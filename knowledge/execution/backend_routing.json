@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "policy": {
+    "default_preferred": "ADB",
+    "default_fallback": "ADB",
+    "note": "A skill absent from `skills` keeps its historical ADB path. MAA is only promoted per skill after an A/B shows it is not worse."
+  },
+  "device": {
+    "preferred": "MAA",
+    "fallback": "ADB",
+    "evidence": {
+      "source": "tools/maa_selftest.py",
+      "measured_at": "2026-09-14T20:35:00+08:00",
+      "device": "MuMu Player 12 @ 127.0.0.1:7555, 720x1280, com.gof.china",
+      "screencap_ms": {"ADB_exec_out_screencap_p": 246.2, "MAA_EmulatorExtras": 12.1, "samples": 5},
+      "ratio": 20.3,
+      "note": "Frame capture is the hottest call in the loop. Measured live, five samples each, same MuMu instance."
+    }
+  },
+  "skills": {}
+}

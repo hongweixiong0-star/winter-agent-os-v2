@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T12:30:35+00:00
+HANDOFF TIME: 2026-09-14T12:34:32+00:00
 LAST GOOD COMMIT: f8e145f
-WORKING TREE: 8 dirty file(s)
-  ['M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M dataset/candidate/template_manifest.json', ' M winter_agent_v2/vision.py', '?? evidence/ab_matcher_20260914.json', '?? tools/_h.txt', '?? tools/ab_matcher.py', '?? tools/verify_template.py', '?? winter_agent_v2/matchers.py']
+WORKING TREE: 3 dirty file(s)
+  ['?? out_handoff.txt', '?? out_probe.txt', '?? tools/probe_maa.py']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 19 stable, 30 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 19 stable, 31 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 26 skills never executed, 11 never succeeded
 
@@ -22,7 +22,7 @@ STOPPED AT: agent_state=DEGRADED stop_reason=INTEL_HERO_DISPATCH_NOT_PROVEN
 LAST PRODUCTION EPISODE: {"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T12:19:55.812501+00:00", "episode_id": "intel_pins_20260914_121727_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_before_20260914T121917075964.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_after_20260914T121927504859.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 110, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 8
+DIRTY FILES: 3
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 

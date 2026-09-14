@@ -73,3 +73,13 @@ desktop.ini
 tools/_pt_tmp/
 *.tmp
 .workbuddy-ai/handoff/.commit_message.txt
+# command-output capture files: this machine cannot pipe stdout (no coreutils),
+# so every probe writes out_*.txt and pages it back with Read
+out.txt
+out_*.txt
+out_*.json
+# MaaFramework's own logs and the per-run migration reports
+learning/maa_logs/
+learning/maa_migration/
+dataset/evidence/maa_migration/
+dataset/evidence/maa_probe_*.png

@@ -33,6 +33,11 @@ class Episode:
     after_screenshot: str = ""
     verifier_ok: bool | None = None
     recovery_result: str | None = None
+    # Which backend actually executed this step ("MAA" / "ADB" / "" when nothing
+    # was issued).  Recorded per episode so the MAA rollout is auditable from the
+    # production stream instead of from a migration document.
+    executor_backend: str = ""
+    executor_latency_ms: float | None = None
     recorded_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

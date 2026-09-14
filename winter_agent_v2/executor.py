@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 
 from .device import ADBDevice
@@ -19,6 +20,7 @@ class Executor:
         policy: SafetyPolicy | None = None,
         device: ADBDevice | None = None,
         target_resolver: NormalizedTargetResolver | None = None,
+        backend: str = "ADB",
     ) -> None:
         if production and dry_run:
             raise ValueError("production and dry_run are mutually exclusive")
@@ -27,58 +29,86 @@ class Executor:
         self.policy = policy or SafetyPolicy()
         self.device = device
         self.target_resolver = target_resolver
+        # Stamped onto every ExecutionResult so an episode can state which
+        # UI-automation backend really ran.  The device may be an ADBDevice or a
+        # MaaExecutorAdapter; the two are interface-compatible on purpose.
+        self.backend = backend
 
-    def execute(self, action: Action) -> ExecutionResult:
+    def _result(
+        self,
+        executed: bool,
+        action: Action,
+        error: str | None = None,
+        latency_ms: float | None = None,
+    ) -> ExecutionResult:
+        return ExecutionResult(
+            executed, self.dry_run, action, error,
+            backend=self.backend if executed else "", latency_ms=latency_ms,
+        )
+
+    def execute(self, action: Action, skill_id: str | None = None) -> ExecutionResult:
+        """Run one atomic action on the configured backend.
+
+        ``skill_id`` is accepted for the executor router's routing decision and
+        is deliberately unused here: a skill's target resolution stays the job of
+        its ``target_resolver``, so this class keeps exactly one responsibility.
+        """
         policy = self.policy.evaluate(action)
         if not policy.allowed:
-            return ExecutionResult(False, self.dry_run, action, policy.reason)
+            return self._result(False, action, policy.reason)
         if (action.kind.startswith("TAP") or action.kind == "PRESS_BACK") and not self.production:
-            return ExecutionResult(False, True, action, "DRY_RUN_BLOCKED_DEVICE_ACTION")
+            return self._result(False, action, "DRY_RUN_BLOCKED_DEVICE_ACTION")
         if action.kind == "OBSERVE":
-            return ExecutionResult(True, self.dry_run, action)
+            return self._result(True, action)
         if action.kind == "TAP_SEMANTIC":
             if self.device is None or self.target_resolver is None or not action.target:
-                return ExecutionResult(False, self.dry_run, action, "DEVICE_ADAPTER_NOT_CONNECTED")
+                return self._result(False, action, "DEVICE_ADAPTER_NOT_CONNECTED")
             center = self.target_resolver(action.target)
             if center is None:
-                return ExecutionResult(False, self.dry_run, action, "SEMANTIC_TARGET_NOT_VERIFIED")
+                return self._result(False, action, "SEMANTIC_TARGET_NOT_VERIFIED")
             x_norm, y_norm = center
             if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
-                return ExecutionResult(False, self.dry_run, action, "SEMANTIC_TARGET_OUT_OF_BOUNDS")
+                return self._result(False, action, "SEMANTIC_TARGET_OUT_OF_BOUNDS")
             status = self.device.status()
             if not status.connected or status.resolution is None:
-                return ExecutionResult(False, self.dry_run, action, "DEVICE_BUSY")
+                return self._result(False, action, "DEVICE_BUSY")
             width, height = status.resolution
+            started = time.perf_counter()
             self.device.tap(round(x_norm * width), round(y_norm * height))
-            return ExecutionResult(True, False, action)
+            latency_ms = (time.perf_counter() - started) * 1000.0
+            return self._result(True, action, latency_ms=round(latency_ms, 2))
         if action.kind == "PRESS_BACK":
             if self.device is None:
-                return ExecutionResult(False, self.dry_run, action, "DEVICE_ADAPTER_NOT_CONNECTED")
+                return self._result(False, action, "DEVICE_ADAPTER_NOT_CONNECTED")
             status = self.device.status()
             if not status.connected:
-                return ExecutionResult(False, self.dry_run, action, "DEVICE_BUSY")
+                return self._result(False, action, "DEVICE_BUSY")
+            started = time.perf_counter()
             self.device.press_back()
-            return ExecutionResult(True, False, action)
+            latency_ms = (time.perf_counter() - started) * 1000.0
+            return self._result(True, action, latency_ms=round(latency_ms, 2))
         if action.kind == "SWIPE":
             # ``target`` carries "x1_norm,y1_norm,x2_norm,y2_norm" and payload may
             # carry a duration. Used only to move scrollable in-game lists
             # (resource-target strip, event lists) before a semantic tap.
             if self.device is None:
-                return ExecutionResult(False, self.dry_run, action, "DEVICE_ADAPTER_NOT_CONNECTED")
+                return self._result(False, action, "DEVICE_ADAPTER_NOT_CONNECTED")
             try:
                 x1, y1, x2, y2 = (float(part) for part in str(action.target or "").split(","))
             except ValueError:
-                return ExecutionResult(False, self.dry_run, action, "SWIPE_TARGET_INVALID")
+                return self._result(False, action, "SWIPE_TARGET_INVALID")
             if not all(0.0 <= value <= 1.0 for value in (x1, y1, x2, y2)):
-                return ExecutionResult(False, self.dry_run, action, "SWIPE_TARGET_OUT_OF_BOUNDS")
+                return self._result(False, action, "SWIPE_TARGET_OUT_OF_BOUNDS")
             status = self.device.status()
             if not status.connected or status.resolution is None:
-                return ExecutionResult(False, self.dry_run, action, "DEVICE_BUSY")
+                return self._result(False, action, "DEVICE_BUSY")
             width, height = status.resolution
+            started = time.perf_counter()
             self.device.swipe(
                 round(x1 * width), round(y1 * height),
                 round(x2 * width), round(y2 * height),
                 int(action.payload.get("duration_ms", 300)),
             )
-            return ExecutionResult(True, False, action)
-        return ExecutionResult(False, self.dry_run, action, "DEVICE_ADAPTER_NOT_CONNECTED")
+            latency_ms = (time.perf_counter() - started) * 1000.0
+            return self._result(True, action, latency_ms=round(latency_ms, 2))
+        return self._result(False, action, "DEVICE_ADAPTER_NOT_CONNECTED")

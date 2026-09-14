@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `3e4484e 2026-09-14T20:30:38+08:00 feat(vision): search-based OpenCV matcher, opt-in, with an A/B before any default`
 - `da28686 2026-09-14T20:25:14+08:00 fix(hero): the fight button is clickable - my template was 103 px too high`
 - `4e075a7 2026-09-14T20:08:08+08:00 docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved`
 - `d2cc794 2026-09-14T19:47:35+08:00 docs(mcp): capability audit - zero new MCP servers, host MCP usage policy`
@@ -17,17 +18,11 @@ Last 12 commits (newest first):
 - `f8e145f 2026-09-14T17:16:36+08:00 feat(intel): drain-and-loop closure + fix the stamina fragment misread`
 - `349bb6c 2026-09-14T16:51:47+08:00 docs(memory): repair the fifth-round note eaten by shell command substitution`
 - `0d44f54 2026-09-14T16:50:46+08:00 docs(handoff): mark db268f9 as last-good after the intel chain closed end to end`
-- `db268f9 2026-09-14T16:50:25+08:00 feat(intel): the beast chain runs end to end on the live client`
 
-Uncommitted changes: 8
-- `M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M dataset/candidate/template_manifest.json`
-- ` M winter_agent_v2/vision.py`
-- `?? evidence/ab_matcher_20260914.json`
-- `?? tools/_h.txt`
-- `?? tools/ab_matcher.py`
-- `?? tools/verify_template.py`
-- `?? winter_agent_v2/matchers.py`
+Uncommitted changes: 3
+- `?? out_handoff.txt`
+- `?? out_probe.txt`
+- `?? tools/probe_maa.py`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -145,6 +145,12 @@ class ExecutionResult:
     dry_run: bool
     action: Action
     error: str | None = None
+    # Which UI-automation backend actually issued this action ("MAA" / "ADB").
+    # Required by the operator's rule that a production episode must show
+    # ``executor_backend = MAA`` before MAA can be called "接入".  Empty means the
+    # action never reached a backend (policy refusal, dry run).
+    backend: str = ""
+    latency_ms: float | None = None
 
 
 @dataclass(frozen=True)

@@ -245,6 +245,11 @@ class LiveRuntime:
             before_screenshot=str(before_screenshot) if before_screenshot else "",
             after_screenshot=str(after_screenshot) if after_screenshot else "",
             verifier_ok=None if verification is None else bool(verification.ok),
+            # Which backend issued this step's input. Empty when nothing was
+            # issued (resolution refused, dry run) — that distinction is what
+            # keeps "MAA is in production" an evidence claim, not a hope.
+            executor_backend=execution.backend if execution is not None else "",
+            executor_latency_ms=execution.latency_ms if execution is not None else None,
         )
         try:
             self.episode_store.append(episode)

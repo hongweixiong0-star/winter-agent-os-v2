@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T12:30:35+00:00`
+- generated_at: `2026-09-14T12:34:32+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `da28686` on `main`
+- commit: `3e4484e` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,17 +10,12 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 30
-- HEAD: `da28686` — fix(hero): the fight button is clickable - my template was 103 px too high (2026-09-14T20:25:14+08:00)
-- working tree: 8 dirty file(s)
-  - `M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M dataset/candidate/template_manifest.json`
-  - ` M winter_agent_v2/vision.py`
-  - `?? evidence/ab_matcher_20260914.json`
-  - `?? tools/_h.txt`
-  - `?? tools/ab_matcher.py`
-  - `?? tools/verify_template.py`
-  - `?? winter_agent_v2/matchers.py`
+- commits: 31
+- HEAD: `3e4484e` — feat(vision): search-based OpenCV matcher, opt-in, with an A/B before any default (2026-09-14T20:30:38+08:00)
+- working tree: 3 dirty file(s)
+  - `?? out_handoff.txt`
+  - `?? out_probe.txt`
+  - `?? tools/probe_maa.py`
 
 ## B. Runtime
 

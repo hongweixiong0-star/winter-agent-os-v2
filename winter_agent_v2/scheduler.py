@@ -45,7 +45,10 @@ class Scheduler:
             return TickResult(Decision("SAFE_STOP", "skill_not_ready", 1.0, "no_action"), None)
         if self.candidate_pool and self.candidate_pool.eligible(skill):
             self.candidate_pool.attempted(skill)
-        return TickResult(decision, self.executor.execute(skill.action))
+        # ``skill_id`` travels with the action so an ExecutorRouter can pick the
+        # skill's preferred backend.  A plain Executor ignores the argument, so
+        # the single-scheduler contract is unchanged.
+        return TickResult(decision, self.executor.execute(skill.action, skill_id=skill.id))
 
     def select_next(self, observations: tuple[WorldState, ...]) -> TaskSelection:
         """Choose the first actionable observed task with no second scheduler.
