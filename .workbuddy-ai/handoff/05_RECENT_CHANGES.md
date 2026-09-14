@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `f8e145f 2026-09-14T17:16:36+08:00 feat(intel): drain-and-loop closure + fix the stamina fragment misread`
 - `349bb6c 2026-09-14T16:51:47+08:00 docs(memory): repair the fifth-round note eaten by shell command substitution`
 - `0d44f54 2026-09-14T16:50:46+08:00 docs(handoff): mark db268f9 as last-good after the intel chain closed end to end`
 - `db268f9 2026-09-14T16:50:25+08:00 feat(intel): the beast chain runs end to end on the live client`
@@ -17,21 +18,10 @@ Last 12 commits (newest first):
 - `eeac37d 2026-09-14T14:17:40+08:00 wip: stamina becomes observable + recall becomes dispatchable`
 - `35ed464 2026-09-14T13:44:03+08:00 docs(handoff): record the live stamina reading (200/200) and the recall UI probe`
 - `446d909 2026-09-14T13:41:40+08:00 feat(policy): stamina spending beats gathering; gathering is LAST_RESORT`
-- `f35df92 2026-09-14T13:32:27+08:00 docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint`
 
-Uncommitted changes: 12
-- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- ` M tests/test_march_recall_and_stamina.py`
-- ` M winter_agent_v2/ocr.py`
-- `?? dataset/truth_audit/hud_stamina_20260914/map_hud_with_stamina_295__roi_fragments.png`
-- `?? evidence/intel_loop_20260914_085752.log`
+Uncommitted changes: 2
+- `M .workbuddy-ai/handoff/.last_good_commit`
 - `?? tools/_h.txt`
-- `?? tools/loop_out.txt`
-- `?? tools/run_intel_loop.py`
 <!-- /AUTO:recent_commits -->
 
 ---
