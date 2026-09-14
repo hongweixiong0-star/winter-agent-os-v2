@@ -29,6 +29,11 @@ dataset/truth_audit/**/*.jpg
 dataset/external/**/*.png
 dataset/external/**/*.jpg
 
+# nested third-party clones: they are their own repositories and are
+# REFERENCE_ONLY (see knowledge/external/projects.json).  Tracking them as plain
+# directories made `git status` permanently dirty.
+dataset/external/repositories/
+
 # re-include the regression fixtures
 !dataset/truth_audit/gather_live_20260914_115120/**/*.png
 !dataset/truth_audit/resource_cells_20260914_120027/**/*.png

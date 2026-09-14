@@ -1,0 +1,174 @@
+# START HERE — Winter Agent OS V2
+
+**你是接管这个项目的新账号。你没有前一个账号的聊天上下文，这是设计如此。**
+
+项目目录本身就是事实源。按下面 5 步走，不要跳步。
+
+---
+
+## 第 0 步：认清环境（5 分钟，别跳过）
+
+本项目运行环境有两个**已知的坑**，不知道会浪费大量时间：
+
+1. **Bash 工具在这台机器上没有 coreutils**：`ls` / `cat` / `head` / `tail` / `sleep` /
+   `wc` / `date` 全部 `command not found`，只有 shell 内建命令可用。
+2. **PowerShell 工具的 stdout 不回传**（返回 exit code 0 但没有任何输出）。
+
+所以：**所有命令都用 Python 执行**，输出重定向到文件后再用 Read 读取。
+
+```bash
+# 唯一可用的通用执行方式
+cd "E:/无尽冬日智能体" && "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/<script>.py > out.txt 2>&1
+# 然后 Read out.txt
+```
+
+Python 环境：
+- **项目 venv（含 PIL / rapidocr，跑项目脚本必须用它）**：
+  `E:\dongri-mumu-bot\.venv\Scripts\python.exe`
+- 托管 Python 3.13（**没有 PIL**）：`C:\Users\xhw\.workbuddy\binaries\python\versions\3.13.12\python.exe`
+
+真机（MuMu 默认**不启动**）：
+```bash
+"D:/Program Files/Netease/MuMu Player 12/nx_main/MuMuManager.exe" control -v 0 launch -pkg com.gof.china
+"D:/Program Files/Netease/MuMu Player 12/nx_main/adb.exe" connect 127.0.0.1:7555
+```
+启动后真机为 720×1280，前台包 `com.gof.china`。
+
+---
+
+## 第 1 步：读宪法
+
+读 **`.workbuddy-ai/handoff/00_MASTER_RULES.md`**。
+它包含 V2 架构冻结、Single Scheduler/WorldState/Registry、Goal≠Skill、Semantic First、
+Verifier First、安全红线、开发方式等**长期硬规则**。改动架构前必须读过。
+
+---
+
+## 第 2 步：重建当前事实
+
+```bash
+"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/update_workbuddy_handoff.py
+```
+
+这一步会读 git / registry / capability mapping / episodes.jsonl / runtime snapshot /
+latest log / evidence integrity / commercial parity，并重写：
+
+- `01_CURRENT_TRUTH.md`（完整重生成）
+- `08_LIVE_METRICS.json`、`09_RUNTIME_STATE.json`（完整重生成）
+- `03_NEXT_ACTION.md`、`04_OPEN_ISSUES.md`、`05_RECENT_CHANGES.md`、
+  `02_CURRENT_PROGRESS.md`、`10_LAST_HANDOFF.md` 里 **`<!-- AUTO:... -->` 之间的块**
+
+手写内容不会被覆盖。
+
+---
+
+## 第 3 步：读这四份
+
+| 文件 | 回答什么问题 |
+|---|---|
+| `01_CURRENT_TRUTH.md` | 现在的真实数字：commit / episodes / 成功率 / 技能生命周期 / Goal 覆盖 / 证据完整性 |
+| `03_NEXT_ACTION.md` | 当前最高价值任务、为什么、根因、下一个精确动作、验收标准 |
+| `04_OPEN_ISSUES.md` | P0/P1 未决问题与环境坑 |
+| `10_LAST_HANDOFF.md` | 上一个账号停在哪里、什么已验证、什么没有、不要重复什么 |
+
+补充阅读（按需）：
+`02_CURRENT_PROGRESS.md`（阶段判断）、`05_RECENT_CHANGES.md`（改了什么/为什么）、
+`06_DECISIONS.md`（**非显然决定的理由，防止你好心改回去**）、
+`07_EXTERNAL_REUSE.md`（外部项目台账）。
+
+---
+
+## 第 4 步：亲自核对（不要只信 Handoff）
+
+```bash
+git log --oneline -12          # 版本历史
+git status --porcelain         # 脏文件
+python tools/truth_audit.py    # 重算 episode / registry / 证据完整性
+```
+
+要核对的东西：
+
+- **git**：HEAD 与 `10_LAST_HANDOFF.md` 是否一致？有没有未提交改动？
+- **episodes**：`learning/episodes.jsonl` 最后几条是什么？`recorded_at` 是不是新的？
+- **evidence**：被引用的截图真的在磁盘上吗？（`01_CURRENT_TRUTH.md` 的 Evidence integrity 段）
+- **runtime**：`learning/runtime_snapshot.json` 的 `updated_at` 有多新？
+  `unexpected_worker_exits` / `stop_reason` 是什么？
+- **latest logs**：`learning/control_panel/latest.log` 的最后 `stop_reason`；
+  `learning/control_panel/crashes/` 有没有新的崩溃报告？
+
+### 冲突裁决（不可颠倒）
+
+1. Handoff 文档与**代码**冲突 → **代码优先**
+2. 代码与 **Production Evidence** 冲突 → **Production Evidence 优先**
+
+证据优先级总表：
+```
+LIVE CLIENT > PRODUCTION EVIDENCE > VERIFIER RESULT > CURRENT CODE
+> REPLAY > TEST > DOCUMENT > PRIOR KNOWLEDGE
+```
+
+---
+
+## 第 5 步：继续开发
+
+1. 承接 `03_NEXT_ACTION.md` 里的**当前最高价值任务**。若你认为它不是最高价值，
+   先用真实数据说明理由，再换。
+2. **禁止重新设计架构。** 见 `00_MASTER_RULES.md` §2。
+3. **禁止重复已经 Live Verified 的工作。** 见 `02_CURRENT_PROGRESS.md` 的「已 Live 且应守住」表。
+4. 进入循环：
+
+```
+RUN → FAILURE → FIX → REPLAY → LIVE → VERIFY → EVIDENCE → NEXT
+```
+
+5. 只有真实客户端 + 真实动作 + 真实状态变化 + Verifier PASS + 可追溯 Evidence
+   才能把能力标为 `LIVE_VERIFIED` / `STABLE`。
+6. **不要每完成一步就停下来问用户。** 自动继续下一最高价值任务
+   （唯一例外：真实支付、账号安全、不可恢复破坏）。
+7. 会话准备结束时（或完成一个重要节点后）：
+
+```bash
+python tools/update_workbuddy_handoff.py
+```
+
+在这几个时机刷新 handoff（不要每改一行就重写）：
+新的 Live Verified / Goal Coverage 变化 / Stable·Degraded 变化 / 重大 Failure 修复 /
+重大 Runtime Failure / 外部模式真正接入 / 重要 checkpoint / 会话准备结束。
+
+8. 若本轮改动「逻辑完整 + 测试通过 + 值得保留」，建 checkpoint：
+
+```bash
+"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest tests -q
+python tools/update_workbuddy_handoff.py --checkpoint -m "type(scope): summary"
+```
+
+仍在实验中 → **保持 dirty tree**，并在 `10_LAST_HANDOFF.md` 手写块说明脏文件的意义。
+**不许假装已完成。**
+
+---
+
+## 目录职责
+
+```
+.workbuddy-ai/memory/     长期项目知识、设计决定、历史经验（人写）
+.workbuddy-ai/handoff/    当前开发现场、当前进度、下一操作（机器生成 + 人写补充）
+```
+
+关键路径速查：
+
+| 用途 | 路径 |
+|---|---|
+| 运行态唯一真相源 | `learning/runtime_snapshot.json` |
+| 生产证据流 | `learning/episodes.jsonl` |
+| Worker 崩溃报告 | `learning/control_panel/crashes/` |
+| 最近一次运行日志 | `learning/control_panel/latest.log` |
+| 能力映射（**手写输入**） | `knowledge/goals/goal_capability_map.json` |
+| 覆盖率报告（**生成输出**） | `knowledge/goals/capability_skill_map.json` |
+| 商业脚本对标 | `knowledge/coverage/commercial_bot_parity.json` |
+| 真机证据归档 | `evidence/`、`dataset/truth_audit/` |
+| 本项目唯一入口 | `START_HERE.md`（本文件） |
+
+---
+
+**一句话总纲：让真实客户端更可靠、更快、覆盖更多 Goal、恢复更强、人工干预更少。
+做不到，这次开发价值接近 0。**

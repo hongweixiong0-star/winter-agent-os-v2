@@ -1,0 +1,127 @@
+# 06 — DECISIONS
+
+已做出的、**非显然**的技术决定。目的是回答「为什么不是另一种做法」，
+防止新账号好心地把它们改回去。倒序：最新在上。
+
+格式：`决定 / 理由 / 备选被否决的原因 / 影响范围`
+
+---
+
+## D-013：截图证据不进 git
+
+- **决定**：`.gitignore` 排除 `dataset/raw/**` 与 `dataset/truth_audit/**` 的 PNG
+  （约 1.1 GB），只保留 `dataset/candidate/**` 模板与命名的回归 fixture 目录。
+- **理由**：checkpoint 必须快且可读。1.1 GB PNG 会让每次 commit 失去意义，也无法 clone。
+  截图是机器本地产物，retention 已在磁盘上保护被引用的帧，handoff 记录绝对路径。
+- **被否决**：全部提交（体积不可接受）；全部不提交（会丢掉 `dataset/candidate` 的模板，
+  而模板是 live-verified vision 的输入）。
+- **影响**：Live Verified 的可追溯性依赖**本机磁盘**，换机器需要重新采集。
+  **注意**：排除图片必须用**文件 pattern**（`dataset/truth_audit/**/*.png`），
+  绝不能用目录 pattern 排除父目录——git 无法再 include 其子文件，会静默丢掉 fixture。
+
+## D-012：FAILURE 与 DEGRADED 的判定收紧
+
+- **决定**：Goal 级 `DEGRADED` 只在「所有能力都已 live 证明，但至少一个低于可靠成功率」时才给。
+- **理由**：最初写成「任一次能力有 ≥2 失败且成功率 <0.8 就 DEGRADED」，
+  结果 16 个 Goal 里 7 个变 DEGRADED、`NEVER_TRIED` 被吞成 0 —— 而这恰恰是
+  用户明确要求的开发优先级输入。
+- **影响**：`capability_coverage.py` 的状态判定顺序。
+  改这一处之前先问：`NEVER_TRIED` 的数字还有意义吗？
+
+## D-011：Episode 直接携带截图路径
+
+- **决定**：`Episode` 增加 `before_screenshot` / `after_screenshot`（绝对路径），
+  并给 `retention` 提供 `referenced_evidence()`。
+- **理由**：需求要求「任何被引用证据不存在 → FAIL」。没有引用就没有可校验的东西；
+  同时引用是保留策略知道「哪些帧不能删」的唯一依据。
+- **被否决**：只把路径写进 `docs`（文档会说谎，且不会被校验）。
+- **影响**：`learning.py` / `runtime.py` / `retention.py` / `tests/test_evidence_integrity.py`。
+
+## D-010：能力映射层，而不是继续修字符串
+
+- **决定**：新增 `knowledge/goals/goal_capability_map.json` 作为**手写输入映射**，
+  覆盖率改为在其上计算；`knowledge/goals/capability_skill_map.json` 保留为**输出报告**。
+- **理由**：需求侧的 `SELECT_INTEL` / `EXECUTE_INTEL` 与注册表的
+  `SELECT_INTEL_BEAST_MISSION` / `DISPATCH_INTEL_BEAST` 是两套词汇。
+  直接匹配会让已实现的算缺失、没实现的算满足。
+- **被否决**：把注册表改名去迁就需求字符串（会破坏已有 episode 证据的可追溯性）。
+- **影响**：文件名相近容易混——前者 input，后者 output，两个文件里都写了说明。
+
+## D-009：`verify_resource_selected` 不再要求读得到等级
+
+- **决定**：等级被降级为 evidence，不再作为「选中成功」的必要条件。
+- **理由**：这个 verifier 要证明的状态变化是「锚定的页签变成了请求的资源」。
+  等级是另一个观测（且滑条范围已从 1~8 变 1~27，尚未重标定）。
+  把它并进选择判定，等于让一个脆弱读取拖垮整条链路。
+- **被否决**：保留 `resource_level is not None`（会继续制造假失败）。
+- **影响**：判定变窄但更准；等级读数仍在 evidence 里，另有独立 verifier 时再校验。
+
+## D-008：`MARCH_PAGE_NOT_OPEN` 必须拆成两个原因
+
+- **决定**：拆为 `MARCH_PAGE_ACTION_MISSED`（资源点页面仍在，控件还在 → 点击未生效，
+  属于重试/延迟问题）与 `MARCH_PAGE_NOT_RECOGNIZED`（页面已变但 Vision 命名失败 →
+  模板问题）。
+- **理由**：两者根因与修法完全不同，共用一个计数器等于无法行动。
+- **影响**：`verifier.py`；历史 59 次仍是旧口径，不可与新数据直接比。
+
+## D-007：资源页签用「锚点 + 相对布局」，不写死坐标
+
+- **决定**：`selected_resource` 先找白色角标的**一对竖线**（间距 130–175px），
+  再按 pitch 推出其它格；坐标由 `resource_cell_center_norm()` 现场计算，
+  屏外则由 `resource_tab_swipe_for()` 先滚动。
+- **理由**：客户端会把当前选中页签重新居中，整条带的滚动偏移在会话之间会变
+  （实测到 0 与 +400px 两种）。写死中心只对一种偏移成立。
+- **证据**：旧实现下 `SELECT_RESOURCE` 44 次只成功 3 次（6.8%）；
+  新实现在 22 个真机帧上 22/22 正确。
+- **被否决**：再加几组固定坐标（偏移是连续的，永远补不全）。
+- **影响**：`vision.py`；`runtime.py` 的 `RESOURCE_DYNAMIC` 解析与滚动逻辑。
+
+## D-006：`Page.MARCH` 必须有显式分支
+
+- **决定**：采集编队页显式返回 `DISPATCH_MARCH`；兜底 `first_ready_p0_skill` 排除 `WAIT`。
+- **理由**：兜底按注册表插入顺序取第一个 `required_page=None` 的技能，
+  而那个是占位技能 `WAIT`（「等环境状态自行解决」）。环境状态在上方已全部显式处理，
+  让 `WAIT` 在这里胜出会静默卡死在任意页面上。
+- **影响**：`brain.py`。
+
+## D-005：Worker 用 `except BaseException` 且必须留 traceback
+
+- **决定**：捕获一切（含 `KeyboardInterrupt`/`SystemExit`），写崩溃报告后再通知 GUI；
+  失败分类决定是否计入 `unexpected_worker_exits`。
+- **理由**：「worker 悄无声息地消失」比崩溃本身更难查。历史 15 次退出因为只留了
+  `str(exc)` 而永久无法归因。
+- **被否决**：清零计数器（需求明确禁止）；无脑加 retry（掩盖根因）。
+- **影响**：`tools/control_panel.py`；`learning/control_panel/crashes/`。
+
+## D-004：长期保留区必须显式列入保护名单
+
+- **决定**：`dataset/verified` / `dataset/production` / `dataset/normalized` /
+  `dataset/external` 加入 `PROTECTED_DIRECTORY_NAMES`，并新增 `referenced_evidence()`。
+- **理由**：这两个「长期保留区」此前**完全不在**保护名单里，会被正常轮转删掉——
+  即唯一能证明「曾经真机跑过」的帧。
+- **影响**：`retention.py`；`tests/test_retention.py`。
+
+## D-003：`LiveRuntime._semantic` 访问器（不要直接 `.semantic`）
+
+- **决定**：用 `getattr(vision, "semantic", vision)` 统一取语义 ROI 视觉对象。
+- **理由**：`run_live.py` 传 `SemanticWorldVision.semantic`（ROI 对象本身），
+  其它调用方传 world vision。前一个账号把访问方式改成 `self.semantic_vision.semantic`，
+  恰好让 `run_live.py` 这条路 100% 崩溃。
+- **影响**：`runtime.py`。改这里前先确认两种接线都还能跑。
+
+## D-002：`git init` 并建立 checkpoint 机制
+
+- **决定**：项目纳入 git；`last_good_commit` 记录在
+  `.workbuddy-ai/handoff/.last_good_commit`，由 `--checkpoint` / `--mark-good` 维护。
+- **理由**：此前无版本控制，已造成一次不可恢复的删除事故。
+- **规矩**：只有「逻辑完整 + 测试通过 + 值得保留」才建 checkpoint；
+  仍在实验中就保持 dirty tree，并**必须在 handoff 里写清脏文件的意义**。
+  不许假装已完成。
+
+## D-001：Handoff 是加速器，不是唯一事实源
+
+- **决定**：所有关键事实都能仅靠 git / episodes / evidence / runtime snapshot / logs /
+  registry / goal state 重建；生成器负责重算。
+- **理由**：必须支持「上一个账号突然断线」——它可能没机会写 `10_LAST_HANDOFF`。
+- **影响**：`tools/update_workbuddy_handoff.py` 的存在意义；
+  任何只存在于 Markdown 里的「事实」都视为不可信。

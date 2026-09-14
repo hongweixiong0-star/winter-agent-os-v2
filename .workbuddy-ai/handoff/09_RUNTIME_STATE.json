@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-09-14T04:34:43+00:00",
+  "source": "tools/update_workbuddy_handoff.py",
+  "commit": "f9ef073",
+  "snapshot_path": "learning\\runtime_snapshot.json",
+  "snapshot": {
+    "agent_state": "IDLE",
+    "runtime_thread_alive": false,
+    "scheduler_loop_alive": false,
+    "last_tick_time": "2026-09-14T04:11:46.250362+00:00",
+    "last_action_time": "2026-09-14T04:11:46.737766+00:00",
+    "last_success_time": "2026-09-14T04:11:59.155613+00:00",
+    "last_fatal_error": null,
+    "watchdog_restart_count": 13,
+    "unexpected_worker_exits": 15,
+    "page": "MAP",
+    "current_goal": "GATHER_RESOURCE",
+    "current_skill": "DISPATCH_MARCH",
+    "reason": "resource_march_formation_open",
+    "preconditions": [],
+    "verifier": "PASS",
+    "next_action": "gather_march_dispatched",
+    "risk": "UNKNOWN",
+    "confidence": 0.99,
+    "device": "UNKNOWN",
+    "game": "UNKNOWN",
+    "mode": "AUTO",
+    "qwen": "ON_DEMAND",
+    "vision": "READY",
+    "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_after_20260914T041148263346.png",
+    "march_used": 1,
+    "march_max": 6,
+    "queues": {
+      "building": {},
+      "research": {},
+      "training": {},
+      "intel": {},
+      "alliance": {},
+      "events": {}
+    },
+    "stop_reason": "TARGET_SKILL_VERIFIED",
+    "updated_at": "2026-09-14T04:11:59.201462+00:00"
+  },
+  "latest_log": {
+    "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
+    "modified_at": "2026-09-14T03:45:35+00:00",
+    "size_bytes": 0,
+    "last_stop_reason": null
+  },
+  "recent_crash_reports": [],
+  "process_alive_interpretation": "runtime_thread_alive/scheduler_loop_alive mean the in-process worker loop is running. They do NOT mean the emulator or the game is reachable; check the device separately."
+}
