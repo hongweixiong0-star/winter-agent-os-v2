@@ -50,6 +50,9 @@ from .device import DeviceStatus
 
 BACKEND = "MAA"
 ANDROID_KEYCODE_BACK = 4
+# MaaAdbScreencapMethodEnum.EmulatorExtras — the emulator-native channel that
+# makes screencap cost 12.1 ms instead of 246.2 ms on this MuMu instance.
+SCREENCAP_EMULATOR_EXTRAS = 64
 
 # MaaFramework resolves a template name to a file under ``image/``; the caller
 # passes the bare name (no extension).  Verified 2026-09-14: passing
@@ -178,6 +181,9 @@ class MaaExecutorAdapter:
         self._loaded_templates: set[str] = set()
         self._last_frame: np.ndarray | None = None
         self._last_frame_at: float = 0.0
+        self._screencap_methods: int | None = None
+        self._input_methods: int | None = None
+        self._discovered_device: dict[str, Any] | None = None
         self._package: str | None = None
         self._package_at: float = 0.0
         self._stats: dict[str, _VerbStats] = {}
@@ -197,6 +203,34 @@ class MaaExecutorAdapter:
     @property
     def last_frame(self) -> np.ndarray | None:
         return self._last_frame
+
+    @property
+    def negotiated(self) -> dict[str, Any]:
+        """What the toolkit actually handed over, for honest reporting.
+
+        Recorded because the difference between "MAA is fast" and "MAA fell back
+        to generic ADB screencap" is 15x and is otherwise invisible.
+        """
+        return {
+            "capture_backend": self.capture_backend,
+            "screencap_methods": self._screencap_methods,
+            "input_methods": self._input_methods,
+            "device": self._discovered_device,
+        }
+
+    @property
+    def capture_backend(self) -> str:
+        """Which capture channel this adapter actually negotiated.
+
+        Reported rather than assumed: ``EmulatorExtras`` (MuMu's native channel,
+        measured at 12.1 ms) is only used when the toolkit handed us those method
+        bits.  If it did not, this says ``MAA_ADB`` so an episode never claims the
+        fast path it did not take.
+        """
+        methods = self._screencap_methods
+        if methods is not None and int(methods) & SCREENCAP_EMULATOR_EXTRAS:
+            return "MAA_MUMU_EXTRAS"
+        return "MAA_ADB"
 
     @property
     def last_frame_age_s(self) -> float | None:
@@ -299,16 +333,42 @@ class MaaExecutorAdapter:
         screencap_methods = -1
         input_methods = -1
         config: dict[str, Any] | None = None
+        discovered: dict[str, Any] | None = None
         try:
             from maa.toolkit import Toolkit
-            devices = Toolkit.find_adb_devices(str(self.adb_path))
-            if devices:
-                device = devices[0]
-                screencap_methods = int(getattr(device, "screencap_methods", -1))
-                input_methods = int(getattr(device, "input_methods", -1))
-                config = getattr(device, "config", None) or None
+            # ``find_adb_devices`` is asked twice on purpose.  Observed
+            # 2026-09-14: passing the adb path can return no device at all, and
+            # without the device's ``extras.mumu`` block MaaFramework falls back
+            # to a generic screencap path - which measured 178 ms against the
+            # 12 ms the EmulatorExtras channel gives.  A 15x loss that leaves no
+            # error message anywhere, so the fallback discovery call is kept.
+            for probe in (lambda: Toolkit.find_adb_devices(str(self.adb_path)),
+                          lambda: Toolkit.find_adb_devices()):
+                try:
+                    devices = probe()
+                except Exception:  # noqa: BLE001
+                    continue
+                if devices:
+                    device = devices[0]
+                    screencap_methods = int(getattr(device, "screencap_methods", -1))
+                    input_methods = int(getattr(device, "input_methods", -1))
+                    config = getattr(device, "config", None) or None
+                    discovered = {
+                        "name": getattr(device, "name", None),
+                        "address": getattr(device, "address", None),
+                        "screencap_methods": screencap_methods,
+                        "input_methods": input_methods,
+                        "has_mumu_extras": bool(
+                            ((config or {}).get("extras") or {}).get("mumu")
+                        ),
+                    }
+                    if (config or {}).get("extras"):
+                        break
         except Exception:  # noqa: BLE001
             pass
+        self._screencap_methods = screencap_methods
+        self._input_methods = input_methods
+        self._discovered_device = discovered
         return controller_cls(
             adb_path=str(self.adb_path),
             address=self.serial,

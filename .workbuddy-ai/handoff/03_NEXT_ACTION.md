@@ -10,11 +10,11 @@ CURRENT TASK: implement `CHECK_ALLIANCE_EVENT` — missing from the registry, bl
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x110
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x111
 LAST GOOD COMMIT: f8e145f
-CURRENT DIRTY FILES: 3
-LAST PRODUCTION EPISODE: {"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T12:19:55.812501+00:00", "episode_id": "intel_pins_20260914_121727_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_before_20260914T121917075964.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_after_20260914T121927504859.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 110, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+CURRENT DIRTY FILES: 42
+LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T13:14:30.045936+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260914T131419612734.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_after_20260914T131422364577.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 111, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
@@ -32,6 +32,37 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 ## 手写：当前任务的上下文
 
 本区由人维护。生成器不会碰它。写「为什么是这个任务」以及「坑在哪」。
+
+### 【最新 2026-09-14 21:1x】MAA 已进入生产执行路径 —— 下一轮做什么
+
+先读 `docs/AVAILABLE_TOOLING.md`（工具清单）与 `docs/EXECUTOR_REALITY_AUDIT.md`
+（每个 skill 现在真实走哪条后端）。**这是本轮最重要的两个新增文件。**
+
+已落地：`MaaExecutorAdapter` + `ExecutorRouter`；取帧默认走 MAA（真机 20 次交替实测
+**8.92 ms vs ADB 324.12 ms，36.3×**）；8 个 P0 skill 的 `preferred_backend=MAA`
+（其中 5 个带 MAA 识别节点，1 个 HYBRID，2 个仅设备轴）；episode 记录真实调用链
+`capture_backend / recognition_backend / action_backend / executor_backend`。
+
+**下一轮按此顺序：**
+
+1. **`START_GATHER`（=OPEN_MARCH_PAGE，`BTN_GATHER`）**：审计显示 94 次真机尝试
+   只有 **37% 成功**，是注册表里最差的高频 skill。识别节点已测通
+   （3/3 阳性、0/5 阴性、82.6 ms），**还没做过真机端到端**。
+   动作：`run_live.py --goal GATHER_RESOURCE`，看 `MARCH_PAGE_NOT_OPEN` 是否下降，
+   并把 episode 里的 `executor_backend` 从 UNRECORDED 变成 MAA/HYBRID。
+2. **`INTEL_HERO_DISPATCH`（战斗按钮）**：识别 9/9、中心误差 0.5 px，但真机 8 次
+   全部 `INTEL_HERO_DISPATCH_NOT_PROVEN`（都是今天修坐标之前的记录）。
+   **需要情报板上有英雄之旅钉子**才能真机复验；没有就记 `BLOCKED_NO_INTEL_TARGET`，
+   不要伪造尝试次数。
+3. **`PAGE_MAP` 候选重测**：现用 `page_map__live_back_safe_home__0` 只 1/4 命中，
+   说明它只匹配自己那一帧、不泛化。要按战斗按钮那套办法（绿色色块分割）在**当前
+   客户端**重新裁一次，再进 MAA。不要直接塞旧模板。
+4. **`CLOSE_POPUP` 的识别仍是 LEGACY**（无正样本语料：母帧已被 retention 轮转掉）。
+   它是 HYBRID，可用；等有弹窗真机帧再补节点。
+5. **72h Soak 仍未开始。** 现在取帧快了 36 倍、每步开销大降，是开始 Soak 的好时机。
+
+**新的硬规则（已写入 `00_MASTER_RULES.md` §2b）：先 TOOL CHECK，再写代码。**
+单个 UI 元素 15 分钟止损；单个 Skill/Failure/Goal 90 分钟止损。
 
 ### 【最新，覆盖下面的旧判断】2026-09-14 操作者策略变更：体力优先，采集降为最低
 

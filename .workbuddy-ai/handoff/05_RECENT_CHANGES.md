@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `4ff00eb 2026-09-14T20:48:40+08:00 feat(executor): MaaFramework as a second executor backend behind the existing Executor boundary`
 - `3e4484e 2026-09-14T20:30:38+08:00 feat(vision): search-based OpenCV matcher, opt-in, with an A/B before any default`
 - `da28686 2026-09-14T20:25:14+08:00 fix(hero): the fight button is clickable - my template was 103 px too high`
 - `4e075a7 2026-09-14T20:08:08+08:00 docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved`
@@ -17,12 +18,28 @@ Last 12 commits (newest first):
 - `37545bd 2026-09-14T17:16:53+08:00 docs(handoff): mark f8e145f as last-good; intel drained, hourly loop automation active`
 - `f8e145f 2026-09-14T17:16:36+08:00 feat(intel): drain-and-loop closure + fix the stamina fragment misread`
 - `349bb6c 2026-09-14T16:51:47+08:00 docs(memory): repair the fifth-round note eaten by shell command substitution`
-- `0d44f54 2026-09-14T16:50:46+08:00 docs(handoff): mark db268f9 as last-good after the intel chain closed end to end`
 
-Uncommitted changes: 3
-- `?? out_handoff.txt`
-- `?? out_probe.txt`
-- `?? tools/probe_maa.py`
+Uncommitted changes: 42
+- `M .gitignore`
+- ` M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/MEMORY.md`
+- ` M .workbuddy/memory/2026-09-14.md`
+- ` M START_HERE.md`
+- ` M config/v2.json`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/execution/backend_routing.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/episodes.jsonl`
+- ` M learning/goal_state.json`
 <!-- /AUTO:recent_commits -->
 
 ---

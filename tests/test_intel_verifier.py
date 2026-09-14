@@ -63,8 +63,19 @@ class IntelVerifierTests(unittest.TestCase):
 
         self.assertEqual((hero.popup, hero.intel.get("mission_type")), ("INTEL_HERO_JOURNEY", "HERO_JOURNEY"))
         self.assertEqual((bounty.popup, bounty.intel.get("mission_type")), ("INTEL_MASTER_BOUNTY", "MASTER_BOUNTY"))
-        self.assertEqual(RuleBrain(current_goal="INTEL").decide(hero, v2_registry()).skill, "BACK")
-        self.assertEqual(RuleBrain(current_goal="INTEL").decide(bounty, v2_registry()).skill, "BACK")
+        # The intent of this test is that a special intel dialog must never fall
+        # into the ORDINARY beast flow.  It used to express that as "the brain
+        # answers BACK", which stopped being true when the Hero Journey branch was
+        # added and live-verified (run6 dispatched the camp fight end to end in
+        # four steps).  The assertion now states the intent directly: the answer
+        # is the Hero Journey target, and it is not a beast skill.
+        hero_skill = RuleBrain(current_goal="INTEL").decide(hero, v2_registry()).skill
+        bounty_skill = RuleBrain(current_goal="INTEL").decide(bounty, v2_registry()).skill
+        self.assertEqual(hero_skill, "OPEN_INTEL_HERO_JOURNEY_TARGET")
+        self.assertEqual(bounty_skill, "BACK")
+        for skill in (hero_skill, bounty_skill):
+            self.assertNotIn("BEAST", skill)
+            self.assertNotIn("INTEL_BEAST", skill)
 
     def test_current_client_firebeast_chain_has_distinct_semantics(self) -> None:
         vision = SemanticWorldVision(ROOT / "dataset" / "candidate" / "template_manifest.json")

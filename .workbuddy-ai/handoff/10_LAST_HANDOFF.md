@@ -8,21 +8,21 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T12:34:32+00:00
+HANDOFF TIME: 2026-09-14T13:17:07+00:00
 LAST GOOD COMMIT: f8e145f
-WORKING TREE: 3 dirty file(s)
-  ['?? out_handoff.txt', '?? out_probe.txt', '?? tools/probe_maa.py']
+WORKING TREE: 42 dirty file(s)
+  ['M .gitignore', ' M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json', ' M .workbuddy-ai/handoff/09_RUNTIME_STATE.json', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 19 stable, 31 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 19 stable, 32 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 26 skills never executed, 11 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=DEGRADED stop_reason=INTEL_HERO_DISPATCH_NOT_PROVEN
-LAST PRODUCTION EPISODE: {"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T12:19:55.812501+00:00", "episode_id": "intel_pins_20260914_121727_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_before_20260914T121917075964.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_after_20260914T121927504859.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 110, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+STOPPED AT: agent_state=IDLE stop_reason=MAX_ACTIONS_REACHED
+LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T13:14:30.045936+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260914T131419612734.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_after_20260914T131422364577.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 111, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 3
+DIRTY FILES: 42
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 

@@ -29,9 +29,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 70,
-          "successes": 60,
-          "failures": 10
+          "attempts": 72,
+          "successes": 61,
+          "failures": 11
         },
         {
           "capability": "READ_INTEL_LIST",
@@ -82,8 +82,8 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 30,
-          "successes": 27,
+          "attempts": 31,
+          "successes": 28,
           "failures": 3
         },
         {
@@ -95,8 +95,8 @@
           "status": "STABLE",
           "implemented_by": "DISMISS_INTEL_REWARD",
           "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 33,
-          "successes": 28,
+          "attempts": 34,
+          "successes": 29,
           "failures": 5
         }
       ],
@@ -186,9 +186,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 48,
+          "attempts": 49,
           "successes": 44,
-          "failures": 4
+          "failures": 5
         },
         {
           "capability": "OPEN_RESOURCE_SEARCH",
@@ -572,8 +572,8 @@
           "status": "DEGRADED",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 79,
-          "successes": 61,
+          "attempts": 80,
+          "successes": 62,
           "failures": 18
         },
         {

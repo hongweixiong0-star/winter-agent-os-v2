@@ -40,10 +40,15 @@ class Executor:
         action: Action,
         error: str | None = None,
         latency_ms: float | None = None,
+        recognition_backend: str = "",
     ) -> ExecutionResult:
+        capture = getattr(self.device, "capture_backend", "ADB_EXEC_OUT")
         return ExecutionResult(
             executed, self.dry_run, action, error,
-            backend=self.backend if executed else "", latency_ms=latency_ms,
+            backend=self.backend if executed else "",
+            capture_backend=capture if executed else "",
+            recognition_backend=recognition_backend if executed else "",
+            latency_ms=latency_ms,
         )
 
     def execute(self, action: Action, skill_id: str | None = None) -> ExecutionResult:
@@ -76,7 +81,11 @@ class Executor:
             started = time.perf_counter()
             self.device.tap(round(x_norm * width), round(y_norm * height))
             latency_ms = (time.perf_counter() - started) * 1000.0
-            return self._result(True, action, latency_ms=round(latency_ms, 2))
+            # The target came from this executor's ``target_resolver``, which on
+            # the ADB path is the V2 semantic vision.  Stated explicitly so the
+            # episode does not have to infer who did the recognition.
+            return self._result(True, action, latency_ms=round(latency_ms, 2),
+                                recognition_backend="V2")
         if action.kind == "PRESS_BACK":
             if self.device is None:
                 return self._result(False, action, "DEVICE_ADAPTER_NOT_CONNECTED")

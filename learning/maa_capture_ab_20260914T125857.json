@@ -1,0 +1,395 @@
+{
+  "semantic": "BTN_OPEN_HOME",
+  "attempts": 20,
+  "adb_capture_ms_mean": 350.23,
+  "maa_capture_ms_mean": 177.98,
+  "capture_ratio": 2.0,
+  "legacy_recognition_ms_mean": 37.11,
+  "maa_recognition_ms_mean": 116.66,
+  "legacy_hits": 20,
+  "maa_hits": 20,
+  "agreement": "20/20",
+  "centre_delta_px_max": 0.3,
+  "rows": [
+    {
+      "attempt": 1,
+      "adb_capture_ms": 382.0,
+      "maa_capture_ms": 178.2,
+      "legacy_recognition_ms": 38.4,
+      "maa_recognition_ms": 114.5,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 2,
+      "adb_capture_ms": 358.5,
+      "maa_capture_ms": 174.3,
+      "legacy_recognition_ms": 36.2,
+      "maa_recognition_ms": 122.5,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 3,
+      "adb_capture_ms": 333.4,
+      "maa_capture_ms": 178.7,
+      "legacy_recognition_ms": 36.9,
+      "maa_recognition_ms": 130.9,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 4,
+      "adb_capture_ms": 348.8,
+      "maa_capture_ms": 183.4,
+      "legacy_recognition_ms": 37.4,
+      "maa_recognition_ms": 114.4,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 5,
+      "adb_capture_ms": 345.1,
+      "maa_capture_ms": 181.1,
+      "legacy_recognition_ms": 34.1,
+      "maa_recognition_ms": 111.9,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 6,
+      "adb_capture_ms": 360.8,
+      "maa_capture_ms": 168.5,
+      "legacy_recognition_ms": 38.5,
+      "maa_recognition_ms": 110.2,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 7,
+      "adb_capture_ms": 340.3,
+      "maa_capture_ms": 172.5,
+      "legacy_recognition_ms": 40.7,
+      "maa_recognition_ms": 113.5,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 8,
+      "adb_capture_ms": 360.6,
+      "maa_capture_ms": 173.0,
+      "legacy_recognition_ms": 37.0,
+      "maa_recognition_ms": 113.6,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 9,
+      "adb_capture_ms": 339.8,
+      "maa_capture_ms": 174.4,
+      "legacy_recognition_ms": 38.4,
+      "maa_recognition_ms": 109.8,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 10,
+      "adb_capture_ms": 345.4,
+      "maa_capture_ms": 175.0,
+      "legacy_recognition_ms": 38.7,
+      "maa_recognition_ms": 110.5,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 11,
+      "adb_capture_ms": 347.2,
+      "maa_capture_ms": 202.6,
+      "legacy_recognition_ms": 43.6,
+      "maa_recognition_ms": 129.4,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 12,
+      "adb_capture_ms": 370.0,
+      "maa_capture_ms": 201.7,
+      "legacy_recognition_ms": 41.0,
+      "maa_recognition_ms": 139.7,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 13,
+      "adb_capture_ms": 378.9,
+      "maa_capture_ms": 163.6,
+      "legacy_recognition_ms": 34.0,
+      "maa_recognition_ms": 113.3,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 14,
+      "adb_capture_ms": 349.3,
+      "maa_capture_ms": 175.9,
+      "legacy_recognition_ms": 34.6,
+      "maa_recognition_ms": 108.9,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 15,
+      "adb_capture_ms": 335.9,
+      "maa_capture_ms": 170.7,
+      "legacy_recognition_ms": 33.9,
+      "maa_recognition_ms": 109.5,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 16,
+      "adb_capture_ms": 316.7,
+      "maa_capture_ms": 172.5,
+      "legacy_recognition_ms": 37.3,
+      "maa_recognition_ms": 114.2,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 17,
+      "adb_capture_ms": 331.0,
+      "maa_capture_ms": 175.2,
+      "legacy_recognition_ms": 31.9,
+      "maa_recognition_ms": 107.2,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 18,
+      "adb_capture_ms": 352.8,
+      "maa_capture_ms": 167.8,
+      "legacy_recognition_ms": 35.9,
+      "maa_recognition_ms": 124.6,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 19,
+      "adb_capture_ms": 354.1,
+      "maa_capture_ms": 183.4,
+      "legacy_recognition_ms": 34.6,
+      "maa_recognition_ms": 114.4,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    },
+    {
+      "attempt": 20,
+      "adb_capture_ms": 353.9,
+      "maa_capture_ms": 187.1,
+      "legacy_recognition_ms": 39.1,
+      "maa_recognition_ms": 120.1,
+      "legacy_hit": true,
+      "legacy_distance": 2,
+      "maa_hit": true,
+      "maa_score": 0.749673,
+      "maa_box": [
+        612,
+        1165,
+        107,
+        113
+      ],
+      "centre_delta_px": 0.3,
+      "agree": true
+    }
+  ]
+}

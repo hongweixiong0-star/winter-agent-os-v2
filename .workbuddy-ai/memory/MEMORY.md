@@ -16,6 +16,29 @@
 - 历史失败 Episode 不得篡改。
 - 证据链：`external → raw → normalized → candidate → verified → production`。
 
+## 工具优先（HARD RULE，2026-09-14）
+- **先找工具，再写代码。** 任何任务开工前先读 `docs/AVAILABLE_TOOLING.md`，并在汇报里给出
+  TOOL CHECK 五行：`AVAILABLE_TOOLS / BEST_EXISTING_TOOL / EXISTING_IMPLEMENTATION /
+  WHY_NOT_USE_EXISTING_TOOL / CUSTOM_CODE_NEEDED`。解释不了"成熟工具为何不够"就不许自研底层。
+- **MaaFw 5.12.3 早已装在项目 venv 里并可用**，却长期没被用过。涉及截图 / 按钮与页签定位 /
+  模板 / OCR / ROI / 点击 / 滑动 / 等待页面 / 等待消失 / 重试 / UI 恢复，**先评估 MAA**。
+- 分层固定：**V2 = Brain/Goal/Strategy/WorldState/Knowledge/Verifier；MAA = 取帧/识别/UI 动作/等待/重试；
+  ADB = 设备层 + fallback；Verifier = 唯一事实裁判**（MAA 返回 SUCCESS ≠ Skill 成功）。
+- 两个轴分开决策（真机 20 次实测）：**取帧 MAA 8.92ms vs ADB 324ms（36.3×）→ 已切；
+  识别 MAA 113ms vs 旧 V2 34.5ms（都 20/20 命中、中心差 0.3px）→ 逐语义按证据迁**，不伪造"更优"。
+- 提升某 skill 到 MAA **必须同时写入 evidence**（`knowledge/execution/backend_routing.json`）。
+- 止损：单个 UI 元素 15 分钟；单个 Skill/Failure/Goal 90 分钟内必须拿到「成功率改善 / Root Cause /
+  具体 Blocker / 证明方案错误」之一；单个变体持续失败就标 PARTIAL/DEGRADED 并登记，不阻塞全局。
+- 旧模板只能当 Candidate：必须来自独立真机帧、带正负样本、阈值标定、页面上下文。
+  **禁止模板自己裁自己再自匹配**（d=0 是循环论证，曾骗过三次真机运行）。
+- **识别节点的提升闸门：正样本 ≥3 张独立真机帧、负样本 ≥3 张**。少于这个就输出
+  `PROMOTION BLOCKED`。曾用 1 张正样本提升 `OPEN_INTEL` 的节点，第一次真机就回归
+  （找对位置但相关性 0.448 < 阈值 0.7，因为按钮是动画的），已回滚为 HYBRID。
+- **哈希距离的容差不能搬到模板匹配阈值上**。旧语义为动画控件放宽过容差（如
+  `BTN_OPEN_INTEL_WILD_HUD` max_distance 24），迁移时必须重新标定，不能沿用默认 0.7。
+
+
+
 ## 环境
 - **入口**：先读 `START_HERE.md`（根目录）。它会指向 `.workbuddy-ai/handoff/`。
 - 跨账号接力：`python tools/update_workbuddy_handoff.py` 从真实项目重算 handoff；

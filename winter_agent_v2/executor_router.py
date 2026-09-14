@@ -50,7 +50,6 @@ NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ROUTING_PATH = PROJECT_ROOT / "knowledge" / "execution" / "backend_routing.json"
-DEFAULT_NODES_PATH = PROJECT_ROOT / "knowledge" / "execution" / "maa_pipeline.json"
 DEFAULT_LEDGER_PATH = PROJECT_ROOT / "learning" / "executor_backend.jsonl"
 
 # Errors that mean "the backend itself is unusable" rather than "the game said
@@ -72,6 +71,12 @@ class Route:
     fallback: str
     migration_priority: str = "P3"
     source: str = "default"
+    # Which recogniser this skill is declared to use: "MAA", "LEGACY" (the V2
+    # semantic vision) or "NONE" (the action needs no recognition, e.g. BACK).
+    recognition_backend: str = ""
+    # The per-semantic recognition nodes declared for this skill, if any.
+    recognition: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -117,6 +122,9 @@ class RoutingTable:
             str(entry.get("fallback", self.default_fallback)),
             str(entry.get("migration_priority", "P3")),
             source="table",
+            recognition_backend=str(entry.get("recognition_backend", "")),
+            recognition=dict(entry.get("recognition", {}) or {}),
+            evidence=dict(entry.get("evidence", {}) or {}),
         )
 
     def recognition_node(self, skill_id: str | None, semantic: str) -> dict[str, Any] | None:
@@ -170,6 +178,70 @@ class BackendLedger:
             pass
 
 
+def build_maa_adapter(
+    config: dict[str, Any],
+    *,
+    production: bool = True,
+    project_root: Path = PROJECT_ROOT,
+) -> MaaExecutorAdapter | None:
+    """Build the MAA backend from ``config/v2.json`` — one switch to turn it off.
+
+    Returns ``None`` only when MAA is disabled by configuration.  When it is
+    enabled the adapter is returned even if it fails to come up: its
+    ``unavailable_reason`` then reaches the ledger, so a dead MAA shows up as a
+    recorded fallback instead of vanishing into a silent try/except.
+    """
+    section = (config.get("executor") or {}).get("maa") or {}
+    if not section.get("enabled", False):
+        return None
+    device = config.get("device", {}) or {}
+    adapter = MaaExecutorAdapter(
+        adb_path=device.get("adb_path", ""),
+        serial=str(device.get("serial", "")),
+        production=bool(production),
+        template_dir=project_root / "dataset/candidate/templates",
+        log_dir=project_root / "learning/maa_logs",
+        save_draw=bool(section.get("save_draw", True)),
+        stdout_level=str(section.get("stdout_level", "error")),
+    )
+    adapter.ensure_ready()
+    return adapter
+
+
+def build_router(
+    *,
+    adb_executor: Executor,
+    adb_resolver: Callable[[str], tuple[float, float] | None] | None,
+    maa_adapter: MaaExecutorAdapter | None,
+    skill_id: str | None,
+    production: bool = True,
+    routing: RoutingTable | None = None,
+    ledger: BackendLedger | None = None,
+) -> Executor | ExecutorRouter:
+    """Return the executor to use for one step.
+
+    With no MAA adapter attached this is the plain ADB executor, so a machine
+    without MaaFramework behaves exactly as before.
+    """
+    if maa_adapter is None:
+        return adb_executor
+    router = ExecutorRouter(
+        adb_executor=adb_executor,
+        maa_adapter=maa_adapter,
+        routing=routing or RoutingTable.load(),
+        ledger=ledger,
+        adb_resolver=adb_resolver,
+    )
+    router.maa_executor = Executor(
+        production=production,
+        dry_run=False,
+        device=maa_adapter,
+        target_resolver=lambda semantic: router.maa_resolver(semantic, skill_id),
+        backend=MAA,
+    )
+    return router
+
+
 class ExecutorRouter:
     """Single executor entry point that picks a backend per skill.
 
@@ -197,16 +269,28 @@ class ExecutorRouter:
 
     # -------------------------------------------------------------- resolution
     def maa_resolver(self, semantic: str, skill_id: str | None) -> tuple[float, float] | None:
-        """MAA-recognition resolver handed to the MAA ``Executor``.
+        """Resolver handed to the MAA ``Executor``.
 
-        Consumes the adapter's most recent frame — the same frame the runtime
-        saved as evidence — so the coordinate that gets tapped and the frame a
+        Two tiers, because the two migration axes have different evidence:
+
+        1. If this skill has a measured MAA recognition node for the semantic,
+           MAA finds the target on the frame and the coordinate comes from MAA.
+        2. Otherwise fall through to the legacy semantic resolver.  The frame is
+           still captured by MAA (that is the 20x win) while the game knowledge
+           stays where it is already live-verified.  Returning ``None`` here
+           instead would make every non-migrated semantic fail on a MAA-device
+           skill, which is a regression, not a migration.
+
+        The frame used is the adapter's most recent one — the same frame the
+        runtime saved as evidence — so the tapped coordinate and the frame a
         reviewer looks at cannot disagree.
         """
         adapter = self.maa_adapter
-        if adapter is None or self.routing.recognition_node(skill_id, semantic) is None:
-            return None
-        node = self.routing.recognition_node(skill_id, semantic) or {}
+        if adapter is None:
+            return self.adb_resolver(semantic) if self.adb_resolver else None
+        node = self.routing.recognition_node(skill_id, semantic)
+        if node is None:
+            return self.adb_resolver(semantic) if self.adb_resolver else None
         frame = adapter.frame()
         if frame is None:
             return None
@@ -217,6 +301,9 @@ class ExecutorRouter:
             threshold=node.get("threshold", 0.7),
         )
         self.last_outcome = outcome
+        # A miss stays a miss.  Falling through to the legacy resolver here would
+        # hide a drifting MAA node behind a position-blind match, so the skill
+        # fails instead and the drift shows up in the ledger.
         return outcome.center_norm()
 
     # -------------------------------------------------------------- dispatch
@@ -279,9 +366,25 @@ class ExecutorRouter:
             route.preferred != backend
             or any(item.get("skipped") for item in attempts if item["backend"] == route.preferred)
         )
+        # Who actually recognised the target.  Derived from what ran: the MAA
+        # recognition path only exists where the routing file declares a node for
+        # this skill+semantic, so a MAA-device action with no node is honestly
+        # reported as V2 recognition rather than as a MAA migration.
+        recognition = "NONE"
+        if result.action.kind == "TAP_SEMANTIC":
+            if backend == MAA and self.routing.recognition_node(
+                route.skill_id, str(result.action.target or "")
+            ) is not None:
+                recognition = "MAA"
+            else:
+                recognition = "V2"
+        executor = self._executor_for(backend, route.skill_id)
+        device = getattr(executor, "device", None) if executor is not None else None
+        capture = getattr(device, "capture_backend", "ADB_EXEC_OUT") if device is not None else ""
         routed = ExecutionResult(
             executed=result.executed, dry_run=result.dry_run, action=result.action,
-            error=result.error, backend=backend, latency_ms=result.latency_ms,
+            error=result.error, backend=backend, capture_backend=capture,
+            recognition_backend=recognition, latency_ms=result.latency_ms,
         )
         self.ledger.append({
             "recorded_at": datetime.now(timezone.utc).isoformat(),
@@ -292,6 +395,8 @@ class ExecutorRouter:
             "preferred_backend": route.preferred,
             "fallback_backend": route.fallback,
             "used_backend": backend,
+            "capture_backend": capture,
+            "recognition_backend": recognition,
             "fallback_used": bool(fallback_used),
             "migration_priority": route.migration_priority,
             "executed": result.executed,

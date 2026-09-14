@@ -9,6 +9,7 @@ from typing import Callable
 
 from .brain import RuleBrain
 from .executor import Executor
+from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
 from .scheduler import Scheduler
@@ -38,6 +39,21 @@ class LiveRun:
 
 
 Verifier = Callable[[WorldState, WorldState], VerificationResult]
+
+
+def _executor_label(execution: ExecutionResult | None) -> str:
+    """Summarise one action's real backend chain for the episode.
+
+    ``MAA``      MAA drove the screen and either MAA or nothing did the recognition
+    ``HYBRID``   MAA drove the screen but the V2 semantic vision found the target
+    ``ADB``      the historical path end to end
+    ``""``       nothing was issued, so no backend can be credited
+    """
+    if execution is None or not execution.executed or not execution.backend:
+        return ""
+    if execution.backend == "MAA":
+        return "MAA" if execution.recognition_backend in {"MAA", "NONE"} else "HYBRID"
+    return execution.backend
 
 
 class LiveRuntime:
@@ -140,8 +156,22 @@ class LiveRuntime:
         candidate_pool: CandidateAttemptPool | None = None,
         runtime_store: RuntimeSnapshotStore | None = None,
         resource_rotation: ResourceRotationStore | None = None,
+        maa_adapter=None,
+        adb_device=None,
+        routing=None,
+        backend_ledger: BackendLedger | None = None,
     ) -> None:
         self.device = device
+        # The ADB device behind the fallback executor.  When MAA observation is
+        # enabled ``device`` is the MaaExecutorAdapter, so without this the ADB
+        # path would be gone and "fall back to ADB" would silently mean "fall back
+        # to MAA".
+        self.adb_device = adb_device if adb_device is not None else device
+        # Optional MAA backend.  ``None`` means the loop behaves exactly as it did
+        # before this existed - the state every machine without MaaFramework is in.
+        self.maa_adapter = maa_adapter
+        self.routing = routing or RoutingTable.load()
+        self.backend_ledger = backend_ledger or BackendLedger()
         self.vision = vision
         self.semantic_vision = semantic_vision
         self.capture_dir = capture_dir
@@ -245,10 +275,20 @@ class LiveRuntime:
             before_screenshot=str(before_screenshot) if before_screenshot else "",
             after_screenshot=str(after_screenshot) if after_screenshot else "",
             verifier_ok=None if verification is None else bool(verification.ok),
-            # Which backend issued this step's input. Empty when nothing was
-            # issued (resolution refused, dry run) — that distinction is what
-            # keeps "MAA is in production" an evidence claim, not a hope.
-            executor_backend=execution.backend if execution is not None else "",
+            # The real call chain for this step. Empty when nothing was issued
+            # (resolution refused, dry run) - that distinction is what keeps
+            # "MAA is in production" an evidence claim rather than a hope.
+            executor_backend=_executor_label(execution),
+            # The channel that produced THIS episode's before/after frames, i.e.
+            # the observation device - not the executor's device.  With MAA
+            # observation enabled those differ: the ADB executor stays wired to
+            # the ADB device so the fallback can actually reach ADB, while every
+            # evidence frame comes from MAA.  Reporting the executor's device here
+            # would have labelled MAA-captured frames as ADB.
+            capture_backend=(getattr(self.device, "capture_backend", "ADB_EXEC_OUT")
+                             if execution is not None and execution.executed else ""),
+            recognition_backend=execution.recognition_backend if execution is not None else "",
+            action_backend=execution.backend if execution is not None else "",
             executor_latency_ms=execution.latency_ms if execution is not None else None,
         )
         try:
@@ -424,11 +464,22 @@ class LiveRuntime:
                             verifier="PENDING",
                         )
                         continue
-            executor = Executor(
+            adb_executor = Executor(
                 production=True,
                 dry_run=False,
-                device=self.device,
+                device=self.adb_device,
                 target_resolver=resolve,
+                backend="ADB",
+            )
+            # One executor boundary, one router decision per step.  With no MAA
+            # adapter attached this returns ``adb_executor`` unchanged.
+            executor = build_router(
+                adb_executor=adb_executor,
+                adb_resolver=resolve,
+                maa_adapter=self.maa_adapter,
+                skill_id=decision.skill,
+                routing=self.routing,
+                ledger=self.backend_ledger,
             )
             started_at = time.monotonic()
             tick = Scheduler(self.brain, self.registry, executor, self.candidate_pool).tick(before)

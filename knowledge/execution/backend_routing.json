@@ -3,19 +3,210 @@
   "policy": {
     "default_preferred": "ADB",
     "default_fallback": "ADB",
-    "note": "A skill absent from `skills` keeps its historical ADB path. MAA is only promoted per skill after an A/B shows it is not worse."
+    "note": "A skill absent from `skills` keeps its historical ADB path, so adding this file cannot regress a live-verified skill. MAA is promoted per skill only after tools/maa_migrate.py measures it on a real-frame corpus (operator rule: if MAA did not improve it, keep ADB)."
   },
   "device": {
     "preferred": "MAA",
     "fallback": "ADB",
     "evidence": {
-      "source": "tools/maa_selftest.py",
-      "measured_at": "2026-09-14T20:35:00+08:00",
+      "source": "tools/maa_live_case.py capture-ab --attempts 20",
+      "measured_at": "2026-09-14T12:59:53Z",
       "device": "MuMu Player 12 @ 127.0.0.1:7555, 720x1280, com.gof.china",
-      "screencap_ms": {"ADB_exec_out_screencap_p": 246.2, "MAA_EmulatorExtras": 12.1, "samples": 5},
-      "ratio": 20.3,
-      "note": "Frame capture is the hottest call in the loop. Measured live, five samples each, same MuMu instance."
+      "live_ab": {
+        "samples": 20,
+        "alternating": true,
+        "adb_capture_ms_mean": 324.12,
+        "maa_capture_ms_mean": 8.92,
+        "capture_ratio": 36.3,
+        "legacy_recognition_ms_mean": 34.5,
+        "maa_recognition_ms_mean": 113.03,
+        "legacy_hits": "20/20",
+        "maa_hits": "20/20",
+        "recognition_agreement": "20/20",
+        "centre_delta_px_max": 0.3
+      },
+      "note": "Frame capture is the hottest call in the loop (twice per step plus once per recognition). MAA wins it by 36x and is therefore the default capture backend. Recognition is the opposite: the legacy fixed-ROI matcher is 3.3x faster than MAA's full-frame search at identical hits, so recognition is migrated per semantic against evidence, never wholesale. An earlier 5-sample probe reported 12.1 ms for MAA; the adapter initially failed to negotiate MuMu's extras and silently fell back to a 178 ms generic path, which is why the negotiated channel is now recorded on every adapter (see MaaExecutorAdapter.negotiated)."
     }
   },
-  "skills": {}
+  "skills": {
+    "INTEL_HERO_DISPATCH": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "MAA",
+      "recognition": {
+        "BTN_HERO_FIGHT": {
+          "template": "BTN_HERO_FIGHT",
+          "threshold": [0.6, 0.65],
+          "source_template": "dataset/candidate/hero_camp/btn_hero_fight__live_squad.png"
+        }
+      },
+      "evidence": {
+        "measured_at": "2026-09-14T12:51:00Z",
+        "source": "tools/maa_migrate.py nodes",
+        "corpus": {"positives": 9, "negatives": 8, "positive_runs": "hero_fight_final / hero_fight_seq / hero_fight_manual / fight_why (4 independent sessions)"},
+        "positive_hits": "9/9",
+        "negative_hits": "0/8",
+        "centre_error_px_max": 0.5,
+        "latency_ms_mean": 71.2,
+        "corpus_sufficient": true,
+        "note": "This is the button that cost two hours of hand calibration today (the first template was cropped 103 px too high and self-matched at distance 0). MAA rediscovers it full-frame at (375,1165,305,72), centre (527.5,1201), against the hand-established truth (527,1201)."
+      }
+    },
+    "INTEL_HERO_START_MARCH": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "MAA",
+      "recognition": {
+        "BTN_HERO_CAMP_FIGHT": {
+          "template": "BTN_HERO_CAMP_FIGHT",
+          "threshold": [0.6, 0.65],
+          "source_template": "dataset/candidate/hero_camp/btn_hero_camp_fight__live_hero_camp.png"
+        }
+      },
+      "evidence": {
+        "measured_at": "2026-09-14T12:51:00Z",
+        "source": "tools/maa_migrate.py nodes",
+        "corpus": {"positives": 2, "negatives": 4},
+        "positive_hits": "2/2",
+        "negative_hits": "0/4",
+        "latency_ms_mean": 74.8,
+        "corpus_sufficient": false,
+        "validation_gap": "Below the >=3-independent-positives gate that the OPEN_INTEL regression introduced. Kept promoted because the measurement is clean (2/2 positives, 0/4 negatives) and the 探险 button is a static control rather than the animated one that failed, but it must not be called validated: a third independent live frame is required. The whole hero-journey flow is additionally blocked on an intel pin being present on the board.",
+        "note": "Small positive corpus (2 frames, two sessions). Enough to prove it discriminates, not enough to call it stable; widening the corpus is a follow-up."
+      }
+    },
+    "OPEN_HOME": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "MAA",
+      "recognition": {
+        "BTN_OPEN_HOME": {
+          "template": "BTN_OPEN_HOME",
+          "threshold": [0.7, 0.75],
+          "source_template": "dataset/candidate/templates/btn_open_home__live_attempt8_idle__3.png"
+        }
+      },
+      "evidence": {
+        "measured_at": "2026-09-14T12:51:00Z",
+        "source": "tools/maa_migrate.py nodes",
+        "corpus": {"positives": 2, "negatives": 4},
+        "positive_hits": "2/2",
+        "negative_hits": "0/4",
+        "latency_ms_mean": 120.3,
+        "corpus_sufficient": false,
+        "validation_gap": "Two independent positives, below the >=3 gate. The measurement is clean (2/2 positives, 0/4 negatives, plus one correctly-rejected mislabelled positive) and the 回城 control is static, so it is kept promoted; it needs a third independent live frame before it may be called validated.",
+        "note": "One frame previously guessed as a positive (fight_why/20_now.png) turned out to be the squad page with no 回城 control, so MAA's rejection of it was correct. Label corrected rather than counted as a miss."
+      }
+    },
+    "OPEN_INTEL": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "LEGACY",
+      "evidence": {
+        "measured_at": "2026-09-14T13:12:00Z",
+        "source": "production run tools/run_live.py --goal INTEL (episode stop_reason=SEMANTIC_TARGET_NOT_VERIFIED)",
+        "note": "Device axis only. The MAA recognition node was promoted on a ONE-frame positive corpus and immediately regressed production: on the live map frame MAA located the control at exactly the manifest ROI (623,813,86,96) but correlated only 0.448 against the template, below the 0.7 default, so the action was refused and the run stopped - against a 94% legacy success rate. The control's blue fill animates, which is why the legacy semantic carries a relaxed tolerance. Recognition is reverted to the V2 semantic vision (skill stays HYBRID: MAA frames + MAA tap + V2 target), and the node is re-measured against a >=3-frame live corpus before it may be promoted again.",
+        "regression_reverted": true
+      }
+    },
+    "BACK": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "NONE",
+      "evidence": {
+        "measured_at": "2026-09-14T20:35:00+08:00",
+        "source": "tools/probe_maa_api2.py",
+        "note": "Device-axis only: KEYCODE_BACK through the MAA controller. No recognition involved, so it is the cheapest possible skill to move and it exercises the fallback path."
+      }
+    },
+    "DISMISS_BATTLE_VICTORY": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "NONE",
+      "evidence": {
+        "measured_at": "2026-09-14T20:35:00+08:00",
+        "source": "tools/probe_maa_api2.py",
+        "note": "Device-axis only (PRESS_BACK)."
+      }
+    },
+    "SELECT_RESOURCE": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "LEGACY",
+      "evidence": {
+        "measured_at": "2026-09-14T13:15:00Z",
+        "source": "docs/EXECUTOR_REALITY_AUDIT.md (historical record) + tools/maa_live_case.py capture-ab",
+        "note": "Device axis only, and deliberately so. SELECT_RESOURCE resolves RESOURCE_DYNAMIC through SemanticROIVision.resource_cell_center_norm - the white-bracket anchor plus a measured 157 px pitch on a strip whose scroll offset changes between sessions. That is a geometric/layout problem, not a fixed-template problem, so a whole-strip template match would not solve it; the V2 resolver stays and MAA contributes the frame and the tap. Moving the recognition would first require a MAA page model for the search panel (>=2 signals per page), which is a separate piece of work."
+      }
+    },
+    "SEARCH_RESOURCE": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "LEGACY",
+      "evidence": {
+        "measured_at": "2026-09-14T13:15:00Z",
+        "source": "docs/EXECUTOR_REALITY_AUDIT.md (historical record: 75 attempts, 55% success)",
+        "note": "Device axis only. Its recognition is V2 semantic state (does the search panel exist), which MAA template matching does not improve on its own. Promoted because it is a high-frequency failure family and 55% success is worth the 36x faster frame and native input even before the recognition axis moves."
+      }
+    },
+    "START_GATHER": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "MAA",
+      "recognition": {
+        "BTN_GATHER": {
+          "template": "BTN_GATHER",
+          "threshold": [0.7, 0.75],
+          "source_template": "dataset/candidate/templates/btn_gather__live_resource_attempt6__1.png"
+        }
+      },
+      "evidence": {
+        "measured_at": "2026-09-14T13:07:00Z",
+        "source": "tools/maa_migrate.py nodes",
+        "corpus": {"positives": 3, "negatives": 5, "positive_runs": "live_resource_attempt6 / attempt7 / live_attempt8_resource (3 independent live runs)"},
+        "positive_hits": "3/3",
+        "negative_hits": "0/5",
+        "latency_ms_mean": 82.6,
+        "corpus_sufficient": true,
+        "note": "OPEN_MARCH_PAGE is the historical MARCH_PAGE_NOT_OPEN family: START_GATHER reads 94 live attempts at 37% success in docs/EXECUTOR_REALITY_AUDIT.md, the worst high-frequency skill in the registry. The hard negatives are the march pages that FOLLOW this dialog, where 采集 must be absent."
+      }
+    },
+    "CLOSE_POPUP": {
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "migration_priority": "P0",
+      "recognition_backend": "LEGACY",
+      "evidence": {
+        "measured_at": "2026-09-14T20:35:00+08:00",
+        "source": "tools/probe_maa_api2.py",
+        "note": "Device-axis only. Its recognition node could NOT be measured: the manifest record's parent frame (dataset/raw/control_panel/runtime/step_001_before.png) has been rotated away, so there is no positive corpus. The legacy semantic resolver is kept for the coordinate while MAA captures frames and clicks."
+      }
+    }
+  },
+  "not_migrated": {
+    "OPEN_MAP": {
+      "semantic": "PAGE_MAP",
+      "reason": "Two candidates exist: a legacy crop and page_map__live_back_safe_home__0 (from dataset/raw/live_back_safe_home.png). Selecting by filename currency moved it from 0/2 to 1/4, but it still only matches the frame it was cropped from and misses three other real Home frames. The candidate does not generalise, so it must be re-measured the way the battle button was (colour-blob segmentation on the current client) before it can be promoted. Recorded here rather than left as an unexplained 0.",
+      "measured_at": "2026-09-14T13:07:00Z"
+    },
+    "CLOSE_POPUP_RECOGNITION": {
+      "semantic": "BTN_CLOSE",
+      "reason": "The manifest record's parent frame (dataset/raw/control_panel/runtime/step_001_before.png) has rotated away, so there is no positive corpus at all: the harness reports 0/0 positives and cannot measure precision. Its device axis is promoted (MAA frame + MAA tap) with the V2 semantic resolver, which is why the audit classifies it HYBRID. Recognition stays LEGACY until a live popup corpus exists.",
+      "measured_at": "2026-09-14T13:07:00Z"
+    },
+    "OPEN_INTEL_RECOGNITION": {
+      "semantic": "BTN_OPEN_INTEL_WILD_HUD",
+      "reason": "REVERTED after a live regression. Measured on the real production frame (dataset/raw/live_runtime/live_runtime_step_001_before_20260914T131236556151.png): MAA found the control at exactly the manifest ROI (623,813,86,96) but scored only 0.448 against the template, versus a 0.7 threshold and 0.191 on negative frames. The control's blue fill animates, which is why the legacy semantic carries a relaxed tolerance that a default-threshold node does not reproduce. A threshold near 0.4 would sit too close to the negative band to publish. It needs either a re-crop from several current frames or a two-signal page model, validated on >=3 independent live positives.",
+      "measured_at": "2026-09-14T13:13:00Z"
+    }
+  }
 }

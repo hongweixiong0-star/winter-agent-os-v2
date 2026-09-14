@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.device import ADBDevice
+from winter_agent_v2.executor_router import build_maa_adapter
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
 from winter_agent_v2.learning import EpisodeStore
@@ -54,6 +55,21 @@ def main() -> int:
     )
     if args.serial is None:
         device.resolve_connection()
+    # MAA is the preferred UI-automation backend (operator directive 2026-09-14).
+    # It replaces the observation device too, because frame capture is the hottest
+    # call in the loop: 12.1 ms through MuMu's native channel against 246.2 ms for
+    # `adb exec-out screencap -p`.  The ADB device is still passed so the router's
+    # fallback goes to ADB rather than back to MAA.
+    maa_adapter = build_maa_adapter(config, production=True)
+    observation_device = device
+    if maa_adapter is not None:
+        ok, reason = maa_adapter.ensure_ready()
+        if ok:
+            observation_device = maa_adapter
+        else:
+            print(f"[executor] MAA requested but unavailable ({reason}); observations stay on ADB")
+    else:
+        print("[executor] MAA disabled by config (executor.maa.enabled=false)")
     template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
     vision = HybridVision(
         template,
@@ -88,7 +104,9 @@ def main() -> int:
             )
     verifier_skills = set(LiveRuntime.VERIFIED_ATOMIC)
     result = LiveRuntime(
-        device=device,
+        device=observation_device,
+        adb_device=device,
+        maa_adapter=maa_adapter,
         vision=vision,
         semantic_vision=template.semantic,
         capture_dir=args.capture_dir,

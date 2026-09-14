@@ -1,0 +1,327 @@
+{
+  "version": 1,
+  "generated_by": "expert winter-agent-v2-dev / skill tool-discovery",
+  "last_checked": "2026-09-14",
+  "machine": {
+    "os": "Windows",
+    "project": "E:\\无尽冬日智能体",
+    "venv": "E:\\dongri-mumu-bot\\.venv\\Scripts\\python.exe",
+    "device": "MuMu Player 12 @ 127.0.0.1:7555, 720x1280, com.gof.china"
+  },
+  "env_traps": [
+    "Bash has no coreutils (ls/cat/head/tail/sleep/wc/date) -> run everything via Python + redirect + Read",
+    "PowerShell stdout is not returned -> never depend on it",
+    "Long foreground commands get SIGTERM -> use background",
+    "MaaFramework writes C++ logs to stderr -> redirect stderr separately",
+    "External editor flushes a stale buffer over edited files -> grep after edit + run tools/check_wiring.py + commit"
+  ],
+  "tools": [
+    {
+      "tool_id": "MAA_FRAMEWORK",
+      "name": "MaaFramework",
+      "version": "5.12.3",
+      "status": "VERIFIED / HIGH PRIORITY",
+      "location": "E:\\dongri-mumu-bot\\.venv\\Lib\\site-packages\\maa",
+      "import_name": "maa",
+      "capabilities": [
+        "screencap (EmulatorExtras)",
+        "template matching (multi-template, multi-threshold, roi, green_mask)",
+        "feature match",
+        "colour match",
+        "recognition composition (And/Or)",
+        "click / swipe / key via native channel",
+        "wait_page / wait_disappear",
+        "save_draw (recognition debug)",
+        "in-memory template override",
+        "pipeline override"
+      ],
+      "verified": true,
+      "verification": "import maa -> OK; maa.library.Library.version() == 'v5.12.3' (probed 2026-09-14)",
+      "benchmark": {
+        "source": "tools/maa_live_case.py capture-ab --attempts 20",
+        "measured_at": "2026-09-14T12:59:53Z",
+        "adb_capture_ms_mean": 324.12,
+        "maa_capture_ms_mean": 8.92,
+        "capture_ratio": 36.3,
+        "legacy_recognition_ms_mean": 34.5,
+        "maa_recognition_ms_mean": 113.03,
+        "legacy_hits": "20/20",
+        "maa_hits": "20/20",
+        "centre_delta_px_max": 0.3,
+        "note": "Capture: MAA wins 36x. Recognition: legacy fixed-ROI is 3.3x FASTER than MAA full-frame at identical hits. An earlier 5-sample probe reported 12.1 ms; the adapter had silently fallen back to a 178 ms generic path, so the negotiated channel is now recorded on every adapter."
+      },
+      "best_for": [
+        "frame capture (hottest call in the loop)",
+        "full-frame template search when position unknown",
+        "click / swipe / key input",
+        "wait-for-page and wait-for-disappearance loops",
+        "recognition debug drawing"
+      ],
+      "limitations": [
+        "NO OCR model on this machine (no det.onnx/rec.onnx/keys.txt) -> returns OCR_MODEL_MISSING",
+        "full-frame recognition is 3.3x slower than legacy fixed-ROI",
+        "Resource.post_bundle() on an ordinary template folder corrupts resource state (guarded by _is_maa_bundle)",
+        "Tasker.bind() True is not enough - check tasker.inited",
+        "Toolkit.find_adb_devices(adb_path) can return no device and silently drop extras.mumu (8.9ms -> ~178ms)"
+      ],
+      "fallback": "ADB",
+      "adapter": "winter_agent_v2/maa_executor.py (MaaExecutorAdapter)",
+      "router": "winter_agent_v2/executor_router.py (ExecutorRouter)",
+      "routing_decisions": "knowledge/execution/backend_routing.json",
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "MAA_AGENT_BINARY",
+      "name": "MaaAgentBinary",
+      "version": "1.0.1",
+      "status": "VERIFIED",
+      "location": "E:\\dongri-mumu-bot\\.venv\\Lib\\site-packages\\MaaAgentBinary",
+      "capabilities": ["maatouch", "minicap", "minitouch"],
+      "verified": true,
+      "verification": "dist-info present; directory contains maatouch/ minicap/ minitouch/ (probed 2026-09-14)",
+      "benchmark": null,
+      "best_for": ["fast input channel used by MAA controller"],
+      "limitations": ["only meaningful through MaaFramework"],
+      "fallback": "ADB shell input",
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "ADB",
+      "name": "Android Debug Bridge",
+      "version": "unknown",
+      "status": "VERIFIED / FALLBACK",
+      "location": "D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\adb.exe",
+      "capabilities": ["screencap", "input tap/swipe/key", "device connect"],
+      "verified": true,
+      "verification": "adbutils 2.12.0 -> AdbClient(127.0.0.1:5037).list() == ['127.0.0.1:7555'] (probed 2026-09-14)",
+      "benchmark": {
+        "adb_capture_ms_mean": 324.12,
+        "note": "20-sample live A/B against MAA; ADB is the fallback capture backend"
+      },
+      "best_for": ["fallback capture", "fallback input", "device bootstrap (adb connect 127.0.0.1:7555)"],
+      "limitations": [
+        "NOT on PATH - call by full path or via adbutils",
+        "36x slower capture than MAA"
+      ],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "MUMU",
+      "name": "MuMu Player 12",
+      "version": "12",
+      "status": "VERIFIED",
+      "location": "D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\",
+      "capabilities": ["emulator run", "adb bridge 127.0.0.1:7555", "emulator-native screencap via MAA extras"],
+      "verified": true,
+      "verification": "device 127.0.0.1:7555 online; processes MuMuNxMain.exe / MuMuNxDevice.exe / MuMuVMMHeadless.exe running (probed 2026-09-14)",
+      "benchmark": null,
+      "best_for": ["running the game client", "fast capture channel"],
+      "limitations": [
+        "process name is MuMuNxMain.exe, NOT MuMuPlayer.exe",
+        "not launched by default"
+      ],
+      "launch": [
+        "D:/Program Files/Netease/MuMu Player 12/nx_main/MuMuManager.exe control -v 0 launch -pkg com.gof.china",
+        "D:/Program Files/Netease/MuMu Player 12/nx_main/adb.exe connect 127.0.0.1:7555"
+      ],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "OCR_RAPID",
+      "name": "RapidOCR (onnxruntime)",
+      "version": "1.4.4",
+      "status": "VERIFIED / PRIMARY OCR",
+      "location": "winter_agent_v2/ocr.py (OCRService, RapidOCRBackend, ResilientOCRBackend)",
+      "capabilities": ["text recognition", "bounded ROI recognition"],
+      "verified": true,
+      "verification": "rapidocr_onnxruntime import OK; HUD stamina ROI reads 0.999 (probed 2026-09-14)",
+      "benchmark": null,
+      "best_for": ["HUD numbers", "any text in a known ROI"],
+      "limitations": [
+        "MUST use a dedicated ROI - a full-screen pass misses the stamina gauge entirely",
+        "MAA's OCR is unusable (no model), do not route OCR to MAA"
+      ],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "OPENCV",
+      "name": "opencv-python",
+      "version": "5.0.0",
+      "status": "VERIFIED",
+      "location": "winter_agent_v2/matchers.py (match_ccoeff, TM_CCOEFF_NORMED multi-scale)",
+      "capabilities": ["template matching", "ROI crop", "annotated evidence"],
+      "verified": true,
+      "verification": "import cv2 -> 5.0.0 (probed 2026-09-14)",
+      "benchmark": {
+        "legacy_recognition_ms_mean": 34.5,
+        "note": "fixed-ROI matcher; 3.3x faster than MAA full-frame at identical 20/20 hits"
+      },
+      "best_for": ["known-ROI template matching (fast path)", "special visual supplements"],
+      "limitations": ["cannot search the full frame when position is unknown - use MAA for that"],
+      "fallback": "MAA template match",
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "NUMPY",
+      "name": "numpy",
+      "version": "2.5.2",
+      "status": "VERIFIED",
+      "location": "venv",
+      "capabilities": ["array math", "MAA frame format (ndarray RGB 720x1280x3)"],
+      "verified": true,
+      "verification": "import numpy -> 2.5.2",
+      "benchmark": null,
+      "best_for": ["frame handling"],
+      "limitations": [],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "PILLOW",
+      "name": "pillow",
+      "version": "12.3.0",
+      "status": "VERIFIED",
+      "location": "venv",
+      "capabilities": ["frame I/O", "crop", "annotated evidence"],
+      "verified": true,
+      "verification": "import PIL -> 12.3.0",
+      "benchmark": null,
+      "best_for": ["evidence images"],
+      "limitations": ["managed Python 3.13 has NO PIL - always use project venv"],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "ONNXRUNTIME",
+      "name": "onnxruntime",
+      "version": "1.19.2",
+      "status": "VERIFIED",
+      "location": "venv",
+      "capabilities": ["inference runtime for RapidOCR"],
+      "verified": true,
+      "verification": "import onnxruntime -> 1.19.2",
+      "benchmark": null,
+      "best_for": ["OCR inference"],
+      "limitations": [],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "TORCH",
+      "name": "torch",
+      "version": "2.13.0+cpu",
+      "status": "VERIFIED",
+      "location": "venv",
+      "capabilities": ["tensor math / model inference"],
+      "verified": true,
+      "verification": "import torch -> 2.13.0+cpu",
+      "benchmark": null,
+      "best_for": ["occasional model work"],
+      "limitations": ["CPU only - heavy models will hurt 24h stability"],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "ADBUTILS",
+      "name": "adbutils",
+      "version": "2.12.0",
+      "status": "VERIFIED",
+      "location": "venv",
+      "capabilities": ["adb device discovery", "shell", "screencap"],
+      "verified": true,
+      "verification": "AdbClient list -> ['127.0.0.1:7555']",
+      "benchmark": null,
+      "best_for": ["device discovery when adb is not on PATH"],
+      "limitations": [],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "GIT",
+      "name": "git",
+      "version": "2.55.0.windows.3",
+      "status": "VERIFIED",
+      "location": "C:\\Program Files\\Git\\cmd\\git.EXE",
+      "capabilities": ["version control", "GitHub source access"],
+      "verified": true,
+      "verification": "git --version OK; git ls-remote --heads https://github.com/Shederator/wosbot.git returned refs (probed 2026-09-14)",
+      "benchmark": null,
+      "best_for": ["checkpoints", "cloning external WOS projects for source-level study"],
+      "limitations": [],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "GH_CLI",
+      "name": "GitHub CLI",
+      "version": "2.98.0",
+      "status": "VERIFIED",
+      "location": "C:\\Program Files\\GitHub CLI\\gh.EXE",
+      "capabilities": ["GitHub API", "repo browse", "source access"],
+      "verified": true,
+      "verification": "gh --version -> 2.98.0 (2026-08-20)",
+      "benchmark": null,
+      "best_for": ["fallback source access when git clone is blocked"],
+      "limitations": ["needs auth for some operations"],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "PYTEST",
+      "name": "pytest",
+      "version": "9.1.1",
+      "status": "VERIFIED",
+      "location": "venv",
+      "capabilities": ["unit / replay tests"],
+      "verified": true,
+      "verification": "import pytest -> 9.1.1",
+      "benchmark": null,
+      "best_for": ["regression before live test"],
+      "limitations": [
+        "full suite needs --basetemp=\"E:/无尽冬日智能体/tools/_pt_tmp\" (default temp cleanup trips the bulk-delete guard)",
+        "pytest PASS is NOT completion - live verification still required"
+      ],
+      "fallback": null,
+      "last_checked": "2026-09-14"
+    }
+  ],
+  "not_installed": {
+    "ffmpeg": null,
+    "tesseract": null,
+    "paddleocr": null,
+    "pytesseract": null,
+    "pywin32 / win32gui": null,
+    "mss": null,
+    "dxcam": null,
+    "playwright": null,
+    "selenium": null,
+    "pyautogui": null,
+    "scikit-image": null,
+    "scipy": null,
+    "pandas": null,
+    "uiautomation": null,
+    "ultralytics": null
+  },
+  "project_tools": {
+    "handoff_rebuild": "tools/update_workbuddy_handoff.py",
+    "truth_audit": "tools/truth_audit.py",
+    "top_failures": "tools/build_top_failures.py",
+    "semantic_failures": "tools/analyze_semantic_failures.py",
+    "wiring_check": "tools/check_wiring.py (must print problems: 0)",
+    "maa_corpus_migration": "tools/maa_migrate.py nodes",
+    "maa_live_ab": "tools/maa_live_case.py state|capture-ab|action-ab|battle",
+    "executor_audit": "tools/executor_audit.py -> docs/EXECUTOR_REALITY_AUDIT.md"
+  },
+  "selection_rules": [
+    "capture -> MAA (36x faster than ADB, verified)",
+    "known-ROI template match -> legacy OpenCV fixed-ROI (3.3x faster than MAA full-frame)",
+    "unknown-position full-frame search -> MAA (legacy fixed-ROI cannot do it)",
+    "click / swipe / key -> MAA controller native channel",
+    "OCR -> RapidOCR on a dedicated ROI (MAA has no OCR model)",
+    "complex semantics / unknown page -> Qwen only after rules, templates, OCR and experience fail",
+    "one primary + at most one fallback per capability class - no tool sprawl"
+  ]
+}

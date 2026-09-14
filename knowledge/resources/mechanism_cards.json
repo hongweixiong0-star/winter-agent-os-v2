@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0",
+  "domain": "resources",
+  "canonical_sources": [
+    "knowledge/game/resources.json",
+    "knowledge/game/buildings.json",
+    "knowledge/game/research.json",
+    "knowledge/strategy/resource_priority.json"
+  ],
+  "no_duplication_rule": "资源实体事实以 knowledge/game/resources.json 为准；本目录只放「怎么用、什么时候用、什么时候不值得用」的机制卡。",
+  "last_reviewed": "2026-09-14",
+  "cards": [
+    {
+      "id": "BASIC_RESOURCE_FOUR",
+      "mechanism": "四种基础资源：生肉 MEAT / 木材 WOOD / 煤矿 COAL / 铁矿 IRON。城内生产 + 世界采集双来源。",
+      "state": "HUD 常驻显示（HOME / MAP / RESOURCE_DETAIL 均可见）",
+      "preconditions": "无（读取类）",
+      "goal_contribution": "所有 QUEUE 类 Goal 的前置：KEEP_BUILDING_PRODUCTIVE / KEEP_TRAINING_PRODUCTIVE / KEEP_RESEARCH_PRODUCTIVE。",
+      "relevant_universal_skills": ["READ_COUNTER", "GATHER_RESOURCE", "SELECT_RESOURCE"],
+      "verifier": "TIMER_READ / COUNTER_READ；HUD 数字必须用独立 ROI 读取",
+      "strategy_implication": "**读 HUD 小数字必须单独裁剪 ROI**：全屏 OCR 会整条漏掉（项目已踩过）。资源不是目标本身，缺资源时应先判断是采集不足还是消耗过快。",
+      "source": ["knowledge/game/resources.json", "wosforge_beginner", "cn_wiki_faq", "LIVE_CLIENT"],
+      "confidence": 0.95,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "GATHER_LEVEL_SELECTION",
+      "mechanism": "世界采集按资源等级筛选目标。等级越高单趟收益越高，但可选目标越少。",
+      "state": "MAP -> 搜索 -> 有结果 / RESOURCE_NOT_FOUND（空）",
+      "preconditions": "已选资源类型；等级筛选值合理；当前地图有对应等级空地",
+      "goal_contribution": "KEEP_MARCHES_PRODUCTIVE；直接决定队列是否空转",
+      "relevant_universal_skills": ["SEARCH_RESOURCE", "SUBMIT_RESOURCE_SEARCH", "SELECT_RESOURCE"],
+      "verifier": "出现可选目标（而不是点击成功）",
+      "strategy_implication": "**RESOURCE_NOT_FOUND 是「换条件」信号，不是「降等级」以外的失败**。2026-09-14 实测：22 次失败中 19 次发生在 level 7-8，说明高等级筛选经常返回空。已有 relax 降级逻辑（level>1 时放宽重试），但显然不够——要么降得不够低，要么没覆盖 level 7/8 起点。空队列的损失远大于「只采到低等级」的损失，所以宁可降级采集也不要空转。",
+      "source": ["LIVE_CLIENT:learning/episodes.jsonl 2026-09-14", "knowledge/game/resources.json"],
+      "confidence": 0.9,
+      "status": "CONFIRMED_WITH_OPEN_FAILURE",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "SPEEDUP_USAGE",
+      "mechanism": "加速道具用于缩短建造 / 研究 / 训练队列时间。",
+      "state": "队列进行中 -> 使用加速 -> 剩余时间下降",
+      "preconditions": "存在进行中的队列；加速道具充足；值得加速（见下）",
+      "goal_contribution": "QUEUE_UTILIZATION 类 Goal",
+      "relevant_universal_skills": ["START_BUILD", "START_RESEARCH", "TRAIN_OR_PROMOTE"],
+      "verifier": "QUEUE_ACTIVE 且剩余时间减少",
+      "strategy_implication": "**普通加速允许自主使用**（在风险边界内）。但不值得为了「让队列好看」而加速低价值任务：优先加速卡住后续 P0 Goal 的那一环，而不是剩余时间最长的那一环。加速是手段不是目的。",
+      "source": ["knowledge/game/resources.json", "wosforge_beginner", "taptap_beginner"],
+      "confidence": 0.9,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "DIAMOND_POLICY",
+      "mechanism": "钻石（Gems）为付费/稀缺货币，出现在 HOME / VIP / EVENT 页。",
+      "state": "只读；默认不消耗",
+      "preconditions": "无",
+      "goal_contribution": "负贡献风险：消耗钻石会把 P0 Goal 变成亏损",
+      "relevant_universal_skills": [],
+      "verifier": "不适用（禁止消耗）",
+      "strategy_implication": "**自动化默认禁止消耗钻石**。F2P_CONSERVATIVE 策略下，任何「花钻石换时间」的自动化都不值得做——它把可再生的等待时间换成了不可再生的稀缺资源。真机若出现钻石购买弹窗，属于 REAL_MONEY_PAYMENT 硬边界，只按一次系统返回并交给 verifier 判定。",
+      "source": ["knowledge/game/resources.json", "knowledge/strategy/goal_library_v1.json", "official_google_play"],
+      "confidence": 0.95,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "SPECIAL_RESOURCES",
+      "mechanism": "钢材 STEEL（来源：英雄探险、情报站任务、礼包；中文百科称无生产建筑）、火晶 FIRE_CRYSTAL（熔炉达火晶1级进入火晶时代）、英雄碎片 HERO_SHARD。",
+      "state": "分散在 EXPLORATION / INTEL / RESEARCH / BUILDING 页",
+      "preconditions": "依赖具体玩法，非稳定产出",
+      "goal_contribution": "长期发展（LONG_TERM_DEVELOPMENT），不是日常刚需",
+      "relevant_universal_skills": ["CLAIM_REWARD", "CLAIM_EXPLORATION_IDLE"],
+      "verifier": "REWARD_CLAIMED / 计数增加",
+      "strategy_implication": "**STEEL 的 confidence 只有 0.85（LIKELY），且「无生产建筑」来自中文百科、未经当前客户端验证**：不要据此设计资源规划。这类资源适合「顺手领」而不是「专门做」。",
+      "source": ["knowledge/game/resources.json", "cn_wiki_faq", "official_google_play"],
+      "confidence": 0.85,
+      "status": "LIKELY_NEEDS_LIVE_VERIFY",
+      "last_reviewed": "2026-09-14"
+    }
+  ],
+  "gaps": [
+    "资源产出速率模型未建立（无法回答「采集多久能凑够一次建筑升级」）",
+    "STEEL 是否真的无生产建筑未验证",
+    "资源与活动的兑换/消耗比价未建模"
+  ]
+}

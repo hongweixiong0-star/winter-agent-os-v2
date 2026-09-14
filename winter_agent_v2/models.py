@@ -150,6 +150,11 @@ class ExecutionResult:
     # ``executor_backend = MAA`` before MAA can be called "接入".  Empty means the
     # action never reached a backend (policy refusal, dry run).
     backend: str = ""
+    # The full call chain for this one action, so an episode can state which
+    # channel produced the frame, who recognised the target, and who clicked -
+    # recorded from what ran, never from what the config asked for.
+    capture_backend: str = ""
+    recognition_backend: str = ""
     latency_ms: float | None = None
 
 

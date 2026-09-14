@@ -93,6 +93,21 @@
     "failed_attempt_retry_max": 2,
     "promotion_requires_live_verifier": true
   },
+  "executor": {
+    "routing_file": "knowledge/execution/backend_routing.json",
+    "note": "Operator directive 2026-09-14: MAA is the default UI-automation backend, ADB is the device layer and fallback. A skill absent from the routing file keeps its historical ADB path, so this file cannot regress a live-verified skill. Turn MAA off entirely by setting maa.enabled=false.",
+    "maa": {
+      "enabled": true,
+      "device_backend": "MAA",
+      "fallback_backend": "ADB",
+      "save_draw": true,
+      "stdout_level": "error",
+      "observed": {
+        "screencap_ms": {"ADB_exec_out_screencap_p": 246.2, "MAA_EmulatorExtras": 12.1},
+        "measurement": "tools/probe_maa_api2.py, live MuMu 127.0.0.1:7555, 5 samples each, 2026-09-14"
+      }
+    }
+  },
   "retention": {
     "max_screenshots": 500,
     "screenshot_ttl_days": 14,

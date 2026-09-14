@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T12:34:32+00:00",
+  "generated_at": "2026-09-14T13:17:07+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "3e4484e",
+  "commit": "4ff00eb",
   "last_good_commit": "f8e145f",
-  "dirty_count": 3,
+  "dirty_count": 42,
   "episodes": {
-    "total": 918,
-    "production": 918,
-    "success": 614,
-    "failure": 299,
-    "success_rate_over_decided": 0.6725,
+    "total": 923,
+    "production": 923,
+    "success": 617,
+    "failure": 301,
+    "success_rate_over_decided": 0.6721,
     "modes": {
-      "PRODUCTION": 918
+      "PRODUCTION": 923
     },
     "mixed_case_rows": 35
   },
@@ -34,7 +34,7 @@
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 110,
+      "count": 111,
       "top_skills": [
         [
           "SELECT_RESOURCE",
@@ -178,9 +178,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 362,
-    "present_on_disk": 362,
-    "traceable_episodes": 186,
+    "referenced_screenshots": 371,
+    "present_on_disk": 371,
+    "traceable_episodes": 191,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -190,10 +190,10 @@
     "parity_fraction": 0.4762
   },
   "runtime": {
-    "agent_state": "DEGRADED",
+    "agent_state": "IDLE",
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "INTEL_HERO_DISPATCH_NOT_PROVEN"
+    "stop_reason": "MAX_ACTIONS_REACHED"
   }
 }

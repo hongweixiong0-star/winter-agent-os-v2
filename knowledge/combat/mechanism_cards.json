@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "domain": "combat",
+  "canonical_sources": [
+    "knowledge/game/marches.json",
+    "knowledge/game/beasts.json",
+    "knowledge/game/giant_beasts.json",
+    "knowledge/game/bear.json",
+    "knowledge/game/troops.json",
+    "knowledge/game/intel.json",
+    "knowledge/ui/pages.json",
+    "knowledge/skills/universal_skill_library_v2.json"
+  ],
+  "no_duplication_rule": "This directory holds ACTIONABLE mechanism cards (why / when / how far / when not worth). Raw entity facts stay canonical in knowledge/game/*.json. If the two disagree, knowledge/game/*.json wins and this card is corrected.",
+  "card_fields": [
+    "mechanism", "state", "preconditions", "goal_contribution",
+    "relevant_universal_skills", "verifier", "strategy_implication",
+    "source", "confidence", "last_reviewed"
+  ],
+  "last_reviewed": "2026-09-14",
+  "cards": [
+    {
+      "id": "MARCH_LIFECYCLE",
+      "mechanism": "行军队列生命周期。队列状态在 IDLE / MARCHING / GATHERING / RETURNING / UNKNOWN 之间迁移，每次出征占一个队列槽，回城后槽位释放。",
+      "state": "IDLE -> MARCHING -> (GATHERING) -> RETURNING -> IDLE; 观测不到时为 UNKNOWN",
+      "preconditions": "有空闲队列槽；有可用部队；当前页面为 MAP 或可从 MAP 到达的目标页；目标身份明确。",
+      "goal_contribution": "KEEP_MARCHES_PRODUCTIVE（P1）。空队列=纯浪费，是无人值守期间最容易被忽视的产能损失。",
+      "relevant_universal_skills": ["SEND_MARCH", "GATHER_RESOURCE", "HUNT_BEAST", "JOIN_RALLY", "REINFORCE_TARGET"],
+      "verifier": "MARCH_STATE_CHANGED（队列数变化 AND 目标身份正确 AND 状态符合预期，三者缺一不算成功）",
+      "strategy_implication": "优先让队列保持非空而不是追求单次收益最大化；回城前不要重复派同一目标（CANCEL_DUPLICATE_TARGET 至今 NEVER EXECUTED）。UNKNOWN 状态不得当成 IDLE 派兵。",
+      "source": ["knowledge/game/marches.json", "wosforge_main", "github_aminul_wos"],
+      "confidence": 0.88,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "GATHER_MARCH",
+      "mechanism": "世界地图上按资源类型+等级搜索目标并派兵采集。等级筛选过高会导致搜索结果为空。",
+      "state": "MAP(搜索) -> RESOURCE_DETAIL(选中) -> MARCH(派兵) -> GATHERING -> RETURNING",
+      "preconditions": "页面为 MAP；已选定资源类型（MEAT/WOOD/COAL/IRON）；存在满足等级条件的空地；有空闲队列。",
+      "goal_contribution": "KEEP_MARCHES_PRODUCTIVE + 资源积累（支撑 KEEP_BUILDING_PRODUCTIVE / KEEP_TRAINING_PRODUCTIVE）。",
+      "relevant_universal_skills": ["SEARCH_RESOURCE", "SUBMIT_RESOURCE_SEARCH", "SELECT_RESOURCE", "GATHER_RESOURCE", "SEND_MARCH"],
+      "verifier": "MARCH_STATE_CHANGED；搜索阶段以是否出现可选目标为准，不要以点击成功为准",
+      "strategy_implication": "**当前最高频真实失败**：2026-09-14 当日 RESOURCE_NOT_FOUND x22（SUBMIT_RESOURCE_SEARCH），22/22 有证据帧，其中 19/22 集中在 resource_level 7-8。说明高等级筛选下搜索返回空，而降级（relax）路径未生效或未降够。修这个比实现新技能更值钱：它直接决定队列是否会空转。",
+      "source": ["LIVE_CLIENT:learning/episodes.jsonl 2026-09-14", "knowledge/game/resources.json", "knowledge/game/marches.json"],
+      "confidence": 0.9,
+      "status": "CONFIRMED_WITH_OPEN_FAILURE",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "BEAST_HUNT",
+      "mechanism": "普通野兽（如大角鹿 Lv22、麝牛 Lv9）：消耗体力出征，胜利后掉落奖励，需回到 Intel 领取。",
+      "state": "目标可见 -> 出征 -> RETURNING -> Intel CLAIMABLE -> 已领取",
+      "preconditions": "体力足够；客户端显示「胜券在握」（victory_assured）；有空闲队列；目标在地图上可见。",
+      "goal_contribution": "CLEAR_INTEL（P0）+ AVOID_STAMINA_WASTE（P1）。",
+      "relevant_universal_skills": ["HUNT_BEAST", "SEND_MARCH", "CLAIM_REWARD"],
+      "verifier": "BATTLE_REPORT_OR_STAMINA_CHANGED；最终以 Intel 出现 CLAIMABLE 并成功领取为准",
+      "strategy_implication": "**显示体力消耗 ≠ 实际消耗**：观测到显示 10、实际扣 7（英雄/账号修正）。不要用显示值做预算。不是「胜券在握」就不要打——失败既浪费体力又占队列。",
+      "source": ["knowledge/game/beasts.json", "LIVE_CLIENT"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "GIANT_BEAST_RALLY",
+      "mechanism": "冰原巨兽，与普通野兽流程不同，疑似需发起或加入集结。",
+      "state": "UNKNOWN（入口与按钮未在当前客户端验证）",
+      "preconditions": "未知，需真机确认",
+      "goal_contribution": "暂不清零；属于 world_rally_pve_candidate",
+      "relevant_universal_skills": ["START_RALLY", "JOIN_RALLY"],
+      "verifier": "rally 或 battle report（未验证）",
+      "strategy_implication": "**不要基于推测实现**。confidence 仅 0.62，属 LIKELY。真机截图确认入口/按钮/消耗后才可以进入实现。",
+      "source": ["knowledge/game/giant_beasts.json", "taptap_beginner", "taptap_strategy_hub"],
+      "confidence": 0.62,
+      "status": "LIKELY_NEEDS_LIVE_VERIFY",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "BEAR_RALLY_JOIN",
+      "mechanism": "巨熊行动（Bear Hunt）。联盟集结活动，分「车头」发起、「车身」加入两种角色。当前客户端将目标显示为「等级1变异巨熊」，属巨熊活动，不得过滤成普通异兽任务。",
+      "state": "联盟/联盟领地/特殊建筑/狩猎陷阱/前往 -> BEAR 页 -> 集结列表 -> 加入 -> 行军中 -> 战斗报告/伤害",
+      "preconditions": "有绿色加号且剩余容量大于 0；目标状态未改变；有空闲队列。",
+      "goal_contribution": "PARTICIPATE_BEAR（**P0**）。",
+      "relevant_universal_skills": ["JOIN_RALLY", "START_RALLY", "READ_TIMER", "READ_COUNTER"],
+      "verifier": "RALLY_JOINED（列表显示行军中或地图特殊队列增加），最终以战斗报告/伤害结果确认",
+      "strategy_implication": "速度优先（REALTIME_OPTIONAL）：发现绿色加号立即进入并出征，失败马上换下一支。**英雄兜底顺序 杰西→书允→杰赛尔→NO_HERO**：合格车身英雄都被占用时，不带英雄也要加入，不得因没英雄放弃未满集结。灰色加号/已满/目标状态已变 → Skip，不是失败。",
+      "source": ["knowledge/game/bear.json", "LIVE_CLIENT", "official_youtube_bear", "PLAYER_POLICY"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "last_reviewed": "2026-09-14"
+    }
+  ],
+  "gaps": [
+    "READ_BEAR_TIMER 未实现（当前 BLOCKED Goal 之一，熊的倒计时无法读取）",
+    "JOIN_RALLY / START_RALLY 在 NEVER EXECUTED 名单里，尚未真机跑过",
+    "Arena / Labyrinth / Exploration 战斗维度未建模",
+    "兵种克制与编队优化未建模（troops.json 只有兵种与训练事实，无战斗矩阵）"
+  ]
+}

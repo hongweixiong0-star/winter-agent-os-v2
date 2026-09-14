@@ -6,7 +6,7 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x110 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x111 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **MARCH_PAGE_NOT_OPEN** x59 — START_GATHER(59)
 - **RESOURCE_NOT_FOUND** x30 — SUBMIT_RESOURCE_SEARCH(30)
 - **DISPATCH_NOT_PROVEN** x29 — DISPATCH_MARCH(29)
@@ -23,7 +23,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 3 uncommitted file(s): ['?? out_handoff.txt', '?? out_probe.txt', '?? tools/probe_maa.py']
+- 42 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
 <!-- /AUTO:open_issues -->
 
 ---

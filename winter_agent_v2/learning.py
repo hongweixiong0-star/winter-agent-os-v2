@@ -37,6 +37,12 @@ class Episode:
     # was issued).  Recorded per episode so the MAA rollout is auditable from the
     # production stream instead of from a migration document.
     executor_backend: str = ""
+    # The full call chain for this step: which channel produced the frames, who
+    # recognised the target, who issued the input.  Never inferred from config -
+    # an episode claiming MAA happened because MAA ran.
+    capture_backend: str = ""
+    recognition_backend: str = ""
+    action_backend: str = ""
     executor_latency_ms: float | None = None
     recorded_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 

@@ -76,6 +76,75 @@ Screenshot → Vision → WorldState → Goal/Brain → Single Scheduler
 
 ---
 
+## 2b. 工具优先（HARD RULE，2026-09-14 增补）
+
+**先找工具，再写代码。**
+
+任何开发任务开始前必须先做一次 TOOL CHECK，并在汇报里给出这五行：
+
+```
+AVAILABLE_TOOLS             机器上已安装且已验证可用的工具（见 docs/AVAILABLE_TOOLING.md）
+BEST_EXISTING_TOOL          其中最适合解决本问题的那个
+EXISTING_IMPLEMENTATION     项目内/外部是否已有实现
+WHY_NOT_USE_EXISTING_TOOL   如果不用它，具体原因（不能是"我想自己写"）
+CUSTOM_CODE_NEEDED          真正必须自研的部分
+```
+
+**解释不了"为什么成熟工具不能解决"，就不许开始自研底层。**
+
+固定优先级：
+
+```
+项目内成熟能力 → 已安装成熟框架 → 外部成熟开源实现 → 成熟第三方库
+→ 最小 Adapter / Glue Code → 最后才允许自行重造
+```
+
+### 各层定位（不可互换）
+
+| 层 | 负责 |
+|---|---|
+| **V2** | Brain / Goal / Strategy / WorldState / Knowledge / Experience / Verifier |
+| **MAA**（已安装，`MaaExecutorAdapter`） | 高速取帧、Template / Feature / Colour Match、ROI、点击、滑动、等待、重试、页面流程 |
+| **ADB** | 设备层、连接、基础控制、**fallback**、应急恢复 |
+| **Verifier** | 唯一事实裁判（MAA 返回 SUCCESS ≠ Skill Success） |
+
+### 两个轴，分开决定（2026-09-14 活体实测）
+
+- **取帧轴：MAA 明显更好，已切换。** 真机交替 20 次：MAA（MuMu EmulatorExtras）
+  **8.92 ms** vs ADB `exec-out screencap -p` **324.12 ms**，**36.3 倍**。
+- **识别轴：不是"越 MAA 越好"，逐语义按证据决定。** 同一批帧上旧 V2 匹配器
+  34.5 ms、MAA 113.0 ms（MAA 更慢），但两侧都是 20/20 命中、中心偏差 0.3 px。
+  因此 MAA 识别的价值在**旧路径结构性做不到的地方**：位置未知/漂移、
+  页面模型多锚点、以及需要多阈值多尺度搜索时。**不为了"必须用 MAA"而伪造更好结论。**
+
+任何把某个 skill 设为 `preferred_backend = MAA` 的改动，必须在
+`knowledge/execution/backend_routing.json` 里同时写入它的 `evidence`
+（阳性/阴性样本科数与结果、中心误差、延迟），否则该提升等于没有依据。
+
+### 止损规则（防止一个按钮吃掉半天）
+
+- 单个 UI 元素：**最多 15 分钟**用现有 V2 Vision 调试。超时立即做 TOOL CHECK。
+- 单个 Skill / Failure / Goal：**最多 90 分钟**。90 分钟内必须至少得到以下之一：
+  Live 成功率改善 / 明确 Root Cause / 明确具体 Blocker / 证明方案错误并回滚。
+- 某个变体（Intel、Event、Resource 的某一类）持续失败但主系统正常：标
+  `PARTIAL` / `DEGRADED` 并登记 Open Issue，**不要阻塞其他 Skill、其他 Goal、
+  整个 AUTO 和整个项目开发**。
+
+### 仍然属于我们自己要建的东西
+
+MaaFramework 只提供引擎，**不提供《无尽冬日》的游戏知识**。模板、页面模型、
+锚点及其证据仍然是我们的工作，且必须按 Production 标准管理：
+来自独立真机帧、带 Positive / Negative 样本、阈值标定、页面上下文，并记录
+precision / false positive / false negative。**禁止模板自己裁自己再自匹配。**
+
+仍然禁止：新增第二 Scheduler / Registry / WorldState / Goal Engine / 平行 Manager。
+MAA 接入只是**补齐现有 Executor Boundary**（`MaaExecutorAdapter` + Executor Router
+backend 支持），不是新架构。
+
+---
+
+
+
 ## 3. Goal 与 Skill 的边界
 
 - **Goal = WHAT**（`GoalLibrary` / `RuleBrain` 决定做什么）
