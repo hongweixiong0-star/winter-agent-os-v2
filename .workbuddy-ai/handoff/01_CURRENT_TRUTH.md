@@ -1,20 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T05:12:29+00:00`
+- generated_at: `2026-09-14T05:13:15+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `65b2955` on `main`
+- commit: `6189c67` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `68e3540`
-- commits: 6
-- HEAD: `65b2955` — docs(handoff): regenerate truth and record the new last-good commit (2026-09-14T13:12:09+08:00)
+- last good commit: `6189c67`
+- commits: 7
+- HEAD: `6189c67` — test(handoff): assert START_HERE leads to real commands and no orphan files (2026-09-14T13:13:05+08:00)
 - working tree: 2 dirty file(s)
-  - `?? tools/coldstart.txt`
-  - `?? tools/simulate_new_account.py`
+  - `M .workbuddy-ai/handoff/.last_good_commit`
+  - `?? tools/_h.txt`
 
 ## B. Runtime
 
