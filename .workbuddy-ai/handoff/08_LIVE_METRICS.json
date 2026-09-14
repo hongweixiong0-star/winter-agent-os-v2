@@ -1,33 +1,33 @@
 {
-  "generated_at": "2026-09-14T09:16:50+00:00",
+  "generated_at": "2026-09-14T11:43:08+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "f8e145f",
+  "commit": "2ac5f2a",
   "last_good_commit": "f8e145f",
-  "dirty_count": 2,
+  "dirty_count": 17,
   "episodes": {
-    "total": 800,
-    "production": 800,
-    "success": 525,
-    "failure": 270,
-    "success_rate_over_decided": 0.6604,
+    "total": 904,
+    "production": 904,
+    "success": 614,
+    "failure": 285,
+    "success_rate_over_decided": 0.683,
     "modes": {
-      "PRODUCTION": 800
+      "PRODUCTION": 904
     },
     "mixed_case_rows": 35
   },
   "skills": {
-    "registry_total": 83,
+    "registry_total": 86,
     "by_state": {
       "VERIFIED": 44,
-      "CANDIDATE": 37,
+      "CANDIDATE": 40,
       "BLOCKED": 2
     },
-    "dispatchable": 65,
+    "dispatchable": 68,
     "counts": {
-      "live_verified": 24,
-      "stable": 17,
+      "live_verified": 23,
+      "stable": 19,
       "degraded": 9,
-      "only_failed": 7,
+      "only_failed": 10,
       "never_executed": 27
     }
   },
@@ -91,6 +91,16 @@
       ]
     },
     {
+      "failure_type": "STAMINA_SOURCES_NOT_OPEN",
+      "count": 7,
+      "top_skills": [
+        [
+          "OPEN_INTEL",
+          7
+        ]
+      ]
+    },
+    {
       "failure_type": "POPUP_CLOSE_NOT_PROVEN",
       "count": 5,
       "top_skills": [
@@ -105,46 +115,32 @@
       ]
     },
     {
-      "failure_type": "EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN",
-      "count": 3,
+      "failure_type": "INTEL_RESCUE_START_NOT_PROVEN",
+      "count": 5,
       "top_skills": [
         [
-          "CONFIRM_EXPLORATION_IDLE_CLAIM",
-          2
-        ],
-        [
-          "EXPLORATION_IDLE_CLAIM",
-          1
+          "EXECUTE_INTEL_RESCUE_SURVIVORS",
+          5
         ]
       ]
     },
     {
-      "failure_type": "STAMINA_SOURCES_NOT_OPEN",
-      "count": 3,
+      "failure_type": "NO_EXECUTION",
+      "count": 4,
       "top_skills": [
         [
-          "OPEN_INTEL",
-          3
-        ]
-      ]
-    },
-    {
-      "failure_type": "INTEL_MISSION_SELECTION_NOT_PROVEN",
-      "count": 2,
-      "top_skills": [
-        [
-          "SELECT_INTEL_BEAST_MISSION",
-          2
+          "SAFE_STOP",
+          4
         ]
       ]
     },
     {
       "failure_type": "INTEL_CLAIM_FEEDBACK_NOT_PROVEN",
-      "count": 2,
+      "count": 3,
       "top_skills": [
         [
           "INTEL_CLAIM_REWARDS",
-          2
+          3
         ]
       ]
     }
@@ -182,9 +178,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 136,
-    "present_on_disk": 136,
-    "traceable_episodes": 68,
+    "referenced_screenshots": 340,
+    "present_on_disk": 340,
+    "traceable_episodes": 172,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -198,6 +194,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "intel_not_available"
+    "stop_reason": "unknown_page"
   }
 }

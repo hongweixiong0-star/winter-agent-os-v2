@@ -1,0 +1,18 @@
+intel pin loop start 2026-09-14T11:30:51+00:00 pin_budget=30
+Traceback (most recent call last):
+  File "E:\无尽冬日智能体\tools\run_intel_pins.py", line 238, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "E:\无尽冬日智能体\tools\run_intel_pins.py", line 165, in main
+    state, shot = observe()
+                  ^^^^^^^^^
+  File "E:\无尽冬日智能体\tools\run_intel_pins.py", line 57, in observe
+    state = hybrid.observe(shot)
+            ^^^^^^^^^^^^^^^^^^^^
+  File "E:\无尽冬日智能体\winter_agent_v2\ocr.py", line 462, in observe
+    primary = self.template_vision.observe(image_path)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\无尽冬日智能体\winter_agent_v2\vision.py", line 1099, in observe
+    marches=tuple(marches),
+                  ^^^^^^^
+UnboundLocalError: cannot access local variable 'marches' where it is not associated with a value

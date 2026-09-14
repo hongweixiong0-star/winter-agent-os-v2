@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T09:16:50+00:00`
+- generated_at: `2026-09-14T11:43:08+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `f8e145f` on `main`
+- commit: `2ac5f2a` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,11 +10,26 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 22
-- HEAD: `f8e145f` — feat(intel): drain-and-loop closure + fix the stamina fragment misread (2026-09-14T17:16:36+08:00)
-- working tree: 2 dirty file(s)
-  - `M .workbuddy-ai/handoff/.last_good_commit`
+- commits: 26
+- HEAD: `2ac5f2a` — chore(skills): install the security-check gate and register the project skill ledger (2026-09-14T19:30:36+08:00)
+- working tree: 17 dirty file(s)
+  - `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+  - ` M .workbuddy-ai/memory/2026-09-14.md`
+  - ` M dataset/candidate/template_manifest.json`
+  - ` M evidence/intel_loop_20260914_112516.log`
+  - ` M learning/goal_state.json`
+  - ` M learning/runtime_snapshot.json`
+  - ` M tools/update_workbuddy_handoff.py`
+  - ` M winter_agent_v2/skills.py`
+  - ` M winter_agent_v2/verifier.py`
+  - ` M winter_agent_v2/vision.py`
+  - `?? .workbuddy/memory/MEMORY.md`
+  - `?? dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
+  - `?? docs/MEMORY_ARCHITECTURE_2026_09_14.md`
+  - `?? evidence/intel_pins_20260914_113408.json`
   - `?? tools/_h.txt`
+  - `?? tools/pins_out7.txt`
+  - `?? tools/pins_out8.txt`
 
 ## B. Runtime
 
@@ -23,24 +38,24 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: intel_not_available
-- page: INTEL  march: None/None
-- updated_at: 2026-09-14T09:02:28.390577+00:00
+- stop_reason: unknown_page
+- page: UNKNOWN  march: None/None
+- updated_at: 2026-09-14T11:35:19.462201+00:00
 
 ## C. Episode stream
 
-- rows: 800 (production 800)  modes: {'PRODUCTION': 800}
-- success / failure: 525 / 270
-- success rate over decided: **0.6604**
+- rows: 904 (production 904)  modes: {'PRODUCTION': 904}
+- success / failure: 614 / 285
+- success rate over decided: **0.683**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T08:34:26.144051+00:00", "episode_id": "live_intel_full_run8", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_after_20260914T083418180357.png"}`
+- last episode: `{"skill": "SAFE_STOP", "result": "FAILURE", "recorded_at": "2026-09-14T11:20:35.634003+00:00", "episode_id": "intel_pins_20260914_112018_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_112018_nav_00\\intel_pins_20260914_112018_nav_00_step_001_before_20260914T112033523534.png", "after_screenshot": ""}`
 
 ## D. Registry and lifecycle
 
-- registry total: 83  by_state: {'VERIFIED': 44, 'CANDIDATE': 37, 'BLOCKED': 2}
-- live dispatchable (verifier-backed): 65
+- registry total: 86  by_state: {'VERIFIED': 44, 'CANDIDATE': 40, 'BLOCKED': 2}
+- live dispatchable (verifier-backed): 68
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **24**  stable: 17  degraded: 9  only_failed: 7  never_executed: 27
+- live_verified: **23**  stable: 19  degraded: 9  only_failed: 10  never_executed: 27
 
 ### Never executed
 
@@ -50,11 +65,11 @@
 - `CLAIM_REWARD` (CANDIDATE)
 - `DISMISS_ALLIANCE_GENERIC_REWARD` (CANDIDATE)
 - `DISMISS_EXPLORATION_REWARD` (VERIFIED)
-- `EXECUTE_INTEL_RESCUE_SURVIVORS` (VERIFIED)
+- `INTEL_HERO_DISPATCH` (CANDIDATE)
+- `INTEL_HERO_START_MARCH` (CANDIDATE)
 - `JOIN_RALLY` (CANDIDATE)
 - `NAVIGATE_TO` (CANDIDATE)
 - `OPEN_ALLIANCE_GIFTS` (CANDIDATE)
-- `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` (VERIFIED)
 - `OPEN_STAMINA_SOURCES` (CANDIDATE)
 - `READ_COUNTER` (CANDIDATE)
 - `READ_INTEL_LIST` (CANDIDATE)
@@ -78,33 +93,38 @@
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` attempts=2 failure=2
 - `DISMISS_MAIL_REWARD` attempts=1 failure=1
 - `DISPATCH_BEAST` attempts=1 failure=1
+- `EXECUTE_INTEL_RESCUE_SURVIVORS` attempts=5 failure=5
+- `OPEN_INTEL_HERO_JOURNEY_TARGET` attempts=1 failure=1
 - `RESEARCH` attempts=1 failure=0
+- `SAFE_STOP` attempts=4 failure=4
 - `SELECT_BEAST_TARGET` attempts=1 failure=1
 - `WAIT` attempts=1 failure=1
 
 ### Stable
 
 - `ALLIANCE_ALLY_GIFT_CLAIM` success=12 rate=0.9231
-- `BACK` success=15 rate=0.9375
+- `BACK` success=41 rate=0.9762
 - `CLOSE_POPUP` success=30 rate=0.9677
+- `DISMISS_INTEL_GENERIC_REWARD` success=11 rate=1.0
 - `DISMISS_MAIL_GENERIC_REWARD` success=6 rate=0.8571
-- `DISPATCH_INTEL_BEAST` success=13 rate=0.9286
+- `DISPATCH_INTEL_BEAST` success=21 rate=0.9545
 - `GATHER_RESOURCE` success=8 rate=1.0
-- `INTEL_BEAST_START_MARCH` success=14 rate=1.0
-- `INTEL_CLAIM_REWARDS` success=15 rate=0.8824
+- `INTEL_BEAST_START_MARCH` success=22 rate=1.0
+- `INTEL_CLAIM_REWARDS` success=27 rate=0.9
 - `OPEN_DAILY` success=5 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
 - `OPEN_HOME` success=20 rate=0.8696
-- `OPEN_INTEL` success=50 rate=0.8929
-- `OPEN_INTEL_BEAST_TARGET` success=13 rate=0.9286
+- `OPEN_INTEL` success=60 rate=0.8571
+- `OPEN_INTEL_BEAST_TARGET` success=20 rate=0.9524
+- `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=5 rate=1.0
 - `OPEN_MAP` success=24 rate=0.96
 - `OPEN_POWER_DETAILS` success=9 rate=1.0
 - `OPEN_POWER_OVERVIEW` success=9 rate=0.8182
-- `SELECT_INTEL_BEAST_MISSION` success=8 rate=0.8
+- `SELECT_INTEL_BEAST_MISSION` success=9 rate=0.8182
 
 ### Degraded
 
-- `DISMISS_INTEL_REWARD` success=15 failure=5 rate=0.75
+- `DISMISS_INTEL_REWARD` success=17 failure=5 rate=0.7727
 - `DISPATCH_MARCH` success=32 failure=29 rate=0.5246
 - `MAIL_CLAIM_REWARDS` success=14 failure=10 rate=0.5833
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
@@ -123,11 +143,11 @@ Failure | Count | Top skills
 `RESOURCE_NOT_FOUND` | 30 | SUBMIT_RESOURCE_SEARCH(30)
 `DISPATCH_NOT_PROVEN` | 29 | DISPATCH_MARCH(29)
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | MAIL_CLAIM_REWARDS(10)
+`STAMINA_SOURCES_NOT_OPEN` | 7 | OPEN_INTEL(7)
 `POPUP_CLOSE_NOT_PROVEN` | 5 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
-`EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN` | 3 | CONFIRM_EXPLORATION_IDLE_CLAIM(2), EXPLORATION_IDLE_CLAIM(1)
-`STAMINA_SOURCES_NOT_OPEN` | 3 | OPEN_INTEL(3)
-`INTEL_MISSION_SELECTION_NOT_PROVEN` | 2 | SELECT_INTEL_BEAST_MISSION(2)
-`INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 2 | INTEL_CLAIM_REWARDS(2)
+`INTEL_RESCUE_START_NOT_PROVEN` | 5 | EXECUTE_INTEL_RESCUE_SURVIVORS(5)
+`NO_EXECUTION` | 4 | SAFE_STOP(4)
+`INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 3 | INTEL_CLAIM_REWARDS(3)
 
 ## F. Goal capability coverage
 
@@ -136,7 +156,7 @@ Failure | Count | Top skills
 
 Goal | Status | Runtime | design | impl | live | stable | blocked by
 ---|---|---|---:|---:|---:|---:|---
-CLEAR_INTEL | PARTIAL | RUNTIME_DISCOVERED | 100% | 100% | 83% | 67% | -
+CLEAR_INTEL | PARTIAL | RUNTIME_DISCOVERED | 100% | 100% | 83% | 83% | -
 AVOID_STAMINA_WASTE | PARTIAL | RUNTIME_DISCOVERED | 100% | 67% | 67% | 33% | SPEND_STAMINA_ON_RALLY
 KEEP_MARCHES_PRODUCTIVE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 86% | 86% | 14% | VERIFY_GATHERING
 KEEP_BUILDING_PRODUCTIVE | PARTIAL | RUNTIME_DISCOVERED | 100% | 50% | 50% | 0% | OPEN_BUILDING_PAGE
@@ -156,9 +176,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 136  present: 136
+- referenced screenshots: 340  present: 340
 - missing: []
-- episodes carrying screenshot references: 68
+- episodes carrying screenshot references: 172
 
 ## H. Commercial bot parity
 

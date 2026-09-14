@@ -755,6 +755,26 @@ BLOCK_FILES = {
 }
 
 
+def evidence_index() -> dict:
+    """Index every evidence artefact so conclusions can be traced without
+    browsing directories (P1 of the 2026-09-14 memory architecture review)."""
+    entries = []
+    for base, kind in ((ROOT / "evidence", "evidence"), (ROOT / "dataset" / "truth_audit", "fixture")):
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*")):
+            if not path.is_file():
+                continue
+            stat = path.stat()
+            entries.append({
+                "path": str(path.relative_to(ROOT)).replace("\\", "/"),
+                "kind": kind,
+                "bytes": stat.st_size,
+                "mtime": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(timespec="seconds"),
+            })
+    return {"generated_at": utc_now(), "count": len(entries), "entries": entries}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", action="store_true", help="commit the current tree")
@@ -786,6 +806,8 @@ def main() -> int:
         print(f"marked last good commit: {head}")
 
     state = collect()
+    atomic_write(ROOT / "evidence" / "INDEX.json", json.dumps(evidence_index(), ensure_ascii=False, indent=2))
+    print("wrote evidence/INDEX.json")
     for name, render in FULL_FILES.items():
         atomic_write(HANDOFF / name, render(state))
         print(f"wrote {name}")

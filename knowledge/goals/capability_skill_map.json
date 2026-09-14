@@ -29,9 +29,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 56,
-          "successes": 50,
-          "failures": 6
+          "attempts": 70,
+          "successes": 60,
+          "failures": 10
         },
         {
           "capability": "READ_INTEL_LIST",
@@ -55,8 +55,8 @@
           "status": "STABLE",
           "implemented_by": "SELECT_INTEL_BEAST_MISSION",
           "live_verified_by": "SELECT_INTEL_BEAST_MISSION",
-          "attempts": 11,
-          "successes": 9,
+          "attempts": 12,
+          "successes": 10,
           "failures": 2
         },
         {
@@ -70,9 +70,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 42,
-          "successes": 40,
-          "failures": 2
+          "attempts": 70,
+          "successes": 63,
+          "failures": 7
         },
         {
           "capability": "CLAIM_INTEL_REWARD",
@@ -82,9 +82,9 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 17,
-          "successes": 15,
-          "failures": 2
+          "attempts": 30,
+          "successes": 27,
+          "failures": 3
         },
         {
           "capability": "DISMISS_INTEL_REWARD",
@@ -92,22 +92,22 @@
             "DISMISS_INTEL_REWARD",
             "DISMISS_INTEL_GENERIC_REWARD"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "DISMISS_INTEL_REWARD",
           "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 21,
-          "successes": 16,
+          "attempts": 33,
+          "successes": 28,
           "failures": 5
         }
       ],
       "design_requirements_total": 6,
       "implemented_capabilities": 6,
       "live_verified_capabilities": 5,
-      "stable_capabilities": 4,
+      "stable_capabilities": 5,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 0.8333,
-      "stable_coverage": 0.6667,
+      "stable_coverage": 0.8333,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -141,8 +141,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 42,
-          "successes": 40,
+          "attempts": 65,
+          "successes": 63,
           "failures": 2
         },
         {
@@ -572,9 +572,9 @@
           "status": "DEGRADED",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 66,
-          "successes": 49,
-          "failures": 17
+          "attempts": 79,
+          "successes": 61,
+          "failures": 18
         },
         {
           "capability": "DISMISS_FREE_REWARD_POPUP",

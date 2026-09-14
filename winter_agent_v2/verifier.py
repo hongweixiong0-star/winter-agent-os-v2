@@ -384,11 +384,14 @@ def verify_intel_hero_march_open(before: WorldState, after: WorldState) -> Verif
 
 
 def verify_intel_hero_dispatched(before: WorldState, after: WorldState) -> VerificationResult:
-    before_ok = before.page is Page.MARCH
-    active = after.page is Page.MAP and any(state in {MarchState.MARCHING, MarchState.RETURNING} for state in after.marches)
-    queue_visible = after.march_used is not None and after.march_used >= 1
-    ok = before_ok and active and queue_visible
-    return VerificationResult(ok, "OK" if ok else "INTEL_HERO_DISPATCH_NOT_PROVEN", {"march_page": before_ok, "active_march": active, "march_used": after.march_used})
+    """The squad page accepted the 战斗 tap: the fight is an instant hero
+    battle (live 2026-09-14: 6.65M vs 0.96M recommended power), so the
+    observable state change is the squad page being replaced by the battle
+    result or the map."""
+    before_ok = before.page is Page.MARCH and not before.beast
+    after_ok = after.page is not Page.MARCH
+    ok = before_ok and after_ok
+    return VerificationResult(ok, "OK" if ok else "INTEL_HERO_DISPATCH_NOT_PROVEN", {"squad_page": before_ok, "left_page": after_ok, "after_page": after.page.value})
 
 
 def verify_intel_rescue_started(before: WorldState, after: WorldState) -> VerificationResult:

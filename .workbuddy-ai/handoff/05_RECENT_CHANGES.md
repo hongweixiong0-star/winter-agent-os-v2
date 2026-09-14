@@ -6,6 +6,10 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `2ac5f2a 2026-09-14T19:30:36+08:00 chore(skills): install the security-check gate and register the project skill ledger`
+- `59e94ed 2026-09-14T19:23:23+08:00 feat(intel): the mission pin board is now workable end to end`
+- `85027fd 2026-09-14T17:17:37+08:00 docs(memory): record the sixth round (intel drained, hourly automation, stamina fragment fix)`
+- `37545bd 2026-09-14T17:16:53+08:00 docs(handoff): mark f8e145f as last-good; intel drained, hourly loop automation active`
 - `f8e145f 2026-09-14T17:16:36+08:00 feat(intel): drain-and-loop closure + fix the stamina fragment misread`
 - `349bb6c 2026-09-14T16:51:47+08:00 docs(memory): repair the fifth-round note eaten by shell command substitution`
 - `0d44f54 2026-09-14T16:50:46+08:00 docs(handoff): mark db268f9 as last-good after the intel chain closed end to end`
@@ -14,14 +18,25 @@ Last 12 commits (newest first):
 - `940310f 2026-09-14T16:15:30+08:00 docs(handoff): mark 702e65b as last-good after the beast-card and intel-list fixes`
 - `702e65b 2026-09-14T16:15:17+08:00 fix(intel): repair the stamina-sink chain — stale beast card + empty-list dead end`
 - `16bf007 2026-09-14T15:45:11+08:00 docs(handoff): mark 25b5ba7 as last-good and refresh truth after the regression suite`
-- `25b5ba7 2026-09-14T15:43:18+08:00 feat(stamina,recall): make the operator's stamina-first policy executable`
-- `eeac37d 2026-09-14T14:17:40+08:00 wip: stamina becomes observable + recall becomes dispatchable`
-- `35ed464 2026-09-14T13:44:03+08:00 docs(handoff): record the live stamina reading (200/200) and the recall UI probe`
-- `446d909 2026-09-14T13:41:40+08:00 feat(policy): stamina spending beats gathering; gathering is LAST_RESORT`
 
-Uncommitted changes: 2
-- `M .workbuddy-ai/handoff/.last_good_commit`
+Uncommitted changes: 17
+- `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+- ` M .workbuddy-ai/memory/2026-09-14.md`
+- ` M dataset/candidate/template_manifest.json`
+- ` M evidence/intel_loop_20260914_112516.log`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
+- ` M tools/update_workbuddy_handoff.py`
+- ` M winter_agent_v2/skills.py`
+- ` M winter_agent_v2/verifier.py`
+- ` M winter_agent_v2/vision.py`
+- `?? .workbuddy/memory/MEMORY.md`
+- `?? dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
+- `?? docs/MEMORY_ARCHITECTURE_2026_09_14.md`
+- `?? evidence/intel_pins_20260914_113408.json`
 - `?? tools/_h.txt`
+- `?? tools/pins_out7.txt`
+- `?? tools/pins_out8.txt`
 <!-- /AUTO:recent_commits -->
 
 ---

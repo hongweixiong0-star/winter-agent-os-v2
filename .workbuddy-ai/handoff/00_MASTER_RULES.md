@@ -286,6 +286,25 @@ Failure Analysis、Escalation。
   Verifier calibration frame。`dataset/verified/` 与 `dataset/production/` 是长期保留区。
 - **Evidence Integrity Test：任何被引用证据不存在 → FAIL。**
 
+### 18b. 记忆写入路由（2026-09-14 增补，防双事实源）
+
+项目存在两个记忆路径，职责必须严格区分：
+
+| 路径 | 职责 |
+|---|---|
+| `.workbuddy-ai/memory/` | **唯一长期事实源**：MEMORY.md（蒸馏后的长期知识）+ YYYY-MM-DD.md（当日流水） |
+| `.workbuddy/memory/` | WorkBuddy 宿主注入的会话工作路径：**只写当日流水与自动化记忆，视为缓存** |
+
+规则：
+
+1. 长期知识（架构决定、环境铁律、操作者偏好、蒸馏教训）**只写**
+   `.workbuddy-ai/memory/MEMORY.md`；宿主路径不写长期知识。
+2. `.workbuddy/memory/MEMORY.md` 只放指针，指向上述事实源。
+3. 每日日志追加式；超过 30 天的日志按主题蒸馏进 MEMORY.md，
+   原文移入 `.workbuddy-ai/memory/archive/`（移动，不删除）。
+4. 当前现场只信 `.workbuddy-ai/handoff/`；`learning/` 是机器态，人只读。
+5. 详细分层设计见 `docs/MEMORY_ARCHITECTURE_2026_09_14.md`。
+
 ## 19. 知识与模型分离
 
 知识存 `knowledge/`，Qwen 只学「如何根据知识决策」。

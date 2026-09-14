@@ -11,15 +11,18 @@ Machine-detected issues (recomputed every run):
 - **RESOURCE_NOT_FOUND** x30 — SUBMIT_RESOURCE_SEARCH(30)
 - **DISPATCH_NOT_PROVEN** x29 — DISPATCH_MARCH(29)
 - **MAIL_CLAIM_FEEDBACK_NOT_PROVEN** x10 — MAIL_CLAIM_REWARDS(10)
-- **POPUP_CLOSE_NOT_PROVEN** x5 — DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
+- **STAMINA_SOURCES_NOT_OPEN** x7 — OPEN_INTEL(7)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
 - `DISPATCH_BEAST` never succeeded (attempts=1, failure=1)
+- `EXECUTE_INTEL_RESCUE_SURVIVORS` never succeeded (attempts=5, failure=5)
+- `OPEN_INTEL_HERO_JOURNEY_TARGET` never succeeded (attempts=1, failure=1)
 - `RESEARCH` never succeeded (attempts=1, failure=0)
+- `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 2 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
+- 17 uncommitted file(s): ['M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M dataset/candidate/template_manifest.json', ' M evidence/intel_loop_20260914_112516.log', ' M learning/goal_state.json']
 <!-- /AUTO:open_issues -->
 
 ---

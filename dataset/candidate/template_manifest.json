@@ -6900,6 +6900,18 @@
       },
       "max_distance": 8,
       "provenance": "live 2026-09-14 hero-journey camp panel (探险 ⚡10 button), frame intel_pins_20260914_104320_nav_01"
+    },
+    {
+      "semantic": "BTN_HERO_FIGHT",
+      "template_path": "dataset/candidate/hero_camp/btn_hero_fight__live_squad.png",
+      "roi_norm": {
+        "x_norm": 0.525,
+        "y_norm": 0.8344,
+        "w_norm": 0.3806,
+        "h_norm": 0.0469
+      },
+      "max_distance": 8,
+      "provenance": "live 2026-09-14 hero-journey squad setup page (战斗 button), frame intel_pins_20260914_113408_nav_00"
     }
   ]
 }

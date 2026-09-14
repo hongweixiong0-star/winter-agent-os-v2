@@ -1014,6 +1014,13 @@ class SemanticWorldVision:
                 confidence=0.99,
             )
 
+        if match("BTN_HERO_FIGHT"):
+            # The Hero Journey squad-setup page (小队设置, measured live
+            # 2026-09-14): pre-filled heroes plus a 战斗 button. It is the
+            # formation stage of the camp fight, so it maps to Page.MARCH
+            # with empty beast fields - the brain's intel hero branch then
+            # dispatches.
+            return WorldState(page=Page.MARCH, beast={}, confidence=0.99)
         if match("BTN_HERO_CAMP_FIGHT"):
             # The Hero Journey camp panel on the world map (measured live
             # 2026-09-14): an 探险 ⚡10 fight button, no march stage. It is a
@@ -1094,7 +1101,7 @@ class SemanticWorldVision:
                 used = 2 + transient_count
             else:
                 used = None
-        return WorldState(
+            return WorldState(
                 page=Page.MAP,
                 marches=tuple(marches),
                 march_used=used,
