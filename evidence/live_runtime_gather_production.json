@@ -1,0 +1,154 @@
+{
+  "schema_version":"1.0",
+  "mode":"PRODUCTION",
+  "verified_at":"2026-09-05",
+  "goal":"GATHER_RESOURCE",
+  "runtime":"LiveRuntime",
+  "scheduler_count":1,
+  "attempts":[
+    {
+      "attempt":1,
+      "actions":["OPEN_MAP","SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "runtime_result":"DISPATCH_NOT_PROVEN",
+      "actual_client_evidence":"3/6 with a new 00:00:58 march",
+      "failure_class":"OCR_MARCH_COUNT_MISSING",
+      "resolution":"dynamic 3/6 and march status moved to OCR; original screenshot re-evaluated PASS",
+      "counted_as_unattended_success":false
+    },
+    {
+      "attempt":2,
+      "actions":["OPEN_MAP","SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS","PASS"],
+      "state_after":{"page":"MAP","march_used":4,"march_max":6,"marches":["GATHERING","MARCHING"],"resource_target":"WOOD"},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "natural_followup":{"page":"MAP","march_used":4,"march_max":6,"marches":["GATHERING","MARCHING"],"resource_target":"WOOD","verifier":"PASS"},
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":3,
+      "actions":["OPEN_MAP","SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS","PASS"],
+      "state_before":{"page":"HOME","march_used":4,"march_max":6},
+      "state_after":{"page":"MAP","march_used":5,"march_max":6,"marches":["GATHERING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "return_home_verifier":"PASS",
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":4,
+      "actions":["OPEN_MAP","SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS","PASS"],
+      "state_before":{"page":"HOME","observed_on_map_march_used":4,"march_max":6},
+      "state_after":{"page":"MAP","march_used":5,"march_max":6,"marches":["GATHERING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "note":"One earlier march naturally returned before this run, so the result was correctly retained as 5/6 rather than misreported as full.",
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":5,
+      "actions":["SEARCH_RESOURCE"],
+      "state_before":{"page":"MAP","march_used":5,"march_max":6},
+      "runtime_result":"SEMANTIC_TARGET_NOT_VERIFIED",
+      "failure_class":"VISION_VARIANCE",
+      "action_executed":false,
+      "resolution":"Added a semantic-specific pHash distance of 12 for the fixed-position search control; all other semantics retain their stricter threshold.",
+      "counted_as_unattended_success":false
+    },
+    {
+      "attempt":6,
+      "actions":["SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS"],
+      "state_before":{"page":"MAP","march_used":5,"march_max":6},
+      "state_after":{"page":"MAP","march_used":6,"march_max":6,"marches":["GATHERING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":7,
+      "actions":["SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH"],
+      "state_before":{"page":"MAP","march_used":2,"march_max":6},
+      "runtime_result":"RESOURCE_NOT_FOUND",
+      "failure_class":"KNOWN_INTERMEDIATE_FRAME",
+      "actual_client_evidence":"resource detail appeared after the first known MAP observation",
+      "resolution":"failed action verifier now re-observes bounded frames without repeating the click",
+      "counted_as_unattended_success":false
+    },
+    {
+      "attempt":8,
+      "actions":["START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS"],
+      "state_before":{"page":"RESOURCE_DETAIL","march_used":2,"march_max":6},
+      "state_after":{"page":"MAP","march_used":3,"march_max":6,"marches":["GATHERING","MARCHING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":9,
+      "actions":["SEARCH_RESOURCE"],
+      "state_before":{"page":"MAP","march_used":3,"march_max":6},
+      "runtime_result":"SEMANTIC_TARGET_NOT_VERIFIED",
+      "failure_class":"VISION_VARIANCE",
+      "action_executed":false,
+      "learning_episode_recorded":true,
+      "resolution":"current live frame imported as a candidate search-button template with Replay pHash distance 2",
+      "counted_as_unattended_success":false
+    },
+    {
+      "attempt":10,
+      "actions":["SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS"],
+      "state_before":{"page":"MAP","march_used":3,"march_max":6},
+      "state_after":{"page":"MAP","march_used":4,"march_max":6,"marches":["GATHERING","MARCHING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "learning_episodes_recorded":4,
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":11,
+      "actions":["SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS"],
+      "state_before":{"page":"MAP","march_used":4,"march_max":6},
+      "state_after":{"page":"MAP","march_used":5,"march_max":6,"marches":["GATHERING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "learning_episodes_recorded":4,
+      "capture_dir":"dataset/raw/live_runtime_post_bootstrap_fix",
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":12,
+      "actions":["SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS"],
+      "state_before":{"page":"MAP","march_used":5,"march_max":6},
+      "state_after":{"page":"MAP","march_used":6,"march_max":6,"marches":["GATHERING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "learning_episodes_recorded":4,
+      "capture_dir":"dataset/raw/live_runtime_fill_after_bootstrap_fix",
+      "counted_as_unattended_success":true
+    },
+    {
+      "attempt":13,
+      "driver":"DESKTOP_CONTROL_PANEL_CONTINUOUS_MODE",
+      "actions":["SEARCH_RESOURCE","SUBMIT_RESOURCE_SEARCH","START_GATHER","DISPATCH_MARCH"],
+      "step_verifiers":["PASS","PASS","PASS","PASS"],
+      "state_before":{"page":"MAP","march_used":5,"march_max":6},
+      "state_after":{"page":"MAP","march_used":6,"march_max":6,"marches":["GATHERING","MARCHING"]},
+      "runtime_result":"TARGET_SKILL_VERIFIED",
+      "learning_episodes_recorded":4,
+      "continuous_follow_up":{"decision":"SAFE_STOP","reason":"no_idle_march","actions_executed":0,"next_check_seconds":600},
+      "counted_as_unattended_success":true
+    }
+  ],
+  "recovery_evidence":{
+    "transition_white_frame":"refresh screenshot only; action not repeated",
+    "map_android_back":"exit confirmation detected and closed; OPEN_HOME substituted",
+    "current_client_wood_position":"live template replaced legacy location",
+    "dynamic_march_count":"OCR, not fixed 1/6 or 2/6 template",
+    "known_intermediate_frame":"bounded verifier re-observation without a second click",
+    "automatic_episode_learning":"real execution failures and successes append before/action/after/result/failure_type/duration"
+  },
+  "end_state":"HOME",
+  "background_gathering_continues":true,
+  "unattended_dispatch_successes":9,
+  "queue_full_guard":{"state":{"page":"MAP","march_used":6,"march_max":6},"decision":"SAFE_STOP","reason":"no_idle_march","actions_executed":0,"result":"PASS","capture_dir":"dataset/raw/live_runtime_full_guard_after_bootstrap_fix"},
+  "stable_claimed":false
+}

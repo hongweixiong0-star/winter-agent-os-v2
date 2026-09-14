@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "mode": "PRODUCTION",
+  "recorded_at": "2026-09-13T07:16:39+08:00",
+  "skill": "DISPATCH_MARCH",
+  "result": "VERIFIED_FROM_LIVE_EVIDENCE_AFTER_SAFE_RECOVERY",
+  "state_transition": [
+    "MARCH",
+    "REAL_MONEY_OFFER_HARD_BLOCK",
+    "PRESS_BACK",
+    "MAP_MARCHING"
+  ],
+  "before": {
+    "path": "dataset/raw/control_panel/runtime_auto/20260913_071323_375697/step_003_before.png",
+    "sha256": "c21dbcef4a45ff6822f79cfd589131a7dcff1da42a1aa4c0118baa9a52a1d818",
+    "page": "MARCH"
+  },
+  "interruption": {
+    "path": "dataset/raw/control_panel/runtime_auto/20260913_071323_375697/step_003_after_refresh_2.png",
+    "sha256": "cf72f29280e821271321bafe0867873f564399a661c840ffba1077df6a93b369",
+    "popup": "REAL_MONEY_OFFER",
+    "price": "CNY_30.00",
+    "purchase_action": "BLOCKED",
+    "recovery": "PRESS_BACK"
+  },
+  "after": {
+    "path": "dataset/raw/live_purchase_popup_closed_20260913.png",
+    "sha256": "df3505b53c6cc1be9697c29bcda2ab8347d2b538aa4dd62d119f5ee44d387022",
+    "page": "MAP",
+    "march_used": 2,
+    "march_max": 6,
+    "march_state": "MARCHING"
+  },
+  "verifier": {
+    "name": "verify_wood_dispatch_from_march",
+    "ok": true,
+    "evidence": {
+      "wood_march_page": true,
+      "active_state": true,
+      "active_queue_visible": true,
+      "march_used": 2,
+      "target_ok": true
+    }
+  },
+  "notes": "The original historical Episode remains a failure because the old runtime could not classify the promotional blocker. This evidence does not rewrite history; it proves the corrected recovery/verifier composition against the same live screenshots."
+}

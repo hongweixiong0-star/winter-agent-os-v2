@@ -1,0 +1,1 @@
+{"schema_version":"1.0","type":"ADVISORY","rules":[{"when":"player_goal == resource_growth AND march.IDLE","suggest":"GATHER_RESOURCE"},{"when":"intel.state in [NOT_AVAILABLE,EXPIRED]","suggest":"SWITCH_TASK"}],"hardcoded_absolute_priority":false}

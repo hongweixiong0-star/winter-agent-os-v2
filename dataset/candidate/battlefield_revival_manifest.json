@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-13T12:21:45.433502+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "popup_battlefield_revival__step_001_after_refresh_2__df53c4e4__0",
+      "semantic": "POPUP_BATTLEFIELD_REVIVAL",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/battlefield_revival/popup_battlefield_revival__step_001_after_refresh_2__df53c4e4__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_offer_carousel_recovery_20260913/step_001_after_refresh_2.png",
+      "parent_sha256": "df53c4e47465cbf1bcc6f5ad2f212bcca1d3677122c0fe5a6309b00a7aef0480",
+      "roi_norm": {
+        "x_norm": 0.0,
+        "y_norm": 0.0,
+        "w_norm": 1.0,
+        "h_norm": 0.88
+      },
+      "width": 720,
+      "height": 1126,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

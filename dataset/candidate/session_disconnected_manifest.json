@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-13T12:17:46.109165+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "popup_session_disconnected__live_resource_rotation_current_20260913__f6bc866e__0",
+      "semantic": "POPUP_SESSION_DISCONNECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/session_disconnected/popup_session_disconnected__live_resource_rotation_current_20260913__f6bc866e__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_current_20260913.png",
+      "parent_sha256": "f6bc866e175243fda378d8de2856fd95e816bb535ac031aa7e8f950f20688cfb",
+      "roi_norm": {
+        "x_norm": 0.025,
+        "y_norm": 0.325,
+        "w_norm": 0.95,
+        "h_norm": 0.365
+      },
+      "width": 684,
+      "height": 467,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_reconnect_session__live_resource_rotation_current_20260913__f6bc866e__1",
+      "semantic": "BTN_RECONNECT_SESSION",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/session_disconnected/btn_reconnect_session__live_resource_rotation_current_20260913__f6bc866e__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_current_20260913.png",
+      "parent_sha256": "f6bc866e175243fda378d8de2856fd95e816bb535ac031aa7e8f950f20688cfb",
+      "roi_norm": {
+        "x_norm": 0.51,
+        "y_norm": 0.59,
+        "w_norm": 0.425,
+        "h_norm": 0.07
+      },
+      "width": 306,
+      "height": 90,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

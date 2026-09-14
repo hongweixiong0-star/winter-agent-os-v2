@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-12T23:15:34.084883+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "high_risk_real_money_offer__step_003_after_refresh_2__cf72f292__0",
+      "semantic": "HIGH_RISK_REAL_MONEY_OFFER",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/real_money_offer/high_risk_real_money_offer__step_003_after_refresh_2__cf72f292__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260913_071323_375697/step_003_after_refresh_2.png",
+      "parent_sha256": "cf72f29280e821271321bafe0867873f564399a661c840ffba1077df6a93b369",
+      "roi_norm": {
+        "x_norm": 0.095,
+        "y_norm": 0.1,
+        "w_norm": 0.81,
+        "h_norm": 0.79
+      },
+      "width": 583,
+      "height": 1011,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "real_money_price_button__step_003_after_refresh_2__cf72f292__1",
+      "semantic": "REAL_MONEY_PRICE_BUTTON",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/real_money_offer/real_money_price_button__step_003_after_refresh_2__cf72f292__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260913_071323_375697/step_003_after_refresh_2.png",
+      "parent_sha256": "cf72f29280e821271321bafe0867873f564399a661c840ffba1077df6a93b369",
+      "roi_norm": {
+        "x_norm": 0.285,
+        "y_norm": 0.805,
+        "w_norm": 0.435,
+        "h_norm": 0.07
+      },
+      "width": 313,
+      "height": 90,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

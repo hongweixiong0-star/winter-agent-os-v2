@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "mode": "PRODUCTION",
+  "verified_at": "2026-09-06T11:34:05+08:00",
+  "entry": "desktop shortcut -> control panel -> Start",
+  "selection": {
+    "task": "GATHER_RESOURCE",
+    "enabled": true,
+    "continuous": true
+  },
+  "first_cycle": {
+    "state_before": {"page": "MAP", "march_used": 5, "march_max": 6},
+    "actions": ["SEARCH_RESOURCE", "SUBMIT_RESOURCE_SEARCH", "START_GATHER", "DISPATCH_MARCH"],
+    "state_after": {"page": "MAP", "march_used": 6, "march_max": 6},
+    "verifier": "PASS",
+    "episodes_written": 4
+  },
+  "automatic_follow_up": {
+    "state": {"page": "MAP", "march_used": 6, "march_max": 6},
+    "decision": "SAFE_STOP",
+    "reason": "no_idle_march",
+    "actions_executed": 0,
+    "next_check_seconds": 600
+  },
+  "latest_validation": {
+    "verified_at": "2026-09-06T23:31:17+08:00",
+    "initial_failure_found": "WinError 5 while replacing a reused screenshot filename",
+    "fix": "each unattended run now writes to a timestamped evidence directory",
+    "fallback_chain": ["INTEL_UNKNOWN", "BEAST_TARGET_NOT_VISIBLE", "GATHER_RESOURCE"],
+    "gather_actions": ["SEARCH_RESOURCE", "SUBMIT_RESOURCE_SEARCH", "START_GATHER", "DISPATCH_MARCH"],
+    "state_transition": "4/6 -> 5/6",
+    "verifier": "PASS",
+    "next_cycle": {
+      "intel_stamina_read": 228,
+      "decision": "SAFE_STOP",
+      "reason": "reserved_march_for_stamina",
+      "actions_executed": 0,
+      "next_check_seconds": 600
+    },
+    "panel_process_id": 18420
+  },
+  "supporting_files": [
+    "learning/episodes.jsonl",
+    "learning/control_panel/latest.log",
+    "dataset/raw/control_panel/runtime",
+    "dataset/raw/control_panel/runtime_intel",
+    "dataset/raw/control_panel/runtime_beast"
+  ]
+}

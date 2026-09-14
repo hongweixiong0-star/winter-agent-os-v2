@@ -1,0 +1,1307 @@
+{
+  "schema_version": "1.0",
+  "model": "Goal -> Canonical Capability -> Registered Skill -> Production Evidence",
+  "summary": {
+    "total": 16,
+    "fully_live_verified": 1,
+    "partial": 8,
+    "never_tried": 0,
+    "blocked": 4,
+    "degraded": 3,
+    "missing": 0,
+    "fully_live_verified_percent": 6.2,
+    "never_tried_percent": 0.0,
+    "automation_coverage_mean": 0.54,
+    "live_coverage_mean": 0.5452
+  },
+  "goals": [
+    {
+      "goal": "CLEAR_INTEL",
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "OPEN_INTEL_PAGE",
+          "alternatives": [
+            "OPEN_INTEL"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_INTEL",
+          "live_verified_by": "OPEN_INTEL",
+          "attempts": 53,
+          "successes": 50,
+          "failures": 3
+        },
+        {
+          "capability": "READ_INTEL_LIST",
+          "alternatives": [
+            "READ_INTEL_LIST"
+          ],
+          "status": "CANDIDATE",
+          "implemented_by": "READ_INTEL_LIST",
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "SELECT_INTEL_MISSION",
+          "alternatives": [
+            "SELECT_INTEL_BEAST_MISSION",
+            "SELECT_INTEL_FIREBEAST_MISSION",
+            "SELECT_INTEL_RESCUE_SURVIVORS"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "SELECT_INTEL_BEAST_MISSION",
+          "live_verified_by": "SELECT_INTEL_BEAST_MISSION",
+          "attempts": 9,
+          "successes": 7,
+          "failures": 2
+        },
+        {
+          "capability": "EXECUTE_INTEL_MISSION",
+          "alternatives": [
+            "OPEN_INTEL_BEAST_TARGET",
+            "INTEL_BEAST_START_MARCH",
+            "DISPATCH_INTEL_BEAST",
+            "EXECUTE_INTEL_RESCUE_SURVIVORS"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_INTEL_BEAST_TARGET",
+          "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
+          "attempts": 38,
+          "successes": 37,
+          "failures": 1
+        },
+        {
+          "capability": "CLAIM_INTEL_REWARD",
+          "alternatives": [
+            "INTEL_CLAIM_REWARDS"
+          ],
+          "status": "STABLE",
+          "implemented_by": "INTEL_CLAIM_REWARDS",
+          "live_verified_by": "INTEL_CLAIM_REWARDS",
+          "attempts": 16,
+          "successes": 15,
+          "failures": 1
+        },
+        {
+          "capability": "DISMISS_INTEL_REWARD",
+          "alternatives": [
+            "DISMISS_INTEL_REWARD",
+            "DISMISS_INTEL_GENERIC_REWARD"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "DISMISS_INTEL_REWARD",
+          "live_verified_by": "DISMISS_INTEL_REWARD",
+          "attempts": 20,
+          "successes": 15,
+          "failures": 5
+        }
+      ],
+      "design_requirements_total": 6,
+      "implemented_capabilities": 6,
+      "live_verified_capabilities": 5,
+      "stable_capabilities": 3,
+      "design_coverage": 1.0,
+      "implementation_coverage": 1.0,
+      "live_coverage": 0.8333,
+      "stable_coverage": 0.5,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": []
+    },
+    {
+      "goal": "AVOID_STAMINA_WASTE",
+      "category": "PVE",
+      "composition": "ANY_OF",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "SPEND_STAMINA_ON_BEAST",
+          "alternatives": [
+            "SELECT_BEAST_TARGET",
+            "BEAST_HUNT",
+            "DISPATCH_BEAST"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "SELECT_BEAST_TARGET",
+          "live_verified_by": "BEAST_HUNT",
+          "attempts": 4,
+          "successes": 2,
+          "failures": 2
+        },
+        {
+          "capability": "SPEND_STAMINA_ON_INTEL",
+          "alternatives": [
+            "OPEN_INTEL_BEAST_TARGET",
+            "INTEL_BEAST_START_MARCH",
+            "DISPATCH_INTEL_BEAST"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_INTEL_BEAST_TARGET",
+          "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
+          "attempts": 38,
+          "successes": 37,
+          "failures": 1
+        },
+        {
+          "capability": "SPEND_STAMINA_ON_RALLY",
+          "alternatives": [
+            "JOIN_RALLY"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 3,
+      "implemented_capabilities": 2,
+      "live_verified_capabilities": 2,
+      "stable_capabilities": 1,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.6667,
+      "live_coverage": 0.6667,
+      "stable_coverage": 0.3333,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "SPEND_STAMINA_ON_RALLY"
+      ]
+    },
+    {
+      "goal": "KEEP_MARCHES_PRODUCTIVE",
+      "category": "持续发展",
+      "composition": "SEQUENCE",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "NAVIGATE_TO_MAP",
+          "alternatives": [
+            "OPEN_MAP",
+            "OPEN_HOME"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_MAP",
+          "live_verified_by": "OPEN_MAP",
+          "attempts": 48,
+          "successes": 44,
+          "failures": 4
+        },
+        {
+          "capability": "OPEN_RESOURCE_SEARCH",
+          "alternatives": [
+            "SEARCH_RESOURCE"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "SEARCH_RESOURCE",
+          "live_verified_by": "SEARCH_RESOURCE",
+          "attempts": 68,
+          "successes": 34,
+          "failures": 34
+        },
+        {
+          "capability": "SELECT_RESOURCE_TYPE",
+          "alternatives": [
+            "SELECT_RESOURCE"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "SELECT_RESOURCE",
+          "live_verified_by": "SELECT_RESOURCE",
+          "attempts": 44,
+          "successes": 3,
+          "failures": 41
+        },
+        {
+          "capability": "FIND_RESOURCE_NODE",
+          "alternatives": [
+            "SUBMIT_RESOURCE_SEARCH"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "SUBMIT_RESOURCE_SEARCH",
+          "live_verified_by": "SUBMIT_RESOURCE_SEARCH",
+          "attempts": 38,
+          "successes": 30,
+          "failures": 8
+        },
+        {
+          "capability": "OPEN_MARCH_FORMATION",
+          "alternatives": [
+            "START_GATHER"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "START_GATHER",
+          "live_verified_by": "START_GATHER",
+          "attempts": 89,
+          "successes": 30,
+          "failures": 59
+        },
+        {
+          "capability": "DISPATCH_GATHER_MARCH",
+          "alternatives": [
+            "DISPATCH_MARCH"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "DISPATCH_MARCH",
+          "live_verified_by": "DISPATCH_MARCH",
+          "attempts": 56,
+          "successes": 28,
+          "failures": 28
+        },
+        {
+          "capability": "VERIFY_GATHERING",
+          "alternatives": [
+            "VERIFY_GATHERING"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 7,
+      "implemented_capabilities": 6,
+      "live_verified_capabilities": 6,
+      "stable_capabilities": 1,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.8571,
+      "live_coverage": 0.8571,
+      "stable_coverage": 0.1429,
+      "runtime_goal_status": "NOT_A_RUNTIME_GOAL",
+      "blocked_by": [
+        "VERIFY_GATHERING"
+      ]
+    },
+    {
+      "goal": "KEEP_BUILDING_PRODUCTIVE",
+      "category": "持续发展",
+      "composition": "ALL_OF",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "OPEN_BUILDING_PAGE",
+          "alternatives": [
+            "OPEN_BUILDING"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "START_BUILD",
+          "alternatives": [
+            "BUILDING_UPGRADE"
+          ],
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "BUILDING_UPGRADE",
+          "live_verified_by": "BUILDING_UPGRADE",
+          "attempts": 1,
+          "successes": 1,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 2,
+      "implemented_capabilities": 1,
+      "live_verified_capabilities": 1,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.5,
+      "live_coverage": 0.5,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "OPEN_BUILDING_PAGE"
+      ]
+    },
+    {
+      "goal": "KEEP_RESEARCH_PRODUCTIVE",
+      "category": "持续发展",
+      "composition": "ALL_OF",
+      "status": "BLOCKED",
+      "capabilities": [
+        {
+          "capability": "OPEN_RESEARCH_PAGE",
+          "alternatives": [
+            "OPEN_RESEARCH"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "START_RESEARCH",
+          "alternatives": [
+            "RESEARCH"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 1,
+          "successes": 0,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 2,
+      "implemented_capabilities": 0,
+      "live_verified_capabilities": 0,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.0,
+      "live_coverage": 0.0,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "OPEN_RESEARCH_PAGE",
+        "START_RESEARCH"
+      ]
+    },
+    {
+      "goal": "KEEP_TRAINING_PRODUCTIVE",
+      "category": "持续发展",
+      "composition": "VARIANT",
+      "status": "FULLY_LIVE_VERIFIED",
+      "capabilities": [
+        {
+          "capability": "OPEN_TRAINING_PAGE",
+          "alternatives": [
+            "OPEN_POWER_OVERVIEW",
+            "OPEN_POWER_DETAILS",
+            "NAVIGATE_INFANTRY_CAMP",
+            "SELECT_INFANTRY_CAMP",
+            "OPEN_INFANTRY_TRAINING",
+            "OPEN_TRAINING"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_POWER_OVERVIEW",
+          "live_verified_by": "OPEN_POWER_OVERVIEW",
+          "attempts": 32,
+          "successes": 28,
+          "failures": 4
+        },
+        {
+          "capability": "START_TRAINING",
+          "alternatives": [
+            "TRAIN_TROOPS",
+            "PROMOTE_TROOPS"
+          ],
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "TRAIN_TROOPS",
+          "live_verified_by": "TRAIN_TROOPS",
+          "attempts": 3,
+          "successes": 2,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 2,
+      "implemented_capabilities": 2,
+      "live_verified_capabilities": 2,
+      "stable_capabilities": 1,
+      "design_coverage": 1.0,
+      "implementation_coverage": 1.0,
+      "live_coverage": 1.0,
+      "stable_coverage": 0.5,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": []
+    },
+    {
+      "goal": "MAIL_ROUTINE",
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "status": "DEGRADED",
+      "capabilities": [
+        {
+          "capability": "OPEN_MAIL_PAGE",
+          "alternatives": [
+            "OPEN_MAIL"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "OPEN_MAIL",
+          "live_verified_by": "OPEN_MAIL",
+          "attempts": 46,
+          "successes": 31,
+          "failures": 15
+        },
+        {
+          "capability": "READ_MAIL_TABS",
+          "alternatives": [
+            "SELECT_MAIL_ALLIANCE_TAB",
+            "SELECT_MAIL_SYSTEM_TAB",
+            "SELECT_MAIL_REPORT_TAB"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "SELECT_MAIL_ALLIANCE_TAB",
+          "live_verified_by": "SELECT_MAIL_ALLIANCE_TAB",
+          "attempts": 13,
+          "successes": 8,
+          "failures": 5
+        },
+        {
+          "capability": "CLAIM_MAIL_ATTACHMENTS",
+          "alternatives": [
+            "MAIL_CLAIM_REWARDS"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "MAIL_CLAIM_REWARDS",
+          "live_verified_by": "MAIL_CLAIM_REWARDS",
+          "attempts": 24,
+          "successes": 14,
+          "failures": 10
+        },
+        {
+          "capability": "DISMISS_MAIL_REWARD",
+          "alternatives": [
+            "DISMISS_MAIL_REWARD",
+            "DISMISS_MAIL_GENERIC_REWARD"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "DISMISS_MAIL_REWARD",
+          "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
+          "attempts": 8,
+          "successes": 6,
+          "failures": 2
+        }
+      ],
+      "design_requirements_total": 4,
+      "implemented_capabilities": 4,
+      "live_verified_capabilities": 4,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 1.0,
+      "live_coverage": 1.0,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": []
+    },
+    {
+      "goal": "DAILY_ACTIVITY_TARGET",
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "OPEN_DAILY_PAGE",
+          "alternatives": [
+            "OPEN_DAILY"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_DAILY",
+          "live_verified_by": "OPEN_DAILY",
+          "attempts": 6,
+          "successes": 5,
+          "failures": 1
+        },
+        {
+          "capability": "READ_DAILY_PROGRESS",
+          "alternatives": [
+            "READ_DAILY_PROGRESS"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "CLAIM_DAILY_REWARD",
+          "alternatives": [
+            "DAILY_CLAIM_REWARDS"
+          ],
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "DAILY_CLAIM_REWARDS",
+          "live_verified_by": "DAILY_CLAIM_REWARDS",
+          "attempts": 3,
+          "successes": 3,
+          "failures": 0
+        },
+        {
+          "capability": "DISMISS_DAILY_REWARD",
+          "alternatives": [
+            "DISMISS_DAILY_REWARD",
+            "DISMISS_DAILY_GENERIC_REWARD"
+          ],
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "DISMISS_DAILY_REWARD",
+          "live_verified_by": "DISMISS_DAILY_REWARD",
+          "attempts": 3,
+          "successes": 2,
+          "failures": 1
+        }
+      ],
+      "design_requirements_total": 4,
+      "implemented_capabilities": 3,
+      "live_verified_capabilities": 3,
+      "stable_capabilities": 1,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.75,
+      "live_coverage": 0.75,
+      "stable_coverage": 0.25,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "READ_DAILY_PROGRESS"
+      ]
+    },
+    {
+      "goal": "CLAIM_FREE_REWARDS",
+      "category": "日常低保",
+      "composition": "ANY_OF",
+      "status": "DEGRADED",
+      "capabilities": [
+        {
+          "capability": "CLAIM_FREE_REWARD",
+          "alternatives": [
+            "CLAIM_REWARD",
+            "CLAIM_OFFLINE_REWARDS",
+            "ALLIANCE_ALLY_GIFT_CLAIM",
+            "ALLIANCE_GIFTS",
+            "MAIL_CLAIM_REWARDS",
+            "EXPLORATION_IDLE_CLAIM",
+            "DAILY_CLAIM_REWARDS",
+            "INTEL_CLAIM_REWARDS"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "CLAIM_OFFLINE_REWARDS",
+          "live_verified_by": "CLAIM_OFFLINE_REWARDS",
+          "attempts": 65,
+          "successes": 49,
+          "failures": 16
+        },
+        {
+          "capability": "DISMISS_FREE_REWARD_POPUP",
+          "alternatives": [
+            "DISMISS_ALLIANCE_GENERIC_REWARD",
+            "DISMISS_MAIL_GENERIC_REWARD",
+            "DISMISS_DAILY_GENERIC_REWARD",
+            "DISMISS_EXPLORATION_GENERIC_REWARD"
+          ],
+          "status": "STABLE",
+          "implemented_by": "DISMISS_ALLIANCE_GENERIC_REWARD",
+          "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
+          "attempts": 9,
+          "successes": 8,
+          "failures": 1
+        }
+      ],
+      "design_requirements_total": 2,
+      "implemented_capabilities": 2,
+      "live_verified_capabilities": 2,
+      "stable_capabilities": 1,
+      "design_coverage": 1.0,
+      "implementation_coverage": 1.0,
+      "live_coverage": 1.0,
+      "stable_coverage": 0.5,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": []
+    },
+    {
+      "goal": "CLAIM_EXPLORATION_IDLE",
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "status": "DEGRADED",
+      "capabilities": [
+        {
+          "capability": "OPEN_EXPLORATION_PAGE",
+          "alternatives": [
+            "OPEN_EXPLORATION"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_EXPLORATION",
+          "live_verified_by": "OPEN_EXPLORATION",
+          "attempts": 12,
+          "successes": 11,
+          "failures": 1
+        },
+        {
+          "capability": "CLAIM_IDLE_INCOME",
+          "alternatives": [
+            "EXPLORATION_IDLE_CLAIM",
+            "CONFIRM_EXPLORATION_IDLE_CLAIM"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "EXPLORATION_IDLE_CLAIM",
+          "live_verified_by": "EXPLORATION_IDLE_CLAIM",
+          "attempts": 7,
+          "successes": 2,
+          "failures": 5
+        },
+        {
+          "capability": "DISMISS_EXPLORATION_REWARD",
+          "alternatives": [
+            "DISMISS_EXPLORATION_REWARD",
+            "DISMISS_EXPLORATION_GENERIC_REWARD"
+          ],
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "DISMISS_EXPLORATION_REWARD",
+          "live_verified_by": "DISMISS_EXPLORATION_GENERIC_REWARD",
+          "attempts": 1,
+          "successes": 1,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 3,
+      "implemented_capabilities": 3,
+      "live_verified_capabilities": 3,
+      "stable_capabilities": 1,
+      "design_coverage": 1.0,
+      "implementation_coverage": 1.0,
+      "live_coverage": 1.0,
+      "stable_coverage": 0.3333,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": []
+    },
+    {
+      "goal": "ALLIANCE_ROUTINE",
+      "category": "日常低保",
+      "composition": "ANY_OF",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "OPEN_ALLIANCE_PAGE",
+          "alternatives": [
+            "OPEN_ALLIANCE"
+          ],
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "OPEN_ALLIANCE",
+          "live_verified_by": "OPEN_ALLIANCE",
+          "attempts": 1,
+          "successes": 1,
+          "failures": 0
+        },
+        {
+          "capability": "ALLIANCE_HELP",
+          "alternatives": [
+            "ALLIANCE_HELP"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 1,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "ALLIANCE_TECH_CONTRIBUTE",
+          "alternatives": [
+            "ALLIANCE_TECH_CONTRIBUTE"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": "ALLIANCE_TECH_CONTRIBUTE",
+          "attempts": 4,
+          "successes": 4,
+          "failures": 0
+        },
+        {
+          "capability": "CLAIM_ALLIANCE_GIFTS",
+          "alternatives": [
+            "ALLIANCE_GIFTS",
+            "OPEN_ALLIANCE_GIFTS",
+            "ALLIANCE_ALLY_GIFT_CLAIM"
+          ],
+          "status": "STABLE",
+          "implemented_by": "OPEN_ALLIANCE_GIFTS",
+          "live_verified_by": "ALLIANCE_GIFTS",
+          "attempts": 16,
+          "successes": 14,
+          "failures": 2
+        }
+      ],
+      "design_requirements_total": 4,
+      "implemented_capabilities": 2,
+      "live_verified_capabilities": 3,
+      "stable_capabilities": 1,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.5,
+      "live_coverage": 0.75,
+      "stable_coverage": 0.25,
+      "runtime_goal_status": "NOT_A_RUNTIME_GOAL",
+      "blocked_by": [
+        "ALLIANCE_HELP",
+        "ALLIANCE_TECH_CONTRIBUTE"
+      ]
+    },
+    {
+      "goal": "EVENT_MINIMUM_GUARANTEE",
+      "category": "限时活动",
+      "composition": "SEQUENCE",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "OPEN_EVENT_PAGE",
+          "alternatives": [
+            "OPEN_EVENT"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "READ_EVENT_RULES",
+          "alternatives": [
+            "READ_EVENT_RULES"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "READ_EVENT_PROGRESS",
+          "alternatives": [
+            "READ_EVENT_PROGRESS",
+            "READ_EVENT_LIST"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "READ_EVENT_TIMER",
+          "alternatives": [
+            "READ_EVENT_TIMER",
+            "READ_TIMER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "CONTRIBUTE_TO_EVENT_SCORE",
+          "alternatives": [
+            "TRAIN_TROOPS",
+            "BUILDING_UPGRADE",
+            "RESEARCH"
+          ],
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "TRAIN_TROOPS",
+          "live_verified_by": "TRAIN_TROOPS",
+          "attempts": 5,
+          "successes": 3,
+          "failures": 0
+        },
+        {
+          "capability": "CLAIM_EVENT_TIER",
+          "alternatives": [
+            "CLAIM_EVENT_TIER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 6,
+      "implemented_capabilities": 1,
+      "live_verified_capabilities": 1,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.1667,
+      "live_coverage": 0.1667,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "CLAIM_EVENT_TIER",
+        "OPEN_EVENT_PAGE",
+        "READ_EVENT_PROGRESS",
+        "READ_EVENT_RULES",
+        "READ_EVENT_TIMER"
+      ]
+    },
+    {
+      "goal": "ALLIANCE_TIMED_EVENTS",
+      "category": "限时活动",
+      "composition": "ANY_OF",
+      "status": "BLOCKED",
+      "capabilities": [
+        {
+          "capability": "CHECK_ALLIANCE_EVENT",
+          "alternatives": [
+            "CHECK_ALLIANCE_EVENT"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "READ_ALLIANCE_EVENT_TIMER",
+          "alternatives": [
+            "READ_ALLIANCE_EVENT_TIMER",
+            "READ_BEAR_TIMER",
+            "READ_TIMER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "CLAIM_EVENT_TIER",
+          "alternatives": [
+            "CLAIM_EVENT_TIER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 3,
+      "implemented_capabilities": 0,
+      "live_verified_capabilities": 0,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.0,
+      "live_coverage": 0.0,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "CHECK_ALLIANCE_EVENT",
+        "CLAIM_EVENT_TIER",
+        "READ_ALLIANCE_EVENT_TIMER"
+      ]
+    },
+    {
+      "goal": "PARTICIPATE_BEAR",
+      "category": "实时活动",
+      "composition": "SEQUENCE",
+      "status": "PARTIAL",
+      "capabilities": [
+        {
+          "capability": "CHECK_BEAR_PHASE",
+          "alternatives": [
+            "CHECK_ALLIANCE_EVENT",
+            "READ_BEAR_TIMER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "SELECT_TROOP_PRESET",
+          "alternatives": [
+            "SELECT_TROOP_PRESET"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "START_RALLY",
+          "alternatives": [
+            "START_RALLY"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "JOIN_RALLY",
+          "alternatives": [
+            "JOIN_RALLY"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "CONFIRM_MARCH",
+          "alternatives": [
+            "CONFIRM_MARCH",
+            "DISPATCH_MARCH"
+          ],
+          "status": "DEGRADED",
+          "implemented_by": "DISPATCH_MARCH",
+          "live_verified_by": "DISPATCH_MARCH",
+          "attempts": 56,
+          "successes": 28,
+          "failures": 28
+        }
+      ],
+      "design_requirements_total": 5,
+      "implemented_capabilities": 1,
+      "live_verified_capabilities": 1,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.2,
+      "live_coverage": 0.2,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "CHECK_BEAR_PHASE",
+        "JOIN_RALLY",
+        "SELECT_TROOP_PRESET",
+        "START_RALLY"
+      ]
+    },
+    {
+      "goal": "USE_FREE_ARENA_ATTEMPTS",
+      "category": "竞技场",
+      "composition": "SEQUENCE",
+      "status": "BLOCKED",
+      "capabilities": [
+        {
+          "capability": "OPEN_ARENA_PAGE",
+          "alternatives": [
+            "OPEN_ARENA"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "READ_FREE_ATTEMPTS",
+          "alternatives": [
+            "READ_FREE_ATTEMPTS",
+            "READ_COUNTER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "SELECT_ARENA_OPPONENT",
+          "alternatives": [
+            "SELECT_ARENA_OPPONENT"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "START_ARENA",
+          "alternatives": [
+            "START_ARENA",
+            "USE_ACTIVITY_ATTEMPT"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "VERIFY_ARENA_RESULT",
+          "alternatives": [
+            "VERIFY_ARENA_RESULT"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 5,
+      "implemented_capabilities": 0,
+      "live_verified_capabilities": 0,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.0,
+      "live_coverage": 0.0,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "OPEN_ARENA_PAGE",
+        "READ_FREE_ATTEMPTS",
+        "SELECT_ARENA_OPPONENT",
+        "START_ARENA",
+        "VERIFY_ARENA_RESULT"
+      ]
+    },
+    {
+      "goal": "LABYRINTH_DAILY",
+      "category": "迷宫",
+      "composition": "SEQUENCE",
+      "status": "BLOCKED",
+      "capabilities": [
+        {
+          "capability": "OPEN_LABYRINTH_PAGE",
+          "alternatives": [
+            "OPEN_LABYRINTH"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "READ_LABYRINTH_ATTEMPTS",
+          "alternatives": [
+            "READ_LABYRINTH_ATTEMPTS",
+            "READ_COUNTER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "START_LABYRINTH",
+          "alternatives": [
+            "START_LABYRINTH",
+            "USE_ACTIVITY_ATTEMPT"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        },
+        {
+          "capability": "VERIFY_LABYRINTH_RESULT",
+          "alternatives": [
+            "VERIFY_LABYRINTH_RESULT"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0
+        }
+      ],
+      "design_requirements_total": 4,
+      "implemented_capabilities": 0,
+      "live_verified_capabilities": 0,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.0,
+      "live_coverage": 0.0,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "OPEN_LABYRINTH_PAGE",
+        "READ_LABYRINTH_ATTEMPTS",
+        "START_LABYRINTH",
+        "VERIFY_LABYRINTH_RESULT"
+      ]
+    }
+  ],
+  "highest_leverage": [
+    {
+      "skill_id": "CHECK_ALLIANCE_EVENT",
+      "blocked_goals": 2,
+      "never_tried_goals": 0,
+      "goals": [
+        "ALLIANCE_TIMED_EVENTS",
+        "PARTICIPATE_BEAR"
+      ]
+    },
+    {
+      "skill_id": "CLAIM_EVENT_TIER",
+      "blocked_goals": 2,
+      "never_tried_goals": 0,
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE",
+        "ALLIANCE_TIMED_EVENTS"
+      ]
+    },
+    {
+      "skill_id": "JOIN_RALLY",
+      "blocked_goals": 2,
+      "never_tried_goals": 0,
+      "goals": [
+        "AVOID_STAMINA_WASTE",
+        "PARTICIPATE_BEAR"
+      ]
+    },
+    {
+      "skill_id": "READ_BEAR_TIMER",
+      "blocked_goals": 2,
+      "never_tried_goals": 0,
+      "goals": [
+        "ALLIANCE_TIMED_EVENTS",
+        "PARTICIPATE_BEAR"
+      ]
+    },
+    {
+      "skill_id": "READ_COUNTER",
+      "blocked_goals": 2,
+      "never_tried_goals": 0,
+      "goals": [
+        "USE_FREE_ARENA_ATTEMPTS",
+        "LABYRINTH_DAILY"
+      ]
+    },
+    {
+      "skill_id": "READ_TIMER",
+      "blocked_goals": 2,
+      "never_tried_goals": 0,
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE",
+        "ALLIANCE_TIMED_EVENTS"
+      ]
+    },
+    {
+      "skill_id": "USE_ACTIVITY_ATTEMPT",
+      "blocked_goals": 2,
+      "never_tried_goals": 0,
+      "goals": [
+        "USE_FREE_ARENA_ATTEMPTS",
+        "LABYRINTH_DAILY"
+      ]
+    },
+    {
+      "skill_id": "ALLIANCE_HELP",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "ALLIANCE_ROUTINE"
+      ]
+    },
+    {
+      "skill_id": "ALLIANCE_TECH_CONTRIBUTE",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "ALLIANCE_ROUTINE"
+      ]
+    },
+    {
+      "skill_id": "OPEN_ARENA",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "USE_FREE_ARENA_ATTEMPTS"
+      ]
+    },
+    {
+      "skill_id": "OPEN_BUILDING",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "KEEP_BUILDING_PRODUCTIVE"
+      ]
+    },
+    {
+      "skill_id": "OPEN_EVENT",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE"
+      ]
+    },
+    {
+      "skill_id": "OPEN_LABYRINTH",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "LABYRINTH_DAILY"
+      ]
+    },
+    {
+      "skill_id": "OPEN_RESEARCH",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "KEEP_RESEARCH_PRODUCTIVE"
+      ]
+    },
+    {
+      "skill_id": "READ_ALLIANCE_EVENT_TIMER",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "ALLIANCE_TIMED_EVENTS"
+      ]
+    },
+    {
+      "skill_id": "READ_DAILY_PROGRESS",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "DAILY_ACTIVITY_TARGET"
+      ]
+    },
+    {
+      "skill_id": "READ_EVENT_LIST",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE"
+      ]
+    },
+    {
+      "skill_id": "READ_EVENT_PROGRESS",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE"
+      ]
+    },
+    {
+      "skill_id": "READ_EVENT_RULES",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE"
+      ]
+    },
+    {
+      "skill_id": "READ_EVENT_TIMER",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE"
+      ]
+    }
+  ]
+}

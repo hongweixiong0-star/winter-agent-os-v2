@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.1",
+  "task_enabled": {
+    "邮件": true,
+    "探险": true,
+    "采集": true,
+    "训练": true,
+    "Intel": true,
+    "联盟": true,
+    "日常": true,
+    "野怪": true
+  },
+  "continuous": true,
+  "updated_at": "2026-09-14T11:05:37.154008+08:00"
+}

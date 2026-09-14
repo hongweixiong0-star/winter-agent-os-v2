@@ -1,0 +1,2 @@
+{"schema_version":"1.0","type":"ADVISORY","inputs":["inventory","next_cost","event","march_capacity","player_goal"],"rules":[{"when":"resource deficit is known","suggest":"gather largest normalized deficit"}],"notes":"Community 20:20:4:1 ratio is not a universal production rule and is not promoted."
+}

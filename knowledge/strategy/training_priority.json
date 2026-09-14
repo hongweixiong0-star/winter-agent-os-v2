@@ -1,0 +1,1 @@
+{"schema_version":"1.0","type":"ADVISORY","inputs":["camp_queues","troop_mix","resources","events","player_goal"],"rules":[{"when":"queue idle AND safe resource budget available","suggest":"train eligible tier"}],"hardcoded_order":false}

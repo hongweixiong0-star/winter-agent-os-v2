@@ -1,0 +1,23 @@
+{
+  "skill_id":"ALLIANCE_GIFTS",
+  "name":"Claim available Alliance Gifts",
+  "goal":"Claim already available free Alliance Gifts and prove the list/counter changed",
+  "preconditions":["alliance joined","Alliance Gifts page reachable","claimable free gift exists"],
+  "required_page":"ALLIANCE",
+  "required_state":{"section":"GIFTS","status":"CLAIMABLE"},
+  "required_vision":["PAGE_ALLIANCE_GIFTS","BTN_ALLIANCE_GIFTS_CLAIM_ALL","POPUP_ALLIANCE_GIFT_REWARD","ALLIANCE_GIFTS_DAILY_COUNTER"],
+  "required_actions":["open alliance","open alliance gifts","claim available gift"],
+  "verification":["reward feedback visible","claimable count or list decreases","gift becomes claimed or disappears"],
+  "failure_conditions":["NO_GIFTS","EXPIRED","PAYMENT_PATH","UNKNOWN_GIFT_STATE","COUNTER_UNCHANGED"],
+  "recovery":["BACK","REFRESH_STATE","SWITCH_TASK"],
+  "dependencies":["Vision","OCR","WorldState","Verifier"],
+  "risk":"LOW",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT","COMMUNITY_DB","OPEN_SOURCE_PROJECT","PLAYER_GUIDE"],
+  "status":"VERIFIED",
+  "live_attempts":3,
+  "live_successes":2,
+  "failure_counts":{"RESET_DURING_ACTION":1},
+  "verified_variants":["VICTORY_LOOT_DAY1_19","VICTORY_LOOT_DAY2_61"],
+  "stable":false
+}

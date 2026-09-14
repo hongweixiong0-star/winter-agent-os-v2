@@ -1,0 +1,13 @@
+{
+  "skill_id": "OPERATIONS_LOOP",
+  "name": "日常运营闭环",
+  "state": "CANDIDATE",
+  "goal": "防御、治疗、防体力溢出、奖励、训练和均衡采集由唯一调度器统一选择",
+  "preconditions": ["live page classified", "relevant counters OCR verified", "target skill VERIFIED"],
+  "required_state": ["defense", "hospital", "stamina", "events", "rewards", "training", "resources"],
+  "verification": ["action-specific verifier", "state after differs from state before", "resource costs ledgered"],
+  "failure_conditions": ["UNKNOWN_PAGE", "UNKNOWN_COUNTER", "UNVERIFIED_COMBAT", "PAID_ITEM", "NO_ACTIONABLE_SKILL"],
+  "recovery": ["REFRESH_STATE", "SWITCH_TASK", "SAFE_STOP"],
+  "risk": "MIXED",
+  "notes": "Red dots discover candidates only. Attacking cities is never classified as no-death. Gatherer/turret combat remains blocked until live casualty rules and healing verifier are proven."
+}

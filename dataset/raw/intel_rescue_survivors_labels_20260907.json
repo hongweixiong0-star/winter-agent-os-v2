@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "source": "LIVE_CLIENT_HUMAN_REVIEWED_SCREENSHOT",
+  "samples": [
+    {
+      "image": "live_intel_firebeast2_claim_20260907/step_004_before.png",
+      "page": "INTEL",
+      "elements": [
+        {"semantic": "TARGET_INTEL_RESCUE_SURVIVORS", "roi": {"x_norm": 0.55, "y_norm": 0.335, "w_norm": 0.14, "h_norm": 0.115}, "confidence": 0.99}
+      ]
+    },
+    {
+      "image": "live_intel_orange_tent_probe_20260907.png",
+      "page": "POPUP",
+      "elements": [
+        {"semantic": "POPUP_INTEL_RESCUE_SURVIVORS_TITLE", "roi": {"x_norm": 0.12, "y_norm": 0.252, "w_norm": 0.76, "h_norm": 0.055}, "confidence": 0.99}
+      ]
+    },
+    {
+      "image": "live_intel_rescue_survivors_target_20260907.png",
+      "page": "MAP",
+      "elements": [
+        {"semantic": "DIALOG_INTEL_RESCUE_SURVIVORS_TARGET", "roi": {"x_norm": 0.20, "y_norm": 0.22, "w_norm": 0.60, "h_norm": 0.32}, "confidence": 0.99},
+        {"semantic": "BTN_INTEL_RESCUE_SURVIVORS", "roi": {"x_norm": 0.337, "y_norm": 0.465, "w_norm": 0.325, "h_norm": 0.052}, "confidence": 0.99}
+      ]
+    },
+    {
+      "image": "live_intel_rescue_survivors_execute_20260907.png",
+      "page": "MAP",
+      "elements": [
+        {"semantic": "STATUS_INTEL_RESCUE_SURVIVORS_ACTIVE", "roi": {"x_norm": 0.00, "y_norm": 0.38, "w_norm": 0.35, "h_norm": 0.10}, "confidence": 0.99}
+      ]
+    }
+  ]
+}

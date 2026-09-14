@@ -1,0 +1,23 @@
+{
+  "skill_id":"ALLIANCE_ALLY_GIFT_CLAIM",
+  "name":"Claim one already-created Ally Gift",
+  "goal":"Claim a free existing Ally Gift without entering its purchase-generation route",
+  "preconditions":["Alliance Gifts page","Ally Gift tab","claim button visible"],
+  "required_page":"ALLIANCE",
+  "required_state":{"section":"GIFTS","tab":"ALLY_GIFT","status":"CLAIMABLE"},
+  "required_vision":["PAGE_ALLIANCE_GIFTS","TAB_ALLIANCE_ALLY_GIFTS","BTN_ALLY_GIFT_CLAIM"],
+  "required_actions":["claim one existing gift"],
+  "verification":["gift progress increases","and badge decreases or target row claims or final button clears","async alliance progress alone is rejected"],
+  "failure_conditions":["NO_GIFT","PURCHASE_ROUTE","COUNTER_UNCHANGED","RESET_DURING_ACTION"],
+  "recovery":["REFRESH_STATE","RETRY","SWITCH_TASK"],
+  "dependencies":["Vision","OCR","Verifier"],
+  "risk":"LOW",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT"],
+  "status":"VERIFIED",
+  "live_attempts":9,
+  "live_successes":9,
+  "observed_points_by_level":{"1":30,"3":120},
+  "failure_patterns":["LIVE_LIST_REORDER","ASYNC_ALLIANCE_PROGRESS"],
+  "stable":false
+}

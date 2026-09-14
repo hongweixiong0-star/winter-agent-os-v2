@@ -1,0 +1,15 @@
+{
+  "schema_version":"1.0",
+  "mode":"PRODUCTION",
+  "started_at":"2026-09-04T20:34:00+08:00",
+  "steps":[
+    {"skill":"TRAIN_TROOPS","before":{"troop_type":"INFANTRY","tier":10,"batch_count":806,"status":"AVAILABLE"},"action":"START_TRAINING","after":{"status":"IN_PROGRESS","timer":"10:03:12"},"verifier":"PASS"},
+    {"skill":"GATHER_RESOURCE","before":{"page":"MAP","march_used":1,"march_max":6},"action":"DISPATCH_WOOD_LEVEL_8","after":{"page":"MAP","march_used":2,"march_max":6,"state":"MARCHING","travel_seconds":17},"verifier":"PASS"},
+    {"skill":"VERIFY_GATHERING","after":{"page":"MAP","march_used":2,"march_max":6,"state":"GATHERING","resource":"WOOD","displayed_remaining":"09:30:59"},"verifier":"PASS"}
+  ],
+  "result":"IN_PROGRESS",
+  "completed_skills":["TRAIN_TROOPS"],
+  "started_skills":["GATHER_RESOURCE"],
+  "full_gather_cycle_success_claimed":false,
+  "notes":"This proves live TRAIN→GATHER task switching and gathering start. Natural return is not yet complete and is not counted as another GATHER_RESOURCE success."
+}

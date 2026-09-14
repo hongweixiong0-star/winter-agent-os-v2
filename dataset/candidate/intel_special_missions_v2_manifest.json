@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T15:09:41.178129+00:00",
+  "status": "CANDIDATE",
+  "count": 5,
+  "records": [
+    {
+      "template_id": "popup_intel_hero_journey_title__live_intel_purple_axes_probe__0",
+      "semantic": "POPUP_INTEL_HERO_JOURNEY_TITLE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_special_missions_v2/popup_intel_hero_journey_title__live_intel_purple_axes_probe__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_purple_axes_probe.png",
+      "parent_sha256": "062eba21bd16fb70d7bfe9ddd2a00fbb2901fbae3e7ecef48f4169831cbd3834",
+      "roi_norm": {
+        "x_norm": 0.12,
+        "y_norm": 0.215,
+        "w_norm": 0.76,
+        "h_norm": 0.05
+      },
+      "width": 547,
+      "height": 64,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_intel_master_bounty_title__live_intel_orange_rabbit_probe__0",
+      "semantic": "POPUP_INTEL_MASTER_BOUNTY_TITLE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_special_missions_v2/popup_intel_master_bounty_title__live_intel_orange_rabbit_probe__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_orange_rabbit_probe.png",
+      "parent_sha256": "310fccc84814a8411198af472496adc0f6749e5184fa3d2b388e19ccf2696fd7",
+      "roi_norm": {
+        "x_norm": 0.12,
+        "y_norm": 0.265,
+        "w_norm": 0.76,
+        "h_norm": 0.05
+      },
+      "width": 547,
+      "height": 64,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "dialog_intel_master_bounty_high_power__live_intel_master_bounty_target_probe__0",
+      "semantic": "DIALOG_INTEL_MASTER_BOUNTY_HIGH_POWER",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_special_missions_v2/dialog_intel_master_bounty_high_power__live_intel_master_bounty_target_probe__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_master_bounty_target_probe.png",
+      "parent_sha256": "c5aa5891b696b3b80dbe12894507fa4f91c6c9b31536cae35940830f6439c803",
+      "roi_norm": {
+        "x_norm": 0.205,
+        "y_norm": 0.18,
+        "w_norm": 0.59,
+        "h_norm": 0.35
+      },
+      "width": 425,
+      "height": 448,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "dialog_intel_hero_journey_explore__live_intel_hero_journey_target_probe__0",
+      "semantic": "DIALOG_INTEL_HERO_JOURNEY_EXPLORE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_special_missions_v2/dialog_intel_hero_journey_explore__live_intel_hero_journey_target_probe__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_hero_journey_target_probe.png",
+      "parent_sha256": "ad26c8730b58a5f93ac604af473c97c497e900bf5a322fffbc61ae2bac6c4bd0",
+      "roi_norm": {
+        "x_norm": 0.2,
+        "y_norm": 0.215,
+        "w_norm": 0.6,
+        "h_norm": 0.315
+      },
+      "width": 432,
+      "height": 403,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "status_intel_hero_journey_failed__live_intel_hero_journey_progress__0",
+      "semantic": "STATUS_INTEL_HERO_JOURNEY_FAILED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_special_missions_v2/status_intel_hero_journey_failed__live_intel_hero_journey_progress__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_hero_journey_progress.png",
+      "parent_sha256": "9f53cebd2ac90584c1a2e193be2df8528275935b17c86e743d9bf29acf91626d",
+      "roi_norm": {
+        "x_norm": 0.43,
+        "y_norm": 0.2,
+        "w_norm": 0.18,
+        "h_norm": 0.11
+      },
+      "width": 130,
+      "height": 141,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

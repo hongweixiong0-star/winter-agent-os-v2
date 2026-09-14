@@ -1,0 +1,42 @@
+{
+  "schema_version":"1.0",
+  "status":"VERIFIED",
+  "mode":"PRODUCTION_DESKTOP",
+  "issue":"VISIBLE_CHILD_CONSOLE_WINDOWS_AND_PANEL_STATE_CROSS_TALK",
+  "root_causes":[
+    "python.exe runtime children were launched without Windows no-window flags",
+    "ADB console utilities were launched without Windows no-window flags",
+    "desktop launcher had no single-instance guard",
+    "refresh had no in-flight guard",
+    "worker thread read Tk task variables directly",
+    "chained task labels were not normalized after completion",
+    "structured runtime JSON was inserted into the GUI log widget"
+  ],
+  "fixes":[
+    "background/no-window flags for Runtime and ADB children",
+    "named Windows single-instance mutex",
+    "single refresh lane",
+    "task-selection snapshot before worker start",
+    "Mail/Intel/Beast/Gather chained status normalization",
+    "full JSON retained only in learning/control_panel/latest.log",
+    "no modal confirmation when closing the panel"
+  ],
+  "live_validation":{
+    "visible_panel_windows":1,
+    "visible_cmd_python_powershell_windows":0,
+    "duplicate_launcher_probe_visible_panels":1,
+    "chain":["MAIL_ALL_CLEAR","INTEL_CHECKED","BEAST_CHECKED","GATHER_RESERVED_MARCH"],
+    "final_task_labels":{"邮件":"已检查","Intel":"已检查","野怪":"已检查","采集":"已检查"},
+    "final_stop_reason":"reserved_march_for_stamina",
+    "result":"PASS"
+  },
+  "tests":{"targeted_passed":42,"full_passed":165,"failed":0,"warnings_as_errors":true},
+  "dataset":{"screenshots":964,"candidate":583,"duplicate":381,"damaged":0},
+  "evidence_roots":[
+    "dataset/raw/control_panel/runtime_mail/20260907_072029_573296",
+    "dataset/raw/control_panel/runtime_intel/20260907_072058_113509",
+    "dataset/raw/control_panel/runtime_beast/20260907_072214_739311",
+    "dataset/raw/control_panel/runtime/20260907_072225_493329",
+    "learning/control_panel/latest.log"
+  ]
+}

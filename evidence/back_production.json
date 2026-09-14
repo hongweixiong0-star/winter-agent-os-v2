@@ -1,0 +1,12 @@
+{
+  "schema_version":"1.0",
+  "mode":"PRODUCTION",
+  "verified_at":"2026-09-05",
+  "skill":"BACK",
+  "transitions":[
+    {"from":"ALLIANCE_GIFTS","action":"PRESS_BACK","to":"ALLIANCE","result":"SUCCESS"},
+    {"from":"ALLIANCE","action":"PRESS_BACK","to":"HOME","result":"SUCCESS"}
+  ],
+  "coordinate_free":true,
+  "hard_safety_boundary_preserved":true
+}

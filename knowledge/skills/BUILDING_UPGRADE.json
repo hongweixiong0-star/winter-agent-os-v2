@@ -1,0 +1,20 @@
+{
+  "skill_id":"BUILDING_UPGRADE",
+  "name":"Building Upgrade",
+  "goal":"Start a valid normal-resource building upgrade and prove the construction queue",
+  "preconditions":["HOME known","building selected","prerequisites satisfied","resources sufficient","builder available"],
+  "required_page":"BUILDING",
+  "required_state":{"upgradeable":true},
+  "required_vision":["building identity","current/target level","prerequisite checks","resource checks","BTN_BUILD_UPGRADE","BUILDING_QUEUE_TIMER"],
+  "required_actions":["select building","open upgrade","start normal upgrade"],
+  "verification":"queue_building matches target AND timer visible",
+  "failure_conditions":["PREREQUISITE_MISSING","RESOURCE_INSUFFICIENT","QUEUE_FULL","UNKNOWN_DIALOG","REAL_MONEY_ACTION"],
+  "recovery":["BACK","REFRESH_STATE","SWITCH_TASK","SAFE_STOP"],
+  "dependencies":["Vision","Executor","Verifier","ResourceLedger"],
+  "risk":"MEDIUM_RESOURCE_SPEND",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT","COMMUNITY_DB","PLAYER_GUIDE","OPEN_SOURCE_PROJECT_GAP"],
+  "status":"VERIFIED",
+  "verified_attempts":1,
+  "stable":false
+}

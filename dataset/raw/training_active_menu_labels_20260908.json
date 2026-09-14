@@ -1,0 +1,10 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "reviewed_from":"LIVE_CLIENT",
+  "samples":[
+    {"image":"live_20260908_training_navigation_auto_v2/step_003_after_refresh_2.png","page":"HOME","elements":[
+      {"semantic":"BTN_OPEN_TRAINING_FROM_CAMP","roi":{"x_norm":0.650,"y_norm":0.600,"w_norm":0.170,"h_norm":0.150},"confidence":0.99}
+    ]}
+  ]
+}

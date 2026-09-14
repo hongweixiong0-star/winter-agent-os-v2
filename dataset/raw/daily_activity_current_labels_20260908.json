@@ -1,0 +1,1 @@
+{"schema_version":"1.0","status":"SIMULATION","reviewed_from":"LIVE_CLIENT","samples":[{"image":"live_20260908_daily_after2.png","page":"DAILY","elements":[{"semantic":"DAILY_ACTIVITY_70_CURRENT","roi":{"x_norm":0.04,"y_norm":0.245,"w_norm":0.115,"h_norm":0.10},"confidence":0.99}]}]}

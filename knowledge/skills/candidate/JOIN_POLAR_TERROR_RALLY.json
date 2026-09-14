@@ -1,0 +1,50 @@
+{
+  "skill_id": "JOIN_POLAR_TERROR_RALLY",
+  "goal_support": [
+    "AVOID_STAMINA_WASTE"
+  ],
+  "entry_pages": [
+    "ALLIANCE",
+    "MAP"
+  ],
+  "target_pages": [
+    "MARCH"
+  ],
+  "required_semantics": [
+    "POLAR_TERROR_RALLY_FREE_JOIN"
+  ],
+  "execute_steps": [
+    "VERIFY_FREE_JOIN",
+    "TAP_CENTER",
+    "SELECT_MARCH"
+  ],
+  "success_conditions": [
+    "rally_march_active"
+  ],
+  "risk": "MEDIUM_COMBAT",
+  "preconditions": [
+    "entry page recognized",
+    "required semantics or reviewed prior available",
+    "action-specific verifier exists before real try"
+  ],
+  "failure_conditions": [
+    "UNKNOWN_PAGE",
+    "SEMANTIC_NOT_FOUND",
+    "VERIFIER_FAILED",
+    "PAID_ACTION"
+  ],
+  "recovery": [
+    "REFRESH_STATE",
+    "BACK",
+    "REOPEN_PAGE",
+    "SWITCH_TASK"
+  ],
+  "resource_cost": "READ_FROM_CURRENT_CLIENT",
+  "external_evidence": [
+    "CURRENT_KNOWLEDGE_BASE",
+    "EXTERNAL_WOS_PRIOR"
+  ],
+  "live_evidence": [],
+  "confidence": 0.45,
+  "lifecycle": "CANDIDATE"
+}

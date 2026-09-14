@@ -1,0 +1,13 @@
+{
+  "schema_version":"1.0",
+  "retrieved_at":"2026-09-03",
+  "sources":[
+    {"type":"LIVE_CLIENT","name":"Free Hero Recruitment daily cycle","evidence":["dataset/raw/live_daily_after_beast.png","dataset/raw/live_daily_hero_recruit_navigation.png","dataset/raw/live_daily_hero_recruit_result.png","dataset/raw/live_daily_hero_recruit_verified.png","dataset/raw/live_daily_claim_result.png","dataset/raw/live_daily_claim_verified.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_SKILL"},
+    {"type":"LIVE_CLIENT","name":"Daily multi-task one-key claim","evidence":["dataset/raw/live_continue_task_page.png","dataset/raw/live_daily_multiclaim_result.png","dataset/raw/live_daily_multiclaim_verified.png","dataset/raw/live_daily_multiclaim_after.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_SKILL"},
+    {"type":"LIVE_CLIENT","name":"Alliance contribution Daily task chain","evidence":["dataset/raw/live_cycle2_daily_tasks.png","dataset/raw/live_cycle2_alliance_tech.png","dataset/raw/live_cycle2_alliance_before.png","dataset/raw/live_cycle2_alliance_result1.png","dataset/raw/live_cycle2_alliance_result2.png","dataset/raw/live_cycle2_alliance_verified.png","dataset/raw/live_cycle2_daily_claimable.png","dataset/raw/live_cycle2_daily_reward.png","dataset/raw/live_cycle2_daily_after.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_CROSS_SKILL_CHAIN"},
+    {"type":"OFFICIAL","name":"Century Games Help — Match Missions","url":"https://centurygames.helpshift.com/hc/en/64-whiteout-survival/faq/8454-what-are-match-missions/?p=all%2F1000","license":"REFERENCE_ONLY","use":"RESET_AND_UNCLAIMED_REWARD_PRIOR"},
+    {"type":"OFFICIAL","name":"Whiteout Survival App Store update notes","url":"https://apps.apple.com/us/app/whiteout-survival/id6443575749","license":"REFERENCE_ONLY","use":"DAILY_ACTIVITY_CHANGE_PRIOR"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"AminulIslamSifat/wos Missions Reward","url":"https://github.com/AminulIslamSifat/wos","license":"MIT_REPORTED_VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"}
+  ],
+  "conflicts":[]
+}

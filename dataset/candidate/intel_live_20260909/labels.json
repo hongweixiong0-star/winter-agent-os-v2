@@ -1,0 +1,13 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "samples":[{
+    "image":"../../raw/event_calibration/intel_score_attempt_1/step_002_before.png",
+    "elements":[{
+      "semantic":"TARGET_INTEL_BEAST_MISSION",
+      "roi":{"x_norm":0.4333,"y_norm":0.3008,"w_norm":0.1111,"h_norm":0.0938},
+      "confidence":0.99,
+      "live_verification":"tap opened Defeat Beast Level 10 mission dialog"
+    }]
+  }]
+}

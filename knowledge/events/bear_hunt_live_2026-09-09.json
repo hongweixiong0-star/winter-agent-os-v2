@@ -1,0 +1,15 @@
+{
+  "event_id": "BEAR_HUNT",
+  "observed_at": "2026-09-09T21:15:37+08:00",
+  "live_name": "狩猎陷阱 / 等级1变异巨熊",
+  "entry": ["联盟", "联盟领地", "特殊建筑", "狩猎陷阱", "前往"],
+  "event_state": "ENDED_AND_COOLDOWN",
+  "cooldown_after_event": "1天22:57:12",
+  "live_actions": {"leader_rally":"DISPATCH_VERIFIED", "member_join":"MARCHING_VERIFIED", "official_auto_join":"ENABLED_8_HOURS_MAX_6_QUEUES"},
+  "formation_policy": {"leader":"full Bear leader preset", "member":["杰西", "书允", "杰赛尔", "NO_HERO"]},
+  "result_verification": "PENDING_BATTLE_REPORT",
+  "evidence_root": "dataset/raw/bear_live_20260909",
+  "source": "LIVE_CLIENT",
+  "confidence": 0.98,
+  "status": "VERIFIED_LIVE_NAVIGATION"
+}

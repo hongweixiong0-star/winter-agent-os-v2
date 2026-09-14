@@ -1,0 +1,1 @@
+{"schema_version":"1.0","gate":"DISCOVERED","records":[{"id":"VIP","name":"VIP","page":"VIP","levels":"dynamic","daily_reward":"reported","purchase_policy":"BLOCK","source":["wosforge_beginner","github_aminul_wos"],"confidence":0.75,"status":"LIKELY","notes":"外部 bot 的自动购买行为不允许进入 V2。"}]}

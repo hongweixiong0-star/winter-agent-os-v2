@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "samples": [
+    {
+      "image": "../../dataset/raw/control_panel/runtime_auto/20260912_230906_574238/step_001_before.png",
+      "page": "POPUP",
+      "state": {
+        "popup": "BATTLE_VICTORY_BANNER",
+        "underlying_page": "MAP",
+        "underlying_resource_search_open": true,
+        "source": "LIVE_CLIENT"
+      },
+      "elements": [
+        {
+          "semantic": "POPUP_BATTLE_VICTORY_BANNER",
+          "roi": {"x_norm": 0.245, "y_norm": 0.405, "w_norm": 0.510, "h_norm": 0.340},
+          "confidence": 0.99
+        },
+        {
+          "semantic": "BTN_CLOSE_BATTLE_VICTORY",
+          "roi": {"x_norm": 0.885, "y_norm": 0.225, "w_norm": 0.075, "h_norm": 0.055},
+          "confidence": 0.99
+        }
+      ]
+    },
+    {
+      "image": "../../dataset/raw/control_panel/runtime_auto/20260912_231335_767785/step_001_before.png",
+      "page": "POPUP",
+      "state": {
+        "popup": "BATTLE_VICTORY_BANNER",
+        "underlying_page": "MAP",
+        "underlying_resource_search_open": true,
+        "source": "LIVE_CLIENT"
+      },
+      "elements": [
+        {
+          "semantic": "POPUP_BATTLE_VICTORY_BANNER",
+          "roi": {"x_norm": 0.245, "y_norm": 0.405, "w_norm": 0.510, "h_norm": 0.340},
+          "confidence": 0.99
+        }
+      ]
+    }
+  ]
+}

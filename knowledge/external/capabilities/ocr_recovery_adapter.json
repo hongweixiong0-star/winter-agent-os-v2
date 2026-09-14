@@ -1,0 +1,15 @@
+{
+  "capability": "OCR_RECOVERY",
+  "source": "AminulIslamSifat/whiteout-survival-bot",
+  "source_commit": "1d09932fad186a96309f85c2305055ece88461e3",
+  "source_path": "core/core.py::_post_json_with_replay",
+  "license": "README claims MIT; LICENSE file not found",
+  "classification": "PATTERN_ADAPTED_NO_CODE_COPIED",
+  "external_pattern": "bounded retry with exponential backoff",
+  "v2_adapter": "winter_agent_v2.ocr.ResilientOCRBackend",
+  "integration": "tools/run_live.py",
+  "retry_policy": {"retries": 2, "initial_backoff_seconds": 0.15, "unbounded": false},
+  "verification": ["test_resilient_ocr_recovers_with_bounded_backoff", "test_resilient_ocr_does_not_retry_forever"],
+  "live_status": "AWAITING_NEXT_OCR_FRAME",
+  "promote_policy": "Keep only if live OCR remains correct and recovery produces no duplicate action"
+}

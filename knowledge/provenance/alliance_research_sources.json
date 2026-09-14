@@ -1,0 +1,10 @@
+{
+  "schema_version":"1.0",
+  "retrieved_at":"2026-09-04",
+  "sources":[
+    {"type":"LIVE_CLIENT","name":"Alliance Help and five Technology contribution cycles","evidence":["dataset/raw/live_alliance_home_2.png","dataset/raw/live_alliance_help.png","dataset/raw/live_alliance_tech_page.png","dataset/raw/live_alliance_tech_detail.png","dataset/raw/live_alliance_tech_contribution_result.png","dataset/raw/live_alliance_tech_contribution_verified.png","dataset/raw/live_alliance_tech_attempt2_before.png","dataset/raw/live_alliance_tech_attempt2_result.png","dataset/raw/live_alliance_tech_attempt2_verified.png","dataset/raw/live_alliance_tech_attempt3_before.png","dataset/raw/live_alliance_tech_attempt3_result.png","dataset/raw/live_alliance_tech_attempt3_verified.png","dataset/raw/live_cycle2_alliance_tech.png","dataset/raw/live_cycle2_alliance_before.png","dataset/raw/live_cycle2_alliance_result1.png","dataset/raw/live_cycle2_alliance_result2.png","dataset/raw/live_cycle2_alliance_verified.png","dataset/raw/live_cycle2_daily_claimable.png","dataset/raw/live_cycle2_daily_reward.png","dataset/raw/live_cycle2_daily_after.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_SKILL_AND_CROSS_SKILL_CHAIN"},
+    {"type":"OFFICIAL","name":"Whiteout Survival Google Play — Alliance guide","url":"https://play.google.com/store/apps/editorial?id=mc_games_editorialevergreen_postinstall_whiteout_survival_alliances_fcp","license":"REFERENCE_ONLY","use":"ALLIANCE_SYSTEM_PRIOR"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"AminulIslamSifat/wos — Alliance Help and Tech Contribution","url":"https://github.com/AminulIslamSifat/wos","license":"MIT_REPORTED_VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"}
+  ],
+  "conflicts":[]
+}

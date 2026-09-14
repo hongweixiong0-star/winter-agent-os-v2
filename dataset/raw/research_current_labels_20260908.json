@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "reviewed_from": "LIVE_CLIENT",
+  "samples": [
+    {
+      "image": "live_20260908_research_navigation_current.png",
+      "page": "HOME",
+      "elements": [
+        {
+          "semantic": "BTN_OPEN_RESEARCH",
+          "roi": {"x_norm": 0.680, "y_norm": 0.596, "w_norm": 0.130, "h_norm": 0.120},
+          "confidence": 0.99
+        }
+      ]
+    }
+  ]
+}

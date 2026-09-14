@@ -1,0 +1,50 @@
+{
+  "skill_id": "VERIFY_ARENA_RESULT",
+  "goal_support": [
+    "USE_FREE_ARENA_ATTEMPTS"
+  ],
+  "entry_pages": [
+    "ARENA",
+    "POPUP"
+  ],
+  "target_pages": [
+    "ARENA"
+  ],
+  "required_semantics": [
+    "ARENA_RESULT",
+    "ARENA_FREE_ATTEMPTS"
+  ],
+  "execute_steps": [
+    "SCREENSHOT",
+    "OCR_RESULT_AND_COUNTER"
+  ],
+  "success_conditions": [
+    "free_attempts_decreased"
+  ],
+  "risk": "LOW",
+  "preconditions": [
+    "entry page recognized",
+    "required semantics or reviewed prior available",
+    "action-specific verifier exists before real try"
+  ],
+  "failure_conditions": [
+    "UNKNOWN_PAGE",
+    "SEMANTIC_NOT_FOUND",
+    "VERIFIER_FAILED",
+    "PAID_ACTION"
+  ],
+  "recovery": [
+    "REFRESH_STATE",
+    "BACK",
+    "REOPEN_PAGE",
+    "SWITCH_TASK"
+  ],
+  "resource_cost": "READ_FROM_CURRENT_CLIENT",
+  "external_evidence": [
+    "CURRENT_KNOWLEDGE_BASE",
+    "EXTERNAL_WOS_PRIOR"
+  ],
+  "live_evidence": [],
+  "confidence": 0.45,
+  "lifecycle": "CANDIDATE"
+}

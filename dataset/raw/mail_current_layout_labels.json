@@ -1,0 +1,1 @@
+{"schema_version":"1.0","status":"SIMULATION","reviewed_from":"LIVE_CLIENT","samples":[{"image":"control_panel/runtime_mail/20260907_073917_723820/step_001_before.png","page":"HOME","elements":[{"semantic":"BTN_OPEN_MAIL","roi":{"x_norm":0.87,"y_norm":0.795,"w_norm":0.10,"h_norm":0.05},"confidence":0.99}]}]}

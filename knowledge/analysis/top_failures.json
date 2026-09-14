@@ -1,0 +1,374 @@
+{
+  "source": "learning\\episodes.jsonl",
+  "episodes_total": 732,
+  "results": {
+    "SUCCESS": 486,
+    "BLOCKED": 4,
+    "IN_PROGRESS": 1,
+    "FAILURE": 241
+  },
+  "failures_total": 241,
+  "top_failures": [
+    {
+      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "count": 104,
+      "resolved": false
+    },
+    {
+      "failure_type": "MARCH_PAGE_NOT_OPEN",
+      "count": 59,
+      "resolved": false
+    },
+    {
+      "failure_type": "DISPATCH_NOT_PROVEN",
+      "count": 28,
+      "resolved": false
+    },
+    {
+      "failure_type": "MAIL_CLAIM_FEEDBACK_NOT_PROVEN",
+      "count": 10,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESOURCE_NOT_FOUND",
+      "count": 8,
+      "resolved": true
+    },
+    {
+      "failure_type": "POPUP_CLOSE_NOT_PROVEN",
+      "count": 5,
+      "resolved": true
+    },
+    {
+      "failure_type": "EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN",
+      "count": 3,
+      "resolved": false
+    },
+    {
+      "failure_type": "INTEL_MISSION_SELECTION_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "MAIL_TAB_SELECTION_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "OPEN_HOME_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "OPEN_MAIL_NOT_PROVEN",
+      "count": 2,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESET_DURING_ACTION",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "VISION_VARIANCE",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "BEAST_TARGET_SELECTION_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "INTEL_CLAIM_FEEDBACK_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "INTEL_BEAST_DISPATCH_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "INTEL_REWARD_DISMISS_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "EXPLORATION_IDLE_DIALOG_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "ALLY_GIFT_REWARD_FEEDBACK_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESOURCE_SEARCH_NOT_OPEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "SAFE_BACK_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "RESOURCE_SELECTION_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    },
+    {
+      "failure_type": "OPEN_MAP_NOT_PROVEN",
+      "count": 1,
+      "resolved": false
+    }
+  ],
+  "top_failing_skills": [
+    {
+      "skill": "START_GATHER",
+      "count": 59
+    },
+    {
+      "skill": "SELECT_RESOURCE",
+      "count": 41
+    },
+    {
+      "skill": "SEARCH_RESOURCE",
+      "count": 34
+    },
+    {
+      "skill": "DISPATCH_MARCH",
+      "count": 28
+    },
+    {
+      "skill": "OPEN_MAIL",
+      "count": 15
+    },
+    {
+      "skill": "MAIL_CLAIM_REWARDS",
+      "count": 10
+    },
+    {
+      "skill": "SUBMIT_RESOURCE_SEARCH",
+      "count": 8
+    },
+    {
+      "skill": "DISMISS_INTEL_REWARD",
+      "count": 5
+    },
+    {
+      "skill": "SELECT_MAIL_ALLIANCE_TAB",
+      "count": 4
+    },
+    {
+      "skill": "DISMISS_REAL_MONEY_OFFER",
+      "count": 4
+    },
+    {
+      "skill": "OPEN_INTEL",
+      "count": 3
+    },
+    {
+      "skill": "OPEN_HOME",
+      "count": 3
+    },
+    {
+      "skill": "EXPLORATION_IDLE_CLAIM",
+      "count": 3
+    },
+    {
+      "skill": "SELECT_INTEL_BEAST_MISSION",
+      "count": 2
+    },
+    {
+      "skill": "CONFIRM_EXPLORATION_IDLE_CLAIM",
+      "count": 2
+    },
+    {
+      "skill": "OPEN_POWER_OVERVIEW",
+      "count": 2
+    },
+    {
+      "skill": "NAVIGATE_INFANTRY_CAMP",
+      "count": 2
+    },
+    {
+      "skill": "ALLIANCE_GIFTS",
+      "count": 1
+    },
+    {
+      "skill": "SELECT_BEAST_TARGET",
+      "count": 1
+    },
+    {
+      "skill": "DISPATCH_BEAST",
+      "count": 1
+    },
+    {
+      "skill": "CLOSE_POPUP",
+      "count": 1
+    },
+    {
+      "skill": "INTEL_CLAIM_REWARDS",
+      "count": 1
+    },
+    {
+      "skill": "DISPATCH_INTEL_BEAST",
+      "count": 1
+    },
+    {
+      "skill": "OPEN_EXPLORATION",
+      "count": 1
+    },
+    {
+      "skill": "DISMISS_MAIL_REWARD",
+      "count": 1
+    },
+    {
+      "skill": "ALLIANCE_ALLY_GIFT_CLAIM",
+      "count": 1
+    },
+    {
+      "skill": "OPEN_DAILY",
+      "count": 1
+    },
+    {
+      "skill": "DISMISS_DAILY_REWARD",
+      "count": 1
+    },
+    {
+      "skill": "SELECT_MAIL_SYSTEM_TAB",
+      "count": 1
+    },
+    {
+      "skill": "DISMISS_MAIL_GENERIC_REWARD",
+      "count": 1
+    },
+    {
+      "skill": "BACK",
+      "count": 1
+    },
+    {
+      "skill": "OPEN_MAP",
+      "count": 1
+    },
+    {
+      "skill": "RECONNECT_SESSION",
+      "count": 1
+    }
+  ],
+  "blocker_by_goal": [
+    {
+      "goal": "GATHER_RESOURCE",
+      "total": 174,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 73,
+        "MARCH_PAGE_NOT_OPEN": 59,
+        "DISPATCH_NOT_PROVEN": 28,
+        "RESOURCE_NOT_FOUND": 8,
+        "OPEN_HOME_NOT_PROVEN": 2,
+        "VISION_VARIANCE": 1,
+        "RESOURCE_SEARCH_NOT_OPEN": 1,
+        "RESOURCE_SELECTION_NOT_PROVEN": 1,
+        "OPEN_MAP_NOT_PROVEN": 1
+      }
+    },
+    {
+      "goal": "UNATTRIBUTED",
+      "total": 44,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 13,
+        "MAIL_CLAIM_FEEDBACK_NOT_PROVEN": 10,
+        "POPUP_CLOSE_NOT_PROVEN": 5,
+        "EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN": 3,
+        "INTEL_MISSION_SELECTION_NOT_PROVEN": 2,
+        "MAIL_TAB_SELECTION_NOT_PROVEN": 2,
+        "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN": 2,
+        "RESET_DURING_ACTION": 1,
+        "INTEL_CLAIM_FEEDBACK_NOT_PROVEN": 1,
+        "INTEL_REWARD_DISMISS_NOT_PROVEN": 1,
+        "EXPLORATION_IDLE_DIALOG_NOT_PROVEN": 1,
+        "ALLY_GIFT_REWARD_FEEDBACK_NOT_PROVEN": 1,
+        "DAILY_REWARD_ADVANCE_NOT_PROVEN": 1,
+        "SAFE_BACK_NOT_PROVEN": 1
+      }
+    },
+    {
+      "goal": "MAIL",
+      "total": 15,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 13,
+        "OPEN_MAIL_NOT_PROVEN": 2
+      }
+    },
+    {
+      "goal": "INTEL",
+      "total": 4,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 3,
+        "INTEL_BEAST_DISPATCH_NOT_PROVEN": 1
+      }
+    },
+    {
+      "goal": "BEAST_HUNT",
+      "total": 2,
+      "failures": {
+        "BEAST_TARGET_SELECTION_NOT_PROVEN": 1,
+        "BEAST_DISPATCH_NOT_PROVEN": 1
+      }
+    },
+    {
+      "goal": "EXPLORATION",
+      "total": 1,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 1
+      }
+    },
+    {
+      "goal": "DAILY_TASKS",
+      "total": 1,
+      "failures": {
+        "SEMANTIC_TARGET_NOT_VERIFIED": 1
+      }
+    }
+  ],
+  "resolved_failures": {
+    "RESOURCE_NOT_FOUND": {
+      "fix": "等级过滤改为从滑条实读，并在搜索落空时降级重搜",
+      "evidence": "8/8 失败样本均为 level=8 固定过滤；RELAX_RESOURCE_LEVEL 已注册到 VERIFIED_ATOMIC",
+      "superseded_by": "docs/PANEL_REDESIGN_2026_09_14.md",
+      "verified_live": false
+    },
+    "POPUP_CLOSE_NOT_PROVEN": {
+      "fix": "维护/加载页新增 WAIT 分支，弹窗不再被反复 BACK",
+      "evidence": "维护公告模板 + verify_environmental_wait 已接线；unexpected_worker_exits 根因确认",
+      "verified_live": false
+    }
+  },
+  "data_quality": {
+    "mixed_case_results": [
+      "blocked",
+      "failure",
+      "in_progress",
+      "success"
+    ],
+    "note": "result 字段历史上同时存在大写与小写变体，统计前已归一化。"
+  }
+}

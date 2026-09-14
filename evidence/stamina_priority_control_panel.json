@@ -1,0 +1,25 @@
+{
+  "schema_version":"1.0",
+  "mode":"PRODUCTION",
+  "date":"2026-09-06",
+  "auto_execution":true,
+  "enabled_tasks":["野怪","采集"],
+  "priority_order":["BEAST_HUNT","GATHER_RESOURCE"],
+  "live_cycle":{
+    "beast_check":"verified_beast_target_not_visible",
+    "fallback_gather_check":"reserved_march_for_stamina",
+    "actions_executed":0,
+    "unsafe_clicks":0,
+    "next_check_seconds":600
+  },
+  "moving_target_detector":{
+    "semantic":"TARGET_BEAST_MUSK_OX_9",
+    "search_region":"central_world_map_only",
+    "fixed_coordinate_required":false,
+    "positive_shift_replay":"PASS",
+    "real_negative_map_replay":"PASS",
+    "live_unattended_recheck":"PASS_NO_CLICK"
+  },
+  "policy":"When no reviewed low-level Beast is visible, do not guess or dispatch a Giant Beast; retain one idle march and retry automatically.",
+  "log":"learning/control_panel/latest.log"
+}

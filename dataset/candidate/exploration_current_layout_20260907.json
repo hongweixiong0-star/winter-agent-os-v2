@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T09:31:50.288861+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "page_exploration__step_001_before__0",
+      "semantic": "PAGE_EXPLORATION",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/exploration_current_layout_20260907/page_exploration__step_001_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deploy_exploration_claim_v2/step_001_before.png",
+      "parent_sha256": "033e9154b9bfdbcd67176e5f50fa41c85ea91b89acffa4c3d1a20c55dcb44b81",
+      "roi_norm": {
+        "x_norm": 0.1,
+        "y_norm": 0.01,
+        "w_norm": 0.18,
+        "h_norm": 0.055
+      },
+      "width": 130,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_exploration_idle_claim__step_001_before__1",
+      "semantic": "BTN_EXPLORATION_IDLE_CLAIM",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/exploration_current_layout_20260907/btn_exploration_idle_claim__step_001_before__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deploy_exploration_claim_v2/step_001_before.png",
+      "parent_sha256": "033e9154b9bfdbcd67176e5f50fa41c85ea91b89acffa4c3d1a20c55dcb44b81",
+      "roi_norm": {
+        "x_norm": 0.755,
+        "y_norm": 0.645,
+        "w_norm": 0.2,
+        "h_norm": 0.06
+      },
+      "width": 144,
+      "height": 77,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

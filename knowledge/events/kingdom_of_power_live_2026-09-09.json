@@ -1,0 +1,42 @@
+{
+  "event_id": "KINGDOM_OF_POWER_CURRENT",
+  "name": "最强王国",
+  "status": "VERIFIED_LIVE_PAGE",
+  "source": ["LIVE_CLIENT"],
+  "observed_at": "2026-09-09T11:55:00+08:00",
+  "entry": "HOME/常规活动",
+  "page": "EVENT",
+  "current_stage": {
+    "phase": "子阶段 III",
+    "scoring_stage": "击败野兽",
+    "remaining_at_observation": "12:03:29",
+    "current_points_before": 0,
+    "current_points": 11250,
+    "visible_personal_reward_tiers": [80000, 150000, 300000],
+    "alliance_points": 36436030,
+    "alliance_rank": 13,
+    "scoring_actions": [
+      {"action_id":"PET_ADVANCEMENT_SCORE_1","points_per_unit":50,"source":"LIVE_CLIENT"},
+      {"action_id":"ADVANCED_WILD_MARK_REFINEMENT","points_per_unit":15000,"source":"LIVE_CLIENT"},
+      {"action_id":"NORMAL_WILD_MARK_REFINEMENT","points_per_unit":1150,"source":"LIVE_CLIENT"},
+      {"action_id":"CHIEF_GEM_SCORE_1","points_per_unit":70,"source":"LIVE_CLIENT"},
+      {"action_id":"WISHING_HOUSE_PARTICIPATION","points_per_unit":8000,"source":"LIVE_CLIENT"},
+      {"action_id":"RARE_HERO_SHARD_STAR_UP","points_per_unit":350,"source":"LIVE_CLIENT"},
+      {"action_id":"EPIC_HERO_SHARD_STAR_UP","points_per_unit":1220,"source":"LIVE_CLIENT"},
+      {"action_id":"MYTHIC_HERO_SHARD_STAR_UP","points_per_unit":3040,"source":"LIVE_CLIENT"},
+      {"action_id":"INITIATE_RALLY_DEFEAT_POLAR_TERROR","points_per_unit":30000,"source":"LIVE_CLIENT"},
+      {"action_id":"DEFEAT_BEAST_LEVEL_1_10","points_per_unit":9000,"skill_id":"BEAST_HUNT","source":"LIVE_CLIENT"},
+      {"action_id":"DEFEAT_BEAST_LEVEL_11_15","points_per_unit":9750,"skill_id":"BEAST_HUNT","source":"LIVE_CLIENT"},
+      {"action_id":"DEFEAT_BEAST_LEVEL_16_20","points_per_unit":10500,"skill_id":"BEAST_HUNT","source":"LIVE_CLIENT"},
+      {"action_id":"DEFEAT_BEAST_LEVEL_21_25","points_per_unit":11250,"skill_id":"BEAST_HUNT","source":"LIVE_CLIENT"},
+      {"action_id":"DEFEAT_BEAST_LEVEL_26_30","points_per_unit":12000,"skill_id":"BEAST_HUNT","source":"LIVE_CLIENT"},
+      {"action_id":"EXPERT_MARK_NON_UNIVERSAL","points_per_unit":6000,"source":"LIVE_CLIENT"},
+      {"action_id":"BOOK_OF_LEARNING","points_per_unit":60,"source":"LIVE_CLIENT"},
+      {"action_id":"EXPERT_SKILL_SPEEDUP_MINUTE","points_per_unit":30,"source":"LIVE_CLIENT","excludes":"gem_speedup"}
+    ]
+  },
+  "policy": "Visible tiers are facts; the selected F2P minimum-guarantee target remains a planner decision after stamina, reward value and remaining time are read.",
+  "live_point_verification": {"skill":"INTEL_BEAST","points_before":0,"points_after":11250,"verified_gain":11250,"result":"PASS","evidence":"dataset/raw/event_calibration/points_after_beast_1_v2.png"},
+  "evidence": ["dataset/raw/event_calibration/regular_event.png","dataset/raw/event_calibration/scoring_rules.png","dataset/raw/event_calibration/scoring_rules_lower.png"],
+  "confidence": 0.99
+}

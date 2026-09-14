@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T12:15:53.621682+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "target_intel_beast_mission__step_004_before__0",
+      "semantic": "TARGET_INTEL_BEAST_MISSION",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_remaining_purple_v2/target_intel_beast_mission__step_004_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_color_chain_round7/step_004_before.png",
+      "parent_sha256": "37ad855694f9c69e5eab09bf75ae2ae271e153296cf7bc34c9dc4ed123bfa4a3",
+      "roi_norm": {
+        "x_norm": 0.195,
+        "y_norm": 0.5,
+        "w_norm": 0.13,
+        "h_norm": 0.11
+      },
+      "width": 94,
+      "height": 141,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

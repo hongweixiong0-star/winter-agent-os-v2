@@ -1,0 +1,17 @@
+{
+  "schema_version":"1.0","mode":"PRODUCTION","date":"2026-09-06","trigger":"USER_REPORTED_STAMINA_FULL",
+  "initial_state":{"page":"MAP","march_used":6,"march_max":6,"all_visible_marches":"GATHERING"},
+  "recovery":{"action":"RECALL_ONE_GATHERING_MARCH","confirmation_ocr":"您确定要召回部队吗？","transition":"GATHERING -> RETURNING 00:00:59 -> IDLE","result":"PASS"},
+  "rejected_target":{"name":"雪豹","level":29,"recommended_power":78153250,"displayed_cost":10,"reason":"本次出征胜算较低","dispatch_executed":false},
+  "completed_hunts":[
+    {"name":"麝牛","level":9,"displayed_cost":10,"victory":"胜券在握","queue":"5/6 -> 6/6 -> 5/6"},
+    {"name":"北极狼","level":6,"displayed_cost":10,"victory":"胜券在握","queue":"5/6 -> 6/6 -> 5/6"},
+    {"name":"麝牛","level":9,"displayed_cost":10,"victory":"胜券在握","queue":"5/6 -> 6/6 -> 5/6"},
+    {"name":"麝牛","level":9,"displayed_cost":10,"victory":"胜券在握","queue":"5/6 -> 6/6 -> 5/6","executor":"V2_LIVE_RUNTIME","verifier":"PASS_AFTER_EVIDENCE_FUSION_FIX"}
+  ],
+  "displayed_cost_committed":40,"numeric_stamina_delta_verified":false,
+  "native_runtime":{"goal":"BEAST_HUNT","skills":["BEAST_HUNT","DISPATCH_BEAST"],"dispatch_executed":true,"before":"MARCH/victory_assured","after":"MAP/6_of_6/MARCHING","verification":"PASS","screenshots":"dataset/raw/live_beast_runtime_native_retry/"},
+  "search_exploration":{"result":"LEVEL_5_GIANT_BEAST_REJECTED","name":"猛犸象","displayed_cost":25,"recommended_power":142724200,"action_executed":false,"reason":"not_normal_low_cost_beast"},
+  "scheduler_guard":{"state":{"page":"MAP","march_used":5,"march_max":6},"decision":"SAFE_STOP","reason":"reserved_march_for_stamina","actions_executed":0,"result":"PASS"},
+  "screenshots":"dataset/raw/stamina_emergency/"
+}

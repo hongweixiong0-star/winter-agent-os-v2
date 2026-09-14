@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "continuous_external_knowledge": true,
+  "mode": "JUST_IN_TIME",
+  "priority": [
+    "LIVE_CLIENT",
+    "LOCAL_KNOWLEDGE",
+    "LEGACY_EVIDENCE",
+    "OFFICIAL",
+    "COMMUNITY_DB",
+    "OPEN_SOURCE_PROJECT",
+    "PLAYER_GUIDE",
+    "VIDEO",
+    "SAFE_LIVE_EXPLORATION"
+  ],
+  "production_asset_policy": "External assets require provenance, license review, current-client verification and Replay before promotion. Unknown-license assets remain REFERENCE_ONLY."
+}

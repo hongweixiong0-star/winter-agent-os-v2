@@ -1,0 +1,1 @@
+{"schema_version":"1.0","status":"SIMULATION","reviewed_from":"LIVE_CLIENT","samples":[{"image":"control_panel/runtime_exploration/20260907_174709_973331/step_001_before.png","page":"HOME","elements":[{"semantic":"BTN_OPEN_EXPLORATION","roi":{"x_norm":0.01,"y_norm":0.925,"w_norm":0.14,"h_norm":0.07},"confidence":0.99}]}]}

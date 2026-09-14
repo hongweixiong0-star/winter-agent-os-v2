@@ -1,0 +1,49 @@
+{
+  "skill_id": "START_LABYRINTH",
+  "goal_support": [
+    "LABYRINTH_DAILY"
+  ],
+  "entry_pages": [
+    "LABYRINTH"
+  ],
+  "target_pages": [
+    "LABYRINTH",
+    "MARCH"
+  ],
+  "required_semantics": [
+    "LABYRINTH_START"
+  ],
+  "execute_steps": [
+    "VERIFY_FREE_ATTEMPT",
+    "TAP_CENTER"
+  ],
+  "success_conditions": [
+    "attempt_started"
+  ],
+  "risk": "LOW_COMBAT",
+  "preconditions": [
+    "entry page recognized",
+    "required semantics or reviewed prior available",
+    "action-specific verifier exists before real try"
+  ],
+  "failure_conditions": [
+    "UNKNOWN_PAGE",
+    "SEMANTIC_NOT_FOUND",
+    "VERIFIER_FAILED",
+    "PAID_ACTION"
+  ],
+  "recovery": [
+    "REFRESH_STATE",
+    "BACK",
+    "REOPEN_PAGE",
+    "SWITCH_TASK"
+  ],
+  "resource_cost": "READ_FROM_CURRENT_CLIENT",
+  "external_evidence": [
+    "CURRENT_KNOWLEDGE_BASE",
+    "EXTERNAL_WOS_PRIOR"
+  ],
+  "live_evidence": [],
+  "confidence": 0.45,
+  "lifecycle": "CANDIDATE"
+}

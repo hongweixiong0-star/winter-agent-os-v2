@@ -1,0 +1,22 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "source":"LIVE_CLIENT_HUMAN_REVIEWED_SCREENSHOT",
+  "samples":[
+    {"image":"live_home_after_welcome_reward_20260907.png","page":"HOME","elements":[
+      {"semantic":"BTN_OPEN_MAIL","roi":{"x_norm":0.865,"y_norm":0.785,"w_norm":0.105,"h_norm":0.085},"confidence":0.99}
+    ]},
+    {"image":"live_mail_navigation_current_20260907.png","page":"MAIL","elements":[
+      {"semantic":"BTN_MAIL_TAB_ALLIANCE","roi":{"x_norm":0.215,"y_norm":0.068,"w_norm":0.185,"h_norm":0.055},"confidence":0.99},
+      {"semantic":"BTN_MAIL_TAB_SYSTEM","roi":{"x_norm":0.410,"y_norm":0.068,"w_norm":0.185,"h_norm":0.055},"confidence":0.99},
+      {"semantic":"TAB_MAIL_REPORT_ACTIVE","roi":{"x_norm":0.60,"y_norm":0.068,"w_norm":0.18,"h_norm":0.055},"confidence":0.99}
+    ]},
+    {"image":"live_mail_alliance_before_claim_20260907.png","page":"MAIL","elements":[
+      {"semantic":"TAB_MAIL_ALLIANCE_ACTIVE","roi":{"x_norm":0.215,"y_norm":0.068,"w_norm":0.185,"h_norm":0.055},"confidence":0.99}
+    ]},
+    {"image":"live_mail_system_before_claim_20260907.png","page":"MAIL","elements":[
+      {"semantic":"TAB_MAIL_SYSTEM_ACTIVE","roi":{"x_norm":0.410,"y_norm":0.068,"w_norm":0.185,"h_norm":0.055},"confidence":0.99},
+      {"semantic":"BTN_MAIL_TAB_REPORT","roi":{"x_norm":0.60,"y_norm":0.068,"w_norm":0.18,"h_norm":0.055},"confidence":0.99}
+    ]}
+  ]
+}

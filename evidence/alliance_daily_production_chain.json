@@ -1,0 +1,13 @@
+{
+  "schema_version":"1.0",
+  "mode":"PRODUCTION",
+  "verified_at":"2026-09-04",
+  "chain":["DAILY_ALLIANCE_CONTRIBUTE_3_OF_5","ALLIANCE_TECH_CONTRIBUTE","ALLIANCE_TECH_CONTRIBUTE","DAILY_CLAIM_REWARDS"],
+  "resource_spend":{"MEAT":20000},
+  "alliance":{"attempts":"25/25→23/25","personal_contribution":"49680→50040","rewards":[120,240]},
+  "daily":{"progress":"3/5→5/5","activity":"65→70","reward":{"WOOD":4000},"next_tier":"5/20"},
+  "vision":{"layers":["TEMPLATE","OCR"],"hybrid_verifier":"PASS","template_only":"REJECTED_FOR_DYNAMIC_NUMBERS"},
+  "verifier":"PASS",
+  "result":"SUCCESS",
+  "stable_claimed":false
+}

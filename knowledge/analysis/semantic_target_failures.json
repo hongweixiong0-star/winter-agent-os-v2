@@ -1,0 +1,137 @@
+{
+  "source": "learning\\episodes.jsonl",
+  "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+  "total": 104,
+  "by_action_target": [
+    {
+      "target": "RESOURCE_DYNAMIC",
+      "count": 34,
+      "contexts": {
+        "search_open=True,selected=None,level=None": 25,
+        "search_open=True,selected=MEAT,level=8": 9
+      }
+    },
+    {
+      "target": "BTN_OPEN_RESOURCE_SEARCH",
+      "count": 32,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 32
+      }
+    },
+    {
+      "target": "BTN_OPEN_MAIL",
+      "count": 13,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 13
+      }
+    },
+    {
+      "target": "RESOURCE_WOOD",
+      "count": 6,
+      "contexts": {
+        "search_open=True,selected=None,level=None": 6
+      }
+    },
+    {
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "count": 4,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 4
+      }
+    },
+    {
+      "target": "BTN_OPEN_INTEL_WILD_HUD",
+      "count": 3,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 3
+      }
+    },
+    {
+      "target": "BTN_MAIL_TAB_ALLIANCE",
+      "count": 3,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 3
+      }
+    },
+    {
+      "target": "BTN_CLOSE",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    },
+    {
+      "target": "BTN_OPEN_HOME",
+      "count": 1,
+      "contexts": {
+        "search_open=True,selected=WOOD,level=8": 1
+      }
+    },
+    {
+      "target": "BTN_OPEN_EXPLORATION",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    },
+    {
+      "target": "POPUP_MAIL_REWARD",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    },
+    {
+      "target": "BTN_EXPLORATION_IDLE_CLAIM",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    },
+    {
+      "target": "BTN_OPEN_DAILY",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    },
+    {
+      "target": "BTN_OPEN_POWER_OVERVIEW",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    },
+    {
+      "target": "BTN_OPEN_POWER_OVERVIEW_ICON",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    },
+    {
+      "target": "POPUP_GENERIC_REWARD_HEADER",
+      "count": 1,
+      "contexts": {
+        "search_open=False,selected=None,level=None": 1
+      }
+    }
+  ],
+  "template_margins": {
+    "BTN_OPEN_RESOURCE_SEARCH": {
+      "threshold": 12,
+      "observed": {
+        "min": 0,
+        "median": 6,
+        "max": 12,
+        "samples": 51
+      },
+      "risk": "最大值已顶到阈值；ROI 内含地图动态指示箭头，pHash 随动画相位漂移，无裕度。"
+    },
+    "BTN_RESOURCE_SEARCH_SUBMIT": {
+      "threshold": 6,
+      "observed": null,
+      "risk": "未单独标定；如需放宽应先按 ROI 实测分布决定，不得直接套用其它语义的阈值。"
+    }
+  }
+}

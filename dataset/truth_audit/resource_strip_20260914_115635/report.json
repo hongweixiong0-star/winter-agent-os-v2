@@ -1,0 +1,112 @@
+[
+  {
+    "label": "start",
+    "file": "20260914_115635_s_001_start.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "scroll_1",
+    "file": "20260914_115635_s_002_scroll_1.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "tap_mid_after_scroll_1",
+    "file": "20260914_115635_s_003_tap_mid_after_scroll_1.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "scroll_2",
+    "file": "20260914_115635_s_004_scroll_2.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "tap_mid_after_scroll_2",
+    "file": "20260914_115635_s_005_tap_mid_after_scroll_2.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "scroll_3",
+    "file": "20260914_115635_s_006_scroll_3.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "tap_mid_after_scroll_3",
+    "file": "20260914_115635_s_007_tap_mid_after_scroll_3.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "scroll_4",
+    "file": "20260914_115635_s_008_scroll_4.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "tap_mid_after_scroll_4",
+    "file": "20260914_115635_s_009_tap_mid_after_scroll_4.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "scroll_5",
+    "file": "20260914_115635_s_010_scroll_5.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  },
+  {
+    "label": "tap_mid_after_scroll_5",
+    "file": "20260914_115635_s_011_tap_mid_after_scroll_5.png",
+    "page": "MAP",
+    "search_open": true,
+    "resource_selected": "WOOD",
+    "resource_level": 1,
+    "classifier": "('RESOURCE_WOOD_SELECTED', 0.0, {'x_norm': 0.375, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+    "level_raw": 1
+  }
+]

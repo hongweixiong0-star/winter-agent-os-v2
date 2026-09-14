@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-13T12:32:58.077596+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "btn_recall_lowest_value_gathering__live_recall_map_rows_20260913__a25c0ec7__0",
+      "semantic": "BTN_RECALL_LOWEST_VALUE_GATHERING",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/recall_march_current/btn_recall_lowest_value_gathering__live_recall_map_rows_20260913__a25c0ec7__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_recall_map_rows_20260913.png",
+      "parent_sha256": "a25c0ec7e7291039fadc770f92411738b3917aa2fe02a67e79fef236b023d9d9",
+      "roi_norm": {
+        "x_norm": 0.275,
+        "y_norm": 0.19,
+        "w_norm": 0.065,
+        "h_norm": 0.05
+      },
+      "width": 47,
+      "height": 64,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

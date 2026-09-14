@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T09:58:56.940795+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "btn_exploration_idle_claim__step_001_before__0",
+      "semantic": "BTN_EXPLORATION_IDLE_CLAIM",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/exploration_claimable_stable_20260907/btn_exploration_idle_claim__step_001_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deploy_exploration_to_intel_v2/step_001_before.png",
+      "parent_sha256": "0db9ba10384cc367284c26676b183bfa641e0a4ad6f24510d5beda75a1f7c5ff",
+      "roi_norm": {
+        "x_norm": 0.77,
+        "y_norm": 0.66,
+        "w_norm": 0.18,
+        "h_norm": 0.04
+      },
+      "width": 130,
+      "height": 51,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "skill_id": "READ_EVENT_TIMER",
+  "goal_support": [
+    "EVENT_MINIMUM_GUARANTEE",
+    "PARTICIPATE_BEAR"
+  ],
+  "entry_pages": [
+    "EVENT",
+    "ALLIANCE"
+  ],
+  "target_pages": [
+    "EVENT",
+    "ALLIANCE"
+  ],
+  "required_semantics": [
+    "EVENT_TIMER"
+  ],
+  "execute_steps": [
+    "SCREENSHOT",
+    "OCR_TIMER"
+  ],
+  "success_conditions": [
+    "remaining_time_known"
+  ],
+  "risk": "LOW",
+  "preconditions": [
+    "entry page recognized",
+    "required semantics or reviewed prior available",
+    "action-specific verifier exists before real try"
+  ],
+  "failure_conditions": [
+    "UNKNOWN_PAGE",
+    "SEMANTIC_NOT_FOUND",
+    "VERIFIER_FAILED",
+    "PAID_ACTION"
+  ],
+  "recovery": [
+    "REFRESH_STATE",
+    "BACK",
+    "REOPEN_PAGE",
+    "SWITCH_TASK"
+  ],
+  "resource_cost": "READ_FROM_CURRENT_CLIENT",
+  "external_evidence": [
+    "CURRENT_KNOWLEDGE_BASE",
+    "EXTERNAL_WOS_PRIOR"
+  ],
+  "live_evidence": [],
+  "confidence": 0.45,
+  "lifecycle": "CANDIDATE"
+}

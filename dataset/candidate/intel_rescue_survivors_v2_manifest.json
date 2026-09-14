@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T16:56:35.616366+00:00",
+  "status": "CANDIDATE",
+  "count": 5,
+  "records": [
+    {
+      "template_id": "target_intel_rescue_survivors__step_004_before__0",
+      "semantic": "TARGET_INTEL_RESCUE_SURVIVORS",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_rescue_survivors_v2/target_intel_rescue_survivors__step_004_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_firebeast2_claim_20260907/step_004_before.png",
+      "parent_sha256": "268a826c78adb7d841f7b4060b004f5250f6d0ae355cc6543ee462c7c169c23d",
+      "roi_norm": {
+        "x_norm": 0.55,
+        "y_norm": 0.335,
+        "w_norm": 0.14,
+        "h_norm": 0.115
+      },
+      "width": 101,
+      "height": 147,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_intel_rescue_survivors_title__live_intel_orange_tent_probe_20260907__0",
+      "semantic": "POPUP_INTEL_RESCUE_SURVIVORS_TITLE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_rescue_survivors_v2/popup_intel_rescue_survivors_title__live_intel_orange_tent_probe_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_orange_tent_probe_20260907.png",
+      "parent_sha256": "24ac51fae2fa53cfd2009e3df858cc23521f630285510feb5b505708368e4a5b",
+      "roi_norm": {
+        "x_norm": 0.12,
+        "y_norm": 0.252,
+        "w_norm": 0.76,
+        "h_norm": 0.055
+      },
+      "width": 547,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "dialog_intel_rescue_survivors_target__live_intel_rescue_survivors_target_20260907__0",
+      "semantic": "DIALOG_INTEL_RESCUE_SURVIVORS_TARGET",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_rescue_survivors_v2/dialog_intel_rescue_survivors_target__live_intel_rescue_survivors_target_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_rescue_survivors_target_20260907.png",
+      "parent_sha256": "52fe90331b24ed93b34560ef3d7503414e1189d4007c57d6c31ba0308e4eb4e2",
+      "roi_norm": {
+        "x_norm": 0.2,
+        "y_norm": 0.22,
+        "w_norm": 0.6,
+        "h_norm": 0.32
+      },
+      "width": 432,
+      "height": 410,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_intel_rescue_survivors__live_intel_rescue_survivors_target_20260907__1",
+      "semantic": "BTN_INTEL_RESCUE_SURVIVORS",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_rescue_survivors_v2/btn_intel_rescue_survivors__live_intel_rescue_survivors_target_20260907__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_rescue_survivors_target_20260907.png",
+      "parent_sha256": "52fe90331b24ed93b34560ef3d7503414e1189d4007c57d6c31ba0308e4eb4e2",
+      "roi_norm": {
+        "x_norm": 0.337,
+        "y_norm": 0.465,
+        "w_norm": 0.325,
+        "h_norm": 0.052
+      },
+      "width": 234,
+      "height": 67,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "status_intel_rescue_survivors_active__live_intel_rescue_survivors_execute_20260907__0",
+      "semantic": "STATUS_INTEL_RESCUE_SURVIVORS_ACTIVE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_rescue_survivors_v2/status_intel_rescue_survivors_active__live_intel_rescue_survivors_execute_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_rescue_survivors_execute_20260907.png",
+      "parent_sha256": "c5d08257fe666185c7333b09f8042c129b52cd91eba62020f526379d4895dd58",
+      "roi_norm": {
+        "x_norm": 0.0,
+        "y_norm": 0.38,
+        "w_norm": 0.35,
+        "h_norm": 0.1
+      },
+      "width": 252,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

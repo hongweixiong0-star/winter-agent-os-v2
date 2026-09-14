@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "samples": [{
+    "image": "../../dataset/raw/live_recall_map_rows_20260913.png",
+    "page": "MAP",
+    "state": {"march_used": 5, "march_max": 6, "marches": ["GATHERING"], "source": "LIVE_CLIENT"},
+    "elements": [{
+      "semantic": "BTN_RECALL_LOWEST_VALUE_GATHERING",
+      "roi": {"x_norm": 0.275, "y_norm": 0.190, "w_norm": 0.065, "h_norm": 0.050},
+      "confidence": 0.99
+    }]
+  }]
+}

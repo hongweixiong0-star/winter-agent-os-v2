@@ -1,0 +1,1 @@
+{"schema_version":"1.0","type":"ADVISORY","inputs":["furnace_level","prerequisites","resources","queues","events","player_goal"],"rules":[{"when":"goal requires unlock and prerequisites are verified","suggest":"upgrade prerequisite chain"}],"hardcoded_order":false}

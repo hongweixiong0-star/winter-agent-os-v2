@@ -1,0 +1,56 @@
+# Winter Agent OS V2 — repository hygiene
+#
+# TRACKED
+#   code, config, knowledge, docs, tests, tools, handoff
+#   dataset/candidate/**   reviewed templates + manifests: INPUTS to live-verified
+#                          vision, so they belong in history (~20 MB)
+#   dataset/truth_audit/{gather_live_20260914_115120,resource_cells_20260914_120027,
+#                        hard_block_evidence}/**   named regression fixtures
+#
+# NOT TRACKED: bulk screenshot evidence
+#   dataset/raw            ~1.0 GB rotating runtime captures
+#   dataset/truth_audit rest ~80 MB of one-off audit crops
+#
+# Rationale: a checkpoint must stay fast and reviewable.  Screenshots are
+# machine-local artefacts that retention already protects on disk, and the
+# handoff records their absolute paths.  Committing ~1.1 GB of PNGs would make
+# every checkpoint useless.
+# Regenerate fixtures with: tools/capture_resource_tabs.py
+#
+# NOTE: image files are excluded by FILE pattern, never by excluding their
+# parent directory — git cannot re-include a file whose parent directory is
+# excluded, which silently drops the regression fixtures.
+
+# --- bulk evidence ---------------------------------------------------------
+dataset/raw/**/*.png
+dataset/raw/**/*.jpg
+dataset/truth_audit/**/*.png
+dataset/truth_audit/**/*.jpg
+dataset/external/**/*.png
+dataset/external/**/*.jpg
+
+# re-include the regression fixtures
+!dataset/truth_audit/gather_live_20260914_115120/**/*.png
+!dataset/truth_audit/resource_cells_20260914_120027/**/*.png
+!dataset/truth_audit/hard_block_evidence/**/*.png
+
+# --- python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- editors / os ----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- scratch ---------------------------------------------------------------
+*.tmp

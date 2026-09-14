@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "gate": "VERIFIED",
+  "event_id": "ARMAMENT_COMPETITION",
+  "name": "军备竞演",
+  "source": "LIVE_CLIENT",
+  "last_verified": "2026-09-05T23:52:00+08:00",
+  "client_variant": "FIRE_CRYSTAL_AND_GEAR",
+  "progress_tiers": [1300, 9700, 24000, 38000],
+  "current_points_before": 0,
+  "current_points_after": 64000,
+  "target_points": 38000,
+  "points_missing_after": 0,
+  "claimed_tiers": [1300, 9700, 24000, 38000],
+  "minimum_guarantee_complete": true,
+  "scoring_actions": [
+    {"action_id":"FIRE_CRYSTAL_BUILDING","points_per_unit":100,"client_verified":true},
+    {"action_id":"CHIEF_GEAR_SCORE","points_per_unit":3,"client_verified":true,"excludes":"chief_charm"},
+    {"action_id":"MITHRIL","points_per_unit":28800,"client_verified":true},
+    {"action_id":"HERO_GEAR_ESSENCE_STONE","points_per_unit":800,"client_verified":true},
+    {"action_id":"HERO_EXCLUSIVE_WIDGET","points_per_unit":1600,"client_verified":true},
+    {"action_id":"CONSTRUCTION_SPEEDUP_MINUTE","points_per_unit":1,"client_verified":true,"excludes":"gem_speedup"},
+    {"action_id":"RESEARCH_SPEEDUP_MINUTE","points_per_unit":1,"client_verified":true,"excludes":"gem_speedup"},
+    {"action_id":"TRAINING_PROMOTION_SPEEDUP_MINUTE","points_per_unit":1,"client_verified":true,"excludes":"gem_speedup"},
+    {"action_id":"EXPERT_SKILL_SPEEDUP_MINUTE","points_per_unit":1,"client_verified":true,"excludes":"gem_speedup"}
+  ],
+  "executed_plan": {
+    "action_id": "HERO_GEAR_ESSENCE_STONE",
+    "skill_goal": "EVENT_MINIMUM_GUARANTEE",
+    "hero": "阿隆索",
+    "equipment": "神射手目镜",
+    "before_level": 7,
+    "after_level": 8,
+    "resource": "HERO_GEAR_ESSENCE_STONE",
+    "amount": 80,
+    "before": 286,
+    "after": 206,
+    "reason": "user policy prioritizes fire crystal or other scoring items and preserves speedups",
+    "expected_value": 64000,
+    "verified_points_gain": 64000
+  },
+  "evidence": [
+    "dataset/raw/event_minimum_guarantee/event_entry.png",
+    "dataset/raw/event_minimum_guarantee/event_scoring_actions.png",
+    "dataset/raw/event_minimum_guarantee/event_scoring_actions_2.png",
+    "dataset/raw/event_minimum_guarantee/essence_spend_after.png",
+    "dataset/raw/event_minimum_guarantee/points_after_verified.png",
+    "dataset/raw/event_minimum_guarantee/complete_final.png"
+  ]
+}

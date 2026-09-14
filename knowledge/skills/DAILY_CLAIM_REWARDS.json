@@ -1,0 +1,22 @@
+{
+  "skill_id":"DAILY_CLAIM_REWARDS",
+  "name":"Claim completed daily tasks",
+  "goal":"Claim one or more completed Daily tasks and prove activity increase plus cleared claim state",
+  "preconditions":["Daily page","claimable_count > 0","claim button visible"],
+  "required_page":"DAILY",
+  "required_state":{"status":"CLAIMABLE"},
+  "required_vision":["PAGE_DAILY","BTN_DAILY_CLAIM_ALL","POPUP_DAILY_REWARD"],
+  "required_actions":["claim all","dismiss reward"],
+  "verification":["reward feedback","activity delta equals reward","claimable_count becomes 0"],
+  "failure_conditions":["NO_CLAIMABLE_TASK","REWARD_UNKNOWN","ACTIVITY_UNCHANGED","CLAIM_NOT_CLEARED"],
+  "recovery":["REFRESH_STATE","REOPEN_PAGE","SWITCH_TASK"],
+  "dependencies":["Vision","WorldState","Verifier"],
+  "risk":"LOW",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT"],
+  "status":"VERIFIED",
+  "live_attempts":3,
+  "live_successes":3,
+  "verified_variants":["HERO_RECRUIT_SINGLE","LOGIN_ALLIANCE_HELP_TRAIN_MULTI","ALLIANCE_CONTRIBUTE_5"],
+  "stable":false
+}

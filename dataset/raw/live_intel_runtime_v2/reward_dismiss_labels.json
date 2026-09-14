@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "source": "LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples": [
+    {
+      "image": "step_002_before.png",
+      "page": "POPUP",
+      "elements": [
+        {
+          "semantic": "BTN_DISMISS_INTEL_REWARD",
+          "roi": {
+            "x_norm": 0.36,
+            "y_norm": 0.90,
+            "w_norm": 0.28,
+            "h_norm": 0.07
+          },
+          "confidence": 0.99
+        }
+      ]
+    }
+  ]
+}

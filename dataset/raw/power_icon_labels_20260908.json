@@ -1,0 +1,10 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "reviewed_from":"LIVE_CLIENT",
+  "samples":[
+    {"image":"live_20260908_training_navigation_auto_v1/step_002_before.png","page":"HOME","elements":[
+      {"semantic":"BTN_OPEN_POWER_OVERVIEW_ICON","roi":{"x_norm":0.135,"y_norm":0.041,"w_norm":0.055,"h_norm":0.031},"confidence":0.99}
+    ]}
+  ]
+}

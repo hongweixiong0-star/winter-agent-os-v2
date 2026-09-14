@@ -1,0 +1,13 @@
+{
+  "schema_version":"1.0","gate":"REVIEWED","records":[
+    {"id":"MEAT","name":"生肉","aliases":["肉","Meat","Food"],"icon_semantic":"raw_meat/food","page":["HOME","MAP","RESOURCE_DETAIL"],"source":["wosforge_beginner","cn_wiki_faq","taptap_beginner"],"confidence":0.95,"status":"CONFIRMED","notes":"四种基础资源之一；城内生产与世界采集。"},
+    {"id":"WOOD","name":"木材","aliases":["木头","Wood","Lumber"],"icon_semantic":"logs/wood","page":["HOME","MAP","RESOURCE_DETAIL"],"source":["wosforge_beginner","cn_wiki_faq","taptap_beginner"],"confidence":0.95,"status":"CONFIRMED","notes":"四种基础资源之一。"},
+    {"id":"COAL","name":"煤矿","aliases":["煤","Coal"],"icon_semantic":"black_coal","page":["HOME","MAP","RESOURCE_DETAIL"],"source":["wosforge_beginner","cn_wiki_faq","taptap_beginner"],"confidence":0.95,"status":"CONFIRMED","notes":"四种基础资源之一。"},
+    {"id":"IRON","name":"铁矿","aliases":["铁","Iron"],"icon_semantic":"iron_ore","page":["HOME","MAP","RESOURCE_DETAIL"],"source":["wosforge_beginner","cn_wiki_faq","taptap_beginner"],"confidence":0.95,"status":"CONFIRMED","notes":"四种基础资源之一。"},
+    {"id":"STEEL","name":"钢材","aliases":["Steel"],"icon_semantic":"steel_ingot","page":["EXPLORATION","INTEL","RESEARCH"],"source":["wosforge_beginner","cn_wiki_faq","taptap_beginner"],"confidence":0.85,"status":"LIKELY","notes":"中文百科称无生产建筑，来源含英雄探险、情报站任务和礼包；需当前客户端验证。"},
+    {"id":"GEMS","name":"钻石","aliases":["宝石","Gems"],"icon_semantic":"gem","page":["HOME","VIP","EVENT"],"source":["official_google_play","wosforge_beginner"],"confidence":0.9,"status":"CONFIRMED","notes":"付费/稀缺货币语义；自动化默认禁止消耗。"},
+    {"id":"FIRE_CRYSTAL","name":"火晶","aliases":["Fire Crystal","FC"],"icon_semantic":"fire_crystal","page":["BUILDING","RESEARCH"],"source":["official_google_play","wosforge_buildings"],"confidence":0.95,"status":"CONFIRMED","notes":"官方 2026-08 更新说明：熔炉达到火晶1级进入火晶时代。"},
+    {"id":"SPEEDUP","name":"加速道具","aliases":["加速","Speedup"],"icon_semantic":"clock_arrows","page":["BUILDING","RESEARCH","TRAINING"],"source":["wosforge_beginner","taptap_beginner"],"confidence":0.9,"status":"CONFIRMED","notes":"存在建造、研究、训练等场景；具体子类后续发现。"},
+    {"id":"HERO_SHARD","name":"英雄碎片","aliases":["英雄信物","Hero Shard","Fragment"],"icon_semantic":"hero_fragment","page":["HERO","EVENT"],"source":["wosforge_main","taptap_beginner"],"confidence":0.9,"status":"CONFIRMED","notes":"英雄养成材料；具体稀有度与通用/专属类型待客户端枚举。"}
+  ]
+}

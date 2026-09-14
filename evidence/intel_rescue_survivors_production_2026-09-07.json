@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "status": "VERIFIED",
+  "mode": "PRODUCTION",
+  "task": "INTEL_RESCUE_SURVIVORS_10",
+  "live_client": "com.gof.china",
+  "attempts": [
+    {"attempt":1,"stamina_before":172,"stamina_after":161,"displayed_cost":12,"note":"one stamina regenerated during the observed interval","result":"SUCCESS","claim":"VERIFIED"}
+  ],
+  "verified_chain": ["SELECT_INTEL_RESCUE_SURVIVORS","OPEN_INTEL_RESCUE_SURVIVORS_TARGET","EXECUTE_INTEL_RESCUE_SURVIVORS","INTEL_CLAIM_REWARDS","DISMISS_INTEL_REWARD"],
+  "evidence_roots": [
+    "dataset/raw/live_intel_orange_tent_probe_20260907.png",
+    "dataset/raw/live_intel_rescue_survivors_target_20260907.png",
+    "dataset/raw/live_intel_rescue_survivors_execute_20260907.png",
+    "dataset/raw/live_intel_rescue_survivors_claim_20260907"
+  ]
+}

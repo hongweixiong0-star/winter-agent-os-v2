@@ -1,0 +1,13 @@
+{
+  "schema_version":"1.0","status":"ACTIVE","source":"USER_SIGNAL_PLUS_LIVE_CLIENT",
+  "user_signal":"Chief Stamina full","reserve_marches":1,
+  "live_actions":[
+    {"target":"麝牛","level":9,"displayed_cost":10,"result":"DISPATCHED_AND_RETURNED"},
+    {"target":"北极狼","level":6,"displayed_cost":10,"result":"DISPATCHED_AND_RETURNED"},
+    {"target":"麝牛","level":9,"displayed_cost":10,"result":"DISPATCHED_AND_RETURNED"},
+    {"target":"麝牛","level":9,"displayed_cost":10,"result":"DISPATCHED_AND_RETURNED","executor":"V2_LIVE_RUNTIME","verifier":"PASS_AFTER_EVIDENCE_FUSION_FIX"}
+  ],
+  "displayed_cost_committed":40,"numeric_stamina_before":null,"numeric_stamina_after":null,
+  "note":"Do not infer exact stamina delta without a numeric before/after read.",
+  "updated_at":"2026-09-06T13:31:28+08:00"
+}

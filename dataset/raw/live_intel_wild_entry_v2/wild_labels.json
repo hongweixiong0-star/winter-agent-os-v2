@@ -1,0 +1,21 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "reviewed_from":"LIVE_CLIENT_PLUS_LEGACY_EVIDENCE",
+  "samples":[
+    {
+      "image":"step_001_after_refresh_1.png",
+      "page":"MAP",
+      "elements":[
+        {"semantic":"BTN_OPEN_INTEL_WILD_HUD","roi":{"x_norm":0.865,"y_norm":0.635,"w_norm":0.120,"h_norm":0.075},"confidence":0.92}
+      ]
+    },
+    {
+      "image":"wild_fresh_before.png",
+      "page":"MAP",
+      "elements":[
+        {"semantic":"BTN_OPEN_INTEL_WILD_HUD","roi":{"x_norm":0.865,"y_norm":0.635,"w_norm":0.120,"h_norm":0.075},"confidence":0.96}
+      ]
+    }
+  ]
+}

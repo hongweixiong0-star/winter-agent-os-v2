@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "mode": "PRODUCTION",
+  "date": "2026-09-05",
+  "policy": {
+    "claim_only_explicit_free_or_already_attached_rewards": true,
+    "real_money_actions": "BLOCKED",
+    "bounded_live_notification_pass": true
+  },
+  "results": [
+    {"surface":"MAIL_INITIAL","result":"SUCCESS","before":{"WAR":2,"ALLIANCE":4,"SYSTEM":4,"REPORT":57},"after":{"WAR":0,"ALLIANCE":0,"SYSTEM":0,"REPORT":0},"verified_rewards":["GEMS","HERO_SHARDS","SPEEDUPS","RESOURCES","KEYS"],"evidence":["dataset/raw/live_mail_claim_result.png","dataset/raw/live_mail_all_cleared.png"]},
+    {"surface":"DAILY","result":"SUCCESS","before":{"claimable_badge":10},"after":{"activity":175,"claimable_badge":0},"evidence":["dataset/raw/live_daily_red_dot_claim_result.png","dataset/raw/live_daily_red_dot_after_rewards.png"]},
+    {"surface":"GROWTH_TASK","result":"SUCCESS","claims":14,"stop_condition":"next task requires Warehouse 28 and shows GO, not CLAIM","evidence":["dataset/raw/live_growth_task_claim_result.png","dataset/raw/live_growth_task_chain_14.png"]},
+    {"surface":"ALLIANCE_GIFTS","result":"SUCCESS","ally_batch_claimed":15,"victory_daily_before":61,"victory_daily_after":166,"top_chest_reward_gems":100,"new_incremental_gift_claimed":1,"stop_condition":"bounded pass; live alliance notifications continue asynchronously","evidence":["dataset/raw/live_alliance_gifts_batch_claim_result.png","dataset/raw/live_alliance_victory_gifts_mass_verified.png","dataset/raw/live_alliance_chest_reward_verified.png"]},
+    {"surface":"EVENT_FREE_TRACKS","result":"SUCCESS","claims":["LOGIN_DAY_6_FREE","HERO_RALLY_FREE_20_21_22","TARGET_EVENT_CHECKIN_DAY_6","ALLIANCE_MOBILIZATION_SUPPLY_X2"],"paid_routes_touched":false,"evidence":["dataset/raw/live_login_gift_free_claimed.png","dataset/raw/live_value_event_hero_rally_free_verified.png","dataset/raw/live_target_event_checkin_claimed.png","dataset/raw/live_alliance_mobilization_supply_result.png"]},
+    {"surface":"MAIL_INCREMENTAL","result":"SUCCESS","before":{"WAR":1,"ALLIANCE":1,"SYSTEM":0,"REPORT":1},"reward":{"FIRE_CRYSTAL":5},"after":{"WAR":0,"ALLIANCE":0,"SYSTEM":0,"REPORT":0},"evidence":["dataset/raw/live_mail_incremental_entry.png","dataset/raw/live_mail_incremental_cleared.png","dataset/raw/live_mail_incremental_all_clear.png"]},
+    {"surface":"EXPLORATION_IDLE_INCOME","result":"SUCCESS","before":{"idle_hours":9,"claim_enabled":true},"reward":{"STEEL":29000,"HERO_EXP":80000,"GEAR_ITEMS":3},"after":{"claim_enabled":false},"evidence":["dataset/raw/live_exploration_red_dot.png","dataset/raw/live_exploration_claim_verified.png","dataset/raw/live_exploration_after_claim.png"]}
+  ],
+  "classified_non_reward_red_dots": ["ALLIANCE_WAR","ALLIANCE_TERRITORY_MIGRATION","PET_SKILL_READY","CHIEF_ORDER_READY","MERCHANT_REFRESH_OR_PURCHASE","ARMS_RACE_INFO","TREASURE_HUNTER_ACTION"],
+  "notes": "A global red-dot count is not a reward count. New mail and alliance gifts may arrive during the audit, so completion is verified per page and per bounded pass."
+}

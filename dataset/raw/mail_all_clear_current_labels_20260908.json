@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "reviewed_from": "LIVE_CLIENT",
+  "samples": [
+    {
+      "image": "live_20260908_next_batch_mail_v2/step_001_after_refresh_2.png",
+      "page": "MAIL",
+      "elements": [
+        {
+          "semantic": "STATUS_MAIL_ALL_CLEAR",
+          "roi": {"x_norm": 0.215, "y_norm": 0.060, "w_norm": 0.195, "h_norm": 0.065},
+          "confidence": 0.99
+        }
+      ]
+    }
+  ]
+}

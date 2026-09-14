@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "retrieved_at": "2026-09-03",
+  "sources": [
+    {"type":"LIVE_CLIENT","name":"CN client Research Center and technology tree","evidence":["dataset/raw/live_research_power_navigation.png","dataset/raw/live_research_queue_busy.png","dataset/raw/live_research_recheck_queue.png","dataset/raw/live_research_recheck_active.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_UI_AND_STATE"},
+    {"type":"COMMUNITY_DB","name":"Whiteout Survival Wiki — Research Center","url":"https://www.whiteoutsurvival.wiki/buildings/research-center/","license":"REFERENCE_ONLY_UNLESS_CONFIRMED","use":"MECHANISM_PRIOR"},
+    {"type":"PLAYER_GUIDE","name":"TapTap research/building guide","url":"https://www.taptap.cn/moment/540206174411163246","license":"REFERENCE_ONLY","use":"STRATEGY_CANDIDATE"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"AminulIslamSifat/wos capability list","url":"https://github.com/AminulIslamSifat/wos","license":"VERIFY_PER_PATH","use":"CAPABILITY_GAP_ONLY"},
+    {"type":"LEGACY_EVIDENCE","name":"legacy research_manager failure patterns","path":"E:/dongri-mumu-bot/modules/research_manager.py","license":"LOCAL_REFERENCE_ONLY","use":"FAILURE_PATTERNS_ONLY"}
+  ],
+  "conflicts": []
+}

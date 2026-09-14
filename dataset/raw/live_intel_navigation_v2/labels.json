@@ -1,0 +1,14 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "reviewed_from":"LIVE_CLIENT",
+  "samples":[
+    {
+      "image":"../live_intel_city_scan1.png",
+      "page":"HOME",
+      "elements":[
+        {"semantic":"TARGET_LIGHTHOUSE_BUILDING","roi":{"x_norm":0.180,"y_norm":0.570,"w_norm":0.350,"h_norm":0.230},"confidence":0.96}
+      ]
+    }
+  ]
+}

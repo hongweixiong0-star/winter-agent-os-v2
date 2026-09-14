@@ -1,0 +1,26 @@
+{
+  "skill_id": "JOIN_BEAR_RALLY",
+  "goal_support": ["PARTICIPATE_BEAR"],
+  "entry_pages": ["ALLIANCE", "ALLIANCE_WAR", "MAP", "BEAR"],
+  "target_pages": ["MARCH", "ALLIANCE_WAR"],
+  "required_semantics": ["BEAR_RALLY_JOIN", "RALLY_CAPACITY", "RALLY_JOIN_STATE"],
+  "execute_steps": ["VERIFY_BEAR_EVENT_ACTIVE", "OPEN_ALLIANCE_RALLY_LIST", "SKIP_GREY_OR_FULL_RALLY", "TAP_FIRST_GREEN_JOIN_IMMEDIATELY", "SELECT_BODY_HERO_PRESET_OR_NO_HERO", "DISPATCH_WITHOUT_SCREENSHOT_DELAY"],
+  "formation_policy": {
+    "leader": "Use full main heroes and a saved Bear leader preset.",
+    "member_priority": ["JESSIE", "SEO_YOON", "JASSER", "NO_HERO"],
+    "fallback": "If all effective body heroes are already deployed, join without heroes.",
+    "forbidden_behavior": "Do not use an ineffective hero merely to fill the hero slot; do not block joining because no body hero is available."
+  },
+  "success_conditions": ["target rally displays MARCHING", "member avatar appears in rally", "special march count increases"],
+  "risk": "MEDIUM_COMBAT",
+  "preconditions": ["Bear event active", "green join button visible", "rally capacity available", "at least one march available"],
+  "failure_conditions": ["UNKNOWN_PAGE", "RALLY_FULL", "TARGET_STATE_CHANGED", "NO_MARCH", "PAID_ACTION"],
+  "recovery": ["ON_RALLY_FULL_TRY_NEXT", "ON_TARGET_CHANGED_TRY_NEXT", "ON_HERO_LIMIT_USE_NEXT_BODY_HERO", "ON_ALL_BODY_HEROES_BUSY_USE_NO_HERO", "REFRESH_RALLY_LIST", "SWITCH_TASK"],
+  "resource_cost": "troops and march slot; no stamina observed for live Bear rally",
+  "external_evidence": ["CURRENT_KNOWLEDGE_BASE", "EXTERNAL_WOS_PRIOR"],
+  "live_evidence": ["dataset/raw/bear_live_20260909/join_list_now.png", "dataset/raw/bear_live_20260909/joined_bear_2.png", "dataset/raw/bear_live_20260909/auto_join_final.png"],
+  "confidence": 0.9,
+  "lifecycle": "BLOCKED",
+  "deprecated_by": "JOIN_RALLY(target=BEAR, context=BearGoalState)",
+  "candidate_note": "Historical live-evidence holder only. It must never enter the real attempt pool; generic JOIN_RALLY owns execution."
+}

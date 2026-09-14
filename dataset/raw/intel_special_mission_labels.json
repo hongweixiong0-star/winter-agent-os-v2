@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "source": "LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples": [
+    {
+      "image": "live_intel_purple_axes_probe.png",
+      "page": "POPUP",
+      "elements": [
+        {
+          "semantic": "POPUP_INTEL_HERO_JOURNEY_TITLE",
+          "roi": {"x_norm": 0.12, "y_norm": 0.215, "w_norm": 0.76, "h_norm": 0.05},
+          "confidence": 0.99
+        }
+      ]
+    },
+    {
+      "image": "live_intel_orange_rabbit_probe.png",
+      "page": "POPUP",
+      "elements": [
+        {
+          "semantic": "POPUP_INTEL_MASTER_BOUNTY_TITLE",
+          "roi": {"x_norm": 0.12, "y_norm": 0.265, "w_norm": 0.76, "h_norm": 0.05},
+          "confidence": 0.99
+        }
+      ]
+    },
+    {
+      "image": "live_intel_master_bounty_target_probe.png",
+      "page": "BEAST",
+      "elements": [
+        {
+          "semantic": "DIALOG_INTEL_MASTER_BOUNTY_HIGH_POWER",
+          "roi": {"x_norm": 0.205, "y_norm": 0.18, "w_norm": 0.59, "h_norm": 0.35},
+          "confidence": 0.99
+        }
+      ]
+    },
+    {
+      "image": "live_intel_hero_journey_target_probe.png",
+      "page": "EXPLORATION",
+      "elements": [
+        {
+          "semantic": "DIALOG_INTEL_HERO_JOURNEY_EXPLORE",
+          "roi": {"x_norm": 0.20, "y_norm": 0.215, "w_norm": 0.60, "h_norm": 0.315},
+          "confidence": 0.99
+        }
+      ]
+    },
+    {
+      "image": "live_intel_hero_journey_progress.png",
+      "page": "MAP",
+      "elements": [
+        {
+          "semantic": "STATUS_INTEL_HERO_JOURNEY_FAILED",
+          "roi": {"x_norm": 0.43, "y_norm": 0.20, "w_norm": 0.18, "h_norm": 0.11},
+          "confidence": 0.99
+        }
+      ]
+    }
+  ]
+}

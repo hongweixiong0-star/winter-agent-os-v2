@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "status": "VERIFIED",
+  "mode": "PRODUCTION",
+  "task": "INTEL_FIREBEAST_10",
+  "live_client": "com.gof.china",
+  "target": {"name":"炽红巨兽","level":20,"recommended_power":1467020,"displayed_stamina_cost":10},
+  "attempts": [
+    {"attempt":1,"stamina_before":198,"stamina_after":189,"note":"one stamina regenerated during the observed interval","result":"SUCCESS","dispatch":"VERIFIED","claim":"VERIFIED"},
+    {"attempt":2,"stamina_before":181,"stamina_after":172,"note":"one stamina regenerated during the observed interval","result":"SUCCESS","dispatch":"VERIFIED","claim":"VERIFIED"}
+  ],
+  "verified_chain": ["SELECT_INTEL_FIREBEAST_MISSION","OPEN_INTEL_BEAST_TARGET","INTEL_BEAST_START_MARCH","DISPATCH_INTEL_BEAST","INTEL_CLAIM_REWARDS","DISMISS_INTEL_REWARD"],
+  "safety": {"victory_assured_required":true,"real_money":false},
+  "evidence_roots": [
+    "dataset/raw/live_intel_orange_goat_probe_20260907.png",
+    "dataset/raw/live_intel_blazing_behemoth_target_20260907.png",
+    "dataset/raw/live_intel_blazing_behemoth_dispatch_20260907",
+    "dataset/raw/live_intel_blazing_behemoth_claim_20260907",
+    "dataset/raw/live_intel_firebeast2_dispatch_20260907_round2",
+    "dataset/raw/live_intel_firebeast2_claim_20260907"
+  ]
+}

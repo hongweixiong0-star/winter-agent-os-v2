@@ -1,0 +1,49 @@
+{
+  "skill_id": "OPEN_ARENA",
+  "goal_support": [
+    "USE_FREE_ARENA_ATTEMPTS"
+  ],
+  "entry_pages": [
+    "HOME"
+  ],
+  "target_pages": [
+    "ARENA"
+  ],
+  "required_semantics": [
+    "BTN_OPEN_ARENA"
+  ],
+  "execute_steps": [
+    "FIND_SEMANTIC",
+    "TAP_CENTER",
+    "SCREENSHOT"
+  ],
+  "success_conditions": [
+    "page_is_arena"
+  ],
+  "risk": "LOW",
+  "preconditions": [
+    "entry page recognized",
+    "required semantics or reviewed prior available",
+    "action-specific verifier exists before real try"
+  ],
+  "failure_conditions": [
+    "UNKNOWN_PAGE",
+    "SEMANTIC_NOT_FOUND",
+    "VERIFIER_FAILED",
+    "PAID_ACTION"
+  ],
+  "recovery": [
+    "REFRESH_STATE",
+    "BACK",
+    "REOPEN_PAGE",
+    "SWITCH_TASK"
+  ],
+  "resource_cost": "READ_FROM_CURRENT_CLIENT",
+  "external_evidence": [
+    "CURRENT_KNOWLEDGE_BASE",
+    "EXTERNAL_WOS_PRIOR"
+  ],
+  "live_evidence": [],
+  "confidence": 0.45,
+  "lifecycle": "CANDIDATE"
+}

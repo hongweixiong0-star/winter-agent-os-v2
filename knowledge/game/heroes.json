@@ -1,0 +1,8 @@
+{"schema_version":"1.0","gate":"REVIEWED","records":[
+  {"id":"MOLLY","name":"茉莉","rarity":"SSR/Legendary mapping requires locale verification","type":"unknown","skills":"dynamic","role":"combat","icon":"hero.molly","source":["official_google_play","taptap_beginner"],"confidence":0.9,"status":"CONFIRMED"},
+  {"id":"CLORIS","name":"克劳瑞斯","rarity":"稀有/Blue reported","type":"development","skills":"meat gathering bonus reported","role":"gather_meat","icon":"hero.cloris","source":["taptap_beginner","taptap_strategy_hub"],"confidence":0.78,"status":"LIKELY"},
+  {"id":"EUGENE","name":"尤金","rarity":"稀有/Blue reported","type":"development","skills":"wood gathering bonus reported","role":"gather_wood","icon":"hero.eugene","source":["taptap_beginner","taptap_strategy_hub"],"confidence":0.78,"status":"LIKELY"},
+  {"id":"CHARLIE","name":"查理","rarity":"稀有/Blue reported","type":"development","skills":"coal gathering bonus reported","role":"gather_coal","icon":"hero.charlie","source":["taptap_beginner","taptap_strategy_hub"],"confidence":0.78,"status":"LIKELY"},
+  {"id":"SMITH","name":"史密斯","rarity":"稀有/Blue reported","type":"development","skills":"iron gathering bonus reported","role":"gather_iron","icon":"hero.smith","source":["taptap_beginner","taptap_strategy_hub"],"confidence":0.78,"status":"LIKELY"}
+],"notes":"Not an exhaustive roster. Heroes are discovery-driven; community wiki claimed 65 heroes on 2026-09-01, but V1 imports only cross-useful records."
+}

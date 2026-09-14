@@ -1,0 +1,11 @@
+{
+  "schema_version":"1.0",
+  "retrieved_at":"2026-09-03",
+  "sources":[
+    {"type":"LIVE_CLIENT","name":"Level-22 Great Horned Deer Intel cycle","evidence":["dataset/raw/live_beast_intel_world_target.png","dataset/raw/live_beast_march_selection.png","dataset/raw/live_beast_marching.png","dataset/raw/live_beast_return_complete.png","dataset/raw/live_beast_intel_completed.png","dataset/raw/live_beast_intel_reward.png","dataset/raw/live_beast_intel_claimed.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_SKILL"},
+    {"type":"OFFICIAL","name":"Google Play — How to hunt Beasts","url":"https://play.google.com/store/apps/editorial?hl=en_US&id=mc_games_editorial_evergreen_postinstall_hunt_beasts_whiteout_survival_now_fcp","license":"REFERENCE_ONLY","use":"STAMINA_MECHANISM_PRIOR"},
+    {"type":"COMMUNITY_DB","name":"WSCO — Beasts and Polar Terrors","url":"https://www.whiteoutsurvival-community.com/tools/wiki/events/beasts-polar-terrors-wsco.html","license":"REFERENCE_ONLY","use":"ENTITY_SEPARATION_PRIOR"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"AminulIslamSifat/wos","url":"https://github.com/AminulIslamSifat/wos","license":"MIT_REPORTED_VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"}
+  ],
+  "conflicts":[{"field":"stamina_cost","source_a":"target UI displayed 10","source_b":"live account changed 92→85","difference":"base/displayed 10 vs actual 7","likely_current":"account/hero reduction","status":"VERIFIED_LIVE_DELTA_WITH_CAUSE_LIKELY"}]
+}

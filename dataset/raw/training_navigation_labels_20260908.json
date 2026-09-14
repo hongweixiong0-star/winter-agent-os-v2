@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "reviewed_from": "LIVE_CLIENT",
+  "samples": [
+    {"image":"live_20260908_next_batch_home.png","page":"HOME","elements":[
+      {"semantic":"BTN_OPEN_POWER_OVERVIEW","roi":{"x_norm":0.135,"y_norm":0.035,"w_norm":0.285,"h_norm":0.050},"confidence":0.99}
+    ]},
+    {"image":"live_20260908_power_entry.png","page":"POPUP","elements":[
+      {"semantic":"POPUP_POWER_OVERVIEW","roi":{"x_norm":0.030,"y_norm":0.095,"w_norm":0.940,"h_norm":0.815},"confidence":0.99},
+      {"semantic":"BTN_OPEN_POWER_DETAILS","roi":{"x_norm":0.355,"y_norm":0.595,"w_norm":0.290,"h_norm":0.055},"confidence":0.99}
+    ]},
+    {"image":"live_20260908_power_details.png","page":"POPUP","elements":[
+      {"semantic":"POPUP_POWER_DETAILS","roi":{"x_norm":0.030,"y_norm":0.130,"w_norm":0.940,"h_norm":0.735},"confidence":0.99},
+      {"semantic":"BTN_POWER_TROOP_IMPROVE","roi":{"x_norm":0.745,"y_norm":0.420,"w_norm":0.195,"h_norm":0.055},"confidence":0.99}
+    ]},
+    {"image":"live_20260908_training_navigation_settled.png","page":"HOME","elements":[
+      {"semantic":"TARGET_INFANTRY_CAMP_HIGHLIGHTED","roi":{"x_norm":0.185,"y_norm":0.390,"w_norm":0.590,"h_norm":0.285},"confidence":0.99}
+    ]},
+    {"image":"live_20260908_training_menu_current.png","page":"HOME","elements":[
+      {"semantic":"BTN_OPEN_TRAINING_FROM_CAMP","roi":{"x_norm":0.605,"y_norm":0.620,"w_norm":0.135,"h_norm":0.100},"confidence":0.99}
+    ]}
+  ]
+}

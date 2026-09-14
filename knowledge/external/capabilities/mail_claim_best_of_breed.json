@@ -1,0 +1,15 @@
+{
+  "capability": "CLAIM_MAIL_REWARDS",
+  "reviewed_at": "2026-09-12T18:15:00+08:00",
+  "external_sources": [
+    "Shederator/wosbot: modules/tasks/src/main/java/dev/frostguard/tasks/dailies/MailRewardsRoutine.java",
+    "Shederator/wosbot: modules/tasks/src/main/java/dev/frostguard/tasks/dailies/MailClaimPassPolicy.java",
+    "AminulIslamSifat/whiteout-survival-bot: usecases/mail.py"
+  ],
+  "selected_pattern": "before/after unread-marker evidence; continue only after verified progress; maximum three passes",
+  "v2_equivalent": "verify_mail_read_or_claim + Runtime max_actions budget",
+  "verifier": ["known reward popup", "mail badge count reduction", "all badges cleared"],
+  "rejected": ["fixed tab coordinates as sole truth", "blind four-tap claim success", "unknown-license templates"],
+  "status": "INTEGRATED_EXISTING_PATTERN_CONFIRMED",
+  "next_live_ab": "Run MAIL goal when mail badge is present; compare no-progress failures and latency"
+}

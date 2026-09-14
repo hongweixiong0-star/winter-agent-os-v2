@@ -1,0 +1,13 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "source":"LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples":[{
+    "image":"live_intel_remaining_current.png",
+    "page":"INTEL",
+    "elements":[
+      {"semantic":"TARGET_INTEL_BEAST_MISSION","roi":{"x_norm":0.215,"y_norm":0.275,"w_norm":0.13,"h_norm":0.11},"confidence":0.99},
+      {"semantic":"TARGET_INTEL_BEAST_MISSION","roi":{"x_norm":0.445,"y_norm":0.535,"w_norm":0.13,"h_norm":0.11},"confidence":0.99}
+    ]
+  }]
+}

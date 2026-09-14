@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-08T10:39:35.715613+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "btn_open_power_overview_icon__step_002_before__0",
+      "semantic": "BTN_OPEN_POWER_OVERVIEW_ICON",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/power_icon_20260908/btn_open_power_overview_icon__step_002_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_training_navigation_auto_v1/step_002_before.png",
+      "parent_sha256": "a02cfd93d0fb1a3c32f9404c573291b9a1530955e9fcab20a6847c984c98d7c1",
+      "roi_norm": {
+        "x_norm": 0.135,
+        "y_norm": 0.041,
+        "w_norm": 0.055,
+        "h_norm": 0.031
+      },
+      "width": 40,
+      "height": 40,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

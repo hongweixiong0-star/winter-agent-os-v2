@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "retrieved_at": "2026-09-02T22:32:00+08:00",
+  "skill_id": "GATHER_RESOURCE",
+  "sources": [
+    {"type":"LIVE_CLIENT","url":null,"license":"PRIVATE_RUNTIME_EVIDENCE","use":"Current CN flow, button text, march states and verifier evidence"},
+    {"type":"OFFICIAL","url":"https://www.centurygames.com/whiteout-survival-new-content-update/","license":"REFERENCE_ONLY","use":"Current official update provenance"},
+    {"type":"OFFICIAL","url":"https://apps.apple.com/cn/app/%E6%97%A0%E5%B0%BD%E5%86%AC%E6%97%A5/id6478492012","license":"REFERENCE_ONLY","use":"CN release notes and alliance safe gathering description"},
+    {"type":"COMMUNITY_DB","url":"https://www.whiteoutsurvival.wiki/research/wood-gathering-i/","license":"REFERENCE_ONLY","use":"Wood gathering research mechanics"},
+    {"type":"COMMUNITY_DB","url":"https://www.whiteout-survival-community.com/tools/wiki/events/marches-wsco.html","license":"REFERENCE_ONLY","use":"March queue semantics"},
+    {"type":"OPEN_SOURCE_PROJECT","project":"AminulIslamSifat/wos","url":"https://github.com/AminulIslamSifat/wos","path":"usecases/gather.py","license":"README_CLAIMS_MIT_BUT_LICENSE_FILE_NOT_FOUND_REVIEW_REQUIRED","use":"Reference-only flow, OCR regions, retry and march-count ideas"},
+    {"type":"OPEN_SOURCE_PROJECT","project":"Shederator/wosbot","url":"https://github.com/Shederator/wosbot","license":"AGPL-3.0","use":"Reference-only capabilities and queue/recovery ideas"},
+    {"type":"OPEN_SOURCE_PROJECT","project":"batazor/whiteout-survival-autopilot","url":"https://github.com/batazor/whiteout-survival-autopilot","license":"UNKNOWN","use":"Reference-only OCR and dataset workflow ideas"}
+  ]
+}

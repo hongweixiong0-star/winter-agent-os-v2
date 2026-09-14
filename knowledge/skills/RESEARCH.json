@@ -1,0 +1,20 @@
+{
+  "skill_id": "RESEARCH",
+  "name": "Research technology",
+  "goal": "Start one Whiteout Survival technology and prove the research queue transition",
+  "preconditions": ["RESEARCH page known", "research queue available", "node prerequisites and cost verified"],
+  "required_page": "RESEARCH",
+  "required_state": {"queue_available": true},
+  "required_vision": ["PAGE_RESEARCH", "RESEARCH_TAB_*", "BTN_START_RESEARCH", "RESEARCH_QUEUE_TIMER"],
+  "required_actions": ["select branch", "select research node", "start normal research"],
+  "verification": ["expected node shown", "queue state IN_PROGRESS", "timer visible"],
+  "failure_conditions": ["QUEUE_BUSY", "PREREQUISITE_MISSING", "RESOURCE_INSUFFICIENT", "UNKNOWN_NODE"],
+  "recovery": ["REFRESH_STATE", "SWITCH_TASK"],
+  "dependencies": ["Vision", "WorldState", "Executor", "Verifier"],
+  "risk": "MEDIUM_RESOURCE_SPEND",
+  "confidence": 0.99,
+  "source": ["LIVE_CLIENT", "COMMUNITY_DB_PRIOR", "LEGACY_FAILURE_EVIDENCE"],
+  "status": "BLOCKED",
+  "blocker": "QUEUE_BUSY",
+  "live_attempts": 0
+}

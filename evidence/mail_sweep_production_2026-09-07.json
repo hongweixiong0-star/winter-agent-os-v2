@@ -1,0 +1,27 @@
+{
+  "schema_version":"1.0",
+  "status":"VERIFIED",
+  "mode":"PRODUCTION",
+  "task":"MAIL_REWARD_SWEEP",
+  "live_client":"com.gof.china",
+  "initial_badges":{"ALLIANCE":4,"SYSTEM":5,"REPORT":10},
+  "claims":[
+    {"tab":"REPORT","before_badge":10,"reward_popup":true,"after_badge":0,"result":"SUCCESS"},
+    {"tab":"ALLIANCE","before_badge":4,"reward_popup":true,"after_badge":0,"result":"SUCCESS"},
+    {"tab":"SYSTEM","before_badge":5,"reward_popup":true,"after_badge":0,"result":"SUCCESS"}
+  ],
+  "final_state":{"status":"CLAIMED","tab_badges":{},"badge_count":0},
+  "unattended_smoke":{"chain":["CLOSE_RESOURCE_SEARCH","OPEN_HOME","OPEN_MAIL","MAIL_ALL_CLEAR","OPEN_MAP","OPEN_INTEL","SWITCH_BEAST","SWITCH_GATHER"],"single_execution_lane":true,"goal_cross_talk":false,"result":"VERIFIED"},
+  "evidence_roots":[
+    "dataset/raw/live_mail_navigation_current_20260907.png",
+    "dataset/raw/live_mail_report_claim_result_20260907.png",
+    "dataset/raw/live_mail_after_report_claim_20260907.png",
+    "dataset/raw/live_mail_alliance_before_claim_20260907.png",
+    "dataset/raw/live_mail_alliance_claim_result_20260907.png",
+    "dataset/raw/live_mail_system_before_claim_20260907.png",
+    "dataset/raw/live_mail_system_claim_result_20260907.png",
+    "dataset/raw/live_mail_all_clear_20260907.png",
+    "dataset/raw/live_mail_sweep_all_clear_smoke_20260907",
+    "dataset/raw/control_panel/runtime_mail/20260907_061104_894669"
+  ]
+}

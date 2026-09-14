@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T09:33:23.023561+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "popup_exploration_idle_dialog__step_001_after__0",
+      "semantic": "POPUP_EXPLORATION_IDLE_DIALOG",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/exploration_idle_dialog_20260907/popup_exploration_idle_dialog__step_001_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deploy_exploration_claim_v3/step_001_after.png",
+      "parent_sha256": "e61562596eff60aea2c3b58799fd11e9109e60f2212295340eea709ce272eb09",
+      "roi_norm": {
+        "x_norm": 0.08,
+        "y_norm": 0.2,
+        "w_norm": 0.84,
+        "h_norm": 0.61
+      },
+      "width": 605,
+      "height": 781,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_exploration_idle_confirm__step_001_after__1",
+      "semantic": "BTN_EXPLORATION_IDLE_CONFIRM",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/exploration_idle_dialog_20260907/btn_exploration_idle_confirm__step_001_after__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deploy_exploration_claim_v3/step_001_after.png",
+      "parent_sha256": "e61562596eff60aea2c3b58799fd11e9109e60f2212295340eea709ce272eb09",
+      "roi_norm": {
+        "x_norm": 0.29,
+        "y_norm": 0.69,
+        "w_norm": 0.42,
+        "h_norm": 0.07
+      },
+      "width": 302,
+      "height": 90,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

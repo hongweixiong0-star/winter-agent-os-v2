@@ -1,0 +1,1 @@
+{"schema_version":"1.0","pages":["HOME","MAP","RESOURCE_DETAIL","MARCH","MARCH_QUEUE","BUILDING","RESEARCH","TRAINING","ALLIANCE","INTEL","BEAST","GIANT_BEAST","BEAR","EVENT","HERO","PET","MAIL","VIP","EXPLORATION","ARENA","SETTINGS","PROFILE","POPUP"],"state_policy":{"unknown":"UNKNOWN","unknown_action":"NO_CLICK","detection_order":["TEMPLATE","OCR","DETECTOR","QWEN"]}}

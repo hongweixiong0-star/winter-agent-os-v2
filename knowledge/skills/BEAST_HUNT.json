@@ -1,0 +1,21 @@
+{
+  "skill_id":"BEAST_HUNT",
+  "name":"Hunt normal Beast",
+  "goal":"Defeat one identified normal Beast and verify return and mission/battle result",
+  "preconditions":["normal Beast distinguished from Giant Beast/Bear","target available","idle march","sufficient stamina","victory expectation verified"],
+  "required_page":"BEAST",
+  "required_state":{"available":true,"idle_march_min":1},
+  "required_vision":["DIALOG_BEAST_TARGET","BTN_BEAST_START_MARCH","STATUS_VICTORY_ASSURED","STATUS_BEAST_RETURNING"],
+  "required_actions":["open target","open march","dispatch","wait natural return","return to source mission"],
+  "verification":["march queue increases","RETURNING after combat","queue restores","stamina decreases within displayed bound","Intel mission becomes CLAIMABLE","reward feedback"],
+  "failure_conditions":["STAMINA_INSUFFICIENT","NO_MARCH","TARGET_GONE","DEFEAT","RETURN_TIMEOUT","VERIFIER_UNKNOWN"],
+  "recovery":["REFRESH_STATE","REOPEN_PAGE","SWITCH_TASK"],
+  "dependencies":["Vision","WorldState","March","Executor","Verifier","Intel claim"],
+  "risk":"MEDIUM_STAMINA_SPEND",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT","OFFICIAL","COMMUNITY_DB","OPEN_SOURCE_PROJECT"],
+  "status":"VERIFIED",
+  "live_attempts":1,
+  "live_successes":1,
+  "stable":false
+}

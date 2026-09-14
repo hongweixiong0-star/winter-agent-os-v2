@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T10:02:52.643061+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "target_intel_beast_mission_blue__step_004_before__0",
+      "semantic": "TARGET_INTEL_BEAST_MISSION_BLUE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_mission_v2_remaining/target_intel_beast_mission_blue__step_004_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_beast10_automatic_return_claim_round2/step_004_before.png",
+      "parent_sha256": "a94b4046d9a259376f1fdb8259d6e150b040b87bd13b8f9c3be20b3f2a919af7",
+      "roi_norm": {
+        "x_norm": 0.22,
+        "y_norm": 0.36,
+        "w_norm": 0.13,
+        "h_norm": 0.11
+      },
+      "width": 94,
+      "height": 141,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "target_intel_beast_mission_blue__step_004_before__1",
+      "semantic": "TARGET_INTEL_BEAST_MISSION_BLUE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_mission_v2_remaining/target_intel_beast_mission_blue__step_004_before__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_beast10_automatic_return_claim_round2/step_004_before.png",
+      "parent_sha256": "a94b4046d9a259376f1fdb8259d6e150b040b87bd13b8f9c3be20b3f2a919af7",
+      "roi_norm": {
+        "x_norm": 0.8,
+        "y_norm": 0.435,
+        "w_norm": 0.13,
+        "h_norm": 0.11
+      },
+      "width": 94,
+      "height": 141,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

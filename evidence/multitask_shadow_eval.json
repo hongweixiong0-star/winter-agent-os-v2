@@ -1,0 +1,16 @@
+{
+  "schema_version":"1.0",
+  "evaluated_at":"2026-09-04",
+  "mode":"SHADOW_REAL_SCREENSHOT",
+  "observations":[
+    {"page":"RESEARCH","decision":"SAFE_STOP","reason":"research_queue_busy"},
+    {"page":"TRAINING","decision":"SAFE_STOP","reason":"all_training_queues_busy"},
+    {"page":"ALLIANCE","decision":"SAFE_STOP","reason":"alliance_help_auto_active"},
+    {"page":"DAILY","decision":"DAILY_HERO_RECRUIT","reason":"free_recruit_daily_available"}
+  ],
+  "selected_index":3,
+  "selected_skill":"DAILY_HERO_RECRUIT",
+  "result":"PASS",
+  "production_claim":false,
+  "notes":"Uses screenshots from real client but is a shadow selection evaluation; it does not count as another live Daily execution."
+}

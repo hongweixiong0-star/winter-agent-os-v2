@@ -1,0 +1,13 @@
+{
+  "schema_version": "2.0",
+  "mechanisms": [
+    "NAVIGATION", "QUEUE_JOB", "MARCH_RESOURCE", "RALLY", "LIMITED_ATTEMPTS",
+    "SCORING_WRAPPER", "MISSION_BOARD", "PHASE_STATE_MACHINE", "WAVE_DEFENSE",
+    "BATTLEFIELD_CONTROL", "SHOP_EXCHANGE", "REWARD_CLAIM", "REFRESH_REROLL",
+    "REGISTRATION_SNAPSHOT", "COOLDOWN_TIMER"
+  ],
+  "event_adapter_rule": "Map existing mechanisms and skills first; create a new mechanism only after live evidence proves a genuine gap.",
+  "evidence_priority": ["LIVE_CLIENT", "OFFICIAL", "MULTI_SOURCE_CONFIRMED", "COMMUNITY_DB", "OPEN_SOURCE_PROJECT", "PLAYER_GUIDE", "LEGACY_EVIDENCE", "UNKNOWN"],
+  "source": "无尽冬日_V2_Game_Understanding_Universal_Skill_Library_V2.docx",
+  "status": "REVIEWED"
+}

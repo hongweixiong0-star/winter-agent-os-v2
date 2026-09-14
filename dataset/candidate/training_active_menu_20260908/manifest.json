@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-08T10:42:38.670077+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "btn_open_training_from_camp__step_003_after_refresh_2__0",
+      "semantic": "BTN_OPEN_TRAINING_FROM_CAMP",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_active_menu_20260908/btn_open_training_from_camp__step_003_after_refresh_2__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_training_navigation_auto_v2/step_003_after_refresh_2.png",
+      "parent_sha256": "fbe792e6af135ad779d7a488debc9c457c4a45affc153631ba20ea495ed20416",
+      "roi_norm": {
+        "x_norm": 0.65,
+        "y_norm": 0.6,
+        "w_norm": 0.17,
+        "h_norm": 0.15
+      },
+      "width": 122,
+      "height": 192,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

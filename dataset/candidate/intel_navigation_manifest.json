@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T05:50:22.862121+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "target_lighthouse_building__live_intel_city_scan1__0",
+      "semantic": "TARGET_LIGHTHOUSE_BUILDING",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_navigation/target_lighthouse_building__live_intel_city_scan1__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_city_scan1.png",
+      "parent_sha256": "f0aa0a01cf77e5a21dade4eac1e2468e5b0b4018a50380da0c5147e27317cd19",
+      "roi_norm": {
+        "x_norm": 0.18,
+        "y_norm": 0.57,
+        "w_norm": 0.35,
+        "h_norm": 0.23
+      },
+      "width": 252,
+      "height": 294,
+      "confidence": 0.96,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

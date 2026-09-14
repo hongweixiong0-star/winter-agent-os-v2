@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T16:27:24.050766+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "target_intel_beast_mission__step_003_after__0",
+      "semantic": "TARGET_INTEL_BEAST_MISSION",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_claw_last_v2/target_intel_beast_mission__step_003_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_claw2_claim_20260907/step_003_after.png",
+      "parent_sha256": "842bc8c53f42c49f20b7f20c6484e0e0e93cd3840625733d11f7035dc2c610c6",
+      "roi_norm": {
+        "x_norm": 0.67,
+        "y_norm": 0.515,
+        "w_norm": 0.13,
+        "h_norm": 0.11
+      },
+      "width": 94,
+      "height": 141,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

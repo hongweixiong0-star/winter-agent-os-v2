@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "status": "REVIEWED",
+  "source": "USER_PROVIDED_GOAL_LIBRARY_2026-09-09",
+  "policy": "F2P_CONSERVATIVE",
+  "formula": "Deadline + Reward + DailyLoss + EventSynergy + DevelopmentValue - ResourceCost - Risk",
+  "priority_classes": ["DEADLINE", "DAILY_FREE_VALUE", "QUEUE_UTILIZATION", "EVENT_OPTIMIZATION", "LONG_TERM_DEVELOPMENT"],
+  "p0_goals": ["CLEAR_INTEL", "DAILY_ACTIVITY_TARGET", "CLAIM_FREE_REWARDS", "USE_FREE_ARENA_ATTEMPTS", "EVENT_MINIMUM_GUARANTEE", "PARTICIPATE_BEAR"],
+  "p1_goals": ["KEEP_MARCHES_PRODUCTIVE", "KEEP_BUILDING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE", "KEEP_TRAINING_PRODUCTIVE", "ALLIANCE_HELP", "ALLIANCE_CONTRIBUTION", "CLAIM_EXPLORATION_IDLE", "AVOID_STAMINA_WASTE"],
+  "invariants": [
+    "LIVE_CLIENT_IS_FINAL_UI_FACT",
+    "GOAL_DECIDES_WHAT_SKILL_DECIDES_HOW",
+    "ONE_SCHEDULER_ONLY",
+    "CLICK_IS_NOT_COMPLETION",
+    "BLOCKED_GOAL_MUST_NOT_BLOCK_AGENT",
+    "REAL_MONEY_FORBIDDEN",
+    "RED_DOT_IS_DISCOVERY_NOT_AUTHORIZATION",
+    "ELIGIBLE_CANDIDATE_MUST_ENTER_REAL_ATTEMPT_POOL",
+    "CANDIDATE_READY_5_CYCLES_FORCES_ONE_EXPLORATION_ATTEMPT"
+  ],
+  "implemented_core": ["GoalState", "dynamic_priority", "deadline_pressure", "intel_discovery", "stamina_discovery", "queue_goal_discovery", "event_minimum_guarantee_discovery", "verified_free_claim_discovery", "single_scheduler_priority_modifier"],
+  "next_live_gates": ["DailyGoalSnapshot", "Arena free attempts OCR", "Bear countdown OCR", "VIP/free claim pages", "Event discovery scan", "GoalState persistence for control panel"]
+}

@@ -1,0 +1,33 @@
+{
+  "capability": "GATHER_RESOURCE",
+  "reviewed_at": "2026-09-12T18:15:00+08:00",
+  "current_failure_impact": {"MARCH_PAGE_NOT_OPEN": 57, "skill": "START_GATHER"},
+  "external_patterns": [
+    {
+      "project": "Shederator/wosbot",
+      "commit": "main@2026-09-12",
+      "license": "AGPL-3.0",
+      "source_path": "modules/tasks/src/main/java/dev/frostguard/tasks/economy/GatherRoutine.java",
+      "patterns": ["persistent four-resource rotation", "physical march-slot evidence", "same-target bounded retry", "resource-level downgrade", "event-aware march reservation", "next-return reschedule"],
+      "classification": "REFERENCE_ONLY",
+      "reason": "AGPL implementation and assets are not copied into V2"
+    },
+    {
+      "project": "AminulIslamSifat/whiteout-survival-bot",
+      "commit": "1d09932fad186a96309f85c2305055ece88461e3",
+      "license": "README claims MIT; no LICENSE file found",
+      "source_path": "usecases/gather.py",
+      "patterns": ["percentage-coordinate fallback", "OCR march counter", "four-resource rotation", "template-first search", "recalibration recovery"],
+      "classification": "REFERENCE_ONLY",
+      "reason": "license file not verified"
+    }
+  ],
+  "gap_diff": {
+    "what_external_does_better": ["four-resource rotation", "bounded same-target retry", "resource-level fallback", "return-time scheduling"],
+    "what_v2_does_better": ["semantic verifier", "normalized coordinates", "live-client evidence", "single Goal/Scheduler separation"],
+    "what_to_adopt": ["rotation state", "retry budgets", "return-time driven recheck", "template/OCR fast path"],
+    "what_to_reject": ["absolute 720x1280 coordinates", "blind success after deploy tap", "whole task scheduler"]
+  },
+  "status": "CANDIDATE",
+  "live_result": "Current WOOD path recently verified; multi-resource visual assets remain missing"
+}

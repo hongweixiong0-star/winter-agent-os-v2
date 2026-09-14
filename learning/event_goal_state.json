@@ -1,0 +1,16 @@
+{
+  "event_id": "KINGDOM_OF_POWER_CURRENT",
+  "name": "最强王国·击败野兽",
+  "verified_at": "2026-09-09T16:00:00+08:00",
+  "current_points": 11250,
+  "target_points": 80000,
+  "points_missing": 68750,
+  "remaining_seconds_at_verification": 28795,
+  "minimum_guarantee_complete": false,
+  "all_target_rewards_claimed": false,
+  "plan": "优先完成 Intel 野怪；再用已验证普通野怪补到第一档，预计还需约7次同档积分",
+  "resource_spent": "体力：本次显示10；实际扣除待回到 Intel 复核",
+  "verified_points_gain": 11250,
+  "rewards": "第一档80,000尚未达到",
+  "source": "LIVE_CLIENT"
+}

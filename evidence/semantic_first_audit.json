@@ -1,0 +1,444 @@
+{
+  "generated_at": "2026-09-10T01:03:26.774049+00:00",
+  "policy": "SEMANTIC_FIRST",
+  "vision_assets": {
+    "total": 355,
+    "passed": 355,
+    "failed": 0,
+    "failures": []
+  },
+  "skills": {
+    "total": 73,
+    "semantic_contract_complete": 12,
+    "legacy_or_incomplete": 61,
+    "failures": [
+      {
+        "skill_id": "CLOSE_POPUP",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_INTEL_REWARD",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_INTEL_BEAST_MISSION",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_INTEL_FIREBEAST_MISSION",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_INTEL_RESCUE_SURVIVORS",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_INTEL_BEAST_TARGET",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_INTEL",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "READ_INTEL_LIST",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_MAP",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_HOME",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SEARCH_RESOURCE",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_RESOURCE",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SUBMIT_RESOURCE_SEARCH",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "START_GATHER",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "CHECK_MARCH",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISPATCH_MARCH",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "VERIFY_GATHERING",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "BACK",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_MAIL",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_ALLIANCE",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_EXPLORATION",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_EXPLORATION_REWARD",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "CONFIRM_EXPLORATION_IDLE_CLAIM",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "CLAIM_OFFLINE_REWARDS",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_DAILY",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_POWER_OVERVIEW",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_POWER_DETAILS",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "NAVIGATE_INFANTRY_CAMP",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_INFANTRY_CAMP",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_INFANTRY_TRAINING",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_DAILY_REWARD",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_MAIL_ALLIANCE_TAB",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_MAIL_SYSTEM_TAB",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_MAIL_REPORT_TAB",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_MAIL_REWARD",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_MAIL_GENERIC_REWARD",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_DAILY_GENERIC_REWARD",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_INTEL_GENERIC_REWARD",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_EXPLORATION_GENERIC_REWARD",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "OPEN_ALLIANCE_GIFTS",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISMISS_ALLIANCE_GENERIC_REWARD",
+        "state": "CANDIDATE",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "GATHER_RESOURCE",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "BUILDING_UPGRADE",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "RESEARCH",
+        "state": "BLOCKED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "TRAIN_TROOPS",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "INTEL_CLAIM_REWARDS",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "BEAST_HUNT",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "INTEL_BEAST_START_MARCH",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISPATCH_INTEL_BEAST",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "SELECT_BEAST_TARGET",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DISPATCH_BEAST",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DAILY_HERO_RECRUIT",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "DAILY_CLAIM_REWARDS",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "ALLIANCE_TECH_CONTRIBUTE",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "ALLIANCE_HELP",
+        "state": "BLOCKED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "ALLIANCE_GIFTS",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "ALLIANCE_ALLY_GIFT_CLAIM",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "MAIL_CLAIM_REWARDS",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      },
+      {
+        "skill_id": "EXPLORATION_IDLE_CLAIM",
+        "state": "VERIFIED",
+        "reasons": [
+          "SEMANTIC_CONTRACT_INCOMPLETE"
+        ]
+      }
+    ]
+  }
+}

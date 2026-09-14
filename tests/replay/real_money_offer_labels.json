@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "samples": [
+    {
+      "image": "../../dataset/raw/control_panel/runtime_auto/20260913_071323_375697/step_003_after_refresh_2.png",
+      "page": "POPUP",
+      "state": {
+        "popup": "REAL_MONEY_OFFER",
+        "risk": "HARD_BLOCK",
+        "currency_price_visible": true,
+        "source": "LIVE_CLIENT"
+      },
+      "elements": [
+        {
+          "semantic": "HIGH_RISK_REAL_MONEY_OFFER",
+          "roi": {"x_norm": 0.095, "y_norm": 0.100, "w_norm": 0.810, "h_norm": 0.790},
+          "confidence": 0.99
+        },
+        {
+          "semantic": "REAL_MONEY_PRICE_BUTTON",
+          "roi": {"x_norm": 0.285, "y_norm": 0.805, "w_norm": 0.435, "h_norm": 0.070},
+          "confidence": 0.99
+        }
+      ]
+    }
+  ]
+}

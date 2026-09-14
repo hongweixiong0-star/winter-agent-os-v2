@@ -1,0 +1,19 @@
+{
+  "schema_version":"1.0",
+  "mode":"PRODUCTION_SCREENSHOT_EVALUATION",
+  "evaluated_at":"2026-09-04",
+  "backend":"rapidocr_onnxruntime",
+  "runtime_source":"E:/dongri-mumu-bot/.venv/Lib/site-packages",
+  "legacy_code_imported":false,
+  "pages":[
+    {"page":"RESEARCH","image":"dataset/raw/live_research_recheck_active.png","classified":"RESEARCH","expected_keywords":["科技研究","病房扩建"],"hits":2,"structured":{"node":"WARD_EXPANSION_VII","name":"病房扩建VII","branch":"GROWTH","level_progress":"2/3","timer":"5d00:55:44","status":"IN_PROGRESS","queue_available":false}},
+    {"page":"TRAINING","image":"dataset/raw/live_train_queue_busy.png","classified":"TRAINING","expected_keywords":["训练","盾兵"],"hits":2},
+    {"page":"TRAINING","image":"dataset/raw/live_train_started.png","classified":"TRAINING","expected_keywords":["训练中","盾兵营"],"hits":2,"structured":{"troop_type":"INFANTRY","batch_count":806,"timer":"10:03:12","status":"IN_PROGRESS"}},
+    {"page":"INTEL","image":"dataset/raw/live_intel_lighthouse_selected.png","classified":"INTEL","expected_keywords":["情报"],"hits":1},
+    {"page":"DAILY","image":"dataset/raw/live_daily_claim_verified.png","classified":"DAILY","expected_keywords":["每日任务"],"hits":1},
+    {"page":"ALLIANCE","image":"dataset/raw/live_alliance_tech_attempt3_verified.png","classified":"ALLIANCE","expected_keywords":["联盟科技","联盟永续"],"hits":2,"structured":{"personal_contribution":49680}}
+  ],
+  "page_classification":{"passed":6,"total":6},
+  "keyword_probe":{"hits":10,"total":10},
+  "scope_warning":"Targeted current-client probe; not a general OCR accuracy rate."
+}

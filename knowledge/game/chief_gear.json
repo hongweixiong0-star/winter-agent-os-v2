@@ -1,0 +1,1 @@
+{"schema_version":"1.0","gate":"DISCOVERED","records":[{"id":"CHIEF_GEAR","name":"领主装备","aliases":["Chief Gear"],"category":"chief_progression","entry":"PROFILE","materials":"dynamic","effects":"city/march bonuses","source":["wosforge_main","taptap_build_research"],"confidence":0.8,"status":"LIKELY"}]}

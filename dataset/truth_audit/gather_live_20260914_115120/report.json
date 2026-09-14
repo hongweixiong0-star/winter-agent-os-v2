@@ -1,0 +1,110 @@
+{
+  "capture_dir": "E:\\无尽冬日智能体\\dataset\\truth_audit\\gather_live_20260914_115120",
+  "steps": [
+    {
+      "label": "home",
+      "observe": {
+        "page": "HOME",
+        "resource_search_open": false,
+        "resource_selected": null,
+        "resource_level": null,
+        "resource_target": null,
+        "march_used": null,
+        "marches": []
+      }
+    },
+    {
+      "label": "map",
+      "observe": {
+        "page": "MAP",
+        "resource_search_open": false,
+        "resource_selected": null,
+        "resource_level": null,
+        "resource_target": null,
+        "march_used": 1,
+        "marches": [],
+        "probe": {
+          "PAGE_MAP": null,
+          "BTN_OPEN_RESOURCE_SEARCH": 6,
+          "BTN_OPEN_HOME": 2
+        }
+      }
+    },
+    {
+      "label": "search_panel",
+      "observe": {
+        "page": "MAP",
+        "resource_search_open": true,
+        "resource_selected": "COAL",
+        "resource_level": 7,
+        "resource_target": null,
+        "march_used": 1,
+        "marches": [],
+        "probe": {
+          "BTN_RESOURCE_SEARCH_SUBMIT": 0,
+          "BTN_OPEN_RESOURCE_SEARCH": null
+        }
+      }
+    },
+    {
+      "label": "tab_tap_MEAT",
+      "tapped_center": 0.25,
+      "observe": {
+        "page": "MAP",
+        "resource_search_open": true,
+        "resource_selected": null,
+        "resource_level": 4,
+        "resource_target": null,
+        "march_used": 1,
+        "marches": []
+      },
+      "selected_resource_classifier": "None",
+      "resource_level": 4
+    },
+    {
+      "label": "tab_tap_WOOD",
+      "tapped_center": 0.4722,
+      "observe": {
+        "page": "MAP",
+        "resource_search_open": true,
+        "resource_selected": null,
+        "resource_level": null,
+        "resource_target": null,
+        "march_used": 1,
+        "marches": []
+      },
+      "selected_resource_classifier": "None",
+      "resource_level": null
+    },
+    {
+      "label": "tab_tap_COAL",
+      "tapped_center": 0.6944,
+      "observe": {
+        "page": "MAP",
+        "resource_search_open": true,
+        "resource_selected": "COAL",
+        "resource_level": 7,
+        "resource_target": null,
+        "march_used": 1,
+        "marches": []
+      },
+      "selected_resource_classifier": "('RESOURCE_COAL_SELECTED', 0.6428571428571429, {'x_norm': 0.5972, 'y_norm': 0.6719, 'w_norm': 0.1944, 'h_norm': 0.1172})",
+      "resource_level": 7
+    },
+    {
+      "label": "tab_tap_IRON",
+      "tapped_center": 0.9167,
+      "observe": {
+        "page": "MAP",
+        "resource_search_open": true,
+        "resource_selected": null,
+        "resource_level": 1,
+        "resource_target": null,
+        "march_used": 1,
+        "marches": []
+      },
+      "selected_resource_classifier": "None",
+      "resource_level": 1
+    }
+  ]
+}

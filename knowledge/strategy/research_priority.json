@@ -1,0 +1,1 @@
+{"schema_version":"1.0","type":"ADVISORY","inputs":["current_nodes","resources","timers","events","player_goal"],"rules":[{"when":"development bottleneck is measured","suggest":"eligible Growth node"}],"hardcoded_order":false}

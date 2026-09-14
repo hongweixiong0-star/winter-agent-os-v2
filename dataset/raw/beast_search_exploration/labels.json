@@ -1,0 +1,22 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "reviewed_from":"LIVE_CLIENT",
+  "samples":[
+    {
+      "image":"search_after.png",
+      "page":"MAP",
+      "elements":[
+        {"semantic":"BTN_SEARCH_BEAST_TAB","roi":{"x_norm":0.000,"y_norm":0.665,"w_norm":0.160,"h_norm":0.110},"confidence":0.99}
+      ]
+    },
+    {
+      "image":"beast_tab.png",
+      "page":"MAP",
+      "elements":[
+        {"semantic":"SEARCH_BEAST_LEVEL_5_SELECTED","roi":{"x_norm":0.250,"y_norm":0.760,"w_norm":0.500,"h_norm":0.105},"confidence":0.99},
+        {"semantic":"BTN_SUBMIT_BEAST_SEARCH","roi":{"x_norm":0.280,"y_norm":0.900,"w_norm":0.440,"h_norm":0.075},"confidence":0.99}
+      ]
+    }
+  ]
+}

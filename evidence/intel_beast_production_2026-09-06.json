@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "status": "VERIFIED",
+  "mode": "PRODUCTION",
+  "task": "INTEL_BEAST_10",
+  "live_client": "com.gof.china",
+  "attempts": [
+    {"attempt":1,"stamina_before":200,"stamina_after":190,"displayed_cost":10,"march_before":"4/6","march_active":"5/6","march_after":"4/6","points":"N/A","result":"SUCCESS","claim":"VERIFIED"},
+    {"attempt":2,"stamina_before":192,"stamina_after":182,"displayed_cost":10,"march_before":"4/6","march_active":"5/6","march_after":"4/6","points":"N/A","result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC"},
+    {"attempt":3,"stamina_before":174,"stamina_after":165,"displayed_cost":10,"note":"one stamina regenerated during the observed interval","march_active":"5/6","march_after":"4/6","points":"N/A","result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC"},
+    {"attempt":4,"stamina_before":187,"stamina_after":178,"displayed_cost":10,"note":"one stamina regenerated during the observed interval","result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC","mission_pin":"ORANGE_PAW"},
+    {"attempt":5,"stamina_before":178,"stamina_after":169,"displayed_cost":10,"note":"one stamina regenerated during the observed interval","result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC","mission_pin":"PURPLE_PAW"},
+    {"attempt":6,"stamina_before":169,"stamina_after":160,"displayed_cost":10,"note":"one stamina regenerated during the observed interval","result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC","mission_pin":"PURPLE_PAW"},
+    {"attempt":7,"stamina_before":228,"stamina_after":218,"displayed_cost":10,"result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC","mission_pin":"PURPLE_CLAW"},
+    {"attempt":8,"stamina_before":218,"stamina_after":208,"displayed_cost":10,"result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC","mission_pin":"PURPLE_CLAW"},
+    {"attempt":9,"stamina_before":208,"stamina_after":198,"displayed_cost":10,"result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC","mission_pin":"PURPLE_CLAW"},
+    {"attempt":10,"stamina_before":189,"stamina_after":180,"displayed_cost":10,"note":"one stamina regenerated during the observed interval; Firebeast attempt occurred before this mission","result":"SUCCESS","claim":"VERIFIED","execution":"AUTOMATIC","mission_pin":"PURPLE_CLAW"}
+  ],
+  "verified_chain": ["OPEN_INTEL","SELECT_INTEL_BEAST_MISSION","OPEN_INTEL_BEAST_TARGET","INTEL_BEAST_START_MARCH","DISPATCH_INTEL_BEAST","INTEL_CLAIM_REWARDS","DISMISS_INTEL_REWARD"],
+  "safety": {"victory_assured_required":true,"real_money":false,"displayed_recommended_power":5107044,"observed_march_power":80444862},
+  "evidence_roots": [
+    "dataset/raw/live_intel_beast10_automatic_round2",
+    "dataset/raw/live_intel_beast10_automatic_return_claim_round2",
+    "dataset/raw/live_intel_beast10_automatic_round3_resume",
+    "dataset/raw/live_intel_beast10_round4_claim_clean",
+    "dataset/raw/live_intel_orange_automatic_round5",
+    "dataset/raw/live_intel_orange_claim_purple_dispatch_round6_retry",
+    "dataset/raw/live_intel_color_chain_round7",
+    "dataset/raw/live_intel_last_purple_round8",
+    "dataset/raw/live_intel_last_purple_claim_round8",
+    "dataset/raw/live_intel_claw_dispatch_20260907",
+    "dataset/raw/live_intel_claw_claim_20260907",
+    "dataset/raw/live_intel_claw2_dispatch_20260907",
+    "dataset/raw/live_intel_claw2_claim_20260907",
+    "dataset/raw/live_intel_claw3_dispatch_20260907",
+    "dataset/raw/live_intel_claw3_claim_20260907",
+    "dataset/raw/live_intel_claw4_dispatch_20260907",
+    "dataset/raw/live_intel_claw4_claim_20260907"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T05:20:26.486911+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "btn_search_beast_tab__search_after__0",
+      "semantic": "BTN_SEARCH_BEAST_TAB",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/beast_search/btn_search_beast_tab__search_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/beast_search_exploration/search_after.png",
+      "parent_sha256": "a6a5e9725caf130e7645bb72d208dbe48d159a012026a7f945d0e5f47d0f7a0d",
+      "roi_norm": {
+        "x_norm": 0.0,
+        "y_norm": 0.665,
+        "w_norm": 0.16,
+        "h_norm": 0.11
+      },
+      "width": 115,
+      "height": 141,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

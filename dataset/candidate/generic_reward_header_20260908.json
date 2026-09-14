@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T23:28:43.636287+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "popup_generic_reward_header__step_006_before__0",
+      "semantic": "POPUP_GENERIC_REWARD_HEADER",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/generic_reward_header_20260908/popup_generic_reward_header__step_006_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deploy_mail_generic_reward_v2/step_006_before.png",
+      "parent_sha256": "b7465f847bfca37851f6a02a4d57e096d0824db42f43e7e5467133dcdf852d5e",
+      "roi_norm": {
+        "x_norm": 0.14,
+        "y_norm": 0.21,
+        "w_norm": 0.72,
+        "h_norm": 0.09
+      },
+      "width": 518,
+      "height": 115,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_generic_reward_header__live_20260908_daily_reward__0",
+      "semantic": "POPUP_GENERIC_REWARD_HEADER",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/generic_reward_header_20260908/popup_generic_reward_header__live_20260908_daily_reward__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_daily_reward.png",
+      "parent_sha256": "055604ff9c0fa2adfe976ebfde6021ef464217158694d2889a62db923555aaab",
+      "roi_norm": {
+        "x_norm": 0.14,
+        "y_norm": 0.21,
+        "w_norm": 0.72,
+        "h_norm": 0.09
+      },
+      "width": 518,
+      "height": 115,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

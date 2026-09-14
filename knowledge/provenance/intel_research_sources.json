@@ -1,0 +1,14 @@
+{
+  "schema_version":"1.0",
+  "retrieved_at":"2026-09-03",
+  "sources":[
+    {"type":"LIVE_CLIENT","name":"CN Lighthouse Intel claim cycle","evidence":["dataset/raw/live_intel_lighthouse_selected.png","dataset/raw/live_intel_claim_result.png","dataset/raw/live_intel_after_claim.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_UI_AND_SUBSKILL"},
+    {"type":"OFFICIAL","name":"Whiteout Survival July 2026 update","url":"https://www.centurygames.com/whiteout-survival-wos-update/","license":"REFERENCE_ONLY","use":"EXPIRY_REMINDER_FACT"},
+    {"type":"COMMUNITY_DB","name":"Whiteout Survival Wiki — Lighthouse","url":"https://www.whiteoutsurvival.wiki/buildings/lighthouse/","license":"REFERENCE_ONLY_UNLESS_CONFIRMED","use":"MISSION_TYPE_PRIOR"},
+    {"type":"COMMUNITY_DB","name":"Whiteout Survival Data — Lighthouse","url":"https://whiteoutdata.com/buildings/lighthouse/","license":"REFERENCE_ONLY_UNLESS_CONFIRMED","use":"FOUR_MISSION_TYPE_PRIOR"},
+    {"type":"OFFICIAL_PLATFORM_EDITORIAL","name":"Google Play — Advanced tips for Whiteout Survival","url":"https://play.google.com/store/apps/editorial?hl=en_GB&id=mc_games_editorialevergreen_postinstall_advanced_tips_in_whiteout_survival_fcp","license":"REFERENCE_ONLY","use":"HERO_STRENGTHENING_STRATEGY_PRIOR"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"AminulIslamSifat/wos","url":"https://github.com/AminulIslamSifat/wos","license":"VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"Frostguard","url":"https://github.com/Shederator/wosbot","license":"VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"}
+  ],
+  "conflicts":[{"field":"absolute_refresh_schedule","source_a":"community reports","source_b":"live client only provides countdown","resolution":"CANDIDATE","verification_required":"observe reset across server boundary"}]
+}

@@ -1,0 +1,7 @@
+{"schema_version":"1.0","retrieved_at":"2026-09-03T08:10:00+08:00","skill_id":"BUILDING_UPGRADE","sources":[
+  {"type":"LIVE_CLIENT","url":null,"license":"PRIVATE_RUNTIME_EVIDENCE","use":"Warehouse flow, costs, prerequisite, timer and verifier"},
+  {"type":"COMMUNITY_DB","url":"https://www.whiteoutsurvival.wiki/buildings/furnace/","license":"REFERENCE_ONLY","use":"Furnace dependency and level-table prior"},
+  {"type":"OFFICIAL","url":"https://play.google.com/store/apps/editorial?hl=zh&id=mc_games_editorialevergreen_postinstall_starter_tips_now_whiteout_survival_fcp","license":"REFERENCE_ONLY","use":"Official beginner building guidance"},
+  {"type":"PLAYER_GUIDE","url":"https://www.taptap.cn/moment/540206174411163246","license":"REFERENCE_ONLY","use":"Strategy candidate only"},
+  {"type":"OPEN_SOURCE_PROJECT","project":"AminulIslamSifat/wos","url":"https://github.com/AminulIslamSifat/wos","license":"REVIEW_REQUIRED","use":"Capability-gap comparison; no general BUILD implementation advertised"}
+]}

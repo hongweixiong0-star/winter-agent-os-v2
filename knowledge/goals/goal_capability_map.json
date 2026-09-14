@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0",
+  "generated_by": "hand-reviewed from the live registry and the production episode stream",
+  "source_of_truth": [
+    "winter_agent_v2/skills.py (the one registry)",
+    "winter_agent_v2/runtime.py (LiveRuntime.VERIFIED_ATOMIC: skills the live loop can dispatch)",
+    "learning/episodes.jsonl (PRODUCTION evidence)"
+  ],
+  "why": [
+    "Goal coverage used to match GOAL_REQUIREMENTS strings directly against registry strings.",
+    "Those were different vocabularies: the requirement side said READ_INTEL_LIST / SELECT_INTEL /",
+    "EXECUTE_INTEL while the registry said OPEN_INTEL / SELECT_INTEL_BEAST_MISSION /",
+    "INTEL_BEAST_START_MARCH / DISPATCH_INTEL_BEAST. The mismatch made real capabilities look",
+    "missing and made unbuilt requirements look satisfied. Coverage is therefore computed over a",
+    "canonical capability layer: a goal needs capabilities, a capability is satisfied by one or",
+    "more registered skills, and only the episode stream decides whether it is live-verified.",
+    "",
+    "This file is the INPUT mapping. The machine-readable coverage REPORT is written to",
+    "knowledge/goals/capability_skill_map.json by tools/build_capability_coverage.py."
+  ],
+  "lifecycle_rules": {
+    "LIVE_VERIFIED": "production episode + success + verifier pass + traceable evidence",
+    "STABLE": ">= stable_min_successes successes and success_rate >= stable_min_rate",
+    "stable_min_successes": 5,
+    "stable_min_rate": 0.8,
+    "degraded_min_failures": 2,
+    "never_counts_as_verified": [
+      "code exists",
+      "unit test pass",
+      "replay pass",
+      "simulation pass",
+      "candidate generated",
+      "external project supports it",
+      "documentation claims it"
+    ]
+  },
+  "goals": {
+    "CLEAR_INTEL": {
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_INTEL_PAGE", "alternatives": ["OPEN_INTEL"]},
+        {"capability": "READ_INTEL_LIST", "alternatives": ["READ_INTEL_LIST"]},
+        {"capability": "SELECT_INTEL_MISSION", "alternatives": ["SELECT_INTEL_BEAST_MISSION", "SELECT_INTEL_FIREBEAST_MISSION", "SELECT_INTEL_RESCUE_SURVIVORS"]},
+        {"capability": "EXECUTE_INTEL_MISSION", "alternatives": ["OPEN_INTEL_BEAST_TARGET", "INTEL_BEAST_START_MARCH", "DISPATCH_INTEL_BEAST", "EXECUTE_INTEL_RESCUE_SURVIVORS"]},
+        {"capability": "CLAIM_INTEL_REWARD", "alternatives": ["INTEL_CLAIM_REWARDS"]},
+        {"capability": "DISMISS_INTEL_REWARD", "alternatives": ["DISMISS_INTEL_REWARD", "DISMISS_INTEL_GENERIC_REWARD"]}
+      ]
+    },
+    "AVOID_STAMINA_WASTE": {
+      "category": "PVE",
+      "composition": "ANY_OF",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "SPEND_STAMINA_ON_BEAST", "alternatives": ["SELECT_BEAST_TARGET", "BEAST_HUNT", "DISPATCH_BEAST"]},
+        {"capability": "SPEND_STAMINA_ON_INTEL", "alternatives": ["OPEN_INTEL_BEAST_TARGET", "INTEL_BEAST_START_MARCH", "DISPATCH_INTEL_BEAST"]},
+        {"capability": "SPEND_STAMINA_ON_RALLY", "alternatives": ["JOIN_RALLY"]}
+      ]
+    },
+    "KEEP_MARCHES_PRODUCTIVE": {
+      "category": "持续发展",
+      "composition": "SEQUENCE",
+      "runtime_goal": false,
+      "capabilities": [
+        {"capability": "NAVIGATE_TO_MAP", "alternatives": ["OPEN_MAP", "OPEN_HOME"]},
+        {"capability": "OPEN_RESOURCE_SEARCH", "alternatives": ["SEARCH_RESOURCE"]},
+        {"capability": "SELECT_RESOURCE_TYPE", "alternatives": ["SELECT_RESOURCE"]},
+        {"capability": "FIND_RESOURCE_NODE", "alternatives": ["SUBMIT_RESOURCE_SEARCH"]},
+        {"capability": "OPEN_MARCH_FORMATION", "alternatives": ["START_GATHER"]},
+        {"capability": "DISPATCH_GATHER_MARCH", "alternatives": ["DISPATCH_MARCH"]},
+        {"capability": "VERIFY_GATHERING", "alternatives": ["VERIFY_GATHERING"]}
+      ]
+    },
+    "KEEP_BUILDING_PRODUCTIVE": {
+      "category": "持续发展",
+      "composition": "ALL_OF",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_BUILDING_PAGE", "alternatives": ["OPEN_BUILDING"]},
+        {"capability": "START_BUILD", "alternatives": ["BUILDING_UPGRADE"]}
+      ]
+    },
+    "KEEP_RESEARCH_PRODUCTIVE": {
+      "category": "持续发展",
+      "composition": "ALL_OF",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_RESEARCH_PAGE", "alternatives": ["OPEN_RESEARCH"]},
+        {"capability": "START_RESEARCH", "alternatives": ["RESEARCH"]}
+      ]
+    },
+    "KEEP_TRAINING_PRODUCTIVE": {
+      "category": "持续发展",
+      "composition": "VARIANT",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_TRAINING_PAGE", "alternatives": ["OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP", "SELECT_INFANTRY_CAMP", "OPEN_INFANTRY_TRAINING", "OPEN_TRAINING"]},
+        {"capability": "START_TRAINING", "alternatives": ["TRAIN_TROOPS", "PROMOTE_TROOPS"]}
+      ]
+    },
+    "MAIL_ROUTINE": {
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_MAIL_PAGE", "alternatives": ["OPEN_MAIL"]},
+        {"capability": "READ_MAIL_TABS", "alternatives": ["SELECT_MAIL_ALLIANCE_TAB", "SELECT_MAIL_SYSTEM_TAB", "SELECT_MAIL_REPORT_TAB"]},
+        {"capability": "CLAIM_MAIL_ATTACHMENTS", "alternatives": ["MAIL_CLAIM_REWARDS"]},
+        {"capability": "DISMISS_MAIL_REWARD", "alternatives": ["DISMISS_MAIL_REWARD", "DISMISS_MAIL_GENERIC_REWARD"]}
+      ]
+    },
+    "DAILY_ACTIVITY_TARGET": {
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_DAILY_PAGE", "alternatives": ["OPEN_DAILY"]},
+        {"capability": "READ_DAILY_PROGRESS", "alternatives": ["READ_DAILY_PROGRESS"]},
+        {"capability": "CLAIM_DAILY_REWARD", "alternatives": ["DAILY_CLAIM_REWARDS"]},
+        {"capability": "DISMISS_DAILY_REWARD", "alternatives": ["DISMISS_DAILY_REWARD", "DISMISS_DAILY_GENERIC_REWARD"]}
+      ]
+    },
+    "CLAIM_FREE_REWARDS": {
+      "category": "日常低保",
+      "composition": "ANY_OF",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "CLAIM_FREE_REWARD", "alternatives": ["CLAIM_REWARD", "CLAIM_OFFLINE_REWARDS", "ALLIANCE_ALLY_GIFT_CLAIM", "ALLIANCE_GIFTS", "MAIL_CLAIM_REWARDS", "EXPLORATION_IDLE_CLAIM", "DAILY_CLAIM_REWARDS", "INTEL_CLAIM_REWARDS"]},
+        {"capability": "DISMISS_FREE_REWARD_POPUP", "alternatives": ["DISMISS_ALLIANCE_GENERIC_REWARD", "DISMISS_MAIL_GENERIC_REWARD", "DISMISS_DAILY_GENERIC_REWARD", "DISMISS_EXPLORATION_GENERIC_REWARD"]}
+      ]
+    },
+    "CLAIM_EXPLORATION_IDLE": {
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_EXPLORATION_PAGE", "alternatives": ["OPEN_EXPLORATION"]},
+        {"capability": "CLAIM_IDLE_INCOME", "alternatives": ["EXPLORATION_IDLE_CLAIM", "CONFIRM_EXPLORATION_IDLE_CLAIM"]},
+        {"capability": "DISMISS_EXPLORATION_REWARD", "alternatives": ["DISMISS_EXPLORATION_REWARD", "DISMISS_EXPLORATION_GENERIC_REWARD"]}
+      ]
+    },
+    "ALLIANCE_ROUTINE": {
+      "category": "日常低保",
+      "composition": "ANY_OF",
+      "runtime_goal": false,
+      "capabilities": [
+        {"capability": "OPEN_ALLIANCE_PAGE", "alternatives": ["OPEN_ALLIANCE"]},
+        {"capability": "ALLIANCE_HELP", "alternatives": ["ALLIANCE_HELP"]},
+        {"capability": "ALLIANCE_TECH_CONTRIBUTE", "alternatives": ["ALLIANCE_TECH_CONTRIBUTE"]},
+        {"capability": "CLAIM_ALLIANCE_GIFTS", "alternatives": ["ALLIANCE_GIFTS", "OPEN_ALLIANCE_GIFTS", "ALLIANCE_ALLY_GIFT_CLAIM"]}
+      ]
+    },
+    "EVENT_MINIMUM_GUARANTEE": {
+      "category": "限时活动",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_EVENT_PAGE", "alternatives": ["OPEN_EVENT"]},
+        {"capability": "READ_EVENT_RULES", "alternatives": ["READ_EVENT_RULES"]},
+        {"capability": "READ_EVENT_PROGRESS", "alternatives": ["READ_EVENT_PROGRESS", "READ_EVENT_LIST"]},
+        {"capability": "READ_EVENT_TIMER", "alternatives": ["READ_EVENT_TIMER", "READ_TIMER"]},
+        {"capability": "CONTRIBUTE_TO_EVENT_SCORE", "alternatives": ["TRAIN_TROOPS", "BUILDING_UPGRADE", "RESEARCH"]},
+        {"capability": "CLAIM_EVENT_TIER", "alternatives": ["CLAIM_EVENT_TIER"]}
+      ]
+    },
+    "ALLIANCE_TIMED_EVENTS": {
+      "category": "限时活动",
+      "composition": "ANY_OF",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "CHECK_ALLIANCE_EVENT", "alternatives": ["CHECK_ALLIANCE_EVENT"]},
+        {"capability": "READ_ALLIANCE_EVENT_TIMER", "alternatives": ["READ_ALLIANCE_EVENT_TIMER", "READ_BEAR_TIMER", "READ_TIMER"]},
+        {"capability": "CLAIM_EVENT_TIER", "alternatives": ["CLAIM_EVENT_TIER"]}
+      ]
+    },
+    "PARTICIPATE_BEAR": {
+      "category": "实时活动",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "CHECK_BEAR_PHASE", "alternatives": ["CHECK_ALLIANCE_EVENT", "READ_BEAR_TIMER"]},
+        {"capability": "SELECT_TROOP_PRESET", "alternatives": ["SELECT_TROOP_PRESET"]},
+        {"capability": "START_RALLY", "alternatives": ["START_RALLY"]},
+        {"capability": "JOIN_RALLY", "alternatives": ["JOIN_RALLY"]},
+        {"capability": "CONFIRM_MARCH", "alternatives": ["CONFIRM_MARCH", "DISPATCH_MARCH"]}
+      ]
+    },
+    "USE_FREE_ARENA_ATTEMPTS": {
+      "category": "竞技场",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_ARENA_PAGE", "alternatives": ["OPEN_ARENA"]},
+        {"capability": "READ_FREE_ATTEMPTS", "alternatives": ["READ_FREE_ATTEMPTS", "READ_COUNTER"]},
+        {"capability": "SELECT_ARENA_OPPONENT", "alternatives": ["SELECT_ARENA_OPPONENT"]},
+        {"capability": "START_ARENA", "alternatives": ["START_ARENA", "USE_ACTIVITY_ATTEMPT"]},
+        {"capability": "VERIFY_ARENA_RESULT", "alternatives": ["VERIFY_ARENA_RESULT"]}
+      ]
+    },
+    "LABYRINTH_DAILY": {
+      "category": "迷宫",
+      "composition": "SEQUENCE",
+      "runtime_goal": true,
+      "capabilities": [
+        {"capability": "OPEN_LABYRINTH_PAGE", "alternatives": ["OPEN_LABYRINTH"]},
+        {"capability": "READ_LABYRINTH_ATTEMPTS", "alternatives": ["READ_LABYRINTH_ATTEMPTS", "READ_COUNTER"]},
+        {"capability": "START_LABYRINTH", "alternatives": ["START_LABYRINTH", "USE_ACTIVITY_ATTEMPT"]},
+        {"capability": "VERIFY_LABYRINTH_RESULT", "alternatives": ["VERIFY_LABYRINTH_RESULT"]}
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version":"1.0",
+  "retrieved_at":"2026-09-03",
+  "sources":[
+    {"type":"LIVE_CLIENT","name":"Three CN-client queues and Infantry start cycle","evidence":["dataset/raw/live_train_queue_busy.png","dataset/raw/live_train_lancer_tab.png","dataset/raw/live_train_marksman_tab.png","dataset/raw/live_next_training_queue.png","dataset/raw/live_train_available_after_claim.png","dataset/raw/live_train_selection_available.png","dataset/raw/live_train_started.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_UI_STATE_AND_SKILL"},
+    {"type":"COMMUNITY_DB","name":"Whiteout Survival Wiki — Lancer Camp and FAQ","url":"https://www.whiteoutsurvival.wiki/buildings/lancer-camp/","license":"REFERENCE_ONLY_UNLESS_CONFIRMED","use":"MECHANISM_PRIOR"},
+    {"type":"PLAYER_GUIDE","name":"TapTap official-community FAQ","url":"https://www.taptap.cn/moment/554751687949025360","license":"REFERENCE_ONLY","use":"PROMOTION_PRIOR"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"AminulIslamSifat/wos","url":"https://github.com/AminulIslamSifat/wos","license":"VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"Shederator/wosbot (Frostguard)","url":"https://github.com/Shederator/wosbot","license":"VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"}
+  ],
+  "conflicts":[]
+}

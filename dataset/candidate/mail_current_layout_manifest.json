@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T04:18:10.466155+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "btn_open_mail__step_001_before__0",
+      "semantic": "BTN_OPEN_MAIL",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_current_layout/btn_open_mail__step_001_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_mail/20260907_073917_723820/step_001_before.png",
+      "parent_sha256": "3e2f9333c06ea7416105f8115736d51ea6d8ff8fb9f10cebabae9ac12203ebe9",
+      "roi_norm": {
+        "x_norm": 0.87,
+        "y_norm": 0.795,
+        "w_norm": 0.1,
+        "h_norm": 0.05
+      },
+      "width": 72,
+      "height": 64,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

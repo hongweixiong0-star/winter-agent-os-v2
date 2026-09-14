@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "source": "LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples": [
+    {
+      "image": "live_intel_claw4_claim_20260907/step_003_after.png",
+      "page": "INTEL",
+      "elements": [
+        {"semantic": "TARGET_INTEL_FIREBEAST_MISSION", "roi": {"x_norm": 0.07, "y_norm": 0.335, "w_norm": 0.14, "h_norm": 0.115}, "confidence": 0.99}
+      ]
+    },
+    {
+      "image": "live_intel_orange_goat_probe_20260907.png",
+      "page": "POPUP",
+      "elements": [
+        {"semantic": "POPUP_INTEL_FIREBEAST_TITLE", "roi": {"x_norm": 0.12, "y_norm": 0.252, "w_norm": 0.76, "h_norm": 0.055}, "confidence": 0.99}
+      ]
+    },
+    {
+      "image": "live_intel_blazing_behemoth_target_20260907.png",
+      "page": "BEAST",
+      "elements": [
+        {"semantic": "DIALOG_INTEL_FIREBEAST_TARGET", "roi": {"x_norm": 0.205, "y_norm": 0.18, "w_norm": 0.59, "h_norm": 0.35}, "confidence": 0.99}
+      ]
+    }
+  ]
+}

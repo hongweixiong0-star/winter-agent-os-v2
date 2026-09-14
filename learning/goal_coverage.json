@@ -1,0 +1,998 @@
+{
+  "summary": {
+    "total": 15,
+    "automated": 2,
+    "candidate_or_partial": 13,
+    "missing": 0,
+    "automated_percent": 13.3,
+    "candidate_percent": 86.7,
+    "missing_percent": 0.0
+  },
+  "goals": [
+    {
+      "goal": "CLEAR_INTEL",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_INTEL",
+        "READ_INTEL_LIST",
+        "SELECT_INTEL",
+        "EXECUTE_INTEL",
+        "CLAIM_INTEL"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_INTEL",
+          "actual_skill_id": "OPEN_INTEL",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 53
+        },
+        {
+          "skill_id": "READ_INTEL_LIST",
+          "actual_skill_id": "READ_INTEL_LIST",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "INTEL_CARD",
+            "INTEL_STATUS"
+          ],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "SELECT_INTEL",
+          "actual_skill_id": "SELECT_INTEL",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "INTEL_AVAILABLE_CARD"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "EXECUTE_INTEL",
+          "actual_skill_id": "EXECUTE_INTEL",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "INTEL_EXECUTE",
+            "STAMINA_COST"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "CLAIM_INTEL",
+          "actual_skill_id": "INTEL_CLAIM_REWARDS",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [
+            "INTEL_CLAIMABLE"
+          ],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 16
+        }
+      ],
+      "goal_priority": 10
+    },
+    {
+      "goal": "DAILY_ACTIVITY_TARGET",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_DAILY",
+        "READ_DAILY_PROGRESS",
+        "DAILY_CLAIM_REWARDS"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_DAILY",
+          "actual_skill_id": "OPEN_DAILY",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 5
+        },
+        {
+          "skill_id": "READ_DAILY_PROGRESS",
+          "actual_skill_id": "READ_DAILY_PROGRESS",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "DAILY_ACTIVITY_COUNTER",
+            "DAILY_REWARD_TIER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "DAILY_CLAIM_REWARDS",
+          "actual_skill_id": "DAILY_CLAIM_REWARDS",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 2
+        }
+      ],
+      "goal_priority": 10
+    },
+    {
+      "goal": "CLAIM_FREE_REWARDS",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "CLAIM_FREE_REWARD",
+        "OPEN_VIP",
+        "CLAIM_VIP_FREE"
+      ],
+      "skills": [
+        {
+          "skill_id": "CLAIM_FREE_REWARD",
+          "actual_skill_id": "CLAIM_FREE_REWARD",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "CLAIM_BUTTON",
+            "FREE_LABEL"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "OPEN_VIP",
+          "actual_skill_id": "OPEN_VIP",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BTN_OPEN_VIP"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "CLAIM_VIP_FREE",
+          "actual_skill_id": "CLAIM_VIP_FREE",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "VIP_FREE_CHEST"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 10
+    },
+    {
+      "goal": "USE_FREE_ARENA_ATTEMPTS",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_ARENA",
+        "READ_FREE_ATTEMPTS",
+        "SELECT_ARENA_OPPONENT",
+        "START_ARENA",
+        "VERIFY_ARENA_RESULT"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_ARENA",
+          "actual_skill_id": "OPEN_ARENA",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BTN_OPEN_ARENA"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_FREE_ATTEMPTS",
+          "actual_skill_id": "READ_FREE_ATTEMPTS",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "ARENA_FREE_ATTEMPTS"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "SELECT_ARENA_OPPONENT",
+          "actual_skill_id": "SELECT_ARENA_OPPONENT",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "ARENA_OPPONENT_CARD",
+            "POWER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "START_ARENA",
+          "actual_skill_id": "START_ARENA",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BTN_ARENA_CHALLENGE_FREE"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "VERIFY_ARENA_RESULT",
+          "actual_skill_id": "VERIFY_ARENA_RESULT",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "ARENA_FREE_ATTEMPTS",
+            "ARENA_RESULT"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 9
+    },
+    {
+      "goal": "EVENT_MINIMUM_GUARANTEE",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_EVENT",
+        "READ_EVENT_LIST",
+        "READ_EVENT_TIMER",
+        "READ_EVENT_PROGRESS",
+        "READ_EVENT_RULES",
+        "READ_EVENT_REWARD_TIERS",
+        "CLAIM_EVENT_TIER"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_EVENT",
+          "actual_skill_id": "OPEN_EVENT",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BTN_OPEN_EVENT"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_EVENT_LIST",
+          "actual_skill_id": "READ_EVENT_LIST",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "EVENT_CARD"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_EVENT_TIMER",
+          "actual_skill_id": "READ_EVENT_TIMER",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "EVENT_TIMER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_EVENT_PROGRESS",
+          "actual_skill_id": "READ_EVENT_PROGRESS",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "EVENT_POINTS",
+            "EVENT_REWARD_TIER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_EVENT_RULES",
+          "actual_skill_id": "READ_EVENT_RULES",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BTN_EVENT_RULES",
+            "EVENT_SCORING_ROW"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_EVENT_REWARD_TIERS",
+          "actual_skill_id": "READ_EVENT_REWARD_TIERS",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "EVENT_REWARD_TIER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "CLAIM_EVENT_TIER",
+          "actual_skill_id": "CLAIM_EVENT_TIER",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "EVENT_TIER_CLAIMABLE"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 10
+    },
+    {
+      "goal": "PARTICIPATE_BEAR",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "CHECK_ALLIANCE_EVENT",
+        "READ_BEAR_TIMER",
+        "PREPARE_BEAR_MARCH",
+        "JOIN_BEAR_RALLY"
+      ],
+      "skills": [
+        {
+          "skill_id": "CHECK_ALLIANCE_EVENT",
+          "actual_skill_id": "CHECK_ALLIANCE_EVENT",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "ALLIANCE_EVENT_ENTRY"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_BEAR_TIMER",
+          "actual_skill_id": "READ_BEAR_TIMER",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BEAR_TIMER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "PREPARE_BEAR_MARCH",
+          "actual_skill_id": "PREPARE_BEAR_MARCH",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "JOIN_BEAR_RALLY",
+          "actual_skill_id": "JOIN_BEAR_RALLY",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BEAR_RALLY_JOIN"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 9
+    },
+    {
+      "goal": "KEEP_MARCHES_PRODUCTIVE",
+      "status": "AUTOMATED_VERIFIED",
+      "required_skills": [
+        "OPEN_MAP",
+        "SEARCH_RESOURCE",
+        "SELECT_RESOURCE",
+        "CHECK_MARCH",
+        "DISPATCH_MARCH",
+        "VERIFY_GATHERING"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_MAP",
+          "actual_skill_id": "OPEN_MAP",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 22
+        },
+        {
+          "skill_id": "SEARCH_RESOURCE",
+          "actual_skill_id": "SEARCH_RESOURCE",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 19
+        },
+        {
+          "skill_id": "SELECT_RESOURCE",
+          "actual_skill_id": "SELECT_RESOURCE",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 2
+        },
+        {
+          "skill_id": "CHECK_MARCH",
+          "actual_skill_id": "CHECK_MARCH",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "DISPATCH_MARCH",
+          "actual_skill_id": "DISPATCH_MARCH",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 16
+        },
+        {
+          "skill_id": "VERIFY_GATHERING",
+          "actual_skill_id": "VERIFY_GATHERING",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "KEEP_BUILDING_PRODUCTIVE",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_BUILDING",
+        "BUILDING_UPGRADE"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_BUILDING",
+          "actual_skill_id": "OPEN_BUILDING",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BUILDING_UPGRADABLE"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "BUILDING_UPGRADE",
+          "actual_skill_id": "BUILDING_UPGRADE",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 1
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "KEEP_RESEARCH_PRODUCTIVE",
+      "status": "PARTIAL",
+      "required_skills": [
+        "OPEN_RESEARCH",
+        "RESEARCH"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_RESEARCH",
+          "actual_skill_id": "OPEN_RESEARCH",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "RESEARCH_CENTER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "RESEARCH",
+          "actual_skill_id": "RESEARCH",
+          "lifecycle": "BLOCKED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 1
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "KEEP_TRAINING_PRODUCTIVE",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_TRAINING",
+        "TRAIN_TROOPS",
+        "PROMOTE_TROOPS"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_TRAINING",
+          "actual_skill_id": "OPEN_TRAINING",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "TRAINING_CAMP_AVAILABLE"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "TRAIN_TROOPS",
+          "actual_skill_id": "TRAIN_TROOPS",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 3
+        },
+        {
+          "skill_id": "PROMOTE_TROOPS",
+          "actual_skill_id": "PROMOTE_TROOPS",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BTN_PROMOTE_TROOPS"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "ALLIANCE_ROUTINE",
+      "status": "PARTIAL",
+      "required_skills": [
+        "OPEN_ALLIANCE",
+        "ALLIANCE_HELP",
+        "ALLIANCE_TECH_CONTRIBUTE",
+        "ALLIANCE_GIFTS"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_ALLIANCE",
+          "actual_skill_id": "OPEN_ALLIANCE",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "ALLIANCE_HELP",
+          "actual_skill_id": "ALLIANCE_HELP",
+          "lifecycle": "BLOCKED",
+          "vision_missing": [],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 1
+        },
+        {
+          "skill_id": "ALLIANCE_TECH_CONTRIBUTE",
+          "actual_skill_id": "ALLIANCE_TECH_CONTRIBUTE",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 4
+        },
+        {
+          "skill_id": "ALLIANCE_GIFTS",
+          "actual_skill_id": "ALLIANCE_GIFTS",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 3
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "CLAIM_EXPLORATION_IDLE",
+      "status": "AUTOMATED_VERIFIED",
+      "required_skills": [
+        "OPEN_EXPLORATION",
+        "EXPLORATION_IDLE_CLAIM"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_EXPLORATION",
+          "actual_skill_id": "OPEN_EXPLORATION",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 12
+        },
+        {
+          "skill_id": "EXPLORATION_IDLE_CLAIM",
+          "actual_skill_id": "EXPLORATION_IDLE_CLAIM",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 5
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "AVOID_STAMINA_WASTE",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_INTEL",
+        "READ_INTEL_LIST",
+        "BEAST_HUNT",
+        "JOIN_POLAR_TERROR_RALLY"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_INTEL",
+          "actual_skill_id": "OPEN_INTEL",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 53
+        },
+        {
+          "skill_id": "READ_INTEL_LIST",
+          "actual_skill_id": "READ_INTEL_LIST",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "INTEL_CARD",
+            "INTEL_STATUS"
+          ],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "BEAST_HUNT",
+          "actual_skill_id": "BEAST_HUNT",
+          "lifecycle": "VERIFIED",
+          "vision_missing": [],
+          "verifier_missing": false,
+          "recovery_missing": false,
+          "external_prior_available": false,
+          "live_evidence_count": 2
+        },
+        {
+          "skill_id": "JOIN_POLAR_TERROR_RALLY",
+          "actual_skill_id": "JOIN_POLAR_TERROR_RALLY",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "POLAR_TERROR_RALLY_FREE_JOIN"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "LABYRINTH_DAILY",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "OPEN_LABYRINTH",
+        "READ_LABYRINTH_ATTEMPTS",
+        "START_LABYRINTH",
+        "VERIFY_LABYRINTH_RESULT"
+      ],
+      "skills": [
+        {
+          "skill_id": "OPEN_LABYRINTH",
+          "actual_skill_id": "OPEN_LABYRINTH",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "BTN_OPEN_LABYRINTH"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_LABYRINTH_ATTEMPTS",
+          "actual_skill_id": "READ_LABYRINTH_ATTEMPTS",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "LABYRINTH_ATTEMPTS"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "START_LABYRINTH",
+          "actual_skill_id": "START_LABYRINTH",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "LABYRINTH_START"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "VERIFY_LABYRINTH_RESULT",
+          "actual_skill_id": "VERIFY_LABYRINTH_RESULT",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "LABYRINTH_RESULT"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 5
+    },
+    {
+      "goal": "ALLIANCE_TIMED_EVENTS",
+      "status": "AUTOMATED_CANDIDATE",
+      "required_skills": [
+        "CHECK_ALLIANCE_EVENT",
+        "READ_ALLIANCE_EVENT_TIMER",
+        "CLAIM_EVENT_TIER"
+      ],
+      "skills": [
+        {
+          "skill_id": "CHECK_ALLIANCE_EVENT",
+          "actual_skill_id": "CHECK_ALLIANCE_EVENT",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "ALLIANCE_EVENT_ENTRY"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "READ_ALLIANCE_EVENT_TIMER",
+          "actual_skill_id": "READ_ALLIANCE_EVENT_TIMER",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "ALLIANCE_EVENT_TIMER"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        },
+        {
+          "skill_id": "CLAIM_EVENT_TIER",
+          "actual_skill_id": "CLAIM_EVENT_TIER",
+          "lifecycle": "CANDIDATE",
+          "vision_missing": [
+            "EVENT_TIER_CLAIMABLE"
+          ],
+          "verifier_missing": true,
+          "recovery_missing": false,
+          "external_prior_available": true,
+          "live_evidence_count": 0
+        }
+      ],
+      "goal_priority": 5
+    }
+  ],
+  "top_leverage": [
+    {
+      "skill_id": "CLAIM_EVENT_TIER",
+      "blocked_goals": 2,
+      "priority_sum": 15.0,
+      "complexity": 1.5,
+      "automation_leverage": 20.0
+    },
+    {
+      "skill_id": "READ_INTEL_LIST",
+      "blocked_goals": 2,
+      "priority_sum": 15.0,
+      "complexity": 1.5,
+      "automation_leverage": 20.0
+    },
+    {
+      "skill_id": "CHECK_ALLIANCE_EVENT",
+      "blocked_goals": 2,
+      "priority_sum": 14.0,
+      "complexity": 1.5,
+      "automation_leverage": 18.67
+    },
+    {
+      "skill_id": "READ_EVENT_LIST",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.0,
+      "automation_leverage": 10.0
+    },
+    {
+      "skill_id": "READ_EVENT_PROGRESS",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.0,
+      "automation_leverage": 10.0
+    },
+    {
+      "skill_id": "READ_EVENT_REWARD_TIERS",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.0,
+      "automation_leverage": 10.0
+    },
+    {
+      "skill_id": "READ_EVENT_TIMER",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.0,
+      "automation_leverage": 10.0
+    },
+    {
+      "skill_id": "PREPARE_BEAR_MARCH",
+      "blocked_goals": 1,
+      "priority_sum": 9.0,
+      "complexity": 1.0,
+      "automation_leverage": 9.0
+    },
+    {
+      "skill_id": "READ_BEAR_TIMER",
+      "blocked_goals": 1,
+      "priority_sum": 9.0,
+      "complexity": 1.0,
+      "automation_leverage": 9.0
+    },
+    {
+      "skill_id": "READ_FREE_ATTEMPTS",
+      "blocked_goals": 1,
+      "priority_sum": 9.0,
+      "complexity": 1.0,
+      "automation_leverage": 9.0
+    },
+    {
+      "skill_id": "START_ARENA",
+      "blocked_goals": 1,
+      "priority_sum": 9.0,
+      "complexity": 1.0,
+      "automation_leverage": 9.0
+    },
+    {
+      "skill_id": "VERIFY_ARENA_RESULT",
+      "blocked_goals": 1,
+      "priority_sum": 9.0,
+      "complexity": 1.0,
+      "automation_leverage": 9.0
+    },
+    {
+      "skill_id": "CLAIM_FREE_REWARD",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    },
+    {
+      "skill_id": "CLAIM_INTEL",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    },
+    {
+      "skill_id": "CLAIM_VIP_FREE",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    },
+    {
+      "skill_id": "EXECUTE_INTEL",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    },
+    {
+      "skill_id": "OPEN_EVENT",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    },
+    {
+      "skill_id": "OPEN_VIP",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    },
+    {
+      "skill_id": "READ_DAILY_PROGRESS",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    },
+    {
+      "skill_id": "READ_EVENT_RULES",
+      "blocked_goals": 1,
+      "priority_sum": 10.0,
+      "complexity": 1.5,
+      "automation_leverage": 6.67
+    }
+  ]
+}

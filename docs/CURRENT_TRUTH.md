@@ -1,0 +1,134 @@
+# CURRENT TRUTH
+
+Generated (UTC): 2026-09-14T04:12:27.857000+00:00
+
+Everything below is recomputed by `python tools/truth_audit.py`.
+Do not trust numbers in older Markdown files.
+
+## A. Runtime
+
+- agent_state: `IDLE`
+- runtime_thread_alive: False / scheduler_loop_alive: False
+- unexpected_worker_exits: 15
+- watchdog_restart_count: 13
+- last_fatal_error: None
+- stop_reason: TARGET_SKILL_VERIFIED
+- page: MAP march: 1/6
+
+## B. Episodes
+
+- total: 736 (mode: PRODUCTION=736)
+- success / failure: 489 / 242
+- blocked: 4  in_progress: 1
+- success rate over decided: **66.9%**
+- success rate over total: 66.4%
+- mixed-case `result` rows (must be normalized on read, never rewritten): 35
+
+## C. Top failures
+
+Failure type | Count | Skills | Top skills | Last seen
+---|---:|---:|---|---
+`SEMANTIC_TARGET_NOT_VERIFIED` | 104 | 14 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-13T16:13:57
+`MARCH_PAGE_NOT_OPEN` | 59 | 1 | START_GATHER(59) | 2026-09-12T15:17:11
+`DISPATCH_NOT_PROVEN` | 28 | 1 | DISPATCH_MARCH(28) | 2026-09-13T15:21:30
+`MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | 1 | MAIL_CLAIM_REWARDS(10) | 
+`RESOURCE_NOT_FOUND` | 8 | 1 | SUBMIT_RESOURCE_SEARCH(8) | 2026-09-13T15:59:52
+`POPUP_CLOSE_NOT_PROVEN` | 5 | 2 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1) | 2026-09-13T21:08:40
+`EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN` | 3 | 2 | CONFIRM_EXPLORATION_IDLE_CLAIM(2), EXPLORATION_IDLE_CLAIM(1) | 
+`INTEL_MISSION_SELECTION_NOT_PROVEN` | 2 | 1 | SELECT_INTEL_BEAST_MISSION(2) | 
+`MAIL_TAB_SELECTION_NOT_PROVEN` | 2 | 2 | SELECT_MAIL_ALLIANCE_TAB(1), SELECT_MAIL_SYSTEM_TAB(1) | 
+`OPEN_HOME_NOT_PROVEN` | 2 | 1 | OPEN_HOME(2) | 
+`INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN` | 2 | 1 | NAVIGATE_INFANTRY_CAMP(2) | 
+`OPEN_MAIL_NOT_PROVEN` | 2 | 1 | OPEN_MAIL(2) | 
+
+## D. Registry
+
+- total skills: 80
+- by state: {'VERIFIED': 44, 'CANDIDATE': 34, 'BLOCKED': 2}
+- by latency: {'NORMAL': 70, 'FAST': 9, 'REALTIME': 1}
+- REALTIME skills: ['JOIN_RALLY']
+- BLOCKED skills: ['RESEARCH', 'ALLIANCE_HELP']
+
+## E. Dataset
+
+Area | Files | Empty dirs
+---|---:|---:
+`dataset/raw` | 1668 | 56
+`dataset/candidate` | 521 | 0
+`dataset/verified` | 5 | 0
+`dataset/normalized` | 1 | 0
+`dataset/production` | 0 | 0
+`dataset/external` | 90 | 7
+
+## F. Evidence integrity
+
+- status: **PASS**
+- episodes carrying screenshot references: 4 / 736
+- screenshots referenced: 8
+- screenshots missing: 0
+- distinct episode ids: 2
+
+## G. Skill lifecycle vs the episode stream
+
+- registry total: 80
+- live verified (>=1 production success): **48**
+- only ever failed: 7
+- never executed: 25
+
+Never executed skills:
+
+- `CANCEL_DUPLICATE_TARGET` (VERIFIED)
+- `CHECK_MARCH` (VERIFIED)
+- `CLAIM_REWARD` (CANDIDATE)
+- `DISMISS_ALLIANCE_GENERIC_REWARD` (CANDIDATE)
+- `DISMISS_EXPLORATION_REWARD` (VERIFIED)
+- `DISMISS_INTEL_GENERIC_REWARD` (CANDIDATE)
+- `EXECUTE_INTEL_RESCUE_SURVIVORS` (VERIFIED)
+- `JOIN_RALLY` (CANDIDATE)
+- `NAVIGATE_TO` (CANDIDATE)
+- `OPEN_ALLIANCE_GIFTS` (CANDIDATE)
+- `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` (VERIFIED)
+- `READ_COUNTER` (CANDIDATE)
+- `READ_INTEL_LIST` (CANDIDATE)
+- `READ_TIMER` (CANDIDATE)
+- `RECALL_MARCH` (CANDIDATE)
+- `RECOVER_HOME` (CANDIDATE)
+- `REINFORCE_TARGET` (CANDIDATE)
+- `RELAX_RESOURCE_LEVEL` (CANDIDATE)
+- `SELECT_INFANTRY_CAMP` (CANDIDATE)
+- `SELECT_INTEL_RESCUE_SURVIVORS` (VERIFIED)
+- `SELECT_REWARD_OPTION` (CANDIDATE)
+- `SEND_MARCH` (CANDIDATE)
+- `START_RALLY` (CANDIDATE)
+- `USE_ACTIVITY_ATTEMPT` (CANDIDATE)
+- `VERIFY_GATHERING` (VERIFIED)
+
+## H. Capability coverage (rebuilt model)
+
+- model: Goal -> Canonical Capability -> Registered Skill -> Production Evidence
+- generated: 2026-09-14T04:12:21.881042+00:00 (0.0 days ago)
+- FULLY_LIVE_VERIFIED: 1 / 16
+- PARTIAL: 8  NEVER_TRIED: 0  BLOCKED: 4  DEGRADED: 3
+- mean implementation coverage: 0.54
+- mean live coverage: 0.5452
+
+Goal | Status | Runtime | design | impl | live | stable | blocked by
+---|---|---|---:|---:|---:|---:|---
+CLEAR_INTEL | PARTIAL | RUNTIME_DISCOVERED | 100% | 100% | 83% | 50% | -
+AVOID_STAMINA_WASTE | PARTIAL | RUNTIME_DISCOVERED | 100% | 67% | 67% | 33% | SPEND_STAMINA_ON_RALLY
+KEEP_MARCHES_PRODUCTIVE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 86% | 86% | 14% | VERIFY_GATHERING
+KEEP_BUILDING_PRODUCTIVE | PARTIAL | RUNTIME_DISCOVERED | 100% | 50% | 50% | 0% | OPEN_BUILDING_PAGE
+KEEP_RESEARCH_PRODUCTIVE | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_RESEARCH_PAGE, START_RESEARCH
+KEEP_TRAINING_PRODUCTIVE | FULLY_LIVE_VERIFIED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 50% | -
+MAIL_ROUTINE | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 0% | -
+DAILY_ACTIVITY_TARGET | PARTIAL | RUNTIME_DISCOVERED | 100% | 75% | 75% | 25% | READ_DAILY_PROGRESS
+CLAIM_FREE_REWARDS | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 50% | -
+CLAIM_EXPLORATION_IDLE | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 33% | -
+ALLIANCE_ROUTINE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 50% | 75% | 25% | ALLIANCE_HELP, ALLIANCE_TECH_CONTRIBUTE
+EVENT_MINIMUM_GUARANTEE | PARTIAL | RUNTIME_DISCOVERED | 100% | 17% | 17% | 0% | CLAIM_EVENT_TIER, OPEN_EVENT_PAGE, READ_EVENT_PROGRESS, READ_EVENT_RULES, READ_EVENT_TIMER
+ALLIANCE_TIMED_EVENTS | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | CHECK_ALLIANCE_EVENT, CLAIM_EVENT_TIER, READ_ALLIANCE_EVENT_TIMER
+PARTICIPATE_BEAR | PARTIAL | RUNTIME_DISCOVERED | 100% | 20% | 20% | 0% | CHECK_BEAR_PHASE, JOIN_RALLY, SELECT_TROOP_PRESET, START_RALLY
+USE_FREE_ARENA_ATTEMPTS | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_ARENA_PAGE, READ_FREE_ATTEMPTS, SELECT_ARENA_OPPONENT, START_ARENA, VERIFY_ARENA_RESULT
+LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABYRINTH_PAGE, READ_LABYRINTH_ATTEMPTS, START_LABYRINTH, VERIFY_LABYRINTH_RESULT
+
+Retired: learning/goal_coverage.json (string-matching model; do not use)

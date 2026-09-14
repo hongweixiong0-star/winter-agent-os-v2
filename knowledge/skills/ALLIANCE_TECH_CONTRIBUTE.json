@@ -1,0 +1,21 @@
+{
+  "skill_id":"ALLIANCE_TECH_CONTRIBUTE",
+  "name":"Contribute normal resources to Alliance Technology",
+  "goal":"Contribute to a live recommended technology and prove both attempt and contribution-counter transitions",
+  "preconditions":["alliance joined","recommended technology visible","normal-resource contribution available"],
+  "required_page":"ALLIANCE",
+  "required_state":{"section":"TECHNOLOGY","status":"AVAILABLE"},
+  "required_vision":["PAGE_ALLIANCE_TECH","BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT","STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT"],
+  "required_actions":["open alliance","open technology","select recommended technology","contribute normal resource"],
+  "verification":["attempts remaining decreases by 1","personal contribution delta equals visible reward","reward is observed base 120 or critical x2 240"],
+  "failure_conditions":["NO_ALLIANCE","NO_CONTRIBUTION_ATTEMPT","RESOURCE_INSUFFICIENT","COUNTER_UNCHANGED","PAYMENT_ONLY"],
+  "recovery":["BACK","REFRESH_STATE","SWITCH_TASK"],
+  "dependencies":["Vision","WorldState","Alliance","Verifier","ResourceLedger"],
+  "risk":"LOW_RESOURCE_SPEND",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT","OFFICIAL","OPEN_SOURCE_PROJECT"],
+  "status":"VERIFIED",
+  "live_attempts":5,
+  "live_successes":5,
+  "stable":false
+}

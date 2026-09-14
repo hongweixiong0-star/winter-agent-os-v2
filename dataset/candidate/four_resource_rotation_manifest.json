@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-13T12:23:10.021562+00:00",
+  "status": "CANDIDATE",
+  "count": 7,
+  "records": [
+    {
+      "template_id": "resource_tab_meat__live_resource_rotation_panel_wood_20260913__eb0813e3__0",
+      "semantic": "RESOURCE_TAB_MEAT",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/four_resource_rotation/resource_tab_meat__live_resource_rotation_panel_wood_20260913__eb0813e3__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_panel_wood_20260913.png",
+      "parent_sha256": "eb0813e3c14732577a2371b51630260e3301bd0e38afef6bb865dec49a1bed89",
+      "roi_norm": {
+        "x_norm": 0.2,
+        "y_norm": 0.665,
+        "w_norm": 0.18,
+        "h_norm": 0.096
+      },
+      "width": 130,
+      "height": 123,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "resource_wood_selected__live_resource_rotation_panel_wood_20260913__eb0813e3__1",
+      "semantic": "RESOURCE_WOOD_SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/four_resource_rotation/resource_wood_selected__live_resource_rotation_panel_wood_20260913__eb0813e3__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_panel_wood_20260913.png",
+      "parent_sha256": "eb0813e3c14732577a2371b51630260e3301bd0e38afef6bb865dec49a1bed89",
+      "roi_norm": {
+        "x_norm": 0.41,
+        "y_norm": 0.665,
+        "w_norm": 0.18,
+        "h_norm": 0.096
+      },
+      "width": 130,
+      "height": 123,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "resource_tab_coal__live_resource_rotation_panel_wood_20260913__eb0813e3__2",
+      "semantic": "RESOURCE_TAB_COAL",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/four_resource_rotation/resource_tab_coal__live_resource_rotation_panel_wood_20260913__eb0813e3__2.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_panel_wood_20260913.png",
+      "parent_sha256": "eb0813e3c14732577a2371b51630260e3301bd0e38afef6bb865dec49a1bed89",
+      "roi_norm": {
+        "x_norm": 0.62,
+        "y_norm": 0.665,
+        "w_norm": 0.18,
+        "h_norm": 0.096
+      },
+      "width": 130,
+      "height": 123,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "resource_tab_iron__live_resource_rotation_panel_wood_20260913__eb0813e3__3",
+      "semantic": "RESOURCE_TAB_IRON",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/four_resource_rotation/resource_tab_iron__live_resource_rotation_panel_wood_20260913__eb0813e3__3.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_panel_wood_20260913.png",
+      "parent_sha256": "eb0813e3c14732577a2371b51630260e3301bd0e38afef6bb865dec49a1bed89",
+      "roi_norm": {
+        "x_norm": 0.82,
+        "y_norm": 0.665,
+        "w_norm": 0.175,
+        "h_norm": 0.096
+      },
+      "width": 126,
+      "height": 123,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "resource_meat_selected__live_resource_rotation_selected_meat_20260913__136d105c__0",
+      "semantic": "RESOURCE_MEAT_SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/four_resource_rotation/resource_meat_selected__live_resource_rotation_selected_meat_20260913__136d105c__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_meat_20260913.png",
+      "parent_sha256": "136d105c8933e020b111169a7d5fea7066634958cde8ce974f74295384d29dbf",
+      "roi_norm": {
+        "x_norm": 0.2,
+        "y_norm": 0.665,
+        "w_norm": 0.18,
+        "h_norm": 0.096
+      },
+      "width": 130,
+      "height": 123,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "resource_coal_selected__live_resource_rotation_selected_coal_20260913__88b54dd1__0",
+      "semantic": "RESOURCE_COAL_SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/four_resource_rotation/resource_coal_selected__live_resource_rotation_selected_coal_20260913__88b54dd1__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_coal_20260913.png",
+      "parent_sha256": "88b54dd13804958e9da387170a0630fb4f0acff4552345687c6c84f159a916cb",
+      "roi_norm": {
+        "x_norm": 0.62,
+        "y_norm": 0.665,
+        "w_norm": 0.18,
+        "h_norm": 0.096
+      },
+      "width": 130,
+      "height": 123,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "resource_iron_selected__live_resource_rotation_selected_iron_20260913__54ea993d__0",
+      "semantic": "RESOURCE_IRON_SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/four_resource_rotation/resource_iron_selected__live_resource_rotation_selected_iron_20260913__54ea993d__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_iron_20260913.png",
+      "parent_sha256": "54ea993d874cb8a2a9b0a3d7acd15c36e007d5684f72cbc60849733c5a660d16",
+      "roi_norm": {
+        "x_norm": 0.82,
+        "y_norm": 0.665,
+        "w_norm": 0.175,
+        "h_norm": 0.096
+      },
+      "width": 126,
+      "height": 123,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "source":"LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples":[{
+    "image":"step_002_after_refresh_2.png",
+    "page":"POPUP",
+    "elements":[
+      {"semantic":"POPUP_INTEL_REWARD_TITLE","roi":{"x_norm":0.30,"y_norm":0.215,"w_norm":0.40,"h_norm":0.085},"confidence":0.99}
+    ]
+  }]
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "status": "CANDIDATE",
+  "source": ["USER_POLICY", "LIVE_CLIENT_PRIOR"],
+  "last_verified": "2026-09-09",
+  "rules": {
+    "priority": ["VERIFIED_CITY_ATTACK_DEFENSE", "HOSPITAL_OVER_5_PERCENT", "STAMINA_OVER_30", "EXPIRING_EVENT_MINIMUM_GUARANTEE", "REWARDS", "DEVELOPMENT", "BALANCED_GATHERING"],
+    "stamina": {"threshold": 30, "order": ["INTEL", "GIANT_BEAST", "BEAST_HUNT"], "unknown": "OBSERVE_NO_SPEND"},
+    "training": {"troop_types": ["INFANTRY", "LANCER", "MARKSMAN"], "method": "least_trained_available_queue"},
+    "gathering": {"resources": ["MEAT", "WOOD", "COAL", "IRON"], "method": "largest_weighted_deficit_or_round_robin"},
+    "healing": {"trigger_ratio": 0.05, "batch_min": 500, "batch_max": 1000, "alliance_help": true},
+    "shield": {"incoming_troops_gt": 100000, "free_only_until_live_cost_verifier": true, "preference": ["8H", "2H"]},
+    "red_dot": "DISCOVERY_SIGNAL_ONLY_REQUIRES_PAGE_AND_REWARD_VERIFIER"
+  },
+  "live_gate": {
+    "verified_now": ["INFANTRY_TRAINING", "MAIL_REWARD", "DAILY_REWARD", "ALLIANCE_GIFT", "EXPLORATION_IDLE_REWARD", "INTEL", "NORMAL_BEAST", "WOOD_GATHER"],
+    "candidate": ["LANCER_AUTO_NAVIGATION", "MARKSMAN_AUTO_NAVIGATION", "MEAT_GATHER", "COAL_GATHER", "IRON_GATHER", "GIANT_BEAST", "CITY_ATTACK_DETECTION", "FREE_SHIELD_ACTIVATION", "HOSPITAL_BATCH_HEAL", "CHIEF_DAILY_REWARD", "DAWN_ISLAND_REWARD", "TRAVEL_REWARD", "EVENT_GENERIC_CLAIM"],
+    "blocked_until_live_evidence": ["ATTACK_GATHERER", "ATTACK_TURRET", "NO_DEATH_COMBAT_CLASSIFICATION"]
+  }
+}

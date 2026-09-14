@@ -1,0 +1,30 @@
+{
+  "schema_version":"1.1",
+  "mode":"PRODUCTION",
+  "verified_at":"2026-09-05",
+  "skills":{
+    "ALLIANCE_GIFTS":{"attempts":3,"successes":2,"failures":{"RESET_DURING_ACTION":1}},
+    "ALLIANCE_ALLY_GIFT_CLAIM":{"attempts":9,"successes":9,"failures":{}}
+  },
+  "victory_loot_attempts":[
+    {"attempt":1,"before":{"daily_claimed":444,"gift_progress":71636},"reward_feedback":true,"after":{"daily_claimed":463,"gift_progress":71867,"visible_state":"CLAIMED"},"result":"SUCCESS"},
+    {"attempt":2,"before":{"daily_claimed":463,"gift_progress":71933},"reward_feedback":false,"after":{"daily_claimed":0,"gift_progress":93443,"game_day_reset":true},"result":"RESET_DURING_ACTION"},
+    {"attempt":3,"before":{"daily_claimed":0,"gift_progress":93443},"reward_feedback":true,"after":{"daily_claimed":61,"gift_progress":93734,"visible_state":"CLAIMED"},"result":"SUCCESS"}
+  ],
+  "ally_gift_attempts":[
+    {"attempt":1,"progress":"94076→94106","badge":"9→8","points":30,"executor":"manual_bootstrap","result":"SUCCESS"},
+    {"attempt":2,"progress":"94286→94316","points":30,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"},
+    {"attempt":3,"progress":"94316→94346","badge":"7→6","points":30,"list_reordered":true,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"},
+    {"attempt":4,"progress":"94346→94376","badge":"6→5","points":30,"list_reordered":true,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"},
+    {"attempt":5,"progress":"94376→94406","points":30,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"},
+    {"attempt":6,"progress":"94406→94436","points":30,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"},
+    {"attempt":7,"progress":"94436→94466","points":30,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"},
+    {"attempt":8,"progress":"94466→94496","points":30,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"},
+    {"attempt":9,"progress":"94496→94616","badge":"1→0","points":120,"gift_level":3,"executor":"BRAIN_SCHEDULER_SKILL_EXECUTOR","result":"SUCCESS"}
+  ],
+  "runtime_smoke":{"observed":"CLAIMED","badge_count":0,"decision":"SAFE_STOP","clicks":0,"result":"PASS"},
+  "verifier":{"victory_required":["reward_feedback","positive_daily_counter_delta","nondecreasing_gift_progress","claimed_list_state"],"ally_required":["claimable_before","same_ally_gift_page","positive_progress_delta","badge_or_target_row_or_exhausted_transition"],"rejects_async_progress_only":true},
+  "observed_failure_patterns":["RESET_DURING_ACTION","LIVE_LIST_REORDER","ASYNC_ALLIANCE_PROGRESS"],
+  "hard_block":"Never follow the Ally Gift purchase-generation route",
+  "stable_claimed":false
+}

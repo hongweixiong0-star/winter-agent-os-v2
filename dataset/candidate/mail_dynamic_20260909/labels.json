@@ -1,0 +1,11 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "samples":[{
+    "image":"../../raw/live_mail_dynamic_badge_fix_20260909/step_001_before.png",
+    "elements":[
+      {"semantic":"PAGE_MAIL","roi":{"x_norm":0.105,"y_norm":0.01,"w_norm":0.17,"h_norm":0.055},"confidence":0.99},
+      {"semantic":"BTN_MAIL_CLAIM_ALL","roi":{"x_norm":0.58,"y_norm":0.94,"w_norm":0.4,"h_norm":0.055},"confidence":0.99}
+    ]
+  }]
+}

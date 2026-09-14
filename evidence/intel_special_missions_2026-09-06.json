@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "mode": "PRODUCTION",
+  "live_client": "com.gof.china",
+  "results": [
+    {
+      "mission": "英雄之旅 等级10",
+      "stamina_cost_displayed": 10,
+      "action": "EXPLORE_DISPATCHED",
+      "result": "BATTLE_FAILED",
+      "status": "BLOCKED",
+      "evidence": [
+        "dataset/raw/live_intel_purple_axes_probe.png",
+        "dataset/raw/live_intel_hero_journey_target_probe.png",
+        "dataset/raw/live_intel_hero_journey_progress.png"
+      ]
+    },
+    {
+      "mission": "大师悬赏：20号",
+      "stamina_cost_displayed": 10,
+      "recommended_power": 189295920,
+      "observed_chief_power": 56089968,
+      "action": "NO_DISPATCH",
+      "result": "POWER_BELOW_RECOMMENDED",
+      "status": "BLOCKED",
+      "evidence": [
+        "dataset/raw/live_intel_orange_rabbit_probe.png",
+        "dataset/raw/live_intel_master_bounty_target_probe.png"
+      ]
+    }
+  ],
+  "safety_fix": "Specific mission titles are classified before the shared 前往查看 button; unsupported missions route BACK and cannot enter the ordinary Beast dispatch chain."
+}

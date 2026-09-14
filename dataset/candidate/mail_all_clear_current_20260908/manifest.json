@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-08T04:50:35.040019+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "status_mail_all_clear__step_001_after_refresh_2__0",
+      "semantic": "STATUS_MAIL_ALL_CLEAR",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_all_clear_current_20260908/status_mail_all_clear__step_001_after_refresh_2__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_next_batch_mail_v2/step_001_after_refresh_2.png",
+      "parent_sha256": "d3d1de1307918375867d9fe4289370496b9564a049a91e1a418edc9acb42a63f",
+      "roi_norm": {
+        "x_norm": 0.215,
+        "y_norm": 0.06,
+        "w_norm": 0.195,
+        "h_norm": 0.065
+      },
+      "width": 140,
+      "height": 83,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

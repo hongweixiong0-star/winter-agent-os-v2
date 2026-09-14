@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "auto_execution": true,
+  "bootstrap_safe_interaction": true,
+  "production": true,
+  "dry_run": false,
+  "device": {
+    "provider": "mumu_adb",
+    "adb_path": "D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\adb.exe",
+    "serial": "127.0.0.1:7555",
+    "package_name": "com.gof.china",
+    "resolution": [
+      720,
+      1280
+    ]
+  },
+  "ocr": {
+    "backend": "rapidocr_onnxruntime",
+    "module_path": "E:\\dongri-mumu-bot\\.venv\\Lib\\site-packages",
+    "minimum_confidence": 0.88,
+    "cache": true,
+    "role": "TEXT_RECOGNITION_ONLY"
+  },
+  "retry": {
+    "default_max": 2,
+    "device_busy_wait_seconds": 5,
+    "qwen_busy_fallback": "RULE"
+  },
+  "march_policy": {
+    "reserve_for_stamina": 0,
+    "reason": "Use all marches; recall the lowest-value gathering march when a higher-priority stamina, realtime event, or verification goal needs a slot",
+    "recall_on_demand": true,
+    "recall_priority": [
+      "REALTIME_EVENT",
+      "INTEL",
+      "GIANT_BEAST",
+      "BEAST_HUNT",
+      "LIVE_VERIFICATION"
+    ]
+  },
+  "operations_policy": {
+    "stamina_threshold": 30,
+    "stamina_order": [
+      "INTEL",
+      "GIANT_BEAST",
+      "BEAST_HUNT"
+    ],
+    "resources": {
+      "MEAT": 1.0,
+      "WOOD": 1.0,
+      "COAL": 1.0,
+      "IRON": 1.0
+    },
+    "troop_rotation": [
+      "INFANTRY",
+      "LANCER",
+      "MARKSMAN"
+    ],
+    "hospital_ratio": 0.05,
+    "heal_batch_min": 500,
+    "heal_batch_max": 1000,
+    "shield_attack_threshold": 100000,
+    "shield_preference": [
+      "8H",
+      "2H"
+    ],
+    "red_dot_requires_semantic_verification": true,
+    "event_minimum_guarantee": true
+  },
+  "candidate_policy": {
+    "auto_real_try": true,
+    "required": [
+      "PRECONDITIONS",
+      "EXECUTE",
+      "VERIFIER",
+      "RECOVERY",
+      "RISK_ALLOWED"
+    ],
+    "starvation_ready_cycles": 5,
+    "failed_attempt_retry_max": 2,
+    "promotion_requires_live_verifier": true
+  },
+  "retention": {
+    "max_screenshots": 500,
+    "screenshot_ttl_days": 14,
+    "auto_prune": true,
+    "max_log_size_bytes": 10485760,
+    "episode_limit": 10000
+  },
+  "risk": {
+    "block_real_money": true,
+    "block_account_or_role_delete": true,
+    "block_account_security_change": true,
+    "block_system_dangerous": true,
+    "allow_gems": true,
+    "allow_items": true,
+    "allow_speedups": true,
+    "require_resource_ledger": true
+  }
+}

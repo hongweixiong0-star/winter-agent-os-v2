@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-08T04:32:51.524802+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "btn_open_alliance_gifts__live_20260908_alliance_current__0",
+      "semantic": "BTN_OPEN_ALLIANCE_GIFTS",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/alliance_current_20260908/btn_open_alliance_gifts__live_20260908_alliance_current__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_alliance_current.png",
+      "parent_sha256": "8709d975c5c75ae122b9f0d4e5ba8c053d0b80ab258101b05e98f20887a7acce",
+      "roi_norm": {
+        "x_norm": 0.51,
+        "y_norm": 0.49,
+        "w_norm": 0.45,
+        "h_norm": 0.08
+      },
+      "width": 324,
+      "height": 102,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_ally_gift_claim__live_20260908_alliance_gifts_current__0",
+      "semantic": "BTN_ALLY_GIFT_CLAIM",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/alliance_current_20260908/btn_ally_gift_claim__live_20260908_alliance_gifts_current__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_alliance_gifts_current.png",
+      "parent_sha256": "35dfd816f4829e1b4a3504c529e65a0a38af09d7152b4eb6ed181345a12235c9",
+      "roi_norm": {
+        "x_norm": 0.75,
+        "y_norm": 0.47,
+        "w_norm": 0.19,
+        "h_norm": 0.055
+      },
+      "width": 137,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

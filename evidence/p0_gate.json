@@ -1,0 +1,17 @@
+{
+  "evaluated_at": "2026-09-03T08:08:00+08:00",
+  "skill": "GATHER_RESOURCE",
+  "adb_connected": true,
+  "foreground_package_ok": true,
+  "screenshot_ok": true,
+  "replay_chain_ok": true,
+  "live_vision_verified": true,
+  "live_executor_verified": true,
+  "live_verifier_verified": true,
+  "consecutive_live_successes": 3,
+  "accepted_attempts": [6, 7, 8],
+  "gate_ready": true,
+  "promotion": "VERIFIED",
+  "stable": false,
+  "notes": "Replay and unit tests do not count as live success. Attempts 6-8 were natural current-client cycles; attempt 8 used the V2 Brain/Scheduler/Skill/Executor path and code Verifier."
+}

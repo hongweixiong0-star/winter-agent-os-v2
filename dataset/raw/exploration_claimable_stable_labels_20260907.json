@@ -1,0 +1,1 @@
+{"schema_version":"1.0","status":"SIMULATION","reviewed_from":"LIVE_CLIENT","samples":[{"image":"live_deploy_exploration_to_intel_v2/step_001_before.png","page":"EXPLORATION","elements":[{"semantic":"BTN_EXPLORATION_IDLE_CLAIM","roi":{"x_norm":0.77,"y_norm":0.66,"w_norm":0.18,"h_norm":0.04},"confidence":0.99}]}]}

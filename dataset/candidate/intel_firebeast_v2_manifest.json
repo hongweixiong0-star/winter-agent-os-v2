@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T16:41:33.043225+00:00",
+  "status": "CANDIDATE",
+  "count": 3,
+  "records": [
+    {
+      "template_id": "target_intel_firebeast_mission__step_003_after__0",
+      "semantic": "TARGET_INTEL_FIREBEAST_MISSION",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_firebeast_v2/target_intel_firebeast_mission__step_003_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_claw4_claim_20260907/step_003_after.png",
+      "parent_sha256": "d1076825bc7bf3aa35470780bdef2bac4c86a5c5de253de13d03930666e8f0b0",
+      "roi_norm": {
+        "x_norm": 0.07,
+        "y_norm": 0.335,
+        "w_norm": 0.14,
+        "h_norm": 0.115
+      },
+      "width": 101,
+      "height": 147,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_intel_firebeast_title__live_intel_orange_goat_probe_20260907__0",
+      "semantic": "POPUP_INTEL_FIREBEAST_TITLE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_firebeast_v2/popup_intel_firebeast_title__live_intel_orange_goat_probe_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_orange_goat_probe_20260907.png",
+      "parent_sha256": "d6b922adada24fe2a386cf0bbffced23d3eb730add8d8a07116ce6fbfc48968d",
+      "roi_norm": {
+        "x_norm": 0.12,
+        "y_norm": 0.252,
+        "w_norm": 0.76,
+        "h_norm": 0.055
+      },
+      "width": 547,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "dialog_intel_firebeast_target__live_intel_blazing_behemoth_target_20260907__0",
+      "semantic": "DIALOG_INTEL_FIREBEAST_TARGET",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_firebeast_v2/dialog_intel_firebeast_target__live_intel_blazing_behemoth_target_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_blazing_behemoth_target_20260907.png",
+      "parent_sha256": "e68a454973ebca89054c0819ee1a7e7336febd44d0fa23864167fe25eccbbabb",
+      "roi_norm": {
+        "x_norm": 0.205,
+        "y_norm": 0.18,
+        "w_norm": 0.59,
+        "h_norm": 0.35
+      },
+      "width": 425,
+      "height": 448,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version":"2.0",
+  "type":"ADVISORY",
+  "inputs":["event_state","remaining_time","points_missing","scoring_actions","inventory","queues","available_skills","player_goal"],
+  "deadline_policy":{"over_24h":"NORMAL","under_12h":"ELEVATED","under_6h":"HIGH","under_2h":"P0"},
+  "rules":[
+    {"when":"event active AND minimum guarantee incomplete AND scoring skill executable","suggest":"apply event priority modifier to the existing skill"},
+    {"when":"points target met AND target rewards unclaimed","suggest":"claim rewards before DONE"},
+    {"when":"all reasonable scoring actions unavailable","suggest":"EVENT_TARGET_BLOCKED with missing points and skill gaps"}
+  ],
+  "hardcoded_event_score_tables":false,
+  "scheduler_count":1
+}

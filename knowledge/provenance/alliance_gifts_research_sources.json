@@ -1,0 +1,11 @@
+{
+  "schema_version":"1.0",
+  "retrieved_at":"2026-09-05",
+  "sources":[
+    {"type":"LIVE_CLIENT","name":"Alliance Gifts: two Victory Loot cycles, nine Ally Gift claims, reset/list-reorder evidence, and bounded-runtime safe stop","evidence":["dataset/raw/live_alliance_gifts_entry.png","dataset/raw/live_alliance_gifts_page.png","dataset/raw/live_alliance_gifts_claim_result.png","dataset/raw/live_alliance_gifts_after.png","dataset/raw/live_alliance_gifts_claim2_result.png","dataset/raw/live_alliance_gifts_claim2_victory_recheck.png","dataset/raw/live_alliance_gifts_day2_reward.png","dataset/raw/live_alliance_gifts_day2_after.png","dataset/raw/live_alliance_ally_gifts_before.png","dataset/raw/live_alliance_ally_gift_reward.png","dataset/raw/live_ally_auto_before_3.png","dataset/raw/live_ally_auto_after_3.png","dataset/raw/live_ally_auto_before_9.png","dataset/raw/live_ally_auto_after_9.png","dataset/raw/live_runtime_smoke/step_001_before.png"],"license":"PRIVATE_RUNTIME_EVIDENCE","use":"VERIFIED_SKILL_RUNTIME_AND_FAILURE_PATTERN"},
+    {"type":"COMMUNITY_DB","name":"Whiteout Survival Wiki — State Merger Alliance Gift tasks","url":"https://www.whiteoutsurvival.wiki/events/state-merger/","license":"REFERENCE_ONLY_UNLESS_LIVE_CONFIRMED","use":"COUNTABLE_CLAIM_ACTION_PRIOR"},
+    {"type":"OPEN_SOURCE_PROJECT","name":"Shederator/wosbot capability list","url":"https://github.com/Shederator/wosbot","license":"VERIFY_PER_PATH","use":"CAPABILITY_DECOMPOSITION_ONLY"},
+    {"type":"PLAYER_GUIDE","name":"WOS Tools Alliance Guide — Gift Boxes","url":"https://wostools.net/guides/alliance-guide","license":"REFERENCE_ONLY","use":"MECHANISM_PRIOR"}
+  ],
+  "conflicts":[]
+}

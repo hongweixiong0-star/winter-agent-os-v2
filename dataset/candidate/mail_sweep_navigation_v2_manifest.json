@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T21:33:54.883090+00:00",
+  "status": "CANDIDATE",
+  "count": 7,
+  "records": [
+    {
+      "template_id": "btn_open_mail__live_home_after_welcome_reward_20260907__0",
+      "semantic": "BTN_OPEN_MAIL",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_sweep_navigation_v2/btn_open_mail__live_home_after_welcome_reward_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_home_after_welcome_reward_20260907.png",
+      "parent_sha256": "555532f1f640f9cead28eac8aceb0683f0e99840570f591f855f57d37feb4d83",
+      "roi_norm": {
+        "x_norm": 0.865,
+        "y_norm": 0.785,
+        "w_norm": 0.105,
+        "h_norm": 0.085
+      },
+      "width": 76,
+      "height": 109,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_mail_tab_alliance__live_mail_navigation_current_20260907__0",
+      "semantic": "BTN_MAIL_TAB_ALLIANCE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_sweep_navigation_v2/btn_mail_tab_alliance__live_mail_navigation_current_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_navigation_current_20260907.png",
+      "parent_sha256": "e27834e61fc5cdc5413fc1f09701d6c9b42a19f4269e9de82a23d304543148ea",
+      "roi_norm": {
+        "x_norm": 0.215,
+        "y_norm": 0.068,
+        "w_norm": 0.185,
+        "h_norm": 0.055
+      },
+      "width": 133,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_mail_tab_system__live_mail_navigation_current_20260907__1",
+      "semantic": "BTN_MAIL_TAB_SYSTEM",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_sweep_navigation_v2/btn_mail_tab_system__live_mail_navigation_current_20260907__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_navigation_current_20260907.png",
+      "parent_sha256": "e27834e61fc5cdc5413fc1f09701d6c9b42a19f4269e9de82a23d304543148ea",
+      "roi_norm": {
+        "x_norm": 0.41,
+        "y_norm": 0.068,
+        "w_norm": 0.185,
+        "h_norm": 0.055
+      },
+      "width": 133,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "tab_mail_report_active__live_mail_navigation_current_20260907__2",
+      "semantic": "TAB_MAIL_REPORT_ACTIVE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_sweep_navigation_v2/tab_mail_report_active__live_mail_navigation_current_20260907__2.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_navigation_current_20260907.png",
+      "parent_sha256": "e27834e61fc5cdc5413fc1f09701d6c9b42a19f4269e9de82a23d304543148ea",
+      "roi_norm": {
+        "x_norm": 0.6,
+        "y_norm": 0.068,
+        "w_norm": 0.18,
+        "h_norm": 0.055
+      },
+      "width": 130,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "tab_mail_alliance_active__live_mail_alliance_before_claim_20260907__0",
+      "semantic": "TAB_MAIL_ALLIANCE_ACTIVE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_sweep_navigation_v2/tab_mail_alliance_active__live_mail_alliance_before_claim_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_alliance_before_claim_20260907.png",
+      "parent_sha256": "913782206780434f3123453327859b137498f00253ad0e58b21a6ba3cff24b09",
+      "roi_norm": {
+        "x_norm": 0.215,
+        "y_norm": 0.068,
+        "w_norm": 0.185,
+        "h_norm": 0.055
+      },
+      "width": 133,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "tab_mail_system_active__live_mail_system_before_claim_20260907__0",
+      "semantic": "TAB_MAIL_SYSTEM_ACTIVE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_sweep_navigation_v2/tab_mail_system_active__live_mail_system_before_claim_20260907__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_system_before_claim_20260907.png",
+      "parent_sha256": "4878a2f23e39e9fc3e53e19e56081468ffe8d1d2ccae0aff97bd36b573accdf4",
+      "roi_norm": {
+        "x_norm": 0.41,
+        "y_norm": 0.068,
+        "w_norm": 0.185,
+        "h_norm": 0.055
+      },
+      "width": 133,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_mail_tab_report__live_mail_system_before_claim_20260907__1",
+      "semantic": "BTN_MAIL_TAB_REPORT",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/mail_sweep_navigation_v2/btn_mail_tab_report__live_mail_system_before_claim_20260907__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_mail_system_before_claim_20260907.png",
+      "parent_sha256": "4878a2f23e39e9fc3e53e19e56081468ffe8d1d2ccae0aff97bd36b573accdf4",
+      "roi_norm": {
+        "x_norm": 0.6,
+        "y_norm": 0.068,
+        "w_norm": 0.18,
+        "h_norm": 0.055
+      },
+      "width": 130,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

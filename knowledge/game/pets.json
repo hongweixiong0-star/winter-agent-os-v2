@@ -1,0 +1,1 @@
+{"schema_version":"1.0","gate":"DISCOVERED","records":[{"id":"PETS_SYSTEM","name":"宠物","aliases":["Pets"],"category":"companion_progression","entry":"PET","skills":"passive/active and version-dependent","source":["wosforge_main","taptap_strategy_hub"],"confidence":0.78,"status":"LIKELY","notes":"不导入未经客户端验证的宠物数值。"}]}

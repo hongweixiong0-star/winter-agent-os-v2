@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-08T10:26:25.812514+00:00",
+  "status": "CANDIDATE",
+  "count": 7,
+  "records": [
+    {
+      "template_id": "btn_open_power_overview__live_20260908_next_batch_home__0",
+      "semantic": "BTN_OPEN_POWER_OVERVIEW",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_navigation_20260908/btn_open_power_overview__live_20260908_next_batch_home__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_next_batch_home.png",
+      "parent_sha256": "f07f3f0355943a014a17325e8b3047aa9d9bb3d17f00908b89f9154ab9b93693",
+      "roi_norm": {
+        "x_norm": 0.135,
+        "y_norm": 0.035,
+        "w_norm": 0.285,
+        "h_norm": 0.05
+      },
+      "width": 205,
+      "height": 64,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_power_overview__live_20260908_power_entry__0",
+      "semantic": "POPUP_POWER_OVERVIEW",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_navigation_20260908/popup_power_overview__live_20260908_power_entry__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_power_entry.png",
+      "parent_sha256": "e5520671419bc092d71648a95da55f09294501b8252df5e1f0d99c15775600a9",
+      "roi_norm": {
+        "x_norm": 0.03,
+        "y_norm": 0.095,
+        "w_norm": 0.94,
+        "h_norm": 0.815
+      },
+      "width": 677,
+      "height": 1043,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_open_power_details__live_20260908_power_entry__1",
+      "semantic": "BTN_OPEN_POWER_DETAILS",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_navigation_20260908/btn_open_power_details__live_20260908_power_entry__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_power_entry.png",
+      "parent_sha256": "e5520671419bc092d71648a95da55f09294501b8252df5e1f0d99c15775600a9",
+      "roi_norm": {
+        "x_norm": 0.355,
+        "y_norm": 0.595,
+        "w_norm": 0.29,
+        "h_norm": 0.055
+      },
+      "width": 209,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_power_details__live_20260908_power_details__0",
+      "semantic": "POPUP_POWER_DETAILS",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_navigation_20260908/popup_power_details__live_20260908_power_details__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_power_details.png",
+      "parent_sha256": "74ca7e5c0645958cf89e1be3629af5bb91e5818e60cca78f4eaf0e4bd0d2d59e",
+      "roi_norm": {
+        "x_norm": 0.03,
+        "y_norm": 0.13,
+        "w_norm": 0.94,
+        "h_norm": 0.735
+      },
+      "width": 677,
+      "height": 941,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_power_troop_improve__live_20260908_power_details__1",
+      "semantic": "BTN_POWER_TROOP_IMPROVE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_navigation_20260908/btn_power_troop_improve__live_20260908_power_details__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_power_details.png",
+      "parent_sha256": "74ca7e5c0645958cf89e1be3629af5bb91e5818e60cca78f4eaf0e4bd0d2d59e",
+      "roi_norm": {
+        "x_norm": 0.745,
+        "y_norm": 0.42,
+        "w_norm": 0.195,
+        "h_norm": 0.055
+      },
+      "width": 140,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "target_infantry_camp_highlighted__live_20260908_training_navigation_settled__0",
+      "semantic": "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_navigation_20260908/target_infantry_camp_highlighted__live_20260908_training_navigation_settled__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_training_navigation_settled.png",
+      "parent_sha256": "ece2f7a4139ab59b962135b35d6c35569abb6090f3ae12abec01c01ec701c099",
+      "roi_norm": {
+        "x_norm": 0.185,
+        "y_norm": 0.39,
+        "w_norm": 0.59,
+        "h_norm": 0.285
+      },
+      "width": 425,
+      "height": 365,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_open_training_from_camp__live_20260908_training_menu_current__0",
+      "semantic": "BTN_OPEN_TRAINING_FROM_CAMP",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/training_navigation_20260908/btn_open_training_from_camp__live_20260908_training_menu_current__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_training_menu_current.png",
+      "parent_sha256": "b37a7e04c50ea9bae300e5e22a3a22a3a43a66c86d569b107dec4c632ad7fc82",
+      "roi_norm": {
+        "x_norm": 0.605,
+        "y_norm": 0.62,
+        "w_norm": 0.135,
+        "h_norm": 0.1
+      },
+      "width": 97,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

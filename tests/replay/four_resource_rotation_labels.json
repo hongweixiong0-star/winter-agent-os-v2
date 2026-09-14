@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "samples": [
+    {
+      "image": "../../dataset/raw/live_resource_rotation_panel_wood_20260913.png",
+      "page": "MAP",
+      "state": {"resource_search_open": true, "resource_selected": "WOOD", "source": "LIVE_CLIENT"},
+      "elements": [
+        {"semantic": "RESOURCE_TAB_MEAT", "roi": {"x_norm": 0.200, "y_norm": 0.665, "w_norm": 0.180, "h_norm": 0.096}, "confidence": 0.99},
+        {"semantic": "RESOURCE_WOOD_SELECTED", "roi": {"x_norm": 0.410, "y_norm": 0.665, "w_norm": 0.180, "h_norm": 0.096}, "confidence": 0.99},
+        {"semantic": "RESOURCE_TAB_COAL", "roi": {"x_norm": 0.620, "y_norm": 0.665, "w_norm": 0.180, "h_norm": 0.096}, "confidence": 0.99},
+        {"semantic": "RESOURCE_TAB_IRON", "roi": {"x_norm": 0.820, "y_norm": 0.665, "w_norm": 0.175, "h_norm": 0.096}, "confidence": 0.99}
+      ]
+    },
+    {
+      "image": "../../dataset/raw/live_resource_rotation_selected_meat_20260913.png",
+      "page": "MAP",
+      "state": {"resource_search_open": true, "resource_selected": "MEAT", "source": "LIVE_CLIENT"},
+      "elements": [{"semantic": "RESOURCE_MEAT_SELECTED", "roi": {"x_norm": 0.200, "y_norm": 0.665, "w_norm": 0.180, "h_norm": 0.096}, "confidence": 0.99}]
+    },
+    {
+      "image": "../../dataset/raw/live_resource_rotation_selected_coal_20260913.png",
+      "page": "MAP",
+      "state": {"resource_search_open": true, "resource_selected": "COAL", "source": "LIVE_CLIENT"},
+      "elements": [{"semantic": "RESOURCE_COAL_SELECTED", "roi": {"x_norm": 0.620, "y_norm": 0.665, "w_norm": 0.180, "h_norm": 0.096}, "confidence": 0.99}]
+    },
+    {
+      "image": "../../dataset/raw/live_resource_rotation_selected_iron_20260913.png",
+      "page": "MAP",
+      "state": {"resource_search_open": true, "resource_selected": "IRON", "source": "LIVE_CLIENT"},
+      "elements": [{"semantic": "RESOURCE_IRON_SELECTED", "roi": {"x_norm": 0.820, "y_norm": 0.665, "w_norm": 0.175, "h_norm": 0.096}, "confidence": 0.99}]
+    }
+  ]
+}

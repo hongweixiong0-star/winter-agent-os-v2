@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "source": "LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples": [
+    {
+      "image": "live_intel_claw_claim_20260907/step_003_after.png",
+      "page": "INTEL",
+      "elements": [
+        {"semantic": "TARGET_INTEL_BEAST_MISSION", "roi": {"x_norm": 0.67, "y_norm": 0.505, "w_norm": 0.13, "h_norm": 0.11}, "confidence": 0.99},
+        {"semantic": "TARGET_INTEL_BEAST_MISSION", "roi": {"x_norm": 0.63, "y_norm": 0.56, "w_norm": 0.13, "h_norm": 0.11}, "confidence": 0.99}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "2.0",
+  "gate": "REVIEWED",
+  "principle": "Activities are adapters over universal gameplay skills, not separate click scripts.",
+  "skills": [
+    {"id":"NAVIGATE_TO","latency":"NORMAL","verifier":"PAGE_CHANGED","families":["ALL"]},
+    {"id":"RECOVER_HOME","latency":"FAST","verifier":"PAGE_CHANGED","families":["ALL"]},
+    {"id":"CLOSE_POPUPS","latency":"FAST","verifier":"BUTTON_DISAPPEARED","families":["ALL"]},
+    {"id":"READ_TIMER","latency":"FAST","verifier":"TIMER_READ","families":["EVENT","QUEUE","COOLDOWN"]},
+    {"id":"READ_COUNTER","latency":"FAST","verifier":"COUNTER_READ","families":["ATTEMPT","CAPACITY","PROGRESS"]},
+    {"id":"CLAIM_REWARD","latency":"FAST","verifier":"REWARD_CLAIMED","families":["MAIL","VIP","EVENT","ALLIANCE","DAILY"]},
+    {"id":"START_BUILD","latency":"NORMAL","verifier":"QUEUE_ACTIVE","families":["QUEUE"]},
+    {"id":"START_RESEARCH","latency":"NORMAL","verifier":"QUEUE_ACTIVE","families":["QUEUE"]},
+    {"id":"TRAIN_OR_PROMOTE","latency":"NORMAL","verifier":"QUEUE_ACTIVE","families":["QUEUE"]},
+    {"id":"HEAL_TROOPS","latency":"NORMAL","verifier":"QUEUE_ACTIVE_OR_WOUNDED_REDUCED","families":["QUEUE"]},
+    {"id":"GATHER_RESOURCE","latency":"NORMAL","verifier":"MARCH_STATE_CHANGED","families":["WORLD"]},
+    {"id":"HUNT_BEAST","latency":"FAST","verifier":"BATTLE_REPORT_OR_STAMINA_CHANGED","families":["WORLD"]},
+    {"id":"SEND_MARCH","latency":"FAST","verifier":"MARCH_STATE_CHANGED","families":["WORLD"]},
+    {"id":"START_RALLY","latency":"FAST_OR_REALTIME","verifier":"RALLY_CREATED","families":["RALLY"]},
+    {"id":"JOIN_RALLY","latency":"REALTIME_OPTIONAL","verifier":"RALLY_JOINED","families":["RALLY"]},
+    {"id":"REINFORCE_TARGET","latency":"FAST","verifier":"MARCH_STATE_CHANGED","families":["WORLD","WAVE","BATTLEFIELD"]},
+    {"id":"RECALL_MARCH","latency":"FAST","verifier":"NORMAL_IDLE_SLOT_INCREASED","families":["WORLD"]},
+    {"id":"USE_ACTIVITY_ATTEMPT","latency":"FAST","verifier":"ATTEMPT_OR_RESULT_CHANGED","families":["ATTEMPT"]},
+    {"id":"SHOP_TRANSACTION","latency":"NORMAL","verifier":"RESOURCE_AND_INVENTORY_CHANGED","families":["SHOP"]}
+  ],
+  "source": ["USER_DOCUMENT", "LIVE_CLIENT"],
+  "status": "REVIEWED"
+}

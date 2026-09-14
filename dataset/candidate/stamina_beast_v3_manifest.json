@@ -1,0 +1,170 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T05:11:29.579528+00:00",
+  "status": "CANDIDATE",
+  "count": 9,
+  "records": [
+    {
+      "template_id": "target_beast_musk_ox_9__current_for_skill__0",
+      "semantic": "TARGET_BEAST_MUSK_OX_9",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/target_beast_musk_ox_9__current_for_skill__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/stamina_emergency/current_for_skill.png",
+      "parent_sha256": "8b4c027c92d6aa68a25afca9838538276942bc209b5217d0b7c3b1096a8b3f5c",
+      "roi_norm": {
+        "x_norm": 0.505,
+        "y_norm": 0.155,
+        "w_norm": 0.2,
+        "h_norm": 0.1
+      },
+      "width": 144,
+      "height": 128,
+      "confidence": 0.96,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "dialog_beast_musk_ox_9__beast9_round3_target__0",
+      "semantic": "DIALOG_BEAST_MUSK_OX_9",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/dialog_beast_musk_ox_9__beast9_round3_target__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/stamina_emergency/beast9_round3_target.png",
+      "parent_sha256": "9ede975dcb889cf342d8bda078bdd40e960074b62d8bde4b809e0de866535936",
+      "roi_norm": {
+        "x_norm": 0.305,
+        "y_norm": 0.42,
+        "w_norm": 0.6,
+        "h_norm": 0.37
+      },
+      "width": 432,
+      "height": 474,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_beast_start_march__beast9_round3_target__1",
+      "semantic": "BTN_BEAST_START_MARCH",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/btn_beast_start_march__beast9_round3_target__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/stamina_emergency/beast9_round3_target.png",
+      "parent_sha256": "9ede975dcb889cf342d8bda078bdd40e960074b62d8bde4b809e0de866535936",
+      "roi_norm": {
+        "x_norm": 0.44,
+        "y_norm": 0.713,
+        "w_norm": 0.33,
+        "h_norm": 0.055
+      },
+      "width": 238,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "status_victory_assured_musk_ox_9__beast9_round3_march__0",
+      "semantic": "STATUS_VICTORY_ASSURED_MUSK_OX_9",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/status_victory_assured_musk_ox_9__beast9_round3_march__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/stamina_emergency/beast9_round3_march.png",
+      "parent_sha256": "922faa72a50055cc7c5186fa6e3653f5e089d0d70b0bfa35b926372bf98dfc4b",
+      "roi_norm": {
+        "x_norm": 0.35,
+        "y_norm": 0.45,
+        "w_norm": 0.3,
+        "h_norm": 0.045
+      },
+      "width": 216,
+      "height": 58,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_beast_dispatch_musk_ox_9__beast9_round3_march__1",
+      "semantic": "BTN_BEAST_DISPATCH_MUSK_OX_9",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/btn_beast_dispatch_musk_ox_9__beast9_round3_march__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/stamina_emergency/beast9_round3_march.png",
+      "parent_sha256": "922faa72a50055cc7c5186fa6e3653f5e089d0d70b0bfa35b926372bf98dfc4b",
+      "roi_norm": {
+        "x_norm": 0.56,
+        "y_norm": 0.912,
+        "w_norm": 0.405,
+        "h_norm": 0.07
+      },
+      "width": 292,
+      "height": 90,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "status_beast_low_win_probability__beast_march__0",
+      "semantic": "STATUS_BEAST_LOW_WIN_PROBABILITY",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/status_beast_low_win_probability__beast_march__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/stamina_emergency/beast_march.png",
+      "parent_sha256": "594cf37cd0720b23b11bba47b6b68744462fb33a22e0d4c8c31e8848e0f9c8a0",
+      "roi_norm": {
+        "x_norm": 0.35,
+        "y_norm": 0.45,
+        "w_norm": 0.3,
+        "h_norm": 0.045
+      },
+      "width": 216,
+      "height": 58,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "status_beast_march_outbound_musk_ox_9__beast9_round3_dispatched__0",
+      "semantic": "STATUS_BEAST_MARCH_OUTBOUND_MUSK_OX_9",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/status_beast_march_outbound_musk_ox_9__beast9_round3_dispatched__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/stamina_emergency/beast9_round3_dispatched.png",
+      "parent_sha256": "396aba2bf911fd9fa7521beec8acdb819e577328a06633cbd5ea6e040f7d8815",
+      "roi_norm": {
+        "x_norm": 0.01,
+        "y_norm": 0.43,
+        "w_norm": 0.33,
+        "h_norm": 0.075
+      },
+      "width": 238,
+      "height": 96,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "dialog_beast_musk_ox_9__step_001_after__0",
+      "semantic": "DIALOG_BEAST_MUSK_OX_9",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/dialog_beast_musk_ox_9__step_001_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_beast_runtime_native/step_001_after.png",
+      "parent_sha256": "7b94cf321a57346e6cc02cbaf13115fd7059384be2991602087589e02333435e",
+      "roi_norm": {
+        "x_norm": 0.305,
+        "y_norm": 0.255,
+        "w_norm": 0.6,
+        "h_norm": 0.37
+      },
+      "width": 432,
+      "height": 474,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_beast_start_march__step_001_after__1",
+      "semantic": "BTN_BEAST_START_MARCH",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/stamina_beast_v3/btn_beast_start_march__step_001_after__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_beast_runtime_native/step_001_after.png",
+      "parent_sha256": "7b94cf321a57346e6cc02cbaf13115fd7059384be2991602087589e02333435e",
+      "roi_norm": {
+        "x_norm": 0.44,
+        "y_norm": 0.548,
+        "w_norm": 0.33,
+        "h_norm": 0.055
+      },
+      "width": 238,
+      "height": 70,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

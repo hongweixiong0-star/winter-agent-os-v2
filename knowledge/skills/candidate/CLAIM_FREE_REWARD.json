@@ -1,0 +1,53 @@
+{
+  "skill_id": "CLAIM_FREE_REWARD",
+  "goal_support": [
+    "CLAIM_FREE_REWARDS"
+  ],
+  "entry_pages": [
+    "HOME",
+    "EVENT",
+    "VIP",
+    "ALLIANCE"
+  ],
+  "target_pages": [
+    "POPUP"
+  ],
+  "required_semantics": [
+    "FREE_LABEL",
+    "CLAIM_BUTTON"
+  ],
+  "execute_steps": [
+    "VERIFY_FREE_OR_ZERO_COST",
+    "TAP_CENTER",
+    "SCREENSHOT"
+  ],
+  "success_conditions": [
+    "claim_state_changed"
+  ],
+  "risk": "LOW",
+  "preconditions": [
+    "entry page recognized",
+    "required semantics or reviewed prior available",
+    "action-specific verifier exists before real try"
+  ],
+  "failure_conditions": [
+    "UNKNOWN_PAGE",
+    "SEMANTIC_NOT_FOUND",
+    "VERIFIER_FAILED",
+    "PAID_ACTION"
+  ],
+  "recovery": [
+    "REFRESH_STATE",
+    "BACK",
+    "REOPEN_PAGE",
+    "SWITCH_TASK"
+  ],
+  "resource_cost": "READ_FROM_CURRENT_CLIENT",
+  "external_evidence": [
+    "CURRENT_KNOWLEDGE_BASE",
+    "EXTERNAL_WOS_PRIOR"
+  ],
+  "live_evidence": [],
+  "confidence": 0.45,
+  "lifecycle": "CANDIDATE"
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-08T04:54:31.984838+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "btn_open_research__live_20260908_research_navigation_current__0",
+      "semantic": "BTN_OPEN_RESEARCH",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/research_current_20260908/btn_open_research__live_20260908_research_navigation_current__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_research_navigation_current.png",
+      "parent_sha256": "cd83009890f36dbf877b2ae875aea7b2a6f9c049aae3c84aacd6c8d4cce6fa13",
+      "roi_norm": {
+        "x_norm": 0.68,
+        "y_norm": 0.596,
+        "w_norm": 0.13,
+        "h_norm": 0.12
+      },
+      "width": 94,
+      "height": 154,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

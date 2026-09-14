@@ -1,0 +1,13 @@
+{
+  "schema_version":"1.0",
+  "status":"SIMULATION",
+  "source":"LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples":[{
+    "image":"step_004_before.png",
+    "page":"INTEL",
+    "elements":[
+      {"semantic":"TARGET_INTEL_BEAST_MISSION_BLUE","roi":{"x_norm":0.22,"y_norm":0.36,"w_norm":0.13,"h_norm":0.11},"confidence":0.99},
+      {"semantic":"TARGET_INTEL_BEAST_MISSION_BLUE","roi":{"x_norm":0.80,"y_norm":0.435,"w_norm":0.13,"h_norm":0.11},"confidence":0.99}
+    ]
+  }]
+}

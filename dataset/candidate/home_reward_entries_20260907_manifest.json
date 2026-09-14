@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T09:29:05.072888+00:00",
+  "status": "CANDIDATE",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "btn_open_alliance__step_001_before__0",
+      "semantic": "BTN_OPEN_ALLIANCE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/home_reward_entries_20260907/btn_open_alliance__step_001_before__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deployment_reconnect_mail/step_001_before.png",
+      "parent_sha256": "95b48c656b6ac02b92defd66419c01175d2359e5c065eed24e44b323cfb105ef",
+      "roi_norm": {
+        "x_norm": 0.69,
+        "y_norm": 0.925,
+        "w_norm": 0.12,
+        "h_norm": 0.07
+      },
+      "width": 86,
+      "height": 90,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_open_exploration__step_001_before__1",
+      "semantic": "BTN_OPEN_EXPLORATION",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/home_reward_entries_20260907/btn_open_exploration__step_001_before__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_deployment_reconnect_mail/step_001_before.png",
+      "parent_sha256": "95b48c656b6ac02b92defd66419c01175d2359e5c065eed24e44b323cfb105ef",
+      "roi_norm": {
+        "x_norm": 0.02,
+        "y_norm": 0.925,
+        "w_norm": 0.16,
+        "h_norm": 0.07
+      },
+      "width": 115,
+      "height": 90,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T16:23:26.592730+00:00",
+  "status": "CANDIDATE",
+  "count": 3,
+  "records": [
+    {
+      "template_id": "btn_open_daily__live_20260908_offline_after__0",
+      "semantic": "BTN_OPEN_DAILY",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/daily_current_20260908/btn_open_daily__live_20260908_offline_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_offline_after.png",
+      "parent_sha256": "39e64449c9abd54cc3389a04359e168aa02cc42e0fbed4604b0cc34d5ba6e3a5",
+      "roi_norm": {
+        "x_norm": 0.0,
+        "y_norm": 0.78,
+        "w_norm": 0.13,
+        "h_norm": 0.08
+      },
+      "width": 94,
+      "height": 102,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_daily_reward_current__live_20260908_daily_reward__0",
+      "semantic": "POPUP_DAILY_REWARD_CURRENT",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/daily_current_20260908/popup_daily_reward_current__live_20260908_daily_reward__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_daily_reward.png",
+      "parent_sha256": "055604ff9c0fa2adfe976ebfde6021ef464217158694d2889a62db923555aaab",
+      "roi_norm": {
+        "x_norm": 0.08,
+        "y_norm": 0.2,
+        "w_norm": 0.84,
+        "h_norm": 0.4
+      },
+      "width": 605,
+      "height": 512,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "popup_daily_reward_current__live_20260908_daily_after__0",
+      "semantic": "POPUP_DAILY_REWARD_CURRENT",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/daily_current_20260908/popup_daily_reward_current__live_20260908_daily_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_daily_after.png",
+      "parent_sha256": "b0e500c7c18f0e966669ff03e9b6216903233b557b3a288064c020cdd6b30e6e",
+      "roi_norm": {
+        "x_norm": 0.08,
+        "y_norm": 0.2,
+        "w_norm": 0.84,
+        "h_norm": 0.4
+      },
+      "width": 605,
+      "height": 512,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

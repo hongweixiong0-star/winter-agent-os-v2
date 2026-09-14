@@ -1,0 +1,1 @@
+{"schema_version":"1.0","status":"SIMULATION","reviewed_from":"LIVE_CLIENT","samples":[{"image":"live_deploy_exploration_claim_v4/step_001_after.png","page":"POPUP","elements":[{"semantic":"POPUP_EXPLORATION_REWARD","roi":{"x_norm":0.08,"y_norm":0.20,"w_norm":0.84,"h_norm":0.40},"confidence":0.99}]}]}

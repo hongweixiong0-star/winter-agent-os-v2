@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T05:21:01.049555+00:00",
+  "status": "CANDIDATE",
+  "count": 3,
+  "records": [
+    {
+      "template_id": "btn_search_beast_tab__search_after__0",
+      "semantic": "BTN_SEARCH_BEAST_TAB",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/beast_search_v2/btn_search_beast_tab__search_after__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/beast_search_exploration/search_after.png",
+      "parent_sha256": "a6a5e9725caf130e7645bb72d208dbe48d159a012026a7f945d0e5f47d0f7a0d",
+      "roi_norm": {
+        "x_norm": 0.0,
+        "y_norm": 0.665,
+        "w_norm": 0.16,
+        "h_norm": 0.11
+      },
+      "width": 115,
+      "height": 141,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "search_beast_level_5_selected__beast_tab__0",
+      "semantic": "SEARCH_BEAST_LEVEL_5_SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/beast_search_v2/search_beast_level_5_selected__beast_tab__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/beast_search_exploration/beast_tab.png",
+      "parent_sha256": "a3bfea0594bdd0da1fda9b3fe2037b489f3cf24c8af49e126af39125f5b560e8",
+      "roi_norm": {
+        "x_norm": 0.25,
+        "y_norm": 0.76,
+        "w_norm": 0.5,
+        "h_norm": 0.105
+      },
+      "width": 360,
+      "height": 134,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    },
+    {
+      "template_id": "btn_submit_beast_search__beast_tab__1",
+      "semantic": "BTN_SUBMIT_BEAST_SEARCH",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/beast_search_v2/btn_submit_beast_search__beast_tab__1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/beast_search_exploration/beast_tab.png",
+      "parent_sha256": "a3bfea0594bdd0da1fda9b3fe2037b489f3cf24c8af49e126af39125f5b560e8",
+      "roi_norm": {
+        "x_norm": 0.28,
+        "y_norm": 0.9,
+        "w_norm": 0.44,
+        "h_norm": 0.075
+      },
+      "width": 317,
+      "height": 96,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

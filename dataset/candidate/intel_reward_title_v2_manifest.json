@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-06T10:08:44.515049+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "popup_intel_reward_title__step_002_after_refresh_2__0",
+      "semantic": "POPUP_INTEL_REWARD_TITLE",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_reward_title_v2/popup_intel_reward_title__step_002_after_refresh_2__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_intel_beast10_automatic_return_claim_round3_retry/step_002_after_refresh_2.png",
+      "parent_sha256": "4a0ff899e6b654cc1b0eb9f3b652a0cbfaf6793a23c137f8ce536a5d80957f84",
+      "roi_norm": {
+        "x_norm": 0.3,
+        "y_norm": 0.215,
+        "w_norm": 0.4,
+        "h_norm": 0.085
+      },
+      "width": 288,
+      "height": 109,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version":"1.0",
+  "legacy_product_status":"FAILED_PRODUCT",
+  "architecture_reuse":"FORBIDDEN",
+  "allowed_inputs":["REAL_DEVICE_SUCCESS_EVIDENCE","SCREENSHOT_TEMPLATE_OCR_ROI","KNOWLEDGE_DATA","VERIFIED_UI_FLOW","ADB_MUMU_MAA_TOOL_IDEA","FAILURE_PATTERN","INDEPENDENTLY_TESTED_PURE_FUNCTION"],
+  "required_gates":["INDEPENDENT","SIMPLE","UNIT_TESTED","REPLAY_TESTED","SINGLE_LOOP_COMPATIBLE"],
+  "on_gate_failure":"REFERENCE_ONLY_OR_DISCARD",
+  "module_import_allowed":false,
+  "reuse_priority_from_existence":false
+}

@@ -1,0 +1,10 @@
+{
+  "threshold": 5,
+  "ready_cycles": {
+    "CLAIM_OFFLINE_REWARDS": 0,
+    "DISMISS_MAIL_GENERIC_REWARD": 0,
+    "OPEN_DAILY": 0,
+    "DISMISS_DAILY_REWARD": 0,
+    "DISMISS_DAILY_GENERIC_REWARD": 0
+  }
+}

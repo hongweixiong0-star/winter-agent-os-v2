@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "review": "LIVE_CLIENT_HUMAN_REVIEWED",
+  "samples": [
+    {
+      "image": "episode_search_button.png",
+      "page": "MAP",
+      "elements": [
+        {
+          "semantic": "BTN_OPEN_RESOURCE_SEARCH",
+          "confidence": 0.99,
+          "roi": {"x_norm": 0.012, "y_norm": 0.656, "w_norm": 0.104, "h_norm": 0.07}
+        }
+      ]
+    }
+  ]
+}

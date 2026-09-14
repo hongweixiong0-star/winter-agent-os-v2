@@ -1,0 +1,21 @@
+{
+  "skill_id":"DAILY_HERO_RECRUIT",
+  "name":"Complete free Hero Recruitment daily",
+  "goal":"Use one explicitly free recruit, claim the completed daily, and prove activity increase",
+  "preconditions":["daily task progress incomplete","Go action visible","free recruit explicitly visible"],
+  "required_page":"DAILY",
+  "required_state":{"task_id":"HERO_RECRUIT_1","status":"AVAILABLE"},
+  "required_vision":["BTN_DAILY_GO_HERO_RECRUIT","BTN_FREE_RECRUIT","POPUP_HERO_RECRUIT_REWARD","BTN_DAILY_CLAIM_ALL","POPUP_DAILY_REWARD"],
+  "required_actions":["navigate","free recruit","dismiss reward","return daily","claim task"],
+  "verification":["0/1→1/1","claimable","daily reward feedback","activity +10","claim cleared"],
+  "failure_conditions":["FREE_RECRUIT_NOT_AVAILABLE","PAID_RECRUIT_ONLY","NAVIGATION_FAILED","CLAIM_NOT_AVAILABLE","ACTIVITY_UNCHANGED"],
+  "recovery":["BACK","REFRESH_STATE","SWITCH_TASK"],
+  "dependencies":["Vision","WorldState","Hero Recruitment","Verifier"],
+  "risk":"LOW",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT","OFFICIAL","OPEN_SOURCE_PROJECT"],
+  "status":"VERIFIED",
+  "live_attempts":1,
+  "live_successes":1,
+  "stable":false
+}

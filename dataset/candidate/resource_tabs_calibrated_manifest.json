@@ -1,0 +1,431 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-13T14:58:23.606205+00:00",
+  "status": "CANDIDATE",
+  "method": "LIVE_BRACKET_MEASURED",
+  "tab_band": [
+    0.66,
+    0.76
+  ],
+  "tab_cell": 0.19,
+  "measured_bracket_arms": {
+    "MEAT": [
+      0.0063,
+      0.0236,
+      0.0736,
+      0.1146,
+      0.1854,
+      0.3868
+    ],
+    "WOOD": [
+      0.0063,
+      0.0236,
+      0.0736,
+      0.1146,
+      0.4035,
+      0.6049
+    ],
+    "COAL": [
+      0.0063,
+      0.0236,
+      0.0736,
+      0.1146,
+      0.6229,
+      0.8243
+    ],
+    "IRON": [
+      0.0063,
+      0.0236,
+      0.0736,
+      0.1146,
+      0.841
+    ]
+  },
+  "excluded_noise_arms": [
+    0.0063,
+    0.0236,
+    0.0736,
+    0.1146
+  ],
+  "tab_centers_norm": {
+    "BEAST": 0.1011,
+    "MEAT": 0.2861,
+    "WOOD": 0.4711,
+    "COAL": 0.6561,
+    "IRON": 0.8411
+  },
+  "tab_spacing_norm": 0.185,
+  "count": 16,
+  "records": [
+    {
+      "template_id": "resource_tab_meat__selected__meat__136d105c",
+      "semantic": "RESOURCE_MEAT_SELECTED",
+      "resource": "MEAT",
+      "appearance": "SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_meat__selected__meat__136d105c.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_meat_20260913.png",
+      "parent_sha256": "136d105c8933e020b111169a7d5fea7066634958cde8ce974f74295384d29dbf",
+      "roi_norm": {
+        "x_norm": 0.1917,
+        "y_norm": 0.6602,
+        "w_norm": 0.1889,
+        "h_norm": 0.1
+      },
+      "width": 136,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_meat__unselected__wood__41df1287",
+      "semantic": "RESOURCE_MEAT_UNSELECTED",
+      "resource": "MEAT",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_meat__unselected__wood__41df1287.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_wood_20260913.png",
+      "parent_sha256": "41df1287f36a050fda022670f708afe1c8946d309050795424c6155e3a39bf11",
+      "roi_norm": {
+        "x_norm": 0.1917,
+        "y_norm": 0.6602,
+        "w_norm": 0.1889,
+        "h_norm": 0.1
+      },
+      "width": 136,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_meat__unselected__coal__88b54dd1",
+      "semantic": "RESOURCE_MEAT_UNSELECTED",
+      "resource": "MEAT",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_meat__unselected__coal__88b54dd1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_coal_20260913.png",
+      "parent_sha256": "88b54dd13804958e9da387170a0630fb4f0acff4552345687c6c84f159a916cb",
+      "roi_norm": {
+        "x_norm": 0.1917,
+        "y_norm": 0.6602,
+        "w_norm": 0.1889,
+        "h_norm": 0.1
+      },
+      "width": 136,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_meat__unselected__iron__54ea993d",
+      "semantic": "RESOURCE_MEAT_UNSELECTED",
+      "resource": "MEAT",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_meat__unselected__iron__54ea993d.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_iron_20260913.png",
+      "parent_sha256": "54ea993d874cb8a2a9b0a3d7acd15c36e007d5684f72cbc60849733c5a660d16",
+      "roi_norm": {
+        "x_norm": 0.1917,
+        "y_norm": 0.6602,
+        "w_norm": 0.1889,
+        "h_norm": 0.1
+      },
+      "width": 136,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_wood__unselected__meat__136d105c",
+      "semantic": "RESOURCE_WOOD_UNSELECTED",
+      "resource": "WOOD",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_wood__unselected__meat__136d105c.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_meat_20260913.png",
+      "parent_sha256": "136d105c8933e020b111169a7d5fea7066634958cde8ce974f74295384d29dbf",
+      "roi_norm": {
+        "x_norm": 0.3764,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_wood__selected__wood__41df1287",
+      "semantic": "RESOURCE_WOOD_SELECTED",
+      "resource": "WOOD",
+      "appearance": "SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_wood__selected__wood__41df1287.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_wood_20260913.png",
+      "parent_sha256": "41df1287f36a050fda022670f708afe1c8946d309050795424c6155e3a39bf11",
+      "roi_norm": {
+        "x_norm": 0.3764,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_wood__unselected__coal__88b54dd1",
+      "semantic": "RESOURCE_WOOD_UNSELECTED",
+      "resource": "WOOD",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_wood__unselected__coal__88b54dd1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_coal_20260913.png",
+      "parent_sha256": "88b54dd13804958e9da387170a0630fb4f0acff4552345687c6c84f159a916cb",
+      "roi_norm": {
+        "x_norm": 0.3764,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_wood__unselected__iron__54ea993d",
+      "semantic": "RESOURCE_WOOD_UNSELECTED",
+      "resource": "WOOD",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_wood__unselected__iron__54ea993d.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_iron_20260913.png",
+      "parent_sha256": "54ea993d874cb8a2a9b0a3d7acd15c36e007d5684f72cbc60849733c5a660d16",
+      "roi_norm": {
+        "x_norm": 0.3764,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_coal__unselected__meat__136d105c",
+      "semantic": "RESOURCE_COAL_UNSELECTED",
+      "resource": "COAL",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_coal__unselected__meat__136d105c.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_meat_20260913.png",
+      "parent_sha256": "136d105c8933e020b111169a7d5fea7066634958cde8ce974f74295384d29dbf",
+      "roi_norm": {
+        "x_norm": 0.5611,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_coal__unselected__wood__41df1287",
+      "semantic": "RESOURCE_COAL_UNSELECTED",
+      "resource": "COAL",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_coal__unselected__wood__41df1287.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_wood_20260913.png",
+      "parent_sha256": "41df1287f36a050fda022670f708afe1c8946d309050795424c6155e3a39bf11",
+      "roi_norm": {
+        "x_norm": 0.5611,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_coal__selected__coal__88b54dd1",
+      "semantic": "RESOURCE_COAL_SELECTED",
+      "resource": "COAL",
+      "appearance": "SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_coal__selected__coal__88b54dd1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_coal_20260913.png",
+      "parent_sha256": "88b54dd13804958e9da387170a0630fb4f0acff4552345687c6c84f159a916cb",
+      "roi_norm": {
+        "x_norm": 0.5611,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_coal__unselected__iron__54ea993d",
+      "semantic": "RESOURCE_COAL_UNSELECTED",
+      "resource": "COAL",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_coal__unselected__iron__54ea993d.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_iron_20260913.png",
+      "parent_sha256": "54ea993d874cb8a2a9b0a3d7acd15c36e007d5684f72cbc60849733c5a660d16",
+      "roi_norm": {
+        "x_norm": 0.5611,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_iron__unselected__meat__136d105c",
+      "semantic": "RESOURCE_IRON_UNSELECTED",
+      "resource": "IRON",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_iron__unselected__meat__136d105c.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_meat_20260913.png",
+      "parent_sha256": "136d105c8933e020b111169a7d5fea7066634958cde8ce974f74295384d29dbf",
+      "roi_norm": {
+        "x_norm": 0.7458,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_iron__unselected__wood__41df1287",
+      "semantic": "RESOURCE_IRON_UNSELECTED",
+      "resource": "IRON",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_iron__unselected__wood__41df1287.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_wood_20260913.png",
+      "parent_sha256": "41df1287f36a050fda022670f708afe1c8946d309050795424c6155e3a39bf11",
+      "roi_norm": {
+        "x_norm": 0.7458,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_iron__unselected__coal__88b54dd1",
+      "semantic": "RESOURCE_IRON_UNSELECTED",
+      "resource": "IRON",
+      "appearance": "UNSELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_iron__unselected__coal__88b54dd1.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_coal_20260913.png",
+      "parent_sha256": "88b54dd13804958e9da387170a0630fb4f0acff4552345687c6c84f159a916cb",
+      "roi_norm": {
+        "x_norm": 0.7458,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    },
+    {
+      "template_id": "resource_tab_iron__selected__iron__54ea993d",
+      "semantic": "RESOURCE_IRON_SELECTED",
+      "resource": "IRON",
+      "appearance": "SELECTED",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/resource_tabs_calibrated/resource_tab_iron__selected__iron__54ea993d.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_resource_rotation_selected_iron_20260913.png",
+      "parent_sha256": "54ea993d874cb8a2a9b0a3d7acd15c36e007d5684f72cbc60849733c5a660d16",
+      "roi_norm": {
+        "x_norm": 0.7458,
+        "y_norm": 0.6602,
+        "w_norm": 0.1903,
+        "h_norm": 0.1
+      },
+      "width": 137,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "LIVE_CLIENT"
+    }
+  ],
+  "validation": [
+    {
+      "frame": "live_resource_rotation_selected_meat_20260913.png",
+      "truth": "MEAT",
+      "predicted": "MEAT",
+      "ok": true,
+      "selected_distances": {
+        "MEAT": 0,
+        "WOOD": 16,
+        "COAL": 12,
+        "IRON": 8
+      }
+    },
+    {
+      "frame": "live_resource_rotation_selected_wood_20260913.png",
+      "truth": "WOOD",
+      "predicted": "WOOD",
+      "ok": true,
+      "selected_distances": {
+        "MEAT": 8,
+        "WOOD": 0,
+        "COAL": 14,
+        "IRON": 8
+      }
+    },
+    {
+      "frame": "live_resource_rotation_selected_coal_20260913.png",
+      "truth": "COAL",
+      "predicted": "COAL",
+      "ok": true,
+      "selected_distances": {
+        "MEAT": 8,
+        "WOOD": 10,
+        "COAL": 0,
+        "IRON": 18
+      }
+    },
+    {
+      "frame": "live_resource_rotation_selected_iron_20260913.png",
+      "truth": "IRON",
+      "predicted": "IRON",
+      "ok": true,
+      "selected_distances": {
+        "MEAT": 8,
+        "WOOD": 10,
+        "COAL": 12,
+        "IRON": 0
+      }
+    }
+  ]
+}

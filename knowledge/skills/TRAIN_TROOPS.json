@@ -1,0 +1,23 @@
+{
+  "skill_id":"TRAIN_TROOPS",
+  "name":"Train or promote troops",
+  "goal":"Start one verified Infantry, Lancer, or Marksman training batch",
+  "preconditions":["known training page","at least one camp queue available","cost and troop tier visible"],
+  "required_page":"TRAINING",
+  "required_state":{"one_queue_available":true},
+  "required_vision":["PAGE_TRAINING_*","TRAINING_QUEUE_TIMER","BTN_START_TRAINING","troop type and tier"],
+  "required_actions":["select camp","choose train or promote","select tier/count","start"],
+  "verification":["expected troop type","IN_PROGRESS","timer visible","batch count visible"],
+  "failure_conditions":["ALL_TRAINING_QUEUES_BUSY","RESOURCE_INSUFFICIENT","UNKNOWN_TIER","QUEUE_STATE_UNKNOWN"],
+  "recovery":["inspect next camp once","REFRESH_STATE","SWITCH_TASK"],
+  "dependencies":["Vision","WorldState","Executor","Verifier"],
+  "risk":"MEDIUM_RESOURCE_SPEND",
+  "confidence":0.99,
+  "source":["LIVE_CLIENT","COMMUNITY_DB","OPEN_SOURCE_PROJECT","PLAYER_GUIDE"],
+  "status":"VERIFIED",
+  "blocker":null,
+  "live_attempts":1,
+  "live_successes":1,
+  "verified_variant":"INFANTRY_T10_806",
+  "stable":false
+}

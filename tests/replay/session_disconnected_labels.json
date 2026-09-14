@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "samples": [
+    {
+      "image": "../../dataset/raw/live_resource_rotation_current_20260913.png",
+      "page": "POPUP",
+      "state": {"popup": "SESSION_DISCONNECTED", "source": "LIVE_CLIENT"},
+      "elements": [
+        {
+          "semantic": "POPUP_SESSION_DISCONNECTED",
+          "roi": {"x_norm": 0.025, "y_norm": 0.325, "w_norm": 0.950, "h_norm": 0.365},
+          "confidence": 0.99
+        },
+        {
+          "semantic": "BTN_RECONNECT_SESSION",
+          "roi": {"x_norm": 0.510, "y_norm": 0.590, "w_norm": 0.425, "h_norm": 0.070},
+          "confidence": 0.99
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "status": "SIMULATION",
+  "samples": [{
+    "image": "../../dataset/raw/live_offer_carousel_recovery_20260913/step_001_after_refresh_2.png",
+    "page": "POPUP",
+    "state": {"popup": "BATTLEFIELD_REVIVAL", "source": "LIVE_CLIENT"},
+    "elements": [{
+      "semantic": "POPUP_BATTLEFIELD_REVIVAL",
+      "roi": {"x_norm": 0.000, "y_norm": 0.000, "w_norm": 1.000, "h_norm": 0.880},
+      "confidence": 0.99
+    }]
+  }]
+}

@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "gate": "REVIEWED",
+  "state_enum": ["AVAILABLE", "IN_PROGRESS", "COMPLETED", "CLAIMABLE", "NOT_AVAILABLE", "EXPIRED", "UNKNOWN", "BLOCKED"],
+  "records": [
+    {
+      "id": "INTEL",
+      "name": "情报",
+      "aliases": ["灯塔", "Intel", "Intel Missions"],
+      "entry": "MAP/LIGHTHOUSE_HUD",
+      "page": "INTEL",
+      "tasks": ["beast hunt", "survivor rescue", "hero journey", "master bounty"],
+      "refresh": "live countdown verified; absolute schedule remains version/server candidate",
+      "claim": "one-click claim for completed missions",
+      "unavailable_semantics": "NOT_AVAILABLE",
+      "verification": "claimable markers + reward feedback + markers/button cleared",
+      "source": ["LIVE_CLIENT", "whiteout_survival_wiki_lighthouse", "github_aminul_wos", "frostguard"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "live": {"searchlight_level": 20, "latest_stamina": 161, "ordinary_beast_attempts": 10, "ordinary_beast_successes": 10, "ordinary_beast_claims": 10},
+      "notes": "Ordinary Beast Intel select/dispatch/return/claim is verified. State values remain distinct; BLOCKED is never reported as FAILED or DONE."
+    },
+    {
+      "id": "INTEL_FIREBEAST_10",
+      "name": "狩猎炽红巨兽 等级10",
+      "category": "FIREBEAST",
+      "entry_icon": "orange beast head",
+      "target_name": "炽红巨兽",
+      "target_level": 20,
+      "stamina_cost": 10,
+      "recommended_power": 1467020,
+      "live": {"attempts":2,"successes":2,"claims":2},
+      "source": ["LIVE_CLIENT"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "last_verified": "2026-09-07",
+      "notes": "Uses the verifier-gated Beast formation/dispatch chain but retains a distinct mission identity."
+    },
+    {
+      "id": "INTEL_RESCUE_SURVIVORS_10",
+      "name": "营救幸存者 等级10",
+      "category": "RESCUE_SURVIVORS",
+      "entry_icon": "orange shelter",
+      "stamina_cost": 12,
+      "live": {"attempts":1,"successes":1,"claims":1},
+      "source": ["LIVE_CLIENT"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "last_verified": "2026-09-07",
+      "notes": "Immediate rescue action; live proof includes in-progress state, claimable transition, reward feedback, and cleared claim."
+    },
+    {
+      "id": "INTEL_HERO_JOURNEY_10",
+      "name": "英雄之旅 等级10",
+      "category": "HERO_JOURNEY",
+      "entry_icon": "crossed_axes purple/blue",
+      "stamina_cost": 10,
+      "observed_result": "BATTLE_FAILED",
+      "verification": "live map target displayed 失败 after dispatch",
+      "source": ["LIVE_CLIENT"],
+      "confidence": 0.99,
+      "status": "BLOCKED",
+      "last_verified": "2026-09-06",
+      "notes": "Do not route through ordinary Beast Intel. Requires formation/power research before another Production attempt."
+    },
+    {
+      "id": "INTEL_MASTER_BOUNTY_20",
+      "name": "大师悬赏：20号",
+      "category": "MASTER_BOUNTY",
+      "entry_icon": "orange rabbit",
+      "stamina_cost": 10,
+      "recommended_power": 189295920,
+      "observed_chief_power": 56089968,
+      "source": ["LIVE_CLIENT"],
+      "confidence": 0.99,
+      "status": "BLOCKED",
+      "last_verified": "2026-09-06",
+      "notes": "Power is far below the current client recommendation. No dispatch was made."
+    }
+  ]
+}

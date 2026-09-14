@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "goal_categories": {
+    "日常低保": true,
+    "持续发展": true,
+    "联盟协作": true,
+    "限时活动": true,
+    "PVE": true,
+    "实时活动": true,
+    "资源优化": true,
+    "自动学习": true
+  },
+  "reward_policy": "FREE_CLAIM_FIRST",
+  "real_money": "PERMANENTLY_BLOCKED",
+  "updated_at": "2026-09-14T11:05:37.152505+08:00"
+}

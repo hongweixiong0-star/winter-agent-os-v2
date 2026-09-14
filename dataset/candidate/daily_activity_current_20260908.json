@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T16:24:29.930716+00:00",
+  "status": "CANDIDATE",
+  "count": 1,
+  "records": [
+    {
+      "template_id": "daily_activity_70_current__live_20260908_daily_after2__0",
+      "semantic": "DAILY_ACTIVITY_70_CURRENT",
+      "status": "CANDIDATE",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/daily_activity_current_20260908/daily_activity_70_current__live_20260908_daily_after2__0.png",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_20260908_daily_after2.png",
+      "parent_sha256": "87bf22218f0fe3c4d0b387e713d9cf5d880fc8fd5dcedec12a6b98957f25597a",
+      "roi_norm": {
+        "x_norm": 0.04,
+        "y_norm": 0.245,
+        "w_norm": 0.115,
+        "h_norm": 0.1
+      },
+      "width": 83,
+      "height": 128,
+      "confidence": 0.99,
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+    }
+  ]
+}
