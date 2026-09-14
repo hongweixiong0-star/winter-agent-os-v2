@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `25b5ba7 2026-09-14T15:43:18+08:00 feat(stamina,recall): make the operator's stamina-first policy executable`
 - `eeac37d 2026-09-14T14:17:40+08:00 wip: stamina becomes observable + recall becomes dispatchable`
 - `35ed464 2026-09-14T13:44:03+08:00 docs(handoff): record the live stamina reading (200/200) and the recall UI probe`
 - `446d909 2026-09-14T13:41:40+08:00 feat(policy): stamina spending beats gathering; gathering is LAST_RESORT`
@@ -17,29 +18,10 @@ Last 12 commits (newest first):
 - `68e3540 2026-09-14T13:11:55+08:00 fix(gather): break the unavailable-resource livelock + acceptance harness`
 - `0f006ab 2026-09-14T12:36:41+08:00 docs(handoff): regenerate truth at the new baseline`
 - `d3f974a 2026-09-14T12:36:28+08:00 chore: ignore the transient commit-message helper file`
-- `7512a33 2026-09-14T12:36:15+08:00 feat(handoff): cross-account handoff mechanism + git baseline`
 
-Uncommitted changes: 35
-- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-14.md`
-- ` M .workbuddy/memory/2026-09-14.md`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/resource_rotation.json`
-- ` M learning/runtime_snapshot.json`
-- ` M tests/test_ocr.py`
-- ` M tests/test_operator_policy.py`
-- ` D tools/live_stamina_run1.log`
+Uncommitted changes: 2
+- `M .workbuddy-ai/handoff/.last_good_commit`
+- `?? tools/_h.txt`
 <!-- /AUTO:recent_commits -->
 
 ---

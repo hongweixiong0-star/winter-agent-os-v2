@@ -1,38 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T07:27:21+00:00`
+- generated_at: `2026-09-14T07:43:33+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `eeac37d` on `main`
+- commit: `25b5ba7` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `446d909`
-- commits: 13
-- HEAD: `eeac37d` — wip: stamina becomes observable + recall becomes dispatchable (2026-09-14T14:17:40+08:00)
-- working tree: 35 dirty file(s)
-  - `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-14.md`
-  - ` M .workbuddy/memory/2026-09-14.md`
-  - ` M docs/CAPABILITY_COVERAGE.md`
-  - ` M knowledge/goals/capability_skill_map.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/resource_rotation.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M tests/test_ocr.py`
-  - ` M tests/test_operator_policy.py`
-  - ` D tools/live_stamina_run1.log`
+- last good commit: `25b5ba7`
+- commits: 14
+- HEAD: `25b5ba7` — feat(stamina,recall): make the operator's stamina-first policy executable (2026-09-14T15:43:18+08:00)
+- working tree: 2 dirty file(s)
+  - `M .workbuddy-ai/handoff/.last_good_commit`
+  - `?? tools/_h.txt`
 
 ## B. Runtime
 
