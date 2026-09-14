@@ -1,0 +1,9 @@
+{
+  "purpose": "Live hero-journey route: tapping 前往查看 on the mission card lands on the camp panel, which the vision classifies as Page.EXPLORATION with the 探险 cost visible - not Page.BEAST as verify_intel_hero_target_open required",
+  "source_run": "tools/run_live.py --goal INTEL 2026-09-14 (runtime capture)",
+  "brain_contract": "brain.py:173-181 already returns INTEL_HERO_START_MARCH for exactly this page state",
+  "frames": {
+    "camp_panel_after.png": "hero_live3_20260914_step_001_after_refresh_2_20260914T140500805986.png",
+    "card_before.png": "hero_live3_20260914_step_001_before_20260914T140451811705.png"
+  }
+}

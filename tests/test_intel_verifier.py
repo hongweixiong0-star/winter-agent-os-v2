@@ -6,7 +6,7 @@ from pathlib import Path
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
-from winter_agent_v2.verifier import verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open
+from winter_agent_v2.verifier import verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim, verify_intel_claim_feedback, verify_intel_hero_target_open, verify_intel_mission_selected, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open
 from winter_agent_v2.vision import ReplayVision, SemanticWorldVision
 from winter_agent_v2.skills import v2_registry
 
@@ -137,6 +137,36 @@ class IntelVerifierTests(unittest.TestCase):
         self.assertEqual(bounty.beast.get("blocked_reason"), "POWER_BELOW_RECOMMENDED")
         self.assertEqual(failed.page, Page.MAP)
         self.assertEqual(failed.intel.get("failure"), "BATTLE_FAILED")
+
+    def test_hero_journey_card_opens_the_exploration_camp_panel(self) -> None:
+        """The live hero-journey route must not stall at its own navigation step.
+
+        Live 2026-09-14: tapping 前往查看 on the mission card opened the 英雄之旅
+        camp panel with its 探险 ⚡10 button - which the vision reports as
+        ``Page.EXPLORATION`` with ``stamina_cost_displayed``.  The verifier still
+        required ``Page.BEAST``, so the run stopped with
+        ``INTEL_HERO_TARGET_NOT_PROVEN`` on a step that had worked, before the
+        fight could start.  Frames: dataset/truth_audit/hero_journey_camp_panel_20260914
+        """
+        vision = live_hybrid_vision()
+        root = ROOT / "dataset" / "truth_audit" / "hero_journey_camp_panel_20260914"
+        card = vision.observe(root / "card_before.png")
+        panel = vision.observe(root / "camp_panel_after.png")
+
+        self.assertEqual((card.page, card.popup), (Page.POPUP, "INTEL_HERO_JOURNEY"))
+        self.assertIs(panel.page, Page.EXPLORATION)
+        self.assertEqual(panel.exploration.get("stamina_cost_displayed"), 10)
+
+        self.assertTrue(verify_intel_hero_target_open(card, panel).ok)
+        # The brain must hand this exact state to the camp fight, not stall.
+        self.assertEqual(
+            RuleBrain(current_goal="INTEL").decide(panel, v2_registry()).skill,
+            "INTEL_HERO_START_MARCH",
+        )
+
+        # Negative control: an exploration page with no cost is not the target.
+        costless = dataclasses.replace(panel, exploration={"status": "AVAILABLE"})
+        self.assertFalse(verify_intel_hero_target_open(card, costless).ok)
 
     def test_rescue_start_from_production_frames_is_not_a_false_negative(self) -> None:
         """Production rescue starts must verify, and a BACK-out must still fail.

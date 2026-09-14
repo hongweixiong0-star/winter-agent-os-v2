@@ -360,16 +360,39 @@ def verify_intel_rescue_target_open(before: WorldState, after: WorldState) -> Ve
 
 
 def verify_intel_hero_target_open(before: WorldState, after: WorldState) -> VerificationResult:
-    """Tapping 前往查看 on a Hero Journey card opens the camp target card.
+    """Tapping 前往查看 on a Hero Journey card opens the workable camp panel.
 
-    The camp target card shares the beast target card layout (the same 出征
-    button template drives Page.BEAST), so the page itself is the evidence;
-    the card's power fields differ and are not required to prove navigation.
+    The panel used to be classified as ``Page.BEAST`` because it shares the
+    beast target layout.  Live 2026-09-14 it classifies as ``Page.EXPLORATION``
+    instead: its 探险 ⚡10 button belongs to the exploration system, and the
+    vision layer reports ``exploration.stamina_cost_displayed`` on it.  The
+    brain already follows the live client - ``brain.py`` returns
+    ``INTEL_HERO_START_MARCH`` for exactly this page state, and
+    ``INTEL_HERO_START_MARCH`` is itself declared on ``Page.EXPLORATION``.
+
+    This verifier was still requiring ``Page.BEAST``, so a step that really
+    worked was recorded FAILURE and stopped the run before the fight could be
+    started (live 2026-09-14: ``stop_reason=INTEL_HERO_TARGET_NOT_PROVEN`` on a
+    frame showing the camp panel with its cost).  Both shapes are accepted;
+    the camp panel must show a stamina cost to count as the target.
     """
     before_ok = before.page is Page.POPUP and before.popup == "INTEL_HERO_JOURNEY"
-    after_ok = after.page is Page.BEAST
-    ok = before_ok and after_ok
-    return VerificationResult(ok, "OK" if ok else "INTEL_HERO_TARGET_NOT_PROVEN", {"card": before_ok, "target": after_ok})
+    camp_panel = (
+        after.page is Page.EXPLORATION
+        and after.exploration.get("stamina_cost_displayed") is not None
+    )
+    beast_card = after.page is Page.BEAST
+    ok = before_ok and (camp_panel or beast_card)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "INTEL_HERO_TARGET_NOT_PROVEN",
+        {
+            "card": before_ok,
+            "camp_panel": camp_panel,
+            "beast_card": beast_card,
+            "after_page": after.page.value,
+        },
+    )
 
 
 def verify_intel_hero_march_open(before: WorldState, after: WorldState) -> VerificationResult:
