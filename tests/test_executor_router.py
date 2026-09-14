@@ -264,6 +264,63 @@ class ResolverTierTests(unittest.TestCase):
                               adapter_hit=False, delegation=(0.99, 0.99))
         self.assertIsNone(router.maa_resolver("BTN_X", "TEST_SKILL"))
 
+    def _router_capturing(self, node: dict, seen: dict):
+        class _Adapter:
+            unavailable_reason = None
+            capture_backend = "MAA_MUMU_EXTRAS"
+
+            def available(self_inner):
+                return True
+
+            def frame(self_inner):
+                return "frame"
+
+            def find(self_inner, _frame, semantic, **kw):
+                from winter_agent_v2.maa_executor import RecognitionOutcome
+                seen.update(kw)
+                return RecognitionOutcome(True, semantic, box=(1, 1, 2, 2), image_size=(720, 1280))
+
+        return ExecutorRouter(
+            adb_executor=_executor(_StubDevice(), None, ADB),
+            maa_adapter=_Adapter(),
+            routing=RoutingTable(skills={"TEST_SKILL": {
+                "preferred": MAA, "fallback": ADB, "recognition": {"BTN_X": node},
+            }}),
+            ledger=BackendLedger(path=Path(tempfile.mkdtemp()) / "l.jsonl"),
+            adb_resolver=lambda _s: None,
+        )
+
+    def test_node_template_is_handed_over_by_its_source_path(self) -> None:
+        """A node's template must be registered, not looked up by file name.
+
+        Live 2026-09-14: the router called ``find()`` without registering the
+        node's template, so the adapter searched for
+        ``<template_dir>/BTN_HERO_CAMP_FIGHT.png`` - which does not exist, since
+        the file is named for its provenance and lives in another folder.  Every
+        skill with a node therefore resolved to ``None`` and was recorded as
+        ``SEMANTIC_TARGET_NOT_VERIFIED``, while the very same template scored
+        1.000 in MAA and the V2 matcher when handed over explicitly.
+        """
+        seen: dict = {}
+        source = "dataset/candidate/hero_camp/btn_hero_camp_fight__live_hero_camp.png"
+        router = self._router_capturing(
+            {"template": "BTN_X", "threshold": [0.7], "source_template": source}, seen
+        )
+        self.assertIsNotNone(router.maa_resolver("BTN_X", "TEST_SKILL"))
+
+        images = seen.get("images")
+        self.assertIsNotNone(images, "the node's template must be registered explicitly")
+        registered = Path(images["BTN_X"])
+        self.assertTrue(registered.is_absolute(), "path must not depend on the cwd")
+        self.assertEqual(registered.name, Path(source).name)
+        self.assertTrue(registered.is_file())
+
+    def test_node_without_a_source_template_registers_nothing(self) -> None:
+        seen: dict = {}
+        router = self._router_capturing({"template": "BTN_X", "threshold": [0.7]}, seen)
+        router.maa_resolver("BTN_X", "TEST_SKILL")
+        self.assertIsNone(seen.get("images"), "must not invent a template path")
+
 
 class MaaFrameChannelTests(unittest.TestCase):
     """MaaFramework screencaps are BGR; this project's whole pixel path is RGB.

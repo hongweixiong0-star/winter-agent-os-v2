@@ -661,11 +661,21 @@ class MaaExecutorAdapter:
         template: str | Sequence[str] | None = None,
         roi: tuple[int, int, int, int] | None = None,
         threshold: float | Sequence[float] = DEFAULT_TEMPLATE_THRESHOLD,
+        images: dict[str, np.ndarray | Path] | None = None,
     ) -> RecognitionOutcome:
-        """Semantic lookup: template name defaults to the semantic itself."""
+        """Semantic lookup: template name defaults to the semantic itself.
+
+        ``images`` registers templates by explicit path.  It matters because a
+        node's template name is a *semantic* label (``BTN_HERO_CAMP_FIGHT``)
+        while the file on disk is named for its provenance
+        (``btn_hero_camp_fight__live_hero_camp.png``) and lives outside
+        ``template_dir``.  Without the path the lookup fails with
+        ``TEMPLATE_NOT_REGISTERED`` - which reads as "the target is not on
+        screen" and hides the real cause.
+        """
         return self.match_template(
             image, template if template is not None else semantic,
-            semantic=semantic, roi=roi, threshold=threshold,
+            semantic=semantic, roi=roi, threshold=threshold, images=images,
         )
 
     # Alias kept because the operator's interface list names ``recognize()``.

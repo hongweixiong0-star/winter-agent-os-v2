@@ -294,11 +294,29 @@ class ExecutorRouter:
         frame = adapter.frame()
         if frame is None:
             return None
+        template_name = str(node.get("template", semantic))
+        # A node names its template semantically, but the file is named for its
+        # provenance and usually lives outside ``template_dir``.  Registering
+        # that file is what makes the node usable: without it ``_load_template``
+        # looks for ``<template_dir>/BTN_HERO_CAMP_FIGHT.png``, fails, and the
+        # whole skill reports SEMANTIC_TARGET_NOT_VERIFIED as though the control
+        # were absent.  Live 2026-09-14: this made every skill with a node
+        # unresolvable through MAA while the same template scored 1.000 when
+        # handed over explicitly.
+        source = node.get("source_template")
+        images: dict[str, Any] | None = None
+        if source:
+            source_path = Path(source)
+            if not source_path.is_absolute():
+                source_path = PROJECT_ROOT / source_path
+            if source_path.is_file():
+                images = {template_name: source_path}
         outcome = adapter.find(
             frame, semantic,
-            template=node.get("template", semantic),
+            template=template_name,
             roi=tuple(node["roi"]) if node.get("roi") else None,
             threshold=node.get("threshold", 0.7),
+            images=images,
         )
         self.last_outcome = outcome
         # A miss stays a miss.  Falling through to the legacy resolver here would
