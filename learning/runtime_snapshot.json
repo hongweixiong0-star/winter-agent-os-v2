@@ -1,9 +1,9 @@
 {
-  "agent_state": "DEGRADED",
-  "runtime_thread_alive": false,
-  "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-14T11:20:35.501441+00:00",
-  "last_action_time": "2026-09-14T11:20:35.611268+00:00",
+  "agent_state": "AUTO_RUNNING",
+  "runtime_thread_alive": true,
+  "scheduler_loop_alive": true,
+  "last_tick_time": "2026-09-14T11:25:19.410597+00:00",
+  "last_action_time": "2026-09-14T11:25:19.674294+00:00",
   "last_success_time": null,
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_112018_nav_00\\intel_pins_20260914_112018_nav_00_step_001_before_20260914T112033523534.png",
+  "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_112516_c01\\intel_loop_20260914_112516_c01_step_001_before_20260914T112517241787.png",
   "march_used": null,
   "march_max": null,
   "queues": {
@@ -37,6 +37,6 @@
     "alliance": {},
     "events": {}
   },
-  "stop_reason": "NO_EXECUTION",
-  "updated_at": "2026-09-14T11:20:35.645047+00:00"
+  "stop_reason": null,
+  "updated_at": "2026-09-14T11:29:43.982421+00:00"
 }
