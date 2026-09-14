@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-14T14:49:34+00:00",
-  "count": 388,
+  "generated_at": "2026-09-14T15:13:42+00:00",
+  "count": 389,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -144,7 +144,7 @@
       "path": "evidence/INDEX.json",
       "kind": "evidence",
       "bytes": 71589,
-      "mtime": "2026-09-14T14:16:39+00:00"
+      "mtime": "2026-09-14T14:49:34+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -175,6 +175,12 @@
       "kind": "evidence",
       "bytes": 988,
       "mtime": "2026-09-14T11:32:04+00:00"
+    },
+    {
+      "path": "evidence/intel_loop_20260914_150250.log",
+      "kind": "evidence",
+      "bytes": 264,
+      "mtime": "2026-09-14T15:03:02+00:00"
     },
     {
       "path": "evidence/intel_pins_20260914_094520.json",

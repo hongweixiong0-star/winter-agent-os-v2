@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `5c96773 2026-09-14T22:59:53+08:00 fix(runtime): back out of an unreadable screen instead of dying on it`
+- `39e246f 2026-09-14T22:49:47+08:00 docs(handoff): refresh after the OCR fragment-stitching fix (full suite green, 408 passed)`
 - `48e266f 2026-09-14T22:48:48+08:00 fix(ocr): stitch overlapping digit fragments instead of enlarging the crop`
 - `9bfa719 2026-09-14T22:17:57+08:00 chore(knowledge): carry over the uncommitted knowledge files from the previous session`
 - `5c902be 2026-09-14T22:17:45+08:00 docs(handoff): ninth round - three false-failure root causes fixed, hero chain green`
@@ -16,10 +18,19 @@ Last 12 commits (newest first):
 - `7c2fae5 2026-09-14T21:55:14+08:00 fix(intel): a real rescue start is proven by the paid stamina, not by one frame-specific status read`
 - `3518af1 2026-09-14T21:25:52+08:00 feat(executor): MAA in the real production path, measured live, with a regression found and reverted`
 - `4ff00eb 2026-09-14T20:48:40+08:00 feat(executor): MaaFramework as a second executor backend behind the existing Executor boundary`
-- `3e4484e 2026-09-14T20:30:38+08:00 feat(vision): search-based OpenCV matcher, opt-in, with an A/B before any default`
-- `da28686 2026-09-14T20:25:14+08:00 fix(hero): the fight button is clickable - my template was 103 px too high`
 
-Uncommitted changes: 0
+Uncommitted changes: 11
+- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-09-14.md`
+- ` M .workbuddy/memory/2026-09-14.md`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
+- `?? evidence/intel_loop_20260914_150250.log`
 <!-- /AUTO:recent_commits -->
 
 ---
@@ -111,10 +122,14 @@ P0 双记忆根合并（M1 零丢失合并/M2 指针/M3 宪法 18b）+ P1 eviden
 
 ### 常驻自动化（落实「循环进行」）
 
-- 已创建 **「Winter V2 情报循环（每小时）」**（id `1a07567f-2868-4414-9010-2b411ae3a85d`）：
+- 曾创建 **「Winter V2 情报循环（每小时）」**（当时记录的 id `1a07567f-2868-4414-9010-2b411ae3a85d`）：
   每小时自动跑一轮 `run_intel_loop.py 6`，列表为空时几十秒退出，
   新任务出现即自动打巨兽/领奖励，含付费控件硬边界与失败如实上报。
 - 下批情报（~23:51）出现后会被自动消化，无需人工。
+- ⚠️ **第九轮更正（重要）**：上述 id **在自动化接口里查不到（not found）**，
+  即该自动化**实际并不存在**，那段时间并没有任何无人值守在运行。
+  第九轮已重建 **`7c1c18c1-94ca-4051-a2ca-7a1614cb3979`**（ACTIVE，每小时）。
+  **教训**：handoff 记录的"已完成"不等于事实——自动化这类外部状态必须用接口复核。
 
 ### 状态
 

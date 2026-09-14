@@ -23,6 +23,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
+- 11 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-14.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -33,6 +34,7 @@ Machine-detected issues (recomputed every run):
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
+| 0o | **handoff 声称的「外部状态」不可信（本次踩到最大的一个）** | ✅ 已修 + 已建规则 | 三处 handoff 都写着「常驻自动化『Winter V2 情报循环（每小时）』已创建（id `1a07567f-…`）」，`list` 里没有它、按 id `view` 返回 **not found** —— **那段时间根本没有任何无人值守在跑**，今天修好的 MAA/节点/verifier/OCR 全都不会被自动执行。已重建 id `7c1c18c1-94ca-4051-a2ca-7a1614cb3979`（ACTIVE，每小时）。**规则：自动化 / 连接器 / MCP / 真机这类"外部状态"，必须用对应接口复核后才能写进 handoff；handoff 里写「已完成」不等于事实**（与宪法 §1「最高事实原则」同一逻辑：文档 < 现实）。 |
 | 0m | **英雄之旅卡片的「橙皮」变体不被识别** | ⚠️ 未解，触发条件 UNKNOWN | 同一任务在真机上出现过两种皮肤：`橙皮` → 视觉读 `UNKNOWN/0.00`（大脑回 SAFE_STOP，钉子循环会卡死在该卡片上）；`蓝皮` → 正常识别 `POPUP/INTEL_HERO_JOURNEY/0.99`。两皮的**几何完全一致**（标题框都在 x237-483 / y288-323），OCR 都能读出「英雄之旅等级10」0.999，**只差横幅配色**，因此只认蓝皮的模板匹配不到橙皮。帧：`dataset/truth_audit/hero_journey_card_variants_20260914/`。**禁止猜游戏机制**——橙皮的触发条件没有任何观测支撑，先记为 UNKNOWN。 |
 | 0n | **`TEMPLATE_NOT_REGISTERED` 被报成 `SEMANTIC_TARGET_NOT_VERIFIED`** | ⚠️ 可诊断性缺口 | 「模板没注册」与「屏幕上真的没有这个控件」是两个根因，却共用同一个 reason（宪法 §6 明确禁止）。本次为此多花了不少时间：真机一直说「找不到目标」，实际是路由器没把节点模板交给适配器（已修 `c03af7d`）。建议把 `last_outcome.error` 透出到 episode，让两者可区分。 |
 

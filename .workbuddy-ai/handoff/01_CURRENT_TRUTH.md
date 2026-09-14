@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T14:49:34+00:00`
+- generated_at: `2026-09-14T15:13:41+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `48e266f` on `main`
+- commit: `5c96773` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,9 +10,20 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 41
-- HEAD: `48e266f` — fix(ocr): stitch overlapping digit fragments instead of enlarging the crop (2026-09-14T22:48:48+08:00)
-- working tree: clean
+- commits: 43
+- HEAD: `5c96773` — fix(runtime): back out of an unreadable screen instead of dying on it (2026-09-14T22:59:53+08:00)
+- working tree: 11 dirty file(s)
+  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+  - ` M .workbuddy-ai/memory/2026-09-14.md`
+  - ` M .workbuddy/memory/2026-09-14.md`
+  - ` M learning/episodes.jsonl`
+  - ` M learning/executor_backend.jsonl`
+  - ` M learning/goal_state.json`
+  - ` M learning/runtime_snapshot.json`
+  - `?? evidence/intel_loop_20260914_150250.log`
 
 ## B. Runtime
 
@@ -23,15 +34,15 @@
 - last_fatal_error: None
 - stop_reason: intel_not_available
 - page: INTEL  march: None/None
-- updated_at: 2026-09-14T14:16:16.637183+00:00
+- updated_at: 2026-09-14T15:03:01.832498+00:00
 
 ## C. Episode stream
 
-- rows: 931 (production 931)  modes: {'PRODUCTION': 931}
-- success / failure: 622 / 304
-- success rate over decided: **0.6717**
+- rows: 933 (production 933)  modes: {'PRODUCTION': 933}
+- success / failure: 624 / 304
+- success rate over decided: **0.6724**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T14:16:09.071924+00:00", "episode_id": "hero_live6_20260914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_before_20260914T141558805541.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_after_20260914T141601552798.png"}`
+- last episode: `{"skill": "OPEN_INTEL", "result": "SUCCESS", "recorded_at": "2026-09-14T15:00:32.493085+00:00", "episode_id": "verify_recovery_20260914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\verify_recovery_20260914\\verify_recovery_20260914_step_002_before_20260914T150011996514.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\verify_recovery_20260914\\verify_recovery_20260914_step_002_after_20260914T150025155933.png"}`
 
 ## D. Registry and lifecycle
 
@@ -96,10 +107,10 @@
 - `OPEN_DAILY` success=5 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
 - `OPEN_HOME` success=20 rate=0.8696
-- `OPEN_INTEL` success=62 rate=0.8493
+- `OPEN_INTEL` success=63 rate=0.8514
 - `OPEN_INTEL_BEAST_TARGET` success=20 rate=0.9524
 - `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=5 rate=1.0
-- `OPEN_MAP` success=24 rate=0.9231
+- `OPEN_MAP` success=25 rate=0.9259
 - `OPEN_POWER_DETAILS` success=9 rate=1.0
 - `OPEN_POWER_OVERVIEW` success=9 rate=0.8182
 - `SELECT_INTEL_BEAST_MISSION` success=9 rate=0.8182
@@ -158,9 +169,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 386  present: 386
+- referenced screenshots: 390  present: 390
 - missing: []
-- episodes carrying screenshot references: 199
+- episodes carrying screenshot references: 201
 
 ## H. Commercial bot parity
 

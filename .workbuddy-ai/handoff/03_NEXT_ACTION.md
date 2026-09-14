@@ -12,8 +12,8 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x112
 LAST GOOD COMMIT: f8e145f
-CURRENT DIRTY FILES: 0
-LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T14:16:09.071924+00:00", "episode_id": "hero_live6_20260914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_before_20260914T141558805541.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_after_20260914T141601552798.png"}
+CURRENT DIRTY FILES: 11
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "SUCCESS", "recorded_at": "2026-09-14T15:00:32.493085+00:00", "episode_id": "verify_recovery_20260914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\verify_recovery_20260914\\verify_recovery_20260914_step_002_before_20260914T150011996514.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\verify_recovery_20260914\\verify_recovery_20260914_step_002_after_20260914T150025155933.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
@@ -81,10 +81,16 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 
 - 情报列表已排空（真机 3 轮 `intel_not_available`，exit 0）；最后一个巨兽已派出（体力 295）。
 - 下批任务 **~23:51**（真机倒计时 `下次刷新：06:56:37`）。
-- **常驻自动化**「Winter V2 情报循环（每小时）」已创建（每小时跑
-  `tools/run_intel_loop.py 6`）：新任务自动打、奖励自动领，无需人工。
+- **常驻自动化**「Winter V2 情报循环（每小时）」：每小时跑 `tools/run_intel_loop.py 6`，
+  新任务自动打、奖励自动领，无需人工。
+  ⚠️ **第九轮更正**：旧 handoff 记的那个自动化 id **查不到（not found）**，等于那段时间
+  **没有任何无人值守在运行**。第九轮已重建，当前 id
+  **`7c1c18c1-94ca-4051-a2ca-7a1614cb3979`**（ACTIVE，每小时）。
+  **判断自动化是否存在只能用自动化接口查询，不要只信本文档。**
 - 顺手修复 `parse_stamina_number` 丢位（295 被读成 29，OCR 碎片 `'29'+'9'+'5'`），
-  已几何合并 + fixture 回归（见 05 第六轮）。
+  已几何合并 + fixture 回归（见 05 第六轮）。**第九轮又回到这一处并改进了算法**：
+  现在的规则是「真值 = 包含全部碎片的最短字符串」，并移除了第九轮中途试错的「放大裁剪」方案
+  （它修好 166/189 却把 295 拆坏）。
 - **情报做完后，按排序公式下一项是 `SEMANTIC_TARGET_NOT_VERIFIED` x104 家族**
   （SELECT_RESOURCE 40 / SEARCH_RESOURCE 32 / OPEN_MAIL 13，见 01_CURRENT_TRUTH）。
 

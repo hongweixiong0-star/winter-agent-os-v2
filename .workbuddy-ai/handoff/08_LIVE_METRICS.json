@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T14:49:34+00:00",
+  "generated_at": "2026-09-14T15:13:41+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "48e266f",
+  "commit": "5c96773",
   "last_good_commit": "f8e145f",
-  "dirty_count": 0,
+  "dirty_count": 11,
   "episodes": {
-    "total": 931,
-    "production": 931,
-    "success": 622,
+    "total": 933,
+    "production": 933,
+    "success": 624,
     "failure": 304,
-    "success_rate_over_decided": 0.6717,
+    "success_rate_over_decided": 0.6724,
     "modes": {
-      "PRODUCTION": 931
+      "PRODUCTION": 933
     },
     "mixed_case_rows": 35
   },
@@ -178,9 +178,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 386,
-    "present_on_disk": 386,
-    "traceable_episodes": 199,
+    "referenced_screenshots": 390,
+    "present_on_disk": 390,
+    "traceable_episodes": 201,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
