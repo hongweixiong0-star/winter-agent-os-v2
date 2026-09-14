@@ -1,38 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T05:01:03+00:00`
+- generated_at: `2026-09-14T05:12:07+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `0f006ab` on `main`
+- commit: `68e3540` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `d3f974a`
-- commits: 4
-- HEAD: `0f006ab` — docs(handoff): regenerate truth at the new baseline (2026-09-14T12:36:41+08:00)
-- working tree: 26 dirty file(s)
-  - `M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/resource_rotation.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M tests/test_resource_rotation.py`
-  - ` M winter_agent_v2/operations_policy.py`
-  - ` M winter_agent_v2/resource_rotation.py`
-  - ` M winter_agent_v2/runtime.py`
-  - `?? dataset/truth_audit/level_probe_20260914_124721/`
-  - `?? dataset/truth_audit/resource_availability_20260914_124753/`
-  - `?? evidence/gather_acceptance_20260914_123747.json`
-  - `?? evidence/gather_acceptance_20260914_125232.json`
-  - `?? tools/_after_mid.png`
-  - `?? tools/_after_top.png`
+- last good commit: `68e3540`
+- commits: 5
+- HEAD: `68e3540` — fix(gather): break the unavailable-resource livelock + acceptance harness (2026-09-14T13:11:55+08:00)
+- working tree: 2 dirty file(s)
+  - `M .workbuddy-ai/handoff/.last_good_commit`
+  - `?? tools/_h.txt`
 
 ## B. Runtime
 

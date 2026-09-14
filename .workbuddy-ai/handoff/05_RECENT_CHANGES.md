@@ -6,32 +6,15 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `68e3540 2026-09-14T13:11:55+08:00 fix(gather): break the unavailable-resource livelock + acceptance harness`
 - `0f006ab 2026-09-14T12:36:41+08:00 docs(handoff): regenerate truth at the new baseline`
 - `d3f974a 2026-09-14T12:36:28+08:00 chore: ignore the transient commit-message helper file`
 - `7512a33 2026-09-14T12:36:15+08:00 feat(handoff): cross-account handoff mechanism + git baseline`
 - `f9ef073 2026-09-14T12:29:31+08:00 chore: initial checkpoint of Winter Agent OS V2`
 
-Uncommitted changes: 26
-- `M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M learning/episodes.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/resource_rotation.json`
-- ` M learning/runtime_snapshot.json`
-- ` M tests/test_resource_rotation.py`
-- ` M winter_agent_v2/operations_policy.py`
-- ` M winter_agent_v2/resource_rotation.py`
-- ` M winter_agent_v2/runtime.py`
-- `?? dataset/truth_audit/level_probe_20260914_124721/`
-- `?? dataset/truth_audit/resource_availability_20260914_124753/`
-- `?? evidence/gather_acceptance_20260914_123747.json`
-- `?? evidence/gather_acceptance_20260914_125232.json`
-- `?? tools/_after_mid.png`
-- `?? tools/_after_top.png`
+Uncommitted changes: 2
+- `M .workbuddy-ai/handoff/.last_good_commit`
+- `?? tools/_h.txt`
 <!-- /AUTO:recent_commits -->
 
 ---
