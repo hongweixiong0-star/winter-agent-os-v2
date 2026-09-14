@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T05:41:26+00:00
-LAST GOOD COMMIT: f35df92
+HANDOFF TIME: 2026-09-14T05:44:00+00:00
+LAST GOOD COMMIT: 446d909
 WORKING TREE: 8 dirty file(s)
-  ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M config/v2.json', '?? tests/test_operator_policy.py', '?? tools/_full.txt', '?? tools/_h.txt']
+  ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M tools/_h.txt', '?? dataset/truth_audit/march_queue_20260914_134158/', '?? evidence/gather_march_queue_probe.log', '?? tools/probe_march_queue_recall.py']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 10 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 11 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 25 skills never executed, 7 never succeeded
 

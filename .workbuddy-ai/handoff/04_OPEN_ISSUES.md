@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 8 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M config/v2.json']
+- 8 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M tools/_h.txt']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -30,7 +30,7 @@ Machine-detected issues (recomputed every run):
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
-| 0 | **体力不可观测 → 操作者的「体力优先」策略无法生效** | ❌ **最高优先级** | `world.stamina` 从未被填充：**没有任何 STAMINA 模板**，唯一写入点是 `ocr.py:450`（只在**情报页**上读到一个数字）。地图上 `AVOID_STAMINA_WASTE` Goal 因此永远不被发现（`goal_library.py:80`），AUTO 只能回退到采集。**必须在 HUD 上标定体力 ROI**（Template 优先，OCR 兜底）。 |
+| 0 | **体力不可观测 → 操作者的「体力优先」策略无法生效** | ❌ **最高优先级**（入口已找到） | `world.stamina` 从未被填充：**没有任何 STAMINA 模板**，唯一写入点是 `ocr.py:450`（只在**情报页**）。地图上 `AVOID_STAMINA_WASTE` Goal 因此永不出现（`goal_library.py:80`），AUTO 只能回退采集。**真机已确认**：点左上 `(0.09,0.09)` 打开「获取更多」可见 `领主体力 200/200`（体力确实满）。⚠ 该面板是**商城**，只读，绝不点购买/使用。下一步：标定 HUD 体力 ROI。 |
 | 0b | **`RECALL_MARCH` 不可调度** | ❌ 待实现 | 注册表有，但不在 `VERIFIED_ATOMIC`（无 verifier）。`march_policy.recall_on_demand` 只是声明。需要：找到「撤退」控件语义 → 模板 → verifier（撤退前该行军在队列 → 撤退后消失且空闲槽 +1）。当前有 6 条真实采集行军可作验证对象。 |
 | 0c | 采集优先级过高（已改配置，未改行为） | ⚠️ 部分 | `march_policy.reserve_for_stamina: 0 → 2`，新增 `resource_policy.gather_priority=LAST_RESORT`。但这只阻止采集吃满队列；**主动去花体力**仍受 0 与 0b 阻塞。 |
 | 1 | **AUTO 主循环此前完全无法执行语义点击** | ✅ 已修 | `LiveRuntime.resolve` 用 `self.semantic_vision.semantic.find`，而 `run_live.py` 传入的已经是 `SemanticROIVision` → 第一次点击就 `AttributeError`。已改为 `_semantic` 访问器。**这是接手时最重要的发现。** |

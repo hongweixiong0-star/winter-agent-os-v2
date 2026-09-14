@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `446d909 2026-09-14T13:41:40+08:00 feat(policy): stamina spending beats gathering; gathering is LAST_RESORT`
 - `f35df92 2026-09-14T13:32:27+08:00 docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint`
 - `7a3380d 2026-09-14T13:32:06+08:00 fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH`
 - `8c59182 2026-09-14T13:13:18+08:00 docs(handoff): final truth refresh at the new last-good commit`
@@ -21,11 +22,11 @@ Uncommitted changes: 8
 - `M .workbuddy-ai/handoff/.last_good_commit`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-- ` M config/v2.json`
-- `?? tests/test_operator_policy.py`
-- `?? tools/_full.txt`
-- `?? tools/_h.txt`
+- ` M .workbuddy-ai/memory/2026-09-14.md`
+- ` M tools/_h.txt`
+- `?? dataset/truth_audit/march_queue_20260914_134158/`
+- `?? evidence/gather_march_queue_probe.log`
+- `?? tools/probe_march_queue_recall.py`
 <!-- /AUTO:recent_commits -->
 
 ---

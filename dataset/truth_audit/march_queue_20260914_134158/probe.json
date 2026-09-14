@@ -1,0 +1,80 @@
+[
+  {
+    "label": "map_before",
+    "file": "20260914_134158_map_before.png",
+    "page": "MAP",
+    "march": "1/6",
+    "tokens": [
+      [
+        "行军",
+        0.999,
+        [
+          0.0951,
+          0.1883
+        ]
+      ],
+      [
+        "采集中",
+        0.994,
+        [
+          0.1236,
+          0.2234
+        ]
+      ],
+      [
+        "采集中",
+        0.993,
+        [
+          0.1236,
+          0.2711
+        ]
+      ],
+      [
+        "采集中",
+        0.995,
+        [
+          0.1236,
+          0.318
+        ]
+      ],
+      [
+        "采集中",
+        0.995,
+        [
+          0.1243,
+          0.3656
+        ]
+      ],
+      [
+        "采集中",
+        0.994,
+        [
+          0.1236,
+          0.4129
+        ]
+      ],
+      [
+        "采集中",
+        0.997,
+        [
+          0.1236,
+          0.4605
+        ]
+      ]
+    ]
+  },
+  {
+    "label": "after_march_counter_tap",
+    "file": "20260914_134158_after_march_counter_tap.png",
+    "page": "UNKNOWN",
+    "march": "None/None",
+    "tokens": []
+  },
+  {
+    "label": "after_first_row_tap",
+    "file": "20260914_134158_after_first_row_tap.png",
+    "page": "UNKNOWN",
+    "march": "None/None",
+    "tokens": []
+  }
+]

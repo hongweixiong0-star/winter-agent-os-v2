@@ -1,26 +1,26 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T05:41:26+00:00`
+- generated_at: `2026-09-14T05:44:00+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `f35df92` on `main`
+- commit: `446d909` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `f35df92`
-- commits: 10
-- HEAD: `f35df92` — docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint (2026-09-14T13:32:27+08:00)
+- last good commit: `446d909`
+- commits: 11
+- HEAD: `446d909` — feat(policy): stamina spending beats gathering; gathering is LAST_RESORT (2026-09-14T13:41:40+08:00)
 - working tree: 8 dirty file(s)
   - `M .workbuddy-ai/handoff/.last_good_commit`
   - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
   - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-  - ` M config/v2.json`
-  - `?? tests/test_operator_policy.py`
-  - `?? tools/_full.txt`
-  - `?? tools/_h.txt`
+  - ` M .workbuddy-ai/memory/2026-09-14.md`
+  - ` M tools/_h.txt`
+  - `?? dataset/truth_audit/march_queue_20260914_134158/`
+  - `?? evidence/gather_march_queue_probe.log`
+  - `?? tools/probe_march_queue_recall.py`
 
 ## B. Runtime
 

@@ -1,0 +1,19 @@
+out: E:\无尽冬日智能体\dataset\truth_audit\march_queue_20260914_134158
+
+== current map frame ==
+  map_before             page=MAP          march=1/6
+      '行军' conf=0.999 centre=(0.0951, 0.1883)
+      '采集中' conf=0.994 centre=(0.1236, 0.2234)
+      '采集中' conf=0.993 centre=(0.1236, 0.2711)
+      '采集中' conf=0.995 centre=(0.1236, 0.318)
+      '采集中' conf=0.995 centre=(0.1243, 0.3656)
+      '采集中' conf=0.994 centre=(0.1236, 0.4129)
+      '采集中' conf=0.997 centre=(0.1236, 0.4605)
+
+== tap the top-left march counter ==
+  after_march_counter_tap page=UNKNOWN      march=None/None
+
+== tap the first march row (left list) ==
+  after_first_row_tap    page=UNKNOWN      march=None/None
+
+written E:\无尽冬日智能体\dataset\truth_audit\march_queue_20260914_134158\probe.json

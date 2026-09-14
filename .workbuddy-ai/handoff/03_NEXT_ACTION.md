@@ -11,7 +11,7 @@ CURRENT TASK: implement `CHECK_ALLIANCE_EVENT` — missing from the registry, bl
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x104
-LAST GOOD COMMIT: f35df92
+LAST GOOD COMMIT: 446d909
 CURRENT DIRTY FILES: 8
 LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "FAILURE", "recorded_at": "2026-09-14T05:25:20.306984+00:00", "episode_id": "accept_20260914_132309_run01", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_before_20260914T052441981131.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_after_20260914T052445865611.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
@@ -48,19 +48,29 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 
 **但配置本身不产生行为。** 要让这条策略真正生效，必须先解决两个卡点（按顺序）：
 
-#### 卡点 1：体力不可观测（最高优先级）
+#### 卡点 1：体力不可观测（最高优先级）—— 但已有真机入口
 
-`world.stamina` **从来没有被填充过**：
+`world.stamina` **从来没有被填充过**：manifest 里**没有任何 STAMINA / ENERGY 模板**，
+唯一写入点是 `ocr.py:450`（只在**情报页**上读到一个数字）。
+因此在地图上 `AVOID_STAMINA_WASTE` Goal **永远不会被发现**
+（`goal_library.py:80-85` 需要 `world.stamina["current"]` 或 `world.intel["stamina"]`），
+AUTO 只能回退到采集。
 
-- manifest 里**没有任何 STAMINA / ENERGY 模板**；
-- 唯一的写入点是 `ocr.py:450`，在**情报页**上把一个 OCR 数字放进 `intel["stamina"]`；
-- 因此在地图（决策发生的地方）上，`AVOID_STAMINA_WASTE` 这个 Goal **永远不会被发现**
-  （`goal_library.py:80-85` 需要 `world.stamina["current"]` 或 `world.intel["stamina"]`），
-  于是 AUTO 只能回退到采集。
+**2026-09-14 真机已确认入口与数值**（见 `dataset/truth_audit/march_queue_20260914_134158/`）：
 
-**下一步动作**：在地图 HUD 上标定体力的 ROI，读成 `world.stamina["current"]`
-（HUD 顶部有体力图标与数字）。Template 优先，OCR 兜底（规则 §5 优先级）。
-这是**唯一**能让「体力满了就去花」这条策略成立的前提。
+- 点地图左上角约 `(0.09, 0.09)` 会打开「**获取更多**」面板，面板上直接写着
+  **`领主体力 200/200`** —— 体力确实已满（操作者的描述得到证实）。
+- 同一帧 OCR 可稳定读到（大号高对比文字）：
+  `行军` @ (0.0951, 0.1883)，6 行 `采集中` @ x≈(0.1236)，y = 0.2234 / 0.2711 /
+  0.3180 / 0.3656 / 0.4129 / 0.4605。
+
+**⚠ 安全警告：「获取更多」是商城面板**，含「购买并使用 300 钻石」「前往」等按钮。
+**只允许读，绝不允许点购买类控件**（规则 §8 永久红线）。
+首选做法仍是在**地图 HUD** 上标定体力 ROI（Template 优先 → 失败再 OCR），
+把商城面板仅作为 HUD 被遮挡时的只读兜底。
+
+**下一步动作**：标定 HUD 体力 ROI → 写入 `world.stamina["current"]` → 补测试 →
+然后 `AVOID_STAMINA_WASTE` 才能在地图上被发现。
 
 #### 卡点 2：撤回不可调度
 
