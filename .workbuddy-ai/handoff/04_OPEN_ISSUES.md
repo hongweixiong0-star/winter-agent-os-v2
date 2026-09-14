@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 15 uncommitted file(s): ['M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M learning/episodes.jsonl', ' M learning/goal_state.json']
+- 2 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M tools/_h.txt']
 <!-- /AUTO:open_issues -->
 
 ---

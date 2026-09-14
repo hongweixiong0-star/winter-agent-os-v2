@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `db268f9 2026-09-14T16:50:25+08:00 feat(intel): the beast chain runs end to end on the live client`
 - `7fb541d 2026-09-14T16:15:46+08:00 docs(memory): record the fourth round (beast card + intel empty list)`
 - `940310f 2026-09-14T16:15:30+08:00 docs(handoff): mark 702e65b as last-good after the beast-card and intel-list fixes`
 - `702e65b 2026-09-14T16:15:17+08:00 fix(intel): repair the stamina-sink chain — stale beast card + empty-list dead end`
@@ -17,24 +18,10 @@ Last 12 commits (newest first):
 - `f35df92 2026-09-14T13:32:27+08:00 docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint`
 - `7a3380d 2026-09-14T13:32:06+08:00 fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH`
 - `8c59182 2026-09-14T13:13:18+08:00 docs(handoff): final truth refresh at the new last-good commit`
-- `6189c67 2026-09-14T13:13:05+08:00 test(handoff): assert START_HERE leads to real commands and no orphan files`
 
-Uncommitted changes: 15
-- `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M learning/episodes.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- ` M tools/run_live.py`
-- ` M winter_agent_v2/verifier.py`
-- `?? dataset/truth_audit/intel_claim_reward_20260914/`
-- `?? evidence/live_intel_full_run6_all_steps_success.log`
-- `?? evidence/live_intel_full_run7_claim_fix_check.log`
-- `?? evidence/live_intel_full_run8_dismiss_ok.log`
-- `?? evidence/live_intel_guard_run9.log`
-- `?? tests/test_intel_claim_reward.py`
-- `?? tools/_h.txt`
+Uncommitted changes: 2
+- `M .workbuddy-ai/handoff/.last_good_commit`
+- ` M tools/_h.txt`
 <!-- /AUTO:recent_commits -->
 
 ---

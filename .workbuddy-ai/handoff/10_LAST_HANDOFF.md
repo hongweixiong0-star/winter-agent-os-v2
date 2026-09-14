@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T08:49:57+00:00
-LAST GOOD COMMIT: 702e65b
-WORKING TREE: 15 dirty file(s)
-  ['M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M learning/episodes.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', ' M tools/run_live.py', ' M winter_agent_v2/verifier.py', '?? dataset/truth_audit/intel_claim_reward_20260914/', '?? evidence/live_intel_full_run6_all_steps_success.log']
+HANDOFF TIME: 2026-09-14T08:50:41+00:00
+LAST GOOD COMMIT: db268f9
+WORKING TREE: 2 dirty file(s)
+  ['M .workbuddy-ai/handoff/.last_good_commit', ' M tools/_h.txt']
 
-WHAT FINISHED (machine-visible): 24 skills live verified, 17 stable, 18 commit(s) in history
+WHAT FINISHED (machine-visible): 24 skills live verified, 17 stable, 19 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 27 skills never executed, 7 never succeeded
 
@@ -22,7 +22,7 @@ STOPPED AT: agent_state=DEGRADED stop_reason=intel_not_available
 LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T08:34:26.144051+00:00", "episode_id": "live_intel_full_run8", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_after_20260914T083418180357.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 15
+DIRTY FILES: 2
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 

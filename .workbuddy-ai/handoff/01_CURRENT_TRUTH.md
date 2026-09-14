@@ -1,33 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T08:49:57+00:00`
+- generated_at: `2026-09-14T08:50:41+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `7fb541d` on `main`
+- commit: `db268f9` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `702e65b`
-- commits: 18
-- HEAD: `7fb541d` — docs(memory): record the fourth round (beast card + intel empty list) (2026-09-14T16:15:46+08:00)
-- working tree: 15 dirty file(s)
-  - `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/06_DECISIONS.md`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M tools/run_live.py`
-  - ` M winter_agent_v2/verifier.py`
-  - `?? dataset/truth_audit/intel_claim_reward_20260914/`
-  - `?? evidence/live_intel_full_run6_all_steps_success.log`
-  - `?? evidence/live_intel_full_run7_claim_fix_check.log`
-  - `?? evidence/live_intel_full_run8_dismiss_ok.log`
-  - `?? evidence/live_intel_guard_run9.log`
-  - `?? tests/test_intel_claim_reward.py`
-  - `?? tools/_h.txt`
+- last good commit: `db268f9`
+- commits: 19
+- HEAD: `db268f9` — feat(intel): the beast chain runs end to end on the live client (2026-09-14T16:50:25+08:00)
+- working tree: 2 dirty file(s)
+  - `M .workbuddy-ai/handoff/.last_good_commit`
+  - ` M tools/_h.txt`
 
 ## B. Runtime
 

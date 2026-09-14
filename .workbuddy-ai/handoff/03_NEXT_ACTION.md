@@ -11,8 +11,8 @@ CURRENT TASK: implement `CHECK_ALLIANCE_EVENT` — missing from the registry, bl
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x104
-LAST GOOD COMMIT: 702e65b
-CURRENT DIRTY FILES: 15
+LAST GOOD COMMIT: db268f9
+CURRENT DIRTY FILES: 2
 LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T08:34:26.144051+00:00", "episode_id": "live_intel_full_run8", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_after_20260914T083418180357.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
