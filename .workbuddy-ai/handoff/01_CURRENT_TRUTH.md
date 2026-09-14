@@ -1,38 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T08:15:14+00:00`
+- generated_at: `2026-09-14T08:15:28+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `16bf007` on `main`
+- commit: `702e65b` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `25b5ba7`
-- commits: 15
-- HEAD: `16bf007` — docs(handoff): mark 25b5ba7 as last-good and refresh truth after the regression suite (2026-09-14T15:45:11+08:00)
-- working tree: 29 dirty file(s)
-  - `M .gitignore`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-14.md`
-  - ` M dataset/candidate/template_manifest.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - `D  tools/_pt_tmp/test_all_resources_unavailable0/rotation.json`
-  - `D  tools/_pt_tmp/test_audit_actually_detects_a_0/START_HERE.md`
-  - `D  tools/_pt_tmp/test_corrupt_state_never_raise0/rotation.json`
-  - `D  tools/_pt_tmp/test_expired_cooldown_is_retri0/rotation.json`
-  - `D  tools/_pt_tmp/test_persistent_four_resource_0/rotation.json`
-  - `D  tools/_pt_tmp/test_recovering_allows_runtime0/runtime.json`
-  - `D  tools/_pt_tmp/test_running_state_cannot_surv0/runtime.json`
-  - `D  tools/_pt_tmp/test_safe_stop_and_auto_runnin0/runtime.json`
-  - `D  tools/_pt_tmp/test_successful_dispatch_clear0/rotation.json`
-  - `D  tools/_pt_tmp/test_unavailable_resource_is_s0/rotation.json`
+- last good commit: `702e65b`
+- commits: 16
+- HEAD: `702e65b` — fix(intel): repair the stamina-sink chain — stale beast card + empty-list dead end (2026-09-14T16:15:17+08:00)
+- working tree: 2 dirty file(s)
+  - `M .workbuddy-ai/handoff/.last_good_commit`
+  - `?? tools/_h.txt`
 
 ## B. Runtime
 

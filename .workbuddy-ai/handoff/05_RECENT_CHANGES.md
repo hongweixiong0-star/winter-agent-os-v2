@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `702e65b 2026-09-14T16:15:17+08:00 fix(intel): repair the stamina-sink chain — stale beast card + empty-list dead end`
 - `16bf007 2026-09-14T15:45:11+08:00 docs(handoff): mark 25b5ba7 as last-good and refresh truth after the regression suite`
 - `25b5ba7 2026-09-14T15:43:18+08:00 feat(stamina,recall): make the operator's stamina-first policy executable`
 - `eeac37d 2026-09-14T14:17:40+08:00 wip: stamina becomes observable + recall becomes dispatchable`
@@ -17,29 +18,10 @@ Last 12 commits (newest first):
 - `6189c67 2026-09-14T13:13:05+08:00 test(handoff): assert START_HERE leads to real commands and no orphan files`
 - `65b2955 2026-09-14T13:12:09+08:00 docs(handoff): regenerate truth and record the new last-good commit`
 - `68e3540 2026-09-14T13:11:55+08:00 fix(gather): break the unavailable-resource livelock + acceptance harness`
-- `0f006ab 2026-09-14T12:36:41+08:00 docs(handoff): regenerate truth at the new baseline`
 
-Uncommitted changes: 29
-- `M .gitignore`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-14.md`
-- ` M dataset/candidate/template_manifest.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- `D  tools/_pt_tmp/test_all_resources_unavailable0/rotation.json`
-- `D  tools/_pt_tmp/test_audit_actually_detects_a_0/START_HERE.md`
-- `D  tools/_pt_tmp/test_corrupt_state_never_raise0/rotation.json`
-- `D  tools/_pt_tmp/test_expired_cooldown_is_retri0/rotation.json`
-- `D  tools/_pt_tmp/test_persistent_four_resource_0/rotation.json`
-- `D  tools/_pt_tmp/test_recovering_allows_runtime0/runtime.json`
-- `D  tools/_pt_tmp/test_running_state_cannot_surv0/runtime.json`
-- `D  tools/_pt_tmp/test_safe_stop_and_auto_runnin0/runtime.json`
-- `D  tools/_pt_tmp/test_successful_dispatch_clear0/rotation.json`
-- `D  tools/_pt_tmp/test_unavailable_resource_is_s0/rotation.json`
+Uncommitted changes: 2
+- `M .workbuddy-ai/handoff/.last_good_commit`
+- `?? tools/_h.txt`
 <!-- /AUTO:recent_commits -->
 
 ---

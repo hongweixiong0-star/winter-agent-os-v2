@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T08:15:14+00:00
-LAST GOOD COMMIT: 25b5ba7
-WORKING TREE: 29 dirty file(s)
-  ['M .gitignore', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M dataset/candidate/template_manifest.json', ' M learning/episodes.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
+HANDOFF TIME: 2026-09-14T08:15:28+00:00
+LAST GOOD COMMIT: 702e65b
+WORKING TREE: 2 dirty file(s)
+  ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 15 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 16 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 28 skills never executed, 7 never succeeded
 
@@ -22,7 +22,7 @@ STOPPED AT: agent_state=DEGRADED stop_reason=intel_not_available
 LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T07:59:56.775193+00:00", "episode_id": "live_intel_beast_run3", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_before_20260914T075910172059.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_after_20260914T075925539433.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 29
+DIRTY FILES: 2
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
