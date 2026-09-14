@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 3 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/memory/2026-09-14.md', '?? tools/_h.txt']
+- 8 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M config/v2.json']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -30,7 +30,10 @@ Machine-detected issues (recomputed every run):
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
-| 1 | **AUTO 主循环此前完全无法执行语义点击** | ✅ 已修 | `LiveRuntime.resolve` 用 `self.semantic_vision.semantic.find`，而 `run_live.py` 传入的已经是 `SemanticROIVision` → 第一次点击就 `AttributeError`。已改为 `_semantic` 访问器。**这是本轮最重要发现。** |
+| 0 | **体力不可观测 → 操作者的「体力优先」策略无法生效** | ❌ **最高优先级** | `world.stamina` 从未被填充：**没有任何 STAMINA 模板**，唯一写入点是 `ocr.py:450`（只在**情报页**上读到一个数字）。地图上 `AVOID_STAMINA_WASTE` Goal 因此永远不被发现（`goal_library.py:80`），AUTO 只能回退到采集。**必须在 HUD 上标定体力 ROI**（Template 优先，OCR 兜底）。 |
+| 0b | **`RECALL_MARCH` 不可调度** | ❌ 待实现 | 注册表有，但不在 `VERIFIED_ATOMIC`（无 verifier）。`march_policy.recall_on_demand` 只是声明。需要：找到「撤退」控件语义 → 模板 → verifier（撤退前该行军在队列 → 撤退后消失且空闲槽 +1）。当前有 6 条真实采集行军可作验证对象。 |
+| 0c | 采集优先级过高（已改配置，未改行为） | ⚠️ 部分 | `march_policy.reserve_for_stamina: 0 → 2`，新增 `resource_policy.gather_priority=LAST_RESORT`。但这只阻止采集吃满队列；**主动去花体力**仍受 0 与 0b 阻塞。 |
+| 1 | **AUTO 主循环此前完全无法执行语义点击** | ✅ 已修 | `LiveRuntime.resolve` 用 `self.semantic_vision.semantic.find`，而 `run_live.py` 传入的已经是 `SemanticROIVision` → 第一次点击就 `AttributeError`。已改为 `_semantic` 访问器。**这是接手时最重要的发现。** |
 | 2 | **`unexpected_worker_exits = 15` 无法归因** | ⚠️ 部分 | 历史值来自丢弃 traceback 的旧代码，**永久无法追溯**。现在已改为写完整崩溃报告到 `learning/control_panel/crashes/`，并把环境失败与真实崩溃分开计数。真实的 72h 结论需要新数据。 |
 | 3 | **`DISPATCH_NOT_PROVEN` x28** | ✅ 根因已定位并修复 | 根因：行军队列浮层盖住「搜索资源」按钮 → 模板层对地图返回 `UNKNOWN` → OCR 兜底读到地图活动栏按钮文字「常规活动」→ 判成 `Page.EVENT`（`marches=[]`）→ verifier 失败。已加世界地图常驻锚点（`BTN_OPEN_HOME` 且非 `PAGE_MAP`）并从 OCR 规则删除该按钮标签。**但修复后还没有新的成功闭环证据。** |
 | 4 | **Evidence 未进 git** | ⚠️ 设计如此 | 截图 ~1.1 GB，`.gitignore` 排除。这意味着「Live Verified」的可追溯性依赖**本机磁盘**。Retention 已保护被引用的帧，但换机器就丢。见 `06_DECISIONS.md`。 |

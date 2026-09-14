@@ -7,6 +7,23 @@
 
 ---
 
+## D-018：采集降为 LAST_RESORT，体力消耗优先
+
+- **决定**：`config/v2.json` → `march_policy.reserve_for_stamina: 0 → 2`，
+  新增 `resource_policy{gather_priority: LAST_RESORT, stamina_first: true,
+  claim_rewards_promptly: true}`。策略写进 `tests/test_operator_policy.py` 而不是只写注释。
+- **理由**：操作者明确指令——体力满时应去花体力（情报 / 巨兽），奖励及时领，
+  **采集性价比很低，只有队列没有其他用途时才采**。而原来的
+  `reserve_for_stamina: 0` 让采集吃掉全部 6 条队列，体力任务永远排不上。
+  `march_policy` 里原本已写「recall_on_demand」——**但配置注释不产生行为**，
+  这正是要把它变成可测断言的原因。
+- **被否决**：只改 `reason` 文字（等于没改）；直接禁止采集（队列绝大多数时间空闲，
+  会浪费产出）。
+- **诚实的边界**：这两个数字**只阻止采集吃满队列**，并不能让 Agent 主动去花体力。
+  真正的前提是「体力可观测」与「撤回可调度」，两者都还没做（见 `04_OPEN_ISSUES.md` 的 0 与 0b）。
+  本测试包含两条**阻塞记录断言**：一旦有人实现它们，测试会失败并提醒更新 handoff。
+- **影响**：`config/v2.json`、`tests/test_operator_policy.py`。
+
 ## D-017：聚合统计同样适用「无证据不算验证」
 
 - **决定**：闭环计数只认可携带 `episode_id` 且截图真实存在的 episode。

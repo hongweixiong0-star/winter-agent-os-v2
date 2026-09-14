@@ -11,8 +11,8 @@ CURRENT TASK: implement `CHECK_ALLIANCE_EVENT` — missing from the registry, bl
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x104
-LAST GOOD COMMIT: 7a3380d
-CURRENT DIRTY FILES: 3
+LAST GOOD COMMIT: f35df92
+CURRENT DIRTY FILES: 8
 LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "FAILURE", "recorded_at": "2026-09-14T05:25:20.306984+00:00", "episode_id": "accept_20260914_132309_run01", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_before_20260914T052441981131.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_after_20260914T052445865611.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
@@ -33,7 +33,61 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 
 本区由人维护。生成器不会碰它。写「为什么是这个任务」以及「坑在哪」。
 
-### 为什么当前优先级是「补齐缺失技能」而不是继续修采集
+### 【最新，覆盖下面的旧判断】2026-09-14 操作者策略变更：体力优先，采集降为最低
+
+操作者明确指令：
+
+> 体力满了 → 撤回采集去做情报任务和打巨兽等性价比高的体力消耗 → 把体力用掉 →
+> 各种奖励及时领取。**采集性价比很低，只有队列没有其他用途时才去采集。**
+
+据此 `config/v2.json` 已改为：
+
+- `march_policy.reserve_for_stamina: 0 → 2`（原来采集会吃掉全部 6 条队列）
+- 新增 `resource_policy`：`gather_priority=LAST_RESORT`、`stamina_first=true`、
+  `claim_rewards_promptly=true`
+
+**但配置本身不产生行为。** 要让这条策略真正生效，必须先解决两个卡点（按顺序）：
+
+#### 卡点 1：体力不可观测（最高优先级）
+
+`world.stamina` **从来没有被填充过**：
+
+- manifest 里**没有任何 STAMINA / ENERGY 模板**；
+- 唯一的写入点是 `ocr.py:450`，在**情报页**上把一个 OCR 数字放进 `intel["stamina"]`；
+- 因此在地图（决策发生的地方）上，`AVOID_STAMINA_WASTE` 这个 Goal **永远不会被发现**
+  （`goal_library.py:80-85` 需要 `world.stamina["current"]` 或 `world.intel["stamina"]`），
+  于是 AUTO 只能回退到采集。
+
+**下一步动作**：在地图 HUD 上标定体力的 ROI，读成 `world.stamina["current"]`
+（HUD 顶部有体力图标与数字）。Template 优先，OCR 兜底（规则 §5 优先级）。
+这是**唯一**能让「体力满了就去花」这条策略成立的前提。
+
+#### 卡点 2：撤回不可调度
+
+`RECALL_MARCH` 在注册表里存在，但**不在 `LiveRuntime.VERIFIED_ATOMIC`**（没有 verifier），
+所以主循环永远无法派发它。`march_policy.recall_on_demand` 只是声明。
+
+**下一步动作**：打开行军队列 → 找到「撤退/召回」控件的语义与位置 →
+加模板 → 写 verifier（`撤退前 queue 有该行军 → 撤退后该行军消失且空闲槽 +1`）→
+才允许进 `VERIFIED_ATOMIC`。参考已有 6 条采集行军（当前 6/6 全忙）作为真机验证对象。
+
+#### 已经可以直接做的（不需要上面两项）
+
+- **情报任务**：INTEL 全链已在 `VERIFIED_ATOMIC`（`OPEN_INTEL` 94% 真实成功率）。
+  `run_live.py --goal INTEL` 现在就能跑。
+- **打巨兽**：`SELECT_BEAST_TARGET` / `BEAST_HUNT` / `DISPATCH_BEAST` 都可调度。
+  `run_live.py --goal BEAST_HUNT`。
+- **奖励领取**：MAIL / DAILY / INTEL / EXPLORATION / ALLIANCE 的 claim 技能大多可调度。
+
+> 注意：`march_policy.reserve_for_stamina: 2` 之后，当地图上空闲行军 ≤2 时，
+> 大脑会返回 `SAFE_STOP reserved_march_for_stamina`——这是**正确行为**，
+> 不是缺陷。它保证槽位留给体力任务。
+
+---
+
+### 旧判断（仍然有效，但优先级低于上面）
+
+**为什么「补齐缺失技能」是长期最高价值**
 
 2026-09-14 用新的能力模型核实后的结论：
 

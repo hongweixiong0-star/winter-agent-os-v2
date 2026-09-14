@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `f35df92 2026-09-14T13:32:27+08:00 docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint`
 - `7a3380d 2026-09-14T13:32:06+08:00 fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH`
 - `8c59182 2026-09-14T13:13:18+08:00 docs(handoff): final truth refresh at the new last-good commit`
 - `6189c67 2026-09-14T13:13:05+08:00 test(handoff): assert START_HERE leads to real commands and no orphan files`
@@ -16,9 +17,14 @@ Last 12 commits (newest first):
 - `7512a33 2026-09-14T12:36:15+08:00 feat(handoff): cross-account handoff mechanism + git baseline`
 - `f9ef073 2026-09-14T12:29:31+08:00 chore: initial checkpoint of Winter Agent OS V2`
 
-Uncommitted changes: 3
+Uncommitted changes: 8
 - `M .workbuddy-ai/handoff/.last_good_commit`
-- ` M .workbuddy-ai/memory/2026-09-14.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/06_DECISIONS.md`
+- ` M config/v2.json`
+- `?? tests/test_operator_policy.py`
+- `?? tools/_full.txt`
 - `?? tools/_h.txt`
 <!-- /AUTO:recent_commits -->
 

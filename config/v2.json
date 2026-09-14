@@ -27,8 +27,8 @@
     "qwen_busy_fallback": "RULE"
   },
   "march_policy": {
-    "reserve_for_stamina": 0,
-    "reason": "Use all marches; recall the lowest-value gathering march when a higher-priority stamina, realtime event, or verification goal needs a slot",
+    "reserve_for_stamina": 2,
+    "reason": "Operator policy 2026-09-14: stamina spending beats gathering. Keep slots free for INTEL / beasts and recall the lowest-value gathering march when a stamina sink needs one. Gathering is LAST_RESORT and may only occupy slots with no better use.",
     "recall_on_demand": true,
     "recall_priority": [
       "REALTIME_EVENT",
@@ -37,6 +37,13 @@
       "BEAST_HUNT",
       "LIVE_VERIFICATION"
     ]
+  },
+  "resource_policy": {
+    "gather_priority": "LAST_RESORT",
+    "stamina_first": true,
+    "reserve_marches_for_stamina_spend": 2,
+    "claim_rewards_promptly": true,
+    "note": "Gathering has low value per march-hour compared with stamina sinks. It must never be the reason a stamina task cannot run."
   },
   "operations_policy": {
     "stamina_threshold": 30,

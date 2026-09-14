@@ -1,20 +1,25 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T05:32:24+00:00`
+- generated_at: `2026-09-14T05:41:26+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `7a3380d` on `main`
+- commit: `f35df92` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `7a3380d`
-- commits: 9
-- HEAD: `7a3380d` — fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH (2026-09-14T13:32:06+08:00)
-- working tree: 3 dirty file(s)
+- last good commit: `f35df92`
+- commits: 10
+- HEAD: `f35df92` — docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint (2026-09-14T13:32:27+08:00)
+- working tree: 8 dirty file(s)
   - `M .workbuddy-ai/handoff/.last_good_commit`
-  - ` M .workbuddy-ai/memory/2026-09-14.md`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/06_DECISIONS.md`
+  - ` M config/v2.json`
+  - `?? tests/test_operator_policy.py`
+  - `?? tools/_full.txt`
   - `?? tools/_h.txt`
 
 ## B. Runtime
