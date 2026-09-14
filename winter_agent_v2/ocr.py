@@ -119,17 +119,9 @@ class OCRService:
         self,
         image_path: Path,
         roi: dict[str, float] | None = None,
-        upscale: int = 1,
     ) -> OCRResult:
-        """OCR the frame (or an ROI of it), optionally after enlarging the crop.
-
-        ``upscale`` exists for very small ROIs.  The recognizer fragments a tiny
-        number at native size and the fragments do not agree, which silently
-        yields a wrong number; enlarging the crop first returns one clean token.
-        Measured on production frames (see :data:`HUD_STAMINA_UPSCALE`).
-        """
         digest = hashlib.sha256(image_path.read_bytes()).hexdigest()
-        key = f"{digest}:{self._roi_key(roi)}:{self.backend.name}:x{upscale}"
+        key = f"{digest}:{self._roi_key(roi)}:{self.backend.name}"
         if key in self._cache:
             previous = self._cache[key]
             return OCRResult(previous.tokens, previous.backend, cached=True)
@@ -144,8 +136,6 @@ class OCRService:
                 if left < 0 or top < 0 or right > width or bottom > height or right <= left or bottom <= top:
                     raise ValueError("OCR_ROI_OUT_OF_BOUNDS")
                 image = image.crop((left, top, right, bottom))
-            if upscale > 1:
-                image = image.resize((image.width * upscale, image.height * upscale), Image.LANCZOS)
             result = OCRResult(self.backend.recognize(image), self.backend.name)
         self._cache[key] = result
         return result
@@ -342,23 +332,6 @@ class OCRPageClassifier:
 # read ("200/200") still fits inside it.
 HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.058, "h_norm": 0.019}
 
-# The gauge crop is only 42x24 px, and at that size the recognizer splits one
-# number into overlapping fragments that disagree with each other.  Measured on
-# the production frames kept in
-# ``dataset/truth_audit/rescue_start_production_20260914`` (2026-09-14):
-#   166 -> '16'(0.975) + '66'(0.937) + '6'(0.999)   -> merged read 16   WRONG
-#   189 -> '18'(0.999) + '9'(0.890)                 -> merged read 18   WRONG
-# Both are plain digit losses in a value the whole stamina-first policy hangs
-# on, and the fragment merge in :func:`parse_stamina_number` cannot recover them
-# because the first token covers the second's left edge while the token that
-# actually carries the last digit is either below the confidence gate or looks
-# like an overlap.  Enlarging the crop before recognition removes the cause:
-# at this multiple the same frames return a single '166' (0.981) and '189'
-# (0.999), and the already-clean reads ('178', '177') are unchanged.  Re-verify
-# with ``tools/probe_hud_stamina.py`` before changing it; do not raise this by
-# guesswork, it is a measured value.
-HUD_STAMINA_UPSCALE = 3
-
 # The march counter ("5/6") beside the 行军 label.  Measured live: px
 # 200-244 x 228-255 on 720x1280.  It is read from its own ROI rather than from
 # the full-frame result, because RapidOCR's detector *skips* small numbers on a
@@ -417,37 +390,51 @@ def parse_stamina_number(tokens: tuple[OCRToken, ...]) -> int | None:
     full-frame containment check in :func:`read_hud_stamina` cannot be reused
     here; inside a ROI read the crop *is* the gate.
 
-    The recognizer sometimes splits one rendered number into overlapping
-    fragments (live 2026-09-14: the pill showing 295 came back as the tokens
-    '29' + '9' + '5', each confidently).  Taking the first token then reported
-    29 - a wrong number that would poison every stamina decision.  So merge
-    the fragments geometrically: scan left to right and skip any token whose
-    left edge falls inside the horizontal span already covered by the accepted
-    tokens (it is a re-read of the same digits), appending only the tokens
-    that extend further right.
+    The recognizer splits one rendered number into several overlapping partial
+    reads of the SAME digits, and the fragments disagree about how much of it
+    each one saw.  Measured on the live 42x24 HUD crop (2026-09-14, frames kept
+    in ``dataset/truth_audit/``):
+
+    ==========  ==========================  ==============
+    true value  recognizer returned           first-token read
+    ==========  ==========================  ==============
+    295         '295' + '5'                  295  (ok)
+    295         '29' + '95'                  29   WRONG
+    166         '16' + '66' + '6'            16   WRONG
+    189         '18' + '9'                   18   WRONG
+    ==========  ==========================  ==============
+
+    Every fragment is a substring of the true value, so the value is the
+    shortest string containing all of them: stitch the fragments in reading
+    order, overlapping each one on the longest run of digits it shares with what
+    is already assembled.  That reproduces all four rows above.  Taking the
+    first token read 16 for 166; a left-edge containment test read 29 for 295.
+    Enlarging the crop is NOT the answer - it turns a clean '295' into
+    '29' + '95', which is what the containment test then got wrong.
     """
-    usable = [
-        token
-        for token in tokens
-        if token.confidence >= 0.85 and token.box and re.search(r"\d", token.text)
-    ]
-    if not usable:
-        return None
-    usable.sort(key=lambda token: min(point[0] for point in token.box))
-    merged = ""
-    covered_to: float | None = None
-    for token in usable:
-        start = min(point[0] for point in token.box)
-        end = max(point[0] for point in token.box)
-        if covered_to is not None and start < covered_to - 0.5:
+    fragments: list[tuple[float, str]] = []
+    for token in tokens:
+        if token.confidence < 0.85 or not token.box:
             continue
         text = token.text.strip().replace(" ", "")
-        match = re.fullmatch(r"\d{1,4}(?:/\d{1,4})?", text)
-        if not match:
+        if not re.fullmatch(r"\d{1,4}(?:/\d{1,4})?", text):
             continue
-        merged += text.split("/")[0]
-        covered_to = end
-    if not merged:
+        fragments.append((min(point[0] for point in token.box), text.split("/")[0]))
+    if not fragments:
+        return None
+    fragments.sort(key=lambda item: item[0])
+
+    merged = ""
+    for _left, text in fragments:
+        if text in merged:
+            continue  # a re-read of digits already assembled
+        overlap = 0
+        for size in range(min(len(merged), len(text)), 0, -1):
+            if merged.endswith(text[:size]):
+                overlap = size
+                break
+        merged += text[overlap:]
+    if not merged or len(merged) > 4:
         return None
     return int(merged)
 
@@ -569,12 +556,7 @@ class HybridVision:
                 # returned "350" at 0.999 confidence).  Without the ROI read,
                 # stamina would look unobservable on frames where it is plainly
                 # visible, and the whole stamina-first policy would be skipped.
-                # The crop is enlarged first: at native size a three-digit value
-                # comes back as disagreeing fragments and merged to a wrong, or
-                # one-digit-short, number (see HUD_STAMINA_UPSCALE).
-                roi_tokens = self.ocr.recognize(
-                    image_path, HUD_STAMINA_ROI, upscale=HUD_STAMINA_UPSCALE
-                ).tokens
+                roi_tokens = self.ocr.recognize(image_path, HUD_STAMINA_ROI).tokens
                 with Image.open(image_path) as source:
                     frame_width, frame_height = source.size
                 # Token boxes from a ROI-scoped read are crop-relative, so the

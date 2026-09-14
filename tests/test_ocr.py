@@ -8,7 +8,6 @@ from PIL import Image
 from winter_agent_v2.models import MarchState, Page, WorldState
 from winter_agent_v2.ocr import (
     HUD_STAMINA_ROI,
-    HUD_STAMINA_UPSCALE,
     HybridVision,
     OCRPageClassifier,
     OCRResult,
@@ -298,25 +297,44 @@ class OCRTests(unittest.TestCase):
             state = HybridVision(MapTemplateVision(), OCRService(backend)).observe(path)
         self.assertNotIn("current", state.stamina)
 
-    def test_hud_stamina_upscale_recovers_fragmented_digits(self):
+    def test_hud_stamina_stitches_fragmented_digits(self):
         """A one-digit-short stamina read must not survive the HUD ROI path.
 
         Production frames 2026-09-14 (kept in
-        ``dataset/truth_audit/rescue_start_production_20260914``): at native crop
-        size the recognizer split 166 into the disagreeing overlapping tokens
-        '16' + '66' + '6' and 189 into '18' + '9', so the merged read lost its
-        last digit - a wrong number feeding every stamina decision.  Enlarging
-        the crop recovers the true value.
+        ``dataset/truth_audit/rescue_start_production_20260914``): the
+        recognizer splits the number into overlapping partial reads, so taking
+        the first token read 16 for 166 and 18 for 189 - wrong numbers feeding
+        every stamina decision.
         """
         config = json.loads((ROOT / "config" / "v2.json").read_text(encoding="utf-8"))
         service = OCRService(
             ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))
         )
         for name, truth in (("run_pin13_after", 166), ("run_pin12_before", 189)):
-            tokens = service.recognize(
-                PRODUCTION / f"{name}.png", HUD_STAMINA_ROI, upscale=HUD_STAMINA_UPSCALE
-            ).tokens
+            tokens = service.recognize(PRODUCTION / f"{name}.png", HUD_STAMINA_ROI).tokens
             self.assertEqual(parse_stamina_number(tokens), truth, name)
+
+    def test_fragment_stitching_matches_every_measured_read(self):
+        """Pure-logic cover for the four fragment shapes seen on the live crop.
+
+        Each fragment is a partial read of the same number, so the value is the
+        shortest string containing all of them.  A left-edge containment test
+        read 29 for the second row; taking the first token read 16 for the third.
+        """
+        def tok(text, left):
+            return OCRToken(text, 0.99, ((left, 0), (left + 10, 0), (left + 10, 12), (left, 12)))
+
+        for fragments, truth in (
+            ([tok("295", 0), tok("5", 20)], 295),
+            ([tok("29", 0), tok("95", 12)], 295),
+            ([tok("16", 0), tok("66", 10), tok("6", 24)], 166),
+            ([tok("18", 0), tok("9", 16)], 189),
+            ([tok("178", 0)], 178),
+            ([tok("200", 0)], 200),
+            ([tok("350/350", 0)], 350),
+        ):
+            with self.subTest(fragments=[t.text for t in fragments]):
+                self.assertEqual(parse_stamina_number(tuple(fragments)), truth)
 
     def test_hybrid_uses_ocr_for_unknown_template(self):
         backend = FakeBackend([OCRToken("联盟科技", 0.99)])
