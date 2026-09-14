@@ -12,8 +12,8 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x110
 LAST GOOD COMMIT: f8e145f
-CURRENT DIRTY FILES: 23
-LAST PRODUCTION EPISODE: {"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T11:57:02.877619+00:00", "episode_id": "intel_pins_20260914_115407_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_115407_nav_00\\intel_pins_20260914_115407_nav_00_step_001_before_20260914T115616603104.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_115407_nav_00\\intel_pins_20260914_115407_nav_00_step_001_after_20260914T115628441233.png"}
+CURRENT DIRTY FILES: 15
+LAST PRODUCTION EPISODE: {"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T12:19:55.812501+00:00", "episode_id": "intel_pins_20260914_121727_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_before_20260914T121917075964.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_after_20260914T121927504859.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 110, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
@@ -184,6 +184,13 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
    正确补救是**换资源**（`ResourceRotationStore.unavailable()`），不是降等级。
 10. **升级/等待类操作要看清页面语义**：采集编队页的正确动作是
    `DISPATCH_MARCH`，不是 `WAIT`（`WAIT` 只用于维护/加载画面）。
+11. **模板自匹配是循环论证：d=0 不能证明坐标对。** 从错误位置裁出的模板再拿去匹配同一帧，
+    永远返回 d=0。必须用**独立信号**验证：颜色分割 / 把点击点画在帧上目视复核 / 负向对照帧。
+    本日事故：`BTN_HERO_FIGHT` 裁高了 **103px**（落在英雄头像行），三次真机运行、7 点位扫描、
+    90 秒观察全部被误导，最终靠画点击点叠加图才暴露；修正坐标后一击即胜。
+    **注册任何点击类模板后，必须画框复核一次。**
+12. **带反引号/引号的内容绝不要经 `bash -c` 写文件**（Python 源码字符串里的反引号会被
+    shell 当命令替换吃掉，静默丢内容）。一律用 Write/Edit 工具写。
 
 ### 真机环境（当前实测）
 

@@ -130,16 +130,56 @@ def intel_stamina(shot: Path) -> int | None:
     return None
 
 
+def hero_teams_full_refusal(device, ocr, squad_shot: Path) -> str | None:
+    """Tap 战斗 once and read the transient toast.
+
+    Live 2026-09-14 (CORRECTED): the original refusal this probe was built for
+    (「出战队伍已满。」) came from tapping a hero PORTRAIT slot, because the
+    BTN_HERO_FIGHT template had been cropped 103 px too high; tapping a slot in
+    a full squad is refused with that toast.  The real fix was re-measuring the
+    button (see the manifest provenance), and the fight then worked at once
+    (victory + rewards).  This probe stays as a generic refusal catcher for any
+    future silent rejection; its finding must never be read as a claim about
+    the account's battle-team capacity.
+    """
+    import json as _json
+    from winter_agent_v2.ocr import OCRService, RapidOCRBackend, ResilientOCRBackend, HybridVision
+    from winter_agent_v2.vision import SemanticWorldVision
+
+    config = _json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+    template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+    hybrid = HybridVision(template, OCRService(ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))))
+    state = hybrid.observe(squad_shot)
+    if state.page.value != "MARCH":
+        return None
+    match = template.semantic.find(squad_shot, "BTN_HERO_FIGHT")
+    if match is None or match.center_norm is None:
+        return None
+    width, height = device.status().resolution
+    device.tap(round(match.center_norm[0] * width), round(match.center_norm[1] * height))
+    time.sleep(0.4)
+    toast = ROOT / "dataset/raw/control_panel/probe" / "fight_refusal_toast.png"
+    device.screenshot(toast)
+    result = ocr.recognize(toast)
+    for token in result.tokens:
+        text = token.text.strip()
+        if "出战队伍已满" in text or "队伍已满" in text:
+            return text
+    return None
+
+
 def main() -> int:
     sys.path.insert(0, str(ROOT))
     from winter_agent_v2.device import ADBDevice
     from winter_agent_v2.intel_pins import intel_pin_centers
+    from winter_agent_v2.ocr import OCRService, RapidOCRBackend, ResilientOCRBackend
     from winter_agent_v2.vision import SemanticWorldVision
 
     config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
     device = ADBDevice(Path(config["device"]["adb_path"]), config["device"]["serial"], production=True)
     device.resolve_connection()
     template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+    intel_ocr = OCRService(ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"]))))
     width, height = device.status().resolution
 
     results: list[dict] = []
@@ -198,12 +238,25 @@ def main() -> int:
             run = run_live_cycle(f"pin_{processed+skipped:02d}")
             nav_cycles = 0
             productive = run.get("dispatches", 0) > 0 or run.get("claims", 0) > 0
+            refusal = None
             if not productive:
                 dead_spots.append((pin.color, pin.x, pin.y))
+                # The hero-journey fight refuses silently except for a ~1 s
+                # toast; probe for it so a capacity block is not recorded as
+                # an unexplained failure.
+                after_state, after_shot = observe()
+                if after_state["page"] == "MARCH":
+                    refusal = hero_teams_full_refusal(device, intel_ocr, after_shot)
+                    if refusal:
+                        print(f"  REFUSED: {refusal}", flush=True)
             entry = {"pin": pin.color, "tap": [tap_x, tap_y], "card_opened": opened_card,
-                     "productive": productive, **run}
+                     "productive": productive, "refusal": refusal, **run}
             results.append(entry)
             print("  " + json.dumps(entry, ensure_ascii=False), flush=True)
+            if refusal:
+                print(f"STOP: hero battle teams are full ({refusal}); the account's concurrent "
+                      "hero deployments are occupied by outstanding marches", flush=True)
+                break
             processed += 1
             if isinstance(run.get("stamina_after"), int):
                 stamina = run["stamina_after"]

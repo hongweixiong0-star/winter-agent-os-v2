@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T12:08:04+00:00",
+  "generated_at": "2026-09-14T12:25:10+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d2cc794",
+  "commit": "4e075a7",
   "last_good_commit": "f8e145f",
-  "dirty_count": 23,
+  "dirty_count": 15,
   "episodes": {
-    "total": 913,
-    "production": 913,
+    "total": 918,
+    "production": 918,
     "success": 614,
-    "failure": 294,
-    "success_rate_over_decided": 0.6762,
+    "failure": 299,
+    "success_rate_over_decided": 0.6725,
     "modes": {
-      "PRODUCTION": 913
+      "PRODUCTION": 918
     },
     "mixed_case_rows": 35
   },
@@ -91,6 +91,16 @@
       ]
     },
     {
+      "failure_type": "INTEL_HERO_DISPATCH_NOT_PROVEN",
+      "count": 8,
+      "top_skills": [
+        [
+          "INTEL_HERO_DISPATCH",
+          8
+        ]
+      ]
+    },
+    {
       "failure_type": "STAMINA_SOURCES_NOT_OPEN",
       "count": 7,
       "top_skills": [
@@ -133,16 +143,6 @@
           4
         ]
       ]
-    },
-    {
-      "failure_type": "INTEL_CLAIM_FEEDBACK_NOT_PROVEN",
-      "count": 3,
-      "top_skills": [
-        [
-          "INTEL_CLAIM_REWARDS",
-          3
-        ]
-      ]
     }
   ],
   "goals": {
@@ -178,9 +178,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 352,
-    "present_on_disk": 352,
-    "traceable_episodes": 181,
+    "referenced_screenshots": 362,
+    "present_on_disk": 362,
+    "traceable_episodes": 186,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },

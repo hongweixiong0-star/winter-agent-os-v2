@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T12:08:04+00:00`
+- generated_at: `2026-09-14T12:25:10+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `d2cc794` on `main`
+- commit: `4e075a7` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,24 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 28
-- HEAD: `d2cc794` — docs(mcp): capability audit - zero new MCP servers, host MCP usage policy (2026-09-14T19:47:35+08:00)
-- working tree: 23 dirty file(s)
-  - `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- commits: 29
+- HEAD: `4e075a7` — docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved (2026-09-14T20:08:08+08:00)
+- working tree: 15 dirty file(s)
+  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
   - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
   - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M docs/CAPABILITY_COVERAGE.md`
-  - ` M evidence/INDEX.json`
-  - ` M knowledge/goals/capability_skill_map.json`
-  - ` M learning/candidate_attempt_pool.json`
+  - ` M dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
+  - ` M dataset/candidate/template_manifest.json`
   - ` M learning/episodes.jsonl`
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
+  - ` M tools/run_intel_pins.py`
   - ` M winter_agent_v2/brain.py`
-  - `?? evidence/intel_pins_20260914_114746.json`
-  - `?? evidence/intel_pins_20260914_115009.json`
-  - `?? evidence/intel_pins_20260914_115407.json`
+  - ` M winter_agent_v2/vision.py`
+  - `?? dataset/candidate/hero_camp/popup_hero_battle_victory__live.png`
+  - `?? evidence/intel_pins_20260914_121727.json`
   - `?? tools/_h.txt`
+  - `?? tools/pins_out12.txt`
 
 ## B. Runtime
 
@@ -43,15 +38,15 @@
 - last_fatal_error: None
 - stop_reason: INTEL_HERO_DISPATCH_NOT_PROVEN
 - page: MARCH  march: None/None
-- updated_at: 2026-09-14T11:57:02.929343+00:00
+- updated_at: 2026-09-14T12:19:55.862530+00:00
 
 ## C. Episode stream
 
-- rows: 913 (production 913)  modes: {'PRODUCTION': 913}
-- success / failure: 614 / 294
-- success rate over decided: **0.6762**
+- rows: 918 (production 918)  modes: {'PRODUCTION': 918}
+- success / failure: 614 / 299
+- success rate over decided: **0.6725**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T11:57:02.877619+00:00", "episode_id": "intel_pins_20260914_115407_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_115407_nav_00\\intel_pins_20260914_115407_nav_00_step_001_before_20260914T115616603104.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_115407_nav_00\\intel_pins_20260914_115407_nav_00_step_001_after_20260914T115628441233.png"}`
+- last episode: `{"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T12:19:55.812501+00:00", "episode_id": "intel_pins_20260914_121727_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_before_20260914T121917075964.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_after_20260914T121927504859.png"}`
 
 ## D. Registry and lifecycle
 
@@ -96,7 +91,7 @@
 - `DISMISS_MAIL_REWARD` attempts=1 failure=1
 - `DISPATCH_BEAST` attempts=1 failure=1
 - `EXECUTE_INTEL_RESCUE_SURVIVORS` attempts=5 failure=5
-- `INTEL_HERO_DISPATCH` attempts=3 failure=3
+- `INTEL_HERO_DISPATCH` attempts=8 failure=8
 - `OPEN_INTEL_HERO_JOURNEY_TARGET` attempts=1 failure=1
 - `RESEARCH` attempts=1 failure=0
 - `SAFE_STOP` attempts=4 failure=4
@@ -146,11 +141,11 @@ Failure | Count | Top skills
 `RESOURCE_NOT_FOUND` | 30 | SUBMIT_RESOURCE_SEARCH(30)
 `DISPATCH_NOT_PROVEN` | 29 | DISPATCH_MARCH(29)
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | MAIL_CLAIM_REWARDS(10)
+`INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | INTEL_HERO_DISPATCH(8)
 `STAMINA_SOURCES_NOT_OPEN` | 7 | OPEN_INTEL(7)
 `POPUP_CLOSE_NOT_PROVEN` | 5 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
 `INTEL_RESCUE_START_NOT_PROVEN` | 5 | EXECUTE_INTEL_RESCUE_SURVIVORS(5)
 `NO_EXECUTION` | 4 | SAFE_STOP(4)
-`INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 3 | INTEL_CLAIM_REWARDS(3)
 
 ## F. Goal capability coverage
 
@@ -179,9 +174,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 352  present: 352
+- referenced screenshots: 362  present: 362
 - missing: []
-- episodes carrying screenshot references: 181
+- episodes carrying screenshot references: 186
 
 ## H. Commercial bot parity
 

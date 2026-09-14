@@ -635,6 +635,10 @@ class SemanticWorldVision:
         # The title 召回 is the identifying evidence, and it only appears in
         # this dialog (see tools/register_recall_templates.py, which also
         # asserts the negative control: neither template matches a map frame).
+        if match("POPUP_HERO_BATTLE_VICTORY"):
+            # The Hero Journey battle result (measured live 2026-09-14: 胜利
+            # banner plus reward rows; dismissed by BACK - taps do not clear it).
+            return WorldState(page=Page.POPUP, popup="HERO_BATTLE_VICTORY", confidence=0.99)
         if match("POPUP_TITLE_RECALL"):
             return WorldState(page=Page.POPUP, popup="MARCH_RECALL", confidence=0.99)
         # The stamina-source panel is reached by tapping the 领主体力 gauge.  It

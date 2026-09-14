@@ -6905,13 +6905,25 @@
       "semantic": "BTN_HERO_FIGHT",
       "template_path": "dataset/candidate/hero_camp/btn_hero_fight__live_squad.png",
       "roi_norm": {
-        "x_norm": 0.525,
-        "y_norm": 0.8344,
-        "w_norm": 0.3806,
-        "h_norm": 0.0469
+        "x_norm": 0.5208,
+        "y_norm": 0.9102,
+        "w_norm": 0.4236,
+        "h_norm": 0.0563
       },
       "max_distance": 8,
-      "provenance": "live 2026-09-14 hero-journey squad setup page (战斗 button), frame intel_pins_20260914_113408_nav_00"
+      "provenance": "live 2026-09-14 squad page, RE-MEASURED by green-blob colour segmentation (x369-685,y1160-1242); the first registration was cropped 103px too high onto the hero-portrait row and self-matched at d=0 - see handoff pitfall"
+    },
+    {
+      "semantic": "POPUP_HERO_BATTLE_VICTORY",
+      "template_path": "dataset/candidate/hero_camp/popup_hero_battle_victory__live.png",
+      "roi_norm": {
+        "x_norm": 0.3931,
+        "y_norm": 0.3219,
+        "w_norm": 0.2153,
+        "h_norm": 0.0727
+      },
+      "max_distance": 8,
+      "provenance": "live 2026-09-14 hero-journey victory screen (胜利 banner, rewards 24万x2/4.8万/1.2万/700), dismissed by BACK"
     }
   ]
 }

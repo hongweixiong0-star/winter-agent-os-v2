@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `4e075a7 2026-09-14T20:08:08+08:00 docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved`
 - `d2cc794 2026-09-14T19:47:35+08:00 docs(mcp): capability audit - zero new MCP servers, host MCP usage policy`
 - `ff9a23d 2026-09-14T19:43:43+08:00 docs(memory): architecture review + the P0/P1 fixes it required`
 - `2ac5f2a 2026-09-14T19:30:36+08:00 chore(skills): install the security-check gate and register the project skill ledger`
@@ -17,30 +18,39 @@ Last 12 commits (newest first):
 - `0d44f54 2026-09-14T16:50:46+08:00 docs(handoff): mark db268f9 as last-good after the intel chain closed end to end`
 - `db268f9 2026-09-14T16:50:25+08:00 feat(intel): the beast chain runs end to end on the live client`
 - `7fb541d 2026-09-14T16:15:46+08:00 docs(memory): record the fourth round (beast card + intel empty list)`
-- `940310f 2026-09-14T16:15:30+08:00 docs(handoff): mark 702e65b as last-good after the beast-card and intel-list fixes`
 
-Uncommitted changes: 23
-- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+Uncommitted changes: 15
+- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
 - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M evidence/INDEX.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M learning/candidate_attempt_pool.json`
+- ` M dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
+- ` M dataset/candidate/template_manifest.json`
 - ` M learning/episodes.jsonl`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
+- ` M tools/run_intel_pins.py`
 - ` M winter_agent_v2/brain.py`
-- `?? evidence/intel_pins_20260914_114746.json`
-- `?? evidence/intel_pins_20260914_115009.json`
-- `?? evidence/intel_pins_20260914_115407.json`
+- ` M winter_agent_v2/vision.py`
+- `?? dataset/candidate/hero_camp/popup_hero_battle_victory__live.png`
+- `?? evidence/intel_pins_20260914_121727.json`
 - `?? tools/_h.txt`
+- `?? tools/pins_out12.txt`
 <!-- /AUTO:recent_commits -->
+
+---
+
+## 手写：2026-09-14 第八轮 — 英雄之旅链路真机闭环（操作者纠正后）
+
+**操作者指出「你就是没点击战斗按钮」——完全正确。** 用叠加图复核发现：BTN_HERO_FIGHT
+模板裁在英雄头像行（偏 103px），自匹配 d=0 掩盖了错误；此前所有「点击无效」的诊断
+（含「出战队伍已满」的误读——那是点英雄槽位的换人拒绝）都建立在错误前提上。
+
+修正后一击生效：**战斗 → 胜利 + 获得奖励**（24万×2/4.8万/1.2万/700），
+证据 dataset/truth_audit/hero_fight_final_20260914/。新增 POPUP_HERO_BATTLE_VICTORY
+模板（d=0，负向对照通过：小队页/地图均不误报）与大脑 BACK 关闭分支。
+
+完整链路：钉→卡→前往查看→营地探险→小队设置→战斗→胜利→BACK→情报板。
+教训写入 03 坑列表第 12 条（模板自匹配是循环论证）。
 
 ---
 

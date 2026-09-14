@@ -107,6 +107,10 @@ class RuleBrain:
             return Decision("OPEN_INTEL_RESCUE_SURVIVORS_TARGET", "reviewed_rescue_survivors_mission", world.confidence, "intel_rescue_target_open")
         if world.page is Page.MAP and world.popup == "INTEL_RESCUE_SURVIVORS_TARGET":
             return Decision("EXECUTE_INTEL_RESCUE_SURVIVORS", "rescue_target_and_cost_verified", world.confidence, "intel_rescue_in_progress")
+        if world.page is Page.POPUP and world.popup == "HERO_BATTLE_VICTORY":
+            # The hero battle result screen: taps do not clear it (measured),
+            # BACK does.
+            return Decision("BACK", "hero_battle_victory_dismissed", world.confidence, "intel_page_restored")
         if world.page is Page.POPUP and world.popup == "INTEL_HERO_JOURNEY":
             # Live 2026-09-14: the operator asked for the intel board to be
             # drained; the hero-journey card shares the 前往查看 button with the
