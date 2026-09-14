@@ -6,6 +6,8 @@ from pathlib import Path
 from winter_agent_v2.models import MarchState, Page
 from winter_agent_v2.vision import P0SemanticVision
 
+from tests.live_stack import production_vision
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -46,14 +48,32 @@ class P0SemanticVisionTests(unittest.TestCase):
     def test_live_marching_and_returning(self) -> None:
         marching = self.vision.observe(ROOT / "dataset/raw/live_marching_attempt7.png")
         returning = self.vision.observe(ROOT / "dataset/raw/live_transition_attempt7.png")
-        self.assertEqual((marching.page, marching.march_used), (Page.MAP, 2))
+        self.assertEqual(marching.page, Page.MAP)
+        self.assertEqual(returning.page, Page.MAP)
         self.assertIn(MarchState.MARCHING, marching.marches)
         self.assertIn(MarchState.RETURNING, returning.marches)
+        # The template-only layer cannot count rows, and it no longer pretends
+        # to: it used to add a hardcoded baseline of 1, which made a six-march
+        # frame report 1/6.  The count is read by the OCR layer, and that read
+        # is pinned in test_live_march_counts_are_read_not_assumed below.
+        self.assertIsNone(marching.march_used)
 
     def test_live_idle(self) -> None:
         state = self.vision.observe(ROOT / "dataset/raw/live_idle_attempt7.png")
-        self.assertEqual((state.page, state.march_used, state.march_max), (Page.MAP, 1, 6))
+        self.assertEqual(state.page, Page.MAP)
+        self.assertEqual(state.march_max, 6)
         self.assertEqual(state.marches, ())
+        self.assertIsNone(state.march_used)
+
+    def test_live_march_counts_are_read_not_assumed(self) -> None:
+        """The production stack reads the real count on these same frames."""
+        vision = production_vision()
+        if vision is None:
+            self.skipTest("OCR runtime unavailable; cannot read live march counts")
+        marching = vision.observe(ROOT / "dataset/raw/live_marching_attempt7.png")
+        idle = vision.observe(ROOT / "dataset/raw/live_idle_attempt7.png")
+        self.assertEqual((marching.page, marching.march_used), (Page.MAP, 2))
+        self.assertEqual((idle.page, idle.march_used, idle.march_max), (Page.MAP, 1, 6))
 
 
 if __name__ == "__main__":

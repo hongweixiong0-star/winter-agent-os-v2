@@ -4,7 +4,8 @@ import unittest
 from pathlib import Path
 
 from winter_agent_v2.verifier import verify_gather_cycle
-from winter_agent_v2.vision import P0SemanticVision
+
+from tests.live_stack import production_vision
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,7 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class LiveGatherVerifierTests(unittest.TestCase):
     def test_attempt8_full_cycle_from_live_screenshots(self) -> None:
-        vision = P0SemanticVision(ROOT / "dataset/candidate/templates_manifest.json")
+        # The cycle is proven by march counts changing across four frames, so
+        # the stack that actually reads those counts is required.  The
+        # template-only layer used to fabricate them from a hardcoded baseline.
+        vision = production_vision()
+        if vision is None:
+            self.skipTest("OCR runtime unavailable; cannot read live march counts")
         result = verify_gather_cycle(
             vision.observe(ROOT / "dataset/raw/live_executor_search_open.png"),
             vision.observe(ROOT / "dataset/raw/live_attempt8_marching.png"),

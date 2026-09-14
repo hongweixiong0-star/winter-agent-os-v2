@@ -79,21 +79,37 @@ def test_brain_stops_gathering_when_only_reserved_slots_remain(config: dict) -> 
     )
 
 
-def test_stamina_observation_and_recall_are_the_open_blockers() -> None:
-    """Record the two blockers explicitly so they cannot be forgotten.
+def test_stamina_is_observable_from_the_world_map() -> None:
+    """Replaces the old blocker test: stamina observation is now implemented.
 
-    If either assertion starts failing, the blocker has been solved and this test
-    should be replaced with a positive check of the new capability.
+    The previous version of this test asserted that ``world.stamina`` was never
+    populated.  It was written to fail the moment the gap closed, and it has --
+    so it is now a positive check, kept in the same place so the history of the
+    blocker stays visible in one file.
     """
-    from winter_agent_v2.runtime import LiveRuntime
+    from winter_agent_v2.goal_library import GoalLibrary
+    from winter_agent_v2.models import Page, WorldState
 
-    assert "RECALL_MARCH" not in LiveRuntime.VERIFIED_ATOMIC, (
-        "RECALL_MARCH is now dispatchable — update 03_NEXT_ACTION.md and replace this "
-        "blocker test with a capability test"
+    assert hasattr(WorldState, "stamina")
+    # The HUD reader owns the ROI; a template for the gauge itself is not
+    # required, and the number can only come from OCR.
+    from winter_agent_v2.ocr import gauge_green_pixels, read_hud_stamina  # noqa: F401
+
+    goals = GoalLibrary().discover(
+        WorldState(page=Page.MAP, stamina={"current": 200, "source": "MAP_HUD"}, confidence=0.99)
     )
-    manifest = json.loads((ROOT / "dataset/candidate/template_manifest.json").read_text(encoding="utf-8"))
-    semantics = {str(row.get("semantic", "")) for row in manifest["records"]}
-    assert not {name for name in semantics if "STAMINA" in name}, (
-        "a STAMINA template now exists — stamina may be observable, so the "
-        "AVOID_STAMINA_WASTE goal can be discovered from the map; update the handoff"
+    assert any(goal.goal_id == "AVOID_STAMINA_WASTE" for goal in goals), (
+        "with stamina observable on the map, AUTO must be able to discover that it is"
+        " about to be wasted"
     )
+
+
+def test_recall_is_dispatchable() -> None:
+    """Replaces the old blocker test: the recall path now has a real verifier."""
+    from winter_agent_v2.runtime import LiveRuntime
+    from winter_agent_v2.skills import v2_registry
+
+    registered = {skill.id for skill in v2_registry().all()}
+    for skill_id in ("SELECT_MARCH_TO_RECALL", "RECALL_MARCH"):
+        assert skill_id in registered
+        assert skill_id in LiveRuntime.VERIFIED_ATOMIC

@@ -25,6 +25,112 @@ def verify_intel_list_read(before: WorldState, after: WorldState) -> Verificatio
     })
 
 
+def verify_march_recall_dialog_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """Tapping an active march row opens the recall confirmation dialog.
+
+    Live measurement (2026-09-14): on a map frame with six gathering marches,
+    tapping the first march-list row opened a dialog titled 召回 with a
+    「您确定要召回部队吗？」 body and 取消 / 确定 buttons.  The tap target is the
+    row itself, so the pre-state must show at least one active march and a
+    closed resource-search panel (the search panel covers the march list).
+    """
+    before_ok = (
+        before.page is Page.MAP
+        and before.march_used is not None
+        and before.march_used >= 1
+        and not before.resource_search_open
+    )
+    after_ok = after.page is Page.POPUP and after.popup == "MARCH_RECALL"
+    ok = before_ok and after_ok
+    return VerificationResult(
+        ok,
+        "OK" if ok else "RECALL_DIALOG_NOT_OPEN",
+        {"march_used": before.march_used, "search_open": before.resource_search_open, "popup": after.popup},
+    )
+
+
+def verify_march_recalled(before: WorldState, after: WorldState) -> VerificationResult:
+    """A recall is proven by a gathering march becoming a returning one.
+
+    The skill definition originally declared ``NORMAL_IDLE_SLOT_INCREASED``,
+    which is wrong for this client: measured live on 2026-09-14, confirming the
+    recall left ``march_used`` at 6/6 and turned the recalled row into 返回中.
+    The slot only frees when the troops arrive, so an idle-slot increase right
+    after the tap would have been a false expectation and the verifier would
+    have failed a correct recall.  The proven signal is the state transition.
+    """
+    dialog_ok = before.page is Page.POPUP and before.popup == "MARCH_RECALL"
+    transition = MarchState.RETURNING in after.marches and MarchState.RETURNING not in before.marches
+    after_ok = after.page is Page.MAP and transition
+    ok = dialog_ok and after_ok
+    return VerificationResult(
+        ok,
+        "OK" if ok else "MARCH_RECALL_NOT_PROVEN",
+        {
+            "dialog_open": dialog_ok,
+            "returning_before": MarchState.RETURNING in before.marches,
+            "returning_after": MarchState.RETURNING in after.marches,
+            "march_used_before": before.march_used,
+            "march_used_after": after.march_used,
+        },
+    )
+
+
+def verify_stamina_sources_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """Tapping the 领主体力 gauge on the map opens the 获取更多 panel.
+
+    Measured live on 2026-09-14: a single tap on the gauge (px 49,110 on
+    720x1280) opened the panel, which lists every stamina source and marks the
+    free one with a bare 领取 and no price.
+    """
+    before_ok = before.page is Page.MAP and not before.resource_search_open
+    after_ok = after.page is Page.POPUP and after.popup == "GET_MORE_STAMINA"
+    ok = before_ok and after_ok
+    return VerificationResult(
+        ok,
+        "OK" if ok else "STAMINA_SOURCES_NOT_OPEN",
+        {"before_page": before.page.value, "after_popup": after.popup},
+    )
+
+
+def verify_free_stamina_claimed(before: WorldState, after: WorldState) -> VerificationResult:
+    """Claiming the free stamina gift is proven from the panel's own readout.
+
+    Measured live on 2026-09-14: the panel read ``200/200`` with the 领取 button
+    present, and after one tap on 领取 it read ``350/200`` with the button
+    replaced by 「下次补给」.  Both signals are accepted, because the second one
+    also covers a gift delivered to the warehouse (no immediate stamina
+    change); the tap itself can never spend diamonds, since the paid rows carry
+    their own 「购买并使用 💎300」 control which this verifier does not touch.
+    """
+    before_ok = (
+        before.page is Page.POPUP
+        and before.popup == "GET_MORE_STAMINA"
+        and before.stamina.get("free_claim_available") is True
+    )
+    before_value = before.stamina.get("current")
+    after_value = after.stamina.get("current")
+    increased = (
+        isinstance(before_value, int) and isinstance(after_value, int) and after_value > before_value
+    )
+    control_gone = (
+        after.page is Page.POPUP
+        and after.popup == "GET_MORE_STAMINA"
+        and after.stamina.get("free_claim_available") is False
+    )
+    ok = before_ok and (increased or control_gone)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "FREE_STAMINA_CLAIM_NOT_PROVEN",
+        {
+            "before_value": before_value,
+            "after_value": after_value,
+            "increased": increased,
+            "claim_control_gone": control_gone,
+        },
+    )
+
+
 def verify_popup_closed(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.POPUP and bool(before.popup)
     closed = after.known and after.page is not Page.POPUP and after.popup is None

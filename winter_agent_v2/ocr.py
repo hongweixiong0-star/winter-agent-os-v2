@@ -313,6 +313,83 @@ class OCRPageClassifier:
         return WorldState(page=page, alliance=alliance, daily=daily, research=research, training=training, events=events, confidence=confidence)
 
 
+# --- world-map HUD stamina gauge -------------------------------------------
+# ``world.stamina`` used to be written only on the Intel page (a single OCR
+# read of a number there), so on the world map -- where every decision is made
+# -- "stamina is full" was unobservable and ``AVOID_STAMINA_WASTE`` could never
+# be discovered, which forced AUTO back to gathering.  The operator directive
+# of 2026-09-14 makes spending stamina the top priority, so the gauge has to be
+# readable from the map itself.
+#
+# Measured, not eyeballed, on a live 720x1280 frame with
+# ``tools/calibrate_hud_stamina.py``: the white stamina number sits at
+# x 0.046-0.089, y 0.080-0.091 inside the gauge pill that hangs under the
+# avatar in the top-left HUD corner.  The ROI adds a small margin so a longer
+# read ("200/200") still fits inside it.
+HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.058, "h_norm": 0.019}
+
+
+def read_hud_stamina(
+    tokens: tuple[OCRToken, ...],
+    width: int,
+    height: int,
+    *,
+    minimum_confidence: float = 0.85,
+) -> int | None:
+    """Return the stamina number drawn inside the map HUD gauge, or ``None``.
+
+    The gate is deliberately narrow: an integer token lying *entirely* inside
+    the measured ROI with high OCR confidence.  A missing gauge, a covered HUD
+    or a low-confidence read returns ``None`` so the caller records "stamina
+    unknown" rather than a guessed value that would authorize spending.
+    """
+    roi = HUD_STAMINA_ROI
+    x0 = roi["x_norm"] * width
+    x1 = (roi["x_norm"] + roi["w_norm"]) * width
+    y0 = roi["y_norm"] * height
+    y1 = (roi["y_norm"] + roi["h_norm"]) * height
+    for token in tokens:
+        if token.confidence < minimum_confidence or not token.box:
+            continue
+        text = token.text.strip().replace(" ", "")
+        if re.fullmatch(r"\d{1,4}(?:/\d{1,4})?", text) is None:
+            continue
+        xs = [point[0] for point in token.box]
+        ys = [point[1] for point in token.box]
+        if x0 <= min(xs) and max(xs) <= x1 and y0 <= min(ys) and max(ys) <= y1:
+            return int(text.split("/")[0])
+    return None
+
+
+def gauge_green_pixels(image_path: Path, roi: dict[str, float] | None = None) -> int:
+    """Count saturated gauge pixels in the ROI as supporting evidence.
+
+    This is evidence, never a decision input: it is recorded next to the OCR
+    read so a reviewer can see the number really came from the gauge.  Hue is
+    not used to reject a read, because the fill drains as stamina is spent.
+    """
+    area = roi or HUD_STAMINA_ROI
+    with Image.open(image_path) as source:
+        rgb = source.convert("RGB")
+        width, height = rgb.size
+        crop = rgb.crop(
+            (
+                round(area["x_norm"] * width),
+                round(area["y_norm"] * height),
+                round((area["x_norm"] + area["w_norm"]) * width),
+                round((area["y_norm"] + area["h_norm"]) * height),
+            )
+        )
+    pixels = crop.load()
+    count = 0
+    for y in range(crop.height):
+        for x in range(crop.width):
+            red, green, blue = pixels[x, y]
+            if max(red, green, blue) >= 120 and max(red, green, blue) - min(red, green, blue) >= 60:
+                count += 1
+    return count
+
+
 class HybridVision:
     """Template-first observation with OCR only as a conservative fallback."""
 
@@ -328,7 +405,31 @@ class HybridVision:
             # overlays such as RESOURCE_DETAIL. Read it on both pages so a
             # target dialog can never launch a march after the queue filled
             # between target search and dispatch.
-            if (primary.page is Page.MAP and primary.march_used is not None) or primary.page is Page.RESOURCE_DETAIL:
+            if primary.page is Page.POPUP and primary.popup == "GET_MORE_STAMINA":
+                # The panel is the only place that shows the true stamina
+                # (350/200 on 2026-09-14 after a free claim): the map gauge is
+                # capped at the maximum.  The free control is proved by its own
+                # template, so a paid row can never be mistaken for it.
+                result = self.ocr.recognize(image_path)
+                reading = None
+                for token in result.tokens:
+                    if token.confidence < 0.85 or not token.box:
+                        continue
+                    match = re.fullmatch(r"(\d{1,4})\s*/\s*(\d{1,4})", token.text.strip())
+                    if match:
+                        reading = (int(match.group(1)), int(match.group(2)))
+                        break
+                semantic = getattr(self.template_vision, "semantic", None)
+                claim = semantic.find(image_path, "BTN_CLAIM_FREE_STAMINA") if semantic else None
+                stamina = dict(primary.stamina)
+                if reading is not None:
+                    stamina.update({"current": reading[0], "max": reading[1], "source": "STAMINA_PANEL"})
+                stamina["free_claim_available"] = claim is not None
+                return replace(primary, stamina=stamina)
+            # Every world-map frame is OCR-enriched, not only the ones where the
+            # reviewed layer already saw a march counter: the map is also where
+            # the stamina gauge is read, and both facts feed the same decision.
+            if primary.page in {Page.MAP, Page.RESOURCE_DETAIL}:
                 result = self.ocr.recognize(image_path)
                 eligible = [token for token in result.tokens if token.confidence >= 0.80]
                 march_used = primary.march_used
@@ -363,11 +464,23 @@ class HybridVision:
                 for march in marches:
                     if march not in fused_marches:
                         fused_marches.append(march)
+                stamina = dict(primary.stamina)
+                with Image.open(image_path) as source:
+                    frame_width, frame_height = source.size
+                current_stamina = read_hud_stamina(result.tokens, frame_width, frame_height)
+                if current_stamina is not None:
+                    stamina.update({
+                        "current": current_stamina,
+                        "source": "MAP_HUD",
+                        "roi": dict(HUD_STAMINA_ROI),
+                        "gauge_pixels": gauge_green_pixels(image_path),
+                    })
                 return replace(
                     primary,
                     marches=tuple(fused_marches),
                     march_used=march_used,
                     march_max=march_max,
+                    stamina=stamina,
                 )
             if primary.page is Page.ALLIANCE:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))

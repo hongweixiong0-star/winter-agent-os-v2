@@ -2,16 +2,49 @@ from __future__ import annotations
 
 import json
 
-from .models import Decision, Page, WorldState
+from .models import Decision, MarchState, Page, WorldState
 from .skills import SkillRegistry
 
 
 class RuleBrain:
     """Strict deterministic fallback brain for P0; decides WHAT, never clicks."""
 
-    def __init__(self, current_goal: str | None = None, reserve_marches: int = 0) -> None:
+    def __init__(
+        self,
+        current_goal: str | None = None,
+        reserve_marches: int = 0,
+        recall_on_demand: bool = False,
+        claim_free_stamina: bool = False,
+    ) -> None:
         self.current_goal = current_goal
         self.reserve_marches = max(0, int(reserve_marches))
+        # The operator directive of 2026-09-14 allows recalling a march at any
+        # time, including to free a slot for a live-verification experiment.
+        # ``pending_recall`` remembers that *this loop* opened the recall dialog,
+        # so a dialog that appeared for any other reason is closed instead of
+        # confirmed.
+        self.recall_on_demand = bool(recall_on_demand)
+        self.pending_recall = False
+        # The same directive asks for the free stamina gift to be claimed.  The
+        # only way to know whether it is available is to open the source panel,
+        # because the map gauge never shows it, so the check runs once per run.
+        self.claim_free_stamina = bool(claim_free_stamina)
+        self.stamina_panel_checked = False
+
+    def _recallable(self, world: WorldState) -> bool:
+        """True when recalling a march is both allowed and useful.
+
+        Only a GATHERING march may be recalled: a beast or intel march is
+        already spending the stamina this directive asks us to spend, and
+        recalling it would throw that cost away.
+        """
+        return (
+            self.recall_on_demand
+            and world.page is Page.MAP
+            and not world.resource_search_open
+            and world.idle_marches == 0
+            and MarchState.GATHERING in world.marches
+        )
 
     def decide(self, world: WorldState, registry: SkillRegistry) -> Decision:
         if not world.known:
@@ -78,6 +111,22 @@ class RuleBrain:
             return Decision("BACK", "intel_hero_journey_not_yet_verified", 1.0, "intel_page_restored")
         if world.page is Page.POPUP and world.popup == "INTEL_MASTER_BOUNTY":
             return Decision("BACK", "intel_master_bounty_power_blocked", 1.0, "intel_page_restored")
+        if world.page is Page.POPUP and world.popup == "GET_MORE_STAMINA":
+            # Only the free control is ever confirmed.  The panel also sells
+            # stamina for diamonds; when there is no free gift the panel is
+            # simply closed, which is why this branch precedes CLOSE_POPUP.
+            if world.stamina.get("free_claim_available") is True:
+                return Decision("CLAIM_FREE_STAMINA", "free_stamina_gift_claimable", world.confidence, "free_stamina_claimed")
+            return Decision("BACK", "stamina_panel_without_a_free_gift", world.confidence, "map_restored")
+        # The recall confirmation must be answered before the generic
+        # blocking-popup rule, otherwise a deliberately opened recall dialog
+        # would be closed instead of confirmed.  It is only confirmed when this
+        # loop opened it; an unexplained recall dialog is closed unconfirmed.
+        if world.page is Page.POPUP and world.popup == "MARCH_RECALL":
+            if self.pending_recall:
+                self.pending_recall = False
+                return Decision("RECALL_MARCH", "recall_dialog_opened_by_this_loop", world.confidence, "march_returning_slot_freed_on_arrival")
+            return Decision("CLOSE_POPUP", "recall_dialog_not_opened_by_this_loop", world.confidence, "dialog_closed_unconfirmed")
         if world.page is Page.POPUP and world.popup:
             return Decision("CLOSE_POPUP", "blocking_popup", world.confidence, "popup_closed")
         # Goal isolation precedes ordinary page actions. A reward sweep opened
@@ -243,10 +292,24 @@ class RuleBrain:
                 return Decision("EXPLORATION_IDLE_CLAIM", "idle_income_claimable", world.confidence, "idle_income_claimed")
             return Decision("SAFE_STOP", "exploration_income_not_ready", 1.0, "switch_task")
         if world.page is Page.MAP:
+            # Free stamina first: it costs nothing, it is time-limited (the
+            # panel shows 下次补给 with a countdown), and it is only visible if
+            # the panel is opened.  Once per run, so it cannot become a loop.
+            if (
+                self.claim_free_stamina
+                and not self.stamina_panel_checked
+                and not world.resource_search_open
+                and world.stamina.get("current") is not None
+            ):
+                self.stamina_panel_checked = True
+                return Decision("OPEN_STAMINA_SOURCES", "free_stamina_gift_not_yet_checked_this_run", world.confidence, "stamina_sources_open")
             if self.current_goal == "INTEL":
                 return Decision("OPEN_INTEL", "intel_goal_from_world_map", world.confidence, "intel_page_open")
             if self.current_goal == "BEAST_HUNT":
                 if world.idle_marches is not None and world.idle_marches <= 0:
+                    if self._recallable(world):
+                        self.pending_recall = True
+                        return Decision("SELECT_MARCH_TO_RECALL", "stamina_goal_needs_a_slot_and_only_gathering_marches_remain", world.confidence, "recall_dialog_open")
                     return Decision("SAFE_STOP", "no_idle_march", 1.0, "wait_for_beast_slot")
                 if world.beast.get("visible_target") == "MUSK_OX" and world.beast.get("level") == 9:
                     return Decision("SELECT_BEAST_TARGET", "verified_visible_low_level_beast", world.confidence, "beast_target_dialog_open")

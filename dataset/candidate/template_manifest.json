@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-09-14T04:02:12.432758+00:00",
+  "generated_at": "2026-09-14T06:06:41.024241+00:00",
   "status": "CANDIDATE",
-  "count": 379,
+  "count": 384,
   "records": [
     {
       "template_id": "popup_battlefield_revival__step_001_after_refresh_2__df53c4e4__0",
@@ -6805,6 +6805,71 @@
       "source": "live_20260914_cell_capture/20260914_120027_c_005_select_IRON.png",
       "provenance": "LIVE_CLIENT",
       "note": "cell-relative template: full selected cell incl. white bracket; used by SemanticROIVision.selected_resource with the bracket anchor"
+    },
+    {
+      "semantic": "POPUP_TITLE_RECALL",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\march_recall\\popup_title_recall__live_recall_dialog.png",
+      "roi_norm": {
+        "x_norm": 0.441667,
+        "y_norm": 0.328906,
+        "w_norm": 0.118056,
+        "h_norm": 0.04375
+      },
+      "source": "live_20260914_march_recall_dialog/02_after_row1_tap.png",
+      "provenance": "LIVE_CLIENT",
+      "note": "dialog title 召回; the only place this string appears"
+    },
+    {
+      "semantic": "BTN_CONFIRM_RECALL",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\march_recall\\btn_confirm_recall__live_recall_dialog.png",
+      "roi_norm": {
+        "x_norm": 0.608333,
+        "y_norm": 0.58125,
+        "w_norm": 0.205556,
+        "h_norm": 0.06875
+      },
+      "source": "live_20260914_march_recall_dialog/02_after_row1_tap.png",
+      "provenance": "LIVE_CLIENT",
+      "note": "the blue 确定 button of the recall dialog; tap target"
+    },
+    {
+      "semantic": "POPUP_TITLE_GET_MORE_STAMINA",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\stamina_sources\\popup_title_get_more_stamina__live_stamina_panel.png",
+      "roi_norm": {
+        "x_norm": 0.4,
+        "y_norm": 0.085156,
+        "w_norm": 0.201389,
+        "h_norm": 0.04375
+      },
+      "source": "live_20260914_stamina_sources/02_after_stamina_tap.png",
+      "provenance": "LIVE_CLIENT",
+      "note": "panel title 获取更多; identifies the stamina-source panel"
+    },
+    {
+      "semantic": "BTN_CLAIM_FREE_STAMINA",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\stamina_sources\\btn_claim_free_stamina__live_stamina_panel.png",
+      "roi_norm": {
+        "x_norm": 0.75,
+        "y_norm": 0.277344,
+        "w_norm": 0.113889,
+        "h_norm": 0.04375
+      },
+      "source": "live_20260914_stamina_sources/02_after_stamina_tap.png",
+      "provenance": "LIVE_CLIENT",
+      "note": "the only free control: bare 领取 with no price beside it"
+    },
+    {
+      "semantic": "BTN_PAID_STAMINA_PURCHASE",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\stamina_sources\\btn_paid_stamina_purchase__live_stamina_panel.png",
+      "roi_norm": {
+        "x_norm": 0.705556,
+        "y_norm": 0.489063,
+        "w_norm": 0.197222,
+        "h_norm": 0.039062
+      },
+      "source": "live_20260914_stamina_sources/02_after_stamina_tap.png",
+      "provenance": "LIVE_CLIENT",
+      "note": "NEGATIVE CONTROL: 购买并使用 ?300, must never be tapped"
     }
   ]
 }

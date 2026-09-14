@@ -60,6 +60,11 @@ def main() -> int:
         brain=RuleBrain(
             current_goal=args.goal,
             reserve_marches=int(config.get("march_policy", {}).get("reserve_for_stamina", 0)),
+            # Operator directive 2026-09-14: a march may be recalled at any time
+            # when a higher-priority task (stamina spending, or a verification
+            # run that needs a slot) has a better use for it.
+            recall_on_demand=bool(config.get("march_policy", {}).get("recall_on_demand", False)),
+            claim_free_stamina=bool(config.get("stamina_policy", {}).get("claim_free_stamina", False)),
         ),
         episode_store=EpisodeStore(ROOT / "learning/episodes.jsonl", limit=int(config.get("retention", {}).get("episode_limit", 10000))),
         goal_store=GoalStateStore(ROOT / "learning/goal_state.json"),

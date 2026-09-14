@@ -4,13 +4,19 @@ from pathlib import Path
 from winter_agent_v2.verifier import verify_alliance_daily_chain, verify_dispatch, verify_gathering, verify_training_started
 from winter_agent_v2.vision import ReplayVision, SemanticWorldVision
 
+from tests.live_stack import production_vision
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class MultiTaskProductionChainTests(unittest.TestCase):
     def test_train_then_gather_live_state_chain(self):
-        vision = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+        # A dispatch is proven by the march count increasing, so this needs the
+        # stack that can actually read it (template + OCR).
+        vision = production_vision()
+        if vision is None:
+            self.skipTest("OCR runtime unavailable; cannot read live march counts")
         train_before = vision.observe(ROOT / "dataset/raw/live_train_selection_available.png")
         train_after = vision.observe(ROOT / "dataset/raw/live_train_started.png")
         gather_before = vision.observe(ROOT / "dataset/raw/live_multitask_gather_map_ready.png")

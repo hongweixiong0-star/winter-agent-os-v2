@@ -45,6 +45,12 @@
     "claim_rewards_promptly": true,
     "note": "Gathering has low value per march-hour compared with stamina sinks. It must never be the reason a stamina task cannot run."
   },
+  "stamina_policy": {
+    "claim_free_stamina": true,
+    "spend_before_gather": true,
+    "note": "Operator 2026-09-14: the free 丰盛的招待 gift (+150, next supply shown as 下次补给) must be claimed. The paid rows in the same 获取更多 panel (购买并使用 💎300, 超值月卡/礼包购买/英雄集结 前往) are permanently out of scope and are never tapped; only BTN_CLAIM_FREE_STAMINA is a target.",
+    "known_limit": "The panel is the only place the free gift is visible, so the check runs once per run until the next-supply countdown is persisted (see 03_NEXT_ACTION.md)."
+  },
   "operations_policy": {
     "stamina_threshold": 30,
     "stamina_order": [

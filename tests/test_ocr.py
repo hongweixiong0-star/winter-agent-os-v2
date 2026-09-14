@@ -230,13 +230,43 @@ class OCRTests(unittest.TestCase):
         self.assertFalse(state.research["queue_available"])
 
     def test_hybrid_is_template_first(self):
+        """Pages the template layer fully resolves are not OCR'd.
+
+        The world map is deliberately *not* one of those pages any more: the
+        stamina gauge has to be read there, or "stamina is full" stays
+        unobservable and AUTO can never choose to spend it.  That exception is
+        pinned by test_hybrid_reads_the_map_hud_stamina below.
+        """
         backend = FakeBackend([OCRToken("联盟科技", 0.99)])
         with TemporaryDirectory() as temp:
             path = Path(temp) / "screen.png"
             Image.new("RGB", (10, 10), "white").save(path)
-            state = HybridVision(KnownTemplateVision(), OCRService(backend)).observe(path)
-            self.assertIs(state.page, Page.MAP)
+            state = HybridVision(HomeTemplateVision(), OCRService(backend)).observe(path)
+            self.assertIs(state.page, Page.HOME)
             self.assertEqual(backend.calls, 0)
+
+    def test_hybrid_reads_the_map_hud_stamina(self):
+        backend = FakeBackend([
+            OCRToken("200", 0.99, ((30, 101), (68, 101), (68, 119), (30, 119))),
+        ])
+        with TemporaryDirectory() as temp:
+            path = Path(temp) / "map.png"
+            Image.new("RGB", (720, 1280), "white").save(path)
+            state = HybridVision(MapTemplateVision(), OCRService(backend)).observe(path)
+        self.assertIs(state.page, Page.MAP)
+        self.assertEqual(state.stamina["current"], 200)
+        self.assertEqual(state.stamina["source"], "MAP_HUD")
+
+    def test_hud_stamina_ignores_numbers_outside_its_roi(self):
+        """A number drawn elsewhere on the map must never be read as stamina."""
+        backend = FakeBackend([
+            OCRToken("70,206,322", 0.99, ((131, 58), (268, 58), (268, 87), (131, 87))),
+        ])
+        with TemporaryDirectory() as temp:
+            path = Path(temp) / "map.png"
+            Image.new("RGB", (720, 1280), "white").save(path)
+            state = HybridVision(MapTemplateVision(), OCRService(backend)).observe(path)
+        self.assertNotIn("current", state.stamina)
 
     def test_hybrid_uses_ocr_for_unknown_template(self):
         backend = FakeBackend([OCRToken("联盟科技", 0.99)])

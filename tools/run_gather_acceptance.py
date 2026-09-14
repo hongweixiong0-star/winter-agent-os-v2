@@ -101,6 +101,7 @@ def build_runtime(config: dict, serial: str | None, capture_dir: Path, planned: 
         brain=RuleBrain(
             current_goal="GATHER_RESOURCE",
             reserve_marches=int(config.get("march_policy", {}).get("reserve_for_stamina", 0)),
+            recall_on_demand=bool(config.get("march_policy", {}).get("recall_on_demand", False)),
         ),
         episode_store=EpisodeStore(
             ROOT / "learning/episodes.jsonl",

@@ -43,6 +43,11 @@ dataset/external/repositories/
 !dataset/truth_audit/resource_availability_*/**/*.png
 # the map-vs-EVENT misclassification frame behind DISPATCH_NOT_PROVEN x28
 !dataset/truth_audit/map_overlay_*/**/*.png
+# the recall dialog + the frame proving the slot frees only on arrival, and the
+# HUD frames the stamina gauge ROI was measured from
+!dataset/truth_audit/march_recall_*/**/*.png
+!dataset/truth_audit/hud_stamina_*/**/*.png
+!dataset/truth_audit/free_stamina_*/**/*.png
 
 # --- python ----------------------------------------------------------------
 __pycache__/

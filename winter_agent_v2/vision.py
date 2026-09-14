@@ -175,6 +175,20 @@ class SemanticROIVision:
         self.resource_level_minus = (0.0958, 0.8219)
         self.resource_level_plus = (0.6743, 0.8219)
         self.resource_level_box = (0.7903, 0.8219, 0.9000, 0.8219)
+        # March list: measured live on the 2026-09-14 map (720x1280) with
+        # ``tools/probe_march_recall_ui.py``, which printed both the row tokens
+        # and the dialog the tap produced.  Rows start under the HUD and repeat
+        # at a fixed pitch; row 1's tappable centre opens the 召回 confirmation.
+        # Only row 1 is targeted: it is the oldest march and therefore the
+        # cheapest one to release.
+        self.march_row_1_center = (0.28, 0.2234)
+        self.march_row_pitch = 0.0474
+        # The 领主体力 gauge is drawn on every world-map frame under the avatar.
+        # Measured live on 2026-09-14 (720x1280): the number sits at px
+        # 30-68 x 101-119, i.e. centre (49,110).  Tapping it opens the
+        # 获取更多 stamina-source panel -- verified live, one tap, no other
+        # control touched.
+        self.stamina_gauge_center = (49.0 / 720.0, 110.0 / 1280.0)
         # The world-map search icon is stable in position and meaning, but moving
         # march paths and nearby map animation change its perceptual hash more
         # than ordinary static buttons. Keep this tolerance local to the one
@@ -616,6 +630,19 @@ class SemanticWorldVision:
             )
         if match("HIGH_RISK_PURCHASE"):
             return WorldState(page=Page.POPUP, popup="PURCHASE_POPUP", confidence=0.99)
+        # The recall confirmation is checked before the other confirmations so a
+        # shared blue 确定 button can never be attributed to the wrong dialog.
+        # The title 召回 is the identifying evidence, and it only appears in
+        # this dialog (see tools/register_recall_templates.py, which also
+        # asserts the negative control: neither template matches a map frame).
+        if match("POPUP_TITLE_RECALL"):
+            return WorldState(page=Page.POPUP, popup="MARCH_RECALL", confidence=0.99)
+        # The stamina-source panel is reached by tapping the 领主体力 gauge.  It
+        # mixes one free claim (「丰盛的招待」, a bare 领取 with no price) with
+        # paid rows (「购买并使用 💎300」, store links), so it must be its own
+        # popup identity: only the free control may ever be tapped.
+        if match("POPUP_TITLE_GET_MORE_STAMINA"):
+            return WorldState(page=Page.POPUP, popup="GET_MORE_STAMINA", confidence=0.99)
         if match("POPUP_EXIT_CONFIRM"):
             return WorldState(page=Page.POPUP, popup="EXIT_CONFIRM", confidence=0.99)
         if match("POPUP_POWER_OVERVIEW"):
@@ -1044,9 +1071,21 @@ class SemanticWorldVision:
                 state in {MarchState.MARCHING, MarchState.RETURNING}
                 for state in marches
             )
-            used = self.calibrated_baseline_used + transient_count
-            if not marches and count_two and not count_one:
-                used = 2
+            # The reviewed counter templates are the only authored evidence for
+            # the count.  ``calibrated_baseline_used`` used to be added
+            # unconditionally, which encoded "one march was running when the
+            # template was captured" as a permanent property of the map:
+            # measured live on 2026-09-14, a frame with six gathering marches
+            # still reported 1/6 -- five phantom free slots, enough to authorize
+            # a dispatch into a full queue.  With no counter template matched the
+            # count is unknown, and the OCR layer fills it in; every verifier
+            # already treats ``march_used is None`` as "not proven".
+            if count_one and not count_two:
+                used = 1 + transient_count
+            elif count_two and not count_one:
+                used = 2 + transient_count
+            else:
+                used = None
             return WorldState(
                 page=Page.MAP,
                 marches=tuple(marches),
