@@ -53,7 +53,34 @@ REQUIRED_FINAL_SKILL = "DISPATCH_MARCH"
 RESOURCES = ("MEAT", "WOOD", "COAL", "IRON")
 
 
-def build_runtime(config: dict, serial: str | None, capture_dir: Path) -> LiveRuntime:
+class ForcedRotation:
+    """Test double that pins the next resource while delegating real bookkeeping.
+
+    Rotation reaches a resource only when it happens to be the least-dispatched
+    one, which is fine for production but useless for acceptance: COAL and IRON
+    would never be exercised while MEAT/WOOD still had deficits.  The acceptance
+    rule is per-resource ("each resource >= 3 verified closures"), so the harness
+    has to name the resource under test.
+
+    ``unavailable`` / ``completed`` still go to the real store, so the run's side
+    effects on policy state are genuine.
+    """
+
+    def __init__(self, inner: ResourceRotationStore, resource: str) -> None:
+        self._inner = inner
+        self.resource = resource
+
+    def target(self, stock=None) -> str:  # noqa: ANN001 - mirrors the real signature
+        return self.resource
+
+    def unavailable(self, resource: str) -> None:
+        self._inner.unavailable(resource)
+
+    def completed(self, resource: str) -> None:
+        self._inner.completed(resource)
+
+
+def build_runtime(config: dict, serial: str | None, capture_dir: Path, planned: str | None = None) -> LiveRuntime:
     device = ADBDevice(Path(config["device"]["adb_path"]), serial or config["device"]["serial"], production=True)
     if serial is None:
         device.resolve_connection()
@@ -63,6 +90,9 @@ def build_runtime(config: dict, serial: str | None, capture_dir: Path) -> LiveRu
         OCRService(ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))),
     )
     verifier_skills = set(LiveRuntime.VERIFIED_ATOMIC)
+    rotation: object = ResourceRotationStore(ROOT / "learning/resource_rotation.json")
+    if planned:
+        rotation = ForcedRotation(rotation, planned)
     return LiveRuntime(
         device=device,
         vision=vision,
@@ -84,7 +114,7 @@ def build_runtime(config: dict, serial: str | None, capture_dir: Path) -> LiveRu
             threshold=5,
         ),
         runtime_store=RuntimeSnapshotStore(ROOT / "learning/runtime_snapshot.json"),
-        resource_rotation=ResourceRotationStore(ROOT / "learning/resource_rotation.json"),
+        resource_rotation=rotation,
     )
 
 
@@ -95,6 +125,16 @@ def main() -> int:
     parser.add_argument("--max-actions", type=int, default=12)
     parser.add_argument("--serial", default=None)
     parser.add_argument("--settle", type=float, default=None, help="override per-step settle seconds")
+    parser.add_argument(
+        "--resources",
+        default=",".join(RESOURCES),
+        help="comma separated resources to exercise, one closure per entry",
+    )
+    parser.add_argument(
+        "--plan",
+        default="auto",
+        help="'auto' walks the given resources in order; 'rotation' lets the policy choose",
+    )
     args = parser.parse_args()
 
     config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
@@ -110,13 +150,35 @@ def main() -> int:
     runs: list[dict] = []
     rotation = ResourceRotationStore(ROOT / "learning/resource_rotation.json")
 
+    wanted = [name.strip().upper() for name in args.resources.split(",") if name.strip()]
+    unknown = [name for name in wanted if name not in RESOURCES]
+    if unknown:
+        raise SystemExit(f"unknown resources: {unknown}; known: {list(RESOURCES)}")
+
+    # Build the schedule.  The acceptance rule is per resource, so the default
+    # walks every requested resource in turn (least-attempted first) instead of
+    # hoping the rotation policy happens to reach the off-screen ones.
+    schedule: list[str | None] = []
+    if args.plan == "rotation":
+        schedule = [None] * args.runs
+    else:
+        order = sorted(wanted, key=lambda name: RESOURCES.index(name))
+        while len(schedule) < args.runs:
+            for name in order:
+                if len(schedule) >= args.runs:
+                    break
+                schedule.append(name)
+
     for index in range(1, args.runs + 1):
-        planned = rotation.target({})
+        planned_override = schedule[index - 1]
+        planned = planned_override or rotation.target({})
         capture_dir = ROOT / "dataset/raw/control_panel/runtime_auto" / f"accept_{stamp}_run{index:02d}"
-        print(f"\n=== run {index}/{args.runs}  planned_resource={planned} ===", flush=True)
-        run_record: dict = {"run": index, "planned_resource": planned, "capture_dir": str(capture_dir)}
+        print(f"\n=== run {index}/{args.runs}  planned_resource={planned}"
+              f"{' (pinned)' if planned_override else ''} ===", flush=True)
+        run_record: dict = {"run": index, "planned_resource": planned, "pinned": bool(planned_override),
+                            "capture_dir": str(capture_dir)}
         try:
-            runtime = build_runtime(config, args.serial, capture_dir)
+            runtime = build_runtime(config, args.serial, capture_dir, planned=planned_override)
             if args.settle is not None:
                 runtime.settle_seconds = args.settle
             result = runtime.run(max_actions=args.max_actions, stop_after_skill=REQUIRED_FINAL_SKILL)
@@ -166,13 +228,29 @@ def main() -> int:
             print(f"  EXCEPTION {type(exc).__name__}: {exc}", flush=True)
         runs.append(run_record)
 
+        # The acceptance criterion is bounded by march slots, not by time.  Each
+        # closure occupies one march for hours, so once every slot is gathering
+        # there is nothing to dispatch and further runs would only burn budget
+        # producing identical no_idle_march results.
+        if run_record.get("stop_reason") == "no_idle_march":
+            print("\nstopping: all march slots are busy (no_idle_march). "
+                  "The remaining closures must wait for a march to return.", flush=True)
+            run_record["sweep_aborted"] = "no_idle_march"
+            abort_reason = "no_idle_march"
+        else:
+            abort_reason = None
+
         payload = {
             "schema_version": "1.0",
             "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "source": "tools/run_gather_acceptance.py",
             "acceptance_rule": "each resource completes the full chain (SUBMIT -> SELECT -> START_GATHER -> DISPATCH_MARCH) with every verifier passing",
             "planned_runs": args.runs,
+            "plan": args.plan,
+            "schedule": schedule,
+            "resources_requested": wanted,
             "completed_runs": len(runs),
+            "aborted": abort_reason,
             "tally": tally,
             "runs": runs,
         }
@@ -180,6 +258,8 @@ def main() -> int:
 
         if args.target and all(row["full_chain_success"] >= args.target for row in tally.values()):
             print(f"\nacceptance target reached: every resource has {args.target} verified closures", flush=True)
+            break
+        if abort_reason:
             break
 
     print("\n=== tally ===")

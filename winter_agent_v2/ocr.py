@@ -138,10 +138,23 @@ class OCRService:
 
 
 class OCRPageClassifier:
-    """Conservative exact-keyword fallback; ambiguous OCR stays UNKNOWN."""
+    """Conservative exact-keyword fallback; ambiguous OCR stays UNKNOWN.
+
+    A keyword may only be listed here when it identifies the *page*, never when
+    it is a label that also appears elsewhere in the HUD.  ``常规活动`` was
+    removed for exactly that reason: it is a button label on the world map's
+    event rail, and it appeared with 0.998 confidence on an ordinary map frame.
+    Combined with a template layer that had no map anchor for that layout, it
+    made the world map classify as ``Page.EVENT`` — which is what turned a
+    successfully dispatched march into ``DISPATCH_NOT_PROVEN`` 28 times.
+    ``最强王国`` is the event page's own title and remains valid evidence.
+
+    The general rule for future additions: if the string can be seen while the
+    player is *not* on that page, it cannot identify the page.
+    """
 
     RULES: tuple[tuple[Page, tuple[str, ...]], ...] = (
-        (Page.EVENT, ("常规活动", "最强王国")),
+        (Page.EVENT, ("最强王国",)),
         (Page.ALLIANCE, ("联盟科技", "联盟互助", "联盟永续", "联盟宝箱")),
         (Page.RESEARCH, ("科技研究",)),
         (Page.INTEL, ("情报",)),

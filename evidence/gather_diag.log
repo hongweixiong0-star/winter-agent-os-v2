@@ -1,0 +1,67 @@
+frame: accept_20260914_132309_run01_step_005_after_refresh_2_20260914T052510027985.png
+
+--- template layer ---
+page=UNKNOWN known=False confidence=0.0
+marches=[] march_used=None/None
+probes:
+   PAGE_MAP                     -> None
+   BTN_OPEN_HOME                -> 2
+   BTN_OPEN_RESOURCE_SEARCH     -> None
+   STATUS_GATHERING             -> None
+   STATUS_MARCHING              -> None
+   STATUS_RETURNING             -> None
+   MARCH_COUNT_1_OF_6           -> None
+   MARCH_COUNT_2_OF_6           -> None
+
+--- OCR (45 tokens) ---
+  * 1.000  '开'
+  * 1.000  '联盟'
+  * 1.000  '英雄'
+  * 1.000  '背包'
+  * 0.999  '城镇'
+  * 0.999  '商店'
+  * 0.999  '200'
+  * 0.999  '行军'
+  * 0.999  '统帅9'
+  * 0.998  '超值活动'
+  * 0.998  '1.9亿'
+  * 0.998  '13.1万'
+  * 0.998  '常规活动'
+  * 0.997  '+66'
+  * 0.996  '郭源潮：你们真保守月卡这两天都好几个了'
+  * 0.996  '22'
+  * 0.996  '郭源潮：我已经好奇100个月卡治疗是多长时间了'
+  * 0.995  '未驻防'
+  * 0.995  '探险'
+  * 0.995  '6/6'
+  * 0.995  '采集中'
+  * 0.994  '8'
+  * 0.994  '采集中'
+  * 0.994  '采集中'
+  * 0.994  '未驻防'
+  * 0.994  '采集中'
+  * 0.988  '03:41:42'
+  * 0.987  '00:00:12'
+  * 0.987  '登录好礼'
+  * 0.984  '03:49:29'
+  * 0.982  '02:42:08'
+  * 0.980  '03:21:55'
+  * 0.973  '03:11:20'
+  * 0.964  '109-1413:25:10'
+  * 0.963  '2采集中'
+  * 0.959  '#4298(581,461)'
+  * 0.939  '70,206,322'
+  * 0.935  '画'
+  * 0.931  '(580,460)'
+  * 0.912  '[oi]联盟旗帜'
+  * 0.909  'oli联盟旗帜'
+  * 0.904  '27.9c'
+  * 0.899  '00:02:28'
+    0.822  '[ol]联盟旗帜'
+    0.819  '[DIW薛爱·宁姚'
+
+--- exact-text rule hits (classifier threshold 0.88) ---
+  EVENT: ['常规活动']
+
+classifier verdict: page=EVENT confidence=0.9999592304229736
+hybrid verdict:     page=EVENT known=True marches=[] march_used=None

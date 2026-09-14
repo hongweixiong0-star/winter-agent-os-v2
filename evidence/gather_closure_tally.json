@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-14T05:30:41+00:00",
+  "source": "learning/episodes.jsonl (PRODUCTION, DISPATCH_MARCH, SUCCESS, verifier not false)",
+  "acceptance_rule": "each resource >= 3 verified closures, 12 total",
+  "evidence_rule": "a closure counts only when the episode carries an episode_id and its screenshots exist on disk; an aggregate is not evidence-free",
+  "totals": {
+    "MEAT": 2,
+    "WOOD": 2,
+    "COAL": 0,
+    "IRON": 1
+  },
+  "total_verified_closures": 5,
+  "distinct_episodes": {
+    "IRON": 1,
+    "MEAT": 2,
+    "WOOD": 2
+  },
+  "excluded_untraceable": 27,
+  "excluded_unattributable": 0,
+  "competing_constraint": "the account has 6 march slots and each closure occupies one for hours, so 12 closures cannot be produced in a single session; when every slot is gathering the runtime correctly stops with no_idle_march",
+  "evidence": [
+    {
+      "resource": "IRON",
+      "recorded_at": "2026-09-14T04:11:59.146784+00:00",
+      "episode_id": "live_gather_run2",
+      "step_id": 1,
+      "march_used": 1,
+      "marches": [
+        "MARCHING"
+      ],
+      "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_before_20260914T041144038962.png",
+      "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_after_20260914T041148263346.png"
+    },
+    {
+      "resource": "MEAT",
+      "recorded_at": "2026-09-14T04:39:56.606280+00:00",
+      "episode_id": "accept_20260914_123747_run01",
+      "step_id": 5,
+      "march_used": 2,
+      "marches": [
+        "GATHERING",
+        "MARCHING"
+      ],
+      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run01\\accept_20260914_123747_run01_step_005_before_20260914T043933657406.png",
+      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run01\\accept_20260914_123747_run01_step_005_after_20260914T043939349200.png"
+    },
+    {
+      "resource": "WOOD",
+      "recorded_at": "2026-09-14T04:54:28.822941+00:00",
+      "episode_id": "accept_20260914_125232_run01",
+      "step_id": 4,
+      "march_used": 3,
+      "marches": [
+        "GATHERING",
+        "MARCHING"
+      ],
+      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run01\\accept_20260914_125232_run01_step_004_before_20260914T045408548061.png",
+      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run01\\accept_20260914_125232_run01_step_004_after_20260914T045413598390.png"
+    },
+    {
+      "resource": "MEAT",
+      "recorded_at": "2026-09-14T04:57:04.971789+00:00",
+      "episode_id": "accept_20260914_125232_run02",
+      "step_id": 5,
+      "march_used": 4,
+      "marches": [
+        "GATHERING",
+        "MARCHING"
+      ],
+      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run02\\accept_20260914_125232_run02_step_005_before_20260914T045638057176.png",
+      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run02\\accept_20260914_125232_run02_step_005_after_20260914T045643090367.png"
+    },
+    {
+      "resource": "WOOD",
+      "recorded_at": "2026-09-14T05:00:15.248850+00:00",
+      "episode_id": "accept_20260914_125232_run03",
+      "step_id": 6,
+      "march_used": 5,
+      "marches": [
+        "GATHERING",
+        "MARCHING"
+      ],
+      "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_before_20260914T045955757128.png",
+      "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_after_20260914T050000610623.png"
+    }
+  ]
+}

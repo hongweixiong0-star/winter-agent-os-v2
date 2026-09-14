@@ -1,0 +1,5 @@
+wrote evidence\gather_closure_tally.json
+verified closures: {'MEAT': 2, 'WOOD': 2, 'COAL': 0, 'IRON': 1}  (total 5)
+distinct episodes per resource: {'IRON': 1, 'MEAT': 2, 'WOOD': 2}
+excluded untraceable (no episode_id / missing screenshots): 27
+excluded unattributable: 0

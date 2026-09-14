@@ -41,6 +41,8 @@ dataset/external/repositories/
 # the level-range and resource-availability findings rest on these frames
 !dataset/truth_audit/level_probe_*/**/*.png
 !dataset/truth_audit/resource_availability_*/**/*.png
+# the map-vs-EVENT misclassification frame behind DISPATCH_NOT_PROVEN x28
+!dataset/truth_audit/map_overlay_*/**/*.png
 
 # --- python ----------------------------------------------------------------
 __pycache__/

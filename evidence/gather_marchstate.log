@@ -1,0 +1,3 @@
+template  : page=MAP march=1/6 marches=[]
+hybrid    : page=MAP march=6/6 marches=['GATHERING']
+idle      : 0

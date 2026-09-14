@@ -1,0 +1,12 @@
+
+=== run 1/1  planned_resource=COAL (pinned) ===
+  stop_reason=no_idle_march full_chain_success=False
+     1 SAFE_STOP                  verifier=None  | MAP -> None
+
+=== tally ===
+  MEAT  attempts=0 full_chain_success=0
+  WOOD  attempts=0 full_chain_success=0
+  COAL  attempts=1 full_chain_success=0
+  IRON  attempts=0 full_chain_success=0
+
+written evidence\gather_acceptance_20260914_132842.json

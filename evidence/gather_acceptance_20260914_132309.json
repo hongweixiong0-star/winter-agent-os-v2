@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-14T05:25:20+00:00",
+  "source": "tools/run_gather_acceptance.py",
+  "acceptance_rule": "each resource completes the full chain (SUBMIT -> SELECT -> START_GATHER -> DISPATCH_MARCH) with every verifier passing",
+  "planned_runs": 1,
+  "plan": "auto",
+  "schedule": [
+    "COAL"
+  ],
+  "resources_requested": [
+    "COAL"
+  ],
+  "completed_runs": 1,
+  "tally": {
+    "MEAT": {
+      "attempts": 0,
+      "full_chain_success": 0
+    },
+    "WOOD": {
+      "attempts": 0,
+      "full_chain_success": 0
+    },
+    "COAL": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "IRON": {
+      "attempts": 0,
+      "full_chain_success": 0
+    }
+  },
+  "runs": [
+    {
+      "run": 1,
+      "planned_resource": "COAL",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01",
+      "stop_reason": "DISPATCH_NOT_PROVEN",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SEARCH_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": null,
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 5
+        },
+        {
+          "index": 2,
+          "skill": "SELECT_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 5
+        },
+        {
+          "index": 3,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "RESOURCE_DETAIL",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 4,
+          "skill": "START_GATHER",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "RESOURCE_DETAIL",
+          "after_page": "MARCH",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        },
+        {
+          "index": 5,
+          "skill": "DISPATCH_MARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "DISPATCH_NOT_PROVEN",
+          "before_page": "MARCH",
+          "after_page": "EVENT",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    }
+  ]
+}

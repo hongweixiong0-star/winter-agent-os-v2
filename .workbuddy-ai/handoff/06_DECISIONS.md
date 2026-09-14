@@ -7,6 +7,34 @@
 
 ---
 
+## D-017：聚合统计同样适用「无证据不算验证」
+
+- **决定**：闭环计数只认可携带 `episode_id` 且截图真实存在的 episode。
+- **理由**：第一次统计得出 `WOOD 27 / MEAT 3 / COAL 1 / IRON 1 = 32`，
+  其中 **27 条**是旧代码写的行——没有时间戳、没有 `episode_id`、没有截图，
+  而且当时的 `resource_target` 是 vision 里**硬编码的 "WOOD"**。
+  把它们算进去等于凭默认值编造结果。加上证据门槛后真实值是
+  **MEAT 2 / WOOD 2 / COAL 0 / IRON 1 = 5**。
+- **被否决**：保留宽松统计并在文里加注（数字会被引用，注释不会）。
+- **影响**：`tools/build_gather_closure_tally.py`、`evidence/gather_closure_tally.json`。
+
+## D-016：世界地图需要一个「常驻锚点」，OCR 兜底不能靠按钮文字
+
+- **决定**：
+  1. `SemanticWorldVision.observe` 用 `BTN_OPEN_HOME` 匹配 **且** `PAGE_MAP` 不匹配
+     作为世界地图的常驻证据；
+  2. 从 `OCRPageClassifier.RULES` 中删掉「常规活动」。
+- **理由**：`DISPATCH_MARCH` 28 次的 `DISPATCH_NOT_PROVEN` 根因被真机帧证实：
+  行军队列浮层打开时会盖住「搜索资源」按钮，且 `STATUS_*` 行模板不匹配该布局 →
+  模板层对一张**地图**返回 `UNKNOWN` → OCR 兜底读到地图右侧活动栏的按钮文字
+  「常规活动」（置信 0.998）→ 返回 `Page.EVENT` 且 `marches=[]`。
+  verifier 要的是「地图 + 有行军在跑」，结果拿到一个被替换掉的错误页面。
+- **原则**：**一句话如果玩家不在那个页面时也能看到，它就不能用来判定页面。**
+  这条写进了 `OCRPageClassifier` 的 docstring。
+- **被否决**：放宽 `verify_wood_dispatch_from_march`（真正错的是观测，不是判定）。
+- **影响**：`vision.py`（地图锚点）、`ocr.py`（规则集）、
+  `tests/test_map_page_anchor.py`、fixture `dataset/truth_audit/map_overlay_20260914/`。
+
 ## D-015：占位技能不得赢得「第一个可执行技能」兜底
 
 - **决定**：`brain.py` 的兜底 `registry.ready(world)[0]` 排除 `WAIT`；

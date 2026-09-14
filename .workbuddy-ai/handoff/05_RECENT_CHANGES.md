@@ -131,3 +131,63 @@ Uncommitted changes: 2
 | 3 | WOOD | 第 3 步 `RESOURCE_NOT_FOUND` → **自动切换资源** → 第 4–6 步全部 OK，闭环达成 |
 
 第 3 轮正是活锁修复的**真机验证**：此前这种情况会直接结束运行。
+
+---
+
+## 手写：2026-09-14 第四轮（DISPATCH_NOT_PROVEN x28 根因定位并修复）
+
+### 1. 定位到根因（有真机帧 + OCR token 证据）
+
+跑 COAL 验收时全部步骤都通过，只有最后一步失败：
+
+```
+5 DISPATCH_MARCH  verifier=False DISPATCH_NOT_PROVEN | MARCH -> EVENT
+```
+
+看 `after` 帧：**那是世界地图**，行军队列显示 `6/6`、5 条「采集中」——**派兵其实成功了**。
+逐层诊断（`tools/diagnose_map_event_misclassification.py`）得到完整因果链：
+
+1. 行军队列浮层打开时盖住了「搜索资源」按钮，且 `STATUS_*` 行模板不匹配该布局
+   → 模板层对这张地图返回 `page=UNKNOWN`；
+2. `HybridVision` 回落到 OCR 分类器；
+3. OCR 读到地图右侧活动栏的**按钮文字**「常规活动」（置信 0.998）
+   → 判定 `Page.EVENT`，且 `marches=[]`、`march_used=None`；
+4. `verify_wood_dispatch_from_march` 需要「地图 + 有行军在跑」→ 失败。
+
+**这就是 28 次 `DISPATCH_NOT_PROVEN` 的来源。**
+
+### 2. 两处修复
+
+- **世界地图常驻锚点**：`BTN_OPEN_HOME` 匹配 **且** `PAGE_MAP` 不匹配 → 地图
+  （主城显示的是「地图」按钮，两者互斥）。修复后同一帧：
+  `page=MAP marches=['GATHERING'] march_used=6` —— 正是 verifier 需要的证据。
+- **OCR 规则集删掉「常规活动」**：它是按钮标签，不是页面标题。
+  新原则写进 docstring：**玩家不在那个页面时也能看到的文字，不能用来判定页面。**
+  「最强王国」（活动页自身的标题）保留。
+
+### 3. 验收数字被大幅下修（诚实性修复）
+
+第一次统计出 `WOOD 27 / MEAT 3 / COAL 1 / IRON 1 = 32`。
+但 32 条里有 **27 条是旧代码写的行**：没有 `recorded_at`、没有 `episode_id`、
+没有截图，且当时的 `resource_target` 是 vision 里**硬编码的 "WOOD"**。
+
+加上证据门槛（必须有 `episode_id` 且截图存在）后的真实值：
+
+| 资源 | 可追溯已验证闭环 |
+|---|---:|
+| MEAT | 2 |
+| WOOD | 2 |
+| COAL | 0 |
+| IRON | 1 |
+| **合计** | **5** |
+
+排除 27 条无证据记录。**「无证据不算验证」同样适用于聚合统计。**
+
+### 4. 发现的硬约束：验收受行军槽位限制
+
+账号只有 **6 条行军队列**，每次闭环占用一条数小时。当前 `6/6` 全部采集中、空闲 0，
+运行时正确地以 `no_idle_march` 停止（修复地图锚点后 `march_used` 才被正确读成 6，
+此前误读 1/6 才敢继续派兵）。
+
+**结论：「每资源 ≥3 次、合计 ≥12 次」不可能在单次会话内完成**，
+必须跨多个行军返回周期。harness 已加入 `no_idle_march` 早停，避免空跑浪费预算。

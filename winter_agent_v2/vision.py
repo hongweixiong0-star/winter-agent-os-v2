@@ -1003,11 +1003,28 @@ class SemanticWorldVision:
         marching = match("STATUS_MARCHING")
         count_one = match("MARCH_COUNT_1_OF_6")
         count_two = match("MARCH_COUNT_2_OF_6")
+        # Persistent world-map anchor.
+        #
+        # Every other map signal is conditional: the resource-search button is
+        # covered while the march-list overlay is open, and the STATUS_* row
+        # templates do not match that overlay's layout.  Measured live on
+        # 2026-09-14: a frame showing the map with `6/6` marches and five 采集中
+        # rows matched none of them, so the world map was classified UNKNOWN and
+        # the OCR fallback then read the right-hand event rail's "常规活动" label
+        # and returned Page.EVENT.  That single misclassification is what made
+        # DISPATCH_NOT_PROVEN fire 28 times even though the march had been sent.
+        #
+        # The "return to city" control is drawn on every world-map frame and its
+        # reviewed template matches at distance 2.  It is paired with a negative
+        # PAGE_MAP probe, because the home screen shows the *map* button (PAGE_MAP)
+        # instead, so the two are mutually exclusive and together identify the map
+        # without weakening any other page's evidence.
+        map_hud = match("BTN_OPEN_HOME") is not None and match("PAGE_MAP") is None
         # Read the real level filter from the slider instead of assuming 8.
         # A hard-coded 8 made the search unusable whenever the nearby map had
         # no level-8 node ("在您的城镇附近没有发现条件相符的目标").
         level = self.semantic.resource_level(image_path) if search_submit else None
-        if visible_musk_ox or search_submit or returning or gathering or marching or count_one or count_two or match("BTN_OPEN_RESOURCE_SEARCH"):
+        if visible_musk_ox or search_submit or returning or gathering or marching or count_one or count_two or map_hud or match("BTN_OPEN_RESOURCE_SEARCH"):
             marches: list[MarchState] = []
             if marching:
                 marches.append(MarchState.MARCHING)
