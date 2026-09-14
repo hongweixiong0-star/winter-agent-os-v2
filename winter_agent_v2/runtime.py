@@ -149,6 +149,7 @@ class LiveRuntime:
         max_relax_attempts: int = 3,
         max_scroll_attempts: int = 3,
         max_resource_switches: int = 2,
+        max_unknown_page_backs: int = 2,
         observation_retries: int = 2,
         sleeper: Callable[[float], None] = time.sleep,
         episode_store: EpisodeStore | None = None,
@@ -182,6 +183,7 @@ class LiveRuntime:
         self.max_relax_attempts = max_relax_attempts
         self.max_scroll_attempts = max_scroll_attempts
         self.max_resource_switches = max_resource_switches
+        self.max_unknown_page_backs = max_unknown_page_backs
         self.observation_retries = observation_retries
         self.sleeper = sleeper
         self.episode_store = episode_store
@@ -329,6 +331,7 @@ class LiveRuntime:
         self._relax_attempts = 0
         self._scroll_attempts = 0
         self._resource_switches = 0
+        self._unknown_page_backs = 0
         self._runtime(agent_state=AgentState.AUTO_RUNNING.value, runtime_thread_alive=True,
                       scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
 
@@ -374,6 +377,40 @@ class LiveRuntime:
                           current_skill=decision.skill, reason=decision.reason,
                           next_action=decision.expected_result, confidence=decision.confidence)
             if decision.skill == "SAFE_STOP":
+                # MASTER_RULES 7: an unrecognised screen must not stop the run.
+                # Live 2026-09-14: a Hero Journey mission card rendered in a skin
+                # no template matched.  The brain honestly answered SAFE_STOP
+                # unknown_page (content is not understood, so nothing is clicked -
+                # pages.json keeps unknown_action=NO_CLICK), but the run then ended
+                # and, with it, the whole intel pin loop - while a workable mission
+                # sat on the screen.  A screen nobody understands is exactly where
+                # unattended operation dies, so back out of it once and re-observe.
+                #
+                # Recovery is deliberately narrow and honest:
+                # - only for unknown_page, and never for a fatal stop;
+                # - the system Back key, which is what this project already trusts
+                #   for a blocker it refuses to touch (see the real-money offer
+                #   handling below) and which is a STABLE 97.6% skill here;
+                # - bounded per run, so it cannot become a Back-loop;
+                # - if the screen is still unknown afterwards the original reason
+                #   is reported unchanged.  Recovery must not hide the root cause.
+                recovered = False
+                if decision.reason == "unknown_page" and not is_fatal_stop(decision.reason):
+                    while self._unknown_page_backs < self.max_unknown_page_backs:
+                        self._unknown_page_backs += 1
+                        self.device.press_back()
+                        self.sleeper(self.settle_seconds)
+                        recovery_path = self._capture_path(
+                            index, "after", suffix=f"unknown_page_back_{self._unknown_page_backs}"
+                        )
+                        self.device.screenshot(recovery_path)
+                        before = self.vision.observe(recovery_path)
+                        self._record_goals(before)
+                        if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
+                            recovered = True
+                            break
+                    if recovered:
+                        continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(decision.reason) else AgentState.DEGRADED.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=decision.reason,

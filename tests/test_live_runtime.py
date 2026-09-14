@@ -44,6 +44,7 @@ class FakeVision:
 class FakeDevice:
     def __init__(self):
         self.taps = []
+        self.backs = []
 
     def screenshot(self, path):
         path.touch()
@@ -54,6 +55,9 @@ class FakeDevice:
 
     def tap(self, x, y):
         self.taps.append((x, y))
+
+    def press_back(self):
+        self.backs.append(len(self.taps))
 
     def swipe(self, x1, y1, x2, y2, duration_ms=300):
         self.taps.append(("swipe", x1, y1, x2, y2))
@@ -194,17 +198,48 @@ class LiveRuntimeTests(unittest.TestCase):
         self.assertTrue(all(step.verification is None or step.verification.ok for step in run.steps))
 
     def test_unknown_stops_without_click(self):
+        """An unknown screen is never clicked, and still ends the run if it stays unknown.
+
+        MASTER_RULES 7 lets the loop back out of a screen it cannot read (live
+        2026-09-14: an unrecognised mission card stalled the whole intel loop),
+        but backing out is the ONLY thing it may do, and if that fails the
+        original reason must still be reported rather than hidden.
+        """
         device = FakeDevice()
         with TemporaryDirectory() as temp:
             run = LiveRuntime(
                 device=device,
-                vision=FakeVision([WorldState()]),
+                vision=FakeVision([WorldState(), WorldState(), WorldState(), WorldState()]),
                 semantic_vision=FakeSemantic(),
                 capture_dir=Path(temp),
                 sleeper=lambda _seconds: None,
             ).run(max_actions=2)
-        self.assertEqual(device.taps, [])
+        self.assertEqual(device.taps, [], "unknown content must never be clicked")
+        self.assertEqual(len(device.backs), 2, "recovery is bounded per run")
         self.assertEqual(run.stop_reason, "unknown_page")
+
+    def test_unknown_page_recovery_resumes_the_run(self):
+        """Backing out of an unreadable screen lets the run continue."""
+        device = FakeDevice()
+        states = [
+            WorldState(),  # index 1: nothing recognised
+            WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
+            WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
+        ]
+        with TemporaryDirectory() as temp:
+            run = LiveRuntime(
+                device=device,
+                vision=FakeVision(states),
+                semantic_vision=FakeSemantic(),
+                capture_dir=Path(temp),
+                sleeper=lambda _seconds: None,
+            ).run(max_actions=2)
+        self.assertEqual(len(device.backs), 1, "one back recovers, no more")
+        self.assertEqual(device.taps, [])
+        self.assertNotEqual(
+            run.stop_reason, "unknown_page",
+            "the run must survive a screen it could not read",
+        )
 
 
 if __name__ == "__main__":
