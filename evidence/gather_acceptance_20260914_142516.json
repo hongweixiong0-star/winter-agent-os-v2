@@ -1,0 +1,404 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-14T06:42:03+00:00",
+  "source": "tools/run_gather_acceptance.py",
+  "acceptance_rule": "each resource completes the full chain (SUBMIT -> SELECT -> START_GATHER -> DISPATCH_MARCH) with every verifier passing",
+  "planned_runs": 3,
+  "plan": "auto",
+  "schedule": [
+    "MEAT",
+    "WOOD",
+    "COAL"
+  ],
+  "resources_requested": [
+    "MEAT",
+    "WOOD",
+    "COAL",
+    "IRON"
+  ],
+  "completed_runs": 3,
+  "aborted": null,
+  "tally": {
+    "MEAT": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "WOOD": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "COAL": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "IRON": {
+      "attempts": 0,
+      "full_chain_success": 0
+    }
+  },
+  "runs": [
+    {
+      "run": 1,
+      "planned_resource": "MEAT",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run01",
+      "stop_reason": "RESOURCE_NOT_FOUND",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SEARCH_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": null,
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 5
+        },
+        {
+          "index": 2,
+          "skill": "SELECT_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 5
+        },
+        {
+          "index": 3,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 4,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 5,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 6,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 7,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 8,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    },
+    {
+      "run": 2,
+      "planned_resource": "WOOD",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run02",
+      "stop_reason": "RESOURCE_NOT_FOUND",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SELECT_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 2,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 3,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 4,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 5,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 6,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 5
+        },
+        {
+          "index": 7,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 5
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    },
+    {
+      "run": 3,
+      "planned_resource": "COAL",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03",
+      "stop_reason": "RESOURCE_NOT_FOUND",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SELECT_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 5
+        },
+        {
+          "index": 2,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 3,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 4,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 5,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 6,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 7,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "COAL",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    }
+  ]
+}

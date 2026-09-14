@@ -346,6 +346,12 @@ class RuleBrain:
             if world.idle_marches is None:
                 return Decision("CHECK_MARCH", "march_capacity_unknown", world.confidence, "march_state_known")
             if world.idle_marches <= 0:
+                # Operator directive: a march may be released on demand.  Only
+                # a GATHERING march is eligible (see _recallable); a dialog this
+                # decision opens is confirmed by the RECALL_MARCH branch.
+                if self._recallable(world):
+                    self.pending_recall = True
+                    return Decision("SELECT_MARCH_TO_RECALL", "no_idle_march_and_a_gathering_march_can_be_released", world.confidence, "recall_dialog_open")
                 return Decision("SAFE_STOP", "no_idle_march", 1.0, "no_action")
             if self.current_goal in {None, "GATHER_RESOURCE"} and world.idle_marches <= self.reserve_marches:
                 return Decision("SAFE_STOP", "reserved_march_for_stamina", 1.0, "stamina_task_slot_preserved")

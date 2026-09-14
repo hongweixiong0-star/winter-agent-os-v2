@@ -1,0 +1,12 @@
+{
+  "dispatched": {
+    "MEAT": 1,
+    "WOOD": 0,
+    "COAL": 1,
+    "IRON": 0
+  },
+  "next": "IRON",
+  "unavailable": {
+    "WOOD": "2026-09-14T07:10:37.083192+00:00"
+  }
+}

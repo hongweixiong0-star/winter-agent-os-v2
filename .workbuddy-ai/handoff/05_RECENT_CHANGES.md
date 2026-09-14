@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `eeac37d 2026-09-14T14:17:40+08:00 wip: stamina becomes observable + recall becomes dispatchable`
+- `35ed464 2026-09-14T13:44:03+08:00 docs(handoff): record the live stamina reading (200/200) and the recall UI probe`
 - `446d909 2026-09-14T13:41:40+08:00 feat(policy): stamina spending beats gathering; gathering is LAST_RESORT`
 - `f35df92 2026-09-14T13:32:27+08:00 docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint`
 - `7a3380d 2026-09-14T13:32:06+08:00 fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH`
@@ -16,18 +18,66 @@ Last 12 commits (newest first):
 - `0f006ab 2026-09-14T12:36:41+08:00 docs(handoff): regenerate truth at the new baseline`
 - `d3f974a 2026-09-14T12:36:28+08:00 chore: ignore the transient commit-message helper file`
 - `7512a33 2026-09-14T12:36:15+08:00 feat(handoff): cross-account handoff mechanism + git baseline`
-- `f9ef073 2026-09-14T12:29:31+08:00 chore: initial checkpoint of Winter Agent OS V2`
 
-Uncommitted changes: 8
-- `M .workbuddy-ai/handoff/.last_good_commit`
+Uncommitted changes: 35
+- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/06_DECISIONS.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
 - ` M .workbuddy-ai/memory/2026-09-14.md`
-- ` M tools/_h.txt`
-- `?? dataset/truth_audit/march_queue_20260914_134158/`
-- `?? evidence/gather_march_queue_probe.log`
-- `?? tools/probe_march_queue_recall.py`
+- ` M .workbuddy/memory/2026-09-14.md`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/episodes.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/resource_rotation.json`
+- ` M learning/runtime_snapshot.json`
+- ` M tests/test_ocr.py`
+- ` M tests/test_operator_policy.py`
+- ` D tools/live_stamina_run1.log`
 <!-- /AUTO:recent_commits -->
+
+---
+
+## 手写：2026-09-14 第三轮 — 体力可观测 + 撤回可调度（操作者策略落地）
+
+操作者策略：**体力满了就去花（情报/巨兽），奖励及时领，采集只在队列没有更好用途时做；
+队列需要时可以随时撤回（包括为了验证实验）。**
+
+### 让策略真正生效的四件事
+
+1. **体力在地图上可观测**（`winter_agent_v2/ocr.py`）
+   - `HUD_STAMINA_ROI` = x 0.040–0.098、y 0.0755–0.0945，来自**测量**而非目测。
+   - **必须单独对 ROI 做 OCR**：实测全屏 OCR 会漏掉这个小数字（同一帧全屏 token 里没有，
+     裁成 ROI 后 0.999 读出 `350`）。全屏结果只作兜底。
+   - 真机读数 `200` → 领取后 `350`；`AVOID_STAMINA_WASTE` 因此可被发现。
+2. **免费体力领取**（`OPEN_STAMINA_SOURCES` + `CLAIM_FREE_STAMINA`）
+   - 真机：面板 `200/200` + `领取` → 一次点击 → `350/200` + `领取` 变 `下次补给 04:52:52`。
+   - 面板里只有一行免费；付费行（`购买并使用 💎300` / 月卡 / 礼包 / 英雄集结）已登记为
+     **负向对照模板**，并有测试断言没有任何技能把它当目标。
+3. **撤回两步拆分**（`SELECT_MARCH_TO_RECALL` + `RECALL_MARCH`）
+   - 与既有 `EXPLORATION_IDLE_CLAIM` → `CONFIRM_...` 约定一致。
+   - **实测纠正**：撤回不立刻释放槽位（确认后仍 6/6，该行变「返回中」；13:53 6/6 → 14:06 5/6）。
+     原 verifier `NORMAL_IDLE_SLOT_INCREASED` 会判掉正确撤回，已改为状态迁移。
+   - 只有本循环自己打开的召回框才会被确认；来路不明的召回框走 `CLOSE_POPUP`。
+4. **行军计数改为 ROI 读取 + 不再编造**
+   - `MARCH_COUNT_ROI` 单独读 `x/y`（全屏也会漏掉它）。
+   - `vision.py` 删除 `calibrated_baseline_used` 这个「捕获时恰好有 1 条行军」的隐式假设：
+     实测 6 条采集行军的帧上它会报 **1/6**，也就是 5 个假空闲槽。现在读不到就返回 `None`。
+   - 连带修正了 4 个依赖该基线的测试（改用生产栈 `tests/live_stack.py`）。
+
+### 真机证据
+
+- 免费体力：`dataset/truth_audit/free_stamina_20260914_140601/`（领取前后两帧 + 面板复核图）。
+- 撤回：`dataset/truth_audit/march_recall_20260914_135242/`（地图 → 召回框 → 确认后 `返回中`）。
+- 体力 HUD：`dataset/truth_audit/hud_stamina_20260914/`（含「被对话框遮住 → unknown」负向对照）。
+- 真实 loop 派发：`live_stamina_intel_run1` 日志里 `GET_MORE_STAMINA` 面板被判为
+  「没有免费礼包」→ `BACK`，verifier PASS（说明面板解析与安全路径都通）。
 
 ---
 

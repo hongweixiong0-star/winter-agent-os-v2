@@ -1,0 +1,43 @@
+reserve_for_stamina: 2 -> 0 for this experiment
+state before: {'page': 'MAP', 'popup': None, 'stamina': 350, 'used': 5, 'max': 6, 'idle': 1, 'marches': ['GATHERING']}
+
+=== fill the queue with gathering: E:\dongri-mumu-bot\.venv\Scripts\python.exe -u tools/run_gather_acceptance.py --runs 3 --serial ...
+MAP -> MAP
+     6 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     7 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     8 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+
+=== run 2/3  planned_resource=WOOD (pinned) ===
+  stop_reason=RESOURCE_NOT_FOUND full_chain_success=False
+     1 SELECT_RESOURCE            verifier=True OK | MAP -> MAP
+     2 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     3 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     4 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     5 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     6 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     7 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+
+=== run 3/3  planned_resource=COAL (pinned) ===
+  stop_reason=RESOURCE_NOT_FOUND full_chain_success=False
+     1 SELECT_RESOURCE            verifier=True OK | MAP -> MAP
+     2 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     3 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     4 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     5 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     6 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+     7 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+
+=== tally ===
+  MEAT  attempts=1 full_chain_success=0
+  WOOD  attempts=1 full_chain_success=0
+  COAL  attempts=1 full_chain_success=0
+  IRON  attempts=0 full_chain_success=0
+
+written evidence\gather_acceptance_20260914_142516.json
+
+=== fill the queue with gathering exit=0
+state after filling: {'page': 'MAP', 'popup': None, 'stamina': 350, 'used': None, 'max': 6, 'idle': None, 'marches': ['GATHERING']}
+
+RESULT: the queue did not reach 0 idle; the recall trigger cannot fire yet.
+reserve_for_stamina restored to 2
+state at the end: {'page': 'MAP', 'popup': None, 'stamina': 350, 'used': None, 'max': 6, 'idle': None, 'marches': ['GATHERING']}

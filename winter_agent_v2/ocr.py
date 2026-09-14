@@ -328,6 +328,24 @@ class OCRPageClassifier:
 # read ("200/200") still fits inside it.
 HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.058, "h_norm": 0.019}
 
+# The march counter ("5/6") beside the 行军 label.  Measured live: px
+# 200-244 x 228-255 on 720x1280.  It is read from its own ROI rather than from
+# the full-frame result, because RapidOCR's detector *skips* small numbers on a
+# busy 720x1280 frame: on a live map frame it returned the 行军 label but not
+# the counter next to it, and the whole-frame pass also missed the stamina
+# number that a cropped read returned with 0.999 confidence.  Losing the count
+# makes idle_marches unknown, which stops dispatches; losing it silently as
+# "0 used" would be worse.
+MARCH_COUNT_ROI = {"x_norm": 0.240, "y_norm": 0.172, "w_norm": 0.140, "h_norm": 0.036}
+
+
+def read_march_count(text: str) -> tuple[int, int] | None:
+    """Parse ``used/max`` from the march counter ROI text."""
+    match = re.search(r"(\d{1,2})\s*/\s*(\d{1,2})", text.replace("\n", " "))
+    if match is None:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
 
 def read_hud_stamina(
     tokens: tuple[OCRToken, ...],
@@ -357,6 +375,22 @@ def read_hud_stamina(
         xs = [point[0] for point in token.box]
         ys = [point[1] for point in token.box]
         if x0 <= min(xs) and max(xs) <= x1 and y0 <= min(ys) and max(ys) <= y1:
+            return int(text.split("/")[0])
+    return None
+
+
+def parse_stamina_number(tokens: tuple[OCRToken, ...]) -> int | None:
+    """First integer token in a ROI-scoped read.
+
+    Token boxes from a ROI-scoped OCR are relative to the cropped image, so the
+    full-frame containment check in :func:`read_hud_stamina` cannot be reused
+    here; inside a ROI read the crop *is* the gate.
+    """
+    for token in tokens:
+        if token.confidence < 0.85 or not token.box:
+            continue
+        text = token.text.strip().replace(" ", "")
+        if re.fullmatch(r"\d{1,4}(?:/\d{1,4})?", text):
             return int(text.split("/")[0])
     return None
 
@@ -434,11 +468,18 @@ class HybridVision:
                 eligible = [token for token in result.tokens if token.confidence >= 0.80]
                 march_used = primary.march_used
                 march_max = primary.march_max
-                for token in eligible:
-                    count = re.fullmatch(r"(\d+)\s*/\s*(\d+)", token.text.strip())
-                    if count and token.box and max(point[0] for point in token.box) < 300 and max(point[1] for point in token.box) < 360:
-                        march_used, march_max = int(count.group(1)), int(count.group(2))
-                        break
+                # Read the counter from its own ROI first: the full-frame pass
+                # returned the 行军 label without the number beside it, and a
+                # missing count stops every dispatch.
+                counted = read_march_count(self.ocr.recognize(image_path, MARCH_COUNT_ROI).text)
+                if counted is not None:
+                    march_used, march_max = counted
+                else:
+                    for token in eligible:
+                        count = re.fullmatch(r"(\d+)\s*/\s*(\d+)", token.text.strip())
+                        if count and token.box and max(point[0] for point in token.box) < 300 and max(point[1] for point in token.box) < 360:
+                            march_used, march_max = int(count.group(1)), int(count.group(2))
+                            break
                 texts = [token.text.strip() for token in eligible]
                 marches: list[MarchState] = []
                 if "行军中" in texts:
@@ -465,9 +506,20 @@ class HybridVision:
                     if march not in fused_marches:
                         fused_marches.append(march)
                 stamina = dict(primary.stamina)
+                # The gauge is read from a dedicated ROI: the full-frame pass
+                # silently omits this small number (measured live 2026-09-14 --
+                # it was absent from the frame tokens while the cropped read
+                # returned "350" at 0.999 confidence).  Without the ROI read,
+                # stamina would look unobservable on frames where it is plainly
+                # visible, and the whole stamina-first policy would be skipped.
+                roi_tokens = self.ocr.recognize(image_path, HUD_STAMINA_ROI).tokens
                 with Image.open(image_path) as source:
                     frame_width, frame_height = source.size
-                current_stamina = read_hud_stamina(result.tokens, frame_width, frame_height)
+                # Token boxes from a ROI-scoped read are crop-relative, so the
+                # full-frame containment gate cannot be reused on them.
+                current_stamina = parse_stamina_number(roi_tokens)
+                if current_stamina is None:
+                    current_stamina = read_hud_stamina(result.tokens, frame_width, frame_height)
                 if current_stamina is not None:
                     stamina.update({
                         "current": current_stamina,

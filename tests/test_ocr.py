@@ -30,6 +30,20 @@ class KnownTemplateVision:
         return WorldState(page=Page.MAP, confidence=0.99)
 
 
+class HomeTemplateVision:
+    """A page the template layer resolves completely, so OCR must not run."""
+
+    def observe(self, _):
+        return WorldState(page=Page.HOME, confidence=0.99)
+
+
+class MapTemplateVision:
+    """A resolved map frame: the HUD stamina gauge still has to be read."""
+
+    def observe(self, _):
+        return WorldState(page=Page.MAP, confidence=0.99)
+
+
 class AllianceTemplateVision:
     def observe(self, _):
         return WorldState(page=Page.ALLIANCE, alliance={"section":"TECHNOLOGY","status":"UNKNOWN"}, confidence=0.99)

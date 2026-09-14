@@ -7,6 +7,48 @@
 
 ---
 
+## D-022：撤回的证明是状态迁移，不是空闲槽增加
+
+- **决定**：`RECALL_MARCH` 的 verifier 从 `NORMAL_IDLE_SLOT_INCREASED` 改为
+  `MARCH_RECALLED`（`GATHERING` → `RETURNING` 的状态迁移）。
+- **理由**：真机实测（2026-09-14）——点「确定」后队列仍是 **6/6**，被撤的行变成「返回中」，
+  槽位在部队**回城后**才释放（13:53 6/6 → 14:06 5/6）。原来的声明会让 verifier **判掉
+  一次正确的撤回**，然后整个 run 以失败结束。
+- **被否决**：等部队到家再验证（会阻塞 loop，且时长不可控）。
+- **影响**：`verifier.py`、`skills.py`、`tests/test_march_recall_and_stamina.py`。
+  未来任何「撤回/遣返」类技能都要先问一句：**这个状态变化立刻可观测吗？**
+
+## D-021：小号文字必须走专用 ROI OCR，不能依赖全屏结果
+
+- **决定**：HUD 体力数字与行军计数各自用 `OCRService.recognize(path, ROI)` 单独读取，
+  全屏结果只作兜底。
+- **理由**：真机实测同一帧——全屏 token 里**根本没有**体力数字（也没有 `x/y`），
+  而把 ROI 裁出来后以 **0.999** 置信度读出 `350`。RapidOCR 检测器在大而杂的
+  720×1280 帧上会跳过小控件。
+- **被否决**：放大整帧（慢且影响其它 token 的定位）；把阈值降到 0.5（噪声变多）。
+- **影响**：`ocr.py`（`HUD_STAMINA_ROI`、`MARCH_COUNT_ROI`）。
+  注意：ROI 读出的 token box 是**相对裁剪**的，不能套用全屏的包含判定
+  （`parse_stamina_number` 与 `read_hud_stamina` 的区别就是为此）。
+
+## D-020：付费控件登记为负向对照模板
+
+- **决定**：体力面板里的「购买并使用 💎300」被登记成模板
+  `BTN_PAID_STAMINA_PURCHASE`，但**没有任何技能指向它**；测试断言它不在任何 tap target 里。
+- **理由**：面板把免费与付费入口并排放。只写「不要点」是注释；把付费控件做成**可检测的
+  负向对照**，才能让测试真的证明「免费与付费不会被混淆」，也保证未来加技能时不会误指。
+- **影响**：`dataset/candidate/stamina_sources/`、`tests/test_march_recall_and_stamina.py`。
+
+## D-019：行军计数宁可 unknown，也不许由常量编造
+
+- **决定**：删除 `vision.py` 的 `calibrated_baseline_used` 兜底；没有计数模板匹配时
+  `march_used = None`。
+- **理由**：那个常量把「捕获模板那一刻恰好有 1 条行军」编码成了地图的永久属性。
+  真机实测：6 条采集行军的帧上它报 **1/6** —— 也就是**5 个假空闲槽**，
+  足以授权一次派进满队列的出击。计数改由 OCR 从 `MARCH_COUNT_ROI` 读取。
+- **被否决**：保留常量但标注「approximate」（下游 verifier 无法区分真假，等于没改）。
+- **影响**：`vision.py`；4 个依赖该基线的测试改用生产栈（`tests/live_stack.py`）。
+  所有 verifier 早已把 `march_used is None` 当作「未证明」，方向是安全的。
+
 ## D-018：采集降为 LAST_RESORT，体力消耗优先
 
 - **决定**：`config/v2.json` → `march_policy.reserve_for_stamina: 0 → 2`，

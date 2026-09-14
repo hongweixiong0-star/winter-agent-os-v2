@@ -8,21 +8,21 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T05:44:00+00:00
+HANDOFF TIME: 2026-09-14T07:27:21+00:00
 LAST GOOD COMMIT: 446d909
-WORKING TREE: 8 dirty file(s)
-  ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M tools/_h.txt', '?? dataset/truth_audit/march_queue_20260914_134158/', '?? evidence/gather_march_queue_probe.log', '?? tools/probe_march_queue_recall.py']
+WORKING TREE: 35 dirty file(s)
+  ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json', ' M .workbuddy-ai/handoff/09_RUNTIME_STATE.json', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-14.md']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 11 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 13 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
-WHAT NOT VERIFIED: 25 skills never executed, 7 never succeeded
+WHAT NOT VERIFIED: 28 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=DEGRADED stop_reason=no_idle_march
-LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "FAILURE", "recorded_at": "2026-09-14T05:25:20.306984+00:00", "episode_id": "accept_20260914_132309_run01", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_before_20260914T052441981131.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_after_20260914T052445865611.png"}
+STOPPED AT: agent_state=DEGRADED stop_reason=RESOURCE_NOT_FOUND
+LAST PRODUCTION EPISODE: {"skill": "SUBMIT_RESOURCE_SEARCH", "result": "FAILURE", "recorded_at": "2026-09-14T06:42:03.928936+00:00", "episode_id": "accept_20260914_142516_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_before_20260914T064117019019.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_after_20260914T064129392192.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 8
+DIRTY FILES: 35
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
@@ -40,6 +40,41 @@ DO NOT REPEAT:
 ---
 
 ## 手写：人类补充（生成器读不出来的部分）
+
+### ⏱ 最新一轮（第三轮）停止点 — 读这一节就够了
+
+- **WHAT FINISHED**：操作者的「体力优先 + 可随时撤回」策略从**声明**变成**可执行**。
+  - 体力在地图上可观测（`HUD_STAMINA_ROI`，**必须单独 ROI OCR**，全屏会漏）。
+  - 免费体力领取：新建 `OPEN_STAMINA_SOURCES` + `CLAIM_FREE_STAMINA`（都有 verifier）。
+  - 撤回：拆成 `SELECT_MARCH_TO_RECALL` + `RECALL_MARCH`，都有 verifier，都已进
+    `VERIFIED_ATOMIC`。
+  - 删除「行军计数由常量编造」的旧行为（实测会把 6/6 报成 1/6 = 5 个假空闲槽）。
+- **WHAT LIVE VERIFIED（有帧为证）**
+  - **免费体力领取成功**：面板 `200/200` + `领取` → 一次点击 → `350/200`，`领取` 变
+    `下次补给 04:52:52`。帧：`dataset/truth_audit/free_stamina_20260914_140601/`。
+  - **撤回语义**：确认后队列仍 6/6、该行变「返回中」；13:53 = 6/6 → 14:06 = 5/6（槽位在回城后释放）。
+    帧：`dataset/truth_audit/march_recall_20260914_135242/`。
+  - 真实 loop 里 `OPEN_STAMINA_SOURCES` 的**安全路径**通过：面板判定「无免费礼包」→ `BACK`，
+    verifier PASS（见 `evidence/` 中的 live_stamina 日志）。
+  - `reserve_for_stamina=2` **真的改变了行为**：采集扫描在 idle≤2 时返回
+    `reserved_march_for_stamina` 并停止（真机，`evidence/gather_acceptance_20260914_142334.json`）。
+- **WHAT NOT VERIFIED（别当成已完成）**
+  - **撤回的两个技能尚未在真实 loop 里跑通过一次**（触发条件是 `idle==0`，而 reserve=2
+    让采集永远不会把队列占满）。`tools/run_recall_e2e.py` 是为验证它而写的实验工具。
+  - 免费体力**领取**动作也还没经由 live loop 执行过（本轮是我手动点的那一次）。
+  - 行军计数被覆盖层遮住时 `march_used=None`（诚实 unknown），此时派兵/撤回都无法决策。
+  - `DISPATCH_NOT_PROVEN` x28 根因仍未定位。
+  - 四资源各 ≥3 次闭环验收仍未达成。
+- **撤回端到端尝试过一次并失败（诚实记录）**：`tools/run_recall_e2e.py` 把 reserve 临时降到 0
+  并连跑 3 次采集想把队列填满，但三次都是 `RESOURCE_NOT_FOUND`（城镇附近当前没有可采节点），
+  队列停在 idle=1，触发条件不成立。**所以撤回的两个技能仍未在真实 loop 中跑通过。**
+  日志：`evidence/recall_e2e_20260914.log`。
+- **NEXT EXACT STEP**：先解决「巨兽目标面板遮住行军计数」（识别为地图覆盖层并关闭），
+  再在**确实有 6 条行军在外时**重跑 `tools/run_recall_e2e.py` 让撤回在真实 loop 里通过一次。
+- **DO NOT REPEAT**：不要恢复 `calibrated_baseline_used` 这类「捕获时的状态」常量；
+  不要把 `NORMAL_IDLE_SLOT_INCREASED` 当成撤回的证明；不要用全屏 OCR 读 HUD 小数字。
+
+---
 
 ### WHAT FINISHED（本轮真实完成的）
 

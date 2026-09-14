@@ -8,8 +8,8 @@ Machine-detected issues (recomputed every run):
 
 - **SEMANTIC_TARGET_NOT_VERIFIED** x104 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **MARCH_PAGE_NOT_OPEN** x59 — START_GATHER(59)
+- **RESOURCE_NOT_FOUND** x30 — SUBMIT_RESOURCE_SEARCH(30)
 - **DISPATCH_NOT_PROVEN** x29 — DISPATCH_MARCH(29)
-- **RESOURCE_NOT_FOUND** x12 — SUBMIT_RESOURCE_SEARCH(12)
 - **MAIL_CLAIM_FEEDBACK_NOT_PROVEN** x10 — MAIL_CLAIM_REWARDS(10)
 - **POPUP_CLOSE_NOT_PROVEN** x5 — DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 8 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M tools/_h.txt']
+- 35 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -30,9 +30,12 @@ Machine-detected issues (recomputed every run):
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
-| 0 | **体力不可观测 → 操作者的「体力优先」策略无法生效** | ❌ **最高优先级**（入口已找到） | `world.stamina` 从未被填充：**没有任何 STAMINA 模板**，唯一写入点是 `ocr.py:450`（只在**情报页**）。地图上 `AVOID_STAMINA_WASTE` Goal 因此永不出现（`goal_library.py:80`），AUTO 只能回退采集。**真机已确认**：点左上 `(0.09,0.09)` 打开「获取更多」可见 `领主体力 200/200`（体力确实满）。⚠ 该面板是**商城**，只读，绝不点购买/使用。下一步：标定 HUD 体力 ROI。 |
-| 0b | **`RECALL_MARCH` 不可调度** | ❌ 待实现 | 注册表有，但不在 `VERIFIED_ATOMIC`（无 verifier）。`march_policy.recall_on_demand` 只是声明。需要：找到「撤退」控件语义 → 模板 → verifier（撤退前该行军在队列 → 撤退后消失且空闲槽 +1）。当前有 6 条真实采集行军可作验证对象。 |
-| 0c | 采集优先级过高（已改配置，未改行为） | ⚠️ 部分 | `march_policy.reserve_for_stamina: 0 → 2`，新增 `resource_policy.gather_priority=LAST_RESORT`。但这只阻止采集吃满队列；**主动去花体力**仍受 0 与 0b 阻塞。 |
+| 0 | **体力不可观测 → 操作者的「体力优先」策略无法生效** | ✅ **已修（真机验证）** | `ocr.py` 的 `HUD_STAMINA_ROI` 现在从地图 HUD 读领主体力。ROI 是**测量**的（`tools/calibrate_hud_stamina.py` 打印 token box）：x 0.046–0.089、y 0.080–0.091。**关键坑**：全屏 OCR 会漏掉这个小组件（同帧全屏 token 里没有，裁成 ROI 后 0.999 读出 `350`），所以必须单独对 ROI 做 OCR。真机读数 领取前 `200` → 领取后 `350`。`AVOID_STAMINA_WASTE` 现已能在地图上被发现。 |
+| 0b | **`RECALL_MARCH` 不可调度** | ✅ **已修（真机验证）** | 拆成两个技能（与 `EXPLORATION_IDLE_CLAIM`→`CONFIRM_...` 的既有约定一致）：`SELECT_MARCH_TO_RECALL`（Page.MAP，点队列第 1 行）+ `RECALL_MARCH`（Page.POPUP，点「确定」），都有 verifier 并进了 `VERIFIED_ATOMIC`。**实测纠正**：撤回**不立刻释放槽位**——确认后仍 6/6、该行变「返回中」，回城后才释放（13:53 6/6 → 14:06 5/6）。原声明的 `NORMAL_IDLE_SLOT_INCREASED` 会判掉正确撤回，已改为状态迁移判定。 |
+| 0c | 采集优先级过高（已改配置，未改行为） | ✅ 配置已生效 | `march_policy.reserve_for_stamina: 0 → 2`，`resource_policy.gather_priority=LAST_RESORT`。**真机确认这条配置现在真的改变行为**：采集扫描在 idle≤2 时返回 `reserved_march_for_stamina` 并停止，不再吃满队列。⚠ 副作用见 0d。 |
+| 0d | **`reserve_for_stamina=2` 使撤回触发条件几乎不出现** | ⚠️ 设计后果，待决策 | 撤回的触发是 `idle_marches == 0`，而 reserve=2 让采集在 idle≤2 就停，所以「采集把队列占满」这一状态不再自然发生；撤回目前是**安全网**（用于非采集行军占满其余槽位时），不是日常路径。若操作者更看重「没事时把 6 条都拿去采集」，可把 reserve 降到 1 或 0 —— 现在撤回真的可用了，这个取舍才成立。**这是操作者决策，不是代码缺陷。** |
+| 0e | 免费体力：「下次补给」倒计时没有持久化 | ⚠️ 待优化 | 面板显示 `下次补给 04:52:52`。现在每次运行都会开一次面板确认（白花 2 个动作）。存下该倒计时即可在到期前跳过检查。 |
+| 0f | **行军计数会被覆盖层遮挡 → unknown** | ⚠️ **新，下一轮第一动作** | 巨兽目标面板会盖住 HUD 上的 `x/y`，此时 `march_used=None`。这是**诚实返回 unknown**（旧代码会谎报 1/6 = 5 个假空闲槽，已修）。后果：计数未知时 `idle_marches=None`，派兵与撤回都无法决策。证据帧 `dataset/raw/control_panel/probe/state_now.png`。下一步：识别该面板为地图覆盖层并优先关闭，或从行军列表行数推导计数。 |
 | 1 | **AUTO 主循环此前完全无法执行语义点击** | ✅ 已修 | `LiveRuntime.resolve` 用 `self.semantic_vision.semantic.find`，而 `run_live.py` 传入的已经是 `SemanticROIVision` → 第一次点击就 `AttributeError`。已改为 `_semantic` 访问器。**这是接手时最重要的发现。** |
 | 2 | **`unexpected_worker_exits = 15` 无法归因** | ⚠️ 部分 | 历史值来自丢弃 traceback 的旧代码，**永久无法追溯**。现在已改为写完整崩溃报告到 `learning/control_panel/crashes/`，并把环境失败与真实崩溃分开计数。真实的 72h 结论需要新数据。 |
 | 3 | **`DISPATCH_NOT_PROVEN` x28** | ✅ 根因已定位并修复 | 根因：行军队列浮层盖住「搜索资源」按钮 → 模板层对地图返回 `UNKNOWN` → OCR 兜底读到地图活动栏按钮文字「常规活动」→ 判成 `Page.EVENT`（`marches=[]`）→ verifier 失败。已加世界地图常驻锚点（`BTN_OPEN_HOME` 且非 `PAGE_MAP`）并从 OCR 规则删除该按钮标签。**但修复后还没有新的成功闭环证据。** |

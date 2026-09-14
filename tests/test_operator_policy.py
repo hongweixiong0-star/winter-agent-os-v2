@@ -87,10 +87,15 @@ def test_stamina_is_observable_from_the_world_map() -> None:
     so it is now a positive check, kept in the same place so the history of the
     blocker stays visible in one file.
     """
+    import dataclasses
+
     from winter_agent_v2.goal_library import GoalLibrary
     from winter_agent_v2.models import Page, WorldState
 
-    assert hasattr(WorldState, "stamina")
+    # ``hasattr(WorldState, "stamina")`` is False even when the field exists:
+    # dataclasses deletes the class attribute for ``field(default_factory=...)``
+    # fields, so the field list is the only reliable check.
+    assert "stamina" in {f.name for f in dataclasses.fields(WorldState)}
     # The HUD reader owns the ROI; a template for the gauge itself is not
     # required, and the number can only come from OCR.
     from winter_agent_v2.ocr import gauge_green_pixels, read_hud_stamina  # noqa: F401

@@ -29,9 +29,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 53,
+          "attempts": 54,
           "successes": 50,
-          "failures": 3
+          "failures": 4
         },
         {
           "capability": "READ_INTEL_LIST",
@@ -52,11 +52,11 @@
             "SELECT_INTEL_FIREBEAST_MISSION",
             "SELECT_INTEL_RESCUE_SURVIVORS"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "SELECT_INTEL_BEAST_MISSION",
           "live_verified_by": "SELECT_INTEL_BEAST_MISSION",
-          "attempts": 9,
-          "successes": 7,
+          "attempts": 10,
+          "successes": 8,
           "failures": 2
         },
         {
@@ -70,9 +70,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 38,
+          "attempts": 39,
           "successes": 37,
-          "failures": 1
+          "failures": 2
         },
         {
           "capability": "CLAIM_INTEL_REWARD",
@@ -103,11 +103,11 @@
       "design_requirements_total": 6,
       "implemented_capabilities": 6,
       "live_verified_capabilities": 5,
-      "stable_capabilities": 3,
+      "stable_capabilities": 4,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 0.8333,
-      "stable_coverage": 0.5,
+      "stable_coverage": 0.6667,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -141,9 +141,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 38,
+          "attempts": 39,
           "successes": 37,
-          "failures": 1
+          "failures": 2
         },
         {
           "capability": "SPEND_STAMINA_ON_RALLY",
@@ -198,8 +198,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 74,
-          "successes": 40,
+          "attempts": 75,
+          "successes": 41,
           "failures": 34
         },
         {
@@ -210,8 +210,8 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_RESOURCE",
           "live_verified_by": "SELECT_RESOURCE",
-          "attempts": 49,
-          "successes": 8,
+          "attempts": 52,
+          "successes": 11,
           "failures": 41
         },
         {
@@ -222,9 +222,9 @@
           "status": "DEGRADED",
           "implemented_by": "SUBMIT_RESOURCE_SEARCH",
           "live_verified_by": "SUBMIT_RESOURCE_SEARCH",
-          "attempts": 47,
+          "attempts": 65,
           "successes": 35,
-          "failures": 12
+          "failures": 30
         },
         {
           "capability": "OPEN_MARCH_FORMATION",

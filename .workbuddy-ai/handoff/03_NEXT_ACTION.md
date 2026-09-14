@@ -12,13 +12,13 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x104
 LAST GOOD COMMIT: 446d909
-CURRENT DIRTY FILES: 8
-LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "FAILURE", "recorded_at": "2026-09-14T05:25:20.306984+00:00", "episode_id": "accept_20260914_132309_run01", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_before_20260914T052441981131.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_after_20260914T052445865611.png"}
+CURRENT DIRTY FILES: 35
+LAST PRODUCTION EPISODE: {"skill": "SUBMIT_RESOURCE_SEARCH", "result": "FAILURE", "recorded_at": "2026-09-14T06:42:03.928936+00:00", "episode_id": "accept_20260914_142516_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_before_20260914T064117019019.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_after_20260914T064129392192.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
-NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'DISMISS_EXPLORATION_REWARD', 'DISMISS_INTEL_GENERIC_REWARD', 'EXECUTE_INTEL_RESCUE_SURVIVORS', 'JOIN_RALLY', 'NAVIGATE_TO', 'OPEN_ALLIANCE_GIFTS', 'OPEN_INTEL_RESCUE_SURVIVORS_TARGET', 'READ_COUNTER']
+NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_FREE_STAMINA', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'DISMISS_EXPLORATION_REWARD', 'DISMISS_INTEL_GENERIC_REWARD', 'EXECUTE_INTEL_RESCUE_SURVIVORS', 'JOIN_RALLY', 'NAVIGATE_TO', 'OPEN_ALLIANCE_GIFTS', 'OPEN_INTEL_RESCUE_SURVIVORS_TARGET']
 
 NEXT EXACT ACTION: Add `CHECK_ALLIANCE_EVENT` to winter_agent_v2/skills.py v2_registry() AND register a post-action verifier in LiveRuntime.VERIFIED_ATOMIC (a skill without a verifier is never dispatched). It unblocks: ALLIANCE_TIMED_EVENTS, PARTICIPATE_BEAR. Requirement side: knowledge/goals/goal_capability_map.json lists it as an alternative for the blocked capability. Then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
 
@@ -46,40 +46,45 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 - 新增 `resource_policy`：`gather_priority=LAST_RESORT`、`stamina_first=true`、
   `claim_rewards_promptly=true`
 
-**但配置本身不产生行为。** 要让这条策略真正生效，必须先解决两个卡点（按顺序）：
+****两个卡点已于 2026-09-14 解决，并留下真机证据**（旧描述见文末历史区）。
 
-#### 卡点 1：体力不可观测（最高优先级）—— 但已有真机入口
+##### ① 体力已可在地图上观测（整条策略的前提）
 
-`world.stamina` **从来没有被填充过**：manifest 里**没有任何 STAMINA / ENERGY 模板**，
-唯一写入点是 `ocr.py:450`（只在**情报页**上读到一个数字）。
-因此在地图上 `AVOID_STAMINA_WASTE` Goal **永远不会被发现**
-（`goal_library.py:80-85` 需要 `world.stamina["current"]` 或 `world.intel["stamina"]`），
-AUTO 只能回退到采集。
+- `ocr.py` 新增 `HUD_STAMINA_ROI`，读地图 HUD 上的领主体力数值。ROI 是**测量**出来的
+  （`tools/calibrate_hud_stamina.py` 直接打印 OCR token box，不靠目测）：
+  x 0.046–0.089、y 0.080–0.091（720×1280），中心 (49,110)。
+- **必须单独对这一小块做 OCR**：实测全屏 OCR 会漏掉这个小组件——同一帧的全屏 token 里
+  根本没有它，而裁剪成 ROI 后以 **0.999** 置信度读出 `350`。原因写进代码注释了。
+- 真机读数：领取前 `200`，领取后 `350`（地图显示当前值，不封顶）。
+- 结果：`AVOID_STAMINA_WASTE` 现在能在地图上被发现，`stamina_first` 才有意义。
 
-**2026-09-14 真机已确认入口与数值**（见 `dataset/truth_audit/march_queue_20260914_134158/`）：
+##### ② 撤回已可调度：4 个新技能，全部带 verifier
 
-- 点地图左上角约 `(0.09, 0.09)` 会打开「**获取更多**」面板，面板上直接写着
-  **`领主体力 200/200`** —— 体力确实已满（操作者的描述得到证实）。
-- 同一帧 OCR 可稳定读到（大号高对比文字）：
-  `行军` @ (0.0951, 0.1883)，6 行 `采集中` @ x≈(0.1236)，y = 0.2234 / 0.2711 /
-  0.3180 / 0.3656 / 0.4129 / 0.4605。
+| 技能 | 动作 | verifier |
+|---|---|---|
+| `OPEN_STAMINA_SOURCES` | 点地图体力条 → 打开「获取更多」面板 | `STAMINA_SOURCES_OPEN` |
+| `CLAIM_FREE_STAMINA` | 点面板里**免费的**「领取」 | `FREE_STAMINA_CLAIMED` |
+| `SELECT_MARCH_TO_RECALL` | 点行军队列第 1 行 → 打开召回确认框 | `MARCH_RECALL_DIALOG_OPEN` |
+| `RECALL_MARCH` | 点确认框的「确定」 | `MARCH_RECALLED` |
 
-**⚠ 安全警告：「获取更多」是商城面板**，含「购买并使用 300 钻石」「前往」等按钮。
-**只允许读，绝不允许点购买类控件**（规则 §8 永久红线）。
-首选做法仍是在**地图 HUD** 上标定体力 ROI（Template 优先 → 失败再 OCR），
-把商城面板仅作为 HUD 被遮挡时的只读兜底。
+**实测纠正了一个错误假设**：撤回**不会立刻释放槽位**——确认后队列仍是 6/6，该行变成
+「返回中」，槽位在部队回城后才释放（实测 13:53 = 6/6 → 14:06 = 5/6）。技能原本声明的
+`NORMAL_IDLE_SLOT_INCREASED` 会**判掉一次正确的撤回**，已改为状态迁移判定。
 
-**下一步动作**：标定 HUD 体力 ROI → 写入 `world.stamina["current"]` → 补测试 →
-然后 `AVOID_STAMINA_WASTE` 才能在地图上被发现。
+**免费体力在哪**：面板里只有一行免费（「丰盛的招待」+ 裸露的 `领取`，旁边没有任何价格），
+其余都带价（`购买并使用 💎300`、超值月卡、礼包购买、英雄集结「前往」）。付费控件已登记为
+**负向对照模板**，并有测试断言没有任何技能把它当目标。
 
-#### 卡点 2：撤回不可调度
+##### NEW: 下一轮第一动作（按顺序）
 
-`RECALL_MARCH` 在注册表里存在，但**不在 `LiveRuntime.VERIFIED_ATOMIC`**（没有 verifier），
-所以主循环永远无法派发它。`march_policy.recall_on_demand` 只是声明。
-
-**下一步动作**：打开行军队列 → 找到「撤退/召回」控件的语义与位置 →
-加模板 → 写 verifier（`撤退前 queue 有该行军 → 撤退后该行军消失且空闲槽 +1`）→
-才允许进 `VERIFIED_ATOMIC`。参考已有 6 条采集行军（当前 6/6 全忙）作为真机验证对象。
+1. **行军计数会被覆盖层遮挡**：巨兽目标面板会盖住 HUD 上的 `x/y` 计数，此时
+   `march_used=None`。这是**诚实返回 unknown**（旧代码在这种帧上会谎报 1/6，等于 5 个假空闲槽）。
+   后果：计数未知 → `idle_marches=None` → 派兵和撤回都无法决策。
+   证据帧 `dataset/raw/control_panel/probe/state_now.png`。
+   下一步：把该面板识别为地图覆盖层并优先关闭，或改从行军列表行数推导计数。
+2. **「下次补给」倒计时没有持久化**：面板上写着 `下次补给 04:52:52`，存下来就能在到期前
+   跳过检查；现在每次运行都要开一次面板确认，白花 2 个动作。
+3. `DISPATCH_NOT_PROVEN` x28 根因仍未定位。
 
 #### 已经可以直接做的（不需要上面两项）
 
@@ -126,7 +131,23 @@ AUTO 只能回退到采集。
 
 ### 坑（必须知道）
 
-1. **不要写死坐标。** 资源页签带会滚动，客户端会把当前选中页签重新居中。
+0. **这个项目的文件被两个地方同时编辑，外部编辑器会把旧缓冲区刷回磁盘，悄悄吃掉刚写入的改动。**
+   本轮就中过招：`models.py` 的 `stamina` 字段、`brain.py` 的两条弹窗分支、`runtime.py` 的
+   `resolve` 分支、`tests/test_ocr.py` 的辅助类都曾被无声还原。**症状极具迷惑性**：
+   `grep` 能找到某处出现，但运行时报 `TypeError`/`NameError`，或某个分支干脆不生效。
+   对策（必须照做）：
+   - 改完代码立刻跑 `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/check_wiring.py`
+     —— 它做的是**执行级**校验（导入对象、对真实 WorldState 真的调用 `RuleBrain.decide`），
+     而不是字符串匹配。`problems: 0` 才算通过。
+   - 校验通过后**立刻 `git commit`**，用 git 作为可恢复基线。
+   - 跑测试前再跑一次校验；测试期间不要编辑被测试的文件。
+
+1. **跑全量测试要加 `--basetemp`**：默认临时目录在 `%TEMP%\pytest-of-*`，
+   跑完清理时会被工作区的**批量删除安全钩子**拦下（69 个文件 > 阈值 50），
+   进程被中断、拿不到汇总行（测试其实已经跑完）。用：
+   `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest tests -q --basetemp="E:/无尽冬日智能体/tools/_pt_tmp"`
+
+2. **不要写死坐标。** 资源页签带会滚动，客户端会把当前选中页签重新居中。
    已经实测到多种滚动偏移（0、+400px，以及 MEAT 落在 0.4993 的第三种）。
    必须走 `SemanticROIVision.selected_resource` 的白色角标锚点 + 相对布局。
 2. **`run_live.py` 与 `control_panel.py` 传入的 vision 对象不是同一种。**

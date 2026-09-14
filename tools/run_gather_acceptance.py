@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections import defaultdict
 from dataclasses import asdict
@@ -34,6 +35,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# The config path is overridable so an experiment can run against a modified
+# copy without touching the tracked config that tests read.
+CONFIG_PATH = Path(os.environ.get("WINTER_AGENT_CONFIG", ROOT / "config/v2.json"))
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -138,7 +143,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+    config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     if not config.get("production") or config.get("dry_run"):
         raise RuntimeError("GATHER_ACCEPTANCE_REQUIRES_PRODUCTION_TRUE_AND_DRY_RUN_FALSE")
 

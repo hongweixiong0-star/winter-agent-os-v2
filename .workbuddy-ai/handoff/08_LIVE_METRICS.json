@@ -1,34 +1,34 @@
 {
-  "generated_at": "2026-09-14T05:44:00+00:00",
+  "generated_at": "2026-09-14T07:27:21+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "446d909",
+  "commit": "eeac37d",
   "last_good_commit": "446d909",
-  "dirty_count": 8,
+  "dirty_count": 35,
   "episodes": {
-    "total": 766,
-    "production": 766,
-    "success": 514,
-    "failure": 247,
-    "success_rate_over_decided": 0.6754,
+    "total": 792,
+    "production": 792,
+    "success": 520,
+    "failure": 267,
+    "success_rate_over_decided": 0.6607,
     "modes": {
-      "PRODUCTION": 766
+      "PRODUCTION": 792
     },
     "mixed_case_rows": 35
   },
   "skills": {
-    "registry_total": 80,
+    "registry_total": 83,
     "by_state": {
       "VERIFIED": 44,
-      "CANDIDATE": 34,
+      "CANDIDATE": 37,
       "BLOCKED": 2
     },
-    "dispatchable": 61,
+    "dispatchable": 65,
     "counts": {
       "live_verified": 23,
       "stable": 16,
       "degraded": 10,
       "only_failed": 7,
-      "never_executed": 25
+      "never_executed": 28
     }
   },
   "top_failures": [
@@ -61,22 +61,22 @@
       ]
     },
     {
+      "failure_type": "RESOURCE_NOT_FOUND",
+      "count": 30,
+      "top_skills": [
+        [
+          "SUBMIT_RESOURCE_SEARCH",
+          30
+        ]
+      ]
+    },
+    {
       "failure_type": "DISPATCH_NOT_PROVEN",
       "count": 29,
       "top_skills": [
         [
           "DISPATCH_MARCH",
           29
-        ]
-      ]
-    },
-    {
-      "failure_type": "RESOURCE_NOT_FOUND",
-      "count": 12,
-      "top_skills": [
-        [
-          "SUBMIT_RESOURCE_SEARCH",
-          12
         ]
       ]
     },
@@ -186,9 +186,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 68,
-    "present_on_disk": 68,
-    "traceable_episodes": 34,
+    "referenced_screenshots": 120,
+    "present_on_disk": 120,
+    "traceable_episodes": 60,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -202,6 +202,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "no_idle_march"
+    "stop_reason": "RESOURCE_NOT_FOUND"
   }
 }
