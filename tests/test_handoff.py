@@ -49,6 +49,35 @@ def test_each_auto_block_has_exactly_one_marker_pair(name: str, block: str) -> N
     assert text.count(f"<!-- /AUTO:{block} -->") == 1, f"{name}: duplicate/absent closing marker"
 
 
+def test_start_here_documents_steps_that_actually_exist() -> None:
+    """START_HERE.md must not send a new account to a command that is missing.
+
+    The entry point is the only map a fresh account gets; a stale tool path in it
+    is worse than no path, because the account wastes time debugging the docs.
+    """
+    start = ROOT / "START_HERE.md"
+    assert start.is_file()
+    text = start.read_text(encoding="utf-8")
+    for relative in ("tools/update_workbuddy_handoff.py", "tools/truth_audit.py"):
+        assert relative in text, f"START_HERE.md does not mention {relative}"
+        assert (ROOT / relative).is_file(), f"START_HERE.md points at a missing file: {relative}"
+    # The continuation files it tells the reader to open must exist too.
+    for name in ("01_CURRENT_TRUTH.md", "03_NEXT_ACTION.md", "04_OPEN_ISSUES.md", "10_LAST_HANDOFF.md"):
+        assert name in text, f"START_HERE.md does not reference {name}"
+        assert (ROOT / ".workbuddy-ai" / "handoff" / name).is_file(), f"referenced but missing: {name}"
+
+
+def test_every_handoff_file_is_reachable_from_start_here() -> None:
+    """No handoff file may be orphaned: a new account only reads START_HERE first."""
+    start = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
+    referenced = {
+        "00_MASTER_RULES.md", "01_CURRENT_TRUTH.md", "02_CURRENT_PROGRESS.md", "03_NEXT_ACTION.md",
+        "04_OPEN_ISSUES.md", "05_RECENT_CHANGES.md", "06_DECISIONS.md", "07_EXTERNAL_REUSE.md",
+    }
+    missing = sorted(name for name in referenced if name not in start)
+    assert not missing, f"START_HERE.md does not lead to: {missing}"
+
+
 def test_handoff_is_regenerable_without_prior_chat_context() -> None:
     """Everything machine-owned must be derivable from the repository alone."""
     metrics = ROOT / ".workbuddy-ai" / "handoff" / "08_LIVE_METRICS.json"

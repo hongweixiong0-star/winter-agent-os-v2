@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T05:12:07+00:00`
+- generated_at: `2026-09-14T05:12:29+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `68e3540` on `main`
+- commit: `65b2955` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,11 +10,11 @@
 
 - repository: yes
 - last good commit: `68e3540`
-- commits: 5
-- HEAD: `68e3540` — fix(gather): break the unavailable-resource livelock + acceptance harness (2026-09-14T13:11:55+08:00)
+- commits: 6
+- HEAD: `65b2955` — docs(handoff): regenerate truth and record the new last-good commit (2026-09-14T13:12:09+08:00)
 - working tree: 2 dirty file(s)
-  - `M .workbuddy-ai/handoff/.last_good_commit`
-  - `?? tools/_h.txt`
+  - `?? tools/coldstart.txt`
+  - `?? tools/simulate_new_account.py`
 
 ## B. Runtime
 

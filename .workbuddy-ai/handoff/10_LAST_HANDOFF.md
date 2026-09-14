@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T05:12:07+00:00
+HANDOFF TIME: 2026-09-14T05:12:29+00:00
 LAST GOOD COMMIT: 68e3540
 WORKING TREE: 2 dirty file(s)
-  ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
+  ['?? tools/coldstart.txt', '?? tools/simulate_new_account.py']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 5 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 6 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 25 skills never executed, 7 never succeeded
 
