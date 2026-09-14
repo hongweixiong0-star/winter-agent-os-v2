@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 8 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/memory/2026-09-14.md', ' M dataset/external/repositories/whiteout-survival-bot', ' M dataset/external/repositories/wosbot-sparse', '?? .workbuddy-ai/handoff/']
+- 1 uncommitted file(s): ['?? .workbuddy-ai/handoff/.last_good_commit']
 <!-- /AUTO:open_issues -->
 
 ---

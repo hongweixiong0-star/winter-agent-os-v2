@@ -1,26 +1,19 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T04:34:43+00:00`
+- generated_at: `2026-09-14T04:36:31+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `f9ef073` on `main`
+- commit: `d3f974a` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `f9ef073`
-- commits: 1
-- HEAD: `f9ef073` — chore: initial checkpoint of Winter Agent OS V2 (2026-09-14T12:29:31+08:00)
-- working tree: 8 dirty file(s)
-  - `M .gitignore`
-  - ` M .workbuddy-ai/memory/2026-09-14.md`
-  - ` M dataset/external/repositories/whiteout-survival-bot`
-  - ` M dataset/external/repositories/wosbot-sparse`
-  - `?? .workbuddy-ai/handoff/`
-  - `?? START_HERE.md`
-  - `?? tools/handoff_run.txt`
-  - `?? tools/update_workbuddy_handoff.py`
+- last good commit: `d3f974a`
+- commits: 3
+- HEAD: `d3f974a` — chore: ignore the transient commit-message helper file (2026-09-14T12:36:28+08:00)
+- working tree: 1 dirty file(s)
+  - `?? .workbuddy-ai/handoff/.last_good_commit`
 
 ## B. Runtime
 
@@ -44,7 +37,7 @@
 ## D. Registry and lifecycle
 
 - registry total: 80  by_state: {'VERIFIED': 44, 'CANDIDATE': 34, 'BLOCKED': 2}
-- live dispatchable (verifier-backed): 0
+- live dispatchable (verifier-backed): 61
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
 - live_verified: **24**  stable: 16  degraded: 9  only_failed: 7  never_executed: 25
 

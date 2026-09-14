@@ -6,17 +6,12 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `d3f974a 2026-09-14T12:36:28+08:00 chore: ignore the transient commit-message helper file`
+- `7512a33 2026-09-14T12:36:15+08:00 feat(handoff): cross-account handoff mechanism + git baseline`
 - `f9ef073 2026-09-14T12:29:31+08:00 chore: initial checkpoint of Winter Agent OS V2`
 
-Uncommitted changes: 8
-- `M .gitignore`
-- ` M .workbuddy-ai/memory/2026-09-14.md`
-- ` M dataset/external/repositories/whiteout-survival-bot`
-- ` M dataset/external/repositories/wosbot-sparse`
-- `?? .workbuddy-ai/handoff/`
-- `?? START_HERE.md`
-- `?? tools/handoff_run.txt`
-- `?? tools/update_workbuddy_handoff.py`
+Uncommitted changes: 1
+- `?? .workbuddy-ai/handoff/.last_good_commit`
 <!-- /AUTO:recent_commits -->
 
 ---
