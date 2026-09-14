@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-14T11:43:08+00:00",
-  "count": 305,
+  "generated_at": "2026-09-14T12:08:04+00:00",
+  "count": 346,
   "entries": [
     {
       "path": "evidence/alliance_daily_production_chain.json",
@@ -135,6 +135,12 @@
       "mtime": "2026-09-14T05:30:41+00:00"
     },
     {
+      "path": "evidence/INDEX.json",
+      "kind": "evidence",
+      "bytes": 63677,
+      "mtime": "2026-09-14T12:07:44+00:00"
+    },
+    {
       "path": "evidence/intel_beast_production_2026-09-06.json",
       "kind": "evidence",
       "bytes": 3604,
@@ -199,6 +205,24 @@
       "kind": "evidence",
       "bytes": 1195,
       "mtime": "2026-09-14T11:35:31+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260914_114746.json",
+      "kind": "evidence",
+      "bytes": 1240,
+      "mtime": "2026-09-14T11:48:53+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260914_115009.json",
+      "kind": "evidence",
+      "bytes": 1241,
+      "mtime": "2026-09-14T11:51:19+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260914_115407.json",
+      "kind": "evidence",
+      "bytes": 1249,
+      "mtime": "2026-09-14T11:57:14+00:00"
     },
     {
       "path": "evidence/intel_rescue_survivors_production_2026-09-07.json",
@@ -439,6 +463,12 @@
       "kind": "fixture",
       "bytes": 399364,
       "mtime": "2026-09-14T06:22:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/_nav_now.png",
+      "kind": "fixture",
+      "bytes": 290788,
+      "mtime": "2026-09-14T11:49:28+00:00"
     },
     {
       "path": "dataset/truth_audit/_pill_truth.png",
@@ -703,6 +733,222 @@
       "kind": "fixture",
       "bytes": 682775,
       "mtime": "2026-09-13T21:45:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_manual_20260914/01_before.png",
+      "kind": "fixture",
+      "bytes": 918832,
+      "mtime": "2026-09-14T11:58:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_manual_20260914/02_after1.png",
+      "kind": "fixture",
+      "bytes": 918759,
+      "mtime": "2026-09-14T11:58:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_manual_20260914/03_after2.png",
+      "kind": "fixture",
+      "bytes": 920023,
+      "mtime": "2026-09-14T11:59:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_manual_20260914/04_after_back.png",
+      "kind": "fixture",
+      "bytes": 858553,
+      "mtime": "2026-09-14T11:59:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/00_board.png",
+      "kind": "fixture",
+      "bytes": 1008814,
+      "mtime": "2026-09-14T12:00:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/01_card.png",
+      "kind": "fixture",
+      "bytes": 384524,
+      "mtime": "2026-09-14T12:01:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/02_camp.png",
+      "kind": "fixture",
+      "bytes": 887690,
+      "mtime": "2026-09-14T12:01:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/03_squad.png",
+      "kind": "fixture",
+      "bytes": 919550,
+      "mtime": "2026-09-14T12:01:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/04_autofill.png",
+      "kind": "fixture",
+      "bytes": 919514,
+      "mtime": "2026-09-14T12:01:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/05_fight.png",
+      "kind": "fixture",
+      "bytes": 919704,
+      "mtime": "2026-09-14T12:01:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/rapid_1s.png",
+      "kind": "fixture",
+      "bytes": 909523,
+      "mtime": "2026-09-14T12:03:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/rapid_2s.png",
+      "kind": "fixture",
+      "bytes": 918215,
+      "mtime": "2026-09-14T12:03:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/rapid_3s.png",
+      "kind": "fixture",
+      "bytes": 919799,
+      "mtime": "2026-09-14T12:03:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/rapid_5s.png",
+      "kind": "fixture",
+      "bytes": 918539,
+      "mtime": "2026-09-14T12:03:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/rapid_8s.png",
+      "kind": "fixture",
+      "bytes": 918638,
+      "mtime": "2026-09-14T12:03:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_base.png",
+      "kind": "fixture",
+      "bytes": 919147,
+      "mtime": "2026-09-14T12:02:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_post_450_1098.png",
+      "kind": "fixture",
+      "bytes": 919979,
+      "mtime": "2026-09-14T12:03:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_post_515_1050.png",
+      "kind": "fixture",
+      "bytes": 919918,
+      "mtime": "2026-09-14T12:03:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_post_515_1080.png",
+      "kind": "fixture",
+      "bytes": 919277,
+      "mtime": "2026-09-14T12:02:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_post_515_1098.png",
+      "kind": "fixture",
+      "bytes": 920090,
+      "mtime": "2026-09-14T12:02:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_post_515_1120.png",
+      "kind": "fixture",
+      "bytes": 919543,
+      "mtime": "2026-09-14T12:02:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_post_515_1140.png",
+      "kind": "fixture",
+      "bytes": 918813,
+      "mtime": "2026-09-14T12:03:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_post_580_1098.png",
+      "kind": "fixture",
+      "bytes": 919028,
+      "mtime": "2026-09-14T12:03:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_pre_450_1098.png",
+      "kind": "fixture",
+      "bytes": 918792,
+      "mtime": "2026-09-14T12:02:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_pre_515_1050.png",
+      "kind": "fixture",
+      "bytes": 918261,
+      "mtime": "2026-09-14T12:03:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_pre_515_1080.png",
+      "kind": "fixture",
+      "bytes": 919254,
+      "mtime": "2026-09-14T12:02:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_pre_515_1098.png",
+      "kind": "fixture",
+      "bytes": 920053,
+      "mtime": "2026-09-14T12:02:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_pre_515_1120.png",
+      "kind": "fixture",
+      "bytes": 918711,
+      "mtime": "2026-09-14T12:02:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_pre_515_1140.png",
+      "kind": "fixture",
+      "bytes": 919127,
+      "mtime": "2026-09-14T12:03:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_pre_580_1098.png",
+      "kind": "fixture",
+      "bytes": 919240,
+      "mtime": "2026-09-14T12:03:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/scan_t1.png",
+      "kind": "fixture",
+      "bytes": 921448,
+      "mtime": "2026-09-14T12:02:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/wait_15s.png",
+      "kind": "fixture",
+      "bytes": 920017,
+      "mtime": "2026-09-14T12:04:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/wait_30s.png",
+      "kind": "fixture",
+      "bytes": 918861,
+      "mtime": "2026-09-14T12:05:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/wait_45s.png",
+      "kind": "fixture",
+      "bytes": 920113,
+      "mtime": "2026-09-14T12:05:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/wait_60s.png",
+      "kind": "fixture",
+      "bytes": 919854,
+      "mtime": "2026-09-14T12:06:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_fight_seq_20260914/wait_75s.png",
+      "kind": "fixture",
+      "bytes": 919246,
+      "mtime": "2026-09-14T12:06:27+00:00"
     },
     {
       "path": "dataset/truth_audit/hero_journey_probe_20260914/01_board.png",

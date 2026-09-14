@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T11:43:08+00:00",
+  "generated_at": "2026-09-14T12:08:04+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "2ac5f2a",
+  "commit": "d2cc794",
   "last_good_commit": "f8e145f",
-  "dirty_count": 17,
+  "dirty_count": 23,
   "episodes": {
-    "total": 904,
-    "production": 904,
+    "total": 913,
+    "production": 913,
     "success": 614,
-    "failure": 285,
-    "success_rate_over_decided": 0.683,
+    "failure": 294,
+    "success_rate_over_decided": 0.6762,
     "modes": {
-      "PRODUCTION": 904
+      "PRODUCTION": 913
     },
     "mixed_case_rows": 35
   },
@@ -27,14 +27,14 @@
       "live_verified": 23,
       "stable": 19,
       "degraded": 9,
-      "only_failed": 10,
-      "never_executed": 27
+      "only_failed": 11,
+      "never_executed": 26
     }
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 104,
+      "count": 110,
       "top_skills": [
         [
           "SELECT_RESOURCE",
@@ -178,9 +178,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 340,
-    "present_on_disk": 340,
-    "traceable_episodes": 172,
+    "referenced_screenshots": 352,
+    "present_on_disk": 352,
+    "traceable_episodes": 181,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -194,6 +194,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "unknown_page"
+    "stop_reason": "INTEL_HERO_DISPATCH_NOT_PROVEN"
   }
 }

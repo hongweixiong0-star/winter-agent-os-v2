@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T11:43:08+00:00`
+- generated_at: `2026-09-14T12:08:04+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `2ac5f2a` on `main`
+- commit: `d2cc794` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,26 +10,29 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 26
-- HEAD: `2ac5f2a` — chore(skills): install the security-check gate and register the project skill ledger (2026-09-14T19:30:36+08:00)
-- working tree: 17 dirty file(s)
-  - `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
-  - ` M .workbuddy-ai/memory/2026-09-14.md`
-  - ` M dataset/candidate/template_manifest.json`
-  - ` M evidence/intel_loop_20260914_112516.log`
+- commits: 28
+- HEAD: `d2cc794` — docs(mcp): capability audit - zero new MCP servers, host MCP usage policy (2026-09-14T19:47:35+08:00)
+- working tree: 23 dirty file(s)
+  - `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+  - ` M docs/CAPABILITY_COVERAGE.md`
+  - ` M evidence/INDEX.json`
+  - ` M knowledge/goals/capability_skill_map.json`
+  - ` M learning/candidate_attempt_pool.json`
+  - ` M learning/episodes.jsonl`
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
-  - ` M tools/update_workbuddy_handoff.py`
-  - ` M winter_agent_v2/skills.py`
-  - ` M winter_agent_v2/verifier.py`
-  - ` M winter_agent_v2/vision.py`
-  - `?? .workbuddy/memory/MEMORY.md`
-  - `?? dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
-  - `?? docs/MEMORY_ARCHITECTURE_2026_09_14.md`
-  - `?? evidence/intel_pins_20260914_113408.json`
+  - ` M winter_agent_v2/brain.py`
+  - `?? evidence/intel_pins_20260914_114746.json`
+  - `?? evidence/intel_pins_20260914_115009.json`
+  - `?? evidence/intel_pins_20260914_115407.json`
   - `?? tools/_h.txt`
-  - `?? tools/pins_out7.txt`
-  - `?? tools/pins_out8.txt`
 
 ## B. Runtime
 
@@ -38,24 +41,24 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: unknown_page
-- page: UNKNOWN  march: None/None
-- updated_at: 2026-09-14T11:35:19.462201+00:00
+- stop_reason: INTEL_HERO_DISPATCH_NOT_PROVEN
+- page: MARCH  march: None/None
+- updated_at: 2026-09-14T11:57:02.929343+00:00
 
 ## C. Episode stream
 
-- rows: 904 (production 904)  modes: {'PRODUCTION': 904}
-- success / failure: 614 / 285
-- success rate over decided: **0.683**
+- rows: 913 (production 913)  modes: {'PRODUCTION': 913}
+- success / failure: 614 / 294
+- success rate over decided: **0.6762**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "SAFE_STOP", "result": "FAILURE", "recorded_at": "2026-09-14T11:20:35.634003+00:00", "episode_id": "intel_pins_20260914_112018_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_112018_nav_00\\intel_pins_20260914_112018_nav_00_step_001_before_20260914T112033523534.png", "after_screenshot": ""}`
+- last episode: `{"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T11:57:02.877619+00:00", "episode_id": "intel_pins_20260914_115407_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_115407_nav_00\\intel_pins_20260914_115407_nav_00_step_001_before_20260914T115616603104.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_115407_nav_00\\intel_pins_20260914_115407_nav_00_step_001_after_20260914T115628441233.png"}`
 
 ## D. Registry and lifecycle
 
 - registry total: 86  by_state: {'VERIFIED': 44, 'CANDIDATE': 40, 'BLOCKED': 2}
 - live dispatchable (verifier-backed): 68
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **23**  stable: 19  degraded: 9  only_failed: 10  never_executed: 27
+- live_verified: **23**  stable: 19  degraded: 9  only_failed: 11  never_executed: 26
 
 ### Never executed
 
@@ -65,7 +68,6 @@
 - `CLAIM_REWARD` (CANDIDATE)
 - `DISMISS_ALLIANCE_GENERIC_REWARD` (CANDIDATE)
 - `DISMISS_EXPLORATION_REWARD` (VERIFIED)
-- `INTEL_HERO_DISPATCH` (CANDIDATE)
 - `INTEL_HERO_START_MARCH` (CANDIDATE)
 - `JOIN_RALLY` (CANDIDATE)
 - `NAVIGATE_TO` (CANDIDATE)
@@ -94,6 +96,7 @@
 - `DISMISS_MAIL_REWARD` attempts=1 failure=1
 - `DISPATCH_BEAST` attempts=1 failure=1
 - `EXECUTE_INTEL_RESCUE_SURVIVORS` attempts=5 failure=5
+- `INTEL_HERO_DISPATCH` attempts=3 failure=3
 - `OPEN_INTEL_HERO_JOURNEY_TARGET` attempts=1 failure=1
 - `RESEARCH` attempts=1 failure=0
 - `SAFE_STOP` attempts=4 failure=4
@@ -125,7 +128,7 @@
 ### Degraded
 
 - `DISMISS_INTEL_REWARD` success=17 failure=5 rate=0.7727
-- `DISPATCH_MARCH` success=32 failure=29 rate=0.5246
+- `DISPATCH_MARCH` success=32 failure=35 rate=0.4776
 - `MAIL_CLAIM_REWARDS` success=14 failure=10 rate=0.5833
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
 - `OPEN_MAIL` success=31 failure=15 rate=0.6739
@@ -138,7 +141,7 @@
 
 Failure | Count | Top skills
 ---|---:|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 104 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+`SEMANTIC_TARGET_NOT_VERIFIED` | 110 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 `MARCH_PAGE_NOT_OPEN` | 59 | START_GATHER(59)
 `RESOURCE_NOT_FOUND` | 30 | SUBMIT_RESOURCE_SEARCH(30)
 `DISPATCH_NOT_PROVEN` | 29 | DISPATCH_MARCH(29)
@@ -176,9 +179,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 340  present: 340
+- referenced screenshots: 352  present: 352
 - missing: []
-- episodes carrying screenshot references: 172
+- episodes carrying screenshot references: 181
 
 ## H. Commercial bot parity
 

@@ -380,6 +380,14 @@ class RuleBrain:
             if self.current_goal in {None, "GATHER_RESOURCE"} and world.idle_marches <= self.reserve_marches:
                 return Decision("SAFE_STOP", "reserved_march_for_stamina", 1.0, "stamina_task_slot_preserved")
             return Decision("SEARCH_RESOURCE", "idle_march_available", world.confidence, "resource_search_open")
+        if world.page is Page.MARCH and self.current_goal == "INTEL" and not world.beast:
+            # The Hero Journey squad-setup page (小队设置): no beast fields, and
+            # without this explicit branch the decision fell to the registry
+            # fallback, which could pick the *gathering* dispatch skill whose
+            # button semantic does not exist on this page (live 2026-09-14:
+            # SEMANTIC_TARGET_NOT_VERIFIED loop). The camp fight is an instant
+            # hero battle, so dispatching the pre-filled formation is correct.
+            return Decision("INTEL_HERO_DISPATCH", "intel_hero_formation_ready", world.confidence, "intel_hero_fight_started")
         if world.page is Page.MARCH and world.beast:
             if world.beast.get("victory_assured") is True:
                 if self.current_goal == "INTEL" or world.beast.get("level") == 22:

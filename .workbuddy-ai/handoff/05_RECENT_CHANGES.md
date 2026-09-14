@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `d2cc794 2026-09-14T19:47:35+08:00 docs(mcp): capability audit - zero new MCP servers, host MCP usage policy`
+- `ff9a23d 2026-09-14T19:43:43+08:00 docs(memory): architecture review + the P0/P1 fixes it required`
 - `2ac5f2a 2026-09-14T19:30:36+08:00 chore(skills): install the security-check gate and register the project skill ledger`
 - `59e94ed 2026-09-14T19:23:23+08:00 feat(intel): the mission pin board is now workable end to end`
 - `85027fd 2026-09-14T17:17:37+08:00 docs(memory): record the sixth round (intel drained, hourly automation, stamina fragment fix)`
@@ -16,28 +18,51 @@ Last 12 commits (newest first):
 - `db268f9 2026-09-14T16:50:25+08:00 feat(intel): the beast chain runs end to end on the live client`
 - `7fb541d 2026-09-14T16:15:46+08:00 docs(memory): record the fourth round (beast card + intel empty list)`
 - `940310f 2026-09-14T16:15:30+08:00 docs(handoff): mark 702e65b as last-good after the beast-card and intel-list fixes`
-- `702e65b 2026-09-14T16:15:17+08:00 fix(intel): repair the stamina-sink chain — stale beast card + empty-list dead end`
-- `16bf007 2026-09-14T15:45:11+08:00 docs(handoff): mark 25b5ba7 as last-good and refresh truth after the regression suite`
 
-Uncommitted changes: 17
-- `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
-- ` M .workbuddy-ai/memory/2026-09-14.md`
-- ` M dataset/candidate/template_manifest.json`
-- ` M evidence/intel_loop_20260914_112516.log`
+Uncommitted changes: 23
+- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/candidate_attempt_pool.json`
+- ` M learning/episodes.jsonl`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
-- ` M tools/update_workbuddy_handoff.py`
-- ` M winter_agent_v2/skills.py`
-- ` M winter_agent_v2/verifier.py`
-- ` M winter_agent_v2/vision.py`
-- `?? .workbuddy/memory/MEMORY.md`
-- `?? dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
-- `?? docs/MEMORY_ARCHITECTURE_2026_09_14.md`
-- `?? evidence/intel_pins_20260914_113408.json`
+- ` M winter_agent_v2/brain.py`
+- `?? evidence/intel_pins_20260914_114746.json`
+- `?? evidence/intel_pins_20260914_115009.json`
+- `?? evidence/intel_pins_20260914_115407.json`
 - `?? tools/_h.txt`
-- `?? tools/pins_out7.txt`
-- `?? tools/pins_out8.txt`
 <!-- /AUTO:recent_commits -->
+
+---
+
+## 手写：2026-09-14 第七轮 — Skill/MCP 工具链审计 + 英雄之旅推进到小队页
+
+**Skill 审计**（操作者指令）：安装 skills-security-check（云鼎）并用它实测审计
+winter-os-takeover（Benign 95）；创建项目级 skill-install-gate 门禁 +
+SKILL_AUDIT.json 台账；playwright-cli 与 agent-browser 重复→前者保留不主用；
+拒绝 github MCP（无远程仓库）。台账见 .workbuddy/skills/SKILL_AUDIT.json。
+
+**MCP 审计**：用户层 mcp.json 为空=零自装；宿主 4 个 MCP 处置完毕
+（mail/genie-baas 外发面禁用、weixinpay 永久禁用、sheetagent 按需）；
+专家零 MCP 强制依赖。docs/MCP_AUDIT_2026_09_14.md。
+
+**记忆架构**（操作者指令）：docs/MEMORY_ARCHITECTURE_2026_09_14.md；
+P0 双记忆根合并（M1 零丢失合并/M2 指针/M3 宪法 18b）+ P1 evidence/INDEX.json
+（305 条）已落地。
+
+**英雄之旅真机推进**：路线打通到小队设置页（钉→卡→前往查看→探险→小队页，
+全链视觉/技能/验证器就位），但「战斗」点击不生效（见 04 0k）。体力花费 157→157
+（本轮无新消耗）。修复过程中附带发现并修复 vision.py 的 return 缩进破坏
+（UnboundLocalError: marches）。
 
 ---
 

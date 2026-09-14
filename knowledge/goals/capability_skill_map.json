@@ -246,9 +246,9 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 61,
+          "attempts": 67,
           "successes": 32,
-          "failures": 29
+          "failures": 35
         },
         {
           "capability": "VERIFY_GATHERING",
@@ -954,9 +954,9 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 61,
+          "attempts": 67,
           "successes": 32,
-          "failures": 29
+          "failures": 35
         }
       ],
       "design_requirements_total": 5,

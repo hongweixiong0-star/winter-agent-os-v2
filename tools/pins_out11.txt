@@ -1,0 +1,50 @@
+intel pin loop start 2026-09-14T11:54:07+00:00 pin_budget=30
+STOP: 3 navigation cycles failed to reach the intel page
+
+=== INTEL PINS SUMMARY ===
+{
+  "generated_at": "2026-09-14T11:57:14+00:00",
+  "pins_processed": 0,
+  "pins_skipped": 0,
+  "dispatches": 0,
+  "claims": 0,
+  "per_pin": [
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "INTEL_HERO_DISPATCH_NOT_PROVEN",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 47.3,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_115407_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "INTEL_HERO_DISPATCH_NOT_PROVEN",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 46.7,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_115407_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "INTEL_HERO_DISPATCH_NOT_PROVEN",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 47.3,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_115407_nav_00"
+    }
+  ]
+}
+wrote evidence\intel_pins_20260914_115407.json
