@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T15:13:41+00:00`
+- generated_at: `2026-09-14T15:57:45+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `5c96773` on `main`
+- commit: `3cb413e` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,20 +10,15 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 43
-- HEAD: `5c96773` — fix(runtime): back out of an unreadable screen instead of dying on it (2026-09-14T22:59:53+08:00)
-- working tree: 11 dirty file(s)
-  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-14.md`
-  - ` M .workbuddy/memory/2026-09-14.md`
+- commits: 45
+- HEAD: `3cb413e` — docs(knowledge): correct two intel facts the live client contradicted (2026-09-14T23:51:10+08:00)
+- working tree: 6 dirty file(s)
+  - `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
   - ` M learning/episodes.jsonl`
   - ` M learning/executor_backend.jsonl`
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
-  - `?? evidence/intel_loop_20260914_150250.log`
+  - `?? evidence/intel_loop_20260914_155030.log`
 
 ## B. Runtime
 
@@ -34,15 +29,15 @@
 - last_fatal_error: None
 - stop_reason: intel_not_available
 - page: INTEL  march: None/None
-- updated_at: 2026-09-14T15:03:01.832498+00:00
+- updated_at: 2026-09-14T15:55:16.466091+00:00
 
 ## C. Episode stream
 
-- rows: 933 (production 933)  modes: {'PRODUCTION': 933}
-- success / failure: 624 / 304
-- success rate over decided: **0.6724**
+- rows: 934 (production 934)  modes: {'PRODUCTION': 934}
+- success / failure: 625 / 304
+- success rate over decided: **0.6728**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "OPEN_INTEL", "result": "SUCCESS", "recorded_at": "2026-09-14T15:00:32.493085+00:00", "episode_id": "verify_recovery_20260914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\verify_recovery_20260914\\verify_recovery_20260914_step_002_before_20260914T150011996514.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\verify_recovery_20260914\\verify_recovery_20260914_step_002_after_20260914T150025155933.png"}`
+- last episode: `{"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-14T15:50:44.627333+00:00", "episode_id": "intel_loop_20260914_155030_c01", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_155030_c01\\intel_loop_20260914_155030_c01_step_001_before_20260914T155033213752.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_155030_c01\\intel_loop_20260914_155030_c01_step_001_after_20260914T155035770775.png"}`
 
 ## D. Registry and lifecycle
 
@@ -96,7 +91,7 @@
 ### Stable
 
 - `ALLIANCE_ALLY_GIFT_CLAIM` success=12 rate=0.9231
-- `BACK` success=42 rate=0.9767
+- `BACK` success=43 rate=0.9773
 - `CLOSE_POPUP` success=30 rate=0.9677
 - `DISMISS_INTEL_GENERIC_REWARD` success=13 rate=1.0
 - `DISMISS_MAIL_GENERIC_REWARD` success=6 rate=0.8571
@@ -169,9 +164,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 390  present: 390
+- referenced screenshots: 392  present: 392
 - missing: []
-- episodes carrying screenshot references: 201
+- episodes carrying screenshot references: 202
 
 ## H. Commercial bot parity
 

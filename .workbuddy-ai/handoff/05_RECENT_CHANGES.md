@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `3cb413e 2026-09-14T23:51:10+08:00 docs(knowledge): correct two intel facts the live client contradicted`
+- `5c4ddd1 2026-09-14T23:13:56+08:00 docs(handoff): the hourly automation did not exist; it is recreated and verified`
 - `5c96773 2026-09-14T22:59:53+08:00 fix(runtime): back out of an unreadable screen instead of dying on it`
 - `39e246f 2026-09-14T22:49:47+08:00 docs(handoff): refresh after the OCR fragment-stitching fix (full suite green, 408 passed)`
 - `48e266f 2026-09-14T22:48:48+08:00 fix(ocr): stitch overlapping digit fragments instead of enlarging the crop`
@@ -16,21 +18,14 @@ Last 12 commits (newest first):
 - `e3f3493 2026-09-14T22:08:34+08:00 fix(intel): the hero-journey camp panel is Page.EXPLORATION, not Page.BEAST`
 - `1b7956b 2026-09-14T22:04:40+08:00 fix(executor): MaaFramework screencaps are BGR - convert them to RGB at capture`
 - `7c2fae5 2026-09-14T21:55:14+08:00 fix(intel): a real rescue start is proven by the paid stamina, not by one frame-specific status read`
-- `3518af1 2026-09-14T21:25:52+08:00 feat(executor): MAA in the real production path, measured live, with a regression found and reverted`
-- `4ff00eb 2026-09-14T20:48:40+08:00 feat(executor): MaaFramework as a second executor backend behind the existing Executor boundary`
 
-Uncommitted changes: 11
-- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-14.md`
-- ` M .workbuddy/memory/2026-09-14.md`
+Uncommitted changes: 6
+- `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
-- `?? evidence/intel_loop_20260914_150250.log`
+- `?? evidence/intel_loop_20260914_155030.log`
 <!-- /AUTO:recent_commits -->
 
 ---

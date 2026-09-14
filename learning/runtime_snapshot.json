@@ -2,9 +2,9 @@
   "agent_state": "DEGRADED",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-14T15:03:01.722715+00:00",
-  "last_action_time": "2026-09-14T15:00:23.632505+00:00",
-  "last_success_time": "2026-09-14T15:00:32.502126+00:00",
+  "last_tick_time": "2026-09-14T15:55:16.355920+00:00",
+  "last_action_time": "2026-09-14T15:50:34.226926+00:00",
+  "last_success_time": "2026-09-14T15:50:44.640510+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_150250_c01\\intel_loop_20260914_150250_c01_step_001_before_20260914T150253396942.png",
+  "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_155030_c03\\intel_loop_20260914_155030_c03_step_001_before_20260914T155507853649.png",
   "march_used": null,
   "march_max": null,
   "queues": {
@@ -31,8 +31,7 @@
     "training": {},
     "intel": {
       "status": "NOT_AVAILABLE",
-      "stamina": 149,
-      "refresh": "00:57:08",
+      "stamina": 160,
       "available_count": 0,
       "list_read": true
     },
@@ -40,5 +39,5 @@
     "events": {}
   },
   "stop_reason": "intel_not_available",
-  "updated_at": "2026-09-14T15:03:01.832498+00:00"
+  "updated_at": "2026-09-14T15:55:16.466091+00:00"
 }

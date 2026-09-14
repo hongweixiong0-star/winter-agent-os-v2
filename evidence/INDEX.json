@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-14T15:13:42+00:00",
-  "count": 389,
+  "generated_at": "2026-09-14T15:57:46+00:00",
+  "count": 391,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -143,8 +143,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 71589,
-      "mtime": "2026-09-14T14:49:34+00:00"
+      "bytes": 71754,
+      "mtime": "2026-09-14T15:13:42+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -181,6 +181,12 @@
       "kind": "evidence",
       "bytes": 264,
       "mtime": "2026-09-14T15:03:02+00:00"
+    },
+    {
+      "path": "evidence/intel_loop_20260914_155030.log",
+      "kind": "evidence",
+      "bytes": 792,
+      "mtime": "2026-09-14T15:55:16+00:00"
     },
     {
       "path": "evidence/intel_pins_20260914_094520.json",
@@ -1495,6 +1501,12 @@
       "kind": "fixture",
       "bytes": 7623,
       "mtime": "2026-09-14T05:53:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/orange_pin_probe_20260914/orange_pin_tap_after.png",
+      "kind": "fixture",
+      "bytes": 312512,
+      "mtime": "2026-09-14T15:49:19+00:00"
     },
     {
       "path": "dataset/truth_audit/panel_redesign/_check_panel2_MEAT_a.png",

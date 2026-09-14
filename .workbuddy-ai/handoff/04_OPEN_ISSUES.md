@@ -23,7 +23,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 11 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-14.md']
+- 6 uncommitted file(s): ['M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -66,6 +66,7 @@ Machine-detected issues (recomputed every run):
 | 16 | **`SAFE_STOP` 的「正确空转」被记成 FAILURE** | ✅ **已核实为过期条目（第九轮末）** | 复核发现：`SAFE_STOP` **不在** `skills.py` 注册表里，也没有 `verify_safe_stop`；现存 4 条 SAFE_STOP/`NO_EXECUTION` **全部在 13:25Z 之前**（09:29 / 11:20×3），即 MAA 相关那几个 commit 之前的旧代码所写。**当前代码不再写这种 episode** —— 本会话的 live6 运行里第 6 步就是 SAFE_STOP，episode 流里没有对应失败行。**不要再"修"这个不存在的问题。** |
 | 17 | **verifier 落后于真机页面分类（一类缺陷，非孤立）** | ⚠️ 本轮修了 3 处 | 本日三处同源：`verify_intel_rescue_started`（依赖单帧 `IN_PROGRESS` 读数）、`verify_intel_hero_target_open`、`verify_intel_hero_march_open`（都写死 `Page.BEAST`，而真机与 `brain.py` 早已按 `Page.EXPLORATION` 工作）。**建议**：把「verifier 与 brain/vision 的页面契约」做一次一致性审计，而不是等它一条条在真机上暴露。 |
 | 18 | **统计口径：`RESOURCE_NOT_FOUND` 大量来自验收 harness，不是生产缺陷** | ℹ️ 澄清，勿误判 | 第九轮曾据"当日 22 条"判断采集链在浪费动作，**复核后该结论是错的**：30 条里 27 条来自 `accept_*`（`run_gather_acceptance.py` **故意**去填满队列以触发 `no_idle_march`/撤回），8 条是 09-13 无 `episode_id` 的历史行；**当日生产运行 0 条**。**教训：按 failure_type 统计时必须先按 `episode_id` 区分「生产」与「harness/实验」，否则会把测试自身的探索行为当成产品缺陷。** |
+| 19 | **情报页「下次刷新」倒计时读数不可靠，不能用来排期** | ⚠️ 记录，未修 | 连续 3 次采样（间隔 45s）中 **2 次 `refresh=None`**（模板/OCR 没读到），第 3 次读到 `00:02:45`。且跨时间点的读数与真实流逝时间**不一致**：23:47 读 `00:12:41`、23:55 读 `00:11:10`（8 分钟只走了 1.5 分钟）。**结论：不要用这个倒计时推算"下批任务时间"**（handoff 曾据它写"下批 ~23:51"，实际刷新点并不吻合）。可靠的判据只有 `intel.status`（`AVAILABLE` / `NOT_AVAILABLE`）——**循环按"板子是否空了"判断即可，不要去算时间**。若要修，应先查清该读数是模板命中间歇丢失，还是客户端本身会重置倒计时。 |
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
