@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-09-14T08:50:41+00:00",
+  "generated_at": "2026-09-14T09:15:56+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "db268f9",
+  "commit": "349bb6c",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-14T08:37:43.877355+00:00",
+    "last_tick_time": "2026-09-14T09:02:28.279783+00:00",
     "last_action_time": "2026-09-14T08:34:16.656515+00:00",
     "last_success_time": "2026-09-14T08:34:26.152649+00:00",
     "last_fatal_error": null,
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_guard_run9\\live_intel_guard_run9_step_001_before_20260914T083735806600.png",
+    "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_085752_c03\\intel_loop_20260914_085752_c03_step_001_before_20260914T090217444794.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -37,7 +37,7 @@
       "intel": {
         "status": "NOT_AVAILABLE",
         "stamina": 295,
-        "refresh": "07:22:25",
+        "refresh": "06:57:43",
         "available_count": 0,
         "list_read": true
       },
@@ -45,7 +45,7 @@
       "events": {}
     },
     "stop_reason": "intel_not_available",
-    "updated_at": "2026-09-14T08:37:43.987834+00:00"
+    "updated_at": "2026-09-14T09:02:28.390577+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",

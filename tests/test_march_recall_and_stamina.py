@@ -15,6 +15,8 @@ states:
 ``dataset/truth_audit/hud_stamina_20260914/``
     map_hud_with_stamina_200.png           the gauge reads 200
     map_hud_covered_by_recall_dialog.png   the gauge is covered -> unknown
+    map_hud_with_stamina_295__roi_fragments.png  the gauge reads 295 while the
+        ROI-scoped OCR splits it into the overlapping fragments '29'+'9'+'5'
 """
 
 from __future__ import annotations
@@ -260,3 +262,37 @@ def test_no_skill_targets_the_paid_stamina_control() -> None:
     assert "BTN_PAID_STAMINA_PURCHASE" not in targets, (
         "a skill targets the paid stamina control; only the free claim is allowed"
     )
+
+
+def test_roi_stamina_read_merges_overlapping_digit_fragments() -> None:
+    """The recognizer may split one rendered number into overlapping tokens.
+
+    Live 2026-09-14: the pill showing 295 came back from the ROI-scoped OCR as
+    the tokens '29' + '9' + '5', and taking the first token reported 29 - a
+    wrong number that would poison every stamina decision.  The reader must
+    merge the fragments geometrically instead.
+    """
+    from winter_agent_v2.ocr import OCRToken, parse_stamina_number
+
+    def box(x0: float, x1: float) -> tuple:
+        return ((x0, 5.0), (x1, 5.0))
+
+    fragments = (
+        OCRToken("29", 0.991, box(3.9, 19.0)),
+        OCRToken("9", 0.999, box(13.8, 23.0)),
+        OCRToken("5", 1.0, box(23.6, 33.5)),
+    )
+    assert parse_stamina_number(fragments) == 295
+    # A single complete token still reads as itself.
+    assert parse_stamina_number((OCRToken("295", 1.0, box(3.9, 33.5)),)) == 295
+    # A ratio token keeps only the current value.
+    assert parse_stamina_number((OCRToken("295/200", 1.0, box(3.9, 40.0)),)) == 295
+    # Nothing readable -> honest unknown.
+    assert parse_stamina_number(()) is None
+    assert parse_stamina_number((OCRToken("体力", 0.99, box(3.9, 33.5)),)) is None
+
+
+def test_hybrid_reads_the_fragmented_gauge_correctly_on_the_live_frame() -> None:
+    frame = _require(STAMINA / "map_hud_with_stamina_295__roi_fragments.png")
+    state = _hybrid().observe(frame)
+    assert (state.stamina or {}).get("current") == 295

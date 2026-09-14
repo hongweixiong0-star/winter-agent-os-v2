@@ -1,0 +1,52 @@
+intel loop start 2026-09-14T08:57:52+00:00 max_cycles=12 log=intel_loop_20260914_085752.log
+{"stop_reason": "intel_not_available", "steps": 1, "dispatches": 0, "claims": 0, "stamina_before": null, "stamina_after": null, "cycle": 1, "exit_code": 0, "elapsed_s": 12.2, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_loop_20260914_085752_c01"}
+{"stop_reason": "intel_not_available", "steps": 1, "dispatches": 0, "claims": 0, "stamina_before": null, "stamina_after": null, "cycle": 2, "exit_code": 0, "elapsed_s": 11.8, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_loop_20260914_085752_c02"}
+{"stop_reason": "intel_not_available", "steps": 1, "dispatches": 0, "claims": 0, "stamina_before": null, "stamina_after": null, "cycle": 3, "exit_code": 0, "elapsed_s": 11.8, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_loop_20260914_085752_c03"}
+STOP: intel list stayed empty for 3 consecutive cycles; waiting for the refresh timer is out of scope for this loop
+
+=== INTEL LOOP SUMMARY ===
+{
+  "cycles": 3,
+  "dispatches": 0,
+  "claims": 0,
+  "stamina_first_seen": null,
+  "stamina_last_seen": null,
+  "per_cycle": [
+    {
+      "stop_reason": "intel_not_available",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_before": null,
+      "stamina_after": null,
+      "cycle": 1,
+      "exit_code": 0,
+      "elapsed_s": 12.2,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_loop_20260914_085752_c01"
+    },
+    {
+      "stop_reason": "intel_not_available",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_before": null,
+      "stamina_after": null,
+      "cycle": 2,
+      "exit_code": 0,
+      "elapsed_s": 11.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_loop_20260914_085752_c02"
+    },
+    {
+      "stop_reason": "intel_not_available",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_before": null,
+      "stamina_after": null,
+      "cycle": 3,
+      "exit_code": 0,
+      "elapsed_s": 11.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_loop_20260914_085752_c03"
+    }
+  ]
+}

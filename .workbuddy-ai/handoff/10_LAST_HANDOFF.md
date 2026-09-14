@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T08:50:41+00:00
+HANDOFF TIME: 2026-09-14T09:15:56+00:00
 LAST GOOD COMMIT: db268f9
-WORKING TREE: 2 dirty file(s)
-  ['M .workbuddy-ai/handoff/.last_good_commit', ' M tools/_h.txt']
+WORKING TREE: 12 dirty file(s)
+  ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', ' M tests/test_march_recall_and_stamina.py', ' M winter_agent_v2/ocr.py', '?? dataset/truth_audit/hud_stamina_20260914/map_hud_with_stamina_295__roi_fragments.png', '?? evidence/intel_loop_20260914_085752.log', '?? tools/_h.txt']
 
-WHAT FINISHED (machine-visible): 24 skills live verified, 17 stable, 19 commit(s) in history
+WHAT FINISHED (machine-visible): 24 skills live verified, 17 stable, 21 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 27 skills never executed, 7 never succeeded
 
@@ -22,7 +22,7 @@ STOPPED AT: agent_state=DEGRADED stop_reason=intel_not_available
 LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T08:34:26.144051+00:00", "episode_id": "live_intel_full_run8", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_after_20260914T083418180357.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 2
+DIRTY FILES: 12
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
@@ -40,6 +40,20 @@ DO NOT REPEAT:
 ---
 
 ## 手写：人类补充（生成器读不出来的部分）
+
+### 🔄 情报任务已做完 + 常驻循环自动化（第六轮，2026-09-14 17:00）— 读这一节就够了
+
+操作者指令「循环进行，把情报任务做完再做其他任务」的执行结果：
+
+1. **情报列表已排空**（`tools/run_intel_loop.py` 真机 3 轮全部 `intel_not_available`，exit 0；
+   证据 `evidence/intel_loop_20260914_085752.log`）。任务在第五轮已全部消化：
+   最后一个巨兽派出（-10 体力）、奖励已领、弹窗已关。
+2. **下批任务在 ~23:51**（本地）：真机读到的刷新倒计时 `下次刷新：06:56:37`（16:54 时点）。
+3. **已建常驻自动化**「Winter V2 情报循环（每小时）」（id `1a07567f-2868-4414-9010-2b411ae3a85d`，
+   每小时跑 `tools/run_intel_loop.py 6`）：新任务出现即自动派出巨兽（-10 体力/次）、
+   自动领取奖励；含付费控件硬边界。**操作者可通过 automations 界面暂停/删除。**
+4. 顺手修掉 `parse_stamina_number` 的丢位缺陷（HUD 把 295 读成 29——OCR 把数字拆成
+   `'29'+'9'+'5'` 三个重叠碎片，旧代码取第一个）。已几何合并修复 + 真机 fixture 回归。
 
 ### ✅ 情报巨兽链路已 LIVE VERIFIED（第五轮补齐，2026-09-14 16:28）
 

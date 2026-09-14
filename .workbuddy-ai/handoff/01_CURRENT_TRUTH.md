@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T08:50:41+00:00`
+- generated_at: `2026-09-14T09:15:56+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `db268f9` on `main`
+- commit: `349bb6c` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,11 +10,21 @@
 
 - repository: yes
 - last good commit: `db268f9`
-- commits: 19
-- HEAD: `db268f9` — feat(intel): the beast chain runs end to end on the live client (2026-09-14T16:50:25+08:00)
-- working tree: 2 dirty file(s)
-  - `M .workbuddy-ai/handoff/.last_good_commit`
-  - ` M tools/_h.txt`
+- commits: 21
+- HEAD: `349bb6c` — docs(memory): repair the fifth-round note eaten by shell command substitution (2026-09-14T16:51:47+08:00)
+- working tree: 12 dirty file(s)
+  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+  - ` M learning/goal_state.json`
+  - ` M learning/runtime_snapshot.json`
+  - ` M tests/test_march_recall_and_stamina.py`
+  - ` M winter_agent_v2/ocr.py`
+  - `?? dataset/truth_audit/hud_stamina_20260914/map_hud_with_stamina_295__roi_fragments.png`
+  - `?? evidence/intel_loop_20260914_085752.log`
+  - `?? tools/_h.txt`
+  - `?? tools/loop_out.txt`
+  - `?? tools/run_intel_loop.py`
 
 ## B. Runtime
 
@@ -25,7 +35,7 @@
 - last_fatal_error: None
 - stop_reason: intel_not_available
 - page: INTEL  march: None/None
-- updated_at: 2026-09-14T08:37:43.987834+00:00
+- updated_at: 2026-09-14T09:02:28.390577+00:00
 
 ## C. Episode stream
 

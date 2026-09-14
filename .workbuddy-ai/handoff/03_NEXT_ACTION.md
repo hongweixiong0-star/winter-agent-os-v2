@@ -12,7 +12,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x104
 LAST GOOD COMMIT: db268f9
-CURRENT DIRTY FILES: 2
+CURRENT DIRTY FILES: 12
 LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T08:34:26.144051+00:00", "episode_id": "live_intel_full_run8", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_after_20260914T083418180357.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
@@ -46,7 +46,18 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 - 新增 `resource_policy`：`gather_priority=LAST_RESORT`、`stamina_first=true`、
   `claim_rewards_promptly=true`
 
-****两个卡点已于 2026-09-14 解决，并留下真机证据**（旧描述见文末历史区）。
+**### ✅ 情报任务状态（第六轮更新，2026-09-14 17:00）：**已做完，自动化接管**
+
+- 情报列表已排空（真机 3 轮 `intel_not_available`，exit 0）；最后一个巨兽已派出（体力 295）。
+- 下批任务 **~23:51**（真机倒计时 `下次刷新：06:56:37`）。
+- **常驻自动化**「Winter V2 情报循环（每小时）」已创建（每小时跑
+  `tools/run_intel_loop.py 6`）：新任务自动打、奖励自动领，无需人工。
+- 顺手修复 `parse_stamina_number` 丢位（295 被读成 29，OCR 碎片 `'29'+'9'+'5'`），
+  已几何合并 + fixture 回归（见 05 第六轮）。
+- **情报做完后，按排序公式下一项是 `SEMANTIC_TARGET_NOT_VERIFIED` x104 家族**
+  （SELECT_RESOURCE 40 / SEARCH_RESOURCE 32 / OPEN_MAIL 13，见 01_CURRENT_TRUTH）。
+
+**两个卡点已于 2026-09-14 解决，并留下真机证据**（旧描述见文末历史区）。
 
 ##### ① 体力已可在地图上观测（整条策略的前提）
 

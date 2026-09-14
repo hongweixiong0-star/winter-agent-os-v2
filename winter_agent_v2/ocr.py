@@ -380,19 +380,45 @@ def read_hud_stamina(
 
 
 def parse_stamina_number(tokens: tuple[OCRToken, ...]) -> int | None:
-    """First integer token in a ROI-scoped read.
+    """Read the stamina value from a ROI-scoped OCR result.
 
     Token boxes from a ROI-scoped OCR are relative to the cropped image, so the
     full-frame containment check in :func:`read_hud_stamina` cannot be reused
     here; inside a ROI read the crop *is* the gate.
+
+    The recognizer sometimes splits one rendered number into overlapping
+    fragments (live 2026-09-14: the pill showing 295 came back as the tokens
+    '29' + '9' + '5', each confidently).  Taking the first token then reported
+    29 - a wrong number that would poison every stamina decision.  So merge
+    the fragments geometrically: scan left to right and skip any token whose
+    left edge falls inside the horizontal span already covered by the accepted
+    tokens (it is a re-read of the same digits), appending only the tokens
+    that extend further right.
     """
-    for token in tokens:
-        if token.confidence < 0.85 or not token.box:
+    usable = [
+        token
+        for token in tokens
+        if token.confidence >= 0.85 and token.box and re.search(r"\d", token.text)
+    ]
+    if not usable:
+        return None
+    usable.sort(key=lambda token: min(point[0] for point in token.box))
+    merged = ""
+    covered_to: float | None = None
+    for token in usable:
+        start = min(point[0] for point in token.box)
+        end = max(point[0] for point in token.box)
+        if covered_to is not None and start < covered_to - 0.5:
             continue
         text = token.text.strip().replace(" ", "")
-        if re.fullmatch(r"\d{1,4}(?:/\d{1,4})?", text):
-            return int(text.split("/")[0])
-    return None
+        match = re.fullmatch(r"\d{1,4}(?:/\d{1,4})?", text)
+        if not match:
+            continue
+        merged += text.split("/")[0]
+        covered_to = end
+    if not merged:
+        return None
+    return int(merged)
 
 
 def gauge_green_pixels(image_path: Path, roi: dict[str, float] | None = None) -> int:

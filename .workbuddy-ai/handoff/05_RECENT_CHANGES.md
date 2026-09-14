@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `349bb6c 2026-09-14T16:51:47+08:00 docs(memory): repair the fifth-round note eaten by shell command substitution`
+- `0d44f54 2026-09-14T16:50:46+08:00 docs(handoff): mark db268f9 as last-good after the intel chain closed end to end`
 - `db268f9 2026-09-14T16:50:25+08:00 feat(intel): the beast chain runs end to end on the live client`
 - `7fb541d 2026-09-14T16:15:46+08:00 docs(memory): record the fourth round (beast card + intel empty list)`
 - `940310f 2026-09-14T16:15:30+08:00 docs(handoff): mark 702e65b as last-good after the beast-card and intel-list fixes`
@@ -16,13 +18,60 @@ Last 12 commits (newest first):
 - `35ed464 2026-09-14T13:44:03+08:00 docs(handoff): record the live stamina reading (200/200) and the recall UI probe`
 - `446d909 2026-09-14T13:41:40+08:00 feat(policy): stamina spending beats gathering; gathering is LAST_RESORT`
 - `f35df92 2026-09-14T13:32:27+08:00 docs(handoff): record the map-anchor fix, the corrected tally and the march-slot constraint`
-- `7a3380d 2026-09-14T13:32:06+08:00 fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH`
-- `8c59182 2026-09-14T13:13:18+08:00 docs(handoff): final truth refresh at the new last-good commit`
 
-Uncommitted changes: 2
-- `M .workbuddy-ai/handoff/.last_good_commit`
-- ` M tools/_h.txt`
+Uncommitted changes: 12
+- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
+- ` M tests/test_march_recall_and_stamina.py`
+- ` M winter_agent_v2/ocr.py`
+- `?? dataset/truth_audit/hud_stamina_20260914/map_hud_with_stamina_295__roi_fragments.png`
+- `?? evidence/intel_loop_20260914_085752.log`
+- `?? tools/_h.txt`
+- `?? tools/loop_out.txt`
+- `?? tools/run_intel_loop.py`
 <!-- /AUTO:recent_commits -->
+
+---
+
+## 手写：2026-09-14 第六轮 — 情报循环 + 体力读取碎片修复 + 常驻自动化
+
+（第六轮补齐，2026-09-14 16:50-17:00）
+
+操作者指令：**循环进行，把情报任务做完再做其他任务**。
+
+### 情报循环结果（真机）
+
+- 新增 `tools/run_intel_loop.py`：反复调用真实 `run_live.py --goal INTEL`，
+  统计 dispatches / claims / 体力变化，停止条件全部诚实（体力耗尽 / 连续静默 / 轮数上限）。
+- **本轮实测**：3 轮全部 `intel_not_available`（exit 0）→ **情报列表已排空**：
+  第五轮 run6 已派出最后一个巨兽任务（体力 305→295）、run7 已领取、run8 已关闭弹窗。
+- 真机读取刷新倒计时 **`下次刷新：06:56:37`** → 下批任务约 **23:51**（本地）出现。
+  列表为空不是缺陷，是账号真实状态。
+
+### 顺手修掉的真缺陷：HUD 体力读数丢位
+
+- 真机暴露：HUD 把体力 **295 读成 29**（同一分钟情报页明明显示 295）。
+- 根因（精确复现）：ROI 内 OCR 把 `295` 拆成 **3 个重叠碎片** `'29'`(0.991)+`'9'`(0.999)+`'5'`(1.0)，
+  旧 `parse_stamina_number` 取第一个 → 29。这个错误数字会污染所有体力决策。
+- 修复：`parse_stamina_number` 改为**几何合并**——按 x 左→右扫描，跳过左边缘落进
+  已覆盖跨度的碎片（同一数字的重复读取），只追加向右扩展的 token。
+- 回归：新 fixture `map_hud_with_stamina_295__roi_fragments.png` + 2 个新测试
+  （合成碎片单元测试 + 真机帧端到端）；历史 200 帧不回归、遮挡帧仍诚实返回 None。17 项测试通过。
+
+### 常驻自动化（落实「循环进行」）
+
+- 已创建 **「Winter V2 情报循环（每小时）」**（id `1a07567f-2868-4414-9010-2b411ae3a85d`）：
+  每小时自动跑一轮 `run_intel_loop.py 6`，列表为空时几十秒退出，
+  新任务出现即自动打巨兽/领奖励，含付费控件硬边界与失败如实上报。
+- 下批情报（~23:51）出现后会被自动消化，无需人工。
+
+### 状态
+
+- 门禁：情报/召回/体力子集 17 passed；全量基线 381 passed（上一轮）。
+- 情报任务 = **做完**（列表排空，等待刷新，自动化接管）。
 
 ---
 
