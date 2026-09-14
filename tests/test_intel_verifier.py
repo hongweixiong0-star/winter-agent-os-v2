@@ -1,14 +1,27 @@
+import dataclasses
+import json
 import unittest
 from pathlib import Path
 
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
+from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
 from winter_agent_v2.verifier import verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open
 from winter_agent_v2.vision import ReplayVision, SemanticWorldVision
 from winter_agent_v2.skills import v2_registry
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PRODUCTION = ROOT / "dataset" / "truth_audit" / "rescue_start_production_20260914"
+
+
+def live_hybrid_vision() -> HybridVision:
+    """The same stack the runtime uses: semantic templates + the project OCR."""
+    config = json.loads((ROOT / "config" / "v2.json").read_text(encoding="utf-8"))
+    return HybridVision(
+        SemanticWorldVision(ROOT / "dataset" / "candidate" / "template_manifest.json"),
+        OCRService(ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))),
+    )
 
 
 class IntelVerifierTests(unittest.TestCase):
@@ -124,3 +137,37 @@ class IntelVerifierTests(unittest.TestCase):
         self.assertEqual(bounty.beast.get("blocked_reason"), "POWER_BELOW_RECOMMENDED")
         self.assertEqual(failed.page, Page.MAP)
         self.assertEqual(failed.intel.get("failure"), "BATTLE_FAILED")
+
+    def test_rescue_start_from_production_frames_is_not_a_false_negative(self) -> None:
+        """Production rescue starts must verify, and a BACK-out must still fail.
+
+        Live 2026-09-14: two real rescue starts consumed exactly the 12 stamina
+        the dialog advertised (178 -> 166 and 189 -> 177) and the vision layer,
+        on the post-tap map frame, returned an empty intel dict - so the old
+        check (`intel.status == IN_PROGRESS`) recorded FAILURE for work that had
+        actually been done.  These are the production frames, kept in
+        ``dataset/truth_audit/rescue_start_production_20260914``.
+        """
+        vision = live_hybrid_vision()
+        for tag, before_stamina, after_stamina in (
+            ("run_pin13", 178, 166),
+            ("run_pin12", 189, 177),
+        ):
+            before = vision.observe(PRODUCTION / f"{tag}_before.png")
+            after = vision.observe(PRODUCTION / f"{tag}_after.png")
+
+            # The dialog's own cost and the HUD reading have to be right first:
+            # a one-digit-short stamina read is what made the delta unusable.
+            self.assertEqual(before.popup, "INTEL_RESCUE_SURVIVORS_TARGET")
+            self.assertEqual(before.intel.get("stamina_cost_displayed"), 12)
+            self.assertEqual(before.stamina.get("current"), before_stamina, tag)
+            self.assertEqual(after.stamina.get("current"), after_stamina, tag)
+
+            result = verify_intel_rescue_started(before, after)
+            self.assertTrue(result.ok, f"{tag}: {result.reason}")
+
+        # Negative control: leaving the dialog (BACK) clears it without paying,
+        # which must stay a failure rather than being waved through.
+        target = vision.observe(PRODUCTION / "run_pin12_before.png")
+        dialog_closed_without_paying = dataclasses.replace(target, popup=None)
+        self.assertFalse(verify_intel_rescue_started(target, dialog_closed_without_paying).ok)

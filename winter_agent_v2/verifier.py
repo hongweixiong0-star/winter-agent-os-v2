@@ -395,10 +395,61 @@ def verify_intel_hero_dispatched(before: WorldState, after: WorldState) -> Verif
 
 
 def verify_intel_rescue_started(before: WorldState, after: WorldState) -> VerificationResult:
-    target = before.page is Page.MAP and before.popup == "INTEL_RESCUE_SURVIVORS_TARGET" and before.intel.get("stamina_cost_displayed") == 12
-    active = after.page is Page.MAP and after.popup is None and after.intel.get("status") == "IN_PROGRESS" and after.intel.get("mission_id") == "INTEL_RESCUE_SURVIVORS_10"
-    ok = target and active
-    return VerificationResult(ok, "OK" if ok else "INTEL_RESCUE_START_NOT_PROVEN", {"target_and_cost":target, "in_progress":active})
+    """Starting Rescue Survivors is proven by the mission's stamina being paid.
+
+    Live 2026-09-14 production frames (false negative): tapping 营救 on the
+    reviewed target dialog really started the mission - the HUD went 178 -> 166
+    (exactly the 12 the dialog advertised) and the dialog was replaced by the
+    探索 progress panel - but the after-frame returned an EMPTY intel dict, so
+    the old check (`intel.status == IN_PROGRESS` from a mission-pin template
+    that only ever matches the intel page) recorded FAILURE for an action that
+    had worked.  Five production episodes failed this way; three of them showed
+    the exact -12 spend.  A verifier must not let one frame-specific read drag
+    down the whole judgement when the real state change is observable.
+
+    Evidence model (both parts required: the reviewed dialog, then the payment):
+    - before: on the world map, the reviewed Rescue Survivors target dialog is
+      open and it advertises a cost;
+    - after: that dialog is gone AND the stamina actually dropped by no more
+      than the advertised cost - the same acceptance rule already used by
+      `verify_beast_hunt`.  A BACK-out clears the dialog without paying, so it
+      stays a failure; a MAP_HUD misread drifts the wrong way and also fails.
+
+    The `IN_PROGRESS` read stays accepted as an alternative signal, so the
+    reviewed intel-page frames keep verifying.
+    """
+    cost = before.intel.get("stamina_cost_displayed")
+    target = (
+        before.page is Page.MAP
+        and before.popup == "INTEL_RESCUE_SURVIVORS_TARGET"
+        and isinstance(cost, int)
+        and cost > 0
+    )
+    dialog_cleared = after.page is Page.MAP and after.popup is None
+    stamina_before = (before.stamina or {}).get("current")
+    stamina_after = (after.stamina or {}).get("current")
+    spend = (
+        stamina_before - stamina_after
+        if isinstance(stamina_before, int) and isinstance(stamina_after, int)
+        else None
+    )
+    paid = spend is not None and 0 < spend <= cost
+    in_progress = after.intel.get("status") == "IN_PROGRESS"
+    ok = bool(target and dialog_cleared and (paid or in_progress))
+    return VerificationResult(
+        ok,
+        "OK" if ok else "INTEL_RESCUE_START_NOT_PROVEN",
+        {
+            "target_and_cost": target,
+            "dialog_cleared": dialog_cleared,
+            "stamina_before": stamina_before,
+            "stamina_after": stamina_after,
+            "stamina_spent": spend,
+            "cost": cost,
+            "paid": paid,
+            "in_progress": in_progress,
+        },
+    )
 
 
 def verify_open_map(before: WorldState, after: WorldState) -> VerificationResult:

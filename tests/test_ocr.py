@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -5,7 +6,22 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 
 from winter_agent_v2.models import MarchState, Page, WorldState
-from winter_agent_v2.ocr import HybridVision, OCRPageClassifier, OCRResult, OCRService, OCRToken
+from winter_agent_v2.ocr import (
+    HUD_STAMINA_ROI,
+    HUD_STAMINA_UPSCALE,
+    HybridVision,
+    OCRPageClassifier,
+    OCRResult,
+    OCRService,
+    OCRToken,
+    RapidOCRBackend,
+    ResilientOCRBackend,
+    parse_stamina_number,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PRODUCTION = ROOT / "dataset" / "truth_audit" / "rescue_start_production_20260914"
 
 
 class FakeBackend:
@@ -281,6 +297,26 @@ class OCRTests(unittest.TestCase):
             Image.new("RGB", (720, 1280), "white").save(path)
             state = HybridVision(MapTemplateVision(), OCRService(backend)).observe(path)
         self.assertNotIn("current", state.stamina)
+
+    def test_hud_stamina_upscale_recovers_fragmented_digits(self):
+        """A one-digit-short stamina read must not survive the HUD ROI path.
+
+        Production frames 2026-09-14 (kept in
+        ``dataset/truth_audit/rescue_start_production_20260914``): at native crop
+        size the recognizer split 166 into the disagreeing overlapping tokens
+        '16' + '66' + '6' and 189 into '18' + '9', so the merged read lost its
+        last digit - a wrong number feeding every stamina decision.  Enlarging
+        the crop recovers the true value.
+        """
+        config = json.loads((ROOT / "config" / "v2.json").read_text(encoding="utf-8"))
+        service = OCRService(
+            ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))
+        )
+        for name, truth in (("run_pin13_after", 166), ("run_pin12_before", 189)):
+            tokens = service.recognize(
+                PRODUCTION / f"{name}.png", HUD_STAMINA_ROI, upscale=HUD_STAMINA_UPSCALE
+            ).tokens
+            self.assertEqual(parse_stamina_number(tokens), truth, name)
 
     def test_hybrid_uses_ocr_for_unknown_template(self):
         backend = FakeBackend([OCRToken("联盟科技", 0.99)])

@@ -115,9 +115,21 @@ class OCRService:
             return "FULL"
         return ":".join(f"{roi[key]:.6f}" for key in ("x_norm", "y_norm", "w_norm", "h_norm"))
 
-    def recognize(self, image_path: Path, roi: dict[str, float] | None = None) -> OCRResult:
+    def recognize(
+        self,
+        image_path: Path,
+        roi: dict[str, float] | None = None,
+        upscale: int = 1,
+    ) -> OCRResult:
+        """OCR the frame (or an ROI of it), optionally after enlarging the crop.
+
+        ``upscale`` exists for very small ROIs.  The recognizer fragments a tiny
+        number at native size and the fragments do not agree, which silently
+        yields a wrong number; enlarging the crop first returns one clean token.
+        Measured on production frames (see :data:`HUD_STAMINA_UPSCALE`).
+        """
         digest = hashlib.sha256(image_path.read_bytes()).hexdigest()
-        key = f"{digest}:{self._roi_key(roi)}:{self.backend.name}"
+        key = f"{digest}:{self._roi_key(roi)}:{self.backend.name}:x{upscale}"
         if key in self._cache:
             previous = self._cache[key]
             return OCRResult(previous.tokens, previous.backend, cached=True)
@@ -132,6 +144,8 @@ class OCRService:
                 if left < 0 or top < 0 or right > width or bottom > height or right <= left or bottom <= top:
                     raise ValueError("OCR_ROI_OUT_OF_BOUNDS")
                 image = image.crop((left, top, right, bottom))
+            if upscale > 1:
+                image = image.resize((image.width * upscale, image.height * upscale), Image.LANCZOS)
             result = OCRResult(self.backend.recognize(image), self.backend.name)
         self._cache[key] = result
         return result
@@ -327,6 +341,23 @@ class OCRPageClassifier:
 # avatar in the top-left HUD corner.  The ROI adds a small margin so a longer
 # read ("200/200") still fits inside it.
 HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.058, "h_norm": 0.019}
+
+# The gauge crop is only 42x24 px, and at that size the recognizer splits one
+# number into overlapping fragments that disagree with each other.  Measured on
+# the production frames kept in
+# ``dataset/truth_audit/rescue_start_production_20260914`` (2026-09-14):
+#   166 -> '16'(0.975) + '66'(0.937) + '6'(0.999)   -> merged read 16   WRONG
+#   189 -> '18'(0.999) + '9'(0.890)                 -> merged read 18   WRONG
+# Both are plain digit losses in a value the whole stamina-first policy hangs
+# on, and the fragment merge in :func:`parse_stamina_number` cannot recover them
+# because the first token covers the second's left edge while the token that
+# actually carries the last digit is either below the confidence gate or looks
+# like an overlap.  Enlarging the crop before recognition removes the cause:
+# at this multiple the same frames return a single '166' (0.981) and '189'
+# (0.999), and the already-clean reads ('178', '177') are unchanged.  Re-verify
+# with ``tools/probe_hud_stamina.py`` before changing it; do not raise this by
+# guesswork, it is a measured value.
+HUD_STAMINA_UPSCALE = 3
 
 # The march counter ("5/6") beside the 行军 label.  Measured live: px
 # 200-244 x 228-255 on 720x1280.  It is read from its own ROI rather than from
@@ -538,7 +569,12 @@ class HybridVision:
                 # returned "350" at 0.999 confidence).  Without the ROI read,
                 # stamina would look unobservable on frames where it is plainly
                 # visible, and the whole stamina-first policy would be skipped.
-                roi_tokens = self.ocr.recognize(image_path, HUD_STAMINA_ROI).tokens
+                # The crop is enlarged first: at native size a three-digit value
+                # comes back as disagreeing fragments and merged to a wrong, or
+                # one-digit-short, number (see HUD_STAMINA_UPSCALE).
+                roi_tokens = self.ocr.recognize(
+                    image_path, HUD_STAMINA_ROI, upscale=HUD_STAMINA_UPSCALE
+                ).tokens
                 with Image.open(image_path) as source:
                     frame_width, frame_height = source.size
                 # Token boxes from a ROI-scoped read are crop-relative, so the

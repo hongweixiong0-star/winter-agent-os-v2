@@ -1,0 +1,22 @@
+{
+  "purpose": "PRODUCTION frames proving a rescue start that the old verifier called FAILURE",
+  "source": "learning/episodes.jsonl (EXECUTE_INTEL_RESCUE_SURVIVORS failures)",
+  "samples": [
+    {
+      "tag": "run_pin13",
+      "before": "run_pin13_before.png",
+      "after": "run_pin13_after.png",
+      "episode_stamina_before": 178,
+      "episode_stamina_after": 166,
+      "episode_delta": -12
+    },
+    {
+      "tag": "run_pin12",
+      "before": "run_pin12_before.png",
+      "after": "run_pin12_after.png",
+      "episode_stamina_before": 189,
+      "episode_stamina_after": 177,
+      "episode_delta": -12
+    }
+  ]
+}
