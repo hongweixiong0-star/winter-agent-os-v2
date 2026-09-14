@@ -61,6 +61,34 @@ SCREENCAP_EMULATOR_EXTRAS = 64
 DEFAULT_TEMPLATE_THRESHOLD = 0.7
 
 
+def to_rgb_frame(frame: np.ndarray) -> np.ndarray:
+    """Return a MaaFramework screencap in the RGB order this project uses.
+
+    MaaFramework's ``post_screencap`` hands back BGR, while every other pixel
+    path here is RGB: V2 templates are cropped from ADB PNGs and loaded through
+    PIL, and the OCR layer reads them the same way.  Measured live 2026-09-14
+    (MaaFw 5.12.3, MuMu EmulatorExtras) against the Hero Journey card kept in
+    ``dataset/truth_audit/hero_journey_card_variants_20260914``:
+
+    ==========================  ====================================
+    MAA matcher, as captured    score 0.6879 -> NO_MATCH (threshold .7)
+    MAA matcher, R<->B swapped  score 1.0000 -> hit (86,275,547,64)
+    V2 vision, as-captured PNG  UNKNOWN / conf 0.00
+    V2 vision, swapped PNG      POPUP / INTEL_HERO_JOURNEY / conf 0.99
+    ==========================  ====================================
+
+    Landing just under the threshold is the worst case: colour-bearing
+    templates fail or pass at random, and every evidence PNG written to disk
+    shows the wrong colours.  Convert once, at capture, so all consumers agree.
+    Re-run the probe described in ``docs/AVAILABLE_TOOLING.md`` before assuming
+    this still holds after a MAA upgrade.
+    """
+    array = np.asarray(frame)
+    if array.ndim != 3 or array.shape[2] != 3:
+        return np.ascontiguousarray(array)
+    return np.ascontiguousarray(array[:, :, ::-1])
+
+
 def _is_maa_bundle(path: Path) -> bool:
     """True only for a directory MaaFramework can actually load as a bundle.
 
@@ -466,8 +494,11 @@ class MaaExecutorAdapter:
         if frame is None:
             self._stat("screen").record(False, elapsed_ms, "MAA_SCREENCAP_EMPTY")
             return None
+        # MaaFramework screencap hands back BGR; every other pixel path in this
+        # project is RGB.  See to_rgb_frame() for the live measurement.
+        frame = to_rgb_frame(frame)
         self._stat("screen").record(True, elapsed_ms)
-        return self._accept_frame(np.asarray(frame))
+        return self._accept_frame(frame)
 
     def screenshot(self, destination: Path) -> Path:
         """Write the current frame to ``destination`` (atomic, validated).

@@ -1,0 +1,8 @@
+{
+  "purpose": "One Hero Journey mission rendered in two skins on the live client; only the blue skin is recognised by POPUP_INTEL_HERO_JOURNEY_TITLE",
+  "observed": "2026-09-14 13:56 (orange, page=UNKNOWN conf=0.0) and 14:00 (blue, popup=INTEL_HERO_JOURNEY conf=0.99), same mission, countdown 01:03:46 -> 01:02:17",
+  "frames": {
+    "orange": "hero_journey_card_ORANGE_skin_1356.png",
+    "blue": "hero_journey_card_BLUE_skin_1400.png"
+  }
+}

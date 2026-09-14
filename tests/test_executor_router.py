@@ -265,6 +265,73 @@ class ResolverTierTests(unittest.TestCase):
         self.assertIsNone(router.maa_resolver("BTN_X", "TEST_SKILL"))
 
 
+class MaaFrameChannelTests(unittest.TestCase):
+    """MaaFramework screencaps are BGR; this project's whole pixel path is RGB.
+
+    Regression for 2026-09-14.  The MAA capture path handed BGR frames to both
+    the matcher and the evidence writer, so the V2 vision read the live Hero
+    Journey card as ``UNKNOWN / confidence 0.00`` and MAA's own matcher scored
+    the matching template 0.6879 against a 0.7 threshold - just under it, which
+    means colour-bearing templates fail or pass at random instead of failing
+    loudly.  The card was invisible to AUTO while it sat on screen.
+    """
+
+    EVIDENCE = (
+        ROOT / "dataset" / "truth_audit" / "hero_journey_card_variants_20260914"
+        / "maa_captured_BGR_frame.png"
+    )
+
+    def test_bgr_capture_becomes_rgb(self) -> None:
+        import numpy as np
+
+        from winter_agent_v2.maa_executor import to_rgb_frame
+
+        # A blue pixel as MaaFramework stores it must come out blue in RGB order.
+        self.assertEqual(
+            tuple(to_rgb_frame(np.array([[[222, 152, 98]]], dtype=np.uint8))[0, 0]),
+            (98, 152, 222),
+        )
+
+    def test_frames_without_three_channels_pass_through(self) -> None:
+        import numpy as np
+
+        from winter_agent_v2.maa_executor import to_rgb_frame
+
+        self.assertEqual(to_rgb_frame(np.zeros((4, 4), dtype=np.uint8)).shape, (4, 4))
+
+    def test_evidence_frame_matches_the_rgb_template_only_after_conversion(self) -> None:
+        import numpy as np
+        from PIL import Image
+
+        from winter_agent_v2.maa_executor import to_rgb_frame
+        from winter_agent_v2.matchers import match_ccoeff
+
+        if not self.EVIDENCE.is_file():
+            self.skipTest("MAA evidence frame is not present on this machine")
+
+        manifest = json.loads(
+            (ROOT / "dataset" / "candidate" / "template_manifest.json").read_text(encoding="utf-8")
+        )
+        record = next(
+            r for r in manifest["records"]
+            if r.get("semantic") == "POPUP_INTEL_HERO_JOURNEY_TITLE"
+        )
+
+        as_captured = match_ccoeff(self.EVIDENCE, Path(record["template_path"]), record["roi_norm"])
+        self.assertIsNotNone(as_captured)
+
+        with tempfile.TemporaryDirectory() as temp:
+            converted = Path(temp) / "rgb.png"
+            with Image.open(self.EVIDENCE) as source:
+                Image.fromarray(to_rgb_frame(np.asarray(source.convert("RGB")))).save(converted)
+            fixed = match_ccoeff(converted, Path(record["template_path"]), record["roi_norm"])
+
+        self.assertIsNotNone(fixed)
+        # The as-captured pixels must score clearly worse than the corrected ones.
+        self.assertLess(as_captured.score, fixed.score)
+        self.assertGreater(fixed.score, 0.98)
+
+
 class BackendChainTests(unittest.TestCase):
     def test_recognition_backend_is_v2_when_the_skill_has_no_maa_node(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
