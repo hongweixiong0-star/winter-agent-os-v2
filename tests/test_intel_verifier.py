@@ -6,7 +6,7 @@ from pathlib import Path
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
-from winter_agent_v2.verifier import verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim, verify_intel_claim_feedback, verify_intel_hero_target_open, verify_intel_mission_selected, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open
+from winter_agent_v2.verifier import verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim, verify_intel_claim_feedback, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_intel_mission_selected, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open
 from winter_agent_v2.vision import ReplayVision, SemanticWorldVision
 from winter_agent_v2.skills import v2_registry
 
@@ -167,6 +167,28 @@ class IntelVerifierTests(unittest.TestCase):
         # Negative control: an exploration page with no cost is not the target.
         costless = dataclasses.replace(panel, exploration={"status": "AVAILABLE"})
         self.assertFalse(verify_intel_hero_target_open(card, costless).ok)
+
+    def test_camp_panel_advances_to_the_squad_page(self) -> None:
+        """Tapping 探险 opens the squad page directly - not a beast target card.
+
+        Live 2026-09-14, after the routing-node template fix: the step executed
+        and the panel became ``Page.MARCH``, but the verifier demanded
+        ``before.page is Page.BEAST`` and recorded INTEL_HERO_MARCH_NOT_OPEN one
+        step short of the fight.  Frames:
+        dataset/truth_audit/hero_journey_camp_to_squad_20260914
+        """
+        vision = live_hybrid_vision()
+        root = ROOT / "dataset" / "truth_audit" / "hero_journey_camp_to_squad_20260914"
+        panel = vision.observe(root / "camp_panel_before.png")
+        squad = vision.observe(root / "squad_page_after.png")
+
+        self.assertIs(panel.page, Page.EXPLORATION)
+        self.assertEqual(panel.exploration.get("stamina_cost_displayed"), 10)
+        self.assertIs(squad.page, Page.MARCH)
+
+        self.assertTrue(verify_intel_hero_march_open(panel, squad).ok)
+        # Standing still on the same page must not read as progress.
+        self.assertFalse(verify_intel_hero_march_open(panel, panel).ok)
 
     def test_rescue_start_from_production_frames_is_not_a_false_negative(self) -> None:
         """Production rescue starts must verify, and a BACK-out must still fail.

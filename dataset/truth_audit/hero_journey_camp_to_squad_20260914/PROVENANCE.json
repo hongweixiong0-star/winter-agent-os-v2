@@ -1,0 +1,8 @@
+{
+  "purpose": "Live hero-journey route: the camp panel (Page.EXPLORATION, 探险 cost visible) accepts the tap and is replaced by the squad-setup page (Page.MARCH). verify_intel_hero_march_open required before.page is Page.BEAST and rejected it.",
+  "source_run": "tools/run_live.py --goal INTEL 2026-09-14, after the routing-node template fix",
+  "frames": {
+    "squad_page_after.png": "hero_live5_20260914_step_001_after_20260914T141216615654.png",
+    "camp_panel_before.png": "hero_live5_20260914_step_001_before_20260914T141212960423.png"
+  }
+}

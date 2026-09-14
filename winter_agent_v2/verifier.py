@@ -396,14 +396,37 @@ def verify_intel_hero_target_open(before: WorldState, after: WorldState) -> Veri
 
 
 def verify_intel_hero_march_open(before: WorldState, after: WorldState) -> VerificationResult:
-    """The camp panel accepted the 探险 tap: the panel closed (live 2026-09-14
-    the hero-journey fight has no march stage, so any transition out of the
-    camp panel - a battle screen, a result popup or the bare map - is the
-    observable state change)."""
-    before_ok = before.page is Page.BEAST and not before.beast
-    after_ok = after.page is not Page.BEAST
-    ok = before_ok and after_ok
-    return VerificationResult(ok, "OK" if ok else "INTEL_HERO_MARCH_NOT_OPEN", {"target": before_ok, "left_panel": after_ok, "after_page": after.page.value})
+    """The camp panel accepted the 探险 tap: it was replaced by the next page.
+
+    Live 2026-09-14 the hero-journey fight has no march stage, so any transition
+    out of the camp panel - the squad-setup page, a battle screen, a result
+    popup or the bare map - is the observable state change.
+
+    The panel is classified as ``Page.EXPLORATION`` on the current client (see
+    ``verify_intel_hero_target_open``), and the live route is
+    ``EXPLORATION -> MARCH``: tapping 探险 opens the squad page directly.  This
+    check still demanded ``before.page is Page.BEAST`` and therefore rejected
+    that real transition, so the run stopped with
+    ``INTEL_HERO_MARCH_NOT_OPEN`` one step short of the fight.
+    """
+    camp_panel = (
+        before.page is Page.EXPLORATION
+        and before.exploration.get("stamina_cost_displayed") is not None
+    )
+    beast_panel = before.page is Page.BEAST and not before.beast
+    before_ok = camp_panel or beast_panel
+    left_panel = after.page is not before.page
+    ok = before_ok and left_panel
+    return VerificationResult(
+        ok,
+        "OK" if ok else "INTEL_HERO_MARCH_NOT_OPEN",
+        {
+            "camp_panel": camp_panel,
+            "beast_panel": beast_panel,
+            "left_panel": left_panel,
+            "after_page": after.page.value,
+        },
+    )
 
 
 def verify_intel_hero_dispatched(before: WorldState, after: WorldState) -> VerificationResult:
