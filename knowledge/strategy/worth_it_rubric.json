@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "purpose": "回答「为什么做 / 什么时候做 / 做到什么程度 / 什么时候不值得做」。工程侧回答 HOW（怎么点击），本文件回答 WHETHER 与 HOW FAR。",
+  "canonical_sources": [
+    "knowledge/strategy/goal_library_v1.json",
+    "knowledge/strategy/operations_priority.json",
+    "knowledge/strategy/event_priority.json",
+    "knowledge/strategy/task_priority.json"
+  ],
+  "last_reviewed": "2026-09-14",
+  "priority_formula": "Deadline + Reward + DailyLoss + EventSynergy + DevelopmentValue - ResourceCost - Risk",
+  "priority_classes": ["DEADLINE", "DAILY_FREE_VALUE", "QUEUE_UTILIZATION", "EVENT_OPTIMIZATION", "LONG_TERM_DEVELOPMENT"],
+  "p0_goals": ["CLEAR_INTEL", "DAILY_ACTIVITY_TARGET", "CLAIM_FREE_REWARDS", "USE_FREE_ARENA_ATTEMPTS", "EVENT_MINIMUM_GUARANTEE", "PARTICIPATE_BEAR"],
+  "p1_goals": ["KEEP_MARCHES_PRODUCTIVE", "KEEP_BUILDING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE", "KEEP_TRAINING_PRODUCTIVE", "ALLIANCE_HELP", "ALLIANCE_CONTRIBUTION", "CLAIM_EXPLORATION_IDLE", "AVOID_STAMINA_WASTE"],
+  "worth_it_rules": [
+    {
+      "rule": "免费领取永远值得做",
+      "why": "零资源成本、正收益、有每日上限（不用就蒸发）",
+      "how_far": "领到无可领为止",
+      "not_worth_when": "需要消耗钻石或真实货币才能领（硬边界，禁止）",
+      "source": "knowledge/strategy/goal_library_v1.json"
+    },
+    {
+      "rule": "每日次数类动作做到上限即止",
+      "why": "超出上限的部分既不给活跃度也不给奖励，是纯浪费",
+      "how_far": "到每日上限",
+      "not_worth_when": "已达上限（NOT_AVAILABLE 是正常终态，不是失败，应 Skip 而非 Retry）",
+      "source": "knowledge/game/alliance.json"
+    },
+    {
+      "rule": "队列空转优先于单次收益最优",
+      "why": "空队列是 100% 浪费；采到低等级资源仍为正收益",
+      "how_far": "保持队列非空",
+      "not_worth_when": "目标状态 UNKNOWN（不得当作 IDLE 派兵）",
+      "source": "knowledge/game/marches.json"
+    },
+    {
+      "rule": "体力消耗需先判断胜算",
+      "why": "失败既浪费体力又占队列，双重损失",
+      "how_far": "只打客户端显示「胜券在握」的目标",
+      "not_worth_when": "未显示胜券在握；体力未知时 OBSERVE_NO_SPEND",
+      "source": "knowledge/game/beasts.json, knowledge/strategy/operations_priority.json"
+    },
+    {
+      "rule": "集结值得「不带英雄也加入」",
+      "why": "集结本身收益 >> 英雄加成边际差异；为配最优阵容而错过集结是净损失",
+      "how_far": "加入即可，英雄按兜底顺序 杰西→书允→杰赛尔→NO_HERO",
+      "not_worth_when": "灰色加号 / 容量已满 / 目标状态已变（Skip，不是失败）",
+      "source": "knowledge/game/bear.json"
+    },
+    {
+      "rule": "钻石默认不消耗",
+      "why": "把可再生的等待时间换成不可再生的稀缺资源，在 F2P_CONSERVATIVE 下永远不划算",
+      "how_far": "不消耗",
+      "not_worth_when": "任何「花钻石换时间/换分数」的自动化",
+      "source": "knowledge/game/resources.json, knowledge/strategy/goal_library_v1.json"
+    },
+    {
+      "rule": "活动只做保底，不追榜",
+      "why": "保底之上的边际分数通常要靠钻石或过量体力换取",
+      "how_far": "达到最低档奖励分数，并领取奖励",
+      "not_worth_when": "需要额外消耗才能提升名次",
+      "source": "knowledge/strategy/event_priority.json"
+    },
+    {
+      "rule": "红点只是发现信号，不是执行授权",
+      "why": "红点会长期存在且不一定对应可领奖励",
+      "how_far": "进入页面 → 用 reward verifier 判定 → 再决定领不领",
+      "not_worth_when": "无法用 verifier 证明有实际奖励可领",
+      "source": "knowledge/strategy/goal_library_v1.json#invariants, knowledge/strategy/operations_priority.json"
+    }
+  ],
+  "operational_thresholds": {
+    "stamina": {"threshold": 30, "spend_order": ["INTEL", "GIANT_BEAST", "BEAST_HUNT"], "unknown": "OBSERVE_NO_SPEND"},
+    "training": {"troop_types": ["INFANTRY", "LANCER", "MARKSMAN"], "method": "least_trained_available_queue"},
+    "gathering": {"resources": ["MEAT", "WOOD", "COAL", "IRON"], "method": "largest_weighted_deficit_or_round_robin"},
+    "healing": {"trigger_ratio": 0.05, "batch_min": 500, "batch_max": 1000, "alliance_help": true},
+    "source": "knowledge/strategy/operations_priority.json (status=CANDIDATE, last_verified 2026-09-09)"
+  },
+  "invariants": [
+    "LIVE_CLIENT_IS_FINAL_UI_FACT",
+    "GOAL_DECIDES_WHAT_SKILL_DECIDES_HOW",
+    "ONE_SCHEDULER_ONLY",
+    "CLICK_IS_NOT_COMPLETION",
+    "BLOCKED_GOAL_MUST_NOT_BLOCK_AGENT",
+    "REAL_MONEY_FORBIDDEN",
+    "RED_DOT_IS_DISCOVERY_NOT_AUTHORIZATION",
+    "ELIGIBLE_CANDIDATE_MUST_ENTER_REAL_ATTEMPT_POOL",
+    "CANDIDATE_READY_5_CYCLES_FORCES_ONE_EXPLORATION_ATTEMPT"
+  ],
+  "cross_goal_impact_checklist": [
+    "这个动作会占用队列吗？占用多久？（可能与 KEEP_*_PRODUCTIVE 冲突）",
+    "会消耗体力/资源吗？会不会让更高优先级 Goal 缺资源？",
+    "有每日上限吗？今天还剩多少？",
+    "是否与其他活动同步（EventSynergy）？",
+    "失败时的损失是可逆的吗？",
+    "不做的话，损失是永久蒸发（DailyLoss）还是可以延后？"
+  ],
+  "gaps": [
+    "operations_priority.json 状态仍是 CANDIDATE（非 VERIFIED），阈值需在真机上复核",
+    "资源产出速率模型缺失，无法量化 ResourceCost",
+    "活动计分表刻意不硬编码，导致 EventSynergy 只能定性判断"
+  ]
+}

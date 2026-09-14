@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "role": "CANONICAL_MAP",
+  "purpose": "告诉专家「某个游戏事实的权威来源在哪个文件」，避免在新目录里复制第二份事实。本文件不含事实本身，只含指针。",
+  "rule": "knowledge/game/*.json 是实体事实的权威来源（canonical）。domain 目录（combat / resources / alliance / heroes / events / strategy）只放决策口径与机制卡。两者冲突时以 knowledge/game/*.json 为准，并回头修正机制卡。",
+  "last_reviewed": "2026-09-14",
+  "canonical_files": {
+    "game/game_overview.json": "游戏本体与版本事实（包名 com.gof.china、2026-08 Fire Crystal 更新）、自动化范围与硬边界",
+    "game/mechanism_library_v2.json": "15 个通用机制名 + evidence_priority（权威优先级链）+ 事件适配器规则",
+    "game/buildings.json": "建筑与升级（含真机队列事实）",
+    "game/research.json": "科研机制",
+    "game/troops.json": "兵种（盾/矛/射）与训练、晋升门槛（真机 camp_level 30 / tier 10）",
+    "game/heroes.json": "英雄名册（**非全集**，仅 5 条）",
+    "game/resources.json": "资源实体（MEAT/WOOD/COAL/IRON/STEEL/GEMS/FIRE_CRYSTAL/SPEEDUP/HERO_SHARD）",
+    "game/marches.json": "行军状态枚举 IDLE/MARCHING/GATHERING/RETURNING/UNKNOWN",
+    "game/intel.json": "情报状态枚举与任务类型（真机 searchlight_level 20 / stamina 161）",
+    "game/beasts.json": "普通野兽（真机体力显示 10 实际 7）",
+    "game/giant_beasts.json": "冰原巨兽（confidence 0.62，未验证）",
+    "game/bear.json": "巨熊行动（车头/车身策略、加入规则、英雄兜底、live_evidence）",
+    "game/alliance.json": "联盟帮助/科技/宝箱（真机数值：币 2000/2000、捐献 10000 MEAT、基数 120 暴击 240）",
+    "game/mail.json": "邮件与领取",
+    "game/vip.json": "VIP",
+    "game/daily.json": "日常任务与活跃度",
+    "game/events.json": "活动概览",
+    "game/exploration.json": "探险",
+    "game/pets.json": "宠物",
+    "game/fire_crystal.json": "火晶时代",
+    "game/chief_gear.json": "统帅装备"
+  },
+  "domain_dirs": {
+    "combat/mechanism_cards.json": "行军生命周期 / 采集派兵 / 野兽 / 巨兽 / 巨熊集结",
+    "resources/mechanism_cards.json": "资源读取 / 采集等级选择 / 加速 / 钻石策略 / 特殊资源",
+    "alliance/mechanism_cards.json": "帮助 / 科技捐献 / 宝箱 / 联盟活动检查（缺失技能）",
+    "heroes/mechanism_cards.json": "采集加成 / 集结英雄角色 / 名册缺口",
+    "events/mechanism_cards.json": "保底 / 倒计时压力 / 阶段机 / 限次 / 阻塞上报",
+    "strategy/worth_it_rubric.json": "为什么做 / 什么时候做 / 做到什么程度 / 什么时候不值得做",
+    "events/event_registry.json": "已注册活动（BEAR_HUNT REVIEWED / STATE_VS_STATE DISCOVERED）",
+    "events/*_live_*.json": "单次活动的真机观测原始记录"
+  },
+  "ui_and_goals": {
+    "ui/pages.json": "23 个页面枚举 + state_policy（unknown→NO_CLICK，识别顺序 TEMPLATE→OCR→DETECTOR→QWEN）",
+    "ui/semantic_dictionary.json": "语义词典（26KB，最大的 UI 事实库）",
+    "ui/element_types.json": "元素类型",
+    "goals/goal_capability_map.json": "Goal → Capability",
+    "goals/capability_skill_map.json": "Capability → Skill（36KB）",
+    "skills/universal_skill_library_v2.json": "通用技能库与各自 verifier",
+    "skills/*.json": "单个技能的机制定义",
+    "skills/*_RESEARCH.md": "该技能的研究来源记录"
+  },
+  "page_entry_index": {
+    "HOME": "主城，回城锚点",
+    "MAP": "世界地图，采集/野兽/行军入口",
+    "INTEL": "情报（灯塔），野兽/营救/英雄旅程/悬赏",
+    "ALLIANCE": "联盟：帮助、科技、宝箱、领地",
+    "BEAR": "巨熊行动",
+    "BUILDING": "建筑升级队列",
+    "RESEARCH": "科研队列",
+    "TRAINING": "训练/晋升队列",
+    "MAIL": "邮件领取",
+    "VIP": "VIP 与免费礼包",
+    "EVENT": "活动",
+    "PET": "宠物",
+    "EXPLORATION": "探险",
+    "ARENA": "竞技场（免费次数）",
+    "POPUP": "弹窗（含 REAL_MONEY_OFFER，硬边界）",
+    "note": "完整 23 页见 ui/pages.json"
+  },
+  "never_invent": [
+    "未在当前客户端观测到的数值（写 UNKNOWN，不要猜）",
+    "未验证的英雄/活动/建筑数据（confidence < 0.8 的只能作为假设）",
+    "社区攻略中的绝对值（除非被 LIVE_CLIENT 或多来源确认）"
+  ]
+}

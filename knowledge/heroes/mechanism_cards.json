@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "domain": "heroes",
+  "canonical_sources": [
+    "knowledge/game/heroes.json",
+    "knowledge/game/bear.json",
+    "knowledge/game/intel.json"
+  ],
+  "no_duplication_rule": "英雄实体以 knowledge/game/heroes.json 为准；本目录只放「英雄在自动化决策里怎么用」。",
+  "notice": "heroes.json 明确声明：这不是完整名册，英雄是发现式驱动的，社区 wiki 曾称 2026-09-01 有 65 个英雄，V1 只导入了有跨用途价值的记录。不要假设这张表是全集。",
+  "last_reviewed": "2026-09-14",
+  "cards": [
+    {
+      "id": "GATHER_HERO_BONUS",
+      "mechanism": "部分英雄对特定资源采集有加成：克劳瑞斯(肉)、尤金(木)、查理(煤)、史密斯(铁)。",
+      "state": "英雄池 -> 按目标资源选择 -> 派出",
+      "preconditions": "已解锁对应英雄；采集目标的资源类型已知",
+      "goal_contribution": "KEEP_MARCHES_PRODUCTIVE（采集效率）",
+      "relevant_universal_skills": ["GATHER_RESOURCE", "SEND_MARCH"],
+      "verifier": "MARCH_STATE_CHANGED",
+      "strategy_implication": "采集时优先派对应加成英雄。注意这些条目的 confidence 只有 0.78（LIKELY，来源 taptap 社区而非官方/真机），所以**值得做但不值得为它重构派兵逻辑**——有就派，没有就照常派，不要因为「没凑齐最优英雄」而放弃出征。",
+      "source": ["knowledge/game/heroes.json", "taptap_beginner", "taptap_strategy_hub"],
+      "confidence": 0.78,
+      "status": "LIKELY",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "BEAR_RALLY_HERO_ROLE",
+      "mechanism": "巨熊集结分车头（发起者）与车身（加入者）。车身首位英雄优先使用带有效远征增益的英雄。",
+      "state": "集结列表 -> 选择编队 -> 出征",
+      "preconditions": "已加入集结；可选英雄池已知",
+      "goal_contribution": "PARTICIPATE_BEAR（P0）",
+      "relevant_universal_skills": ["JOIN_RALLY", "START_RALLY"],
+      "verifier": "RALLY_JOINED -> 战斗报告/伤害",
+      "strategy_implication": "**兜底顺序 杰西 → 书允 → 杰赛尔 → NO_HERO**。关键原则：合格车身英雄都被占用时，**不带英雄也要加入，不得因此放弃未满集结**。集结本身的收益远大于英雄加成的边际差异；为了「配最优阵容」而错过集结是净损失。",
+      "source": ["knowledge/game/bear.json", "LIVE_CLIENT", "official_youtube_bear"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "HERO_ROSTER_GAP",
+      "mechanism": "当前英雄表只有 5 条记录（茉莉/克劳瑞斯/尤金/查理/史密斯），而社区称有 65 个英雄。",
+      "state": "部分已知",
+      "preconditions": "不适用",
+      "goal_contribution": "unknown",
+      "relevant_universal_skills": [],
+      "verifier": "不适用",
+      "strategy_implication": "**不要把这张表当全集做决策**。真机上遇到未知英雄时按 UNKNOWN 处理（不猜、不阻断），而不是假定「表里没有=不存在」。补全名册属于 LONG_TERM_DEVELOPMENT，优先级低于当前 P0/P1。",
+      "source": ["knowledge/game/heroes.json"],
+      "confidence": 0.5,
+      "status": "PARTIAL_NEEDS_DISCOVERY",
+      "last_reviewed": "2026-09-14"
+    }
+  ],
+  "gaps": [
+    "英雄完整名册未采集",
+    "英雄等级/升星/装备对战斗力的影响未建模",
+    "英雄探险（Explorer）玩法未建模",
+    "Arena / Labyrinth 的英雄编队未建模"
+  ]
+}

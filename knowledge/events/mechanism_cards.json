@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "domain": "events",
+  "canonical_sources": [
+    "knowledge/game/mechanism_library_v2.json",
+    "knowledge/events/event_registry.json",
+    "knowledge/strategy/event_priority.json",
+    "knowledge/strategy/goal_library_v1.json",
+    "knowledge/events/bear_hunt_live_2026-09-09.json",
+    "knowledge/events/armament_competition_live_2026-09-05.json",
+    "knowledge/events/kingdom_of_power_live_2026-09-09.json"
+  ],
+  "no_duplication_rule": "具体活动的真机观测留在 knowledge/events/*_live_*.json；本目录只放跨活动通用的机制卡。",
+  "universal_mechanisms": [
+    "NAVIGATION", "QUEUE_JOB", "MARCH_RESOURCE", "RALLY", "LIMITED_ATTEMPTS",
+    "SCORING_WRAPPER", "MISSION_BOARD", "PHASE_STATE_MACHINE", "WAVE_DEFENSE",
+    "BATTLEFIELD_CONTROL", "SHOP_EXCHANGE", "REWARD_CLAIM", "REFRESH_REROLL",
+    "REGISTRATION_SNAPSHOT", "COOLDOWN_TIMER"
+  ],
+  "adapter_rule": "先映射已有 mechanism 与 skill；只有在真机证明确实是新机制时，才允许新增 mechanism。",
+  "last_reviewed": "2026-09-14",
+  "cards": [
+    {
+      "id": "EVENT_MINIMUM_GUARANTEE",
+      "mechanism": "活动保底：在活动结束前拿到最低档奖励所需分数，是投入产出比最高的一档。",
+      "state": "未达标 -> 达标 -> 奖励已领",
+      "preconditions": "活动进行中；保底未完成；存在可执行的得分技能",
+      "goal_contribution": "EVENT_MINIMUM_GUARANTEE（**P0**）",
+      "relevant_universal_skills": ["READ_COUNTER", "READ_TIMER", "CLAIM_REWARD"],
+      "verifier": "COUNTER_READ（分数变化）+ REWARD_CLAIMED（领奖）",
+      "strategy_implication": "**只做保底，不追榜**。保底之上的边际分数通常要靠消耗钻石或过量体力换取，在 F2P_CONSERVATIVE 下不值得。达标后若奖励未领，必须先领再标记 DONE。",
+      "source": ["knowledge/strategy/event_priority.json", "knowledge/strategy/goal_library_v1.json"],
+      "confidence": 0.9,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "DEADLINE_PRESSURE",
+      "mechanism": "随剩余时间变化提升优先级的压力模型。",
+      "state": "剩余 >24h NORMAL；<12h ELEVATED；<6h HIGH；<2h P0",
+      "preconditions": "能读到活动剩余时间（READ_TIMER）",
+      "goal_contribution": "决定同一时刻多个 Goal 谁先做",
+      "relevant_universal_skills": ["READ_TIMER"],
+      "verifier": "TIMER_READ",
+      "strategy_implication": "**倒计时读不到时不得假定紧急**，也不得假定不紧急——按 UNKNOWN 处理并保持观察。倒计时本身是 OCR 高风险项（小字、动态刷新），需独立 ROI。",
+      "source": ["knowledge/strategy/event_priority.json"],
+      "confidence": 0.9,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "PHASE_STATE_MACHINE",
+      "mechanism": "活动分阶段（报名 / 进行 / 结算 / 领奖），不同阶段可执行动作不同。",
+      "state": "REGISTRATION -> ACTIVE -> SETTLEMENT -> CLAIMABLE -> DONE",
+      "preconditions": "能识别当前阶段",
+      "goal_contribution": "避免在无事可做的阶段空转",
+      "relevant_universal_skills": ["READ_TIMER", "READ_COUNTER", "CLAIM_REWARD"],
+      "verifier": "阶段标识变化 + 可执行动作集合变化",
+      "strategy_implication": "阶段不匹配时是 **Defer 而不是 Failure**：报名期强行做得分动作必然失败，且会污染失败统计。",
+      "source": ["knowledge/game/mechanism_library_v2.json"],
+      "confidence": 0.85,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "LIMITED_ATTEMPTS",
+      "mechanism": "每日/每周期有限次数的动作（如竞技场免费次数、捐献次数、帮助次数）。",
+      "state": "有次数 -> 用一次 -> 次数减少 -> 用尽",
+      "preconditions": "次数 > 0",
+      "goal_contribution": "DAILY_FREE_VALUE 类（如 USE_FREE_ARENA_ATTEMPTS 为 **P0**）",
+      "relevant_universal_skills": ["READ_COUNTER", "USE_ACTIVITY_ATTEMPT"],
+      "verifier": "COUNTER_READ（次数减少）",
+      "strategy_implication": "**每日免费次数是「不用就蒸发」的价值**（DAILY_LOSS），优先级天然高于可延后的发展类动作。用尽 = 今日完成，不是失败。",
+      "source": ["knowledge/game/mechanism_library_v2.json", "knowledge/strategy/goal_library_v1.json"],
+      "confidence": 0.9,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "EVENT_TARGET_BLOCKED",
+      "mechanism": "当所有合理得分动作都不可用时，应显式报告阻塞，而不是静默跳过或反复重试。",
+      "state": "BLOCKED（带缺口说明）",
+      "preconditions": "得分动作不可执行",
+      "goal_contribution": "暴露能力缺口，驱动 Capability Gap 分析",
+      "relevant_universal_skills": [],
+      "verifier": "不适用",
+      "strategy_implication": "**必须记录缺的分数与缺的技能**，否则 BLOCKED 会退化成「看起来没什么事」。BLOCKED 不是 FAILURE，也不得停止 AUTO。",
+      "source": ["knowledge/strategy/event_priority.json"],
+      "confidence": 0.9,
+      "status": "CONFIRMED",
+      "last_reviewed": "2026-09-14"
+    }
+  ],
+  "gaps": [
+    "STATE_VS_STATE（最强王国）gate=DISCOVERED，tasks 为空，未建模",
+    "各活动的具体计分表未采集（hardcoded_event_score_tables=false，刻意不硬编码）",
+    "活动日程（开战/报名绝对时间）未建模"
+  ]
+}

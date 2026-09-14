@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "domain": "alliance",
+  "canonical_sources": [
+    "knowledge/game/alliance.json",
+    "knowledge/game/bear.json",
+    "knowledge/skills/ALLIANCE_GIFTS.json",
+    "knowledge/skills/ALLIANCE_TECH_CONTRIBUTE.json",
+    "knowledge/skills/ALLIANCE_ALLY_GIFT_CLAIM.json"
+  ],
+  "no_duplication_rule": "联盟实体与真机数值以 knowledge/game/alliance.json 为准；本目录只放决策与验证口径。",
+  "last_reviewed": "2026-09-14",
+  "cards": [
+    {
+      "id": "ALLIANCE_HELP",
+      "mechanism": "联盟帮助：点击帮助可给盟友加速并获得联盟币，每日有上限。",
+      "state": "可帮助 / NOT_AVAILABLE（当日已耗尽或无人需要帮助）/ 自动帮助已开启",
+      "preconditions": "在 ALLIANCE 页；存在可帮助项；当日联盟币奖励未达上限",
+      "goal_contribution": "ALLIANCE_HELP（P1）；真机观测每日联盟币 2000/2000 封顶",
+      "relevant_universal_skills": ["ALLIANCE_HELP", "READ_COUNTER"],
+      "verifier": "手动帮助动作消失 或 自动帮助处于激活状态",
+      "strategy_implication": "**NOT_AVAILABLE 不是失败**，是「今天已经做完了」。真机显示 auto_help_active=true、当日自动帮助 4387 次、币 2000/2000 → 这种情况下再点帮助毫无价值，应 Skip 而不是 Retry。别把满额度当成需要修的 bug。",
+      "source": ["knowledge/game/alliance.json", "LIVE_CLIENT"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "ALLIANCE_TECH_CONTRIBUTE",
+      "mechanism": "联盟科技捐献：消耗资源换取个人贡献，每日有次数与额度限制。存在暴击机制。",
+      "state": "可捐献 -> 次数减少 + 贡献增加；暴击时收益翻倍",
+      "preconditions": "在 ALLIANCE/科技页；资源足够（真机单次 10000 MEAT）；当日捐献次数未满",
+      "goal_contribution": "ALLIANCE_CONTRIBUTION（P1）；真机观测联动「联盟捐献5次 3/5→5/5」、活跃度 65→70",
+      "relevant_universal_skills": ["ALLIANCE_TECH_CONTRIBUTE", "READ_COUNTER"],
+      "verifier": "attempts_decrease AND receipt == personal_contribution_delta（两者必须一致）",
+      "strategy_implication": "真机基数 120，暴击 ×2 = 240，观测 delta 序列 [240,120,240,120,240]。**捐到每日次数上限即止**，超过上限的部分既不给活跃度也不给贡献，属于纯浪费。活跃度提升本身是 P0 DAILY_ACTIVITY_TARGET 的组成部分，所以这项值得优先于无上限的探索性操作。",
+      "source": ["knowledge/game/alliance.json", "LIVE_CLIENT"],
+      "confidence": 0.99,
+      "status": "VERIFIED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "ALLIANCE_GIFTS",
+      "mechanism": "联盟宝箱分 VICTORY_LOOT（胜利战利品）与 ALLY_GIFT（盟友礼物）两类，可领取。",
+      "state": "有可领 / 无可领",
+      "preconditions": "在 ALLIANCE 页；存在未领取项",
+      "goal_contribution": "CLAIM_FREE_REWARDS（P0）",
+      "relevant_universal_skills": ["CLAIM_REWARD", "ALLIANCE_ALLY_GIFT_CLAIM"],
+      "verifier": "REWARD_CLAIMED（战利品：每日计数增加；盟友礼物：个人徽章变化）",
+      "strategy_implication": "免费领取属于高价值低风险，**永远优先于任何消耗性操作**。无可领时是正常状态，不要重试。",
+      "source": ["knowledge/game/alliance.json", "knowledge/skills/ALLIANCE_GIFTS.json"],
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "last_reviewed": "2026-09-14"
+    },
+    {
+      "id": "CHECK_ALLIANCE_EVENT",
+      "mechanism": "联盟定时活动入口与状态检查。",
+      "state": "未知 —— **尚未实现，也未真机观测**",
+      "preconditions": "未知",
+      "goal_contribution": "**卡住 2 个 Goal**：ALLIANCE_TIMED_EVENTS、PARTICIPATE_BEAR",
+      "relevant_universal_skills": ["CHECK_ALLIANCE_EVENT（MISSING）", "READ_TIMER"],
+      "verifier": "无（缺技能 = 永远不会被调度）",
+      "strategy_implication": "这是当前 leverage 最高的缺失技能（一个技能解锁多个 Goal）。**但注意：按 Recency 重排后，当日最高频失败是 RESOURCE_NOT_FOUND x22，比它更紧迫**。实现时必须同时注册 verifier，否则不会被调度。",
+      "source": ["knowledge/goals/capability_skill_map.json", ".workbuddy-ai/handoff/03_NEXT_ACTION.md"],
+      "confidence": 0.7,
+      "status": "MISSING_NEEDS_LIVE_DESIGN",
+      "last_reviewed": "2026-09-14"
+    }
+  ],
+  "gaps": [
+    "CHECK_ALLIANCE_EVENT 未实现（BLOCKED: ALLIANCE_TIMED_EVENTS, PARTICIPATE_BEAR）",
+    "联盟商店 / 联盟领地建筑未建模",
+    "联盟活动日程（开战时间、报名期）未建模"
+  ]
+}
