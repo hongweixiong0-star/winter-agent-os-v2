@@ -1,0 +1,12 @@
+{
+  "source": "live 2026-09-14 INTEL run (run2, step 002)",
+  "note": "dialog -> tap 前往查看 -> target card on the map; used by tests/test_beast_target_card.py",
+  "measured": {
+    "recommended_power": 5107044,
+    "level": 22,
+    "stamina_cost": 10,
+    "mission_id": "INTEL_BEAST_10",
+    "empty_list_evidence": "only 情报 / 305 / 下次刷新07:59:21 present; no card action keyword",
+    "card_evidence": "前往查看 at px 292,914-428,955 when a card is shown"
+  }
+}

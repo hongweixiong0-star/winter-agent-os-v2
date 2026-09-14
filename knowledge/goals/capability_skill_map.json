@@ -29,9 +29,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 54,
+          "attempts": 55,
           "successes": 50,
-          "failures": 4
+          "failures": 5
         },
         {
           "capability": "READ_INTEL_LIST",

@@ -12,8 +12,8 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x104
 LAST GOOD COMMIT: 25b5ba7
-CURRENT DIRTY FILES: 2
-LAST PRODUCTION EPISODE: {"skill": "SUBMIT_RESOURCE_SEARCH", "result": "FAILURE", "recorded_at": "2026-09-14T06:42:03.928936+00:00", "episode_id": "accept_20260914_142516_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_before_20260914T064117019019.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_after_20260914T064129392192.png"}
+CURRENT DIRTY FILES: 29
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T07:59:56.775193+00:00", "episode_id": "live_intel_beast_run3", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_before_20260914T075910172059.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_after_20260914T075925539433.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
@@ -142,27 +142,36 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
    - 校验通过后**立刻 `git commit`**，用 git 作为可恢复基线。
    - 跑测试前再跑一次校验；测试期间不要编辑被测试的文件。
 
-1. **跑全量测试要加 `--basetemp`**：默认临时目录在 `%TEMP%\pytest-of-*`，
+1. **跑真机验证前先清 `__pycache__`。** 编辑器回写时可能带上较旧的 mtime，
+   使 Python 认为旧的 `.pyc` 仍然有效 → **运行的是已回滚的字节码**（本轮表现为
+   `OPEN_INTEL` 用了 `verify_stamina_sources_open`、免费体力检查不触发，而磁盘上的代码是对的）。
+   固定流程：清 `__pycache__` → `tools/check_wiring.py` 显示 `problems: 0` → 立刻跑真机。
+2. **不要用「模板没匹配」推断页面语义。** 模板会整体过期（本轮 `BTN_BEAST_START_MARCH`
+   距离 30、`BTN_BEAST_DISPATCH` 距离 36，而点击坐标其实是对的）。
+   要判定「空 / 无任务 / 不可用」这类语义，必须有**独立的正向证据**
+   （例：情报空列表用 OCR 的 `下次刷新` 头行 + 无 `前往查看`）。
+
+3. **跑全量测试要加 `--basetemp`**：默认临时目录在 `%TEMP%\pytest-of-*`，
    跑完清理时会被工作区的**批量删除安全钩子**拦下（69 个文件 > 阈值 50），
    进程被中断、拿不到汇总行（测试其实已经跑完）。用：
    `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest tests -q --basetemp="E:/无尽冬日智能体/tools/_pt_tmp"`
 
-2. **不要写死坐标。** 资源页签带会滚动，客户端会把当前选中页签重新居中。
+4. **不要写死坐标。** 资源页签带会滚动，客户端会把当前选中页签重新居中。
    已经实测到多种滚动偏移（0、+400px，以及 MEAT 落在 0.4993 的第三种）。
    必须走 `SemanticROIVision.selected_resource` 的白色角标锚点 + 相对布局。
-2. **`run_live.py` 与 `control_panel.py` 传入的 vision 对象不是同一种。**
+5. **`run_live.py` 与 `control_panel.py` 传入的 vision 对象不是同一种。**
    用 `LiveRuntime._semantic` 访问器，不要直接 `self.semantic_vision.semantic`。
-3. **新增 Skill 必须同时提供 verifier**，否则 `LiveRuntime.VERIFIED_ATOMIC` 不含它，
+6. **新增 Skill 必须同时提供 verifier**，否则 `LiveRuntime.VERIFIED_ATOMIC` 不含它，
    就永远不会被 live loop 调度（`capability_coverage` 会把它算成「未实现」）。
-4. **不要用通配符批量删文件。** 项目目录曾经不是 git 仓库；现在已经有了，
+7. **不要用通配符批量删文件。** 项目目录曾经不是 git 仓库；现在已经有了，
    但删除前仍必须逐项确认。
-5. Bash 工具在本机**没有 coreutils**（`ls/cat/head/sleep/wc/date` 都不可用），
+8. Bash 工具在本机**没有 coreutils**（`ls/cat/head/sleep/wc/date` 都不可用），
    PowerShell 工具**stdout 不回传**。所有命令都用
    `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -c "..."` 配合重定向 + Read 读取。
-6. **等级筛选器范围是 1..8，不是 1..27。** 真机实测 1→4→8 后停在 8。
+9. **等级筛选器范围是 1..8，不是 1..27。** 真机实测 1→4→8 后停在 8。
    `RESOURCE_NOT_FOUND` 不是等级问题，是「该资源当前范围内没有可采节点」。
    正确补救是**换资源**（`ResourceRotationStore.unavailable()`），不是降等级。
-7. **升级/等待类操作要看清页面语义**：采集编队页的正确动作是
+10. **升级/等待类操作要看清页面语义**：采集编队页的正确动作是
    `DISPATCH_MARCH`，不是 `WAIT`（`WAIT` 只用于维护/加载画面）。
 
 ### 真机环境（当前实测）

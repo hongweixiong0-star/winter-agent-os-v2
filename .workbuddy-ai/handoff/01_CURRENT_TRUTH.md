@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T07:43:33+00:00`
+- generated_at: `2026-09-14T08:15:14+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `25b5ba7` on `main`
+- commit: `16bf007` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,11 +10,29 @@
 
 - repository: yes
 - last good commit: `25b5ba7`
-- commits: 14
-- HEAD: `25b5ba7` — feat(stamina,recall): make the operator's stamina-first policy executable (2026-09-14T15:43:18+08:00)
-- working tree: 2 dirty file(s)
-  - `M .workbuddy-ai/handoff/.last_good_commit`
-  - `?? tools/_h.txt`
+- commits: 15
+- HEAD: `16bf007` — docs(handoff): mark 25b5ba7 as last-good and refresh truth after the regression suite (2026-09-14T15:45:11+08:00)
+- working tree: 29 dirty file(s)
+  - `M .gitignore`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+  - ` M .workbuddy-ai/memory/2026-09-14.md`
+  - ` M dataset/candidate/template_manifest.json`
+  - ` M learning/episodes.jsonl`
+  - ` M learning/goal_state.json`
+  - ` M learning/runtime_snapshot.json`
+  - `D  tools/_pt_tmp/test_all_resources_unavailable0/rotation.json`
+  - `D  tools/_pt_tmp/test_audit_actually_detects_a_0/START_HERE.md`
+  - `D  tools/_pt_tmp/test_corrupt_state_never_raise0/rotation.json`
+  - `D  tools/_pt_tmp/test_expired_cooldown_is_retri0/rotation.json`
+  - `D  tools/_pt_tmp/test_persistent_four_resource_0/rotation.json`
+  - `D  tools/_pt_tmp/test_recovering_allows_runtime0/runtime.json`
+  - `D  tools/_pt_tmp/test_running_state_cannot_surv0/runtime.json`
+  - `D  tools/_pt_tmp/test_safe_stop_and_auto_runnin0/runtime.json`
+  - `D  tools/_pt_tmp/test_successful_dispatch_clear0/rotation.json`
+  - `D  tools/_pt_tmp/test_unavailable_resource_is_s0/rotation.json`
 
 ## B. Runtime
 
@@ -23,17 +41,17 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: RESOURCE_NOT_FOUND
-- page: MAP  march: None/6
-- updated_at: 2026-09-14T06:42:03.959479+00:00
+- stop_reason: intel_not_available
+- page: INTEL  march: None/None
+- updated_at: 2026-09-14T08:04:03.857388+00:00
 
 ## C. Episode stream
 
-- rows: 792 (production 792)  modes: {'PRODUCTION': 792}
-- success / failure: 520 / 267
-- success rate over decided: **0.6607**
+- rows: 793 (production 793)  modes: {'PRODUCTION': 793}
+- success / failure: 520 / 268
+- success rate over decided: **0.6599**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "SUBMIT_RESOURCE_SEARCH", "result": "FAILURE", "recorded_at": "2026-09-14T06:42:03.928936+00:00", "episode_id": "accept_20260914_142516_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_before_20260914T064117019019.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_after_20260914T064129392192.png"}`
+- last episode: `{"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T07:59:56.775193+00:00", "episode_id": "live_intel_beast_run3", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_before_20260914T075910172059.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_after_20260914T075925539433.png"}`
 
 ## D. Registry and lifecycle
 
@@ -96,7 +114,7 @@
 - `OPEN_DAILY` success=5 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
 - `OPEN_HOME` success=20 rate=0.8696
-- `OPEN_INTEL` success=50 rate=0.9259
+- `OPEN_INTEL` success=50 rate=0.9091
 - `OPEN_INTEL_BEAST_TARGET` success=12 rate=0.9231
 - `OPEN_MAP` success=24 rate=0.96
 - `OPEN_POWER_DETAILS` success=9 rate=1.0
@@ -157,9 +175,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 120  present: 120
+- referenced screenshots: 122  present: 122
 - missing: []
-- episodes carrying screenshot references: 60
+- episodes carrying screenshot references: 61
 
 ## H. Commercial bot parity
 

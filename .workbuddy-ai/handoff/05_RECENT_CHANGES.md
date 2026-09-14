@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `16bf007 2026-09-14T15:45:11+08:00 docs(handoff): mark 25b5ba7 as last-good and refresh truth after the regression suite`
 - `25b5ba7 2026-09-14T15:43:18+08:00 feat(stamina,recall): make the operator's stamina-first policy executable`
 - `eeac37d 2026-09-14T14:17:40+08:00 wip: stamina becomes observable + recall becomes dispatchable`
 - `35ed464 2026-09-14T13:44:03+08:00 docs(handoff): record the live stamina reading (200/200) and the recall UI probe`
@@ -17,12 +18,78 @@ Last 12 commits (newest first):
 - `65b2955 2026-09-14T13:12:09+08:00 docs(handoff): regenerate truth and record the new last-good commit`
 - `68e3540 2026-09-14T13:11:55+08:00 fix(gather): break the unavailable-resource livelock + acceptance harness`
 - `0f006ab 2026-09-14T12:36:41+08:00 docs(handoff): regenerate truth at the new baseline`
-- `d3f974a 2026-09-14T12:36:28+08:00 chore: ignore the transient commit-message helper file`
 
-Uncommitted changes: 2
-- `M .workbuddy-ai/handoff/.last_good_commit`
-- `?? tools/_h.txt`
+Uncommitted changes: 29
+- `M .gitignore`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-09-14.md`
+- ` M dataset/candidate/template_manifest.json`
+- ` M learning/episodes.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
+- `D  tools/_pt_tmp/test_all_resources_unavailable0/rotation.json`
+- `D  tools/_pt_tmp/test_audit_actually_detects_a_0/START_HERE.md`
+- `D  tools/_pt_tmp/test_corrupt_state_never_raise0/rotation.json`
+- `D  tools/_pt_tmp/test_expired_cooldown_is_retri0/rotation.json`
+- `D  tools/_pt_tmp/test_persistent_four_resource_0/rotation.json`
+- `D  tools/_pt_tmp/test_recovering_allows_runtime0/runtime.json`
+- `D  tools/_pt_tmp/test_running_state_cannot_surv0/runtime.json`
+- `D  tools/_pt_tmp/test_safe_stop_and_auto_runnin0/runtime.json`
+- `D  tools/_pt_tmp/test_successful_dispatch_clear0/rotation.json`
+- `D  tools/_pt_tmp/test_unavailable_resource_is_s0/rotation.json`
 <!-- /AUTO:recent_commits -->
+
+---
+
+## 手写：2026-09-14 第四轮 — 修复体力出口链路断裂（情报巨兽）
+
+上一轮如实记录的最高价值任务：`OPEN_INTEL_BEAST_TARGET` 失败（`INTEL_BEAST_TARGET_NOT_PROVEN`）。
+本轮定位并修掉了**两层**根因——都不是当初猜的「点击坐标漂移」。
+
+### 根因 1：巨兽目标卡模板整体过期（新客户端布局）
+
+真机帧里的 `推荐实力5,107,044`、`等级22大角鹿`、`出征 10` 与代码里 `INTEL_BEAST_10`
+的标定**完全一致**，说明内容没变、位置变了。实测匹配距离：
+
+| 模板 | 实测距离 | 阈值 |
+|---|---:|---:|
+| `BTN_BEAST_START_MARCH` | **30** | 8 |
+| `DIALOG_BEAST_TARGET` | 14 | 8 |
+| `BTN_BEAST_DISPATCH` | **36** | 8 |
+
+点击坐标其实是**对的**：`BTN_INTEL_VIEW_TARGET` 距离 6，中心 (0.5, 0.73) 正好落在 OCR 读到的
+`前往查看` 框 (px 292,914–428,955) 上。问题在于点完之后客户端把结果画在**世界地图**上
+（目标卡），而模板层认不出卡 → 判成 `Page.MAP` → 要求 `Page.BEAST` 的 verifier 永远不可能通过。
+
+`BTN_BEAST_START_MARCH` 是**双载荷**语义：既是页面证据，又是 `INTEL_BEAST_START_MARCH`
+（出征按钮）的点击目标。按测量值新增记录（`tools/register_beast_target_templates.py`），
+旧记录保留作 provenance（`find()` 取最佳匹配）。修复后该帧判为 `Page.BEAST`，
+verifier 复算 **OK**，负向对照（普通地图帧）仍为 MAP。
+
+### 根因 2：情报列表「空」这个状态在视觉层根本没有分支
+
+`OPEN_INTEL_BEAST_TARGET` 修好后，链路不再卡在巨兽卡上，却暴露出下一步：情报页显示
+`intel.status = UNKNOWN` → 大脑只能 `SAFE_STOP intel_state_unknown`（exit 2，看起来像失败）。
+实测两帧的**可区分证据**：
+
+- 有任务卡：OCR 出现 `前往查看`（px 292,914）
+- 空列表：只有 `情报` / `体力` / `下次刷新：07:59:21` 头行
+
+**关键取舍**：不能用「模板没匹配」推断空列表——本轮刚被模板过期坑过一次，
+那样会把「模板失效」误报成「没有任务」并静默结束目标。所以只在 OCR 找到**正向证据**时
+才判定，判不出来就保持 `UNKNOWN`。
+
+结果：`intel_state_unknown`（exit 2）→ **`intel_not_available` + `list_read=True`（exit 0）**。
+「账号当前没有情报任务」从「看起来故障」变成「诚实地说无事可做」。
+
+### 未完成（如实记录）
+
+- **巨兽链路没有真机端到端跑通**：修好之后情报列表恰好空了（`下次刷新 07:59:21` 已过但未刷新），
+  没有任务可点。端到端待列表出现任务后重跑。
+- 体力 350→305 的下降**无法归因**（episode 流无对应记录），已记入 `04_OPEN_ISSUES.md` 0g。
 
 ---
 

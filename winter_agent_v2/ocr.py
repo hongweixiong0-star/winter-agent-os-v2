@@ -616,6 +616,26 @@ class HybridVision:
                     refresh = re.search(r"(\d{2})\D+(\d{2}):(\d{2})", text)
                     if refresh and token.box and min(point[1] for point in token.box) < 190:
                         intel["refresh"] = ":".join(refresh.groups())
+                # The template layer can only say UNKNOWN here, because it knows
+                # the page but not the list.  Measured on 2026-09-14, the two
+                # states are separable by OCR alone:
+                #   with a mission card -> 击败野兽等级10 ... 前往查看 (px 292,914)
+                #   empty list          -> only 情报 / 体力 / 下次刷新 header
+                # Deciding from template *absence* would be unsafe instead: the
+                # card templates do go stale (see the beast target card fix), and
+                # a stale template would then be reported as "no missions" and
+                # silently end the goal.  Only the two measured states are
+                # claimed; anything else stays UNKNOWN.
+                if str(intel.get("status", "UNKNOWN")).upper() == "UNKNOWN":
+                    texts = [token.text.strip() for token in eligible]
+                    has_card = any(
+                        keyword in text for text in texts for keyword in ("前往查看", "查看")
+                    )
+                    has_header = any("下次刷新" in text for text in texts)
+                    if has_card:
+                        intel.update({"status": "AVAILABLE", "available_count": 1, "list_read": True})
+                    elif has_header:
+                        intel.update({"status": "NOT_AVAILABLE", "available_count": 0, "list_read": True})
                 return replace(primary, intel=intel)
             if primary.page is Page.TRAINING and primary.training.get("status") == "IN_PROGRESS" and primary.training.get("timer") in {None, "VISIBLE"}:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))

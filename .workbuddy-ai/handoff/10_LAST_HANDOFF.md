@@ -8,21 +8,21 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T07:43:33+00:00
+HANDOFF TIME: 2026-09-14T08:15:14+00:00
 LAST GOOD COMMIT: 25b5ba7
-WORKING TREE: 2 dirty file(s)
-  ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
+WORKING TREE: 29 dirty file(s)
+  ['M .gitignore', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M dataset/candidate/template_manifest.json', ' M learning/episodes.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 14 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 15 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 28 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=DEGRADED stop_reason=RESOURCE_NOT_FOUND
-LAST PRODUCTION EPISODE: {"skill": "SUBMIT_RESOURCE_SEARCH", "result": "FAILURE", "recorded_at": "2026-09-14T06:42:03.928936+00:00", "episode_id": "accept_20260914_142516_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_before_20260914T064117019019.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_142516_run03\\accept_20260914_142516_run03_step_007_after_20260914T064129392192.png"}
+STOPPED AT: agent_state=DEGRADED stop_reason=intel_not_available
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T07:59:56.775193+00:00", "episode_id": "live_intel_beast_run3", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_before_20260914T075910172059.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_after_20260914T075925539433.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 2
+DIRTY FILES: 29
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
@@ -41,7 +41,34 @@ DO NOT REPEAT:
 
 ## 手写：人类补充（生成器读不出来的部分）
 
-### ⏱ 最新一轮（第三轮）停止点 — 读这一节就够了
+### ⏱ 最新一轮（第四轮）停止点 — 读这一节就够了
+
+- **WHAT FINISHED**：修掉体力出口链路断裂的两层根因。
+  1. 巨兽目标卡模板整体过期（`BTN_BEAST_START_MARCH` 距离 30 ≫ 阈值 8）→ 按真机帧重采。
+     点击坐标没错，错的是「点完之后客户端把目标卡画在地图上，模板层认不出」。
+  2. 情报列表「空」在视觉层没有分支 → 用实测证据（卡片=有 `前往查看`；空=只有 `下次刷新`）
+     新增该状态，且**明确拒绝**用「模板没匹配」来推断空列表。
+- **WHAT LIVE VERIFIED（有帧为证）**
+  - 巨兽目标卡：该帧判为 `Page.BEAST`，beast 字段 = `{INTEL_BEAST_10, 大角鹿, 22, available, 推荐实力 5107044, 10}`，
+    `verify_intel_target_open` 复算 **OK**，负向对照（普通地图）不误报。
+    证据：`dataset/truth_audit/intel_beast_target_20260914/` + `tests/test_beast_target_card.py`（9 项）。
+  - 情报空列表：真机 `run5` → `stop_reason=intel_not_available`、`list_read=True`、**exit 0**
+    （此前是 `intel_state_unknown` / exit 2）。
+- **WHAT NOT VERIFIED（别当成已完成）**
+  - **巨兽链路仍未端到端跑通**：修好后情报列表恰好空了（`下次刷新 07:59:21` 已过未刷新），
+    没有任务可点。**待列表出现任务后重跑 `run_live.py --goal INTEL`**，预期链路：
+    `SELECT_INTEL_BEAST_MISSION → OPEN_INTEL_BEAST_TARGET → INTEL_BEAST_START_MARCH → DISPATCH_INTEL_BEAST`。
+  - `BTN_BEAST_DISPATCH`（编队页派兵按钮）实测距离 **36**，**很可能同样过期但尚无真机帧可采**；
+    一旦链路走到编队页就会暴露——届时应像本轮一样用真机帧重采，不要凭猜改坐标。
+  - 体力 350→305（-45）无法归因（episode 流无对应记录），见 `04_OPEN_ISSUES.md` 0g。
+- **NEXT EXACT STEP**：情报列表刷新出任务后，重跑 `--goal INTEL` 走到编队页；
+  若 `DISPATCH_INTEL_BEAST` 失败，就用新帧重采 `BTN_BEAST_DISPATCH`。
+- **DO NOT REPEAT**：不要用「模板没匹配」推断页面的**语义**（空/无任务/不可用）——
+  本轮刚被模板过期坑过；语义判定必须有独立正向证据。
+
+---
+
+### ⏱ 上一轮（第三轮）停止点
 
 - **WHAT FINISHED**：操作者的「体力优先 + 可随时撤回」策略从**声明**变成**可执行**。
   - 体力在地图上可观测（`HUD_STAMINA_ROI`，**必须单独 ROI OCR**，全屏会漏）。

@@ -68,5 +68,8 @@ desktop.ini
 .DS_Store
 
 # --- scratch ---------------------------------------------------------------
+# pytest --basetemp sandbox (tests are run with this to avoid tripping the
+# workspace bulk-delete guard on %TEMP% cleanup)
+tools/_pt_tmp/
 *.tmp
 .workbuddy-ai/handoff/.commit_message.txt

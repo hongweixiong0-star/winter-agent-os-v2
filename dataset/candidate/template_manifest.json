@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-09-14T06:06:41.024241+00:00",
+  "generated_at": "2026-09-14T07:57:18.934342+00:00",
   "status": "CANDIDATE",
-  "count": 384,
+  "count": 385,
   "records": [
     {
       "template_id": "popup_battlefield_revival__step_001_after_refresh_2__df53c4e4__0",
@@ -6870,6 +6870,24 @@
       "source": "live_20260914_stamina_sources/02_after_stamina_tap.png",
       "provenance": "LIVE_CLIENT",
       "note": "NEGATIVE CONTROL: 购买并使用 ?300, must never be tapped"
+    },
+    {
+      "semantic": "BTN_BEAST_START_MARCH",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\beast_target\\btn_beast_start_march__live_beast_target_card.png",
+      "roi_norm": {
+        "x_norm": 0.334722,
+        "y_norm": 0.455469,
+        "w_norm": 0.326389,
+        "h_norm": 0.053125
+      },
+      "source": "live_20260914_intel_beast_card/step_002_after",
+      "provenance": "LIVE_CLIENT",
+      "note": "current-client 出征 button of the 等级22大角鹿 Intel target card",
+      "measured": {
+        "recommended_power": 5107044,
+        "stamina_cost": 10,
+        "mission_id": "INTEL_BEAST_10"
+      }
     }
   ]
 }

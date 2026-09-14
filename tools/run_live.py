@@ -81,7 +81,7 @@ def main() -> int:
         resource_rotation=ResourceRotationStore(ROOT / "learning/resource_rotation.json"),
     ).run(max_actions=args.max_actions, stop_after_skill=args.stop_after)
     print(json.dumps(asdict(result), ensure_ascii=False, default=str))
-    accepted_stops = {"TARGET_SKILL_VERIFIED", "MAX_ACTIONS_REACHED", "no_idle_march", "reserved_march_for_stamina", "verified_beast_target_not_visible", "intel_available_no_claim", "mail_all_clear", "exploration_income_not_ready", "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable", "alliance_action_not_needed", "research_queue_busy", "training_queue_busy"}
+    accepted_stops = {"TARGET_SKILL_VERIFIED", "MAX_ACTIONS_REACHED", "no_idle_march", "reserved_march_for_stamina", "verified_beast_target_not_visible", "intel_available_no_claim", "intel_not_available", "intel_expired", "mail_all_clear", "exploration_income_not_ready", "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable", "alliance_action_not_needed", "research_queue_busy", "training_queue_busy"}
     verified = all(step.verification is None or step.verification.ok for step in result.steps)
     return 0 if verified and result.stop_reason in accepted_stops else 2
 

@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 2 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
+- 29 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -35,6 +35,8 @@ Machine-detected issues (recomputed every run):
 | 0c | 采集优先级过高（已改配置，未改行为） | ✅ 配置已生效 | `march_policy.reserve_for_stamina: 0 → 2`，`resource_policy.gather_priority=LAST_RESORT`。**真机确认这条配置现在真的改变行为**：采集扫描在 idle≤2 时返回 `reserved_march_for_stamina` 并停止，不再吃满队列。⚠ 副作用见 0d。 |
 | 0d | **`reserve_for_stamina=2` 使撤回触发条件几乎不出现** | ⚠️ 设计后果，待决策 | 撤回的触发是 `idle_marches == 0`，而 reserve=2 让采集在 idle≤2 就停，所以「采集把队列占满」这一状态不再自然发生；撤回目前是**安全网**（用于非采集行军占满其余槽位时），不是日常路径。若操作者更看重「没事时把 6 条都拿去采集」，可把 reserve 降到 1 或 0 —— 现在撤回真的可用了，这个取舍才成立。**这是操作者决策，不是代码缺陷。** |
 | 0e | 免费体力：「下次补给」倒计时没有持久化 | ⚠️ 待优化 | 面板显示 `下次补给 04:52:52`。现在每次运行都会开一次面板确认（白花 2 个动作）。存下该倒计时即可在到期前跳过检查。 |
+| 0g | **体力在 14:19→15:55 之间从 350 掉到 305（-45），无法归因** | ⚠️ 记录，未定位 | episode 流里**没有任何** `DISPATCH_*` 或体力消费记录（最近一次巨兽派兵是 05:00 的采集）。可能是客户端自身或本会话之外的操作。**不得当成我方成功消费**，也不得当成缺陷——先记录，等有新的可归因数据。 |
+| 0h | **INTEL 巨兽链路的端到端验证被账号状态挡住** | ⚠️ 环境限制 | 2026-09-14 16:00 起情报列表为空（`下次刷新 07:59:21` 已过但未刷新出任务），所以 `OPEN_INTEL_BEAST_TARGET` 之后无法真机走完。修复本身已用真实帧验证（见 `tests/test_beast_target_card.py`），端到端待列表出现任务后重跑 `run_live.py --goal INTEL`。 |
 | 0f | **行军计数会被覆盖层遮挡 → unknown** | ⚠️ **新，下一轮第一动作** | 巨兽目标面板会盖住 HUD 上的 `x/y`，此时 `march_used=None`。这是**诚实返回 unknown**（旧代码会谎报 1/6 = 5 个假空闲槽，已修）。后果：计数未知时 `idle_marches=None`，派兵与撤回都无法决策。证据帧 `dataset/raw/control_panel/probe/state_now.png`。下一步：识别该面板为地图覆盖层并优先关闭，或从行军列表行数推导计数。 |
 | 1 | **AUTO 主循环此前完全无法执行语义点击** | ✅ 已修 | `LiveRuntime.resolve` 用 `self.semantic_vision.semantic.find`，而 `run_live.py` 传入的已经是 `SemanticROIVision` → 第一次点击就 `AttributeError`。已改为 `_semantic` 访问器。**这是接手时最重要的发现。** |
 | 2 | **`unexpected_worker_exits = 15` 无法归因** | ⚠️ 部分 | 历史值来自丢弃 traceback 的旧代码，**永久无法追溯**。现在已改为写完整崩溃报告到 `learning/control_panel/crashes/`，并把环境失败与真实崩溃分开计数。真实的 72h 结论需要新数据。 |

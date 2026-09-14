@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T07:43:33+00:00",
+  "generated_at": "2026-09-14T08:15:14+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "25b5ba7",
+  "commit": "16bf007",
   "last_good_commit": "25b5ba7",
-  "dirty_count": 2,
+  "dirty_count": 29,
   "episodes": {
-    "total": 792,
-    "production": 792,
+    "total": 793,
+    "production": 793,
     "success": 520,
-    "failure": 267,
-    "success_rate_over_decided": 0.6607,
+    "failure": 268,
+    "success_rate_over_decided": 0.6599,
     "modes": {
-      "PRODUCTION": 792
+      "PRODUCTION": 793
     },
     "mixed_case_rows": 35
   },
@@ -186,9 +186,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 120,
-    "present_on_disk": 120,
-    "traceable_episodes": 60,
+    "referenced_screenshots": 122,
+    "present_on_disk": 122,
+    "traceable_episodes": 61,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -202,6 +202,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "RESOURCE_NOT_FOUND"
+    "stop_reason": "intel_not_available"
   }
 }
