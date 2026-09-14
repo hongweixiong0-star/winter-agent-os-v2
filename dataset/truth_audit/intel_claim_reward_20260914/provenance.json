@@ -1,0 +1,15 @@
+{
+  "source": "live 2026-09-14 INTEL run7 step 001",
+  "note": "一键领取 -> shared 获得奖励 popup; classified EXPLORATION_REWARD on the first after-frame and GENERIC_REWARD on the refresh frames",
+  "measured": {
+    "reward_text": [
+      "获得奖励",
+      "EXP",
+      "6,000",
+      "50",
+      "点击任意位置退出"
+    ],
+    "before_status": "CLAIMABLE",
+    "claimable_count": 1
+  }
+}

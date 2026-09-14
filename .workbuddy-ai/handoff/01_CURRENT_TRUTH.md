@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T08:15:28+00:00`
+- generated_at: `2026-09-14T08:49:57+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `702e65b` on `main`
+- commit: `7fb541d` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,10 +10,23 @@
 
 - repository: yes
 - last good commit: `702e65b`
-- commits: 16
-- HEAD: `702e65b` — fix(intel): repair the stamina-sink chain — stale beast card + empty-list dead end (2026-09-14T16:15:17+08:00)
-- working tree: 2 dirty file(s)
-  - `M .workbuddy-ai/handoff/.last_good_commit`
+- commits: 18
+- HEAD: `7fb541d` — docs(memory): record the fourth round (beast card + intel empty list) (2026-09-14T16:15:46+08:00)
+- working tree: 15 dirty file(s)
+  - `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/06_DECISIONS.md`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+  - ` M learning/episodes.jsonl`
+  - ` M learning/goal_state.json`
+  - ` M learning/runtime_snapshot.json`
+  - ` M tools/run_live.py`
+  - ` M winter_agent_v2/verifier.py`
+  - `?? dataset/truth_audit/intel_claim_reward_20260914/`
+  - `?? evidence/live_intel_full_run6_all_steps_success.log`
+  - `?? evidence/live_intel_full_run7_claim_fix_check.log`
+  - `?? evidence/live_intel_full_run8_dismiss_ok.log`
+  - `?? evidence/live_intel_guard_run9.log`
+  - `?? tests/test_intel_claim_reward.py`
   - `?? tools/_h.txt`
 
 ## B. Runtime
@@ -25,22 +38,22 @@
 - last_fatal_error: None
 - stop_reason: intel_not_available
 - page: INTEL  march: None/None
-- updated_at: 2026-09-14T08:04:03.857388+00:00
+- updated_at: 2026-09-14T08:37:43.987834+00:00
 
 ## C. Episode stream
 
-- rows: 793 (production 793)  modes: {'PRODUCTION': 793}
-- success / failure: 520 / 268
-- success rate over decided: **0.6599**
+- rows: 800 (production 800)  modes: {'PRODUCTION': 800}
+- success / failure: 525 / 270
+- success rate over decided: **0.6604**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T07:59:56.775193+00:00", "episode_id": "live_intel_beast_run3", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_before_20260914T075910172059.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_after_20260914T075925539433.png"}`
+- last episode: `{"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T08:34:26.144051+00:00", "episode_id": "live_intel_full_run8", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_after_20260914T083418180357.png"}`
 
 ## D. Registry and lifecycle
 
 - registry total: 83  by_state: {'VERIFIED': 44, 'CANDIDATE': 37, 'BLOCKED': 2}
 - live dispatchable (verifier-backed): 65
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **23**  stable: 16  degraded: 10  only_failed: 7  never_executed: 28
+- live_verified: **24**  stable: 17  degraded: 9  only_failed: 7  never_executed: 27
 
 ### Never executed
 
@@ -50,7 +63,6 @@
 - `CLAIM_REWARD` (CANDIDATE)
 - `DISMISS_ALLIANCE_GENERIC_REWARD` (CANDIDATE)
 - `DISMISS_EXPLORATION_REWARD` (VERIFIED)
-- `DISMISS_INTEL_GENERIC_REWARD` (CANDIDATE)
 - `EXECUTE_INTEL_RESCUE_SURVIVORS` (VERIFIED)
 - `JOIN_RALLY` (CANDIDATE)
 - `NAVIGATE_TO` (CANDIDATE)
@@ -89,18 +101,19 @@
 - `BACK` success=15 rate=0.9375
 - `CLOSE_POPUP` success=30 rate=0.9677
 - `DISMISS_MAIL_GENERIC_REWARD` success=6 rate=0.8571
-- `DISPATCH_INTEL_BEAST` success=12 rate=0.9231
+- `DISPATCH_INTEL_BEAST` success=13 rate=0.9286
 - `GATHER_RESOURCE` success=8 rate=1.0
-- `INTEL_BEAST_START_MARCH` success=13 rate=1.0
-- `INTEL_CLAIM_REWARDS` success=15 rate=0.9375
+- `INTEL_BEAST_START_MARCH` success=14 rate=1.0
+- `INTEL_CLAIM_REWARDS` success=15 rate=0.8824
 - `OPEN_DAILY` success=5 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
 - `OPEN_HOME` success=20 rate=0.8696
-- `OPEN_INTEL` success=50 rate=0.9091
-- `OPEN_INTEL_BEAST_TARGET` success=12 rate=0.9231
+- `OPEN_INTEL` success=50 rate=0.8929
+- `OPEN_INTEL_BEAST_TARGET` success=13 rate=0.9286
 - `OPEN_MAP` success=24 rate=0.96
 - `OPEN_POWER_DETAILS` success=9 rate=1.0
 - `OPEN_POWER_OVERVIEW` success=9 rate=0.8182
+- `SELECT_INTEL_BEAST_MISSION` success=8 rate=0.8
 
 ### Degraded
 
@@ -110,7 +123,6 @@
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
 - `OPEN_MAIL` success=31 failure=15 rate=0.6739
 - `SEARCH_RESOURCE` success=41 failure=34 rate=0.5467
-- `SELECT_INTEL_BEAST_MISSION` success=7 failure=2 rate=0.7778
 - `SELECT_RESOURCE` success=11 failure=41 rate=0.2115
 - `START_GATHER` success=35 failure=59 rate=0.3723
 - `SUBMIT_RESOURCE_SEARCH` success=35 failure=30 rate=0.5385
@@ -126,9 +138,9 @@ Failure | Count | Top skills
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | MAIL_CLAIM_REWARDS(10)
 `POPUP_CLOSE_NOT_PROVEN` | 5 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
 `EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN` | 3 | CONFIRM_EXPLORATION_IDLE_CLAIM(2), EXPLORATION_IDLE_CLAIM(1)
+`STAMINA_SOURCES_NOT_OPEN` | 3 | OPEN_INTEL(3)
 `INTEL_MISSION_SELECTION_NOT_PROVEN` | 2 | SELECT_INTEL_BEAST_MISSION(2)
-`MAIL_TAB_SELECTION_NOT_PROVEN` | 2 | SELECT_MAIL_ALLIANCE_TAB(1), SELECT_MAIL_SYSTEM_TAB(1)
-`OPEN_HOME_NOT_PROVEN` | 2 | OPEN_HOME(2)
+`INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 2 | INTEL_CLAIM_REWARDS(2)
 
 ## F. Goal capability coverage
 
@@ -157,9 +169,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 122  present: 122
+- referenced screenshots: 136  present: 136
 - missing: []
-- episodes carrying screenshot references: 61
+- episodes carrying screenshot references: 68
 
 ## H. Commercial bot parity
 

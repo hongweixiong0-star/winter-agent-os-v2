@@ -29,9 +29,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 55,
+          "attempts": 56,
           "successes": 50,
-          "failures": 5
+          "failures": 6
         },
         {
           "capability": "READ_INTEL_LIST",
@@ -55,8 +55,8 @@
           "status": "STABLE",
           "implemented_by": "SELECT_INTEL_BEAST_MISSION",
           "live_verified_by": "SELECT_INTEL_BEAST_MISSION",
-          "attempts": 10,
-          "successes": 8,
+          "attempts": 11,
+          "successes": 9,
           "failures": 2
         },
         {
@@ -70,8 +70,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 39,
-          "successes": 37,
+          "attempts": 42,
+          "successes": 40,
           "failures": 2
         },
         {
@@ -82,9 +82,9 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 16,
+          "attempts": 17,
           "successes": 15,
-          "failures": 1
+          "failures": 2
         },
         {
           "capability": "DISMISS_INTEL_REWARD",
@@ -95,8 +95,8 @@
           "status": "DEGRADED",
           "implemented_by": "DISMISS_INTEL_REWARD",
           "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 20,
-          "successes": 15,
+          "attempts": 21,
+          "successes": 16,
           "failures": 5
         }
       ],
@@ -141,8 +141,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 39,
-          "successes": 37,
+          "attempts": 42,
+          "successes": 40,
           "failures": 2
         },
         {
@@ -572,9 +572,9 @@
           "status": "DEGRADED",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 65,
+          "attempts": 66,
           "successes": 49,
-          "failures": 16
+          "failures": 17
         },
         {
           "capability": "DISMISS_FREE_REWARD_POPUP",

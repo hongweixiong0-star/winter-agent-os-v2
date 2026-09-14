@@ -8,21 +8,21 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T08:15:28+00:00
+HANDOFF TIME: 2026-09-14T08:49:57+00:00
 LAST GOOD COMMIT: 702e65b
-WORKING TREE: 2 dirty file(s)
-  ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
+WORKING TREE: 15 dirty file(s)
+  ['M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M learning/episodes.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', ' M tools/run_live.py', ' M winter_agent_v2/verifier.py', '?? dataset/truth_audit/intel_claim_reward_20260914/', '?? evidence/live_intel_full_run6_all_steps_success.log']
 
-WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 16 commit(s) in history
+WHAT FINISHED (machine-visible): 24 skills live verified, 17 stable, 18 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
-WHAT NOT VERIFIED: 28 skills never executed, 7 never succeeded
+WHAT NOT VERIFIED: 27 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
 STOPPED AT: agent_state=DEGRADED stop_reason=intel_not_available
-LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T07:59:56.775193+00:00", "episode_id": "live_intel_beast_run3", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_before_20260914T075910172059.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_beast_run3\\live_intel_beast_run3_step_001_after_20260914T075925539433.png"}
+LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T08:34:26.144051+00:00", "episode_id": "live_intel_full_run8", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_after_20260914T083418180357.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 2
+DIRTY FILES: 15
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
@@ -41,7 +41,36 @@ DO NOT REPEAT:
 
 ## 手写：人类补充（生成器读不出来的部分）
 
-### ⏱ 最新一轮（第四轮）停止点 — 读这一节就够了
+### ✅ 情报巨兽链路已 LIVE VERIFIED（第五轮补齐，2026-09-14 16:28）
+
+情报列表刷新出任务后，`run6` 一次跑通全链，**四步 verifier 全部 PASS**，episode 可追溯
+（`episode_id = live_intel_full_run6`）：
+
+| step | 技能 | 结果 | 关键证据 |
+|---|---|---|---|
+| 1 | `SELECT_INTEL_BEAST_MISSION` | SUCCESS | INTEL → POPUP/INTEL_BEAST_MISSION |
+| 2 | `OPEN_INTEL_BEAST_TARGET` | **SUCCESS** | → BEAST，level 22（就是此前一直 `NOT_PROVEN` 的那一步） |
+| 3 | `INTEL_BEAST_START_MARCH` | SUCCESS | → MARCH 编队页 |
+| 4 | `DISPATCH_INTEL_BEAST` | **SUCCESS** | → MAP，`marches=['MARCHING']`，**体力 305→295** |
+
+随后 `run7` 领取已完成任务奖励（修复后 SUCCESS）、`run8` 关掉奖励弹窗（SUCCESS），
+情报列表清空后以 `intel_not_available` 停止（**exit 0**）。
+
+**顺带纠正上一轮的一个错误猜测**：`BTN_BEAST_DISPATCH` 在旧帧上距离 36，我曾判断「很可能同样过期」——
+**实测它是好的**，编队页派兵一次成功。那次距离是用**地图帧**量的，而它只在编队页出现，
+属于测量对象选错。教训：没有对应页面的帧，就不要断言某个模板过期。
+
+- **WHAT NOT VERIFIED（别当成已完成）**
+  - 巨兽链路修复后只验证了 **1 次**完整派兵；`DISPATCH_INTEL_BEAST` 历史 12 次成功属于修复前。
+    离 `STABLE` 还差样本。
+  - 情报奖励领取修复后也只跑了 1 次。
+  - 体力 350→295 中只有 **-10 可归因**（run6 派兵），其余 -45 仍无法归因（`04_OPEN_ISSUES.md` 0g）。
+- **NEXT EXACT STEP**：情报下次刷新后（倒计时从 `07:22:25` 起算）再跑几次 `--goal INTEL`，
+  把 `DISPATCH_INTEL_BEAST` 的样本量做上去。
+
+---
+
+### ⏱ 上一轮（第四轮）停止点
 
 - **WHAT FINISHED**：修掉体力出口链路断裂的两层根因。
   1. 巨兽目标卡模板整体过期（`BTN_BEAST_START_MARCH` 距离 30 ≫ 阈值 8）→ 按真机帧重采。

@@ -56,6 +56,29 @@ def main() -> int:
             )
         ),
     )
+    # Safety net: this tree is edited from two places at once, and an external
+    # editor has repeatedly flushed a stale buffer over runtime.py.  When that
+    # happens a verifier can silently point at the wrong function -- one run
+    # recorded OPEN_INTEL as STAMINA_SOURCES_NOT_OPEN, which looks like a real
+    # product failure in the episode stream.  Fail loudly instead.
+    from winter_agent_v2.verifier import (
+        verify_open_intel,
+        verify_open_map,
+        verify_wood_dispatch_from_march,
+    )
+
+    for skill_id, expected in (
+        ("OPEN_INTEL", verify_open_intel),
+        ("OPEN_MAP", verify_open_map),
+        ("DISPATCH_MARCH", verify_wood_dispatch_from_march),
+    ):
+        actual = LiveRuntime.VERIFIED_ATOMIC.get(skill_id)
+        if actual is not expected:
+            raise SystemExit(
+                f"VERIFIER_MAPPING_CORRUPT: {skill_id} -> "
+                f"{getattr(actual, '__name__', None)} (expected {expected.__name__}). "
+                "The source tree was rewritten while it was loaded; do not run live."
+            )
     verifier_skills = set(LiveRuntime.VERIFIED_ATOMIC)
     result = LiveRuntime(
         device=device,

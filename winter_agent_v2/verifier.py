@@ -676,7 +676,7 @@ def verify_training_started(before: WorldState, after: WorldState, troop_type: s
 
 def verify_intel_claim(before: WorldState, reward: WorldState, after: WorldState) -> VerificationResult:
     was_claimable = before.page is Page.INTEL and before.intel.get("status") == "CLAIMABLE" and int(before.intel.get("claimable_count", 0)) > 0
-    reward_visible = reward.page is Page.POPUP and reward.popup == "INTEL_REWARD" and reward.intel.get("claim_feedback") is True
+    reward_visible = is_reward_popup(reward)
     cleared = after.page is Page.INTEL and int(after.intel.get("claimable_count", 0)) == 0 and after.intel.get("status") != "CLAIMABLE"
     ok = was_claimable and reward_visible and cleared
     return VerificationResult(
@@ -686,12 +686,34 @@ def verify_intel_claim(before: WorldState, reward: WorldState, after: WorldState
     )
 
 
+# The client shows ONE shared "获得奖励" popup for every reward source, so
+# which popup branch in vision.py wins is not stable.  Measured 2026-09-14: the
+# same Intel claim produced EXPLORATION_REWARD on the first after-frame and
+# GENERIC_REWARD on the two refresh frames, because POPUP_EXPLORATION_REWARD is
+# checked before POPUP_INTEL_REWARD and they match the same artwork.  The source
+# is therefore proven by the *before* state (Intel page with claimable > 0),
+# which is already required; any reward popup counts as the feedback.
+# verify_daily_claim_feedback accepted GENERIC_REWARD for the same reason.
+REWARD_POPUPS = frozenset({"INTEL_REWARD", "GENERIC_REWARD", "EXPLORATION_REWARD"})
+
+
+def is_reward_popup(state: WorldState) -> bool:
+    """True when a reward popup is on screen, whatever the client called it."""
+    return state.page is Page.POPUP and (
+        state.popup in REWARD_POPUPS
+        or state.intel.get("claim_feedback") is True
+        or state.daily.get("claim_feedback") is True
+        or state.mail.get("claim_feedback") is True
+        or state.exploration.get("claim_feedback") is True
+    )
+
+
 def verify_intel_claim_feedback(before: WorldState, after: WorldState) -> VerificationResult:
     """Atomic claim proof used by LiveRuntime before the reward popup is closed."""
     was_claimable = before.page is Page.INTEL and before.intel.get("status") == "CLAIMABLE" and int(before.intel.get("claimable_count", 0)) > 0
-    reward_visible = after.page is Page.POPUP and after.popup == "INTEL_REWARD" and after.intel.get("claim_feedback") is True
+    reward_visible = is_reward_popup(after)
     ok = was_claimable and reward_visible
-    return VerificationResult(ok, "OK" if ok else "INTEL_CLAIM_FEEDBACK_NOT_PROVEN", {"was_claimable":was_claimable,"reward_visible":reward_visible})
+    return VerificationResult(ok, "OK" if ok else "INTEL_CLAIM_FEEDBACK_NOT_PROVEN", {"was_claimable":was_claimable,"reward_visible":reward_visible,"popup":after.popup})
 
 
 def verify_beast_hunt(

@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 2 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
+- 15 uncommitted file(s): ['M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M learning/episodes.jsonl', ' M learning/goal_state.json']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -36,7 +36,9 @@ Machine-detected issues (recomputed every run):
 | 0d | **`reserve_for_stamina=2` 使撤回触发条件几乎不出现** | ⚠️ 设计后果，待决策 | 撤回的触发是 `idle_marches == 0`，而 reserve=2 让采集在 idle≤2 就停，所以「采集把队列占满」这一状态不再自然发生；撤回目前是**安全网**（用于非采集行军占满其余槽位时），不是日常路径。若操作者更看重「没事时把 6 条都拿去采集」，可把 reserve 降到 1 或 0 —— 现在撤回真的可用了，这个取舍才成立。**这是操作者决策，不是代码缺陷。** |
 | 0e | 免费体力：「下次补给」倒计时没有持久化 | ⚠️ 待优化 | 面板显示 `下次补给 04:52:52`。现在每次运行都会开一次面板确认（白花 2 个动作）。存下该倒计时即可在到期前跳过检查。 |
 | 0g | **体力在 14:19→15:55 之间从 350 掉到 305（-45），无法归因** | ⚠️ 记录，未定位 | episode 流里**没有任何** `DISPATCH_*` 或体力消费记录（最近一次巨兽派兵是 05:00 的采集）。可能是客户端自身或本会话之外的操作。**不得当成我方成功消费**，也不得当成缺陷——先记录，等有新的可归因数据。 |
-| 0h | **INTEL 巨兽链路的端到端验证被账号状态挡住** | ⚠️ 环境限制 | 2026-09-14 16:00 起情报列表为空（`下次刷新 07:59:21` 已过但未刷新出任务），所以 `OPEN_INTEL_BEAST_TARGET` 之后无法真机走完。修复本身已用真实帧验证（见 `tests/test_beast_target_card.py`），端到端待列表出现任务后重跑 `run_live.py --goal INTEL`。 |
+| 0h | ~~INTEL 巨兽链路的端到端验证被账号状态挡住~~ | ✅ **已解决** | `run6` 四步全 PASS 并真的派出了巨兽（`marches=['MARCHING']`，体力 305→295）。修复前被挡是因为列表恰好空了。 |
+| 0i | **`OPEN_INTEL` 偶发使用错误验证器**（episode 里留下 `STAMINA_SOURCES_NOT_OPEN`） | ⚠️ 已加护栏，根因是外部编辑器 | 磁盘代码正确、运行却偶发跑错 → 编辑器回写过程中被加载。已在 `run_live.py` 启动前校验 3 个关键映射，被污染时直接 `VERIFIER_MAPPING_CORRUPT` 退出，**不再写入虚假 episode**。彻底解法是不要在外部编辑器里长期打开 `winter_agent_v2/*.py`。 |
+| 0j | 情报奖励领取：`INTEL_CLAIM_REWARDS` 判 `INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | ✅ 已修 | 客户端对**所有来源共用同一个「获得奖励」弹窗**，而 `POPUP_EXPLORATION_REWARD` 的分支排在 `POPUP_INTEL_REWARD` 之前 → 同一帧被判成 `EXPLORATION_REWARD`（首帧）/ `GENERIC_REWARD`（刷新帧）。改为：**来源由 before 态证明**（情报页 + claimable>0），弹窗只要属于奖励类即算反馈（与 `verify_daily_claim_feedback` 既有口径一致）。 | 2026-09-14 16:00 起情报列表为空（`下次刷新 07:59:21` 已过但未刷新出任务），所以 `OPEN_INTEL_BEAST_TARGET` 之后无法真机走完。修复本身已用真实帧验证（见 `tests/test_beast_target_card.py`），端到端待列表出现任务后重跑 `run_live.py --goal INTEL`。 |
 | 0f | **行军计数会被覆盖层遮挡 → unknown** | ⚠️ **新，下一轮第一动作** | 巨兽目标面板会盖住 HUD 上的 `x/y`，此时 `march_used=None`。这是**诚实返回 unknown**（旧代码会谎报 1/6 = 5 个假空闲槽，已修）。后果：计数未知时 `idle_marches=None`，派兵与撤回都无法决策。证据帧 `dataset/raw/control_panel/probe/state_now.png`。下一步：识别该面板为地图覆盖层并优先关闭，或从行军列表行数推导计数。 |
 | 1 | **AUTO 主循环此前完全无法执行语义点击** | ✅ 已修 | `LiveRuntime.resolve` 用 `self.semantic_vision.semantic.find`，而 `run_live.py` 传入的已经是 `SemanticROIVision` → 第一次点击就 `AttributeError`。已改为 `_semantic` 访问器。**这是接手时最重要的发现。** |
 | 2 | **`unexpected_worker_exits = 15` 无法归因** | ⚠️ 部分 | 历史值来自丢弃 traceback 的旧代码，**永久无法追溯**。现在已改为写完整崩溃报告到 `learning/control_panel/crashes/`，并把环境失败与真实崩溃分开计数。真实的 72h 结论需要新数据。 |

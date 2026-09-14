@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T08:15:28+00:00",
+  "generated_at": "2026-09-14T08:49:57+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "702e65b",
+  "commit": "7fb541d",
   "last_good_commit": "702e65b",
-  "dirty_count": 2,
+  "dirty_count": 15,
   "episodes": {
-    "total": 793,
-    "production": 793,
-    "success": 520,
-    "failure": 268,
-    "success_rate_over_decided": 0.6599,
+    "total": 800,
+    "production": 800,
+    "success": 525,
+    "failure": 270,
+    "success_rate_over_decided": 0.6604,
     "modes": {
-      "PRODUCTION": 793
+      "PRODUCTION": 800
     },
     "mixed_case_rows": 35
   },
@@ -24,11 +24,11 @@
     },
     "dispatchable": 65,
     "counts": {
-      "live_verified": 23,
-      "stable": 16,
-      "degraded": 10,
+      "live_verified": 24,
+      "stable": 17,
+      "degraded": 9,
       "only_failed": 7,
-      "never_executed": 28
+      "never_executed": 27
     }
   },
   "top_failures": [
@@ -119,6 +119,16 @@
       ]
     },
     {
+      "failure_type": "STAMINA_SOURCES_NOT_OPEN",
+      "count": 3,
+      "top_skills": [
+        [
+          "OPEN_INTEL",
+          3
+        ]
+      ]
+    },
+    {
       "failure_type": "INTEL_MISSION_SELECTION_NOT_PROVEN",
       "count": 2,
       "top_skills": [
@@ -129,25 +139,11 @@
       ]
     },
     {
-      "failure_type": "MAIL_TAB_SELECTION_NOT_PROVEN",
+      "failure_type": "INTEL_CLAIM_FEEDBACK_NOT_PROVEN",
       "count": 2,
       "top_skills": [
         [
-          "SELECT_MAIL_ALLIANCE_TAB",
-          1
-        ],
-        [
-          "SELECT_MAIL_SYSTEM_TAB",
-          1
-        ]
-      ]
-    },
-    {
-      "failure_type": "OPEN_HOME_NOT_PROVEN",
-      "count": 2,
-      "top_skills": [
-        [
-          "OPEN_HOME",
+          "INTEL_CLAIM_REWARDS",
           2
         ]
       ]
@@ -186,9 +182,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 122,
-    "present_on_disk": 122,
-    "traceable_episodes": 61,
+    "referenced_screenshots": 136,
+    "present_on_disk": 136,
+    "traceable_episodes": 68,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },

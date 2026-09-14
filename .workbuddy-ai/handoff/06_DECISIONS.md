@@ -7,6 +7,29 @@
 
 ---
 
+## D-024：奖励弹窗是共用控件，来源必须由 before 态证明
+
+- **决定**：新增 `is_reward_popup()`；`verify_intel_claim_feedback` 不再要求
+  `popup == "INTEL_REWARD"`，只要 after 是奖励类弹窗即可，来源由
+  「before 在情报页且 claimable_count>0」证明。
+- **理由**：实测（2026-09-14）客户端对**所有来源共用一个「获得奖励」弹窗**；
+  `vision.py` 里 `POPUP_EXPLORATION_REWARD` 的分支排在 `POPUP_INTEL_REWARD` 之前，
+  于是同一次情报领取的首帧被判成 `EXPLORATION_REWARD`、刷新帧被判成 `GENERIC_REWARD`。
+  把弹窗身份钉死在某个来源上，等于把一个**不稳定的分支顺序**当成事实。
+- **被否决**：调整分支顺序（换一批流程受害，且弹窗本来就没有来源标识）。
+- **一致性**：`verify_daily_claim_feedback` **早就**接受 `GENERIC_REWARD`，本决定只是沿用既有口径。
+- **影响**：`verifier.py`；`tests/test_intel_claim_reward.py`。
+
+## D-023：真机启动前校验关键验证器映射
+
+- **决定**：`run_live.py` 在跑之前断言 `OPEN_INTEL / OPEN_MAP / DISPATCH_MARCH`
+  指向预期的 verifier，不符则以 `VERIFIER_MAPPING_CORRUPT` 退出。
+- **理由**：树被两处同时编辑，外部编辑器回写会让运行时加载到**回滚中的代码**，
+  曾表现为「`OPEN_INTEL` 用了 `verify_stamina_sources_open`」——这会把一条**虚假的失败**
+  写进 production episode 流，污染后续所有失败排序。
+- **被否决**：事后清理 episode（禁止篡改历史）；静默重试（掩盖污染）。
+- **影响**：`tools/run_live.py`。彻底解法仍是不要在外部编辑器里长期打开项目源码。
+
 ## D-022：撤回的证明是状态迁移，不是空闲槽增加
 
 - **决定**：`RECALL_MARCH` 的 verifier 从 `NORMAL_IDLE_SLOT_INCREASED` 改为
