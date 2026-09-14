@@ -1,0 +1,12 @@
+{
+  "BTN_HERO_FIGHT": {
+    "phash_gap": 26,
+    "ccoeff_gap": 0.784,
+    "verdict": "ccoeff clearer"
+  },
+  "POPUP_HERO_BATTLE_VICTORY": {
+    "phash_gap": 28,
+    "ccoeff_gap": 0.653,
+    "verdict": "ccoeff clearer"
+  }
+}

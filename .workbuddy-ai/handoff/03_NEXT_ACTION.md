@@ -12,7 +12,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x110
 LAST GOOD COMMIT: f8e145f
-CURRENT DIRTY FILES: 15
+CURRENT DIRTY FILES: 8
 LAST PRODUCTION EPISODE: {"skill": "INTEL_HERO_DISPATCH", "result": "FAILURE", "recorded_at": "2026-09-14T12:19:55.812501+00:00", "episode_id": "intel_pins_20260914_121727_nav_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_before_20260914T121917075964.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_121727_nav_00\\intel_pins_20260914_121727_nav_00_step_001_after_20260914T121927504859.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 110, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 

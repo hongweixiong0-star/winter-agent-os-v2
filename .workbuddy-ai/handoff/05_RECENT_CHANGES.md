@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `da28686 2026-09-14T20:25:14+08:00 fix(hero): the fight button is clickable - my template was 103 px too high`
 - `4e075a7 2026-09-14T20:08:08+08:00 docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved`
 - `d2cc794 2026-09-14T19:47:35+08:00 docs(mcp): capability audit - zero new MCP servers, host MCP usage policy`
 - `ff9a23d 2026-09-14T19:43:43+08:00 docs(memory): architecture review + the P0/P1 fixes it required`
@@ -17,25 +18,40 @@ Last 12 commits (newest first):
 - `349bb6c 2026-09-14T16:51:47+08:00 docs(memory): repair the fifth-round note eaten by shell command substitution`
 - `0d44f54 2026-09-14T16:50:46+08:00 docs(handoff): mark db268f9 as last-good after the intel chain closed end to end`
 - `db268f9 2026-09-14T16:50:25+08:00 feat(intel): the beast chain runs end to end on the live client`
-- `7fb541d 2026-09-14T16:15:46+08:00 docs(memory): record the fourth round (beast card + intel empty list)`
 
-Uncommitted changes: 15
-- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
+Uncommitted changes: 8
+- `M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
 - ` M dataset/candidate/template_manifest.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- ` M tools/run_intel_pins.py`
-- ` M winter_agent_v2/brain.py`
 - ` M winter_agent_v2/vision.py`
-- `?? dataset/candidate/hero_camp/popup_hero_battle_victory__live.png`
-- `?? evidence/intel_pins_20260914_121727.json`
+- `?? evidence/ab_matcher_20260914.json`
 - `?? tools/_h.txt`
-- `?? tools/pins_out12.txt`
+- `?? tools/ab_matcher.py`
+- `?? tools/verify_template.py`
+- `?? winter_agent_v2/matchers.py`
 <!-- /AUTO:recent_commits -->
+
+---
+
+## 手写：2026-09-14 第九轮 — 识别引擎升级（pHash → OpenCV 互相关，按证据 opt-in）
+
+操作者质问「为什么识别这么差」后做的根因分析 + 修复：
+
+**MAA 澄清**：项目**没有用 MAA**（winter_agent_v2 零 MAA 代码；宪法里只是概念位）。
+执行后端是自写 ADB 封装（adb shell input tap / exec-out screencap）。
+
+**识别差的五个根因**：① 模板靠人肉测量（战斗按钮偏 103px 事故）；② 模板整族漂移；
+③ 页面模型缺失（情报板钉子从未建模）；④ 小字 OCR 碎片化；⑤ 单信号判定。
+
+**引擎升级（核心修复）**：新增 winter_agent_v2/matchers.py — OpenCV
+TM_CCOEFF_NORMED 多尺度（0.9/1.0/1.1）互相关，带 ±40px 搜索窗与 0..1 绝对分。
+tools/ab_matcher.py 做 A/B：战斗按钮正样本 1.000 / 负样本 0.216、0.142（分离 +0.784）；
+胜利横幅 1.000 / 0.159、0.347（分离 +0.653）——**绝对分阈值远比汉明距离可判**。
+接入方式：按记录 opt-in（matcher=ccoeff, max_distance=16），已切换 4 个 hero 流程模板；
+其余模板行为完全不变（无未验证的全局切换）。帧级 4/4 正负验证通过，39 项测试零回归。
+
+**防呆工具**：tools/verify_template.py — 对任意 semantic 打印 ROI/matcher/provenance，
+并在帧上画出红圈+匹配框，强制目视复核。**因为模板匹配自己的裁剪区永远 d=0，
+距离 0 不能证明坐标对**（pitfall 11）。
 
 ---
 

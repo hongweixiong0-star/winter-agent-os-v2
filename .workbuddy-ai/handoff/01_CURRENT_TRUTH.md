@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T12:25:10+00:00`
+- generated_at: `2026-09-14T12:30:35+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `4e075a7` on `main`
+- commit: `da28686` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,24 +10,17 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 29
-- HEAD: `4e075a7` — docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved (2026-09-14T20:08:08+08:00)
-- working tree: 15 dirty file(s)
-  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M dataset/candidate/hero_camp/btn_hero_fight__live_squad.png`
+- commits: 30
+- HEAD: `da28686` — fix(hero): the fight button is clickable - my template was 103 px too high (2026-09-14T20:25:14+08:00)
+- working tree: 8 dirty file(s)
+  - `M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
   - ` M dataset/candidate/template_manifest.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M tools/run_intel_pins.py`
-  - ` M winter_agent_v2/brain.py`
   - ` M winter_agent_v2/vision.py`
-  - `?? dataset/candidate/hero_camp/popup_hero_battle_victory__live.png`
-  - `?? evidence/intel_pins_20260914_121727.json`
+  - `?? evidence/ab_matcher_20260914.json`
   - `?? tools/_h.txt`
-  - `?? tools/pins_out12.txt`
+  - `?? tools/ab_matcher.py`
+  - `?? tools/verify_template.py`
+  - `?? winter_agent_v2/matchers.py`
 
 ## B. Runtime
 

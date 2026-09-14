@@ -510,9 +510,20 @@ class SemanticROIVision:
                     round((roi["x_norm"] + roi["w_norm"]) * width),
                     round((roi["y_norm"] + roi["h_norm"]) * height),
                 )
-                with Image.open(row["template_path"]) as template:
-                    distance = hamming(phash(image.crop(bounds)), phash(template))
-                matches.append(SemanticMatch(semantic, distance, roi))
+                if row.get("matcher") == "ccoeff":
+                    # Opt-in search-based matcher (tools/ab_matcher.py measures
+                    # its separation against the phash path).  Score 1.0 -> 0,
+                    # 0.75 -> 16, keeping the SemanticMatch distance contract.
+                    from .matchers import match_ccoeff
+
+                    found = match_ccoeff(image_path, Path(row["template_path"]), row["roi_norm"])
+                    if found is not None:
+                        distance = int(round((1.0 - found.score) * 64))
+                        matches.append(SemanticMatch(semantic, distance, roi))
+                else:
+                    with Image.open(row["template_path"]) as template:
+                        distance = hamming(phash(image.crop(bounds)), phash(template))
+                    matches.append(SemanticMatch(semantic, distance, roi))
         best = min(matches, key=lambda match: match.distance)
         threshold = self.semantic_max_distance.get(semantic, self.max_distance)
         if best.distance <= threshold:

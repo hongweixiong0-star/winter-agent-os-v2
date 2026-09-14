@@ -2936,7 +2936,9 @@
       "width": 288,
       "height": 84,
       "confidence": 0.99,
-      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT"
+      "source": "REPLAY_HUMAN_REVIEWED_SCREENSHOT",
+      "matcher": "ccoeff",
+      "max_distance": 16
     },
     {
       "template_id": "dialog_beast_target__live_beast_intel_world_target__0",
@@ -6898,8 +6900,9 @@
         "w_norm": 0.2986,
         "h_norm": 0.0602
       },
-      "max_distance": 8,
-      "provenance": "live 2026-09-14 hero-journey camp panel (探险 ⚡10 button), frame intel_pins_20260914_104320_nav_01"
+      "max_distance": 16,
+      "provenance": "live 2026-09-14 hero-journey camp panel (探险 ⚡10 button), frame intel_pins_20260914_104320_nav_01",
+      "matcher": "ccoeff"
     },
     {
       "semantic": "BTN_HERO_FIGHT",
@@ -6910,8 +6913,9 @@
         "w_norm": 0.4236,
         "h_norm": 0.0563
       },
-      "max_distance": 8,
-      "provenance": "live 2026-09-14 squad page, RE-MEASURED by green-blob colour segmentation (x369-685,y1160-1242); the first registration was cropped 103px too high onto the hero-portrait row and self-matched at d=0 - see handoff pitfall"
+      "max_distance": 16,
+      "provenance": "live 2026-09-14 squad page, RE-MEASURED by green-blob colour segmentation (x369-685,y1160-1242); the first registration was cropped 103px too high onto the hero-portrait row and self-matched at d=0 - see handoff pitfall",
+      "matcher": "ccoeff"
     },
     {
       "semantic": "POPUP_HERO_BATTLE_VICTORY",
@@ -6922,8 +6926,9 @@
         "w_norm": 0.2153,
         "h_norm": 0.0727
       },
-      "max_distance": 8,
-      "provenance": "live 2026-09-14 hero-journey victory screen (胜利 banner, rewards 24万x2/4.8万/1.2万/700), dismissed by BACK"
+      "max_distance": 16,
+      "provenance": "live 2026-09-14 hero-journey victory screen (胜利 banner, rewards 24万x2/4.8万/1.2万/700), dismissed by BACK",
+      "matcher": "ccoeff"
     }
   ]
 }

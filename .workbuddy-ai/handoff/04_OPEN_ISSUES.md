@@ -23,7 +23,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 15 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M dataset/candidate/hero_camp/btn_hero_fight__live_squad.png', ' M dataset/candidate/template_manifest.json']
+- 8 uncommitted file(s): ['M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M dataset/candidate/template_manifest.json', ' M winter_agent_v2/vision.py', '?? evidence/ab_matcher_20260914.json', '?? tools/_h.txt']
 <!-- /AUTO:open_issues -->
 
 ---

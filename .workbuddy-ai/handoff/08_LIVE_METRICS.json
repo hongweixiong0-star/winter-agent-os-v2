@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-09-14T12:25:10+00:00",
+  "generated_at": "2026-09-14T12:30:35+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "4e075a7",
+  "commit": "da28686",
   "last_good_commit": "f8e145f",
-  "dirty_count": 15,
+  "dirty_count": 8,
   "episodes": {
     "total": 918,
     "production": 918,

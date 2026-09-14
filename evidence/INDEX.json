@@ -1,7 +1,13 @@
 {
-  "generated_at": "2026-09-14T12:25:11+00:00",
-  "count": 371,
+  "generated_at": "2026-09-14T12:30:36+00:00",
+  "count": 372,
   "entries": [
+    {
+      "path": "evidence/ab_matcher_20260914.json",
+      "kind": "evidence",
+      "bytes": 236,
+      "mtime": "2026-09-14T12:26:19+00:00"
+    },
     {
       "path": "evidence/alliance_daily_production_chain.json",
       "kind": "evidence",
@@ -137,8 +143,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 63677,
-      "mtime": "2026-09-14T12:08:04+00:00"
+      "bytes": 68225,
+      "mtime": "2026-09-14T12:25:11+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
