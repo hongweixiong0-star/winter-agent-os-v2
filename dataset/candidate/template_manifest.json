@@ -6888,6 +6888,18 @@
         "stamina_cost": 10,
         "mission_id": "INTEL_BEAST_10"
       }
+    },
+    {
+      "semantic": "BTN_HERO_CAMP_FIGHT",
+      "template_path": "dataset/candidate/hero_camp/btn_hero_camp_fight__live_hero_camp.png",
+      "roi_norm": {
+        "x_norm": 0.3542,
+        "y_norm": 0.4648,
+        "w_norm": 0.2986,
+        "h_norm": 0.0602
+      },
+      "max_distance": 8,
+      "provenance": "live 2026-09-14 hero-journey camp panel (探险 ⚡10 button), frame intel_pins_20260914_104320_nav_01"
     }
   ]
 }

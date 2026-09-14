@@ -1,0 +1,5 @@
+intel pin loop start 2026-09-14T10:43:21+00:00 pin_budget=30
+E:\无尽冬日智能体\winter_agent_v2\intel_pins.py:53: RuntimeWarning: divide by zero encountered in floor_divide
+  sat = 255 * (mx - mn) // mx
+pin 0: ORANGE at (216,609) -> tap
+  {"pin": "ORANGE", "tap": [0.3, 0.4758], "card_opened": true, "productive": false, "exit_code": 2, "stop_reason": "INTEL_HERO_TARGET_NOT_PROVEN", "steps": 1, "dispatches": 0, "claims": 0, "stamina_after": null, "elapsed_s": 13.2, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_104320_pin_00"}

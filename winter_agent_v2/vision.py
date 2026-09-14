@@ -1014,6 +1014,14 @@ class SemanticWorldVision:
                 confidence=0.99,
             )
 
+        if match("BTN_HERO_CAMP_FIGHT"):
+            # The Hero Journey camp panel on the world map (measured live
+            # 2026-09-14): an 探险 ⚡10 fight button, no march stage. It is a
+            # fight target like the beast card, so it maps to Page.BEAST with
+            # empty beast fields - which is how the brain tells it apart from
+            # an intel beast target. The check must precede the map branch:
+            # the panel covers the map HUD and would otherwise be misread.
+            return WorldState(page=Page.BEAST, beast={}, confidence=0.99)
         visible_musk_ox = match("TARGET_BEAST_MUSK_OX_9")
         search_submit = match("BTN_RESOURCE_SEARCH_SUBMIT")
         # The active resource tab is decided by the calibrated strip
@@ -1086,7 +1094,7 @@ class SemanticWorldVision:
                 used = 2 + transient_count
             else:
                 used = None
-            return WorldState(
+        return WorldState(
                 page=Page.MAP,
                 marches=tuple(marches),
                 march_used=used,

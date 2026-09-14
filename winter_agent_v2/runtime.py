@@ -15,7 +15,7 @@ from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
-from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read
+from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read
 from .verifier import verify_ally_gift_claim, verify_beast_dispatch, verify_beast_march_open, verify_beast_target_selected, verify_building_upgrade, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
@@ -75,6 +75,9 @@ class LiveRuntime:
         "RELAX_RESOURCE_LEVEL": verify_resource_level_relaxed,
         "OPEN_STAMINA_SOURCES": verify_stamina_sources_open,
         "CLAIM_FREE_STAMINA": verify_free_stamina_claimed,
+        "OPEN_INTEL_HERO_JOURNEY_TARGET": verify_intel_hero_target_open,
+        "INTEL_HERO_START_MARCH": verify_intel_hero_march_open,
+        "INTEL_HERO_DISPATCH": verify_intel_hero_dispatched,
         "SELECT_MARCH_TO_RECALL": verify_march_recall_dialog_open,
         "RECALL_MARCH": verify_march_recalled,
         "START_GATHER": verify_march_page_open,

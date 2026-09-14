@@ -359,6 +359,38 @@ def verify_intel_rescue_target_open(before: WorldState, after: WorldState) -> Ve
     return VerificationResult(ok, "OK" if ok else "INTEL_RESCUE_TARGET_NOT_PROVEN", {"mission_dialog":before_ok, "target_and_cost":target})
 
 
+def verify_intel_hero_target_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """Tapping 前往查看 on a Hero Journey card opens the camp target card.
+
+    The camp target card shares the beast target card layout (the same 出征
+    button template drives Page.BEAST), so the page itself is the evidence;
+    the card's power fields differ and are not required to prove navigation.
+    """
+    before_ok = before.page is Page.POPUP and before.popup == "INTEL_HERO_JOURNEY"
+    after_ok = after.page is Page.BEAST
+    ok = before_ok and after_ok
+    return VerificationResult(ok, "OK" if ok else "INTEL_HERO_TARGET_NOT_PROVEN", {"card": before_ok, "target": after_ok})
+
+
+def verify_intel_hero_march_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """The camp panel accepted the 探险 tap: the panel closed (live 2026-09-14
+    the hero-journey fight has no march stage, so any transition out of the
+    camp panel - a battle screen, a result popup or the bare map - is the
+    observable state change)."""
+    before_ok = before.page is Page.BEAST and not before.beast
+    after_ok = after.page is not Page.BEAST
+    ok = before_ok and after_ok
+    return VerificationResult(ok, "OK" if ok else "INTEL_HERO_MARCH_NOT_OPEN", {"target": before_ok, "left_panel": after_ok, "after_page": after.page.value})
+
+
+def verify_intel_hero_dispatched(before: WorldState, after: WorldState) -> VerificationResult:
+    before_ok = before.page is Page.MARCH
+    active = after.page is Page.MAP and any(state in {MarchState.MARCHING, MarchState.RETURNING} for state in after.marches)
+    queue_visible = after.march_used is not None and after.march_used >= 1
+    ok = before_ok and active and queue_visible
+    return VerificationResult(ok, "OK" if ok else "INTEL_HERO_DISPATCH_NOT_PROVEN", {"march_page": before_ok, "active_march": active, "march_used": after.march_used})
+
+
 def verify_intel_rescue_started(before: WorldState, after: WorldState) -> VerificationResult:
     target = before.page is Page.MAP and before.popup == "INTEL_RESCUE_SURVIVORS_TARGET" and before.intel.get("stamina_cost_displayed") == 12
     active = after.page is Page.MAP and after.popup is None and after.intel.get("status") == "IN_PROGRESS" and after.intel.get("mission_id") == "INTEL_RESCUE_SURVIVORS_10"

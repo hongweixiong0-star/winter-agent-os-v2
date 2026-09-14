@@ -34,6 +34,13 @@ def main() -> int:
     parser.add_argument("--goal", choices=["HOME", "GATHER_RESOURCE", "BEAST_HUNT", "INTEL", "MAIL", "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN"], default=None)
     parser.add_argument("--stop-after", default=None, help="Stop after this skill passes its verifier")
     parser.add_argument("--serial", default=None, help="Device selected by the control panel")
+    parser.add_argument(
+        "--no-stamina-check",
+        action="store_true",
+        help="Skip the once-per-run free-stamina panel check; used by loops that "
+             "invoke this runner many times per hour, where the repeated failed "
+             "claim attempts are pure episode noise",
+    )
     args = parser.parse_args()
 
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
@@ -92,7 +99,7 @@ def main() -> int:
             # when a higher-priority task (stamina spending, or a verification
             # run that needs a slot) has a better use for it.
             recall_on_demand=bool(config.get("march_policy", {}).get("recall_on_demand", False)),
-            claim_free_stamina=bool(config.get("stamina_policy", {}).get("claim_free_stamina", False)),
+            claim_free_stamina=bool(config.get("stamina_policy", {}).get("claim_free_stamina", True)) and not args.no_stamina_check,
         ),
         episode_store=EpisodeStore(ROOT / "learning/episodes.jsonl", limit=int(config.get("retention", {}).get("episode_limit", 10000))),
         goal_store=GoalStateStore(ROOT / "learning/goal_state.json"),

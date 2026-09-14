@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-09-14T11:15:52+00:00",
+  "pins_processed": 0,
+  "pins_skipped": 0,
+  "dispatches": 0,
+  "claims": 0,
+  "per_pin": [
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "exploration_income_not_ready",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 2.9,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_111533_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "exploration_income_not_ready",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 3.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_111533_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "exploration_income_not_ready",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 2.9,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_111533_nav_00"
+    }
+  ]
+}

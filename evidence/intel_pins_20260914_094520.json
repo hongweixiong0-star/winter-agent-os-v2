@@ -1,0 +1,229 @@
+{
+  "generated_at": "2026-09-14T09:55:15+00:00",
+  "pins_processed": 13,
+  "pins_skipped": 0,
+  "dispatches": 2,
+  "claims": 1,
+  "per_pin": [
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "STAMINA_SOURCES_NOT_OPEN",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": 295,
+      "elapsed_s": 41.2,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_nav_00"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.6042,
+        0.5531
+      ],
+      "card_opened": true,
+      "exit_code": 2,
+      "stop_reason": "STAMINA_SOURCES_NOT_OPEN",
+      "steps": 4,
+      "dispatches": 1,
+      "claims": 0,
+      "stamina_after": 28,
+      "elapsed_s": 55.9,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_00"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.2986,
+        0.4758
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 4,
+      "dispatches": 0,
+      "claims": 1,
+      "stamina_after": null,
+      "elapsed_s": 33.4,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_01"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4758
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.6,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_02"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.475
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_03"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4758
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.6,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_04"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4766
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.4,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_05"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4766
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.4,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_06"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4773
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.7,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_07"
+    },
+    {
+      "pin": "BLUE",
+      "tap": [
+        0.5417,
+        0.2219
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_08"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4766
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_09"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4766
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_10"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4758
+      ],
+      "card_opened": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 19.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_11"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4758
+      ],
+      "card_opened": true,
+      "exit_code": 2,
+      "stop_reason": "STAMINA_SOURCES_NOT_OPEN",
+      "steps": 6,
+      "dispatches": 1,
+      "claims": 0,
+      "stamina_after": 2,
+      "elapsed_s": 78.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_094520_pin_12"
+    }
+  ]
+}

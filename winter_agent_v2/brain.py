@@ -108,7 +108,10 @@ class RuleBrain:
         if world.page is Page.MAP and world.popup == "INTEL_RESCUE_SURVIVORS_TARGET":
             return Decision("EXECUTE_INTEL_RESCUE_SURVIVORS", "rescue_target_and_cost_verified", world.confidence, "intel_rescue_in_progress")
         if world.page is Page.POPUP and world.popup == "INTEL_HERO_JOURNEY":
-            return Decision("BACK", "intel_hero_journey_not_yet_verified", 1.0, "intel_page_restored")
+            # Live 2026-09-14: the operator asked for the intel board to be
+            # drained; the hero-journey card shares the 前往查看 button with the
+            # verified beast flow, so route it through the same machinery.
+            return Decision("OPEN_INTEL_HERO_JOURNEY_TARGET", "reviewed_hero_journey_mission", world.confidence, "intel_hero_target_open")
         if world.page is Page.POPUP and world.popup == "INTEL_MASTER_BOUNTY":
             return Decision("BACK", "intel_master_bounty_power_blocked", 1.0, "intel_page_restored")
         if world.page is Page.POPUP and world.popup == "GET_MORE_STAMINA":
@@ -143,7 +146,14 @@ class RuleBrain:
         if self.current_goal == "INTEL":
             if world.page is Page.HOME:
                 return Decision("OPEN_MAP", "intel_goal_requires_map", world.confidence, "map_opened")
-            if world.page is Page.EXPLORATION and not world.intel:
+            if (
+                world.page is Page.EXPLORATION
+                and not world.intel
+                and world.exploration.get("stamina_cost_displayed") is None
+            ):
+                # A camp panel with a stamina cost is the workable hero-journey
+                # target (handled below); anything else on the exploration page
+                # is not intel work, so leave it.
                 return Decision("BACK", "leave_exploration_for_intel_goal", world.confidence, "home_restored")
             if world.page not in {Page.MAP, Page.INTEL, Page.BEAST, Page.MARCH, Page.EXPLORATION}:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_intel_route")
@@ -156,6 +166,15 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_beast_route")
             if world.page is Page.MAP and world.resource_search_open:
                 return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")
+        if (
+            world.page is Page.EXPLORATION
+            and self.current_goal == "INTEL"
+            and world.exploration.get("stamina_cost_displayed") is not None
+        ):
+            # Live 2026-09-14: the Hero Journey camp panel classifies as the
+            # exploration page (its 探险 ⚡10 button belongs to that system).
+            # With the intel goal active this panel IS the workable target.
+            return Decision("INTEL_HERO_START_MARCH", "intel_hero_camp_panel", world.confidence, "intel_hero_fight_started")
         if self.current_goal == "EXPLORATION":
             if world.page is Page.HOME:
                 return Decision("OPEN_EXPLORATION", "exploration_goal", world.confidence, "exploration_open")
@@ -249,6 +268,11 @@ class RuleBrain:
         if world.page is Page.BEAST:
             if self.current_goal == "INTEL" and world.beast.get("mission_id") in {"INTEL_BEAST_10", "INTEL_FIREBEAST_10"} and world.beast.get("available"):
                 return Decision("INTEL_BEAST_START_MARCH", "intel_beast_target_verified", world.confidence, "intel_beast_march_page_open")
+            if self.current_goal == "INTEL" and not world.beast:
+                # A Hero Journey camp target card: same layout as the beast
+                # target card (the 出征 button drives the page) but without the
+                # beast mission fields, which is how the two are told apart.
+                return Decision("INTEL_HERO_START_MARCH", "intel_hero_target_open", world.confidence, "intel_hero_fight_started")
             if world.beast.get("available") and world.idle_marches and world.idle_marches > 0:
                 return Decision("BEAST_HUNT", "beast_available_with_idle_march", world.confidence, "beast_defeated_and_returned")
             if world.beast.get("available") and world.march_used is None:

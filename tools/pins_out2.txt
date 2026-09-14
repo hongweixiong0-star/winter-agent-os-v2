@@ -1,0 +1,149 @@
+intel pin loop start 2026-09-14T10:03:02+00:00 pin_budget=30
+E:\无尽冬日智能体\winter_agent_v2\intel_pins.py:53: RuntimeWarning: divide by zero encountered in floor_divide
+  sat = 255 * (mx - mn) // mx
+pin 0: ORANGE at (216,608) -> tap
+  {"pin": "ORANGE", "tap": [0.3, 0.475], "card_opened": true, "productive": true, "exit_code": 0, "stop_reason": "intel_not_available", "steps": 4, "dispatches": 0, "claims": 1, "stamina_after": null, "elapsed_s": 36.8, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_00"}
+pin 1: ORANGE at (216,610) -> tap
+  {"pin": "ORANGE", "tap": [0.3, 0.4766], "card_opened": true, "productive": false, "exit_code": 0, "stop_reason": "intel_not_available", "steps": 2, "dispatches": 0, "claims": 0, "stamina_after": null, "elapsed_s": 22.1, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_01"}
+pin 2: ORANGE at (211,675) -> tap
+  {"pin": "ORANGE", "tap": [0.2931, 0.5273], "card_opened": true, "productive": false, "exit_code": 0, "stop_reason": "intel_not_available", "steps": 2, "dispatches": 0, "claims": 0, "stamina_after": null, "elapsed_s": 22.0, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_02"}
+pin 3: BLUE at (390,284) -> tap
+  {"pin": "BLUE", "tap": [0.5417, 0.2219], "card_opened": true, "productive": false, "exit_code": 0, "stop_reason": "intel_not_available", "steps": 2, "dispatches": 0, "claims": 0, "stamina_after": null, "elapsed_s": 22.0, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_03"}
+pin 4: PURPLE at (431,303) -> tap
+  {"pin": "PURPLE", "tap": [0.5986, 0.2367], "card_opened": true, "productive": false, "exit_code": 0, "stop_reason": "intel_not_available", "steps": 2, "dispatches": 0, "claims": 0, "stamina_after": null, "elapsed_s": 21.5, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_04"}
+pin 5: BLUE at (537,410) -> tap
+  {"pin": "BLUE", "tap": [0.7458, 0.3203], "card_opened": true, "productive": false, "exit_code": 0, "stop_reason": "intel_not_available", "steps": 2, "dispatches": 0, "claims": 0, "stamina_after": null, "elapsed_s": 22.1, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_05"}
+pin 6: BLUE at (114,449) -> tap
+  {"pin": "BLUE", "tap": [0.1583, 0.3508], "card_opened": true, "productive": false, "exit_code": 2, "stop_reason": "INTEL_RESCUE_START_NOT_PROVEN", "steps": 2, "dispatches": 0, "claims": 0, "stamina_after": 2, "elapsed_s": 52.6, "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_06"}
+STOP: stamina 2 below 10
+
+=== INTEL PINS SUMMARY ===
+{
+  "generated_at": "2026-09-14T10:08:07+00:00",
+  "pins_processed": 7,
+  "pins_skipped": 0,
+  "dispatches": 0,
+  "claims": 1,
+  "per_pin": [
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.475
+      ],
+      "card_opened": true,
+      "productive": true,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 4,
+      "dispatches": 0,
+      "claims": 1,
+      "stamina_after": null,
+      "elapsed_s": 36.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_00"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.3,
+        0.4766
+      ],
+      "card_opened": true,
+      "productive": false,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 22.1,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_01"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.2931,
+        0.5273
+      ],
+      "card_opened": true,
+      "productive": false,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 22.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_02"
+    },
+    {
+      "pin": "BLUE",
+      "tap": [
+        0.5417,
+        0.2219
+      ],
+      "card_opened": true,
+      "productive": false,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 22.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_03"
+    },
+    {
+      "pin": "PURPLE",
+      "tap": [
+        0.5986,
+        0.2367
+      ],
+      "card_opened": true,
+      "productive": false,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 21.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_04"
+    },
+    {
+      "pin": "BLUE",
+      "tap": [
+        0.7458,
+        0.3203
+      ],
+      "card_opened": true,
+      "productive": false,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": null,
+      "elapsed_s": 22.1,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_05"
+    },
+    {
+      "pin": "BLUE",
+      "tap": [
+        0.1583,
+        0.3508
+      ],
+      "card_opened": true,
+      "productive": false,
+      "exit_code": 2,
+      "stop_reason": "INTEL_RESCUE_START_NOT_PROVEN",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "stamina_after": 2,
+      "elapsed_s": 52.6,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_100302_pin_06"
+    }
+  ]
+}
+wrote evidence\intel_pins_20260914_100302.json
