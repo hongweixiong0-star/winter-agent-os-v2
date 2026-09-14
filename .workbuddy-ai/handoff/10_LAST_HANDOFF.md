@@ -8,21 +8,21 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T04:36:31+00:00
+HANDOFF TIME: 2026-09-14T05:01:03+00:00
 LAST GOOD COMMIT: d3f974a
-WORKING TREE: 1 dirty file(s)
-  ['?? .workbuddy-ai/handoff/.last_good_commit']
+WORKING TREE: 26 dirty file(s)
+  ['M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/06_DECISIONS.md', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M learning/episodes.jsonl', ' M learning/goal_state.json', ' M learning/resource_rotation.json', ' M learning/runtime_snapshot.json']
 
-WHAT FINISHED (machine-visible): 24 skills live verified, 16 stable, 3 commit(s) in history
+WHAT FINISHED (machine-visible): 23 skills live verified, 16 stable, 4 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 25 skills never executed, 7 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
 STOPPED AT: agent_state=IDLE stop_reason=TARGET_SKILL_VERIFIED
-LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-14T04:11:59.146784+00:00", "episode_id": "live_gather_run2", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_before_20260914T041144038962.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_after_20260914T041148263346.png"}
+LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-14T05:00:15.248850+00:00", "episode_id": "accept_20260914_125232_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_before_20260914T045955757128.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_after_20260914T050000610623.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 1
+DIRTY FILES: 26
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
@@ -53,23 +53,30 @@ DO NOT REPEAT:
 
 ### WHAT LIVE VERIFIED（有真机证据）
 
-- `GATHER_RESOURCE` 单条链路：`SUBMIT_RESOURCE_SEARCH` → `START_GATHER` → `DISPATCH_MARCH`
-  全部 verifier PASS，`after = MAP` 且 `marches=["MARCHING"]`、`march_used=1`，
-  `stop_reason = TARGET_SKILL_VERIFIED`，进程退出码 0。
-- 资源页签分类器：22/22 真机帧正确（含 HOME 误报拒绝）。
-- 证据：`evidence/live_gather_20260914/`，
-  截图在 `dataset/raw/control_panel/runtime_auto/live_gather_run{1,2}/`。
-  **注意这些截图不在 git 里**（见 D-013）。
+- `GATHER_RESOURCE` 完整闭环，**多次**：`SEARCH_RESOURCE → SELECT_RESOURCE →
+  SUBMIT_RESOURCE_SEARCH → START_GATHER → DISPATCH_MARCH` 每步 verifier 通过，
+  `after = MAP` 且 `marches` 含 `MARCHING` / `RETURNING`，`stop_reason = TARGET_SKILL_VERIFIED`。
+  证据：`evidence/gather_acceptance_20260914_123747.json`（MEAT）、
+  `evidence/gather_acceptance_20260914_125232.json`（WOOD ×1、MEAT ×1），
+  截图在 `dataset/raw/control_panel/runtime_auto/accept_*/`。
+- **资源不可用自动切换**：WOOD 返回 `RESOURCE_NOT_FOUND` 时，运行时标记其不可用并在
+  **同一次运行内**换资源完成闭环（2026-09-14 第三轮 run 3，步骤 4–6）。
+  此前这一情况会直接结束运行。
+- 资源页签分类器：真机 **22/22** 帧正确（含 HOME 误报拒绝），并在至少三种不同滚动偏移下
+  正确工作（写死坐标做不到）。
+- 等级筛选器：点「+」读数 1→4→8 与真机显示一致（`resource_level_max = 8` 正确）。
 
 ### WHAT NOT VERIFIED（不要当成已完成）
 
-- 「四种资源各 ≥3 次完整闭环、合计 ≥12 次」——**未达成**，本轮只有 1 条完整链路。
-- 资源轮换目前不保证能选到四种不同资源（本轮被选中的是 IRON）。
-- `MARCH_PAGE_NOT_OPEN` 修复后真机 0 次，但**样本量太小**，不足以宣布解决。
+- 「四种资源各 ≥3 次完整闭环、合计 ≥12 次」——**未达成**。
+  当前：MEAT 1 次、WOOD 1 次；**COAL 与 IRON 一次都没尝试过**
+  （默认滚动偏移下它们在屏幕外，需要滚动把格子滚进来）。
 - `DISPATCH_NOT_PROVEN` x28 根因**未定位**。
 - 竞技场 / 迷宫 / 限时活动 / Bear / Rally：**所需技能根本未实现**。
 - 72h Soak、5–7 天 Soak：**远未开始**。
 - 外部项目接入：**0 项**（见 `07_EXTERNAL_REUSE.md`）。
+- `RELAX_RESOURCE_LEVEL`：注册了但从未执行。实测失败场景里等级已在最小值，
+  正确补救是换资源，所以这个技能可能本身就是多余的设计——需要新证据再判断。
 
 ### STOPPED AT
 
@@ -88,9 +95,17 @@ DO NOT REPEAT:
 ### DO NOT REPEAT（踩过的坑）
 
 - 不要凭记忆推导资源页签坐标。读 `SemanticROIVision.selected_resource` 的角标锚点。
+  已实测到至少三种滚动偏移（0 / +400px / MEAT 在 0.4993）。
+- 不要把等级筛选器当成 1~27。**真机实测是 1..8**；`RESOURCE_NOT_FOUND` 是资源可用性问题，
+  不是等级问题——补救动作是**换资源**。
 - 不要在 `LiveRuntime.resolve` 里直接写 `self.semantic_vision.semantic`——用 `_semantic`。
 - 不要新增 Skill 而不提供 verifier（否则 `VERIFIED_ATOMIC` 不含它，永远不会被调度）。
+- **不要用 `registry.ready(world)[0]` 之类的「第一个可执行技能」做兜底**：
+  注册表里第一个 `required_page=None` 的是占位技能 `WAIT`，会让循环在任意页面静默卡死。
+  （已在 `brain.py` 排除 `WAIT`，但新增占位技能时要保持这个不变量。）
 - 不要按目录/通配符批量删文件。**只列具体文件名，逐项确认。**
 - 不要把「代码存在」「Replay PASS」「单次成功」写成 `STABLE` 或 `Live Verified`。
 - 不要为了让测试全绿而恢复错误行为；先判断测试是否过时。
 - 不要在没读 `00_MASTER_RULES.md` 之前改动架构。
+- 不要在脚本里调用 `date` / `head` / `tail` / `wc`（本机不存在，会让命令静默失败或产生
+  形如 `live_gather_` 的错误目录名）。

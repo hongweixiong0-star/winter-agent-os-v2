@@ -1,9 +1,10 @@
 {
   "dispatched": {
-    "MEAT": 1,
-    "WOOD": 1,
+    "MEAT": 2,
+    "WOOD": 2,
     "COAL": 1,
     "IRON": 1
   },
-  "next": "MEAT"
+  "next": "COAL",
+  "unavailable": {}
 }

@@ -7,6 +7,31 @@
 
 ---
 
+## D-015：占位技能不得赢得「第一个可执行技能」兜底
+
+- **决定**：`brain.py` 的兜底 `registry.ready(world)[0]` 排除 `WAIT`；
+  并且 `Page.MARCH` 必须有显式分支。
+- **理由**：注册表按插入顺序返回，第一个 `required_page=None` 的技能是 `WAIT`
+  （语义是「等环境自行解决」）。真机复现：采集链走到编队页后选 `WAIT`，
+  整个运行以 `ENVIRONMENTAL_WAIT_NOT_PROVEN` 结束。
+- **被否决**：给 `WAIT` 更宽松的 verifier（会让真正的环境等待也失去保护）。
+- **影响**：新增任何 `required_page=None` 的占位技能时，必须确认它不会抢占兜底。
+
+## D-014：资源不可用要切换资源，不是继续等
+
+- **决定**：`SUBMIT_RESOURCE_SEARCH` 返回 `RESOURCE_NOT_FOUND` 且等级已在最小值时，
+  标记该资源不可用（冷却 30 分钟）并在**同一次运行内**换资源；
+  `ResourceRotationStore` 的状态文件完全防御式读取。
+- **理由**：真机对照实验证明 `RESOURCE_NOT_FOUND` 是资源可用性
+  （MEAT level 7 秒过 / WOOD level 1~8 全失败），而轮换只在派兵成功时推进，
+  于是不可用资源被**永远选中**——活锁，不是慢路径。整个 Goal 无法前进。
+- **被否决**：
+  - 继续降等级（等级已经是 1，没有更低）。
+  - 直接把 `RESOURCE_NOT_FOUND` 当普通失败结束运行（浪费整轮预算，且 Goal 永远卡住）。
+  - 永久排除该资源（节点稍后会重新出现，应该重试）。
+- **影响**：`resource_rotation.py`、`operations_policy.choose_resource_balanced(exclude=)`、
+  `runtime.LiveRuntime.max_resource_switches`、`tests/test_resource_rotation.py`。
+
 ## D-013：截图证据不进 git
 
 - **决定**：`.gitignore` 排除 `dataset/raw/**` 与 `dataset/truth_audit/**` 的 PNG

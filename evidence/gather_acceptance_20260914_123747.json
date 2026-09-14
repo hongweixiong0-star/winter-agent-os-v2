@@ -1,0 +1,217 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-14T04:44:13+00:00",
+  "source": "tools/run_gather_acceptance.py",
+  "acceptance_rule": "each resource completes the full chain (SUBMIT -> SELECT -> START_GATHER -> DISPATCH_MARCH) with every verifier passing",
+  "planned_runs": 4,
+  "completed_runs": 4,
+  "tally": {
+    "MEAT": {
+      "attempts": 1,
+      "full_chain_success": 1
+    },
+    "WOOD": {
+      "attempts": 3,
+      "full_chain_success": 0
+    },
+    "COAL": {
+      "attempts": 0,
+      "full_chain_success": 0
+    },
+    "IRON": {
+      "attempts": 0,
+      "full_chain_success": 0
+    }
+  },
+  "runs": [
+    {
+      "run": 1,
+      "planned_resource": "MEAT",
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run01",
+      "stop_reason": "TARGET_SKILL_VERIFIED",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SEARCH_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": 1
+        },
+        {
+          "index": 2,
+          "skill": "SELECT_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "IRON",
+          "marches_after": [],
+          "march_used_after": 1
+        },
+        {
+          "index": 3,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "RESOURCE_DETAIL",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": null
+        },
+        {
+          "index": 4,
+          "skill": "START_GATHER",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "RESOURCE_DETAIL",
+          "after_page": "MARCH",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        },
+        {
+          "index": 5,
+          "skill": "DISPATCH_MARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MARCH",
+          "after_page": "MAP",
+          "resource_selected": null,
+          "marches_after": [
+            "GATHERING",
+            "MARCHING"
+          ],
+          "march_used_after": 2
+        }
+      ],
+      "full_chain_success": true,
+      "accepted_stop": true
+    },
+    {
+      "run": 2,
+      "planned_resource": "WOOD",
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run02",
+      "stop_reason": "RESOURCE_NOT_FOUND",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SEARCH_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": null,
+          "marches_after": [
+            "GATHERING",
+            "MARCHING"
+          ],
+          "march_used_after": 2
+        },
+        {
+          "index": 2,
+          "skill": "SELECT_RESOURCE",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "MEAT",
+          "marches_after": [
+            "GATHERING",
+            "MARCHING"
+          ],
+          "march_used_after": 2
+        },
+        {
+          "index": 3,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING",
+            "MARCHING"
+          ],
+          "march_used_after": 2
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    },
+    {
+      "run": 3,
+      "planned_resource": "WOOD",
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run03",
+      "stop_reason": "RESOURCE_NOT_FOUND",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING",
+            "MARCHING"
+          ],
+          "march_used_after": 2
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    },
+    {
+      "run": 4,
+      "planned_resource": "WOOD",
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_123747_run04",
+      "stop_reason": "RESOURCE_NOT_FOUND",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SUBMIT_RESOURCE_SEARCH",
+          "executed": true,
+          "error": null,
+          "verifier_ok": false,
+          "verifier_reason": "RESOURCE_NOT_FOUND",
+          "before_page": "MAP",
+          "after_page": "MAP",
+          "resource_selected": "WOOD",
+          "marches_after": [
+            "GATHERING"
+          ],
+          "march_used_after": 2
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    }
+  ]
+}

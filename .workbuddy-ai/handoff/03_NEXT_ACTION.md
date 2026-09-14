@@ -12,8 +12,8 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x104
 LAST GOOD COMMIT: d3f974a
-CURRENT DIRTY FILES: 1
-LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-14T04:11:59.146784+00:00", "episode_id": "live_gather_run2", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_before_20260914T041144038962.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_after_20260914T041148263346.png"}
+CURRENT DIRTY FILES: 26
+LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-14T05:00:15.248850+00:00", "episode_id": "accept_20260914_125232_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_before_20260914T045955757128.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_after_20260914T050000610623.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 104, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
@@ -63,8 +63,8 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 ### 坑（必须知道）
 
 1. **不要写死坐标。** 资源页签带会滚动，客户端会把当前选中页签重新居中。
-   已经实测到两种滚动偏移（0 与 +400px）。必须走
-   `SemanticROIVision.selected_resource` 的白色角标锚点 + 相对布局。
+   已经实测到多种滚动偏移（0、+400px，以及 MEAT 落在 0.4993 的第三种）。
+   必须走 `SemanticROIVision.selected_resource` 的白色角标锚点 + 相对布局。
 2. **`run_live.py` 与 `control_panel.py` 传入的 vision 对象不是同一种。**
    用 `LiveRuntime._semantic` 访问器，不要直接 `self.semantic_vision.semantic`。
 3. **新增 Skill 必须同时提供 verifier**，否则 `LiveRuntime.VERIFIED_ATOMIC` 不含它，
@@ -74,6 +74,11 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 5. Bash 工具在本机**没有 coreutils**（`ls/cat/head/sleep/wc/date` 都不可用），
    PowerShell 工具**stdout 不回传**。所有命令都用
    `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -c "..."` 配合重定向 + Read 读取。
+6. **等级筛选器范围是 1..8，不是 1..27。** 真机实测 1→4→8 后停在 8。
+   `RESOURCE_NOT_FOUND` 不是等级问题，是「该资源当前范围内没有可采节点」。
+   正确补救是**换资源**（`ResourceRotationStore.unavailable()`），不是降等级。
+7. **升级/等待类操作要看清页面语义**：采集编队页的正确动作是
+   `DISPATCH_MARCH`，不是 `WAIT`（`WAIT` 只用于维护/加载画面）。
 
 ### 真机环境（当前实测）
 
@@ -83,3 +88,5 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 - 真机可用时：720×1280，前台包 `com.gof.china`。
 - 跑项目脚本必须用项目 venv：`E:\dongri-mumu-bot\.venv\Scripts\python.exe`（含 PIL / rapidocr）。
   托管 Python 3.13 **没有 PIL**。
+- 脚本里**不要用 `date`/`head`/`tail`** 之类外部命令（不存在）。
+- 验收扫描：`tools/run_gather_acceptance.py --runs N`，每轮约 1–2 分钟。

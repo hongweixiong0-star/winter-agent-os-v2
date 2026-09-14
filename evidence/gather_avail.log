@@ -1,0 +1,21 @@
+out: E:\无尽冬日智能体\dataset\truth_audit\resource_availability_20260914_124753
+== ensure the panel is open and learn the strip offset ==
+  baseline                     page=MAP              selected=RESOURCE_WOOD_SELECTED level=8 panel_open=True
+
+== select MEAT at 0.4993 and search ==
+  select_MEAT                  page=MAP              selected=RESOURCE_MEAT_SELECTED level=7 panel_open=True
+  search_MEAT                  page=RESOURCE_DETAIL  selected=RESOURCE_MEAT_SELECTED level=7 panel_open=True
+    -> RESOURCE_DETAIL
+
+== select WOOD at 0.7174 and search ==
+  select_WOOD                  page=MAP              selected=RESOURCE_WOOD_SELECTED level=8 panel_open=True
+  search_WOOD                  page=MAP              selected=RESOURCE_WOOD_SELECTED level=8 panel_open=True
+    -> NOT_FOUND
+  COAL: cell off-screen (swipe delta -29.999999999999886); skipping
+  IRON: cell off-screen (swipe delta -187.0); skipping
+
+written E:\无尽冬日智能体\dataset\truth_audit\resource_availability_20260914_124753\probe.json
+
+summary:
+  search_MEAT                  -> RESOURCE_DETAIL
+  search_WOOD                  -> NOT_FOUND

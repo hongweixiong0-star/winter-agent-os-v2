@@ -38,6 +38,9 @@ dataset/external/repositories/
 !dataset/truth_audit/gather_live_20260914_115120/**/*.png
 !dataset/truth_audit/resource_cells_20260914_120027/**/*.png
 !dataset/truth_audit/hard_block_evidence/**/*.png
+# the level-range and resource-availability findings rest on these frames
+!dataset/truth_audit/level_probe_*/**/*.png
+!dataset/truth_audit/resource_availability_*/**/*.png
 
 # --- python ----------------------------------------------------------------
 __pycache__/

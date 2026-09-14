@@ -1,0 +1,30 @@
+
+=== run 1/4  planned_resource=MEAT ===
+  stop_reason=TARGET_SKILL_VERIFIED full_chain_success=True
+     1 SEARCH_RESOURCE            verifier=True OK | MAP -> MAP
+     2 SELECT_RESOURCE            verifier=True OK | MAP -> MAP
+     3 SUBMIT_RESOURCE_SEARCH     verifier=True OK | MAP -> RESOURCE_DETAIL
+     4 START_GATHER               verifier=True OK | RESOURCE_DETAIL -> MARCH
+     5 DISPATCH_MARCH             verifier=True OK | MARCH -> MAP
+
+=== run 2/4  planned_resource=WOOD ===
+  stop_reason=RESOURCE_NOT_FOUND full_chain_success=False
+     1 SEARCH_RESOURCE            verifier=True OK | MAP -> MAP
+     2 SELECT_RESOURCE            verifier=True OK | MAP -> MAP
+     3 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+
+=== run 3/4  planned_resource=WOOD ===
+  stop_reason=RESOURCE_NOT_FOUND full_chain_success=False
+     1 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+
+=== run 4/4  planned_resource=WOOD ===
+  stop_reason=RESOURCE_NOT_FOUND full_chain_success=False
+     1 SUBMIT_RESOURCE_SEARCH     verifier=False RESOURCE_NOT_FOUND | MAP -> MAP
+
+=== tally ===
+  MEAT  attempts=1 full_chain_success=1
+  WOOD  attempts=3 full_chain_success=0
+  COAL  attempts=0 full_chain_success=0
+  IRON  attempts=0 full_chain_success=0
+
+written evidence\gather_acceptance_20260914_123747.json

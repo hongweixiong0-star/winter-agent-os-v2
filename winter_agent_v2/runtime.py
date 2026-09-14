@@ -125,6 +125,7 @@ class LiveRuntime:
         environmental_wait_seconds: float = 120.0,
         max_relax_attempts: int = 3,
         max_scroll_attempts: int = 3,
+        max_resource_switches: int = 2,
         observation_retries: int = 2,
         sleeper: Callable[[float], None] = time.sleep,
         episode_store: EpisodeStore | None = None,
@@ -143,6 +144,7 @@ class LiveRuntime:
         self.environmental_wait_seconds = environmental_wait_seconds
         self.max_relax_attempts = max_relax_attempts
         self.max_scroll_attempts = max_scroll_attempts
+        self.max_resource_switches = max_resource_switches
         self.observation_retries = observation_retries
         self.sleeper = sleeper
         self.episode_store = episode_store
@@ -274,6 +276,7 @@ class LiveRuntime:
         self.capture_dir.mkdir(parents=True, exist_ok=True)
         self._relax_attempts = 0
         self._scroll_attempts = 0
+        self._resource_switches = 0
         self._runtime(agent_state=AgentState.AUTO_RUNNING.value, runtime_thread_alive=True,
                       scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
 
@@ -478,6 +481,29 @@ class LiveRuntime:
                     agent_state=AgentState.AUTO_RUNNING.value,
                     reason=f"resource_search_exhausted_at_level_{before.resource_level}",
                     next_action="relax_resource_level_and_research",
+                    verifier=verification.reason,
+                )
+                continue
+            if (
+                not verification.ok
+                and decision.skill == "SUBMIT_RESOURCE_SEARCH"
+                and verification.reason == "RESOURCE_NOT_FOUND"
+                and self.resource_rotation is not None
+                and self._resource_switches < self.max_resource_switches
+            ):
+                # The level filter is already at its minimum (measured live: 1..8),
+                # so there is nothing left to relax — the client is telling us there
+                # is no eligible node of *this* resource in range right now.
+                # Treating that as a hard failure made the whole goal stall: the
+                # rotation only advanced on a successful dispatch, so it asked for
+                # the same unavailable resource forever.  Mark it unavailable and
+                # let the next iteration pick a different one, in the same run.
+                self._resource_switches += 1
+                self.resource_rotation.unavailable(planned_resource)
+                self._runtime(
+                    agent_state=AgentState.AUTO_RUNNING.value,
+                    reason=f"resource_{planned_resource}_has_no_node_in_range",
+                    next_action="switch_to_another_resource",
                     verifier=verification.reason,
                 )
                 continue

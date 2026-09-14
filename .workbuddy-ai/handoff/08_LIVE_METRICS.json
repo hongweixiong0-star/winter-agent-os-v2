@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T04:36:31+00:00",
+  "generated_at": "2026-09-14T05:01:03+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d3f974a",
+  "commit": "0f006ab",
   "last_good_commit": "d3f974a",
-  "dirty_count": 1,
+  "dirty_count": 26,
   "episodes": {
-    "total": 736,
-    "production": 736,
-    "success": 489,
-    "failure": 242,
-    "success_rate_over_decided": 0.6689,
+    "total": 761,
+    "production": 761,
+    "success": 510,
+    "failure": 246,
+    "success_rate_over_decided": 0.6746,
     "modes": {
-      "PRODUCTION": 736
+      "PRODUCTION": 761
     },
     "mixed_case_rows": 35
   },
@@ -24,9 +24,9 @@
     },
     "dispatchable": 61,
     "counts": {
-      "live_verified": 24,
+      "live_verified": 23,
       "stable": 16,
-      "degraded": 9,
+      "degraded": 10,
       "only_failed": 7,
       "never_executed": 25
     }
@@ -71,22 +71,22 @@
       ]
     },
     {
+      "failure_type": "RESOURCE_NOT_FOUND",
+      "count": 12,
+      "top_skills": [
+        [
+          "SUBMIT_RESOURCE_SEARCH",
+          12
+        ]
+      ]
+    },
+    {
       "failure_type": "MAIL_CLAIM_FEEDBACK_NOT_PROVEN",
       "count": 10,
       "top_skills": [
         [
           "MAIL_CLAIM_REWARDS",
           10
-        ]
-      ]
-    },
-    {
-      "failure_type": "RESOURCE_NOT_FOUND",
-      "count": 8,
-      "top_skills": [
-        [
-          "SUBMIT_RESOURCE_SEARCH",
-          8
         ]
       ]
     },
@@ -186,9 +186,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 8,
-    "present_on_disk": 8,
-    "traceable_episodes": 4,
+    "referenced_screenshots": 58,
+    "present_on_disk": 58,
+    "traceable_episodes": 29,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },

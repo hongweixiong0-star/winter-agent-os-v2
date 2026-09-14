@@ -17,12 +17,24 @@
 - 证据链：`external → raw → normalized → candidate → verified → production`。
 
 ## 环境
-- 跑测试用系统 Python 3.12：`C:/Users/xhw/AppData/Local/Programs/Python/Python312/python.exe -m pytest tests -q`
-  （托管 Python 3.13 未装 pytest/PIL，会直接报 No module named pytest）
-- 项目**没有 git 仓库**，改动不可回滚，动手前先备份。
+- **入口**：先读 `START_HERE.md`（根目录）。它会指向 `.workbuddy-ai/handoff/`。
+- 跨账号接力：`python tools/update_workbuddy_handoff.py` 从真实项目重算 handoff；
+  `tools/verify_handoff.py` 校验其结构不变量。
+- **项目已有 git 仓库**（2026-09-14 建立），checkpoint 用
+  `python tools/update_workbuddy_handoff.py --checkpoint -m "..."`。
+- **Bash 工具没有 coreutils**：`ls/cat/head/tail/sleep/wc/date` 全部不可用；
+  **PowerShell 工具 stdout 不回传**。所有命令用
+  `"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -c "..." > out.txt 2>&1` 再用 Read 读。
+- 跑项目脚本/测试必须用项目 venv：`E:\dongri-mumu-bot\.venv\Scripts\python.exe`
+  （含 PIL / rapidocr）。托管 Python 3.13 **没有 PIL**，系统 Python 3.12 也不完整。
 - OCR 运行时装在 `E:\dongri-mumu-bot\.venv`，通过 module_path 引用，不 import 其项目代码。
+- MuMu 默认**不启动**。启动：
+  `MuMuManager.exe control -v 0 launch -pkg com.gof.china` → `adb connect 127.0.0.1:7555`。
+  真机 720×1280，前台包 `com.gof.china`。
 - 启动入口：`Start-Winter-Agent-V2.cmd` / 桌面上 `Winter Agent OS V2.lnk`。
 
 ## 稳定偏好（用户）
 - 要求“不虚报”：宁可标 CANDIDATE / UNKNOWN / 0，也不把未验证的东西写成成功。
 - 报告要区分 LIVE_CLIENT / HISTORY·仅参考 / PRIOR / SIMULATION。
+- 不要每完成一步就停下来问；自动继续下一最高价值任务。
+- 清理文件必须先列清单逐项确认，禁止按前缀/通配符批量删除（已付出过代价）。

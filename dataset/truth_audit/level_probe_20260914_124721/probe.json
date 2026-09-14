@@ -1,0 +1,42 @@
+[
+  {
+    "page": null,
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 1,
+    "search_open": true,
+    "label": "baseline",
+    "file": "20260914_124721_baseline.png"
+  },
+  {
+    "page": null,
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 4,
+    "search_open": true,
+    "label": "level_plus_3",
+    "file": "20260914_124721_level_plus_3.png"
+  },
+  {
+    "page": null,
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 4,
+    "search_open": true,
+    "label": "search_at_raised_level",
+    "file": "20260914_124721_search_at_raised_level.png"
+  },
+  {
+    "page": null,
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 8,
+    "search_open": true,
+    "label": "level_plus_7",
+    "file": "20260914_124721_level_plus_7.png"
+  },
+  {
+    "page": null,
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 8,
+    "search_open": true,
+    "label": "search_at_level_7",
+    "file": "20260914_124721_search_at_level_7.png"
+  }
+]

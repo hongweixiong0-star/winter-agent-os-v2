@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T04:36:31+00:00`
+- generated_at: `2026-09-14T05:01:03+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `d3f974a` on `main`
+- commit: `0f006ab` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,10 +10,29 @@
 
 - repository: yes
 - last good commit: `d3f974a`
-- commits: 3
-- HEAD: `d3f974a` — chore: ignore the transient commit-message helper file (2026-09-14T12:36:28+08:00)
-- working tree: 1 dirty file(s)
-  - `?? .workbuddy-ai/handoff/.last_good_commit`
+- commits: 4
+- HEAD: `0f006ab` — docs(handoff): regenerate truth at the new baseline (2026-09-14T12:36:41+08:00)
+- working tree: 26 dirty file(s)
+  - `M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+  - ` M .workbuddy-ai/handoff/06_DECISIONS.md`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+  - ` M learning/episodes.jsonl`
+  - ` M learning/goal_state.json`
+  - ` M learning/resource_rotation.json`
+  - ` M learning/runtime_snapshot.json`
+  - ` M tests/test_resource_rotation.py`
+  - ` M winter_agent_v2/operations_policy.py`
+  - ` M winter_agent_v2/resource_rotation.py`
+  - ` M winter_agent_v2/runtime.py`
+  - `?? dataset/truth_audit/level_probe_20260914_124721/`
+  - `?? dataset/truth_audit/resource_availability_20260914_124753/`
+  - `?? evidence/gather_acceptance_20260914_123747.json`
+  - `?? evidence/gather_acceptance_20260914_125232.json`
+  - `?? tools/_after_mid.png`
+  - `?? tools/_after_top.png`
 
 ## B. Runtime
 
@@ -23,23 +42,23 @@
 - watchdog_restart_count: 13
 - last_fatal_error: None
 - stop_reason: TARGET_SKILL_VERIFIED
-- page: MAP  march: 1/6
-- updated_at: 2026-09-14T04:11:59.201462+00:00
+- page: MAP  march: 5/6
+- updated_at: 2026-09-14T05:00:15.304769+00:00
 
 ## C. Episode stream
 
-- rows: 736 (production 736)  modes: {'PRODUCTION': 736}
-- success / failure: 489 / 242
-- success rate over decided: **0.6689**
+- rows: 761 (production 761)  modes: {'PRODUCTION': 761}
+- success / failure: 510 / 246
+- success rate over decided: **0.6746**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-14T04:11:59.146784+00:00", "episode_id": "live_gather_run2", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_before_20260914T041144038962.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\live_gather_run2\\live_gather_run2_step_001_after_20260914T041148263346.png"}`
+- last episode: `{"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-14T05:00:15.248850+00:00", "episode_id": "accept_20260914_125232_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_before_20260914T045955757128.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_after_20260914T050000610623.png"}`
 
 ## D. Registry and lifecycle
 
 - registry total: 80  by_state: {'VERIFIED': 44, 'CANDIDATE': 34, 'BLOCKED': 2}
 - live dispatchable (verifier-backed): 61
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **24**  stable: 16  degraded: 9  only_failed: 7  never_executed: 25
+- live_verified: **23**  stable: 16  degraded: 10  only_failed: 7  never_executed: 25
 
 ### Never executed
 
@@ -101,14 +120,15 @@
 ### Degraded
 
 - `DISMISS_INTEL_REWARD` success=15 failure=5 rate=0.75
-- `DISPATCH_MARCH` success=28 failure=28 rate=0.5
+- `DISPATCH_MARCH` success=32 failure=28 rate=0.5333
 - `MAIL_CLAIM_REWARDS` success=14 failure=10 rate=0.5833
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
 - `OPEN_MAIL` success=31 failure=15 rate=0.6739
-- `SEARCH_RESOURCE` success=34 failure=34 rate=0.5
+- `SEARCH_RESOURCE` success=39 failure=34 rate=0.5342
 - `SELECT_INTEL_BEAST_MISSION` success=6 failure=2 rate=0.75
-- `START_GATHER` success=30 failure=59 rate=0.3371
-- `SUBMIT_RESOURCE_SEARCH` success=30 failure=8 rate=0.7895
+- `SELECT_RESOURCE` success=7 failure=41 rate=0.1458
+- `START_GATHER` success=34 failure=59 rate=0.3656
+- `SUBMIT_RESOURCE_SEARCH` success=34 failure=12 rate=0.7391
 
 ## E. Top failures
 
@@ -117,8 +137,8 @@ Failure | Count | Top skills
 `SEMANTIC_TARGET_NOT_VERIFIED` | 104 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 `MARCH_PAGE_NOT_OPEN` | 59 | START_GATHER(59)
 `DISPATCH_NOT_PROVEN` | 28 | DISPATCH_MARCH(28)
+`RESOURCE_NOT_FOUND` | 12 | SUBMIT_RESOURCE_SEARCH(12)
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | MAIL_CLAIM_REWARDS(10)
-`RESOURCE_NOT_FOUND` | 8 | SUBMIT_RESOURCE_SEARCH(8)
 `POPUP_CLOSE_NOT_PROVEN` | 5 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
 `EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN` | 3 | CONFIRM_EXPLORATION_IDLE_CLAIM(2), EXPLORATION_IDLE_CLAIM(1)
 `INTEL_MISSION_SELECTION_NOT_PROVEN` | 2 | SELECT_INTEL_BEAST_MISSION(2)
@@ -152,9 +172,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 8  present: 8
+- referenced screenshots: 58  present: 58
 - missing: []
-- episodes carrying screenshot references: 4
+- episodes carrying screenshot references: 29
 
 ## H. Commercial bot parity
 

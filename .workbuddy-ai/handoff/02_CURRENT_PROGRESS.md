@@ -3,13 +3,13 @@
 本文件回答「项目现在走到哪一步了」。机器事实由生成器刷新，判断由人维护。
 
 <!-- AUTO:progress -->
-Machine progress at 2026-09-14T04:36:31+00:00 (commit d3f974a):
+Machine progress at 2026-09-14T05:01:03+00:00 (commit 0f006ab):
 
 - goals: 16 — FULLY_LIVE_VERIFIED 1, PARTIAL 8, NEVER_TRIED 0, BLOCKED 4, DEGRADED 3
 - mean implementation coverage: 0.54
 - mean live coverage: 0.5452
-- skills: live_verified 24, stable 16, degraded 9, only_failed 7, never_executed 25
-- episodes: 736 (success 489 / failure 242, rate 0.6689)
+- skills: live_verified 23, stable 16, degraded 10, only_failed 7, never_executed 25
+- episodes: 761 (success 510 / failure 246, rate 0.6746)
 - evidence integrity: PASS
 <!-- /AUTO:progress -->
 
@@ -32,9 +32,12 @@ Machine progress at 2026-09-14T04:36:31+00:00 (commit d3f974a):
 
 | 能力 | 现状 |
 |---|---|
-| `GATHER_RESOURCE` | 单条链路真机能走通到 `DISPATCH_MARCH`；**没有**「四资源各 ≥3 次」的验收数据 |
-| `SELECT_RESOURCE` | 分类器已修好（22/22），但**没有足量新的生产样本**证明成功率上升 |
-| `MARCH_PAGE_NOT_OPEN` | 失败原因已拆成 ACTION_MISSED / NOT_RECOGNIZED；修复后真机 0 次，但样本量小 |
+| `GATHER_RESOURCE` | 真机已多次完整闭环（MEAT ✓、WOOD ✓），并具备**资源不可用自动切换**；
+  **仍未**达到「四资源各 ≥3 次」——COAL / IRON 一次都没尝试（默认偏移下在屏幕外，需滚动） |
+| `SELECT_RESOURCE` | 分类器真机 22/22，且能在至少三种滚动偏移下工作；已有新的生产成功样本 |
+| `MARCH_PAGE_NOT_OPEN` | 失败原因已拆成 ACTION_MISSED / NOT_RECOGNIZED；本会话真机 0 次 |
+| `RESOURCE_NOT_FOUND` | 已定性为**资源可用性**（MEAT 在 level 7 能搜到，WOOD 在 level 1~8 全搜不到）；
+  活锁已修复并真机验证 |
 | `DISPATCH_NOT_PROVEN` 28 次 | **未定位根因** |
 | `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` 10 次 | 未定位 |
 | ALLIANCE_ROUTINE | 只有 ANY_OF 部分能力；`ALLIANCE_HELP` 从未成功过 |

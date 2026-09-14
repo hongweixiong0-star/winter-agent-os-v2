@@ -1,0 +1,44 @@
+[
+  {
+    "page": "MAP",
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 8,
+    "search_open": true,
+    "label": "baseline",
+    "file": "20260914_124753_baseline.png"
+  },
+  {
+    "page": "MAP",
+    "selected": "RESOURCE_MEAT_SELECTED",
+    "level": 7,
+    "search_open": true,
+    "label": "select_MEAT",
+    "file": "20260914_124753_select_MEAT.png"
+  },
+  {
+    "page": "RESOURCE_DETAIL",
+    "selected": "RESOURCE_MEAT_SELECTED",
+    "level": 7,
+    "search_open": true,
+    "label": "search_MEAT",
+    "file": "20260914_124753_search_MEAT.png",
+    "search_result": "RESOURCE_DETAIL"
+  },
+  {
+    "page": "MAP",
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 8,
+    "search_open": true,
+    "label": "select_WOOD",
+    "file": "20260914_124753_select_WOOD.png"
+  },
+  {
+    "page": "MAP",
+    "selected": "RESOURCE_WOOD_SELECTED",
+    "level": 8,
+    "search_open": true,
+    "label": "search_WOOD",
+    "file": "20260914_124753_search_WOOD.png",
+    "search_result": "NOT_FOUND"
+  }
+]

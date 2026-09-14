@@ -20,16 +20,30 @@ def choose_resource_balanced(
     stock: Mapping[str, int | None],
     dispatched: Mapping[str, int] | None = None,
     weights: Mapping[str, float] | None = None,
+    exclude: Sequence[str] | None = None,
 ) -> PolicyDecision:
-    """Select the largest normalized deficit; unknown stock uses dispatch history."""
+    """Select the largest normalized deficit; unknown stock uses dispatch history.
+
+    ``exclude`` removes resources that the game itself has just reported as
+    unavailable ("no matching target near your town").  Without it the round
+    robin kept returning the same resource on every cycle, because
+    ``dispatched`` only advances when a march is actually sent — so an
+    unavailable resource became a livelock: the goal could never progress and
+    every run burned its budget re-searching the same empty query.
+    """
     dispatched = dispatched or {}
     weights = weights or {name: 1.0 for name in BASE_RESOURCES}
+    excluded = set(exclude or ())
+    candidates = tuple(name for name in BASE_RESOURCES if name not in excluded) or BASE_RESOURCES
     known = {name: stock.get(name) for name in BASE_RESOURCES}
-    if all(value is not None for value in known.values()):
-        target = min(BASE_RESOURCES, key=lambda name: float(known[name]) / max(float(weights.get(name, 1)), .001))
+    if all(known[name] is not None for name in candidates):
+        target = min(candidates, key=lambda name: float(known[name]) / max(float(weights.get(name, 1)), .001))
         return PolicyDecision("GATHER_RESOURCE", "largest_weighted_resource_deficit", {"resource": target})
-    target = min(BASE_RESOURCES, key=lambda name: int(dispatched.get(name, 0)))
-    return PolicyDecision("GATHER_RESOURCE", "balanced_round_robin_without_reliable_inventory", {"resource": target})
+    target = min(candidates, key=lambda name: int(dispatched.get(name, 0)))
+    reason = "balanced_round_robin_without_reliable_inventory"
+    if excluded:
+        reason = "round_robin_skipping_resources_without_available_nodes"
+    return PolicyDecision("GATHER_RESOURCE", reason, {"resource": target, "excluded": sorted(excluded)})
 
 
 def choose_troop_rotation(queue_busy: Mapping[str, bool], trained: Mapping[str, int] | None = None) -> PolicyDecision:
