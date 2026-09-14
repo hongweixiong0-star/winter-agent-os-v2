@@ -6,7 +6,7 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x111 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x112 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **MARCH_PAGE_NOT_OPEN** x59 — START_GATHER(59)
 - **RESOURCE_NOT_FOUND** x30 — SUBMIT_RESOURCE_SEARCH(30)
 - **DISPATCH_NOT_PROVEN** x29 — DISPATCH_MARCH(29)
@@ -17,20 +17,27 @@ Machine-detected issues (recomputed every run):
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
 - `DISPATCH_BEAST` never succeeded (attempts=1, failure=1)
 - `EXECUTE_INTEL_RESCUE_SURVIVORS` never succeeded (attempts=5, failure=5)
-- `INTEL_HERO_DISPATCH` never succeeded (attempts=8, failure=8)
-- `OPEN_INTEL_HERO_JOURNEY_TARGET` never succeeded (attempts=1, failure=1)
+- `INTEL_HERO_START_MARCH` never succeeded (attempts=2, failure=2)
+- `OPEN_INTEL_HERO_JOURNEY_TARGET` never succeeded (attempts=2, failure=2)
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 42 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
+- 23 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
 
-### P0
+### P0（第九轮新增，2026-09-14 22:xx）
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0m | **英雄之旅卡片的「橙皮」变体不被识别** | ⚠️ 未解，触发条件 UNKNOWN | 同一任务在真机上出现过两种皮肤：`橙皮` → 视觉读 `UNKNOWN/0.00`（大脑回 SAFE_STOP，钉子循环会卡死在该卡片上）；`蓝皮` → 正常识别 `POPUP/INTEL_HERO_JOURNEY/0.99`。两皮的**几何完全一致**（标题框都在 x237-483 / y288-323），OCR 都能读出「英雄之旅等级10」0.999，**只差横幅配色**，因此只认蓝皮的模板匹配不到橙皮。帧：`dataset/truth_audit/hero_journey_card_variants_20260914/`。**禁止猜游戏机制**——橙皮的触发条件没有任何观测支撑，先记为 UNKNOWN。 |
+| 0n | **`TEMPLATE_NOT_REGISTERED` 被报成 `SEMANTIC_TARGET_NOT_VERIFIED`** | ⚠️ 可诊断性缺口 | 「模板没注册」与「屏幕上真的没有这个控件」是两个根因，却共用同一个 reason（宪法 §6 明确禁止）。本次为此多花了不少时间：真机一直说「找不到目标」，实际是路由器没把节点模板交给适配器（已修 `c03af7d`）。建议把 `last_outcome.error` 透出到 episode，让两者可区分。 |
+
+### P0（历史遗留，仍然有效）
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
@@ -52,6 +59,11 @@ Machine-detected issues (recomputed every run):
 | 5 | **项目曾不是 git 仓库，已造成不可恢复损失** | ✅ 已修 | 2026-09-14 已 `git init` 并建立首个 checkpoint `f9ef073`。此前按 `_` 前缀批量删除，永久丢失 15 个 Codex 遗留探索脚本。 |
 
 ### P1
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 16 | **`SAFE_STOP` 的「正确空转」被记成 FAILURE** | ⚠️ 口径污染 | 大脑返回 `SAFE_STOP`（如 `unknown_page`、`reserved_march_for_stamina`）时 verifier 给 `NO_EXECUTION`，于是**按设计什么都不做**也被记成失败（当日 4 条）。这会同时毒化成功率、Recovery 决策与后来人的判断。不是「为了好看清零」——而是要**按语义分类**：有意的安全空转应当是独立的终态，不是 FAILURE。 |
+| 17 | **verifier 落后于真机页面分类（一类缺陷，非孤立）** | ⚠️ 本轮修了 3 处 | 本日三处同源：`verify_intel_rescue_started`（依赖单帧 `IN_PROGRESS` 读数）、`verify_intel_hero_target_open`、`verify_intel_hero_march_open`（都写死 `Page.BEAST`，而真机与 `brain.py` 早已按 `Page.EXPLORATION` 工作）。**建议**：把「verifier 与 brain/vision 的页面契约」做一次一致性审计，而不是等它一条条在真机上暴露。 |
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|

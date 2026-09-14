@@ -29,8 +29,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 72,
-          "successes": 61,
+          "attempts": 73,
+          "successes": 62,
           "failures": 11
         },
         {
@@ -82,8 +82,8 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 31,
-          "successes": 28,
+          "attempts": 32,
+          "successes": 29,
           "failures": 3
         },
         {
@@ -95,8 +95,8 @@
           "status": "STABLE",
           "implemented_by": "DISMISS_INTEL_REWARD",
           "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 34,
-          "successes": 29,
+          "attempts": 35,
+          "successes": 30,
           "failures": 5
         }
       ],
@@ -572,8 +572,8 @@
           "status": "DEGRADED",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 80,
-          "successes": 62,
+          "attempts": 81,
+          "successes": 63,
           "failures": 18
         },
         {

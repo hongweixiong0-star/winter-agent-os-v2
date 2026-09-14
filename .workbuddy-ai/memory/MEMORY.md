@@ -36,6 +36,24 @@
   （找对位置但相关性 0.448 < 阈值 0.7，因为按钮是动画的），已回滚为 HYBRID。
 - **哈希距离的容差不能搬到模板匹配阈值上**。旧语义为动画控件放宽过容差（如
   `BTN_OPEN_INTEL_WILD_HUD` max_distance 24），迁移时必须重新标定，不能沿用默认 0.7。
+- **MaaFw `post_screencap` 返回 BGR，而本项目全部像素路径是 RGB**（V2 模板裁自 ADB PNG 并经
+  PIL 读取；OCR 同理）。实测 2026-09-14（MaaFw 5.12.3 + MuMu EmulatorExtras，同一帧同一模板）：
+  MAA 匹配器「原样」0.6879（阈值 0.7 → NO_MATCH），R↔B 交换后 **1.0000 命中**；
+  V2 视觉读已保存的 PNG 是 `UNKNOWN/0.00`，交换后 `POPUP/INTEL_HERO_JOURNEY/0.99`。
+  已修：`to_rgb_frame()` 在 `capture()` 边界只转一次。**`docs/AVAILABLE_TOOLING.md` 写的是
+  "RGB"，与实际相反** —— 框架文档的通道顺序一定要当假设验证；「刚好卡在阈值下面」会让带色
+  模板随机通过/失败，并让磁盘上所有证据帧颜色都是错的。
+- **MAA 识别节点必须显式注册模板文件**：节点里的 `template` 是语义名（`BTN_HERO_CAMP_FIGHT`），
+  而磁盘文件名带 provenance 后缀且位于 `template_dir` 之外
+  （`dataset/candidate/hero_camp/btn_hero_camp_fight__live_hero_camp.png`）。路由若不把节点的
+  `source_template` 交给适配器，会以 `TEMPLATE_NOT_REGISTERED` 失败，却被报成
+  `SEMANTIC_TARGET_NOT_VERIFIED`（读作"屏幕上没这个控件"）——**曾使所有带节点的技能在生产上
+  全部解析不出目标**。已修（`c03af7d`）。
+- **verifier 可能落后于 brain/vision 的页面契约**：2026-09-14 一次性发现三处同源
+  （营救开始 / 英雄目标打开 / 英雄 march 打开）。真机页面分类变了而 verifier 还写死旧页面时，
+  **已经成功的动作会被记成 FAILURE**，同时毒化成功率与 Recovery 决策。
+  核对顺序：先看 `brain.py` 与 vision 层的实际契约，再改 verifier；并且优先用
+  「不可逆的真实状态变化」（体力扣减 / 资源变化 / 队列变化）作为证据，而不是单帧模板读数。
 
 
 

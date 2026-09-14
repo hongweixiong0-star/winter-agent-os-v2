@@ -1,6 +1,6 @@
 # CURRENT TRUTH
 
-Generated (UTC): 2026-09-14T04:12:27.857000+00:00
+Generated (UTC): 2026-09-14T13:46:20.311106+00:00
 
 Everything below is recomputed by `python tools/truth_audit.py`.
 Do not trust numbers in older Markdown files.
@@ -12,40 +12,40 @@ Do not trust numbers in older Markdown files.
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: TARGET_SKILL_VERIFIED
-- page: MAP march: 1/6
+- stop_reason: MAX_ACTIONS_REACHED
+- page: INTEL march: None/None
 
 ## B. Episodes
 
-- total: 736 (mode: PRODUCTION=736)
-- success / failure: 489 / 242
+- total: 923 (mode: PRODUCTION=923)
+- success / failure: 617 / 301
 - blocked: 4  in_progress: 1
-- success rate over decided: **66.9%**
-- success rate over total: 66.4%
+- success rate over decided: **67.2%**
+- success rate over total: 66.8%
 - mixed-case `result` rows (must be normalized on read, never rewritten): 35
 
 ## C. Top failures
 
 Failure type | Count | Skills | Top skills | Last seen
 ---|---:|---:|---|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 104 | 14 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-13T16:13:57
+`SEMANTIC_TARGET_NOT_VERIFIED` | 111 | 15 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-14T13:12:49
 `MARCH_PAGE_NOT_OPEN` | 59 | 1 | START_GATHER(59) | 2026-09-12T15:17:11
-`DISPATCH_NOT_PROVEN` | 28 | 1 | DISPATCH_MARCH(28) | 2026-09-13T15:21:30
+`RESOURCE_NOT_FOUND` | 30 | 1 | SUBMIT_RESOURCE_SEARCH(30) | 2026-09-14T06:42:03
+`DISPATCH_NOT_PROVEN` | 29 | 1 | DISPATCH_MARCH(29) | 2026-09-14T05:25:20
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | 1 | MAIL_CLAIM_REWARDS(10) | 
-`RESOURCE_NOT_FOUND` | 8 | 1 | SUBMIT_RESOURCE_SEARCH(8) | 2026-09-13T15:59:52
+`INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | 1 | INTEL_HERO_DISPATCH(8) | 2026-09-14T12:19:55
+`STAMINA_SOURCES_NOT_OPEN` | 7 | 1 | OPEN_INTEL(7) | 2026-09-14T10:14:36
 `POPUP_CLOSE_NOT_PROVEN` | 5 | 2 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1) | 2026-09-13T21:08:40
+`INTEL_RESCUE_START_NOT_PROVEN` | 5 | 1 | EXECUTE_INTEL_RESCUE_SURVIVORS(5) | 2026-09-14T10:35:24
+`NO_EXECUTION` | 4 | 1 | SAFE_STOP(4) | 2026-09-14T11:20:35
+`INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 3 | 1 | INTEL_CLAIM_REWARDS(3) | 2026-09-14T10:17:47
 `EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN` | 3 | 2 | CONFIRM_EXPLORATION_IDLE_CLAIM(2), EXPLORATION_IDLE_CLAIM(1) | 
-`INTEL_MISSION_SELECTION_NOT_PROVEN` | 2 | 1 | SELECT_INTEL_BEAST_MISSION(2) | 
-`MAIL_TAB_SELECTION_NOT_PROVEN` | 2 | 2 | SELECT_MAIL_ALLIANCE_TAB(1), SELECT_MAIL_SYSTEM_TAB(1) | 
-`OPEN_HOME_NOT_PROVEN` | 2 | 1 | OPEN_HOME(2) | 
-`INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN` | 2 | 1 | NAVIGATE_INFANTRY_CAMP(2) | 
-`OPEN_MAIL_NOT_PROVEN` | 2 | 1 | OPEN_MAIL(2) | 
 
 ## D. Registry
 
-- total skills: 80
-- by state: {'VERIFIED': 44, 'CANDIDATE': 34, 'BLOCKED': 2}
-- by latency: {'NORMAL': 70, 'FAST': 9, 'REALTIME': 1}
+- total skills: 86
+- by state: {'VERIFIED': 44, 'CANDIDATE': 40, 'BLOCKED': 2}
+- by latency: {'NORMAL': 70, 'FAST': 15, 'REALTIME': 1}
 - REALTIME skills: ['JOIN_RALLY']
 - BLOCKED skills: ['RESEARCH', 'ALLIANCE_HELP']
 
@@ -53,8 +53,8 @@ Failure type | Count | Skills | Top skills | Last seen
 
 Area | Files | Empty dirs
 ---|---:|---:
-`dataset/raw` | 1668 | 56
-`dataset/candidate` | 521 | 0
+`dataset/raw` | 2456 | 56
+`dataset/candidate` | 533 | 0
 `dataset/verified` | 5 | 0
 `dataset/normalized` | 1 | 0
 `dataset/production` | 0 | 0
@@ -63,31 +63,31 @@ Area | Files | Empty dirs
 ## F. Evidence integrity
 
 - status: **PASS**
-- episodes carrying screenshot references: 4 / 736
-- screenshots referenced: 8
+- episodes carrying screenshot references: 191 / 923
+- screenshots referenced: 371
 - screenshots missing: 0
-- distinct episode ids: 2
+- distinct episode ids: 73
 
 ## G. Skill lifecycle vs the episode stream
 
-- registry total: 80
-- live verified (>=1 production success): **48**
-- only ever failed: 7
-- never executed: 25
+- registry total: 86
+- live verified (>=1 production success): **50**
+- only ever failed: 10
+- never executed: 26
 
 Never executed skills:
 
 - `CANCEL_DUPLICATE_TARGET` (VERIFIED)
 - `CHECK_MARCH` (VERIFIED)
+- `CLAIM_FREE_STAMINA` (CANDIDATE)
 - `CLAIM_REWARD` (CANDIDATE)
 - `DISMISS_ALLIANCE_GENERIC_REWARD` (CANDIDATE)
 - `DISMISS_EXPLORATION_REWARD` (VERIFIED)
-- `DISMISS_INTEL_GENERIC_REWARD` (CANDIDATE)
-- `EXECUTE_INTEL_RESCUE_SURVIVORS` (VERIFIED)
+- `INTEL_HERO_START_MARCH` (CANDIDATE)
 - `JOIN_RALLY` (CANDIDATE)
 - `NAVIGATE_TO` (CANDIDATE)
 - `OPEN_ALLIANCE_GIFTS` (CANDIDATE)
-- `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` (VERIFIED)
+- `OPEN_STAMINA_SOURCES` (CANDIDATE)
 - `READ_COUNTER` (CANDIDATE)
 - `READ_INTEL_LIST` (CANDIDATE)
 - `READ_TIMER` (CANDIDATE)
@@ -97,6 +97,7 @@ Never executed skills:
 - `RELAX_RESOURCE_LEVEL` (CANDIDATE)
 - `SELECT_INFANTRY_CAMP` (CANDIDATE)
 - `SELECT_INTEL_RESCUE_SURVIVORS` (VERIFIED)
+- `SELECT_MARCH_TO_RECALL` (CANDIDATE)
 - `SELECT_REWARD_OPTION` (CANDIDATE)
 - `SEND_MARCH` (CANDIDATE)
 - `START_RALLY` (CANDIDATE)
@@ -106,7 +107,7 @@ Never executed skills:
 ## H. Capability coverage (rebuilt model)
 
 - model: Goal -> Canonical Capability -> Registered Skill -> Production Evidence
-- generated: 2026-09-14T04:12:21.881042+00:00 (0.0 days ago)
+- generated: 2026-09-14T13:46:15.218848+00:00 (0.0 days ago)
 - FULLY_LIVE_VERIFIED: 1 / 16
 - PARTIAL: 8  NEVER_TRIED: 0  BLOCKED: 4  DEGRADED: 3
 - mean implementation coverage: 0.54
@@ -114,7 +115,7 @@ Never executed skills:
 
 Goal | Status | Runtime | design | impl | live | stable | blocked by
 ---|---|---|---:|---:|---:|---:|---
-CLEAR_INTEL | PARTIAL | RUNTIME_DISCOVERED | 100% | 100% | 83% | 50% | -
+CLEAR_INTEL | PARTIAL | RUNTIME_DISCOVERED | 100% | 100% | 83% | 83% | -
 AVOID_STAMINA_WASTE | PARTIAL | RUNTIME_DISCOVERED | 100% | 67% | 67% | 33% | SPEND_STAMINA_ON_RALLY
 KEEP_MARCHES_PRODUCTIVE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 86% | 86% | 14% | VERIFY_GATHERING
 KEEP_BUILDING_PRODUCTIVE | PARTIAL | RUNTIME_DISCOVERED | 100% | 50% | 50% | 0% | OPEN_BUILDING_PAGE

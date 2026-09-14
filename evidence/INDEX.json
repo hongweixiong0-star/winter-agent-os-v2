@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-14T13:17:07+00:00",
-  "count": 372,
+  "generated_at": "2026-09-14T14:16:39+00:00",
+  "count": 388,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -144,7 +144,7 @@
       "path": "evidence/INDEX.json",
       "kind": "evidence",
       "bytes": 68384,
-      "mtime": "2026-09-14T13:14:52+00:00"
+      "mtime": "2026-09-14T13:46:15+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -235,6 +235,12 @@
       "kind": "evidence",
       "bytes": 1249,
       "mtime": "2026-09-14T12:20:05+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260914_135558.json",
+      "kind": "evidence",
+      "bytes": 1774,
+      "mtime": "2026-09-14T13:57:12+00:00"
     },
     {
       "path": "evidence/intel_rescue_survivors_production_2026-09-07.json",
@@ -1107,6 +1113,66 @@
       "mtime": "2026-09-14T12:06:27+00:00"
     },
     {
+      "path": "dataset/truth_audit/hero_journey_camp_panel_20260914/camp_panel_after.png",
+      "kind": "fixture",
+      "bytes": 796572,
+      "mtime": "2026-09-14T14:05:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_camp_panel_20260914/card_before.png",
+      "kind": "fixture",
+      "bytes": 339050,
+      "mtime": "2026-09-14T14:04:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_camp_panel_20260914/PROVENANCE.json",
+      "kind": "fixture",
+      "bytes": 647,
+      "mtime": "2026-09-14T14:05:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_camp_to_squad_20260914/camp_panel_before.png",
+      "kind": "fixture",
+      "bytes": 782182,
+      "mtime": "2026-09-14T14:12:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_camp_to_squad_20260914/PROVENANCE.json",
+      "kind": "fixture",
+      "bytes": 558,
+      "mtime": "2026-09-14T14:13:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_camp_to_squad_20260914/squad_page_after.png",
+      "kind": "fixture",
+      "bytes": 820056,
+      "mtime": "2026-09-14T14:12:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_card_variants_20260914/hero_journey_card_BLUE_skin_1400.png",
+      "kind": "fixture",
+      "bytes": 379484,
+      "mtime": "2026-09-14T13:57:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_card_variants_20260914/hero_journey_card_ORANGE_skin_1356.png",
+      "kind": "fixture",
+      "bytes": 339314,
+      "mtime": "2026-09-14T13:56:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_card_variants_20260914/maa_captured_BGR_frame.png",
+      "kind": "fixture",
+      "bytes": 339349,
+      "mtime": "2026-09-14T13:59:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/hero_journey_card_variants_20260914/PROVENANCE.json",
+      "kind": "fixture",
+      "bytes": 450,
+      "mtime": "2026-09-14T13:58:13+00:00"
+    },
+    {
       "path": "dataset/truth_audit/hero_journey_probe_20260914/01_board.png",
       "kind": "fixture",
       "bytes": 657693,
@@ -1927,6 +1993,36 @@
       "kind": "fixture",
       "bytes": 54500,
       "mtime": "2026-09-13T16:00:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/rescue_start_production_20260914/PROVENANCE.json",
+      "kind": "fixture",
+      "bytes": 651,
+      "mtime": "2026-09-14T13:49:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/rescue_start_production_20260914/run_pin12_after.png",
+      "kind": "fixture",
+      "bytes": 831301,
+      "mtime": "2026-09-14T10:32:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/rescue_start_production_20260914/run_pin12_before.png",
+      "kind": "fixture",
+      "bytes": 810361,
+      "mtime": "2026-09-14T10:32:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/rescue_start_production_20260914/run_pin13_after.png",
+      "kind": "fixture",
+      "bytes": 889336,
+      "mtime": "2026-09-14T10:34:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/rescue_start_production_20260914/run_pin13_before.png",
+      "kind": "fixture",
+      "bytes": 816833,
+      "mtime": "2026-09-14T10:34:38+00:00"
     },
     {
       "path": "dataset/truth_audit/resource_availability_20260914_124753/20260914_124753_baseline.png",

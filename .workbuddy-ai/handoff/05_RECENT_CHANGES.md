@@ -6,23 +6,21 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `a218319 2026-09-14T22:15:00+08:00 fix(intel): 探险 from the camp panel opens the squad page, not a beast card`
+- `c03af7d 2026-09-14T22:12:48+08:00 fix(executor): register a routing node template, or every MAA node fails`
+- `e3f3493 2026-09-14T22:08:34+08:00 fix(intel): the hero-journey camp panel is Page.EXPLORATION, not Page.BEAST`
+- `1b7956b 2026-09-14T22:04:40+08:00 fix(executor): MaaFramework screencaps are BGR - convert them to RGB at capture`
+- `7c2fae5 2026-09-14T21:55:14+08:00 fix(intel): a real rescue start is proven by the paid stamina, not by one frame-specific status read`
+- `3518af1 2026-09-14T21:25:52+08:00 feat(executor): MAA in the real production path, measured live, with a regression found and reverted`
 - `4ff00eb 2026-09-14T20:48:40+08:00 feat(executor): MaaFramework as a second executor backend behind the existing Executor boundary`
 - `3e4484e 2026-09-14T20:30:38+08:00 feat(vision): search-based OpenCV matcher, opt-in, with an A/B before any default`
 - `da28686 2026-09-14T20:25:14+08:00 fix(hero): the fight button is clickable - my template was 103 px too high`
 - `4e075a7 2026-09-14T20:08:08+08:00 docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved`
 - `d2cc794 2026-09-14T19:47:35+08:00 docs(mcp): capability audit - zero new MCP servers, host MCP usage policy`
 - `ff9a23d 2026-09-14T19:43:43+08:00 docs(memory): architecture review + the P0/P1 fixes it required`
-- `2ac5f2a 2026-09-14T19:30:36+08:00 chore(skills): install the security-check gate and register the project skill ledger`
-- `59e94ed 2026-09-14T19:23:23+08:00 feat(intel): the mission pin board is now workable end to end`
-- `85027fd 2026-09-14T17:17:37+08:00 docs(memory): record the sixth round (intel drained, hourly automation, stamina fragment fix)`
-- `37545bd 2026-09-14T17:16:53+08:00 docs(handoff): mark f8e145f as last-good; intel drained, hourly loop automation active`
-- `f8e145f 2026-09-14T17:16:36+08:00 feat(intel): drain-and-loop closure + fix the stamina fragment misread`
-- `349bb6c 2026-09-14T16:51:47+08:00 docs(memory): repair the fifth-round note eaten by shell command substitution`
 
-Uncommitted changes: 42
-- `M .gitignore`
-- ` M .workbuddy-ai/handoff/00_MASTER_RULES.md`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+Uncommitted changes: 23
+- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
 - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
@@ -30,16 +28,18 @@ Uncommitted changes: 42
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/MEMORY.md`
-- ` M .workbuddy/memory/2026-09-14.md`
-- ` M START_HERE.md`
-- ` M config/v2.json`
-- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M .workbuddy-ai/memory/2026-09-14.md`
+- ` M docs/CURRENT_TRUTH.md`
 - ` M evidence/INDEX.json`
-- ` M knowledge/execution/backend_routing.json`
-- ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/current_truth.json`
 - ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
+- ` M tools/run_intel_pins.py`
+- `?? evidence/intel_pins_20260914_135558.json`
+- `?? knowledge/alliance/`
+- `?? knowledge/events/mechanism_cards.json`
 <!-- /AUTO:recent_commits -->
 
 ---

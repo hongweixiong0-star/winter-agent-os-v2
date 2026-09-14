@@ -36,6 +36,18 @@ PIN_BUDGET = int(sys.argv[1]) if len(sys.argv) > 1 else 30
 RUN_LIVE_TIMEOUT = 420
 STAMINA_FLOOR = 10
 
+# A pin counts as worked when a *verified* step of one of these ran.  It used
+# to be beast dispatch + reward claim only, so a Hero Journey fight or a Rescue
+# Survivors start that really happened still made `productive` False, which
+# blacklisted a good pin and, worse, hid the success from the summary.  The
+# verified-step list is the authority, not the mission type.
+PRODUCTIVE_SKILLS = (
+    "DISPATCH_INTEL_BEAST",
+    "INTEL_CLAIM_REWARDS",
+    "EXECUTE_INTEL_RESCUE_SURVIVORS",
+    "INTEL_HERO_DISPATCH",
+)
+
 
 def observe() -> tuple[dict, Path]:
     """One observation of the live client through the production stack."""
@@ -92,6 +104,12 @@ def run_live_cycle(tag: str) -> dict:
         if str((s.get("decision") or {}).get("skill")) == "INTEL_CLAIM_REWARDS"
         and (s.get("verification") or {}).get("ok") is True
     )
+    productive_steps = [
+        str((s.get("decision") or {}).get("skill"))
+        for s in steps
+        if str((s.get("decision") or {}).get("skill")) in PRODUCTIVE_SKILLS
+        and (s.get("verification") or {}).get("ok") is True
+    ]
     stamina = None
     for s in steps:
         for key in ("after", "before"):
@@ -104,6 +122,7 @@ def run_live_cycle(tag: str) -> dict:
         "steps": len(steps),
         "dispatches": dispatches,
         "claims": claims,
+        "productive_steps": productive_steps,
         "stamina_after": stamina,
         "elapsed_s": round(time.monotonic() - started, 1),
         "capture_dir": capture,
@@ -237,7 +256,9 @@ def main() -> int:
                 continue
             run = run_live_cycle(f"pin_{processed+skipped:02d}")
             nav_cycles = 0
-            productive = run.get("dispatches", 0) > 0 or run.get("claims", 0) > 0
+            # Any verified productive step counts, not just a beast dispatch:
+            # a Hero Journey fight or a Rescue Survivors start is real work.
+            productive = bool(run.get("productive_steps"))
             refusal = None
             if not productive:
                 dead_spots.append((pin.color, pin.x, pin.y))
