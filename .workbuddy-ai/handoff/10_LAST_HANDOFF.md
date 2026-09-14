@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T14:16:38+00:00
+HANDOFF TIME: 2026-09-14T14:49:34+00:00
 LAST GOOD COMMIT: f8e145f
-WORKING TREE: 23 dirty file(s)
-  ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json', ' M .workbuddy-ai/handoff/09_RUNTIME_STATE.json', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-14.md', ' M docs/CURRENT_TRUTH.md']
+WORKING TREE: clean
+  []
 
-WHAT FINISHED (machine-visible): 24 skills live verified, 19 stable, 38 commit(s) in history
+WHAT FINISHED (machine-visible): 24 skills live verified, 19 stable, 41 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 25 skills never executed, 11 never succeeded
 
@@ -22,7 +22,7 @@ STOPPED AT: agent_state=DEGRADED stop_reason=intel_not_available
 LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T14:16:09.071924+00:00", "episode_id": "hero_live6_20260914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_before_20260914T141558805541.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_after_20260914T141601552798.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 23
+DIRTY FILES: 0
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 

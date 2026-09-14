@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T14:16:38+00:00`
+- generated_at: `2026-09-14T14:49:34+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `a218319` on `main`
+- commit: `48e266f` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,9 @@
 
 - repository: yes
 - last good commit: `f8e145f`
-- commits: 38
-- HEAD: `a218319` — fix(intel): 探险 from the camp panel opens the squad page, not a beast card (2026-09-14T22:15:00+08:00)
-- working tree: 23 dirty file(s)
-  - `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-14.md`
-  - ` M docs/CURRENT_TRUTH.md`
-  - ` M evidence/INDEX.json`
-  - ` M learning/current_truth.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M tools/run_intel_pins.py`
-  - `?? evidence/intel_pins_20260914_135558.json`
-  - `?? knowledge/alliance/`
-  - `?? knowledge/events/mechanism_cards.json`
+- commits: 41
+- HEAD: `48e266f` — fix(ocr): stitch overlapping digit fragments instead of enlarging the crop (2026-09-14T22:48:48+08:00)
+- working tree: clean
 
 ## B. Runtime
 

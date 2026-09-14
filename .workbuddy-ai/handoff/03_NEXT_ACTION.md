@@ -12,7 +12,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x112
 LAST GOOD COMMIT: f8e145f
-CURRENT DIRTY FILES: 23
+CURRENT DIRTY FILES: 0
 LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-14T14:16:09.071924+00:00", "episode_id": "hero_live6_20260914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_before_20260914T141558805541.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_after_20260914T141601552798.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 

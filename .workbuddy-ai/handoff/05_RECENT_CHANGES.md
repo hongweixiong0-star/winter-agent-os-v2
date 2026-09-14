@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `48e266f 2026-09-14T22:48:48+08:00 fix(ocr): stitch overlapping digit fragments instead of enlarging the crop`
+- `9bfa719 2026-09-14T22:17:57+08:00 chore(knowledge): carry over the uncommitted knowledge files from the previous session`
+- `5c902be 2026-09-14T22:17:45+08:00 docs(handoff): ninth round - three false-failure root causes fixed, hero chain green`
 - `a218319 2026-09-14T22:15:00+08:00 fix(intel): 探险 from the camp panel opens the squad page, not a beast card`
 - `c03af7d 2026-09-14T22:12:48+08:00 fix(executor): register a routing node template, or every MAA node fails`
 - `e3f3493 2026-09-14T22:08:34+08:00 fix(intel): the hero-journey camp panel is Page.EXPLORATION, not Page.BEAST`
@@ -15,31 +18,8 @@ Last 12 commits (newest first):
 - `4ff00eb 2026-09-14T20:48:40+08:00 feat(executor): MaaFramework as a second executor backend behind the existing Executor boundary`
 - `3e4484e 2026-09-14T20:30:38+08:00 feat(vision): search-based OpenCV matcher, opt-in, with an A/B before any default`
 - `da28686 2026-09-14T20:25:14+08:00 fix(hero): the fight button is clickable - my template was 103 px too high`
-- `4e075a7 2026-09-14T20:08:08+08:00 docs(handoff): seventh round - hero route reaches the squad page; the fight tap stays unresolved`
-- `d2cc794 2026-09-14T19:47:35+08:00 docs(mcp): capability audit - zero new MCP servers, host MCP usage policy`
-- `ff9a23d 2026-09-14T19:43:43+08:00 docs(memory): architecture review + the P0/P1 fixes it required`
 
-Uncommitted changes: 23
-- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-14.md`
-- ` M docs/CURRENT_TRUTH.md`
-- ` M evidence/INDEX.json`
-- ` M learning/current_truth.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- ` M tools/run_intel_pins.py`
-- `?? evidence/intel_pins_20260914_135558.json`
-- `?? knowledge/alliance/`
-- `?? knowledge/events/mechanism_cards.json`
+Uncommitted changes: 0
 <!-- /AUTO:recent_commits -->
 
 ---
