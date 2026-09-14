@@ -8,7 +8,7 @@ Machine-detected issues (recomputed every run):
 
 - **SEMANTIC_TARGET_NOT_VERIFIED** x104 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **MARCH_PAGE_NOT_OPEN** x59 — START_GATHER(59)
-- **DISPATCH_NOT_PROVEN** x28 — DISPATCH_MARCH(28)
+- **DISPATCH_NOT_PROVEN** x29 — DISPATCH_MARCH(29)
 - **RESOURCE_NOT_FOUND** x12 — SUBMIT_RESOURCE_SEARCH(12)
 - **MAIL_CLAIM_FEEDBACK_NOT_PROVEN** x10 — MAIL_CLAIM_REWARDS(10)
 - **POPUP_CLOSE_NOT_PROVEN** x5 — DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
@@ -19,7 +19,7 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 2 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', '?? tools/_h.txt']
+- 3 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/memory/2026-09-14.md', '?? tools/_h.txt']
 <!-- /AUTO:open_issues -->
 
 ---

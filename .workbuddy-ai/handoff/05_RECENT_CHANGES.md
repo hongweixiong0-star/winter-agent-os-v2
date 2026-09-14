@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `7a3380d 2026-09-14T13:32:06+08:00 fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH`
+- `8c59182 2026-09-14T13:13:18+08:00 docs(handoff): final truth refresh at the new last-good commit`
 - `6189c67 2026-09-14T13:13:05+08:00 test(handoff): assert START_HERE leads to real commands and no orphan files`
 - `65b2955 2026-09-14T13:12:09+08:00 docs(handoff): regenerate truth and record the new last-good commit`
 - `68e3540 2026-09-14T13:11:55+08:00 fix(gather): break the unavailable-resource livelock + acceptance harness`
@@ -14,8 +16,9 @@ Last 12 commits (newest first):
 - `7512a33 2026-09-14T12:36:15+08:00 feat(handoff): cross-account handoff mechanism + git baseline`
 - `f9ef073 2026-09-14T12:29:31+08:00 chore: initial checkpoint of Winter Agent OS V2`
 
-Uncommitted changes: 2
+Uncommitted changes: 3
 - `M .workbuddy-ai/handoff/.last_good_commit`
+- ` M .workbuddy-ai/memory/2026-09-14.md`
 - `?? tools/_h.txt`
 <!-- /AUTO:recent_commits -->
 

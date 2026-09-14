@@ -198,8 +198,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 73,
-          "successes": 39,
+          "attempts": 74,
+          "successes": 40,
           "failures": 34
         },
         {
@@ -210,8 +210,8 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_RESOURCE",
           "live_verified_by": "SELECT_RESOURCE",
-          "attempts": 48,
-          "successes": 7,
+          "attempts": 49,
+          "successes": 8,
           "failures": 41
         },
         {
@@ -222,8 +222,8 @@
           "status": "DEGRADED",
           "implemented_by": "SUBMIT_RESOURCE_SEARCH",
           "live_verified_by": "SUBMIT_RESOURCE_SEARCH",
-          "attempts": 46,
-          "successes": 34,
+          "attempts": 47,
+          "successes": 35,
           "failures": 12
         },
         {
@@ -234,8 +234,8 @@
           "status": "DEGRADED",
           "implemented_by": "START_GATHER",
           "live_verified_by": "START_GATHER",
-          "attempts": 93,
-          "successes": 34,
+          "attempts": 94,
+          "successes": 35,
           "failures": 59
         },
         {
@@ -246,9 +246,9 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 60,
+          "attempts": 61,
           "successes": 32,
-          "failures": 28
+          "failures": 29
         },
         {
           "capability": "VERIFY_GATHERING",
@@ -954,9 +954,9 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 60,
+          "attempts": 61,
           "successes": 32,
-          "failures": 28
+          "failures": 29
         }
       ],
       "design_requirements_total": 5,

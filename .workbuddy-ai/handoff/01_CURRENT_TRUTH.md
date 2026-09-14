@@ -1,39 +1,40 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T05:13:15+00:00`
+- generated_at: `2026-09-14T05:32:24+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `6189c67` on `main`
+- commit: `7a3380d` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `6189c67`
-- commits: 7
-- HEAD: `6189c67` — test(handoff): assert START_HERE leads to real commands and no orphan files (2026-09-14T13:13:05+08:00)
-- working tree: 2 dirty file(s)
+- last good commit: `7a3380d`
+- commits: 9
+- HEAD: `7a3380d` — fix(vision): world map was classified as EVENT, breaking DISPATCH_MARCH (2026-09-14T13:32:06+08:00)
+- working tree: 3 dirty file(s)
   - `M .workbuddy-ai/handoff/.last_good_commit`
+  - ` M .workbuddy-ai/memory/2026-09-14.md`
   - `?? tools/_h.txt`
 
 ## B. Runtime
 
-- agent_state: `IDLE`
+- agent_state: `DEGRADED`
 - runtime_thread_alive: False / scheduler_loop_alive: False
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: TARGET_SKILL_VERIFIED
-- page: MAP  march: 5/6
-- updated_at: 2026-09-14T05:00:15.304769+00:00
+- stop_reason: no_idle_march
+- page: MAP  march: 6/6
+- updated_at: 2026-09-14T05:28:53.700950+00:00
 
 ## C. Episode stream
 
-- rows: 761 (production 761)  modes: {'PRODUCTION': 761}
-- success / failure: 510 / 246
-- success rate over decided: **0.6746**
+- rows: 766 (production 766)  modes: {'PRODUCTION': 766}
+- success / failure: 514 / 247
+- success rate over decided: **0.6754**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-14T05:00:15.248850+00:00", "episode_id": "accept_20260914_125232_run03", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_before_20260914T045955757128.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_125232_run03\\accept_20260914_125232_run03_step_006_after_20260914T050000610623.png"}`
+- last episode: `{"skill": "DISPATCH_MARCH", "result": "FAILURE", "recorded_at": "2026-09-14T05:25:20.306984+00:00", "episode_id": "accept_20260914_132309_run01", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_before_20260914T052441981131.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260914_132309_run01\\accept_20260914_132309_run01_step_005_after_20260914T052445865611.png"}`
 
 ## D. Registry and lifecycle
 
@@ -102,15 +103,15 @@
 ### Degraded
 
 - `DISMISS_INTEL_REWARD` success=15 failure=5 rate=0.75
-- `DISPATCH_MARCH` success=32 failure=28 rate=0.5333
+- `DISPATCH_MARCH` success=32 failure=29 rate=0.5246
 - `MAIL_CLAIM_REWARDS` success=14 failure=10 rate=0.5833
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
 - `OPEN_MAIL` success=31 failure=15 rate=0.6739
-- `SEARCH_RESOURCE` success=39 failure=34 rate=0.5342
+- `SEARCH_RESOURCE` success=40 failure=34 rate=0.5405
 - `SELECT_INTEL_BEAST_MISSION` success=6 failure=2 rate=0.75
-- `SELECT_RESOURCE` success=7 failure=41 rate=0.1458
-- `START_GATHER` success=34 failure=59 rate=0.3656
-- `SUBMIT_RESOURCE_SEARCH` success=34 failure=12 rate=0.7391
+- `SELECT_RESOURCE` success=8 failure=41 rate=0.1633
+- `START_GATHER` success=35 failure=59 rate=0.3723
+- `SUBMIT_RESOURCE_SEARCH` success=35 failure=12 rate=0.7447
 
 ## E. Top failures
 
@@ -118,7 +119,7 @@ Failure | Count | Top skills
 ---|---:|---
 `SEMANTIC_TARGET_NOT_VERIFIED` | 104 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 `MARCH_PAGE_NOT_OPEN` | 59 | START_GATHER(59)
-`DISPATCH_NOT_PROVEN` | 28 | DISPATCH_MARCH(28)
+`DISPATCH_NOT_PROVEN` | 29 | DISPATCH_MARCH(29)
 `RESOURCE_NOT_FOUND` | 12 | SUBMIT_RESOURCE_SEARCH(12)
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | MAIL_CLAIM_REWARDS(10)
 `POPUP_CLOSE_NOT_PROVEN` | 5 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
@@ -154,9 +155,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 58  present: 58
+- referenced screenshots: 68  present: 68
 - missing: []
-- episodes carrying screenshot references: 29
+- episodes carrying screenshot references: 34
 
 ## H. Commercial bot parity
 
