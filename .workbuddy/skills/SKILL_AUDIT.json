@@ -106,5 +106,46 @@
     "pytest/测试自动化（0 结果）——由项目 tests/ 与运行器覆盖",
     "日志分析（0 结果）——由 Python 原生 + tools 脚本覆盖",
     "git/本地版本控制（无对口结果）——由 Bash 原生 git 覆盖"
-  ]
+  ],
+  "mcp_audit": {
+    "updated_at": "2026-09-14T19:50:00+08:00",
+    "user_configured_servers": [],
+    "note": "mcp.json 不存在：用户层零自装 MCP。以下为宿主内置插件 MCP 的处置。",
+    "host_mcps": [
+      {
+        "name": "agent-mail",
+        "probe": "GetMe OK（scopes 含 mail:send/delete，外发通道）",
+        "verdict": "项目无关",
+        "policy": "开发流程禁用；绝不经此通道发送项目数据"
+      },
+      {
+        "name": "genie-baas（云 DB/存储/LLM）",
+        "probe": "未实测（需 applicationId；判定无关后不接入）",
+        "verdict": "项目无关且有数据外发面",
+        "policy": "禁用：episodes/evidence 是本地文件事实源，上云违反本地优先架构"
+      },
+      {
+        "name": "sheetagent（Excel 读写）",
+        "probe": "未实测（需本地表格文件）",
+        "verdict": "按需",
+        "policy": "仅在给操作者出分析表格时使用"
+      },
+      {
+        "name": "weixinpay",
+        "probe": "故意不探测（支付域）",
+        "verdict": "与开发无关且高危",
+        "policy": "开发流程永久禁用（真实货币红线）"
+      }
+    ],
+    "decisions": {
+      "github_mcp": "拒绝：公开仓库经原生 git clone / WebFetch 即可，MCP 需 PAT（权限面+令牌风险，零增益）",
+      "context7/library_docs": "按需不装：项目依赖（PIL/rapidocr）稳定，原生 WebSearch 覆盖文档查询",
+      "browser_mcp": "不装：agent-browser skill 已覆盖，装 MCP 即重复",
+      "gitlab_mcp": "拒绝：无 GitLab 实例",
+      "local_code_search_mcp": "拒绝：原生 Grep/Glob 已足够",
+      "sqlite_mcp": "拒绝：项目不用 SQLite（episodes 为 JSONL）；genie-baas 云 DB 不接入",
+      "http_api_debug": "不需要 MCP：venv Python requests 覆盖"
+    },
+    "expert_required_dependencies": "无——winter-agent-v2-dev 完全运行在原生工具+项目代码上，不写入 plugin.json/.mcp.json"
+  }
 }
