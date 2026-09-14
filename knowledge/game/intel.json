@@ -21,6 +21,18 @@
       "notes": "Ordinary Beast Intel select/dispatch/return/claim is verified. State values remain distinct; BLOCKED is never reported as FAILED or DONE."
     },
     {
+      "id": "INTEL_PIN_MAP",
+      "name": "情报任务针板（地图上的任务钉）",
+      "category": "UI_MODEL",
+      "entry": "INTEL page shows a zoomed map sprinkled with teardrop mission pins",
+      "observed_live": "2026-09-14",
+      "pin_colours_seen": ["BLUE", "PURPLE", "ORANGE"],
+      "source": ["LIVE_CLIENT"],
+      "confidence": 0.7,
+      "status": "CANDIDATE",
+      "notes": "Colour is NOT a claimability signal. Earlier project text claimed ORANGE = completed/claimable; the live client contradicts it twice on 2026-09-14: an ORANGE pin at (211,664) opened 大师悬赏：20号 read as INTEL_MASTER_BOUNTY with status BLOCKED (an actionable target, not a reward), and an ORANGE pin at (215,611) opened a Hero Journey card. What each colour encodes is UNKNOWN - do not guess it and do not decide from the colour; decide from the card the brain reads. The pin itself is the only way to learn a mission's identity: the board does not reveal type before a tap. Note also that a card's banner colour can differ from one capture to the next for the SAME mission (a Hero Journey card was read as UNKNOWN at 13:56 and as INTEL_HERO_JOURNEY at 14:00), so a template cropped from one banner colour will not match the other."
+    },
+    {
       "id": "INTEL_FIREBEAST_10",
       "name": "狩猎炽红巨兽 等级10",
       "category": "FIREBEAST",
@@ -53,15 +65,17 @@
       "id": "INTEL_HERO_JOURNEY_10",
       "name": "英雄之旅 等级10",
       "category": "HERO_JOURNEY",
-      "entry_icon": "crossed_axes purple/blue",
+      "entry_icon": "crossed axes; banner colour varies (blue and orange skins both observed live)",
       "stamina_cost": 10,
-      "observed_result": "BATTLE_FAILED",
-      "verification": "live map target displayed 失败 after dispatch",
+      "recommended_power": 957867,
+      "live": {"attempts": 1, "successes": 1, "claimed": 1},
+      "boss_power_observed": 6654991,
+      "verification": "full chain verified live by the automated loop: card -> 前往查看 -> camp panel (Page.EXPLORATION, 探险 ⚡10) -> squad page (Page.MARCH) -> 战斗 -> victory -> reward claimed (INTEL_CLAIM_REWARDS OK)",
       "source": ["LIVE_CLIENT"],
       "confidence": 0.99,
-      "status": "BLOCKED",
-      "last_verified": "2026-09-06",
-      "notes": "Do not route through ordinary Beast Intel. Requires formation/power research before another Production attempt."
+      "status": "VERIFIED",
+      "last_verified": "2026-09-14",
+      "notes": "CORRECTED 2026-09-14. This record previously said BLOCKED / BATTLE_FAILED, from a 2026-09-06 attempt whose real cause was a mis-measured 战斗 button (the template had been cropped 103 px too high), not insufficient power: the fight is won comfortably, 665.4万 vs 95.7万 recommended. Do not route through ordinary Beast Intel - the camp panel classifies as EXPLORATION, not BEAST. Cadence is still thin (1 automated win plus 1 manual win), so treat STABLE as not yet earned."
     },
     {
       "id": "INTEL_MASTER_BOUNTY_20",

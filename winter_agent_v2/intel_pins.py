@@ -9,10 +9,19 @@ pin, never the pins themselves, so whole batches of intel work were invisible.
 
 Detector: HSV mask for saturated pin colours, connected components, then keep
 blobs shaped like pins (area and aspect bounds) and report the tap point
-(blob centre, slightly above the tip).  Colour classes:
-- ORANGE  -> completed / claimable missions (claim first)
-- PURPLE  -> elite fight missions
-- BLUE    -> normal fight / rescue missions
+(blob centre, slightly above the tip).
+
+Colour classes are NOT a claimability signal.  The earlier note here said
+"ORANGE -> completed / claimable missions (claim first)"; the live client
+contradicts it.  Measured 2026-09-14:
+- ORANGE pin at (211,664) opened 大师悬赏：20号, which the vision reads as
+  ``INTEL_MASTER_BOUNTY`` with status ``BLOCKED`` (recommended power 189M) - an
+  actionable target, not a reward to claim.
+- ORANGE pin at (215,611) opened a Hero Journey mission card rendered with an
+  orange banner.
+So colour varies per pin and per mission; treat it as a rendering attribute and
+decide from the card the brain reads, never from the colour.  What each colour
+actually encodes is UNKNOWN - do not guess it.
 """
 
 from __future__ import annotations

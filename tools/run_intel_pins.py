@@ -238,7 +238,14 @@ def main() -> int:
             if not pins:
                 print("no actionable pins left on the intel board", flush=True)
                 break
-            # ORANGE (claimable) first - the operator's expiry concern
+            # Orange pins used to be tapped first on the belief that they were
+            # the claimable (expiring) missions.  Live 2026-09-14 disproved that:
+            # an orange pin opened a BLOCKED 大师悬赏 and another opened a Hero
+            # Journey card, so the colour carries no claimability meaning (see
+            # winter_agent_v2/intel_pins.py).  The ordering is kept because it is
+            # deterministic and harmless, NOT because orange means claimable -
+            # claims are handled from the card the brain reads.  Revisit only with
+            # evidence about what the colours actually encode.
             pins.sort(key=lambda p: (0 if p.color == "ORANGE" else 1, p.y, p.x))
             pin = pins[0]
             tap_x, tap_y = round(pin.x / width, 4), round(pin.y / height, 4)

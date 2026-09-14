@@ -63,8 +63,9 @@ Machine-detected issues (recomputed every run):
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
-| 16 | **`SAFE_STOP` 的「正确空转」被记成 FAILURE** | ⚠️ 口径污染 | 大脑返回 `SAFE_STOP`（如 `unknown_page`、`reserved_march_for_stamina`）时 verifier 给 `NO_EXECUTION`，于是**按设计什么都不做**也被记成失败（当日 4 条）。这会同时毒化成功率、Recovery 决策与后来人的判断。不是「为了好看清零」——而是要**按语义分类**：有意的安全空转应当是独立的终态，不是 FAILURE。 |
+| 16 | **`SAFE_STOP` 的「正确空转」被记成 FAILURE** | ✅ **已核实为过期条目（第九轮末）** | 复核发现：`SAFE_STOP` **不在** `skills.py` 注册表里，也没有 `verify_safe_stop`；现存 4 条 SAFE_STOP/`NO_EXECUTION` **全部在 13:25Z 之前**（09:29 / 11:20×3），即 MAA 相关那几个 commit 之前的旧代码所写。**当前代码不再写这种 episode** —— 本会话的 live6 运行里第 6 步就是 SAFE_STOP，episode 流里没有对应失败行。**不要再"修"这个不存在的问题。** |
 | 17 | **verifier 落后于真机页面分类（一类缺陷，非孤立）** | ⚠️ 本轮修了 3 处 | 本日三处同源：`verify_intel_rescue_started`（依赖单帧 `IN_PROGRESS` 读数）、`verify_intel_hero_target_open`、`verify_intel_hero_march_open`（都写死 `Page.BEAST`，而真机与 `brain.py` 早已按 `Page.EXPLORATION` 工作）。**建议**：把「verifier 与 brain/vision 的页面契约」做一次一致性审计，而不是等它一条条在真机上暴露。 |
+| 18 | **统计口径：`RESOURCE_NOT_FOUND` 大量来自验收 harness，不是生产缺陷** | ℹ️ 澄清，勿误判 | 第九轮曾据"当日 22 条"判断采集链在浪费动作，**复核后该结论是错的**：30 条里 27 条来自 `accept_*`（`run_gather_acceptance.py` **故意**去填满队列以触发 `no_idle_march`/撤回），8 条是 09-13 无 `episode_id` 的历史行；**当日生产运行 0 条**。**教训：按 failure_type 统计时必须先按 `episode_id` 区分「生产」与「harness/实验」，否则会把测试自身的探索行为当成产品缺陷。** |
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|
