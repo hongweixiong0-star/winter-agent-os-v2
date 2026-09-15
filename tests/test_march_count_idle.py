@@ -28,10 +28,12 @@ from winter_agent_v2.ocr import HybridVision
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Real live frames.  A missing frame skips rather than fails: dataset/raw is
-# machine-local evidence that is deliberately not in git.
-IDLE_FRAME = ROOT / "dataset/evidence/maa_live/state_maa_20260915T124440.png"
-BUSY_FRAME = ROOT / "dataset/raw/control_panel/probe/live_page_20260915_133152.png"
+# Archived copies of two real live frames.  They must be referenced from
+# dataset/truth_audit, not from dataset/raw or dataset/evidence: those are
+# prunable, and tests/test_evidence_integrity.py fails the suite if a test
+# hard-codes a path inside them.
+IDLE_FRAME = ROOT / "dataset/truth_audit/march_count_20260915/idle_state_maa_20260915T124440.png"
+BUSY_FRAME = ROOT / "dataset/truth_audit/march_count_20260915/busy_live_page_20260915_133152.png"
 
 
 class _Token:
