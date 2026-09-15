@@ -104,15 +104,12 @@ desktop.ini
 .DS_Store
 
 # --- scratch ---------------------------------------------------------------
-# pytest sandbox.  Two things are needed on this machine, and the reason is
-# recorded in the handoff: --basetemp alone is not enough, because pytest also
-# garbage-collects its default root under %TEMP%\pytest-of-<user>, and that
-# cleanup trips the workspace bulk-delete guard (measured: 463 files) which
-# raises SystemExit mid-run and cascades into ~25 bogus fixture-teardown errors.
-# Setting PYTEST_DEBUG_TEMPROOT to a project path as well is what keeps the
-# suite's result readable:
-#   PYTEST_DEBUG_TEMPROOT=tools/_pt_root python -m pytest tests -q \
-#       --basetemp=tools/_pt_root/bt
+# pytest sandbox.  pytest.ini sets tmp_path_retention_policy=none, so tmp dirs
+# are kept rather than deleted: this host aborts any shutil.rmtree over ~50
+# files (SystemExit from the sandbox shim), and that aborted teardown corrupts
+# fixture state and shows up as ~26 errors in unrelated files.  See the handoff
+# issue 0bd.  Keeping them here means they stay out of git.  To override:
+#   python -m pytest tests -q --basetemp=<dir>
 tools/_pt_*/
 .pytest_tmp_*/
 *.tmp

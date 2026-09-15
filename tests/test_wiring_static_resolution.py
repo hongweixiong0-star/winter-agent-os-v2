@@ -47,9 +47,16 @@ def scratch_pkg(checker, tmp_path):
     ``checker`` reads ``checker.PKG`` at call time, so pointing it here keeps the
     real tree untouched -- the project forbids editing evidence or source just to
     make an assertion pass.
+
+    Only the sources are copied.  ``__pycache__`` is ignored deliberately: the
+    package also holds ~36 ``.pyc`` files, and copying them took the fixture past
+    50 files, which is the threshold of this host's bulk-delete guard.  Python
+    then aborted the cleanup with ``SystemExit`` and the suite reported ~26
+    errors in unrelated files (all at fixture setup, cascading from the corrupted
+    teardown).  The analyzer reads text, so the bytecode was never needed.
     """
     dst = tmp_path / "winter_agent_v2"
-    shutil.copytree(PKG, dst)
+    shutil.copytree(PKG, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     original = checker.PKG
     checker.PKG = dst
     try:
