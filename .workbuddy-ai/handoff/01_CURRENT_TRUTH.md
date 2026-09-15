@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-15T16:09:48+00:00`
+- generated_at: `2026-09-15T16:41:15+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `1a10ad7` on `main`
+- commit: `0fbe6b7` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,18 +10,10 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 70
-- HEAD: `1a10ad7` — fix(vision): a march counter that is not drawn means idle, not unreadable (2026-09-16T00:07:11+08:00)
-- working tree: 25 dirty file(s)
-  - `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/memory/2026-09-15.md`
-  - ` M .workbuddy/memory/2026-09-15.md`
-  - ` M docs/CURRENT_TRUTH.md`
-  - ` M learning/current_truth.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
+- commits: 72
+- HEAD: `0fbe6b7` — test(evidence): archive the two march-count frames under truth_audit so the integrity guard passes (2026-09-16T00:26:13+08:00)
+- working tree: 19 dirty file(s)
+  - `M learning/executor_backend.jsonl`
   - `?? knowledge/execution/backend_routing.json.bak_20260915_maab`
   - `?? out_junit_audit.xml`
   - `?? out_junit_final_r18.xml`
@@ -29,10 +21,17 @@
   - `?? out_junit_full_v1.xml`
   - `?? out_junit_full_v3.xml`
   - `?? out_junit_iso.xml`
+  - `?? out_junit_r18d.xml`
+  - `?? out_junit_r18e.xml`
   - `?? out_junit_v1.xml`
   - `?? out_junit_v2.xml`
   - `?? out_memory_r18.md`
   - `?? out_memory_r18b.md`
+  - `?? out_memory_r18c.md`
+  - `?? out_new_0bc_row.md`
+  - `?? out_new_0bc_row2.md`
+  - `?? out_new_0bd_row.md`
+  - `?? out_new_0bm_row.md`
 
 ## B. Runtime
 

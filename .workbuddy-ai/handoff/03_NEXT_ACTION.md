@@ -456,7 +456,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: RESOURCE_NOT_FOUND — 22 in the last 2 day(s), 30 all-time, last seen 2026-09-14T06:42:03.928936+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 25
+CURRENT DIRTY FILES: 19
 LAST PRODUCTION EPISODE: {"skill": "SELECT_RESOURCE", "result": "FAILURE", "recorded_at": "2026-09-15T16:06:19.052822+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260915T160609443785.png", "after_screenshot": ""}
 TOP FAILURE: {"failure_type": "RESOURCE_NOT_FOUND", "count": 30, "recent": 22, "last_seen": "2026-09-14T06:42:03.928936+00:00", "dates": {"2026-09-13": 8, "2026-09-14": 22}, "undated": 0, "top_skills": [["SUBMIT_RESOURCE_SEARCH", 30]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T16:06:19.052822+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.

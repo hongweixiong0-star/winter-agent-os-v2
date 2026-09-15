@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `0fbe6b7 2026-09-16T00:26:13+08:00 test(evidence): archive the two march-count frames under truth_audit so the integrity guard passes`
+- `96146a9 2026-09-16T00:10:06+08:00 docs(handoff): record 0bc's true cause (march counter, not page model) and the new gather frontier 0bm`
 - `1a10ad7 2026-09-16T00:07:11+08:00 fix(vision): a march counter that is not drawn means idle, not unreadable`
 - `d91ca08 2026-09-15T23:48:31+08:00 chore(handoff): regenerate truth/metrics after the commander round; archive the 20:43/20:45 acceptance evidence`
 - `000c8e7 2026-09-15T23:48:18+08:00 fix(test-infra): remove the self-defeating pytest basetemp+retention pair (0bd); run the earlier work orders' handoff`
@@ -16,19 +18,9 @@ Last 12 commits (newest first):
 - `ae9f71b 2026-09-15T20:39:20+08:00 fix(intel,maa): stop fabricating a vision failure for pin exhaustion; make MAA capture the production path`
 - `eb73be1 2026-09-15T18:39:24+08:00 chore(automation): operator cancelled the hourly intel loop; record PAUSED vs lost`
 - `ddef804 2026-09-15T18:37:13+08:00 chore(memory): daily log for the round-17 dispatch-affordability work`
-- `e1c8fa3 2026-09-15T18:36:33+08:00 chore(handoff): checkpoint e4fd245 regenerated handoff state`
-- `e4fd245 2026-09-15T18:36:15+08:00 fix(dispatch): red cost = client refusal, not a missing control (0ax/0ay/0az); check_wiring resolves call sites (0aw)`
 
-Uncommitted changes: 25
-- `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/memory/2026-09-15.md`
-- ` M .workbuddy/memory/2026-09-15.md`
-- ` M docs/CURRENT_TRUTH.md`
-- ` M learning/current_truth.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
+Uncommitted changes: 19
+- `M learning/executor_backend.jsonl`
 - `?? knowledge/execution/backend_routing.json.bak_20260915_maab`
 - `?? out_junit_audit.xml`
 - `?? out_junit_final_r18.xml`
@@ -36,10 +28,17 @@ Uncommitted changes: 25
 - `?? out_junit_full_v1.xml`
 - `?? out_junit_full_v3.xml`
 - `?? out_junit_iso.xml`
+- `?? out_junit_r18d.xml`
+- `?? out_junit_r18e.xml`
 - `?? out_junit_v1.xml`
 - `?? out_junit_v2.xml`
 - `?? out_memory_r18.md`
 - `?? out_memory_r18b.md`
+- `?? out_memory_r18c.md`
+- `?? out_new_0bc_row.md`
+- `?? out_new_0bc_row2.md`
+- `?? out_new_0bd_row.md`
+- `?? out_new_0bm_row.md`
 <!-- /AUTO:recent_commits -->
 
 ---

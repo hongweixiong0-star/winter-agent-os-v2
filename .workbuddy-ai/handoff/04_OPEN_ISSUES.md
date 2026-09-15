@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 25 uncommitted file(s): ['M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-15.md', ' M .workbuddy/memory/2026-09-15.md', ' M docs/CURRENT_TRUTH.md', ' M learning/current_truth.json']
+- 19 uncommitted file(s): ['M learning/executor_backend.jsonl', '?? knowledge/execution/backend_routing.json.bak_20260915_maab', '?? out_junit_audit.xml', '?? out_junit_final_r18.xml', '?? out_junit_fix.xml']
 <!-- /AUTO:open_issues -->
 
 ---
