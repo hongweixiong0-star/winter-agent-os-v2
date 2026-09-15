@@ -392,8 +392,12 @@ class RuleBrain:
                 and not self.stamina_panel_checked
                 and self._supply_may_be_due()
             ):
-                return Decision("OPEN_MAP", "free_stamina_gift_is_due_go_to_the_map", world.confidence, "map_opened")
+                # OPEN_MAP is a HOME-only skill. The live INTEL -> MAP Back
+                # transition was measured on 2026-09-15 (0bb).
+                return Decision("BACK", "free_stamina_gift_is_due_go_to_the_map", world.confidence, "map_opened")
             if status == "AVAILABLE" and int(world.intel.get("pins") or 0) > 0 and not world.intel.get("mission_type"):
+                if world.intel.get("untried_pins") == 0:
+                    return Decision("SAFE_STOP", "intel_no_untried_pins", 1.0, "switch_task")
                 # The board is a pin map: pins are sighted but no card is open,
                 # so the mission type cannot be known yet - the card only exists
                 # after a pin is tapped.  Tap one to find out; whatever opens

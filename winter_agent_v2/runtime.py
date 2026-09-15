@@ -379,6 +379,22 @@ class LiveRuntime:
             before_path = self._capture_path(index, "before")
             self.device.screenshot(before_path)
             before = self.vision.observe(before_path)
+            # Use the same frame and candidate list for planning and execution.
+            # Exhausting this run's attempts is not an empty/complete board and
+            # must not become a fabricated semantic-target failure (0ba).
+            untried_intel_pins = []
+            if before.page is Page.INTEL and not before.intel.get("mission_type"):
+                detected_pins = intel_pin_centers(before_path)
+                untried_intel_pins = [
+                    pin for pin in detected_pins
+                    if all((pin.x - tx) ** 2 + (pin.y - ty) ** 2 > 40 ** 2
+                           for tx, ty in self._tapped_intel_pins)
+                ]
+                before = replace(before, intel={
+                    **before.intel,
+                    "untried_pins": len(untried_intel_pins),
+                    "detected_pins": len(detected_pins),
+                })
             self._sync_stamina_supply(before)
             planned_resource = self.resource_rotation.target(before.resources) if self.resource_rotation else "WOOD"
             if before.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
@@ -525,11 +541,10 @@ class LiveRuntime:
                     if not status.connected or status.resolution is None:
                         return None
                     width, height = status.resolution
-                    for pin in intel_pin_centers(before_path):
-                        if all((pin.x - tx) ** 2 + (pin.y - ty) ** 2 > 40 ** 2
-                               for tx, ty in self._tapped_intel_pins):
-                            self._tapped_intel_pins.append((pin.x, pin.y))
-                            return (pin.x / width, pin.y / height)
+                    if untried_intel_pins:
+                        pin = untried_intel_pins.pop(0)
+                        self._tapped_intel_pins.append((pin.x, pin.y))
+                        return (pin.x / width, pin.y / height)
                     return None
                 match = self._semantic.find(before_path, semantic)
                 if match:

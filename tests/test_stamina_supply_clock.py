@@ -213,7 +213,8 @@ def test_the_intel_page_routes_to_the_map_when_the_gift_is_due() -> None:
     brain = RuleBrain(claim_free_stamina=True, current_goal="INTEL")
     brain.next_supply_at = datetime.now(timezone.utc) - timedelta(seconds=5)
     decision = brain.decide(intel_world(), v2_registry())
-    assert decision.skill == "OPEN_MAP"
+    assert decision.skill == "BACK"
+    assert v2_registry().get(decision.skill).ready(intel_world())
     assert decision.reason == "free_stamina_gift_is_due_go_to_the_map"
     # It must not be marked as done yet -- the panel has not been looked at.
     assert brain.stamina_panel_checked is False
@@ -223,7 +224,7 @@ def test_the_intel_page_does_not_detour_when_the_supply_is_far_off() -> None:
     brain = RuleBrain(claim_free_stamina=True, current_goal="INTEL")
     brain.next_supply_at = datetime.now(timezone.utc) + timedelta(hours=5)
     decision = brain.decide(intel_world(), v2_registry())
-    assert decision.skill != "OPEN_MAP"
+    assert decision.skill != "BACK"
 
 
 def test_the_intel_page_still_works_when_nothing_is_due() -> None:
@@ -237,17 +238,17 @@ def test_the_intel_page_still_works_when_nothing_is_due() -> None:
 def test_the_detour_is_bounded_to_one_map_trip_per_run() -> None:
     brain = RuleBrain(claim_free_stamina=True, current_goal="INTEL")
     brain.next_supply_at = datetime.now(timezone.utc) - timedelta(seconds=5)
-    assert brain.decide(intel_world(), v2_registry()).skill == "OPEN_MAP"
+    assert brain.decide(intel_world(), v2_registry()).skill == "BACK"
     # Once the map has been visited the flag is set and the loop stays on task.
     brain.stamina_panel_checked = True
-    assert brain.decide(intel_world(), v2_registry()).skill != "OPEN_MAP"
+    assert brain.decide(intel_world(), v2_registry()).skill != "BACK"
 
 
 def test_the_detour_is_off_when_the_operator_disables_free_stamina() -> None:
     brain = RuleBrain(claim_free_stamina=False, current_goal="INTEL")
     brain.next_supply_at = datetime.now(timezone.utc) - timedelta(seconds=5)
     decision = brain.decide(intel_world(), v2_registry())
-    assert decision.skill != "OPEN_MAP"
+    assert decision.skill != "BACK"
 
 
 def test_the_map_check_respects_the_stateless_default_constructor() -> None:

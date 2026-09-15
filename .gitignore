@@ -107,6 +107,10 @@ desktop.ini
 # pytest --basetemp sandbox (tests are run with this to avoid tripping the
 # workspace bulk-delete guard on %TEMP% cleanup)
 tools/_pt_tmp/
+tools/_pt_codex_0ba/
+tools/_pt_codex_full_0ba/
+tools/_pt_codex_0bb/
+tools/_pt_codex_full_0bb/
 *.tmp
 .workbuddy-ai/handoff/.commit_message.txt
 # command-output capture files: this machine cannot pipe stdout (no coreutils),
