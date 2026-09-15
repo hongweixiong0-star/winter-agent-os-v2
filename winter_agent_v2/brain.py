@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 
 from .models import Decision, MarchState, Page, WorldState
 from .skills import SkillRegistry
@@ -44,6 +45,34 @@ class RuleBrain:
         # Never cleared: stamina only regenerates, so a panel that was
         # unaffordable earlier in a run cannot have become affordable later.
         self.camp_panel_refused = False
+        # When the next free gift arrives, learned from the panel's own 下次补给
+        # countdown and supplied by the runtime before each decision.  ``None``
+        # means "not known", and unknown must never authorize the detour below:
+        # this exists to *stop* paying a detour on every cycle, so a missing
+        # value has to fall back to the old once-per-run behaviour.
+        self.next_supply_at = None
+
+    def _supply_may_be_due(self) -> bool:
+        """Whether opening the stamina panel could plausibly find a free gift.
+
+        The panel is the only place the gift is visible, so the check must run
+        at least once per run.  But the supply cadence was measured at 7 hours
+        (2026-09-15: 04:00:01Z and 11:00:01Z, three independent countdown reads),
+        while the unattended loop runs up to 8 cycles an hour -- so a blind
+        once-per-run check spends roughly 16 actions an hour to find a gift that
+        is available three times a day.  Once the runtime has learned the
+        instant, the check is skipped until it is near.
+
+        Unknown is always due.  This is an optimisation, and an unknown clock
+        must not be able to skip the gift -- that would trade a handful of saved
+        actions for silently losing 150 stamina every 7 hours.
+        """
+        if self.next_supply_at is None:
+            return True
+        now = datetime.now(timezone.utc)
+        # A little early, because the countdown read is only second-accurate and
+        # the panel is opened a step or two later.
+        return now >= self.next_supply_at - timedelta(minutes=1)
 
     def _recallable(self, world: WorldState) -> bool:
         """True when recalling a march is both allowed and useful.
@@ -345,6 +374,19 @@ class RuleBrain:
                 return Decision("TRAIN_TROOPS", "training_queue_available", world.confidence, "training_queue_started")
         if world.page is Page.INTEL:
             status = world.intel.get("status", "UNKNOWN")
+            # The free-gift check lives in the world-map branch, but the
+            # unattended intel loop lives on this page: measured live
+            # 2026-09-15T04:10:33Z, a run that started on an intel pin popup
+            # never stood on the map once, so the check could not run at all.
+            # Go there deliberately -- and only when it is actually worth it,
+            # so this cannot become a detour every cycle.  Bounded to once per
+            # run by ``stamina_panel_checked``, the same flag the map uses.
+            if (
+                self.claim_free_stamina
+                and not self.stamina_panel_checked
+                and self._supply_may_be_due()
+            ):
+                return Decision("OPEN_MAP", "free_stamina_gift_is_due_go_to_the_map", world.confidence, "map_opened")
             if status == "AVAILABLE" and int(world.intel.get("pins") or 0) > 0 and not world.intel.get("mission_type"):
                 # The board is a pin map: pins are sighted but no card is open,
                 # so the mission type cannot be known yet - the card only exists
@@ -449,6 +491,7 @@ class RuleBrain:
                 self.claim_free_stamina
                 and not self.stamina_panel_checked
                 and not world.resource_search_open
+                and self._supply_may_be_due()
             ):
                 # No ``stamina.current is not None`` here.  Measured
                 # 2026-09-15T04:03:02Z: stamina was genuinely 0 and the gauge

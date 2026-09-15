@@ -20,6 +20,7 @@ from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_f
 from .verifier import verify_ally_gift_claim, verify_beast_dispatch, verify_beast_march_open, verify_beast_target_selected, verify_building_upgrade, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
+from .stamina_supply import StaminaSupplyStore
 from .intel_pins import intel_pin_centers
 
 
@@ -165,6 +166,7 @@ class LiveRuntime:
         candidate_pool: CandidateAttemptPool | None = None,
         runtime_store: RuntimeSnapshotStore | None = None,
         resource_rotation: ResourceRotationStore | None = None,
+        stamina_supply: StaminaSupplyStore | None = None,
         maa_adapter=None,
         adb_device=None,
         routing=None,
@@ -201,6 +203,10 @@ class LiveRuntime:
         self.candidate_pool = candidate_pool
         self.runtime_store = runtime_store
         self.resource_rotation = resource_rotation
+        # Learns when the free stamina gift becomes claimable, from the panel's
+        # own 下次补给 countdown.  ``None`` keeps the historical behaviour: the
+        # check runs once per run because the instant is unknown.
+        self.stamina_supply = stamina_supply
         # Intel pins already tapped in THIS run.  Pins stay on the board after
         # their mission is consumed (claimed / marching), so without this the
         # loop would tap the same pin forever.  Session-scoped on purpose: the
@@ -222,6 +228,24 @@ class LiveRuntime:
         """
         vision = self.semantic_vision
         return getattr(vision, "semantic", vision)
+
+    def _sync_stamina_supply(self, world: WorldState) -> None:
+        """Persist the free gift's next supply instant and hand it to the brain.
+
+        The panel is the only place the countdown is visible, so the instant is
+        learned whenever that panel is seen and kept in a small file for the runs
+        in between (measured cadence: every 7 hours, while the unattended loop
+        runs up to 8 cycles an hour -- see ``winter_agent_v2/stamina_supply``).
+
+        A claimable panel has no countdown at all; that is not "unknown", it is
+        "available now", and the claim clears it.  So this only ever records.
+        """
+        if self.stamina_supply is None:
+            return
+        countdown = world.stamina.get("next_supply_in_seconds")
+        if isinstance(countdown, int):
+            self.stamina_supply.record(countdown)
+        self.brain.next_supply_at = self.stamina_supply.next_supply_at()
 
     def _policy_allows(self, goal_id: str) -> bool:
         category = {
@@ -355,6 +379,7 @@ class LiveRuntime:
             before_path = self._capture_path(index, "before")
             self.device.screenshot(before_path)
             before = self.vision.observe(before_path)
+            self._sync_stamina_supply(before)
             planned_resource = self.resource_rotation.target(before.resources) if self.resource_rotation else "WOOD"
             if before.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 before = replace(before, resource_target=planned_resource)

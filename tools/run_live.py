@@ -26,6 +26,7 @@ from winter_agent_v2.candidate_policy import CandidateAttemptPool
 from winter_agent_v2.vision import SemanticWorldVision
 from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
 from winter_agent_v2.resource_rotation import ResourceRotationStore
+from winter_agent_v2.stamina_supply import StaminaSupplyStore
 
 
 def main() -> int:
@@ -132,6 +133,7 @@ def main() -> int:
                                             threshold=5),
         runtime_store=RuntimeSnapshotStore(ROOT / "learning/runtime_snapshot.json"),
         resource_rotation=ResourceRotationStore(ROOT / "learning/resource_rotation.json"),
+        stamina_supply=StaminaSupplyStore(ROOT / "learning/stamina_supply.json"),
     ).run(max_actions=args.max_actions, stop_after_skill=args.stop_after)
     print(json.dumps(asdict(result), ensure_ascii=False, default=str))
     accepted_stops = {"TARGET_SKILL_VERIFIED", "MAX_ACTIONS_REACHED", "no_idle_march", "reserved_march_for_stamina", "verified_beast_target_not_visible", "intel_available_no_claim", "intel_not_available", "intel_expired", "mail_all_clear", "exploration_income_not_ready", "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable", "alliance_action_not_needed", "research_queue_busy", "training_queue_busy"}

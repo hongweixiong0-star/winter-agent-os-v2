@@ -399,6 +399,49 @@ def read_march_count(text: str) -> tuple[int, int] | None:
     return int(match.group(1)), int(match.group(2))
 
 
+# The free-gift row of the 获取更多 panel states *when* the next gift arrives as
+# an absolute countdown (下次补给 06:47:35).  Unlike the 150 it sits under, this
+# countdown only exists while the gift is NOT claimable -- a claimable panel
+# draws the green 领取 button in its place (both states are archived in
+# ``dataset/truth_audit/free_stamina_claim_20260915``).
+#
+# Measured on live 720x1280 panels with the production OCR stack (2026-09-15):
+#
+#     frame                     label          countdown   conf   x       y
+#     ------------------------  -------------  ----------  -----  ------  ------
+#     04_panel_after_claim      下次补给      06:47:35    0.936  524-635 382-413
+#     04_stamina_panel_opened   下次补给      00:55:33    0.952  525-635 381-412
+#     02_stamina_refusal_popup  下次补给      00:13:18    0.963  (same row)
+#     00:00:15 seen at 03:59:46.7Z           00:00:15    0.965  (same row)
+#
+# Two frames taken 13 minutes apart implied the same instant to within a second,
+# so this is a real clock, not an animation.  The ROI spans the whole right-hand
+# column of the gift row so a shorter countdown cannot fall outside it.
+NEXT_SUPPLY_ROI = {"x_norm": 0.700, "y_norm": 0.288, "w_norm": 0.200, "h_norm": 0.040}
+
+_NEXT_SUPPLY_PATTERN = re.compile(r"(\d{1,2}):(\d{2}):(\d{2})")
+
+
+def read_next_supply_seconds(tokens: tuple[OCRToken, ...]) -> int | None:
+    """Parse the ``下次补给 HH:MM:SS`` countdown into seconds, or ``None``.
+
+    Returns ``None`` -- never ``0`` -- when the countdown is absent or unreadable:
+    a claimable panel legitimately has no countdown, and "unknown" must not be
+    mistaken for "due now" by the caller.
+    """
+    for token in tokens:
+        if token.confidence < 0.85:
+            continue
+        match = _NEXT_SUPPLY_PATTERN.fullmatch(token.text.strip().replace(" ", ""))
+        if match is None:
+            continue
+        hours, minutes, seconds = (int(group) for group in match.groups())
+        if minutes > 59 or seconds > 59:
+            continue
+        return hours * 3600 + minutes * 60 + seconds
+    return None
+
+
 def read_hud_stamina(
     tokens: tuple[OCRToken, ...],
     width: int,
@@ -628,6 +671,18 @@ class HybridVision:
                 if reading is not None:
                     stamina.update({"current": reading[0], "max": reading[1], "source": "STAMINA_PANEL"})
                 stamina["free_claim_available"] = claim is not None
+                # The panel also states when the next free gift arrives, as an
+                # absolute countdown (下次补给).  Measured 2026-09-15 on four
+                # real panels: 00:13:18 / 00:00:15 / 06:47:35 all read at
+                # 0.936-0.965 confidence, and two frames taken 13 minutes apart
+                # implied the same instant to within a second.  There is no
+                # countdown at all on a panel whose gift is claimable -- the
+                # 领取 button sits there instead -- so its absence is also a fact.
+                countdown = read_next_supply_seconds(
+                    self.ocr.recognize(image_path, NEXT_SUPPLY_ROI).tokens
+                )
+                if countdown is not None:
+                    stamina["next_supply_in_seconds"] = countdown
                 return replace(primary, stamina=stamina)
             # Every world-map frame is OCR-enriched, not only the ones where the
             # reviewed layer already saw a march counter: the map is also where
