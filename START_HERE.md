@@ -88,6 +88,32 @@ latest log / evidence integrity / commercial parity，并重写：
 
 ---
 
+## 第 3.5 步：检查 Codex Commander Queue（**接管后必做**）
+
+Codex 用机器可读队列给 WorkBuddy 派活，**不要手工复制指令**：
+
+```bash
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py init
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py plan
+```
+
+- `WORK_QUEUE.json`（Codex 写）→ `cq.py plan` 解析出 **READY 且依赖已满足** 的可执行集，
+  按 `priority` → 声明顺序排好；`QUEUED` / `WAITING_FOR_NATURAL_STATE` **不要碰**。
+- 每个 Work Order 走固定十步：
+  `READ EVIDENCE → TOOL CHECK → IMPLEMENT → TARGETED TEST → REPLAY → LIVE → VERIFY → BEFORE/AFTER → REPORT → NEXT`
+- 结果写 `.workbuddy-ai/commander/results/<task_id>.json`，状态由 `cq.py` 统一维护：
+  `cq.py start <id>` → `cq.py finish <id> --result <file> [--require-live]`。
+- **timebox 内做不到就承认**：`cq.py block <id> --result <file>`（含 `root_cause_found` /
+  `attempts` / `changes_made` / `evidence` / `blocker` / `recommended_codex_review`），
+  **然后立刻做下一项 READY 任务**，不要死磕、不要停下来问。
+- 需要高级代码分析（改冻结架构、证据与代码无法裁决、同一任务到 timebox 仍无法分类）→
+  追加到 `.workbuddy-ai/commander/REVIEW_REQUESTS.md`，等 Codex 下一次可用。
+
+**队列是任务来源，不是免死金牌**：本文件其余所有铁律（架构冻结、真机证据、付费红线、
+不伪造完成）在队列任务内**同样生效**。
+
+---
+
 ## 第 4 步：亲自核对（不要只信 Handoff）
 
 ```bash

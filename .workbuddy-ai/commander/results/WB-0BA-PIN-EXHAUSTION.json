@@ -1,0 +1,37 @@
+{
+  "TASK_ID": "WB-0BA-PIN-EXHAUSTION",
+  "ROOT_CAUSE": "The intel pin resolver deliberately returns no target once every pin this run has tapped is known (so the loop cannot re-tap a consumed pin). That deliberate refusal was collapsed into the executor's generic 'no execution' path and surfaced as SEMANTIC_TARGET_NOT_VERIFIED -- i.e. a policy decision was being recorded as a vision failure. The fix (commit ae9f71b, previous session) computes the untried-pin list from the same before frame that planning uses, and the brain issues SAFE_STOP with an honest deferral reason BEFORE a target that would resolve to None is ever requested.",
+  "CHANGED_FILES": [
+    "tools/cq.py (new: Commander Queue executor)",
+    "tools/cq_recon.py (new: takeover recon)",
+    "tools/cq_0ba_check.py (new: this task's gate)",
+    "tools/cq_0ba_live_probe.py (new: evidence + live probe)",
+    "tools/cq_parse_run.py (new: run_live stdout parser)",
+    "tools/cq_device_touch_scan.py (new: device-touch audit)",
+    "tools/cq_probe_introspect.py (new: probe safety introspection)",
+    "tools/escape_to_known_page.py (new: BACK-only escape from an unknown screen)",
+    "START_HERE.md (new step 3.5: Commander Queue)",
+    ".workbuddy-ai/handoff/00_MASTER_RULES.md (new section 23)",
+    ".workbuddy-ai/commander/README.md (new: WorkBuddy side of the contract)",
+    "no winter_agent_v2/ production code changed in this work order"
+  ],
+  "TEST_RESULT": "pytest tests/test_intel_pin_exhaustion.py tests/test_stamina_supply_clock.py tests/test_live_runtime.py -q => 40 passed in 4.47s (exit 0). tools/check_wiring.py => problems: 0 (exit 0).",
+  "LIVE_ATTEMPTS": 1,
+  "LIVE_SUCCESS": 3,
+  "LIVE_FAILURE": 0,
+  "BEFORE": "Two recorded SELECT_INTEL_PIN failures, both 2026-09-15 (10:01:52Z and 10:02:57Z), both failure_type=SEMANTIC_TARGET_NOT_VERIFIED with target=INTEL_PIN. A deliberate 'no untried pin' refusal was indistinguishable from 'the control is not on screen'.",
+  "AFTER": "Fresh live run 2026-09-15T13:34:54Z-13:35:35Z, goal INTEL, 4 steps, exit 0. step1 OPEN_INTEL MAP->INTEL OK (backend MAA, capture MAA_MUMU_EXTRAS, 50.93 ms); step2 SELECT_INTEL_PIN INTEL->POPUP OK (intel_after BLOCKED/MASTER_BOUNTY/level 20); step3 BACK POPUP->INTEL OK (reason intel_master_bounty_power_blocked); step4 SAFE_STOP reason=intel_no_untried_pins with execution=null, i.e. NO TAP was attempted and no fabricated vision failure was produced. Episodes for the run: 3/3 SUCCESS, 0 SEMANTIC_TARGET_NOT_VERIFIED. Reproduced independently on the 2026-09-15T12:43Z gather-acceptance runs (evidence/gather_acceptance_20260915_204301.json, both runs stop_reason=intel_no_untried_pins).",
+  "VERIFIER_RESULT": "3/3 OK (OPEN_INTEL, SELECT_INTEL_PIN, BACK). All four acceptance criteria met: no TAP_SEMANTIC on exhaustion; no SEMANTIC_TARGET_NOT_VERIFIED; every verifier PASS; stop reason explainable and CLEAR_INTEL is not marked complete.",
+  "EVIDENCE": [
+    "out_0ba_live_run2.txt (raw run_live stdout for the 13:34:54Z run)",
+    "out_0ba_parsed.txt (per-step table + post-run episodes)",
+    "evidence/gather_acceptance_20260915_204301.json (independent reproduction, 2 runs)",
+    "dataset/raw/control_panel/runtime_auto/accept_20260915_204301_run01/accept_20260915_204301_run01_step_002_before_20260915T124315379816.png (the 大师悬赏 20号 card that is refused)",
+    "learning/episodes.jsonl (13:35:06 / 13:35:16 / 13:35:26, all SUCCESS)"
+  ],
+  "LIVE_EVIDENCE": "run_live.py --goal INTEL --max-actions 12 on the live client at 127.0.0.1:7555, 2026-09-15T13:34:54Z; stop_reason=intel_no_untried_pins; production episodes 13:35:06Z OPEN_INTEL SUCCESS (capture_backend=MAA_MUMU_EXTRAS, action_backend=MAA, executor_backend=HYBRID), 13:35:16Z SELECT_INTEL_PIN SUCCESS, 13:35:26Z BACK SUCCESS; verifier 3/3 OK; zero SEMANTIC_TARGET_NOT_VERIFIED.",
+  "PATCH_STATUS": "DONE",
+  "REMAINING_ISSUE": "target_metric is met on 2 of its 3 clauses, honestly not on the third. (1) '0 false exhaustion reports' -- the reason is literally accurate, because the brain branch that emits intel_no_untried_pins requires pins > 0, so it can only fire when the board has pins and this run tapped them all. But it is diagnostically thin: it reads identically whether five pins were consumed productively or one pin was a power-blocked master bounty. (2) '0 invalid BACK round trips' -- NOT met. Every exhaustion run contains one: tap the pin (step 2) -> the card is BLOCKED/MASTER_BOUNTY -> BACK (step 3) -> then declare exhaustion (step 4). Measured cost is 1 extra action and 1 extra episode row per run; observed 2x in the 20:43Z acceptance evidence and 1x in the 13:34Z run. This is inherent to the documented tap-first design (the mission type only exists after a pin is tapped), so removing it requires classifying pins by type from the board, which is new vision work. (3) 'all stops are intel_no_untried_pins' -- met.",
+  "NEXT_RECOMMENDATION": "Per the operator directive to stop deep-diving Intel, do NOT spend further time here. Three findings are queued for triage instead of action. First, if the round trip is worth removing, the honest minimum is to split the reason into 'board has no pins' versus 'pins exist but this run tapped them all', plus optionally skipping the pin tap when the only detected pin is a known-unaffordable master bounty; that is a small, well-understood change, but at 1 action per run it should lose to the MAA P0 on cost-benefit. Second, SELECT_INTEL_PIN still runs its action on ADB (backend=ADB, capture_backend=ADB_EXEC_OUT) while its neighbours on the same screen run on MAA -- relevant to the MAA migration work and cheap to check against knowledge/execution/backend_routing.json. Third, two page-classification observations from this session are NOT Intel and belong to the earlier PAGE_MAP/page-model issue: the client was found parked on the hero-recruitment gacha page classified UNKNOWN at confidence 0.0 (the safe outcome -- no click -- but a screen full of resource-consuming buttons went unrecognised), and the page then changed MAP -> MAIL between two probes 30 s apart, coinciding with an inbound mail stamped 21:30:06 local.",
+  "recorded_at": "2026-09-15T13:36:12+00:00"
+}

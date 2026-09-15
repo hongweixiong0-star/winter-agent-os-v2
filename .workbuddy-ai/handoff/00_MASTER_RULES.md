@@ -433,3 +433,49 @@ AUTO 连续运行 ≥72h，且：
 - **真实支付永远不会发生**
 
 达成后开始 5–7 天 Soak。
+
+## 23. Codex Commander Queue（2026-09-15 增补）
+
+Codex 是低频的「指挥官」：它不在线时，WorkBuddy 必须能自己把队列跑下去。
+接口是机器可读的，**不允许要求操作者手工复制指令**。
+
+`E:\无尽冬日智能体\.workbuddy-ai\commander\`
+| 文件 | 谁写 | 作用 |
+|---|---|---|
+| `WORK_QUEUE.json` | **Codex 写** | 正式任务接口，含 `priority` / `dependencies` / `files_scope` / `do_not_touch` / `acceptance` / `timebox_minutes` / `status` |
+| `results/<task_id>.json` | WorkBuddy 写 | 每个 Work Order 的回报 |
+| `EXECUTION_STATE.json` | WorkBuddy 写 | 队列执行状态（唯一写入方是 `tools/cq.py`） |
+| `BLOCKED_QUEUE.json` | WorkBuddy 写 | timebox 内做不到的任务 |
+| `REVIEW_REQUESTS.md` | WorkBuddy 写 | 需要 Codex 高级分析的问题 |
+
+**接管后必做**（`START_HERE.md` 第 3.5 步）：
+
+```bash
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py init
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py plan
+```
+
+**可执行判据（两个都要满足）**：`status == "READY"` **且** `dependencies` 里每一项都已有终态。
+`QUEUED`（Codex 有意压着）与 `WAITING_FOR_NATURAL_STATE`（需要真机自然到达的状态）
+**不是可执行任务**，不要为了"完成任务"而去制造那个状态。
+
+**排序**：`priority`（P0<P1<P2）→ 队列内声明顺序。
+
+**每个 Work Order 固定十步**：
+`READ EVIDENCE → TOOL CHECK → IMPLEMENT → TARGETED TEST → REPLAY → LIVE → VERIFY → BEFORE/AFTER → REPORT → NEXT`
+报文字段固定为：
+`TASK_ID ROOT_CAUSE CHANGED_FILES TEST_RESULT LIVE_ATTEMPTS LIVE_SUCCESS LIVE_FAILURE BEFORE AFTER VERIFIER_RESULT EVIDENCE PATCH_STATUS REMAINING_ISSUE NEXT_RECOMMENDATION`
+
+`cq.py finish` 会**拒绝**缺少必填字段的回报；`--require-live` 再拒绝没有 `LIVE_EVIDENCE`
+却宣称完成的回报。**队列不会让虚报变便宜。**
+
+**timebox 到了就承认，然后换下一项**：`cq.py block <id> --result <file>`，
+内容必须含 `root_cause_found` / `attempts` / `changes_made` / `evidence` / `blocker` /
+`recommended_codex_review`。**禁止死磕，禁止停下来问操作者。**
+
+**队列不豁免本文件任何铁律**：架构冻结（§2）、真机证据（§6/§18）、
+付费红线（§8）、不伪造完成（§20）在队列任务内**同样生效**。
+若队列任务与铁律冲突（例如要求改冻结架构），**不执行**，改写进 `REVIEW_REQUESTS.md`。
+
+**队列任务的 target_metric 由 Codex 依据当时的 handoff 写出，可能过时**：
+执行时必须用生产证据核对它。**做不到就如实写 REMAINING_ISSUE，不要为了对齐指标而粉饰。**

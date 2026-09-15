@@ -332,8 +332,19 @@ class LiveRuntime:
             # the ADB device so the fallback can actually reach ADB, while every
             # evidence frame comes from MAA.  Reporting the executor's device here
             # would have labelled MAA-captured frames as ADB.
+            #
+            # Gated on the frames existing, NOT on the action having executed.
+            # Those are different questions and conflating them was a measured
+            # defect (WB-EXECUTOR-EVIDENCE-AUDIT, 2026-09-15): six failed
+            # TAP_SEMANTIC steps whose target never resolved -- every one of them
+            # with a real before frame on disk -- reported capture_backend="",
+            # so the field that exists to say "which channel produced these
+            # frames" said nothing, while empty also meant "no action ran".  The
+            # field now answers its own question; whether the action reached a
+            # backend is still reported, separately and correctly, by
+            # executor_backend.
             capture_backend=(getattr(self.device, "capture_backend", "ADB_EXEC_OUT")
-                             if execution is not None and execution.executed else ""),
+                             if (before_screenshot or after_screenshot) else ""),
             recognition_backend=execution.recognition_backend if execution is not None else "",
             action_backend=execution.backend if execution is not None else "",
             executor_latency_ms=execution.latency_ms if execution is not None else None,

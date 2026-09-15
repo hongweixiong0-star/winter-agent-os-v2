@@ -73,9 +73,12 @@ _COMMON_DUNDERS = frozenset(
 )
 
 
-def _parse_package() -> dict[str, ast.Module]:
+def _parse_package(pkg: Path | None = None) -> dict[str, ast.Module]:
+    # ``pkg`` is resolved at call time, never captured: the tests point ``PKG``
+    # at a scratch copy and must keep working without touching this default.
+    root = PKG if pkg is None else pkg
     trees: dict[str, ast.Module] = {}
-    for path in sorted(PKG.glob("*.py")):
+    for path in sorted(root.glob("*.py")):
         try:
             trees[path.stem] = ast.parse(path.read_text(encoding="utf-8"))
         except SyntaxError as exc:  # pragma: no cover - surfaced as a miss
@@ -84,9 +87,9 @@ def _parse_package() -> dict[str, ast.Module]:
     return trees
 
 
-def _definitions() -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+def _definitions(pkg: Path | None = None) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     """Return (class-name -> method-names, module -> module-level function names)."""
-    trees = _parse_package()
+    trees = _parse_package(pkg)
     class_methods: dict[str, set[str]] = {}
     module_funcs: dict[str, set[str]] = {}
     for mod, tree in trees.items():
@@ -117,8 +120,11 @@ def _base_names(cls: ast.ClassDef) -> list[str]:
     return out
 
 
-def dangling_self_calls() -> list[tuple[str, str]]:
+def dangling_self_calls(pkg: Path | None = None) -> list[tuple[str, str]]:
     """Every `self.foo(...)` whose `foo` resolves to no method on the class.
+
+    ``pkg`` selects the directory to sweep and defaults to the package, so the
+    caller can also point it at ``tools/`` or ``tests/`` -- see main().
 
     Deliberately scoped so the signal stays trustworthy:
       * only attributes starting with `_` are considered -- that is the private
@@ -130,8 +136,8 @@ def dangling_self_calls() -> list[tuple[str, str]]:
       * methods reached through a locally-bound `self` parameter are still
         covered because their callee is a `self.` attribute of some class.
     """
-    trees = _parse_package()
-    class_methods, _ = _definitions()
+    trees = _parse_package(pkg)
+    class_methods, _ = _definitions(pkg)
     package_wide = set()
     for methods in class_methods.values():
         package_wide |= methods
@@ -217,7 +223,7 @@ def _module_scope_names(tree: ast.Module) -> set[str]:
     return names
 
 
-def dangling_module_calls() -> list[tuple[str, str]]:
+def dangling_module_calls(pkg: Path | None = None) -> list[tuple[str, str]]:
     """Every bare `foo(...)` that resolves to no function, import, or builtin.
 
     The pay-off case is a module-level helper that a class calls but nobody
@@ -229,7 +235,7 @@ def dangling_module_calls() -> list[tuple[str, str]]:
     by collecting every binding at module scope, including imports, class names,
     assignments, comprehension targets, and function parameters.
     """
-    trees = _parse_package()
+    trees = _parse_package(pkg)
     builtin_names = set(dir(builtins))
     found: list[tuple[str, str]] = []
     for mod, tree in trees.items():
@@ -344,6 +350,23 @@ def main() -> int:
     for label, detail in dangling_module_calls():
         check(label, False, detail)
     check("no dangling module-level call sites", not dangling_module_calls())
+
+    # The package is not where new code comes from.  Every session adds scripts
+    # under tools/ and tests/, neither of which had ever been swept -- and the
+    # unattended entry points (run_live.py, run_intel_pins.py) live in tools/.
+    # The 0aw class of bug is just as easy to introduce there: a call site that
+    # resolves to no definition is syntactically valid, so import and pytest stay
+    # green and the AttributeError waits for the one path that reaches it.
+    #
+    # Measured before extending (2026-09-15): 0 hits in both directories across
+    # 162 files, so this adds signal rather than noise.
+    print("\n-- dangling call sites outside the package (tools/, tests/) --")
+    for extra in (ROOT / "tools", ROOT / "tests"):
+        self_hits = dangling_self_calls(extra)
+        mod_hits = dangling_module_calls(extra)
+        for label, detail in self_hits + mod_hits:
+            check(label, False, detail)
+        check(f"no dangling calls in {extra.name}/", not (self_hits or mod_hits))
 
     print(f"\nproblems: {len(problems)}")
     for name in problems:

@@ -1,0 +1,79 @@
+{
+  "updated_at": "2026-09-15T15:18:47+00:00",
+  "queue_generated_at": "2026-09-15T20:45:00+08:00",
+  "current_task": null,
+  "tasks": {
+    "WB-0BA-PIN-EXHAUSTION": {
+      "status": "DONE",
+      "priority": "P0",
+      "queue_status": "READY",
+      "result_file": "results/WB-0BA-PIN-EXHAUSTION.json",
+      "started_at": "2026-09-15T13:29:12+00:00",
+      "finished_at": "2026-09-15T13:36:12+00:00",
+      "verdict": "DONE",
+      "summary": "Fresh live run 2026-09-15T13:34:54Z-13:35:35Z, goal INTEL, 4 steps, exit 0. step1 OPEN_INTEL MAP->INTEL OK (backend MAA, capture MAA_MUMU_EXTRAS, 50.93 ms); step2 SELECT_INTEL_PIN INTEL->POPUP OK (intel_after BLOCKED/MASTER_BOUNTY/level 20); step3 BACK POPUP->INTEL OK (reason intel_master_bounty_pow"
+    },
+    "WB-0BB-STAMINA-ROUTE": {
+      "status": "DONE",
+      "priority": "P0",
+      "queue_status": "READY",
+      "result_file": "results/WB-0BB-STAMINA-ROUTE.json",
+      "started_at": "2026-09-15T13:37:06+00:00",
+      "finished_at": "2026-09-15T13:37:53+00:00",
+      "verdict": "DONE",
+      "summary": "CLOSED LOOP, one run, production evidence (episode_id codex_0ba_0bb_live_20260915, 2026-09-15T12:30:55Z -> 12:32:08Z, goal CLEAR_INTEL/AVOID_STAMINA_WASTE, mode PRODUCTION): step1 BACK INTEL->MAP verifier OK (executor MAA); step2 OPEN_STAMINA_SOURCES MAP->POPUP, target HUD_STAMINA_GAUGE, verifier OK"
+    },
+    "WB-0AZ-BEAST-BACK-VERIFY": {
+      "status": "BLOCKED",
+      "priority": "P1",
+      "queue_status": "READY",
+      "result_file": null,
+      "started_at": "2026-09-15T13:39:39+00:00",
+      "finished_at": "2026-09-15T13:40:50+00:00",
+      "verdict": "BLOCKED",
+      "blocker": "Page.BEAST + beast.available == false is not reachable from the current live client without pressing an unmeasured control (前往查看 on a power-blocked 大师悬赏 popup). The work order's stop_condition forbids manufacturing that state, and its fallback_action names this exact outcome. Everything short of the live run is now verified: the repair is dispatched by the real runtime, verified by the real verifier, cannot ping-pong, cannot shadow real work, and cannot be shadowed by an earlier branch. What is NOT verified is one live run that starts on the card."
+    },
+    "WB-0AX-COST-RED-LIVE": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": "WAITING_FOR_NATURAL_STATE",
+      "result_file": null
+    },
+    "WB-0AW-WIRING-COVERAGE": {
+      "status": "DONE",
+      "priority": "P1",
+      "queue_status": "READY",
+      "result_file": "results/WB-0AW-WIRING-COVERAGE.json",
+      "started_at": "2026-09-15T13:41:13+00:00",
+      "finished_at": "2026-09-15T15:11:41+00:00",
+      "verdict": "DONE_STATIC_ONLY",
+      "summary": "All three directories swept in one command: winter_agent_v2 (36 files), tools (78), tests (84) -- 198 files, 0 dangling self-call sites, 0 dangling module-level call sites. Both new sweeps report OK inside the normal check_wiring.py run, so the coverage report is now part of every routine execution "
+    },
+    "WB-EXECUTOR-EVIDENCE-AUDIT": {
+      "status": "DONE",
+      "priority": "P1",
+      "queue_status": "READY",
+      "result_file": "results/WB-EXECUTOR-EVIDENCE-AUDIT.json",
+      "started_at": "2026-09-15T15:11:57+00:00",
+      "finished_at": "2026-09-15T15:17:17+00:00",
+      "verdict": "DONE",
+      "summary": "Live run 2026-09-15T15:16:47Z (goal INTEL, from HOME) produced episode OPEN_MAP with capture_backend=MAA_MUMU_EXTRAS, recognition_backend=V2, action_backend=ADB, executor_backend=ADB -- all four present on a FAILED step. Every episode recorded from 12:59:36Z onward is complete on all four fields (CH"
+    },
+    "WB-RUNTIME-EXIT-ROOTCAUSE": {
+      "status": "DONE",
+      "priority": "P2",
+      "queue_status": "READY",
+      "result_file": "results/WB-RUNTIME-EXIT-ROOTCAUSE.json",
+      "started_at": "2026-09-15T15:17:33+00:00",
+      "finished_at": "2026-09-15T15:18:47+00:00",
+      "verdict": "DONE_REPORT_ONLY",
+      "summary": "Stratified from evidence. (a) The counter is written ONLY by tools/control_panel.py, and that GUI is not running, so nothing has incremented it recently. (b) learning/control_panel/crashes/ does not exist and latest.log is 0 bytes, mtime 2026-09-14T03:45:35Z. (c) Across all 1284 episodes there is no"
+    },
+    "WB-GOAL-LOW-RISK-COVERAGE": {
+      "status": "PENDING",
+      "priority": "P2",
+      "queue_status": "QUEUED",
+      "result_file": null
+    }
+  }
+}

@@ -883,7 +883,13 @@ def last_handoff_block(state: dict) -> str:
         "",
         "KNOWN RISKS:",
         "- Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.",
-        "- `unexpected_worker_exits` before 2026-09-14 has no traceback and cannot be attributed.",
+        # Audited 2026-09-15 (WB-RUNTIME-EXIT-ROOTCAUSE).  This number is quoted in
+        # every handoff, so what it does and does not mean belongs next to it.
+        "- `unexpected_worker_exits` is a BARE COUNTER WITH TWO WRITERS, both in tools/control_panel.py."
+        " The classified path counts only `WORKER_CRASH` and promises a traceback under"
+        " learning/control_panel/crashes/; the unclassified fallback `_handle_runtime_error` counts"
+        " EVERY non-fatal error whatever its cause. No crash reports exist and latest.log is 0 bytes,"
+        " so the historical total cannot be read as 'worker crashes' and must not be zeroed.",
         "",
         "DO NOT REPEAT:",
         "- Do not re-derive resource-tab coordinates from memory; read the bracket anchor (vision.selected_resource).",

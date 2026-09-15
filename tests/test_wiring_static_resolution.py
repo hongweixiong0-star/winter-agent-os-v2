@@ -149,3 +149,38 @@ def test_analyzer_tolerates_a_real_private_helper(checker, scratch_pkg):
     target.write_text(source + probe, encoding="utf-8")
     labels = [label for label, _ in checker.dangling_self_calls()]
     assert not any("_defined_here" in label for label in labels), labels
+
+
+# ---------------------------------------------------------------------------
+# Scope: the sweep must cover where new code is actually written.
+#
+# Failure 0aw was fixed by adding AST resolution, but the sweep only walked
+# winter_agent_v2/.  Every session adds scripts under tools/ and tests/ instead,
+# and the unattended entry points (run_live.py, run_intel_pins.py) live in
+# tools/, so the same class of bug could reappear there unseen.
+# ---------------------------------------------------------------------------
+
+
+def test_the_sweep_analyses_the_directory_it_is_given(checker, tmp_path):
+    """A sweep that ignored its argument would report tools/ clean unconditionally.
+
+    Without this control, ``dangling_self_calls(ROOT / "tools")`` could quietly
+    analyse the package and still pass the real-tree assertion.
+    """
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    (scratch / "broken.py").write_text(
+        "class A:\n    def go(self):\n        return self._not_defined_anywhere()\n",
+        encoding="utf-8",
+    )
+    labels = [label for label, _ in checker.dangling_self_calls(scratch)]
+    assert any("_not_defined_anywhere" in label for label in labels), labels
+    assert all("broken" in label for label in labels), labels
+
+
+def test_real_tools_and_tests_are_clean(checker):
+    for name in ("tools", "tests"):
+        directory = ROOT / name
+        assert directory.is_dir(), directory
+        assert checker.dangling_self_calls(directory) == [], name
+        assert checker.dangling_module_calls(directory) == [], name

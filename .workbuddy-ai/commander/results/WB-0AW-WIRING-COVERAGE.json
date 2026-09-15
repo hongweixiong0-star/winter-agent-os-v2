@@ -1,0 +1,25 @@
+{
+  "TASK_ID": "WB-0AW-WIRING-COVERAGE",
+  "ROOT_CAUSE": "The AST resolution added for 0aw swept only winter_agent_v2/. That is not where new code is written: every session adds scripts under tools/ and tests/ instead, and the unattended entry points -- run_live.py and run_intel_pins.py -- live in tools/. So the check's coverage did not match the surface that actually changes, which is the same 'coverage is not execution' gap that produced 0aw in the first place, one level up. Nothing was wrong with the analyzer; it was pointed at the wrong directory.",
+  "CHANGED_FILES": [
+    "tools/check_wiring.py (both analyzers gained an optional pkg argument, resolved at call time so the existing tests that reassign PKG keep working; main() now also sweeps tools/ and tests/)",
+    "tests/test_wiring_static_resolution.py (+2 tests: the sweep must analyse the directory it is given, and the real tools/ and tests/ must be clean)",
+    "tools/cq_0aw_scope_probe.py (new: the measurement that preceded the change)"
+  ],
+  "TEST_RESULT": "pytest tests/test_wiring_static_resolution.py -q => 9 passed in 3.31s (exit 0). tools/check_wiring.py => problems: 0 (exit 0), with the two new lines 'OK no dangling calls in tools/' and 'OK no dangling calls in tests/' now printed on every run.",
+  "LIVE_ATTEMPTS": 0,
+  "LIVE_SUCCESS": 0,
+  "LIVE_FAILURE": 0,
+  "BEFORE": "Scope was winter_agent_v2/ only: 36 files swept, while tools/ (78 files) and tests/ (84 files) had never been swept for this class of bug by any session. The target metric was satisfied only for the package.",
+  "AFTER": "All three directories swept in one command: winter_agent_v2 (36 files), tools (78), tests (84) -- 198 files, 0 dangling self-call sites, 0 dangling module-level call sites. Both new sweeps report OK inside the normal check_wiring.py run, so the coverage report is now part of every routine execution rather than something a session has to remember to ask for.",
+  "VERIFIER_RESULT": "Not applicable: this is a static-analysis task with no live action, which the work order itself states (live_plan: 'does not need the real device; it is a pre-check for every live task'). Detection power was proven rather than assumed: the analyzer was measured over both new directories BEFORE the change (0 hits in 162 files, so the extension adds signal and not noise), and a new negative control writes a scratch directory containing class A with a call to self._not_defined_anywhere() and asserts dangling_self_calls(that directory) reports it -- which also proves the sweep honours its argument instead of silently re-analysing the package.",
+  "EVIDENCE": [
+    "out_0aw_gate2.txt (check_wiring.py: problems: 0, including the two new tools//tests/ checks; pytest 9 passed)",
+    "out_0aw_scope.txt (pre-change measurement: winter_agent_v2 36 files 0 hits; tools 78 files 0 hits; tests 84 files 0 hits)",
+    "other evidence from this session: out_0ba_check.txt, out_0bb_gate.txt, out_0az_gate3.txt all show problems: 0, and all of them now exercise the widened sweep"
+  ],
+  "PATCH_STATUS": "DONE_STATIC_ONLY",
+  "REMAINING_ISSUE": "Two honest limits. (1) This sweep is textual and name-based. A dangling call reached through dynamic dispatch -- getattr(self, name)(), a callback passed in from config, a name bound only inside exec -- is invisible to it, by construction. It closes the 0aw shape, not every possible unresolved call. (2) The scope is a fixed list of three directories. If a new top-level source directory is ever added, nothing will remind anyone to include it; the natural guard would be to sweep every directory that contains .py files, but that would sweep the pytest scratch dirs and the archived copies and would very likely make the checker noisy, which is the failure mode that gets a checker disabled. The fixed list is the deliberate trade.",
+  "NEXT_RECOMMENDATION": "Nothing further on this task. It is cheap and it is now automatic. The next order in the queue, WB-EXECUTOR-EVIDENCE-AUDIT, depends on this one and is now unblocked; note that its subject matter overlaps a finding from WB-0BB -- episode records carry no decision-reason field, so several work orders cannot prove WHY a run did what it did. If the audit touches episode provenance, adding that field is the single highest-leverage change available, because it would make trigger questions answerable in one query instead of by inference.",
+  "recorded_at": "2026-09-15T15:11:41+00:00"
+}

@@ -1,0 +1,523 @@
+{
+  "generated_at": "2026-09-15T20:45:00+08:00",
+  "project": "E:\\无尽冬日智能体",
+  "mode": "LOW_FREQUENCY_COMMANDER",
+  "execution_window_hours": 24,
+  "rules": {
+    "order": "priority_desc",
+    "one_scheduler": true,
+    "no_architecture_redesign": true,
+    "live_evidence_required": true,
+    "real_payment_blocked": true,
+    "timebox_enforced": true
+  },
+  "orders": [
+    {
+      "task_id": "WB-0BA-PIN-EXHAUSTION",
+      "priority": "P0",
+      "objective": "完成情报 pin 耗尽语义修复的生产闭环，确认不再产生 SEMANTIC_TARGET_NOT_VERIFIED 或无效回程。",
+      "why_now": "这是当前最高频失败的已定位第三个子成因，且修复刚完成但尚未由完整真机链路确认。",
+      "current_evidence": "2026-09-15 10:02 生产记录中 SELECT_INTEL_PIN 失败 2 次；代码会对已点 pin 返回 None。",
+      "root_cause": "本轮已尝试 pin 被解析器刻意拒绝，但执行层把 None 统一记为视觉目标失败。",
+      "root_cause_confidence": 0.99,
+      "required_tool": "现有 LiveRuntime、RuleBrain、intel_pin_centers、run_live.py、run_intel_pins.py。",
+      "preferred_backend": "MAA capture/action + V2 semantic vision",
+      "fallback_backend": "ADB capture/action",
+      "files_to_inspect": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/brain.py",
+        "tools/run_intel_pins.py",
+        "tests/test_intel_pin_exhaustion.py"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/brain.py",
+        "tools/run_live.py",
+        "tests/test_intel_pin_exhaustion.py"
+      ],
+      "do_not_touch": [
+        "scheduler architecture",
+        "registry architecture",
+        "historical episodes",
+        "paid controls"
+      ],
+      "implementation_hint": "继续使用同一 before frame 的 detected/untried pin 列表；耗尽时使用可接受的 deferral stop reason；不要把 CLEAR_INTEL 标为 COMPLETE。",
+      "test_plan": [
+        "pytest tests/test_intel_pin_exhaustion.py tests/test_stamina_supply_clock.py tests/test_live_runtime.py -q",
+        "tools/check_wiring.py"
+      ],
+      "live_plan": [
+        "run_live.py --goal INTEL --max-actions 12",
+        "若 pin 出现则运行 tools/run_intel_pins.py 3"
+      ],
+      "acceptance": [
+        "耗尽 pin 时无 TAP_SEMANTIC",
+        "无 SEMANTIC_TARGET_NOT_VERIFIED",
+        "verifier 全部 PASS",
+        "stop reason 可解释且不完成 CLEAR_INTEL"
+      ],
+      "before_metric": "SELECT_INTEL_PIN 失败 2 条；无 untried_pins 状态",
+      "target_metric": "0 次耗尽误报；0 次无效 BACK 往返；所有停止均为 intel_no_untried_pins",
+      "timebox_minutes": 90,
+      "stop_condition": "90 分钟内没有新的真机证据或根因被推翻",
+      "fallback_action": "保存 before/after/evidence，标记 BLOCKED，继续 WB-0BB 或 WB-0AX",
+      "dependencies": [],
+      "status": "READY",
+      "recommended_tool": "现有 LiveRuntime、RuleBrain、intel_pin_centers、run_live.py、run_intel_pins.py。",
+      "root_cause_or_hypothesis": "本轮已尝试 pin 被解析器刻意拒绝，但执行层把 None 统一记为视觉目标失败。",
+      "files_scope": {
+        "inspect": [
+          "winter_agent_v2/runtime.py",
+          "winter_agent_v2/brain.py",
+          "tools/run_intel_pins.py",
+          "tests/test_intel_pin_exhaustion.py"
+        ],
+        "modify": [
+          "winter_agent_v2/runtime.py",
+          "winter_agent_v2/brain.py",
+          "tools/run_live.py",
+          "tests/test_intel_pin_exhaustion.py"
+        ]
+      }
+    },
+    {
+      "task_id": "WB-0BB-STAMINA-ROUTE",
+      "priority": "P0",
+      "objective": "验证补给时钟到期后的完整路线：情报页返回地图、打开免费体力面板、领取、回到主任务。",
+      "why_now": "真机已证实 INTEL→MAP、OPEN_STAMINA_SOURCES、CLAIM_FREE_STAMINA 各自成功，但尚未在同一次无人值守链路闭环。",
+      "current_evidence": "2026-09-15 20:30 生产 episode：BACK INTEL→MAP、OPEN_STAMINA_SOURCES MAP→POPUP、CLAIM_FREE_STAMINA 成功，体力 140→290。",
+      "root_cause": "此前大脑选择 OPEN_MAP，但该技能 HOME-only，导致调度器 skill_not_ready；已改为实测可验证的 BACK。",
+      "root_cause_confidence": 0.98,
+      "required_tool": "现有 StaminaSupplyStore、LiveRuntime、MAA、run_live.py。",
+      "preferred_backend": "MAA",
+      "fallback_backend": "ADB",
+      "files_to_inspect": [
+        "winter_agent_v2/brain.py",
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/stamina_supply.py",
+        "tests/test_stamina_supply_clock.py"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/brain.py",
+        "winter_agent_v2/runtime.py",
+        "tests/test_stamina_supply_clock.py"
+      ],
+      "do_not_touch": [
+        "paid stamina rows",
+        "stamina item policy",
+        "scheduler architecture"
+      ],
+      "implementation_hint": "只在 next_supply_at 到期窗口触发；免费领取后核对体力增加和倒计时重新落盘；未到期只返回地图并继续任务。",
+      "test_plan": [
+        "pytest tests/test_stamina_supply_clock.py tests/test_intel_pin_exhaustion.py -q",
+        "tools/check_wiring.py"
+      ],
+      "live_plan": [
+        "从当前客户端状态运行 run_live.py --goal INTEL --max-actions 12",
+        "保留每一步 episode 与体力 before/after"
+      ],
+      "acceptance": [
+        "BACK verifier PASS",
+        "免费领取 verifier PASS",
+        "体力真实增加",
+        "付费控件零点击",
+        "不因普通失败停止 AUTO"
+      ],
+      "before_metric": "各步骤分散验证；完整闭环未证实",
+      "target_metric": "至少 1 次同运行闭环，体力 +150，0 paid taps",
+      "timebox_minutes": 90,
+      "stop_condition": "补给未到期且继续运行会消耗资源，或 90 分钟无法获得可归因状态变化",
+      "fallback_action": "保存当前时钟与证据，标记 WAITING_FOR_DUE_WINDOW，不人为消耗体力制造状态",
+      "dependencies": [
+        "WB-0BA-PIN-EXHAUSTION"
+      ],
+      "status": "READY",
+      "recommended_tool": "现有 StaminaSupplyStore、LiveRuntime、MAA、run_live.py。",
+      "root_cause_or_hypothesis": "此前大脑选择 OPEN_MAP，但该技能 HOME-only，导致调度器 skill_not_ready；已改为实测可验证的 BACK。",
+      "files_scope": {
+        "inspect": [
+          "winter_agent_v2/brain.py",
+          "winter_agent_v2/runtime.py",
+          "winter_agent_v2/stamina_supply.py",
+          "tests/test_stamina_supply_clock.py"
+        ],
+        "modify": [
+          "winter_agent_v2/brain.py",
+          "winter_agent_v2/runtime.py",
+          "tests/test_stamina_supply_clock.py"
+        ]
+      }
+    },
+    {
+      "task_id": "WB-0AZ-BEAST-BACK-VERIFY",
+      "priority": "P1",
+      "objective": "在 BLOCKED 巨兽卡上验证第 1 步 BACK→MAP 的无人值守恢复。",
+      "why_now": "落点已测量，整链尚未真机复验；这是避免自动化静默停摆的关键恢复。",
+      "current_evidence": "probe_back_from_beast.py 已证实 BEAST→MAP；修复后尚无从 BLOCKED 卡起步的 run。",
+      "root_cause": "非可行动巨兽卡原先 SAFE_STOP 且客户端停留原页，下一轮继续撞同一死结。",
+      "root_cause_confidence": 0.99,
+      "required_tool": "probe_back_from_beast.py、run_live.py、verify_safe_back。",
+      "preferred_backend": "MAA action/capture",
+      "fallback_backend": "ADB press_back + screenshot",
+      "files_to_inspect": [
+        "winter_agent_v2/brain.py",
+        "winter_agent_v2/runtime.py",
+        "tests/test_beast_card_dead_end_recovery.py"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/brain.py",
+        "winter_agent_v2/runtime.py",
+        "tests/test_beast_card_dead_end_recovery.py"
+      ],
+      "do_not_touch": [
+        "MAX_NAV_CYCLES",
+        "beast mission identity rules"
+      ],
+      "implementation_hint": "只允许一次性离开守卫；若 BACK 未改变页面，后续 SAFE_STOP 必须保留原 reason。",
+      "test_plan": [
+        "pytest tests/test_beast_card_dead_end_recovery.py -q"
+      ],
+      "live_plan": [
+        "把客户端保持在 BLOCKED 卡后运行 run_live.py --goal INTEL --max-actions 4"
+      ],
+      "acceptance": [
+        "第 1 步 BACK",
+        "BEAST→MAP verifier PASS",
+        "无卡↔地图乒乓",
+        "stop reason 不为 beast_not_actionable"
+      ],
+      "before_metric": "整链未真机验证；历史每轮第 1 步停止",
+      "target_metric": "1/1 起步恢复成功",
+      "timebox_minutes": 60,
+      "stop_condition": "无法安全复现 BLOCKED 卡，禁止人为花费资源制造卡片",
+      "fallback_action": "保留已测量证据，标记 LIVE_BLOCKED_BY_STATE",
+      "dependencies": [],
+      "status": "READY",
+      "recommended_tool": "probe_back_from_beast.py、run_live.py、verify_safe_back。",
+      "root_cause_or_hypothesis": "非可行动巨兽卡原先 SAFE_STOP 且客户端停留原页，下一轮继续撞同一死结。",
+      "files_scope": {
+        "inspect": [
+          "winter_agent_v2/brain.py",
+          "winter_agent_v2/runtime.py",
+          "tests/test_beast_card_dead_end_recovery.py"
+        ],
+        "modify": [
+          "winter_agent_v2/brain.py",
+          "winter_agent_v2/runtime.py",
+          "tests/test_beast_card_dead_end_recovery.py"
+        ]
+      }
+    },
+    {
+      "task_id": "WB-0AX-COST-RED-LIVE",
+      "priority": "P1",
+      "objective": "等待自然低体力场景，验证红色花费是客户端拒绝而非视觉失败。",
+      "why_now": "回放已零错分，真机仅验证可支付侧；不可为验证而主动消耗体力。",
+      "current_evidence": "失败帧 4/4 pHash=26、强红像素=452；成功帧 25/25 pHash=0、红像素=0。",
+      "root_cause": "客户端将不可负担花费显示为红色，白色模板因此不命中。",
+      "root_cause_confidence": 0.99,
+      "required_tool": "现有 unaffordable_cost_pixels、run_live.py、episode evidence。",
+      "preferred_backend": "MAA capture + V2 colour evidence",
+      "fallback_backend": "ADB capture",
+      "files_to_inspect": [
+        "winter_agent_v2/ocr.py",
+        "winter_agent_v2/brain.py",
+        "winter_agent_v2/runtime.py"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/ocr.py",
+        "winter_agent_v2/brain.py",
+        "winter_agent_v2/runtime.py",
+        "tests"
+      ],
+      "do_not_touch": [
+        "cost templates",
+        "paid controls",
+        "stamina inventory policy"
+      ],
+      "implementation_hint": "只收集自然产生的红色 before frame；确认 SAFE_STOP reason 为 dispatch_unaffordable_for_stamina。",
+      "test_plan": [
+        "现有 cost colour tests",
+        "tools/check_wiring.py"
+      ],
+      "live_plan": [
+        "自动循环中被动等待低体力出征场景，不人为花体力"
+      ],
+      "acceptance": [
+        "红色帧不点出征",
+        "reason 可区分",
+        "无支付动作",
+        "production evidence 可追溯"
+      ],
+      "before_metric": "真机红色拒绝 0 次",
+      "target_metric": "自然产生至少 1 次红色拒绝并正确停下",
+      "timebox_minutes": 60,
+      "stop_condition": "需要人为消耗体力才能触发",
+      "fallback_action": "仅记录 WAITING_FOR_NATURAL_LOW_STAMINA，不改代码",
+      "dependencies": [],
+      "status": "WAITING_FOR_NATURAL_STATE",
+      "recommended_tool": "现有 unaffordable_cost_pixels、run_live.py、episode evidence。",
+      "root_cause_or_hypothesis": "客户端将不可负担花费显示为红色，白色模板因此不命中。",
+      "files_scope": {
+        "inspect": [
+          "winter_agent_v2/ocr.py",
+          "winter_agent_v2/brain.py",
+          "winter_agent_v2/runtime.py"
+        ],
+        "modify": [
+          "winter_agent_v2/ocr.py",
+          "winter_agent_v2/brain.py",
+          "winter_agent_v2/runtime.py",
+          "tests"
+        ]
+      }
+    },
+    {
+      "task_id": "WB-0AW-WIRING-COVERAGE",
+      "priority": "P1",
+      "objective": "把关键动态调用完整性检查纳入日常执行，并确认新改动没有悬空调用。",
+      "why_now": "此前 AttributeError 只有真机走到免费体力入口才暴露，静态 wiring=0 仍不足以保证覆盖。",
+      "current_evidence": "check_wiring.py 已能解析 self-private/module call，当前 problems: 0；仍缺少改动路径覆盖提示。",
+      "root_cause": "执行级检查不等于路径覆盖；新增方法合法但入口未被测试或真机走到。",
+      "root_cause_confidence": 0.97,
+      "required_tool": "check_wiring.py、pytest、git diff。",
+      "preferred_backend": "现有 AST wiring checker",
+      "fallback_backend": "Python AST 最小补充",
+      "files_to_inspect": [
+        "tools/check_wiring.py",
+        "tests/test_wiring_static_resolution.py"
+      ],
+      "files_allowed_to_modify": [
+        "tools/check_wiring.py",
+        "tests/test_wiring_static_resolution.py"
+      ],
+      "do_not_touch": [
+        "runtime architecture",
+        "business behavior"
+      ],
+      "implementation_hint": "仅补充改动模块的可达调用报告或负向测试，不新增 Manager。",
+      "test_plan": [
+        "pytest tests/test_wiring_static_resolution.py -q",
+        "tools/check_wiring.py"
+      ],
+      "live_plan": [
+        "不需要真机；作为每个 live task 的前置检查"
+      ],
+      "acceptance": [
+        "problems: 0",
+        "负向悬空调用可捕获",
+        "不误报协作者注入属性"
+      ],
+      "before_metric": "关键路径依赖人工 AST 核对",
+      "target_metric": "每次任务可自动报告 dangling calls=0",
+      "timebox_minutes": 45,
+      "stop_condition": "检查器需要大规模重写或误报现有合法注入",
+      "fallback_action": "保持当前 checker，记录 BLOCKED_QUEUE",
+      "dependencies": [],
+      "status": "READY",
+      "recommended_tool": "check_wiring.py、pytest、git diff。",
+      "root_cause_or_hypothesis": "执行级检查不等于路径覆盖；新增方法合法但入口未被测试或真机走到。",
+      "files_scope": {
+        "inspect": [
+          "tools/check_wiring.py",
+          "tests/test_wiring_static_resolution.py"
+        ],
+        "modify": [
+          "tools/check_wiring.py",
+          "tests/test_wiring_static_resolution.py"
+        ]
+      }
+    },
+    {
+      "task_id": "WB-EXECUTOR-EVIDENCE-AUDIT",
+      "priority": "P1",
+      "objective": "审计所有新增与近期生产 episode 的 backend 字段，找出 capture/recognition/action/executor 未完整记录的路径并做最小修复。",
+      "why_now": "MAA 已进入真实路径，但当前 production evidence 仍有大量空 backend 字段，无法量化迁移效果。",
+      "current_evidence": "已有 MAA live state：约 10ms capture；部分 episodes 仍显示空 executor_backend/capture_backend。",
+      "root_cause": "执行结果与 episode 记录的 backend provenance 在部分分支没有贯通。",
+      "root_cause_confidence": 0.9,
+      "required_tool": "EpisodeStore、truth_audit、maa_live_case、现有 backend ledger。",
+      "preferred_backend": "MAA for live capture/action",
+      "fallback_backend": "ADB with explicit provenance",
+      "files_to_inspect": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/executor_router.py",
+        "winter_agent_v2/learning.py",
+        "tools/truth_audit.py"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/runtime.py",
+        "winter_agent_v2/executor_router.py",
+        "winter_agent_v2/learning.py",
+        "tests"
+      ],
+      "do_not_touch": [
+        "historical episode rows",
+        "backend routing policy without evidence"
+      ],
+      "implementation_hint": "只修当前写入路径；历史空字段保留，并在读取端区分 legacy_unknown。",
+      "test_plan": [
+        "相关 episode/runtime tests",
+        "tools/truth_audit.py"
+      ],
+      "live_plan": [
+        "一次安全的 --max-actions 1 或 state probe，确认新 episode 四类 backend 字段"
+      ],
+      "acceptance": [
+        "新 episode 字段非空或明确 UNKNOWN",
+        "MAA/ADB provenance 可追溯",
+        "不污染历史统计"
+      ],
+      "before_metric": "backend provenance 完整率未知且存在空字段",
+      "target_metric": "新生成 episode provenance 完整率 100%",
+      "timebox_minutes": 75,
+      "stop_condition": "需要改历史数据或重构执行链",
+      "fallback_action": "生成缺口报告并标记 PARTIAL",
+      "dependencies": [
+        "WB-0AW-WIRING-COVERAGE"
+      ],
+      "status": "READY",
+      "recommended_tool": "EpisodeStore、truth_audit、maa_live_case、现有 backend ledger。",
+      "root_cause_or_hypothesis": "执行结果与 episode 记录的 backend provenance 在部分分支没有贯通。",
+      "files_scope": {
+        "inspect": [
+          "winter_agent_v2/runtime.py",
+          "winter_agent_v2/executor_router.py",
+          "winter_agent_v2/learning.py",
+          "tools/truth_audit.py"
+        ],
+        "modify": [
+          "winter_agent_v2/runtime.py",
+          "winter_agent_v2/executor_router.py",
+          "winter_agent_v2/learning.py",
+          "tests"
+        ]
+      }
+    },
+    {
+      "task_id": "WB-RUNTIME-EXIT-ROOTCAUSE",
+      "priority": "P2",
+      "objective": "对 unexpected_worker_exits=15 做证据分层，确认新增运行是否仍产生真实线程崩溃。",
+      "why_now": "72 小时验收的硬门槛是 0；历史 15 次不可归因，必须先建立新数据基线。",
+      "current_evidence": "runtime_snapshot: unexpected_worker_exits=15、watchdog_restart_count=13、last_fatal_error=null；近期无 crash report。",
+      "root_cause": "历史退出混合了环境失败、旧 wiring bug、真实 worker crash，当前没有足够 traceback 归因。",
+      "root_cause_confidence": 0.8,
+      "required_tool": "runtime_snapshot、control_panel latest.log、crashes、episodes、truth_audit。",
+      "preferred_backend": "现有 runtime evidence pipeline",
+      "fallback_backend": "手工分类最近运行产物",
+      "files_to_inspect": [
+        "winter_agent_v2/runtime_snapshot.py",
+        "tools/update_workbuddy_handoff.py",
+        "learning/control_panel"
+      ],
+      "files_allowed_to_modify": [
+        "winter_agent_v2/runtime_snapshot.py",
+        "tools/update_workbuddy_handoff.py",
+        "tests"
+      ],
+      "do_not_touch": [
+        "历史 unexpected_worker_exits 数字",
+        "watchdog semantics without evidence"
+      ],
+      "implementation_hint": "先分类新旧，不要为了好看清零；若没有新 crash，不要制造重启测试。",
+      "test_plan": [
+        "runtime snapshot tests",
+        "tools/truth_audit.py"
+      ],
+      "live_plan": [
+        "读取并观察一轮正常 bounded run 的 runtime transitions"
+      ],
+      "acceptance": [
+        "新运行 crash=0 或有完整 traceback",
+        "环境失败不计为 worker crash",
+        "72h 基线可解释"
+      ],
+      "before_metric": "历史 unexpected_worker_exits=15，不可归因",
+      "target_metric": "新增运行真实 crash=0，分类字段完整",
+      "timebox_minutes": 60,
+      "stop_condition": "需要人为制造崩溃或修改历史计数",
+      "fallback_action": "输出分类报告，保留 P2 open issue",
+      "dependencies": [
+        "WB-EXECUTOR-EVIDENCE-AUDIT"
+      ],
+      "status": "READY",
+      "recommended_tool": "runtime_snapshot、control_panel latest.log、crashes、episodes、truth_audit。",
+      "root_cause_or_hypothesis": "历史退出混合了环境失败、旧 wiring bug、真实 worker crash，当前没有足够 traceback 归因。",
+      "files_scope": {
+        "inspect": [
+          "winter_agent_v2/runtime_snapshot.py",
+          "tools/update_workbuddy_handoff.py",
+          "learning/control_panel"
+        ],
+        "modify": [
+          "winter_agent_v2/runtime_snapshot.py",
+          "tools/update_workbuddy_handoff.py",
+          "tests"
+        ]
+      }
+    },
+    {
+      "task_id": "WB-GOAL-LOW-RISK-COVERAGE",
+      "priority": "P2",
+      "objective": "在前述运行稳定后，从 NEVER_TRIED 中选择一个低风险、免费、可验证 Goal 做最小 live attempt。",
+      "why_now": "当前 Goal fully live verified 仅 2/16；但必须先守住情报与补给链，避免扩大失败面。",
+      "current_evidence": "Arena/Labyrinth/Alliance timed/research 等多数未尝试；免费奖励与训练已有较好证据。",
+      "root_cause": "能力缺口是真实未实现，不应靠文档或测试伪装完成。",
+      "root_cause_confidence": 0.95,
+      "required_tool": "goal_capability_map、registry、现有 live harness、MAA。",
+      "preferred_backend": "现有 V2 + MAA",
+      "fallback_backend": "ADB",
+      "files_to_inspect": [
+        "knowledge/goals/goal_capability_map.json",
+        "winter_agent_v2/skills.py",
+        "winter_agent_v2/goal_library.py"
+      ],
+      "files_allowed_to_modify": [
+        "对应 skill/goal 文件",
+        "tests",
+        "evidence metadata"
+      ],
+      "do_not_touch": [
+        "Arena/Labyrinth 大型脚本化架构",
+        "new scheduler/manager/registry"
+      ],
+      "implementation_hint": "优先选择免费、无选择、已有 verifier 的候选；Candidate 必须进入 live attempt pool。",
+      "test_plan": [
+        "目标相关 targeted tests",
+        "tools/check_wiring.py"
+      ],
+      "live_plan": [
+        "最多一次低风险 bounded attempt，失败即分类、恢复、跳过"
+      ],
+      "acceptance": [
+        "有真实状态变化和 verifier evidence 才升级 lifecycle",
+        "否则保持 CANDIDATE/BLOCKED"
+      ],
+      "before_metric": "fully_live_verified 2/16，21 skills never executed",
+      "target_metric": "新增 1 个低风险 live attempt；成功才推进 lifecycle",
+      "timebox_minutes": 90,
+      "stop_condition": "需要新架构、支付、账号安全或不可恢复状态",
+      "fallback_action": "写入 BLOCKED_QUEUE，禁止继续深挖边缘变体",
+      "dependencies": [
+        "WB-0BA-PIN-EXHAUSTION",
+        "WB-0BB-STAMINA-ROUTE",
+        "WB-RUNTIME-EXIT-ROOTCAUSE"
+      ],
+      "status": "QUEUED",
+      "recommended_tool": "goal_capability_map、registry、现有 live harness、MAA。",
+      "root_cause_or_hypothesis": "能力缺口是真实未实现，不应靠文档或测试伪装完成。",
+      "files_scope": {
+        "inspect": [
+          "knowledge/goals/goal_capability_map.json",
+          "winter_agent_v2/skills.py",
+          "winter_agent_v2/goal_library.py"
+        ],
+        "modify": [
+          "对应 skill/goal 文件",
+          "tests",
+          "evidence metadata"
+        ]
+      }
+    }
+  ]
+}

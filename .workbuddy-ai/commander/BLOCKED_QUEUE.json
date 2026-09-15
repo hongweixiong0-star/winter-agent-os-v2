@@ -1,0 +1,36 @@
+{
+  "updated_at": "2026-09-15T13:40:50+00:00",
+  "items": [
+    {
+      "task_id": "WB-0AZ-BEAST-BACK-VERIFY",
+      "root_cause_found": "Yes -- and it is a state-availability problem, not a code problem. The recovery itself is correct and now proven at integration level: BACK is registered, is present in LiveRuntime.VERIFIED_ATOMIC (71 entries), and the brain's BACK decision from a blocked card is goal-independent. The blocker is that Page.BEAST with beast.available=false cannot be reached without taking an action whose effect is unmeasured. That state arose earlier today only because the client was left there by natural operation; from the current state (INTEL board, one pin whose card is a BLOCKED MASTER_BOUNTY shown as a POPUP) the only visible route in is to press the 前往查看 control on that power-blocked bounty popup -- a control the current brain deliberately refuses (reason intel_master_bounty_power_blocked) precisely because the account's power is below the recommended 189,295,920. Pressing it by hand to manufacture a test state is what the work order's stop_condition forbids, and its side effects are not measured.",
+      "attempts": [
+        "Read the work order's live_plan and the acceptance list; established that the state required is Page.BEAST + beast.available == false.",
+        "Probed the live client with tools/probe_live_page.py at 2026-09-15T13:38:25Z: page=INTEL, confidence 0.98, intel={status AVAILABLE, pins 1, list_read true}, beast dict empty. Not the required state.",
+        "Searched for a safe route into the card: the intel board's single pin resolves to a MASTER_BOUNTY (level 20) presented as a POPUP, and the brain refuses that flow, so the pin route does not produce Page.BEAST.",
+        "Checked whether the harness could drive it instead: run_live.py --goal INTEL --max-actions 12 at 13:34:54Z tapped that pin, got the blocked master bounty, and took the designed BACK exit -- i.e. the live client actively refuses to enter the blocked-card state.",
+        "Checked whether anything else was moving the client, because the page changed MAP -> MAIL between two probes: examined all python processes (only a stuck pytest suite and an unrelated ollama script), confirmed no test instantiates a real device (they use Mock()/fakes), confirmed probe_live_page.py never taps, and confirmed ADBDevice.resolve_connection only issues adb connect. None of them tap, so no second driver exists.",
+        "Ran the integration check tools/cq_0az_integration.py: BACK in registry = True, in VERIFIED_ATOMIC = True, decision = BACK for every goal, reason non-fatal, and the only earlier exit in decide() is the unknown_page safe-stop which needs world.known == False. The 'fixed but never reached' risk is therefore closed structurally.",
+        "Wrote and ran a runtime-level REPLAY (tests/test_beast_card_runtime_recovery.py) that drives LiveRuntime.run over a blocked-card frame: 13 passed."
+      ],
+      "changes_made": [
+        "tests/test_beast_card_runtime_recovery.py (NEW, 5 tests). Runtime-level REPLAY for this recovery: step 1 dispatches BACK (execution.executed true), presses exactly one BACK and zero taps, and the step is verified through the real verify_safe_back. Includes the negative control (BACK that changes nothing => one BACK only, verification fails honestly as SAFE_BACK_NOT_PROVEN, run ends, stop reason is not beast_not_actionable) and a no-shadowing control (an available beast is still hunted, 1 tap, 0 backs).",
+        "tools/cq_0az_integration.py (NEW). Read-only integration check for this and future work orders: is the skill the brain names actually in the registry and in VERIFIED_ATOMIC, is the reason fatal, and is the branch reachable.",
+        "tools/escape_to_known_page.py (NEW, from the WB-0BA work order). BACK-only escape from an unrecognised screen; earlier in this session the client was found on the 英雄招募 gacha page classified UNKNOWN at confidence 0.0.",
+        "no change to winter_agent_v2: the recovery code itself is unchanged and correct"
+      ],
+      "evidence": [
+        "out_0az_gate3.txt (13 passed, check_wiring problems: 0)",
+        "out_0az_integration.txt (BACK in VERIFIED_ATOMIC True; BACK for every goal; reason non-fatal; first Page.BEAST reference line 211, only earlier exit is unknown_page)",
+        "out_0az_pingpong.txt (measured negative-control behaviour: stop_reason SAFE_BACK_NOT_PROVEN, 1 step, backs 1, taps 0)",
+        "out_0az_probe.txt (live probe 13:38:25Z: Page.INTEL, no beast dict -- the required state is absent)",
+        "out_0ba_live_run2.txt / out_0ba_parsed.txt (13:34:54Z run: the pin yields BLOCKED/MASTER_BOUNTY and the brain takes its designed BACK exit rather than entering the blocked card)",
+        "tools/probe_back_from_beast.py and the earlier measurement it records: one BACK on a real blocked card landed on MAP with stamina readable (110)",
+        "evidence/intel_pins_20260915_092119.json and evidence/intel_pins_20260915_095605.json (the two natural occurrences that stranded the client; the latter shows three identical steps=1 elapsed_s=5.4 nav cycles)"
+      ],
+      "blocker": "Page.BEAST + beast.available == false is not reachable from the current live client without pressing an unmeasured control (前往查看 on a power-blocked 大师悬赏 popup). The work order's stop_condition forbids manufacturing that state, and its fallback_action names this exact outcome. Everything short of the live run is now verified: the repair is dispatched by the real runtime, verified by the real verifier, cannot ping-pong, cannot shadow real work, and cannot be shadowed by an earlier branch. What is NOT verified is one live run that starts on the card.",
+      "recommended_codex_review": "Two questions only Codex can settle, both cheap to answer. (1) Is pressing 前往查看 on a power-blocked master bounty an acceptable state to enter? It is a navigation control (the dispatch control is 出征, which is separate), but its effect is unmeasured, and if the answer is yes then this work order becomes a five-minute live run the next time the client happens to be on the board with such a pin. If the answer is no, the honest resolution is to wait for the state to recur naturally -- it has happened at least twice today (09:21Z and 09:56Z) -- and capture the run then, so the order should be re-issued as WAITING_FOR_NATURAL_STATE rather than left READY. (2) Note for the same review: the recovery ends the run when BACK does not move the client (stop_reason SAFE_BACK_NOT_PROVEN, measured in this replay). That is honest and it stops the old permanent dead end, because every following run gets one fresh attempt at the escape; but if BACK is ever permanently ineffective nothing else on this page can move the client. No further action is recommended on current evidence."
+    }
+  ],
+  "rule": "Only add a task after its timebox expires without live improvement, root cause, blocker, or safe rollback."
+}

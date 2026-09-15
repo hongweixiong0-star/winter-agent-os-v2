@@ -95,7 +95,16 @@ class Executor:
             started = time.perf_counter()
             self.device.press_back()
             latency_ms = (time.perf_counter() - started) * 1000.0
-            return self._result(True, action, latency_ms=round(latency_ms, 2))
+            # A system key involves no recognition step, and saying so is not
+            # cosmetic: the router already reports "NONE" for this action, so
+            # omitting it here made the same action record a different value
+            # depending on whether it ran through the router.  Measured
+            # 2026-09-15 (WB-EXECUTOR-EVIDENCE-AUDIT): two successful BACK steps
+            # (accept_20260915_204301_run01/02) carried recognition_backend=""
+            # while their sibling MAA steps carried "NONE", and a reader cannot
+            # tell "no recognition was needed" from "the field was forgotten".
+            return self._result(True, action, latency_ms=round(latency_ms, 2),
+                                recognition_backend="NONE")
         if action.kind == "SWIPE":
             # ``target`` carries "x1_norm,y1_norm,x2_norm,y2_norm" and payload may
             # carry a duration. Used only to move scrollable in-game lists
