@@ -1,0 +1,140 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-15T12:44:20+00:00",
+  "source": "tools/run_gather_acceptance.py",
+  "acceptance_rule": "each resource completes the full chain (SUBMIT -> SELECT -> START_GATHER -> DISPATCH_MARCH) with every verifier passing",
+  "planned_runs": 2,
+  "plan": "auto",
+  "schedule": [
+    "MEAT",
+    "WOOD"
+  ],
+  "resources_requested": [
+    "MEAT",
+    "WOOD",
+    "COAL",
+    "IRON"
+  ],
+  "completed_runs": 2,
+  "aborted": null,
+  "tally": {
+    "MEAT": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "WOOD": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "COAL": {
+      "attempts": 0,
+      "full_chain_success": 0
+    },
+    "IRON": {
+      "attempts": 0,
+      "full_chain_success": 0
+    }
+  },
+  "runs": [
+    {
+      "run": 1,
+      "planned_resource": "MEAT",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260915_204301_run01",
+      "stop_reason": "intel_no_untried_pins",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SELECT_INTEL_PIN",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "INTEL",
+          "after_page": "POPUP",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        },
+        {
+          "index": 2,
+          "skill": "BACK",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "POPUP",
+          "after_page": "INTEL",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        },
+        {
+          "index": 3,
+          "skill": "SAFE_STOP",
+          "executed": null,
+          "error": null,
+          "verifier_ok": null,
+          "verifier_reason": null,
+          "before_page": "INTEL",
+          "after_page": null,
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    },
+    {
+      "run": 2,
+      "planned_resource": "WOOD",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260915_204301_run02",
+      "stop_reason": "intel_no_untried_pins",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "SELECT_INTEL_PIN",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "INTEL",
+          "after_page": "POPUP",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        },
+        {
+          "index": 2,
+          "skill": "BACK",
+          "executed": true,
+          "error": null,
+          "verifier_ok": true,
+          "verifier_reason": "OK",
+          "before_page": "POPUP",
+          "after_page": "INTEL",
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        },
+        {
+          "index": 3,
+          "skill": "SAFE_STOP",
+          "executed": null,
+          "error": null,
+          "verifier_ok": null,
+          "verifier_reason": null,
+          "before_page": "INTEL",
+          "after_page": null,
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    }
+  ]
+}

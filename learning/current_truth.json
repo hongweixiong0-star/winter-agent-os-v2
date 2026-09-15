@@ -1,25 +1,25 @@
 {
   "schema_version": "1.1",
-  "generated_at_utc": "2026-09-15T07:54:27.007544+00:00",
+  "generated_at_utc": "2026-09-15T15:15:28.699611+00:00",
   "source_of_truth": "learning/episodes.jsonl + registry + runtime_snapshot.json + capability coverage",
   "episodes": {
-    "total": 1168,
-    "success": 845,
-    "failure": 318,
+    "total": 1284,
+    "success": 954,
+    "failure": 325,
     "blocked": 4,
     "in_progress": 1,
-    "success_rate_over_decided": 72.7,
-    "success_rate_over_total": 72.3,
+    "success_rate_over_decided": 74.6,
+    "success_rate_over_total": 74.3,
     "modes": {
-      "PRODUCTION": 1168
+      "PRODUCTION": 1284
     },
     "result_case_anomaly": 35
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 116,
-      "affected_skills": 17,
+      "count": 118,
+      "affected_skills": 18,
       "top_skills": [
         [
           "SELECT_RESOURCE",
@@ -34,7 +34,7 @@
           13
         ]
       ],
-      "last_seen": "2026-09-15T04:11:16.481273+00:00"
+      "last_seen": "2026-09-15T10:02:57.844444+00:00"
     },
     {
       "failure_type": "MARCH_PAGE_NOT_OPEN",
@@ -138,15 +138,27 @@
     },
     {
       "failure_type": "NO_EXECUTION",
-      "count": 4,
+      "count": 5,
       "affected_skills": 1,
       "top_skills": [
         [
           "SAFE_STOP",
+          5
+        ]
+      ],
+      "last_seen": "2026-09-15T12:27:40.810551+00:00"
+    },
+    {
+      "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
+      "count": 4,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "OPEN_INTEL_BEAST_TARGET",
           4
         ]
       ],
-      "last_seen": "2026-09-14T11:20:35.634003+00:00"
+      "last_seen": "2026-09-15T09:38:04.531382+00:00"
     },
     {
       "failure_type": "INTEL_CLAIM_FEEDBACK_NOT_PROVEN",
@@ -159,22 +171,6 @@
         ]
       ],
       "last_seen": "2026-09-14T10:17:47.451675+00:00"
-    },
-    {
-      "failure_type": "EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN",
-      "count": 3,
-      "affected_skills": 2,
-      "top_skills": [
-        [
-          "CONFIRM_EXPLORATION_IDLE_CLAIM",
-          2
-        ],
-        [
-          "EXPLORATION_IDLE_CLAIM",
-          1
-        ]
-      ],
-      "last_seen": null
     }
   ],
   "skills": {
@@ -211,12 +207,12 @@
       "success_rate": 100.0
     },
     "INTEL_CLAIM_REWARDS": {
-      "attempts": 53,
-      "success": 50,
+      "attempts": 63,
+      "success": 60,
       "failure": 3,
       "other": 0,
-      "last_seen": "2026-09-15T06:15:49.271432+00:00",
-      "success_rate": 94.3
+      "last_seen": "2026-09-15T09:37:33.124103+00:00",
+      "success_rate": 95.2
     },
     "BEAST_HUNT": {
       "attempts": 3,
@@ -371,12 +367,12 @@
       "success_rate": 96.8
     },
     "DISMISS_INTEL_REWARD": {
-      "attempts": 24,
-      "success": 19,
+      "attempts": 28,
+      "success": 23,
       "failure": 5,
       "other": 0,
-      "last_seen": "2026-09-15T02:25:21.369970+00:00",
-      "success_rate": 79.2
+      "last_seen": "2026-09-15T09:37:44.024776+00:00",
+      "success_rate": 82.1
     },
     "SELECT_INTEL_BEAST_MISSION": {
       "attempts": 12,
@@ -387,36 +383,36 @@
       "success_rate": 83.3
     },
     "OPEN_INTEL_BEAST_TARGET": {
-      "attempts": 38,
-      "success": 36,
-      "failure": 2,
+      "attempts": 45,
+      "success": 41,
+      "failure": 4,
       "other": 0,
-      "last_seen": "2026-09-15T06:14:35.443118+00:00",
-      "success_rate": 94.7
+      "last_seen": "2026-09-15T09:38:04.531382+00:00",
+      "success_rate": 91.1
     },
     "INTEL_BEAST_START_MARCH": {
-      "attempts": 38,
-      "success": 36,
+      "attempts": 43,
+      "success": 41,
       "failure": 2,
       "other": 0,
-      "last_seen": "2026-09-15T06:14:41.517529+00:00",
-      "success_rate": 94.7
+      "last_seen": "2026-09-15T09:36:42.775753+00:00",
+      "success_rate": 95.3
     },
     "DISPATCH_INTEL_BEAST": {
-      "attempts": 37,
-      "success": 32,
+      "attempts": 42,
+      "success": 37,
       "failure": 5,
       "other": 0,
-      "last_seen": "2026-09-15T06:14:56.610766+00:00",
-      "success_rate": 86.5
+      "last_seen": "2026-09-15T09:37:06.154606+00:00",
+      "success_rate": 88.1
     },
     "OPEN_INTEL": {
-      "attempts": 107,
-      "success": 94,
+      "attempts": 124,
+      "success": 111,
       "failure": 13,
       "other": 0,
-      "last_seen": "2026-09-15T06:15:42.732952+00:00",
-      "success_rate": 87.9
+      "last_seen": "2026-09-15T13:35:06.735112+00:00",
+      "success_rate": 89.5
     },
     "SELECT_RESOURCE": {
       "attempts": 52,
@@ -443,12 +439,12 @@
       "success_rate": 67.4
     },
     "BACK": {
-      "attempts": 72,
-      "success": 71,
+      "attempts": 90,
+      "success": 89,
       "failure": 1,
       "other": 0,
-      "last_seen": "2026-09-15T06:16:24.637255+00:00",
-      "success_rate": 98.6
+      "last_seen": "2026-09-15T13:35:26.914355+00:00",
+      "success_rate": 98.9
     },
     "CONFIRM_EXPLORATION_IDLE_CLAIM": {
       "attempts": 2,
@@ -555,12 +551,12 @@
       "success_rate": 100.0
     },
     "DISMISS_DAILY_REWARD": {
-      "attempts": 3,
+      "attempts": 4,
       "success": 1,
-      "failure": 2,
+      "failure": 3,
       "other": 0,
-      "last_seen": "2026-09-14T17:19:05.582803+00:00",
-      "success_rate": 33.3
+      "last_seen": "2026-09-15T09:23:53.200251+00:00",
+      "success_rate": 25.0
     },
     "DISMISS_DAILY_GENERIC_REWARD": {
       "attempts": 1,
@@ -627,19 +623,19 @@
       "success_rate": 0.0
     },
     "DISMISS_INTEL_GENERIC_REWARD": {
-      "attempts": 30,
-      "success": 30,
+      "attempts": 35,
+      "success": 35,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-15T06:16:01.783404+00:00",
+      "last_seen": "2026-09-15T09:33:40.161240+00:00",
       "success_rate": 100.0
     },
     "SAFE_STOP": {
-      "attempts": 4,
+      "attempts": 5,
       "success": 0,
-      "failure": 4,
+      "failure": 5,
       "other": 0,
-      "last_seen": "2026-09-14T11:20:35.634003+00:00",
+      "last_seen": "2026-09-15T12:27:40.810551+00:00",
       "success_rate": 0.0
     },
     "OPEN_INTEL_RESCUE_SURVIVORS_TARGET": {
@@ -651,44 +647,44 @@
       "success_rate": 100.0
     },
     "EXECUTE_INTEL_RESCUE_SURVIVORS": {
-      "attempts": 8,
-      "success": 2,
+      "attempts": 9,
+      "success": 3,
       "failure": 6,
       "other": 0,
-      "last_seen": "2026-09-15T00:12:49.838073+00:00",
-      "success_rate": 25.0
+      "last_seen": "2026-09-15T09:29:00.425565+00:00",
+      "success_rate": 33.3
     },
     "OPEN_INTEL_HERO_JOURNEY_TARGET": {
-      "attempts": 16,
-      "success": 14,
+      "attempts": 22,
+      "success": 20,
       "failure": 2,
       "other": 0,
-      "last_seen": "2026-09-15T04:00:40.317142+00:00",
-      "success_rate": 87.5
+      "last_seen": "2026-09-15T09:35:03.380223+00:00",
+      "success_rate": 90.9
     },
     "INTEL_HERO_DISPATCH": {
-      "attempts": 15,
-      "success": 7,
+      "attempts": 19,
+      "success": 11,
       "failure": 8,
       "other": 0,
-      "last_seen": "2026-09-15T04:01:16.715104+00:00",
-      "success_rate": 46.7
+      "last_seen": "2026-09-15T09:35:36.116698+00:00",
+      "success_rate": 57.9
     },
     "INTEL_HERO_START_MARCH": {
-      "attempts": 13,
-      "success": 10,
+      "attempts": 19,
+      "success": 16,
       "failure": 3,
       "other": 0,
-      "last_seen": "2026-09-15T04:00:53.571376+00:00",
-      "success_rate": 76.9
+      "last_seen": "2026-09-15T09:35:15.560313+00:00",
+      "success_rate": 84.2
     },
     "SELECT_INTEL_PIN": {
-      "attempts": 24,
-      "success": 24,
-      "failure": 0,
+      "attempts": 45,
+      "success": 43,
+      "failure": 2,
       "other": 0,
-      "last_seen": "2026-09-15T06:16:13.099948+00:00",
-      "success_rate": 100.0
+      "last_seen": "2026-09-15T13:35:16.993308+00:00",
+      "success_rate": 95.6
     },
     "OPEN_ALLIANCE_GIFTS": {
       "attempts": 1,
@@ -707,20 +703,28 @@
       "success_rate": 0.0
     },
     "OPEN_STAMINA_SOURCES": {
-      "attempts": 8,
-      "success": 8,
+      "attempts": 11,
+      "success": 11,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-15T06:15:11.676983+00:00",
+      "last_seen": "2026-09-15T12:31:09.754568+00:00",
       "success_rate": 100.0
     },
     "CLAIM_FREE_STAMINA": {
-      "attempts": 1,
-      "success": 1,
+      "attempts": 2,
+      "success": 2,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-15T04:12:27.426919+00:00",
+      "last_seen": "2026-09-15T12:31:13.775138+00:00",
       "success_rate": 100.0
+    },
+    "CHECK_MARCH": {
+      "attempts": 1,
+      "success": 0,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-09-15T12:59:36.927458+00:00",
+      "success_rate": 0.0
     }
   },
   "registry": {
@@ -753,15 +757,11 @@
   "registry_lifecycle": {
     "registry_total": 87,
     "live_verified_skills": 58,
-    "only_failed_skills": 8,
-    "never_executed_skills": 21,
+    "only_failed_skills": 9,
+    "never_executed_skills": 20,
     "never_executed": [
       {
         "skill_id": "CANCEL_DUPLICATE_TARGET",
-        "state": "VERIFIED"
-      },
-      {
-        "skill_id": "CHECK_MARCH",
         "state": "VERIFIED"
       },
       {
@@ -848,6 +848,11 @@
         "failure": 2
       },
       {
+        "skill_id": "CHECK_MARCH",
+        "state": "VERIFIED",
+        "failure": 1
+      },
+      {
         "skill_id": "DISMISS_EXPLORATION_REWARD",
         "state": "VERIFIED",
         "failure": 1
@@ -887,17 +892,32 @@
       {
         "skill_id": "OPEN_INTEL",
         "state": "VERIFIED",
-        "success": 94
+        "success": 111
       },
       {
         "skill_id": "BACK",
         "state": "VERIFIED",
-        "success": 71
+        "success": 89
       },
       {
         "skill_id": "INTEL_CLAIM_REWARDS",
         "state": "VERIFIED",
-        "success": 50
+        "success": 60
+      },
+      {
+        "skill_id": "SELECT_INTEL_PIN",
+        "state": "VERIFIED",
+        "success": 43
+      },
+      {
+        "skill_id": "INTEL_BEAST_START_MARCH",
+        "state": "VERIFIED",
+        "success": 41
+      },
+      {
+        "skill_id": "OPEN_INTEL_BEAST_TARGET",
+        "state": "VERIFIED",
+        "success": 41
       },
       {
         "skill_id": "SEARCH_RESOURCE",
@@ -905,14 +925,14 @@
         "success": 41
       },
       {
-        "skill_id": "INTEL_BEAST_START_MARCH",
+        "skill_id": "DISPATCH_INTEL_BEAST",
         "state": "VERIFIED",
-        "success": 36
+        "success": 37
       },
       {
-        "skill_id": "OPEN_INTEL_BEAST_TARGET",
-        "state": "VERIFIED",
-        "success": 36
+        "skill_id": "DISMISS_INTEL_GENERIC_REWARD",
+        "state": "CANDIDATE",
+        "success": 35
       },
       {
         "skill_id": "START_GATHER",
@@ -923,11 +943,6 @@
         "skill_id": "SUBMIT_RESOURCE_SEARCH",
         "state": "VERIFIED",
         "success": 35
-      },
-      {
-        "skill_id": "DISPATCH_INTEL_BEAST",
-        "state": "VERIFIED",
-        "success": 32
       },
       {
         "skill_id": "DISPATCH_MARCH",
@@ -945,22 +960,17 @@
         "success": 30
       },
       {
-        "skill_id": "DISMISS_INTEL_GENERIC_REWARD",
-        "state": "CANDIDATE",
-        "success": 30
-      },
-      {
         "skill_id": "OPEN_MAP",
         "state": "VERIFIED",
         "success": 25
       },
       {
-        "skill_id": "SELECT_INTEL_PIN",
+        "skill_id": "ALLIANCE_ALLY_GIFT_CLAIM",
         "state": "VERIFIED",
-        "success": 24
+        "success": 23
       },
       {
-        "skill_id": "ALLIANCE_ALLY_GIFT_CLAIM",
+        "skill_id": "DISMISS_INTEL_REWARD",
         "state": "VERIFIED",
         "success": 23
       },
@@ -970,9 +980,14 @@
         "success": 20
       },
       {
-        "skill_id": "DISMISS_INTEL_REWARD",
-        "state": "VERIFIED",
-        "success": 19
+        "skill_id": "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "state": "CANDIDATE",
+        "success": 20
+      },
+      {
+        "skill_id": "INTEL_HERO_START_MARCH",
+        "state": "CANDIDATE",
+        "success": 16
       },
       {
         "skill_id": "MAIL_CLAIM_REWARDS",
@@ -980,9 +995,9 @@
         "success": 14
       },
       {
-        "skill_id": "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "skill_id": "INTEL_HERO_DISPATCH",
         "state": "CANDIDATE",
-        "success": 14
+        "success": 11
       },
       {
         "skill_id": "OPEN_EXPLORATION",
@@ -990,14 +1005,14 @@
         "success": 11
       },
       {
-        "skill_id": "SELECT_RESOURCE",
+        "skill_id": "OPEN_STAMINA_SOURCES",
         "state": "CANDIDATE",
         "success": 11
       },
       {
-        "skill_id": "INTEL_HERO_START_MARCH",
+        "skill_id": "SELECT_RESOURCE",
         "state": "CANDIDATE",
-        "success": 10
+        "success": 11
       },
       {
         "skill_id": "SELECT_INTEL_BEAST_MISSION",
@@ -1018,16 +1033,6 @@
         "skill_id": "GATHER_RESOURCE",
         "state": "VERIFIED",
         "success": 8
-      },
-      {
-        "skill_id": "OPEN_STAMINA_SOURCES",
-        "state": "CANDIDATE",
-        "success": 8
-      },
-      {
-        "skill_id": "INTEL_HERO_DISPATCH",
-        "state": "CANDIDATE",
-        "success": 7
       },
       {
         "skill_id": "NAVIGATE_INFANTRY_CAMP",
@@ -1065,6 +1070,11 @@
         "success": 3
       },
       {
+        "skill_id": "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "state": "VERIFIED",
+        "success": 3
+      },
+      {
         "skill_id": "OPEN_INFANTRY_TRAINING",
         "state": "CANDIDATE",
         "success": 3
@@ -1090,8 +1100,8 @@
         "success": 2
       },
       {
-        "skill_id": "EXECUTE_INTEL_RESCUE_SURVIVORS",
-        "state": "VERIFIED",
+        "skill_id": "CLAIM_FREE_STAMINA",
+        "state": "CANDIDATE",
         "success": 2
       },
       {
@@ -1107,11 +1117,6 @@
       {
         "skill_id": "BUILDING_UPGRADE",
         "state": "VERIFIED",
-        "success": 1
-      },
-      {
-        "skill_id": "CLAIM_FREE_STAMINA",
-        "state": "CANDIDATE",
         "success": 1
       },
       {
@@ -1178,7 +1183,7 @@
   },
   "dataset": {
     "raw": {
-      "files": 3075,
+      "files": 3342,
       "empty_dirs": 56
     },
     "candidate": {
@@ -1203,30 +1208,30 @@
     }
   },
   "runtime": {
-    "agent_state": "IDLE",
+    "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-15T06:16:13.711907+00:00",
-    "last_action_time": "2026-09-15T06:16:13.885356+00:00",
-    "last_success_time": "2026-09-15T06:16:24.650931+00:00",
+    "last_tick_time": "2026-09-15T13:35:34.841447+00:00",
+    "last_action_time": "2026-09-15T13:35:17.713402+00:00",
+    "last_success_time": "2026-09-15T13:35:26.928026+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
     "page": "INTEL",
     "current_goal": "CLEAR_INTEL",
-    "current_skill": "BACK",
-    "reason": "intel_master_bounty_power_blocked",
+    "current_skill": "SAFE_STOP",
+    "reason": "intel_no_untried_pins",
     "preconditions": [],
     "verifier": "PASS",
-    "next_action": "intel_page_restored",
+    "next_action": "switch_task",
     "risk": "UNKNOWN",
-    "confidence": 0.98,
+    "confidence": 1.0,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "dataset\\raw\\live_cost_colour_positive2_20260915\\live_cost_colour_positive2_20260915_step_010_after_20260915T061615387821.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260915T133526951700.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -1235,32 +1240,34 @@
       "training": {},
       "intel": {
         "status": "AVAILABLE",
-        "stamina": 167,
-        "refresh": "01:43:44",
-        "available_count": 3,
-        "pins": 3,
-        "list_read": true
+        "stamina": 136,
+        "refresh": "02:24:32",
+        "available_count": 1,
+        "pins": 1,
+        "list_read": true,
+        "untried_pins": 0,
+        "detected_pins": 1
       },
       "alliance": {},
       "events": {}
     },
-    "stop_reason": "MAX_ACTIONS_REACHED",
-    "updated_at": "2026-09-15T06:16:24.651908+00:00"
+    "stop_reason": "intel_no_untried_pins",
+    "updated_at": "2026-09-15T13:35:34.911629+00:00"
   },
   "evidence_integrity": {
-    "episodes_with_screenshot_references": 436,
-    "screenshots_referenced": 856,
+    "episodes_with_screenshot_references": 552,
+    "screenshots_referenced": 1085,
     "screenshots_missing": 0,
     "missing_examples": [],
-    "distinct_episode_ids": 118,
+    "distinct_episode_ids": 130,
     "cross_episode_name_collisions": 0,
     "status": "PASS"
   },
   "capability_coverage": {
     "present": true,
     "model": "Goal -> Canonical Capability -> Registered Skill -> Production Evidence",
-    "generated_at_utc": "2026-09-15T07:54:21.181763+00:00",
-    "age_days": 0.0,
+    "generated_at_utc": "2026-09-15T12:25:26.105774+00:00",
+    "age_days": 0.12,
     "summary": {
       "total": 16,
       "fully_live_verified": 2,

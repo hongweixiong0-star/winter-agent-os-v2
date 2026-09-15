@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-15T12:45:44+00:00",
+  "source": "tools/run_gather_acceptance.py",
+  "acceptance_rule": "each resource completes the full chain (SUBMIT -> SELECT -> START_GATHER -> DISPATCH_MARCH) with every verifier passing",
+  "planned_runs": 3,
+  "plan": "auto",
+  "schedule": [
+    "MEAT",
+    "WOOD",
+    "COAL"
+  ],
+  "resources_requested": [
+    "MEAT",
+    "WOOD",
+    "COAL",
+    "IRON"
+  ],
+  "completed_runs": 3,
+  "aborted": null,
+  "tally": {
+    "MEAT": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "WOOD": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "COAL": {
+      "attempts": 1,
+      "full_chain_success": 0
+    },
+    "IRON": {
+      "attempts": 0,
+      "full_chain_success": 0
+    }
+  },
+  "runs": [
+    {
+      "run": 1,
+      "planned_resource": "MEAT",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260915_204500_run01",
+      "stop_reason": "SKILL_NOT_ENABLED_FOR_LIVE_LOOP",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "CHECK_MARCH",
+          "executed": null,
+          "error": null,
+          "verifier_ok": null,
+          "verifier_reason": null,
+          "before_page": "MAP",
+          "after_page": null,
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    },
+    {
+      "run": 2,
+      "planned_resource": "WOOD",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260915_204500_run02",
+      "stop_reason": "SKILL_NOT_ENABLED_FOR_LIVE_LOOP",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "CHECK_MARCH",
+          "executed": null,
+          "error": null,
+          "verifier_ok": null,
+          "verifier_reason": null,
+          "before_page": "MAP",
+          "after_page": null,
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    },
+    {
+      "run": 3,
+      "planned_resource": "COAL",
+      "pinned": true,
+      "capture_dir": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\accept_20260915_204500_run03",
+      "stop_reason": "SKILL_NOT_ENABLED_FOR_LIVE_LOOP",
+      "steps": [
+        {
+          "index": 1,
+          "skill": "CHECK_MARCH",
+          "executed": null,
+          "error": null,
+          "verifier_ok": null,
+          "verifier_reason": null,
+          "before_page": "MAP",
+          "after_page": null,
+          "resource_selected": null,
+          "marches_after": [],
+          "march_used_after": null
+        }
+      ],
+      "full_chain_success": false,
+      "accepted_stop": false
+    }
+  ]
+}

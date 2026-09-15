@@ -8,27 +8,27 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-15T10:36:18+00:00
+HANDOFF TIME: 2026-09-15T15:48:09+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 2 dirty file(s)
-  ['M .workbuddy-ai/handoff/.checkpoints.jsonl', ' M .workbuddy-ai/handoff/.last_good_commit']
+WORKING TREE: 37 dirty file(s)
+  ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json', ' M .workbuddy-ai/handoff/09_RUNTIME_STATE.json', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M .workbuddy-ai/memory/2026-09-15.md', ' M .workbuddy/memory/2026-09-15.md']
 
-WHAT FINISHED (machine-visible): 26 skills live verified, 24 stable, 59 commit(s) in history
+WHAT FINISHED (machine-visible): 26 skills live verified, 24 stable, 67 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
-WHAT NOT VERIFIED: 21 skills never executed, 9 never succeeded
+WHAT NOT VERIFIED: 20 skills never executed, 10 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=DEGRADED stop_reason=SEMANTIC_TARGET_NOT_VERIFIED
-LAST PRODUCTION EPISODE: {"skill": "SELECT_INTEL_PIN", "result": "FAILURE", "recorded_at": "2026-09-15T10:02:57.844444+00:00", "episode_id": "intel_pins_20260915_100034_pin_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_100034_pin_00\\intel_pins_20260915_100034_pin_00_step_004_before_20260915T100248439796.png", "after_screenshot": ""}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 118, "recent": 51, "last_seen": "2026-09-15T10:02:57.844444+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 6}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+STOPPED AT: agent_state=DEGRADED stop_reason=OPEN_MAP_NOT_PROVEN
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "FAILURE", "recorded_at": "2026-09-15T15:16:47.597321+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260915T151601898916.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260915T151617564204.png"}
+TOP FAILURE: {"failure_type": "RESOURCE_NOT_FOUND", "count": 30, "recent": 30, "last_seen": "2026-09-14T06:42:03.928936+00:00", "dates": {"2026-09-13": 8, "2026-09-14": 22}, "undated": 0, "top_skills": [["SUBMIT_RESOURCE_SEARCH", 30]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 2
+DIRTY FILES: 37
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.
-- `unexpected_worker_exits` before 2026-09-14 has no traceback and cannot be attributed.
+- `unexpected_worker_exits` is a BARE COUNTER WITH TWO WRITERS, both in tools/control_panel.py. The classified path counts only `WORKER_CRASH` and promises a traceback under learning/control_panel/crashes/; the unclassified fallback `_handle_runtime_error` counts EVERY non-fatal error whatever its cause. No crash reports exist and latest.log is 0 bytes, so the historical total cannot be read as 'worker crashes' and must not be zeroed.
 
 DO NOT REPEAT:
 - Do not re-derive resource-tab coordinates from memory; read the bracket anchor (vision.selected_resource).

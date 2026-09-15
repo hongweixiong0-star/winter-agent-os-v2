@@ -6,22 +6,40 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `2b78b91 2026-09-15T23:19:33+08:00 feat(commander): adopt the Codex Commander Queue and execute 5 work orders`
+- `59fd8b9 2026-09-15T21:17:26+08:00 test(infra): stop the host bulk-delete guard from faking 26 suite errors (0bd)`
+- `d66f75d 2026-09-15T21:02:37+08:00 docs(handoff): MAA state from production evidence; PAGE_MAP anchor is the city button (0bc)`
+- `f9aa8be 2026-09-15T21:00:19+08:00 fix(runtime): the brain must never name a skill the live loop refuses (CHECK_MARCH)`
+- `ae9f71b 2026-09-15T20:39:20+08:00 fix(intel,maa): stop fabricating a vision failure for pin exhaustion; make MAA capture the production path`
+- `eb73be1 2026-09-15T18:39:24+08:00 chore(automation): operator cancelled the hourly intel loop; record PAUSED vs lost`
+- `ddef804 2026-09-15T18:37:13+08:00 chore(memory): daily log for the round-17 dispatch-affordability work`
+- `e1c8fa3 2026-09-15T18:36:33+08:00 chore(handoff): checkpoint e4fd245 regenerated handoff state`
 - `e4fd245 2026-09-15T18:36:15+08:00 fix(dispatch): red cost = client refusal, not a missing control (0ax/0ay/0az); check_wiring resolves call sites (0aw)`
 - `03ede69 2026-09-15T18:03:19+08:00 fix(dispatch): a red cost is the client refusing payment, not a missing control (0ax/0ay/0az)`
 - `dd7b860 2026-09-15T16:25:53+08:00 check(wiring): resolve every call site to a definition, not just the paths we know (0aw hardening)`
 - `3c57cae 2026-09-15T16:19:26+08:00 evidence(stamina): archive the supply-clock live A/B/C with the due-path run`
-- `d79c459 2026-09-15T16:16:53+08:00 feat(stamina): persist the free gift's supply clock and make the check reachable (0au/0e)`
-- `17c480a 2026-09-15T14:34:41+08:00 0av: 花费被画成红色即客户端的可负担性判决(真机A/B 5/5); 营地面板写入 cost_affordable 并作为最高优先级闸门`
-- `eb23534 2026-09-15T12:54:32+08:00 免费体力首次真机领取闭环(0an/0aq); 空读数不再跳过检查(0as); 营地战斗被拒可恢复(0at); 补给周期实测7小时(0ar)`
-- `5675402 2026-09-15T11:11:14+08:00 fix(vision,verifier,brain,runtime): stop inventing beast identities; one decision per step`
-- `2a23687 2026-09-15T08:51:32+08:00 docs(handoff): checkpoint 8943141 + round overview artifact`
-- `8943141 2026-09-15T08:51:00+08:00 chore(handoff): rank top failures by recency, not all-time count`
-- `6a2a96c 2026-09-15T08:47:19+08:00 fix(vision): identify the beast formation page by its own anchors, not by an animated button`
-- `c94df20 2026-09-15T08:17:00+08:00 feat(intel): SELECT_INTEL_PIN live-verified 4/4; a full intel board is no longer reported empty`
 
-Uncommitted changes: 2
-- `M .workbuddy-ai/handoff/.checkpoints.jsonl`
-- ` M .workbuddy-ai/handoff/.last_good_commit`
+Uncommitted changes: 37
+- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-09-15.md`
+- ` M .workbuddy/memory/2026-09-15.md`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M docs/CURRENT_TRUTH.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/current_truth.json`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
+- ` M learning/stamina_supply.json`
 <!-- /AUTO:recent_commits -->
 
 ---

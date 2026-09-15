@@ -29,8 +29,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 121,
-          "successes": 108,
+          "attempts": 124,
+          "successes": 111,
           "failures": 13
         },
         {
@@ -186,9 +186,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 50,
+          "attempts": 51,
           "successes": 45,
-          "failures": 5
+          "failures": 6
         },
         {
           "capability": "OPEN_RESOURCE_SEARCH",

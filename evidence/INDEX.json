@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-15T10:36:19+00:00",
-  "count": 474,
+  "generated_at": "2026-09-15T15:48:10+00:00",
+  "count": 476,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -99,6 +99,18 @@
       "mtime": "2026-09-14T06:42:03+00:00"
     },
     {
+      "path": "evidence/gather_acceptance_20260915_204301.json",
+      "kind": "evidence",
+      "bytes": 3798,
+      "mtime": "2026-09-15T12:44:20+00:00"
+    },
+    {
+      "path": "evidence/gather_acceptance_20260915_204500.json",
+      "kind": "evidence",
+      "bytes": 3057,
+      "mtime": "2026-09-15T12:45:44+00:00"
+    },
+    {
       "path": "evidence/gather_acceptance_run.log",
       "kind": "evidence",
       "bytes": 1375,
@@ -167,8 +179,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 88850,
-      "mtime": "2026-09-15T10:19:25+00:00"
+      "bytes": 89198,
+      "mtime": "2026-09-15T15:18:15+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
