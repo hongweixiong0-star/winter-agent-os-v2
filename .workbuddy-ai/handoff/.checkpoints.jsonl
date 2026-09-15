@@ -1,3 +1,4 @@
 {"at": "2026-09-15T00:08:13+00:00", "commit": "c2908ad", "message": "fix(intel): count mission pins instead of trusting header text; a full board was reported empty"}
 {"at": "2026-09-15T00:17:00+00:00", "commit": "c94df20", "message": "feat(intel): SELECT_INTEL_PIN live-verified 4/4; a full intel board is no longer reported empty"}
 {"at": "2026-09-15T00:47:25+00:00", "commit": "6a2a96c", "message": "beast formation page: own anchors instead of an animated button; live A/B + 10/10 verifier OK"}
+{"at": "2026-09-15T00:51:06+00:00", "commit": "8943141", "message": "handoff ranks failures by recency; dead 09-12/13 eras no longer masquerade as current defects"}

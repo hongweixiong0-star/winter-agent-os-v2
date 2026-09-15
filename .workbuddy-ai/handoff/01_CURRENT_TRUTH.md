@@ -1,30 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-15T00:49:16+00:00`
+- generated_at: `2026-09-15T00:51:07+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `6a2a96c` on `main`
+- commit: `8943141` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `6a2a96c`
-- commits: 49
-- HEAD: `6a2a96c` — fix(vision): identify the beast formation page by its own anchors, not by an animated button (2026-09-15T08:47:19+08:00)
-- working tree: 12 dirty file(s)
+- last good commit: `8943141`
+- commits: 50
+- HEAD: `8943141` — chore(handoff): rank top failures by recency, not all-time count (2026-09-15T08:51:00+08:00)
+- working tree: 2 dirty file(s)
   - `M .workbuddy-ai/handoff/.checkpoints.jsonl`
   - ` M .workbuddy-ai/handoff/.last_good_commit`
-  - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M evidence/INDEX.json`
-  - ` M tools/update_workbuddy_handoff.py`
 
 ## B. Runtime
 
