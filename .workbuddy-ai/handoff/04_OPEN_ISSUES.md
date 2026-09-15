@@ -21,7 +21,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 28 uncommitted file(s): ['M .workbuddy-ai/handoff/.checkpoints.jsonl', ' M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
+- 2 uncommitted file(s): ['M .workbuddy-ai/handoff/.checkpoints.jsonl', ' M .workbuddy-ai/handoff/.last_good_commit']
 <!-- /AUTO:open_issues -->
 
 ---

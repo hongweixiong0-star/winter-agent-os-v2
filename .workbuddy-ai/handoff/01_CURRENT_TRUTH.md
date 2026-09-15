@@ -1,38 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-15T10:19:24+00:00`
+- generated_at: `2026-09-15T10:36:18+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `03ede69` on `main`
+- commit: `e4fd245` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `17c480a`
-- commits: 58
-- HEAD: `03ede69` — fix(dispatch): a red cost is the client refusing payment, not a missing control (0ax/0ay/0az) (2026-09-15T18:03:19+08:00)
-- working tree: 28 dirty file(s)
+- last good commit: `e4fd245`
+- commits: 59
+- HEAD: `e4fd245` — fix(dispatch): red cost = client refusal, not a missing control (0ax/0ay/0az); check_wiring resolves call sites (0aw) (2026-09-15T18:36:15+08:00)
+- working tree: 2 dirty file(s)
   - `M .workbuddy-ai/handoff/.checkpoints.jsonl`
   - ` M .workbuddy-ai/handoff/.last_good_commit`
-  - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-15.md`
-  - ` M .workbuddy-ai/memory/MEMORY.md`
-  - ` M docs/CAPABILITY_COVERAGE.md`
-  - ` M docs/CURRENT_TRUTH.md`
-  - ` M evidence/INDEX.json`
-  - ` M knowledge/goals/capability_skill_map.json`
-  - ` M learning/current_truth.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
 
 ## B. Runtime
 

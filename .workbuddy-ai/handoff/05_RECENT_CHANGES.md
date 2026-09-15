@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `e4fd245 2026-09-15T18:36:15+08:00 fix(dispatch): red cost = client refusal, not a missing control (0ax/0ay/0az); check_wiring resolves call sites (0aw)`
 - `03ede69 2026-09-15T18:03:19+08:00 fix(dispatch): a red cost is the client refusing payment, not a missing control (0ax/0ay/0az)`
 - `dd7b860 2026-09-15T16:25:53+08:00 check(wiring): resolve every call site to a definition, not just the paths we know (0aw hardening)`
 - `3c57cae 2026-09-15T16:19:26+08:00 evidence(stamina): archive the supply-clock live A/B/C with the due-path run`
@@ -17,29 +18,10 @@ Last 12 commits (newest first):
 - `8943141 2026-09-15T08:51:00+08:00 chore(handoff): rank top failures by recency, not all-time count`
 - `6a2a96c 2026-09-15T08:47:19+08:00 fix(vision): identify the beast formation page by its own anchors, not by an animated button`
 - `c94df20 2026-09-15T08:17:00+08:00 feat(intel): SELECT_INTEL_PIN live-verified 4/4; a full intel board is no longer reported empty`
-- `c2908ad 2026-09-15T08:08:13+08:00 fix(intel): count mission pins instead of trusting header text; a full board was reported empty`
 
-Uncommitted changes: 28
+Uncommitted changes: 2
 - `M .workbuddy-ai/handoff/.checkpoints.jsonl`
 - ` M .workbuddy-ai/handoff/.last_good_commit`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-15.md`
-- ` M .workbuddy-ai/memory/MEMORY.md`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M docs/CURRENT_TRUTH.md`
-- ` M evidence/INDEX.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M learning/current_truth.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
 <!-- /AUTO:recent_commits -->
 
 ---

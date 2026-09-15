@@ -3,7 +3,7 @@
 本文件回答「项目现在走到哪一步了」。机器事实由生成器刷新，判断由人维护。
 
 <!-- AUTO:progress -->
-Machine progress at 2026-09-15T10:19:24+00:00 (commit 03ede69):
+Machine progress at 2026-09-15T10:36:18+00:00 (commit e4fd245):
 
 - goals: 16 — FULLY_LIVE_VERIFIED 2, PARTIAL 8, NEVER_TRIED 0, BLOCKED 4, DEGRADED 2
 - mean implementation coverage: 0.54

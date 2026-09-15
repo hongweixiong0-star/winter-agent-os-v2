@@ -333,8 +333,8 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 51 in the last 2 day(s), 118 all-time, last seen 2026-09-15T10:02:57.844444+00:00
-LAST GOOD COMMIT: 17c480a
-CURRENT DIRTY FILES: 28
+LAST GOOD COMMIT: e4fd245
+CURRENT DIRTY FILES: 2
 LAST PRODUCTION EPISODE: {"skill": "SELECT_INTEL_PIN", "result": "FAILURE", "recorded_at": "2026-09-15T10:02:57.844444+00:00", "episode_id": "intel_pins_20260915_100034_pin_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_100034_pin_00\\intel_pins_20260915_100034_pin_00_step_004_before_20260915T100248439796.png", "after_screenshot": ""}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 118, "recent": 51, "last_seen": "2026-09-15T10:02:57.844444+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 6}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T10:02:57.844444+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
