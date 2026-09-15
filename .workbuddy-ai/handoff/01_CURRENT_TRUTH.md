@@ -1,20 +1,19 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-15T03:10:44+00:00`
+- generated_at: `2026-09-15T03:29:33+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `2a23687` on `main`
+- commit: `5675402` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `8943141`
-- commits: 51
-- HEAD: `2a23687` — docs(handoff): checkpoint 8943141 + round overview artifact (2026-09-15T08:51:32+08:00)
-- working tree: 58 dirty file(s)
-  - `M .gitignore`
-  - ` M .workbuddy-ai/artifacts/overview.md`
+- last good commit: `5675402`
+- commits: 52
+- HEAD: `5675402` — fix(vision,verifier,brain,runtime): stop inventing beast identities; one decision per step (2026-09-15T11:11:14+08:00)
+- working tree: 13 dirty file(s)
+  - `M .workbuddy-ai/handoff/.last_good_commit`
   - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
   - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
   - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
@@ -23,16 +22,10 @@
   - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
   - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
   - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-15.md`
-  - ` M .workbuddy-ai/memory/MEMORY.md`
-  - ` M docs/CAPABILITY_COVERAGE.md`
   - ` M evidence/INDEX.json`
-  - ` M knowledge/goals/capability_skill_map.json`
-  - ` M learning/candidate_attempt_pool.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
+  - `?? tests/test_camp_panel_stamina.py`
+  - `?? tools/probe_camp_panel_stamina.py`
+  - `?? tools/probe_stamina_panel_episodes.py`
 
 ## B. Runtime
 

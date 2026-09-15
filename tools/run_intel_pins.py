@@ -78,9 +78,26 @@ def observe() -> tuple[dict, Path]:
 def run_live_cycle(tag: str) -> dict:
     capture = f"dataset/raw/control_panel/runtime_auto/intel_pins_{STAMP}_{tag}"
     started = time.monotonic()
+    # This loop used to pass --no-stamina-check.  The flag was added on
+    # 2026-09-14 to stop "repeated failed claim attempts", i.e. steps recorded
+    # as failure_type=STAMINA_SOURCES_NOT_OPEN whose skill was OPEN_INTEL and
+    # whose state_after.page was INTEL -- a *correct* action recorded as a
+    # failure.  That is the one-decision-per-step bug (Scheduler.tick now takes
+    # the runtime's own decision), it is fixed, and the flag never stopped the
+    # noise for other callers anyway: failures of that shape were still
+    # recorded at 2026-09-14T23:37 and 2026-09-15T02:31, both after the flag
+    # landed.
+    #
+    # What it did do is forbid the only unattended process from performing the
+    # free-stamina check that config/v2.json's stamina_policy asks for
+    # ("the free 丰盛的招待 gift (+150) must be claimed").  CLAIM_FREE_STAMINA
+    # has zero executions in the recorded corpus, and stamina is this account's
+    # bottleneck: 23 of 149 recorded readings are <= 12 while every
+    # stamina-spending action costs 10-12.  The check runs at most once per run
+    # (RuleBrain.stamina_panel_checked) and its whole path -- open the panel,
+    # find no gift, back out -- was live-verified 4/4 on 2026-09-15T03:03:57Z.
     proc = subprocess.run(
         [sys.executable, "-u", str(RUN_LIVE), "--goal", "INTEL", "--max-actions", "14",
-         "--no-stamina-check",
          "--serial", "127.0.0.1:7555", "--capture-dir", capture],
         capture_output=True, text=True, errors="replace", cwd=str(ROOT), timeout=RUN_LIVE_TIMEOUT,
     )

@@ -626,6 +626,54 @@ class HybridVision:
                     march_max=march_max,
                     stamina=stamina,
                 )
+            if (
+                primary.page is Page.EXPLORATION
+                and primary.exploration.get("stamina_cost_displayed") is not None
+            ):
+                # The Hero Journey camp panel is a *map overlay*: the world-map
+                # HUD stays on screen behind it, so the stamina gauge sits at
+                # exactly the position it does on Page.MAP.
+                #
+                # Measured 2026-09-15 over the 25 production frames where the
+                # brain saw this panel (dataset/truth_audit/
+                # stamina_check_live_20260915 plus every recorded EXPLORATION
+                # frame carrying a displayed cost, via
+                # tools/probe_camp_panel_stamina.py): HUD_STAMINA_ROI reads a
+                # number on 19 of 25 -- 157, 165, 165, 165, 18, 18, 186, 155,
+                # 155, 145, 36, 36, 157, 157, 11, 11, 2, 2, 9 -- and on the
+                # live frame it returns ('9', 0.999), character for character
+                # identical to the map frame's read.
+                #
+                # The 6 misses are OCR failures, not a wrong ROI: the digit sits
+                # next to a red badge and is read as 'A'/'m' at ~0.7 confidence
+                # (one frame's tokens are empty).  The MAP branch's whole-frame
+                # fallback rescues none of them (measured: 0 of 6), so it is not
+                # repeated here -- a missing read leaves stamina unknown and the
+                # brain falls back to its previous behaviour, which is the safe
+                # direction.
+                #
+                # Without this read the brain stands on a 探险 ⚡10 button with
+                # no idea whether it can afford the fight.  Live
+                # 2026-09-15T03:03:57Z: stamina 9 against a displayed cost of 10,
+                # the tap was refused, and the run burned its remaining three
+                # actions opening and closing the stamina panel.  Gated on the
+                # displayed cost so the idle-income exploration page (EXPLORATION
+                # with no cost) pays no OCR cost.
+                #
+                # Assigned rather than returned: nothing after this point
+                # branches on Page.EXPLORATION today, and keeping the state
+                # flowing means a future branch still sees it.
+                roi_tokens = self.ocr.recognize(image_path, HUD_STAMINA_ROI).tokens
+                current_stamina = parse_stamina_number(roi_tokens)
+                if current_stamina is not None:
+                    stamina = dict(primary.stamina)
+                    stamina.update({
+                        "current": current_stamina,
+                        "source": "CAMP_PANEL_HUD",
+                        "roi": dict(HUD_STAMINA_ROI),
+                        "gauge_pixels": gauge_green_pixels(image_path),
+                    })
+                    primary = replace(primary, stamina=stamina)
             if primary.page is Page.ALLIANCE:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))
                 if secondary.page is primary.page and secondary.alliance:

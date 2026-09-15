@@ -38,9 +38,14 @@ def main() -> int:
     parser.add_argument(
         "--no-stamina-check",
         action="store_true",
-        help="Skip the once-per-run free-stamina panel check; used by loops that "
-             "invoke this runner many times per hour, where the repeated failed "
-             "claim attempts are pure episode noise",
+        help="Skip the once-per-run free-stamina panel check.  Kept as a "
+             "diagnostic escape hatch only: it was added on 2026-09-14 for "
+             "loops that invoke this runner many times per hour, to suppress "
+             "failure_type=STAMINA_SOURCES_NOT_OPEN episodes -- which turned "
+             "out to be correct actions recorded as failures by the "
+             "one-decision-per-step bug (Scheduler.tick now takes the "
+             "runtime's decision).  No caller passes it any more; "
+             "config/v2.json asks for the free gift to be claimed.",
     )
     args = parser.parse_args()
 

@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `5675402 2026-09-15T11:11:14+08:00 fix(vision,verifier,brain,runtime): stop inventing beast identities; one decision per step`
 - `2a23687 2026-09-15T08:51:32+08:00 docs(handoff): checkpoint 8943141 + round overview artifact`
 - `8943141 2026-09-15T08:51:00+08:00 chore(handoff): rank top failures by recency, not all-time count`
 - `6a2a96c 2026-09-15T08:47:19+08:00 fix(vision): identify the beast formation page by its own anchors, not by an animated button`
@@ -17,11 +18,9 @@ Last 12 commits (newest first):
 - `5c96773 2026-09-14T22:59:53+08:00 fix(runtime): back out of an unreadable screen instead of dying on it`
 - `39e246f 2026-09-14T22:49:47+08:00 docs(handoff): refresh after the OCR fragment-stitching fix (full suite green, 408 passed)`
 - `48e266f 2026-09-14T22:48:48+08:00 fix(ocr): stitch overlapping digit fragments instead of enlarging the crop`
-- `9bfa719 2026-09-14T22:17:57+08:00 chore(knowledge): carry over the uncommitted knowledge files from the previous session`
 
-Uncommitted changes: 58
-- `M .gitignore`
-- ` M .workbuddy-ai/artifacts/overview.md`
+Uncommitted changes: 13
+- `M .workbuddy-ai/handoff/.last_good_commit`
 - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
 - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
@@ -30,16 +29,10 @@ Uncommitted changes: 58
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-15.md`
-- ` M .workbuddy-ai/memory/MEMORY.md`
-- ` M docs/CAPABILITY_COVERAGE.md`
 - ` M evidence/INDEX.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M learning/candidate_attempt_pool.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
+- `?? tests/test_camp_panel_stamina.py`
+- `?? tools/probe_camp_panel_stamina.py`
+- `?? tools/probe_stamina_panel_episodes.py`
 <!-- /AUTO:recent_commits -->
 
 ---

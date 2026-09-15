@@ -99,7 +99,13 @@ def main() -> int:
                 round(TITLE_ROI[3] * image.size[1]),
             )
             crop = image.crop(bounds)
-        out_dir = ROOT / "dataset" / "raw" / "control_panel" / "probe" / "formation_title"
+        # Outside dataset/raw on purpose: that tree is the frame corpus, and the
+        # corpus gate assumes every PNG in it is a full 720x1280 client frame.
+        # Writing 302x79 title crops there broke that invariant -- every ROI
+        # fell outside the crop, match_ccoeff could not run, and
+        # SemanticROIVision.find raised ValueError on the ccoeff-only semantics
+        # instead of returning None.  See tests/test_vision_never_raises.py.
+        out_dir = ROOT / "dataset" / "probe_output" / "formation_title"
         out_dir.mkdir(parents=True, exist_ok=True)
         crop_path = out_dir / f"{frame.parent.name}__{frame.stem}.png"
         crop.save(crop_path)
@@ -113,7 +119,7 @@ def main() -> int:
             f"    title OCR: {text!r}"
         )
     print(f"\n(crop roi={width:.3f}x{height:.3f}; crops kept under "
-          f"dataset/raw/control_panel/probe/formation_title/)")
+          f"dataset/probe_output/formation_title/)")
     return 0
 
 

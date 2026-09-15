@@ -30,6 +30,20 @@ class RuleBrain:
         # because the map gauge never shows it, so the check runs once per run.
         self.claim_free_stamina = bool(claim_free_stamina)
         self.stamina_panel_checked = False
+        # A separate flag for the camp panel's affordability gate.  It must not
+        # reuse ``stamina_panel_checked``: that flag gates the map's
+        # free-stamina check, and the gate below deliberately *routes towards*
+        # that check, so setting it here would switch off the very step it is
+        # sending the run to do.
+        self.unaffordable_camp_panel_left = False
+        # Set by the runtime when the *client itself* refused a camp fight for
+        # lack of stamina.  That refusal is ground truth and it outranks the
+        # gauge reading: measured live 2026-09-15, the camp panel's stamina ROI
+        # reads 19/25 frames, and on the miss the gate silently failed to fire
+        # while the client was already telling us the price was unpayable.
+        # Never cleared: stamina only regenerates, so a panel that was
+        # unaffordable earlier in a run cannot have become affordable later.
+        self.camp_panel_refused = False
 
     def _recallable(self, world: WorldState) -> bool:
         """True when recalling a march is both allowed and useful.
@@ -178,6 +192,68 @@ class RuleBrain:
             # Live 2026-09-14: the Hero Journey camp panel classifies as the
             # exploration page (its 探险 ⚡10 button belongs to that system).
             # With the intel goal active this panel IS the workable target.
+            cost = world.exploration.get("stamina_cost_displayed")
+            available = world.stamina.get("current")
+            # ``camp_panel_refused`` is the client's own verdict and needs no
+            # reading at all -- see the flag's comment in __init__.  The gauge
+            # test is the *predictive* path; this one is the corrective path for
+            # the 6/25 frames the ROI cannot read.
+            unaffordable = self.camp_panel_refused or (
+                isinstance(cost, int) and isinstance(available, int) and available < cost
+            )
+            if unaffordable:
+                # Live 2026-09-15T03:03:57Z: the client sat on this panel with
+                # stamina 9 against a displayed cost of 10.  Tapping 探险 made
+                # the client refuse and open 获取更多 instead; the run then
+                # spent its remaining three actions on the stamina panel and
+                # achieved nothing.  The refusal is now recorded honestly
+                # (verify_intel_hero_march_open -> INTEL_HERO_MARCH_REFUSED_FOR_
+                # STAMINA), and runtime.py returns on the first failed
+                # verification, so attempting it would end the run on step 1.
+                # Measure the price before paying it instead.
+                #
+                # A missing read is not a zero: the gauge test only fires on two
+                # integers, so an unread gauge leaves the attempt in place and
+                # the client stays the authority on affordability -- and when it
+                # refuses, runtime.py records that refusal on the brain and the
+                # run comes back here through ``camp_panel_refused`` instead of
+                # ending.
+                if (
+                    self.claim_free_stamina
+                    and not self.stamina_panel_checked
+                    and not self.unaffordable_camp_panel_left
+                ):
+                    # BACK leaves the panel.  Measured live 2026-09-15T03:46Z:
+                    # from the camp panel it lands on **MAP**
+                    # (dataset/truth_audit/camp_panel_stamina_gate_20260915,
+                    # step 3: EXPLORATION -> MAP), which is where the
+                    # free-stamina check runs.  The 8/8 recorded
+                    # EXPLORATION->HOME transitions belong to the *idle-income*
+                    # exploration page, a different screen; HOME also converges
+                    # on MAP because the INTEL goal maps HOME to OPEN_MAP.  The
+                    # panel cannot be opened from here even though the gauge is
+                    # visible: verify_stamina_sources_open requires the map as
+                    # its before-state.
+                    #
+                    # This flag is the loop guard, and it is deliberately not
+                    # ``stamina_panel_checked``: that one is set by the map
+                    # branch when it actually opens the panel, and setting it
+                    # here would cancel the check this decision exists to
+                    # trigger.  With the guard in place a Back that failed to
+                    # move the client stops the run instead of repeating.
+                    self.unaffordable_camp_panel_left = True
+                    return Decision(
+                        "BACK",
+                        "camp_fight_unaffordable_go_get_free_stamina",
+                        world.confidence,
+                        "camp_panel_left",
+                    )
+                return Decision(
+                    "SAFE_STOP",
+                    "camp_fight_unaffordable_and_free_gift_already_checked",
+                    1.0,
+                    "wait_for_stamina_regen",
+                )
             return Decision("INTEL_HERO_START_MARCH", "intel_hero_camp_panel", world.confidence, "intel_hero_fight_started")
         if self.current_goal == "EXPLORATION":
             if world.page is Page.HOME:
@@ -357,8 +433,18 @@ class RuleBrain:
                 self.claim_free_stamina
                 and not self.stamina_panel_checked
                 and not world.resource_search_open
-                and world.stamina.get("current") is not None
             ):
+                # No ``stamina.current is not None`` here.  Measured
+                # 2026-09-15T04:03:02Z: stamina was genuinely 0 and the gauge
+                # ROI read returned nothing (the OCR cannot read a lone 0 --
+                # best confidence 0.73, flipping between '0' and 'O'; see
+                # tools/probe_stamina_zero.py), so this check was skipped on the
+                # one frame where the free +150 gift mattered most, and the run
+                # went on to open an intel pin instead.  The gauge pill is drawn
+                # on those frames (dataset/probe_output/map_gauge_unreadable/),
+                # and the panel -- not the gauge -- is what proves whether the
+                # gift is claimable, so the number is not needed to decide
+                # whether to look.
                 self.stamina_panel_checked = True
                 return Decision("OPEN_STAMINA_SOURCES", "free_stamina_gift_not_yet_checked_this_run", world.confidence, "stamina_sources_open")
             if self.current_goal == "INTEL":

@@ -64,6 +64,9 @@ dataset/external/repositories/
 # the live run where OPEN_STAMINA_SOURCES finally executed, and the stamina
 # refusal that verify_intel_hero_march_open used to record as a success
 !dataset/truth_audit/stamina_check_live_*/**/*.png
+# the two live runs that prove the camp panel now reports its stamina and that
+# an unaffordable fight is refused before the tap instead of after it
+!dataset/truth_audit/camp_panel_stamina_gate_*/**/*.png
 # the alliance HOME page read as the GIFTS section (2026-09-15, two-layer defect)
 !dataset/truth_audit/alliance_gifts_chain_*/**/*.png
 # the live A/B that proves one decision per step (runtime made the step decision
@@ -117,3 +120,9 @@ learning/maa_migration/
 dataset/evidence/maa_migration/
 dataset/evidence/maa_live/
 dataset/evidence/maa_probe_*.png
+# probe crops.  These must NOT live under dataset/raw: that tree is the frame
+# corpus and the corpus gate assumes every PNG in it is a full client frame.
+# Measured 2026-09-15 -- 302x79 title crops in dataset/raw made every ROI fall
+# outside the frame, so match_ccoeff could not run and SemanticROIVision.find
+# raised ValueError instead of returning None.
+dataset/probe_output/

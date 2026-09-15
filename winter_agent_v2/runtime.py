@@ -156,6 +156,7 @@ class LiveRuntime:
         max_relax_attempts: int = 3,
         max_scroll_attempts: int = 3,
         max_resource_switches: int = 2,
+        max_stamina_refusals: int = 1,
         max_unknown_page_backs: int = 2,
         observation_retries: int = 2,
         sleeper: Callable[[float], None] = time.sleep,
@@ -190,6 +191,7 @@ class LiveRuntime:
         self.max_relax_attempts = max_relax_attempts
         self.max_scroll_attempts = max_scroll_attempts
         self.max_resource_switches = max_resource_switches
+        self.max_stamina_refusals = max_stamina_refusals
         self.max_unknown_page_backs = max_unknown_page_backs
         self.observation_retries = observation_retries
         self.sleeper = sleeper
@@ -344,6 +346,7 @@ class LiveRuntime:
         self._relax_attempts = 0
         self._scroll_attempts = 0
         self._resource_switches = 0
+        self._stamina_refusals = 0
         self._unknown_page_backs = 0
         self._runtime(agent_state=AgentState.AUTO_RUNNING.value, runtime_thread_alive=True,
                       scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
@@ -445,11 +448,23 @@ class LiveRuntime:
                     return self._semantic.resource_cell_center_norm(planned_resource)
                 if semantic == "HUD_STAMINA_GAUGE":
                     # The gauge is drawn at a measured spot on every map frame.
-                    # Refuse unless the gauge was actually read on this frame, so
-                    # a popup or a loading screen can never absorb the tap.
+                    # The page check is what keeps a popup or a loading screen
+                    # from absorbing the tap.
+                    #
+                    # It used to *also* require ``stamina.current is not None``,
+                    # i.e. that the number had been read.  Measured 2026-09-15:
+                    # the two MAP frames in the recorded corpus whose gauge
+                    # could not be read are both genuine ``0`` readings -- the
+                    # pill is drawn and plainly shows 0
+                    # (dataset/probe_output/map_gauge_unreadable/) -- and the
+                    # OCR cannot read a lone 0 at any padding or scale (best
+                    # confidence 0.73, and it flips between '0' and 'O'; see
+                    # tools/probe_stamina_zero.py).  So that condition did not
+                    # test "the gauge is there", it tested "the gauge is not
+                    # empty", and it disabled the free-stamina check exactly
+                    # when stamina was 0 -- the moment the free gift matters
+                    # most.  The tap target is the pill's own centre either way.
                     if before.page.value != "MAP" or before.resource_search_open:
-                        return None
-                    if before.stamina.get("current") is None:
                         return None
                     return self._semantic.stamina_gauge_center
                 if semantic == "MARCH_ROW_1":
@@ -664,6 +679,48 @@ class LiveRuntime:
                     agent_state=AgentState.AUTO_RUNNING.value,
                     reason=f"resource_{planned_resource}_has_no_node_in_range",
                     next_action="switch_to_another_resource",
+                    verifier=verification.reason,
+                )
+                continue
+            if (
+                not verification.ok
+                and decision.skill == "INTEL_HERO_START_MARCH"
+                and verification.reason == "INTEL_HERO_MARCH_REFUSED_FOR_STAMINA"
+                and self._stamina_refusals < self.max_stamina_refusals
+            ):
+                # The client refused the camp fight and opened 获取更多 instead.
+                # Measured live 2026-09-15T03:51:37Z: the camp panel's stamina
+                # ROI read nothing on that frame (the gauge digit had drifted
+                # left of HUD_STAMINA_ROI; 19 of 25 corpus frames read, and the
+                # whole-frame fallback rescues 0 of the misses), so
+                # RuleBrain's predictive affordability gate could not fire and
+                # the tap went out anyway.  Because runtime returns on the first
+                # failed verification, that ended a run which was one step away
+                # from the free-stamina check.
+                #
+                # A wider ROI was measured and rejected: it lifted readability
+                # to 25/26 but returned *different* numbers on 6 frames
+                # (18->188, 36->136, and a known 9 read as 6) by catching
+                # adjacent glyphs.  A wrong reading is worse than none here --
+                # it would mis-authorise spending -- so the read is left
+                # conservative and the refusal is treated as what it actually
+                # is: the client's own affordability verdict, which needs no OCR.
+                #
+                # Recoverable rather than fatal, exactly like the two
+                # RESOURCE_NOT_FOUND branches above: record the verdict on the
+                # brain (so the next sight of this panel routes to the free
+                # stamina instead of tapping again) and continue.  The runtime
+                # presses nothing itself -- the refusal leaves
+                # POPUP/GET_MORE_STAMINA on screen and RuleBrain already decides
+                # that popup (claim the free gift if it is there, otherwise Back
+                # to the map).  Bounded to one per run so a genuinely stuck
+                # client still ends the run honestly.
+                self._stamina_refusals += 1
+                self.brain.camp_panel_refused = True
+                self._runtime(
+                    agent_state=AgentState.AUTO_RUNNING.value,
+                    reason="camp_fight_refused_by_the_client_for_stamina",
+                    next_action="claim_free_stamina_else_back_to_map",
                     verifier=verification.reason,
                 )
                 continue

@@ -524,6 +524,22 @@ class SemanticROIVision:
                     with Image.open(row["template_path"]) as template:
                         distance = hamming(phash(image.crop(bounds)), phash(template))
                     matches.append(SemanticMatch(semantic, distance, roi))
+        if not matches:
+            # The ``ccoeff`` branch appends nothing when the matcher cannot be
+            # evaluated -- every scale is skipped because the template is not
+            # strictly smaller than the search window, which is what happens
+            # when the frame's resolution differs from the one the ROI was
+            # registered at (measured 2026-09-15: a 302x79 crop under
+            # dataset/raw made every ROI fall outside the frame, and
+            # ``POPUP_HERO_BATTLE_VICTORY`` -- a single-record, ccoeff-only
+            # semantic -- left this list empty).  ``min`` on an empty list
+            # raises, so ``find`` crashed the whole observation instead of
+            # reporting "not found".
+            #
+            # ``find`` is called on every captured frame, including partial
+            # ones and frames from a device whose resolution changed, so it must
+            # be total: a template that cannot be evaluated is not a match.
+            return None
         best = min(matches, key=lambda match: match.distance)
         threshold = self.semantic_max_distance.get(semantic, self.max_distance)
         if best.distance <= threshold:

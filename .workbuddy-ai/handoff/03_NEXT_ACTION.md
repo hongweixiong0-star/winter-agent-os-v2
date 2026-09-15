@@ -4,6 +4,116 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：本轮（2026-09-15 12:2x GMT+8）—— 免费体力首次真机领取闭环 + 两条「空读数」缺陷
+
+**一句话**：`0an` 关掉了（首次真机领到 +150），但顺手挖出两条同源缺陷 —— **「读不到」被当成了「不要做」**。
+
+### 1. 免费体力首次真机领取（`0an` → `0aq`）—— 已闭环
+
+`tools/run_live.py --goal INTEL --max-actions 6 --stop-after CLAIM_FREE_STAMINA`，`exit 0`：
+
+| 步骤 | 技能 | 前 → 后 | 体力 |
+|---|---|---|---|
+| 1 | `OPEN_STAMINA_SOURCES` | MAP → POPUP | `MAP_HUD 2` → 面板 `2/200, free_claim_available=true` |
+| 2 | `CLAIM_FREE_STAMINA` | POPUP → POPUP | `2/200 true` → **`152/200 false`** |
+
+动作是真实的 `TAP_SEMANTIC BTN_CLAIM_FREE_STAMINA`；`verify_free_stamina_claimed` **第一次判真实领取**。
+证据：`dataset/truth_audit/free_stamina_claim_20260915/`（含 README 与全部步骤记录）。
+
+### 2. 补给周期实测 7 小时（`0ar`）—— `0e` 的价值上调
+
+领取后 04:12:26Z 显示 `下次补给 06:47:35` ⇒ 下次 **11:00:01Z**；03:59:46.7Z 那张显示 `00:00:15` ⇒ **04:00:01Z**。
+**正好差 7 小时** ⇒ 补给时刻 **04:00 / 11:00 / 18:00 / 01:00 UTC**（北京 12:00 / 19:00 / 02:00 / 09:00），
+**一天 3–4 次，不是每天一次**。倒计时可当绝对时间用（两帧相隔 42 分钟、外推误差 1 秒）。
+
+### 3. 体力为 0 时读不出 ⇒ 免费体力检查被整条跳过（`0as`）—— 已修（单测）
+
+真机 04:03:02Z：体力真的是 **0**，ROI **读不出任何 token** ⇒ `stamina={}`。后果两条：大脑的 MAP 分支
+要求「有数字」才去开面板 ⇒ **恰好在礼物最值钱的一帧跳过检查**；运行时也拒绝解析体力条点击目标。
+`tools/probe_stamina_zero.py`：单独一个 `0` 在任何 padding×scale 下最高置信度 **0.73**，且在 `0`/`O` 间跳
+⇒ **降阈值不是答案**；加 padding 在 35 帧闸门上**一个值都没变** ⇒ 也不是答案。
+`tools/probe_map_gauge_unreadable.py`：6 张 MAP 帧 2 张读不出，**2/2 都是干净 HUD、体力条画着并显示 0**。
+**修法**：把「要不要去看」与「能不能点」都从「数字读没读到」解绑（礼物可领与否由**面板自己的模板**判定）。
+
+### 4. 营地战斗被拒会掐死整轮（`0at`）—— 已修（单测）
+
+`runtime.py` 第一次验证失败就 `return` ⇒ `INTEL_HERO_MARCH_REFUSED_FOR_STAMINA` 会终结整轮，
+而它离免费体力检查只差一步。**改成可恢复路由**（先例：`RESOURCE_NOT_FOUND`）：把客户端自己的拒绝
+记到 `brain.camp_panel_refused`（**客户端判决优先于任何 OCR 读数**）后 `continue`，每轮限 1 次；
+运行时**不自己按键**，弹窗仍归 `RuleBrain`。
+
+### 下一步（按价值排序）
+
+1. **`0au` —— 让免费体力检查在无人值守循环里真的跑起来（最高价值，因为它是 1–4 生效的前提）。**
+   pin 循环常态停在情报页，`run_live.py` 从情报页出发**全程不回地图** ⇒ 检查根本不执行。
+   做法：本轮未检查过免费体力时，大脑主动 `INTEL → OPEN_MAP` 一次；或按 `0ar` 的 7 小时补给时刻
+   只在窗口附近去（配合 `0e` 持久化「下次补给」绝对时间）。
+2. **`0e`/`0ar` —— 持久化「下次补给」绝对时间**，让检查只在窗口附近付出动作成本。
+3. **真机复现 `0as` 与 `0at`**（两者都只有单测）：`0as` 需体力回到 0；`0at` 需「闸门读不到体力 + 客户端拒绝」同时出现。
+4. **`0al` —— 需操作者决策，未动代码**：账上 1,007 个「恢复 10 点」道具（≈10,070 体力）而体力长期个位数。
+5. **`0ap` —— 拿到一次真实的自动化运行产物之前，不得声称"有无人值守在跑"（第 3 次）。**
+6. **72 小时 Soak** —— 仍未开始。
+
+
+
+### 1. 营地面板现在报出体力（`0ao` 的一部分）—— 已修 + 真机验证
+
+英雄之旅营地面板是**地图浮层**，世界地图 HUD 完整保留 ⇒ 体力条位置与 `Page.MAP` **完全相同**。
+但 `HybridVision` 只对 `Page.MAP`/`RESOURCE_DETAIL` 做体力富化，营地面板被判成 `EXPLORATION`
+⇒ **读数被量到了又丢掉**（`stamina={}`）。
+
+定向语料闸门（`tools/probe_camp_panel_stamina.py`，25 张"大脑真的看到营地面板"的生产帧）：
+`HUD_STAMINA_ROI` 在 **19/25** 上读出数字（157/165/165/165/18/18/186/155/155/145/36/36/157/157/11/11/2/2/9），
+6 张读不出是 **OCR 失败而非 ROI 错**（数字紧邻小红点，被读成 `A`/`m`，conf≈0.7）。
+**地图分支的全帧回落对这 6 张一张都救不回（实测 0/6）** ⇒ 不接回落，少一次全帧 OCR。
+真机：`before.stamina={'current': 16, 'source': 'CAMP_PANEL_HUD', ...}`（补丁前是 `{}`）。
+
+### 2. 体力不足时先量后付（`0ak` 根因级修法）—— 已修 + 真机验证
+
+大脑在营地面板上比较 `world.stamina.current` 与 `exploration.stamina_cost_displayed`：
+
+- 不足 **且** 本轮还没查过免费礼物 ⇒ `BACK`（`camp_fight_unaffordable_go_get_free_stamina`）→ 落 MAP → 免费体力检查
+- 不足 **且** 礼物已查过 / 未授权 ⇒ `SAFE_STOP`
+- 够 / 读不出 ⇒ 照常 `INTEL_HERO_START_MARCH`
+
+真机（体力 7，cost 10）第 3 步 = `BACK / camp_fight_unaffordable_go_get_free_stamina`，
+`EXPLORATION → MAP`，第 4 步即 `OPEN_STAMINA_SOURCES`，6/6 verifier OK，exit 0。
+**反事实**：没有闸门时第 3 步会 `INTEL_HERO_START_MARCH` → 被拒 → 记 `INTEL_HERO_MARCH_REFUSED_FOR_STAMINA`
+→ `runtime.py` 在**第一次验证失败就 return** ⇒ 整轮死在第 3 步，永远到不了第 4–5 步。
+
+**踩到的坑（写下来）**：闸门第一版复用了 `stamina_panel_checked` 做循环守卫 —— 而 MAP 分支的免费体力检查
+**正是**以 `not stamina_panel_checked` 为闸 ⇒ 等于把自己要去做的那一步关掉。改用独立标志
+`unaffordable_camp_panel_left`，并补了一条**端到端**测试（`test_the_route_really_reaches_the_free_stamina_check`）
+专门钉住这个耦合。**"设一个标志"之前先问：还有谁在读它？**
+
+### 3. 免费体力检查还给无人值守循环（`0am`）—— 已修 + 真机验证
+
+`tools/run_intel_pins.py` 一直在传 `--no-stamina-check`，而 `config/v2.json` 明说免费礼物
+**must be claimed**。该旗子的理由（`STAMINA_SOURCES_NOT_OPEN` 噪声）已查明是 `0i` 的签名：
+`skill=OPEN_INTEL` + `action=BTN_OPEN_INTEL_WILD_HUD` + `after=INTEL`（**动作成功了**）却记成 FAILURE，共 9 条。
+已删传参。真机（不带旗子）：第 1 步 = `OPEN_STAMINA_SOURCES`，3/3 OK，exit 0。
+
+**留档**：`dataset/truth_audit/camp_panel_stamina_gate_20260915/`（5 帧 + 两次运行全量 step 记录 + README）。
+
+### 4. 视觉层不再抛异常（`0ao`）
+
+`SemanticROIVision.find` 的 `matches` 在 `ccoeff` 分支下可能为空 ⇒ `min([])` 抛 `ValueError`。
+4 个语义是全 ccoeff 单记录（含 `BTN_HERO_CAMP_FIGHT`、`BTN_HERO_FIGHT`）。已加空列表守卫。
+暴露它的是我自己把 104 张 302×79 标题裁剪图写进了 `dataset/raw` ⇒ 已移到 `dataset/probe_output/`（移动，未删除）。
+
+### 下一个账号的最优动作（按价值排序）
+
+1. **`0an`：盯 `CLAIM_FREE_STAMINA` 的真机首执**。免费礼物到期后跑
+   `run_live.py --goal INTEL --max-actions 4`，若 `free_claim_available=true` 就应出现
+   `CLAIM_FREE_STAMINA`（全语料 0 次）。**它的 verifier 从未判过真实领取**，这是唯一还没真机验证的
+   关键动作；若判错，循环每个 cycle 都会产出一条失败。
+2. **`0e`：持久化「下次补给」倒计时**（优先级已升高）。现在每个 cycle 白花 ≤2 个动作（最多 8 cycle/小时
+   ≈ 16 动作/小时），而三次真机运行礼物一次都没到期。存下倒计时即可把这项降到接近 0。
+3. **`0al`（需操作者决策，勿擅自扩权）**：面板里有 `领主体力 / 使用后恢复10点 / [使用] / 库存 1,007`
+   ≈ 上万体力道具，而体力常年在个位数。该行不是付费行，但 `stamina_policy.note` 只允许 `BTN_CLAIM_FREE_STAMINA`。
+4. **`0ap`：自动化"说在跑、实际没跑"第 3 次**。在拿到一次真实的自动化运行产物前，不得声称有无人值守在跑。
+5. **72h Soak** —— 仍未开始。
+
 ## 手写：本轮（2026-09-15 11:xx GMT+8）—— 出征页身份不再编造 + 免费体力首次真机执行
 
 ### 1. 出征页身份编造（`0w` + `0af`）—— 已修，全语料闸门 104/104
@@ -69,8 +179,8 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 48 in the last 2 day(s), 115 all-time, last seen 2026-09-15T01:06:10.228210+00:00
-LAST GOOD COMMIT: 8943141
-CURRENT DIRTY FILES: 58
+LAST GOOD COMMIT: 5675402
+CURRENT DIRTY FILES: 13
 LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-15T03:04:43.757203+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260915T030429554449.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260915T030432112556.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 115, "recent": 48, "last_seen": "2026-09-15T01:06:10.228210+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 3}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T03:04:43.757203+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
