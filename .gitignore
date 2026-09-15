@@ -104,13 +104,17 @@ desktop.ini
 .DS_Store
 
 # --- scratch ---------------------------------------------------------------
-# pytest --basetemp sandbox (tests are run with this to avoid tripping the
-# workspace bulk-delete guard on %TEMP% cleanup)
-tools/_pt_tmp/
-tools/_pt_codex_0ba/
-tools/_pt_codex_full_0ba/
-tools/_pt_codex_0bb/
-tools/_pt_codex_full_0bb/
+# pytest sandbox.  Two things are needed on this machine, and the reason is
+# recorded in the handoff: --basetemp alone is not enough, because pytest also
+# garbage-collects its default root under %TEMP%\pytest-of-<user>, and that
+# cleanup trips the workspace bulk-delete guard (measured: 463 files) which
+# raises SystemExit mid-run and cascades into ~25 bogus fixture-teardown errors.
+# Setting PYTEST_DEBUG_TEMPROOT to a project path as well is what keeps the
+# suite's result readable:
+#   PYTEST_DEBUG_TEMPROOT=tools/_pt_root python -m pytest tests -q \
+#       --basetemp=tools/_pt_root/bt
+tools/_pt_*/
+.pytest_tmp_*/
 *.tmp
 .workbuddy-ai/handoff/.commit_message.txt
 # command-output capture files: this machine cannot pipe stdout (no coreutils),

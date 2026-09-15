@@ -221,6 +221,47 @@ def verify_resource_level_relaxed(before: WorldState, after: WorldState) -> Veri
     )
 
 
+def verify_march_count_readable(before: WorldState, after: WorldState) -> VerificationResult:
+    """Prove the march capacity became readable without leaving the map.
+
+    ``CHECK_MARCH`` taps nothing -- its action is an ``OBSERVE`` -- and exists
+    only because the brain cannot plan march-dependent work while the counter is
+    unread (``world.idle_marches is None``).  Its whole job is to look again.
+
+    It was selected by the brain but absent from ``VERIFIED_ATOMIC``, and
+    ``runtime.py`` refuses any skill outside that map, so every run that reached
+    this state died with ``SKILL_NOT_ENABLED_FOR_LIVE_LOOP`` -- an integration
+    gap reported as the outcome of a real session.  That is the same mislabelling
+    class as 0ax and 0ba, one layer further in: the loop blamed the run for a
+    wiring hole.
+
+    It matters beyond the wording.  The recorded reason ``march_used`` goes
+    missing is that an overlay hides the counter; when the overlay clears, the
+    next frame reads it.  Today the loop cannot survive long enough to take that
+    frame, so a transient occlusion ends the run -- and the gather workflow,
+    which needs a free march, never starts at all (measured 2026-09-15: three
+    ``GATHER_RESOURCE`` closures all died on step 1 here, which is why
+    ``START_GATHER`` has never once executed on MAA).
+
+    The honest claim is narrow: still on the map, and the count is now readable.
+    Neither half is assumed -- an unread count stays a failure, reported as
+    ``MARCH_COUNT_NOT_READ`` rather than as a fabricated success.
+    """
+    stayed = before.page is Page.MAP and after.page is Page.MAP
+    readable = after.march_used is not None
+    ok = stayed and readable
+    return VerificationResult(
+        ok,
+        "OK" if ok else "MARCH_COUNT_NOT_READ",
+        {
+            "stayed_on_map": stayed,
+            "march_used_before": before.march_used,
+            "march_used_after": after.march_used,
+            "march_max_after": after.march_max,
+        },
+    )
+
+
 def verify_safe_back(before: WorldState, after: WorldState) -> VerificationResult:
     search_closed = before.page is Page.MAP and before.resource_search_open and after.page is Page.MAP and not after.resource_search_open
     page_returned = before.page not in {Page.MAP, Page.POPUP} and after.page is not before.page and after.known

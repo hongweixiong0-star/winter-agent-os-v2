@@ -62,6 +62,10 @@ NON_FATAL_STOPS = {
     "intel_available_no_claim", "verified_beast_target_not_visible", "unknown_page",
     "goal_page_mismatch", "SKILL_NOT_ENABLED_FOR_LIVE_LOOP", "MAX_ACTIONS_REACHED",
     "TARGET_SKILL_VERIFIED",
+    # Honest end of a run whose march counter stayed unreadable.  Kept next to
+    # SKILL_NOT_ENABLED_FOR_LIVE_LOOP on purpose: that reason used to be what
+    # this state produced, and it described a wiring hole rather than the game.
+    "MARCH_COUNT_NOT_READ", "intel_no_untried_pins",
 }
 
 
