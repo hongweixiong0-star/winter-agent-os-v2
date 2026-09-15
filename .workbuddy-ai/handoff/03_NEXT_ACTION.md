@@ -4,6 +4,57 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：本轮（2026-09-15 23:2x GMT+8）—— 接入 Codex Commander Queue；队列已跑空
+
+### 0. 先做这一步（**接管后第一件事**）
+
+```bash
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py plan
+```
+
+任务来源现在是 `.workbuddy-ai/commander/WORK_QUEUE.json`（Codex 写），
+**不是**文档里的待办列表。判据 = `status=="READY"` **且** `dependencies` 全有终态。
+`QUEUED` / `WAITING_FOR_NATURAL_STATE` **不是可执行任务**（后者禁止为凑任务消耗资源）。
+
+**当前队列终态：RUNNABLE 0。** 8 个 Order 已全部收敛：
+`WB-0BA`/`WB-0BB`/`WB-0AW`/`WB-EXECUTOR-EVIDENCE-AUDIT`/`WB-RUNTIME-EXIT-ROOTCAUSE` = DONE；
+`WB-0AZ` = BLOCKED；`WB-0AX` = WAITING_FOR_NATURAL_STATE；`WB-GOAL-LOW-RISK-COVERAGE` = QUEUED（Codex 压着）。
+⇒ **下一轮不要自己发明任务**：等 Codex 更新 `WORK_QUEUE.json`，或按下面第 2 条做。
+
+### 1. 队列留了三件明确交接
+
+1. **RR-001（`0bi`，最该先看）**：`unexpected_worker_exits` 有两个写入方且规则不一致
+   —— 带分类的路径只计 `WORKER_CRASH`，兜底路径**凡非 fatal 全计**。
+   `crashes/` 不存在、`latest.log` 0 字节 ⇒ **历史 15 不是「15 次崩溃」**。
+   修复位置在 `tools/control_panel.py`，**超出该 Order 的授权文件范围** ⇒ 未动手，见 `REVIEW_REQUESTS.md`。
+   ⚠ 72h 验收要求 `unexpected_worker_exits = 0`，而**一个把环境失败也算崩溃的计数器永远到不了 0**。
+2. **`0bj` / `WB-0AZ`**：建议 Codex 改成 `WAITING_FOR_NATURAL_STATE`
+   （BLOCKED 卡今日已自然出现 ≥2 次），或先裁决「按 `大师悬赏` 弹窗的 `前往查看` 是否可接受」。
+3. **队列自己的前提要重算**：`WB-EXECUTOR-EVIDENCE-AUDIT` 的 before_metric
+   （「大量空 backend 字段」）描述的是**历史语料**，当前写路径当时已经 **97%** 完整。
+   ⇒ 以后把指标**限定在近期 episode** 上，Order 会更准。
+
+### 2. 如果你在本轮没有队列可跑，按价值做这三件（都已定位、都在授权内）
+
+1. **`0be` 的残余**：pin 耗尽每轮多一次「无效 BACK 往返」（1 动作）。
+   要去掉需要按 pin 类型分类 ⇒ 新视觉工作。**先算性价比**，别默认去做。
+2. **`0bg` 的真机确认**：两个 provenance 修复目前只有单测 + REPLAY；
+   下一次审计要**确认不再出现那两种形状**，而不是假设已生效。
+3. **`0bl` 的观察项**：客户端可能停在**战斗中**且被判 UNKNOWN；runtime 的 unknown_page 恢复**会按 BACK**，
+   而**战斗里按 BACK 的后果未测量**。若再遇到，**等待而不是按**（`tools/wait_for_known_page.py`）。
+
+### 3. 两个本机环境事实（本轮新增，别重新踩）
+
+- **`pytest tests/` 的 27 个「假错误」已修（`0bd`）**：根因是上一轮的 `pytest.ini`
+  **自相矛盾**（`tmp_path_retention_policy=none` + `--basetemp=tools/_pt_bt`）。
+  **看 `errors`，不要只看 `failures=0`**。一步区分法：单独跑可疑文件。
+  遗留：`%TEMP%\pytest-of-xhw` 下 15 个目录 / 1105 个文件（含被中断的 `garbage-*` 残骸），
+  **可安全清除**，清一次即断掉自持循环（本轮未清，超出授权范围）。
+- **客户端会被游戏自身改变**：本轮实测 `MAP → MAIL` 在两次探针之间自行变化，
+  时间点与一封 21:30:06 到达的邮件吻合。⇒ **run 必须重新 observe，不能假设上次的页面还在**。
+
+---
+
 ## 手写：本轮（2026-09-15 20:4x GMT+8）—— 操作者纠偏：Intel 冻结，全面转向 MAA 生产接入
 
 **操作者指令**：Intel 成果 KEEP，但**禁止继续把主要时间投入 Intel**；`0ba` 最多 30 分钟收尾后
@@ -403,17 +454,17 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 51 in the last 2 day(s), 118 all-time, last seen 2026-09-15T10:02:57.844444+00:00
+CURRENT ROOT CAUSE: RESOURCE_NOT_FOUND — 30 in the last 2 day(s), 30 all-time, last seen 2026-09-14T06:42:03.928936+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 0
-LAST PRODUCTION EPISODE: {"skill": "SELECT_INTEL_PIN", "result": "FAILURE", "recorded_at": "2026-09-15T10:02:57.844444+00:00", "episode_id": "intel_pins_20260915_100034_pin_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_100034_pin_00\\intel_pins_20260915_100034_pin_00_step_004_before_20260915T100248439796.png", "after_screenshot": ""}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 118, "recent": 51, "last_seen": "2026-09-15T10:02:57.844444+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 6}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T10:02:57.844444+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 37
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "FAILURE", "recorded_at": "2026-09-15T15:16:47.597321+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260915T151601898916.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260915T151617564204.png"}
+TOP FAILURE: {"failure_type": "RESOURCE_NOT_FOUND", "count": 30, "recent": 30, "last_seen": "2026-09-14T06:42:03.928936+00:00", "dates": {"2026-09-13": 8, "2026-09-14": 22}, "undated": 0, "top_skills": [["SUBMIT_RESOURCE_SEARCH", 30]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T15:16:47.597321+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
 DESIGN-BLOCKED (not implementable from the draft alone; each needs a live frame of its page first): CHECK_ALLIANCE_EVENT [NOT_REGISTERED] — requires semantic(s) `ALLIANCE_EVENT_ENTRY` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; CLAIM_EVENT_TIER [NOT_REGISTERED] — requires semantic(s) `EVENT_TIER_CLAIMABLE` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; JOIN_RALLY [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_BEAR_TIMER [NOT_REGISTERED] — requires semantic(s) `BEAR_TIMER` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; READ_COUNTER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_TIMER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined ... and 14 more
-NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER', 'RECALL_MARCH', 'RECOVER_HOME', 'REINFORCE_TARGET']
+NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER', 'RECALL_MARCH', 'RECOVER_HOME', 'REINFORCE_TARGET', 'RELAX_RESOURCE_LEVEL']
 
 NEXT EXACT ACTION: Do not implement a design-blocked skill from its draft. The cheapest real progress is to obtain a live frame of the page the skill needs (a read-only discovery probe), design the missing semantic from that evidence, then implement. Failing that, take the highest-value *live-evidenced* defect from 04_OPEN_ISSUES — those are already proven by production episodes.
 

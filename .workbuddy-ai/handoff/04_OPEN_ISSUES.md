@@ -6,26 +6,47 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x118 all-time; recent=51 (last 2d), last seen 2026-09-15T10:02:57.844444+00:00 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **RESOURCE_NOT_FOUND** x30 all-time; recent=30 (last 2d), last seen 2026-09-14T06:42:03.928936+00:00 — SUBMIT_RESOURCE_SEARCH(30)
-- **DISPATCH_NOT_PROVEN** x29 all-time; recent=28 (last 2d), last seen 2026-09-14T05:25:20.306984+00:00 — DISPATCH_MARCH(29)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x118 all-time; recent=15 (last 2d), last seen 2026-09-15T10:02:57.844444+00:00 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=9 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
+- **DISPATCH_NOT_PROVEN** x29 all-time; recent=8 (last 2d), last seen 2026-09-14T05:25:20.306984+00:00 — DISPATCH_MARCH(29)
 - **INTEL_HERO_DISPATCH_NOT_PROVEN** x8 all-time; recent=8 (last 2d), last seen 2026-09-14T12:19:55.812501+00:00 — INTEL_HERO_DISPATCH(8)
 - **INTEL_RESCUE_START_NOT_PROVEN** x6 all-time; recent=6 (last 2d), last seen 2026-09-14T17:17:43.915836+00:00 — EXECUTE_INTEL_RESCUE_SURVIVORS(6)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
+- `CHECK_MARCH` never succeeded (attempts=1, failure=1)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
 - `DISPATCH_BEAST` never succeeded (attempts=1, failure=1)
 - `RESEARCH` never succeeded (attempts=1, failure=0)
-- `SAFE_STOP` never succeeded (attempts=4, failure=4)
+- `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
+- 37 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 第 18 轮（2026-09-15 23:0x GMT+8）—— 接入 Codex Commander Queue + 执行 6 个 Work Order
+
+**任务来源变了**：Codex 通过 `.workbuddy-ai/commander/WORK_QUEUE.json` 派活。
+接管后**必做** `tools/cq.py plan`（已写进 `START_HERE.md` 第 3.5 步与 `00_MASTER_RULES.md` §23）。
+判据 = `status=="READY"` **且** `dependencies` 全有终态；`QUEUED` 与
+`WAITING_FOR_NATURAL_STATE` **不是可执行任务**。队列终态：**RUNNABLE 0**。
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0be | **`SEMANTIC_TARGET_NOT_VERIFIED` 的第 4 个子成因 = 「pin 耗尽」的**结果**已被修掉，但 target_metric 的第三款没满足** | ✅ **验收达成；残余如实记录** | `WB-0BA`。四条验收**全过**（无 TAP_SEMANTIC、无 SEMANTIC_TARGET_NOT_VERIFIED、verifier 3/3、理由可解释）。但真机跑出来是 `SELECT_INTEL_PIN`(开卡) → `BACK`(把刚开的卡关掉) → `SAFE_STOP intel_no_untried_pins` ⇒ **每轮 1 次「无效 BACK 往返」**，即 `target_metric` 明写的「0 次无效 BACK 往返」**没满足**。**这不是缺陷而是 tap-first 的固有代价**（任务卡类型只有点开才知道）。`intel_no_untried_pins` 这个理由**字面上是准确的**（该分支要求 `pins > 0`）。真机本轮实测：13:34:54Z 起 4 步、exit 0、3/3 verifier OK。⚠ **若要去掉那次往返**需要按 pin 类型分类（新视觉工作），**按操作者指令不再在 Intel 深挖**。 |
+| 0bf | **免费体力路线其实早已闭环，缺的是「两个方向都验」** | ✅ **已闭环（同运行 + 反向）** | `WB-0BB`。单次运行 7 步全 verifier OK：`BACK(INTEL→MAP) → OPEN_STAMINA_SOURCES → CLAIM_FREE_STAMINA(140→290) → BACK → OPEN_INTEL(回到主任务) → SELECT_INTEL_PIN → BACK`。**反向本轮也拿到**：补给未到期（时钟在 14.4h 外）时**不绕道**。⚠ **顺带撤回一处错误推断**：`stamina_supply.py` 的 docstring 曾由两个样本推出「04:00:01 与 11:00:01 相隔 7 小时 ⇒ 一天 3-4 次」；第 4 个样本显示「领取后 **+15.5 小时**才下一次」⇒ **7 小时守恒不成立**。代码本来就只信面板倒计时，所以**行为无需改，是注释在骗人** —— 已改成明确写「机制 UNKNOWN，不要从样本推周期」。 |
+| 0bg | **episode 的 backend provenance 曾有两个真缺陷；且「全空的 SAFE_STOP 行」不可能来自 runtime** | ✅ **两个缺陷已修；第三个结论已钉住** | `WB-EXECUTOR-EVIDENCE-AUDIT`。先纠正队列前提：**今日 280 条只有 7 条不完整（97%），积压是历史**（09-12 100%、09-13 100%、09-14 69%空）。今日 9 条缺口拆成**三个互不相同的成因**：① **6 条**失败 TAP_SEMANTIC 报 `capture_backend=""` 而磁盘上有真实 before 帧 —— 该字段 docstring 说是「产生本 episode 帧的通道」，却被 `if execution.executed` 门控 ⇒ **两个不同问题共用了一个空值**。修：改判据为「帧是否存在」。② **2 条**成功 `BACK` 报 `recognition_backend=""`，而同屏 MAA 步骤报 `NONE` —— router 对系统键写 `NONE`，裸 `Executor` 漏传参数 ⇒ **同一动作因走哪条路而记录不同**。修：`PRESS_BACK` 显式声明 `NONE`。③ **1 条**全空 SAFE_STOP 行：**查明它不可能来自 runtime** —— `runtime.py` 在 `_record_episode` **之前**就 `return`。⇒ **语料里存在 runtime 从不产生的行**，对任何用该流算失败率的人都很重要，已用测试钉住。⚠ **未验**：两个修复路径是单测 + REPLAY 级；15:16:47Z 那条 `executed=true`，没有真机触发 `executed=false` 路径。 |
+| 0bh | **`check_wiring.py` 的 0aw 扫描**扫错了目录** | ✅ **已扩到 tools/ 与 tests/** | `WB-0AW`。原扫描只走 `winter_agent_v2/`，但**每轮新增代码都在 `tools/` 与 `tests/`**，且**无人值守入口 `run_live.py` / `run_intel_pins.py` 就在 `tools/`** ⇒ 「覆盖率 ≠ 执行」这个坑**又高了一层**。现已扫三目录（198 文件，全 0）。**先测量再动手**：扩展前 162 文件 0 命中 ⇒ 是加信号不是加噪声；并加「扫描必须真的分析传入目录」的负向对照（否则它可能永远报 clean）。 |
+| 0bi | **`unexpected_worker_exits` 有两个写入方且规则不一致 —— 修复超出该 Order 的授权文件范围** | ⚠️ **已定位，未修；已上交 RR-001** | `WB-RUNTIME-EXIT-ROOTCAUSE`。`tools/control_panel.py` 里 `_handle_worker_failure`（1234/1239）**只计 `WORKER_CRASH`**（并承诺 traceback 落 `crashes/`），而兜底的 `_handle_runtime_error`（1257）**凡非 fatal 一律计数、完全不看 classification** ⇒ **环境失败在带分类的路径上被排除，在兜底路径上不被排除**。**由此可推**：代码承诺每个被计数的 WORKER_CRASH 都有 traceback，而 **`learning/control_panel/crashes/` 根本不存在、`latest.log` 是 0 字节**，全语料 1284 条**没有任何 crash/fatal 类型** ⇒ **这 15 次几乎不可能来自真实崩溃**，更可能来自那条不看分类的兜底路径。⇒ **历史 15 的正确读法是「成因不明的非致命中断累计」，不是「15 次崩溃」，更不能清零**（清零会丢掉唯一线索）。**修复位置在 `tools/control_panel.py`，不在该 Order 的 `files_allowed_to_modify` 里**（且 `do_not_touch` 明列 watchdog semantics）⇒ **未动手，写成 `REVIEW_REQUESTS.md` 的 RR-001**。已在授权范围内做的事：把结论写进 `tools/update_workbuddy_handoff.py` 的 KNOWN RISKS，**让每个后续会话都看到**。 |
+| 0bj | **BLOCKED 巨兽卡恢复：集成层已证，真机状态不可安全复现** | ⛔ **BLOCKED（非「没做」，是队列自己写的 stop_condition）** | `WB-0AZ`。**新增 REPLAY 级测试**驱动**真实 `LiveRuntime`**：第 1 步真的**派发** BACK、**零 tap**、经**真 verifier** 验证；并测得反向行为 —— BACK 没挪动客户端时 `stop_reason=SAFE_BACK_NOT_PROVEN` 且**只按一次**（不乒乓）。**结构可达性也已确认**：`BACK` 在 `VERIFIED_ATOMIC` 里、决策与 goal 无关、`decide()` 中更早的出口只有 `unknown_page`。**但**从当前状态进入 `Page.BEAST + available=false` 需要按 `大师悬赏` 弹窗上的 `前往查看`，而**那是当前大脑明确拒绝的控件**、副作用未测量 ⇒ **不许手工造状态**。⇒ 建议 Codex 改为 `WAITING_FOR_NATURAL_STATE`（该状态今日已自然出现 ≥2 次）。 |
+| 0bk | **`SEMANTIC_TARGET_NOT_VERIFIED` 全时 118 次，但它的总量现在被证明是不可分解的噪声源** | ⚠️ **不要再拿总量论证视觉层退化** | 已确认**至少 4 个互不相干的子成因**：`0ax` 红花费（已修）、`0ay` `小队设置` 页（已覆盖）、`0ba`/`0be` pin 耗尽（已修）、以及 `SELECT_RESOURCE`/`SEARCH_RESOURCE` 的历史簇（09-12/09-13，未查）。⚠ **在这个数字被拆干净前，用它的总量做回归判断会把四件事一起算作一件事。** |
+| 0bl | **客户端可能停在「不该按任何键」的画面上 —— 而 runtime 的 unknown_page 恢复会按 BACK** | ⚠️ **已记录，未在原地发明导航** | 本轮实测：15:14:46Z 客户端停在**战斗进行中**（技能键、`x2`、暂停键），被判 `Page.UNKNOWN` / confidence 0.0。**判 UNKNOWN 是正确的**（不点任何东西），但 `runtime.py` 的 `unknown_page` 恢复**会按一次 BACK**，而**战斗里按 BACK 的后果未测量** ⇒ 本轮**选择等待**（新工具 `tools/wait_for_known_page.py`，只读、有界），战斗自行结束后才跑任何 run。⚠ 同一时段还实测到客户端停在**英雄招募**（抽卡页，按钮消耗招募券）被判 UNKNOWN —— 同样是「安全但不认识」。⚠ 还有一次 `MAP → MAIL` 在两次探针之间自行变化，时间点与一封 21:30:06 到达的邮件吻合，**归因未证实**。 |
+| 0bd | **本机 `pytest tests/` 报 ~27 个「假错误」：`failures=0` 但 `errors=27`** | ✅ **已定位 + 已修（有测量）** | **决定性证据**（本轮全量 junit）：`tests=702, failures=0, errors=27, skipped=7`；stdout `595 passed, 7 skipped, 27 errors, 73 subtests in 1074.40s`；**首个错误是 `SystemExit: 1`**（`tests/test_capture_naming`），随后是 `AssertionError` 级联，**最后的 4 个错误落在我自己的 `tests/test_wiring_static_resolution.py`**。**根因：上一轮的 `pytest.ini` 自相矛盾。** 宿主沙箱在 `rmtree` 超过约 50 个文件时抛 `SystemExit`，而 pytest 有两处 rmtree：① 每个测试的 `tmp_path` 清理 ② **会话级把 `--basetemp` 指向的目录整个删掉**。上一轮同时设了 `tmp_path_retention_policy=none`（不删测试目录）**和** `addopts=--basetemp=tools/_pt_bt` ⇒ 保留策略让 basetemp 长到 **145 个文件**，于是**下一次运行开头那次整目录删除正好撞上守卫**。**修法（已验）**：`pytest.ini` 去掉 retention 覆盖与 `--basetemp`，回到默认（每个测试目录在自己还小的时候就被删掉）；`scratch_pkg` 继续只拷**源码**（去掉 `__pycache__`，36 个文件 < 阈值）。**测量**：此前报错的那 5 个文件一起跑 **31 passed / 0 errors / 0 failures / 3.78s**；**随后全量复测**：`tests=708, failures=0, errors=0, skipped=7, 73 subtests`（此前为 `failures=0, errors=27`）⇒ **27 个假错误归零**。⚠ **不要只看 `failures`** —— 27 个错误是在 `failures=0` 的情况下出现的。一步区分法：单独跑可疑文件，全过 ⇒ 是环境不是回归。⚠ **仍有一个残留的 exit=1**：全部测试跑完、junit 写完之后，pytest 的会话级 GC 去删**此前遗留**的 `garbage-*` 目录（463 个文件），宿主守卫拒绝并返回 1。**它不再污染任何测试结果**（`errors=0`、junit 完整），但会让退出码不是 0。⇒ **一次性清除 `%TEMP%\pytest-of-xhw`（15 个目录 / 1105 个文件）即可归零**；它们是 pytest 临时草稿、可安全删除，本轮未清除因为那属于宿主临时目录、超出本任务授权范围。 |
 
 ### P0（本轮新增，2026-09-15 17:5x GMT+8）
 

@@ -48,12 +48,16 @@ def scratch_pkg(checker, tmp_path):
     real tree untouched -- the project forbids editing evidence or source just to
     make an assertion pass.
 
-    Only the sources are copied.  ``__pycache__`` is ignored deliberately: the
-    package also holds ~36 ``.pyc`` files, and copying them took the fixture past
-    50 files, which is the threshold of this host's bulk-delete guard.  Python
-    then aborted the cleanup with ``SystemExit`` and the suite reported ~26
-    errors in unrelated files (all at fixture setup, cascading from the corrupted
-    teardown).  The analyzer reads text, so the bytecode was never needed.
+    Deliberately function-scoped rather than module-scoped: the fixture swaps a
+    module global, and a module-scoped copy would stay in force for the tests that
+    do NOT request it, some of which assert against the real tree and some of
+    which mutate the copy.  Each test therefore gets its own copy, which is fine
+    for the host's bulk-delete guard as long as a copy stays small -- so sources
+    only.  ``__pycache__``/``*.pyc`` are ignored because 36 sources plus 36
+    bytecode files is how this fixture previously produced directories past the
+    ~50-file threshold, and an aborted rmtree is what turned into the cascade of
+    errors described in pytest.ini.  The analyzer reads text; the bytecode was
+    never needed.
     """
     dst = tmp_path / "winter_agent_v2"
     shutil.copytree(PKG, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
