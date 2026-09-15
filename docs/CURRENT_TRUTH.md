@@ -1,42 +1,42 @@
 # CURRENT TRUTH
 
-Generated (UTC): 2026-09-14T13:46:20.311106+00:00
+Generated (UTC): 2026-09-14T23:34:43.692029+00:00
 
 Everything below is recomputed by `python tools/truth_audit.py`.
 Do not trust numbers in older Markdown files.
 
 ## A. Runtime
 
-- agent_state: `IDLE`
+- agent_state: `DEGRADED`
 - runtime_thread_alive: False / scheduler_loop_alive: False
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: MAX_ACTIONS_REACHED
+- stop_reason: intel_not_available
 - page: INTEL march: None/None
 
 ## B. Episodes
 
-- total: 923 (mode: PRODUCTION=923)
-- success / failure: 617 / 301
+- total: 1003 (mode: PRODUCTION=1003)
+- success / failure: 690 / 308
 - blocked: 4  in_progress: 1
-- success rate over decided: **67.2%**
-- success rate over total: 66.8%
+- success rate over decided: **69.1%**
+- success rate over total: 68.8%
 - mixed-case `result` rows (must be normalized on read, never rewritten): 35
 
 ## C. Top failures
 
 Failure type | Count | Skills | Top skills | Last seen
 ---|---:|---:|---|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 111 | 15 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-14T13:12:49
+`SEMANTIC_TARGET_NOT_VERIFIED` | 112 | 16 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-14T14:08:48
 `MARCH_PAGE_NOT_OPEN` | 59 | 1 | START_GATHER(59) | 2026-09-12T15:17:11
 `RESOURCE_NOT_FOUND` | 30 | 1 | SUBMIT_RESOURCE_SEARCH(30) | 2026-09-14T06:42:03
 `DISPATCH_NOT_PROVEN` | 29 | 1 | DISPATCH_MARCH(29) | 2026-09-14T05:25:20
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | 1 | MAIL_CLAIM_REWARDS(10) | 
 `INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | 1 | INTEL_HERO_DISPATCH(8) | 2026-09-14T12:19:55
 `STAMINA_SOURCES_NOT_OPEN` | 7 | 1 | OPEN_INTEL(7) | 2026-09-14T10:14:36
+`INTEL_RESCUE_START_NOT_PROVEN` | 6 | 1 | EXECUTE_INTEL_RESCUE_SURVIVORS(6) | 2026-09-14T17:17:43
 `POPUP_CLOSE_NOT_PROVEN` | 5 | 2 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1) | 2026-09-13T21:08:40
-`INTEL_RESCUE_START_NOT_PROVEN` | 5 | 1 | EXECUTE_INTEL_RESCUE_SURVIVORS(5) | 2026-09-14T10:35:24
 `NO_EXECUTION` | 4 | 1 | SAFE_STOP(4) | 2026-09-14T11:20:35
 `INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 3 | 1 | INTEL_CLAIM_REWARDS(3) | 2026-09-14T10:17:47
 `EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN` | 3 | 2 | CONFIRM_EXPLORATION_IDLE_CLAIM(2), EXPLORATION_IDLE_CLAIM(1) | 
@@ -53,7 +53,7 @@ Failure type | Count | Skills | Top skills | Last seen
 
 Area | Files | Empty dirs
 ---|---:|---:
-`dataset/raw` | 2456 | 56
+`dataset/raw` | 2687 | 56
 `dataset/candidate` | 533 | 0
 `dataset/verified` | 5 | 0
 `dataset/normalized` | 1 | 0
@@ -63,17 +63,17 @@ Area | Files | Empty dirs
 ## F. Evidence integrity
 
 - status: **PASS**
-- episodes carrying screenshot references: 191 / 923
-- screenshots referenced: 371
+- episodes carrying screenshot references: 271 / 1003
+- screenshots referenced: 530
 - screenshots missing: 0
-- distinct episode ids: 73
+- distinct episode ids: 95
 
 ## G. Skill lifecycle vs the episode stream
 
 - registry total: 86
-- live verified (>=1 production success): **50**
-- only ever failed: 10
-- never executed: 26
+- live verified (>=1 production success): **54**
+- only ever failed: 7
+- never executed: 25
 
 Never executed skills:
 
@@ -83,7 +83,6 @@ Never executed skills:
 - `CLAIM_REWARD` (CANDIDATE)
 - `DISMISS_ALLIANCE_GENERIC_REWARD` (CANDIDATE)
 - `DISMISS_EXPLORATION_REWARD` (VERIFIED)
-- `INTEL_HERO_START_MARCH` (CANDIDATE)
 - `JOIN_RALLY` (CANDIDATE)
 - `NAVIGATE_TO` (CANDIDATE)
 - `OPEN_ALLIANCE_GIFTS` (CANDIDATE)
@@ -107,9 +106,9 @@ Never executed skills:
 ## H. Capability coverage (rebuilt model)
 
 - model: Goal -> Canonical Capability -> Registered Skill -> Production Evidence
-- generated: 2026-09-14T13:46:15.218848+00:00 (0.0 days ago)
-- FULLY_LIVE_VERIFIED: 1 / 16
-- PARTIAL: 8  NEVER_TRIED: 0  BLOCKED: 4  DEGRADED: 3
+- generated: 2026-09-14T23:34:38.553944+00:00 (0.0 days ago)
+- FULLY_LIVE_VERIFIED: 2 / 16
+- PARTIAL: 8  NEVER_TRIED: 0  BLOCKED: 4  DEGRADED: 2
 - mean implementation coverage: 0.54
 - mean live coverage: 0.5452
 
@@ -123,7 +122,7 @@ KEEP_RESEARCH_PRODUCTIVE | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | 
 KEEP_TRAINING_PRODUCTIVE | FULLY_LIVE_VERIFIED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 50% | -
 MAIL_ROUTINE | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 0% | -
 DAILY_ACTIVITY_TARGET | PARTIAL | RUNTIME_DISCOVERED | 100% | 75% | 75% | 25% | READ_DAILY_PROGRESS
-CLAIM_FREE_REWARDS | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 50% | -
+CLAIM_FREE_REWARDS | FULLY_LIVE_VERIFIED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 100% | -
 CLAIM_EXPLORATION_IDLE | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 33% | -
 ALLIANCE_ROUTINE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 50% | 75% | 25% | ALLIANCE_HELP, ALLIANCE_TECH_CONTRIBUTE
 EVENT_MINIMUM_GUARANTEE | PARTIAL | RUNTIME_DISCOVERED | 100% | 17% | 17% | 0% | CLAIM_EVENT_TIER, OPEN_EVENT_PAGE, READ_EVENT_PROGRESS, READ_EVENT_RULES, READ_EVENT_TIMER

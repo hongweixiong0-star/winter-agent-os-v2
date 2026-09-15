@@ -32,6 +32,22 @@ class OCRResult:
         return "\n".join(token.text for token in self.tokens)
 
 
+def _intel_pin_count(image_path: Path) -> int:
+    """Mission pins visible on an intel frame, or 0 when they cannot be counted.
+
+    The intel page is a pin map, so the pin detector is the only signal that
+    sees the board itself rather than the card that a tap produces.  A detector
+    error deliberately returns 0: the caller then falls back to its previous
+    text rule, so a broken detector can never invent an available board.
+    """
+    try:
+        from .intel_pins import intel_pin_centers
+
+        return len(intel_pin_centers(image_path))
+    except Exception:
+        return 0
+
+
 class OCRBackend(Protocol):
     name: str
 
@@ -661,25 +677,46 @@ class HybridVision:
                     if refresh and token.box and min(point[1] for point in token.box) < 190:
                         intel["refresh"] = ":".join(refresh.groups())
                 # The template layer can only say UNKNOWN here, because it knows
-                # the page but not the list.  Measured on 2026-09-14, the two
-                # states are separable by OCR alone:
-                #   with a mission card -> 击败野兽等级10 ... 前往查看 (px 292,914)
-                #   empty list          -> only 情报 / 体力 / 下次刷新 header
-                # Deciding from template *absence* would be unsafe instead: the
-                # card templates do go stale (see the beast target card fix), and
-                # a stale template would then be reported as "no missions" and
-                # silently end the goal.  Only the two measured states are
-                # claimed; anything else stays UNKNOWN.
+                # the page but not the list.  Two earlier claims about this
+                # branch were measured and then FALSIFIED on the live client, so
+                # they are recorded rather than quietly dropped:
+                #
+                # 1. "the two states are separable by OCR alone" is wrong.  The
+                #    intel page is a PIN MAP: the mission card only exists after
+                #    a pin is tapped, so a board full of work OCRs as nothing but
+                #    the 情报 / 体力 / 下次刷新 header.  Reproduced live
+                #    2026-09-15 07:36 with 5 pins on screen: OCR saw only the
+                #    header, the rule below reported NOT_AVAILABLE with
+                #    available_count=0, and goal_library turns that into
+                #    CLEAR_INTEL=COMPLETE - a silent, successful-looking stop.
+                #    That same frame's header read 下次刷新:00:23:06 while the
+                #    board was full, so the countdown is not a usable signal
+                #    either.
+                # 2. Deciding from template *absence* remains unsafe for the
+                #    reason it always was: card templates go stale, and a stale
+                #    template would be reported as "no missions".
+                #
+                # The primary evidence is therefore the pin detector, which sees
+                # the board itself.  Pins > 0 is a positive sighting and upgrades
+                # the page to AVAILABLE.  The change is strictly additive: when no
+                # pin is seen the previous OCR rule runs unchanged, so a detector
+                # failure degrades to the old behaviour instead of inventing an
+                # available board.
                 if str(intel.get("status", "UNKNOWN")).upper() == "UNKNOWN":
-                    texts = [token.text.strip() for token in eligible]
-                    has_card = any(
-                        keyword in text for text in texts for keyword in ("前往查看", "查看")
-                    )
-                    has_header = any("下次刷新" in text for text in texts)
-                    if has_card:
-                        intel.update({"status": "AVAILABLE", "available_count": 1, "list_read": True})
-                    elif has_header:
-                        intel.update({"status": "NOT_AVAILABLE", "available_count": 0, "list_read": True})
+                    pins = _intel_pin_count(image_path)
+                    if pins:
+                        intel.update({"status": "AVAILABLE", "available_count": pins,
+                                      "pins": pins, "list_read": True})
+                    else:
+                        texts = [token.text.strip() for token in eligible]
+                        has_card = any(
+                            keyword in text for text in texts for keyword in ("前往查看", "查看")
+                        )
+                        has_header = any("下次刷新" in text for text in texts)
+                        if has_card:
+                            intel.update({"status": "AVAILABLE", "available_count": 1, "list_read": True})
+                        elif has_header:
+                            intel.update({"status": "NOT_AVAILABLE", "available_count": 0, "list_read": True})
                 return replace(primary, intel=intel)
             if primary.page is Page.TRAINING and primary.training.get("status") == "IN_PROGRESS" and primary.training.get("timer") in {None, "VISIBLE"}:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))

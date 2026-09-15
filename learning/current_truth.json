@@ -1,25 +1,25 @@
 {
   "schema_version": "1.1",
-  "generated_at_utc": "2026-09-14T13:46:20.311106+00:00",
+  "generated_at_utc": "2026-09-14T23:34:43.692029+00:00",
   "source_of_truth": "learning/episodes.jsonl + registry + runtime_snapshot.json + capability coverage",
   "episodes": {
-    "total": 923,
-    "success": 617,
-    "failure": 301,
+    "total": 1003,
+    "success": 690,
+    "failure": 308,
     "blocked": 4,
     "in_progress": 1,
-    "success_rate_over_decided": 67.2,
-    "success_rate_over_total": 66.8,
+    "success_rate_over_decided": 69.1,
+    "success_rate_over_total": 68.8,
     "modes": {
-      "PRODUCTION": 923
+      "PRODUCTION": 1003
     },
     "result_case_anomaly": 35
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 111,
-      "affected_skills": 15,
+      "count": 112,
+      "affected_skills": 16,
       "top_skills": [
         [
           "SELECT_RESOURCE",
@@ -34,7 +34,7 @@
           13
         ]
       ],
-      "last_seen": "2026-09-14T13:12:49.119146+00:00"
+      "last_seen": "2026-09-14T14:08:48.104088+00:00"
     },
     {
       "failure_type": "MARCH_PAGE_NOT_OPEN",
@@ -109,6 +109,18 @@
       "last_seen": "2026-09-14T10:14:36.537848+00:00"
     },
     {
+      "failure_type": "INTEL_RESCUE_START_NOT_PROVEN",
+      "count": 6,
+      "affected_skills": 1,
+      "top_skills": [
+        [
+          "EXECUTE_INTEL_RESCUE_SURVIVORS",
+          6
+        ]
+      ],
+      "last_seen": "2026-09-14T17:17:43.915836+00:00"
+    },
+    {
       "failure_type": "POPUP_CLOSE_NOT_PROVEN",
       "count": 5,
       "affected_skills": 2,
@@ -123,18 +135,6 @@
         ]
       ],
       "last_seen": "2026-09-13T21:08:40.162078+00:00"
-    },
-    {
-      "failure_type": "INTEL_RESCUE_START_NOT_PROVEN",
-      "count": 5,
-      "affected_skills": 1,
-      "top_skills": [
-        [
-          "EXECUTE_INTEL_RESCUE_SURVIVORS",
-          5
-        ]
-      ],
-      "last_seen": "2026-09-14T10:35:24.525820+00:00"
     },
     {
       "failure_type": "NO_EXECUTION",
@@ -211,12 +211,12 @@
       "success_rate": 100.0
     },
     "INTEL_CLAIM_REWARDS": {
-      "attempts": 31,
-      "success": 28,
+      "attempts": 43,
+      "success": 40,
       "failure": 3,
       "other": 0,
-      "last_seen": "2026-09-14T13:14:19.580626+00:00",
-      "success_rate": 90.3
+      "last_seen": "2026-09-14T22:45:03.509163+00:00",
+      "success_rate": 93.0
     },
     "BEAST_HUNT": {
       "attempts": 2,
@@ -355,12 +355,12 @@
       "success_rate": 87.0
     },
     "OPEN_MAP": {
-      "attempts": 26,
-      "success": 24,
+      "attempts": 27,
+      "success": 25,
       "failure": 2,
       "other": 0,
-      "last_seen": "2026-09-14T13:12:13.057787+00:00",
-      "success_rate": 92.3
+      "last_seen": "2026-09-14T15:00:11.943838+00:00",
+      "success_rate": 92.6
     },
     "CLOSE_POPUP": {
       "attempts": 31,
@@ -371,12 +371,12 @@
       "success_rate": 96.8
     },
     "DISMISS_INTEL_REWARD": {
-      "attempts": 22,
-      "success": 17,
+      "attempts": 23,
+      "success": 18,
       "failure": 5,
       "other": 0,
-      "last_seen": "2026-09-14T10:28:45.692344+00:00",
-      "success_rate": 77.3
+      "last_seen": "2026-09-14T17:27:06.273848+00:00",
+      "success_rate": 78.3
     },
     "SELECT_INTEL_BEAST_MISSION": {
       "attempts": 11,
@@ -387,36 +387,36 @@
       "success_rate": 81.8
     },
     "OPEN_INTEL_BEAST_TARGET": {
-      "attempts": 21,
-      "success": 20,
-      "failure": 1,
+      "attempts": 27,
+      "success": 25,
+      "failure": 2,
       "other": 0,
-      "last_seen": "2026-09-14T10:37:28.465678+00:00",
-      "success_rate": 95.2
+      "last_seen": "2026-09-14T22:44:20.523983+00:00",
+      "success_rate": 92.6
     },
     "INTEL_BEAST_START_MARCH": {
-      "attempts": 22,
-      "success": 22,
-      "failure": 0,
-      "other": 0,
-      "last_seen": "2026-09-14T10:37:34.383808+00:00",
-      "success_rate": 100.0
-    },
-    "DISPATCH_INTEL_BEAST": {
-      "attempts": 22,
-      "success": 21,
+      "attempts": 28,
+      "success": 27,
       "failure": 1,
       "other": 0,
-      "last_seen": "2026-09-14T10:37:50.573831+00:00",
-      "success_rate": 95.5
+      "last_seen": "2026-09-14T22:44:25.762095+00:00",
+      "success_rate": 96.4
+    },
+    "DISPATCH_INTEL_BEAST": {
+      "attempts": 27,
+      "success": 26,
+      "failure": 1,
+      "other": 0,
+      "last_seen": "2026-09-14T22:44:40.968436+00:00",
+      "success_rate": 96.3
     },
     "OPEN_INTEL": {
-      "attempts": 72,
-      "success": 61,
+      "attempts": 85,
+      "success": 74,
       "failure": 11,
       "other": 0,
-      "last_seen": "2026-09-14T13:14:13.314470+00:00",
-      "success_rate": 84.7
+      "last_seen": "2026-09-14T22:44:57.392254+00:00",
+      "success_rate": 87.1
     },
     "SELECT_RESOURCE": {
       "attempts": 52,
@@ -443,12 +443,12 @@
       "success_rate": 67.4
     },
     "BACK": {
-      "attempts": 42,
-      "success": 41,
+      "attempts": 50,
+      "success": 49,
       "failure": 1,
       "other": 0,
-      "last_seen": "2026-09-14T10:39:07.112305+00:00",
-      "success_rate": 97.6
+      "last_seen": "2026-09-14T22:46:42.153375+00:00",
+      "success_rate": 98.0
     },
     "CONFIRM_EXPLORATION_IDLE_CLAIM": {
       "attempts": 2,
@@ -555,12 +555,12 @@
       "success_rate": 100.0
     },
     "DISMISS_DAILY_REWARD": {
-      "attempts": 2,
+      "attempts": 3,
       "success": 1,
-      "failure": 1,
+      "failure": 2,
       "other": 0,
-      "last_seen": null,
-      "success_rate": 50.0
+      "last_seen": "2026-09-14T17:19:05.582803+00:00",
+      "success_rate": 33.3
     },
     "DISMISS_DAILY_GENERIC_REWARD": {
       "attempts": 1,
@@ -627,11 +627,11 @@
       "success_rate": 0.0
     },
     "DISMISS_INTEL_GENERIC_REWARD": {
-      "attempts": 12,
-      "success": 12,
+      "attempts": 22,
+      "success": 22,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-14T13:14:30.045936+00:00",
+      "last_seen": "2026-09-14T22:45:14.157352+00:00",
       "success_rate": 100.0
     },
     "SAFE_STOP": {
@@ -643,36 +643,44 @@
       "success_rate": 0.0
     },
     "OPEN_INTEL_RESCUE_SURVIVORS_TARGET": {
-      "attempts": 5,
-      "success": 5,
+      "attempts": 6,
+      "success": 6,
       "failure": 0,
       "other": 0,
-      "last_seen": "2026-09-14T10:34:38.454784+00:00",
+      "last_seen": "2026-09-14T17:17:02.674627+00:00",
       "success_rate": 100.0
     },
     "EXECUTE_INTEL_RESCUE_SURVIVORS": {
-      "attempts": 5,
-      "success": 0,
-      "failure": 5,
+      "attempts": 7,
+      "success": 1,
+      "failure": 6,
       "other": 0,
-      "last_seen": "2026-09-14T10:35:24.525820+00:00",
-      "success_rate": 0.0
+      "last_seen": "2026-09-14T22:40:06.507366+00:00",
+      "success_rate": 14.3
     },
     "OPEN_INTEL_HERO_JOURNEY_TARGET": {
-      "attempts": 1,
-      "success": 0,
-      "failure": 1,
+      "attempts": 6,
+      "success": 4,
+      "failure": 2,
       "other": 0,
-      "last_seen": "2026-09-14T10:43:48.657584+00:00",
-      "success_rate": 0.0
+      "last_seen": "2026-09-14T22:41:07.340376+00:00",
+      "success_rate": 66.7
     },
     "INTEL_HERO_DISPATCH": {
-      "attempts": 8,
-      "success": 0,
+      "attempts": 12,
+      "success": 4,
       "failure": 8,
       "other": 0,
-      "last_seen": "2026-09-14T12:19:55.812501+00:00",
-      "success_rate": 0.0
+      "last_seen": "2026-09-14T22:41:40.314485+00:00",
+      "success_rate": 33.3
+    },
+    "INTEL_HERO_START_MARCH": {
+      "attempts": 5,
+      "success": 3,
+      "failure": 2,
+      "other": 0,
+      "last_seen": "2026-09-14T22:41:19.371886+00:00",
+      "success_rate": 60.0
     }
   },
   "registry": {
@@ -704,9 +712,9 @@
   },
   "registry_lifecycle": {
     "registry_total": 86,
-    "live_verified_skills": 50,
-    "only_failed_skills": 10,
-    "never_executed_skills": 26,
+    "live_verified_skills": 54,
+    "only_failed_skills": 7,
+    "never_executed_skills": 25,
     "never_executed": [
       {
         "skill_id": "CANCEL_DUPLICATE_TARGET",
@@ -731,10 +739,6 @@
       {
         "skill_id": "DISMISS_EXPLORATION_REWARD",
         "state": "VERIFIED"
-      },
-      {
-        "skill_id": "INTEL_HERO_START_MARCH",
-        "state": "CANDIDATE"
       },
       {
         "skill_id": "JOIN_RALLY",
@@ -815,16 +819,6 @@
     ],
     "only_failed": [
       {
-        "skill_id": "INTEL_HERO_DISPATCH",
-        "state": "CANDIDATE",
-        "failure": 8
-      },
-      {
-        "skill_id": "EXECUTE_INTEL_RESCUE_SURVIVORS",
-        "state": "VERIFIED",
-        "failure": 5
-      },
-      {
         "skill_id": "CONFIRM_EXPLORATION_IDLE_CLAIM",
         "state": "VERIFIED",
         "failure": 2
@@ -837,11 +831,6 @@
       {
         "skill_id": "DISPATCH_BEAST",
         "state": "VERIFIED",
-        "failure": 1
-      },
-      {
-        "skill_id": "OPEN_INTEL_HERO_JOURNEY_TARGET",
-        "state": "CANDIDATE",
         "failure": 1
       },
       {
@@ -869,17 +858,22 @@
       {
         "skill_id": "OPEN_INTEL",
         "state": "VERIFIED",
-        "success": 61
+        "success": 74
       },
       {
         "skill_id": "BACK",
         "state": "VERIFIED",
-        "success": 41
+        "success": 49
       },
       {
         "skill_id": "SEARCH_RESOURCE",
         "state": "VERIFIED",
         "success": 41
+      },
+      {
+        "skill_id": "INTEL_CLAIM_REWARDS",
+        "state": "VERIFIED",
+        "success": 40
       },
       {
         "skill_id": "START_GATHER",
@@ -907,24 +901,29 @@
         "success": 30
       },
       {
-        "skill_id": "INTEL_CLAIM_REWARDS",
-        "state": "VERIFIED",
-        "success": 28
-      },
-      {
-        "skill_id": "OPEN_MAP",
-        "state": "VERIFIED",
-        "success": 24
-      },
-      {
         "skill_id": "INTEL_BEAST_START_MARCH",
         "state": "VERIFIED",
-        "success": 22
+        "success": 27
       },
       {
         "skill_id": "DISPATCH_INTEL_BEAST",
         "state": "VERIFIED",
-        "success": 21
+        "success": 26
+      },
+      {
+        "skill_id": "OPEN_INTEL_BEAST_TARGET",
+        "state": "VERIFIED",
+        "success": 25
+      },
+      {
+        "skill_id": "OPEN_MAP",
+        "state": "VERIFIED",
+        "success": 25
+      },
+      {
+        "skill_id": "DISMISS_INTEL_GENERIC_REWARD",
+        "state": "CANDIDATE",
+        "success": 22
       },
       {
         "skill_id": "OPEN_HOME",
@@ -932,14 +931,9 @@
         "success": 20
       },
       {
-        "skill_id": "OPEN_INTEL_BEAST_TARGET",
-        "state": "VERIFIED",
-        "success": 20
-      },
-      {
         "skill_id": "DISMISS_INTEL_REWARD",
         "state": "VERIFIED",
-        "success": 17
+        "success": 18
       },
       {
         "skill_id": "MAIL_CLAIM_REWARDS",
@@ -949,11 +943,6 @@
       {
         "skill_id": "ALLIANCE_ALLY_GIFT_CLAIM",
         "state": "VERIFIED",
-        "success": 12
-      },
-      {
-        "skill_id": "DISMISS_INTEL_GENERIC_REWARD",
-        "state": "CANDIDATE",
         "success": 12
       },
       {
@@ -997,18 +986,28 @@
         "success": 6
       },
       {
+        "skill_id": "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
+        "state": "VERIFIED",
+        "success": 6
+      },
+      {
         "skill_id": "OPEN_DAILY",
         "state": "CANDIDATE",
         "success": 5
       },
       {
-        "skill_id": "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
-        "state": "VERIFIED",
-        "success": 5
-      },
-      {
         "skill_id": "ALLIANCE_TECH_CONTRIBUTE",
         "state": "VERIFIED",
+        "success": 4
+      },
+      {
+        "skill_id": "INTEL_HERO_DISPATCH",
+        "state": "CANDIDATE",
+        "success": 4
+      },
+      {
+        "skill_id": "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "state": "CANDIDATE",
         "success": 4
       },
       {
@@ -1019,6 +1018,11 @@
       {
         "skill_id": "DAILY_CLAIM_REWARDS",
         "state": "VERIFIED",
+        "success": 3
+      },
+      {
+        "skill_id": "INTEL_HERO_START_MARCH",
+        "state": "CANDIDATE",
         "success": 3
       },
       {
@@ -1102,6 +1106,11 @@
         "success": 1
       },
       {
+        "skill_id": "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "state": "VERIFIED",
+        "success": 1
+      },
+      {
         "skill_id": "OPEN_ALLIANCE",
         "state": "VERIFIED",
         "success": 1
@@ -1120,7 +1129,7 @@
   },
   "dataset": {
     "raw": {
-      "files": 2456,
+      "files": 2687,
       "empty_dirs": 56
     },
     "candidate": {
@@ -1145,30 +1154,30 @@
     }
   },
   "runtime": {
-    "agent_state": "IDLE",
+    "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-14T13:14:20.533019+00:00",
-    "last_action_time": "2026-09-14T13:14:20.841747+00:00",
-    "last_success_time": "2026-09-14T13:14:30.055253+00:00",
+    "last_tick_time": "2026-09-14T22:46:50.266165+00:00",
+    "last_action_time": "2026-09-14T22:46:32.641241+00:00",
+    "last_success_time": "2026-09-14T22:46:42.164845+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
     "page": "INTEL",
-    "current_goal": "INTEL",
-    "current_skill": "DISMISS_INTEL_GENERIC_REWARD",
-    "reason": "intel_goal_generic_reward_feedback",
+    "current_goal": "AVOID_STAMINA_WASTE",
+    "current_skill": "SAFE_STOP",
+    "reason": "intel_not_available",
     "preconditions": [],
     "verifier": "PASS",
-    "next_action": "intel_page_restored",
+    "next_action": "switch_task",
     "risk": "UNKNOWN",
-    "confidence": 0.98,
+    "confidence": 1.0,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_after_20260914T131422364577.png",
+    "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_002_before_20260914T224642165822.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -1177,39 +1186,40 @@
       "training": {},
       "intel": {
         "status": "NOT_AVAILABLE",
-        "stamina": 177,
+        "stamina": 128,
+        "refresh": "01:13:19",
         "available_count": 0,
         "list_read": true
       },
       "alliance": {},
       "events": {}
     },
-    "stop_reason": "MAX_ACTIONS_REACHED",
-    "updated_at": "2026-09-14T13:14:30.078298+00:00"
+    "stop_reason": "intel_not_available",
+    "updated_at": "2026-09-14T22:46:50.270541+00:00"
   },
   "evidence_integrity": {
-    "episodes_with_screenshot_references": 191,
-    "screenshots_referenced": 371,
+    "episodes_with_screenshot_references": 271,
+    "screenshots_referenced": 530,
     "screenshots_missing": 0,
     "missing_examples": [],
-    "distinct_episode_ids": 73,
+    "distinct_episode_ids": 95,
     "cross_episode_name_collisions": 0,
     "status": "PASS"
   },
   "capability_coverage": {
     "present": true,
     "model": "Goal -> Canonical Capability -> Registered Skill -> Production Evidence",
-    "generated_at_utc": "2026-09-14T13:46:15.218848+00:00",
+    "generated_at_utc": "2026-09-14T23:34:38.553944+00:00",
     "age_days": 0.0,
     "summary": {
       "total": 16,
-      "fully_live_verified": 1,
+      "fully_live_verified": 2,
       "partial": 8,
       "never_tried": 0,
       "blocked": 4,
-      "degraded": 3,
+      "degraded": 2,
       "missing": 0,
-      "fully_live_verified_percent": 6.2,
+      "fully_live_verified_percent": 12.5,
       "never_tried_percent": 0.0,
       "automation_coverage_mean": 0.54,
       "live_coverage_mean": 0.5452
@@ -1308,12 +1318,12 @@
       },
       {
         "goal": "CLAIM_FREE_REWARDS",
-        "status": "DEGRADED",
+        "status": "FULLY_LIVE_VERIFIED",
         "runtime_goal_status": "RUNTIME_DISCOVERED",
         "design_coverage": 1.0,
         "implementation_coverage": 1.0,
         "live_coverage": 1.0,
-        "stable_coverage": 0.5,
+        "stable_coverage": 1.0,
         "blocked_by": []
       },
       {

@@ -308,6 +308,39 @@ def verify_intel_reward_dismissed(before: WorldState, after: WorldState) -> Veri
     )
 
 
+INTEL_MISSION_POPUPS = frozenset({
+    "INTEL_BEAST_MISSION",
+    "INTEL_RESCUE_SURVIVORS_MISSION",
+    "INTEL_HERO_JOURNEY",
+    "INTEL_MASTER_BOUNTY",
+})
+
+
+def verify_intel_pin_opened(before: WorldState, after: WorldState) -> VerificationResult:
+    """Tapping a mission pin opens that mission's card.
+
+    The intel board is a pin map (live 2026-09-14/15): the card does not exist
+    until a pin is tapped, so the pre-state cannot name a mission type - that is
+    the whole reason this skill exists.  What it can require is a *positive
+    sighting* of the board: the pin detector saw at least one pin.  The
+    post-state must be one of the four reviewed mission cards; a tap that lands
+    on snow leaves the page on INTEL and is reported as not proven, never as a
+    success.
+
+    A BLOCKED card (大师悬赏, power 189M) still counts as opened: the tap did
+    reach the mission, and the brain is the layer that decides to back out.
+    """
+    before_ok = before.page is Page.INTEL and int(before.intel.get("pins") or 0) > 0
+    after_ok = after.page is Page.POPUP and after.popup in INTEL_MISSION_POPUPS
+    ok = before_ok and after_ok
+    return VerificationResult(ok, "OK" if ok else "INTEL_PIN_CARD_NOT_OPENED", {
+        "before_pins": before.intel.get("pins"),
+        "before_status": before.intel.get("status"),
+        "after_page": after.page.value,
+        "after_popup": after.popup,
+    })
+
+
 def verify_intel_mission_selected(before: WorldState, after: WorldState) -> VerificationResult:
     expected = {"BEAST": "INTEL_BEAST_10", "FIREBEAST": "INTEL_FIREBEAST_10"}
     mission_type = before.intel.get("mission_type")

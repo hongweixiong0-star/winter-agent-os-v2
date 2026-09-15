@@ -12,8 +12,8 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x112
 LAST GOOD COMMIT: f8e145f
-CURRENT DIRTY FILES: 6
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-14T15:50:44.627333+00:00", "episode_id": "intel_loop_20260914_155030_c01", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_155030_c01\\intel_loop_20260914_155030_c01_step_001_before_20260914T155033213752.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_155030_c01\\intel_loop_20260914_155030_c01_step_001_after_20260914T155035770775.png"}
+CURRENT DIRTY FILES: 12
+LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-14T22:46:42.153375+00:00", "episode_id": "manual_pin_20260914_224900", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_before_20260914T224631885532.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_after_20260914T224634142577.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']

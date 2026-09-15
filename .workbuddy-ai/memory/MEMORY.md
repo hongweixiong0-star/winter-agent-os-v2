@@ -61,6 +61,58 @@
   **已经成功的动作会被记成 FAILURE**，同时毒化成功率与 Recovery 决策。
   核对顺序：先看 `brain.py` 与 vision 层的实际契约，再改 verifier；并且优先用
   「不可逆的真实状态变化」（体力扣减 / 资源变化 / 队列变化）作为证据，而不是单帧模板读数。
+- **`intel_not_available` 这个 stop_reason 目前不可信（2026-09-15 真机对照推翻其判据）。**
+  `winter_agent_v2/ocr.py` 的 INTEL 回落分支声称两个状态"仅靠 OCR 即可分开"：
+  「有任务卡 → `击败野兽等级10 … 前往查看`；列表为空 → 只剩 `情报 / 体力 / 下次刷新` 表头」，
+  并在 `status` 仍为 `UNKNOWN` 时按 `has_header` 直接判 `NOT_AVAILABLE`。
+  **真机对照证伪**：截图 `live_intel_full_run6_step_001_before_20260914T082814883105.png`
+  （08:28 UTC）OCR 全量只有 `情报 / 305 / 下次刷新：07:31:46 / 满级 / 40`——
+  **没有 `前往查看`**，而它随后连做 4 个真实动作并真派兵、真领奖
+  （`SELECT_INTEL_BEAST_MISSION` → `OPEN_INTEL_BEAST_TARGET` → `INTEL_BEAST_START_MARCH`
+  → `DISPATCH_INTEL_BEAST`，08:30 又 `INTEL_CLAIM_REWARDS`）。
+  即**"只有表头"同时对应"有空任务"和"空列表"**，`has_header ⇒ NOT_AVAILABLE` 是假阳性判据。
+  情报地图上的 pin 是纯图形、无文字，`前往查看` 只在点开 pin 后才出现——所以列表页 OCR
+  从结构上就拿不到区分两者的证据。该帧之所以判成 `AVAILABLE` 是因为**模板层**先命中了
+  野兽卡，OCR 回落根本没被调用；一旦模板层漏检（→`UNKNOWN`），回落就会把"有任务"错报为
+  `NOT_AVAILABLE` 并正常退出（exit 0、verifier PASS），**静默终止目标且看起来像成功**。
+  修法方向：`NOT_AVAILABLE` 只能由**逐 pin 点开**（`tools/run_intel_pins.py` 的
+  `card_opened/productive` 证据）或"pin 数为 0"来支撑，不能由表头文字推导。
+  按项目提升闸门，此结论目前只有 **1 张正样本帧**，修模板/判据前需补齐 ≥3 正 ≥3 负，属
+  `PROMOTION BLOCKED`；但**"别信 `intel_not_available`"这条可以直接用**。
+- **`run_intel_loop.py` 对 pin 地图情报板是"错的工具"（2026-09-15 01:10 实跑复现 + 产出对照）。**
+  第 2 次真机运行同样 3 轮 `intel_not_available` / exit 0 / dispatches 0 / claims 0，
+  而**它自己连拍的 3 张 frame 全部是满板 8 pin 的情报地图**（体力 175、`下次刷新:06:49:22`）。
+  同一次自动化紧接着跑 `tools/run_intel_pins.py 8`：8/8 `card_opened=true`、
+  `DISPATCH_INTEL_BEAST`×3、`INTEL_HERO_DISPATCH`×2、`INTEL_CLAIM_REWARDS`×7（全部 verifier ok）、
+  体力 **176 → 107（净 −69）**。⇒ **有 pin 地图时"空板"结论永远错**；
+  **真相源是逐 pin 的 `card_opened/productive`（`evidence/intel_pins_*.json`）**。
+- 根因链（本次补齐）：情报页是 **pin 地图**，任务卡只在**点开 pin 之后**出现；
+  `vision.py` + `dataset/candidate/template_manifest.json` 是按"单张任务卡"标定的 → 地图上必漏检
+  → template 层给 `Page.INTEL` 但 status `UNKNOWN` → 落进 `ocr.py` 的 `has_header` 回落 → 假 `NOT_AVAILABLE`。
+  而 `winter_agent_v2/intel_pins.py::intel_pin_centers()`（颜色 blob + 白图标校验，已真机可用）
+  **只被 `tools/run_intel_pins.py` 调用，没接进生产 vision/OCR 路径**。
+  ⇒ 正解：INTEL 可用性判据改成 **pin 计数**（`pins>0 ⇒ AVAILABLE/available_count=N`）；
+  `NOT_AVAILABLE` 只允许由"pin 数为 0"或逐 pin 证据支撑，**禁止由表头文字推导**。
+- 闸门现状（2026-09-15 01:30）：正样本 **≥4 张独立真机帧**（08:28Z run6 + 17:10/17:12/17:14Z 本轮三张）
+  外加 8 条 pin 级 `card_opened` 记录 ⇒ 正样本已够；
+  **负样本（真正空板帧）仍未确立**——`intel_pins_*.json` 里 6 个 `processed=0` 的会话
+  更可能是导航失败，**不可当负样本**。故仍 `PROMOTION BLOCKED`，本次未改生产代码。
+- **体力读数的可信面**：只采信**情报页表头**读数（`run_intel_pins.intel_stamina()` 的 0.78/0.015/0.16/0.04 ROI）。
+  同一轮里 nav cycle 报出的 16 / 36 是地图 HUD 体力条在浮层下的已知误读，**不要用于记账**。
+  逐 pin 会话里最稳的序列是 episodes 中 `OPEN_INTEL` 的 `intel.stamina`（表头 OCR，conf 0.999）。
+- **pin 计数本身也会假零：`intel_pin_centers()` 的长宽比闸门漏检"带光晕"的橙 pin（2026-09-15 实测）。**
+  闸门是 `h>=60 and w>=40 and 0.65 <= w/h <= 1.3 and fill>=0.30`。
+  收尾帧上还剩 1 个橙色巨兽 pin，blob 实测
+  `ORANGE area 4575 w 87 h 136 ratio 0.64 fill 0.39 bbox (170,606,256,741)` —— **0.64 < 0.65，差 0.01 被丢**。
+  根因：橙 pin 的**光晕把 blob 向下拉长**（h 136，本体 ~90）→ 比例跌破下限。
+  已有 **2 张独立正样本**（06:35 与 06:47 GMT+8 的两帧，同一块光晕橙 pin 均漏检）。
+  ⇒ **`run_intel_pins.py` 打出的 "no actionable pins left" 同样不是"板空"的证据**，
+  先分清是"检测为 0"还是"点开后被判无动作"。修法：比例下限放到 ~0.5，或先剥离光晕再量本体高度。
+  负样本（真正空板帧）尚未确立，仍 `PROMOTION BLOCKED`，不改生产代码。
+- **大师悬赏（INTEL_MASTER_BOUNTY）是长期阻断项**：2026-09-15 点开「大师悬赏：20号」，
+  vision 读 `status=BLOCKED`（推荐战力 189M，账上远不够），卡上只有 `前往查看` 无领取按钮，
+  brain 正确走 `BACK`（`reason=intel_master_bounty_power_blocked`，verifier ok，未花体力）。
+  这类 pin 会长期占着地图，**别把它当成"任务失败"反复重试**；战力达标前它不可动作。
 
 
 

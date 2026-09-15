@@ -116,7 +116,20 @@ def intel_pin_centers(image_path: Path, min_area: int = 800, max_area: int = 120
             h = max(ys) - min(ys) + 1
             # Teardrop pins: taller than (or as wide as) they are long, and
             # never the flat refresh banner (h ~ 47) nor sprawling snow.
-            if h < 60 or w < 40 or not (0.65 <= w / max(h, 1) <= 1.3):
+            #
+            # The lower bound is 0.5, not 0.65, because an orange pin carries a
+            # glow halo that inflates the blob DOWNWARD: the pin itself is a
+            # normal teardrop but the measured blob reaches ratio ~0.62-0.64.
+            # Measured 2026-09-15 over 22 live frames (5 independent boards,
+            # plus 16 frames without such a pin): the halo'd pin measured
+            # w 86-87, h 135-139, ratio 0.619-0.644, white icon present; and
+            # moving the floor from 0.65 to 0.5 admitted EXACTLY that one blob
+            # per affected board and zero blobs on every other frame.
+            # At 0.65 the pin was dropped silently, which made a full board read
+            # as empty - reproduced live 2026-09-15 07:36, where the client
+            # showed 5 pins, the detector returned 4, and production reported
+            # available_count=0 and stopped the goal as "complete".
+            if h < 60 or w < 40 or not (0.5 <= w / max(h, 1) <= 1.3):
                 continue
             fill = area / (w * h)
             if fill < 0.30:

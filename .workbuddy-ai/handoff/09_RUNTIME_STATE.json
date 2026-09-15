@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-09-14T15:57:45+00:00",
+  "generated_at": "2026-09-14T23:34:38+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "3cb413e",
+  "commit": "622fb46",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-14T15:55:16.355920+00:00",
-    "last_action_time": "2026-09-14T15:50:34.226926+00:00",
-    "last_success_time": "2026-09-14T15:50:44.640510+00:00",
+    "last_tick_time": "2026-09-14T22:46:50.266165+00:00",
+    "last_action_time": "2026-09-14T22:46:32.641241+00:00",
+    "last_success_time": "2026-09-14T22:46:42.164845+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_155030_c03\\intel_loop_20260914_155030_c03_step_001_before_20260914T155507853649.png",
+    "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_002_before_20260914T224642165822.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -36,7 +36,8 @@
       "training": {},
       "intel": {
         "status": "NOT_AVAILABLE",
-        "stamina": 160,
+        "stamina": 128,
+        "refresh": "01:13:19",
         "available_count": 0,
         "list_read": true
       },
@@ -44,7 +45,7 @@
       "events": {}
     },
     "stop_reason": "intel_not_available",
-    "updated_at": "2026-09-14T15:55:16.466091+00:00"
+    "updated_at": "2026-09-14T22:46:50.270541+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",

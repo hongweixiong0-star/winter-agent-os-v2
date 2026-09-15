@@ -1,0 +1,110 @@
+{
+  "generated_at": "2026-09-14T22:45:34+00:00",
+  "pins_processed": 4,
+  "pins_skipped": 0,
+  "dispatches": 2,
+  "claims": 4,
+  "per_pin": [
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.1403,
+        0.4492
+      ],
+      "card_opened": true,
+      "productive": false,
+      "refusal": null,
+      "exit_code": 2,
+      "stop_reason": "INTEL_BEAST_TARGET_NOT_PROVEN",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": 169,
+      "elapsed_s": 18.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_223903_pin_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 5,
+      "dispatches": 0,
+      "claims": 1,
+      "productive_steps": [
+        "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 157,
+      "elapsed_s": 60.2,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_223903_nav_01"
+    },
+    {
+      "pin": "PURPLE",
+      "tap": [
+        0.3694,
+        0.3445
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 8,
+      "dispatches": 0,
+      "claims": 1,
+      "productive_steps": [
+        "INTEL_HERO_DISPATCH",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 147,
+      "elapsed_s": 93.9,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_223903_pin_01"
+    },
+    {
+      "pin": "PURPLE",
+      "tap": [
+        0.7958,
+        0.3844
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 7,
+      "dispatches": 1,
+      "claims": 1,
+      "productive_steps": [
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 13,
+      "elapsed_s": 67.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_223903_pin_02"
+    },
+    {
+      "pin": "BLUE",
+      "tap": [
+        0.5056,
+        0.6422
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 0,
+      "stop_reason": "intel_not_available",
+      "steps": 7,
+      "dispatches": 1,
+      "claims": 1,
+      "productive_steps": [
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 128,
+      "elapsed_s": 67.9,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260914_223903_pin_03"
+    }
+  ]
+}

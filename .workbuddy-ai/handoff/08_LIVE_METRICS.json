@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-14T15:57:45+00:00",
+  "generated_at": "2026-09-14T23:34:38+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "3cb413e",
+  "commit": "622fb46",
   "last_good_commit": "f8e145f",
-  "dirty_count": 6,
+  "dirty_count": 12,
   "episodes": {
-    "total": 934,
-    "production": 934,
-    "success": 625,
-    "failure": 304,
-    "success_rate_over_decided": 0.6728,
+    "total": 1003,
+    "production": 1003,
+    "success": 690,
+    "failure": 308,
+    "success_rate_over_decided": 0.6914,
     "modes": {
-      "PRODUCTION": 934
+      "PRODUCTION": 1003
     },
     "mixed_case_rows": 35
   },
@@ -24,10 +24,10 @@
     },
     "dispatchable": 68,
     "counts": {
-      "live_verified": 24,
+      "live_verified": 27,
       "stable": 19,
       "degraded": 9,
-      "only_failed": 11,
+      "only_failed": 8,
       "never_executed": 25
     }
   },
@@ -111,6 +111,16 @@
       ]
     },
     {
+      "failure_type": "INTEL_RESCUE_START_NOT_PROVEN",
+      "count": 6,
+      "top_skills": [
+        [
+          "EXECUTE_INTEL_RESCUE_SURVIVORS",
+          6
+        ]
+      ]
+    },
+    {
       "failure_type": "POPUP_CLOSE_NOT_PROVEN",
       "count": 5,
       "top_skills": [
@@ -121,16 +131,6 @@
         [
           "RECONNECT_SESSION",
           1
-        ]
-      ]
-    },
-    {
-      "failure_type": "INTEL_RESCUE_START_NOT_PROVEN",
-      "count": 5,
-      "top_skills": [
-        [
-          "EXECUTE_INTEL_RESCUE_SURVIVORS",
-          5
         ]
       ]
     },
@@ -147,13 +147,13 @@
   ],
   "goals": {
     "total": 16,
-    "fully_live_verified": 1,
+    "fully_live_verified": 2,
     "partial": 8,
     "never_tried": 0,
     "blocked": 4,
-    "degraded": 3,
+    "degraded": 2,
     "missing": 0,
-    "fully_live_verified_percent": 6.2,
+    "fully_live_verified_percent": 12.5,
     "never_tried_percent": 0.0,
     "automation_coverage_mean": 0.54,
     "live_coverage_mean": 0.5452
@@ -167,7 +167,7 @@
     "KEEP_TRAINING_PRODUCTIVE": "FULLY_LIVE_VERIFIED",
     "MAIL_ROUTINE": "DEGRADED",
     "DAILY_ACTIVITY_TARGET": "PARTIAL",
-    "CLAIM_FREE_REWARDS": "DEGRADED",
+    "CLAIM_FREE_REWARDS": "FULLY_LIVE_VERIFIED",
     "CLAIM_EXPLORATION_IDLE": "DEGRADED",
     "ALLIANCE_ROUTINE": "PARTIAL",
     "EVENT_MINIMUM_GUARANTEE": "PARTIAL",
@@ -178,9 +178,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 392,
-    "present_on_disk": 392,
-    "traceable_episodes": 202,
+    "referenced_screenshots": 530,
+    "present_on_disk": 530,
+    "traceable_episodes": 271,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },

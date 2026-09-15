@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "dataset/truth_audit/intel_beast_target_20260914"
 DIALOG = FIXTURE / "01_intel_beast_mission_dialog.png"
 CARD = FIXTURE / "02_beast_target_card_on_map.png"
-EMPTY_INTEL = FIXTURE / "03_intel_page_empty_list.png"
+EMPTY_INTEL = FIXTURE / "03_intel_page_full_board.png"
 MANIFEST = ROOT / "dataset/candidate/template_manifest.json"
 
 
@@ -115,15 +115,32 @@ def test_the_button_template_carries_the_measured_geometry() -> None:
     assert abs(match.center_norm[1] - 0.4820) < 0.01
 
 
-def test_empty_intel_list_is_reported_not_left_unknown() -> None:
-    """A visible-but-empty Intel list must not dead-end the goal.
+def test_the_frame_once_filed_as_an_empty_intel_list_is_a_full_board() -> None:
+    """The only frame ever filed as an "empty Intel list" is a FULL pin board.
 
-    Before: ``PAGE_INTEL`` matched, no mission template matched, so the state was
-    ``status=UNKNOWN`` and the brain could only answer ``SAFE_STOP
-    intel_state_unknown`` -- indistinguishable from a vision failure.
+    It was captured 2026-09-14 and named ``03_intel_page_empty_list.png``
+    because its OCR text held only the 情报 / 体力 / 下次刷新 header and no
+    前往查看.  That inference was wrong: the intel page is a PIN MAP and the
+    mission card only exists after a pin is tapped.  Re-measured 2026-09-15,
+    the frame carries 13 mission pins (体力 305, 下次刷新:07:59:21).
 
-    Now the two states are separated by OCR evidence measured on the live client:
-    a card shows 前往查看, an empty list shows only the 下次刷新 header.
+    It is kept - renamed, not deleted - as the evidence for that correction,
+    and because it is the reason this project still has no verified EMPTY
+    board: the one negative sample it thought it had was a mislabel.
+    """
+    from winter_agent_v2.intel_pins import intel_pin_centers
+
+    pins = intel_pin_centers(_fixture(EMPTY_INTEL))
+    assert len(pins) >= 10, f"expected a full board, detected {[p.color for p in pins]}"
+
+
+def test_a_full_intel_board_is_never_reported_as_not_available() -> None:
+    """Regression guard for the silent-stop bug this fixture used to encode.
+
+    The old assertion here was ``status == "NOT_AVAILABLE"`` on a board that in
+    fact holds thirteen missions.  ``goal_library`` maps NOT_AVAILABLE to
+    ``CLEAR_INTEL = COMPLETE``, so that reading stopped the agent for the day
+    while the board was full.
     """
     from winter_agent_v2.models import Page
 
@@ -132,14 +149,13 @@ def test_empty_intel_list_is_reported_not_left_unknown() -> None:
         pytest.skip("OCR runtime unavailable")
     state = vision.observe(_fixture(EMPTY_INTEL))
     assert state.page is Page.INTEL
-    assert state.intel.get("status") == "NOT_AVAILABLE"
-    assert state.intel.get("list_read") is True
-    assert state.intel.get("available_count") == 0
+    assert state.intel.get("status") == "AVAILABLE", state.intel
+    assert int(state.intel.get("pins") or 0) >= 1
     # The refresh countdown is real evidence that the page rendered.
     assert state.intel.get("refresh")
 
 
-def test_empty_intel_list_stops_with_a_meaningful_reason() -> None:
+def test_a_full_intel_board_dispatches_a_pin_tap_instead_of_stopping() -> None:
     from winter_agent_v2.brain import RuleBrain
     from winter_agent_v2.skills import v2_registry
 
@@ -148,8 +164,9 @@ def test_empty_intel_list_stops_with_a_meaningful_reason() -> None:
         pytest.skip("OCR runtime unavailable")
     state = vision.observe(_fixture(EMPTY_INTEL))
     decision = RuleBrain(current_goal="INTEL").decide(state, v2_registry())
-    assert decision.skill == "SAFE_STOP"
-    assert decision.reason == "intel_not_available", decision.reason
+    assert decision.skill == "SELECT_INTEL_PIN", decision.reason
+    # A genuinely idle account must still be able to end its run cleanly, so
+    # run_live.py has to keep accepting the honest no-missions stop.
     accepted = (ROOT / "tools/run_live.py").read_text(encoding="utf-8")
     assert '"intel_not_available"' in accepted, (
         "run_live.py must treat 'no intel missions available' as an accepted stop,"
@@ -158,15 +175,21 @@ def test_empty_intel_list_stops_with_a_meaningful_reason() -> None:
 
 
 def test_intel_list_states_are_never_inferred_from_template_absence() -> None:
-    """Documents why the empty-list rule uses OCR keywords.
+    """Template *absence* is never evidence about the intel board.
 
     The card templates do go stale (that is exactly what broke
     ``OPEN_INTEL_BEAST_TARGET``), so "no template matched" is not evidence of an
-    empty list -- it is evidence of nothing.
+    empty board -- it is evidence of nothing.  Since 2026-09-15 the primary
+    evidence is the pin detector; the OCR keywords survive only as the fallback
+    used when no pin is sighted at all, which is why they must stay in the file.
     """
     source = (ROOT / "winter_agent_v2/ocr.py").read_text(encoding="utf-8")
     assert "下次刷新" in source and "前往查看" in source
     assert "NOT_AVAILABLE" in source
+    assert "intel_pin_centers" in source, (
+        "the pin count is the primary availability evidence; losing it would"
+        " silently restore the header-text rule that reported a full board as empty"
+    )
 
 
 def test_the_legacy_button_records_are_kept_for_provenance() -> None:

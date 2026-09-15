@@ -253,6 +253,14 @@ class RuleBrain:
                 return Decision("TRAIN_TROOPS", "training_queue_available", world.confidence, "training_queue_started")
         if world.page is Page.INTEL:
             status = world.intel.get("status", "UNKNOWN")
+            if status == "AVAILABLE" and int(world.intel.get("pins") or 0) > 0 and not world.intel.get("mission_type"):
+                # The board is a pin map: pins are sighted but no card is open,
+                # so the mission type cannot be known yet - the card only exists
+                # after a pin is tapped.  Tap one to find out; whatever opens
+                # then drives the reviewed chain.  This has to come before the
+                # READ_INTEL_LIST branch, which would otherwise observe a board
+                # it cannot read and stop.
+                return Decision("SELECT_INTEL_PIN", "intel_board_has_pins_but_no_card_open", world.confidence, "intel_pin_card_opened")
             if status == "AVAILABLE" and not world.intel.get("mission_type") and not world.intel.get("list_read"):
                 return Decision("READ_INTEL_LIST", "intel_list_requires_structured_observation", world.confidence, "intel_list_known")
             if status == "CLAIMABLE" and int(world.intel.get("claimable_count", 0)) > 0:

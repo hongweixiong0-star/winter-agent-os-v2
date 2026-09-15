@@ -17,9 +17,10 @@ from .goal_library import GoalLibrary, GoalStateStore
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read
-from .verifier import verify_ally_gift_claim, verify_beast_dispatch, verify_beast_march_open, verify_beast_target_selected, verify_building_upgrade, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
+from .verifier import verify_ally_gift_claim, verify_beast_dispatch, verify_beast_march_open, verify_beast_target_selected, verify_building_upgrade, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
+from .intel_pins import intel_pin_centers
 
 
 @dataclass(frozen=True)
@@ -105,6 +106,7 @@ class LiveRuntime:
         "SELECT_INTEL_BEAST_MISSION": verify_intel_mission_selected,
         "SELECT_INTEL_FIREBEAST_MISSION": verify_intel_mission_selected,
         "SELECT_INTEL_RESCUE_SURVIVORS": verify_intel_rescue_selected,
+        "SELECT_INTEL_PIN": verify_intel_pin_opened,
         "OPEN_INTEL_RESCUE_SURVIVORS_TARGET": verify_intel_rescue_target_open,
         "EXECUTE_INTEL_RESCUE_SURVIVORS": verify_intel_rescue_started,
         "OPEN_MAIL": verify_open_mail,
@@ -192,6 +194,12 @@ class LiveRuntime:
         self.candidate_pool = candidate_pool
         self.runtime_store = runtime_store
         self.resource_rotation = resource_rotation
+        # Intel pins already tapped in THIS run.  Pins stay on the board after
+        # their mission is consumed (claimed / marching), so without this the
+        # loop would tap the same pin forever.  Session-scoped on purpose: the
+        # board changes between runs, and a pin that produced nothing may be
+        # workable later (the hourly harness re-runs from a cold start).
+        self._tapped_intel_pins: list[tuple[int, int]] = []
 
     @property
     def _semantic(self):
@@ -457,6 +465,27 @@ class LiveRuntime:
                     if not before.resource_search_open:
                         return None
                     return self._semantic.resource_level_minus
+                if semantic == "INTEL_PIN":
+                    # The intel board is a pin map, so the tap target is a
+                    # *detected pin* rather than a template: the mission card
+                    # that names the mission type does not exist until a pin is
+                    # tapped.  Pins already tried in this run are skipped,
+                    # because a pin stays on the board after its mission is
+                    # consumed; when none is left the resolver refuses instead
+                    # of re-tapping one, so the run ends honestly rather than
+                    # looping on a consumed pin.
+                    if before.page.value != "INTEL":
+                        return None
+                    status = self.device.status()
+                    if not status.connected or status.resolution is None:
+                        return None
+                    width, height = status.resolution
+                    for pin in intel_pin_centers(before_path):
+                        if all((pin.x - tx) ** 2 + (pin.y - ty) ** 2 > 40 ** 2
+                               for tx, ty in self._tapped_intel_pins):
+                            self._tapped_intel_pins.append((pin.x, pin.y))
+                            return (pin.x / width, pin.y / height)
+                    return None
                 match = self._semantic.find(before_path, semantic)
                 if match:
                     return match.center_norm

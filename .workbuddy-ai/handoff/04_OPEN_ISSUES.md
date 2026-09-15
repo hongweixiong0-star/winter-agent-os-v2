@@ -16,14 +16,11 @@ Machine-detected issues (recomputed every run):
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
 - `DISPATCH_BEAST` never succeeded (attempts=1, failure=1)
-- `EXECUTE_INTEL_RESCUE_SURVIVORS` never succeeded (attempts=5, failure=5)
-- `INTEL_HERO_START_MARCH` never succeeded (attempts=2, failure=2)
-- `OPEN_INTEL_HERO_JOURNEY_TARGET` never succeeded (attempts=2, failure=2)
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 6 uncommitted file(s): ['M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
+- 12 uncommitted file(s): ['M .workbuddy-ai/memory/MEMORY.md', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
 <!-- /AUTO:open_issues -->
 
 ---
