@@ -454,12 +454,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: RESOURCE_NOT_FOUND — 30 in the last 2 day(s), 30 all-time, last seen 2026-09-14T06:42:03.928936+00:00
+CURRENT ROOT CAUSE: RESOURCE_NOT_FOUND — 22 in the last 2 day(s), 30 all-time, last seen 2026-09-14T06:42:03.928936+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 37
-LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "FAILURE", "recorded_at": "2026-09-15T15:16:47.597321+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260915T151601898916.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260915T151617564204.png"}
-TOP FAILURE: {"failure_type": "RESOURCE_NOT_FOUND", "count": 30, "recent": 30, "last_seen": "2026-09-14T06:42:03.928936+00:00", "dates": {"2026-09-13": 8, "2026-09-14": 22}, "undated": 0, "top_skills": [["SUBMIT_RESOURCE_SEARCH", 30]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T15:16:47.597321+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 25
+LAST PRODUCTION EPISODE: {"skill": "SELECT_RESOURCE", "result": "FAILURE", "recorded_at": "2026-09-15T16:06:19.052822+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260915T160609443785.png", "after_screenshot": ""}
+TOP FAILURE: {"failure_type": "RESOURCE_NOT_FOUND", "count": 30, "recent": 22, "last_seen": "2026-09-14T06:42:03.928936+00:00", "dates": {"2026-09-13": 8, "2026-09-14": 22}, "undated": 0, "top_skills": [["SUBMIT_RESOURCE_SEARCH", 30]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T16:06:19.052822+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

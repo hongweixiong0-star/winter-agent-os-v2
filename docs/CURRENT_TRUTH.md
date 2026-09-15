@@ -1,6 +1,6 @@
 # CURRENT TRUTH
 
-Generated (UTC): 2026-09-15T15:15:28.699611+00:00
+Generated (UTC): 2026-09-15T15:56:14.088991+00:00
 
 Everything below is recomputed by `python tools/truth_audit.py`.
 Do not trust numbers in older Markdown files.
@@ -12,16 +12,16 @@ Do not trust numbers in older Markdown files.
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: intel_no_untried_pins
-- page: INTEL march: None/None
+- stop_reason: OPEN_MAP_NOT_PROVEN
+- page: POPUP march: None/None
 
 ## B. Episodes
 
-- total: 1284 (mode: PRODUCTION=1284)
-- success / failure: 954 / 325
+- total: 1285 (mode: PRODUCTION=1285)
+- success / failure: 954 / 326
 - blocked: 4  in_progress: 1
-- success rate over decided: **74.6%**
-- success rate over total: 74.3%
+- success rate over decided: **74.5%**
+- success rate over total: 74.2%
 - mixed-case `result` rows (must be normalized on read, never rewritten): 35
 
 ## C. Top failures
@@ -53,7 +53,7 @@ Failure type | Count | Skills | Top skills | Last seen
 
 Area | Files | Empty dirs
 ---|---:|---:
-`dataset/raw` | 3342 | 56
+`dataset/raw` | 3346 | 56
 `dataset/candidate` | 533 | 0
 `dataset/verified` | 5 | 0
 `dataset/normalized` | 1 | 0
@@ -63,8 +63,8 @@ Area | Files | Empty dirs
 ## F. Evidence integrity
 
 - status: **PASS**
-- episodes carrying screenshot references: 552 / 1284
-- screenshots referenced: 1085
+- episodes carrying screenshot references: 553 / 1285
+- screenshots referenced: 1087
 - screenshots missing: 0
 - distinct episode ids: 130
 
@@ -101,7 +101,7 @@ Never executed skills:
 ## H. Capability coverage (rebuilt model)
 
 - model: Goal -> Canonical Capability -> Registered Skill -> Production Evidence
-- generated: 2026-09-15T12:25:26.105774+00:00 (0.12 days ago)
+- generated: 2026-09-15T15:48:10.456947+00:00 (0.01 days ago)
 - FULLY_LIVE_VERIFIED: 2 / 16
 - PARTIAL: 8  NEVER_TRIED: 0  BLOCKED: 4  DEGRADED: 2
 - mean implementation coverage: 0.54

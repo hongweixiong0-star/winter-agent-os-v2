@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 51,
-          "successes": 45,
+          "attempts": 52,
+          "successes": 46,
           "failures": 6
         },
         {
@@ -198,8 +198,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 75,
-          "successes": 41,
+          "attempts": 76,
+          "successes": 42,
           "failures": 34
         },
         {
@@ -210,9 +210,9 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_RESOURCE",
           "live_verified_by": "SELECT_RESOURCE",
-          "attempts": 52,
+          "attempts": 53,
           "successes": 11,
-          "failures": 41
+          "failures": 42
         },
         {
           "capability": "FIND_RESOURCE_NODE",

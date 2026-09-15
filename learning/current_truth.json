@@ -1,17 +1,17 @@
 {
   "schema_version": "1.1",
-  "generated_at_utc": "2026-09-15T15:15:28.699611+00:00",
+  "generated_at_utc": "2026-09-15T15:56:14.088991+00:00",
   "source_of_truth": "learning/episodes.jsonl + registry + runtime_snapshot.json + capability coverage",
   "episodes": {
-    "total": 1284,
+    "total": 1285,
     "success": 954,
-    "failure": 325,
+    "failure": 326,
     "blocked": 4,
     "in_progress": 1,
-    "success_rate_over_decided": 74.6,
-    "success_rate_over_total": 74.3,
+    "success_rate_over_decided": 74.5,
+    "success_rate_over_total": 74.2,
     "modes": {
-      "PRODUCTION": 1284
+      "PRODUCTION": 1285
     },
     "result_case_anomaly": 35
   },
@@ -351,12 +351,12 @@
       "success_rate": 87.0
     },
     "OPEN_MAP": {
-      "attempts": 27,
+      "attempts": 28,
       "success": 25,
-      "failure": 2,
+      "failure": 3,
       "other": 0,
-      "last_seen": "2026-09-14T15:00:11.943838+00:00",
-      "success_rate": 92.6
+      "last_seen": "2026-09-15T15:16:47.597321+00:00",
+      "success_rate": 89.3
     },
     "CLOSE_POPUP": {
       "attempts": 31,
@@ -1183,7 +1183,7 @@
   },
   "dataset": {
     "raw": {
-      "files": 3342,
+      "files": 3346,
       "empty_dirs": 56
     },
     "candidate": {
@@ -1211,27 +1211,27 @@
     "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-15T13:35:34.841447+00:00",
-    "last_action_time": "2026-09-15T13:35:17.713402+00:00",
-    "last_success_time": "2026-09-15T13:35:26.928026+00:00",
+    "last_tick_time": "2026-09-15T15:16:15.320913+00:00",
+    "last_action_time": "2026-09-15T15:16:16.020718+00:00",
+    "last_success_time": null,
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
-    "page": "INTEL",
-    "current_goal": "CLEAR_INTEL",
-    "current_skill": "SAFE_STOP",
-    "reason": "intel_no_untried_pins",
+    "page": "POPUP",
+    "current_goal": "INTEL",
+    "current_skill": "OPEN_MAP",
+    "reason": "intel_goal_requires_map",
     "preconditions": [],
-    "verifier": "PASS",
-    "next_action": "switch_task",
+    "verifier": "OPEN_MAP_NOT_PROVEN",
+    "next_action": "map_opened",
     "risk": "UNKNOWN",
-    "confidence": 1.0,
+    "confidence": 0.99,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260915T133526951700.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260915T151617564204.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -1239,24 +1239,17 @@
       "research": {},
       "training": {},
       "intel": {
-        "status": "AVAILABLE",
-        "stamina": 136,
-        "refresh": "02:24:32",
-        "available_count": 1,
-        "pins": 1,
-        "list_read": true,
-        "untried_pins": 0,
-        "detected_pins": 1
+        "claim_feedback": true
       },
       "alliance": {},
       "events": {}
     },
-    "stop_reason": "intel_no_untried_pins",
-    "updated_at": "2026-09-15T13:35:34.911629+00:00"
+    "stop_reason": "OPEN_MAP_NOT_PROVEN",
+    "updated_at": "2026-09-15T15:16:47.656265+00:00"
   },
   "evidence_integrity": {
-    "episodes_with_screenshot_references": 552,
-    "screenshots_referenced": 1085,
+    "episodes_with_screenshot_references": 553,
+    "screenshots_referenced": 1087,
     "screenshots_missing": 0,
     "missing_examples": [],
     "distinct_episode_ids": 130,
@@ -1266,8 +1259,8 @@
   "capability_coverage": {
     "present": true,
     "model": "Goal -> Canonical Capability -> Registered Skill -> Production Evidence",
-    "generated_at_utc": "2026-09-15T12:25:26.105774+00:00",
-    "age_days": 0.12,
+    "generated_at_utc": "2026-09-15T15:48:10.456947+00:00",
+    "age_days": 0.01,
     "summary": {
       "total": 16,
       "fully_live_verified": 2,

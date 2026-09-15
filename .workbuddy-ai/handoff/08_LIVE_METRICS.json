@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-15T15:48:09+00:00",
+  "generated_at": "2026-09-15T16:09:48+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "2b78b91",
+  "commit": "1a10ad7",
   "last_good_commit": "e4fd245",
-  "dirty_count": 37,
+  "dirty_count": 25,
   "episodes": {
-    "total": 1285,
-    "production": 1285,
-    "success": 954,
-    "failure": 326,
-    "success_rate_over_decided": 0.7453,
+    "total": 1288,
+    "production": 1288,
+    "success": 956,
+    "failure": 327,
+    "success_rate_over_decided": 0.7451,
     "modes": {
-      "PRODUCTION": 1285
+      "PRODUCTION": 1288
     },
     "mixed_case_rows": 35
   },
@@ -35,7 +35,7 @@
     {
       "failure_type": "RESOURCE_NOT_FOUND",
       "count": 30,
-      "recent": 30,
+      "recent": 22,
       "last_seen": "2026-09-14T06:42:03.928936+00:00",
       "dates": {
         "2026-09-13": 8,
@@ -51,20 +51,20 @@
     },
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 118,
-      "recent": 15,
-      "last_seen": "2026-09-15T10:02:57.844444+00:00",
+      "count": 119,
+      "recent": 16,
+      "last_seen": "2026-09-15T16:06:19.052822+00:00",
       "dates": {
         "2026-09-12": 36,
         "2026-09-13": 37,
         "2026-09-14": 8,
-        "2026-09-15": 6
+        "2026-09-15": 7
       },
       "undated": 31,
       "top_skills": [
         [
           "SELECT_RESOURCE",
-          40
+          41
         ],
         [
           "SEARCH_RESOURCE",
@@ -90,24 +90,6 @@
         [
           "OPEN_INTEL",
           9
-        ]
-      ]
-    },
-    {
-      "failure_type": "DISPATCH_NOT_PROVEN",
-      "count": 29,
-      "recent": 8,
-      "last_seen": "2026-09-14T05:25:20.306984+00:00",
-      "dates": {
-        "2026-09-12": 1,
-        "2026-09-13": 27,
-        "2026-09-14": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "DISPATCH_MARCH",
-          29
         ]
       ]
     },
@@ -212,6 +194,23 @@
           3
         ]
       ]
+    },
+    {
+      "failure_type": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
+      "count": 3,
+      "recent": 2,
+      "last_seen": "2026-09-15T09:23:53.200251+00:00",
+      "dates": {
+        "2026-09-14": 1,
+        "2026-09-15": 1
+      },
+      "undated": 1,
+      "top_skills": [
+        [
+          "DISMISS_DAILY_REWARD",
+          3
+        ]
+      ]
     }
   ],
   "goals": {
@@ -247,9 +246,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 1087,
-    "present_on_disk": 1087,
-    "traceable_episodes": 553,
+    "referenced_screenshots": 1092,
+    "present_on_disk": 1092,
+    "traceable_episodes": 556,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -263,6 +262,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "OPEN_MAP_NOT_PROVEN"
+    "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED"
   }
 }
