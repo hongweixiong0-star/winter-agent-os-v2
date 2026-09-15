@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `3c57cae 2026-09-15T16:19:26+08:00 evidence(stamina): archive the supply-clock live A/B/C with the due-path run`
+- `d79c459 2026-09-15T16:16:53+08:00 feat(stamina): persist the free gift's supply clock and make the check reachable (0au/0e)`
+- `17c480a 2026-09-15T14:34:41+08:00 0av: 花费被画成红色即客户端的可负担性判决(真机A/B 5/5); 营地面板写入 cost_affordable 并作为最高优先级闸门`
 - `eb23534 2026-09-15T12:54:32+08:00 免费体力首次真机领取闭环(0an/0aq); 空读数不再跳过检查(0as); 营地战斗被拒可恢复(0at); 补给周期实测7小时(0ar)`
 - `5675402 2026-09-15T11:11:14+08:00 fix(vision,verifier,brain,runtime): stop inventing beast identities; one decision per step`
 - `2a23687 2026-09-15T08:51:32+08:00 docs(handoff): checkpoint 8943141 + round overview artifact`
@@ -15,11 +18,8 @@ Last 12 commits (newest first):
 - `c2908ad 2026-09-15T08:08:13+08:00 fix(intel): count mission pins instead of trusting header text; a full board was reported empty`
 - `622fb46 2026-09-14T23:58:16+08:00 docs(handoff): intel refresh countdown is not schedulable; night loop verified`
 - `3cb413e 2026-09-14T23:51:10+08:00 docs(knowledge): correct two intel facts the live client contradicted`
-- `5c4ddd1 2026-09-14T23:13:56+08:00 docs(handoff): the hourly automation did not exist; it is recreated and verified`
-- `5c96773 2026-09-14T22:59:53+08:00 fix(runtime): back out of an unreadable screen instead of dying on it`
-- `39e246f 2026-09-14T22:49:47+08:00 docs(handoff): refresh after the OCR fragment-stitching fix (full suite green, 408 passed)`
 
-Uncommitted changes: 13
+Uncommitted changes: 21
 - `M .workbuddy-ai/handoff/.checkpoints.jsonl`
 - ` M .workbuddy-ai/handoff/.last_good_commit`
 - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
@@ -30,14 +30,153 @@ Uncommitted changes: 13
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-09-15.md`
 - ` M docs/CAPABILITY_COVERAGE.md`
+- ` M docs/CURRENT_TRUTH.md`
 - ` M evidence/INDEX.json`
 - ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/current_truth.json`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
 <!-- /AUTO:recent_commits -->
 
 ---
 
-## 手写：2026-09-14 第九轮 — 识别引擎升级（pHash → OpenCV 互相关，按证据 opt-in）
+## 手写：2026-09-15 第十七轮 — 解开 pHash「0 / 26」之谜（`0ax`）+ 拆掉无人值守的静默死结（`0az`）
+
+**一句话**：项目第一大失败 `SEMANTIC_TARGET_NOT_VERIFIED` 的近因根本不是「控件找不到」，
+而是**客户端把「你付不起」直接画成了红字**；同时无人值守被一张 BLOCKED 巨兽卡静默卡死。
+
+### 1. `0ax` —— 出征按钮的花费变红被记成「视觉找不到控件」
+
+全时 116 次，但**近期（≥09-14）只有 12 条**，形状集中：`MARCH` 页的派兵按钮
+（`BTN_BEAST_DISPATCH` ×4 / `BTN_DISPATCH` ×6）。把全部 29 条记录的 `before` 帧逐张测量：
+
+| 组 | n | pHash 距离 | 强红像素 | `unaffordable_cost_pixels` |
+|---|---:|---:|---:|---|
+| 成功 | 25 | **0**（25/25 全等） | **0** | `False` |
+| 失败 | 4 | **26**（4/4 全等） | **452** | `True` |
+
+阈值 8。**两组各自内部完全一致** ⇒ 不是抖动、不是临界，是两种确定画面。
+失败帧的 `10` 是**红色**的 —— 即 `0av` 已确立的机制（红 = 客户端判定付不起）。
+红色数字叠在模板的白色数字上，把 ROI 推出阈值 ⇒ 解析器返 `None` ⇒ 执行器报「控件不存在」。
+
+- **修法（复用，零新增颜色判别代码）**：`ocr.HybridVision.observe` 在 `Page.MARCH` 上
+  调用**已有的** `unaffordable_cost_pixels()`，读 manifest 注册的 ROI，
+  写 `stamina.cost_affordable` + `cost_verdict_source=DISPATCH_COST_COLOUR`；
+  `brain.py` 在该值为 `False` 时 `SAFE_STOP dispatch_unaffordable_for_stamina`。
+- **测试**：`tests/test_dispatch_cost_affordability.py`（17 项）。
+  帧是机器本地的（`.gitignore` 排除 `dataset/truth_audit/**/*.png`），
+  所以帧相关用例在缺帧时**跳过而不是失败**；结构化测量值 `live_ab_records.json` 进 git。
+- **证据**：`dataset/truth_audit/beast_dispatch_cost_colour_20260915/`（4 张失败帧 + 2 张成功帧
+  + 记录 + README）；裁图 `dataset/probe_output/beast_dispatch_roi_20260915/`。
+- **诚实边界**：真机只验证了**「付得起」**一侧；**「红色 ⇒ 真停下」只有回放 + 单测**。
+  红色变体**故意不入模板**（那只会去点一个客户端已判定付不起的按钮）。
+
+### 2. `0ay` —— 那 6 条 `BTN_DISPATCH` 失败被解释清楚（非新增缺陷）
+
+它们**红像素为 0**，与 `0ax` 不同因。裁图显示那些帧是 **`小队设置` 页**
+（ROI 上是绿色「战斗」按钮，距离 32 vs 正常 2），而 `brain.py` 早有
+「MARCH + INTEL + 无 beast ⇒ `INTEL_HERO_DISPATCH`」分支专治它
+⇒ **修复前历史**。价值在于：避免后续会话去找一个并不存在的模板 bug。
+证据 `dataset/probe_output/dispatch_roi_btndispatch_20260915/`。
+
+### 3. `0az` —— BLOCKED 巨兽卡 = 无人值守的静默死结（已修）
+
+`Page.BEAST` 上 `available=false` 时 brain 直接 `SAFE_STOP beast_not_actionable`：
+没人把客户端挪走 ⇒ 下一次运行撞同一页再停。两次独立复现（`dispatches=0 claims=0`，
+nav 周期三条都是 `steps=1 / elapsed_s=5.4`）。
+
+- **先测再改**：新写 `tools/probe_back_from_beast.py`，在真机那张卡上按**一次** BACK
+  ⇒ 实测落到 **`Page.MAP`**（体力恢复可读 110）。
+- **修法**：`BACK` 出路 + 一次性守卫 `beast_card_not_actionable_left`（防卡↔图乒乓），
+  与营地面板 `unaffordable_camp_panel_left` 同一模式。
+- **可验证**：`verify_safe_back` 正好接受该转移（before 非 MAP/POPUP、after 不同且已知）；
+  测试 `tests/test_beast_card_dead_end_recovery.py`（9 项，含真 verifier + 负向对照）。
+
+### 4. `0ap` 反转 —— 自动化**确实在跑**（生产证据闭环）
+
+上一轮结论是「没有任何无人值守在跑」。本轮证据：`evidence/intel_pins_20260915_092119.json`
+（`dispatches=4 claims=10`）+ **81 条** `intel_pins_20260915_0921` episode
+（派兵 ×4、英雄派兵 ×4、救援 ×1、领奖 ×10，**全部 verifier ok**），
+**非本会话手动发起** ⇒ 无人值守在跑，且上一轮修的 `0au`/`0e`/`0av` **真的被自动走到**
+（这 81 条里 `cost_affordable` 出现 12 次）。
+
+### 5. `0aw` 补强 —— 让这一类缺陷由机器抓
+
+`check_wiring.py` 加两条 AST 检查（私有 `self._x(` 调用点解析、裸名解析），
+并做**负向对照**：把 `0aw` 那条调用原样注入临时副本 ⇒ **抓到**；真实树 0。
+测试 `tests/test_wiring_static_resolution.py`（7 项）。
+
+### 本轮测试
+
+| 文件 | 项数 |
+|---|---:|
+| `tests/test_wiring_static_resolution.py` | 7 |
+| `tests/test_dispatch_cost_affordability.py` | 17 |
+| `tests/test_beast_card_dead_end_recovery.py` | 9 |
+| `tools/check_wiring.py` | `problems: 0` |
+
+---
+
+## 手写：2026-09-15 第十六轮 — 免费体力补给时钟（`0au`/`0e`）+ 拆掉运行时炸弹（`0aw`）
+
+**本轮价值最高的一条不是 `0au`/`0e`，而是先发现的 `0aw`。**
+
+### 1. `0aw`（新 P0）：脏树里的代码会崩在免费体力唯一的入口上
+
+`ocr.HybridVision.observe` 在 `GET_MORE_STAMINA` 分支调用
+`self._next_supply_seconds(...)` —— **该方法在任何类上都不存在**。
+AST 核对确认 `HybridVision` 只有 `__init__ / _semantic_roi / observe`。
+
+**迷惑性极强**：它是**语法合法的**，所以
+
+```
+tools/check_wiring.py   -> problems: 0        （通过）
+pytest tests            -> 542 passed          （通过）
+import winter_agent_v2.ocr -> OK               （通过）
+```
+
+只有真机走到 `GET_MORE_STAMINA` 面板才 `AttributeError` —— 而那正是
+`0au` / `0as` / `0am` 三条修复共同依赖的面板。
+
+⇒ **教训写进 03 坑列表**：`check_wiring.py` 是**执行级**校验，但**不是覆盖率校验**。
+「方法被调用」≠「方法存在且被走到」。**接管一个脏树时，必须先核对
+上一轮未提交代码的完整性**，不能只看 `problems: 0` 就开工。
+
+### 2. `0au`：检查在整个无人值守循环里根本不可达
+
+检查住在**世界地图**分支；情报 pin 循环整个 run 都在情报页。真机 `04:10:33Z`
+实测：从情报 pin 弹窗起手的 run **一次都没站到地图上** ⇒ 面板永远打不开
+⇒ `0am`/`0as` 修好的东西等于没生效。
+
+**修法**：情报页分支在「礼物可能到期」时主动 `OPEN_MAP`，每 run 限一趟。
+
+### 3. `0e`：把「每次都要看」变成「到期才看」
+
+面板自报倒计时，实测 4 个采样点全落在 **7 小时网格**
+（`04:00:01Z` / `11:00:01Z`）；循环最多 8 cycle/小时 ⇒ 约 **16 动作/小时**
+去确认一个每天只到 3 次的东西。
+
+### 4. Live A/B/C（`dataset/truth_audit/stamina_supply_clock_20260915/`）
+
+| run | 起点 | 关键结果 |
+|---|---|---|
+| A `08:14:56Z` | 世界地图 | `OPEN_STAMINA_SOURCES` → POPUP；**`next_supply_in_seconds=9900`**（新字段真机首次出现）；落盘 `11:00:02.444Z`；3/3 OK，exit 0 |
+| B `08:16Z` | **情报页** | **不回地图**，直接 `SELECT_INTEL_PIN → OPEN_INTEL_BEAST_TARGET → INTEL_BEAST_START_MARCH`，3/3 OK ← `0e` 的节省证据 |
+| C `08:17:4xZ` | 时钟置到过去 | `OPEN_STAMINA_SOURCES` **真的从地图打开了面板** ← 到期路径证实；面板自报 `9710s ⇒ 11:00:01.758Z`，与 A **到秒一致** |
+
+测试：`tests/test_stamina_supply_clock.py`（22 项，含真机帧 round-trip 与
+「未知不是 0」的方向性护栏）；全量 **542 passed, 7 skipped**（上轮 422）；
+`check_wiring.py` = `problems: 0`。提交 `d79c459` + 证据归档。
+
+**诚实边界**：三次运行礼物**都确实未到期** ⇒ 「时钟驱动到期 → 领到 +150」
+真机只走到**开面板**。`CLAIM_FREE_STAMINA` 的 verifier 已由 `0aq` 单独闭环
+（2→152），但两者尚未拼在同一次运行里。
+
+---
 
 操作者质问「为什么识别这么差」后做的根因分析 + 修复：
 

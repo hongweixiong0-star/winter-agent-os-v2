@@ -37,6 +37,12 @@ class RuleBrain:
         # that check, so setting it here would switch off the very step it is
         # sending the run to do.
         self.unaffordable_camp_panel_left = False
+        # Set once the brain has left a non-actionable beast/hero target card.
+        # The page is a dead end (measured live 2026-09-15: a BLOCKED 大师悬赏
+        # leaves the client with nothing to tap), and leaving it is what lets the
+        # next run work at all -- but a Back that failed to move the client must
+        # not be repeated, or the loop ping-pongs between the card and the map.
+        self.beast_card_not_actionable_left = False
         # Set by the runtime when the *client itself* refused a camp fight for
         # lack of stamina.  That refusal is ground truth and it outranks the
         # gauge reading: measured live 2026-09-15, the camp panel's stamina ROI
@@ -445,6 +451,36 @@ class RuleBrain:
                 return Decision("BEAST_HUNT", "beast_available_with_idle_march", world.confidence, "beast_defeated_and_returned")
             if world.beast.get("available") and world.march_used is None:
                 return Decision("BEAST_HUNT", "verified_beast_target", world.confidence, "beast_march_page_open")
+            # The card is on screen but offers no action: measured live
+            # 2026-09-15, a BLOCKED 大师悬赏 (`available=false`,
+            # `blocked_reason=POWER_BELOW_RECOMMENDED`) parks the client here.
+            #
+            # Returning SAFE_STOP used to end every run at its first step, which
+            # is not a stop but a dead end: nothing moved the client off the
+            # card, so the *next* run hit the same page and stopped again.  The
+            # hourly automation produced nothing for as long as the client sat
+            # there -- recorded twice, twice with `dispatches=0 claims=0`
+            # (evidence/intel_pins_20260915_092119.json and ..._095605.json,
+            # the latter with three identical `steps=1 elapsed_s=5.4` nav
+            # cycles before run_intel_pins.py gave up on its own cap).
+            #
+            # Leave the page instead.  Where BACK goes from here is measured,
+            # not assumed: `tools/probe_back_from_beast.py` pressed it once on a
+            # live blocked card and the client landed on **MAP** with the HUD
+            # readable again (stamina 110), which is exactly the page the INTEL
+            # goal - and the free-stamina check - start from.
+            # `verify_safe_back` accepts this transition (before is neither MAP
+            # nor POPUP, after is a different known page), so the step is
+            # verifiable rather than merely hopeful.
+            #
+            # Once per run: if BACK did not actually leave the card, repeating it
+            # would ping-pong the loop between this page and the map, spending
+            # actions and recording nothing.  The flag mirrors the camp panel's
+            # ``unaffordable_camp_panel_left`` guard, and after it is set the
+            # honest SAFE_STOP below still applies.
+            if not self.beast_card_not_actionable_left:
+                self.beast_card_not_actionable_left = True
+                return Decision("BACK", "beast_card_not_actionable_leaving_the_page", world.confidence, "map_opened")
             return Decision("SAFE_STOP", "beast_not_actionable", 1.0, "switch_task")
         if world.page is Page.DAILY:
             if world.daily.get("status") == "CLAIMABLE":
@@ -566,7 +602,44 @@ class RuleBrain:
             # button semantic does not exist on this page (live 2026-09-14:
             # SEMANTIC_TARGET_NOT_VERIFIED loop). The camp fight is an instant
             # hero battle, so dispatching the pre-filled formation is correct.
+            #
+            # Deliberately above the affordability guard below: this page draws a
+            # different control, whose cost colour the guard's ROI has not been
+            # measured against, so the guard is kept to the 出征 formation pages.
             return Decision("INTEL_HERO_DISPATCH", "intel_hero_formation_ready", world.confidence, "intel_hero_fight_started")
+        if world.page is Page.MARCH and world.stamina.get("cost_affordable") is False:
+            # The client drew the dispatch cost in red, which is its own verdict
+            # that the account cannot pay for this march.  Tapping 出征 in that
+            # state cannot succeed, so attempting it only produces a mislabelled
+            # failure.
+            #
+            # That mislabelling is the reason this branch exists.  Measured
+            # 2026-09-15 (learning/episodes.jsonl, all recorded beast dispatches):
+            # the 25 that were affordable matched the reviewed dispatch template
+            # at phash distance 0, and the 4 that were unaffordable all sat at
+            # distance 26 against a threshold of 8 -- because the red digit is
+            # painted over the white one the template was cut from.  The executor
+            # therefore reported those four as SEMANTIC_TARGET_NOT_VERIFIED, i.e.
+            # "the control is not there", which is false and which twice sent
+            # earlier sessions looking for a stale template or a wrong
+            # coordinate.  Refusing here records what actually happened instead:
+            # the control was found, and the account could not afford it.
+            #
+            # ``is False`` is required, not truthiness: ``None`` means Vision
+            # could not measure the colour, and an unmeasured cost must not stop
+            # a dispatch that was payable.  The client stays the authority; this
+            # only short-circuits the case where it has already said no.
+            #
+            # SAFE_STOP rather than a detour: the free-stamina route runs from the
+            # map (``0au``/``0e``), and what BACK does from a formation page is
+            # not measured, so no unverified navigation is invented here.  The
+            # run ends honestly and the next cycle replenishes.
+            return Decision(
+                "SAFE_STOP",
+                "dispatch_unaffordable_for_stamina",
+                1.0,
+                "wait_for_stamina_regen",
+            )
         if world.page is Page.MARCH and world.beast:
             if world.beast.get("victory_assured") is True:
                 # The route keys on `target_kind`, which HybridVision reads from

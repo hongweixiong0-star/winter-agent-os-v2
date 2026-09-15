@@ -970,6 +970,42 @@ class HybridVision:
                         elif has_header:
                             intel.update({"status": "NOT_AVAILABLE", "available_count": 0, "list_read": True})
                 return replace(primary, intel=intel)
+            if primary.page is Page.MARCH:
+                # The formation page's 出征 control states both the price and, in
+                # colour, whether the account can pay it.  Recording that verdict
+                # here is what keeps an unaffordable dispatch a *spending*
+                # decision instead of a vision defect.
+                #
+                # Measured 2026-09-15 over every recorded beast dispatch in
+                # learning/episodes.jsonl:
+                #
+                #   result   n   phash distance   strong-red px   verdict
+                #   success  25  0 (all identical)   0             affordable
+                #   failure   4  26 (all identical)  452            unaffordable
+                #
+                # The four failures were all reported as
+                # SEMANTIC_TARGET_NOT_VERIFIED, which reads as "the control could
+                # not be found" -- but the control was on screen the whole time
+                # and plainly visible; its cost digit was drawn red, which is
+                # what moved the pixel hash off the reviewed template.  The same
+                # red/white signal already gates the hero camp panel (see
+                # ``unaffordable_cost_pixels`` and brain.py's camp branch), so
+                # this is the same measurement applied to the other cost-bearing
+                # control rather than a new rule.
+                #
+                # The ROI comes from the manifest record, not a second
+                # hand-written rectangle, for the reason ``_semantic_roi`` gives.
+                # It is read on every MARCH frame, including the gathering
+                # formation page: both dispatch buttons are the same control
+                # (see the identity note below).
+                cost_roi = self._semantic_roi("BTN_BEAST_DISPATCH")
+                if cost_roi is not None:
+                    blocked = unaffordable_cost_pixels(image_path, cost_roi)
+                    if blocked is not None:
+                        stamina = dict(primary.stamina)
+                        stamina["cost_affordable"] = not blocked
+                        stamina["cost_verdict_source"] = "DISPATCH_COST_COLOUR"
+                        primary = replace(primary, stamina=stamina)
             if primary.page is Page.MARCH and primary.beast:
                 # The 出征 formation page is shared by the map wilderness beast
                 # and the intel beast target, and the template layer cannot

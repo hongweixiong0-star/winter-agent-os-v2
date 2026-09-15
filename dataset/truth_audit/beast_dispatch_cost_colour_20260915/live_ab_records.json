@@ -1,0 +1,99 @@
+{
+  "_provenance": "Frames are real live-client captures already referenced by learning/episodes.jsonl. The four UNAFFORDABLE frames are the only recorded beast dispatches that failed with SEMANTIC_TARGET_NOT_VERIFIED; the two AFFORDABLE frames are the two most recent recorded successes. Copies exist because dataset/raw is machine-local and not in git.",
+  "measured": {
+    "template": "btn_beast_dispatch__live_beast_march_selection__2.png",
+    "roi_norm": {
+      "x_norm": 0.56,
+      "y_norm": 0.914,
+      "w_norm": 0.405,
+      "h_norm": 0.07
+    },
+    "threshold_phash": 8,
+    "UNAFFORDABLE": {
+      "n": 4,
+      "phash_distance": 26,
+      "strong_red_px": 452,
+      "helper_unaffordable_cost_pixels": true
+    },
+    "AFFORDABLE": {
+      "n": 25,
+      "phash_distance": 0,
+      "strong_red_px": 0,
+      "helper_unaffordable_cost_pixels": false
+    }
+  },
+  "records": [
+    {
+      "file": "01_unaffordable_2026-09-15.png",
+      "kind": "UNAFFORDABLE",
+      "recorded_at": "2026-09-15T01:02:40.790453+00:00",
+      "episode_id": "intel_pins_20260915_005907_nav_00",
+      "goal_id": "INTEL",
+      "skill": "DISPATCH_INTEL_BEAST",
+      "action_target": "BTN_BEAST_DISPATCH",
+      "result": "FAILURE",
+      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "original_frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_005907_nav_00\\intel_pins_20260915_005907_nav_00_step_002_before_20260915T010238806423.png"
+    },
+    {
+      "file": "02_unaffordable_2026-09-15.png",
+      "kind": "UNAFFORDABLE",
+      "recorded_at": "2026-09-15T01:02:47.610666+00:00",
+      "episode_id": "intel_pins_20260915_005907_nav_00",
+      "goal_id": "INTEL",
+      "skill": "DISPATCH_INTEL_BEAST",
+      "action_target": "BTN_BEAST_DISPATCH",
+      "result": "FAILURE",
+      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "original_frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_005907_nav_00\\intel_pins_20260915_005907_nav_00_step_001_before_20260915T010245838006.png"
+    },
+    {
+      "file": "03_unaffordable_2026-09-15.png",
+      "kind": "UNAFFORDABLE",
+      "recorded_at": "2026-09-15T01:06:10.228210+00:00",
+      "episode_id": "intel_pins_20260915_010514_pin_00",
+      "goal_id": "INTEL",
+      "skill": "DISPATCH_INTEL_BEAST",
+      "action_target": "BTN_BEAST_DISPATCH",
+      "result": "FAILURE",
+      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "original_frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_010514_pin_00\\intel_pins_20260915_010514_pin_00_step_005_before_20260915T010608207158.png"
+    },
+    {
+      "file": "04_unaffordable_2026-09-15.png",
+      "kind": "UNAFFORDABLE",
+      "recorded_at": "2026-09-15T04:11:16.481273+00:00",
+      "episode_id": "live_zero_stamina_claim_20260915",
+      "goal_id": "INTEL",
+      "skill": "DISPATCH_INTEL_BEAST",
+      "action_target": "BTN_BEAST_DISPATCH",
+      "result": "FAILURE",
+      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "original_frame": "dataset\\raw\\live_zero_stamina_claim_20260915\\live_zero_stamina_claim_20260915_step_007_before_20260915T041114783780.png"
+    },
+    {
+      "file": "05_affordable_2026-09-15.png",
+      "kind": "AFFORDABLE",
+      "recorded_at": "2026-09-15T09:33:02.778188+00:00",
+      "episode_id": "intel_pins_20260915_092119_nav_02",
+      "goal_id": "INTEL",
+      "skill": "DISPATCH_INTEL_BEAST",
+      "action_target": "BTN_BEAST_DISPATCH",
+      "result": "SUCCESS",
+      "failure_type": null,
+      "original_frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_009_before_20260915T093248321948.png"
+    },
+    {
+      "file": "06_affordable_2026-09-15.png",
+      "kind": "AFFORDABLE",
+      "recorded_at": "2026-09-15T09:37:06.154606+00:00",
+      "episode_id": "intel_pins_20260915_092119_nav_03",
+      "goal_id": "INTEL",
+      "skill": "DISPATCH_INTEL_BEAST",
+      "action_target": "BTN_BEAST_DISPATCH",
+      "result": "SUCCESS",
+      "failure_type": null,
+      "original_frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_03\\intel_pins_20260915_092119_nav_03_step_001_before_20260915T093650735627.png"
+    }
+  ]
+}

@@ -4,6 +4,136 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：本轮（2026-09-15 17:5x GMT+8）—— 解开 pHash「0 / 26」之谜（`0ax`）+ 拆掉无人值守的静默死结（`0az`）
+
+**一句话**：第一大失败 `SEMANTIC_TARGET_NOT_VERIFIED` 的近因不是「控件找不到」，
+而是**客户端把「你付不起」画成了红字**；同时无人值守被一张 BLOCKED 巨兽卡静默卡死。
+
+### 1. `0ax` —— 出征花费变红 ⇒ 被误记成视觉失败（已修）
+
+**只测一件事就破案了**：把 29 条记录的 `before` 帧逐张量 pHash 距离与红像素。
+
+| 组 | n | pHash 距离 | 强红像素 |
+|---|---:|---:|---:|
+| 成功 | 25 | **0**（25/25 全等） | **0** |
+| 失败 | 4 | **26**（4/4 全等） | **452** |
+
+阈值 8。两组各自内部**完全一致** ⇒ 不是抖动、不是临界，是两种确定画面：
+失败帧的 `10` 是**红色**的（`0av` 已确立：红 = 客户端判定付不起）。
+红色数字叠在模板的白色数字上 ⇒ 模板不命中 ⇒ 解析器返 `None` ⇒ 报「控件不存在」。
+
+**两次误诊的教训**：上一轮先判「模板过期（距离 36）」，后又因一次成功判「实测它是好的」——
+**两次都没解释成功/失败为何恰好是 0 与 26 两个离散值**。先问那个问题，答案就在屏幕上。
+
+修法**复用** `0av` 的 `unaffordable_cost_pixels()`（29 帧零错分），新增零行颜色代码；
+`brain.py` 在 `cost_affordable is False` 时 `SAFE_STOP dispatch_unaffordable_for_stamina`。
+
+### 2. `0ay` —— 6 条 `BTN_DISPATCH` 失败是 `小队设置` 页（已解释，非未解）
+
+红像素为 0，与上条不同因。那些帧是 `小队设置` 页（ROI 上是绿色「战斗」按钮，距离 32 vs 2），
+已被既有的「MARCH + INTEL + 无 beast ⇒ INTEL_HERO_DISPATCH」分支覆盖 ⇒ **修复前历史**。
+
+### 3. `0az` —— BLOCKED 巨兽卡把无人值守静默卡死（已修）
+
+`Page.BEAST` + `available=false` ⇒ 原代码 `SAFE_STOP beast_not_actionable`，
+**没人把客户端挪走，下一次运行撞同一页再停**。两次独立复现（`dispatches=0`，
+nav 三条都是 `steps=1 / elapsed_s=5.4`）。
+
+**严格先测再改**：新写 `tools/probe_back_from_beast.py`，真机按**一次** BACK
+⇒ 实测落到 `Page.MAP`（体力恢复可读 110）。据此加 `BACK` 出路 + 一次性守卫
+（防卡↔图乒乓）；`verify_safe_back` 正好接受该转移。
+
+### 4. `0ap` 反转 —— 自动化确实在跑
+
+`evidence/intel_pins_20260915_092119.json`（`dispatches=4 claims=10`）+ **81 条**
+`intel_pins_20260915_0921` episode（全部 verifier ok），**非本会话手动发起**
+⇒ 无人值守在跑，上一轮修的 `0au`/`0e`/`0av` 真的被自动走到。
+
+### 5. 下一步（按价值排序）
+
+1. **`0ax` 的红色臂真机验证**。目前真机只验了「付得起」一侧（闸门不触发、出征照常）。
+   要拿到红色臂，需要体力 < 花费（10）时站在编队页。**最省的做法**：等某次自动化跑到
+   体力低位、又正好停在编队页时，直接从 episode 里取证；**不要**为了造这个状态去花体力。
+2. **`0az` 的真机复验**：让客户端故意停在一张 BLOCKED 卡上，再跑
+   `run_live.py --goal INTEL --max-actions 4`，期望**第 1 步是 `BACK` → MAP** 而不是 `SAFE_STOP`。
+   （本轮已拿到 BACK 落点的测量，但**修复后**的整链真机尚未跑过。）
+3. **`0aw` 的同族排查**：本轮把「调用了不存在的方法」变成了机器可查。
+   `check_wiring.py` 现在每次都会跑这两条 AST 检查，**若它报 miss，先看是不是又一处脏树残留**。
+4. **72h Soak 仍未开始** —— 随着 `0az` 这类静默死结被清除，它才真正有意义。
+5. `0al`（账号上 ~1007 个 +10 体力道具）仍需**操作者决策**，本轮未动代码。
+
+---
+
+## 手写：上一轮（2026-09-15 16:2x GMT+8）—— 免费体力补给时钟（`0au` + `0e` 双双关闭）+ 拆掉一颗运行时炸弹
+
+**一句话**：面板自己写着下次礼物何时到 —— 读出来存成绝对时刻，同时解决了
+「无人值守循环根本走不到地图」和「每 cycle 白花 2 个动作」。**并且发现上一轮留在脏树里的
+代码会 AttributeError 崩在免费体力唯一的入口上。**
+
+### 0. 先修炸弹（新增 P0，`0aw`）
+
+脏树里 `ocr.HybridVision.observe` 在 `GET_MORE_STAMINA` 面板分支调用
+`self._next_supply_seconds(...)` —— **该方法在任何类上都不存在**
+（AST 核对：`HybridVision` 只有 `__init__ / _semantic_roi / observe`）。
+它**语法合法** ⇒ `check_wiring.py`（problems: 0）、`pytest`、`import` **全部通过**；
+只有真机走到那个面板才炸 —— 而那个面板**正是免费体力唯一的入口**，
+且它是 `0au`/`0as`/`0am` 三条修复共同依赖的路径。
+
+⇒ **教训（第 N 次同族）**：`check_wiring.py` 是**执行级**校验但**不是覆盖率校验**；
+「方法被调用」不等于「方法存在且被走到」。脏树停在一个会崩的状态时，
+下一轮接管必须**先核对上一轮未提交代码的完整性**，不能只看 `problems: 0`。
+
+### 1. `0au` —— 检查根本不可达（已修 + 真机验证）
+
+免费体力检查住在**世界地图**分支，而无人值守的情报循环整个 run 都在情报页。
+真机 `04:10:33Z` 实测：从情报 pin 弹窗起手的 run **一次都没站到地图上**。
+
+**修法**：情报页分支在「礼物可能到期」时主动 `OPEN_MAP` 去一次，
+由既有的 `stamina_panel_checked` 限一遍（每 run 最多一趟往返）。
+措辞刻意**不**标成「本轮已检查」—— 面板还没看，不能先记完成。
+
+### 2. `0e` —— 每个 cycle 白跑两趟（已修 + 真机验证）
+
+补给周期实测 **7 小时**（`04:00:01Z` / `11:00:01Z`），而循环最多 8 cycle/小时
+⇒ 约 **16 动作/小时**去确认一个每天只到 3 次的东西。
+
+**修法**：读面板倒计时 → 存 `learning/stamina_supply.json` → 只在到期附近才去。
+**未知一律当作到期**（错判「没到期」静默丢 150 体力；错判「到期」只花 2 个动作，代价不对称）。
+
+### 3. Live A/B/C（`dataset/truth_audit/stamina_supply_clock_20260915/`）
+
+| run | 起点 | 结果 |
+|---|---|---|
+| A `08:14:56Z` | 世界地图 | `1 OPEN_STAMINA_SOURCES` → POPUP，**`next_supply_in_seconds=9900`**（新字段真机首次出现），落盘 `11:00:02.444Z`；**3/3 verifier OK，exit 0** |
+| B `08:16Z` | **情报页** | **没有回地图**，直接 `SELECT_INTEL_PIN → OPEN_INTEL_BEAST_TARGET → INTEL_BEAST_START_MARCH`，3/3 OK ← **这就是 `0e` 的节省证据** |
+| C `08:17:4xZ` | 时钟人为置到过去 | `2 OPEN_STAMINA_SOURCES` **真的从地图打开了面板** ← 到期路径证实；面板自报 `9710s ⇒ 11:00:01.758Z`，**与 A 到秒一致** |
+
+`2716/2757` 帧级别的语料闸门本轮没做（改动只在两个分支的**前置条件**上，
+不改变任何页面判定），改为用 22 项单测 + 三次真机 A/B/C 钉住。
+
+**诚实边界（不许读成更多）**：三次运行礼物**都确实未到期**
+⇒ 「时钟说到期 → 领到 +150」这条链真机**只走到开面板**。
+`CLAIM_FREE_STAMINA` 本身的 verifier 已由 `0aq` 单独闭环（体力 2→152），
+但**两者尚未拼在同一次运行里**。等真实到期（`11:00:02Z` 之后）补这一环。
+
+### 下一步（按价值排序）
+
+1. **`0aw` 的补强**：把「新增/修改的方法是否真的存在」纳入校验。
+   本轮是**人工 AST 核对**发现的；`check_wiring.py` 只验既有关键路径。
+   最小做法：给它加一条「对改动过的模块，所有 `self._xxx(` 调用点都能解析到定义」。
+2. **`0ax` —— 到期驱动的一次真实领取**（`11:00:02Z` 之后跑
+   `run_live.py --goal INTEL --max-actions 4`，期望 `OPEN_STAMINA_SOURCES` →
+   `CLAIM_FREE_STAMINA` 且体力 +150）。这是把 1+2 闭环的最后一步。
+3. **`0au` 的情报页→地图真机路径**：Run B 因时钟未到期未触发，单测已覆盖决策，真机待补。
+4. **`0ap` —— 自动化"说在跑、实际没跑"，本轮实测为第 4 次（已重建 + 已复核）**：
+   三处 handoff 都写 `e3485d0c-…`（ACTIVE），接口 `list` 里**没有它**、按 id `view` 是
+   **not found** ⇒ 上一轮所有修复**都没有被自动执行**。已重建
+   **`43aef0ad-d5bc-4d79-9291-0a4da0b0dc27`**（ACTIVE，每小时）并用 `list` 复核。
+   ⚠ id 每次重建都会变（`0o`/`0q`/本轮共失效 3 次）⇒ **每轮接管必须重查一次**，
+   不得引用文档里的 id 当存在证明。**根因仍未定位。**
+5. **`0al`** —— 需操作者决策，未动代码（账上 ~1,007 个 +10 体力道具）。
+6. **72 小时 Soak** —— 仍未开始。
+
 ## 手写：本轮（2026-09-15 14:0x GMT+8）—— 客户端把「你付不起」直接画成红色（`0av`）
 
 **一句话**：追一条 `DISPATCH_INTEL_BEAST / SEMANTIC_TARGET_NOT_VERIFIED`，追出了**比体力条 OCR 强得多**的可负担性信号。
@@ -196,11 +326,11 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 49 in the last 2 day(s), 116 all-time, last seen 2026-09-15T04:11:16.481273+00:00
-LAST GOOD COMMIT: eb23534
-CURRENT DIRTY FILES: 13
-LAST PRODUCTION EPISODE: {"skill": "CLAIM_FREE_STAMINA", "result": "SUCCESS", "recorded_at": "2026-09-15T04:12:27.426919+00:00", "episode_id": "live_claim_from_map_20260915", "before_screenshot": "dataset\\raw\\live_claim_from_map_20260915\\live_claim_from_map_20260915_step_002_before_20260915T041223964925.png", "after_screenshot": "dataset\\raw\\live_claim_from_map_20260915\\live_claim_from_map_20260915_step_002_after_20260915T041226122573.png"}
+LAST GOOD COMMIT: 17c480a
+CURRENT DIRTY FILES: 21
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "SUCCESS", "recorded_at": "2026-09-15T08:18:43.253578+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260915T081826852856.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260915T081839756681.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 116, "recent": 49, "last_seen": "2026-09-15T04:11:16.481273+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 4}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T04:12:27.426919+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T08:18:43.253578+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
