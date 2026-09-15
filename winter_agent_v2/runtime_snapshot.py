@@ -78,6 +78,59 @@ def is_fatal_stop(reason: str | None) -> bool:
     return normalized.startswith(("FATAL_", "ACCOUNT_", "PAYMENT_"))
 
 
+# ---------------------------------------------------------------------------
+# The single rule for `unexpected_worker_exits`.
+#
+# Origin: RR-001 / WB-R19-RUNTIME-EXIT-SEMANTICS (2026-09-16).  The counter had
+# two writers in tools/control_panel.py with different rules -- the classified
+# path counted only a genuine WORKER_CRASH, while the unclassified fallback
+# counted every non-fatal error.  So an emulator dropout or an operator stop
+# incremented a counter that the 72-hour gate requires to be zero, which made
+# that gate unreachable by fixing crashes.  The rule now lives here, next to
+# `is_fatal_stop`, and both writers call it: same question, one answer.
+#
+# Why it is a free function rather than a method: the semantics belong to the
+# snapshot, not to the GUI.  A rule that can only be exercised by starting a
+# Tk window is a rule that will not be tested, and this one already went wrong
+# once for exactly that reason.
+# ---------------------------------------------------------------------------
+
+# The classification a caller supplies when the event carries no worker
+# verdict at all -- a generic runtime error, for instance.  It is deliberately
+# NOT a synonym for WORKER_CRASH: `classify_worker_failure` defaults to
+# WORKER_CRASH for any unrecognised text, so reusing that default on a path that
+# never sees a worker death would count every stray error as a crash.
+UNCLASSIFIED_EVENT = "UNCLASSIFIED"
+
+
+def counts_as_unexpected_worker_exit(
+    *,
+    classification: str | None,
+    message: str | None,
+    stop_requested: bool = False,
+) -> bool:
+    """Does this event increment ``unexpected_worker_exits``?
+
+    Yes only when all three hold:
+
+    * the event was classified as a genuine crash of the worker itself
+      (``WORKER_CRASH``) -- not an environmental failure, not an operator stop,
+      not an event that carries no worker verdict;
+    * the operator did not ask for the stop; and
+    * the reason is not fatal, because a fatal stop is already recorded in
+      ``last_fatal_error`` and counting it twice would double-report one event.
+
+    Environmental conditions are recoverable by waiting and retrying and are not
+    evidence of a defect, so they must not move a counter whose whole purpose is
+    "the worker died for a reason we do not understand".
+    """
+    if stop_requested:
+        return False
+    if is_fatal_stop(message):
+        return False
+    return str(classification or "") == "WORKER_CRASH"
+
+
 class RuntimeSnapshotStore:
     """Atomic single source of truth written by Runtime and read by the GUI."""
 

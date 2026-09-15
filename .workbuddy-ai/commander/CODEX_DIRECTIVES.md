@@ -1,18 +1,23 @@
-# Codex Directives
+# Codex Directives — Round 19
 
-生成时间：2026-09-15 20:45（Asia/Shanghai）
+生成时间：2026-09-16 07:17（Asia/Shanghai）
 
-WorkBuddy 按 `WORK_QUEUE.json` 的 priority 顺序执行。该文件是 Codex → WorkBuddy 的正式机器可读任务接口；用户只需启动 WorkBuddy，不需要手工复制任务。每个任务严格走：
+`WORK_QUEUE.json` 是 Codex → WorkBuddy 的正式机器接口。按 `priority` 与数组顺序执行；仅当依赖任务已有终态时启动。用户只需启动 WorkBuddy。
 
-`READ EVIDENCE → TOOL CHECK → MINIMAL PATCH → TARGETED TEST → REPLAY → LIVE → VERIFY → EVIDENCE → NEXT`
+每项任务严格执行：
 
-硬边界：
-- 不新增 Scheduler、Registry、WorldState、Manager 或活动专属执行链。
-- 不修改历史 episode，不把 Replay/Test/单次成功写成 LIVE_VERIFIED。
-- 不点击任何付费控件，不使用体力道具，不为制造失败主动消耗资源。
-- 涉及截图、定位、OCR、点击、等待时，先用现有 MAA/V2 能力；ADB 只做 fallback。
-- 超过 timebox 且没有真机改善、明确根因、明确 blocker 或可回滚错误方案，立即停下并记录 `BLOCKED_QUEUE.json`。
+`READ EVIDENCE → TOOL CHECK → MINIMAL PATCH → TARGETED TEST → REPLAY → LIVE → VERIFY → BEFORE/AFTER → RESULT → NEXT`
 
-每项任务必须读取并执行字段：`task_id priority objective why_now current_evidence recommended_tool preferred_backend root_cause_or_hypothesis files_scope do_not_touch implementation_hint test_plan live_plan acceptance timebox_minutes stop_condition dependencies`。
+工具顺序：项目已有能力 → MAA → Legacy Verified Evidence → 成熟外部实现 → OpenCV/OCR/ADB → 最小自研。
 
-每项任务只回报：`TASK_ID ROOT_CAUSE CHANGED_FILES TEST_RESULT LIVE_ATTEMPTS LIVE_SUCCESS LIVE_FAILURE BEFORE AFTER VERIFIER_RESULT EVIDENCE PATCH_STATUS REMAINING_ISSUE NEXT_RECOMMENDATION`。
+本轮技术决定：
+
+- MAA MuMuExtras 已是生产取帧路径；战斗按钮已有真实 `recognition/action/executor=MAA` 证据，KEEP。
+- `SELECT_RESOURCE` 保持 V2 bracket + relative layout，MAA 负责取帧、滑动、点击。整条资源栏模板不能解决动态偏移。
+- `OPEN_INTEL` 允许一次 60 分钟修复，因为近期连续 6 次失败已阻塞 AUTO；完成后停止继续深挖 Intel。
+- RR-001 已批准最小修复，可修改 `tools/control_panel.py`；历史 `unexpected_worker_exits=15` 永不清零。
+- 不主动点击 power-blocked 大师悬赏的「前往查看」制造 BLOCKED 卡；等待自然复现。
+
+硬边界：不新增 Scheduler、Registry、WorldState、Manager；不修改历史 episode；不点击付费控件；不使用体力道具；不为验证主动消耗资源。超过 timebox 且没有 Live Improvement、明确 Root Cause、明确 Blocker 或有效 Rollback，立即停止、写 `BLOCKED_QUEUE.json`，继续下一 READY 任务。
+
+每项结果写入 `.workbuddy-ai/commander/results/<task_id>.json`，字段至少包含：`TASK_ID ROOT_CAUSE CHANGED_FILES TEST_RESULT REPLAY_RESULT LIVE_ATTEMPTS LIVE_SUCCESS LIVE_FAILURE BEFORE AFTER VERIFIER_RESULT EVIDENCE_PATH PATCH_STATUS REMAINING_ISSUE`。

@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-15T16:41:15+00:00",
+  "generated_at": "2026-09-15T23:39:19+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "0fbe6b7",
+  "commit": "b4baff2",
   "last_good_commit": "e4fd245",
-  "dirty_count": 19,
+  "dirty_count": 47,
   "episodes": {
-    "total": 1288,
-    "production": 1288,
-    "success": 956,
-    "failure": 327,
-    "success_rate_over_decided": 0.7451,
+    "total": 1303,
+    "production": 1303,
+    "success": 962,
+    "failure": 336,
+    "success_rate_over_decided": 0.7411,
     "modes": {
-      "PRODUCTION": 1288
+      "PRODUCTION": 1303
     },
     "mixed_case_rows": 35
   },
@@ -33,6 +33,33 @@
   },
   "top_failures": [
     {
+      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "count": 127,
+      "recent": 23,
+      "last_seen": "2026-09-15T23:37:49.500186+00:00",
+      "dates": {
+        "2026-09-12": 36,
+        "2026-09-13": 37,
+        "2026-09-14": 8,
+        "2026-09-15": 15
+      },
+      "undated": 31,
+      "top_skills": [
+        [
+          "SELECT_RESOURCE",
+          43
+        ],
+        [
+          "SEARCH_RESOURCE",
+          32
+        ],
+        [
+          "OPEN_MAIL",
+          13
+        ]
+      ]
+    },
+    {
       "failure_type": "RESOURCE_NOT_FOUND",
       "count": 30,
       "recent": 22,
@@ -46,33 +73,6 @@
         [
           "SUBMIT_RESOURCE_SEARCH",
           30
-        ]
-      ]
-    },
-    {
-      "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 119,
-      "recent": 16,
-      "last_seen": "2026-09-15T16:06:19.052822+00:00",
-      "dates": {
-        "2026-09-12": 36,
-        "2026-09-13": 37,
-        "2026-09-14": 8,
-        "2026-09-15": 7
-      },
-      "undated": 31,
-      "top_skills": [
-        [
-          "SELECT_RESOURCE",
-          41
-        ],
-        [
-          "SEARCH_RESOURCE",
-          32
-        ],
-        [
-          "OPEN_MAIL",
-          13
         ]
       ]
     },
@@ -126,6 +126,23 @@
       ]
     },
     {
+      "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
+      "count": 5,
+      "recent": 5,
+      "last_seen": "2026-09-15T23:09:43.853116+00:00",
+      "dates": {
+        "2026-09-14": 2,
+        "2026-09-15": 3
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_INTEL_BEAST_TARGET",
+          5
+        ]
+      ]
+    },
+    {
       "failure_type": "NO_EXECUTION",
       "count": 5,
       "recent": 5,
@@ -139,43 +156,6 @@
         [
           "SAFE_STOP",
           5
-        ]
-      ]
-    },
-    {
-      "failure_type": "POPUP_CLOSE_NOT_PROVEN",
-      "count": 5,
-      "recent": 4,
-      "last_seen": "2026-09-13T21:08:40.162078+00:00",
-      "dates": {
-        "2026-09-13": 5
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "DISMISS_REAL_MONEY_OFFER",
-          4
-        ],
-        [
-          "RECONNECT_SESSION",
-          1
-        ]
-      ]
-    },
-    {
-      "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
-      "count": 4,
-      "recent": 4,
-      "last_seen": "2026-09-15T09:38:04.531382+00:00",
-      "dates": {
-        "2026-09-14": 2,
-        "2026-09-15": 2
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_INTEL_BEAST_TARGET",
-          4
         ]
       ]
     },
@@ -208,6 +188,24 @@
       "top_skills": [
         [
           "DISMISS_DAILY_REWARD",
+          3
+        ]
+      ]
+    },
+    {
+      "failure_type": "OPEN_MAP_NOT_PROVEN",
+      "count": 3,
+      "recent": 2,
+      "last_seen": "2026-09-15T15:16:47.597321+00:00",
+      "dates": {
+        "2026-09-13": 1,
+        "2026-09-14": 1,
+        "2026-09-15": 1
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_MAP",
           3
         ]
       ]
@@ -246,9 +244,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 1092,
-    "present_on_disk": 1092,
-    "traceable_episodes": 556,
+    "referenced_screenshots": 1114,
+    "present_on_disk": 1114,
+    "traceable_episodes": 571,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },

@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
+- **SEMANTIC_TARGET_NOT_VERIFIED** x127 all-time; recent=23 (last 2d), last seen 2026-09-15T23:37:49.500186+00:00 — SELECT_RESOURCE(43), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **RESOURCE_NOT_FOUND** x30 all-time; recent=22 (last 2d), last seen 2026-09-14T06:42:03.928936+00:00 — SUBMIT_RESOURCE_SEARCH(30)
-- **SEMANTIC_TARGET_NOT_VERIFIED** x119 all-time; recent=16 (last 2d), last seen 2026-09-15T16:06:19.052822+00:00 — SELECT_RESOURCE(41), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=9 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
 - **INTEL_HERO_DISPATCH_NOT_PROVEN** x8 all-time; recent=8 (last 2d), last seen 2026-09-14T12:19:55.812501+00:00 — INTEL_HERO_DISPATCH(8)
 - **INTEL_RESCUE_START_NOT_PROVEN** x6 all-time; recent=6 (last 2d), last seen 2026-09-14T17:17:43.915836+00:00 — EXECUTE_INTEL_RESCUE_SURVIVORS(6)
-- **NO_EXECUTION** x5 all-time; recent=5 (last 2d), last seen 2026-09-15T12:27:40.810551+00:00 — SAFE_STOP(5)
+- **INTEL_BEAST_TARGET_NOT_PROVEN** x5 all-time; recent=5 (last 2d), last seen 2026-09-15T23:09:43.853116+00:00 — OPEN_INTEL_BEAST_TARGET(5)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CHECK_MARCH` never succeeded (attempts=1, failure=1)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 19 uncommitted file(s): ['M learning/executor_backend.jsonl', '?? knowledge/execution/backend_routing.json.bak_20260915_maab', '?? out_junit_audit.xml', '?? out_junit_final_r18.xml', '?? out_junit_fix.xml']
+- 47 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/REVIEW_REQUESTS.md']
 <!-- /AUTO:open_issues -->
 
 ---

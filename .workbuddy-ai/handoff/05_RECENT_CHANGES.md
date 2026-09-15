@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `b4baff2 2026-09-16T00:41:21+08:00 chore(handoff): final regeneration after the march-count fix (712 tests, 0 failures, 0 errors)`
 - `0fbe6b7 2026-09-16T00:26:13+08:00 test(evidence): archive the two march-count frames under truth_audit so the integrity guard passes`
 - `96146a9 2026-09-16T00:10:06+08:00 docs(handoff): record 0bc's true cause (march counter, not page model) and the new gather frontier 0bm`
 - `1a10ad7 2026-09-16T00:07:11+08:00 fix(vision): a march counter that is not drawn means idle, not unreadable`
@@ -17,28 +18,28 @@ Last 12 commits (newest first):
 - `f9aa8be 2026-09-15T21:00:19+08:00 fix(runtime): the brain must never name a skill the live loop refuses (CHECK_MARCH)`
 - `ae9f71b 2026-09-15T20:39:20+08:00 fix(intel,maa): stop fabricating a vision failure for pin exhaustion; make MAA capture the production path`
 - `eb73be1 2026-09-15T18:39:24+08:00 chore(automation): operator cancelled the hourly intel loop; record PAUSED vs lost`
-- `ddef804 2026-09-15T18:37:13+08:00 chore(memory): daily log for the round-17 dispatch-affordability work`
 
-Uncommitted changes: 19
-- `M learning/executor_backend.jsonl`
-- `?? knowledge/execution/backend_routing.json.bak_20260915_maab`
-- `?? out_junit_audit.xml`
-- `?? out_junit_final_r18.xml`
-- `?? out_junit_fix.xml`
-- `?? out_junit_full_v1.xml`
-- `?? out_junit_full_v3.xml`
-- `?? out_junit_iso.xml`
-- `?? out_junit_r18d.xml`
-- `?? out_junit_r18e.xml`
-- `?? out_junit_v1.xml`
-- `?? out_junit_v2.xml`
-- `?? out_memory_r18.md`
-- `?? out_memory_r18b.md`
-- `?? out_memory_r18c.md`
-- `?? out_new_0bc_row.md`
-- `?? out_new_0bc_row2.md`
-- `?? out_new_0bd_row.md`
-- `?? out_new_0bm_row.md`
+Uncommitted changes: 47
+- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
+- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
+- ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
+- ` M .workbuddy-ai/commander/REVIEW_REQUESTS.md`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
+- ` M tests/test_resource_tab_anchor.py`
+- ` M tools/control_panel.py`
+- ` M winter_agent_v2/runtime_snapshot.py`
+- ` M winter_agent_v2/vision.py`
+- `?? .workbuddy-ai/commander/results/WB-R19-RUNTIME-EXIT-SEMANTICS.json`
+- `?? .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json`
+- `?? .workbuddy-ai/memory/2026-09-16.md`
+- `?? .workbuddy/memory/2026-09-16.md`
+- `?? evidence/intel_pins_20260915_230510.json`
+- `?? evidence/intel_pins_20260915_230917.json`
 <!-- /AUTO:recent_commits -->
 
 ---

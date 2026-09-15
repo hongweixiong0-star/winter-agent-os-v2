@@ -357,6 +357,84 @@ class SemanticROIVision:
             return 716 - (left + cell_px)
         return 0.0
 
+    def candidate_tab_lefts(self, image_path: Path) -> list[float]:
+        """``candidate_tab_lefts_from`` for a path on disk."""
+        with Image.open(image_path) as opened:
+            return self.candidate_tab_lefts_from(opened.convert("RGB"))
+
+    def _supported_offsets(self, image: Image.Image, width: int, height: int) -> list[tuple[int, float, float, str]]:
+        """Score every ``(anchor, anchored tab)`` pair by reviewed-template support.
+
+        An offset is a prediction about where all seven tabs sit.  The four
+        reviewed templates therefore *judge* it independently of the frame being
+        explained: for the true pair the predicted MEAT/WOOD/COAL/IRON cells
+        match their own template and no other's, and for a wrong pair they land on
+        neighbouring tabs and match nothing.
+
+        Returns ``(support, margin, left_px, anchored_tab)``, best first.
+        """
+        y0, y1 = self._tab_band_rows(height)
+        cell_px = round(self.resource_tab_cell * width)
+        signatures = {
+            resource: [s for s in (_cell_template_signature(Path(p)) for p in paths) if s is not None]
+            for resource, paths in self.resource_tab_cell_templates.items()
+        }
+        results: list[tuple[int, float, float, str]] = []
+        for left_px in self.candidate_tab_lefts_from(image):
+            for anchored in self.resource_tab_order:
+                offset = self.resource_tab_offset_from(left_px, anchored, width)
+                support = 0
+                best_margin = -999.0
+                for resource, own_signatures in signatures.items():
+                    if not own_signatures:
+                        continue
+                    predicted_left = (
+                        self.resource_tab_first_left
+                        + self.resource_tab_order.index(resource) * self.resource_tab_pitch
+                    ) * width + offset
+                    x0 = round(predicted_left)
+                    if x0 < 0 or x0 + cell_px > width:
+                        continue
+                    probe_signature = _cell_signature(image.crop((x0, y0, x0 + cell_px, y1)))
+                    own = min(_signature_distance(probe_signature, s) for s in own_signatures)
+                    others = [
+                        _signature_distance(probe_signature, s)
+                        for other, other_signatures in signatures.items()
+                        if other != resource
+                        for s in other_signatures
+                    ]
+                    runner_up = min(others) if others else own + 999.0
+                    if own <= self.resource_tab_max_distance and runner_up - own >= self.resource_tab_min_margin:
+                        support += 1
+                        best_margin = max(best_margin, runner_up - own)
+                if support:
+                    results.append((support, best_margin, left_px, anchored))
+        results.sort(key=lambda item: (-item[0], -item[1]))
+        return results
+
+    def candidate_tab_lefts_from(self, image: Image.Image) -> list[float]:
+        """Every stroke-pair left edge that could be the active tab.
+
+        ``selected_tab_left`` returns the FIRST accepted pair, which is correct
+        only while the bracket is the only thing producing one.  Measured
+        2026-09-16 on the production frame that failed SELECT_RESOURCE: nine
+        strokes yielded four accepted pairs, and the first (x=2.0) was spurious
+        while the real bracket sat on the third visible cell (x=282.5).  Taking
+        the first one put the offset 280 px out -- harmless there only because the
+        anchored cell happened not to match a template; had it matched, the
+        executor would have been handed a wrong tap target.
+
+        This reports what is geometrically possible and nothing more; the caller
+        resolves the ambiguity with the reviewed templates.
+        """
+        strokes = self._bracket_strokes(image)
+        lefts: list[float] = []
+        for index, (first, _) in enumerate(strokes):
+            for second, _ in strokes[index + 1:]:
+                if 130 <= second - first <= 175 and first not in lefts:
+                    lefts.append(first)
+        return lefts
+
     def selected_resource(self, image_path: Path) -> SemanticMatch | None:
         """Identify the active resource tab from the bracket anchor + cell icon.
 
@@ -369,12 +447,26 @@ class SemanticROIVision:
            active resource tab must never be reported as a selection — the old
            fixed-ROI version returned ``RESOURCE_COAL_SELECTED`` on the HOME
            screen);
-        2. crop the anchored cell and compare it against the four reviewed cell
+        2. crop the anchored cell and compare it against the reviewed cell
            templates, which all carry the same bracket, so identity comes from
            the icon and label;
         3. accept only when the best match is both close (``<= 6.0``) and clearly
            better than the runner-up (``>= 4.0``).  Live measurement: active tab
-           scores <= 1.2, every non-active tab scores >= 13.0.
+           scores <= 1.2, every non-active tab scores >= 13.0;
+        4. if (3) rejects, the anchored tab is one of the three tabs that carry no
+           template -- measured 2026-09-16 on the production frame that failed
+           `SELECT_RESOURCE`: bracket found at left_px=2.0, fully visible, and the
+           four reviewed templates scored 33.75 / 34.63 / 35.98 / 36.48, i.e. the
+           cell is none of them.  Declining to identify it left
+           ``resource_tab_offset`` at ``None``, which stopped the executor from
+           tapping *or* scrolling anything.  So the offset is instead resolved
+           from the known strip order, and the resolution is validated by the
+           reviewed templates themselves -- see
+           ``_offset_supported_by_reviewed_tabs``.  This is the work order's
+           "safe method that determines the offset from the known complete order
+           alone"; it deliberately adds no template, because the only frame
+           available for the missing tabs is the very frame being explained, and
+           a template cropped from its own test frame proves nothing.
 
         On success ``self.resource_tab_offset`` and
         ``self.resource_tab_visible_span`` are updated, which is what lets the
@@ -398,41 +490,73 @@ class SemanticROIVision:
                 return None
             probe = image.crop((x0, y0, x1, y1))
             self.resource_tab_visible_span = (x0, x1)
-        if not fully_visible:
-            # A clipped cell cannot be identified reliably; the strip must be
-            # scrolled instead of guessed at.
-            return None
-        probe_signature = _cell_signature(probe)
-        scored: list[tuple[float, str]] = []
-        for resource, paths in self.resource_tab_cell_templates.items():
-            best = None
-            for path in paths:
-                signature = _cell_template_signature(Path(path))
-                if signature is None:
-                    continue
-                value = _signature_distance(probe_signature, signature)
-                if best is None or value < best:
-                    best = value
-            if best is not None:
-                scored.append((best, resource))
-        if not scored:
-            return None
-        scored.sort()
-        best_distance, best_resource = scored[0]
-        runner_up = scored[1][0] if len(scored) > 1 else best_distance + 999.0
-        if best_distance > self.resource_tab_max_distance or runner_up - best_distance < self.resource_tab_min_margin:
-            return None
-        self.resource_tab_offset = self.resource_tab_offset_from(left_px, best_resource, width)
-        return SemanticMatch(
-            f"RESOURCE_{best_resource}_SELECTED",
-            float(best_distance),
-            {
-                "x_norm": round(x0 / width, 4),
-                "y_norm": round(y0 / height, 4),
-                "w_norm": round(cell_px / width, 4),
-                "h_norm": round((y1 - y0) / height, 4),
-            },
-        )
+            if not fully_visible:
+                # A clipped cell cannot be identified reliably; the strip must be
+                # scrolled instead of guessed at.
+                return None
+            probe_signature = _cell_signature(probe)
+            scored: list[tuple[float, str]] = []
+            for resource, paths in self.resource_tab_cell_templates.items():
+                best = None
+                for path in paths:
+                    signature = _cell_template_signature(Path(path))
+                    if signature is None:
+                        continue
+                    value = _signature_distance(probe_signature, signature)
+                    if best is None or value < best:
+                        best = value
+                if best is not None:
+                    scored.append((best, resource))
+            if scored:
+                scored.sort()
+                best_distance, best_resource = scored[0]
+                runner_up = scored[1][0] if len(scored) > 1 else best_distance + 999.0
+                if (
+                    best_distance <= self.resource_tab_max_distance
+                    and runner_up - best_distance >= self.resource_tab_min_margin
+                ):
+                    self.resource_tab_offset = self.resource_tab_offset_from(left_px, best_resource, width)
+                    return SemanticMatch(
+                        f"RESOURCE_{best_resource}_SELECTED",
+                        float(best_distance),
+                        {
+                            "x_norm": round(x0 / width, 4),
+                            "y_norm": round(y0 / height, 4),
+                            "w_norm": round(cell_px / width, 4),
+                            "h_norm": round((y1 - y0) / height, 4),
+                        },
+                    )
+            # Neither the anchor nor the identity survived the direct test, so
+            # search the possibilities the layout allows -- every stroke pair that
+            # could be the bracket crossed with every tab it could be marking --
+            # and let the reviewed templates pick.  A pair is only accepted when
+            # it is the unique best: two equally-supported candidates stay
+            # unresolved rather than being guessed between.
+            supported = self._supported_offsets(image, width, height)
+            if supported:
+                support, margin, anchor_left, anchored = supported[0]
+                if len(supported) == 1:
+                    unique = True
+                else:
+                    runner_support, runner_margin = supported[1][0], supported[1][1]
+                    unique = support > runner_support or margin > runner_margin + 1.0
+                if unique:
+                    self.resource_tab_offset = self.resource_tab_offset_from(anchor_left, anchored, width)
+                    self.resource_tab_visible_span = (round(anchor_left), round(anchor_left) + cell_px)
+                    return SemanticMatch(
+                        f"RESOURCE_{anchored}_SELECTED",
+                        float(support),
+                        {
+                            "x_norm": round(anchor_left / width, 4),
+                            "y_norm": round(y0 / height, 4),
+                            "w_norm": round(cell_px / width, 4),
+                            "h_norm": round((y1 - y0) / height, 4),
+                            "offset_source": "ANCHOR_AND_IDENTITY_RESOLVED_BY_REVIEWED_TABS",
+                            "supporting_reviewed_tabs": support,
+                            "support_margin": round(margin, 2),
+                        },
+                    )
+        return None
 
     def resource_level(self, image_path: Path) -> int | None:
         """Read the configured resource-search level from the slider fill.

@@ -25,7 +25,13 @@ from winter_agent_v2.device import ADBDevice
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
 from winter_agent_v2.retention import prune_runtime_screenshots
 from winter_agent_v2.skills import v2_registry
-from winter_agent_v2.runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
+from winter_agent_v2.runtime_snapshot import (
+    UNCLASSIFIED_EVENT,
+    AgentState,
+    RuntimeSnapshotStore,
+    counts_as_unexpected_worker_exit,
+    is_fatal_stop,
+)
 
 CONFIG_PATH = ROOT / "config/v2.json"
 PANEL_STATE_PATH = ROOT / "config/control_panel_state.json"
@@ -1231,7 +1237,10 @@ class ControlPanel:
         report = data.get("crash_report")
         fatal = is_fatal_stop(message)
         previous = self.runtime_store.read()
-        counts_as_exit = classification == "WORKER_CRASH" and not fatal and not self.stop_requested
+        # One rule for the counter, shared with _handle_runtime_error below.
+        counts_as_exit = counts_as_unexpected_worker_exit(
+            classification=classification, message=message, stop_requested=self.stop_requested
+        )
         self.runtime_store.update(
             agent_state=AgentState.FATAL_STOPPED.value if fatal else AgentState.DEGRADED.value,
             runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=message,
@@ -1248,13 +1257,30 @@ class ControlPanel:
             self._waiting_buttons(); self._append("Watchdog 将在 5 秒后恢复唯一 Runtime。")
 
     def _handle_runtime_error(self, message: str) -> None:
+        """Handle an event that is NOT a worker death.
+
+        This is the fallback for every event kind the drain loop does not
+        recognise, so by construction it never carries a worker verdict.  It
+        used to increment ``unexpected_worker_exits`` for every non-fatal
+        message, which is why the counter could not be driven to zero by fixing
+        crashes (RR-001).  It now asks the same question as
+        ``_handle_worker_failure`` and answers it honestly: this event has no
+        worker classification, so it is not a worker exit.
+
+        The reason is recorded as ``stop_reason`` either way -- declining to
+        count something is not the same as hiding it, and the counter is not the
+        only record.
+        """
         fatal = is_fatal_stop(message)
         previous = self.runtime_store.read()
+        counts_as_exit = counts_as_unexpected_worker_exit(
+            classification=UNCLASSIFIED_EVENT, message=message, stop_requested=self.stop_requested
+        )
         self.runtime_store.update(
             agent_state=AgentState.FATAL_STOPPED.value if fatal else AgentState.DEGRADED.value,
             runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=message,
             last_fatal_error=message if fatal else previous.last_fatal_error,
-            unexpected_worker_exits=previous.unexpected_worker_exits + (0 if fatal else 1),
+            unexpected_worker_exits=previous.unexpected_worker_exits + (1 if counts_as_exit else 0),
         )
         self.values["vision"].set("异常"); self.values["result"].set(message); self._append(f"⚠ {message}")
         self._idle_buttons(); self._clear_running_task_labels()
