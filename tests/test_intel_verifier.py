@@ -190,6 +190,33 @@ class IntelVerifierTests(unittest.TestCase):
         # Standing still on the same page must not read as progress.
         self.assertFalse(verify_intel_hero_march_open(panel, panel).ok)
 
+    def test_a_stamina_refusal_is_never_recorded_as_a_started_fight(self) -> None:
+        """Live 2026-09-15T03:03:57Z: the client refused the camp fight.
+
+        ``run_live.py --goal INTEL`` found the client parked on a Hero Journey
+        camp panel (探险 💧10) with 9 stamina, so the tap produced
+        ``POPUP / GET_MORE_STAMINA`` and the fight never started.  The check
+        accepted *any* page change, so ``INTEL_HERO_START_MARCH`` was recorded
+        as a success -- a refusal reported as work done.  Frames:
+        ``dataset/truth_audit/stamina_check_live_20260915``.
+        """
+        vision = live_hybrid_vision()
+        root = ROOT / "dataset" / "truth_audit" / "stamina_check_live_20260915"
+        panel = vision.observe(root / "01_hero_camp_panel_before_live.png")
+        refusal = vision.observe(root / "02_stamina_refusal_popup_after_live.png")
+
+        self.assertIs(panel.page, Page.EXPLORATION)
+        self.assertEqual(panel.exploration.get("stamina_cost_displayed"), 10)
+        self.assertIs(refusal.page, Page.POPUP)
+        self.assertEqual(refusal.popup, "GET_MORE_STAMINA")
+
+        result = verify_intel_hero_march_open(panel, refusal)
+        self.assertFalse(result.ok, "a stamina refusal is not a started fight")
+        self.assertEqual(result.reason, "INTEL_HERO_MARCH_REFUSED_FOR_STAMINA")
+        self.assertTrue(result.evidence["refused_for_stamina"])
+        # The page really did change, which is why the old check passed.
+        self.assertTrue(result.evidence["left_panel"])
+
     def test_rescue_start_from_production_frames_is_not_a_false_negative(self) -> None:
         """Production rescue starts must verify, and a BACK-out must still fail.
 

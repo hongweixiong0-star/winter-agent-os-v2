@@ -1,0 +1,524 @@
+corpus=E:\无尽冬日智能体\dataset\raw frames=2907 formation-page frames=104
+
+dataset\raw\bear_live_20260909\auto_join_formation.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=ALLIANCE beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\bear_live_20260909\auto_join_hero_select.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=ALLIANCE beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\bear_live_20260909\auto_join_started_fast.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=ALLIANCE beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\bear_live_20260909\bear_preset6.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\bear_live_20260909\bear_troop_setup.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\bear_live_20260909\join_setup_1.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\ally_discovery_20260915_021118_00_start.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\intel_board_20260915_003755.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\intel_board_20260915_003755_annotated.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\intel_board_20260915_010623.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\intel_board_20260915_010623_annotated.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\nav_before_20260915_083848.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\pins_20260915_000822.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\pins_20260915_005907.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\probe\pins_20260915_010514.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\alliance_gifts_20260915\alliance_gifts_20260915_step_001_before_20260915T021054921252.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\ally_prep_20260915\ally_prep_20260915_step_003_after_20260915T021045202833.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\ally_prep_20260915\ally_prep_20260915_step_003_after_refresh_1_20260915T021048237545.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\ally_prep_20260915\ally_prep_20260915_step_003_after_refresh_2_20260915T021051270225.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\formation_fix_20260915_003914\formation_fix_20260915_003914_step_004_after_20260915T004004918444.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\formation_fix_20260915_003914\formation_fix_20260915_003914_step_005_before_20260915T004006688516.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_loop_20260914_101400_c02\intel_loop_20260914_101400_c02_step_001_after_20260914T101640989165.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_loop_20260914_101400_c02\intel_loop_20260914_101400_c02_step_002_before_20260914T101643078480.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_094520_pin_00\intel_pins_20260914_094520_pin_00_step_002_after_20260914T094637376786.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_094520_pin_00\intel_pins_20260914_094520_pin_00_step_003_before_20260914T094639181573.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_094520_pin_12\intel_pins_20260914_094520_pin_12_step_004_after_20260914T095431931169.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_094520_pin_12\intel_pins_20260914_094520_pin_12_step_005_before_20260914T095433674230.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_07\intel_pins_20260914_101641_pin_07_step_002_after_20260914T102421273819.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_07\intel_pins_20260914_101641_pin_07_step_003_before_20260914T102423068705.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_09\intel_pins_20260914_101641_pin_09_step_002_after_20260914T102748663555.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_09\intel_pins_20260914_101641_pin_09_step_003_before_20260914T102750550063.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_10\intel_pins_20260914_101641_pin_10_step_002_after_20260914T102921744386.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_10\intel_pins_20260914_101641_pin_10_step_003_before_20260914T102923732853.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_11\intel_pins_20260914_101641_pin_11_step_002_after_20260914T103054938959.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_11\intel_pins_20260914_101641_pin_11_step_003_before_20260914T103056935657.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_15\intel_pins_20260914_101641_pin_15_step_002_after_20260914T103732536132.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_101641_pin_15\intel_pins_20260914_101641_pin_15_step_003_before_20260914T103734415825.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_171640_pin_01\intel_pins_20260914_171640_pin_01_step_002_after_20260914T171929127444.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_171640_pin_01\intel_pins_20260914_171640_pin_01_step_003_before_20260914T171930660803.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_171640_pin_06\intel_pins_20260914_171640_pin_06_step_002_after_20260914T172739940306.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_171640_pin_06\intel_pins_20260914_171640_pin_06_step_003_before_20260914T172741459387.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_171640_pin_07\intel_pins_20260914_171640_pin_07_step_002_after_20260914T172903456088.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_171640_pin_07\intel_pins_20260914_171640_pin_07_step_003_before_20260914T172905039702.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_223903_pin_02\intel_pins_20260914_223903_pin_02_step_002_after_20260914T224301010616.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_223903_pin_02\intel_pins_20260914_223903_pin_02_step_003_before_20260914T224302555520.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_223903_pin_03\intel_pins_20260914_223903_pin_03_step_002_after_20260914T224424202756.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260914_223903_pin_03\intel_pins_20260914_223903_pin_03_step_003_before_20260914T224425774172.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_nav_01\intel_pins_20260915_000822_nav_01_step_001_after_20260915T001346774044.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_nav_01\intel_pins_20260915_000822_nav_01_step_001_after_refresh_1_20260915T001357116819.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_nav_01\intel_pins_20260915_000822_nav_01_step_001_after_refresh_2_20260915T001406300425.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_nav_01\intel_pins_20260915_000822_nav_01_step_001_before_20260915T001425796801.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_nav_01\intel_pins_20260915_000822_nav_01_step_002_after_20260915T001113949822.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_nav_01\intel_pins_20260915_000822_nav_01_step_003_before_20260915T001115505029.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_pin_00\intel_pins_20260915_000822_pin_00_step_002_after_20260915T000847103120.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_pin_00\intel_pins_20260915_000822_pin_00_step_003_before_20260915T000848658059.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_pin_00\intel_pins_20260915_000822_pin_00_step_009_after_20260915T001000074303.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_000822_pin_00\intel_pins_20260915_000822_pin_00_step_010_before_20260915T001001656723.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_005907_nav_00\intel_pins_20260915_005907_nav_00_step_001_after_20260915T010236837751.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_005907_nav_00\intel_pins_20260915_005907_nav_00_step_001_before_20260915T010245838006.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_005907_nav_00\intel_pins_20260915_005907_nav_00_step_002_before_20260915T010238806423.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_010514_pin_00\intel_pins_20260915_010514_pin_00_step_004_after_20260915T010606293100.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_010514_pin_00\intel_pins_20260915_010514_pin_00_step_005_before_20260915T010608207158.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={'victory_assured': True}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_022310_nav_00\intel_pins_20260915_022310_nav_00_step_004_after_20260915T022423521169.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\intel_pins_20260915_022310_nav_00\intel_pins_20260915_022310_nav_00_step_005_before_20260915T022425512015.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\live_intel_full_run6\live_intel_full_run6_step_003_after_20260914T082838141907.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\control_panel\runtime_auto\live_intel_full_run6\live_intel_full_run6_step_004_before_20260914T082839940110.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\event_calibration\intel_score_attempt_2\step_002_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\event_calibration\intel_score_attempt_2\step_003_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_bear_join_final_attempt.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_bear_join_troop.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_bear_retry_selection.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_bear_troop_reduced.png
+    anchors  : {'PAGE_BEAST_MARCH': 0}
+    observe  : page=MARCH beast={}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_beast_march_selection.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_beast_runtime_native_retry\step_001_after.png
+    anchors  : {'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '目标：@1.00 | 麝牛@0.74'
+
+dataset\raw\live_beast_runtime_native_retry\step_002_before.png
+    anchors  : {'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '目标：@1.00 | 麝牛@0.74'
+
+dataset\raw\live_intel_beast10_automatic_round2\step_003_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_beast10_automatic_round2\step_004_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_beast10_automatic_round3_resume\step_002_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_beast10_automatic_round3_resume\step_003_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_beast10_automatic_round4_resume\step_002_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_beast10_automatic_round4_resume\step_003_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_beast10_march_current.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_blazing_behemoth_dispatch_20260907\step_001_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_blazing_behemoth_dispatch_20260907\step_002_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw2_dispatch_20260907\step_003_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw2_dispatch_20260907\step_004_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw3_dispatch_20260907\step_003_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw3_dispatch_20260907\step_004_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw4_dispatch_20260907\step_003_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw4_dispatch_20260907\step_004_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw_dispatch_20260907\step_002_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_claw_dispatch_20260907\step_003_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_firebeast2_dispatch_20260907_round2\step_003_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_firebeast2_dispatch_20260907_round2\step_004_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_last_purple_round8\step_003_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_last_purple_round8\step_004_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_orange_automatic_round5\step_002_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_orange_automatic_round5\step_003_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_orange_claim_purple_dispatch_round6_retry\step_006_after.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\live_intel_orange_claim_purple_dispatch_round6_retry\step_007_before.png
+    anchors  : {'PAGE_BEAST_MARCH': 0, 'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '出征@1.00'
+
+dataset\raw\stamina_emergency\beast6_march.png
+    anchors  : {'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '目标：@1.00 | 北极狼@1.00'
+
+dataset\raw\stamina_emergency\beast9_march.png
+    anchors  : {'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '目标：@1.00 | 麝牛@0.74'
+
+dataset\raw\stamina_emergency\beast9_round3_march.png
+    anchors  : {'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '麝牛', 'level': 9, 'victory_assured': True, 'stamina_cost_displayed': 10}
+    title OCR: '目标：@1.00 | 麝牛@0.74'
+
+dataset\raw\stamina_emergency\beast_march.png
+    anchors  : {'BTN_BEAST_DISPATCH': 0, 'BTN_BEAST_DISPATCH_MUSK_OX_9': 0}
+    observe  : page=MARCH beast={'name': '雪豹', 'level': 29, 'victory_assured': False, 'stamina_cost_displayed': 10}
+    title OCR: '目标：@1.00 | 雪豹@1.00'
+
+(crop roi=0.420x0.062; crops kept under dataset/raw/control_panel/probe/formation_title/)
+exit=0

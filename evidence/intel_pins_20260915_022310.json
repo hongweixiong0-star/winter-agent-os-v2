@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-09-15T02:27:53+00:00",
+  "pins_processed": 1,
+  "pins_skipped": 0,
+  "dispatches": 1,
+  "claims": 2,
+  "per_pin": [
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "MAX_ACTIONS_REACHED",
+      "steps": 14,
+      "dispatches": 1,
+      "claims": 1,
+      "productive_steps": [
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS",
+        "INTEL_HERO_DISPATCH"
+      ],
+      "stamina_after": 11,
+      "elapsed_s": 202.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_022310_nav_00"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.2931,
+        0.5172
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 2,
+      "stop_reason": "EXPLORATION_REWARD_DISMISS_NOT_PROVEN",
+      "steps": 3,
+      "dispatches": 0,
+      "claims": 1,
+      "productive_steps": [
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": null,
+      "elapsed_s": 52.2,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_022310_pin_00"
+    }
+  ]
+}

@@ -278,13 +278,35 @@ class RuleBrain:
                     return Decision("SELECT_INTEL_BEAST_MISSION", "ordinary_beast_intel_available", world.confidence, "intel_mission_detail_open")
                 return Decision("SAFE_STOP", "intel_available_no_claim", 1.0, "inspect_or_execute_intel_mission")
         if world.page is Page.BEAST:
-            if self.current_goal == "INTEL" and world.beast.get("mission_id") in {"INTEL_BEAST_10", "INTEL_FIREBEAST_10"} and world.beast.get("available"):
+            # The intel mission id IS the page identity, so it must not be
+            # gated on `current_goal`.  Until 2026-09-15 it was, and the
+            # consequence was measured live: with goal HOME the game sat on an
+            # intel beast target (`mission_id=INTEL_BEAST_10`, 大角鹿 level 22)
+            # and control fell through to the two BEAST_HUNT branches below.
+            # BEAST_HUNT taps the same button (BTN_BEAST_START_MARCH) so the
+            # action was right, but its verifier binds the *map wilderness*
+            # target (`verify_beast_march_open` requires name 麝牛 / level 9),
+            # so a correct action was recorded as a FAILURE:
+            #   episode ally_prep_20260915 step 3, 2026-09-15T02:10:52Z,
+            #   BEAST_HUNT / BEAST_MARCH_NOT_PROVEN, while the after-state was
+            #   a victory-assured formation page.
+            # That poisoned the success rate for both skills.  Keying on the
+            # mission id alone routes the target to the skill whose verifier
+            # actually binds it (`verify_intel_beast_march_open` maps
+            # INTEL_BEAST_10 -> level 22, INTEL_FIREBEAST_10 -> level 20),
+            # with no change to the physical tap.  Goal-gated routes are
+            # unaffected because each goal's own gate above already safe-stops
+            # on a page it does not own.
+            if world.beast.get("mission_id") in {"INTEL_BEAST_10", "INTEL_FIREBEAST_10"} and world.beast.get("available"):
                 return Decision("INTEL_BEAST_START_MARCH", "intel_beast_target_verified", world.confidence, "intel_beast_march_page_open")
             if self.current_goal == "INTEL" and not world.beast:
                 # A Hero Journey camp target card: same layout as the beast
                 # target card (the 出征 button drives the page) but without the
                 # beast mission fields, which is how the two are told apart.
                 return Decision("INTEL_HERO_START_MARCH", "intel_hero_target_open", world.confidence, "intel_hero_fight_started")
+            # Only the map wilderness beast reaches here: vision emits
+            # `available` on this page from the 麝牛/9 dialog alone
+            # (`DIALOG_BEAST_MUSK_OX_9`), which carries no mission id.
             if world.beast.get("available") and world.idle_marches and world.idle_marches > 0:
                 return Decision("BEAST_HUNT", "beast_available_with_idle_march", world.confidence, "beast_defeated_and_returned")
             if world.beast.get("available") and world.march_used is None:
@@ -402,9 +424,29 @@ class RuleBrain:
             return Decision("INTEL_HERO_DISPATCH", "intel_hero_formation_ready", world.confidence, "intel_hero_fight_started")
         if world.page is Page.MARCH and world.beast:
             if world.beast.get("victory_assured") is True:
-                if self.current_goal == "INTEL" or world.beast.get("level") == 22:
-                    return Decision("DISPATCH_INTEL_BEAST", "intel_beast_victory_assured", world.confidence, "intel_beast_march_dispatched")
-                return Decision("DISPATCH_BEAST", "beast_victory_assured", world.confidence, "beast_march_dispatched")
+                # The route keys on `target_kind`, which HybridVision reads from
+                # the formation page's title bar.  It used to key on
+                # `world.beast.get("level") == 22`, a level vision copied from
+                # whichever duplicate dispatch-button template happened to
+                # match, so the choice between the wilderness and intel dispatch
+                # was decided by pixel noise.  See vision.py's 出征 block and
+                # tools/probe_beast_formation_identity.py.
+                #
+                # The wilderness route requires *positive* evidence (a title
+                # that read 目标：<name>); everything else -- an intel title, an
+                # unreadable title, or the INTEL goal -- takes the intel route.
+                # The asymmetry is deliberate.  Both dispatch buttons are the
+                # same control, so either tap lands, but the two verifiers are
+                # not equivalent: `verify_beast_dispatch` demands the measured
+                # name 麝牛, so sending an unidentified formation there would
+                # record a correct action as a FAILURE, which is the failure
+                # mode that has poisoned this project's statistics before.
+                # `verify_intel_beast_dispatch` asserts only facts that are true
+                # of both pages (victory assured, a real march started), so it
+                # stays honest when the identity is not measured.
+                if world.beast.get("target_kind") == "WILDERNESS":
+                    return Decision("DISPATCH_BEAST", "beast_victory_assured", world.confidence, "beast_march_dispatched")
+                return Decision("DISPATCH_INTEL_BEAST", "intel_beast_victory_assured", world.confidence, "intel_beast_march_dispatched")
             return Decision("SAFE_STOP", "beast_low_win_probability", 1.0, "choose_lower_target")
         if world.page is Page.MARCH:
             # The gathering formation page had no branch at all, so it fell

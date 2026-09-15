@@ -66,9 +66,9 @@ class FormationPageIdentityTests(unittest.TestCase):
         state = _vision().observe(FORMATION_AFTER)
         self.assertIs(state.beast.get("victory_assured"), True)
         # The formation page does not display the target's name or level, so
-        # claiming either would be an invention.  The neighbouring
-        # BTN_BEAST_DISPATCH branch hard-codes 大角鹿/22 and must not be reached
-        # for a beast it does not describe.
+        # claiming either would be an invention.  Every branch of this page now
+        # obeys that; the identity is read from the title bar by HybridVision
+        # instead (see tests/test_beast_formation_identity.py).
         self.assertNotIn("name", state.beast)
         self.assertNotIn("level", state.beast)
 
@@ -99,13 +99,24 @@ class FormationPageNegativeControlsTests(unittest.TestCase):
         self.assertIs(state.page, Page.ALLIANCE)
         self.assertNotEqual(state.page, Page.MARCH)
 
-    def test_the_reviewed_formation_frame_keeps_its_original_identity(self) -> None:
-        # This frame is the source of both anchors.  It already matched the
-        # reviewed 麝牛 level-9 branch before this change, and that branch must
-        # keep winning: the new branch is a fallback, not a replacement.
+    def test_the_reviewed_formation_frame_claims_no_identity_either(self) -> None:
+        # This frame is the source of both anchors, and it is an *intel*
+        # formation page: its title bar reads 出征, not 目标：<name>.
+        #
+        # Until 2026-09-15 this test asserted `beast.level == 9` here and called
+        # that "its original identity".  That was the fabrication written into a
+        # test: the frame's own templates are BTN_BEAST_DISPATCH and
+        # PAGE_BEAST_MARCH (the intel family), and the level 9 came from
+        # BTN_BEAST_DISPATCH_MUSK_OX_9, a crop of the same button taken from a
+        # wilderness frame.  Both crops match this frame at distance 0
+        # (tools/probe_beast_formation_identity.py), so which one "won" was
+        # branch order.  The sibling test above already required no name/level
+        # on the other intel frame -- the two contradicted each other on the
+        # same page, which is what exposed it.
         state = _vision().observe(REVIEWED_FORMATION)
         self.assertIs(state.page, Page.MARCH)
-        self.assertEqual(state.beast.get("level"), 9)
+        self.assertNotIn("name", state.beast)
+        self.assertNotIn("level", state.beast)
         self.assertIs(state.beast.get("victory_assured"), True)
 
     def test_the_title_strip_alone_never_claims_victory_assured(self) -> None:

@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-15T00:51:07+00:00",
+  "generated_at": "2026-09-15T03:10:44+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "8943141",
+  "commit": "2a23687",
   "last_good_commit": "8943141",
-  "dirty_count": 2,
+  "dirty_count": 58,
   "episodes": {
-    "total": 1043,
-    "production": 1043,
-    "success": 728,
-    "failure": 310,
-    "success_rate_over_decided": 0.7013,
+    "total": 1109,
+    "production": 1109,
+    "success": 788,
+    "failure": 316,
+    "success_rate_over_decided": 0.7138,
     "modes": {
-      "PRODUCTION": 1043
+      "PRODUCTION": 1109
     },
     "mixed_case_rows": 35
   },
@@ -22,25 +22,26 @@
       "CANDIDATE": 40,
       "BLOCKED": 2
     },
-    "dispatchable": 69,
+    "dispatchable": 70,
     "counts": {
       "live_verified": 26,
-      "stable": 20,
+      "stable": 22,
       "degraded": 10,
-      "only_failed": 8,
-      "never_executed": 25
+      "only_failed": 9,
+      "never_executed": 22
     }
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 112,
-      "recent": 45,
-      "last_seen": "2026-09-14T14:08:48.104088+00:00",
+      "count": 115,
+      "recent": 48,
+      "last_seen": "2026-09-15T01:06:10.228210+00:00",
       "dates": {
         "2026-09-12": 36,
         "2026-09-13": 37,
-        "2026-09-14": 8
+        "2026-09-14": 8,
+        "2026-09-15": 3
       },
       "undated": 31,
       "top_skills": [
@@ -95,17 +96,18 @@
     },
     {
       "failure_type": "STAMINA_SOURCES_NOT_OPEN",
-      "count": 8,
-      "recent": 8,
-      "last_seen": "2026-09-14T23:37:22.332132+00:00",
+      "count": 9,
+      "recent": 9,
+      "last_seen": "2026-09-15T02:31:47.501403+00:00",
       "dates": {
-        "2026-09-14": 8
+        "2026-09-14": 8,
+        "2026-09-15": 1
       },
       "undated": 0,
       "top_skills": [
         [
           "OPEN_INTEL",
-          8
+          9
         ]
       ]
     },
@@ -244,9 +246,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 610,
-    "present_on_disk": 610,
-    "traceable_episodes": 311,
+    "referenced_screenshots": 739,
+    "present_on_disk": 739,
+    "traceable_episodes": 377,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },

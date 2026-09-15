@@ -4,24 +4,83 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：本轮（2026-09-15 11:xx GMT+8）—— 出征页身份不再编造 + 免费体力首次真机执行
+
+### 1. 出征页身份编造（`0w` + `0af`）—— 已修，全语料闸门 104/104
+
+**症状**：`dataset/raw/stamina_emergency/beast6_march.png` 是 **`目标：北极狼`** 的出征页，
+修复前被报成 **`麝牛 / level 9`**；而 `verify_beast_dispatch` 当时**正是要求这两个值** ⇒
+verifier 在编造身份上通过。
+
+**根因（像素级，不是推断）**：四张"身份"模板是**同一个控件的两份裁图**：
+
+| 语义 | 父帧 | roi (y, h) | 在两张父帧上的距离 |
+|---|---|---|---|
+| `BTN_BEAST_DISPATCH_MUSK_OX_9` | `beast9_round3_march` | (0.912, 0.070) | 0 / 0 |
+| `BTN_BEAST_DISPATCH` | `live_beast_march_selection` | (0.914, 0.070) | 0 / 0 |
+| `STATUS_VICTORY_ASSURED_MUSK_OX_9` | `beast9_round3_march` | (0.450, 0.045) | 0 / 4 |
+| `STATUS_VICTORY_ASSURED` | `live_beast_march_selection` | (0.455, 0.045) | 0 / 0 |
+
+⇒ 身份由**分支顺序**决定。`tools/probe_beast_formation_identity.py` 可复现。
+
+**该页其实显示目标 —— 在标题栏**（vision 从未读过）：
+野生 `目标：麝牛 / 北极狼 / 雪豹`（6/6 帧），情报 裸 `出征`（98/98 帧），**104/104 全部可读、零张失败**。
+
+**修法**：`vision.py` 三个 MARCH 分支只断言 `victory_assured`（不再写 name/level）；
+`ocr.py::HybridVision` 读标题栏填 `beast["name"]` + `beast["target_kind"]`；
+`verifier.py` 的 MARCH 一侧改为绑**量测到的** name；`brain.py` 路由改读 `target_kind`。
+
+**安全性方向（重要）**：野生路由要求**正向证据**，其余（情报标题 / 读不出 / goal=INTEL）
+一律走情报路由。因为两个出征按钮是同一控件（点哪个都落），但 `verify_beast_dispatch` 要求量测到的
+`麝牛` ⇒ 把身份未量测的编队送过去会把**正确动作记成 FAILURE**。
+
+**留档**：`dataset/truth_audit/beast_formation_identity_20260915/`（7 帧 + 7 张标题裁图 + 语料闸门输出 + README）。
+
+### 2. 免费体力检查首次真机执行（`0ai`）—— 已确认
+
+真机 `run_live.py --goal INTEL --max-actions 4`（`03:03:57Z`，4/4 verifier OK，exit 0）：
+step 3 = `OPEN_STAMINA_SOURCES` / `TAP_SEMANTIC HUD_STAMINA_GAUGE` / `MAP → POPUP/GET_MORE_STAMINA` / **OK**。
+语料：1105 条 episode 里该技能此前出现 **0** 次。
+**边界**：只证明"面板会被打开"；当时 `free_claim_available=false`，所以**领取动作仍未真机验证**。
+
+### 3. 新缺陷：体力不足被记成"战斗已开始"（`0ak`）—— 已修，待真机重跑
+
+同一次运行 step 1 被判 **OK**，after 态却是 `POPUP/GET_MORE_STAMINA`（体力 9 < 标价 10，游戏**拒绝**）。
+`verify_intel_hero_march_open` 的判据是"页面变了就算成功" ⇒ 必然通过。
+已修：拒绝单独判定 + 独立 reason `INTEL_HERO_MARCH_REFUSED_FOR_STAMINA`。
+
+### 下一动作（按价值排序）
+
+1. **`0ak` 的真机重跑确认**：把客户端停到英雄之旅营地面板（体力 < 10），跑
+   `run_live.py --goal INTEL --max-actions 2`，第 1 步应记 `INTEL_HERO_MARCH_REFUSED_FOR_STAMINA`。
+2. **主动体力门（`0ak` 的根因级修法）**：大脑在动手前比较 `world.stamina.current`（地图 HUD）
+   与 `exploration.stamina_cost_displayed`，不足就 `SAFE_STOP`，而不是先花 2 个动作去撞拒绝。
+   本轮那次运行**4 个动作里有 2 个是 `BACK`**，纯粹因为体力不足。
+3. **`CLAIM_FREE_STAMINA` 的真机验证**：等 `丰盛的招待` 的下次补给到期（本轮帧显示 `00:56:02`）再跑一次。
+4. **`0al`（需操作者决策）**：账上有约 **1,007 × +10** 体力道具而体力只有 9；
+   面板里那行「使用」不是付费行，但 `stamina_policy.note` 只允许 `BTN_CLAIM_FREE_STAMINA`。
+   **等操作者表态，不要擅自扩权。**
+5. 设计受阻的技能（见 AUTO 块 `DESIGN-BLOCKED`）：需要先拿真机帧再设计语义，不要照草稿硬写。
+
 <!-- AUTO:next_action -->
 CURRENT PRIORITY: fill the missing skills that block 4 goal(s)
-CURRENT TASK: implement `CHECK_ALLIANCE_EVENT` — missing from the registry, blocks 2 goal(s): ['ALLIANCE_TIMED_EVENTS', 'PARTICIPATE_BEAR']
+CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draft is implementable from the manifest alone (14 NOT_REGISTERED, 6 NO_VERIFIER); see DESIGN-BLOCKED below
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 45 in the last 2 day(s), 112 all-time, last seen 2026-09-14T14:08:48.104088+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 48 in the last 2 day(s), 115 all-time, last seen 2026-09-15T01:06:10.228210+00:00
 LAST GOOD COMMIT: 8943141
-CURRENT DIRTY FILES: 2
-LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL_HERO_JOURNEY_TARGET", "result": "SUCCESS", "recorded_at": "2026-09-15T00:41:23.227521+00:00", "episode_id": "formation_fix_20260915_003914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\formation_fix_20260915_003914\\formation_fix_20260915_003914_step_010_before_20260915T004118573925.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\formation_fix_20260915_003914\\formation_fix_20260915_003914_step_010_after_20260915T004121164386.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "recent": 45, "last_seen": "2026-09-14T14:08:48.104088+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T00:41:23.227521+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 58
+LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-15T03:04:43.757203+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260915T030429554449.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260915T030432112556.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 115, "recent": 48, "last_seen": "2026-09-15T01:06:10.228210+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 3}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T03:04:43.757203+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
-NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_FREE_STAMINA', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'DISMISS_EXPLORATION_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'OPEN_ALLIANCE_GIFTS', 'OPEN_STAMINA_SOURCES', 'READ_COUNTER', 'READ_INTEL_LIST']
+DESIGN-BLOCKED (not implementable from the draft alone; each needs a live frame of its page first): CHECK_ALLIANCE_EVENT [NOT_REGISTERED] — requires semantic(s) `ALLIANCE_EVENT_ENTRY` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; CLAIM_EVENT_TIER [NOT_REGISTERED] — requires semantic(s) `EVENT_TIER_CLAIMABLE` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; JOIN_RALLY [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_BEAR_TIMER [NOT_REGISTERED] — requires semantic(s) `BEAR_TIMER` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; READ_COUNTER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_TIMER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined ... and 14 more
+NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_FREE_STAMINA', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER', 'RECALL_MARCH', 'RECOVER_HOME']
 
-NEXT EXACT ACTION: Add `CHECK_ALLIANCE_EVENT` to winter_agent_v2/skills.py v2_registry() AND register a post-action verifier in LiveRuntime.VERIFIED_ATOMIC (a skill without a verifier is never dispatched). It unblocks: ALLIANCE_TIMED_EVENTS, PARTICIPATE_BEAR. Requirement side: knowledge/goals/goal_capability_map.json lists it as an alternative for the blocked capability. Then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
+NEXT EXACT ACTION: Do not implement a design-blocked skill from its draft. The cheapest real progress is to obtain a live frame of the page the skill needs (a read-only discovery probe), design the missing semantic from that evidence, then implement. Failing that, take the highest-value *live-evidenced* defect from 04_OPEN_ISSUES — those are already proven by production episodes.
 
 ACCEPTANCE: production episode + passing verifier + screenshot evidence, and the named goal(s) move off BLOCKED (live coverage increases).
 
@@ -32,7 +91,201 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 
 ## 手写：当前任务的上下文
 
-### 【最新 2026-09-15 08:45 GMT+8】出征（部队编成）页被读成联盟首页 —— 已修 + 真机 A/B 证明
+### 【最新 2026-09-15 10:3x GMT+8】运行时对同一帧算了两次决策 —— 已修 + 真机 A/B
+
+**这是本轮价值最高的一条**，而且它**推翻了旧记录对 `0i` 的归因**。
+
+**怎么发现的**：本来只是想做一次真机确认，结果第一次运行就撞上了 ——
+`--goal INTEL` 在地图页第 1 步判 FAILURE 并 exit 2。动作明明成功了：
+
+```
+1 OPEN_INTEL  action TAP_SEMANTIC BTN_OPEN_INTEL_WILD_HUD
+  before MAP  ->  after INTEL            ← 动作完全成功
+  verify ok=false reason=STAMINA_SOURCES_NOT_OPEN
+         evidence {"before_page": "MAP", "after_popup": null}
+  recorded skill OPEN_INTEL
+  stop_reason STAMINA_SOURCES_NOT_OPEN   exit 2
+```
+
+`STAMINA_SOURCES_NOT_OPEN` 是 `verify_stamina_sources_open` 的 reason，那串 evidence 也是它的
+evidence ⇒ **一个"这一步根本没执行的技能"的验证器，判了这一步**。
+
+**真根因（旧记录写的是"外部编辑器回写"，那是错的）**：运行时**对同一帧算了两次决策**。
+```
+runtime.py:387   decision = self.brain.decide(before, registry)   ← 第 1 次（并用它建后端路由）
+Scheduler.tick   decision = self.brain.decide(world, registry)    ← 第 2 次，执行的是这一次
+runtime.py:595   VERIFIED_ATOMIC[decision.skill](before, after)   ← 验证器绑第 1 次
+runtime.py:612   episode 记 tick.decision                        ← 记录写第 2 次
+```
+而 **`RuleBrain.decide` 不是纯函数**：`brain.py:362` 置 `stamina_panel_checked=True`
+并返回 `OPEN_STAMINA_SOURCES`。所以第 2 次调用返回 `OPEN_INTEL`。
+`runtime.py:545` 的注释原文就写着 **"one router decision per step"** —— **代码违反了自己写下的不变量**。
+
+**三重后果**：
+1. **假 FAILURE + 运行中止**（上面那条，exit 2）；
+2. **免费体力面板从未被打开**，而大脑已把"本轮已检查"标为 True ——
+   **一个功能"报告完成却从未执行"**，与情报 `NOT_AVAILABLE` 静默终止同族；
+3. `STAMINA_SOURCES_NOT_OPEN` 被记在 `OPEN_INTEL` 名下（AUTO 表 `OPEN_INTEL(8)`），污染统计。
+   顺带解释了为什么 `0i` 的"静态映射护栏"永远查不到它：映射本来就是对的。
+
+**修法（一步一决策）**：`Scheduler.tick(world, decision=None)` 改为执行**传入的**决策；
+`runtime.py` 把自己的决策交给它。不传时行为不变（单测覆盖）。
+
+**真机 A/B（同 goal、同动作、同 `MAP→INTEL` 迁移、体力 0 消耗）**
+| | 修复前 `02:31:11Z` | 修复后 `02:34:45Z` |
+|---|---|---|
+| skill / action | `OPEN_INTEL` / `BTN_OPEN_INTEL_WILD_HUD` | 同 |
+| before → after | `MAP → INTEL` | 同 |
+| verification | **False** `STAMINA_SOURCES_NOT_OPEN` | **True** `OK {"before_map":true,"after_intel":true,"stamina":3}` |
+| stop_reason / exit | `STAMINA_SOURCES_NOT_OPEN` / **2** | `MAX_ACTIONS_REACHED` / **0**（3/3 OK） |
+
+留档 `dataset/truth_audit/one_decision_per_step_20260915/`（4 帧 + `live_ab_records.json`）；
+`tests/test_one_decision_per_step.py` 用记录里的**原始状态重新调用两个 verifier**，
+证明"记录下来的 reason/evidence 正是另一个 verifier 的输出"——不是字符串比对，是重放。
+
+**诚实边界**：本轮那次 A/B **没有**触发免费体力检查（当时地图 HUD 体力读数为空，
+而闸门要求它非空）⇒ **不要声称"免费体力检查已恢复"**，待下次地图帧体力可读时确认（登记为 `0ai`）。
+
+**下一最高价值任务**：见下一节的 `0af` + `0w`（MARCH 页被 vision 编造野兽身份）。
+另外 `0ai` 是一个**零成本顺带确认**：下次地图帧体力可读时，第 1 步应当是
+`OPEN_STAMINA_SOURCES`（reason `free_stamina_gift_not_yet_checked_this_run`）。
+
+### 【2026-09-15 10:5x GMT+8】情报巨兽目标被路由到 `BEAST_HUNT` —— 已修（证据=生产回放，非真机）
+
+**一句话**：`Page.BEAST` 被两个不同目标共用，而路由判据用的是 goal 而不是页面身份。
+
+**真机记录（这是本轮唯一的事实来源，未做新真机运行）**
+episode `ally_prep_20260915` step 3，`2026-09-15T02:10:52Z`，`goal_id=HOME`：
+```
+state_before  BEAST  beast={"mission_id":"INTEL_BEAST_10","name":"大角鹿","level":22,"available":true}
+action        TAP_SEMANTIC BTN_BEAST_START_MARCH
+state_after   MARCH  beast={"name":"麝牛","level":9,"victory_assured":true}
+result        FAILURE  failure_type=BEAST_MARCH_NOT_PROVEN
+```
+
+**根因**：`brain.py` 用 `current_goal == "INTEL"` 判定"这是情报目标"。
+但情报身份由 `mission_id` 决定，**与 goal 无关** ⇒ 任何非 INTEL goal 下，
+情报目标都落到 `BEAST_HUNT`（技能文档写的是"击败野外普通巨兽"），
+而它注册的 verifier `verify_beast_march_open` 要求 before 是**地图野怪 `麝牛`/9`**。
+**两次点击完全相同**（都是 `BTN_BEAST_START_MARCH`）⇒ 动作成功、却被记成失败。
+
+**修法（1 行，且不改变任何物理点击）**：删掉 goal 闸门，只按
+`mission_id ∈ {INTEL_BEAST_10, INTEL_FIREBEAST_10}` 路由到 `INTEL_BEAST_START_MARCH`
+（其 verifier `verify_intel_beast_march_open` 用 mission→level 表绑定身份，是既有正确实现）。
+各 goal 自己的页面闸门在上方先执行，所以 goal 语义不受影响。
+
+**证据等级（不许读成 LIVE_VERIFIED）**：生产 episode 回放 + 单测。
+`dataset/truth_audit/beast_intel_target_routing_20260915/recorded_episode_20260915T021052Z.json`
+保存了同一条真机 before/after，**同一对状态现在通过正确的 verifier**（改前判 FAILURE）。
+**没有做真机运行确认**，原因：`run_intel_pins.py` 内部固定 `--goal INTEL`，
+而 INTEL 下旧代码本来就路由正确 ⇒ 它**无法**验证本次改动。
+要真机确认，需先把客户端停在情报巨兽目标页、再用非 INTEL goal 跑（见下方"下一动作"）。
+
+**同时发现（第三次 `0p` 同类）**：`tests/test_beast_verifier.py` 原来断言
+`RuleBrain().decide(live_beast_intel_world_target.png) == "BEAST_HUNT"` —— 而该帧标签明确是
+`mission_id=INTEL_BEAST_10 / 大角鹿 / 22`，即**情报**目标。它能通过只是因为
+`RuleBrain()` 的 `current_goal=None` 让 goal 闸门恰好为假。**它把 bug 写死成了测试。** 已改写。
+
+**下一最高价值任务（`0af` + `0w`，同一根因，要一起修）**：**MARCH 页被 vision 编造了野兽身份。**
+`vision.py:784` 只要 `BTN_BEAST_DISPATCH_MUSK_OX_9` + `STATUS_VICTORY_ASSURED_MUSK_OX_9` 命中，
+就写死 `beast={"name":"麝牛","level":9,"victory_assured":True}` —— 不管这一仗其实是情报的
+`大角鹿/22`。后果有两层：
+1. `brain.py:405` 靠 `world.beast.get("level") == 22` 区分情报/野怪派发 ⇒ **死分支**，
+   非 INTEL goal 下的情报出征会被判给 `DISPATCH_BEAST`（点 `BTN_BEAST_DISPATCH_MUSK_OX_9`）
+   而不是 `DISPATCH_INTEL_BEAST`（点 `BTN_BEAST_DISPATCH`）。
+2. 出征（部队编成）页根本不显示野兽名/等级 ⇒ 任何名字/等级都是编造，违反「不得声明页面上不存在的信息」。
+
+**正解**：MARCH 页只声明它真正显示的东西（`victory_assured` / 体力消耗），
+并把 mission 身份从 BEAST 页**传递**到 MARCH 页，而不是让 MARCH 页自己猜。
+⚠ 动它之前先核清 `verify_beast_march_open` / `verify_beast_dispatch` / `verify_beast_hunt` /
+`verify_stamina_beast_*` 的依赖面 —— 它们都依赖这些字面值。
+**低成本真机确认顺带做**：下一次情报 pin 运行把客户端留在巨兽目标页时，直接跑
+`tools/run_live.py --goal HOME --max-actions 2`，第 1 步应当是 `INTEL_BEAST_START_MARCH` 且 verifier OK。
+
+**顺带（`0ab` 已修，但要记住教训）**：新增真机留档目录后必须 `git check-ignore` 验一次。
+本轮发现 4 个**被测试读取**的归档目录（含 69 帧 / 34 MB 的 `panel_redesign`）一直被
+`dataset/truth_audit/**/*.png` 这条文件模式静默吞掉，新克隆跑不了对应测试。
+
+### 【2026-09-15 10:2x GMT+8】联盟首页被读成「宝箱页」—— 两层缺陷，已修 + 真机 12/12 闭环
+
+**本轮真实改进（Before → After）**
+`OPEN_ALLIANCE_GIFTS` —— **项目史上从未被执行过**（在 handoff 的 NEVER EXECUTED 名单里）
+→ 真机 1/1 verifier OK，并连锁带出 11 次 `ALLIANCE_ALLY_GIFT_CLAIM` 全部 OK。
+而在此之前，进入联盟页的唯一结局是 `SAFE_STOP alliance_state_unknown`。
+
+**为什么值得做**：真机联盟首页上「联盟宝箱」磁贴挂着 **84** 个未领宝箱（`badge_count`），
+而机器**看不见**它们 —— 这不是"少做一个功能"，是"一个正在漏收益的链路"。
+
+**一个误分类同时打断了两件事**（所以之前没人能修好它）：
+1. `brain.py:206` 只有在 `section == "HOME"` 时才派发 `OPEN_ALLIANCE_GIFTS` → 永远不成立；
+2. `verify_open_alliance_gifts`（`verifier.py:244`）也要求 `before.section == "HOME"` →
+   **即使强行派发也永远判不过**。两层互锁，看起来像"技能没实现"。
+
+**两个独立原因，单独任一个都不足以解释**
+- **模板层**：`PAGE_ALLIANCE_GIFTS` 在首页上 d=6（阈值 8），且它的分支排在 `PAGE_ALLIANCE`
+  之前 ⇒ 首页根本走不到 HOME 分支。
+- **OCR 层（真根因）**：`ocr.py:258` 只要看到精确文本 `联盟宝箱` 就写 `section="GIFTS"`。
+  但 `联盟宝箱` **本身就是首页的入口磁贴** —— 实测它在 **5 张首页帧和 3 张宝箱页帧上都是
+  精确 token**，也就是它**什么都区分不了**。而 `HybridVision` 又把 OCR 的 `alliance` 字典
+  **盖在**模板结果之上 ⇒ 就算模板层答对了 HOME，也会被 OCR 覆写回 GIFTS。
+  ⇒ 实测隔离证据：`SemanticWorldVision.observe(首页)` → `HOME`，同一帧过完整 `HybridVision` → `GIFTS`。
+
+**修法（两处严格加法 + 一个缺失的 verifier）**
+- `vision.py`：在两条弱标题条**之前**加成对锚点分支
+  `if match("PAGE_ALLIANCE") and (match("BTN_OPEN_ALLIANCE_GIFTS") or match("BTN_ALLIANCE_HELP"))`
+  → `HOME`。`PAGE_ALLIANCE` 单独用不可信（见 04 的 0x），必须配一个入口磁贴。
+- `ocr.py`：模板层已经决定 `section` 时，OCR **不得覆写** `section`（其余字段照旧合并）。
+- `verifier.py` + `runtime.py`：补上 `ALLIANCE_GIFTS` 的 verifier 并注册 ——
+  **没有 verifier 的技能永远不会被派发**。
+
+**闸门（2757 张真机帧）**：`PAGE_ALLIANCE` 单独命中 79 帧，**全部是 MARCH**（已知弱标题条）；
+成对锚点命中 **16 帧，全部当前已是 `ALLIANCE` 且 `visible_claim_buttons == 0`**（真首页）。
+⇒ **2757 帧里页面身份改变 0 帧**，只在 16 张首页上把 `section` 从错的 GIFTS 改成 HOME。
+
+**Live Evidence（`tools/run_live.py --goal ALLIANCE --max-actions 12`，exit 0）**
+`stop_reason=MAX_ACTIONS_REACHED`，**12/12 verifier OK**：
+```
+1 OPEN_ALLIANCE_GIFTS  reason=alliance_gifts_badge_visible  ver=True OK
+  before ALLIANCE {"section":"HOME","tab":"VICTORY_LOOT","status":"UNKNOWN"}
+  after  ALLIANCE {"section":"GIFTS","tab":"ALLY_GIFT","status":"CLAIMABLE","visible_claim_buttons":4,"badge_count":84}
+  evid   {"alliance_home_before": true, "gifts_after": true}
+2..12 ALLIANCE_ALLY_GIFT_CLAIM  ver=True OK ×11
+  badge 84 → 73；gift_progress 58250 → 62480（target 150000）
+```
+留档：`dataset/truth_audit/alliance_gifts_chain_20260915/`（5 帧，含 1 张出征页负对照）。
+
+**诚实边界（不要读成更多）**
+- `ALLIANCE_GIFTS`（我补 verifier 的那个技能）**至今仍是休眠代码**：`brain.py:301` 只在
+  `tab != "ALLY_GIFT"` 时才选它，而真机宝箱页默认就停在 `ALLY_GIFT` ⇒ 走的是
+  `ALLIANCE_ALLY_GIFT_CLAIM`。**它有单测、已注册，但没有真机证据**，不许标 LIVE_VERIFIED。
+- 本轮**没有**改动 `tab` 的判据（`ocr.py:285` 用 `购买含有盟友赠礼` 判别）——它在本轮没暴露问题。
+
+**上一轮 handoff 的 `NEXT EXACT ACTION` 按字面做不了**（必须记下来，否则下个账号会再撞一次）：
+它要求实现 `CHECK_ALLIANCE_EVENT`，但该技能自己的设计稿依赖的语义 `ALLIANCE_EVENT_ENTRY`
+**在 `dataset/candidate/template_manifest.json` 里根本不存在**（385 条查过；联盟类只有
+home / help / tech / gifts 四组），而这一页**从未被真机观测过** ⇒ 那等于要凭空设计 3 处新视觉。
+`ALLIANCE_TIMED_EVENTS` 的另外两个能力（`ALLIANCE_EVENT_TIMER` / `EVENT_TIER_CLAIMABLE`）
+同样没有观测支撑。**本轮改为先做有真机证据的缺陷**，这是"Live Improvement > Report"的取舍。
+
+**下一最高价值任务（`0af` + `0w`，同一根因，要一起修）**：**MARCH 页被 vision 编造了野兽身份。**
+`vision.py:784` 只要 `BTN_BEAST_DISPATCH_MUSK_OX_9` + `STATUS_VICTORY_ASSURED_MUSK_OX_9` 命中，
+就写死 `beast={"name":"麝牛","level":9,"victory_assured":True}` —— 不管这一仗其实是情报的
+`大角鹿/22`。后果有两层：
+1. `brain.py:405` 靠 `world.beast.get("level") == 22` 区分情报/野怪派发 ⇒ **死分支**，
+   非 INTEL goal 下的情报出征会被判给 `DISPATCH_BEAST`（点 `BTN_BEAST_DISPATCH_MUSK_OX_9`）
+   而不是 `DISPATCH_INTEL_BEAST`（点 `BTN_BEAST_DISPATCH`）。
+2. 出征（部队编成）页根本不显示野兽名/等级 ⇒ 任何名字/等级都是编造，违反「不得声明页面上不存在的信息」。
+
+**正解**：MARCH 页只声明它真正显示的东西（`victory_assured` / 体力消耗），
+并把 mission 身份从 BEAST 页**传递**到 MARCH 页，而不是让 MARCH 页自己猜。
+⚠ 动它之前先核清 `verify_beast_march_open` / `verify_beast_dispatch` / `verify_beast_hunt` /
+`verify_stamina_beast_*` 的依赖面 —— 它们都依赖这些字面值。
+
+**顺带（`0ab` 已修，但要记住教训）**：新增真机留档目录后必须 `git check-ignore` 验一次。
+本轮发现 4 个**被测试读取**的归档目录（含 69 帧 / 34 MB 的 `panel_redesign`）一直被
+`dataset/truth_audit/**/*.png` 这条文件模式静默吞掉，新克隆跑不了对应测试。
+
+### 【2026-09-15 08:45 GMT+8】出征（部队编成）页被读成联盟首页 —— 已修 + 真机 A/B 证明
 
 **本轮真实改进（Before → After）**
 `INTEL_BEAST_START_MARCH` 在真机上：`INTEL_BEAST_MARCH_NOT_PROVEN`（00:14:13Z）

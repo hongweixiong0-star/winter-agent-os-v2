@@ -12,6 +12,8 @@ from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.verifier import verify_beast_dispatch, verify_beast_march_open, verify_beast_target_selected
 from winter_agent_v2.vision import SemanticWorldVision
 
+from tests.live_stack import production_vision
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,8 +27,15 @@ class StaminaBeastRuntimeTests(unittest.TestCase):
         folder = ROOT / "dataset/raw/stamina_emergency"
         visible = self.vision.observe(folder / "current_for_skill.png")
         target = self.vision.observe(folder / "beast9_round3_target.png")
-        march = self.vision.observe(folder / "beast9_round3_march.png")
         dispatched = self.vision.observe(folder / "beast9_round3_dispatched.png")
+        # The formation page draws the target only in its title bar, so the name
+        # that `verify_beast_march_open` binds cannot come from the template
+        # layer alone -- the production stack is required (see
+        # tests/live_stack.py, whose whole purpose is this distinction).
+        hybrid = production_vision()
+        if hybrid is None:
+            self.skipTest("OCR runtime unavailable")
+        march = hybrid.observe(folder / "beast9_round3_march.png")
 
         self.assertIs(visible.page, Page.MAP)
         self.assertEqual(visible.beast.get("visible_target"), "MUSK_OX")

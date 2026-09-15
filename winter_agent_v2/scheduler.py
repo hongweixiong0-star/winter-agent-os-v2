@@ -36,8 +36,33 @@ class Scheduler:
         self.goals = GoalLibrary()
         self.candidate_pool = candidate_pool
 
-    def tick(self, world: WorldState) -> TickResult:
-        decision = self.brain.decide(world, self.registry)
+    def tick(self, world: WorldState, decision: Decision | None = None) -> TickResult:
+        """Execute one action for ``world``.
+
+        ``decision`` lets the caller hand over a decision it has already made,
+        so that the whole step runs on **one** decision.  ``RuleBrain.decide`` is
+        not a pure function -- it mutates run-scoped state, e.g.
+        ``stamina_panel_checked`` (brain.py:362) -- so calling it twice for the
+        same frame does not return the same answer:
+
+            call 1 -> OPEN_STAMINA_SOURCES   (and sets stamina_panel_checked)
+            call 2 -> OPEN_INTEL             (the flag is now set)
+
+        Live 2026-09-15T02:31:11Z showed what that cost.  ``runtime.py`` made the
+        first decision and built the backend router from it, then ``tick`` made
+        the second one and executed *that*.  So the action really performed was
+        ``OPEN_INTEL`` (the client did reach the intel page) while the verifier
+        applied afterwards was ``verify_stamina_sources_open``, which expects a
+        ``GET_MORE_STAMINA`` popup -- and the step was recorded as
+        ``OPEN_INTEL`` / ``STAMINA_SOURCES_NOT_OPEN``, aborting the run.  Worse,
+        the free-stamina panel was never opened even though the brain had marked
+        it checked for this run: a feature reporting "done" without doing it.
+
+        Callers that do not pass a decision keep the previous behaviour, so the
+        single-scheduler contract is unchanged.
+        """
+        if decision is None:
+            decision = self.brain.decide(world, self.registry)
         if decision.skill == "SAFE_STOP":
             return TickResult(decision, None)
         skill = self.registry.get(decision.skill)

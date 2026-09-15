@@ -449,15 +449,35 @@ def verify_intel_hero_march_open(before: WorldState, after: WorldState) -> Verif
     beast_panel = before.page is Page.BEAST and not before.beast
     before_ok = camp_panel or beast_panel
     left_panel = after.page is not before.page
-    ok = before_ok and left_panel
+    # A GET_MORE_STAMINA panel is the client *refusing* the action for lack of
+    # stamina, not a result of it, and `left_panel` alone cannot tell the two
+    # apart because both replace the camp panel.
+    #
+    # Measured live 2026-09-15T03:03:57Z (run_live.py --goal INTEL, the client
+    # parked on a Hero Journey camp panel by the hourly automation): stamina was
+    # 9 and the panel showed 探险 💧10, so the tap produced
+    # `POPUP / GET_MORE_STAMINA` and the fight never started -- yet this check
+    # returned OK and the episode recorded `INTEL_HERO_START_MARCH` as a
+    # success.  A refusal recorded as success is the one failure mode this
+    # project treats as worse than a failure.
+    refused_for_stamina = after.page is Page.POPUP and after.popup == "GET_MORE_STAMINA"
+    ok = before_ok and left_panel and not refused_for_stamina
+    reason = "OK"
+    if not ok:
+        reason = (
+            "INTEL_HERO_MARCH_REFUSED_FOR_STAMINA"
+            if before_ok and refused_for_stamina
+            else "INTEL_HERO_MARCH_NOT_OPEN"
+        )
     return VerificationResult(
         ok,
-        "OK" if ok else "INTEL_HERO_MARCH_NOT_OPEN",
+        reason,
         {
             "camp_panel": camp_panel,
             "beast_panel": beast_panel,
             "left_panel": left_panel,
             "after_page": after.page.value,
+            "refused_for_stamina": refused_for_stamina,
         },
     )
 
@@ -569,14 +589,20 @@ def verify_beast_target_selected(before: WorldState, after: WorldState) -> Verif
 
 
 def verify_beast_march_open(before: WorldState, after: WorldState) -> VerificationResult:
+    # The identity is bound on the BEAST side, where the client prints
+    # 等级9 麝牛 on the target card.  The formation page prints only
+    # 目标：<name> and no level, so its half asserts the measured name plus the
+    # safety line.  Until 2026-09-15 this half also demanded `level == 9`, a
+    # value vision copied from whichever duplicate dispatch-button template
+    # matched -- a tautology that passed on an invented identity.
     before_ok = before.page is Page.BEAST and before.beast.get("name") == "麝牛" and before.beast.get("level") == 9 and before.beast.get("available") is True
-    after_ok = after.page is Page.MARCH and after.beast.get("name") == "麝牛" and after.beast.get("level") == 9 and after.beast.get("victory_assured") is True
+    after_ok = after.page is Page.MARCH and after.beast.get("name") == "麝牛" and after.beast.get("victory_assured") is True
     ok = before_ok and after_ok
     return VerificationResult(ok, "OK" if ok else "BEAST_MARCH_NOT_PROVEN", {"target_verified":before_ok,"victory_assured":after_ok})
 
 
 def verify_beast_dispatch(before: WorldState, after: WorldState) -> VerificationResult:
-    before_ok = before.page is Page.MARCH and before.beast.get("name") == "麝牛" and before.beast.get("level") == 9 and before.beast.get("victory_assured") is True
+    before_ok = before.page is Page.MARCH and before.beast.get("name") == "麝牛" and before.beast.get("victory_assured") is True
     active = after.page is Page.MAP and any(state in {MarchState.MARCHING, MarchState.RETURNING} for state in after.marches)
     queue_visible = after.march_used is not None and after.march_used >= 1
     ok = before_ok and active and queue_visible
@@ -888,8 +914,11 @@ def verify_beast_hunt(
     idle: WorldState,
     intel_completed: WorldState,
 ) -> VerificationResult:
-    target_ok = target.page is Page.BEAST and target.beast.get("available") is True and target.beast.get("level") == 22
-    march_ok = march.page is Page.MARCH and march.beast.get("level") == 22 and march.beast.get("victory_assured") is True
+    target_ok = target.page is Page.BEAST and target.beast.get("available") is True and target.beast.get("mission_id") == "INTEL_BEAST_10"
+    # The formation page prints no level, so this half asserts the measured
+    # safety line only (it used to demand `level == 22`, a value vision copied
+    # from a duplicate button template).
+    march_ok = march.page is Page.MARCH and march.beast.get("victory_assured") is True
     returning_ok = (
         returning.page is Page.MAP
         and MarchState.RETURNING in returning.marches
@@ -1055,6 +1084,84 @@ def verify_alliance_gifts_claim(before: WorldState, reward: WorldState, after: W
     claimed_ok = after.page is Page.ALLIANCE and after.alliance.get("section") == "GIFTS" and after.alliance.get("status") != "CLAIMABLE" and int(after.alliance.get("visible_claimed", 0)) > 0
     ok = before_ok and reward_ok and count_ok and progress_ok and claimed_ok
     return VerificationResult(ok, "OK" if ok else "ALLIANCE_GIFT_CLAIM_NOT_PROVEN", {"before_ok":before_ok,"reward_ok":reward_ok,"daily_count_delta":count_delta,"count_ok":count_ok,"progress_delta":progress_after-progress_before,"progress_ok":progress_ok,"claimed_ok":claimed_ok})
+
+
+def verify_alliance_gifts_claimed(before: WorldState, after: WorldState) -> VerificationResult:
+    """Claim-all on the Alliance Gifts page (the ``ALLIANCE_GIFTS`` skill).
+
+    Why this exists (2026-09-15).  ``brain.py`` selects ``ALLIANCE_GIFTS``
+    whenever the gifts page reports ``status == CLAIMABLE``, but the skill had
+    no entry in ``LiveRuntime.VERIFIED_ATOMIC`` -- and a skill without a
+    verifier is never dispatched.  So the last step of the alliance gift chain
+    was dead even after the gifts page had been reached, which is why the live
+    Alliance page could carry a 99+ unclaimed-gift badge indefinitely.
+
+    The two-state form is deliberate: ``verify_alliance_gifts_claim`` above
+    needs a third ``reward`` frame and is used by the offline daily chain, while
+    the live loop only ever hands a verifier the before/after pair.
+
+    Evidence is taken from fields the production vision already extracts from
+    the live gifts page.  Measured 2026-09-15 on
+    ``dataset/raw/live_alliance_gifts_page.png``: ``status=CLAIMABLE``,
+    ``daily_claimed=444``, ``daily_limit=500``, ``gift_progress=71636``,
+    ``visible_claim_buttons=4``.
+    """
+    before_ok = (
+        before.page is Page.ALLIANCE
+        and before.alliance.get("section") == "GIFTS"
+        and before.alliance.get("status") == "CLAIMABLE"
+    )
+    # The client either resolves a claim-all in place (stays on the gifts list)
+    # or answers with the alliance gift reward overlay.  Both are accepted,
+    # because rejecting the overlay form would score a real claim as a failure
+    # and poison the success rate -- the mistake this project has already paid
+    # for twice.  Only the *specific* gift-reward overlay counts; a generic
+    # popup would be no evidence at all.
+    after_on_gifts = after.page is Page.ALLIANCE and after.alliance.get("section") == "GIFTS"
+    after_is_gift_reward = after.page is Page.POPUP and after.popup == "ALLIANCE_GIFT_REWARD"
+
+    count_ok = False
+    buttons_ok = False
+    progress_ok = False
+    before_claimed = int(before.alliance.get("daily_claimed", -1))
+    after_claimed = int(after.alliance.get("daily_claimed", -1))
+    count_delta = after_claimed - before_claimed
+    buttons_before = int(before.alliance.get("visible_claim_buttons", 0))
+    buttons_after = int(after.alliance.get("visible_claim_buttons", 0))
+    progress_delta = int(after.alliance.get("gift_progress", 0)) - int(before.alliance.get("gift_progress", 0))
+    if after_on_gifts:
+        # The counters only mean anything when the list is still readable; the
+        # overlay covers it, and reading zeros behind it would look like a
+        # negative delta.
+        count_ok = (
+            before_claimed >= 0
+            and count_delta > 0
+            and after_claimed <= int(after.alliance.get("daily_limit", 500))
+        )
+        buttons_ok = buttons_before > 0 and buttons_after < buttons_before
+        progress_ok = progress_delta >= 0
+
+    # Either in-place signal alone is enough: the daily counter is the game's
+    # own record of what was claimed, while the visible button count can fall to
+    # zero in the same frame that the counter read lags behind.
+    action_ok = count_ok or buttons_ok
+    ok = before_ok and ((after_on_gifts and action_ok and progress_ok) or after_is_gift_reward)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "ALLIANCE_GIFTS_CLAIM_NOT_PROVEN",
+        {
+            "before_ok": before_ok,
+            "after_on_gifts": after_on_gifts,
+            "after_is_gift_reward": after_is_gift_reward,
+            "daily_count_delta": count_delta,
+            "count_ok": count_ok,
+            "claim_buttons_before": buttons_before,
+            "claim_buttons_after": buttons_after,
+            "buttons_ok": buttons_ok,
+            "progress_delta": progress_delta,
+            "progress_ok": progress_ok,
+        },
+    )
 
 
 def verify_mail_claim(before: WorldState, reward: WorldState, after: WorldState) -> VerificationResult:

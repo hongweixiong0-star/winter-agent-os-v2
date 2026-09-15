@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-09-15T01:06:15+00:00",
+  "pins_processed": 1,
+  "pins_skipped": 0,
+  "dispatches": 0,
+  "claims": 0,
+  "per_pin": [
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.2917,
+        0.5172
+      ],
+      "card_opened": true,
+      "productive": false,
+      "refusal": null,
+      "exit_code": 2,
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "steps": 5,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 39.7,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_010514_pin_00"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "record": "corpus_measurement",
+  "semantic": "BTN_BEAST_DISPATCH",
+  "measured_at": "2026-09-15T01:16:00+00:00",
+  "tool": "tools/probe_page_anchor.py (read-only, reuses winter_agent_v2.image_hash phash/hamming)",
+  "question": "Can the disabled-state 出征 button (pHash distance 26) be admitted by relaxing the threshold, or by adding a second DISABLED-state template?",
+  "verdict": "NO. Threshold relaxation is proven infeasible. The template route is closed.",
+  "corpus": {
+    "root": "dataset/raw",
+    "frames": 2795,
+    "unreadable": 0
+  },
+  "threshold_in_production": 6,
+  "threshold_source": "winter_agent_v2/vision.py SemanticROIVision.max_distance default = 6; BTN_BEAST_DISPATCH has no semantic_max_distance override",
+  "result": {
+    "frames_matching_at_threshold_6": 70,
+    "all_70_are_at_distance_0": true,
+    "frames_within_distance_30": 1007,
+    "unrelated_frames_within_distance_30": 937,
+    "distance_histogram_low_tail": {
+      "0": 70,
+      "18": 1,
+      "20": 70,
+      "22": 4,
+      "24": 28,
+      "26": 41,
+      "28": 114,
+      "30": 72,
+      "note": "Counts cover only the 400 lowest-distance frames that the tool printed. The tool reports 1007 frames at <= 30 in total, so the 30 bucket extends well past 72."
+    }
+  },
+  "why_relaxation_is_infeasible": {
+    "argument": "The disabled-state button measures 26. Distance 26 is not a sparse gap: 28 frames sit at 24, 41 at 26 and 114 at 28, and those frames are overwhelmingly NOT the beast formation page. A threshold that admits 26 would therefore make BTN_BEAST_DISPATCH resolve on mail, alliance, rally and exploration screens.",
+    "visual_audit": {
+      "method": "Same ROI (403,1170,292,90) cropped from one template and five frames of the 24-28 band, tiled for eyeball review. Filenames were deliberately NOT trusted.",
+      "image": "out_intel_dbg/dispatch_roi_band_audit.png",
+      "samples": [
+        {"frame": "dataset/candidate/templates/btn_beast_dispatch__live_beast_march_selection__2.png", "distance": 0, "content": "出征 + barrel + WHITE 10 (the real, enabled button)"},
+        {"frame": "dataset/raw/live_mail_system_claim_result.png", "distance": 26, "content": "purple mail reward banner ('兑换为10个吉娜信物')"},
+        {"frame": "dataset/raw/live_deployment_mail_claim/step_001_before.png", "distance": 24, "content": "mail '一键已读&领取' button"},
+        {"frame": "dataset/raw/live_alliance_gifts_after.png", "distance": 28, "content": "grey '领取' claim button"},
+        {"frame": "dataset/raw/bear_live_20260909/bear_rally_panel.png", "distance": 28, "content": "blue '加入' rally-join button"},
+        {"frame": "dataset/raw/live_deploy_exploration_dynamic_target_v1/step_001_after.png", "distance": 26, "content": "blank / dark region with no control at all"},
+        {"frame": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_010514_pin_00/intel_pins_20260915_010514_pin_00_step_005_before_20260915T010608207158.png", "distance": 26, "content": "出征 + barrel + RED 10 (the disabled button we actually need)"}
+      ],
+      "conclusion": "The disabled 出征 button at distance 26 is numerically indistinguishable from a mail banner, a mail button, an alliance claim button, a rally-join button and an empty region. There is no threshold that separates them."
+    }
+  },
+  "what_the_fix_must_be_instead": {
+    "approach": "Explicit state branch, no template and no threshold change.",
+    "sketch": "On the beast formation page (already correctly classified as Page.MARCH), read the stamina cost rendered on the 出征 button and compare it with the account's current stamina. If cost > stamina, emit an explicit insufficient-stamina outcome and BACK out. Never report SEMANTIC_TARGET_NOT_VERIFIED, which falsely means 'the control is not on screen'.",
+    "why": "The page is already classified correctly by the two reviewed anchors (PAGE_BEAST_MARCH + STATUS_VICTORY_ASSURED). The only missing information is the cost-vs-stamina comparison, which is a number read, not a control lookup. This also removes the wrong reason from the failure statistics.",
+    "supporting_evidence": "The cost digit is legible and state-coloured in both states: WHITE when affordable, RED when not. Current account stamina (5) was confirmed independently on three surfaces.",
+    "status": "NOT IMPLEMENTED. Recorded as the correct direction. This measurement does not itself authorise the change; it removes a wrong candidate and pins the right one."
+  },
+  "stop_loss_note": "This is the project's accepted 'prove the approach wrong' outcome for the 90-minute rule: the template-relaxation approach is now disproven with a 2795-frame corpus plus a visual audit, rather than being left as an open PROMOTION BLOCKED item."
+}

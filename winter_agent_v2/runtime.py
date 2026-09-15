@@ -16,7 +16,7 @@ from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
-from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read
+from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
 from .verifier import verify_ally_gift_claim, verify_beast_dispatch, verify_beast_march_open, verify_beast_target_selected, verify_building_upgrade, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
@@ -81,6 +81,11 @@ class LiveRuntime:
         "DISMISS_INTEL_REWARD": verify_intel_reward_dismissed,
         "ALLIANCE_ALLY_GIFT_CLAIM": verify_ally_gift_claim,
         "OPEN_ALLIANCE_GIFTS": verify_open_alliance_gifts,
+        # brain.py selects ALLIANCE_GIFTS whenever the gifts page reports
+        # CLAIMABLE.  Without this entry the skill was never dispatched, so the
+        # alliance gift chain always stopped one step short of claiming
+        # anything (live Alliance home carried a 99+ unclaimed-gift badge).
+        "ALLIANCE_GIFTS": verify_alliance_gifts_claimed,
         "DISMISS_ALLIANCE_GENERIC_REWARD": verify_alliance_reward_dismissed,
         "OPEN_MAP": verify_open_map,
         "OPEN_HOME": verify_open_home,
@@ -548,7 +553,13 @@ class LiveRuntime:
                 ledger=self.backend_ledger,
             )
             started_at = time.monotonic()
-            tick = Scheduler(self.brain, self.registry, executor, self.candidate_pool).tick(before)
+            # ``decision`` was already made above and the backend router below
+            # was built from it, so it is handed to the scheduler rather than
+            # recomputed.  ``RuleBrain.decide`` mutates run-scoped state (the
+            # free-stamina once-per-run flag), so a second call for the same
+            # frame answers differently and the verifier then judges a skill the
+            # step never ran.  See ``Scheduler.tick`` for the live evidence.
+            tick = Scheduler(self.brain, self.registry, executor, self.candidate_pool).tick(before, decision)
             self._runtime(last_action_time=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat())
             if tick.execution is None or not tick.execution.executed:
                 self._record_episode(

@@ -32,6 +32,38 @@ class OCRResult:
         return "\n".join(token.text for token in self.tokens)
 
 
+# The 出征 formation page draws the target it is about to attack in its title
+# bar and nowhere else.  Measured 2026-09-15 on six live frames (720x1280): the
+# text occupies x 86-260, y 15-75, so this ROI is that region widened slightly
+# so a longer target name cannot be clipped.
+FORMATION_TITLE_ROI = {"x_norm": 0.08, "y_norm": 0.004, "w_norm": 0.42, "h_norm": 0.062}
+
+# ``目标：<name>`` is drawn by the world-map wilderness flow.  The intel flow
+# shows the bare page title instead, and that is the only structural difference
+# between the two populations sharing this page.
+FORMATION_TARGET_PATTERN = re.compile(r"目标[:：]\s*(?P<name>[^\s:：]+)")
+FORMATION_INTEL_TITLE = "出征"
+
+
+def read_formation_target(text: str) -> tuple[str | None, str | None]:
+    """Split a formation-page title into ``(target name, target kind)``.
+
+    ``("麝牛", "WILDERNESS")`` for ``目标：麝牛``, ``(None, "INTEL")`` for the
+    bare ``出征`` title, and ``(None, None)`` when the strip cannot be read.
+
+    An unreadable title must never resolve to either kind: this field decides
+    which dispatch skill runs and therefore whether stamina is spent, so
+    "unknown" has to stay distinguishable from both answers.
+    """
+    match = FORMATION_TARGET_PATTERN.search(text)
+    if match:
+        name = match.group("name").strip()
+        return (name, "WILDERNESS") if name else (None, None)
+    if FORMATION_INTEL_TITLE in text:
+        return None, "INTEL"
+    return None, None
+
+
 def _intel_pin_count(image_path: Path) -> int:
     """Mission pins visible on an intel frame, or 0 when they cannot be counted.
 
@@ -598,6 +630,33 @@ class HybridVision:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))
                 if secondary.page is primary.page and secondary.alliance:
                     alliance = {**primary.alliance, **secondary.alliance}
+                    # Vision is template-first: OCR may add the structured fields
+                    # the template layer does not carry (gift counters, personal
+                    # contribution, attempts), but it must not overwrite a
+                    # `section` the template layer has already decided.
+                    #
+                    # Measured 2026-09-15.  `OCRPageClassifier` sets
+                    # section=GIFTS whenever the exact text 联盟宝箱 is present,
+                    # and 联盟宝箱 is also an entry TILE on the alliance HOME
+                    # page: it is an exact token on all 5 home frames AND on all
+                    # 3 gifts frames, so on its own it identifies no page at
+                    # all.  Letting it win reported the live home page as
+                    # section=GIFTS / status=UNKNOWN, which silently broke two
+                    # things: brain.py dispatches OPEN_ALLIANCE_GIFTS only when
+                    # section == HOME, so the loop always ended in SAFE_STOP
+                    # alliance_state_unknown, and verify_open_alliance_gifts
+                    # requires before.section == HOME, so the skill could never
+                    # have passed anyway.  The live Alliance page carried a 99+
+                    # unclaimed-gift badge the whole time.
+                    #
+                    # The reviewed template layer already distinguishes the four
+                    # alliance sections with page anchors measured over 2757
+                    # frames (PAGE_ALLIANCE_GIFTS d=0 on gifts, PAGE_ALLIANCE_TECH
+                    # d=2 on technology, PAGE_ALLIANCE_HELP d=4 on help,
+                    # PAGE_ALLIANCE + an entry tile on home), so its answer is
+                    # the one to keep.
+                    if primary.alliance.get("section"):
+                        alliance["section"] = primary.alliance["section"]
                     if alliance.get("section") == "GIFTS" and alliance.get("tab") == "ALLY_GIFT":
                         badge = self.ocr.recognize(
                             image_path,
@@ -718,6 +777,33 @@ class HybridVision:
                         elif has_header:
                             intel.update({"status": "NOT_AVAILABLE", "available_count": 0, "list_read": True})
                 return replace(primary, intel=intel)
+            if primary.page is Page.MARCH and primary.beast:
+                # The 出征 formation page is shared by the map wilderness beast
+                # and the intel beast target, and the template layer cannot
+                # tell them apart: the two dispatch buttons and the two
+                # 胜券在握 strips are crops of the same controls and match both
+                # frames at distance 0 (tools/probe_beast_formation_identity.py).
+                # The template layer therefore asserts only the safety line it
+                # really sees, and the target identity is read here, from the
+                # title bar, which is the only place the client draws it.
+                #
+                # Gated on a non-empty ``primary.beast``: the gathering
+                # formation page also classifies as MARCH, and filling its
+                # empty beast dict would make the brain treat a resource march
+                # as a beast march.
+                #
+                # Nothing is added when the strip cannot be read.  An unread
+                # title leaves the state without an identity, and the brain
+                # refuses to spend stamina on a target it cannot name.
+                title = self.ocr.recognize(image_path, FORMATION_TITLE_ROI)
+                name, kind = read_formation_target(title.text)
+                if name or kind:
+                    beast = dict(primary.beast)
+                    if name:
+                        beast["name"] = name
+                    if kind:
+                        beast["target_kind"] = kind
+                    return replace(primary, beast=beast)
             if primary.page is Page.TRAINING and primary.training.get("status") == "IN_PROGRESS" and primary.training.get("timer") in {None, "VISIBLE"}:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))
                 if secondary.page is primary.page and secondary.training:

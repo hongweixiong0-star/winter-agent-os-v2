@@ -49,6 +49,39 @@ dataset/external/repositories/
 !dataset/truth_audit/hud_stamina_*/**/*.png
 !dataset/truth_audit/free_stamina_*/**/*.png
 
+# --- fixtures that a test file actually reads -------------------------------
+# The rule above is a file pattern, so every one of these was silently untracked
+# even though a test asserts against it: a fresh clone could not run
+# tests/test_intel_pin_board.py, tests/test_beast_formation_page.py or
+# tests/test_panel_redesign.py.  Re-include exactly what is read, nothing more.
+# the pin-count fix (aspect floor 0.65 -> 0.5) is argued from these 4 frames
+!dataset/truth_audit/intel_pin_board_*/**/*.png
+# the formation page given a beast identity it does not display (0w)
+!dataset/truth_audit/beast_formation_page_*/**/*.png
+# the same page measured across the whole corpus: the four "identity" templates
+# are crops of one control and the real target is only in the title bar
+!dataset/truth_audit/beast_formation_identity_*/**/*.png
+# the live run where OPEN_STAMINA_SOURCES finally executed, and the stamina
+# refusal that verify_intel_hero_march_open used to record as a success
+!dataset/truth_audit/stamina_check_live_*/**/*.png
+# the alliance HOME page read as the GIFTS section (2026-09-15, two-layer defect)
+!dataset/truth_audit/alliance_gifts_chain_*/**/*.png
+# the live A/B that proves one decision per step (runtime made the step decision
+# twice, so a stamina verifier judged an intel step)
+!dataset/truth_audit/one_decision_per_step_*/**/*.png
+# panel_redesign holds 69 frames / 34 MB, so only the 4 the test reads are
+# re-included -- keep this list in sync with tests/test_panel_redesign.py
+!dataset/truth_audit/panel_redesign/panel_meat_selected.png
+!dataset/truth_audit/panel_redesign/panel_wood_reselect.png
+!dataset/truth_audit/panel_redesign/panel_coal_selected.png
+!dataset/truth_audit/panel_redesign/panel_iron_selected.png
+
+# run_live.py debug dumps: body-detection retries leave these in the repo root
+# (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only
+# record of what the unstable tap targets did.
+out_*.png
+out_intel_dbg/
+
 # --- python ----------------------------------------------------------------
 __pycache__/
 *.py[cod]

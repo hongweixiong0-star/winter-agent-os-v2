@@ -1,0 +1,121 @@
+{
+  "record": "intel_unattended_pin_loop",
+  "generated_at": "2026-09-15T01:08:00+00:00",
+  "tool": "tools/run_intel_pins.py",
+  "tool_rejected": {
+    "tool": "tools/run_intel_loop.py",
+    "reason": "Known false intel_not_available on pin-map boards (reproduced twice 2026-09-15). Not used."
+  },
+  "environment": {
+    "device": "127.0.0.1:7555",
+    "client": "com.gof.china",
+    "resolution": "720x1280",
+    "stamina_at_start": 5,
+    "stamina_source": "intel page header OCR (run_intel_pins.intel_stamina / vision intel.stamina)",
+    "note": "stamina 5 was confirmed independently three ways: intel board header (probe 01:07:33 = 5), world-map HUD barrel badge (5), and the march page's 出征 cost badge (red 10 > 5)."
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "command": "tools/run_intel_pins.py 8",
+      "evidence": "evidence/intel_pins_20260915_005722.json",
+      "outcome": "STOP: 3 navigation cycles failed to reach the intel page",
+      "pins_processed": 0,
+      "pins_skipped": 0,
+      "dispatches": 0,
+      "claims": 0,
+      "cause": "Client was parked on the ALLIANCE page by the previous automation (evidence/alliance_event_entry_discovery_20260915_005553.json). All 3 nav cycles burned with stop_reason goal_page_mismatch / SEMANTIC_TARGET_NOT_VERIFIED."
+    },
+    {
+      "attempt": 2,
+      "command": "tools/run_intel_pins.py 8",
+      "evidence": "evidence/intel_pins_20260915_005907.json",
+      "outcome": "STOP: 3 navigation cycles failed to reach the intel page",
+      "pins_processed": 0,
+      "pins_skipped": 0,
+      "dispatches": 0,
+      "claims": 0,
+      "cause": "Counting artifact, NOT idleness. Nav cycle 1 (14 steps, MAX_ACTIONS_REACHED) genuinely reached the intel board and did real work: episodes.jsonl 00:59:46 OPEN_INTEL MAP->INTEL ok, 00:59:58 SELECT_INTEL_PIN ok, 01:00:02 OPEN_INTEL_HERO_JOURNEY_TARGET ok, 01:00:18 INTEL_HERO_START_MARCH ok, 01:00:43 OPEN_INTEL ok, 01:00:55 SELECT_INTEL_PIN ok, 01:01:00 OPEN_INTEL_HERO_JOURNEY_TARGET ok, 01:01:05 INTEL_HERO_START_MARCH ok, 01:01:45 OPEN_INTEL ok, 01:01:58 SELECT_INTEL_PIN ok, 01:02:22 SELECT_INTEL_PIN ok, 01:02:27 OPEN_INTEL_BEAST_TARGET ok, 01:02:38 INTEL_BEAST_START_MARCH ok (all verifier_ok=True). It then failed at DISPATCH_INTEL_BEAST (x2), which left the client on the MARCH page; the outer loop re-observed page != INTEL and burned nav cycles 2 and 3. Because the loop only counts a pin when it gets a clean page == INTEL observation at the top of an iteration, pins_processed stayed 0 even though 4 pins were opened and 3 hero marches started."
+    },
+    {
+      "attempt": 3,
+      "command": "tools/run_intel_pins.py 8 (board already open, no nav needed)",
+      "evidence": "evidence/intel_pins_20260915_010514.json",
+      "outcome": "pins_processed=1, then STOP: stamina 5 below 10",
+      "pins_processed": 1,
+      "pins_skipped": 0,
+      "dispatches": 0,
+      "claims": 0,
+      "per_pin": [
+        {
+          "pin": "ORANGE",
+          "tap_norm": [0.2917, 0.5172],
+          "card_opened": true,
+          "productive": false,
+          "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+          "steps": 5,
+          "productive_steps": [],
+          "episodes": "01:05:45 BACK POPUP->INTEL ok, 01:05:57 SELECT_INTEL_PIN INTEL->POPUP ok, 01:06:02 OPEN_INTEL_BEAST_TARGET POPUP->BEAST ok, 01:06:08 INTEL_BEAST_START_MARCH BEAST->MARCH ok, 01:06:10 DISPATCH_INTEL_BEAST MARCH->None FAILED SEMANTIC_TARGET_NOT_VERIFIED (BTN_BEAST_DISPATCH)"
+        }
+      ]
+    }
+  ],
+  "root_cause": {
+    "skill": "DISPATCH_INTEL_BEAST",
+    "semantic": "BTN_BEAST_DISPATCH",
+    "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+    "occurrences_this_session": 3,
+    "measurement": {
+      "production_threshold": 6,
+      "threshold_source": "winter_agent_v2/vision.py SemanticROIVision.max_distance default = 6; BTN_BEAST_DISPATCH has no semantic_max_distance override",
+      "observed_distance_this_frame": 26,
+      "probe": "tools/probe_frame_semantics.py --semantic BTN_BEAST_DISPATCH --max-distance 40 -> MATCH d=26",
+      "template": "dataset/candidate/templates/btn_beast_dispatch__live_beast_march_selection__2.png",
+      "template_status": "CANDIDATE",
+      "template_parent": "dataset/raw/live_beast_march_selection.png"
+    },
+    "diagnosis": "State-dependent template staleness, not a missing control. The template was cropped from an ENABLED 出征 button whose stamina cost reads '10' in WHITE. With stamina 5 the client renders the same button at the same position with the cost '10' in RED, and the pHash distance jumps from ~0 to 26. Crops of template vs live frame are geometrically identical; the only difference is the cost digit colour.",
+    "evidence_frames": [
+      "dataset/candidate/templates/btn_beast_dispatch__live_beast_march_selection__2.png (ENABLED, cost white)",
+      "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_010514_pin_00/intel_pins_20260915_010514_pin_00_step_005_before_20260915T010608207158.png (DISABLED, cost red)"
+    ],
+    "secondary_observation": "The outcome is arguably correct (cost 10 > stamina 5, so the dispatch could not have succeeded anyway), but the agent reports it as 'the control is not on screen', which is a wrong reason and will keep poisoning DISPATCH_INTEL_BEAST success-rate statistics and Recovery decisions.",
+    "fix_direction": [
+      "SUPERSEDED by evidence/corpus_btn_beast_dispatch_20260915.json: the template route is CLOSED. A 2795-frame corpus measurement shows the disabled-state distance (26) sits inside a dense band of unrelated frames (28 at d=24, 41 at d=26, 114 at d=28), visually confirmed to be mail banners, mail buttons, alliance claim buttons, rally-join buttons and blank regions. No threshold separates them.",
+      "The correct fix is an explicit state branch: on the already-correctly-classified beast formation page, read the stamina cost on the 出征 button and compare it with current stamina; if cost > stamina, report insufficient stamina and BACK out, instead of SEMANTIC_TARGET_NOT_VERIFIED.",
+      "Do NOT relax the threshold to ~26 and do NOT add a second disabled-state template."
+    ],
+    "promotion_gate": "RESOLVED AS 'APPROACH DISPROVEN' - no longer a PROMOTION BLOCKED item. The template/threshold candidate was eliminated by corpus evidence rather than left waiting for samples. See evidence/corpus_btn_beast_dispatch_20260915.json."
+  },
+  "board_probe": {
+    "tool": "tools/probe_intel_board.py",
+    "on_board_frame": {
+      "frame": "dataset/raw/control_panel/probe/intel_board_20260915_010733.png",
+      "production_vision": {
+        "page": "INTEL",
+        "status": "AVAILABLE",
+        "stamina": 5,
+        "refresh": "06:52:27",
+        "available_count": 7,
+        "pins": 7,
+        "list_read": true
+      },
+      "detected_pins": 7,
+      "note": "Production vision agrees with the pin detector: available_count == pins == 7. The 2026-09-15 pin-count fix is confirmed working on a live frame."
+    },
+    "on_march_frame": {
+      "frame": "dataset/raw/control_panel/probe/intel_board_20260915_010623.png",
+      "production_vision_page": "MARCH",
+      "detected_pins": 1,
+      "false_positive": "PURPLE (153,377) on the MARCH page - re-confirms that intel_pin_centers() produces false pins outside the intel board and MUST stay page-gated."
+    }
+  },
+  "terminal_state": "STOP: stamina 5 below 10 (STAMINA_FLOOR). This is a legitimate normal terminal state, not a failure of the loop: the account has too little stamina to fund any intel beast dispatch (cost 10).",
+  "rules_honoured": [
+    "Only tools/run_intel_pins.py was used; tools/run_intel_loop.py was not invoked.",
+    "No payment / purchase / gift-pack control was ever tapped.",
+    "No historical Episode or screenshot was modified or deleted.",
+    "No wildcard/bulk file deletion.",
+    "pins_processed == 0 with pins visibly on the board was NOT reported as 'board empty'."
+  ]
+}

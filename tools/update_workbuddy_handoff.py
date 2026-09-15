@@ -653,20 +653,139 @@ def failure_rank_line(top: dict | None, ep: dict) -> str:
     )
 
 
+def _manifest_semantics() -> set[str]:
+    """Every semantic id the vision manifest can actually resolve."""
+    try:
+        payload = json.loads(
+            (ROOT / "dataset/candidate/template_manifest.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return set()
+    records = payload.get("records") if isinstance(payload, dict) else payload
+    return {
+        record["semantic"]
+        for record in (records or [])
+        if isinstance(record, dict) and isinstance(record.get("semantic"), str)
+    }
+
+
+def design_blocker(skill_id: str) -> str | None:
+    """Why a missing skill cannot be implemented from its own design draft.
+
+    The coverage report ranks missing skills by how many blocked goals they
+    unblock, which is the right ordering *if the skill can be written*.  Measured
+    on 2026-09-15, none of the 20 highest-leverage missing skills could be:
+
+    * 12 have an entry in ``skill_factory.PRIORS`` that names required semantics
+      absent from ``dataset/candidate/template_manifest.json`` -- e.g.
+      ``CHECK_ALLIANCE_EVENT`` needs ``ALLIANCE_EVENT_ENTRY``, ``OPEN_ARENA``
+      needs ``BTN_OPEN_ARENA``.  ``knowledge/alliance/mechanism_cards.json``
+      already records the former as ``MISSING_NEEDS_LIVE_DESIGN``;
+    * 8 are absent from ``PRIORS`` entirely, so there is no draft at all
+      (``JOIN_RALLY``, ``READ_COUNTER``, ``READ_TIMER``, ``USE_ACTIVITY_ATTEMPT``,
+      ``ALLIANCE_HELP``, ``ALLIANCE_TECH_CONTRIBUTE``, ...).
+
+    Either way the work is "observe the page live, then design the vision", not
+    "add a skill to the registry".  Two consecutive handoffs put
+    ``CHECK_ALLIANCE_EVENT`` at the top of NEXT EXACT ACTION and sent the next
+    account into that dead end.
+
+    Returns ``None`` when the skill is not design-blocked, or when the manifest
+    cannot be read (never claim a blocker without evidence).
+    """
+    try:
+        from winter_agent_v2.skill_factory import PRIORS
+    except Exception:
+        return None
+    prior = PRIORS.get(skill_id)
+    if prior is None:
+        return (
+            "has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), "
+            "so its required semantics and success condition are undefined"
+        )
+    available = _manifest_semantics()
+    if not available:
+        return None
+    missing = sorted(s for s in prior.required_semantics if s not in available)
+    if not missing:
+        return None
+    return (
+        "requires semantic(s) "
+        + ", ".join(f"`{s}`" for s in missing)
+        + " that do not exist in dataset/candidate/template_manifest.json; the page has "
+        "never been observed live, so this needs new vision design first"
+    )
+
+
+def skill_gap(skill_id: str) -> str:
+    """What is *actually* missing for this skill, in the project's own terms.
+
+    "Missing" in the coverage report means "this capability has no verified
+    implementation", which is not the same as "not in the registry".  Measured
+    2026-09-15: ``JOIN_RALLY``, ``READ_COUNTER``, ``READ_TIMER``,
+    ``ALLIANCE_HELP`` and ``ALLIANCE_TECH_CONTRIBUTE`` are all already
+    registered in ``v2_registry()`` (87 skills) and are missing only a
+    post-action verifier -- so "add it to v2_registry()" was the wrong
+    instruction for them.
+    """
+    try:
+        from winter_agent_v2.runtime import LiveRuntime
+        from winter_agent_v2.skills import v2_registry
+    except Exception:
+        return "UNKNOWN"
+    try:
+        registered = v2_registry().get(skill_id) is not None
+    except Exception:
+        return "UNKNOWN"
+    has_verifier = skill_id in LiveRuntime.VERIFIED_ATOMIC
+    if not registered and not has_verifier:
+        return "NOT_REGISTERED"
+    if registered and not has_verifier:
+        return "NO_VERIFIER"
+    return "REGISTERED"
+
+
 def next_action_block(state: dict) -> str:
     git, ep, lc = state["git"], state["episodes"], state["lifecycle"]
     cov = state["coverage"].get("summary", {})
     blocked_goals = [row["goal"] for row in state["coverage"].get("goals", []) if row["status"] == "BLOCKED"]
     never = [row["skill_id"] for row in lc["never_executed"][:12]]
     top = ep["top_failures"][0] if ep["top_failures"] else None
-    item = top_leverage(state)
+    # Skip skills whose own design draft needs vision that does not exist yet;
+    # recommending one is not an actionable task.
+    item = None
+    skipped: list[tuple[str, str]] = []
+    for candidate in state["coverage"].get("highest_leverage") or []:
+        blocker = design_blocker(candidate["skill_id"])
+        if blocker is None:
+            item = candidate
+            break
+        skipped.append((candidate["skill_id"], blocker))
     if item:
+        gap = skill_gap(item["skill_id"])
         current_task = (
-            f"implement `{item['skill_id']}` — missing from the registry, blocks "
-            f"{item['blocked_goals']} goal(s): {item.get('goals')}"
+            f"implement `{item['skill_id']}` ({gap.replace('_', ' ').lower()}) — "
+            f"blocks {item['blocked_goals']} goal(s): {item.get('goals')}"
         )
         next_action = NEXT_EXACT_ACTION_TEMPLATE.format(
             skill=item["skill_id"], goals=", ".join(item.get("goals") or [])
+        )
+    elif skipped:
+        counts: dict[str, int] = {}
+        for skill_id, _ in skipped:
+            gap = skill_gap(skill_id)
+            counts[gap] = counts.get(gap, 0) + 1
+        shape = ", ".join(f"{n} {gap}" for gap, n in sorted(counts.items()))
+        current_task = (
+            "every highest-leverage missing skill is DESIGN-BLOCKED — no draft is "
+            f"implementable from the manifest alone ({shape}); see DESIGN-BLOCKED below"
+        )
+        next_action = (
+            "Do not implement a design-blocked skill from its draft. The cheapest real "
+            "progress is to obtain a live frame of the page the skill needs (a read-only "
+            "discovery probe), design the missing semantic from that evidence, then "
+            "implement. Failing that, take the highest-value *live-evidenced* defect from "
+            "04_OPEN_ISSUES — those are already proven by production episodes."
         )
     else:
         current_task = "no blocked capability remains; extend goal coverage"
@@ -692,6 +811,15 @@ def next_action_block(state: dict) -> str:
         f"BLOCKED GOALS: {blocked_goals}",
         f"MISSING SKILLS BY LEVERAGE: "
         f"{[(x['skill_id'], x['blocked_goals']) for x in (state['coverage'].get('highest_leverage') or [])[:10]]}",
+        (
+            "DESIGN-BLOCKED (not implementable from the draft alone; each needs a live frame "
+            "of its page first): "
+            + "; ".join(
+                f"{skill_id} [{skill_gap(skill_id)}] — {why}"
+                for skill_id, why in skipped[:6]
+            )
+            + (f" ... and {len(skipped) - 6} more" if len(skipped) > 6 else "")
+        ) if skipped else "DESIGN-BLOCKED: none",
         f"NEVER EXECUTED SKILLS (first 12): {never}",
         "",
         f"NEXT EXACT ACTION: {next_action}",

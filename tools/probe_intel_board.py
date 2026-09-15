@@ -58,7 +58,12 @@ def gate_trace(image_path: Path) -> list[dict]:
             h = max(ys) - min(ys) + 1
             ratio = round(w / max(h, 1), 3)
             fill = round(area / (w * h), 3)
-            passes_ratio = 0.65 <= ratio <= 1.3
+            # MUST match the detector's live bounds in winter_agent_v2/intel_pins.py.
+            # This was 0.65 here after the detector moved its floor to 0.5 for the
+            # orange pin's glow, so the trace claimed a pin was "rejected only by
+            # ratio" while production was in fact detecting it - i.e. the probe
+            # manufactured a false zero on a full board.  Keep the two in sync.
+            passes_ratio = 0.5 <= ratio <= 1.3
             passes_fill = fill >= 0.30
             passes_icon = _has_white_icon(rgb, xs, ys)
             passes_size = h >= 60 and w >= 40

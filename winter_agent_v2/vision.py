@@ -776,18 +776,27 @@ class SemanticWorldVision:
                 confidence=0.99,
             )
         if match("STATUS_BEAST_LOW_WIN_PROBABILITY"):
+            # Only the fact this template evidences is asserted.  Until
+            # 2026-09-15 this branch also claimed 雪豹 level 29, and the two
+            # sibling branches below claimed 麝牛 level 9 and 大角鹿 level 22.
+            # The formation page draws none of those values: its title bar is
+            # the only place the target appears, and it reads 目标：<name> (no
+            # level at all).  See the block comment further down for the
+            # measured proof that the "identity" was duplicate templates.
             return WorldState(
                 page=Page.MARCH,
-                beast={"name":"雪豹", "level":29, "victory_assured":False, "stamina_cost_displayed":10},
+                beast={"victory_assured":False},
                 confidence=0.99,
             )
         if match("BTN_BEAST_DISPATCH_MUSK_OX_9") and match("STATUS_VICTORY_ASSURED_MUSK_OX_9"):
             return WorldState(
                 page=Page.MARCH,
-                beast={"name":"麝牛", "level":9, "victory_assured":True, "stamina_cost_displayed":10},
+                beast={"victory_assured":True},
                 confidence=0.99,
             )
         if match("DIALOG_BEAST_MUSK_OX_9") and match("BTN_BEAST_START_MARCH"):
+            # This one is legitimate: the world-map target dialog prints the
+            # string 等级9 麝牛, so name and level are both drawn on screen.
             return WorldState(
                 page=Page.BEAST,
                 beast={"name":"麝牛", "level":9, "available":True, "recommended_power":9000, "stamina_cost_displayed":10},
@@ -796,7 +805,7 @@ class SemanticWorldVision:
         if match("BTN_BEAST_DISPATCH"):
             return WorldState(
                 page=Page.MARCH,
-                beast={"name": "大角鹿", "level": 22, "victory_assured": True, "stamina_cost_displayed": 10},
+                beast={"victory_assured": True},
                 confidence=0.99,
             )
         # Stable-anchor fallback identity for the same 出征 formation page.
@@ -833,6 +842,33 @@ class SemanticWorldVision:
         #     marched.  Only the safety fact the page actually shows (the green
         #     本次出征胜券在握 line) is asserted, which is exactly what
         #     verify_intel_beast_march_open needs.
+        #
+        # 2026-09-15, second pass: the two sibling branches above were brought
+        # in line with that rule.  They had kept their hard-coded identities,
+        # and measurement showed those identities were not descriptions of the
+        # beast at all but duplicate templates of the same two controls:
+        #
+        #     semantic                          parent frame
+        #     BTN_BEAST_DISPATCH_MUSK_OX_9      beast9_round3_march
+        #     BTN_BEAST_DISPATCH                live_beast_march_selection
+        #     STATUS_VICTORY_ASSURED_MUSK_OX_9  beast9_round3_march
+        #     STATUS_VICTORY_ASSURED            live_beast_march_selection
+        #
+        # All four match BOTH frames at distance 0
+        # (tools/probe_beast_formation_identity.py); their ROIs differ by 0.002
+        # in y_norm, which is under the hash resolution.  So the reported
+        # identity was decided by branch order, and the consequence was
+        # measurable: dataset/raw/stamina_emergency/beast6_march.png is a 北极狼
+        # formation page and was reported as 麝牛 level 9, which is exactly the
+        # name+level verify_beast_dispatch demanded -- a verifier passing on an
+        # invented identity.
+        #
+        # The page does show the target, in its title bar, and the two
+        # populations separate cleanly there:
+        #     wilderness  目标：麝牛 / 目标：北极狼 / 目标：雪豹   (4/4 frames)
+        #     intel       出征                                    (2/2 frames)
+        # HybridVision.observe reads that strip and fills beast["name"] plus
+        # beast["target_kind"], which is where the identity now comes from.
         if match("PAGE_BEAST_MARCH") and match("STATUS_VICTORY_ASSURED"):
             return WorldState(page=Page.MARCH, beast={"victory_assured": True}, confidence=0.99)
         if match("BTN_BEAST_START_MARCH"):
@@ -1020,6 +1056,42 @@ class SemanticWorldVision:
             return WorldState(page=Page.ALLIANCE, alliance={"section":"GIFTS", "tab":"ALLY_GIFT", "status":"CLAIMABLE"}, confidence=0.99)
         if match("STATUS_ALLIANCE_GIFTS_CLAIMED") or match("STATUS_ALLY_GIFTS_CLAIMED"):
             return WorldState(page=Page.ALLIANCE, alliance={"section":"GIFTS", "status":"CLAIMED"}, confidence=0.99)
+        # Stable-anchor identity for the Alliance HOME page, placed before the
+        # two weak title strips below.
+        #
+        # The home page shows eight entry tiles (联盟战争 / 联盟宝箱 / 联盟领地 /
+        # 据点争夺 / 联盟商店 / 联盟科技 / 实力排行 / 联盟互助).  PAGE_ALLIANCE is
+        # its reviewed title strip and sits at distance 0 on every home frame
+        # measured -- but it is a *weak* strip: over all 2757 frames in
+        # dataset/raw it also matches 79 出征 (troop formation) frames at
+        # distance 8, so it must never be trusted on its own.
+        #
+        # Until 2026-09-15 the home page therefore never reached the
+        # PAGE_ALLIANCE branch further down: PAGE_ALLIANCE_GIFTS (distance 6 on
+        # home, 0 on the real gifts page) and PAGE_ALLIANCE_TECH (distance 8 on
+        # home, 2 on the real tech page) both matched first, so the live home
+        # page was reported as section=GIFTS / status=UNKNOWN.  That single
+        # misread broke two things at once, silently:
+        #   * brain.py dispatches OPEN_ALLIANCE_GIFTS only when section == HOME,
+        #     so that branch was unreachable and the loop always ended in
+        #     SAFE_STOP alliance_state_unknown;
+        #   * verify_open_alliance_gifts requires before.section == HOME, so the
+        #     skill could not have passed even if it had been dispatched.
+        # OPEN_ALLIANCE_GIFTS is consequently one of the registry's
+        # never-executed skills, while the live Alliance page carries an
+        # unclaimed-gift badge of 99+.
+        #
+        # The pair below is measured, not assumed.  Over the same 2757 frames,
+        # BTN_OPEN_ALLIANCE_GIFTS (the 联盟宝箱 tile) and BTN_ALLIANCE_HELP (the
+        # 联盟互助 tile) match 16 frames -- and *only* frames the production
+        # classifier already calls Page.ALLIANCE, every one of them with
+        # visible_claim_buttons == 0 (i.e. genuinely the home page, not the
+        # gifts list).  On the real gifts / technology / help pages the same two
+        # tiles sit at distance 24-34.  Requiring the title strip AND an entry
+        # tile therefore changes no page identity at all (0 of 2757 frames) and
+        # only corrects the section on the home page itself (16 of 2757).
+        if match("PAGE_ALLIANCE") and (match("BTN_OPEN_ALLIANCE_GIFTS") or match("BTN_ALLIANCE_HELP")):
+            return WorldState(page=Page.ALLIANCE, alliance={"section": "HOME"}, confidence=0.98)
         if match("PAGE_ALLIANCE_GIFTS"):
             return WorldState(page=Page.ALLIANCE, alliance={"section":"GIFTS", "status":"UNKNOWN"}, confidence=0.98)
         if match("PAGE_ALLIANCE_TECH"):
