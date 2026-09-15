@@ -96,3 +96,66 @@ def test_handoff_is_regenerable_without_prior_chat_context() -> None:
     for heading in ("## A. Version control", "## C. Episode stream", "## F. Goal capability coverage",
                     "## G. Evidence integrity"):
         assert heading in text, f"01_CURRENT_TRUTH.md lost section: {heading}"
+
+
+class FailureRecencyTests:
+    """Top-failure ranking must be readable as *current*, not cumulative.
+
+    Ranking failure types by all-time count alone sent a whole working session
+    after `SEMANTIC_TARGET_NOT_VERIFIED x112`, of which 0 had happened on the
+    day of the session and whose last live occurrence was three days earlier;
+    `MARCH_PAGE_NOT_OPEN x59` was likewise entirely one dead day.  The fields
+    below are what makes that visible without re-deriving it by hand.
+
+    NOTE: these are module-level functions on purpose -- this suite collects
+    pytest-style functions, and a `class XxxTests` (no `Test` prefix) would
+    silently never run.
+    """
+
+
+def test_recent_zero_is_reported_as_historical() -> None:
+    from tools.update_workbuddy_handoff import failure_rank_line
+
+    line = failure_rank_line(
+        {"failure_type": "MARCH_PAGE_NOT_OPEN", "count": 59, "recent": 0, "last_seen": "2026-09-12T09:00:00+00:00"},
+        {"recent_window_days": 2},
+    )
+    assert "HISTORICAL" in line
+    assert "0 in the last 2 day(s)" in line
+    assert "59 all-time" in line
+
+
+def test_recent_failures_are_reported_as_current() -> None:
+    from tools.update_workbuddy_handoff import failure_rank_line
+
+    line = failure_rank_line(
+        {"failure_type": "RESOURCE_NOT_FOUND", "count": 30, "recent": 30, "last_seen": "2026-09-14T06:42:03+00:00"},
+        {"recent_window_days": 2},
+    )
+    assert "HISTORICAL" not in line
+    assert "30 in the last 2 day(s)" in line
+
+
+def test_missing_recency_data_falls_back_to_the_bare_count() -> None:
+    from tools.update_workbuddy_handoff import failure_rank_line
+
+    assert failure_rank_line({"failure_type": "X", "count": 3}, {}) == "X x3"
+    assert failure_rank_line(None, {}) == "no production failures recorded"
+
+
+def test_the_rendered_ranking_is_ordered_by_recency() -> None:
+    import json
+
+    path = ROOT / ".workbuddy-ai" / "handoff" / "03_NEXT_ACTION.md"
+    if not path.is_file():
+        pytest.skip("run tools/update_workbuddy_handoff.py first")
+    text = path.read_text(encoding="utf-8")
+    payload = None
+    for line in text.splitlines():
+        if line.startswith("TOP FAILURE: "):
+            payload = json.loads(line[len("TOP FAILURE: "):])
+            break
+    assert payload is not None, "03_NEXT_ACTION.md lost its TOP FAILURE line"
+    for key in ("recent", "last_seen", "dates"):
+        assert key in payload, f"TOP FAILURE lost {key}; recency ranking would regress"
+    assert "TOP FAILURE IS RANKED BY RECENT FIRST" in text

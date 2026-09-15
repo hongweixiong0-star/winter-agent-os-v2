@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x112 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-- **MARCH_PAGE_NOT_OPEN** x59 — START_GATHER(59)
-- **RESOURCE_NOT_FOUND** x30 — SUBMIT_RESOURCE_SEARCH(30)
-- **DISPATCH_NOT_PROVEN** x29 — DISPATCH_MARCH(29)
-- **MAIL_CLAIM_FEEDBACK_NOT_PROVEN** x10 — MAIL_CLAIM_REWARDS(10)
-- **STAMINA_SOURCES_NOT_OPEN** x8 — OPEN_INTEL(8)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x112 all-time; recent=45 (last 2d), last seen 2026-09-14T14:08:48.104088+00:00 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **RESOURCE_NOT_FOUND** x30 all-time; recent=30 (last 2d), last seen 2026-09-14T06:42:03.928936+00:00 — SUBMIT_RESOURCE_SEARCH(30)
+- **DISPATCH_NOT_PROVEN** x29 all-time; recent=28 (last 2d), last seen 2026-09-14T05:25:20.306984+00:00 — DISPATCH_MARCH(29)
+- **STAMINA_SOURCES_NOT_OPEN** x8 all-time; recent=8 (last 2d), last seen 2026-09-14T23:37:22.332132+00:00 — OPEN_INTEL(8)
+- **INTEL_HERO_DISPATCH_NOT_PROVEN** x8 all-time; recent=8 (last 2d), last seen 2026-09-14T12:19:55.812501+00:00 — INTEL_HERO_DISPATCH(8)
+- **INTEL_RESCUE_START_NOT_PROVEN** x6 all-time; recent=6 (last 2d), last seen 2026-09-14T17:17:43.915836+00:00 — EXECUTE_INTEL_RESCUE_SURVIVORS(6)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
@@ -20,7 +20,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 24 uncommitted file(s): ['M .workbuddy-ai/handoff/.checkpoints.jsonl', ' M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
+- 12 uncommitted file(s): ['M .workbuddy-ai/handoff/.checkpoints.jsonl', ' M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -37,6 +37,7 @@ Machine-detected issues (recomputed every run):
 | 0v | **出征（部队编成）页被分类成 `ALLIANCE/HOME`** | ✅ **已修 + 真机 A/B 证明** | 出征按钮 `BTN_BEAST_DISPATCH` 是动画控件（真机帧上还叠着 `00:00:29` 倒计时徽标），同一页面两帧实测 d=0 / **d=26**（阈值 8）。它一失手，下一条命中的就是 `PAGE_ALLIANCE` **标题条**（d=8）→ 整页报成联盟首页 → `INTEL_BEAST_MARCH_NOT_PROVEN`。而这一页复核过的两个锚点 `PAGE_BEAST_MARCH` / `STATUS_VICTORY_ASSURED`（均 d=0）**在清单里却没有任何分支引用**（孤儿模板）。已在 `BTN_BEAST_DISPATCH` 之后加「两个锚点同时命中」的分支。闸门：2716 帧里 83 帧命中锚点，**影响面恰好 5 帧**（全是同一张出征页）；89 张联盟类帧零误命中。真机 A/B：补丁前 `ALLIANCE/HOME` → 补丁后 `MARCH {victory_assured: True}`。 |
 | 0w | **出征页会被赋予页面上不存在的野兽身份** | ⚠️ **新，未修** | 真机 episode 内部自相矛盾：目标卡是 `大角鹿 level 22`，出征页 after 却是 `beast={'name':'麝牛','level':9,...}` —— 来自 `BTN_BEAST_DISPATCH_MUSK_OX_9` + `STATUS_VICTORY_ASSURED_MUSK_OX_9` 在出征页上的**假命中**（两个出征按钮同形）。出征页根本不显示野兽名/等级。**修它要连带 `verify_beast_hunt` 与 `verify_stamina_beast_*`（它们依赖麝牛/9 这些字面值）**，所以先记录。新加的分支已刻意不声明这两项。 |
 | 0x | **`PAGE_ALLIANCE` 是弱标题条模板，会误命中任何「出征」标题** | ⚠️ 新，记录 | 3 张 `dataset/raw/bear_live_20260909/auto_join_*` / `bear_troop_setup` 帧（真机看是**出征部队比例配置页**：士兵比例 / 全部撤回 / 平均配置 / 储存）当前被判成 `ALLIANCE`。本轮**故意不把它们改成 MARCH**：它们没有「本次出征胜券在握」，而空 `beast` 的 MARCH 会让 `brain.py:395` 对 INTEL 目标派发 `INTEL_HERO_DISPATCH`——那是危险误派。正解是给「出征族页面」一个统一的页面身份 + 各自的子类型，而不是继续靠标题条。 |
+| 0y | **「最高失败」按全时段计数排序，会把人引向已经死掉的问题** | ✅ 已修（生成器 + 测试） | 本轮差点上钩：handoff 的 `CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x112`，按天拆开是 **09-12: 36 / 09-13: 37 / 09-14: 8 / 09-15: 0**（另 31 条无日期）；`MARCH_PAGE_NOT_OPEN x59` **全部集中在 09-12 一天**。也就是说 `START_GATHER` 那个「94 次尝试 / 37% 成功率、最差高频技能」的印象**完全是 09-12 的历史包袱**，09-13 之后它零失败。已改：`episode_state()` 为每个 failure_type 记录 `recent`（相对**最新 episode 时间**的 2 天窗口，按完整时间戳比较而不是按日历天）、`last_seen`、`dates`、`undated`；`top_failures` 改为**按 recent 优先**排序；`CURRENT ROOT CAUSE` 行在 recent=0 时直接标 `HISTORICAL, do not treat as the current defect`。`tests/test_handoff.py` 加 4 项护栏（含「recent=0 必须被标 HISTORICAL」）。 |
 | 0s | **光晕 pin 的比例下限余量只剩 0.021** | ⚠️ 记录，稳健化解法待做 | 实测跨度 **0.521–0.644**（0.521 出现在满板帧上），闸门现在是 `0.5 <= w/h <= 1.3`。正解是**剥离光晕后量本体高度**，不是继续降阈值。语料核对：22 帧里降下限只多收那一个光晕橙 pin，其余 16 帧零新增。 |
 | 0t | **`intel_pin_centers()` 在 MAP 帧上会误报** | ✅ 已按页面门控 | 世界地图右侧 HUD 圆形按钮会被当成 pin（实测 4 个 BLUE）。生产里只在 `page == INTEL` 时调用，满足约束；**任何新的调用点都必须自己加页面门控**。证据：`dataset/truth_audit/intel_pin_board_20260915/03_map_frame_detector_false_positives*.png`。 |
 | 0u | **`run_intel_pins.py` 的导航周期语义与停止条件** | ⚠️ 记录 | 它的 `"navigation cycle"` 分支现在**会做真实工作**（本轮 nav_01 产出 1 次派兵 + 2 次领奖 + 1 次救援），但仍按"导航"记账；且连续 3 次导航周期后**无条件停止**，即使其中有产出。 |

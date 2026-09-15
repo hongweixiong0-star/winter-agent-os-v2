@@ -36,7 +36,7 @@ import json
 import subprocess
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +51,12 @@ LATEST_LOG = ROOT / "learning/control_panel/latest.log"
 CRASH_DIR = ROOT / "learning/control_panel/crashes"
 COVERAGE = ROOT / "knowledge/goals/capability_skill_map.json"
 PARITY = ROOT / "knowledge/coverage/commercial_bot_parity.json"
+
+# How far back a failure has to have occurred to count as "current".
+# See the note in ``episode_metrics``: ranking failure types by all-time count
+# alone is actively misleading on this project, because the pre-MAA and
+# pre-page-anchor eras (2026-09-12/13) dominate the totals.
+RECENT_WINDOW = timedelta(days=2)
 LAST_GOOD = HANDOFF / ".last_good_commit"
 CHECKPOINT_LOG = HANDOFF / ".checkpoints.jsonl"
 
@@ -181,7 +187,9 @@ def episode_state() -> dict:
     decided = success + failure
 
     per_skill: dict[str, dict] = defaultdict(lambda: {"attempts": 0, "success": 0, "failure": 0, "last_seen": None})
-    failures: dict[str, dict] = defaultdict(lambda: {"count": 0, "skills": Counter()})
+    failures: dict[str, dict] = defaultdict(
+        lambda: {"count": 0, "skills": Counter(), "last_seen": None, "dates": Counter(), "stamps": []}
+    )
     for row, result in production:
         skill = str(row.get("skill", ""))
         if not skill:
@@ -197,10 +205,40 @@ def episode_state() -> dict:
             kind = str(row.get("failure_type") or "UNCLASSIFIED")
             failures[kind]["count"] += 1
             failures[kind]["skills"][skill] += 1
+            # Ranked-by-all-time-count alone sent a whole session chasing a
+            # failure type whose last live occurrence was three days earlier
+            # (SEMANTIC_TARGET_NOT_VERIFIED: 112 all-time but nothing recent;
+            # MARCH_PAGE_NOT_OPEN: 59, every one of them on a single day).
+            # Every failure type therefore also carries when it was last seen
+            # and how many times it occurred inside the recent window, so
+            # "top failure" can be read as current rather than cumulative.  The
+            # window is measured against the newest episode in the stream, so
+            # this stays correct when the file is read offline.
+            if seen:
+                failures[kind]["stamps"].append(seen)
+                failures[kind]["dates"][seen[:10]] += 1
+                if failures[kind]["last_seen"] is None or seen > failures[kind]["last_seen"]:
+                    failures[kind]["last_seen"] = seen
     for entry in per_skill.values():
         decided_skill = entry["success"] + entry["failure"]
         entry["success_rate"] = round(entry["success"] / decided_skill, 4) if decided_skill else None
     last = production[-1][0] if production else None
+    # Recency window: the newest recorded_at in the stream minus RECENT_WINDOW.
+    # Full ISO timestamps are compared (not calendar days) so a failure 47 hours
+    # old is not counted as "recent" merely because it happened on a day that
+    # also contains a fresh one.
+    stamps = sorted(str(row.get("recorded_at") or "") for row, _ in production if row.get("recorded_at"))
+    newest = stamps[-1] if stamps else ""
+    recent_floor = ""
+    if newest:
+        try:
+            recent_floor = (datetime.fromisoformat(newest) - RECENT_WINDOW).isoformat()
+        except ValueError:
+            recent_floor = ""
+    for kind, data in failures.items():
+        data["recent"] = sum(1 for stamp in data["stamps"] if recent_floor and stamp >= recent_floor)
+        data["all_dates"] = dict(sorted(data["dates"].items()))
+        data["undated"] = data["count"] - len(data["stamps"])
     return {
         "total": len(rows),
         "production": len(production),
@@ -208,6 +246,9 @@ def episode_state() -> dict:
         "failure": failure,
         "success_rate_over_decided": round(success / decided, 4) if decided else None,
         "modes": dict(modes),
+        "recent_window_days": int(RECENT_WINDOW.days),
+        "recent_floor": recent_floor,
+        "newest_episode_at": newest,
         "mixed_case_rows": sum(1 for row, _, _ in normalised if str(row.get("result", "")) in {"success", "failure"}),
         "skills": dict(per_skill),
         "top_failures": sorted(
@@ -215,11 +256,15 @@ def episode_state() -> dict:
                 {
                     "failure_type": kind,
                     "count": data["count"],
+                    "recent": data.get("recent", 0),
+                    "last_seen": data.get("last_seen"),
+                    "dates": data.get("all_dates", {}),
+                    "undated": data.get("undated", 0),
                     "top_skills": data["skills"].most_common(3),
                 }
                 for kind, data in failures.items()
             ),
-            key=lambda item: -item["count"],
+            key=lambda item: (-item["recent"], -item["count"]),
         )[:10],
         "last_episode": {
             "skill": last.get("skill"),
@@ -583,6 +628,31 @@ def top_leverage(state: dict) -> dict | None:
     return items[0] if items else None
 
 
+def failure_rank_line(top: dict | None, ep: dict) -> str:
+    """Describe the top failure honestly: recent occurrences first.
+
+    All-time counts on this project are dominated by two dead eras (before the
+    MAA migration and before the page-anchor fixes), so a bare `x112` reads as
+    "fix this now" when the real recent count is zero.
+    """
+    if not top:
+        return "no production failures recorded"
+    recent = top.get("recent")
+    if recent is None:
+        return f"{top['failure_type']} x{top['count']}"
+    window = ep.get("recent_window_days")
+    if recent == 0:
+        return (
+            f"{top['failure_type']} — {recent} in the last {window} day(s), "
+            f"{top['count']} all-time, last seen {top.get('last_seen') or 'undated'}; "
+            "HISTORICAL, do not treat as the current defect"
+        )
+    return (
+        f"{top['failure_type']} — {recent} in the last {window} day(s), "
+        f"{top['count']} all-time, last seen {top.get('last_seen') or 'undated'}"
+    )
+
+
 def next_action_block(state: dict) -> str:
     git, ep, lc = state["git"], state["episodes"], state["lifecycle"]
     cov = state["coverage"].get("summary", {})
@@ -610,11 +680,14 @@ def next_action_block(state: dict) -> str:
         "The blocked goals share one small set of never-implemented skills, so one skill "
         "purchase can move several goals at once.",
         "",
-        f"CURRENT ROOT CAUSE: {top['failure_type'] + ' x' + str(top['count']) if top else 'no production failures recorded'}",
+        f"CURRENT ROOT CAUSE: {failure_rank_line(top, ep)}",
         f"LAST GOOD COMMIT: {git.get('last_good_commit')}",
         f"CURRENT DIRTY FILES: {git.get('dirty_count')}",
         f"LAST PRODUCTION EPISODE: {json.dumps(ep.get('last_episode'), ensure_ascii=False)}",
         f"TOP FAILURE: {json.dumps(top, ensure_ascii=False) if top else 'none'}",
+        "TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last "
+        f"{ep.get('recent_window_days')} day(s), floor {ep.get('recent_floor')}) before `count` "
+        "(all-time). A failure type with recent=0 is history, not a current defect.",
         "",
         f"BLOCKED GOALS: {blocked_goals}",
         f"MISSING SKILLS BY LEVERAGE: "
@@ -637,7 +710,13 @@ def open_issues_block(state: dict) -> str:
     lines = ["Machine-detected issues (recomputed every run):", ""]
     for row in ep["top_failures"][:6]:
         tops = ", ".join(f"{name}({n})" for name, n in row["top_skills"])
-        lines.append(f"- **{row['failure_type']}** x{row['count']} — {tops}")
+        recent = row.get("recent")
+        stamp = (
+            f"recent={recent} (last {ep.get('recent_window_days')}d), last seen {row.get('last_seen') or 'undated'}"
+            if recent is not None
+            else "recent=unknown"
+        )
+        lines.append(f"- **{row['failure_type']}** x{row['count']} all-time; {stamp} — {tops}")
     if ev.get("status") != "PASS":
         lines.append(f"- **EVIDENCE INTEGRITY {ev.get('status')}** — missing: {ev.get('missing')}")
     for row in lc["only_failed"]:

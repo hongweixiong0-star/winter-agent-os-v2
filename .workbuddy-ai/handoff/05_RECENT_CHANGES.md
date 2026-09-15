@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `6a2a96c 2026-09-15T08:47:19+08:00 fix(vision): identify the beast formation page by its own anchors, not by an animated button`
 - `c94df20 2026-09-15T08:17:00+08:00 feat(intel): SELECT_INTEL_PIN live-verified 4/4; a full intel board is no longer reported empty`
 - `c2908ad 2026-09-15T08:08:13+08:00 fix(intel): count mission pins instead of trusting header text; a full board was reported empty`
 - `622fb46 2026-09-14T23:58:16+08:00 docs(handoff): intel refresh countdown is not schedulable; night loop verified`
@@ -17,9 +18,8 @@ Last 12 commits (newest first):
 - `9bfa719 2026-09-14T22:17:57+08:00 chore(knowledge): carry over the uncommitted knowledge files from the previous session`
 - `5c902be 2026-09-14T22:17:45+08:00 docs(handoff): ninth round - three false-failure root causes fixed, hero chain green`
 - `a218319 2026-09-14T22:15:00+08:00 fix(intel): 探险 from the camp panel opens the squad page, not a beast card`
-- `c03af7d 2026-09-14T22:12:48+08:00 fix(executor): register a routing node template, or every MAA node fails`
 
-Uncommitted changes: 24
+Uncommitted changes: 12
 - `M .workbuddy-ai/handoff/.checkpoints.jsonl`
 - ` M .workbuddy-ai/handoff/.last_good_commit`
 - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
@@ -30,16 +30,8 @@ Uncommitted changes: 24
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-15.md`
-- ` M docs/CAPABILITY_COVERAGE.md`
 - ` M evidence/INDEX.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- ` M winter_agent_v2/vision.py`
-- `?? evidence/page_anchor_decision_20260915.json`
+- ` M tools/update_workbuddy_handoff.py`
 <!-- /AUTO:recent_commits -->
 
 ---

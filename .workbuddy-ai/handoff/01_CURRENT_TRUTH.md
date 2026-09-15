@@ -1,18 +1,18 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-15T00:46:09+00:00`
+- generated_at: `2026-09-15T00:49:16+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `c94df20` on `main`
+- commit: `6a2a96c` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `c94df20`
-- commits: 48
-- HEAD: `c94df20` — feat(intel): SELECT_INTEL_PIN live-verified 4/4; a full intel board is no longer reported empty (2026-09-15T08:17:00+08:00)
-- working tree: 24 dirty file(s)
+- last good commit: `6a2a96c`
+- commits: 49
+- HEAD: `6a2a96c` — fix(vision): identify the beast formation page by its own anchors, not by an animated button (2026-09-15T08:47:19+08:00)
+- working tree: 12 dirty file(s)
   - `M .workbuddy-ai/handoff/.checkpoints.jsonl`
   - ` M .workbuddy-ai/handoff/.last_good_commit`
   - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
@@ -23,16 +23,8 @@
   - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
   - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
   - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-15.md`
-  - ` M docs/CAPABILITY_COVERAGE.md`
   - ` M evidence/INDEX.json`
-  - ` M knowledge/goals/capability_skill_map.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M winter_agent_v2/vision.py`
-  - `?? evidence/page_anchor_decision_20260915.json`
+  - ` M tools/update_workbuddy_handoff.py`
 
 ## B. Runtime
 
@@ -140,15 +132,15 @@
 Failure | Count | Top skills
 ---|---:|---
 `SEMANTIC_TARGET_NOT_VERIFIED` | 112 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-`MARCH_PAGE_NOT_OPEN` | 59 | START_GATHER(59)
 `RESOURCE_NOT_FOUND` | 30 | SUBMIT_RESOURCE_SEARCH(30)
 `DISPATCH_NOT_PROVEN` | 29 | DISPATCH_MARCH(29)
-`MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | MAIL_CLAIM_REWARDS(10)
 `STAMINA_SOURCES_NOT_OPEN` | 8 | OPEN_INTEL(8)
 `INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | INTEL_HERO_DISPATCH(8)
 `INTEL_RESCUE_START_NOT_PROVEN` | 6 | EXECUTE_INTEL_RESCUE_SURVIVORS(6)
 `POPUP_CLOSE_NOT_PROVEN` | 5 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
 `NO_EXECUTION` | 4 | SAFE_STOP(4)
+`INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 3 | INTEL_CLAIM_REWARDS(3)
+`OPEN_MAP_NOT_PROVEN` | 2 | OPEN_MAP(2)
 
 ## F. Goal capability coverage
 
