@@ -729,6 +729,26 @@ class HybridVision:
                 for march in marches:
                     if march not in fused_marches:
                         fused_marches.append(march)
+                # A counter that is simply not drawn is not an unreadable counter.
+                #
+                # Measured 2026-09-15 across every recorded MAP observation in the
+                # corpus: (march_used is None, no march states) occurs 98 times,
+                # while (march_used is None, march states present) occurs 35 times.
+                # The first is the client drawing no counter because nothing is out;
+                # the second is a count we genuinely cannot read.  Only the first
+                # may be read as idle -- and it has to be, because leaving it
+                # unknown stops the entire gather workflow at its first step
+                # (CHECK_MARCH / MARCH_COUNT_NOT_READ, live 2026-09-15T12:59:36Z)
+                # with no way to recover.
+                #
+                # The cost is asymmetric in the right direction: if this is ever
+                # wrong, the dispatch fails its verifier and costs one action;
+                # treating a genuinely idle queue as unreadable costs the whole
+                # gather goal, permanently.  The guard uses fused_marches, so
+                # evidence of a march from either layer keeps the count unknown
+                # rather than guessing.
+                if march_used is None and not fused_marches:
+                    march_used = 0
                 stamina = dict(primary.stamina)
                 # The gauge is read from a dedicated ROI: the full-frame pass
                 # silently omits this small number (measured live 2026-09-14 --
