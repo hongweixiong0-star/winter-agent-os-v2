@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-15T16:41:16+00:00",
-  "count": 479,
+  "generated_at": "2026-09-15T23:53:24+00:00",
+  "count": 486,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -179,8 +179,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 89198,
-      "mtime": "2026-09-15T16:09:49+00:00"
+      "bytes": 91338,
+      "mtime": "2026-09-15T23:39:20+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -373,6 +373,18 @@
       "kind": "evidence",
       "bytes": 1049,
       "mtime": "2026-09-15T10:03:23+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260915_230510.json",
+      "kind": "evidence",
+      "bytes": 1333,
+      "mtime": "2026-09-15T23:07:04+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260915_230917.json",
+      "kind": "evidence",
+      "bytes": 1872,
+      "mtime": "2026-09-15T23:11:58+00:00"
     },
     {
       "path": "evidence/intel_rescue_survivors_production_2026-09-07.json",
@@ -2731,6 +2743,36 @@
       "kind": "fixture",
       "bytes": 3888,
       "mtime": "2026-09-14T03:58:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_tab_anchor_20260916/gap_ice_beast_anchor__live_runtime_step_003_before_20260915T160609443785.png",
+      "kind": "fixture",
+      "bytes": 589010,
+      "mtime": "2026-09-15T23:35:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_tab_anchor_20260916/good_coal_anchor__accept_20260914_142516_run03_step_001_after_20260914T063709395434.png",
+      "kind": "fixture",
+      "bytes": 755849,
+      "mtime": "2026-09-15T23:35:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_tab_anchor_20260916/good_meat_anchor__accept_20260914_142516_run01_step_003_before_20260914T062618228437.png",
+      "kind": "fixture",
+      "bytes": 738874,
+      "mtime": "2026-09-15T23:35:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_tab_anchor_20260916/negative_home__live_page_20260915_151524.png",
+      "kind": "fixture",
+      "bytes": 1100267,
+      "mtime": "2026-09-15T23:35:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_tab_anchor_20260916/negative_map__live_page_20260915_133152.png",
+      "kind": "fixture",
+      "bytes": 969620,
+      "mtime": "2026-09-15T23:35:02+00:00"
     },
     {
       "path": "dataset/truth_audit/row_800_900.png",

@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-15T23:39:19+00:00
+HANDOFF TIME: 2026-09-15T23:53:24+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 47 dirty file(s)
-  ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/REVIEW_REQUESTS.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
+WORKING TREE: 29 dirty file(s)
+  ['M docs/CAPABILITY_COVERAGE.md', ' M evidence/INDEX.json', ' M knowledge/goals/capability_skill_map.json', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', '?? .workbuddy/memory/2026-09-16.md', '?? evidence/intel_pins_20260915_230510.json', '?? evidence/intel_pins_20260915_230917.json']
 
-WHAT FINISHED (machine-visible): 26 skills live verified, 24 stable, 73 commit(s) in history
+WHAT FINISHED (machine-visible): 26 skills live verified, 24 stable, 74 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 20 skills never executed, 10 never succeeded
 
@@ -22,7 +22,7 @@ STOPPED AT: agent_state=DEGRADED stop_reason=SEMANTIC_TARGET_NOT_VERIFIED
 LAST PRODUCTION EPISODE: {"skill": "SELECT_RESOURCE", "result": "FAILURE", "recorded_at": "2026-09-15T23:37:49.500186+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260915T233739598714.png", "after_screenshot": ""}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 127, "recent": 23, "last_seen": "2026-09-15T23:37:49.500186+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 43], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 47
+DIRTY FILES: 29
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 

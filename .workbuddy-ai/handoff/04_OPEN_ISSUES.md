@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 47 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/REVIEW_REQUESTS.md']
+- 29 uncommitted file(s): ['M docs/CAPABILITY_COVERAGE.md', ' M evidence/INDEX.json', ' M knowledge/goals/capability_skill_map.json', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl']
 <!-- /AUTO:open_issues -->
 
 ---

@@ -29,9 +29,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 124,
+          "attempts": 130,
           "successes": 111,
-          "failures": 13
+          "failures": 19
         },
         {
           "capability": "READ_INTEL_LIST",
@@ -70,9 +70,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 139,
+          "attempts": 140,
           "successes": 122,
-          "failures": 17
+          "failures": 18
         },
         {
           "capability": "CLAIM_INTEL_REWARD",
@@ -141,9 +141,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 130,
+          "attempts": 131,
           "successes": 119,
-          "failures": 11
+          "failures": 12
         },
         {
           "capability": "SPEND_STAMINA_ON_RALLY",
@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 52,
-          "successes": 46,
+          "attempts": 54,
+          "successes": 48,
           "failures": 6
         },
         {
@@ -198,8 +198,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 76,
-          "successes": 42,
+          "attempts": 77,
+          "successes": 43,
           "failures": 34
         },
         {
@@ -210,9 +210,9 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_RESOURCE",
           "live_verified_by": "SELECT_RESOURCE",
-          "attempts": 53,
+          "attempts": 55,
           "successes": 11,
-          "failures": 42
+          "failures": 44
         },
         {
           "capability": "FIND_RESOURCE_NODE",

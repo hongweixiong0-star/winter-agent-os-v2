@@ -2,9 +2,9 @@
   "agent_state": "DEGRADED",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-15T16:06:18.959715+00:00",
-  "last_action_time": "2026-09-15T16:06:19.029323+00:00",
-  "last_success_time": "2026-09-15T16:06:09.420617+00:00",
+  "last_tick_time": "2026-09-15T23:37:49.345496+00:00",
+  "last_action_time": "2026-09-15T23:37:49.456600+00:00",
+  "last_success_time": "2026-09-15T23:37:27.110363+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260915T160609443785.png",
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260915T233739598714.png",
   "march_used": 0,
   "march_max": 6,
   "queues": {
@@ -34,5 +34,5 @@
     "events": {}
   },
   "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
-  "updated_at": "2026-09-15T16:06:19.066489+00:00"
+  "updated_at": "2026-09-15T23:37:49.514492+00:00"
 }

@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `dbc3610 2026-09-16T07:53:10+08:00 fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence`
 - `b4baff2 2026-09-16T00:41:21+08:00 chore(handoff): final regeneration after the march-count fix (712 tests, 0 failures, 0 errors)`
 - `0fbe6b7 2026-09-16T00:26:13+08:00 test(evidence): archive the two march-count frames under truth_audit so the integrity guard passes`
 - `96146a9 2026-09-16T00:10:06+08:00 docs(handoff): record 0bc's true cause (march counter, not page model) and the new gather frontier 0bm`
@@ -17,29 +18,28 @@ Last 12 commits (newest first):
 - `d66f75d 2026-09-15T21:02:37+08:00 docs(handoff): MAA state from production evidence; PAGE_MAP anchor is the city button (0bc)`
 - `f9aa8be 2026-09-15T21:00:19+08:00 fix(runtime): the brain must never name a skill the live loop refuses (CHECK_MARCH)`
 - `ae9f71b 2026-09-15T20:39:20+08:00 fix(intel,maa): stop fabricating a vision failure for pin exhaustion; make MAA capture the production path`
-- `eb73be1 2026-09-15T18:39:24+08:00 chore(automation): operator cancelled the hourly intel loop; record PAUSED vs lost`
 
-Uncommitted changes: 47
-- `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
-- ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-- ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
-- ` M .workbuddy-ai/commander/REVIEW_REQUESTS.md`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+Uncommitted changes: 29
+- `M docs/CAPABILITY_COVERAGE.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/goals/capability_skill_map.json`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
-- ` M tests/test_resource_tab_anchor.py`
-- ` M tools/control_panel.py`
-- ` M winter_agent_v2/runtime_snapshot.py`
-- ` M winter_agent_v2/vision.py`
-- `?? .workbuddy-ai/commander/results/WB-R19-RUNTIME-EXIT-SEMANTICS.json`
-- `?? .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json`
-- `?? .workbuddy-ai/memory/2026-09-16.md`
 - `?? .workbuddy/memory/2026-09-16.md`
 - `?? evidence/intel_pins_20260915_230510.json`
 - `?? evidence/intel_pins_20260915_230917.json`
+- `?? out_junit_audit.xml`
+- `?? out_junit_final_r18.xml`
+- `?? out_junit_fix.xml`
+- `?? out_junit_full_v1.xml`
+- `?? out_junit_full_v3.xml`
+- `?? out_junit_iso.xml`
+- `?? out_junit_r18d.xml`
+- `?? out_junit_r18e.xml`
+- `?? out_junit_r19.xml`
+- `?? out_junit_v1.xml`
 <!-- /AUTO:recent_commits -->
 
 ---

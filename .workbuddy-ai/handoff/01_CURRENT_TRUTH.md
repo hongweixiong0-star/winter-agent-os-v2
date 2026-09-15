@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-15T23:39:19+00:00`
+- generated_at: `2026-09-15T23:53:24+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `b4baff2` on `main`
+- commit: `dbc3610` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 73
-- HEAD: `b4baff2` — chore(handoff): final regeneration after the march-count fix (712 tests, 0 failures, 0 errors) (2026-09-16T00:41:21+08:00)
-- working tree: 47 dirty file(s)
-  - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
-  - ` M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
-  - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-  - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
-  - ` M .workbuddy-ai/commander/REVIEW_REQUESTS.md`
-  - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- commits: 74
+- HEAD: `dbc3610` — fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence (2026-09-16T07:53:10+08:00)
+- working tree: 29 dirty file(s)
+  - `M docs/CAPABILITY_COVERAGE.md`
+  - ` M evidence/INDEX.json`
+  - ` M knowledge/goals/capability_skill_map.json`
   - ` M learning/episodes.jsonl`
   - ` M learning/executor_backend.jsonl`
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
-  - ` M tests/test_resource_tab_anchor.py`
-  - ` M tools/control_panel.py`
-  - ` M winter_agent_v2/runtime_snapshot.py`
-  - ` M winter_agent_v2/vision.py`
-  - `?? .workbuddy-ai/commander/results/WB-R19-RUNTIME-EXIT-SEMANTICS.json`
-  - `?? .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json`
-  - `?? .workbuddy-ai/memory/2026-09-16.md`
   - `?? .workbuddy/memory/2026-09-16.md`
   - `?? evidence/intel_pins_20260915_230510.json`
   - `?? evidence/intel_pins_20260915_230917.json`
+  - `?? out_junit_audit.xml`
+  - `?? out_junit_final_r18.xml`
+  - `?? out_junit_fix.xml`
+  - `?? out_junit_full_v1.xml`
+  - `?? out_junit_full_v3.xml`
+  - `?? out_junit_iso.xml`
+  - `?? out_junit_r18d.xml`
+  - `?? out_junit_r18e.xml`
+  - `?? out_junit_r19.xml`
+  - `?? out_junit_v1.xml`
 
 ## B. Runtime
 

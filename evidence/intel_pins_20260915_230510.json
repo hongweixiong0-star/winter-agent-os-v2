@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-09-15T23:07:04+00:00",
+  "pins_processed": 0,
+  "pins_skipped": 0,
+  "dispatches": 0,
+  "claims": 0,
+  "per_pin": [
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "steps": 2,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": 261,
+      "elapsed_s": 36.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_230510_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": 261,
+      "elapsed_s": 12.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_230510_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": 261,
+      "elapsed_s": 12.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_230510_nav_00"
+    }
+  ]
+}
