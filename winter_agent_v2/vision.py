@@ -799,6 +799,42 @@ class SemanticWorldVision:
                 beast={"name": "大角鹿", "level": 22, "victory_assured": True, "stamina_cost_displayed": 10},
                 confidence=0.99,
             )
+        # Stable-anchor fallback identity for the same 出征 formation page.
+        #
+        # The dispatch button above is animated, and its template therefore
+        # drifts.  Measured live 2026-09-15 on two frames of the identical
+        # page: BTN_BEAST_DISPATCH sat at distance 0 on one and distance 26 on
+        # the other (its threshold is the default 8).  On the frame where it
+        # missed, the next branch that matched was the PAGE_ALLIANCE title
+        # strip at distance 8, so the formation page was reported as
+        # ALLIANCE/HOME with an empty beast.  That single misclassification is
+        # what recorded INTEL_BEAST_MARCH_NOT_PROVEN for
+        # intel_pins_20260915_000822_nav_01 even though the tap had opened
+        # exactly the right page, and it also poisons every downstream
+        # decision that branches on the page (brain, recovery, verifier).
+        #
+        # PAGE_BEAST_MARCH and STATUS_VICTORY_ASSURED are the reviewed anchors
+        # of this page -- both were extracted from the same live frame
+        # (dataset/raw/live_beast_march_selection.png) -- and both sit at
+        # distance 0 on *both* frames above.  They were never referenced by
+        # this classifier, which is why the unstable button decided the page.
+        #
+        # Negative evidence, measured over all 2716 frames in dataset/raw:
+        # neither anchor matches any of the 89 alliance frames, so this cannot
+        # steal a real alliance page.
+        #
+        # Two deliberate design choices:
+        #   * placed AFTER BTN_BEAST_DISPATCH, so the already live-verified
+        #     path stays byte-identical whenever the button does match and this
+        #     only adds coverage when it does not;
+        #   * no beast name/level is claimed.  The formation page does not
+        #     display them, and inheriting the neighbour branch's hard-coded
+        #     大角鹿/22 would be an invention whenever another beast is being
+        #     marched.  Only the safety fact the page actually shows (the green
+        #     本次出征胜券在握 line) is asserted, which is exactly what
+        #     verify_intel_beast_march_open needs.
+        if match("PAGE_BEAST_MARCH") and match("STATUS_VICTORY_ASSURED"):
+            return WorldState(page=Page.MARCH, beast={"victory_assured": True}, confidence=0.99)
         if match("BTN_BEAST_START_MARCH"):
             return WorldState(
                 page=Page.BEAST,

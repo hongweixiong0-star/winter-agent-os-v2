@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-15T00:08:14+00:00",
-  "count": 401,
+  "generated_at": "2026-09-15T00:46:09+00:00",
+  "count": 405,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -143,8 +143,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 72946,
-      "mtime": "2026-09-14T23:34:38+00:00"
+      "bytes": 74181,
+      "mtime": "2026-09-15T00:17:00+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -285,6 +285,12 @@
       "mtime": "2026-09-14T22:45:34+00:00"
     },
     {
+      "path": "evidence/intel_pins_20260915_000822.json",
+      "kind": "evidence",
+      "bytes": 2093,
+      "mtime": "2026-09-15T00:14:44+00:00"
+    },
+    {
       "path": "evidence/intel_rescue_survivors_production_2026-09-07.json",
       "kind": "evidence",
       "bytes": 805,
@@ -397,6 +403,12 @@
       "kind": "evidence",
       "bytes": 619,
       "mtime": "2026-09-03T00:17:41+00:00"
+    },
+    {
+      "path": "evidence/page_anchor_decision_20260915.json",
+      "kind": "evidence",
+      "bytes": 20486,
+      "mtime": "2026-09-15T00:31:54+00:00"
     },
     {
       "path": "evidence/recall_e2e_20260914.log",
@@ -691,6 +703,18 @@
       "kind": "fixture",
       "bytes": 1269639,
       "mtime": "2026-09-14T01:14:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_formation_page_20260915/01_formation_page_misread_as_alliance_live.png",
+      "kind": "fixture",
+      "bytes": 475472,
+      "mtime": "2026-09-15T00:13:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_formation_page_20260915/02_beast_target_card_before_live.png",
+      "kind": "fixture",
+      "bytes": 706991,
+      "mtime": "2026-09-15T00:13:43+00:00"
     },
     {
       "path": "dataset/truth_audit/chuzheng_btn.png",

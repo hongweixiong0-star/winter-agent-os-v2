@@ -1,1 +1,2 @@
 {"at": "2026-09-15T00:08:13+00:00", "commit": "c2908ad", "message": "fix(intel): count mission pins instead of trusting header text; a full board was reported empty"}
+{"at": "2026-09-15T00:17:00+00:00", "commit": "c94df20", "message": "feat(intel): SELECT_INTEL_PIN live-verified 4/4; a full intel board is no longer reported empty"}

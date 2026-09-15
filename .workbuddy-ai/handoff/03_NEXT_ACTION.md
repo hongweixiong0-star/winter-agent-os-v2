@@ -11,9 +11,9 @@ CURRENT TASK: implement `CHECK_ALLIANCE_EVENT` — missing from the registry, bl
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x112
-LAST GOOD COMMIT: c2908ad
-CURRENT DIRTY FILES: 2
-LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T23:37:22.332132+00:00", "episode_id": "repro_intel_073638", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_before_20260914T233640944691.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_after_20260914T233654787876.png"}
+LAST GOOD COMMIT: c94df20
+CURRENT DIRTY FILES: 24
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL_HERO_JOURNEY_TARGET", "result": "SUCCESS", "recorded_at": "2026-09-15T00:41:23.227521+00:00", "episode_id": "formation_fix_20260915_003914", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\formation_fix_20260915_003914\\formation_fix_20260915_003914_step_010_before_20260915T004118573925.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\formation_fix_20260915_003914\\formation_fix_20260915_003914_step_010_after_20260915T004121164386.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
@@ -30,6 +30,52 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 ---
 
 ## 手写：当前任务的上下文
+
+### 【最新 2026-09-15 08:45 GMT+8】出征（部队编成）页被读成联盟首页 —— 已修 + 真机 A/B 证明
+
+**本轮真实改进（Before → After）**
+`INTEL_BEAST_START_MARCH` 在真机上：`INTEL_BEAST_MARCH_NOT_PROVEN`（00:14:13Z）
+→ 同一技能 verifier OK。
+
+**上一轮 handoff 的猜测是错的**（原文写「verifier 写死了任务等级，新 pin 打开了别的等级」）。
+`state_before` 正是复核过的 `INTEL_BEAST_10 / 大角鹿 / level 22 / available`。
+真根因：**出征页被分类成 `ALLIANCE/HOME`**。
+
+同一个页面的两帧实测（全部证据）：
+
+| 语义 | 帧 A（同轮 SUCCESS） | 帧 B（失败帧） |
+|---|---|---|
+| `BTN_BEAST_DISPATCH` | d=0 命中 | **d=26 不命中**（阈值 8） |
+| `PAGE_BEAST_MARCH` | d=0 命中 | d=0 命中 |
+| `STATUS_VICTORY_ASSURED` | d=0 命中 | d=0 命中 |
+| `PAGE_ALLIANCE` | d=8 命中 | d=8 命中 |
+
+出征按钮是**动画控件**（真机帧上还叠着 `00:00:29` 倒计时徽标），hash 漂移越过阈值 8；
+它一失手，下一个命中的就是 `PAGE_ALLIANCE` 那条**标题条**模板 → 整页报成联盟首页。
+而这一页真正复核过的两个锚点（`PAGE_BEAST_MARCH`、`STATUS_VICTORY_ASSURED`，都裁自
+`dataset/raw/live_beast_march_selection.png`）在清单里存在却**没有任何分支引用**（孤儿模板）。
+
+**修法**：在 `BTN_BEAST_DISPATCH` 之后、`PAGE_ALLIANCE` 之前加
+`if match("PAGE_BEAST_MARCH") and match("STATUS_VICTORY_ASSURED")` → `Page.MARCH`
++ `beast={"victory_assured": True}`。放在按钮之后 ⇒ 已 live-verified 的路径逐字节不变；
+不声明野兽名/等级 ⇒ 不编造页面上不存在的信息。
+
+**闸门（2716 张真机帧）**：83 帧命中锚点，其中 75 帧当前已是 `MARCH`（不变）、8 帧是 `ALLIANCE`；
+8 帧里只有 5 帧两个锚点同时命中（全部是同一张出征页）⇒ **影响面恰好 5 帧**。
+另核：89 张联盟类帧两个锚点零命中。
+
+**Live Evidence**
+1. 真机帧 A/B（同帧）：`dataset/raw/control_panel/probe/intel_board_20260915_003755.png`
+   补丁前 `ALLIANCE {'section':'HOME'}` → 补丁后 `MARCH {'victory_assured': True}`。
+2. 真机端到端 `tools/run_live.py --goal INTEL`（00:39:14Z，2m09s，exit 0）：
+   **10/10 步 verifier OK，`stop_reason=MAX_ACTIONS_REACHED`**，含 `DISPATCH_INTEL_BEAST` OK
+   （`marches=['MARCHING']`）。⚠ 该轮 `INTEL_BEAST_START_MARCH` 走的是按钮分支，
+   证明的是「链路通」，不是「新分支被真机触发」——后者由第 1 条证明。
+
+**下一最高价值任务**：见 04_OPEN_ISSUES 的 0w（出征页被赋予页面上不存在的野兽身份，
+会污染 episode 与统计）与 0r（已作废）之外，优先项仍是
+`START_GATHER` 的 MAA 端到端（94 次真机尝试 / 37% 成功率，是最高频最差项）。
+
 
 本区由人维护。生成器不会碰它。写「为什么是这个任务」以及「坑在哪」。
 

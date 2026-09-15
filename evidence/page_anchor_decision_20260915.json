@@ -1,0 +1,650 @@
+[
+  {
+    "frame": "dataset\\raw\\bear_live_20260909\\auto_join_formation.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\bear_live_20260909\\auto_join_hero_select.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\bear_live_20260909\\auto_join_started_fast.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\bear_live_20260909\\bear_preset6.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\bear_live_20260909\\bear_troop_setup.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\bear_live_20260909\\join_setup_1.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\probe\\pins_20260915_000822.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_101400_c02\\intel_loop_20260914_101400_c02_step_001_after_20260914T101640989165.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_101400_c02\\intel_loop_20260914_101400_c02_step_002_before_20260914T101643078480.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_00\\intel_pins_20260914_094520_pin_00_step_002_after_20260914T094637376786.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_00\\intel_pins_20260914_094520_pin_00_step_003_before_20260914T094639181573.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_12\\intel_pins_20260914_094520_pin_12_step_004_after_20260914T095431931169.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_12\\intel_pins_20260914_094520_pin_12_step_005_before_20260914T095433674230.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_07\\intel_pins_20260914_101641_pin_07_step_002_after_20260914T102421273819.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_07\\intel_pins_20260914_101641_pin_07_step_003_before_20260914T102423068705.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_09\\intel_pins_20260914_101641_pin_09_step_002_after_20260914T102748663555.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_09\\intel_pins_20260914_101641_pin_09_step_003_before_20260914T102750550063.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_10\\intel_pins_20260914_101641_pin_10_step_002_after_20260914T102921744386.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_10\\intel_pins_20260914_101641_pin_10_step_003_before_20260914T102923732853.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_11\\intel_pins_20260914_101641_pin_11_step_002_after_20260914T103054938959.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_11\\intel_pins_20260914_101641_pin_11_step_003_before_20260914T103056935657.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_15\\intel_pins_20260914_101641_pin_15_step_002_after_20260914T103732536132.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_15\\intel_pins_20260914_101641_pin_15_step_003_before_20260914T103734415825.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_pin_01\\intel_pins_20260914_171640_pin_01_step_002_after_20260914T171929127444.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_pin_01\\intel_pins_20260914_171640_pin_01_step_003_before_20260914T171930660803.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_pin_06\\intel_pins_20260914_171640_pin_06_step_002_after_20260914T172739940306.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_pin_06\\intel_pins_20260914_171640_pin_06_step_003_before_20260914T172741459387.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_pin_07\\intel_pins_20260914_171640_pin_07_step_002_after_20260914T172903456088.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_pin_07\\intel_pins_20260914_171640_pin_07_step_003_before_20260914T172905039702.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_pin_02\\intel_pins_20260914_223903_pin_02_step_002_after_20260914T224301010616.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_pin_02\\intel_pins_20260914_223903_pin_02_step_003_before_20260914T224302555520.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_pin_03\\intel_pins_20260914_223903_pin_03_step_002_after_20260914T224424202756.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_pin_03\\intel_pins_20260914_223903_pin_03_step_003_before_20260914T224425774172.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_001_after_20260915T001346774044.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_001_after_refresh_1_20260915T001357116819.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_001_after_refresh_2_20260915T001406300425.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_001_before_20260915T001425796801.png",
+    "current_page": "ALLIANCE",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_002_after_20260915T001113949822.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_003_before_20260915T001115505029.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_pin_00\\intel_pins_20260915_000822_pin_00_step_002_after_20260915T000847103120.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_pin_00\\intel_pins_20260915_000822_pin_00_step_003_before_20260915T000848658059.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_pin_00\\intel_pins_20260915_000822_pin_00_step_009_after_20260915T001000074303.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_pin_00\\intel_pins_20260915_000822_pin_00_step_010_before_20260915T001001656723.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run6\\live_intel_full_run6_step_003_after_20260914T082838141907.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run6\\live_intel_full_run6_step_004_before_20260914T082839940110.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\event_calibration\\intel_score_attempt_2\\step_002_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\event_calibration\\intel_score_attempt_2\\step_003_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_bear_join_final_attempt.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_bear_join_troop.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_bear_retry_selection.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_bear_troop_reduced.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_beast_march_selection.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_beast_runtime_native_retry\\step_001_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_beast_runtime_native_retry\\step_002_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_beast10_automatic_round2\\step_003_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_beast10_automatic_round2\\step_004_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_beast10_automatic_round3_resume\\step_002_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_beast10_automatic_round3_resume\\step_003_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_beast10_automatic_round4_resume\\step_002_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_beast10_automatic_round4_resume\\step_003_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_beast10_march_current.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_blazing_behemoth_dispatch_20260907\\step_001_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_blazing_behemoth_dispatch_20260907\\step_002_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw2_dispatch_20260907\\step_003_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw2_dispatch_20260907\\step_004_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw3_dispatch_20260907\\step_003_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw3_dispatch_20260907\\step_004_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw4_dispatch_20260907\\step_003_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw4_dispatch_20260907\\step_004_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw_dispatch_20260907\\step_002_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_claw_dispatch_20260907\\step_003_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_firebeast2_dispatch_20260907_round2\\step_003_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_firebeast2_dispatch_20260907_round2\\step_004_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_last_purple_round8\\step_003_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_last_purple_round8\\step_004_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_orange_automatic_round5\\step_002_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_orange_automatic_round5\\step_003_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_orange_claim_purple_dispatch_round6_retry\\step_006_after.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\live_intel_orange_claim_purple_dispatch_round6_retry\\step_007_before.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "PAGE_BEAST_MARCH": 0,
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\stamina_emergency\\beast6_march.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\stamina_emergency\\beast9_march.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\stamina_emergency\\beast9_round3_march.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "STATUS_VICTORY_ASSURED": 0
+    }
+  },
+  {
+    "frame": "dataset\\raw\\stamina_emergency\\beast_march.png",
+    "current_page": "MARCH",
+    "anchors": {
+      "STATUS_VICTORY_ASSURED": 6
+    }
+  }
+]

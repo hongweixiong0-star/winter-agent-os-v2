@@ -20,7 +20,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 2 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', '?? .workbuddy-ai/handoff/.checkpoints.jsonl']
+- 24 uncommitted file(s): ['M .workbuddy-ai/handoff/.checkpoints.jsonl', ' M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -33,7 +33,10 @@ Machine-detected issues (recomputed every run):
 |---|---|---|---|
 | 0p | **「空情报板」的负样本是错标 —— 项目至今没有一张真正的空板帧** | ✅ 已纠正前提 | `dataset/truth_audit/intel_beast_target_20260914/03_intel_page_empty_list.png` 实测是**满板 13 个 pin**（体力 305、`下次刷新:07:59:21`）。上一轮据 OCR 只有表头把它命名为 empty，并写了两个断言 `status == "NOT_AVAILABLE"` 的测试 —— **把 bug 写成了测试**。已重命名为 `03_intel_page_full_board.png`（保留不删，`evidence/INDEX.json` 自动重建），测试改写为正确行为。⇒ **`NOT_AVAILABLE` 至今未被任何真机帧证实**，只能由「pin 检测器一个都没看到」到达。**以后不要把"等负样本"当作不改判据的理由**；也不要再用这个文件当负样本。 |
 | 0q | **自动化 / 外部状态记录不可信 —— 已第二次复发** | ✅ 已修 + 规则已强化 | 三份 handoff 都写「常驻自动化 id `7c1c18c1-…`（ACTIVE，每小时）」，自动化接口 `list` 返回**空数组** ⇒ 那段时间**没有任何无人值守在跑**。与第九轮 `0o` 同型。已重建 `e3485d0c-1b51-48a4-880c-c01fe0fdec19`（ACTIVE，每小时）并**用 `list` 复核存在**。**坑：`list` 为空时 `.workbuddy/memory/automations/<id>/memory.md` 仍在磁盘上，看目录会误判为"存在"。** |
-| 0r | **`INTEL_BEAST_START_MARCH` 的 verifier 写死任务等级** | ⚠️ 新，下一轮第一项 | `verify_intel_beast_march_open` 只接受 `INTEL_BEAST_10`→22 / `INTEL_FIREBEAST_10`→20。新上线的 `SELECT_INTEL_PIN` 会点开**未复核**的 pin，因此可能打开其他等级的巨兽任务 → 2026-09-15 00:14:13 真机 `INTEL_BEAST_MARCH_NOT_PROVEN`（同轮前两次同技能 SUCCESS）。与 P1 #17「verifier 落后于 brain/vision 契约」同源。**这是本轮唯一新增失败，且直接限制刚拿到的能力。** |
+| 0r | ~~`INTEL_BEAST_START_MARCH` 的 verifier 写死任务等级~~ | ❌ **假设已被证据推翻，条目作废** | 原文猜测「新上线的 `SELECT_INTEL_PIN` 点开了未复核等级 → verifier 拒绝」。实测 `state_before` 正是复核过的 `INTEL_BEAST_10 / 大角鹿 / level 22 / available`，**verifier 判据没错**。真实根因是页面分类，见 0v。**教训：verifier 失败时先核对 `state_before/after` 的原始值，不要从"新上线的东西"倒推原因。** |
+| 0v | **出征（部队编成）页被分类成 `ALLIANCE/HOME`** | ✅ **已修 + 真机 A/B 证明** | 出征按钮 `BTN_BEAST_DISPATCH` 是动画控件（真机帧上还叠着 `00:00:29` 倒计时徽标），同一页面两帧实测 d=0 / **d=26**（阈值 8）。它一失手，下一条命中的就是 `PAGE_ALLIANCE` **标题条**（d=8）→ 整页报成联盟首页 → `INTEL_BEAST_MARCH_NOT_PROVEN`。而这一页复核过的两个锚点 `PAGE_BEAST_MARCH` / `STATUS_VICTORY_ASSURED`（均 d=0）**在清单里却没有任何分支引用**（孤儿模板）。已在 `BTN_BEAST_DISPATCH` 之后加「两个锚点同时命中」的分支。闸门：2716 帧里 83 帧命中锚点，**影响面恰好 5 帧**（全是同一张出征页）；89 张联盟类帧零误命中。真机 A/B：补丁前 `ALLIANCE/HOME` → 补丁后 `MARCH {victory_assured: True}`。 |
+| 0w | **出征页会被赋予页面上不存在的野兽身份** | ⚠️ **新，未修** | 真机 episode 内部自相矛盾：目标卡是 `大角鹿 level 22`，出征页 after 却是 `beast={'name':'麝牛','level':9,...}` —— 来自 `BTN_BEAST_DISPATCH_MUSK_OX_9` + `STATUS_VICTORY_ASSURED_MUSK_OX_9` 在出征页上的**假命中**（两个出征按钮同形）。出征页根本不显示野兽名/等级。**修它要连带 `verify_beast_hunt` 与 `verify_stamina_beast_*`（它们依赖麝牛/9 这些字面值）**，所以先记录。新加的分支已刻意不声明这两项。 |
+| 0x | **`PAGE_ALLIANCE` 是弱标题条模板，会误命中任何「出征」标题** | ⚠️ 新，记录 | 3 张 `dataset/raw/bear_live_20260909/auto_join_*` / `bear_troop_setup` 帧（真机看是**出征部队比例配置页**：士兵比例 / 全部撤回 / 平均配置 / 储存）当前被判成 `ALLIANCE`。本轮**故意不把它们改成 MARCH**：它们没有「本次出征胜券在握」，而空 `beast` 的 MARCH 会让 `brain.py:395` 对 INTEL 目标派发 `INTEL_HERO_DISPATCH`——那是危险误派。正解是给「出征族页面」一个统一的页面身份 + 各自的子类型，而不是继续靠标题条。 |
 | 0s | **光晕 pin 的比例下限余量只剩 0.021** | ⚠️ 记录，稳健化解法待做 | 实测跨度 **0.521–0.644**（0.521 出现在满板帧上），闸门现在是 `0.5 <= w/h <= 1.3`。正解是**剥离光晕后量本体高度**，不是继续降阈值。语料核对：22 帧里降下限只多收那一个光晕橙 pin，其余 16 帧零新增。 |
 | 0t | **`intel_pin_centers()` 在 MAP 帧上会误报** | ✅ 已按页面门控 | 世界地图右侧 HUD 圆形按钮会被当成 pin（实测 4 个 BLUE）。生产里只在 `page == INTEL` 时调用，满足约束；**任何新的调用点都必须自己加页面门控**。证据：`dataset/truth_audit/intel_pin_board_20260915/03_map_frame_detector_false_positives*.png`。 |
 | 0u | **`run_intel_pins.py` 的导航周期语义与停止条件** | ⚠️ 记录 | 它的 `"navigation cycle"` 分支现在**会做真实工作**（本轮 nav_01 产出 1 次派兵 + 2 次领奖 + 1 次救援），但仍按"导航"记账；且连续 3 次导航周期后**无条件停止**，即使其中有产出。 |
