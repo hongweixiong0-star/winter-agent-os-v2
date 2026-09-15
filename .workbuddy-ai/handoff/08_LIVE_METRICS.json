@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-15T03:29:33+00:00",
+  "generated_at": "2026-09-15T04:54:55+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "5675402",
-  "last_good_commit": "5675402",
+  "commit": "eb23534",
+  "last_good_commit": "eb23534",
   "dirty_count": 13,
   "episodes": {
-    "total": 1109,
-    "production": 1109,
-    "success": 788,
-    "failure": 316,
-    "success_rate_over_decided": 0.7138,
+    "total": 1153,
+    "production": 1153,
+    "success": 830,
+    "failure": 318,
+    "success_rate_over_decided": 0.723,
     "modes": {
-      "PRODUCTION": 1109
+      "PRODUCTION": 1153
     },
     "mixed_case_rows": 35
   },
@@ -26,22 +26,22 @@
     "counts": {
       "live_verified": 26,
       "stable": 22,
-      "degraded": 10,
+      "degraded": 11,
       "only_failed": 9,
-      "never_executed": 22
+      "never_executed": 21
     }
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 115,
-      "recent": 48,
-      "last_seen": "2026-09-15T01:06:10.228210+00:00",
+      "count": 116,
+      "recent": 49,
+      "last_seen": "2026-09-15T04:11:16.481273+00:00",
       "dates": {
         "2026-09-12": 36,
         "2026-09-13": 37,
         "2026-09-14": 8,
-        "2026-09-15": 3
+        "2026-09-15": 4
       },
       "undated": 31,
       "top_skills": [
@@ -246,9 +246,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 739,
-    "present_on_disk": 739,
-    "traceable_episodes": 377,
+    "referenced_screenshots": 826,
+    "present_on_disk": 826,
+    "traceable_episodes": 421,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -262,6 +262,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "MAX_ACTIONS_REACHED"
+    "stop_reason": "TARGET_SKILL_VERIFIED"
   }
 }

@@ -29,8 +29,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 100,
-          "successes": 87,
+          "attempts": 105,
+          "successes": 92,
           "failures": 13
         },
         {
@@ -70,9 +70,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 115,
-          "successes": 101,
-          "failures": 14
+          "attempts": 118,
+          "successes": 103,
+          "failures": 15
         },
         {
           "capability": "CLAIM_INTEL_REWARD",
@@ -82,8 +82,8 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 50,
-          "successes": 47,
+          "attempts": 52,
+          "successes": 49,
           "failures": 3
         },
         {
@@ -95,8 +95,8 @@
           "status": "STABLE",
           "implemented_by": "DISMISS_INTEL_REWARD",
           "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 51,
-          "successes": 46,
+          "attempts": 53,
+          "successes": 48,
           "failures": 5
         }
       ],
@@ -141,9 +141,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 107,
-          "successes": 99,
-          "failures": 8
+          "attempts": 110,
+          "successes": 101,
+          "failures": 9
         },
         {
           "capability": "SPEND_STAMINA_ON_RALLY",
@@ -572,8 +572,8 @@
           "status": "STABLE",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 110,
-          "successes": 92,
+          "attempts": 112,
+          "successes": 94,
           "failures": 18
         },
         {

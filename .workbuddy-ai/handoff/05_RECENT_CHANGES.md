@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `eb23534 2026-09-15T12:54:32+08:00 免费体力首次真机领取闭环(0an/0aq); 空读数不再跳过检查(0as); 营地战斗被拒可恢复(0at); 补给周期实测7小时(0ar)`
 - `5675402 2026-09-15T11:11:14+08:00 fix(vision,verifier,brain,runtime): stop inventing beast identities; one decision per step`
 - `2a23687 2026-09-15T08:51:32+08:00 docs(handoff): checkpoint 8943141 + round overview artifact`
 - `8943141 2026-09-15T08:51:00+08:00 chore(handoff): rank top failures by recency, not all-time count`
@@ -17,10 +18,10 @@ Last 12 commits (newest first):
 - `5c4ddd1 2026-09-14T23:13:56+08:00 docs(handoff): the hourly automation did not exist; it is recreated and verified`
 - `5c96773 2026-09-14T22:59:53+08:00 fix(runtime): back out of an unreadable screen instead of dying on it`
 - `39e246f 2026-09-14T22:49:47+08:00 docs(handoff): refresh after the OCR fragment-stitching fix (full suite green, 408 passed)`
-- `48e266f 2026-09-14T22:48:48+08:00 fix(ocr): stitch overlapping digit fragments instead of enlarging the crop`
 
 Uncommitted changes: 13
-- `M .workbuddy-ai/handoff/.last_good_commit`
+- `M .workbuddy-ai/handoff/.checkpoints.jsonl`
+- ` M .workbuddy-ai/handoff/.last_good_commit`
 - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
 - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
@@ -29,10 +30,9 @@ Uncommitted changes: 13
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M docs/CAPABILITY_COVERAGE.md`
 - ` M evidence/INDEX.json`
-- `?? tests/test_camp_panel_stamina.py`
-- `?? tools/probe_camp_panel_stamina.py`
-- `?? tools/probe_stamina_panel_episodes.py`
+- ` M knowledge/goals/capability_skill_map.json`
 <!-- /AUTO:recent_commits -->
 
 ---

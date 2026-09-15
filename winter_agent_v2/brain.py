@@ -194,12 +194,28 @@ class RuleBrain:
             # With the intel goal active this panel IS the workable target.
             cost = world.exploration.get("stamina_cost_displayed")
             available = world.stamina.get("current")
-            # ``camp_panel_refused`` is the client's own verdict and needs no
-            # reading at all -- see the flag's comment in __init__.  The gauge
-            # test is the *predictive* path; this one is the corrective path for
-            # the 6/25 frames the ROI cannot read.
-            unaffordable = self.camp_panel_refused or (
-                isinstance(cost, int) and isinstance(available, int) and available < cost
+            cost_affordable = world.stamina.get("cost_affordable")
+            # Three signals, in descending authority.  The first two are the
+            # client's own verdicts and need no reading at all:
+            #
+            # * ``cost_affordable is False`` -- the client drew the cost in red,
+            #   which is what it will refuse on.  Measured 5/5 across three
+            #   cost-bearing buttons (tools/probe_cost_colour.py), and it needs
+            #   no OCR, so it also covers the 6 of 25 frames the gauge cannot
+            #   read and the genuine ``0`` the ROI cannot read at all.
+            # * ``camp_panel_refused`` -- the client already refused this fight;
+            #   recorded by the runtime (see the flag's comment in __init__).
+            #
+            # Only the last one is our own arithmetic, and it is the weakest: it
+            # needs both integers, so an unread gauge leaves it silent.
+            #
+            # ``cost_affordable`` must be tested against ``False`` explicitly --
+            # ``None`` means "not measured", which must not block a fight that
+            # was payable.
+            unaffordable = (
+                cost_affordable is False
+                or self.camp_panel_refused
+                or (isinstance(cost, int) and isinstance(available, int) and available < cost)
             )
             if unaffordable:
                 # Live 2026-09-15T03:03:57Z: the client sat on this panel with

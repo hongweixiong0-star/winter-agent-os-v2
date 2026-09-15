@@ -6,7 +6,7 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x115 all-time; recent=48 (last 2d), last seen 2026-09-15T01:06:10.228210+00:00 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x116 all-time; recent=49 (last 2d), last seen 2026-09-15T04:11:16.481273+00:00 — SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **RESOURCE_NOT_FOUND** x30 all-time; recent=30 (last 2d), last seen 2026-09-14T06:42:03.928936+00:00 — SUBMIT_RESOURCE_SEARCH(30)
 - **DISPATCH_NOT_PROVEN** x29 all-time; recent=28 (last 2d), last seen 2026-09-14T05:25:20.306984+00:00 — DISPATCH_MARCH(29)
 - **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=9 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
@@ -21,14 +21,20 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=4, failure=4)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 13 uncommitted file(s): ['M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md']
+- 13 uncommitted file(s): ['M .workbuddy-ai/handoff/.checkpoints.jsonl', ' M .workbuddy-ai/handoff/.last_good_commit', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
 
-### P0（2026-09-15 12:1x GMT+8 新增）—— 免费体力闭环 + 两条「空读数」缺陷
+### P0（2026-09-15 14:0x GMT+8 新增）
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0av | **「花费被画成红色」是客户端自己的可负担性判决 —— 这是比体力条 OCR 强得多的信号** | ✅ **已修（真机帧测定 5/5 + 单测 9/15）** | 起因：真机 `2026-09-15T04:11:16Z` `DISPATCH_INTEL_BEAST` 报 `SEMANTIC_TARGET_NOT_VERIFIED`，而出征按钮**明明在屏幕上**。定量：`BTN_BEAST_DISPATCH` 模板（`live_beast_march_selection.png` 自身 ROI 裁出，**父帧 d=0**）画的是**白色**花费 `10`；真机那帧是**红色** `10`。用 ccoeff 在 scale 1.0 上打分 **0.9152**（形状对、只是颜色不同）⇒ 是颜色，不是控件缺失。**顺带发现更大的东西**：客户端把"你付不起"直接画成红色。`tools/probe_cost_colour.py` 实测 3 种按钮 5 帧，**红色只出现在体力 < 花费的帧上，能付的帧红色像素为 0**：出征(体力0/花费10)=452、营地面板(7/10)=220、营地面板(16/10)=0、英雄出征页(10/10)=0、模板源=0。**5/5，且不是阈值判断**（能付的帧是**零**红像素）。**这比体力条 OCR 强得多**：后者营地面板 19/25，且单独的 `0` 根本读不出（见 `0as`）。已落地：`ocr.py::unaffordable_cost_pixels()` + `HybridVision` 在营地面板上写 `stamina.cost_affordable`（source=`BUTTON_COST_COLOUR`）+ `brain.py` 把它当作**最高优先级**的可负担性信号（`cost_affordable is False` ⇒ 路由去取免费体力；`None` 表示"没量到"，**不得阻止**能付的战斗）。测试 `tests/test_cost_colour_verdict.py`。**真机 A/B 已拿到（同一技能、同一按钮、只有可负担性不同）**：`04:11:16Z` 体力 **0** ⇒ 花费**红** ⇒ 模板不命中 ⇒ `DISPATCH_INTEL_BEAST` **FAILURE / SEMANTIC_TARGET_NOT_VERIFIED**；`06:14:56Z` 体力 **176** ⇒ 花费**白** ⇒ 模板命中 ⇒ 同一技能 **SUCCESS**（MARCH→MAP），整轮 10/10 SUCCESS、exit 0。**未做的部分**：红色变体**没有**加进 `BTN_BEAST_DISPATCH` 模板（那只会让我们去点一个必被拒的按钮；现在"找不到"恰好等于"不能点"）；出征页的红花费尚未在 `brain.py` 里显式成文，只体现在模板不命中上。**`cost_affordable` 字段本身没在真机运行中出现过**（两轮都没走到营地面板），只在生产单帧上验证过。 |
+
+
 
 | # | 问题 | 状态 | 备注 |
 |---|---|---|---|

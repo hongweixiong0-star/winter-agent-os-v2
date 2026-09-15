@@ -4,6 +4,23 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：本轮（2026-09-15 14:0x GMT+8）—— 客户端把「你付不起」直接画成红色（`0av`）
+
+**一句话**：追一条 `DISPATCH_INTEL_BEAST / SEMANTIC_TARGET_NOT_VERIFIED`，追出了**比体力条 OCR 强得多**的可负担性信号。
+
+- 真机 04:11:16Z 出征按钮**在屏幕上**却报"找不到"。定量：模板画的是**白**色花费 `10`
+  （且它就是从父帧同一 ROI 裁出的，**父帧 d=0**），真机那帧是**红**色 `10`；
+  ccoeff scale 1.0 打分 **0.9152** ⇒ 形状对、只是颜色变了。
+- **但颜色本身就是判决**：客户端把"付不起"画成红色。`tools/probe_cost_colour.py` 实测 3 种按钮 5 帧，
+  **红色只出现在体力 < 花费的帧上，能付的帧红色像素为 0**（出征 0/10→452；营地面板 7/10→220；
+  营地面板 16/10→0；英雄出征页 10/10→0；模板源→0）。**5/5，且不是阈值判断**。
+- 已落地：`unaffordable_cost_pixels()` + `HybridVision` 在营地面板写 `stamina.cost_affordable`
+  + `brain.py` 把它当**最高优先级**信号（`False` ⇒ 去取免费体力；`None` 表示没量到，**不得阻止**能付的战斗）。
+  测试 9 项；加宽定向集 **158 passed, 2 skipped, 33 subtests**。
+- **没做**：没把红色变体加进 `BTN_BEAST_DISPATCH` 模板 —— 那只会让我们去点一个必被拒的按钮。
+- **没真机复现**：本轮两轮真机（5/5、未命中营地面板）都没走到营地面板，`cost_affordable`
+  在**生产单帧**上已验证（真机帧 + 生产视觉栈），但**没在真机运行中**出现过。
+
 ## 手写：本轮（2026-09-15 12:2x GMT+8）—— 免费体力首次真机领取闭环 + 两条「空读数」缺陷
 
 **一句话**：`0an` 关掉了（首次真机领到 +150），但顺手挖出两条同源缺陷 —— **「读不到」被当成了「不要做」**。
@@ -178,17 +195,17 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 48 in the last 2 day(s), 115 all-time, last seen 2026-09-15T01:06:10.228210+00:00
-LAST GOOD COMMIT: 5675402
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 49 in the last 2 day(s), 116 all-time, last seen 2026-09-15T04:11:16.481273+00:00
+LAST GOOD COMMIT: eb23534
 CURRENT DIRTY FILES: 13
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-15T03:04:43.757203+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260915T030429554449.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260915T030432112556.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 115, "recent": 48, "last_seen": "2026-09-15T01:06:10.228210+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 3}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T03:04:43.757203+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+LAST PRODUCTION EPISODE: {"skill": "CLAIM_FREE_STAMINA", "result": "SUCCESS", "recorded_at": "2026-09-15T04:12:27.426919+00:00", "episode_id": "live_claim_from_map_20260915", "before_screenshot": "dataset\\raw\\live_claim_from_map_20260915\\live_claim_from_map_20260915_step_002_before_20260915T041223964925.png", "after_screenshot": "dataset\\raw\\live_claim_from_map_20260915\\live_claim_from_map_20260915_step_002_after_20260915T041226122573.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 116, "recent": 49, "last_seen": "2026-09-15T04:11:16.481273+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 4}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T04:12:27.426919+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
 DESIGN-BLOCKED (not implementable from the draft alone; each needs a live frame of its page first): CHECK_ALLIANCE_EVENT [NOT_REGISTERED] — requires semantic(s) `ALLIANCE_EVENT_ENTRY` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; CLAIM_EVENT_TIER [NOT_REGISTERED] — requires semantic(s) `EVENT_TIER_CLAIMABLE` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; JOIN_RALLY [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_BEAR_TIMER [NOT_REGISTERED] — requires semantic(s) `BEAR_TIMER` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; READ_COUNTER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_TIMER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined ... and 14 more
-NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_FREE_STAMINA', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER', 'RECALL_MARCH', 'RECOVER_HOME']
+NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CHECK_MARCH', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER', 'RECALL_MARCH', 'RECOVER_HOME', 'REINFORCE_TARGET']
 
 NEXT EXACT ACTION: Do not implement a design-blocked skill from its draft. The cheapest real progress is to obtain a live frame of the page the skill needs (a read-only discovery probe), design the missing semantic from that evidence, then implement. Failing that, take the highest-value *live-evidenced* defect from 04_OPEN_ISSUES — those are already proven by production episodes.
 

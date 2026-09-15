@@ -516,6 +516,67 @@ def gauge_green_pixels(image_path: Path, roi: dict[str, float] | None = None) ->
     return count
 
 
+def unaffordable_cost_pixels(
+    image_path: Path,
+    roi: dict[str, float],
+    *,
+    minimum_red: int = 40,
+) -> bool | None:
+    """Read the client's own affordability verdict: the cost's colour.
+
+    The client renders a stamina cost **white** when it can be paid and **red**
+    when it cannot -- the same widget, one colour difference.  Measured
+    2026-09-15 across three different cost-bearing buttons (see
+    ``tools/probe_cost_colour.py``), red pixels appear on exactly the frames
+    where stamina is below the displayed cost and on none of the others:
+
+        ==============================  =========  =====  =======
+        frame                           stamina    cost   red px
+        ==============================  =========  =====  =======
+        beast dispatch (live 04:11Z)    0          10     452
+        hero camp panel                 7          10     220
+        hero camp panel                 16         10     0
+        hero squad page (dispatched)    10         10     0
+        beast dispatch (template src)   payable    10     0
+        ==============================  =========  =====  =======
+
+    5 of 5, and it is not a threshold judgement: the affordable frames contain
+    **zero** red pixels, so any appearance of the colour is the signal.
+
+    This matters because the HUD gauge does *not* cover these cases: its ROI
+    reads only 19 of 25 camp-panel frames, and it cannot read a lone ``0`` at
+    all (``tools/probe_stamina_zero.py``: best confidence 0.73, flipping
+    between '0' and 'O').  The colour needs no OCR.
+
+    Returns ``None`` when the ROI is not in the frame, so a caller cannot read
+    that as "affordable": **an unreadable verdict must not authorize spending.**
+    """
+    with Image.open(image_path) as source:
+        rgb = source.convert("RGB")
+        width, height = rgb.size
+    x0 = round(roi["x_norm"] * width)
+    y0 = round(roi["y_norm"] * height)
+    x1 = round((roi["x_norm"] + roi["w_norm"]) * width)
+    y1 = round((roi["y_norm"] + roi["h_norm"]) * height)
+    if x1 <= x0 or y1 <= y0 or x0 < 0 or y0 < 0 or x1 > width or y1 > height:
+        return None
+    with Image.open(image_path) as source:
+        # The cost sits to the right of the button label; counting the whole
+        # button would let its own artwork swamp the digits.
+        crop = source.convert("RGB").crop((x0, y0, x1, y1))
+        right = crop.crop((crop.width // 2, 0, crop.width, crop.height))
+    pixels = right.load()
+    red = 0
+    for y in range(right.height):
+        for x in range(right.width):
+            r, g, b = pixels[x, y]
+            if r > 110 and (r - g) > 45 and (r - b) > 45:
+                red += 1
+    if red < minimum_red:
+        return False
+    return True
+
+
 class HybridVision:
     """Template-first observation with OCR only as a conservative fallback."""
 
@@ -523,6 +584,22 @@ class HybridVision:
         self.template_vision = template_vision
         self.ocr = ocr
         self.classifier = classifier or OCRPageClassifier()
+
+    def _semantic_roi(self, semantic: str) -> dict[str, float] | None:
+        """Return the ROI the manifest registered for ``semantic``, or ``None``.
+
+        A registered ROI is already a measured statement about where that
+        control is drawn, so it is the one place a pixel check should come from
+        -- a second hardcoded rectangle would drift away from the template it
+        describes.
+        """
+        records = getattr(getattr(self.template_vision, "semantic", None), "records", None)
+        if not records:
+            return None
+        for record in records:
+            if record.get("semantic") == semantic and record.get("roi_norm"):
+                return dict(record["roi_norm"])
+        return None
 
     def observe(self, image_path: Path) -> WorldState:
         primary = self.template_vision.observe(image_path)
@@ -674,6 +751,19 @@ class HybridVision:
                         "gauge_pixels": gauge_green_pixels(image_path),
                     })
                     primary = replace(primary, stamina=stamina)
+                # The client also states affordability without any OCR: it draws
+                # the cost in red when it cannot be paid.  That covers the 6 of
+                # 25 frames the gauge above cannot read -- and it is the verdict
+                # the client itself will act on, which no pixel-read number is.
+                # See ``unaffordable_cost_pixels`` for the measurement.
+                cost_roi = self._semantic_roi("BTN_HERO_CAMP_FIGHT")
+                if cost_roi is not None:
+                    blocked = unaffordable_cost_pixels(image_path, cost_roi)
+                    if blocked is not None:
+                        stamina = dict(primary.stamina)
+                        stamina["cost_affordable"] = not blocked
+                        stamina["cost_verdict_source"] = "BUTTON_COST_COLOUR"
+                        primary = replace(primary, stamina=stamina)
             if primary.page is Page.ALLIANCE:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))
                 if secondary.page is primary.page and secondary.alliance:
