@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-15T04:54:55+00:00",
-  "count": 460,
+  "generated_at": "2026-09-15T10:19:25+00:00",
+  "count": 474,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -167,8 +167,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 86100,
-      "mtime": "2026-09-15T04:54:33+00:00"
+      "bytes": 86676,
+      "mtime": "2026-09-15T08:21:18+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -343,6 +343,24 @@
       "kind": "evidence",
       "bytes": 1192,
       "mtime": "2026-09-15T02:27:53+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260915_092119.json",
+      "kind": "evidence",
+      "bytes": 4647,
+      "mtime": "2026-09-15T09:38:19+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260915_095605.json",
+      "kind": "evidence",
+      "bytes": 1309,
+      "mtime": "2026-09-15T09:56:34+00:00"
+    },
+    {
+      "path": "evidence/intel_pins_20260915_100034.json",
+      "kind": "evidence",
+      "bytes": 1049,
+      "mtime": "2026-09-15T10:03:23+00:00"
     },
     {
       "path": "evidence/intel_rescue_survivors_production_2026-09-07.json",
@@ -793,6 +811,54 @@
       "kind": "fixture",
       "bytes": 521468,
       "mtime": "2026-09-09T13:17:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/01_unaffordable_2026-09-15.png",
+      "kind": "fixture",
+      "bytes": 475664,
+      "mtime": "2026-09-15T09:51:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/02_unaffordable_2026-09-15.png",
+      "kind": "fixture",
+      "bytes": 475664,
+      "mtime": "2026-09-15T09:51:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/03_unaffordable_2026-09-15.png",
+      "kind": "fixture",
+      "bytes": 475886,
+      "mtime": "2026-09-15T09:51:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/04_unaffordable_2026-09-15.png",
+      "kind": "fixture",
+      "bytes": 475597,
+      "mtime": "2026-09-15T09:51:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/05_affordable_2026-09-15.png",
+      "kind": "fixture",
+      "bytes": 476558,
+      "mtime": "2026-09-15T09:51:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/06_affordable_2026-09-15.png",
+      "kind": "fixture",
+      "bytes": 476125,
+      "mtime": "2026-09-15T09:51:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/live_ab_records.json",
+      "kind": "fixture",
+      "bytes": 4358,
+      "mtime": "2026-09-15T09:51:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/README.md",
+      "kind": "fixture",
+      "bytes": 3647,
+      "mtime": "2026-09-15T09:54:24+00:00"
     },
     {
       "path": "dataset/truth_audit/beast_formation_identity_20260915/01_wilderness_arctic_wolf_beast6_march.png",
@@ -2713,6 +2779,24 @@
       "kind": "fixture",
       "bytes": 4394,
       "mtime": "2026-09-15T03:08:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/stamina_supply_clock_20260915/live_ab_records.json",
+      "kind": "fixture",
+      "bytes": 33552,
+      "mtime": "2026-09-15T08:19:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/stamina_supply_clock_20260915/README.md",
+      "kind": "fixture",
+      "bytes": 7516,
+      "mtime": "2026-09-15T08:19:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/stamina_supply_clock_20260915/stamina_supply.json",
+      "kind": "fixture",
+      "bytes": 112,
+      "mtime": "2026-09-15T08:17:02+00:00"
     },
     {
       "path": "dataset/truth_audit/tabstrips/coal_strip2x.png",

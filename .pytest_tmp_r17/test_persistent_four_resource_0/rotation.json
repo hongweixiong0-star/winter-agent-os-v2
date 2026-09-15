@@ -1,0 +1,10 @@
+{
+  "dispatched": {
+    "MEAT": 1,
+    "WOOD": 1,
+    "COAL": 1,
+    "IRON": 0
+  },
+  "next": "IRON",
+  "unavailable": {}
+}

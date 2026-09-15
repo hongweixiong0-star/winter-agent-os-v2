@@ -1,20 +1,20 @@
 {
-  "agent_state": "IDLE",
+  "agent_state": "DEGRADED",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-15T06:16:13.711907+00:00",
-  "last_action_time": "2026-09-15T06:16:13.885356+00:00",
-  "last_success_time": "2026-09-15T06:16:24.650931+00:00",
+  "last_tick_time": "2026-09-15T10:02:57.517838+00:00",
+  "last_action_time": "2026-09-15T10:02:57.821773+00:00",
+  "last_success_time": "2026-09-15T10:02:48.416781+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
   "page": "INTEL",
   "current_goal": "CLEAR_INTEL",
-  "current_skill": "BACK",
-  "reason": "intel_master_bounty_power_blocked",
+  "current_skill": "SELECT_INTEL_PIN",
+  "reason": "intel_board_has_pins_but_no_card_open",
   "preconditions": [],
   "verifier": "PASS",
-  "next_action": "intel_page_restored",
+  "next_action": "intel_pin_card_opened",
   "risk": "UNKNOWN",
   "confidence": 0.98,
   "device": "UNKNOWN",
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "dataset\\raw\\live_cost_colour_positive2_20260915\\live_cost_colour_positive2_20260915_step_010_after_20260915T061615387821.png",
+  "screenshot_path": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_100034_pin_00\\intel_pins_20260915_100034_pin_00_step_004_before_20260915T100248439796.png",
   "march_used": null,
   "march_max": null,
   "queues": {
@@ -31,15 +31,15 @@
     "training": {},
     "intel": {
       "status": "AVAILABLE",
-      "stamina": 167,
-      "refresh": "01:43:44",
-      "available_count": 3,
-      "pins": 3,
+      "stamina": 110,
+      "refresh": "05:57:11",
+      "available_count": 1,
+      "pins": 1,
       "list_read": true
     },
     "alliance": {},
     "events": {}
   },
-  "stop_reason": "MAX_ACTIONS_REACHED",
-  "updated_at": "2026-09-15T06:16:24.651908+00:00"
+  "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+  "updated_at": "2026-09-15T10:02:57.863358+00:00"
 }

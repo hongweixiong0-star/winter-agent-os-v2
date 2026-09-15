@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `03ede69 2026-09-15T18:03:19+08:00 fix(dispatch): a red cost is the client refusing payment, not a missing control (0ax/0ay/0az)`
+- `dd7b860 2026-09-15T16:25:53+08:00 check(wiring): resolve every call site to a definition, not just the paths we know (0aw hardening)`
 - `3c57cae 2026-09-15T16:19:26+08:00 evidence(stamina): archive the supply-clock live A/B/C with the due-path run`
 - `d79c459 2026-09-15T16:16:53+08:00 feat(stamina): persist the free gift's supply clock and make the check reachable (0au/0e)`
 - `17c480a 2026-09-15T14:34:41+08:00 0av: 花费被画成红色即客户端的可负担性判决(真机A/B 5/5); 营地面板写入 cost_affordable 并作为最高优先级闸门`
@@ -16,10 +18,8 @@ Last 12 commits (newest first):
 - `6a2a96c 2026-09-15T08:47:19+08:00 fix(vision): identify the beast formation page by its own anchors, not by an animated button`
 - `c94df20 2026-09-15T08:17:00+08:00 feat(intel): SELECT_INTEL_PIN live-verified 4/4; a full intel board is no longer reported empty`
 - `c2908ad 2026-09-15T08:08:13+08:00 fix(intel): count mission pins instead of trusting header text; a full board was reported empty`
-- `622fb46 2026-09-14T23:58:16+08:00 docs(handoff): intel refresh countdown is not schedulable; night loop verified`
-- `3cb413e 2026-09-14T23:51:10+08:00 docs(knowledge): correct two intel facts the live client contradicted`
 
-Uncommitted changes: 21
+Uncommitted changes: 28
 - `M .workbuddy-ai/handoff/.checkpoints.jsonl`
 - ` M .workbuddy-ai/handoff/.last_good_commit`
 - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
@@ -31,6 +31,7 @@ Uncommitted changes: 21
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
 - ` M .workbuddy-ai/memory/2026-09-15.md`
+- ` M .workbuddy-ai/memory/MEMORY.md`
 - ` M docs/CAPABILITY_COVERAGE.md`
 - ` M docs/CURRENT_TRUTH.md`
 - ` M evidence/INDEX.json`
@@ -39,7 +40,6 @@ Uncommitted changes: 21
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
 <!-- /AUTO:recent_commits -->
 
 ---
@@ -95,6 +95,11 @@ nav 周期三条都是 `steps=1 / elapsed_s=5.4`）。
   与营地面板 `unaffordable_camp_panel_left` 同一模式。
 - **可验证**：`verify_safe_back` 正好接受该转移（before 非 MAP/POPUP、after 不同且已知）；
   测试 `tests/test_beast_card_dead_end_recovery.py`（9 项，含真 verifier + 负向对照）。
+- **独立收敛（值得记一笔）**：**自动化自己那次 agent 运行**（17:20 GMT+8）已经独立诊断出同一问题
+  并写进 `.workbuddy-ai/memory/MEMORY.md`，结论是「BLOCKED 大师悬赏 pin 会毒化整轮 nav……
+  正解方向：先 BACK 回地图再继续」。本轮的修法与那条方向**一致**，只是触发条件更宽更稳
+  （「这张卡在屏幕上但没有任何可行动作」，不依赖 `intel.status` 字段）。
+  ⇒ 这既交叉验证了 `0az` 的诊断，也再次证明**自动化确实在跑且真的在读/写项目记忆**。
 
 ### 4. `0ap` 反转 —— 自动化**确实在跑**（生产证据闭环）
 
@@ -109,6 +114,19 @@ nav 周期三条都是 `steps=1 / elapsed_s=5.4`）。
 `check_wiring.py` 加两条 AST 检查（私有 `self._x(` 调用点解析、裸名解析），
 并做**负向对照**：把 `0aw` 那条调用原样注入临时副本 ⇒ **抓到**；真实树 0。
 测试 `tests/test_wiring_static_resolution.py`（7 项）。
+
+### 6. 真机跑了一次 pin 循环（`evidence/intel_pins_20260915_100034.json`）
+
+`tools/run_intel_pins.py 3` → exit 0，`pins_processed=1`，末态 `no actionable pins left on the intel board`。
+**两条诚实结论**：
+
+- **`0az` 的恢复没有触发**（因为测量探针已先把客户端挪到 MAP，nav 周期从 MAP 起手）。
+  修好后的整链**尚未真机跑过** ⇒ 记在 `04` 的 `0az` 行里，不要读成已真机验证。
+- **发现 `SEMANTIC_TARGET_NOT_VERIFIED` 的第 3 个子成因**（`0ba`）：2 条
+  `SELECT_INTEL_PIN` 失败（`page=INTEL→None`）。读代码即定：`runtime.resolve()` 在
+  `INTEL_PIN` 分支里，当每个检测到的 pin 都已在 40px 内点过时**刻意返回 `None`**
+  （注释明说是为了不在已消费的 pin 上循环），但执行器把它统一记成「控件不存在」。
+  与 `0ax` **完全同一类错误**：刻意拒绝被记成视觉缺陷。
 
 ### 本轮测试
 

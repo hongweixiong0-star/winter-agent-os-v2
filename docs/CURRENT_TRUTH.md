@@ -1,40 +1,40 @@
 # CURRENT TRUTH
 
-Generated (UTC): 2026-09-14T23:34:43.692029+00:00
+Generated (UTC): 2026-09-15T07:54:27.007544+00:00
 
 Everything below is recomputed by `python tools/truth_audit.py`.
 Do not trust numbers in older Markdown files.
 
 ## A. Runtime
 
-- agent_state: `DEGRADED`
+- agent_state: `IDLE`
 - runtime_thread_alive: False / scheduler_loop_alive: False
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: intel_not_available
+- stop_reason: MAX_ACTIONS_REACHED
 - page: INTEL march: None/None
 
 ## B. Episodes
 
-- total: 1003 (mode: PRODUCTION=1003)
-- success / failure: 690 / 308
+- total: 1168 (mode: PRODUCTION=1168)
+- success / failure: 845 / 318
 - blocked: 4  in_progress: 1
-- success rate over decided: **69.1%**
-- success rate over total: 68.8%
+- success rate over decided: **72.7%**
+- success rate over total: 72.3%
 - mixed-case `result` rows (must be normalized on read, never rewritten): 35
 
 ## C. Top failures
 
 Failure type | Count | Skills | Top skills | Last seen
 ---|---:|---:|---|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 112 | 16 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-14T14:08:48
+`SEMANTIC_TARGET_NOT_VERIFIED` | 116 | 17 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-15T04:11:16
 `MARCH_PAGE_NOT_OPEN` | 59 | 1 | START_GATHER(59) | 2026-09-12T15:17:11
 `RESOURCE_NOT_FOUND` | 30 | 1 | SUBMIT_RESOURCE_SEARCH(30) | 2026-09-14T06:42:03
 `DISPATCH_NOT_PROVEN` | 29 | 1 | DISPATCH_MARCH(29) | 2026-09-14T05:25:20
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | 1 | MAIL_CLAIM_REWARDS(10) | 
+`STAMINA_SOURCES_NOT_OPEN` | 9 | 1 | OPEN_INTEL(9) | 2026-09-15T02:31:47
 `INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | 1 | INTEL_HERO_DISPATCH(8) | 2026-09-14T12:19:55
-`STAMINA_SOURCES_NOT_OPEN` | 7 | 1 | OPEN_INTEL(7) | 2026-09-14T10:14:36
 `INTEL_RESCUE_START_NOT_PROVEN` | 6 | 1 | EXECUTE_INTEL_RESCUE_SURVIVORS(6) | 2026-09-14T17:17:43
 `POPUP_CLOSE_NOT_PROVEN` | 5 | 2 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1) | 2026-09-13T21:08:40
 `NO_EXECUTION` | 4 | 1 | SAFE_STOP(4) | 2026-09-14T11:20:35
@@ -43,9 +43,9 @@ Failure type | Count | Skills | Top skills | Last seen
 
 ## D. Registry
 
-- total skills: 86
-- by state: {'VERIFIED': 44, 'CANDIDATE': 40, 'BLOCKED': 2}
-- by latency: {'NORMAL': 70, 'FAST': 15, 'REALTIME': 1}
+- total skills: 87
+- by state: {'VERIFIED': 45, 'CANDIDATE': 40, 'BLOCKED': 2}
+- by latency: {'NORMAL': 71, 'FAST': 15, 'REALTIME': 1}
 - REALTIME skills: ['JOIN_RALLY']
 - BLOCKED skills: ['RESEARCH', 'ALLIANCE_HELP']
 
@@ -53,7 +53,7 @@ Failure type | Count | Skills | Top skills | Last seen
 
 Area | Files | Empty dirs
 ---|---:|---:
-`dataset/raw` | 2687 | 56
+`dataset/raw` | 3075 | 56
 `dataset/candidate` | 533 | 0
 `dataset/verified` | 5 | 0
 `dataset/normalized` | 1 | 0
@@ -63,30 +63,26 @@ Area | Files | Empty dirs
 ## F. Evidence integrity
 
 - status: **PASS**
-- episodes carrying screenshot references: 271 / 1003
-- screenshots referenced: 530
+- episodes carrying screenshot references: 436 / 1168
+- screenshots referenced: 856
 - screenshots missing: 0
-- distinct episode ids: 95
+- distinct episode ids: 118
 
 ## G. Skill lifecycle vs the episode stream
 
-- registry total: 86
-- live verified (>=1 production success): **54**
-- only ever failed: 7
-- never executed: 25
+- registry total: 87
+- live verified (>=1 production success): **58**
+- only ever failed: 8
+- never executed: 21
 
 Never executed skills:
 
 - `CANCEL_DUPLICATE_TARGET` (VERIFIED)
 - `CHECK_MARCH` (VERIFIED)
-- `CLAIM_FREE_STAMINA` (CANDIDATE)
 - `CLAIM_REWARD` (CANDIDATE)
 - `DISMISS_ALLIANCE_GENERIC_REWARD` (CANDIDATE)
-- `DISMISS_EXPLORATION_REWARD` (VERIFIED)
 - `JOIN_RALLY` (CANDIDATE)
 - `NAVIGATE_TO` (CANDIDATE)
-- `OPEN_ALLIANCE_GIFTS` (CANDIDATE)
-- `OPEN_STAMINA_SOURCES` (CANDIDATE)
 - `READ_COUNTER` (CANDIDATE)
 - `READ_INTEL_LIST` (CANDIDATE)
 - `READ_TIMER` (CANDIDATE)
@@ -106,7 +102,7 @@ Never executed skills:
 ## H. Capability coverage (rebuilt model)
 
 - model: Goal -> Canonical Capability -> Registered Skill -> Production Evidence
-- generated: 2026-09-14T23:34:38.553944+00:00 (0.0 days ago)
+- generated: 2026-09-15T07:54:21.181763+00:00 (0.0 days ago)
 - FULLY_LIVE_VERIFIED: 2 / 16
 - PARTIAL: 8  NEVER_TRIED: 0  BLOCKED: 4  DEGRADED: 2
 - mean implementation coverage: 0.54

@@ -121,6 +121,21 @@
   vision 读 `status=BLOCKED`（推荐战力 189M，账上远不够），卡上只有 `前往查看` 无领取按钮，
   brain 正确走 `BACK`（`reason=intel_master_bounty_power_blocked`，verifier ok，未花体力）。
   这类 pin 会长期占着地图，**别把它当成"任务失败"反复重试**；战力达标前它不可动作。
+- **BLOCKED 大师悬赏 pin 会毒化整轮 nav（2026-09-15 17:20 实跑）。** 点开它之后客户端被留在
+  `BEAST` 页；`run_live.py --goal INTEL` 面对 INTEL-blocked 的 BEAST 页直接判 `beast_not_actionable`
+  并在 **1 步 / 3.5s 内退出**——既不点返回也不去情报页，**不报错、只是"正常"退出**。
+  于是 `run_intel_pins.py` 的 nav cycle 空转 3 次撞上限 `STOP`，剩余 pin 预算作废。
+  这与「游离模态挡路」不同：模态会让 nav run 显式失败，这个只会静默空转。
+  正解方向：INTEL 目标在 BEAST 页见到 `intel.status == BLOCKED` 时先 BACK 回地图再继续。
+  ✅ **已修（2026-09-15 18:0x，id `0az`）**：修法与你写下的方向一致 —— 先**测量**落点
+  （`tools/probe_back_from_beast.py` 在真机那张卡上按一次 BACK ⇒ 落到 `MAP`，体力恢复可读 110），
+  再在 `brain.py` 的 `Page.BEAST` 非可行动分支加 `BACK` 出路（`beast_card_not_actionable_leaving_the_page`），
+  并用一次性守卫 `beast_card_not_actionable_left` 防止 BACK 没生效时卡↔图乒乓；
+  `verify_safe_back` 正好接受该转移。条件比 `intel.status == BLOCKED` **更宽也更稳**：
+  触发条件是「这张卡在屏幕上但没有任何可行动作」（`available` 假值），不依赖情报字段。
+  ⚠ 修好后**整链尚未真机跑过**（当时客户端已被测量探针挪到 MAP），目前是「落点已测量 + 单测 9 项」。
+- **`DISMISS_DAILY_REWARD` 的 `DAILY_REWARD_ADVANCE_NOT_PROVEN` 是未归因失败**（2026-09-15 09:23:24）：
+  情报领奖后的弹窗关闭未被 verifier 证明，会把该 cycle 的 exit_code 顶成 2，但不阻断产出。
 
 ### 外部状态
 - **automation / connector / MCP / 真机这类"外部状态"，写进 handoff 之前必须用对应接口查一次。**

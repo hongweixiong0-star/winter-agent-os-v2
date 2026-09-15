@@ -1,0 +1,170 @@
+{
+  "generated_at": "2026-09-15T09:38:19+00:00",
+  "pins_processed": 3,
+  "pins_skipped": 0,
+  "dispatches": 4,
+  "claims": 10,
+  "per_pin": [
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.6181,
+        0.3984
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 2,
+      "stop_reason": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
+      "steps": 12,
+      "dispatches": 1,
+      "claims": 2,
+      "productive_steps": [
+        "INTEL_CLAIM_REWARDS",
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 184,
+      "elapsed_s": 144.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_pin_00"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.6167,
+        0.3984
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 0,
+      "stop_reason": "MAX_ACTIONS_REACHED",
+      "steps": 14,
+      "dispatches": 0,
+      "claims": 1,
+      "productive_steps": [
+        "INTEL_HERO_DISPATCH",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 175,
+      "elapsed_s": 162.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_pin_01"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "INTEL_BEAST_TARGET_NOT_PROVEN",
+      "steps": 7,
+      "dispatches": 0,
+      "claims": 1,
+      "productive_steps": [
+        "INTEL_HERO_DISPATCH",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 166,
+      "elapsed_s": 94.3,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_nav_02"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "MAX_ACTIONS_REACHED",
+      "steps": 14,
+      "dispatches": 1,
+      "claims": 2,
+      "productive_steps": [
+        "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "INTEL_CLAIM_REWARDS",
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 14,
+      "elapsed_s": 147.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_nav_02"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "MAX_ACTIONS_REACHED",
+      "steps": 14,
+      "dispatches": 1,
+      "claims": 2,
+      "productive_steps": [
+        "INTEL_HERO_DISPATCH",
+        "INTEL_CLAIM_REWARDS",
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 124,
+      "elapsed_s": 162.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_nav_02"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.2931,
+        0.5172
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 0,
+      "stop_reason": "MAX_ACTIONS_REACHED",
+      "steps": 14,
+      "dispatches": 0,
+      "claims": 1,
+      "productive_steps": [
+        "INTEL_HERO_DISPATCH",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 115,
+      "elapsed_s": 147.7,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_pin_02"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "INTEL_BEAST_TARGET_NOT_PROVEN",
+      "steps": 6,
+      "dispatches": 1,
+      "claims": 1,
+      "productive_steps": [
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 105,
+      "elapsed_s": 76.0,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_nav_03"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "beast_not_actionable",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 3.6,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_nav_03"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "beast_not_actionable",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 3.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_092119_nav_03"
+    }
+  ]
+}

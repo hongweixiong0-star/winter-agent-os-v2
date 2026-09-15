@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-09-15T09:56:34+00:00",
+  "pins_processed": 0,
+  "pins_skipped": 0,
+  "dispatches": 0,
+  "claims": 0,
+  "per_pin": [
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "beast_not_actionable",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 5.4,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_095605_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "beast_not_actionable",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 5.4,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_095605_nav_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "beast_not_actionable",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 5.4,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_095605_nav_00"
+    }
+  ]
+}

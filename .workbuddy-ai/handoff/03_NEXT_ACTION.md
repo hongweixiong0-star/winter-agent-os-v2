@@ -51,16 +51,23 @@ nav 三条都是 `steps=1 / elapsed_s=5.4`）。
 
 ### 5. 下一步（按价值排序）
 
-1. **`0ax` 的红色臂真机验证**。目前真机只验了「付得起」一侧（闸门不触发、出征照常）。
-   要拿到红色臂，需要体力 < 花费（10）时站在编队页。**最省的做法**：等某次自动化跑到
-   体力低位、又正好停在编队页时，直接从 episode 里取证；**不要**为了造这个状态去花体力。
-2. **`0az` 的真机复验**：让客户端故意停在一张 BLOCKED 卡上，再跑
-   `run_live.py --goal INTEL --max-actions 4`，期望**第 1 步是 `BACK` → MAP** 而不是 `SAFE_STOP`。
-   （本轮已拿到 BACK 落点的测量，但**修复后**的整链真机尚未跑过。）
-3. **`0aw` 的同族排查**：本轮把「调用了不存在的方法」变成了机器可查。
-   `check_wiring.py` 现在每次都会跑这两条 AST 检查，**若它报 miss，先看是不是又一处脏树残留**。
-4. **72h Soak 仍未开始** —— 随着 `0az` 这类静默死结被清除，它才真正有意义。
-5. `0al`（账号上 ~1007 个 +10 体力道具）仍需**操作者决策**，本轮未动代码。
+1. **`0ba`（新）—— 把第 3 个子成因也拆干净**。`SELECT_INTEL_PIN` 在「每个检测到的 pin
+   都已在 40px 内点过」时**刻意返回 `None`**（`runtime.resolve()` 的注释明写是为了不在已消费的
+   pin 上循环），但执行器把它记成 `SEMANTIC_TARGET_NOT_VERIFIED` —— 与 `0ax` **同一类错误**。
+   真机证据：`evidence/intel_pins_20260915_100034.json` 里 2 条 `page=INTEL→None` 的失败，
+   同一次运行还有 `SELECT_INTEL_PIN → BACK → SELECT_INTEL_PIN(FAIL)` 的白烧往返。
+   **修法照抄 `0ax` 的做法**：让大脑在情报页知道「无可行动 pin」时不要选 `SELECT_INTEL_PIN`，
+   给出诚实的停止理由；不要让解析器返回 `None`。
+2. **`0az` 的真机复验**：把客户端故意停在 BLOCKED 卡上，再跑
+   `run_live.py --goal INTEL --max-actions 4`，期望**第 1 步是 `BACK` → MAP**。
+   本轮只拿到了 BACK 落点的测量（BEAST→MAP，体力 110），**修复后的整链尚未真机跑过**。
+3. **`0ax` 的红色臂真机验证**。真机目前只验了「付得起」一侧。
+   最省的做法是等某次自动化跑到体力低位又正好停在编队页时**从 episode 里取证**，
+   **不要**为了造这个状态去花体力。
+4. **`0aw` 的同族排查**：`check_wiring.py` 现在每次都会跑两条 AST 检查；
+   若它报 miss，先看是不是又一处脏树残留。
+5. **72h Soak 仍未开始** —— 随着 `0az` 这类静默死结被清除，它才真正有意义。
+6. `0al`（账号上 ~1007 个 +10 体力道具）仍需**操作者决策**，本轮未动代码。
 
 ---
 
@@ -325,12 +332,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 49 in the last 2 day(s), 116 all-time, last seen 2026-09-15T04:11:16.481273+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 51 in the last 2 day(s), 118 all-time, last seen 2026-09-15T10:02:57.844444+00:00
 LAST GOOD COMMIT: 17c480a
-CURRENT DIRTY FILES: 21
-LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "SUCCESS", "recorded_at": "2026-09-15T08:18:43.253578+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260915T081826852856.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260915T081839756681.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 116, "recent": 49, "last_seen": "2026-09-15T04:11:16.481273+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 4}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T08:18:43.253578+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 28
+LAST PRODUCTION EPISODE: {"skill": "SELECT_INTEL_PIN", "result": "FAILURE", "recorded_at": "2026-09-15T10:02:57.844444+00:00", "episode_id": "intel_pins_20260915_100034_pin_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_100034_pin_00\\intel_pins_20260915_100034_pin_00_step_004_before_20260915T100248439796.png", "after_screenshot": ""}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 118, "recent": 51, "last_seen": "2026-09-15T10:02:57.844444+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 6}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T10:02:57.844444+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

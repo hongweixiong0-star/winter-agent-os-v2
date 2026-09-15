@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-09-15T10:03:23+00:00",
+  "pins_processed": 1,
+  "pins_skipped": 0,
+  "dispatches": 0,
+  "claims": 0,
+  "per_pin": [
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "steps": 4,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": 110,
+      "elapsed_s": 62.3,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_100034_nav_00"
+    },
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.2931,
+        0.5172
+      ],
+      "card_opened": true,
+      "productive": false,
+      "refusal": null,
+      "exit_code": 2,
+      "stop_reason": "SEMANTIC_TARGET_NOT_VERIFIED",
+      "steps": 4,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 50.1,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_100034_pin_00"
+    }
+  ]
+}
