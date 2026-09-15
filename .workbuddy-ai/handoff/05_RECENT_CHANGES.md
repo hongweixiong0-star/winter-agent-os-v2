@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `c2908ad 2026-09-15T08:08:13+08:00 fix(intel): count mission pins instead of trusting header text; a full board was reported empty`
 - `622fb46 2026-09-14T23:58:16+08:00 docs(handoff): intel refresh countdown is not schedulable; night loop verified`
 - `3cb413e 2026-09-14T23:51:10+08:00 docs(knowledge): correct two intel facts the live client contradicted`
 - `5c4ddd1 2026-09-14T23:13:56+08:00 docs(handoff): the hourly automation did not exist; it is recreated and verified`
@@ -17,21 +18,10 @@ Last 12 commits (newest first):
 - `a218319 2026-09-14T22:15:00+08:00 fix(intel): 探险 from the camp panel opens the squad page, not a beast card`
 - `c03af7d 2026-09-14T22:12:48+08:00 fix(executor): register a routing node template, or every MAA node fails`
 - `e3f3493 2026-09-14T22:08:34+08:00 fix(intel): the hero-journey camp panel is Page.EXPLORATION, not Page.BEAST`
-- `1b7956b 2026-09-14T22:04:40+08:00 fix(executor): MaaFramework screencaps are BGR - convert them to RGB at capture`
 
-Uncommitted changes: 12
-- `M .workbuddy-ai/memory/MEMORY.md`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- `?? .workbuddy/memory/2026-09-15.md`
-- `?? .workbuddy/memory/automations/7c1c18c1-94ca-4051-a2ca-7a1614cb3979/`
-- `?? evidence/intel_loop_20260914_160145.log`
-- `?? evidence/intel_loop_20260914_171035.log`
-- `?? evidence/intel_loop_20260914_223418.log`
-- `?? evidence/intel_pins_20260914_171640.json`
-- `?? evidence/intel_pins_20260914_223903.json`
+Uncommitted changes: 2
+- `M .workbuddy-ai/handoff/.last_good_commit`
+- `?? .workbuddy-ai/handoff/.checkpoints.jsonl`
 <!-- /AUTO:recent_commits -->
 
 ---

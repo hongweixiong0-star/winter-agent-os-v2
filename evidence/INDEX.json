@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-14T23:34:38+00:00",
-  "count": 396,
+  "generated_at": "2026-09-15T00:08:14+00:00",
+  "count": 401,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -143,8 +143,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 72117,
-      "mtime": "2026-09-14T15:57:46+00:00"
+      "bytes": 72946,
+      "mtime": "2026-09-14T23:34:38+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -1275,10 +1275,16 @@
       "mtime": "2026-09-14T06:18:08+00:00"
     },
     {
-      "path": "dataset/truth_audit/intel_beast_target_20260914/03_intel_page_empty_list.png",
+      "path": "dataset/truth_audit/intel_beast_target_20260914/03_intel_page_full_board.png",
       "kind": "fixture",
       "bytes": 1038523,
       "mtime": "2026-09-14T08:00:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/intel_beast_target_20260914/03_intel_page_full_board_annotated.png",
+      "kind": "fixture",
+      "bytes": 933766,
+      "mtime": "2026-09-14T23:53:59+00:00"
     },
     {
       "path": "dataset/truth_audit/intel_beast_target_20260914/provenance.json",
@@ -1303,6 +1309,30 @@
       "kind": "fixture",
       "bytes": 422,
       "mtime": "2026-09-14T08:35:47+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/intel_pin_board_20260915/01_intel_board_5_pins_live.png",
+      "kind": "fixture",
+      "bytes": 885103,
+      "mtime": "2026-09-14T23:36:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/intel_pin_board_20260915/02_intel_board_5_pins_live_annotated.png",
+      "kind": "fixture",
+      "bytes": 885802,
+      "mtime": "2026-09-14T23:37:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/intel_pin_board_20260915/03_map_frame_detector_false_positives.png",
+      "kind": "fixture",
+      "bytes": 783512,
+      "mtime": "2026-09-14T23:36:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/intel_pin_board_20260915/04_map_frame_detector_false_positives_annotated.png",
+      "kind": "fixture",
+      "bytes": 706757,
+      "mtime": "2026-09-14T23:36:20+00:00"
     },
     {
       "path": "dataset/truth_audit/level_label.png",

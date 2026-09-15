@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-09-15T00:14:44+00:00",
+  "pins_processed": 1,
+  "pins_skipped": 0,
+  "dispatches": 3,
+  "claims": 4,
+  "per_pin": [
+    {
+      "pin": "ORANGE",
+      "tap": [
+        0.4792,
+        0.2172
+      ],
+      "card_opened": true,
+      "productive": true,
+      "refusal": null,
+      "exit_code": 0,
+      "stop_reason": "MAX_ACTIONS_REACHED",
+      "steps": 14,
+      "dispatches": 2,
+      "claims": 2,
+      "productive_steps": [
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS",
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 26,
+      "elapsed_s": 143.5,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_000822_pin_00"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 0,
+      "stop_reason": "MAX_ACTIONS_REACHED",
+      "steps": 14,
+      "dispatches": 1,
+      "claims": 2,
+      "productive_steps": [
+        "DISPATCH_INTEL_BEAST",
+        "INTEL_CLAIM_REWARDS",
+        "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "INTEL_CLAIM_REWARDS"
+      ],
+      "stamina_after": 16,
+      "elapsed_s": 154.4,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_000822_nav_01"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "INTEL_BEAST_MARCH_NOT_PROVEN",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 32.8,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_000822_nav_01"
+    },
+    {
+      "pin": null,
+      "note": "navigation cycle",
+      "exit_code": 2,
+      "stop_reason": "goal_page_mismatch",
+      "steps": 1,
+      "dispatches": 0,
+      "claims": 0,
+      "productive_steps": [],
+      "stamina_after": null,
+      "elapsed_s": 10.7,
+      "capture_dir": "dataset/raw/control_panel/runtime_auto/intel_pins_20260915_000822_nav_01"
+    }
+  ]
+}

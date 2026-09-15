@@ -8,21 +8,21 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-14T23:34:38+00:00
-LAST GOOD COMMIT: f8e145f
-WORKING TREE: 12 dirty file(s)
-  ['M .workbuddy-ai/memory/MEMORY.md', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', '?? .workbuddy/memory/2026-09-15.md', '?? .workbuddy/memory/automations/7c1c18c1-94ca-4051-a2ca-7a1614cb3979/', '?? evidence/intel_loop_20260914_160145.log', '?? evidence/intel_loop_20260914_171035.log', '?? evidence/intel_loop_20260914_223418.log']
+HANDOFF TIME: 2026-09-15T00:08:13+00:00
+LAST GOOD COMMIT: c2908ad
+WORKING TREE: 2 dirty file(s)
+  ['M .workbuddy-ai/handoff/.last_good_commit', '?? .workbuddy-ai/handoff/.checkpoints.jsonl']
 
-WHAT FINISHED (machine-visible): 27 skills live verified, 19 stable, 46 commit(s) in history
+WHAT FINISHED (machine-visible): 27 skills live verified, 19 stable, 47 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
-WHAT NOT VERIFIED: 25 skills never executed, 8 never succeeded
+WHAT NOT VERIFIED: 26 skills never executed, 8 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=DEGRADED stop_reason=intel_not_available
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-14T22:46:42.153375+00:00", "episode_id": "manual_pin_20260914_224900", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_before_20260914T224631885532.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_after_20260914T224634142577.png"}
+STOPPED AT: agent_state=DEGRADED stop_reason=STAMINA_SOURCES_NOT_OPEN
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T23:37:22.332132+00:00", "episode_id": "repro_intel_073638", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_before_20260914T233640944691.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_after_20260914T233654787876.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 12
+DIRTY FILES: 2
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 

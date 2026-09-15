@@ -71,7 +71,7 @@ def p0_registry() -> SkillRegistry:
         Skill("SELECT_INTEL_PIN", "Tap the next untried Intel mission pin so its card opens and its mission type can be read",
               Page.INTEL,
               Action("TAP_SEMANTIC", "INTEL_PIN"),
-              state=SkillState.CANDIDATE,
+              state=SkillState.VERIFIED,
               verifier="INTEL_PIN_OPENED", recovery=("BACK",),
               semantic_goal="Work an intel mission whose type is not yet known",
               parameters=(), context=("WORLD",),

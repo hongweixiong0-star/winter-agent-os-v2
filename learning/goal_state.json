@@ -1,52 +1,7 @@
 {
-  "observed_at": "2026-09-14T23:37:21.900817+00:00",
-  "written_at": "2026-09-14T23:37:22.331146+00:00",
-  "page": "INTEL",
+  "observed_at": "2026-09-15T00:14:33.498223+00:00",
+  "written_at": "2026-09-15T00:14:34.527894+00:00",
+  "page": "ALLIANCE",
   "confidence": 0.98,
-  "goals": [
-    {
-      "goal_id": "CLEAR_INTEL",
-      "status": "COMPLETE",
-      "completion": 1.0,
-      "remaining_seconds": null,
-      "reward_value": 300,
-      "daily_loss": 500,
-      "event_synergy": 0.0,
-      "development_value": 0.0,
-      "resource_cost": 0.0,
-      "risk": 0.0,
-      "available_skills": [
-        "INTEL_CLAIM_REWARDS",
-        "SELECT_INTEL_BEAST_MISSION",
-        "SELECT_INTEL_RESCUE_SURVIVORS"
-      ],
-      "retry_after": null,
-      "evidence": {
-        "status": "NOT_AVAILABLE"
-      },
-      "priority": null
-    },
-    {
-      "goal_id": "AVOID_STAMINA_WASTE",
-      "status": "READY",
-      "completion": 0.0,
-      "remaining_seconds": null,
-      "reward_value": 100,
-      "daily_loss": 45,
-      "event_synergy": 0.0,
-      "development_value": 0.0,
-      "resource_cost": 0.0,
-      "risk": 0.0,
-      "available_skills": [
-        "INTEL_CLAIM_REWARDS",
-        "BEAST_HUNT"
-      ],
-      "retry_after": null,
-      "evidence": {
-        "current": 39,
-        "threshold": 30
-      },
-      "priority": 145.0
-    }
-  ]
+  "goals": []
 }

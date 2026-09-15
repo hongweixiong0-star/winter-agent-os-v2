@@ -1,30 +1,20 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-14T23:34:38+00:00`
+- generated_at: `2026-09-15T00:08:13+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `622fb46` on `main`
+- commit: `c2908ad` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
 ## A. Version control
 
 - repository: yes
-- last good commit: `f8e145f`
-- commits: 46
-- HEAD: `622fb46` — docs(handoff): intel refresh countdown is not schedulable; night loop verified (2026-09-14T23:58:16+08:00)
-- working tree: 12 dirty file(s)
-  - `M .workbuddy-ai/memory/MEMORY.md`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - `?? .workbuddy/memory/2026-09-15.md`
-  - `?? .workbuddy/memory/automations/7c1c18c1-94ca-4051-a2ca-7a1614cb3979/`
-  - `?? evidence/intel_loop_20260914_160145.log`
-  - `?? evidence/intel_loop_20260914_171035.log`
-  - `?? evidence/intel_loop_20260914_223418.log`
-  - `?? evidence/intel_pins_20260914_171640.json`
-  - `?? evidence/intel_pins_20260914_223903.json`
+- last good commit: `c2908ad`
+- commits: 47
+- HEAD: `c2908ad` — fix(intel): count mission pins instead of trusting header text; a full board was reported empty (2026-09-15T08:08:13+08:00)
+- working tree: 2 dirty file(s)
+  - `M .workbuddy-ai/handoff/.last_good_commit`
+  - `?? .workbuddy-ai/handoff/.checkpoints.jsonl`
 
 ## B. Runtime
 
@@ -33,24 +23,24 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: intel_not_available
+- stop_reason: STAMINA_SOURCES_NOT_OPEN
 - page: INTEL  march: None/None
-- updated_at: 2026-09-14T22:46:50.270541+00:00
+- updated_at: 2026-09-14T23:37:22.345482+00:00
 
 ## C. Episode stream
 
-- rows: 1003 (production 1003)  modes: {'PRODUCTION': 1003}
-- success / failure: 690 / 308
-- success rate over decided: **0.6914**
+- rows: 1004 (production 1004)  modes: {'PRODUCTION': 1004}
+- success / failure: 690 / 309
+- success rate over decided: **0.6907**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-14T22:46:42.153375+00:00", "episode_id": "manual_pin_20260914_224900", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_before_20260914T224631885532.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_after_20260914T224634142577.png"}`
+- last episode: `{"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T23:37:22.332132+00:00", "episode_id": "repro_intel_073638", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_before_20260914T233640944691.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_after_20260914T233654787876.png"}`
 
 ## D. Registry and lifecycle
 
-- registry total: 86  by_state: {'VERIFIED': 44, 'CANDIDATE': 40, 'BLOCKED': 2}
-- live dispatchable (verifier-backed): 68
+- registry total: 87  by_state: {'VERIFIED': 44, 'CANDIDATE': 41, 'BLOCKED': 2}
+- live dispatchable (verifier-backed): 69
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **27**  stable: 19  degraded: 9  only_failed: 8  never_executed: 25
+- live_verified: **27**  stable: 19  degraded: 9  only_failed: 8  never_executed: 26
 
 ### Never executed
 
@@ -72,6 +62,7 @@
 - `REINFORCE_TARGET` (CANDIDATE)
 - `RELAX_RESOURCE_LEVEL` (CANDIDATE)
 - `SELECT_INFANTRY_CAMP` (CANDIDATE)
+- `SELECT_INTEL_PIN` (CANDIDATE)
 - `SELECT_INTEL_RESCUE_SURVIVORS` (VERIFIED)
 - `SELECT_MARCH_TO_RECALL` (CANDIDATE)
 - `SELECT_REWARD_OPTION` (CANDIDATE)
@@ -105,7 +96,7 @@
 - `OPEN_DAILY` success=5 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
 - `OPEN_HOME` success=20 rate=0.8696
-- `OPEN_INTEL` success=74 rate=0.8706
+- `OPEN_INTEL` success=74 rate=0.8605
 - `OPEN_INTEL_BEAST_TARGET` success=25 rate=0.9259
 - `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=6 rate=1.0
 - `OPEN_MAP` success=25 rate=0.9259
@@ -134,8 +125,8 @@ Failure | Count | Top skills
 `RESOURCE_NOT_FOUND` | 30 | SUBMIT_RESOURCE_SEARCH(30)
 `DISPATCH_NOT_PROVEN` | 29 | DISPATCH_MARCH(29)
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | MAIL_CLAIM_REWARDS(10)
+`STAMINA_SOURCES_NOT_OPEN` | 8 | OPEN_INTEL(8)
 `INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | INTEL_HERO_DISPATCH(8)
-`STAMINA_SOURCES_NOT_OPEN` | 7 | OPEN_INTEL(7)
 `INTEL_RESCUE_START_NOT_PROVEN` | 6 | EXECUTE_INTEL_RESCUE_SURVIVORS(6)
 `POPUP_CLOSE_NOT_PROVEN` | 5 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1)
 `NO_EXECUTION` | 4 | SAFE_STOP(4)
@@ -167,9 +158,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 530  present: 530
+- referenced screenshots: 532  present: 532
 - missing: []
-- episodes carrying screenshot references: 271
+- episodes carrying screenshot references: 272
 
 ## H. Commercial bot parity
 

@@ -93,22 +93,37 @@
   **只被 `tools/run_intel_pins.py` 调用，没接进生产 vision/OCR 路径**。
   ⇒ 正解：INTEL 可用性判据改成 **pin 计数**（`pins>0 ⇒ AVAILABLE/available_count=N`）；
   `NOT_AVAILABLE` 只允许由"pin 数为 0"或逐 pin 证据支撑，**禁止由表头文字推导**。
-- 闸门现状（2026-09-15 01:30）：正样本 **≥4 张独立真机帧**（08:28Z run6 + 17:10/17:12/17:14Z 本轮三张）
-  外加 8 条 pin 级 `card_opened` 记录 ⇒ 正样本已够；
-  **负样本（真正空板帧）仍未确立**——`intel_pins_*.json` 里 6 个 `processed=0` 的会话
-  更可能是导航失败，**不可当负样本**。故仍 `PROMOTION BLOCKED`，本次未改生产代码。
+- **闸门已解除，修复已上线（2026-09-15 08:xx GMT+8）。** 上一轮卡在「负样本未确立」，
+  但真相是：**那个"负样本"是错标的正样本**。项目里唯一被当成"空情报板"的帧
+  `dataset/truth_audit/intel_beast_target_20260914/03_intel_page_empty_list.png`
+  实测是**满板 13 个 pin**（体力 305、`下次刷新:07:59:21`），而且上一轮还写了一个
+  断言 `status == "NOT_AVAILABLE"` 的测试 —— **把 bug 写成了测试**。
+  已重命名为 `03_intel_page_full_board.png`（保留不删），两个测试改写为正确行为。
+  ⇒ **本项目至今没有任何经过验证的「空情报板」帧**；`NOT_AVAILABLE` 只能由
+  「pin 检测器一个都没看到」到达。**教训：所谓"负样本"必须先肉眼复核，不能靠 OCR 文字推断。**
+  修复后同一张真机帧：`NOT_AVAILABLE/available_count=0` → `AVAILABLE/pins=5`；
+  `SELECT_INTEL_PIN` 真机 4 次执行 4 次 SUCCESS（含 `EXECUTE_INTEL_RESCUE_SURVIVORS` 链路）。
+- **自动化 / 外部状态必须用接口复核，且这条已经复发第二次（2026-09-15 接手时）。**
+  三份 handoff 都写着「常驻自动化 id `7c1c18c1-…`（ACTIVE，每小时）」，
+  而自动化接口 `list` 返回**空数组**（磁盘上只剩 `.workbuddy/memory/automations/<id>/memory.md`）。
+  与第九轮 `0o` 完全同型 ⇒ **两次记录都不可信，两次都等于"没有任何无人值守在跑"**。
+  已重建 `e3485d0c-1b51-48a4-880c-c01fe0fdec19`（ACTIVE，每小时），并用 `list` 复核存在。
+  **规则：automation / connector / MCP / 真机这类"外部状态"，写进 handoff 之前必须用对应接口查一次。**
+  另一个坑：`list` 为空时磁盘上的 `memory.md` 还在，**看目录会误判为"存在"**。
 - **体力读数的可信面**：只采信**情报页表头**读数（`run_intel_pins.intel_stamina()` 的 0.78/0.015/0.16/0.04 ROI）。
   同一轮里 nav cycle 报出的 16 / 36 是地图 HUD 体力条在浮层下的已知误读，**不要用于记账**。
   逐 pin 会话里最稳的序列是 episodes 中 `OPEN_INTEL` 的 `intel.stamina`（表头 OCR，conf 0.999）。
-- **pin 计数本身也会假零：`intel_pin_centers()` 的长宽比闸门漏检"带光晕"的橙 pin（2026-09-15 实测）。**
-  闸门是 `h>=60 and w>=40 and 0.65 <= w/h <= 1.3 and fill>=0.30`。
-  收尾帧上还剩 1 个橙色巨兽 pin，blob 实测
-  `ORANGE area 4575 w 87 h 136 ratio 0.64 fill 0.39 bbox (170,606,256,741)` —— **0.64 < 0.65，差 0.01 被丢**。
-  根因：橙 pin 的**光晕把 blob 向下拉长**（h 136，本体 ~90）→ 比例跌破下限。
-  已有 **2 张独立正样本**（06:35 与 06:47 GMT+8 的两帧，同一块光晕橙 pin 均漏检）。
-  ⇒ **`run_intel_pins.py` 打出的 "no actionable pins left" 同样不是"板空"的证据**，
-  先分清是"检测为 0"还是"点开后被判无动作"。修法：比例下限放到 ~0.5，或先剥离光晕再量本体高度。
-  负样本（真正空板帧）尚未确立，仍 `PROMOTION BLOCKED`，不改生产代码。
+- **pin 计数的假零已修（2026-09-15）：长宽比下限 0.65 → 0.5。**
+  根因是橙 pin 的**光晕把 blob 向下拉长**（本体 ~90px，blob 到 137–167px）→ 比例跌破下限。
+  实测跨度 **0.521–0.644**（0.521 出现在满板帧上），闸门现在是
+  `h>=60 and w>=40 and 0.5 <= w/h <= 1.3 and fill>=0.30`。
+  语料核对（22 帧）：降下限后**每块板只多收那一个光晕橙 pin，其余 16 帧零新增**。
+  ⇒ **`run_intel_pins.py` 打出的 "no actionable pins left" 不是"板空"的证据**，
+  先分清是"检测为 0"还是"点开后被判无动作"。**0.5 的余量已经很小**，
+  更稳健的解法是**剥离光晕后量本体高度**（而不是继续降阈值）。
+  另外：`intel_pin_centers()` 在 **MAP 帧上会误报**（右侧 HUD 圆形按钮被当成 pin，4 个 BLUE），
+  所以它**必须按页面门控**——生产里只在 `page == INTEL` 时调用。
+  证据：`dataset/truth_audit/intel_pin_board_20260915/`（含 MAP 误报对照帧）。
 - **大师悬赏（INTEL_MASTER_BOUNTY）是长期阻断项**：2026-09-15 点开「大师悬赏：20号」，
   vision 读 `status=BLOCKED`（推荐战力 189M，账上远不够），卡上只有 `前往查看` 无领取按钮，
   brain 正确走 `BACK`（`reason=intel_master_bounty_power_blocked`，verifier ok，未花体力）。

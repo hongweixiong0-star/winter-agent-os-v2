@@ -11,9 +11,9 @@ CURRENT TASK: implement `CHECK_ALLIANCE_EVENT` — missing from the registry, bl
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED x112
-LAST GOOD COMMIT: f8e145f
-CURRENT DIRTY FILES: 12
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-14T22:46:42.153375+00:00", "episode_id": "manual_pin_20260914_224900", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_before_20260914T224631885532.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\manual_pin_20260914_224900\\manual_pin_20260914_224900_step_001_after_20260914T224634142577.png"}
+LAST GOOD COMMIT: c2908ad
+CURRENT DIRTY FILES: 2
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL", "result": "FAILURE", "recorded_at": "2026-09-14T23:37:22.332132+00:00", "episode_id": "repro_intel_073638", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_before_20260914T233640944691.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\repro_intel_073638\\repro_intel_073638_step_001_after_20260914T233654787876.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 112, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
@@ -33,7 +33,60 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 
 本区由人维护。生成器不会碰它。写「为什么是这个任务」以及「坑在哪」。
 
-### 【最新 2026-09-14 21:1x】MAA 已进入生产执行路径 —— 下一轮做什么
+### 【最新 2026-09-15 08:xx GMT+8】情报可用性假阴性已修 + 真机验证 + 自动化重建 —— 读这一节
+
+**本轮真实改进（Before → After，同一张真机帧）**
+
+```
+Before  {"status": "NOT_AVAILABLE", "available_count": 0, "list_read": true}
+After   {"status": "AVAILABLE",     "available_count": 5, "pins": 5, "list_read": true}
+```
+
+根因链（真机复现 07:36）：`run_live.py --goal INTEL` 打开情报页 → 生产视觉报 NOT_AVAILABLE
+→ `goal_library.py:71` 把它映射成 `CLEAR_INTEL = COMPLETE` → **AUTO 静默停止，exit 0 像成功**。
+同一帧肉眼可见 **5 个任务 pin**（2 紫 / 2 蓝 / 1 橙），其中橙 pin 还被比例闸门漏掉。
+
+改动（增量，无新架构）：`intel_pins.py` 比例下限 0.65→0.5；`ocr.py` 情报页 UNKNOWN 时
+**先数 pin，`pins>0 ⇒ AVAILABLE`**，无 pin 才落回原表头规则；新增 `SELECT_INTEL_PIN`
+（`skills.py` + `runtime.py` 的 `INTEL_PIN` 解析与去重 + `verifier.py::verify_intel_pin_opened`
++ `brain.py` 分支，排在 `READ_INTEL_LIST` 之前）。
+
+**Live Evidence**：`tools/run_intel_pins.py 8`（6m22s，exit 0，`evidence/intel_pins_20260915_000822.json`）
+- `SELECT_INTEL_PIN` **4 次执行 / 4 次 SUCCESS**（verifier PASS）⇒ LIVE_VERIFIED（attempts=4）。
+- 连带真实产出：`DISPATCH_INTEL_BEAST` ×3、`EXECUTE_INTEL_RESCUE_SURVIVORS` ×1、`INTEL_CLAIM_REWARDS` ×4；
+  体力 39 → 26 → 16。**救援任务在上一版是永远看不到的**（模板层不认那个 pin）。
+- 全量测试 `422 passed, 7 skipped`；`check_wiring.py` = `problems: 0`；checkpoint `c2908ad`。
+
+**⚠ 本轮推翻的一个前提：项目唯一的"空情报板"参考帧是错标。**
+`dataset/truth_audit/intel_beast_target_20260914/03_intel_page_empty_list.png`
+实测是**满板 13 个 pin**（体力 305、`下次刷新:07:59:21`），上一轮还写了断言 `NOT_AVAILABLE` 的测试
+（把 bug 写成了测试）。已重命名为 `03_intel_page_full_board.png`（保留不删），两个测试改写。
+⇒ **本项目至今没有任何经过验证的「空情报板」帧**；`NOT_AVAILABLE` 只能由「pin 检测器一个都没看到」到达。
+以后**别再用它当负样本**，也**别再把"等负样本"当作不改判据的理由**。
+
+**⚠ P0 复发：自动化接口 `list` 返回空。** handoff 三次声称的 id `7c1c18c1-…` 查不到
+（磁盘上 `memory.md` 还在，看目录会误判为存在）⇒ 当时**没有任何无人值守在跑**。
+已重建 **`e3485d0c-1b51-48a4-880c-c01fe0fdec19`**（ACTIVE，每小时，cwds=`E:\无尽冬日智能体`），
+payload 换成真机有效的 `tools/run_intel_pins.py`，并**用 `list` 复核存在**。
+
+**下一轮按此顺序（按失败影响 × 频率 × 可修性排序）**
+
+1. **`INTEL_BEAST_START_MARCH` 的 verifier 写死了任务等级**（`INTEL_BEAST_10`→22、`INTEL_FIREBEAST_10`→20）。
+   `SELECT_INTEL_PIN` 现在会点开**未复核**的 pin，于是可能打开其他等级的巨兽任务 →
+   本轮 00:14:13 出现 `INTEL_BEAST_MARCH_NOT_PROVEN`（同轮前两次同技能 SUCCESS）。
+   这是本轮**唯一新增失败**，且直接限制了刚拿到的能力。先查那一帧实际等级，再决定放宽 verifier
+   还是按 `mission_id` 分派。证据：`dataset/raw/control_panel/runtime_auto/intel_pins_20260915_000822_nav_01/`。
+2. **光晕 pin 的稳健化**：比例下限 0.5 的余量只剩 0.021（实测跨度 0.521–0.644）。
+   正解是**剥离光晕后量本体高度**，不是继续降阈值。
+3. **`START_GATHER`（=OPEN_MARCH_PAGE）的 MAA 端到端**：94 次真机 37% 成功，
+   是注册表里最差的高频 skill；识别节点已测通（3/3 正、0/5 负）但**从未真机端到端**。
+4. **`run_intel_pins.py` 的导航周期语义**：它现在**会做真实工作**却仍记成 `"navigation cycle"`，
+   且连续 3 次导航周期后无条件停止（本轮 nav_01 有产出，之后 2 次失败即停）。
+5. 72h Soak 仍未开始。
+
+---
+
+### 【上一轮 2026-09-14 21:1x】MAA 已进入生产执行路径 —— 下一轮做什么
 
 先读 `docs/AVAILABLE_TOOLING.md`（工具清单）与 `docs/EXECUTOR_REALITY_AUDIT.md`
 （每个 skill 现在真实走哪条后端）。**这是本轮最重要的两个新增文件。**
