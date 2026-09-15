@@ -144,6 +144,13 @@
   ⇒ **两次记录都不可信，两次都等于"没有任何无人值守在跑"**。已重建
   `e3485d0c-1b51-48a4-880c-c01fe0fdec19`（ACTIVE，每小时）并用 `list` 复核存在。
   另一个坑：`list` 为空时磁盘上的 `memory.md` 还在，**看目录会误判为"存在"**。
+- **反向的坑：把"人为停用"误判成"又丢了"（2026-09-15 18:37）。**
+  `43aef0ad-d5bc-4d79-9291-0a4da0b0dc27`「Winter V2 情报循环（每小时）」曾被生产证据证明**真的在跑**
+  （`evidence/intel_pins_20260915_092119.json`：`dispatches=4 claims=10` + 81 条 episode），
+  随后**操作者主动要求取消**，已置 `PAUSED` 并复核。
+  ⇒ 判断自动化时**必须分三种状态**：① `ACTIVE` 且在产出 → 正常；② `ACTIVE` 但无产出 → `0ap` 那个病；
+  ③ `PAUSED` → **人为停用，不是故障**。看不到新 episode 时**先查 status**，
+  不要一律当故障去重建（重建会覆盖操作者的意图）。恢复只需把 status 置回 `ACTIVE`，id 与 prompt 都还在。
 
 ## 环境
 - **入口**：先读 `START_HERE.md`（根目录），它会指向 `.workbuddy-ai/handoff/`。
