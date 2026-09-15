@@ -9,12 +9,16 @@ runtime reads.
 
 from __future__ import annotations
 
+import ast
+import builtins
 import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+
+PKG = ROOT / "winter_agent_v2"
 
 problems: list[str] = []
 
@@ -23,6 +27,229 @@ def check(label: str, condition: bool, detail: str = "") -> None:
     print(("OK   " if condition else "MISS "), label, detail)
     if not condition:
         problems.append(label)
+
+
+# ---------------------------------------------------------------------------
+# Static "does this call site resolve to a definition anymore" analysis.
+#
+# Motivation (failure 0aw, 2026-09-15): HybridVision.observe called
+# `self._next_supply_seconds(...)`, a method that existed on no class.  Because
+# the call is syntactically valid Python, every gate passed -- import, pytest,
+# and this file -- and the AttributeError would only have fired at runtime on
+# the GET_MORE_STAMINA panel, which is the only path to the free stamina gift.
+#
+# So "a method is called" must not be conflated with "the method exists".  This
+# walks the AST of every module in the package and flags call sites that cannot
+# resolve to a definition.  It is deliberately conservative: an unresolvable
+# name is reported, never silently accepted, but the name-only fallback for
+# cross-module bases means we prefer a false alarm over a false negative.
+# ---------------------------------------------------------------------------
+
+_COMMON_DUNDERS = frozenset(
+    {
+        "__init__",
+        "__enter__",
+        "__exit__",
+        "__repr__",
+        "__str__",
+        "__eq__",
+        "__ne__",
+        "__hash__",
+        "__len__",
+        "__iter__",
+        "__next__",
+        "__contains__",
+        "__getitem__",
+        "__setitem__",
+        "__delitem__",
+        "__call__",
+        "__bool__",
+        "__format__",
+        "__lt__",
+        "__le__",
+        "__gt__",
+        "__ge__",
+    }
+)
+
+
+def _parse_package() -> dict[str, ast.Module]:
+    trees: dict[str, ast.Module] = {}
+    for path in sorted(PKG.glob("*.py")):
+        try:
+            trees[path.stem] = ast.parse(path.read_text(encoding="utf-8"))
+        except SyntaxError as exc:  # pragma: no cover - surfaced as a miss
+            print("SYNTAX_ERROR", path.name, exc)
+            problems.append(f"parse:{path.name}")
+    return trees
+
+
+def _definitions() -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    """Return (class-name -> method-names, module -> module-level function names)."""
+    trees = _parse_package()
+    class_methods: dict[str, set[str]] = {}
+    module_funcs: dict[str, set[str]] = {}
+    for mod, tree in trees.items():
+        funcs = {
+            node.name
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        module_funcs[mod] = funcs
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef):
+                methods = {
+                    item.name
+                    for item in node.body
+                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+                }
+                class_methods.setdefault(node.name, set()).update(methods)
+    return class_methods, module_funcs
+
+
+def _base_names(cls: ast.ClassDef) -> list[str]:
+    out: list[str] = []
+    for base in cls.bases:
+        if isinstance(base, ast.Name):
+            out.append(base.id)
+        elif isinstance(base, ast.Attribute):
+            out.append(base.attr)
+    return out
+
+
+def dangling_self_calls() -> list[tuple[str, str]]:
+    """Every `self.foo(...)` whose `foo` resolves to no method on the class.
+
+    Deliberately scoped so the signal stays trustworthy:
+      * only attributes starting with `_` are considered -- that is the private
+        helper convention this package uses, and it cuts the entire false-positive
+        population (injected callables, collaborators, dataclass field defaults)
+        which are never private helpers;
+      * the name must exist nowhere in the package as a method, so a helper
+        reached via a base class in another module is not reported;
+      * methods reached through a locally-bound `self` parameter are still
+        covered because their callee is a `self.` attribute of some class.
+    """
+    trees = _parse_package()
+    class_methods, _ = _definitions()
+    package_wide = set()
+    for methods in class_methods.values():
+        package_wide |= methods
+
+    found: list[tuple[str, str]] = []
+    for mod, tree in trees.items():
+        for cls in [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]:
+            available = set()
+            for item in cls.body:
+                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    available.add(item.name)
+            # simple assignment targets in the class body (e.g. self.x = fn in
+            # a factory) and base-class names resolved by name across modules
+            for item in ast.walk(cls):
+                if isinstance(item, ast.Assign):
+                    for target in item.targets:
+                        if isinstance(target, ast.Attribute):
+                            available.add(target.attr)
+                        elif isinstance(target, ast.Name):
+                            available.add(target.id)
+                elif isinstance(item, (ast.AnnAssign, ast.AugAssign)):
+                    target = item.target
+                    if isinstance(target, ast.Attribute):
+                        available.add(target.attr)
+                elif isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    for arg in item.args.args:
+                        available.add(arg.arg)
+            for base_name in _base_names(cls):
+                available |= class_methods.get(base_name, set())
+                available.add(base_name)
+
+            for call in ast.walk(cls):
+                if not isinstance(call, ast.Call):
+                    continue
+                func = call.func
+                if not isinstance(func, ast.Attribute):
+                    continue
+                value = func.value
+                if not (isinstance(value, ast.Name) and value.id == "self"):
+                    continue
+                attr = func.attr
+                if not attr.startswith("_"):
+                    continue
+                if attr in available or attr in _COMMON_DUNDERS:
+                    continue
+                if attr in package_wide:
+                    continue
+                found.append(
+                    (
+                        f"self-call resolves:{mod}.{cls.name}.{attr}",
+                        f"line {call.lineno}: self.{attr}() has no definition",
+                    )
+                )
+    return found
+
+
+def _module_scope_names(tree: ast.Module) -> set[str]:
+    """Names bound at module scope: imports, defs, classes, assignments, params."""
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            names.update(a.asname or a.name for a in node.names)
+        elif isinstance(node, ast.Import):
+            names.update((a.asname or a.name).split(".")[0] for a in node.names)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+            # a factory returning `cls(...)` binds cls as a parameter
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for arg in node.args.args:
+                    names.add(arg.arg)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            names.add(node.id)
+        elif isinstance(node, ast.arg):
+            names.add(node.arg)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            names.add(node.name)
+        elif isinstance(node, (ast.comprehension,)):
+            if isinstance(node.target, ast.Name):
+                names.add(node.target.id)
+        elif isinstance(node, ast.Lambda):
+            for arg in node.args.args:
+                names.add(arg.arg)
+    return names
+
+
+def dangling_module_calls() -> list[tuple[str, str]]:
+    """Every bare `foo(...)` that resolves to no function, import, or builtin.
+
+    The pay-off case is a module-level helper that a class calls but nobody
+    defines -- removing or renaming ``read_next_supply_seconds`` while leaving
+    the call in ``HybridVision.observe`` is exactly the 0aw shape one step to the
+    left.  Unlike the self-call sweep this cannot be narrowed to private names,
+    because helpers in this package are public-named (``read_hud_stamina``,
+    ``parse_stamina_number``); the false-positive population is instead removed
+    by collecting every binding at module scope, including imports, class names,
+    assignments, comprehension targets, and function parameters.
+    """
+    trees = _parse_package()
+    builtin_names = set(dir(builtins))
+    found: list[tuple[str, str]] = []
+    for mod, tree in trees.items():
+        scope = _module_scope_names(tree) | builtin_names
+        for call in ast.walk(tree):
+            if not isinstance(call, ast.Call):
+                continue
+            func = call.func
+            if not isinstance(func, ast.Name):
+                continue
+            name = func.id
+            if name in scope:
+                continue
+            found.append(
+                (
+                    f"module-call resolves:{mod}.{name}",
+                    f"line {call.lineno}: {name}() has no definition/import",
+                )
+            )
+    return found
 
 
 def main() -> int:
@@ -107,6 +334,16 @@ def main() -> int:
 
     goals_source = (ROOT / "winter_agent_v2/goal_library.py").read_text(encoding="utf-8")
     check("goal_library reads world.stamina", "world.stamina" in goals_source)
+
+    print("\n-- dangling self-call sites (the 0aw class) --")
+    for label, detail in dangling_self_calls():
+        check(label, False, detail)
+    check("no dangling self-call sites", not dangling_self_calls())
+
+    print("\n-- dangling module-level call sites --")
+    for label, detail in dangling_module_calls():
+        check(label, False, detail)
+    check("no dangling module-level call sites", not dangling_module_calls())
 
     print(f"\nproblems: {len(problems)}")
     for name in problems:
