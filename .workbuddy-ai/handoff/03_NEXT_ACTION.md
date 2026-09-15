@@ -4,7 +4,78 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-15 17:5x GMT+8）—— 解开 pHash「0 / 26」之谜（`0ax`）+ 拆掉无人值守的静默死结（`0az`）
+## 手写：本轮（2026-09-15 20:4x GMT+8）—— 操作者纠偏：Intel 冻结，全面转向 MAA 生产接入
+
+**操作者指令**：Intel 成果 KEEP，但**禁止继续把主要时间投入 Intel**；`0ba` 最多 30 分钟收尾后
+**立即切回 MAA P0**；顺序 = MAA Capture → MaaExecutorAdapter → 战斗按钮 MAA →
+OPEN_MARCH_PAGE A/B → SELECT_RESOURCE MAA → Live A/B → `unexpected_worker_exits` → 重算 Top Failure。
+
+### 0. 先做的一件事：把上一会话**未提交的 2 小时工作**锁进 git（commit `ae9f71b`）
+
+接管时工作树是脏的，里面已经躺着 `0ba` **和** MAA 采集生产化两件事，**全部未提交**
+（`winter_agent_v2/runtime.py`、`brain.py`、`tools/run_live.py`、新增
+`tests/test_intel_pin_exhaustion.py`，以及 `learning/episodes.jsonl` 里 9 条新 episode）。
+本项目已有「外部编辑器把未提交改动回滚」的前科 ⇒ **先校验、再立刻提交**：
+`check_wiring.py` = `problems: 0`、相关测试 74 passed（含 65 项定向）。
+
+### 1. 用生产证据核实 MAA 的真实状态（不要只看文档）
+
+| 判据 | 实测 | 结论 |
+|---|---|---|
+| `capture_backend = MAA_MUMU_EXTRAS` | **349** 条 episode | ✅ 步骤 1 已达成 |
+| `recognition_backend = MAA` | **31** 条（`INTEL_HERO_DISPATCH`/`START_MARCH`） | ✅ 步骤 3（战斗按钮）已达成 |
+| `action_backend = MAA` | **128** 条 | ✅ |
+| `executor_backend = MAA / HYBRID` | **74 / 52** 条 | ✅ |
+| 真机采集时延 | MAA **12.6–15.6ms** vs ADB **404–525ms**（26–42×） | ✅ |
+
+⇒ **操作者计划的步骤 1–3 其实早已完成**（上一会话做的），只是没提交。
+`MaaExecutorAdapter` 也已存在且能力齐全（`recognize/find/ocr/wait_page/click/swipe/run_task/save_annotated`）。
+**真正还没做的**：`START_GATHER`（步骤 4）、`SELECT_RESOURCE`（步骤 5）**一次都没在 MAA 上跑过**。
+
+### 2. `0ba` 收尾 + 一个把「步骤 4 无法测量」解释掉的发现（commit `f9aa8be`）
+
+想跑步骤 4 的 A/B 时，**三次 `GATHER_RESOURCE` 闭环全部在第 1 步就死**：
+`stop_reason=SKILL_NOT_ENABLED_FOR_LIVE_LOOP`。根因：城市视图被判定为 `MAP`、
+不画可读的行军计数 ⇒ 大脑选 `CHECK_MARCH` ⇒ 而该技能 `verifier=None`、不在
+`VERIFIED_ATOMIC` ⇒ 运行时拒绝执行。**这就是 `START_GATHER` 从未在 MAA 上跑过的原因。**
+
+已修的一半：补 `verify_march_count_readable` + 登记进 `VERIFIED_ATOMIC`。
+真机 before/after：`execution=null / stop=SKILL_NOT_ENABLED_FOR_LIVE_LOOP`
+→ `executed=true / verifier=MARCH_COUNT_NOT_READ`（技能真的会执行了，理由也诚实了）。
+
+⚠ **没修的一半**：计数在城市视图上就是不画（`march_used` 跨帧持续 None，非单帧遮挡），
+所以**采集仍然起不来**。城市 vs 世界地图的判定是**独立的页面分类调查**（新开 `0bc`），
+且**很可能是 `MARCH_PAGE_NOT_OPEN` 家族的真根因**。
+
+### 3. 顺手修好「全量测试在本机会假红」（新开 `0bd`）
+
+`pytest tests -q` 会出现约 26 个 **setup 阶段**的 `E`。根因**不在项目代码**：
+堆栈进入宿主 shim `sitecustomize.py → _check_bulk_delete_guard → SystemExit(1)`，
+即 pytest 清理 `%TEMP%\pytest-of-<user>\garbage-*`（实测 463 文件）时触发宿主批量删除闸门，
+中断后污染 fixture teardown 并级联出 25 个 `AssertionError`。
+**判定证据**：可疑文件**单独跑 12 passed / 0 error**。
+**可复现跑法**：`PYTEST_DEBUG_TEMPROOT=<项目内>` **加上** `--basetemp=<项目内>`（光有后者不够）。
+
+### 4. 下一步（按操作者给定顺序）
+
+1. **`0bc`：判定「城市 vs 世界地图」** —— 这是解锁步骤 4/5 的前置。城市视图有底部导航
+   （探险/英雄/背包/商店/联盟/城镇）与 `城镇` 按钮，可作为正向信号。**先测量再改**。
+2. **步骤 4：`OPEN_MARCH_PAGE`（`START_GATHER`）OLD vs NEW MAA 真机 A/B**
+   —— 记录 attempts / success / failure / success_rate / latency。
+   OLD 基线已记录：`docs/EXECUTOR_REALITY_AUDIT.md` = **94 次、37%**
+   （`START_GATHER` 是注册表里最差的高频技能）。⚠ `tools/maa_live_case.py action-ab`
+   **目前写死只支持 `OPEN_HOME`**（`verifier = {"OPEN_HOME": verify_open_home}[skill]`），
+   要跑 `START_GATHER` 需先把它改成从 `LiveRuntime.VERIFIED_ATOMIC` 取 verifier。
+3. **步骤 5：`SELECT_RESOURCE` MAA 识别**。⚠ 上一会话**有意**保留 LEGACY 并写明理由：
+   它走 `RESOURCE_DYNAMIC`（白色方括号锚点 + 157px 步距、滚动条偏移随会话变化），
+   属几何/布局问题而非固定模板问题；要迁识别需先有**搜索面板的 MAA 页面模型（每页 ≥2 信号）**。
+   ⇒ 这一步不是「加个 template」能完成的。
+4. `unexpected_worker_exits = 15` —— 操作者列为 P0，MAA 第一轮后立即查真实 traceback。
+5. 最后再重算 Top Failure。
+
+---
+
+## 手写：上一轮（2026-09-15 17:5x GMT+8）—— 解开 pHash「0 / 26」之谜（`0ax`）+ 拆掉无人值守的静默死结（`0az`）
 
 **一句话**：第一大失败 `SEMANTIC_TARGET_NOT_VERIFIED` 的近因不是「控件找不到」，
 而是**客户端把「你付不起」画成了红字**；同时无人值守被一张 BLOCKED 巨兽卡静默卡死。
@@ -334,7 +405,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 51 in the last 2 day(s), 118 all-time, last seen 2026-09-15T10:02:57.844444+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 2
+CURRENT DIRTY FILES: 0
 LAST PRODUCTION EPISODE: {"skill": "SELECT_INTEL_PIN", "result": "FAILURE", "recorded_at": "2026-09-15T10:02:57.844444+00:00", "episode_id": "intel_pins_20260915_100034_pin_00", "before_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_100034_pin_00\\intel_pins_20260915_100034_pin_00_step_004_before_20260915T100248439796.png", "after_screenshot": ""}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 118, "recent": 51, "last_seen": "2026-09-15T10:02:57.844444+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 6}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 40], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T10:02:57.844444+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
