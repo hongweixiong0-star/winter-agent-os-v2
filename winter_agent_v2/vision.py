@@ -1366,6 +1366,23 @@ class SemanticWorldVision:
             return WorldState(page=Page.INTEL, intel={"status":"AVAILABLE", "claimable_count":0}, confidence=0.99)
         if match("PAGE_INTEL"):
             return WorldState(page=Page.INTEL, intel={"status": "UNKNOWN"}, confidence=0.98)
+        # The 任务 panel is tabbed -- 章节任务 / 成长任务 / 每日任务 -- and the client
+        # always opens it on the FIRST tab.  `OCRPageClassifier` names the page from the
+        # literal string 每日任务, which is drawn on the tab *bar* even while another tab
+        # is selected, so "page is DAILY" has never meant "the daily tab is showing" --
+        # and every daily skill was calibrated on the daily tab.  The cost of that gap is
+        # measurable: on 2026-09-16 the account stood at activity 285 with its three
+        # chests (80/160/270) already passed, and the run could not see any of it.
+        #
+        # Which tab is showing is a drawn state, so it is read here as a template:
+        # unselected is a dark blue pill with white text, selected is a light pill with
+        # dark text.  Measured over all 3490 corpus frames, the two records match 4 and 1
+        # frames respectively -- every one of them a live panel frame from that day, and
+        # no other frame in the tree -- so this branch cannot hijack a page.
+        if match("TAB_DAILY_TASKS_SELECTED"):
+            return WorldState(page=Page.DAILY, daily={"tab": "TASKS"}, confidence=0.99)
+        if match("BTN_DAILY_TAB_TASKS"):
+            return WorldState(page=Page.DAILY, daily={"tab": "NOT_TASKS"}, confidence=0.99)
         if match("BTN_DAILY_CLAIM_ALL"):
             return WorldState(
                 page=Page.DAILY,

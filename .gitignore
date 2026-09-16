@@ -109,6 +109,10 @@ dataset/external/repositories/
 #     leaves it.
 !dataset/truth_audit/daily_entry_template_*/**/*.png
 !dataset/truth_audit/daily_tasks_tab_*/**/*.png
+# 2026-09-16, the same round: the 任务 panel's own tab.  `daily_tab_switch_*` holds the
+# panel-on-章节任务 frame that SELECT_DAILY_TAB must act on plus the probe that established
+# it; `daily_tab_*` (in dataset/candidate, always tracked) holds the two registrations.
+!dataset/truth_audit/daily_tab_switch_*/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only

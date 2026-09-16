@@ -282,6 +282,24 @@ def verify_open_daily(before: WorldState, after: WorldState) -> VerificationResu
     return VerificationResult(ok, "OK" if ok else "OPEN_DAILY_NOT_PROVEN", {"before_home": before.page is Page.HOME, "after_daily": after.page is Page.DAILY})
 
 
+def verify_daily_tab_selected(before: WorldState, after: WorldState) -> VerificationResult:
+    """The panel now shows the 每日任务 tab, read as a drawn state.
+
+    `OPEN_DAILY` lands on the panel's first tab (章节任务) while the page classifier calls
+    the page DAILY from the string on the tab bar, so every daily skill was reading the
+    wrong tab's content.  The two states are distinguishable in the frames themselves
+    (unselected = dark blue pill, selected = light pill; measured over 3490 corpus frames
+    they match 4 and 1 frames, all of them live panel frames from 2026-09-16), so this is
+    an independent observation of the client rather than a restatement of the action.
+    """
+    before_ok = before.page is Page.DAILY and before.daily.get("tab") == "NOT_TASKS"
+    after_ok = after.page is Page.DAILY and after.daily.get("tab") == "TASKS"
+    ok = before_ok and after_ok
+    return VerificationResult(ok, "OK" if ok else "DAILY_TAB_NOT_SELECTED",
+                              {"before_on_another_tab": before_ok, "after_on_daily_tab": after_ok,
+                               "before_tab": before.daily.get("tab"), "after_tab": after.daily.get("tab")})
+
+
 def verify_open_alliance_gifts(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.ALLIANCE and before.alliance.get("section") == "HOME"
     after_ok = after.page is Page.ALLIANCE and after.alliance.get("section") == "GIFTS"

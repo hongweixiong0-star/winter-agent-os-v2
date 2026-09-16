@@ -53,6 +53,11 @@ class RuleBrain:
         # leaves it (measured: DAILY -> HOME), and the flag is what stops the loop
         # from re-opening the panel it has already judged empty.
         self.daily_panel_not_actionable_left = False
+        # The panel opens on its 章节任务 tab, and the daily skills were calibrated on the
+        # 每日任务 tab, so one tap is needed to read the content they act on.  One-shot:
+        # if the tap does not take, repeating it would spend an action per step forever,
+        # and the honest path is to stop instead (see the panel-exit flag above).
+        self.daily_tab_switched = False
         # Set by the runtime when the *client itself* refused a camp fight for
         # lack of stamina.  That refusal is ground truth and it outranks the
         # gauge reading: measured live 2026-09-15, the camp panel's stamina ROI
@@ -126,6 +131,30 @@ class RuleBrain:
             "daily_panel_not_actionable_leaving_the_page",
             world.confidence,
             "home_opened",
+        )
+
+    def _select_daily_tab_once(self, world: WorldState) -> Decision | None:
+        """One tap onto the 每日任务 tab, the first time the panel is read elsewhere.
+
+        `OPEN_DAILY` lands on the panel's first tab (章节任务) while the page classifier
+        names the page from the string on the tab *bar*, so `page is DAILY` has never
+        meant "the daily tab is showing".  Measured on the live panel 2026-09-16: with
+        章节任务 showing, the reading is `{'status':'AVAILABLE','claimable_count':0}`, and
+        the account's three activity chests (thresholds 80/160/270, activity 285) were
+        invisible; the two tab states are distinguishable in the frames themselves
+        (dark blue pill vs light pill) and `verify_daily_tab_selected` reads that.
+
+        Returns ``None`` once the flag is set, so the caller falls through to its honest
+        stop instead of tapping forever.
+        """
+        if world.daily.get("tab") != "NOT_TASKS" or self.daily_tab_switched:
+            return None
+        self.daily_tab_switched = True
+        return Decision(
+            "SELECT_DAILY_TAB",
+            "daily_panel_opened_on_another_tab",
+            world.confidence,
+            "daily_tab_selected",
         )
 
     def reserved_slots(self, world: WorldState) -> int:
@@ -392,6 +421,9 @@ class RuleBrain:
                 return Decision("OPEN_HOME", "daily_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.DAILY:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_daily_route")
+            select_tab = self._select_daily_tab_once(world)
+            if select_tab is not None:
+                return select_tab
             if world.daily.get("status") != "CLAIMABLE":
                 leave = self._leave_daily_panel_once(world)
                 if leave is not None:
@@ -562,6 +594,9 @@ class RuleBrain:
                 return Decision("BACK", "beast_card_not_actionable_leaving_the_page", world.confidence, "map_opened")
             return Decision("SAFE_STOP", "beast_not_actionable", 1.0, "switch_task")
         if world.page is Page.DAILY:
+            select_tab = self._select_daily_tab_once(world)
+            if select_tab is not None:
+                return select_tab
             if world.daily.get("status") == "CLAIMABLE":
                 return Decision("DAILY_CLAIM_REWARDS", "daily_task_claimable", world.confidence, "daily_activity_increased")
             if world.daily.get("task_id") == "HERO_RECRUIT_1" and world.daily.get("status") == "AVAILABLE":

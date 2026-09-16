@@ -369,6 +369,23 @@ def main() -> int:
     check("brain: a claimable daily panel is still claimed",
           decide(claimable_panel).skill == "DAILY_CLAIM_REWARDS")
 
+    # The panel opens on 章节任务 while the page classifier names the page from the
+    # 每日任务 string on the tab bar, so the daily skills were reading another tab's
+    # content.  One tap switches it, and it must be one tap only.
+    other_tab = WorldState(page=Page.DAILY,
+                           daily={"tab": "NOT_TASKS", "status": "AVAILABLE", "claimable_count": 0},
+                           confidence=0.99)
+    tab_brain = RuleBrain(current_goal="DAILY")
+    check("brain: daily panel on another tab -> SELECT_DAILY_TAB",
+          tab_brain.decide(other_tab, registry).skill == "SELECT_DAILY_TAB")
+    check("brain: the daily tab is not tapped twice",
+          tab_brain.decide(other_tab, registry).skill != "SELECT_DAILY_TAB")
+    on_daily_tab = WorldState(page=Page.DAILY,
+                              daily={"tab": "TASKS", "status": "CLAIMABLE", "claimable_count": 2},
+                              confidence=0.99)
+    check("brain: the daily tab is not re-tapped when it already shows",
+          decide(on_daily_tab).skill == "DAILY_CLAIM_REWARDS")
+
     goals_source = (ROOT / "winter_agent_v2/goal_library.py").read_text(encoding="utf-8")
     check("goal_library reads world.stamina", "world.stamina" in goals_source)
 

@@ -139,6 +139,7 @@ def p0_registry() -> SkillRegistry:
         Skill("CONFIRM_EXPLORATION_IDLE_CLAIM", "Confirm collection in the verified Exploration idle-income dialog", Page.POPUP, Action("TAP_SEMANTIC", "BTN_EXPLORATION_IDLE_CONFIRM"), state=SkillState.VERIFIED),
         Skill("CLAIM_OFFLINE_REWARDS", "Claim the verified normal-resource welcome-back reward", Page.POPUP, Action("TAP_SEMANTIC", "BTN_CLAIM_OFFLINE_REWARDS"), state=SkillState.CANDIDATE),
         Skill("OPEN_DAILY", "Open Daily Tasks from the current-client Home task icon", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_DAILY"), state=SkillState.CANDIDATE),
+        Skill("SELECT_DAILY_TAB", "Switch the task panel from 章节任务 to 每日任务", Page.DAILY, Action("TAP_SEMANTIC", "BTN_DAILY_TAB_TASKS"), state=SkillState.CANDIDATE),
         Skill("OPEN_POWER_OVERVIEW", "Open the current-client power overview from Home", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_POWER_OVERVIEW_ICON"), state=SkillState.CANDIDATE),
         Skill("OPEN_POWER_DETAILS", "Open power-category details", Page.POPUP, Action("TAP_SEMANTIC", "BTN_OPEN_POWER_DETAILS"), state=SkillState.CANDIDATE),
         Skill("NAVIGATE_INFANTRY_CAMP", "Use Troop Power improvement to highlight the infantry camp", Page.POPUP, Action("TAP_SEMANTIC", "BTN_POWER_TROOP_IMPROVE"), state=SkillState.CANDIDATE),

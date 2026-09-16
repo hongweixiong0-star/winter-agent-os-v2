@@ -1,6 +1,6 @@
 {
-  "count": 391,
-  "generated_at": "2026-09-16T13:23:38.980614+00:00",
+  "count": 393,
+  "generated_at": "2026-09-16T16:51:03.422504+00:00",
   "records": [
     {
       "confidence": 0.99,
@@ -7006,6 +7006,44 @@
       "width": 38,
       "height": 58,
       "note": "left 2/3 of the city daily-entry icon (scroll + quill), badge excluded so one record covers the claimable and claimed states; old 2026-09-08 record kept for the frames it still covers"
+    },
+    {
+      "semantic": "BTN_DAILY_TAB_TASKS",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_tab_20260916\\btn_daily_tab_tasks__live_20260916.png",
+      "roi_norm": {
+        "x_norm": 0.668056,
+        "y_norm": 0.852344,
+        "w_norm": 0.2625,
+        "h_norm": 0.064062
+      },
+      "source": "daily_tasks_tab_20260916/01_before_20260916_134609.png",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "btn_daily_tab_tasks_unselected_20260916",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\daily_tasks_tab_20260916\\01_before_20260916_134609.png",
+      "width": 189,
+      "height": 82,
+      "note": "the 每日任务 tab drawn UNSELECTED (dark blue pill) -- this is the tap target of SELECT_DAILY_TAB, taken while the panel sat on 章节任务"
+    },
+    {
+      "semantic": "TAB_DAILY_TASKS_SELECTED",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_tab_20260916\\tab_daily_tasks_selected__live_20260916.png",
+      "roi_norm": {
+        "x_norm": 0.668056,
+        "y_norm": 0.852344,
+        "w_norm": 0.2625,
+        "h_norm": 0.064062
+      },
+      "source": "daily_tasks_tab_20260916/02_after_tap_20260916_134609.png",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "tab_daily_tasks_selected_20260916",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\daily_tasks_tab_20260916\\02_after_tap_20260916_134609.png",
+      "width": 189,
+      "height": 82,
+      "note": "the same tab drawn SELECTED (light pill, dark label) -- the drawn state the verifier reads, one tap after the frame above"
     }
   ],
   "schema_version": "1.0",
