@@ -240,3 +240,16 @@ learning/git_sync_state.json
 *.bak_*
 *.orig
 *.rej
+
+# --- external source reading (added 2026-09-17, after this rule was missing) -----------
+# The out_*.txt / out_*.md / out_*.xml / out_*.json rules above did not cover .toml, and
+# nothing covered a whole scratch DIRECTORY, so a `git add -A` during the external reuse
+# audit committed five third-party files (four AGPL-3.0 Java sources fetched from
+# Shederator/wosbot, plus that project's pyproject.toml) into this PUBLIC repository.
+# They were removed in the next commit; the history was deliberately NOT rewritten, which
+# is rule 12 (no force-push, no rewriting main).  Everything read from an external
+# repository belongs in these paths, never in the tracked tree.
+out_*.toml
+out_ext_*/
+out_ext_java/
+dataset/external/
