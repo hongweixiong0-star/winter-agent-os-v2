@@ -186,3 +186,14 @@
 - MuMu 默认**不启动**。启动：`MuMuManager.exe control -v 0 launch -pkg com.gof.china`
   → `adb connect 127.0.0.1:7555`。真机 720×1280，前台包 `com.gof.china`。
 - 启动入口：`Start-Winter-Agent-V2.cmd` / 桌面 `Winter Agent OS V2.lnk`。
+- **GitHub 远端已接（2026-09-16）**：`origin = https://github.com/hongweixiong0-star/winter-agent-os-v2.git`
+  （**public**，含完整 88 次提交历史）。checkpoint 之后加一步 `git push origin main` 即同步。
+  推送身份用 **`gh` CLI**（`C:\Program Files\GitHub CLI\gh`，已登录 `hongweixiong0-star`，
+  scopes `gist / read:org / repo`；`gh auth setup-git` 已把凭据接进 git）。
+  ⚠ **不要再走 `git credential fill` 取 token**：GCM(`credential.helper=helper-selector`) 那条路径
+  会因凭据失效弹 GUI 窗口并把**非交互调用挂死**（实测两次，各 2 分钟仍无输出，必须靠
+  `timeout N` 兜底）；而且它返回的 `gho_` token 属于旧会话，不可信。
+  ⚠ **WorkBuddy 的 GitHub 连接器不能建仓库**：`create_repository` 返回
+  `403 Resource not accessible by integration`（App 权限不含 Administration）。
+  建仓库只有两条路：`gh repo create <name> --public --source=. --remote=origin --push`，
+  或操作者在网页手动建。「连不上 git」的判据是 `git remote -v` **为空**，不是 `gh auth status`。
