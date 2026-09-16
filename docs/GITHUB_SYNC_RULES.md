@@ -118,6 +118,25 @@ token、私钥块、JWT、`password=...` 长字面量）、**个人数据**（�
 （`evidence/INDEX.json` 就是这个索引）。
 `dataset/truth_audit/**` 默认被忽略，只按白名单放行**被测试引用**的那些帧（见 `.gitignore`）。
 
+### 8.1 仓库重量实测（2026-09-16，用于判断要不要收紧）
+
+- **当前跟踪 1530 个文件 / 92.3 MB**，其中最大的是：
+  `learning/episodes.jsonl` 2.53 MB（生产证据流，属于"必须同步"）、
+  `dataset/truth_audit/**` 的证据帧（每张 1.0–1.2 MB，**被测试引用所以必须同步**）。
+- **历史 blob 总量 158.6 MB / 打包后 77.6 MB**。增长主要来自两处：
+  `episodes.jsonl` 每个 checkpoint 都会新增一个 ~2.5 MB 版本（约 20 个版本已 52 MB），
+  以及证据 PNG 的历次版本（79 MB）。
+- ⇒ **这是"每 checkpoint 重写一份证据流"的固有成本，不是错误**，但要知道镜像会持续变大。
+  不要为此重写历史（§12）。真要减重只有两条路：把 `episodes.jsonl` 改成按日分片，
+  或把大证据改为"本地 + 提交哈希引用"。**两条都要操作者点头**，本轮不做。
+- 已知的历史杂物（**不删，列给操作者**，依据 00_MASTER_RULES 规则 20）：
+  `config/v2.json.bak_20260913_223856`、
+  `dataset/candidate/template_manifest.json.bak_maintenance`、`.bak_tabcal`、
+  `dataset/candidate/templates_manifest.json.bak_tabcal`、
+  `knowledge/execution/backend_routing.json.bak_20260915_maab`（合计约 648 KB）、
+  `out_junit_r17.xml`（88 KB）。
+  `.gitignore` 已加 `*.bak_*` / `*.orig` / `*.rej` 阻止**新的**进入。
+
 ## 9. Handoff 也要同步
 
 `START_HERE.md`、`.workbuddy-ai/handoff/`、`.workbuddy-ai/commander/`、

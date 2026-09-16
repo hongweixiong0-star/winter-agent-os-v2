@@ -220,3 +220,15 @@ session*
 # files, which ARE tracked, so a fresh clone still learns when the mirror was last
 # updated relative to the commit it is reading.
 learning/git_sync_state.json
+
+# Hand-rolled "save before an edit" backups.  Measured 2026-09-16: five are tracked
+# (config/v2.json.bak_20260913_223856, dataset/candidate/template_manifest.json.bak_
+# maintenance and .bak_tabcal, dataset/candidate/templates_manifest.json.bak_tabcal,
+# knowledge/execution/backend_routing.json.bak_20260915_maab) -- ~648 KB of superseded
+# copies inside a PUBLIC repo, which is exactly the "无意义运行垃圾" the sync rules say
+# not to publish.  They are NOT deleted here: 00_MASTER_RULES rule 20 forbids removing
+# tracked files without an itemised confirmation, the same rule the r17 JUnit XML above
+# is held under.  This rule only stops new ones, and the operator has the list.
+*.bak_*
+*.orig
+*.rej
