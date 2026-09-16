@@ -21,7 +21,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 4 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M docs/ADDING_A_LIVE_OBSERVATION.md']
+- 6 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/memory/2026-09-16.md', '?? dataset/truth_audit/vip_entry_20260917/', '?? out_amil_pyproject.toml', '?? out_ext_java/']
 <!-- /AUTO:open_issues -->
 
 ---

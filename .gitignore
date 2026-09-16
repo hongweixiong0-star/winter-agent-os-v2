@@ -113,6 +113,10 @@ dataset/external/repositories/
 # panel-on-章节任务 frame that SELECT_DAILY_TAB must act on plus the probe that established
 # it; `daily_tab_*` (in dataset/candidate, always tracked) holds the two registrations.
 !dataset/truth_audit/daily_tab_switch_*/**/*.png
+# 2026-09-17: the external VIP-entry hypothesis, tested on V2's own client and rejected
+# (the point opens a paid offer instead).  Kept because the negative result is the cheap
+# half of discovery, and because the frames show what the HOME screen does expose.
+!dataset/truth_audit/vip_entry_*/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only

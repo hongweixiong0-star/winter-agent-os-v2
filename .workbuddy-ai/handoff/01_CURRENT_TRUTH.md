@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T17:10:20+00:00`
+- generated_at: `2026-09-16T17:24:06+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `cb716da` on `main`
+- commit: `cebedaa` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,13 +10,15 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 98
-- HEAD: `cb716da` — feat(daily): switch the task panel to its 每日任务 tab, live verified (2026-09-17T00:58:55+08:00)
-- working tree: 4 dirty file(s)
-  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- commits: 101
+- HEAD: `cebedaa` — docs(external): source-level reuse index for the two P0 WOS projects, and the licences that bound it (2026-09-17T01:22:00+08:00)
+- working tree: 6 dirty file(s)
+  - `M .gitignore`
   - ` M .workbuddy-ai/memory/2026-09-16.md`
-  - ` M .workbuddy/memory/2026-09-16.md`
-  - ` M docs/ADDING_A_LIVE_OBSERVATION.md`
+  - `?? dataset/truth_audit/vip_entry_20260917/`
+  - `?? out_amil_pyproject.toml`
+  - `?? out_ext_java/`
+  - `?? tools/probe_vip_entry.py`
 
 ### A2. Public mirror
 
@@ -25,14 +27,14 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-16T17:10:20+00:00
+SYNC STATE at 2026-09-16T17:24:06+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : cb716da21b098e54d3b1a4c2796fc017fee8258b
-remote_head       : cb716da21b098e54d3b1a4c2796fc017fee8258b   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : cebedaa07d4caf194b39184566aa5d415f8141ac
+remote_head       : cebedaa07d4caf194b39184566aa5d415f8141ac   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (4 path(s))
-last_push_at      : 2026-09-16T16:59:02.682502+00:00
+git_dirty         : True (6 path(s))
+last_push_at      : 2026-09-16T17:22:06.073241+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
 ```

@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `cebedaa 2026-09-17T01:22:00+08:00 docs(external): source-level reuse index for the two P0 WOS projects, and the licences that bound it`
+- `8da036f 2026-09-17T01:14:01+08:00 docs(issues): open the three questions this round could not answer`
+- `9c6abce 2026-09-17T01:10:21+08:00 chore(handoff): record the expert upgrade and the daily-tab round, plus the third badge bite`
 - `cb716da 2026-09-17T00:58:55+08:00 feat(daily): switch the task panel to its 每日任务 tab, live verified`
 - `8510083 2026-09-16T23:19:18+08:00 chore(handoff): publish the weight audit and the final in-sync state`
 - `acdd964 2026-09-16T23:18:57+08:00 docs(sync): measure the mirror's weight and list the historical junk for the operator`
@@ -15,15 +18,14 @@ Last 12 commits (newest first):
 - `5dd5931 2026-09-16T22:59:45+08:00 test(daily): the scheduler guard is about registry fall-through, not about which stop is chosen`
 - `94480d8 2026-09-16T22:53:00+08:00 chore(handoff): record the daily-entry round -- the corpus-gated template fix, the panel exit, and why CAP-B01 is not the cheap one`
 - `ceba904 2026-09-16T22:38:06+08:00 chore(memory): point the project at issue 2 as the standing ChatGPT advisor bridge, with its posting red lines`
-- `a42726a 2026-09-16T22:31:10+08:00 chore(memory): record the GitHub remote, the connector's repo-creation 403, and the GCM hazard that cost two hangs`
-- `cc8ba87 2026-09-16T22:30:06+08:00 test(daily): the honest stop is now read-leave-stop, so assert both decisions`
-- `4f51875 2026-09-16T22:09:05+08:00 fix(daily): one verified Back leaves the 任务 panel, so the newly working OPEN_DAILY cannot become a second beast-card dead end`
 
-Uncommitted changes: 4
-- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+Uncommitted changes: 6
+- `M .gitignore`
 - ` M .workbuddy-ai/memory/2026-09-16.md`
-- ` M .workbuddy/memory/2026-09-16.md`
-- ` M docs/ADDING_A_LIVE_OBSERVATION.md`
+- `?? dataset/truth_audit/vip_entry_20260917/`
+- `?? out_amil_pyproject.toml`
+- `?? out_ext_java/`
+- `?? tools/probe_vip_entry.py`
 <!-- /AUTO:recent_commits -->
 
 ---

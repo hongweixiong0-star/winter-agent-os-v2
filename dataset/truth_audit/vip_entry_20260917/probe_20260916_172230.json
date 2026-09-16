@@ -1,0 +1,70 @@
+{
+  "probe": "vip_entry",
+  "recorded_at": "2026-09-16T17:22:51.570305+00:00",
+  "hypothesis_source": {
+    "repo": "Shederator/wosbot",
+    "file": "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/VipRoutine.java",
+    "box": [
+      [
+        430,
+        48
+      ],
+      [
+        530,
+        85
+      ]
+    ],
+    "licence": "AGPL-3.0-only - used as a measurement hypothesis only; no code or asset copied"
+  },
+  "self_limits": [
+    "aborts unless the page is HOME or MAP",
+    "exactly one tap at the hypothesised point",
+    "one bounded BACK if nothing changed"
+  ],
+  "tap_px": [
+    480,
+    66
+  ],
+  "tokens_at_point": [
+    {
+      "text": "6.0万",
+      "conf": 0.981,
+      "px": [
+        56,
+        0,
+        110,
+        16
+      ]
+    },
+    {
+      "text": "用",
+      "conf": 0.806,
+      "px": [
+        58,
+        42,
+        83,
+        59
+      ]
+    },
+    {
+      "text": "统帅4",
+      "conf": 0.998,
+      "px": [
+        84,
+        38,
+        158,
+        65
+      ]
+    }
+  ],
+  "before": {
+    "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\vip_entry_20260917\\01_before_20260916_172230.png",
+    "page": "HOME",
+    "popup": null
+  },
+  "after": {
+    "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\vip_entry_20260917\\02_after_tap_20260916_172230.png",
+    "page": "POPUP",
+    "popup": "REAL_MONEY_OFFER"
+  }
+}

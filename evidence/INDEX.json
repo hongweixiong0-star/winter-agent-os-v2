@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-16T17:10:20+00:00",
-  "count": 527,
+  "generated_at": "2026-09-16T17:24:07+00:00",
+  "count": 532,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -179,8 +179,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 98904,
-      "mtime": "2026-09-16T15:19:17+00:00"
+      "bytes": 100092,
+      "mtime": "2026-09-16T17:10:20+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -3163,6 +3163,36 @@
       "kind": "fixture",
       "bytes": 1239813,
       "mtime": "2026-09-13T21:09:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/vip_entry_20260917/01_before_20260916_172230.png",
+      "kind": "fixture",
+      "bytes": 1095165,
+      "mtime": "2026-09-16T17:22:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/vip_entry_20260917/02_after_tap_20260916_172230.png",
+      "kind": "fixture",
+      "bytes": 453447,
+      "mtime": "2026-09-16T17:22:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/vip_entry_20260917/04_after_dismiss_popup.png",
+      "kind": "fixture",
+      "bytes": 1084278,
+      "mtime": "2026-09-16T17:23:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/vip_entry_20260917/probe_20260916_172230.json",
+      "kind": "fixture",
+      "bytes": 1459,
+      "mtime": "2026-09-16T17:22:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/vip_entry_20260917/README.md",
+      "kind": "fixture",
+      "bytes": 2804,
+      "mtime": "2026-09-16T17:23:40+00:00"
     }
   ]
 }
