@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `acdd964 2026-09-16T23:18:57+08:00 docs(sync): measure the mirror's weight and list the historical junk for the operator`
+- `f3c9686 2026-09-16T23:17:37+08:00 chore(sync): stop tracking git_sync.py's own push record`
+- `0fac3c4 2026-09-16T23:16:39+08:00 chore(handoff): record the first push under the sync rules`
 - `64d234a 2026-09-16T23:06:14+08:00 feat(sync): make the public mirror part of the development loop, not a manual chore`
 - `5dd5931 2026-09-16T22:59:45+08:00 test(daily): the scheduler guard is about registry fall-through, not about which stop is chosen`
 - `94480d8 2026-09-16T22:53:00+08:00 chore(handoff): record the daily-entry round -- the corpus-gated template fix, the panel exit, and why CAP-B01 is not the cheap one`
@@ -15,14 +18,9 @@ Last 12 commits (newest first):
 - `4f51875 2026-09-16T22:09:05+08:00 fix(daily): one verified Back leaves the 任务 panel, so the newly working OPEN_DAILY cannot become a second beast-card dead end`
 - `91667d2 2026-09-16T22:08:55+08:00 chore(gitignore): ignore the out_*.xml / out_*.md / out_crop_* scratch the JUnit and memory captures leave in the repo root`
 - `b2939b5 2026-09-16T20:24:38+08:00 feat(capability): build the machine-readable capability catalog, and land MAIL claiming on traceable evidence`
-- `c8fad05 2026-09-16T19:57:01+08:00 fix(march): a counter the client will not draw must not block the goal, and an overlay must not fake an idle queue`
-- `44de622 2026-09-16T19:04:05+08:00 docs(procedure): pin the live-observation workflow and the role facts it produced`
-- `2dab563 2026-09-16T19:03:01+08:00 chore(gitignore): keep the raw copy of the role-identity probe out of git without touching the tracked label corpus`
 
-Uncommitted changes: 3
+Uncommitted changes: 1
 - `M .workbuddy-ai/memory/2026-09-16.md`
-- ` M .workbuddy/memory/2026-09-16.md`
-- ` M learning/git_sync_state.json`
 <!-- /AUTO:recent_commits -->
 
 ---

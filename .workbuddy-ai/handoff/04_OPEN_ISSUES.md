@@ -21,7 +21,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 3 uncommitted file(s): ['M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M learning/git_sync_state.json']
+- 1 uncommitted file(s): ['M .workbuddy-ai/memory/2026-09-16.md']
 <!-- /AUTO:open_issues -->
 
 ---

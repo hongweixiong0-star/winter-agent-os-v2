@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T15:16:13+00:00`
+- generated_at: `2026-09-16T15:19:17+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `64d234a` on `main`
+- commit: `acdd964` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,12 +10,10 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 93
-- HEAD: `64d234a` — feat(sync): make the public mirror part of the development loop, not a manual chore (2026-09-16T23:06:14+08:00)
-- working tree: 3 dirty file(s)
+- commits: 96
+- HEAD: `acdd964` — docs(sync): measure the mirror's weight and list the historical junk for the operator (2026-09-16T23:18:57+08:00)
+- working tree: 1 dirty file(s)
   - `M .workbuddy-ai/memory/2026-09-16.md`
-  - ` M .workbuddy/memory/2026-09-16.md`
-  - ` M learning/git_sync_state.json`
 
 ### A2. Public mirror
 
@@ -24,14 +22,14 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-16T15:16:13+00:00
+SYNC STATE at 2026-09-16T15:19:17+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 64d234a159f7483e2e6656ce146efe6ed527ab44
-remote_head       : 64d234a159f7483e2e6656ce146efe6ed527ab44   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : acdd9641392797d94ce1f1856fcabb5f561e0dc1
+remote_head       : acdd9641392797d94ce1f1856fcabb5f561e0dc1   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (3 path(s))
-last_push_at      : 2026-09-16T15:06:26.071173+00:00
+git_dirty         : True (1 path(s))
+last_push_at      : 2026-09-16T15:19:02.795462+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
 ```
