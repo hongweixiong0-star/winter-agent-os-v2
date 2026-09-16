@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 55,
-          "successes": 49,
+          "attempts": 56,
+          "successes": 50,
           "failures": 6
         },
         {
@@ -493,12 +493,12 @@
           "alternatives": [
             "OPEN_DAILY"
           ],
-          "status": "STABLE",
+          "status": "DEGRADED",
           "implemented_by": "OPEN_DAILY",
           "live_verified_by": "OPEN_DAILY",
-          "attempts": 6,
-          "successes": 5,
-          "failures": 1
+          "attempts": 9,
+          "successes": 7,
+          "failures": 2
         },
         {
           "capability": "READ_DAILY_PROGRESS",
@@ -541,11 +541,11 @@
       "design_requirements_total": 4,
       "implemented_capabilities": 3,
       "live_verified_capabilities": 3,
-      "stable_capabilities": 1,
+      "stable_capabilities": 0,
       "design_coverage": 1.0,
       "implementation_coverage": 0.75,
       "live_coverage": 0.75,
-      "stable_coverage": 0.25,
+      "stable_coverage": 0.0,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "READ_DAILY_PROGRESS"

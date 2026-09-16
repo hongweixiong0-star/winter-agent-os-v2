@@ -6,40 +6,24 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `5dd5931 2026-09-16T22:59:45+08:00 test(daily): the scheduler guard is about registry fall-through, not about which stop is chosen`
+- `94480d8 2026-09-16T22:53:00+08:00 chore(handoff): record the daily-entry round -- the corpus-gated template fix, the panel exit, and why CAP-B01 is not the cheap one`
+- `ceba904 2026-09-16T22:38:06+08:00 chore(memory): point the project at issue 2 as the standing ChatGPT advisor bridge, with its posting red lines`
+- `a42726a 2026-09-16T22:31:10+08:00 chore(memory): record the GitHub remote, the connector's repo-creation 403, and the GCM hazard that cost two hangs`
+- `cc8ba87 2026-09-16T22:30:06+08:00 test(daily): the honest stop is now read-leave-stop, so assert both decisions`
+- `4f51875 2026-09-16T22:09:05+08:00 fix(daily): one verified Back leaves the 任务 panel, so the newly working OPEN_DAILY cannot become a second beast-card dead end`
+- `91667d2 2026-09-16T22:08:55+08:00 chore(gitignore): ignore the out_*.xml / out_*.md / out_crop_* scratch the JUnit and memory captures leave in the repo root`
 - `b2939b5 2026-09-16T20:24:38+08:00 feat(capability): build the machine-readable capability catalog, and land MAIL claiming on traceable evidence`
 - `c8fad05 2026-09-16T19:57:01+08:00 fix(march): a counter the client will not draw must not block the goal, and an overlay must not fake an idle queue`
 - `44de622 2026-09-16T19:04:05+08:00 docs(procedure): pin the live-observation workflow and the role facts it produced`
 - `2dab563 2026-09-16T19:03:01+08:00 chore(gitignore): keep the raw copy of the role-identity probe out of git without touching the tracked label corpus`
 - `3e5ec9c 2026-09-16T19:02:29+08:00 feat(role-identity): read which role is logged in from the client, and stop a fragment from rewriting the march counter`
-- `dd11b20 2026-09-16T13:43:51+08:00 fix(capability): stop inventing march capacity; make the reservation a function of it`
-- `1ffc8d2 2026-09-16T12:32:10+08:00 fix(gather): the strip geometry was never wrong -- the gate was below its own calibration corpus`
-- `a42d8e7 2026-09-16T10:31:10+08:00 chore(memory): record the R20 queue terminal state and the two open review requests`
-- `7d5c865 2026-09-16T10:30:57+08:00 chore(handoff): queue exhausted (4 DONE / 3 BLOCKED); RR-002 capture_backend name collision and RR-003 missing verifiers`
-- `b7a6028 2026-09-16T10:30:01+08:00 fix(intel-recognition,battle-recovery): stop treating a moved control as an absent one; do not press Back during a live battle`
-- `e58dcc7 2026-09-16T07:53:26+08:00 chore(handoff): regenerate after the R19 round (739 tests, 0 failures, 0 errors); archive Codex's 23:05/23:09 intel evidence`
-- `dbc3610 2026-09-16T07:53:10+08:00 fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence`
 
-Uncommitted changes: 34
-- `?? out_crop_right_column/`
-- `?? out_crop_role/`
-- `?? out_crop_strip/`
-- `?? out_junit_audit.xml`
-- `?? out_junit_final_r18.xml`
-- `?? out_junit_fix.xml`
-- `?? out_junit_full_v1.xml`
-- `?? out_junit_full_v3.xml`
-- `?? out_junit_iso.xml`
-- `?? out_junit_r18d.xml`
-- `?? out_junit_r18e.xml`
-- `?? out_junit_r19.xml`
-- `?? out_junit_r20.xml`
-- `?? out_junit_r21.xml`
-- `?? out_junit_r22.xml`
-- `?? out_junit_r23.xml`
-- `?? out_junit_r24.xml`
-- `?? out_junit_r24b.xml`
-- `?? out_junit_v1.xml`
-- `?? out_junit_v2.xml`
+Uncommitted changes: 4
+- `M .gitignore`
+- ` M tools/update_workbuddy_handoff.py`
+- `?? tools/git_sync.py`
+- `?? tools/scan_public_repo.py`
 <!-- /AUTO:recent_commits -->
 
 ---

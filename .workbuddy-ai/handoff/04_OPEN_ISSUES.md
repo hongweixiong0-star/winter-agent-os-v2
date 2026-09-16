@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x128 all-time; recent=18 (last 2d), last seen 2026-09-16T04:09:40.727152+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x129 all-time; recent=18 (last 2d), last seen 2026-09-16T13:10:49.548545+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **INTEL_BEAST_TARGET_NOT_PROVEN** x6 all-time; recent=5 (last 2d), last seen 2026-09-16T11:22:47.573385+00:00 — OPEN_INTEL_BEAST_TARGET(6)
 - **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=2 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-15T09:23:53.200251+00:00 — DISMISS_DAILY_REWARD(3)
-- **OPEN_MAP_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-15T15:16:47.597321+00:00 — OPEN_MAP(3)
 - **INTEL_BEAST_MARCH_NOT_PROVEN** x2 all-time; recent=2 (last 2d), last seen 2026-09-15T00:14:13.989039+00:00 — INTEL_BEAST_START_MARCH(2)
+- **MARCH_PAGE_NOT_OPEN** x60 all-time; recent=1 (last 2d), last seen 2026-09-16T11:22:23.403295+00:00 — START_GATHER(60)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
@@ -21,7 +21,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 34 uncommitted file(s): ['?? out_crop_right_column/', '?? out_crop_role/', '?? out_crop_strip/', '?? out_junit_audit.xml', '?? out_junit_final_r18.xml']
+- 4 uncommitted file(s): ['M .gitignore', ' M tools/update_workbuddy_handoff.py', '?? tools/git_sync.py', '?? tools/scan_public_repo.py']
 <!-- /AUTO:open_issues -->
 
 ---

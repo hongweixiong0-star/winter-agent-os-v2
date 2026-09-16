@@ -114,6 +114,26 @@ Codex 用机器可读队列给 WorkBuddy 派活，**不要手工复制指令**�
 
 ---
 
+## 第 3.7 步：看一眼同步状态（仓库是 PUBLIC）
+
+```bash
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/git_sync.py status
+```
+
+`https://github.com/hongweixiong0-star/winter-agent-os-v2` 是这个项目的**公开镜像**，
+"本地是否领先远端"属于当前事实的一部分：跑上面那条就知道
+（`local_head` / `remote_head` / `unpushed_commits` / `git_dirty` / `last_push_at`）。
+同样的字段也写进了 `01_CURRENT_TRUTH.md §A2` 与 `08_LIVE_METRICS.json.git_sync`。
+
+- **该推的时候推**：一个可验证工作单元（Work Order 完成 / LIVE_VERIFIED / 重要修复并验证 /
+  P0 根因修复 / handoff 关键状态变化 / 会话结束）⇒ `tools/git_sync.py push`。
+  **不要**每改一行就推；**也不要**把明显 broken 的状态推 `main`。
+- **推送前先过敏感信息闸门**（`push` 会自动跑；单独跑见 `tools/scan_public_repo.py`）。
+- **绝不** `push --force` / 重写 `main` / `reset --hard`。
+- 完整规则与坑：**`docs/GITHUB_SYNC_RULES.md`**（含本机 pytest 汇总丢失、repo 双写入方等）。
+
+---
+
 ## 第 4 步：亲自核对（不要只信 Handoff）
 
 ```bash

@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T13:08:28+00:00`
+- generated_at: `2026-09-16T15:04:45+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `b2939b5` on `main`
+- commit: `5dd5931` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,32 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 85
-- HEAD: `b2939b5` — feat(capability): build the machine-readable capability catalog, and land MAIL claiming on traceable evidence (2026-09-16T20:24:38+08:00)
-- working tree: 34 dirty file(s)
-  - `?? out_crop_right_column/`
-  - `?? out_crop_role/`
-  - `?? out_crop_strip/`
-  - `?? out_junit_audit.xml`
-  - `?? out_junit_final_r18.xml`
-  - `?? out_junit_fix.xml`
-  - `?? out_junit_full_v1.xml`
-  - `?? out_junit_full_v3.xml`
-  - `?? out_junit_iso.xml`
-  - `?? out_junit_r18d.xml`
-  - `?? out_junit_r18e.xml`
-  - `?? out_junit_r19.xml`
-  - `?? out_junit_r20.xml`
-  - `?? out_junit_r21.xml`
-  - `?? out_junit_r22.xml`
-  - `?? out_junit_r23.xml`
-  - `?? out_junit_r24.xml`
-  - `?? out_junit_r24b.xml`
-  - `?? out_junit_v1.xml`
-  - `?? out_junit_v2.xml`
+- commits: 92
+- HEAD: `5dd5931` — test(daily): the scheduler guard is about registry fall-through, not about which stop is chosen (2026-09-16T22:59:45+08:00)
+- working tree: 4 dirty file(s)
+  - `M .gitignore`
+  - ` M tools/update_workbuddy_handoff.py`
+  - `?? tools/git_sync.py`
+  - `?? tools/scan_public_repo.py`
+
+### A2. Public mirror
+
+The repository is PUBLIC, so 'is the mirror current' is part of the truth this file
+reports, not a side note. `remote_head` is the local remote-tracking ref: it is as
+fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
+
+```
+SYNC STATE at 2026-09-16T15:04:45+00:00
+remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
+branch            : main
+local_head        : 5dd5931d75c2b4f05c3e79556c268e951eaa3e81
+remote_head       : ceba9048b3a2d23d26d1506c5e692dcf114dd205   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 2   (behind: 0)
+git_dirty         : True (4 path(s))
+last_push_at      : None
+last_push_status  : None
+verdict           : LOCAL IS AHEAD by 2 commit(s) -- run `python tools/git_sync.py push`
+```
 
 ## B. Runtime
 
@@ -41,24 +44,24 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: mail_all_clear
-- page: MAIL  march: None/None
-- updated_at: 2026-09-16T12:22:54.728886+00:00
+- stop_reason: daily_panel_already_read_not_actionable
+- page: HOME  march: None/None
+- updated_at: 2026-09-16T13:52:12.653868+00:00
 
 ## C. Episode stream
 
-- rows: 1356 (production 1356)  modes: {'PRODUCTION': 1356}
-- success / failure: 1011 / 340
-- success rate over decided: **0.7483**
+- rows: 1361 (production 1361)  modes: {'PRODUCTION': 1361}
+- success / failure: 1015 / 341
+- success rate over decided: **0.7485**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "DISMISS_MAIL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-16T12:22:44.527500+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_005_before_20260916T122233108905.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_005_after_20260916T122235809128.png"}`
+- last episode: `{"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-16T13:52:03.297065+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T135143672097.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_after_20260916T135154147913.png"}`
 
 ## D. Registry and lifecycle
 
 - registry total: 87  by_state: {'VERIFIED': 45, 'CANDIDATE': 40, 'BLOCKED': 2}
 - live dispatchable (verifier-backed): 71
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **25**  stable: 25  degraded: 10  only_failed: 9  never_executed: 20
+- live_verified: **25**  stable: 24  degraded: 11  only_failed: 9  never_executed: 20
 
 ### Never executed
 
@@ -98,7 +101,7 @@
 ### Stable
 
 - `ALLIANCE_ALLY_GIFT_CLAIM` success=23 rate=0.9583
-- `BACK` success=93 rate=0.9894
+- `BACK` success=94 rate=0.9895
 - `CHECK_MARCH` success=21 rate=0.9545
 - `CLOSE_POPUP` success=30 rate=0.9677
 - `DISMISS_INTEL_GENERIC_REWARD` success=36 rate=1.0
@@ -109,9 +112,8 @@
 - `INTEL_BEAST_START_MARCH` success=41 rate=0.9535
 - `INTEL_CLAIM_REWARDS` success=60 rate=0.9524
 - `INTEL_HERO_START_MARCH` success=17 rate=0.85
-- `OPEN_DAILY` success=5 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
-- `OPEN_HOME` success=20 rate=0.8696
+- `OPEN_HOME` success=21 rate=0.875
 - `OPEN_INTEL` success=112 rate=0.855
 - `OPEN_INTEL_BEAST_TARGET` success=41 rate=0.8723
 - `OPEN_INTEL_HERO_JOURNEY_TARGET` success=20 rate=0.9091
@@ -129,6 +131,7 @@
 - `INTEL_HERO_DISPATCH` success=12 failure=8 rate=0.6
 - `MAIL_CLAIM_REWARDS` success=16 failure=10 rate=0.6154
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
+- `OPEN_DAILY` success=7 failure=2 rate=0.7778
 - `OPEN_MAIL` success=32 failure=15 rate=0.6809
 - `SEARCH_RESOURCE` success=46 failure=34 rate=0.575
 - `SELECT_MAIL_ALLIANCE_TAB` success=5 failure=4 rate=0.5556
@@ -140,15 +143,15 @@
 
 Failure | Count | Top skills
 ---|---:|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 128 | SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+`SEMANTIC_TARGET_NOT_VERIFIED` | 129 | SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 `INTEL_BEAST_TARGET_NOT_PROVEN` | 6 | OPEN_INTEL_BEAST_TARGET(6)
 `STAMINA_SOURCES_NOT_OPEN` | 9 | OPEN_INTEL(9)
 `DAILY_REWARD_ADVANCE_NOT_PROVEN` | 3 | DISMISS_DAILY_REWARD(3)
-`OPEN_MAP_NOT_PROVEN` | 3 | OPEN_MAP(3)
 `INTEL_BEAST_MARCH_NOT_PROVEN` | 2 | INTEL_BEAST_START_MARCH(2)
 `MARCH_PAGE_NOT_OPEN` | 60 | START_GATHER(60)
 `INTEL_RESCUE_START_NOT_PROVEN` | 6 | EXECUTE_INTEL_RESCUE_SURVIVORS(6)
 `NO_EXECUTION` | 5 | SAFE_STOP(5)
+`OPEN_MAP_NOT_PROVEN` | 3 | OPEN_MAP(3)
 `INTEL_HERO_TARGET_NOT_PROVEN` | 2 | OPEN_INTEL_HERO_JOURNEY_TARGET(2)
 
 ## F. Goal capability coverage
@@ -165,7 +168,7 @@ KEEP_BUILDING_PRODUCTIVE | PARTIAL | RUNTIME_DISCOVERED | 100% | 50% | 50% | 0% 
 KEEP_RESEARCH_PRODUCTIVE | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_RESEARCH_PAGE, START_RESEARCH
 KEEP_TRAINING_PRODUCTIVE | FULLY_LIVE_VERIFIED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 50% | -
 MAIL_ROUTINE | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 0% | -
-DAILY_ACTIVITY_TARGET | PARTIAL | RUNTIME_DISCOVERED | 100% | 75% | 75% | 25% | READ_DAILY_PROGRESS
+DAILY_ACTIVITY_TARGET | PARTIAL | RUNTIME_DISCOVERED | 100% | 75% | 75% | 0% | READ_DAILY_PROGRESS
 CLAIM_FREE_REWARDS | FULLY_LIVE_VERIFIED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 100% | -
 CLAIM_EXPLORATION_IDLE | DEGRADED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 33% | -
 ALLIANCE_ROUTINE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 50% | 75% | 25% | ALLIANCE_HELP, ALLIANCE_TECH_CONTRIBUTE
@@ -178,9 +181,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 1219  present: 1219
+- referenced screenshots: 1228  present: 1228
 - missing: []
-- episodes carrying screenshot references: 624
+- episodes carrying screenshot references: 629
 
 ## H. Commercial bot parity
 

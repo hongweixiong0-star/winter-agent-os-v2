@@ -176,3 +176,38 @@ out_*.md
 # probe crop dumps written by the daily-entry / role-identity probes.  Same
 # class as dataset/probe_output/ above, and equally machine-local.
 out_crop_*/
+
+# --- credentials -----------------------------------------------------------
+# The repository is PUBLIC (https://github.com/hongweixiong0-star/winter-agent-os-v2),
+# so anything here would be a disclosure, not just an untidy commit.  These rules are
+# the first line; `tools/scan_public_repo.py` is the second and it fails the check
+# whether or not a file is ignored, so a rule that stops matching cannot hide the file
+# it was protecting.  Patterns are deliberately generic (`token*`, `session*`) and
+# anchored-free: a stray `*.key` anywhere in the tree is not worth the tidiness of a
+# narrow rule.
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.p12
+id_rsa*
+id_ed25519*
+secrets*
+credentials*
+token*
+cookie*
+session*
+# ...except the game's own "session disconnected" popup.  `session*` above is a
+# credential rule, and this client really does draw a session-dropped dialog, so four
+# domain fixtures match it: the two templates, their manifest and the replay labels.
+# Without these lines a future edit to them would be silently ignored -- the failure
+# mode that makes an over-broad ignore rule dangerous rather than merely tidy.
+!dataset/candidate/session_disconnected/
+!dataset/candidate/session_disconnected_manifest.json
+!tests/replay/session_disconnected_labels.json
+# WorkBuddy's connector cache sits inside the project when the desktop app is opened
+# from here; it holds OAuth material for the connected GitHub / mail accounts.
+.workbuddy/connectors/
+.workbuddy/plugins/
+.workbuddy/blobs/

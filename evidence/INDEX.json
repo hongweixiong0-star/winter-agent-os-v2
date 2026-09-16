@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-16T13:08:29+00:00",
-  "count": 511,
+  "generated_at": "2026-09-16T15:04:45+00:00",
+  "count": 521,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -180,7 +180,7 @@
       "path": "evidence/INDEX.json",
       "kind": "evidence",
       "bytes": 96897,
-      "mtime": "2026-09-16T12:24:17+00:00"
+      "mtime": "2026-09-16T13:08:29+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -1039,6 +1039,66 @@
       "kind": "fixture",
       "bytes": 61210,
       "mtime": "2026-09-13T15:20:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_entry_template_20260916/00_live_home_20260916T131040Z.png",
+      "kind": "fixture",
+      "bytes": 951594,
+      "mtime": "2026-09-16T13:10:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_entry_template_20260916/01_home_frame_with_crop_and_tap_point.png",
+      "kind": "fixture",
+      "bytes": 951093,
+      "mtime": "2026-09-16T13:23:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_entry_template_20260916/02_zoom_crop_and_tap_point.png",
+      "kind": "fixture",
+      "bytes": 66021,
+      "mtime": "2026-09-16T13:23:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_entry_template_20260916/README.md",
+      "kind": "fixture",
+      "bytes": 3665,
+      "mtime": "2026-09-16T13:55:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20260916/01_before_20260916_134609.png",
+      "kind": "fixture",
+      "bytes": 614150,
+      "mtime": "2026-09-16T13:46:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20260916/02_after_tap_20260916_134609.png",
+      "kind": "fixture",
+      "bytes": 544943,
+      "mtime": "2026-09-16T13:46:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20260916/03_panel_before_the_back.png",
+      "kind": "fixture",
+      "bytes": 545020,
+      "mtime": "2026-09-16T13:47:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20260916/04_home_after_the_back.png",
+      "kind": "fixture",
+      "bytes": 1067215,
+      "mtime": "2026-09-16T13:47:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20260916/probe_20260916_134609.json",
+      "kind": "fixture",
+      "bytes": 4648,
+      "mtime": "2026-09-16T13:46:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/daily_tasks_tab_20260916/README.md",
+      "kind": "fixture",
+      "bytes": 3724,
+      "mtime": "2026-09-16T13:55:43+00:00"
     },
     {
       "path": "dataset/truth_audit/dispatch_tap_mark.png",

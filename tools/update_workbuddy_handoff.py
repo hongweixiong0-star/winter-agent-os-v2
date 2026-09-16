@@ -474,6 +474,16 @@ def current_truth_md(state: dict) -> str:
         lines.append("- **Any deletion is unrecoverable. Initialise git first.**")
     lines += [
         "",
+        "### A2. Public mirror",
+        "",
+        "The repository is PUBLIC, so 'is the mirror current' is part of the truth this file",
+        "reports, not a side note. `remote_head` is the local remote-tracking ref: it is as",
+        "fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.",
+        "",
+        "```",
+        git_sync_block(state),
+        "```",
+        "",
         "## B. Runtime",
         "",
         f"- agent_state: `{snap.get('agent_state', 'UNKNOWN')}`",
@@ -582,6 +592,7 @@ def live_metrics(state: dict) -> dict:
             "missing_count": len(state["evidence"].get("missing", []))
         },
         "commercial_parity": state["parity"].get("summary", {}),
+        "git_sync": state["git_sync"],
         "runtime": {
             "agent_state": state["runtime"].get("snapshot", {}).get("agent_state"),
             "unexpected_worker_exits": state["runtime"].get("snapshot", {}).get("unexpected_worker_exits"),
@@ -881,6 +892,9 @@ def last_handoff_block(state: dict) -> str:
         f"LIVE STATUS: {'PASS' if snap.get('agent_state') else 'UNKNOWN'} "
         f"(unexpected_worker_exits={snap.get('unexpected_worker_exits')})",
         "",
+        "GIT SYNC (is the public mirror current?):",
+        git_sync_block(state),
+        "",
         "KNOWN RISKS:",
         "- Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.",
         # Audited 2026-09-15 (WB-RUNTIME-EXIT-ROOTCAUSE).  This number is quoted in
@@ -899,7 +913,77 @@ def last_handoff_block(state: dict) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------- main
+# ---------------------------------------------------------------- git sync state
+def git_sync_state() -> dict:
+    """Local-versus-remote sync, so a new session knows if GitHub is behind.
+
+    No network here on purpose: ``update_workbuddy_handoff.py`` runs on every session
+    start and in checkpoints, and a fetch would make it depend on GitHub being
+    reachable.      ``origin/<branch>`` is read from the *local* remote-tracking ref, which
+    is exactly the "as of the last fetch" value a reader needs, and
+    ``tools/git_sync.py status`` is the command that refreshes it.  The
+    ``last_push_*`` fields come from ``learning/git_sync_state.json``, which
+    ``tools/git_sync.py push`` writes, so a reader can see how stale the ref is
+    instead of trusting it blindly.
+    """
+    out = {
+        "branch": None, "local_head": None, "remote_head": None,
+        "unpushed_commits": None, "behind": None, "in_sync": None,
+        "remote_url": None, "last_push_at": None, "last_push_status": None,
+    }
+    code, _ = sh("rev-parse", "--is-inside-work-tree")
+    if code != 0:
+        return out
+    _, branch = sh("rev-parse", "--abbrev-ref", "HEAD")
+    _, head = sh("rev-parse", "HEAD")
+    _, remote_url = sh("remote", "get-url", "origin")
+    out["branch"] = branch or None
+    out["local_head"] = head or None
+    out["remote_url"] = remote_url or None
+    if branch and remote_url:
+        _, remote_head = sh("rev-parse", f"origin/{branch}")
+        out["remote_head"] = remote_head or None
+        _, counts = sh("rev-list", "--left-right", "--count", f"origin/{branch}...HEAD")
+        if counts:
+            left, _, right = counts.partition("\t")
+            if left.strip().isdigit() and right.strip().isdigit():
+                out["behind"] = int(left)
+                out["unpushed_commits"] = int(right)
+                out["in_sync"] = out["behind"] == 0 and out["unpushed_commits"] == 0
+    state = load_json(ROOT / "learning" / "git_sync_state.json", default={}) or {}
+    out["last_push_at"] = state.get("last_push_at")
+    out["last_push_status"] = state.get("last_push_status")
+    return out
+
+
+def git_sync_block(state: dict) -> str:
+    sync = state["git_sync"]
+    git = state["git"]
+    lines = [
+        f"SYNC STATE at {state['generated_at']}",
+        f"remote            : {sync.get('remote_url') or '(none configured)'}",
+        f"branch            : {sync.get('branch')}",
+        f"local_head        : {sync.get('local_head')}",
+        f"remote_head       : {sync.get('remote_head')}   (local remote-tracking ref; "
+        f"run tools/git_sync.py status to refresh)",
+        f"unpushed_commits  : {sync.get('unpushed_commits')}   (behind: {sync.get('behind')})",
+        f"git_dirty         : {bool(git.get('dirty_count'))} ({git.get('dirty_count')} path(s))",
+        f"last_push_at      : {sync.get('last_push_at')}",
+        f"last_push_status  : {sync.get('last_push_status')}",
+    ]
+    if sync.get("in_sync") is True:
+        lines.append("verdict           : GitHub mirrors the local tree")
+    elif sync.get("unpushed_commits"):
+        lines.append(f"verdict           : LOCAL IS AHEAD by {sync['unpushed_commits']} commit(s) "
+                     f"-- run `python tools/git_sync.py push`")
+    elif sync.get("behind"):
+        lines.append(f"verdict           : LOCAL IS BEHIND by {sync['behind']} commit(s) "
+                     f"-- fetch and merge deliberately, never force")
+    else:
+        lines.append("verdict           : remote-tracking ref unavailable")
+    return "\n".join(lines)
+
+
 def collect() -> dict:
     git = git_state()
     registry = registry_state()
@@ -907,6 +991,7 @@ def collect() -> dict:
     return {
         "generated_at": utc_now(),
         "git": git,
+        "git_sync": git_sync_state(),
         "registry": registry,
         "episodes": episodes,
         "lifecycle": skill_lifecycle(registry, episodes),
