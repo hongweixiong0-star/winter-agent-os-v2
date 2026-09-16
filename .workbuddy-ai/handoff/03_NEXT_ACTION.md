@@ -4,7 +4,102 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 20:2x GMT+8）—— 建能力总表；落地 MAIL 领取
+## 手写：本轮（2026-09-16 21:0x–22:1x GMT+8）—— 让每日任务入口真正能用；面板不再把人困住
+
+**先读本轮的证据目录**（都是可复核的帧 + README，不需重测）：
+`dataset/truth_audit/daily_entry_template_20260916/` 与 `dataset/truth_audit/daily_tasks_tab_20260916/`。
+
+### 1. 本轮真实改进（两条，都有真机 episode）
+
+按能力总表 `--rank` 的顺序，`CAP-B01 CLAIM_DAILY_MISSION` 本该是最便宜的一项
+（"动作已实现、页面可达、只缺可采信 episode"）。**它不是** —— 卡在入口上，本轮把入口修通了。
+
+| 步骤 | 技能 | 页面 | verifier | 说明 |
+|---|---|---|---|---|
+| 1 | `OPEN_DAILY` | HOME→DAILY | OK `{"before_home":true,"after_daily":true}` | 2026-09-16T13:44:13Z / 13:51:43Z |
+| 2 | `BACK` | DAILY→HOME | OK `{"page_returned":true}` | 13:52:03Z |
+| 3 | `SAFE_STOP` | — | — | `daily_panel_already_read_not_actionable` |
+
+episode 均可追溯：`episode_id=live_runtime` + `step_id` + `verifier_ok=true` + 前后截图在磁盘上。
+`learning/episodes.jsonl` 里 13:10:49 那条 **`OPEN_DAILY FAILURE / SEMANTIC_TARGET_NOT_VERIFIED`
+就是修复前的那一帧**，别当成新缺陷。
+
+### 2. 根因一：`BTN_OPEN_DAILY` 的模板早就失效了（不是页面问题）
+
+`OPEN_DAILY` 此前**从没有过可采信 episode**（`--rank` 里的 5 次成功全是 478 行旧 schema）。
+真因：`BTN_OPEN_DAILY` 只有一条 2026-09-08 的记录，**在今天的真机帧上距离 18、门禁 8**，
+而同一帧上城市其它按钮都命中（探险 d=0、联盟 d=8、邮件 d=8–20 走它自己的 24）。
+⇒ 帧没问题，模板过期：角标不见了 + 背后的城市换了一个。
+
+**修法不是抬门禁**（抬高会让一个召回 2.2% 的点击目标留在生产里），而是**换一个排除角标的裁剪**：
+`(12,1026,50,1084)` 图标圆的左 2/3，**一条记录同时覆盖"可领"与"已领"两种状态**。
+在**整棵语料 3480 帧**上量（`tools/probe_daily_entry_gate.py`，代理总体 = 同屏那个稳定按钮）：
+
+| 候选 | 召回(HUD n=1104) | 代理外命中 | 2026-09-08 帧 |
+|---|---:|---:|---:|
+| 旧记录 | 24 (2.2%) | 0 | d=2 |
+| 整圆含角标 | 41 (3.7%) | 0 | **d=16 ✗** |
+| 圆下半带 | 587 (53.2%) | 0 | d=2 |
+| **圆左 2/3** | **1054 (95.5%)** | **1** | **d=6 ✓** |
+
+⚠ 那唯一一条"代理外命中"`legacy_resource_search.png` **目视是城市帧**（另一个账号、底部导航变淡）
+⇒ 它是代理看不见的**真阳性**，不是假阳性。**代理外命中必须逐帧分类**，不能看数字小就放过。
+⚠ "HUD 帧"不是"城市帧"：城市与世界地图**共用**同一列左键与底部导航，那个卷轴图标**两张页都在**。
+
+### 3. 根因二：入口修好之后，那个面板变成新的死胡同（已修）
+
+客户端第一次真的站到面板上时：`daily={"status":"AVAILABLE","claimable_count":0}` ⇒
+大脑 `SAFE_STOP daily_no_claimable_rewards`，**停在面板里**（与 `Page.BEAST` 同一类：
+没人把客户端挪走，之后每次运行、**任意 goal**，都会几秒内结束）。
+
+修法（`brain._leave_daily_panel_once` + 一次性旗标 `daily_panel_not_actionable_left`）：
+- 面板里无东西可领 ⇒ **一次 BACK**（真机实测 DAILY→HOME，`verify_safe_back` 接受该迁移）；
+- 旗标防止"BACK 没真的离开"被反复重试；
+- **DAILY goal 在 HOME 上不再重开已经读过、判过空的面板**（`daily_panel_already_read_not_actionable`）
+  —— 这是 beast card 那套不需要的一半，因为面板有入口技能而 BEAST 页没有。
+- `tools/run_live.py` 的 `accepted_stops` 同步加了新 reason（同类：verifier 全过、客户端被留在可用页面）。
+测试：`tests/test_daily_panel_dead_end_recovery.py`（12 项）+ `check_wiring.py` 三条新检查。
+
+### 4. ⚠ 结论：`CAP-B01` 今天**不是可做的**（Feature Availability，不是缺陷）
+
+用一次有界探针（`tools/probe_daily_tasks_tab.py`，只点一下、只点量过的坐标）量到：面板是**分页**的
+（章节任务 / 成长任务 / 每日任务，页签行 y≈1117–1154），**默认落在 章节任务**；
+切到 每日任务 后 `activity=285`，四条任务 **16/20、25/40、0/10、0/10**，
+三个活跃宝箱（80/160/270）**是开的** ⇒ **任何页签今天都没有可领的东西**。
+⇒ 与 RESEARCH 的 `QUEUE_BUSY` 同类：**客户端正确地没事可做**。**不要当 bug 修、不要为凑证据造状态。**
+
+### 5. 下一条该做的（按顺序，都已定位）
+
+1. **`SELECT_DAILY_TAB`（新技能，推荐先做）**：注册表里**没有任何切页签的能力**，
+   而整条 daily 系列技能是在 每日任务 页签上标定的。今天缺它的后果是**具体的漏领**：
+   三个活跃宝箱在 285 点活动下已达标，机器却看不见（它读的是 章节任务 页的内容）。
+   ⚠ 设计要点：切页签的 verifier 不能用任务名（每天在变），要用**选中态**——
+   选中/未选中的样子**两张帧都在** `daily_tasks_tab_20260916/` 里（01 = 章节选中、02 = 每日选中）。
+   还要给 `vision.py` 一个可读的 `daily.tab`，否则大脑看不见"现在是哪一页"。
+   ⚠ 顺带记下：`DAILY_HERO_RECRUIT` 在 goal=DAILY 下**本来就不可达**（goal 块先于页面块返回），
+   且它没有 verifier ⇒ 不可派发。**别把它当成新引入的回归。**
+2. `CAP-B03/B05`（`CLAIM_REWARD` 进 `VERIFIED_ATOMIC`）、`CAP-B09/B10`（VIP，需先发现入口）。
+3. `CAP-AY05 FREE_ITEM` / `CAP-B20 FREE_SHOP_ITEM`（免费商店项）。
+4. `ALLIANCE_GIFTS` / `ALLIANCE_ALLY_GIFT_CLAIM`（后者上一轮真机 11 次成功，**可复跑刷价值**）。
+5. `RECALL_MARCH`：实现齐、verifier 齐，**只差 `idle_marches==0 ∧ GATHERING 在外`** 这个自然状态。
+
+### 6. 本轮踩到/确认的环境事实（会让下一轮白花时间）
+
+- **本机 pytest 全量跑不出汇总行**：宿主批量删除守卫在会话末尾拦下 pytest 自己清理
+  `%TEMP%\pytest-of-xhw\garbage-*`（本轮 707/868 个文件），`SystemExit` 把终端汇总吞掉
+  ⇒ 只剩进度点。**本轮的做法**：`tools/winter_failwatch.py`（`PYTEST_PLUGINS=winter_failwatch
+  PYTHONPATH=tools`）在每条失败发生时就把 nodeid + longrepr 写文件，汇总丢了也不丢信息。
+  ⚠ `%TEMP%\pytest-of-xhw` 属**宿主保护目录**，本轮**未清理**（个人目录不擅自递归删）；
+  项目自己的 `pytest.ini` 注释说它"可安全清除"，需要操作者点头。
+- **本 repo 有第二个写入方**：本轮进行中，另一个会话（同一 `Winter Agent OS V2` 身份）
+  把我的工作树**分三个 commit 提交了**（`91667d2` gitignore / `4f51875` 本轮的代码+证据+工具 /
+  `cc8ba87` 我的测试改动），还写了 `a42726a`（GitHub 远端 + 连接器 403 + GCM 陷阱）。
+  ⇒ **改完立刻 `git log` 复核**，不要默认"未提交的改动还在"；也**不要**在别人刚写完的路径上凭空新建提交。
+- **episode 的"验证"字段是 `verifier_ok`，不是 `verifier`**（后者不在 schema 里）。
+  上一轮留的"episode verifier 为空 {}"疑问**到此关闭**：`verifier_ok=true` + 前后截图 + 步级
+  `verification`（在 run 结果 JSON 里）已足够可审计。
+
+## 手写：上一轮（2026-09-16 20:2x GMT+8）—— 建能力总表；落地 MAIL 领取
 
 ### 0. 阶段的第一件事：跑这两条
 
