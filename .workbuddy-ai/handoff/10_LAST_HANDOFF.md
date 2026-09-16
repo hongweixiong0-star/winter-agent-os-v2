@@ -8,12 +8,12 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-16T15:04:45+00:00
+HANDOFF TIME: 2026-09-16T15:16:13+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 4 dirty file(s)
-  ['M .gitignore', ' M tools/update_workbuddy_handoff.py', '?? tools/git_sync.py', '?? tools/scan_public_repo.py']
+WORKING TREE: 3 dirty file(s)
+  ['M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M learning/git_sync_state.json']
 
-WHAT FINISHED (machine-visible): 25 skills live verified, 24 stable, 92 commit(s) in history
+WHAT FINISHED (machine-visible): 25 skills live verified, 24 stable, 93 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 20 skills never executed, 9 never succeeded
 
@@ -22,21 +22,21 @@ STOPPED AT: agent_state=DEGRADED stop_reason=daily_panel_already_read_not_action
 LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-16T13:52:03.297065+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T135143672097.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_after_20260916T135154147913.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 129, "recent": 18, "last_seen": "2026-09-16T13:10:49.548545+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 4
+DIRTY FILES: 3
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-16T15:04:45+00:00
+SYNC STATE at 2026-09-16T15:16:13+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 5dd5931d75c2b4f05c3e79556c268e951eaa3e81
-remote_head       : ceba9048b3a2d23d26d1506c5e692dcf114dd205   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 2   (behind: 0)
-git_dirty         : True (4 path(s))
-last_push_at      : None
-last_push_status  : None
-verdict           : LOCAL IS AHEAD by 2 commit(s) -- run `python tools/git_sync.py push`
+local_head        : 64d234a159f7483e2e6656ce146efe6ed527ab44
+remote_head       : 64d234a159f7483e2e6656ce146efe6ed527ab44   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 0   (behind: 0)
+git_dirty         : True (3 path(s))
+last_push_at      : 2026-09-16T15:06:26.071173+00:00
+last_push_status  : PUSHED
+verdict           : GitHub mirrors the local tree
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.

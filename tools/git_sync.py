@@ -58,7 +58,8 @@ BRANCH = "main"
 TEMP_PATTERNS = ("out_", "out_crop_", "__pycache__", ".pytest_cache")
 KEEP_PREFIXES = ("winter_agent_v2/", "tools/", "tests/", "dataset/candidate/",
                  "dataset/truth_audit/", "knowledge/", "docs/", "config/",
-                 ".workbuddy-ai/", "learning/episodes.jsonl")
+                 ".workbuddy-ai/", ".workbuddy/memory/", "learning/episodes.jsonl",
+                 "learning/git_sync_state.json", "evidence/", "START_HERE.md")
 DISCARD_HINTS = (".tmp", ".log~", ".orig", ".rej", ".bak")
 
 

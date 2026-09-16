@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T15:04:45+00:00`
+- generated_at: `2026-09-16T15:16:13+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `5dd5931` on `main`
+- commit: `64d234a` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,13 +10,12 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 92
-- HEAD: `5dd5931` — test(daily): the scheduler guard is about registry fall-through, not about which stop is chosen (2026-09-16T22:59:45+08:00)
-- working tree: 4 dirty file(s)
-  - `M .gitignore`
-  - ` M tools/update_workbuddy_handoff.py`
-  - `?? tools/git_sync.py`
-  - `?? tools/scan_public_repo.py`
+- commits: 93
+- HEAD: `64d234a` — feat(sync): make the public mirror part of the development loop, not a manual chore (2026-09-16T23:06:14+08:00)
+- working tree: 3 dirty file(s)
+  - `M .workbuddy-ai/memory/2026-09-16.md`
+  - ` M .workbuddy/memory/2026-09-16.md`
+  - ` M learning/git_sync_state.json`
 
 ### A2. Public mirror
 
@@ -25,16 +24,16 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-16T15:04:45+00:00
+SYNC STATE at 2026-09-16T15:16:13+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 5dd5931d75c2b4f05c3e79556c268e951eaa3e81
-remote_head       : ceba9048b3a2d23d26d1506c5e692dcf114dd205   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 2   (behind: 0)
-git_dirty         : True (4 path(s))
-last_push_at      : None
-last_push_status  : None
-verdict           : LOCAL IS AHEAD by 2 commit(s) -- run `python tools/git_sync.py push`
+local_head        : 64d234a159f7483e2e6656ce146efe6ed527ab44
+remote_head       : 64d234a159f7483e2e6656ce146efe6ed527ab44   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 0   (behind: 0)
+git_dirty         : True (3 path(s))
+last_push_at      : 2026-09-16T15:06:26.071173+00:00
+last_push_status  : PUSHED
+verdict           : GitHub mirrors the local tree
 ```
 
 ## B. Runtime

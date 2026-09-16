@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `64d234a 2026-09-16T23:06:14+08:00 feat(sync): make the public mirror part of the development loop, not a manual chore`
 - `5dd5931 2026-09-16T22:59:45+08:00 test(daily): the scheduler guard is about registry fall-through, not about which stop is chosen`
 - `94480d8 2026-09-16T22:53:00+08:00 chore(handoff): record the daily-entry round -- the corpus-gated template fix, the panel exit, and why CAP-B01 is not the cheap one`
 - `ceba904 2026-09-16T22:38:06+08:00 chore(memory): point the project at issue 2 as the standing ChatGPT advisor bridge, with its posting red lines`
@@ -17,13 +18,11 @@ Last 12 commits (newest first):
 - `c8fad05 2026-09-16T19:57:01+08:00 fix(march): a counter the client will not draw must not block the goal, and an overlay must not fake an idle queue`
 - `44de622 2026-09-16T19:04:05+08:00 docs(procedure): pin the live-observation workflow and the role facts it produced`
 - `2dab563 2026-09-16T19:03:01+08:00 chore(gitignore): keep the raw copy of the role-identity probe out of git without touching the tracked label corpus`
-- `3e5ec9c 2026-09-16T19:02:29+08:00 feat(role-identity): read which role is logged in from the client, and stop a fragment from rewriting the march counter`
 
-Uncommitted changes: 4
-- `M .gitignore`
-- ` M tools/update_workbuddy_handoff.py`
-- `?? tools/git_sync.py`
-- `?? tools/scan_public_repo.py`
+Uncommitted changes: 3
+- `M .workbuddy-ai/memory/2026-09-16.md`
+- ` M .workbuddy/memory/2026-09-16.md`
+- ` M learning/git_sync_state.json`
 <!-- /AUTO:recent_commits -->
 
 ---
