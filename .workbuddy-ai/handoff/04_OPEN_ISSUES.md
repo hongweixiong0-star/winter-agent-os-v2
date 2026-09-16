@@ -21,7 +21,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 44 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M learning/episodes.jsonl']
+- 34 uncommitted file(s): ['?? out_crop_right_column/', '?? out_crop_role/', '?? out_crop_strip/', '?? out_junit_audit.xml', '?? out_junit_final_r18.xml']
 <!-- /AUTO:open_issues -->
 
 ---

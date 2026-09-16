@@ -43,6 +43,16 @@ class RuleBrain:
         # next run work at all -- but a Back that failed to move the client must
         # not be repeated, or the loop ping-pongs between the card and the map.
         self.beast_card_not_actionable_left = False
+        # Same reasoning for the tabbed 任务 panel that ``OPEN_DAILY`` opens.
+        # Measured live 2026-09-16: the panel lands on its 章节任务 tab and the
+        # account had nothing claimable on any tab (the four 每日任务 sat at
+        # 16/20, 25/40, 0/10, 0/10 and the three activity chests at 80/160/270 were
+        # already open), so the honest decision is to stop -- but stopping *inside*
+        # the panel is what leaves the client parked where the next run can do
+        # nothing, the failure mode the beast card already produced.  One Back
+        # leaves it (measured: DAILY -> HOME), and the flag is what stops the loop
+        # from re-opening the panel it has already judged empty.
+        self.daily_panel_not_actionable_left = False
         # Set by the runtime when the *client itself* refused a camp fight for
         # lack of stamina.  That refusal is ground truth and it outranks the
         # gauge reading: measured live 2026-09-15, the camp panel's stamina ROI
@@ -93,6 +103,29 @@ class RuleBrain:
             and not world.resource_search_open
             and world.idle_marches == 0
             and MarchState.GATHERING in world.marches
+        )
+
+    def _leave_daily_panel_once(self, world: WorldState) -> Decision | None:
+        """One Back out of the 任务 panel, the first time it is found empty.
+
+        Measured live 2026-09-16T13:47Z from inside the panel, on the same client
+        the panel was opened from: one Back lands on ``Page.HOME``.  That
+        transition is accepted by ``verify_safe_back`` (``before`` is neither MAP
+        nor POPUP and ``after`` is a different known page), so this is a verifiable
+        step rather than a hopeful one.
+
+        Returns ``None`` once the flag is set, which is what keeps a Back that did
+        not actually move the client from being repeated forever; the caller then
+        falls through to its honest SAFE_STOP.
+        """
+        if self.daily_panel_not_actionable_left:
+            return None
+        self.daily_panel_not_actionable_left = True
+        return Decision(
+            "BACK",
+            "daily_panel_not_actionable_leaving_the_page",
+            world.confidence,
+            "home_opened",
         )
 
     def reserved_slots(self, world: WorldState) -> int:
@@ -347,12 +380,22 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_exploration_route")
         if self.current_goal == "DAILY":
             if world.page is Page.HOME:
+                # Do not re-open a panel this run has already read and found
+                # empty: the Back below would otherwise send the loop round
+                # HOME -> panel -> Back forever.
+                if self.daily_panel_not_actionable_left:
+                    return Decision("SAFE_STOP", "daily_panel_already_read_not_actionable", 1.0, "switch_task")
                 return Decision("OPEN_DAILY", "daily_goal", world.confidence, "daily_open")
             if world.page is Page.MAP:
+                if self.daily_panel_not_actionable_left:
+                    return Decision("SAFE_STOP", "daily_panel_already_read_not_actionable", 1.0, "switch_task")
                 return Decision("OPEN_HOME", "daily_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.DAILY:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_daily_route")
             if world.daily.get("status") != "CLAIMABLE":
+                leave = self._leave_daily_panel_once(world)
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "daily_no_claimable_rewards", 1.0, "switch_task")
         if self.current_goal == "ALLIANCE":
             if world.page is Page.HOME:
@@ -523,6 +566,9 @@ class RuleBrain:
                 return Decision("DAILY_CLAIM_REWARDS", "daily_task_claimable", world.confidence, "daily_activity_increased")
             if world.daily.get("task_id") == "HERO_RECRUIT_1" and world.daily.get("status") == "AVAILABLE":
                 return Decision("DAILY_HERO_RECRUIT", "free_recruit_daily_available", world.confidence, "daily_task_claimable")
+            leave = self._leave_daily_panel_once(world)
+            if leave is not None:
+                return leave
             return Decision("SAFE_STOP", "daily_state_unknown_or_not_actionable", 1.0, "refresh_state_or_switch_task")
         if world.page is Page.ALLIANCE:
             if world.alliance.get("section") == "GIFTS" and world.alliance.get("status") == "CLAIMABLE":

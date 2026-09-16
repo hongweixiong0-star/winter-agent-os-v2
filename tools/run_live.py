@@ -139,6 +139,12 @@ def main() -> int:
     accepted_stops = {"TARGET_SKILL_VERIFIED", "MAX_ACTIONS_REACHED", "no_idle_march", "reserved_march_for_stamina", "verified_beast_target_not_visible", "intel_available_no_claim", "intel_not_available", "intel_expired", "mail_all_clear", "exploration_income_not_ready", "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable", "alliance_action_not_needed", "research_queue_busy", "training_queue_busy"}
     verified = all(step.verification is None or step.verification.ok for step in result.steps)
     accepted_stops.add("intel_no_untried_pins")
+    # Added 2026-09-16 with the panel exit: the DAILY goal now leaves the 任务
+    # panel before stopping, so the honest "nothing claimable" end of a run is
+    # reported as ``daily_panel_already_read_not_actionable`` instead of
+    # ``daily_no_claimable_rewards``.  Same class: all verifiers passed, the
+    # client was left somewhere a later run can work from.
+    accepted_stops.add("daily_panel_already_read_not_actionable")
     return 0 if verified and result.stop_reason in accepted_stops else 2
 
 

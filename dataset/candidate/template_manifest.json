@@ -1,6 +1,6 @@
 {
-  "count": 390,
-  "generated_at": "2026-09-14T07:57:18.934342+00:00",
+  "count": 391,
+  "generated_at": "2026-09-16T13:23:38.980614+00:00",
   "records": [
     {
       "confidence": 0.99,
@@ -6987,6 +6987,25 @@
       "template_id": "btn_open_intel_wild_hud__night_2__0",
       "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_2__0.png",
       "width": 86
+    },
+    {
+      "semantic": "BTN_OPEN_DAILY",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_entry_20260916\\btn_open_daily__live_20260916_home.png",
+      "roi_norm": {
+        "x_norm": 0.016667,
+        "y_norm": 0.801562,
+        "w_norm": 0.052778,
+        "h_norm": 0.045312
+      },
+      "source": "live_20260916T131040Z/live_runtime_step_002_before",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "btn_open_daily_current_20260916",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T131040296670.png",
+      "width": 38,
+      "height": 58,
+      "note": "left 2/3 of the city daily-entry icon (scroll + quill), badge excluded so one record covers the claimable and claimed states; old 2026-09-08 record kept for the frames it still covers"
     }
   ],
   "schema_version": "1.0",

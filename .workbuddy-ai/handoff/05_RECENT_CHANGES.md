@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `b2939b5 2026-09-16T20:24:38+08:00 feat(capability): build the machine-readable capability catalog, and land MAIL claiming on traceable evidence`
 - `c8fad05 2026-09-16T19:57:01+08:00 fix(march): a counter the client will not draw must not block the goal, and an overlay must not fake an idle queue`
 - `44de622 2026-09-16T19:04:05+08:00 docs(procedure): pin the live-observation workflow and the role facts it produced`
 - `2dab563 2026-09-16T19:03:01+08:00 chore(gitignore): keep the raw copy of the role-identity probe out of git without touching the tracked label corpus`
@@ -17,18 +18,8 @@ Last 12 commits (newest first):
 - `b7a6028 2026-09-16T10:30:01+08:00 fix(intel-recognition,battle-recovery): stop treating a moved control as an absent one; do not press Back during a live battle`
 - `e58dcc7 2026-09-16T07:53:26+08:00 chore(handoff): regenerate after the R19 round (739 tests, 0 failures, 0 errors); archive Codex's 23:05/23:09 intel evidence`
 - `dbc3610 2026-09-16T07:53:10+08:00 fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence`
-- `b4baff2 2026-09-16T00:41:21+08:00 chore(handoff): final regeneration after the march-count fix (712 tests, 0 failures, 0 errors)`
 
-Uncommitted changes: 44
-- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/memory/2026-09-16.md`
-- ` M .workbuddy/memory/2026-09-16.md`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- `?? knowledge/game/capability_catalog.json`
+Uncommitted changes: 34
 - `?? out_crop_right_column/`
 - `?? out_crop_role/`
 - `?? out_crop_strip/`
@@ -40,6 +31,15 @@ Uncommitted changes: 44
 - `?? out_junit_iso.xml`
 - `?? out_junit_r18d.xml`
 - `?? out_junit_r18e.xml`
+- `?? out_junit_r19.xml`
+- `?? out_junit_r20.xml`
+- `?? out_junit_r21.xml`
+- `?? out_junit_r22.xml`
+- `?? out_junit_r23.xml`
+- `?? out_junit_r24.xml`
+- `?? out_junit_r24b.xml`
+- `?? out_junit_v1.xml`
+- `?? out_junit_v2.xml`
 <!-- /AUTO:recent_commits -->
 
 ---

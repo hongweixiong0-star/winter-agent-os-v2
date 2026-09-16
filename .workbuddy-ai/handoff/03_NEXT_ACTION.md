@@ -822,7 +822,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 18 in the last 2 day(s), 128 all-time, last seen 2026-09-16T04:09:40.727152+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 44
+CURRENT DIRTY FILES: 34
 LAST PRODUCTION EPISODE: {"skill": "DISMISS_MAIL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-16T12:22:44.527500+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_005_before_20260916T122233108905.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_005_after_20260916T122235809128.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 128, "recent": 18, "last_seen": "2026-09-16T04:09:40.727152+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T12:22:44.527500+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.

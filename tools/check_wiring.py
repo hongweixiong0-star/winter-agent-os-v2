@@ -353,6 +353,22 @@ def main() -> int:
     check("brain: map checks the free gift once per run",
           decide(map_ready, claim_free_stamina=True).skill == "OPEN_STAMINA_SOURCES")
 
+    # The 任务 panel OPEN_DAILY opens is a dead end when it holds nothing
+    # claimable: leaving it is what keeps the next run usable, and the flag is
+    # what keeps the loop from re-opening the panel it just left.
+    empty_panel = WorldState(page=Page.DAILY, daily={"status": "AVAILABLE", "claimable_count": 0},
+                             confidence=0.99)
+    panel_brain = RuleBrain(current_goal="DAILY")
+    check("brain: empty daily panel is left, not stranding the run",
+          panel_brain.decide(empty_panel, registry).skill == "BACK")
+    home_after = WorldState(page=Page.HOME, confidence=0.99)
+    check("brain: the panel is not re-opened after it was read",
+          panel_brain.decide(home_after, registry).skill == "SAFE_STOP")
+    claimable_panel = WorldState(page=Page.DAILY, daily={"status": "CLAIMABLE", "claimable_count": 2},
+                                 confidence=0.99)
+    check("brain: a claimable daily panel is still claimed",
+          decide(claimable_panel).skill == "DAILY_CLAIM_REWARDS")
+
     goals_source = (ROOT / "winter_agent_v2/goal_library.py").read_text(encoding="utf-8")
     check("goal_library reads world.stamina", "world.stamina" in goals_source)
 

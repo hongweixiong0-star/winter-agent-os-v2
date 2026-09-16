@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T12:24:16+00:00`
+- generated_at: `2026-09-16T13:08:28+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `c8fad05` on `main`
+- commit: `b2939b5` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,18 +10,9 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 84
-- HEAD: `c8fad05` — fix(march): a counter the client will not draw must not block the goal, and an overlay must not fake an idle queue (2026-09-16T19:57:01+08:00)
-- working tree: 44 dirty file(s)
-  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/memory/2026-09-16.md`
-  - ` M .workbuddy/memory/2026-09-16.md`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - `?? knowledge/game/capability_catalog.json`
+- commits: 85
+- HEAD: `b2939b5` — feat(capability): build the machine-readable capability catalog, and land MAIL claiming on traceable evidence (2026-09-16T20:24:38+08:00)
+- working tree: 34 dirty file(s)
   - `?? out_crop_right_column/`
   - `?? out_crop_role/`
   - `?? out_crop_strip/`
@@ -33,6 +24,15 @@
   - `?? out_junit_iso.xml`
   - `?? out_junit_r18d.xml`
   - `?? out_junit_r18e.xml`
+  - `?? out_junit_r19.xml`
+  - `?? out_junit_r20.xml`
+  - `?? out_junit_r21.xml`
+  - `?? out_junit_r22.xml`
+  - `?? out_junit_r23.xml`
+  - `?? out_junit_r24.xml`
+  - `?? out_junit_r24b.xml`
+  - `?? out_junit_v1.xml`
+  - `?? out_junit_v2.xml`
 
 ## B. Runtime
 

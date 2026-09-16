@@ -1,6 +1,6 @@
 # CURRENT TRUTH
 
-Generated (UTC): 2026-09-15T15:56:14.088991+00:00
+Generated (UTC): 2026-09-16T13:08:41.639676+00:00
 
 Everything below is recomputed by `python tools/truth_audit.py`.
 Do not trust numbers in older Markdown files.
@@ -12,33 +12,33 @@ Do not trust numbers in older Markdown files.
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: OPEN_MAP_NOT_PROVEN
-- page: POPUP march: None/None
+- stop_reason: mail_all_clear
+- page: MAIL march: None/None
 
 ## B. Episodes
 
-- total: 1285 (mode: PRODUCTION=1285)
-- success / failure: 954 / 326
+- total: 1356 (mode: PRODUCTION=1356)
+- success / failure: 1011 / 340
 - blocked: 4  in_progress: 1
-- success rate over decided: **74.5%**
-- success rate over total: 74.2%
+- success rate over decided: **74.8%**
+- success rate over total: 74.6%
 - mixed-case `result` rows (must be normalized on read, never rewritten): 35
 
 ## C. Top failures
 
 Failure type | Count | Skills | Top skills | Last seen
 ---|---:|---:|---|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 118 | 18 | SELECT_RESOURCE(40), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-15T10:02:57
-`MARCH_PAGE_NOT_OPEN` | 59 | 1 | START_GATHER(59) | 2026-09-12T15:17:11
+`SEMANTIC_TARGET_NOT_VERIFIED` | 128 | 18 | SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13) | 2026-09-16T04:09:40
+`MARCH_PAGE_NOT_OPEN` | 60 | 1 | START_GATHER(60) | 2026-09-16T11:22:23
 `RESOURCE_NOT_FOUND` | 30 | 1 | SUBMIT_RESOURCE_SEARCH(30) | 2026-09-14T06:42:03
 `DISPATCH_NOT_PROVEN` | 29 | 1 | DISPATCH_MARCH(29) | 2026-09-14T05:25:20
 `MAIL_CLAIM_FEEDBACK_NOT_PROVEN` | 10 | 1 | MAIL_CLAIM_REWARDS(10) | 
 `STAMINA_SOURCES_NOT_OPEN` | 9 | 1 | OPEN_INTEL(9) | 2026-09-15T02:31:47
 `INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | 1 | INTEL_HERO_DISPATCH(8) | 2026-09-14T12:19:55
+`INTEL_BEAST_TARGET_NOT_PROVEN` | 6 | 1 | OPEN_INTEL_BEAST_TARGET(6) | 2026-09-16T11:22:47
 `INTEL_RESCUE_START_NOT_PROVEN` | 6 | 1 | EXECUTE_INTEL_RESCUE_SURVIVORS(6) | 2026-09-14T17:17:43
 `POPUP_CLOSE_NOT_PROVEN` | 5 | 2 | DISMISS_REAL_MONEY_OFFER(4), RECONNECT_SESSION(1) | 2026-09-13T21:08:40
 `NO_EXECUTION` | 5 | 1 | SAFE_STOP(5) | 2026-09-15T12:27:40
-`INTEL_BEAST_TARGET_NOT_PROVEN` | 4 | 1 | OPEN_INTEL_BEAST_TARGET(4) | 2026-09-15T09:38:04
 `INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 3 | 1 | INTEL_CLAIM_REWARDS(3) | 2026-09-14T10:17:47
 
 ## D. Registry
@@ -53,8 +53,8 @@ Failure type | Count | Skills | Top skills | Last seen
 
 Area | Files | Empty dirs
 ---|---:|---:
-`dataset/raw` | 3346 | 56
-`dataset/candidate` | 533 | 0
+`dataset/raw` | 3521 | 56
+`dataset/candidate` | 535 | 0
 `dataset/verified` | 5 | 0
 `dataset/normalized` | 1 | 0
 `dataset/production` | 0 | 0
@@ -63,16 +63,16 @@ Area | Files | Empty dirs
 ## F. Evidence integrity
 
 - status: **PASS**
-- episodes carrying screenshot references: 553 / 1285
-- screenshots referenced: 1087
+- episodes carrying screenshot references: 624 / 1356
+- screenshots referenced: 1219
 - screenshots missing: 0
-- distinct episode ids: 130
+- distinct episode ids: 133
 
 ## G. Skill lifecycle vs the episode stream
 
 - registry total: 87
-- live verified (>=1 production success): **58**
-- only ever failed: 9
+- live verified (>=1 production success): **59**
+- only ever failed: 8
 - never executed: 20
 
 Never executed skills:
@@ -101,7 +101,7 @@ Never executed skills:
 ## H. Capability coverage (rebuilt model)
 
 - model: Goal -> Canonical Capability -> Registered Skill -> Production Evidence
-- generated: 2026-09-15T15:48:10.456947+00:00 (0.01 days ago)
+- generated: 2026-09-16T13:08:28.961766+00:00 (0.0 days ago)
 - FULLY_LIVE_VERIFIED: 2 / 16
 - PARTIAL: 8  NEVER_TRIED: 0  BLOCKED: 4  DEGRADED: 2
 - mean implementation coverage: 0.54
