@@ -120,7 +120,17 @@ x 轴与**流程顺序**可以。
 | autopilot（GitLab）架构 | **REFERENCE_ONLY** | 本轮不可达，未验证；且指令明确禁止把 worker/priority/TTL/queue 搬进来 |
 | **坐标常数 / 流程顺序 / 游戏机制事实** | **ADAPT_PATTERN** | 这是对 UI 的测量，不是代码表达；且必须先在 V2 真机复测才能进生产 |
 
-**本轮没有复制任何外部代码或资源。** 落盘的东西只有：本报告 + JSON 索引 + 我自己的审计脚本输出。
+**本轮没有把任何外部代码或资源用于 V2。** 落盘到 git 的只有：本报告 + JSON 索引。
+
+⚠ **一处必须记录的失误（已修）**：本轮结束时一次 `git add -A` 把 5 个第三方文件扫进了
+**公开仓库**——从 `Shederator/wosbot` 取回的 4 个 AGPL-3.0 Java 源文件
+（`ArenaRoutine` / `DailyMissionRoutine` / `ShopNavigator` / `VipRoutine`）与其 `pyproject.toml`。
+这与本报告自己的结论（AGPL ⇒ 只借测量，不复制代码）直接冲突。
+下一个提交已把它们**从跟踪中移除**（`fix(repo): stop tracking the external sources a git add -A swept in`），
+并补上导致它的 `.gitignore` 缺口（`out_*.toml` / `out_ext_*/` / `out_ext_java/` / `dataset/external/`）。
+**历史未被重写**（规则 12 禁止强推/重写 main），且这些文件本身在上游就是公开的 ⇒
+属于许可卫生问题而非泄露；是否用 `git filter-repo` 从历史中清除，**由操作者决定**。
+教训：审计外部源码时，抓取物必须落在已被忽略的路径里，**且不要用 `git add -A`**。
 
 ---
 
