@@ -26,6 +26,10 @@ last_push_status`，并把脏文件按 **KEEP / TEMP / DISCARD? / UNKNOWN** 分�
 `01_CURRENT_TRUTH.md §A2`、`08_LIVE_METRICS.json.git_sync`、`10_LAST_HANDOFF.md`，
 所以**新会话不需要先问人**就知道本地是否领先远端。
 
+⚠ `learning/git_sync_state.json`（`git_sync.py` 的推送记录）**不进 git**：
+每次 push 都会重写它，跟踪它会让工作树永远脏。它承载的**事实**由 handoff 发布
+（上面那三个文件是跟踪的），所以新克隆仍能读到"镜像最后一次是什么时候更新的"。
+
 ---
 
 ## 1. 什么时候**必须** commit + push

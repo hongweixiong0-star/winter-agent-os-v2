@@ -211,3 +211,12 @@ session*
 .workbuddy/connectors/
 .workbuddy/plugins/
 .workbuddy/blobs/
+
+# git_sync.py's own push record.  Machine-local cache, not a shared fact: every push
+# rewrites it, so tracking it would leave a permanently dirty tree (and committing it
+# would dirty it again immediately after the next push).  The *facts* it holds are
+# published where they are useful -- tools/update_workbuddy_handoff.py renders
+# last_push_at / last_push_status into 01_CURRENT_TRUTH.md §A2 and the other handoff
+# files, which ARE tracked, so a fresh clone still learns when the mirror was last
+# updated relative to the commit it is reading.
+learning/git_sync_state.json
