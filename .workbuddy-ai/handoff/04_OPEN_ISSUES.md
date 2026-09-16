@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 60 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md']
+- 27 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/REVIEW_REQUESTS.md', '?? .workbuddy-ai/commander/results/WB-R19-BATTLE-UNKNOWN-RECOVERY.json', '?? .workbuddy-ai/commander/results/WB-R19-LOW-RISK-GOAL-ATTEMPT.json']
 <!-- /AUTO:open_issues -->
 
 ---

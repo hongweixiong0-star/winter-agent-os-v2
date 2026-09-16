@@ -1,0 +1,36 @@
+{
+  "TASK_ID": "WB-R19-LOW-RISK-GOAL-ATTEMPT",
+  "NO_SAFE_CANDIDATE": true,
+  "ROOT_CAUSE": "Not a lack of effort: the candidate set was computed rather than guessed, and it is empty of anything reachable. Filtering the 20 never-executed skills by the order's own three conditions -- (1) must be in LiveRuntime.VERIFIED_ATOMIC, because the live loop refuses anything else; (2) risk NONE or LOW with BOTH a verifier and a recovery path; (3) not inside the fenced areas (Arena/Labyrinth/Rally/payment/account) -- leaves exactly ONE skill, RECALL_MARCH (verifier MARCH_RECALLED, recovery REFRESH_MARCH_STATE). RECALL_MARCH requires a march that is actually in progress, and the live client currently reports marches=[] with march_used=0 (probe 2026-09-16T02:30:10Z, page INTEL). So the single survivor cannot be attempted without first dispatching a march, which is precisely what the order's do_not_touch and the master rules forbid ('禁止为验证主动消耗资源').",
+  "CHANGED_FILES": [
+    "tools/cq_low_risk_candidates.py"
+  ],
+  "PATCH_STATUS": "NO_PATCH_BY_DESIGN",
+  "PATCH_SUMMARY": "Nothing in the product was changed. What was produced is the filter itself (tools/cq_low_risk_candidates.py), so the answer is reproducible and the next round does not have to re-derive it. The elimination reasons are per-skill and checkable, not a blanket judgement.",
+  "TEST_RESULT": "n/a - no change to test. The filter imports the real v2_registry() and reads the real episode corpus, so running it IS the check.",
+  "REPLAY_RESULT": "tools/cq_low_risk_candidates.py, run 2026-09-16. 87 registry skills, 69 seen in episodes, 20 never executed. Of those 20: six (NAVIGATE_TO, RECOVER_HOME, READ_TIMER, READ_COUNTER, CLAIM_REWARD, SEND_MARCH) carry a verifier and recovery but are NOT in VERIFIED_ATOMIC, so the live loop refuses them; six (READ_INTEL_LIST, SELECT_INFANTRY_CAMP, SELECT_INTEL_RESCUE_SURVIVORS, CANCEL_DUPLICATE_TARGET, DISMISS_ALLIANCE_GENERIC_REWARD, RELAX_RESOURCE_LEVEL) are in VERIFIED_ATOMIC but have NO verifier at all; two (JOIN_RALLY, START_RALLY) are MEDIUM_COMBAT and inside the Rally fence. One survives: RECALL_MARCH -- and it needs a natural active march.",
+  "LIVE_ATTEMPTS": 0,
+  "LIVE_SUCCESS": 0,
+  "LIVE_FAILURE": 0,
+  "LIVE_DETAIL": "No live attempt. The order permits at most one bounded attempt, and the only candidate would have required manufacturing the very state it depends on.",
+  "EVIDENCE": {
+    "live_probe": "tools/probe_live_page.py 2026-09-16T02:30:10Z -> page=Page.INTEL, marches=[], march_used=None",
+    "filter_output": "out_r20_8b.txt (candidate table) and out_r20_8c.txt (VERIFIED_ATOMIC membership)",
+    "tool": "tools/cq_low_risk_candidates.py"
+  },
+  "BEFORE": "20 skills never executed; fully-live-verified goals 2/16.",
+  "AFTER": "Unchanged, and now explained rather than merely unknown: the reachable-and-safe candidate set is a single skill that needs an active march, which does not exist.",
+  "VERIFIER_RESULT": "not reached",
+  "REMAINING_ISSUE": [
+    "The blocker is structural, not incidental. A never-executed skill can only be attempted if it is reachable in the live loop, and 12 of the 20 are eliminated by two hard gates rather than by risk: six are absent from VERIFIED_ATOMIC and six have no verifier. Adding a verifier is cheap and is the highest-leverage fix this reconnaissance found; adding a skill to VERIFIED_ATOMIC is not, because that map is the safety boundary.",
+    "A side finding worth acting on: DISPATCH_BEAST and DISPATCH_INTEL_BEAST have NOT never run -- they appear in the corpus -- yet they carry no verifier at all (no verifier= argument in skills.py). So their episodes record a backend and an execution but no verification, which is also why a Beast fight cannot arm the protection added in WB-R19-BATTLE-UNKNOWN-RECOVERY. It is the same gap the provenance audit found from the other side.",
+    "If Codex wants this order to be reachable, the cheapest route is to give one of the six verifier-less atomic skills a real verifier. READ_INTEL_LIST and SELECT_INFANTRY_CAMP are both read/navigation-shaped and spend nothing, so either would satisfy the order's safety intent once it can be verified."
+  ],
+  "ACCEPTANCE": {
+    "no_payment_or_account_risk": "MET -- nothing was executed",
+    "real_action_and_state_change": "NOT REACHED -- deliberately; no candidate could provide it safely",
+    "verifier_pass_before_lifecycle_upgrade": "MET trivially -- no lifecycle was upgraded",
+    "failure_does_not_stop_AUTO": "MET -- the queue continues to the next READY order"
+  },
+  "NEXT_RECOMMENDATION": "Add a verifier to one of the six verifier-less VERIFIED_ATOMIC skills (READ_INTEL_LIST or SELECT_INFANTRY_CAMP are the safest shapes) and reissue this order; that single change makes the order reachable without touching the safety boundary. Separately, the SELECT_RESOURCE strip-geometry recalibration is still the only blocker on the whole gather chain, and its calibration set already exists under dataset/truth_audit/resource_cells_20260914_120027."
+}

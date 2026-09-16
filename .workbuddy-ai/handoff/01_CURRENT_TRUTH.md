@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T02:17:43+00:00`
+- generated_at: `2026-09-16T02:30:54+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `e58dcc7` on `main`
+- commit: `b7a6028` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 75
-- HEAD: `e58dcc7` — chore(handoff): regenerate after the R19 round (739 tests, 0 failures, 0 errors); archive Codex's 23:05/23:09 intel evidence (2026-09-16T07:53:26+08:00)
-- working tree: 60 dirty file(s)
+- commits: 76
+- HEAD: `b7a6028` — fix(intel-recognition,battle-recovery): stop treating a moved control as an absent one; do not press Back during a live battle (2026-09-16T10:30:01+08:00)
+- working tree: 27 dirty file(s)
   - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
   - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/memory/2026-09-16.md`
-  - ` M .workbuddy/memory/2026-09-16.md`
-  - ` M dataset/candidate/template_manifest.json`
-  - ` M knowledge/execution/backend_routing.json`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M winter_agent_v2/runtime.py`
-  - ` M winter_agent_v2/vision.py`
-  - `?? .workbuddy-ai/commander/results/WB-R19-BACKEND-PROVENANCE-TRUTH.json`
-  - `?? .workbuddy-ai/commander/results/WB-R19-OPEN-INTEL-MAA-RECOVERY.json`
-  - `?? .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json`
-  - `?? dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_1__0.png`
-  - `?? dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_2__0.png`
-  - `?? dataset/truth_audit/intel_entry_20260916/`
+  - ` M .workbuddy-ai/commander/REVIEW_REQUESTS.md`
+  - `?? .workbuddy-ai/commander/results/WB-R19-BATTLE-UNKNOWN-RECOVERY.json`
+  - `?? .workbuddy-ai/commander/results/WB-R19-LOW-RISK-GOAL-ATTEMPT.json`
+  - `?? out_crop_right_column/`
+  - `?? out_junit_audit.xml`
+  - `?? out_junit_final_r18.xml`
+  - `?? out_junit_fix.xml`
+  - `?? out_junit_full_v1.xml`
+  - `?? out_junit_full_v3.xml`
+  - `?? out_junit_iso.xml`
+  - `?? out_junit_r18d.xml`
+  - `?? out_junit_r18e.xml`
+  - `?? out_junit_r19.xml`
+  - `?? out_junit_r20.xml`
+  - `?? out_junit_v1.xml`
+  - `?? out_junit_v2.xml`
+  - `?? out_memory_r18.md`
+  - `?? out_memory_r18b.md`
 
 ## B. Runtime
 

@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `b7a6028 2026-09-16T10:30:01+08:00 fix(intel-recognition,battle-recovery): stop treating a moved control as an absent one; do not press Back during a live battle`
 - `e58dcc7 2026-09-16T07:53:26+08:00 chore(handoff): regenerate after the R19 round (739 tests, 0 failures, 0 errors); archive Codex's 23:05/23:09 intel evidence`
 - `dbc3610 2026-09-16T07:53:10+08:00 fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence`
 - `b4baff2 2026-09-16T00:41:21+08:00 chore(handoff): final regeneration after the march-count fix (712 tests, 0 failures, 0 errors)`
@@ -17,29 +18,28 @@ Last 12 commits (newest first):
 - `2b78b91 2026-09-15T23:19:33+08:00 feat(commander): adopt the Codex Commander Queue and execute 5 work orders`
 - `59fd8b9 2026-09-15T21:17:26+08:00 test(infra): stop the host bulk-delete guard from faking 26 suite errors (0bd)`
 - `d66f75d 2026-09-15T21:02:37+08:00 docs(handoff): MAA state from production evidence; PAGE_MAP anchor is the city button (0bc)`
-- `f9aa8be 2026-09-15T21:00:19+08:00 fix(runtime): the brain must never name a skill the live loop refuses (CHECK_MARCH)`
 
-Uncommitted changes: 60
+Uncommitted changes: 27
 - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/memory/2026-09-16.md`
-- ` M .workbuddy/memory/2026-09-16.md`
-- ` M dataset/candidate/template_manifest.json`
-- ` M knowledge/execution/backend_routing.json`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
-- ` M winter_agent_v2/runtime.py`
-- ` M winter_agent_v2/vision.py`
-- `?? .workbuddy-ai/commander/results/WB-R19-BACKEND-PROVENANCE-TRUTH.json`
-- `?? .workbuddy-ai/commander/results/WB-R19-OPEN-INTEL-MAA-RECOVERY.json`
-- `?? .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json`
-- `?? dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_1__0.png`
-- `?? dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_2__0.png`
-- `?? dataset/truth_audit/intel_entry_20260916/`
+- ` M .workbuddy-ai/commander/REVIEW_REQUESTS.md`
+- `?? .workbuddy-ai/commander/results/WB-R19-BATTLE-UNKNOWN-RECOVERY.json`
+- `?? .workbuddy-ai/commander/results/WB-R19-LOW-RISK-GOAL-ATTEMPT.json`
+- `?? out_crop_right_column/`
+- `?? out_junit_audit.xml`
+- `?? out_junit_final_r18.xml`
+- `?? out_junit_fix.xml`
+- `?? out_junit_full_v1.xml`
+- `?? out_junit_full_v3.xml`
+- `?? out_junit_iso.xml`
+- `?? out_junit_r18d.xml`
+- `?? out_junit_r18e.xml`
+- `?? out_junit_r19.xml`
+- `?? out_junit_r20.xml`
+- `?? out_junit_v1.xml`
+- `?? out_junit_v2.xml`
+- `?? out_memory_r18.md`
+- `?? out_memory_r18b.md`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-16T02:10:02+00:00",
+  "updated_at": "2026-09-16T02:30:35+00:00",
   "queue_generated_at": "2026-09-16T07:17:31+08:00",
-  "current_task": "WB-R19-BATTLE-UNKNOWN-RECOVERY",
+  "current_task": null,
   "tasks": {
     "WB-0BA-PIN-EXHAUSTION": {
       "status": "DONE",
@@ -124,17 +124,23 @@
       "summary": "68 claims audited; every MAA/HYBRID claim traceable to a specific MaaController click or key press on its own row, with coordinates; 6 untraceable claims reported explicitly instead of passing on completeness."
     },
     "WB-R19-BATTLE-UNKNOWN-RECOVERY": {
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "priority": "P1",
       "queue_status": "READY",
-      "result_file": null,
-      "started_at": "2026-09-16T02:10:02+00:00"
+      "result_file": "results/WB-R19-BATTLE-UNKNOWN-RECOVERY.json",
+      "started_at": "2026-09-16T02:10:02+00:00",
+      "finished_at": "2026-09-16T02:30:10+00:00",
+      "verdict": "APPLIED_MINIMAL",
+      "summary": "An unknown screen that follows a verified fight dispatch is waited out with bounded re-observation and no Back press; every other unknown screen is handled exactly as before, which the negative-control tests assert."
     },
     "WB-R19-LOW-RISK-GOAL-ATTEMPT": {
-      "status": "PENDING",
+      "status": "BLOCKED",
       "priority": "P2",
       "queue_status": "READY",
-      "result_file": null
+      "result_file": null,
+      "finished_at": "2026-09-16T02:30:35+00:00",
+      "verdict": "BLOCKED",
+      "blocker": null
     }
   }
 }
