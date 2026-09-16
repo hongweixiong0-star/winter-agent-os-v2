@@ -11,7 +11,7 @@ from typing import Protocol
 
 from PIL import Image
 
-from .models import MarchState, Page, WorldState
+from .models import MarchState, Page, RoleIdentity, WorldState
 
 
 @dataclass(frozen=True)
@@ -391,12 +391,160 @@ HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.058, "h_norm":
 MARCH_COUNT_ROI = {"x_norm": 0.240, "y_norm": 0.172, "w_norm": 0.140, "h_norm": 0.036}
 
 
+_MARCH_COUNT_TOKEN = re.compile(r"^(\d{1,2})\s*/\s*(\d{1,2})$")
+# Delimited by non-digits on both sides: a count must not be carved out of a
+# longer number.  Without this `'200/200'` matched as ``0/20``.
+_MARCH_COUNT_LOOSE = re.compile(r"(?<!\d)(\d{1,2})\s*/\s*(\d{1,2})(?!\d)")
+
+
 def read_march_count(text: str) -> tuple[int, int] | None:
-    """Parse ``used/max`` from the march counter ROI text."""
-    match = re.search(r"(\d{1,2})\s*/\s*(\d{1,2})", text.replace("\n", " "))
-    if match is None:
+    """Parse ``used/max`` from the march counter ROI text.
+
+    ``OCRResult.text`` puts one detected token on each line, so a line *is* a
+    token -- and that separation is load-bearing.  Measured 2026-09-16 on the
+    live frame that carries account A's counter: the ROI OCR returned two tokens,
+    ``'3/'`` and ``'3/6'``, and joining them before matching let the pattern read
+    ``3/ 3``.  The episode recorded capacity 3 on a client that said 6.  A stray
+    fragment must never be able to rewrite the one number the whole dispatch path
+    rests on, so a token that *is* the pattern wins outright; only when no token
+    is a whole count is a single unambiguous embedded one accepted.  Anything
+    genuinely ambiguous returns ``None``, which the caller already treats as
+    "unread" -- the honest answer, per "证据不足不要强猜".
+    """
+    whole = [match for match in (_MARCH_COUNT_TOKEN.match(line.strip())
+                                 for line in text.splitlines()) if match is not None]
+    if len(whole) == 1:
+        return int(whole[0].group(1)), int(whole[0].group(2))
+    if len(whole) > 1:
         return None
-    return int(match.group(1)), int(match.group(2))
+    loose = [match for match in (_MARCH_COUNT_LOOSE.search(line) for line in text.splitlines())
+             if match is not None]
+    if len(loose) != 1:
+        return None
+    return int(loose[0].group(1)), int(loose[0].group(2))
+
+
+# --- 领主档案: which role is logged in ---------------------------------------
+#
+# Measured 2026-09-16 on a live 720x1280 frame captured by
+# ``tools/role_identity_probe.py`` (archived in
+# ``dataset/truth_audit/role_identity_20260916``).  One tap on the top-left
+# avatar opens this panel and it states the account, the name and the kingdom.
+#
+# Do not look for the name on the HUD: measured first, and it is not there.  Both
+# the city view and the world map draw avatar portrait / power / stamina /
+# alliance rank (统帅N) / date, and no name at all.  Nor is any of those usable as
+# a key -- power moves by the hour and an alliance rank is shared by everyone
+# holding it.
+#
+# The title gate is not decoration.  ``账号：`` also appears on account-management
+# screens, which is exactly where ``config.risk.block_account_or_role_delete``
+# applies, so an identity is accepted only when the panel's own title is on the
+# frame as well.  Two independent facts or nothing.
+ROLE_PROFILE_TITLE = "领主档案"
+ROLE_PROFILE_TITLE_ROI = {"x_norm": 0.100, "y_norm": 0.012, "w_norm": 0.280, "h_norm": 0.040}
+# One ROI over the whole information block, not one per row: the client lays the
+# rows out, and a long name must not be clipped by a rectangle drawn around the
+# name we happened to observe.  Rows are recovered from token geometry instead.
+ROLE_PROFILE_INFO_ROI = {"x_norm": 0.355, "y_norm": 0.650, "w_norm": 0.590, "h_norm": 0.215}
+
+_ROLE_ACCOUNT = re.compile(r"账号[：:]\s*([0-9]{6,14})")
+_ROLE_KINGDOM = re.compile(r"所在王国[：:]\s*([0-9]{1,5})")
+_ROLE_ALLIANCE_TAG = re.compile(r"^\[([^\]]{1,12})\]\s*(.+)$")
+_ROLE_POWER = re.compile(r"(?<![\d.])([0-9][0-9,.]*万)(?![\d万])")
+_ROLE_LABELLED = ("账号", "所在王国", "联盟", "击败")
+
+
+def read_role_identity_rows(tokens, tolerance: float = 14.0) -> list[str]:
+    """Group OCR tokens into drawn rows, top to bottom, each joined left to right.
+
+    ``tolerance`` is in ROI-crop pixels.  Measured row pitch on the live panel is
+    ~41 px, so 14 px cannot merge two rows while still absorbing the baseline
+    wobble within one.  Token boxes from a ROI-scoped read are crop-relative,
+    which is why this works on the crop and not on full-frame coordinates.
+    """
+    placed: list[tuple[float, float, str]] = []
+    for token in tokens:
+        text = token.text.strip()
+        if not text or not token.box:
+            continue
+        ys = [point[1] for point in token.box]
+        xs = [point[0] for point in token.box]
+        placed.append((sum(ys) / len(ys), min(xs), text))
+    placed.sort()
+    rows: list[list[tuple[float, float, str]]] = []
+    for y, x, text in placed:
+        if rows and abs(y - rows[-1][0][0]) <= tolerance:
+            rows[-1].append((y, x, text))
+        else:
+            rows.append([(y, x, text)])
+    return [" ".join(text for _, _, text in sorted(row, key=lambda item: item[1])) for row in rows]
+
+
+def parse_role_identity(title_text: str, rows: list[str], *, confidence: float = 0.0) -> RoleIdentity | None:
+    """Build a :class:`RoleIdentity` from the panel's own text, or ``None``.
+
+    ``None`` unless the title says this is the profile panel *and* both the name
+    and the account rows parse.  A partial reading is not an identity, and
+    inventing one would key persisted state to the wrong role -- which is the
+    exact failure this whole capability exists to prevent.
+    """
+    if ROLE_PROFILE_TITLE not in title_text or not rows:
+        return None
+    account = None
+    for row in rows:
+        match = _ROLE_ACCOUNT.search(row)
+        if match:
+            account = match.group(1)
+            break
+    if account is None:
+        return None
+    # The block's first drawn row is the name row -- the panel's own layout, so it
+    # is read from position rather than from a hand-drawn rectangle.  If the
+    # topmost row is a labelled row instead, OCR missed the name, and "no
+    # identity" is the honest answer.
+    name_row = rows[0]
+    if any(label in name_row for label in _ROLE_LABELLED):
+        return None
+    name = name_row.strip()
+    if not name or name.isdigit():
+        return None
+
+    alliance_tag = None
+    match = _ROLE_ALLIANCE_TAG.match(name)
+    if match:
+        alliance_tag, name = match.group(1), match.group(2).strip()
+    if not name:
+        return None
+
+    kingdom = None
+    for row in rows:
+        match = _ROLE_KINGDOM.search(row)
+        if match:
+            kingdom = match.group(1)
+            break
+
+    # The power row carries no label, so it is the first unlabelled row below the
+    # name that states a rounded total.  Kept as text: the panel rounds (54.2万
+    # against a HUD reading of 542,443) and an int would claim precision the
+    # client never drew.
+    power_text = None
+    for row in rows[1:]:
+        if any(label in row for label in _ROLE_LABELLED):
+            continue
+        match = _ROLE_POWER.search(row)
+        if match:
+            power_text = match.group(1)
+            break
+
+    return RoleIdentity(
+        role_id=account,
+        role_name=name,
+        alliance_tag=alliance_tag,
+        kingdom=kingdom,
+        power_text=power_text,
+        confidence=confidence,
+    )
 
 
 # The free-gift row of the 获取更多 panel states *when* the next gift arrives as
@@ -644,13 +792,46 @@ class HybridVision:
                 return dict(record["roi_norm"])
         return None
 
+    def read_role_identity(self, image_path: Path) -> RoleIdentity | None:
+        """Read which role is logged in, or ``None`` when this is not that panel.
+
+        Deliberately separate from :meth:`observe`.  Identity is a session-level
+        fact, not a per-frame one: putting it in ``WorldState`` would make every
+        observation carry it, and the identification step is the only caller.
+
+        Gated on two independent facts -- the panel's own title *and* the account
+        row -- because the same panel holds the 设置 tab, which is where
+        ``config.risk.block_account_or_role_delete`` applies.  A frame that is not
+        plainly this panel yields ``None`` rather than a guess.
+        """
+        title_tokens = self.ocr.recognize(image_path, ROLE_PROFILE_TITLE_ROI).tokens
+        title = "".join(token.text.strip() for token in title_tokens if token.confidence >= 0.80)
+        if ROLE_PROFILE_TITLE not in title:
+            return None
+        info = self.ocr.recognize(image_path, ROLE_PROFILE_INFO_ROI)
+        tokens = [token for token in info.tokens if token.confidence >= 0.80]
+        if not tokens:
+            return None
+        return parse_role_identity(
+            title,
+            read_role_identity_rows(tokens),
+            confidence=min(token.confidence for token in tokens),
+        )
+
     def observe(self, image_path: Path) -> WorldState:
         primary = self.template_vision.observe(image_path)
         if primary.known:
-            # March capacity is a global HUD fact and remains visible on map
-            # overlays such as RESOURCE_DETAIL. Read it on both pages so a
-            # target dialog can never launch a march after the queue filled
-            # between target search and dispatch.
+            # The march counter is drawn on the map HUD and stays drawn under map
+            # overlays such as RESOURCE_DETAIL. Read it on both pages so a target
+            # dialog can never launch a march after the queue filled between
+            # target search and dispatch.
+            #
+            # Corrected 2026-09-16: this used to call march capacity "a global HUD
+            # fact".  It is neither global nor constant.  Capacity is a property of
+            # the logged-in role and it moves: account A (2026-09-14) drew 行军 3/6
+            # while account B, `xhw小号` (2026-09-16), drew 1/2 on the same server
+            # #4298.  Only ``march_max`` read off a counter is a fact; nothing here
+            # may supply one when the client did not draw it.
             if primary.page is Page.POPUP and primary.popup == "GET_MORE_STAMINA":
                 # The panel is the only place that shows the true stamina
                 # (350/200 on 2026-09-14 after a free claim): the map gauge is

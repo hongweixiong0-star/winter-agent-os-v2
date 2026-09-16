@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-16T05:43:34+00:00",
-  "count": 502,
+  "generated_at": "2026-09-16T11:01:34+00:00",
+  "count": 508,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -180,7 +180,7 @@
       "path": "evidence/INDEX.json",
       "kind": "evidence",
       "bytes": 95047,
-      "mtime": "2026-09-16T04:31:55+00:00"
+      "mtime": "2026-09-16T05:43:34+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -2869,6 +2869,42 @@
       "kind": "fixture",
       "bytes": 969620,
       "mtime": "2026-09-15T23:35:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/role_identity_20260916/map_after_back.png",
+      "kind": "fixture",
+      "bytes": 596603,
+      "mtime": "2026-09-16T10:44:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/role_identity_20260916/map_before_tap.png",
+      "kind": "fixture",
+      "bytes": 638573,
+      "mtime": "2026-09-16T10:44:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/role_identity_20260916/ocr_tokens.json",
+      "kind": "fixture",
+      "bytes": 3608,
+      "mtime": "2026-09-16T10:44:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/role_identity_20260916/probe.json",
+      "kind": "fixture",
+      "bytes": 2839,
+      "mtime": "2026-09-16T10:44:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/role_identity_20260916/profile_panel_live_20260916T184004.png",
+      "kind": "fixture",
+      "bytes": 651386,
+      "mtime": "2026-09-16T10:44:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/role_identity_20260916/README.md",
+      "kind": "fixture",
+      "bytes": 2808,
+      "mtime": "2026-09-16T10:45:26+00:00"
     },
     {
       "path": "dataset/truth_audit/row_800_900.png",

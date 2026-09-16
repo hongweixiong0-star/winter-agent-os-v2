@@ -1,0 +1,156 @@
+{
+  "stamp": "20260916_184004",
+  "avatar_centre_px": [
+    47,
+    51
+  ],
+  "before": {
+    "page": "MAP",
+    "confidence": 0.99
+  },
+  "after": {
+    "page": "UNKNOWN",
+    "confidence": 0.0
+  },
+  "after_back_page": "MAP",
+  "candidate_identity_tokens": [
+    {
+      "text": "领主档案",
+      "confidence": 0.994,
+      "centre_norm": [
+        0.2271,
+        0.0328
+      ]
+    },
+    {
+      "text": "[zoe]xhw小号",
+      "confidence": 0.98,
+      "centre_norm": [
+        0.525,
+        0.6738
+      ]
+    },
+    {
+      "text": "账号：1171757165",
+      "confidence": 0.999,
+      "centre_norm": [
+        0.5257,
+        0.718
+      ]
+    },
+    {
+      "text": "54.2万",
+      "confidence": 0.999,
+      "centre_norm": [
+        0.4965,
+        0.7508
+      ]
+    },
+    {
+      "text": "击败：0Q",
+      "confidence": 0.941,
+      "centre_norm": [
+        0.4778,
+        0.7797
+      ]
+    },
+    {
+      "text": "十心情",
+      "confidence": 0.957,
+      "centre_norm": [
+        0.2194,
+        0.8055
+      ]
+    },
+    {
+      "text": "联盟：zoe",
+      "confidence": 0.999,
+      "centre_norm": [
+        0.4681,
+        0.8121
+      ]
+    },
+    {
+      "text": "0级",
+      "confidence": 0.993,
+      "centre_norm": [
+        0.2403,
+        0.8398
+      ]
+    },
+    {
+      "text": "所在王国：4298",
+      "confidence": 0.999,
+      "centre_norm": [
+        0.509,
+        0.8434
+      ]
+    },
+    {
+      "text": "礼物展柜",
+      "confidence": 0.999,
+      "centre_norm": [
+        0.5,
+        0.8957
+      ]
+    },
+    {
+      "text": "装扮",
+      "confidence": 0.976,
+      "centre_norm": [
+        0.1292,
+        0.9777
+      ]
+    },
+    {
+      "text": "部队",
+      "confidence": 0.993,
+      "centre_norm": [
+        0.3764,
+        0.9781
+      ]
+    },
+    {
+      "text": "排行榜",
+      "confidence": 0.996,
+      "centre_norm": [
+        0.6229,
+        0.9777
+      ]
+    },
+    {
+      "text": "设置",
+      "confidence": 0.999,
+      "centre_norm": [
+        0.8708,
+        0.977
+      ]
+    }
+  ],
+  "log": [
+    {
+      "label": "00_before",
+      "file": "20260916_184004_00_before.png",
+      "page": "MAP",
+      "confidence": 0.99,
+      "march_used": null,
+      "march_max": null
+    },
+    {
+      "label": "01_after_avatar_tap",
+      "file": "20260916_184004_01_after_avatar_tap.png",
+      "page": "UNKNOWN",
+      "confidence": 0.0,
+      "march_used": null,
+      "march_max": null
+    },
+    {
+      "label": "02_after_back",
+      "file": "20260916_184004_02_after_back.png",
+      "page": "MAP",
+      "confidence": 0.99,
+      "march_used": null,
+      "march_max": null
+    }
+  ]
+}

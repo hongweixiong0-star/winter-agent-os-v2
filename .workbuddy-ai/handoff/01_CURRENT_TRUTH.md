@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T05:43:33+00:00`
+- generated_at: `2026-09-16T11:01:33+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `1ffc8d2` on `main`
+- commit: `dd11b20` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,21 +10,21 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 79
-- HEAD: `1ffc8d2` — fix(gather): the strip geometry was never wrong -- the gate was below its own calibration corpus (2026-09-16T12:32:10+08:00)
-- working tree: 39 dirty file(s)
+- commits: 80
+- HEAD: `dd11b20` — fix(capability): stop inventing march capacity; make the reservation a function of it (2026-09-16T13:43:51+08:00)
+- working tree: 43 dirty file(s)
   - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
   - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
   - ` M .workbuddy-ai/memory/2026-09-16.md`
   - ` M .workbuddy/memory/2026-09-16.md`
-  - ` M config/v2.json`
-  - ` M tests/test_p0_live_vision.py`
-  - ` M tools/check_wiring.py`
-  - ` M winter_agent_v2/brain.py`
-  - ` M winter_agent_v2/vision.py`
-  - `?? docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`
-  - `?? docs/ROLE_SCOPED_CAPABILITY_PLAN.md`
+  - ` M docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`
+  - ` M winter_agent_v2/models.py`
+  - ` M winter_agent_v2/ocr.py`
+  - `?? dataset/raw/role_identity/`
+  - `?? dataset/truth_audit/role_identity_20260916/`
+  - `?? docs/PRODUCT_ONE_AGENT_MULTI_ROLE.md`
   - `?? out_crop_right_column/`
+  - `?? out_crop_role/`
   - `?? out_crop_strip/`
   - `?? out_junit_audit.xml`
   - `?? out_junit_final_r18.xml`

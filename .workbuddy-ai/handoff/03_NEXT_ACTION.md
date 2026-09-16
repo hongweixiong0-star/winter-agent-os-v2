@@ -4,7 +4,55 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 13:0x GMT+8）—— 角色成长/容量动态建模：审计 + 两项 P0
+## 手写：本轮（2026-09-16 18:4x GMT+8）—— 产品定义落地：**身份来源已找到**（一次点击）
+
+**先读**：`docs/PRODUCT_ONE_AGENT_MULTI_ROLE.md`（操作者的产品定义 + 落地现状 + 硬边界）。
+
+### 1. 本轮最重要的一句话
+
+**"登录的是哪个角色"以前无法观测，现在可以了**：从 HOME/MAP **点一次左上头像**
+打开 `领主档案` 面板，OCR 直接读出 `[zoe]xhw小号` / `账号：1171757165` / `所在王国：4298`。
+一次 Back 回 MAP（实测 0.99）。证据：`dataset/truth_audit/role_identity_20260916/`。
+
+**但还没人用它。** 已落地的是**观测能力**：`models.RoleIdentity`、
+`HybridVision.read_role_identity()`、`tools/role_identity_probe.py`、
+`tools/cq_role_identity_verify.py`、`tests/test_role_identity.py`（20 项，4 个负向帧）。
+
+### 2. 下一步就是把它接进运行（这是当前最高杠杆项）
+
+1. **`IDENTIFY_ROLE` 正式 Skill 化**（照 §15 的 Precondition / Action / Verifier 三件套）。
+   Precondition：页 ∈ {HOME, MAP} 且身份未知或过期。Action：点头像。Verifier：`read_role_identity()`
+   返回非 None **且** 回到 HOME/MAP。⚠ 代价必须记录：这一步要 2 个动作（点 + Back）。
+2. **role state 按 `role_id` 分文件落盘**（`learning/roles/<role_id>.json`），
+   承载 AccountStage / MarchCapacity / FeatureAvailability。**不要**建第二套引擎（§26）。
+3. **每条 episode 带 `role_id`**，否则历史指标永远是无归属的（见第 3 条）。
+4. **不要把 `领主档案` 登记成 page 模板却不加恢复规则**：今天它判 `UNKNOWN` ⇒ 会被
+   `unknown_page` 恢复按 BACK 并成功退出；一旦登记成已知页而大脑没有对应分支，就会卡在面板上。
+   要登记就连恢复（Back）一起做。
+
+### 3. ⚠ 语料已经跨了两个角色（本轮证实）
+
+| | 2026-09-14 13:41 | 2026-09-16 18:37 |
+|---|---|---|
+| 战力 | **70,206,322** | **542,443** |
+| 统帅 | 统帅9 | 统帅2 |
+| 行军 | **行军 6/6** | **行军 1/2** |
+
+同服务器 `#4298`。⇒ `learning/episodes.jsonl` 里**混了两个账号**，容量差 3 倍。
+任何"某技能的容量/无效率"统计，在带 `role_id` 之前都只能当作参考。
+
+### 4. 顺手修掉的一个真缺陷
+
+`read_march_count` 把 ROI 的多个 token 拼成一行再匹配 ⇒ `'3/' ＋ '3/6'` 读成 `(3,3)`，
+**客户端说 6、episode 记 3**，而这正是派兵依赖的数字。已收紧为"整 token 优先、
+碎片不得改写、歧义返回 None"，并加了数字边界（`200/200` 不再被读成 `0/20`）。
+
+### 5. 上一轮（13:0x）的角色能力审计仍然有效
+
+`docs/ROLE_SCOPED_CAPABILITY_AUDIT.md` 的 9 问答案不变；本轮只是把其中"无法观测身份"
+从**阻断性前提**变成了**已解决的前提**。
+
+## 手写：上一轮（2026-09-16 13:0x GMT+8）—— 角色成长/容量动态建模：审计 + 两项 P0
 
 **先读两份文档，不要只看本条**：`docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`（9 问逐条答案，全带证据）
 与 `docs/ROLE_SCOPED_CAPABILITY_PLAN.md`（剩余项方案 + 阻断性前提）。
@@ -636,7 +684,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 24 in the last 2 day(s), 128 all-time, last seen 2026-09-16T04:09:40.727152+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 39
+CURRENT DIRTY FILES: 43
 LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-16T04:15:47.610172+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T041534522773.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T041538058317.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 128, "recent": 24, "last_seen": "2026-09-16T04:09:40.727152+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T04:15:47.610172+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.

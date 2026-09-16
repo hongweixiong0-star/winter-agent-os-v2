@@ -125,6 +125,40 @@ class WorldState:
 
 
 @dataclass(frozen=True)
+class RoleIdentity:
+    """Which role the client is logged in as, quoted from the 领主档案 panel.
+
+    The operator's product definition (2026-09-16) makes this a precondition:
+    "它登录到哪个角色 → 识别当前角色 → 读取当前角色的发展状态".  The project had no
+    role concept at all, and the corpus was already built from two different
+    accounts -- one showing 70,206,322 power and 6 march slots on 2026-09-14,
+    the other showing 542,443 power and 2 march slots on 2026-09-16 -- so every
+    metric that pooled them was un-scoped.
+
+    Every field is a string the client drew.  Nothing here is derived from a
+    furnace-level table, per "实际客户端观测 > 推测规则": a level may only ever
+    supply a prior, never a fact.
+
+    ``role_id`` is the account number the panel prints (``账号：1171757165``) and
+    is the stable key to scope state by.  ``role_name`` is what the player sees,
+    with any alliance tag kept separately rather than baked into the name.
+    ``power_text`` stays text on purpose: the panel rounds (``54.2万`` against a
+    HUD reading of 542,443), so turning it into an int would claim precision the
+    client never showed.
+    """
+
+    role_id: str
+    role_name: str
+    alliance_tag: str | None = None
+    kingdom: str | None = None
+    power_text: str | None = None
+    confidence: float = 0.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class Decision:
     skill: str
     reason: str

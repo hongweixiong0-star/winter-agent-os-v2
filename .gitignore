@@ -78,6 +78,13 @@ dataset/external/repositories/
 !dataset/truth_audit/panel_redesign/panel_wood_reselect.png
 !dataset/truth_audit/panel_redesign/panel_coal_selected.png
 !dataset/truth_audit/panel_redesign/panel_iron_selected.png
+# the only evidence of where the client states *which role is logged in*: the
+# 领主档案 panel behind one tap on the avatar, plus the map frames either side of
+# it.  tests/test_role_identity.py reads all three (one positive, two negatives),
+# and they are ~1.9 MB total, so the directory is re-included whole rather than
+# file by file -- a later frame added here would otherwise go silently untracked,
+# which is the trap the note above describes.
+!dataset/truth_audit/role_identity_*/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only

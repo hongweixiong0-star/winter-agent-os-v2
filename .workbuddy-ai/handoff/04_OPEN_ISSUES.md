@@ -22,12 +22,27 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 39 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M config/v2.json']
+- 43 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M docs/ROLE_SCOPED_CAPABILITY_AUDIT.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 第 22 轮（2026-09-16 18:4x GMT+8）—— 产品定义落地：身份来源已找到
+
+产品定义见 `docs/PRODUCT_ONE_AGENT_MULTI_ROLE.md`（冻结级，后续会话按它执行）。
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0af | **身份能读了但没人用**：`read_role_identity()` 已实现并双向验证，但运行路径没有调用它 | ⚠️ **未修（下一件该做的事）** | 需要 `IDENTIFY_ROLE` Skill（Precondition/Action/Verifier）+ 运行序言。⚠ 代价：2 个动作（点头像 + Back）。⚠ 面板内有 `设置` 页签，**永不点击面板内控件**。 |
+| 0ag | **语料跨两个角色**：09-14 是 70,206,322 战力 / `行军 6/6`，09-16 是 542,443 / `1/2`，同服 `#4298` | ⚠️ **未修** | 在每条 episode 带 `role_id` 之前，容量/无效率统计都只能当参考。**不要**回头改写历史（§18）。 |
+| 0ah | **`领主档案` 未登记为 page 模板** | ⚠️ **刻意未做** | 今天它判 `UNKNOWN` ⇒ 会被 `unknown_page` 恢复按 BACK 并成功退出（已实测）。**登记页但不加恢复规则会卡死在面板上** —— 要登记就连 Back 一起做。 |
+| 0ai | `ocr.py` 全帧回退用 `re.fullmatch(r"(\d+)\s*/\s*(\d+)")`，**无位数上限** | ⚠️ **未修（相邻，未测量）** | 与刚修的 `read_march_count` 同类；本轮只修有证据的那条。触发面窄（要求 token 在左上 `x<300,y<360`）。 |
+| 0aj | `resources_policy` / 角色状态**仍无 role-scoped 落盘** | ⚠️ **未修** | 与 0af 同批做：`learning/roles/<role_id>.json`。**不要**用配置声明当身份（见产品定义 §5.2）。 |
+
+**本轮修掉的**：`read_march_count` 把令牌拼接后再匹配，`'3/'＋'3/6'` 读成 `(3,3)`（客户端说 6）。
+已收紧为整 token 优先 + 数字边界；14 例全过（含 `200/200`、`542,443` 必须为 `None`）。
 
 ### 第 21 轮（2026-09-16 13:0x GMT+8）—— 角色成长/行军容量动态建模：审计 + 两项 P0
 

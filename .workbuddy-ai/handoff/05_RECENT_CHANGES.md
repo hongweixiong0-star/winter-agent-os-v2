@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `dd11b20 2026-09-16T13:43:51+08:00 fix(capability): stop inventing march capacity; make the reservation a function of it`
 - `1ffc8d2 2026-09-16T12:32:10+08:00 fix(gather): the strip geometry was never wrong -- the gate was below its own calibration corpus`
 - `a42d8e7 2026-09-16T10:31:10+08:00 chore(memory): record the R20 queue terminal state and the two open review requests`
 - `7d5c865 2026-09-16T10:30:57+08:00 chore(handoff): queue exhausted (4 DONE / 3 BLOCKED); RR-002 capture_backend name collision and RR-003 missing verifiers`
@@ -17,21 +18,20 @@ Last 12 commits (newest first):
 - `96146a9 2026-09-16T00:10:06+08:00 docs(handoff): record 0bc's true cause (march counter, not page model) and the new gather frontier 0bm`
 - `1a10ad7 2026-09-16T00:07:11+08:00 fix(vision): a march counter that is not drawn means idle, not unreadable`
 - `d91ca08 2026-09-15T23:48:31+08:00 chore(handoff): regenerate truth/metrics after the commander round; archive the 20:43/20:45 acceptance evidence`
-- `000c8e7 2026-09-15T23:48:18+08:00 fix(test-infra): remove the self-defeating pytest basetemp+retention pair (0bd); run the earlier work orders' handoff`
 
-Uncommitted changes: 39
+Uncommitted changes: 43
 - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
 - ` M .workbuddy-ai/memory/2026-09-16.md`
 - ` M .workbuddy/memory/2026-09-16.md`
-- ` M config/v2.json`
-- ` M tests/test_p0_live_vision.py`
-- ` M tools/check_wiring.py`
-- ` M winter_agent_v2/brain.py`
-- ` M winter_agent_v2/vision.py`
-- `?? docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`
-- `?? docs/ROLE_SCOPED_CAPABILITY_PLAN.md`
+- ` M docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`
+- ` M winter_agent_v2/models.py`
+- ` M winter_agent_v2/ocr.py`
+- `?? dataset/raw/role_identity/`
+- `?? dataset/truth_audit/role_identity_20260916/`
+- `?? docs/PRODUCT_ONE_AGENT_MULTI_ROLE.md`
 - `?? out_crop_right_column/`
+- `?? out_crop_role/`
 - `?? out_crop_strip/`
 - `?? out_junit_audit.xml`
 - `?? out_junit_final_r18.xml`
