@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T11:01:33+00:00`
+- generated_at: `2026-09-16T11:56:59+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `dd11b20` on `main`
+- commit: `44de622` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 80
-- HEAD: `dd11b20` — fix(capability): stop inventing march capacity; make the reservation a function of it (2026-09-16T13:43:51+08:00)
-- working tree: 43 dirty file(s)
-  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- commits: 83
+- HEAD: `44de622` — docs(procedure): pin the live-observation workflow and the role facts it produced (2026-09-16T19:04:05+08:00)
+- working tree: 61 dirty file(s)
+  - `M .gitignore`
+  - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
   - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
   - ` M .workbuddy-ai/memory/2026-09-16.md`
+  - ` M .workbuddy-ai/memory/MEMORY.md`
   - ` M .workbuddy/memory/2026-09-16.md`
-  - ` M docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`
-  - ` M winter_agent_v2/models.py`
-  - ` M winter_agent_v2/ocr.py`
-  - `?? dataset/raw/role_identity/`
-  - `?? dataset/truth_audit/role_identity_20260916/`
-  - `?? docs/PRODUCT_ONE_AGENT_MULTI_ROLE.md`
-  - `?? out_crop_right_column/`
-  - `?? out_crop_role/`
-  - `?? out_crop_strip/`
-  - `?? out_junit_audit.xml`
-  - `?? out_junit_final_r18.xml`
-  - `?? out_junit_fix.xml`
-  - `?? out_junit_full_v1.xml`
-  - `?? out_junit_full_v3.xml`
-  - `?? out_junit_iso.xml`
-  - `?? out_junit_r18d.xml`
+  - ` M docs/CAPABILITY_COVERAGE.md`
+  - ` M evidence/INDEX.json`
+  - ` M knowledge/goals/capability_skill_map.json`
+  - ` M learning/episodes.jsonl`
+  - ` M learning/executor_backend.jsonl`
+  - ` M learning/goal_state.json`
+  - ` M learning/resource_rotation.json`
+  - ` M learning/runtime_snapshot.json`
 
 ## B. Runtime
 
@@ -41,24 +41,24 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: reserved_march_for_stamina
-- page: MAP  march: 1/2
-- updated_at: 2026-09-16T04:17:01.572805+00:00
+- stop_reason: INTEL_BEAST_TARGET_NOT_PROVEN
+- page: HOME  march: None/None
+- updated_at: 2026-09-16T11:22:47.626484+00:00
 
 ## C. Episode stream
 
-- rows: 1317 (production 1317)  modes: {'PRODUCTION': 1317}
-- success / failure: 974 / 338
-- success rate over decided: **0.7424**
+- rows: 1351 (production 1351)  modes: {'PRODUCTION': 1351}
+- success / failure: 1006 / 340
+- success rate over decided: **0.7474**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-16T04:15:47.610172+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T041534522773.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T041538058317.png"}`
+- last episode: `{"skill": "OPEN_INTEL_BEAST_TARGET", "result": "FAILURE", "recorded_at": "2026-09-16T11:22:47.573385+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T112228940512.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T112231479939.png"}`
 
 ## D. Registry and lifecycle
 
 - registry total: 87  by_state: {'VERIFIED': 45, 'CANDIDATE': 40, 'BLOCKED': 2}
 - live dispatchable (verifier-backed): 71
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **26**  stable: 24  degraded: 9  only_failed: 10  never_executed: 20
+- live_verified: **26**  stable: 25  degraded: 9  only_failed: 9  never_executed: 20
 
 ### Never executed
 
@@ -86,7 +86,6 @@
 ### Only ever failed
 
 - `ALLIANCE_HELP` attempts=1 failure=0
-- `CHECK_MARCH` attempts=1 failure=1
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` attempts=2 failure=2
 - `DISMISS_EXPLORATION_REWARD` attempts=1 failure=1
 - `DISMISS_MAIL_REWARD` attempts=1 failure=1
@@ -99,7 +98,8 @@
 ### Stable
 
 - `ALLIANCE_ALLY_GIFT_CLAIM` success=23 rate=0.9583
-- `BACK` success=92 rate=0.9892
+- `BACK` success=93 rate=0.9894
+- `CHECK_MARCH` success=21 rate=0.9545
 - `CLOSE_POPUP` success=30 rate=0.9677
 - `DISMISS_INTEL_GENERIC_REWARD` success=36 rate=1.0
 - `DISMISS_INTEL_REWARD` success=23 rate=0.8214
@@ -113,42 +113,42 @@
 - `OPEN_EXPLORATION` success=11 rate=0.9167
 - `OPEN_HOME` success=20 rate=0.8696
 - `OPEN_INTEL` success=112 rate=0.855
-- `OPEN_INTEL_BEAST_TARGET` success=41 rate=0.8913
+- `OPEN_INTEL_BEAST_TARGET` success=41 rate=0.8723
 - `OPEN_INTEL_HERO_JOURNEY_TARGET` success=20 rate=0.9091
 - `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=7 rate=1.0
 - `OPEN_MAP` success=29 rate=0.9062
 - `OPEN_POWER_DETAILS` success=9 rate=1.0
 - `OPEN_POWER_OVERVIEW` success=9 rate=0.8182
-- `OPEN_STAMINA_SOURCES` success=12 rate=1.0
+- `OPEN_STAMINA_SOURCES` success=13 rate=1.0
 - `SELECT_INTEL_BEAST_MISSION` success=10 rate=0.8333
 - `SELECT_INTEL_PIN` success=43 rate=0.9348
 
 ### Degraded
 
-- `DISPATCH_MARCH` success=33 failure=35 rate=0.4853
+- `DISPATCH_MARCH` success=34 failure=35 rate=0.4928
 - `INTEL_HERO_DISPATCH` success=12 failure=8 rate=0.6
 - `MAIL_CLAIM_REWARDS` success=14 failure=10 rate=0.5833
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
 - `OPEN_MAIL` success=31 failure=15 rate=0.6739
-- `SEARCH_RESOURCE` success=44 failure=34 rate=0.5641
-- `SELECT_RESOURCE` success=12 failure=45 rate=0.2105
-- `START_GATHER` success=36 failure=59 rate=0.3789
-- `SUBMIT_RESOURCE_SEARCH` success=36 failure=30 rate=0.5455
+- `SEARCH_RESOURCE` success=46 failure=34 rate=0.575
+- `SELECT_RESOURCE` success=14 failure=45 rate=0.2373
+- `START_GATHER` success=37 failure=60 rate=0.3814
+- `SUBMIT_RESOURCE_SEARCH` success=38 failure=30 rate=0.5588
 
 ## E. Top failures
 
 Failure | Count | Top skills
 ---|---:|---
 `SEMANTIC_TARGET_NOT_VERIFIED` | 128 | SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-`RESOURCE_NOT_FOUND` | 30 | SUBMIT_RESOURCE_SEARCH(30)
-`STAMINA_SOURCES_NOT_OPEN` | 9 | OPEN_INTEL(9)
 `INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | INTEL_HERO_DISPATCH(8)
-`INTEL_RESCUE_START_NOT_PROVEN` | 6 | EXECUTE_INTEL_RESCUE_SURVIVORS(6)
-`INTEL_BEAST_TARGET_NOT_PROVEN` | 5 | OPEN_INTEL_BEAST_TARGET(5)
-`NO_EXECUTION` | 5 | SAFE_STOP(5)
-`INTEL_CLAIM_FEEDBACK_NOT_PROVEN` | 3 | INTEL_CLAIM_REWARDS(3)
+`INTEL_BEAST_TARGET_NOT_PROVEN` | 6 | OPEN_INTEL_BEAST_TARGET(6)
+`STAMINA_SOURCES_NOT_OPEN` | 9 | OPEN_INTEL(9)
 `DAILY_REWARD_ADVANCE_NOT_PROVEN` | 3 | DISMISS_DAILY_REWARD(3)
 `OPEN_MAP_NOT_PROVEN` | 3 | OPEN_MAP(3)
+`INTEL_BEAST_MARCH_NOT_PROVEN` | 2 | INTEL_BEAST_START_MARCH(2)
+`MARCH_PAGE_NOT_OPEN` | 60 | START_GATHER(60)
+`INTEL_RESCUE_START_NOT_PROVEN` | 6 | EXECUTE_INTEL_RESCUE_SURVIVORS(6)
+`NO_EXECUTION` | 5 | SAFE_STOP(5)
 
 ## F. Goal capability coverage
 
@@ -177,9 +177,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 1141  present: 1141
+- referenced screenshots: 1209  present: 1209
 - missing: []
-- episodes carrying screenshot references: 585
+- episodes carrying screenshot references: 619
 
 ## H. Commercial bot parity
 

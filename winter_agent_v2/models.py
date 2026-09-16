@@ -117,6 +117,36 @@ class WorldState:
         return max(0, self.march_max - self.march_used)
 
     @property
+    def has_free_march_slot(self) -> bool | None:
+        """Whether at least one normal march slot is free, or ``None`` if unknowable.
+
+        The start condition must not depend on a capacity the client will not draw.
+        Measured 2026-09-16: the march counter only exists while a march is out.  With
+        nothing out, ``MARCH_COUNT_ROI`` returns no tokens at all, so ``march_used``
+        reads 0 while ``march_max`` stays unreadable -- and every ``idle_marches``
+        computation returns ``None``.  ``CHECK_MARCH`` cannot repair that by looking
+        again: nothing is going to change.  Live 2026-09-16T11:09-11:16, three
+        ``GATHER_RESOURCE`` runs burned all eight actions each on CHECK_MARCH for
+        exactly this reason.
+
+        It does not have to be repaired, because a lower bound is enough to start:
+        if nothing is out at all, at least one slot is free -- an account that can
+        march has at least one slot.  That claims nothing about the capacity, and it
+        is self-correcting: dispatching a march makes the counter appear, so the real
+        pair is read on the very next frame (live 2026-09-16T04:15:47, ``max``
+        ``None -> 2``).
+
+        The distinction matters for honest reporting.  ``idle_marches`` states a
+        count and is only knowable while a march is out; this states the weak fact
+        the dispatch decision actually needs, and it is knowable in both states.
+        """
+        if self.idle_marches is not None:
+            return self.idle_marches > 0
+        if self.march_used == 0:
+            return True
+        return None
+
+    @property
     def effective_normal_march_slots(self) -> int | None:
         return self.normal_march_slots if self.normal_march_slots is not None else self.march_max
 

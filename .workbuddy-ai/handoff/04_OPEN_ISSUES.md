@@ -7,13 +7,12 @@
 Machine-detected issues (recomputed every run):
 
 - **SEMANTIC_TARGET_NOT_VERIFIED** x128 all-time; recent=24 (last 2d), last seen 2026-09-16T04:09:40.727152+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-- **RESOURCE_NOT_FOUND** x30 all-time; recent=22 (last 2d), last seen 2026-09-14T06:42:03.928936+00:00 — SUBMIT_RESOURCE_SEARCH(30)
-- **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=9 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
 - **INTEL_HERO_DISPATCH_NOT_PROVEN** x8 all-time; recent=8 (last 2d), last seen 2026-09-14T12:19:55.812501+00:00 — INTEL_HERO_DISPATCH(8)
-- **INTEL_RESCUE_START_NOT_PROVEN** x6 all-time; recent=6 (last 2d), last seen 2026-09-14T17:17:43.915836+00:00 — EXECUTE_INTEL_RESCUE_SURVIVORS(6)
-- **INTEL_BEAST_TARGET_NOT_PROVEN** x5 all-time; recent=5 (last 2d), last seen 2026-09-15T23:09:43.853116+00:00 — OPEN_INTEL_BEAST_TARGET(5)
+- **INTEL_BEAST_TARGET_NOT_PROVEN** x6 all-time; recent=5 (last 2d), last seen 2026-09-16T11:22:47.573385+00:00 — OPEN_INTEL_BEAST_TARGET(6)
+- **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=2 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
+- **DAILY_REWARD_ADVANCE_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-15T09:23:53.200251+00:00 — DISMISS_DAILY_REWARD(3)
+- **OPEN_MAP_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-15T15:16:47.597321+00:00 — OPEN_MAP(3)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
-- `CHECK_MARCH` never succeeded (attempts=1, failure=1)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
@@ -22,12 +21,30 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 43 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M docs/ROLE_SCOPED_CAPABILITY_AUDIT.md']
+- 61 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 第 23 轮（2026-09-16 19:0x GMT+8）—— CAPABILITY-FIRST 阶段启动
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0ak | **采集链在 R22 之后无法起步**（空闲时客户端不画计数器 ⇒ `idle_marches=None` ⇒ CHECK_MARCH 死循环） | ✅ **已修 + 已真机验证** | `has_free_march_slot`：`used==0 ⇒ 有空位`（下界，非容量猜测）；派兵后计数器出现，`max None->2`。实测 11:19:52–11:20:57 五步全 PASS |
+| 0am | ~~派兵后 43 秒行军消失~~ | ✅ **已解：那是假的** | 逐步重放 11:20:47→11:21:42 五帧，**始终 `used=1 max=2 MARCHING`** —— 队伍从未消失。`used 1->0` 是**旧空闲规则**在资源弹窗遮住 HUD 时把"读不到"读成"没有"造成的。**我自己的假说也是被这条缺陷骗到的** |
+| 0aq | **遮盖帧被读成空闲**（RESOURCE_DETAIL / 任何盖住 HUD 的覆层） | ✅ **已修 + 已用真机帧验证** | 空闲规则加 `primary.page is Page.MAP` 守卫；RESOURCE_DETAIL 帧现在报 `used=None`（未知），MAP 空闲帧仍报 0。证据 `dataset/truth_audit/march_counter_overlay_20260916/`，测试 `tests/test_march_count_idle.py`（8 项） |
+| 0al | **`RECALL_MARCH` 可判定、从未执行** | ⛔ **BLOCKED（理由已查实，不是没做）** | 触发条件是 `idle_marches==0`，即**槽位占满**。但该角色第二次派兵被**游戏自己拒绝**：`page=POPUP`，OCR 全文 `领主大人，您的城镇中现在暂无可出征士兵，请前往训练。` + `训练士兵` 按钮。⇒ **限制这个角色的是"兵力"而不是"槽位"**（槽位读到 `1/2`，永远有空位）⇒ 靠派采集**无法**把 `idle_marches` 压到 0。派兵/召回去凑状态属于禁项 ⇒ 记为 BLOCKED 并换下一个能力 |
+| 0ar | **"无兵可出征"弹窗被识别成 `INTEL_BEAST_MISSION`** | ⚠️ **新发现，未修** | 该弹窗内容是"去训练士兵"，却命中了 `popup='INTEL_BEAST_MISSION'` 模板 ⇒ 大脑随后走了 intel 分支（run2 以 `OPEN_INTEL_BEAST_TARGET` 失败收场）。**幸运的是它同时暴露了一条真实线索**：这正是操作者顺序第 3 项 **TRAIN** 的入口（`训练士兵`），可作为落地 TRAIN 的起点 |
+| 0as | **召回触发条件用"槽位"表达，而实际瓶颈可能是"兵力"** | ⚠️ **设计缺口，未改** | 操作者第 9–13 节要求 Capacity / Occupancy / Reservation 分开，并允许"更高价值目标需要队列时召回"。当前实现只在**计数器满**时才召回。本角色证明：**槽位未满 ≠ 还有可用队伍**。若要真正实现"按需召回"，触发应基于"新目标还需要一支部队而拿不到" |
+| 0an | 27 个技能**未实现**（按操作者顺序：CLAIM_MAIL/OPEN_VIP/TRAIN/RESEARCH/ALLIANCE 多数/ARENA/LABYRINTH/PET/RALLY/BEAR） | ⚠️ **未实现** | 用 `tools/capability_landing_queue.py` 按顺序推进；每个走最小验收四件套 |
+| 0ao | 3 个技能**实现了但不可判定**（`ALLIANCE_HELP` / `JOIN_RALLY` / `START_RALLY` 不在 `VERIFIED_ATOMIC`） | ⚠️ **未修** | 运行时拒绝派发它无法评价的步骤（RR-003 同源） |
+| 0ap | 覆盖率在 **Goal 层已无 NEVER_TRIED / MISSING** | ✅ 事实更正 | 所以"推 MISSING→LIVE_VERIFIED"只能在 **Skill 粒度**做，别在 Goal 层找活 |
+
+**本轮生产代码改动两处**：① `models.WorldState.has_free_march_slot` + `brain.py` MAP 分支用它起步；
+② `ocr.py` 空闲规则限定 `Page.MAP`（覆层不得制造空队列）。
+**没做**：没有为让召回可触发去制造状态（禁项），也没有再引入任何容量常量。
 
 ### 第 22 轮（2026-09-16 18:4x GMT+8）—— 产品定义落地：身份来源已找到
 

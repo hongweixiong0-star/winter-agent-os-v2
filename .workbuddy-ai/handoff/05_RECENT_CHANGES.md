@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `44de622 2026-09-16T19:04:05+08:00 docs(procedure): pin the live-observation workflow and the role facts it produced`
+- `2dab563 2026-09-16T19:03:01+08:00 chore(gitignore): keep the raw copy of the role-identity probe out of git without touching the tracked label corpus`
+- `3e5ec9c 2026-09-16T19:02:29+08:00 feat(role-identity): read which role is logged in from the client, and stop a fragment from rewriting the march counter`
 - `dd11b20 2026-09-16T13:43:51+08:00 fix(capability): stop inventing march capacity; make the reservation a function of it`
 - `1ffc8d2 2026-09-16T12:32:10+08:00 fix(gather): the strip geometry was never wrong -- the gate was below its own calibration corpus`
 - `a42d8e7 2026-09-16T10:31:10+08:00 chore(memory): record the R20 queue terminal state and the two open review requests`
@@ -15,31 +18,28 @@ Last 12 commits (newest first):
 - `dbc3610 2026-09-16T07:53:10+08:00 fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence`
 - `b4baff2 2026-09-16T00:41:21+08:00 chore(handoff): final regeneration after the march-count fix (712 tests, 0 failures, 0 errors)`
 - `0fbe6b7 2026-09-16T00:26:13+08:00 test(evidence): archive the two march-count frames under truth_audit so the integrity guard passes`
-- `96146a9 2026-09-16T00:10:06+08:00 docs(handoff): record 0bc's true cause (march counter, not page model) and the new gather frontier 0bm`
-- `1a10ad7 2026-09-16T00:07:11+08:00 fix(vision): a march counter that is not drawn means idle, not unreadable`
-- `d91ca08 2026-09-15T23:48:31+08:00 chore(handoff): regenerate truth/metrics after the commander round; archive the 20:43/20:45 acceptance evidence`
 
-Uncommitted changes: 43
-- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+Uncommitted changes: 61
+- `M .gitignore`
+- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
 - ` M .workbuddy-ai/memory/2026-09-16.md`
+- ` M .workbuddy-ai/memory/MEMORY.md`
 - ` M .workbuddy/memory/2026-09-16.md`
-- ` M docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`
-- ` M winter_agent_v2/models.py`
-- ` M winter_agent_v2/ocr.py`
-- `?? dataset/raw/role_identity/`
-- `?? dataset/truth_audit/role_identity_20260916/`
-- `?? docs/PRODUCT_ONE_AGENT_MULTI_ROLE.md`
-- `?? out_crop_right_column/`
-- `?? out_crop_role/`
-- `?? out_crop_strip/`
-- `?? out_junit_audit.xml`
-- `?? out_junit_final_r18.xml`
-- `?? out_junit_fix.xml`
-- `?? out_junit_full_v1.xml`
-- `?? out_junit_full_v3.xml`
-- `?? out_junit_iso.xml`
-- `?? out_junit_r18d.xml`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/resource_rotation.json`
+- ` M learning/runtime_snapshot.json`
 <!-- /AUTO:recent_commits -->
 
 ---

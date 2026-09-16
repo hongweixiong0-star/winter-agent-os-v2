@@ -28,6 +28,17 @@
   ⇒ **只读，永不点击面板内任何控件**。名字**不在** HUD 上（三帧核实），战力/统帅都不是键。
 - **数值只来自观测**：容量必须来自计数器 `/` 读数（炉子/世代只能提供 Prior）。解析器必须
   整 token 匹配 —— `'3/' ＋ '3/6'` 曾被拼成一行读成 `3/3`，**客户端说 6、episode 记 3**。
+- **当前阶段 = CAPABILITY-FIRST（2026-09-16 起）**：不再扩架构，尽快"会做越来越多的事"。
+  单功能 30–60 分钟（复杂最多 90）；**超时无明显真机进展 ⇒ BLOCKED ⇒ 立即换下一个**；
+  **已能稳定工作的功能不要再优化**；最小验收 = `Preconditions → Execute → Verifier PASS →
+  Production Episode → Evidence`；顺序：GATHER/RECALL → CLAIM·MAIL·VIP·FREE →
+  TRAIN·PROMOTE·HEAL → RESEARCH·BUILD → ALLIANCE → HUNT_BEAST → ARENA·EXPLORATION·PET →
+  RALLY → BEAR。**Intel 除 P0 回归不再深挖。** 用 `tools/capability_landing_queue.py` 看队列。
+  ⚠ 区分「没试过」与「没实现」：`Skill.verifier` 只是声明的名字，真裁判是 `VERIFIED_ATOMIC`。
+- **"等待/重试"类技能必须有终止条件**：`CHECK_MARCH` 只是"再看一眼"，当被观测对象不随时间
+  变化时它是纯烧动作（实测一轮烧完 8 个动作、零产出）。设计任何重观测前先问：**什么会变？**
+- **删掉一个错误假设之后，必须重跑一次端到端**：R22 删掉"假定容量 6"是对的，但它同时删掉了
+  采集链**起步条件的唯一数值** —— 而 R21 的成功恰好由那个假设供给，**成功掩盖了这个洞**。
 
 ## 工具优先（HARD RULE，2026-09-14）
 - **先找工具，再写代码。** 开工前先读 `docs/AVAILABLE_TOOLING.md`，汇报给 TOOL CHECK 五行：

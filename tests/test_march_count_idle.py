@@ -34,6 +34,10 @@ ROOT = Path(__file__).resolve().parents[1]
 # hard-codes a path inside them.
 IDLE_FRAME = ROOT / "dataset/truth_audit/march_count_20260915/idle_state_maa_20260915T124440.png"
 BUSY_FRAME = ROOT / "dataset/truth_audit/march_count_20260915/busy_live_page_20260915_133152.png"
+# Two frames from one live dispatch on 2026-09-16: the map frame while the march was
+# out, and the frame 20 seconds later behind the resource dialog.
+OVERLAY_FRAME = ROOT / "dataset/truth_audit/march_counter_overlay_20260916/overlay_resource_detail__live_runtime_step_003_after_20260916T112024089464.png"
+MARCH_OUT_FRAME = ROOT / "dataset/truth_audit/march_counter_overlay_20260916/map_march_out__live_runtime_step_005_after_20260916T112047572741.png"
 
 
 class _Token:
@@ -104,21 +108,24 @@ class TheCounterIsNotDrawnWhenNothingIsOutTests(unittest.TestCase):
         self.assertIsNone(state.march_used)
 
 
+def _production_vision() -> HybridVision:
+    """The template+OCR stack production builds, so a real frame is read as production reads it."""
+    import json
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from winter_agent_v2.ocr import OCRService, RapidOCRBackend, ResilientOCRBackend
+    from winter_agent_v2.vision import SemanticWorldVision
+
+    config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+    template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+    ocr = OCRService(ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"]))))
+    return HybridVision(template, ocr)
+
+
 class RealFramesStillReadTheSameWayTests(unittest.TestCase):
-    def _vision(self):
-        import json
-        import sys
-
-        sys.path.insert(0, str(ROOT))
-        from winter_agent_v2.ocr import OCRService, RapidOCRBackend, ResilientOCRBackend
-        from winter_agent_v2.vision import SemanticWorldVision
-
-        config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
-        template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
-        ocr = OCRService(
-            ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))
-        )
-        return HybridVision(template, ocr)
+    def _vision(self) -> HybridVision:
+        return _production_vision()
 
     @unittest.skipUnless(IDLE_FRAME.is_file(), "idle MAP frame not on this machine")
     def test_the_live_frame_that_blocked_gather_now_reads_idle(self):
@@ -131,6 +138,67 @@ class RealFramesStillReadTheSameWayTests(unittest.TestCase):
         state = self._vision().observe(BUSY_FRAME)
         self.assertEqual(state.march_used, 6)
         self.assertEqual(state.march_max, 6)
+
+
+class AnOverlayIsNotAnIdleQueueTests(unittest.TestCase):
+    """A hidden counter is not a counter that says zero.
+
+    Measured 2026-09-16 while tracking a live dispatch.  On the MAP frame right after
+    the march left, the ROI read ``1/2`` and ``marches=MARCHING``.  Twenty seconds
+    later, with the resource dialog open, the same run observed
+    ``page=RESOURCE_DETAIL`` with an empty ROI and no march states, and the idle rule
+    reported ``used=0`` -- "idle" -- while that march was still out; a gather cannot
+    finish in 20 seconds, and re-observing the recorded frames confirms the march was
+    MARCHING throughout.  The overlay covers both the counter and the march list, so
+    absence of evidence was being read as evidence of absence.
+
+    That direction is the dangerous one: a false "idle" authorises a dispatch into a
+    queue that may be full, and since the start condition began accepting a lower
+    bound it is also what makes the goal act at all.
+    """
+
+    def _observe(self, tmp: Path, page: Page) -> WorldState:
+        frame = _blank_png(tmp)
+        primary = WorldState(page=page, march_used=None, march_max=6, marches=(), confidence=0.99)
+        return HybridVision(_FakeTemplate(primary), _FakeOCR()).observe(frame)
+
+    def test_a_frame_behind_an_overlay_stays_unknown(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            state = self._observe(Path(tmp), Page.RESOURCE_DETAIL)
+        self.assertIsNone(state.march_used, "an overlay must not manufacture an empty queue")
+
+    def test_a_plain_map_frame_with_no_counter_still_reads_idle(self):
+        # The rule itself is unchanged where it was measured -- blocking it on the
+        # overlay path must not block it on the page it was written for.
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            state = self._observe(Path(tmp), Page.MAP)
+        self.assertEqual(state.march_used, 0)
+
+
+class TheLiveDispatchFramesAgreeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        if not (OVERLAY_FRAME.is_file() and MARCH_OUT_FRAME.is_file()):
+            raise unittest.SkipTest("overlay evidence not on this machine")
+        cls.vision = _production_vision()
+
+    def test_the_march_was_out_before_the_overlay_appeared(self):
+        state = self.vision.observe(MARCH_OUT_FRAME)
+        self.assertEqual(state.page.value, "MAP")
+        self.assertEqual((state.march_used, state.march_max), (1, 2))
+        self.assertIn(MarchState.MARCHING, state.marches)
+
+    def test_the_overlay_frame_reports_unknown_not_zero(self):
+        state = self.vision.observe(OVERLAY_FRAME)
+        self.assertEqual(state.page.value, "RESOURCE_DETAIL")
+        self.assertIsNone(
+            state.march_used,
+            "this frame is why the run recorded a march disappearing 20 s after it left",
+        )
 
 
 if __name__ == "__main__":

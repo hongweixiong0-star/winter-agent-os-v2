@@ -93,6 +93,11 @@ dataset/external/repositories/
 # file by file -- a later frame added here would otherwise go silently untracked,
 # which is the trap the note above describes.
 !dataset/truth_audit/role_identity_*/**/*.png
+# one live dispatch on 2026-09-16: the map frame with the march out (counter reads
+# 1/2) and the frame 20 s later behind the resource dialog, where an empty ROI was
+# being read as "idle" while that march was still marching.
+# tests/test_march_count_idle.py reads both.
+!dataset/truth_audit/march_counter_overlay_*/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only

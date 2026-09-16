@@ -4,7 +4,74 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 18:4x GMT+8）—— 产品定义落地：**身份来源已找到**（一次点击）
+## 手写：本轮（2026-09-16 19:0x GMT+8）—— 进入 CAPABILITY-FIRST 阶段
+
+**阶段定义（操作者，最高优先）**：不再扩架构，尽快让 Agent「会做越来越多的事」。
+现有 V2 顶层架构冻结；Role/Progression 够用即停；**优先把 MISSING / NEVER_TRIED 推进到
+LIVE_VERIFIED**；MAA 优先、复用外部成熟项目；单功能 30–60 分钟（复杂最多 90）；
+超时无真机进展 ⇒ BLOCKED 立即换下一个；**已稳定的功能不要继续过度优化**；
+最小验收 = `Preconditions → Execute → Verifier PASS → Production Episode → Evidence`。
+
+**操作者给的落地顺序**：GATHER / RECALL → CLAIM·MAIL·VIP·FREE → TRAIN·PROMOTE·HEAL →
+RESEARCH·BUILD → ALLIANCE(HELP/GIFT/TECH) → HUNT_BEAST → ARENA·EXPLORATION·LABYRINTH·PET →
+JOIN/START_RALLY → BEAR → 其他已解锁。**Intel 已有大量成功证据，除 P0 回归不再深挖。**
+
+### 0. 先跑这一条，它把整阶段的队列算出来
+
+```
+"E:\dongri-mumu-bot\.venv\Scripts\python.exe" -u tools/capability_landing_queue.py
+```
+
+按操作者的顺序逐项打印 `reg / judge / tried / state / episodes`，并分出三类：
+- **未实现**（不在 registry）27 个：`CLAIM_MAIL OPEN_VIP CLAIM_VIP OPEN_DAILY…`（含 TRAIN/RESEARCH/
+  ALLIANCE 大部分/ARENA/LABYRINTH/PET/RALLY/BEAR 全部）
+- **实现了但不可判定**（不在 `VERIFIED_ATOMIC`，运行时会拒绝派发）3 个：`ALLIANCE_HELP JOIN_RALLY START_RALLY`
+- **可判定且从未执行**：`RECALL_MARCH`（见第 2 条）
+
+⚠ 注意 `Skill.verifier` 只是**声明的名字**，真正的裁判是 `LiveRuntime.VERIFIED_ATOMIC`；两者不一致
+就是 RR-003。**别把 `never_tried` 当成"没实现"**（覆盖率审计技能的警告）。
+
+### 1. 本轮修掉一个 P0 回归：采集链曾**无法起步**（已真机恢复）
+
+R22 删掉"假定容量 6"是对的，但它同时删掉了起步条件的**唯一数值**：
+
+- 客户端**只在有队伍在外时才画行军计数器**。空闲时 `MARCH_COUNT_ROI` 一个 token 都没有
+  ⇒ `march_used=0` 但 `march_max` 读不到 ⇒ `idle_marches=None`
+  ⇒ 大脑答 `CHECK_MARCH`，而 `CHECK_MARCH` 只是"再看一眼" —— **不会改变任何东西**。
+- **实测**：2026-09-16 11:09–11:16 三次运行各烧完 8 个动作在 CHECK_MARCH 上，**零次派兵**。
+  （R21 那次能跑通，是因为当时 `march_max` 由被硬编码的 6 供给。**成功掩盖了这个洞。**）
+
+**修法**（`models.WorldState.has_free_march_slot` + `brain` MAP 分支）：起步不需要容量，
+只需要"有空位"这个更弱、并且**两种状态下都可判定**的事实 —— `used == 0 ⇒ 至少一个空位`。
+这是**下界，不是容量猜测**，而且**自我修正**：派兵本身让计数器出现，下一帧就读到真容量
+（实测 11:20:57 `DISPATCH_MARCH` `max None->2`）。`CHECK_MARCH` 现在只保留在"确实有队伍在外、
+容量却仍读不到"这一种**重观测可能有用**的状态。
+
+### 2. 下一个能力：`RECALL_MARCH`（操作者顺序第 2 项，已可判定、从未执行）
+
+**实现是齐的**（不要再造）：`SELECT_MARCH_TO_RECALL`（TAP `MARCH_ROW_1`，标定中心 0.28/0.2234）
+→ 弹窗（`POPUP_TITLE_RECALL` 已注册，`vision.py` 已返回 `popup="MARCH_RECALL"`）
+→ `RECALL_MARCH`（TAP `BTN_CONFIRM_RECALL`，ROI 中心 px 512,788 与实测"确定"吻合）；
+两个 verifier 都完整且有真机依据（**召回由 `GATHERING→RETURNING` 证明，不是靠空位增加**）；
+单测/回放已覆盖 12 项。**唯一缺的是触发条件**：
+
+```
+brain._recallable 要求  page==MAP ∧ 搜索面板关闭 ∧ idle_marches == 0 ∧ GATHERING 在外
+```
+
+⇒ 需要**两个队列位同时被占用**（该角色容量 2）跑一次运行。本轮试过：11:20:57 第一次派兵成功，
+但 43 秒后 `used 1->0`（客户端现在 HOME、无行军）—— **太快，不可能是采集完成，根因未定，不得猜测**。
+**下一步**：派兵后**立刻**再跑（不要等），或先查清"派兵后 43 秒消失"的真因（候选：
+那次 `START_GATHER` 落到了 POPUP 上、或有弹窗遮住 HUD 导致计数器消失被读成空闲）。
+
+### 3. 顺手确认的两件事
+
+- `docs/CAPABILITY_COVERAGE.md` 已重跑：`rate 0.7424 → 0.7474`；**Goal 层 `never_tried=0`、
+  `missing=0`** ⇒ 这一阶段只能在 **Skill 粒度**推进（用第 0 条那个工具）。
+- `read_march_count` / `read_role_identity` / `has_free_march_slot` 三者都在"**不猜**"这一侧：
+  读不到就是 `None`，由调用方决定是等待还是用下界。
+
+## 手写：上一轮（2026-09-16 18:4x GMT+8）—— 产品定义落地：**身份来源已找到**（一次点击）
 
 **先读**：`docs/PRODUCT_ONE_AGENT_MULTI_ROLE.md`（操作者的产品定义 + 落地现状 + 硬边界）。
 
@@ -690,10 +757,10 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 24 in the last 2 day(s), 128 all-time, last seen 2026-09-16T04:09:40.727152+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 43
-LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-16T04:15:47.610172+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T041534522773.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T041538058317.png"}
+CURRENT DIRTY FILES: 61
+LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL_BEAST_TARGET", "result": "FAILURE", "recorded_at": "2026-09-16T11:22:47.573385+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T112228940512.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T112231479939.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 128, "recent": 24, "last_seen": "2026-09-16T04:09:40.727152+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T04:15:47.610172+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T11:22:47.573385+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

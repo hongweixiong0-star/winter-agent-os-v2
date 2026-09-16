@@ -160,3 +160,66 @@ def test_the_page_model_reports_no_capacity_until_one_is_read() -> None:
     # A lower bound with no capacity still yields "not proven", never a number.
     bounded = WorldState(page=Page.MAP, march_used=1)
     assert bounded.idle_marches is None
+
+
+# ------------------------------------- the start condition may not need a capacity
+#
+# Removing the invented capacity exposed that the client does not draw the counter
+# while nothing is out, so `idle_marches` is None in exactly the state the goal needs
+# to leave.  Measured live 2026-09-16T11:09-11:16: three GATHER_RESOURCE runs spent
+# all eight actions on CHECK_MARCH and produced no dispatch, because re-observing an
+# idle map cannot reveal a counter that is not drawn.  GATHER_RESOURCE is the
+# operator's phase priority #1, so this is the blocker, not a curiosity.
+
+
+def test_an_idle_map_with_no_counter_may_still_start_a_march() -> None:
+    """Nothing out proves at least one slot is free -- without claiming a capacity."""
+    world = _map(0, None)
+    assert world.idle_marches is None, "the count itself stays unknown"
+    assert world.has_free_march_slot is True, "but the weaker fact is knowable"
+    decision = RuleBrain(current_goal="GATHER_RESOURCE", reserve_marches=2).decide(world, v2_registry())
+    assert decision.skill == "SEARCH_RESOURCE", decision
+    assert decision.reason == "idle_march_available"
+
+
+def test_an_unreadable_occupancy_still_asks_for_a_measurement() -> None:
+    """`used` unknown is a different state from `used` read as zero."""
+    world = _map(None, None)
+    assert world.has_free_march_slot is None
+    assert RuleBrain(current_goal="GATHER_RESOURCE").decide(world, v2_registry()).skill == "CHECK_MARCH"
+
+
+def test_check_march_survives_for_the_state_where_observing_again_can_help() -> None:
+    """A march IS out, so the counter is drawn: looking again is a real move."""
+    world = _map(1, None, marches=(MarchState.GATHERING,))
+    assert world.has_free_march_slot is None
+    assert RuleBrain(current_goal="GATHER_RESOURCE").decide(world, v2_registry()).skill == "CHECK_MARCH"
+
+
+def test_a_read_capacity_behaves_exactly_as_before() -> None:
+    """The lower bound must not change any decision that already had a number."""
+    brain = RuleBrain(current_goal="GATHER_RESOURCE", reserve_marches=2)
+    assert brain.decide(_map(0, 2), v2_registry()).skill == "SEARCH_RESOURCE"
+    assert brain.decide(_map(1, 2), v2_registry()).skill == "SEARCH_RESOURCE"
+    recalling = RuleBrain(current_goal="GATHER_RESOURCE", reserve_marches=2, recall_on_demand=True)
+    decision = recalling.decide(_map(2, 2, marches=(MarchState.GATHERING,)), v2_registry())
+    assert decision.skill == "SELECT_MARCH_TO_RECALL", (
+        "a full queue with a gathering march still offers the recall"
+    )
+
+
+def test_a_full_queue_with_nothing_recallable_is_not_forced() -> None:
+    """A full queue of beast/intel marches is a stop, not a recall."""
+    brain = RuleBrain(current_goal="GATHER_RESOURCE", reserve_marches=2)
+    decision = brain.decide(_map(2, 2, marches=(MarchState.MARCHING,)), v2_registry())
+    assert decision.skill == "SAFE_STOP"
+    assert decision.reason == "no_idle_march"
+
+
+def test_the_free_slot_predicate_is_tri_state_and_never_a_count() -> None:
+    assert _map(0, None).has_free_march_slot is True
+    assert _map(0, 2).has_free_march_slot is True
+    assert _map(1, 2).has_free_march_slot is True
+    assert _map(2, 2).has_free_march_slot is False
+    assert _map(None, 2).has_free_march_slot is None
+    assert _map(1, None).has_free_march_slot is None

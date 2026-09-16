@@ -618,9 +618,19 @@ class RuleBrain:
                 return Decision("SUBMIT_RESOURCE_SEARCH", "balanced_resource_search_configured", world.confidence, "resource_found")
             if world.resource_search_open:
                 return Decision("SELECT_RESOURCE", "balanced_resource_not_selected", world.confidence, f"{desired_resource.lower()}_selected")
-            if world.idle_marches is None:
+            # Ask the weaker, always-knowable question first.  ``idle_marches`` is a
+            # count and the client only draws the counter while a march is out, so
+            # requiring it here deadlocked the whole gather goal: measured live
+            # 2026-09-16T11:09-11:16, three runs answered CHECK_MARCH eight times each
+            # and re-observed nothing, because nothing was going to change.  With
+            # nothing out, "at least one slot is free" is provable, and the dispatch
+            # itself makes the exact capacity readable (04:15:47, max None -> 2).
+            # CHECK_MARCH now only runs when marches ARE out and the capacity is still
+            # unread -- the one state in which looking again can help.
+            free_slot = world.has_free_march_slot
+            if free_slot is None:
                 return Decision("CHECK_MARCH", "march_capacity_unknown", world.confidence, "march_state_known")
-            if world.idle_marches <= 0:
+            if not free_slot:
                 # Operator directive: a march may be released on demand.  Only
                 # a GATHERING march is eligible (see _recallable); a dialog this
                 # decision opens is confirmed by the RECALL_MARCH branch.
@@ -628,7 +638,11 @@ class RuleBrain:
                     self.pending_recall = True
                     return Decision("SELECT_MARCH_TO_RECALL", "no_idle_march_and_a_gathering_march_can_be_released", world.confidence, "recall_dialog_open")
                 return Decision("SAFE_STOP", "no_idle_march", 1.0, "no_action")
-            if self.current_goal in {None, "GATHER_RESOURCE"} and world.idle_marches <= self.reserved_slots(world):
+            if (
+                self.current_goal in {None, "GATHER_RESOURCE"}
+                and world.idle_marches is not None
+                and world.idle_marches <= self.reserved_slots(world)
+            ):
                 return Decision("SAFE_STOP", "reserved_march_for_stamina", 1.0, "stamina_task_slot_preserved")
             return Decision("SEARCH_RESOURCE", "idle_march_available", world.confidence, "resource_search_open")
         if world.page is Page.MARCH and self.current_goal == "INTEL" and not world.beast:

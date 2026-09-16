@@ -1,30 +1,28 @@
 {
-  "observed_at": "2026-09-16T04:16:59.650310+00:00",
-  "written_at": "2026-09-16T04:17:01.486570+00:00",
-  "page": "MAP",
+  "observed_at": "2026-09-16T11:22:47.550236+00:00",
+  "written_at": "2026-09-16T11:22:47.550236+00:00",
+  "page": "HOME",
   "confidence": 0.99,
   "goals": [
     {
-      "goal_id": "AVOID_STAMINA_WASTE",
+      "goal_id": "KEEP_TRAINING_PRODUCTIVE",
       "status": "READY",
       "completion": 0.0,
       "remaining_seconds": null,
-      "reward_value": 100,
-      "daily_loss": 1705,
+      "reward_value": 0.0,
+      "daily_loss": 0.0,
       "event_synergy": 0.0,
-      "development_value": 0.0,
+      "development_value": 90,
       "resource_cost": 0.0,
       "risk": 0.0,
       "available_skills": [
-        "INTEL_CLAIM_REWARDS",
-        "BEAST_HUNT"
+        "TRAIN_TROOPS"
       ],
       "retry_after": null,
       "evidence": {
-        "current": 371,
-        "threshold": 30
+        "queue_busy": false
       },
-      "priority": 1805.0
+      "priority": 90.0
     }
   ]
 }
