@@ -1,0 +1,897 @@
+{
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-09-16T17:35:00Z",
+  "task": "External Reuse Audit 20260917 — source-level capability index, built to shorten V2 implementation time",
+  "how_built": "Both P0 repositories were already shallow-cloned under dataset/external/repositories/ (gitignored). Their working trees were materialised locally (Python repo: git checkout; Java repo: partial clone, blob:none, fetched on demand plus gh api for the files git could not read) and the source was read directly. Nothing here is taken from a README claim.",
+  "repos": [
+    {
+      "key": "wosbot",
+      "repo": "Shederator/wosbot (Frostguard)",
+      "url": "https://github.com/Shederator/wosbot",
+      "commit": "50dd188353fbd61d7acdb8f73b371f38cbd53159",
+      "commit_date": "2026-09-06T18:54:53+02:00",
+      "license": "AGPL-3.0-only",
+      "license_evidence": "gh api repos/Shederator/wosbot/license -> AGPL-3.0; README states 'GNU Affero General Public License version 3 only'; LICENSE present in tree",
+      "language": "Java 620 files / JavaFX desktop, module layout modules/{api,automation,desktop,tasks,vision}",
+      "resolution": "720 x 1280 portrait",
+      "resolution_evidence": "README table: '| Resolution | `720 x 1280` in portrait mode |', emulator table recommends MuMu Player",
+      "emulator": "MuMu Player (recommended), MEmu, LDPlayer 9 — driven through the emulator's command-line controller",
+      "files_indexed": 1336,
+      "files_read": [
+        "modules/tasks/.../dailies/VipRoutine.java",
+        "modules/tasks/.../dailies/DailyMissionRoutine.java",
+        "modules/tasks/.../combat/ArenaRoutine.java",
+        "modules/tasks/.../dailies/MailClaimPassPolicy.java",
+        "modules/tasks/.../dailies/MailRewardsRoutine.java",
+        "modules/automation/.../helper/ShopNavigator.java"
+      ],
+      "structure": "tasks/<domain>/<X>Routine.java (one routine per capability) + engine/{helper,nav,schedule,preempt,ranking,emulator} + per-capability TESTS that encode frame evidence (e.g. ResearchActionPatternEvidenceTest, ArenaRoutinePowerFrameTest)"
+    },
+    {
+      "key": "amil",
+      "repo": "AminulIslamSifat/whiteout-survival-bot",
+      "url": "https://github.com/AminulIslamSifat/whiteout-survival-bot",
+      "commit": "1d09932fad186a96309f85c2305055ece88461e3",
+      "commit_date": "2026-09-02T21:34:52+06:00",
+      "license": "UNVERIFIED",
+      "license_evidence": "README badge + 'This project is released under the MIT License. See the LICENSE file for details.' BUT: no LICENSE/COPYING path exists in the git tree (checked the full recursive tree), pyproject.toml has no license field, and gh api repos/.../license returns 404. A README sentence is not a license.",
+      "language": "Python (42 .py) + a local OCR/template HTTP service",
+      "resolution": "1080 x 2456 portrait (hardcoded)",
+      "resolution_evidence": "core/coord_utils.py BASE_WIDTH/BASE_HEIGHT = 1080/2456; cmd_program/scrcpy_config.json; README 'bot is hardcoded for 1080x2460'",
+      "emulator": "scrcpy / screen stream over ADB (paddleocr + opencv in a sidecar service)",
+      "files_indexed": 168,
+      "files_read": [
+        "core/core.py",
+        "core/fsm.py",
+        "core/coord_utils.py",
+        "Main/main.py",
+        "usecases/vip.py",
+        "references/TextArea/*.json (73 ROI tables incl. roi.json, Home.VIP.json)"
+      ],
+      "structure": "usecases/<capability>.py each exporting TASK_METADATA=[{key,title,func}], discovered by importlib; all geometry lives in references/TextArea/*.json (percentage boxes) + references/icon/template_config.json, with per-device override files references/<device_id>/*.json"
+    }
+  ],
+  "capabilities": [
+    {
+      "capability": "VIP_FREE_CLAIM",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/VipRoutine.java"
+      ],
+      "implementation_summary": "VipRoutine: open the VIP menu, redeem the daily chest, redeem the point rewards, dismiss. The monthly-VIP purchase path exists but is gated behind a config boolean that defaults to false.",
+      "navigation": "tapInside(VIP_MENU_BUTTON (430,48)-(530,85)) -> verify with TemplatesEnum.VIP_MENU; pressBack() to leave",
+      "recognition": "template VIP_MENU to confirm the panel; OcrSettingsData SINGLE_LINE + charWhitelist('0123456789d') over VIP_EXPIRATION_TIME (273,1170)-(461,1213) accepted by GameTimeUtils.isAcceptedFormat",
+      "action": "tapInside(DAILY_CHEST_REWARDS (540,813)-(624,835), attempts=3, 300ms) then tapInside(VIP_POINT_REWARDS (602,263)-(650,293), attempts=3, 300ms)",
+      "verification": "NONE for the claims — the taps are blind fixed-coordinate, repeated 3x. Only the menu opening is verified (template).",
+      "recovery": "if the menu template is not found -> log + reschedule; no retry of the panel itself",
+      "useful_assets": "the entry button box (430,48)-(530,85) and the claim boxes above are 720x1280 pixel constants, i.e. directly testable on V2's client",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH for coordinates and flow order (read from source, same 720x1280 client); LOW for their verification (there is none)",
+      "v2_equivalent": "CAP-B09/B10 VIP (no skill yet; entry never found)",
+      "current_gap": "V2 has no VIP entry. The external flow says: the button is on the HOME screen at (430,48)-(530,85) and the panel is confirmed by a template — V2 can probe exactly that point instead of searching blind. V2 must add the verifier their code lacks.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "VIP_FREE_CLAIM",
+      "repo": "amil",
+      "source_files": [
+        "usecases/vip.py",
+        "references/TextArea/Home.VIP.json"
+      ],
+      "implementation_summary": "collect_vip_rewards(): tap the VIP home entry by TEXT, tap the chest by TEMPLATE, dismiss the 'click to continue' popup, tap the Claim text, then the exit text.",
+      "navigation": "tap_on_text('Home.VIPLevel', wait=2) -> recalibrate() before and after",
+      "recognition": "named text ROIs: Home.VIP.Title (12.59,6.22)-(20.65,8.25 %), Home.VIP.Level, Home.VIP.Claim (75.28,71.02)-(86.48,73.29 %), Home.VIP.RemainingVIPTime (37.04,93.74)-(62.69,95.41 %), Home.VIP.Claim.TapAnywhereToExit",
+      "action": "tap_on_template('Home.VIP.CollectChest') -> tap_on_text('click to continue', align=[0,-16.26]) -> tap_on_text('Home.VIP.Claim') -> tap_on_text('Home.VIP.Claim.TapAnywhereToExit')",
+      "verification": "each tap_on_* call returns True/False (found and tapped), which the caller uses to decide whether the next step applies — a chain-of-successes, not a state verifier",
+      "recovery": "recalibrate() (re-read all ROI calibration) before/after; failure just skips the step",
+      "useful_assets": "the VIP panel ROI table with % boxes, notably the Claim button at (75.28-86.48%, 71.02-73.29%) and the 'Tap anywhere to exit' popup text at y 93-95%",
+      "license": "UNVERIFIED (README claims MIT; no LICENSE file, no API license)",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "MEDIUM — geometry is on a 1080x2456 portrait client, so the y percentages do NOT transfer to V2's 720x1280 (aspect 0.44 vs 0.5625); x and the flow order do",
+      "v2_equivalent": "CAP-B09/B10 VIP",
+      "current_gap": "Same as above, plus: the flow order (chest -> click-to-continue -> claim -> tap-to-exit) is a ready-made acceptance sequence for V2's VIP verifier.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "DAILY_MISSION_TAB_SWITCH",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/DailyMissionRoutine.java"
+      ],
+      "implementation_summary": "switchToDailyMissionsTabFlow(): if the daily screen title is already visible, done; otherwise find the 每日任务 tab button, tap it, then RE-VERIFY the title before claiming anything.",
+      "navigation": "tapNear(DAILY_MISSIONS_BUTTON (50,1050)) to open the panel; tab search area (300,1050)-(720,1200)",
+      "recognition": "template DAILY_MISSION_SCREEN_TITLE searched in area (180,70)-(540,170); template DAILY_MISSION_DAILY_TAB_BUTTON searched in (300,1050)-(720,1200); both with threshold 90, 3 attempts, 300ms delay",
+      "action": "tapInside(dailyTabButton) + 500ms",
+      "verification": "re-search DAILY_MISSION_SCREEN_TITLE after the tap; only then proceed to claims",
+      "recovery": "if the tab button or the title is not found -> log and skip claims (no guessing)",
+      "useful_assets": "the tab-search area (300,1050)-(720,1200) INDEPENDENTLY confirms V2's freshly measured tab row (x 481-704, y 1091-1173); the title area (180,70)-(540,170) is a second anchor V2 does not use yet",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH — same 720x1280 client, and the geometry matches V2's own measurement to within ~10px",
+      "v2_equivalent": "SELECT_DAILY_TAB (live verified 2026-09-16) + OPEN_DAILY",
+      "current_gap": "V2 already does exactly this (verified 16:4x). Two additions worth taking: (a) a second anchor (the title strip) as an alternative confirmation, (b) their pre-tap 'already on the daily screen?' short-circuit, which V2 gets from the tab templates.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "DAILY_REWARD_CLAIM",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/DailyMissionRoutine.java"
+      ],
+      "implementation_summary": "redeemAllRewards(): prefer one Claim-All tap; otherwise loop individual claim buttons up to MAX_INDIVIDUAL_CLAIMS=20, dismissing reward popups between taps, and stop when a button does not move.",
+      "navigation": "on the daily tab (see above)",
+      "recognition": "DAILY_MISSION_CLAIMALL_BUTTON; else DAILY_MISSION_CLAIM_BUTTON, with a DISABLED variant discriminator: if DAILY_MISSION_CLAIM_BUTTON_DISABLED is found within 20px (Manhattan) of the claim button, treat the claim as not available",
+      "action": "tapInside(claimAllResult) or tapNear(claimPoint) then dismissRewardPopupsFlow() = tapInside((10,100)-(600,120), count=3, 150ms)",
+      "verification": "no-progress detection: after tapping, re-search; if the button is still at the same point (<=20px) twice, stop and report 'no visual progress'",
+      "recovery": "bounded loop (20), same-target check, then dismiss and return false so the scheduler can reschedule",
+      "useful_assets": "the DISABLED-variant discriminator and the same-target no-progress check are both directly applicable to V2's 领取 button problem",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH — the pattern is stated and coded explicitly in the routine",
+      "v2_equivalent": "DAILY_CLAIM_REWARDS (live verified 2026-09-16, 1 claim) + BTN_DAILY_CLAIM_ALL (2026-09-08 calibration, no longer matches today's layout)",
+      "current_gap": "V2 cannot yet tap a claimable activity chest. The external pattern says: register the enabled and disabled appearances and treat 'disabled at the same point' as not claimable — the same trick V2 used for the selected/unselected tab pill.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "MAIL_CLAIM",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/MailRewardsRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/MailClaimPassPolicy.java"
+      ],
+      "implementation_summary": "mail is handled as repeatable PASSES: MailClaimPassPolicy decides how many passes to run and when to stop, MailRewardsRoutine executes one pass (open mail, claim, clear reward popups, close).",
+      "navigation": "into the mail screen; the routine logs its own lines (MailRewardsRoutine | ...)",
+      "recognition": "the policy layer reads the unread count / badge between passes (there is a MailUnreadReportShortcutEvidenceTest in the tree, i.e. the unread state was measured from frames)",
+      "action": "claim within a pass, then dismiss overlays",
+      "verification": "the pass boundary is the verification: the next pass re-reads the unread state",
+      "recovery": "bounded passes; the policy stops when a pass makes no progress",
+      "useful_assets": "the pass/policy split (one routine = one pass; a policy owns 'how many / stop when') maps cleanly onto V2's run-loop",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM — policy file read in full (2.5KB), routine read only by structure",
+      "v2_equivalent": "OPEN_MAIL + MAIL_CLAIM_REWARDS + SELECT_MAIL_*_TAB + DISMISS_MAIL_*",
+      "current_gap": "V2's mail chain is live verified and passed at 8 -> 0 badges; the external value is only the 'stop when a pass makes no progress' rule, which V2 already gets from its badge-reduction verifier.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "ARENA_CHALLENGE",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/combat/ArenaRoutine.java"
+      ],
+      "implementation_summary": "1639 lines. Reads the arena score and remaining challenges, decides whether to refresh the opponent list, picks an opponent by comparing power colours and star counts, launches a quick-deploy fight, and reacts to victory/defeat.",
+      "navigation": "arena entry, then quick deploy (180,1200) and battle start (530,1200)",
+      "recognition": "score (548,1064)-(650,1100); challenges left (405,948)-(438,994); opponent rows: base y 376 (380 on the first run), pitch 128, up to MAX_OPPONENTS=5; per-row name x150 w260 (relative y -70), server x145 w140 (+12), power text relative x180, star x296 w42; POWER_VALUE_PATTERN '([0-9]+[.,][0-9]+)([KMBkmb])' handles comma decimals and K/M/B; 4 alternative alliance-tag regexes tolerate OCR damage",
+      "action": "tap the row's challenge button (x624, half-size 38), or quick deploy + battle start",
+      "verification": "colour analysis instead of a template: ARENA_POWER_GREEN_TEXT rgb(105,230,50), MIN_COLORED_PIXELS=10, green/red dominance ratio 1.5, scan step 2 — i.e. 'is my power higher' is decided by counting coloured pixels",
+      "recovery": "MAX_REASONABLE_CHALLENGE_ATTEMPTS=10; free refreshes capped at 3, gem refreshes at 5 but DEFAULT_REFRESH_WITH_GEMS=false; ATTEMPT_PRICES {100,200,400,600,800} for paid extra attempts",
+      "useful_assets": "the whole opponent-row geometry; the power-colour rule; AVOID_PROFILE_ALLIANCE (never fight your own alliance); the free-only default",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH for the constants (read from source, 720x1280) and for the colour rule; MEDIUM for the exact row layout on V2's client (needs one frame)",
+      "v2_equivalent": "CAP-AE/ARENA (OPEN_ARENA / START_ARENA_FIGHT: not implemented)",
+      "current_gap": "V2 has nothing for arena. This file is the single richest external source in the audit: geometry + colour rule + refresh policy + alliance-avoidance, all at V2's client resolution.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "ARENA_CHALLENGE",
+      "repo": "amil",
+      "source_files": [
+        "usecases/arena.py",
+        "references/TextArea/Home.Arena.json",
+        "references/icon/arena/*.png"
+      ],
+      "implementation_summary": "arena as a usecase with a named-ROI table and 6 arena icon templates (challenge, defensive lineup, buy challenge, victory-or-defeat, pause, retreat).",
+      "navigation": "text/template taps on the home screen then inside the arena panel",
+      "recognition": "Home.Arena.json percentage ROIs + references/icon/arena/*.png templates named by function (e.g. Home.Arena.Challenge.Fight.VictoryOrDefeat)",
+      "action": "select opponent row, tap challenge",
+      "verification": "the victory/defeat banner template is the result signal",
+      "recovery": "not centralised",
+      "useful_assets": "the template-variant inventory for the arena fight (pause / victory / defeat / retreat) tells V2 which UI states it will have to cover",
+      "license": "UNVERIFIED",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "MEDIUM — icon names give the state list; 1080x2456 ROIs do not transfer",
+      "v2_equivalent": "CAP-AE/ARENA",
+      "current_gap": "Same gap; the value here is the state inventory, not the geometry.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "BEAR_TRAP_PARTICIPATION",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/automation/src/main/java/dev/frostguard/engine/schedule/BearTrapParticipationSchedule.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/schedule/BearTrapProtectionPolicy.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/schedule/BearTrapVisualProtection.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/schedule/preempt/BearTrapPreemptionRule.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/helper/BearTrapHelper.java",
+        "modules/api/.../configs/BearTrapParticipationTriggerEnum.java"
+      ],
+      "implementation_summary": "Bear is not a task but a SCHEDULE with a protection policy: a participation trigger enum (when to join), a preemption rule that can interrupt whatever else is running, and a 'visual protection' layer for the rally UI.",
+      "navigation": "engine/nav/... rally flag coordinates",
+      "recognition": "BearTrapVisualProtection (frame-based protection of the rally UI), 12 bear-related files including tests",
+      "action": "join the rally at the scheduled window",
+      "verification": "participation trigger + schedule state",
+      "recovery": "preemption rules mean a running task is interrupted rather than failing",
+      "useful_assets": "the split 'schedule (when) / preemption (priority) / protection (UI safety)' is the most transferable idea for V2's Bear and Rally goals",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM — file names and module layout read from the tree; the class bodies were not fetched (blob fetch failed for BearTrap* files)",
+      "v2_equivalent": "CAP-BEAR (OPEN_BEAR / START_BEAR_RALLY / JOIN_BEAR_RALLY: not implemented)",
+      "current_gap": "V2 has no time-window concept and no preemption: its scheduler decides one action per tick from the current page. Bear needs 'at 19:00 join the rally, even if gathering'. This is a design question for the V2 scheduler, not a new scheduler.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "RALLY_JOIN",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/combat/ManualRallyJoinRoutine.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/nav/RallyFlagCoordinates.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/schedule/preempt/ManualRallyJoinPreemptionRule.java"
+      ],
+      "implementation_summary": "manual rally joining with its own coordinate model (RallyFlagCoordinates) and a preemption rule so an operator-triggered rally join wins over routine work.",
+      "navigation": "RallyFlagCoordinates — rally flags are located in the world map field",
+      "recognition": "flag coordinates (dedicated class + unit test)",
+      "action": "open the flag, join",
+      "verification": "its own preemption rule implies a state check before interrupting",
+      "recovery": "preemption + bounded attempts",
+      "useful_assets": "a dedicated coordinate class for a moving world-map object, plus the notion that a human-triggered join outranks routine tasks",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM — names and test coverage read from the tree; bodies not fetched",
+      "v2_equivalent": "CAP-RALLY (OPEN_RALLY / JOIN_RALLY / START_RALLY: registered as CANDIDATE but unjudgeable)",
+      "current_gap": "V2's JOIN_RALLY/START_RALLY have no verifiers, so they are never dispatched (the RR-003 class).",
+      "reuse_note": ""
+    },
+    {
+      "capability": "BEAST_HUNT",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/combat/BeastSlayRoutine.java",
+        "modules/desktop/.../panel/combat/BeastHuntingLayoutController.java"
+      ],
+      "implementation_summary": "beast slaying as a routine with a matching desktop panel; hunting is one of several combat routines (arena, beast, polar terror, rally).",
+      "navigation": "world map -> beast target",
+      "recognition": "not fetched (blob fetch failed); the desktop controller implies a configurable search area",
+      "action": "select target, dispatch",
+      "verification": "routine-level (not fetched)",
+      "recovery": "routine-level (not fetched)",
+      "useful_assets": "confirms that beast hunting is driven by a configurable search area rather than a fixed point",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "LOW-MEDIUM — path-level evidence only",
+      "v2_equivalent": "BEAST_HUNT / DISPATCH_BEAST / INTEL_BEAST chain (V2's intel-beast chain is live verified)",
+      "current_gap": "V2's wilderness beast hunt exists; the external value is marginal.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "POLAR_TERROR",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarTerrorHuntingRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarStaminaTopUpPolicy.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarSpecialRewardsScanner.java",
+        "modules/api/.../configs/PolarTerrorMode.java",
+        "modules/desktop/.../panel/combat/PolarTerrorLayoutController.java"
+      ],
+      "implementation_summary": "Polar Terror is modelled as hunting + a mode enum + a stamina top-up POLICY + a special-rewards scanner. The stamina policy is separate from the hunting routine.",
+      "navigation": "combat panel",
+      "recognition": "PolarSpecialRewardsScanner (scans for special drops)",
+      "action": "hunt within the mode's rules",
+      "verification": "mode + scanner state",
+      "recovery": "stamina policy decides whether to top up or stop — i.e. 'no stamina' is a policy, not an error",
+      "useful_assets": "separating 'how to fight' from 'may I spend stamina' — exactly V2's stamina policy question, and a concrete precedent for spending policy as a first-class object",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM — path-level evidence + naming that states the policy split",
+      "v2_equivalent": "no V2 equivalent (polar terror not modelled)",
+      "current_gap": "V2's stamina rules live in config (`reserve_for_stamina`) and in the brain; the external split into a named policy is a cleaner shape if V2 ever grows stamina-spending goals.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "GATHER",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/automation/src/main/java/dev/frostguard/engine/schedule/GatherQueuePolicy.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/economy/GatherHeroSelectionPolicy.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/economy/GatherRotationSelectionPolicy.java",
+        "modules/automation/.../schedule/preempt/GatherDeployPreemptionRule.java",
+        "modules/desktop/.../panel/economy/GatherLayoutController.java"
+      ],
+      "implementation_summary": "gathering is split into four policies: queue (how many marches), hero selection (who leads), rotation (which resource next), and preemption (deploy now vs later).",
+      "navigation": "world map -> resource search (their panel controller implies a configurable area)",
+      "recognition": "resource/hero data (not fetched)",
+      "action": "dispatch a march to the chosen node",
+      "verification": "queue policy state",
+      "recovery": "preemption rule handles 'a better deploy is available now'",
+      "useful_assets": "V2's gather logic is a chain of skills plus a resource-rotation store; the external split names the four decisions separately (queue / hero / rotation / preemption) and gives each one a test",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM — file structure and names; bodies not fetched",
+      "v2_equivalent": "GATHER_RESOURCE chain (live verified end to end 2026-09-16) + resource_rotation store + reserve_for_stamina",
+      "current_gap": "V2 has no hero-selection policy (because marches are dispatched without hero choice) — that is a capability idea, not a bug.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "GATHER",
+      "repo": "amil",
+      "source_files": [
+        "usecases/gather.py",
+        "usecases/collect.py",
+        "references/TextArea/World.Gather.json",
+        "references/TextArea/World.Search.json"
+      ],
+      "implementation_summary": "gather (send a march to a resource) and collect (collect finished marches) as separate usecases; the search panel is driven by named text ROIs.",
+      "navigation": "world -> search (World.Search) -> gather",
+      "recognition": "World.Search ROIs; World.Gather ROIs",
+      "action": "tap resource / tap deploy",
+      "verification": "per-step tap success",
+      "recovery": "recalibrate() between phases",
+      "useful_assets": "splitting 'dispatch' from 'collect finished' as two tasks matches V2's RECALL/collect needs",
+      "license": "UNVERIFIED",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "MEDIUM",
+      "v2_equivalent": "GATHER_RESOURCE + (collect = the unimplemented half)",
+      "current_gap": "V2 has no 'collect finished gathering marches' skill (RECALL_MARCH exists but needs the natural state).",
+      "reuse_note": ""
+    },
+    {
+      "capability": "INTEL",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/automation/src/main/java/dev/frostguard/engine/helper/IntelScreenHelper.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/IntelCyclePolicy.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/IntelDeploymentPreflight.java"
+      ],
+      "implementation_summary": "intel as a cycle with a policy (how many cycles / when to stop) and a PREFLIGHT step (can I deploy at all: stamina, marches, board state) before touching the board.",
+      "navigation": "IntelScreenHelper owns the panel geometry",
+      "recognition": "the helper + two frame tests (IntelCooldownOcrFrameTest, IntelNavigationFrameTest) show cooldown OCR and navigation were measured from frames",
+      "action": "open a mission, deploy",
+      "verification": "preflight + policy state",
+      "recovery": "the policy stops the cycle instead of retrying blindly",
+      "useful_assets": "the preflight idea: check resource availability BEFORE navigating, so a failure does not cost a navigation loop",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM-HIGH — names, tests and file roles are explicit",
+      "v2_equivalent": "OPEN_INTEL + intel pin loop + INTEL_BEAST_* (full chain live verified)",
+      "current_gap": "V2's intel chain works; the external preflight would save the navigation cycles V2 currently spends on an empty board (its stop_reason intel_not_available already handles it, one cycle later).",
+      "reuse_note": ""
+    },
+    {
+      "capability": "RESEARCH",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/city/ResearchDialogClassifier.java",
+        "modules/api/.../configs/ResearchCategoryEnum.java",
+        "modules/api/.../domain/ResearchBadgeData.java",
+        "modules/automation/.../helper/ResearchActionPatternEvidenceTest",
+        "modules/automation/.../helper/ResearchBadgeReaderFrameTest",
+        "modules/desktop/.../panel/training/ResearchLayoutController.java"
+      ],
+      "implementation_summary": "research has a DIALOG CLASSIFIER (which dialog is on screen), a category enum, a badge reader, and frame-evidence tests for both.",
+      "navigation": "research panel via its layout controller",
+      "recognition": "ResearchDialogClassifier + ResearchBadgeReaderFrameTest (badge reading was validated on frames)",
+      "action": "choose a category/node and start research",
+      "verification": "the classifier IS the verification layer (dialog identity before action)",
+      "recovery": "classifier prevents acting on the wrong dialog",
+      "useful_assets": "the idea of a dedicated dialog classifier with frame tests — V2 proved the same point with SELECT_RESOURCE (a gate below its own calibration corpus)",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM-HIGH for structure",
+      "v2_equivalent": "RESEARCH (registered, SAFE_STOPs on QUEUE_BUSY — feature availability)",
+      "current_gap": "V2 cannot start research (queue busy today), and OPEN_RESEARCH does not exist. The classifier pattern is the shape V2 should use for the research dialog once it can.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "TRAINING",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/city/TrainingRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/city/TrainingTierSelector.java",
+        "modules/tasks/src/test/java/dev/frostguard/tasks/city/TrainingTierPatternEvidenceTest.java",
+        "modules/desktop/.../panel/training/TrainingLayoutController.java"
+      ],
+      "implementation_summary": "training a chosen tier, with the tier-selection pattern encoded as its own selector and a frame-evidence test for the tier patterns.",
+      "navigation": "training panel",
+      "recognition": "TrainingTierSelector + TrainingTierPatternEvidenceTest",
+      "action": "select tier, start training",
+      "verification": "tier pattern evidence (frames)",
+      "recovery": "routine-level",
+      "useful_assets": "a selector class per decision + a frame-evidence test per selector is the exact shape V2 uses for its resource tabs (`SELECT_RESOURCE` + the calibration corpus)",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM-HIGH",
+      "v2_equivalent": "OPEN_TRAINING / START_TRAINING / TRAIN_TROOPS (registered; training queue busy today)",
+      "current_gap": "V2's training entry exists in name only; the tier selector idea applies directly (V2's resource level slider max=8 is the same class of problem).",
+      "reuse_note": ""
+    },
+    {
+      "capability": "TRAINING",
+      "repo": "amil",
+      "source_files": [
+        "usecases/training_troops.py",
+        "references/TextArea/Home.TroopTraining.json",
+        "references/icon/home/*"
+      ],
+      "implementation_summary": "training as a usecase over a named ROI table for the troop-training panel.",
+      "navigation": "text/template taps into the training panel",
+      "recognition": "Home.TroopTraining.json ROIs",
+      "action": "choose troop type / amount, start",
+      "verification": "per-step success",
+      "recovery": "bounded retries inside tap_on_text",
+      "useful_assets": "the ROI table names the training panel's controls (a checklist of what must be recognised)",
+      "license": "UNVERIFIED",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "MEDIUM",
+      "v2_equivalent": "OPEN_TRAINING / START_TRAINING",
+      "current_gap": "Same gap as above; geometry does not transfer.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "FURNACE_UPGRADE",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/city/PrioritiseFurnaceRoutine.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/schedule/inject/FurnaceUpgradeInjectionRule.java"
+      ],
+      "implementation_summary": "the furnace is a PRIORITY, not a task: an injection rule can insert a furnace upgrade into the schedule ahead of other work.",
+      "navigation": "city screen",
+      "recognition": "the account's furnace level is read during player initialisation (see IDENTITY below), so the routine knows whether an upgrade is due",
+      "action": "start the furnace upgrade",
+      "verification": "level read at initialisation",
+      "recovery": "injection is reversible by the schedule",
+      "useful_assets": "'inject a high-priority task into the running schedule' is a mechanism V2 lacks; V2's scheduler picks one action per tick with no notion of an urgent insert",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM-HIGH — the injection rule file name and the PrioritiseFurnaceRoutine path state the mechanism",
+      "v2_equivalent": "BUILD/FURNACE (not implemented)",
+      "current_gap": "V2 has no priority-injection mechanism and no furnace-level tracking (it does have a `FURNACE` knowledge entry with level null).",
+      "reuse_note": ""
+    },
+    {
+      "capability": "IDENTITY_AND_MULTI_PROFILE",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/... (profile descriptor used by every routine)",
+        "README account/emulator configuration section"
+      ],
+      "implementation_summary": "every routine is constructed with an AccountDescriptor and stores per-profile configuration; the scheduler runs one account at a time and switches emulator instance / account deliberately.",
+      "navigation": "emulator command-line controller (MuMuManager.exe on Windows)",
+      "recognition": "not applicable",
+      "action": "switch profile, then run routines",
+      "verification": "routine results are attributed to the profile (StatisticsService counters per profile)",
+      "recovery": "unhealthy emulator recovery is a documented feature",
+      "useful_assets": "per-profile configuration + per-profile counters is the isolation model V2 needs for its role states",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM — README + import lines; the descriptor class was not fetched",
+      "v2_equivalent": "V2 role identity (read_role_identity from 领主档案) + PRODUCT_ONE_AGENT_MULTI_ROLE",
+      "current_gap": "V2 can read the role identity but does not yet key state by it.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "IDENTITY_AND_MULTI_PROFILE",
+      "repo": "amil",
+      "source_files": [
+        "Main/main.py",
+        "core/change_player.py",
+        "db/account.json.example",
+        "db/players/example.json"
+      ],
+      "implementation_summary": "accounts sorted by a configured priority; per account, characters are switched one by one; after every switch player_initialization() re-reads the chief profile and asserts the expected account is active; a completion log with a 3h skip window stops the same player being re-run.",
+      "navigation": "tap the avatar (4.63%, 6.1%), then read ChiefProfile.Title / PlayerName / PlayerID / FurnaceLevel / State",
+      "recognition": "fuzzy title check (fuzz.ratio < 60 -> abort), garbage filters (non-alphanumeric ratio > 0.6), pick_best_text with an expected string, extract_after_delim on ']' for the name and '#' for the state, first number for the furnace level",
+      "action": "change_character(name) / change_account(email) then re-initialise",
+      "verification": "after switching, the read identity MUST match the expected account, else RuntimeError — a hard identity assertion between iterations",
+      "recovery": "removes accounts/characters filtered out; raises rather than continuing on an identity mismatch",
+      "useful_assets": "the post-switch identity assertion, the OCR noise filters (garbage ratio, fuzzy title gate) and the completion log + skip window",
+      "license": "UNVERIFIED",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH — main.py read in full",
+      "v2_equivalent": "role identity reading + episode role attribution",
+      "current_gap": "V2 reads the identity but does not assert it after a change, and has no per-role run cooldown.",
+      "reuse_note": "code: REFERENCE_ONLY; the reusable part is the pattern/measurement, not the code"
+    },
+    {
+      "capability": "TASK_SCHEDULING_AND_COOLDOWN",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/.../dailies/VipRoutine.java (queueNextExecution)",
+        "modules/tasks/.../dailies/DailyMissionRoutine.java (queueManualMode/queueAutoMode)",
+        "modules/automation/.../engine/schedule/DelayedTask.java (base class, referenced)"
+      ],
+      "implementation_summary": "each routine reschedules ITSELF: next run at the game's daily reset, or at a learned time (e.g. VIP expiry), or at now+offset capped 2 minutes before reset, or a safety reschedule at now+30min in auto mode.",
+      "navigation": "not applicable",
+      "recognition": "game daily reset time from GameTimeUtils.dailyResetTime(); VIP expiry learned from OCR and persisted per profile",
+      "action": "reschedule(nextExecutionTime)",
+      "verification": "routine counters (StatisticsService) record that a run happened",
+      "recovery": "a safety reschedule guarantees a retry even if the preferred time was missed",
+      "useful_assets": "per-task self-rescheduling with a daily-reset anchor, a 'final check 2 minutes before reset' rule, and a safety reschedule",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH — both routines read in full",
+      "v2_equivalent": "V2's hourly automation + goal_state + candidate_attempt_pool",
+      "current_gap": "V2's automation runs by wall-clock cadence and lets the brain decide; the external model is 'the task knows when it is next due'. Worth considering for the daily-reset-bound claims (a claim missed at the reset boundary is lost value).",
+      "reuse_note": ""
+    },
+    {
+      "capability": "OCR_SERVICE_RESILIENCE",
+      "repo": "amil",
+      "source_files": [
+        "core/core.py (_post_json_with_replay)",
+        "core/ocr.py",
+        "cmd_program/screen_stream.py"
+      ],
+      "implementation_summary": "vision runs as a separate local HTTP service (paddleocr + opencv) and every request is replayed with exponential backoff until the service answers or a deadline passes.",
+      "navigation": "not applicable",
+      "recognition": "requests.post(ocr_url|template_matching_url) with OCR_HTTP_TIMEOUT_SEC=8, replay for OCR_REPLAY_WAIT_SEC=35, backoff 0.35s doubling to 2.5s; a session_id keyed cache with an explicit clear",
+      "action": "not applicable",
+      "verification": "the response must carry success=true",
+      "recovery": "replay the SAME payload; a restarting model service therefore becomes a delay, not a failed action",
+      "useful_assets": "the replay-with-backoff loop and the 'success=true' response contract",
+      "license": "UNVERIFIED",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH — read in full",
+      "v2_equivalent": "V2 calls RapidOCR/PaddleOCR in-process via OCRService + ResilientOCRBackend",
+      "current_gap": "V2 already has a resilient backend; the external replay loop is a fallback worth remembering if the in-process model ever crashes mid-run.",
+      "reuse_note": "code: REFERENCE_ONLY; the reusable part is the pattern/measurement, not the code"
+    },
+    {
+      "capability": "NAVIGATION_GRAPH",
+      "repo": "amil",
+      "source_files": [
+        "core/fsm.py"
+      ],
+      "implementation_summary": "an explicit screen graph {node: {neighbour: {action, target}}} plus detect_state() by title, BFS shortest path, and navigate_to() that executes each transition and, on failure, re-detects and retries; if detection fails entirely it falls back to recalibrate() and assumes main_city.",
+      "navigation": "text/template/coordinate transitions, each with a 3s wait",
+      "recognition": "detection_map: if this title/template is on screen, we are in this state",
+      "action": "the transition's tap",
+      "verification": "each transition returns found/tapped; the next hop only runs if the previous succeeded",
+      "recovery": "on a failed hop -> re-detect -> retry the whole route; on unknown screen -> recalibrate and reset to a known node",
+      "useful_assets": "an explicit navigation graph with path finding and a self-healing re-detect loop — the structural answer to V2's 'goal_page_mismatch -> SAFE_STOP -> stranded client' problem",
+      "license": "UNVERIFIED",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "HIGH — read in full",
+      "v2_equivalent": "V2's per-goal bootstrap blocks (HOME -> OPEN_X) with SAFE_STOP on mismatch",
+      "current_gap": "V2 has no path finding and no 'I am lost -> re-observe -> try the route again' loop; it stops instead. This is the strongest structural borrowing in the audit.",
+      "reuse_note": "code: REFERENCE_ONLY; the reusable part is the pattern/measurement, not the code"
+    },
+    {
+      "capability": "EXPLORATION_AND_LABYRINTH",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/exploration/ExplorationRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/exploration/DoExplorationRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/exploration/TundraTrekRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/exploration/TundraTrekAutoRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/exploration/TundraTruckEventRoutine.java"
+      ],
+      "implementation_summary": "exploration is two routines (open/idle claim vs run a stage), and the Tundra Trek event has both a manual and an AUTO routine plus a separate truck-event routine.",
+      "navigation": "exploration panel",
+      "recognition": "routine-level",
+      "action": "claim idle income / run a stage",
+      "verification": "routine-level",
+      "recovery": "routine-level",
+      "useful_assets": "the manual/auto split per event routine",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM — path-level",
+      "v2_equivalent": "OPEN_EXPLORATION + EXPLORATION_IDLE_CLAIM (live verified)",
+      "current_gap": "V2's idle-income claim is live verified; stage running is not implemented.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "EXPLORATION_AND_LABYRINTH",
+      "repo": "amil",
+      "source_files": [
+        "usecases/exploration.py",
+        "usecases/labyrinth.py",
+        "references/TextArea/Home.Labyrinth.json",
+        "references/TextArea/Home.Exploration*.json",
+        "references/icon/labyrinth/*",
+        "references/icon/exploration/*"
+      ],
+      "implementation_summary": "exploration and labyrinth as usecases; the labyrinth ROI table is 4.5KB (one of the largest), listing its own control set.",
+      "navigation": "text/template taps",
+      "recognition": "Home.Labyrinth.json + labyrinth icon templates",
+      "action": "run the labyrinth",
+      "verification": "fight-state templates (Defeat/Pause/Victory exist for exploration)",
+      "recovery": "recalibrate()",
+      "useful_assets": "the fight-state inventory (pause / victory / defeat) tells V2 which battle states a labyrinth routine must classify before it can be verifier-gated",
+      "license": "UNVERIFIED",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "MEDIUM",
+      "v2_equivalent": "OPEN_LABYRINTH (missing)",
+      "current_gap": "V2 cannot do the labyrinth; note that V2's battle-frame classifier returned UNKNOWN with confidence 0.0 on a real battle frame (2026-09-16 audit), so a battle-state classifier is a prerequisite.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "PET",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/pets/PetSkillsRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/pets/PetAdventureChestRoutine.java",
+        "modules/tasks/src/main/java/dev/frostguard/tasks/pets/PetAllianceTreasuresRoutine.java",
+        "modules/tasks/src/test/java/dev/frostguard/tasks/pets/PetSkillsCooldownFrameTest.java",
+        "modules/desktop/.../panel/pets/PetsLayoutController.java"
+      ],
+      "implementation_summary": "pets are split into three routines (skills, adventure chest, alliance treasures); the skills routine has a COOLDOWN reader validated on frames.",
+      "navigation": "pets panel",
+      "recognition": "PetSkillsCooldown (OCR validated on a frame test)",
+      "action": "use skill / open chest / claim treasure",
+      "verification": "cooldown read is the gate",
+      "recovery": "cooldown read failing means skip, not retry",
+      "useful_assets": "the cooldown-reader-before-action pattern, and the split of one system into three independent routines",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM-HIGH",
+      "v2_equivalent": "OPEN_PET (missing)",
+      "current_gap": "V2 has no pet support; the cooldown reader is the prerequisite.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "PET",
+      "repo": "amil",
+      "source_files": [
+        "usecases/pet.py",
+        "references/TextArea/Home.Pet.json",
+        "references/icon/pet/*"
+      ],
+      "implementation_summary": "pet usecase over a 5.2KB ROI table and a pet icon set.",
+      "navigation": "text/template taps into the pet panel",
+      "recognition": "Home.Pet.json ROIs",
+      "action": "claim / upgrade",
+      "verification": "per-step success",
+      "recovery": "recalibrate()",
+      "useful_assets": "the ROI table names the pet panel's controls",
+      "license": "UNVERIFIED",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "MEDIUM",
+      "v2_equivalent": "OPEN_PET (missing)",
+      "current_gap": "as above",
+      "reuse_note": ""
+    },
+    {
+      "capability": "NOMADIC_MERCHANT",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/tasks/src/main/java/dev/frostguard/tasks/economy/NomadicMerchantRoutine.java",
+        "modules/tasks/src/test/java/dev/frostguard/tasks/economy/NomadicMerchantRoutineTest.java"
+      ],
+      "implementation_summary": "the nomadic merchant is a routine with its own test — a travelling event with a limited window.",
+      "navigation": "world map",
+      "recognition": "routine-level",
+      "action": "trade",
+      "verification": "routine test",
+      "recovery": "its limited window implies a schedule",
+      "useful_assets": "an event-window routine is the shape V2 will need for time-limited merchants",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "LOW-MEDIUM — path-level",
+      "v2_equivalent": "nothing",
+      "current_gap": "not implemented in V2",
+      "reuse_note": ""
+    },
+    {
+      "capability": "SHOP_FREE_ITEM",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/automation/src/main/java/dev/frostguard/engine/helper/ShopNavigator.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/nav/ShopTab.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/helper/ShopSwipeCalibration.java",
+        "modules/api/.../configs/AllianceShopItemEnum.java"
+      ],
+      "implementation_summary": "a shop navigator that knows the shop's TABS (ShopTab enum), swipes horizontally through them (MAX_SWIPE_ATTEMPTS=10) and re-reads the header with OCR (2 attempts, 300ms) to confirm which tab it landed on; a separate calibration class measures the swipe geometry.",
+      "navigation": "open shop -> swipe with calibrated geometry -> confirm the tab by OCR",
+      "recognition": "ShopTab + OCR header read (attempts=2, retry 300ms)",
+      "action": "swipe, then select the item",
+      "verification": "the tab header is re-read after the swipe; without a confirmed header the navigation is not accepted",
+      "recovery": "bounded swipes (10)",
+      "useful_assets": "a dedicated SWIPE CALIBRATION class for a horizontally scrolling tab strip — directly relevant to V2's resource tab strip (which has the same class of problem: pitch/offset)",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "MEDIUM-HIGH — ShopNavigator read (12.6KB, 294 lines), constants extracted",
+      "v2_equivalent": "CAP-AY05 FREE_ITEM / CAP-B20 FREE_SHOP_ITEM (not implemented)",
+      "current_gap": "V2 has no shop navigation at all; this is the pattern to reuse when FREE_SHOP_ITEM is implemented.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "ALLIANCE_HELP_TECH_GIFT_CHEST",
+      "repo": "wosbot",
+      "source_files": [
+        "modules/automation/src/main/java/dev/frostguard/engine/helper/AllianceHelper.java",
+        "modules/automation/src/main/java/dev/frostguard/engine/helper/AllianceChampionshipHelper.java",
+        "modules/automation/.../ranking/capture/AllianceRankingCaptureSupport.java",
+        "modules/api/.../configs/AllianceShopItemEnum.java"
+      ],
+      "implementation_summary": "alliance work is helper-driven (help, championship, ranking capture) rather than one routine; the alliance has its own enum for shop items.",
+      "navigation": "alliance panel",
+      "recognition": "AllianceRankingCaptureSupport (a capture layer for ranking screens)",
+      "action": "help / donate / claim",
+      "verification": "ranking capture implies frame evidence",
+      "recovery": "helper-level",
+      "useful_assets": "a ranking CAPTURE layer (turn a scrolling ranking list into data) — V2 has no notion of reading a list",
+      "license": "AGPL-3.0-only",
+      "reuse_level": "ADAPT_PATTERN",
+      "confidence": "LOW-MEDIUM — the two helper files could not be fetched (blob fetch failed); path-level evidence only",
+      "v2_equivalent": "ALLIANCE_TECH_CONTRIBUTE / ALLIANCE_GIFTS / ALLIANCE_ALLY_GIFT_CLAIM (live verified) / ALLIANCE_HELP (registered, no verifier)",
+      "current_gap": "V2's ALLIANCE_HELP has no verifier (the RR-003 class) and is therefore never dispatched.",
+      "reuse_note": ""
+    },
+    {
+      "capability": "ALLIANCE_HELP_TECH_GIFT_CHEST",
+      "repo": "amil",
+      "source_files": [
+        "usecases/alliance.py",
+        "references/TextArea/Home.Alliance.json",
+        "references/TextArea/Home.Alliance.Help.json",
+        "references/TextArea/Home.Alliance.Tech.json",
+        "references/TextArea/Home.Alliance.Chest.json",
+        "references/TextArea/Home.Alliance.War*.json",
+        "references/icon/alliance/*"
+      ],
+      "implementation_summary": "alliance as one usecase with per-tab ROI tables (Help / Tech / Chest / War+AutoJoin) and alliance icon templates (honour chest, recommended tech, weekly triumph chest).",
+      "navigation": "alliance panel then per-tab text taps",
+      "recognition": "per-tab ROI tables (Help is only 434 bytes — the help button is a single control)",
+      "action": "help / donate / claim chest",
+      "verification": "per-step success; the AutoJoin table exists for the war auto-join toggle",
+      "recovery": "recalibrate()",
+      "useful_assets": "the per-TAB ROI file split (one file per alliance tab) is a clean way to organise a multi-tab panel, and the AutoJoin table proves the war auto-join control was located",
+      "license": "UNVERIFIED",
+      "reuse_level": "REFERENCE_ONLY",
+      "confidence": "MEDIUM-HIGH for structure (files present), MEDIUM for geometry (1080x2456)",
+      "v2_equivalent": "ALLIANCE_* skills",
+      "current_gap": "V2's alliance help has no verifier; the external AutoJoin table hints the client exposes a persistent auto-help toggle which would make ALLIANCE_HELP a one-time setup rather than per-request work.",
+      "reuse_note": ""
+    }
+  ],
+  "reuse_verdicts": {
+    "may_copy_code": [],
+    "may_copy_assets": [],
+    "may_use_as_measurement_hypothesis": [
+      "wosbot"
+    ],
+    "why": "Shederator/wosbot is AGPL-3.0-only: no source or asset may be copied into V2. Its PIXEL CONSTANTS and FLOW ORDER are facts about the game's UI measured on the same 720x1280 client, so they may be used as hypotheses to verify against V2's own client — but every one must be re-measured before production use (LIVE CLIENT wins, per the V2 fact order). AminulIslamSifat/whiteout-survival-bot has NO license file and no API-detected license despite its README badge, so it is REFERENCE_ONLY. zenpaiang/wos-database and HuNiu-rgp/wosbot return no license either.",
+    "v2_rule_applied": "External Source -> Normalize -> Compare with Current Client -> Adapt -> Replay -> Live Test -> Verify -> Promote"
+  },
+  "top_borrow_list": [
+    {
+      "rank": 1,
+      "what": "Arena opponent-row geometry + power-colour rule + free-only refresh policy",
+      "from": "wosbot ArenaRoutine.java",
+      "why": "V2 has no arena at all, and this file is at V2's exact resolution (720x1280) and emulator (MuMu)",
+      "next": "one live frame of the arena panel to confirm the row pitch 128 / base y 376 and the colour rule"
+    },
+    {
+      "rank": 2,
+      "what": "Enabled/disabled variant discriminator for claim buttons (same point, different appearance => not claimable)",
+      "from": "wosbot DailyMissionRoutine.java",
+      "why": "exactly the defect class V2 keeps hitting (greyed 领取 button; red-cost button); V2's own tab fix already used the same trick",
+      "next": "register the enabled+disabled pair for the daily chest / claim button"
+    },
+    {
+      "rank": 3,
+      "what": "Navigation graph with BFS + re-detect + recalibrate fallback",
+      "from": "amil core/fsm.py",
+      "why": "the structural answer to V2's goal_page_mismatch -> SAFE_STOP -> stranded client",
+      "next": "design review, not code: it touches the frozen architecture"
+    },
+    {
+      "rank": 4,
+      "what": "VIP entry button box (430,48)-(530,85) + panel-verified-by-template",
+      "from": "wosbot VipRoutine.java",
+      "why": "V2 has been unable to find the VIP entry; this is a concrete hypothesis at the same resolution",
+      "next": "probe that point on V2's client and register the template"
+    },
+    {
+      "rank": 5,
+      "what": "Same-target no-progress check after a tap (stop when nothing moved)",
+      "from": "wosbot DailyMissionRoutine.java",
+      "why": "generalises V2's one-shot guards into a measurable rule",
+      "next": "apply to the daily claim loop"
+    },
+    {
+      "rank": 6,
+      "what": "Swipe calibration as its own measured class for a horizontal tab strip",
+      "from": "wosbot ShopNavigator/ShopSwipeCalibration",
+      "why": "V2's resource tab strip has the same pitch/offset problem and solved it ad hoc",
+      "next": "reuse the shape when FREE_SHOP_ITEM lands"
+    },
+    {
+      "rank": 7,
+      "what": "Per-task self-rescheduling anchored on the daily reset, with a final check 2 minutes before reset and a safety reschedule",
+      "from": "wosbot VipRoutine + DailyMissionRoutine",
+      "why": "claims missed at the reset boundary are lost value",
+      "next": "consider for the daily-reset-bound goals"
+    },
+    {
+      "rank": 8,
+      "what": "Post-switch identity assertion + OCR noise filters (garbage ratio, fuzzy title gate, pick_best_text)",
+      "from": "amil Main/main.py",
+      "why": "V2 reads the role identity but never asserts it after a switch",
+      "next": "add the assertion to the role-identity path"
+    },
+    {
+      "rank": 9,
+      "what": "Preflight before navigation (check stamina/marches/board before spending a navigation cycle)",
+      "from": "wosbot IntelDeploymentPreflight",
+      "why": "V2 spends navigation cycles before discovering an empty board",
+      "next": "cheap guard in the intel goal"
+    },
+    {
+      "rank": 10,
+      "what": "Time-window scheduling with a preemption rule (bear trap / manual rally join)",
+      "from": "wosbot engine/schedule + preempt",
+      "why": "V2 cannot do 'at the rally window, join even if gathering'",
+      "next": "design question for the V2 scheduler (no second scheduler)"
+    }
+  ],
+  "immediate_v2_targets": [
+    {
+      "capability": "CAP-B01 / daily activity chest claim",
+      "borrow": "enabled/disabled claim-button discriminator + no-progress check + claim-all-then-individual fallback",
+      "source": "wosbot DailyMissionRoutine.java",
+      "blocked_by": "nothing in V2 — needs the enabled/disabled template pair registered from a live frame"
+    },
+    {
+      "capability": "CAP-B09/B10 VIP",
+      "borrow": "the entry button box and the panel template hypothesis",
+      "source": "wosbot VipRoutine.java + amil Home.VIP.json flow order",
+      "blocked_by": "one live probe of the VIP entry point"
+    },
+    {
+      "capability": "CAP-B20 FREE_SHOP_ITEM",
+      "borrow": "ShopNavigator tab model + swipe calibration + OCR-confirmed tab",
+      "source": "wosbot ShopNavigator.java / ShopTab.java",
+      "blocked_by": "nothing structural; needs a live look at the shop panel"
+    },
+    {
+      "capability": "CAP-AE ARENA",
+      "borrow": "row geometry, power-colour rule, free-refresh policy",
+      "source": "wosbot ArenaRoutine.java",
+      "blocked_by": "one live arena frame"
+    },
+    {
+      "capability": "ALLIANCE_HELP verifier",
+      "borrow": "the AutoJoin ROI table (a persistent auto-help toggle may exist)",
+      "source": "amil Home.Alliance.War.AutoJoin.json",
+      "blocked_by": "confirm on V2's client whether auto-help is switchable"
+    }
+  ],
+  "not_useful": [
+    {
+      "repo": "HuNiu-rgp/wosbot",
+      "verdict": "REFERENCE_ONLY",
+      "reason": "no license detected; the public repository is a product page with a closed download, not source. Honest tag: NOT_USEFUL for code reuse."
+    },
+    {
+      "repo": "zenpaiang/wos-database",
+      "verdict": "REFERENCE_ONLY",
+      "reason": "no license detected by the API; kept for chief gear / charm / fire crystal data if a licence is ever stated — not audited source this round."
+    },
+    {
+      "repo": "batazor/autopilot-page",
+      "verdict": "REFERENCE_ONLY",
+      "reason": "MIT docs site; the real source lives on GitLab and was not reachable this round, so its architecture (worker/priority/TTL/queue) is unverified and explicitly NOT to be imported."
+    }
+  ],
+  "honest_limits": [
+    "The Java repo is a partial clone: 6 files were read in full (VipRoutine, DailyMissionRoutine + MailClaimPassPolicy, ArenaRoutine by structure + constants, ShopNavigator by structure) and ~188 files were fetched; the remaining capability entries are path-level evidence (file names, module roles, test names) rather than read bodies. Two files (BearTrapHelper, AllianceHelper) could not be fetched at all.",
+    "The Python repo's 16 usecases and 73 ROI tables are on disk; core/core.py, core/fsm.py, core/coord_utils.py, Main/main.py and usecases/vip.py were read in full; the other usecases were indexed by name and metadata only.",
+    "No external asset (template PNG, icon) has been copied anywhere. No external code has been copied anywhere.",
+    "Geometries are hypotheses until checked against V2's client: the Frostguard constants are 720x1280 like V2, but the UI may differ (client version, language: V2 runs the Chinese client, Frostguard's strings are English)."
+  ],
+  "counts": {
+    "capabilities": 31,
+    "repos": 2,
+    "top_borrow": 10
+  },
+  "normalised_at_utc": "2026-09-16T17:45:00Z",
+  "reuse_level_enum": [
+    "ADAPT_PATTERN",
+    "DIRECT_REUSE_ALLOWED",
+    "LICENSE_BLOCKED",
+    "NOT_USEFUL",
+    "REFERENCE_ONLY"
+  ]
+}
