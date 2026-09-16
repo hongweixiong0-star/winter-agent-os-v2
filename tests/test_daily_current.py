@@ -37,9 +37,26 @@ class CurrentDailyTests(unittest.TestCase):
         self.assertTrue(verify_open_daily(before, after).ok)
 
     def test_daily_panel_goal_does_not_start_unverified_task_actions(self):
+        """The panel is read, left, and only then stopped.
+
+        The intent of this test is unchanged -- the brain must not reach for a task
+        action it cannot have verified (``DAILY_HERO_RECRUIT`` still has no
+        verifier, and is still not chosen) -- but the *shape* of the honest stop
+        changed on 2026-09-16.  Stopping while still inside the panel stranded the
+        client, so the run now leaves it first (measured DAILY -> HOME, accepted by
+        ``verify_safe_back``) and stops on the following decision.  See
+        ``tests/test_daily_panel_dead_end_recovery.py``.
+        """
         current = self.state("live_20260908_daily_after2.png")
-        decision = RuleBrain(current_goal="DAILY").decide(current, v2_registry())
-        self.assertEqual((decision.skill, decision.reason), ("SAFE_STOP", "daily_no_claimable_rewards"))
+        brain = RuleBrain(current_goal="DAILY")
+        first = brain.decide(current, v2_registry())
+        self.assertEqual((first.skill, first.reason),
+                         ("BACK", "daily_panel_not_actionable_leaving_the_page"))
+        home = self.state("live_20260908_offline_after.png")
+        self.assertEqual(home.page, Page.HOME)
+        second = brain.decide(home, v2_registry())
+        self.assertEqual((second.skill, second.reason),
+                         ("SAFE_STOP", "daily_panel_already_read_not_actionable"))
 
 
 if __name__ == "__main__":
