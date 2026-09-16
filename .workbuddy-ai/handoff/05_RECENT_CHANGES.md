@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `c8fad05 2026-09-16T19:57:01+08:00 fix(march): a counter the client will not draw must not block the goal, and an overlay must not fake an idle queue`
 - `44de622 2026-09-16T19:04:05+08:00 docs(procedure): pin the live-observation workflow and the role facts it produced`
 - `2dab563 2026-09-16T19:03:01+08:00 chore(gitignore): keep the raw copy of the role-identity probe out of git without touching the tracked label corpus`
 - `3e5ec9c 2026-09-16T19:02:29+08:00 feat(role-identity): read which role is logged in from the client, and stop a fragment from rewriting the march counter`
@@ -17,29 +18,28 @@ Last 12 commits (newest first):
 - `e58dcc7 2026-09-16T07:53:26+08:00 chore(handoff): regenerate after the R19 round (739 tests, 0 failures, 0 errors); archive Codex's 23:05/23:09 intel evidence`
 - `dbc3610 2026-09-16T07:53:10+08:00 fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence`
 - `b4baff2 2026-09-16T00:41:21+08:00 chore(handoff): final regeneration after the march-count fix (712 tests, 0 failures, 0 errors)`
-- `0fbe6b7 2026-09-16T00:26:13+08:00 test(evidence): archive the two march-count frames under truth_audit so the integrity guard passes`
 
-Uncommitted changes: 61
-- `M .gitignore`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+Uncommitted changes: 44
+- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
 - ` M .workbuddy-ai/memory/2026-09-16.md`
-- ` M .workbuddy-ai/memory/MEMORY.md`
 - ` M .workbuddy/memory/2026-09-16.md`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M evidence/INDEX.json`
-- ` M knowledge/goals/capability_skill_map.json`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
-- ` M learning/resource_rotation.json`
 - ` M learning/runtime_snapshot.json`
+- `?? knowledge/game/capability_catalog.json`
+- `?? out_crop_right_column/`
+- `?? out_crop_role/`
+- `?? out_crop_strip/`
+- `?? out_junit_audit.xml`
+- `?? out_junit_final_r18.xml`
+- `?? out_junit_fix.xml`
+- `?? out_junit_full_v1.xml`
+- `?? out_junit_full_v3.xml`
+- `?? out_junit_iso.xml`
+- `?? out_junit_r18d.xml`
+- `?? out_junit_r18e.xml`
 <!-- /AUTO:recent_commits -->
 
 ---

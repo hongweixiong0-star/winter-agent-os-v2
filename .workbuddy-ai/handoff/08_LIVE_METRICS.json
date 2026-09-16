@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-16T11:56:59+00:00",
+  "generated_at": "2026-09-16T12:24:16+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "44de622",
+  "commit": "c8fad05",
   "last_good_commit": "e4fd245",
-  "dirty_count": 61,
+  "dirty_count": 44,
   "episodes": {
-    "total": 1351,
-    "production": 1351,
-    "success": 1006,
+    "total": 1356,
+    "production": 1356,
+    "success": 1011,
     "failure": 340,
-    "success_rate_over_decided": 0.7474,
+    "success_rate_over_decided": 0.7483,
     "modes": {
-      "PRODUCTION": 1351
+      "PRODUCTION": 1356
     },
     "mixed_case_rows": 35
   },
@@ -24,9 +24,9 @@
     },
     "dispatchable": 71,
     "counts": {
-      "live_verified": 26,
+      "live_verified": 25,
       "stable": 25,
-      "degraded": 9,
+      "degraded": 10,
       "only_failed": 9,
       "never_executed": 20
     }
@@ -35,7 +35,7 @@
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
       "count": 128,
-      "recent": 24,
+      "recent": 18,
       "last_seen": "2026-09-16T04:09:40.727152+00:00",
       "dates": {
         "2026-09-12": 36,
@@ -57,22 +57,6 @@
         [
           "OPEN_MAIL",
           13
-        ]
-      ]
-    },
-    {
-      "failure_type": "INTEL_HERO_DISPATCH_NOT_PROVEN",
-      "count": 8,
-      "recent": 8,
-      "last_seen": "2026-09-14T12:19:55.812501+00:00",
-      "dates": {
-        "2026-09-14": 8
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "INTEL_HERO_DISPATCH",
-          8
         ]
       ]
     },
@@ -212,6 +196,22 @@
           5
         ]
       ]
+    },
+    {
+      "failure_type": "INTEL_HERO_TARGET_NOT_PROVEN",
+      "count": 2,
+      "recent": 1,
+      "last_seen": "2026-09-14T14:05:02.502988+00:00",
+      "dates": {
+        "2026-09-14": 2
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_INTEL_HERO_JOURNEY_TARGET",
+          2
+        ]
+      ]
     }
   ],
   "goals": {
@@ -247,9 +247,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 1209,
-    "present_on_disk": 1209,
-    "traceable_episodes": 619,
+    "referenced_screenshots": 1219,
+    "present_on_disk": 1219,
+    "traceable_episodes": 624,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -263,6 +263,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "INTEL_BEAST_TARGET_NOT_PROVEN"
+    "stop_reason": "mail_all_clear"
   }
 }

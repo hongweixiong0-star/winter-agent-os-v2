@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x128 all-time; recent=24 (last 2d), last seen 2026-09-16T04:09:40.727152+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-- **INTEL_HERO_DISPATCH_NOT_PROVEN** x8 all-time; recent=8 (last 2d), last seen 2026-09-14T12:19:55.812501+00:00 — INTEL_HERO_DISPATCH(8)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x128 all-time; recent=18 (last 2d), last seen 2026-09-16T04:09:40.727152+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **INTEL_BEAST_TARGET_NOT_PROVEN** x6 all-time; recent=5 (last 2d), last seen 2026-09-16T11:22:47.573385+00:00 — OPEN_INTEL_BEAST_TARGET(6)
 - **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=2 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-15T09:23:53.200251+00:00 — DISMISS_DAILY_REWARD(3)
 - **OPEN_MAP_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-15T15:16:47.597321+00:00 — OPEN_MAP(3)
+- **INTEL_BEAST_MARCH_NOT_PROVEN** x2 all-time; recent=2 (last 2d), last seen 2026-09-15T00:14:13.989039+00:00 — INTEL_BEAST_START_MARCH(2)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
@@ -21,12 +21,25 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 61 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md']
+- 44 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M learning/episodes.jsonl']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 第 24 轮（2026-09-16 20:2x GMT+8）—— 能力总表 + MAIL 落地
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0at | **478 行 episode 无 `recorded_at`**（旧 schema 的自报成功，共 51 个技能） | ⚠️ **未修（结构问题，需裁决）** | 占语料 35%。`mode=PRODUCTION` 但无 `episode_id` / 截图 / `verifier_ok`。**污染所有历史指标**。总表已加 `evidence_policy` 排除它们；**不要**删历史（§18）。**待裁决**：这 478 行该标 `mode=LEGACY_SELF_REPORTED`（保留但降级），还是只在新统计里忽略？ |
+| 0au | Skills 记录声称 `state=VERIFIED` 而**无任何可追溯证据** | ⚠️ **未修** | 例：`MAIL_CLAIM_REWARDS` 记录写 `VERIFIED`，但 24 行证据全是旧 schema。`SkillState` 与证据脱钩 ⇒ **不能只看 `state` 字段判断覆盖**，要跑总表 |
+| 0av | `CAP-E01/E04 RESEARCH` 被角色自身状态挡住 | ✅ **非缺陷（已定性）** | 该角色已有进行中研究（6d05:20:54）+ `queue_available=false`，客户端正确拒绝。属 §7 Feature Availability，**不要再当 bug 修** |
+| 0aw | MAIL 等技能的 episode **`verifier` 字段为空 `{}`** | ⚠️ **新发现，未修** | `verifier_ok=True` 有，但判定理由（如 `MAIL_BADGE_REDUCTION_PROVEN`）只出现在运行日志里，**没有落进语料** ⇒ 事后无法从语料复核"为什么算通过"。门禁要求 Verifier PASS，理由应随 episode 落盘 |
+| 0ax | `CAP-AY05 FREE_ITEM` / `CAP-B09/B10 VIP` 等 T0 免费能力**完全未实现** | ⚠️ **未实现** | PHASE 1 剩余主体；VIP 需先发现入口（`OPEN_VIP` 不在 registry） |
+
+**本轮改动**：新增 `tools/build_capability_catalog.py`（总表生成器）+ `knowledge/game/capability_catalog.json`（522 条）。
+**没做**：没有为已实现的功能重建技能；没有按字母顺序推进（按操作者 §5 的价值顺序）。
 
 ### 第 23 轮（2026-09-16 19:0x GMT+8）—— CAPABILITY-FIRST 阶段启动
 

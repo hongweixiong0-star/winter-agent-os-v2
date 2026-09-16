@@ -4,7 +4,72 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 19:0x GMT+8）—— 进入 CAPABILITY-FIRST 阶段
+## 手写：本轮（2026-09-16 20:2x GMT+8）—— 建能力总表；落地 MAIL 领取
+
+### 0. 阶段的第一件事：跑这两条
+
+```
+"E:\dongri-mumu-bot\.venv\Scripts\python.exe" -u tools/build_capability_catalog.py --rank
+"E:\dongri-mumu-bot\.venv\Scripts\python.exe" -u tools/capability_landing_queue.py
+```
+
+第一条建/刷新 `knowledge/game/capability_catalog.json`（操作者 §4 的 522 条能力，
+按 `CAP-<类><序号>` 编号），并按**操作者 §5 的阶段顺序**打印工作清单（`DO` = 待做）。
+第二条打印技能粒度的落地状态（未实现 / 不可判定 / 可判定未执行）。
+**两者都不是第二个 Skill Registry** —— 真执行表永远只有 `v2_registry()`。
+
+### 1. ⚠️ 先看这条：语料里有 478 行"自报成功"，不可采信
+
+`learning/episodes.jsonl` 共 1351 行，其中 **478 行没有 `recorded_at`**（也没有 `episode_id` /
+截图 / `verifier_ok`），字段只有 8 个：`skill, state_before, state_after, action, result, mode,
+duration, failure_type`，全部写着 `mode=PRODUCTION`。样本里 `MAIL_CLAIM_REWARDS` 的"验证"是一个
+**自述字符串**（`"reward feedback AND all tab badges clear"`），不是裁判的判定。
+
+⇒ **这是另一代写入器的输出（旧 schema），按 `live-verification` 门禁不得支撑 LIVE_VERIFIED。**
+⇒ **所有历史指标都被它污染**（最重的：`OPEN_INTEL=53 OPEN_MAIL=46 MAIL_CLAIM_REWARDS=24
+SEARCH_RESOURCE=23 OPEN_HOME=23 OPEN_MAP=23 START_GATHER=20 DISPATCH_MARCH=20`）。
+总表已把这条写进 `evidence_policy` 并只统计带 `recorded_at` 的行。
+**不要**按这些行宣称能力已上线；**也不要**删历史（§18 禁止篡改）。
+
+### 2. ✅ 本轮落地一个真实能力：MAIL 领取（PHASE 1 / T0 / 免费）
+
+验收四件套全齐（真机 2026-09-16T12:21:37–12:22:44，`--goal MAIL`，`stop_reason: mail_all_clear`）：
+
+| 步骤 | 技能 | 页面 | verifier |
+|---|---|---|---|
+| 1 | `OPEN_MAIL` | HOME→MAIL | OK |
+| 2 | `MAIL_CLAIM_REWARDS` | MAIL→MAIL | **`MAIL_BADGE_REDUCTION_PROVEN`**（角标 8→5） |
+| 3 | `SELECT_MAIL_ALLIANCE_TAB` | MAIL→MAIL | OK |
+| 4 | `MAIL_CLAIM_REWARDS` | MAIL→POPUP | OK |
+| 5 | `DISMISS_MAIL_GENERIC_REWARD` | POPUP→MAIL | OK（角标 → **0**） |
+
+10 张截图在磁盘上、`episode_id=live_runtime` + `step_id` 齐备、`mode=PRODUCTION`。
+**总表覆盖：LIVE_VERIFIED 26 → 29**（`CAP-B06 CLAIM_MAIL` / `CAP-B07 MAIL_READ` /
+`CAP-B08 MAIL_COLLECT_ALL`），CANDIDATE 42 → 39。
+
+### 3. 下一条该做的（PHASE 1 里最便宜的）
+
+按总表 `--rank` 的输出顺序，T0 优先：
+
+1. **`CAP-B01 CLAIM_DAILY_MISSION`**（`DAILY_CLAIM_REWARDS` 已存在，0 条可追溯证据）
+   —— 与 MAIL 同一形态：**动作已实现、页面已可达、只缺一条可采信 episode**。这是最便宜的下一项。
+2. `CAP-B03/B05 CLAIM_EVENT_MILESTONE / CLAIM_ALL`（`CLAIM_REWARD` 未进 `VERIFIED_ATOMIC`）
+3. `CAP-B09/B10 VIP 日领 / VIP 免费宝箱`（**完全未实现**，需先发现 VIP 入口）
+4. `CAP-AY05 FREE_ITEM` / `CAP-B20 FREE_SHOP_ITEM`（免费商店项）
+5. `CAP-S06/S07 ALLIANCE_GIFT / CHEST`（`ALLIANCE_GIFTS` 已存在，同样缺可追溯证据）
+
+⚠ **`CAP-E01/E04 RESEARCH` 现在不可落地**：真机显示该角色已有一个进行中的研究
+（`branch=GROWTH node=WARD_EXPANSION_VII status=IN_PROGRESS timer=6d05:20:54`），
+`queue_available=false` ⇒ 客户端正确地拒绝（`QUEUE_BUSY`）。这是 §7 的 Feature Availability
+问题，**不是缺陷** —— 不要再当 bug 修。
+
+### 4. 门禁提醒（本轮踩到）
+
+- 项目脚本/测试**必须**用项目 venv `E:\dongri-mumu-bot\.venv\Scripts\python.exe`；
+  受托管的 3.13 **没有 PIL**，用错会得到 `ModuleNotFoundError: No module named 'PIL'`。
+- PowerShell 里 `python -c "...%d..."` 会被安全策略拦（`%VAR%` 被当成 cmd 变量）⇒ 用 `str.format`。
+
+## 手写：上一轮（2026-09-16 19:0x GMT+8）—— 进入 CAPABILITY-FIRST 阶段
 
 **阶段定义（操作者，最高优先）**：不再扩架构，尽快让 Agent「会做越来越多的事」。
 现有 V2 顶层架构冻结；Role/Progression 够用即停；**优先把 MISSING / NEVER_TRIED 推进到
@@ -755,12 +820,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 24 in the last 2 day(s), 128 all-time, last seen 2026-09-16T04:09:40.727152+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 18 in the last 2 day(s), 128 all-time, last seen 2026-09-16T04:09:40.727152+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 61
-LAST PRODUCTION EPISODE: {"skill": "OPEN_INTEL_BEAST_TARGET", "result": "FAILURE", "recorded_at": "2026-09-16T11:22:47.573385+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T112228940512.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T112231479939.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 128, "recent": 24, "last_seen": "2026-09-16T04:09:40.727152+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T11:22:47.573385+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 44
+LAST PRODUCTION EPISODE: {"skill": "DISMISS_MAIL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-16T12:22:44.527500+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_005_before_20260916T122233108905.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_005_after_20260916T122235809128.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 128, "recent": 18, "last_seen": "2026-09-16T04:09:40.727152+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T12:22:44.527500+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

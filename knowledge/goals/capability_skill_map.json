@@ -427,8 +427,8 @@
           "status": "DEGRADED",
           "implemented_by": "OPEN_MAIL",
           "live_verified_by": "OPEN_MAIL",
-          "attempts": 46,
-          "successes": 31,
+          "attempts": 47,
+          "successes": 32,
           "failures": 15
         },
         {
@@ -441,8 +441,8 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_MAIL_ALLIANCE_TAB",
           "live_verified_by": "SELECT_MAIL_ALLIANCE_TAB",
-          "attempts": 13,
-          "successes": 8,
+          "attempts": 14,
+          "successes": 9,
           "failures": 5
         },
         {
@@ -453,8 +453,8 @@
           "status": "DEGRADED",
           "implemented_by": "MAIL_CLAIM_REWARDS",
           "live_verified_by": "MAIL_CLAIM_REWARDS",
-          "attempts": 24,
-          "successes": 14,
+          "attempts": 26,
+          "successes": 16,
           "failures": 10
         },
         {
@@ -466,8 +466,8 @@
           "status": "DEGRADED",
           "implemented_by": "DISMISS_MAIL_REWARD",
           "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
-          "attempts": 8,
-          "successes": 6,
+          "attempts": 9,
+          "successes": 7,
           "failures": 2
         }
       ],
@@ -572,8 +572,8 @@
           "status": "STABLE",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 123,
-          "successes": 105,
+          "attempts": 125,
+          "successes": 107,
           "failures": 18
         },
         {
@@ -587,8 +587,8 @@
           "status": "STABLE",
           "implemented_by": "DISMISS_ALLIANCE_GENERIC_REWARD",
           "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
-          "attempts": 9,
-          "successes": 8,
+          "attempts": 10,
+          "successes": 9,
           "failures": 1
         }
       ],
