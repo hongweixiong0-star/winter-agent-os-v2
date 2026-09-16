@@ -493,11 +493,11 @@
           "alternatives": [
             "OPEN_DAILY"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "OPEN_DAILY",
           "live_verified_by": "OPEN_DAILY",
-          "attempts": 9,
-          "successes": 7,
+          "attempts": 11,
+          "successes": 9,
           "failures": 2
         },
         {
@@ -520,8 +520,8 @@
           "status": "LIVE_VERIFIED",
           "implemented_by": "DAILY_CLAIM_REWARDS",
           "live_verified_by": "DAILY_CLAIM_REWARDS",
-          "attempts": 3,
-          "successes": 3,
+          "attempts": 4,
+          "successes": 4,
           "failures": 0
         },
         {
@@ -533,19 +533,19 @@
           "status": "DEGRADED",
           "implemented_by": "DISMISS_DAILY_REWARD",
           "live_verified_by": "DISMISS_DAILY_REWARD",
-          "attempts": 5,
-          "successes": 2,
+          "attempts": 6,
+          "successes": 3,
           "failures": 3
         }
       ],
       "design_requirements_total": 4,
       "implemented_capabilities": 3,
       "live_verified_capabilities": 3,
-      "stable_capabilities": 0,
+      "stable_capabilities": 1,
       "design_coverage": 1.0,
       "implementation_coverage": 0.75,
       "live_coverage": 0.75,
-      "stable_coverage": 0.0,
+      "stable_coverage": 0.25,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "READ_DAILY_PROGRESS"
@@ -572,8 +572,8 @@
           "status": "STABLE",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 125,
-          "successes": 107,
+          "attempts": 126,
+          "successes": 108,
           "failures": 18
         },
         {
@@ -587,8 +587,8 @@
           "status": "STABLE",
           "implemented_by": "DISMISS_ALLIANCE_GENERIC_REWARD",
           "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
-          "attempts": 10,
-          "successes": 9,
+          "attempts": 11,
+          "successes": 10,
           "failures": 1
         }
       ],

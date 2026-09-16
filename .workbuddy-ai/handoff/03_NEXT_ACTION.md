@@ -4,7 +4,71 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 21:0x–22:1x GMT+8）—— 让每日任务入口真正能用；面板不再把人困住
+## 手写：本轮（2026-09-16 23:0x–00:5x GMT+8）—— 专家包 v1.1.0 增量升级；任务面板页签切换落地
+
+### 0. 本轮两个交付物
+
+1. **专家包 v1.1.0**：新增 4 个技能 `github-project-sync` / `github-advisor-bridge` /
+   `remote-project-review` / `commit-evidence-linking`，开工加 GIT STATE CHECK、
+   加 Issue #2 上报格式、加禁止项 16/17（Git 与"外部同意≠验证"）。
+   目录：`C:\Users\xhw\.workbuddy\plugins\marketplaces\my-experts\plugins\winter-agent-v2-dev`；
+   `validate_expert.py` / `register_expert.py` 均已通过。
+   ⚠ 技能由**宿主插件缓存**加载（`plugins\cache\my-experts\winter-agent-v2-dev\1.0.0\`）：
+   若下个会话看不到新技能，确认插件是否已重新同步 —— **不要手改 cache 目录**。
+2. **`SELECT_DAILY_TAB` LIVE_VERIFIED**（提交 `cb716da` 已 push）。
+
+### 1. 本轮真实改进（有真机 episode）
+
+| 步骤 | 技能 | 页面 | verifier | 关键读数 |
+|---|---|---|---|---|
+| 1 | `SELECT_DAILY_TAB` | DAILY→DAILY | **OK** | before `tab=NOT_TASKS` → after `tab=TASKS, task_id=ALLIANCE_CONTRIBUTE_5, activity=10` |
+| 2 | `BACK` | DAILY→HOME | OK | 面板退出（上一轮加的守卫） |
+| 3 | `SAFE_STOP` | — | — | `daily_panel_already_read_not_actionable` |
+
+⚠ 16:33 那次运行的 `REAL_MONEY_OFFER` 是**被硬阻断正确挡下**的，不是缺陷；
+那次还**真的领到一份每日奖励**（`DAILY_CLAIM_REWARDS` verifier OK：`claimable_before` +
+`reward_visible`）—— 该技能**第一条可追溯真机 episode**（此前所有行来自无
+`recorded_at`/截图/verifier 的旧写入器）。
+
+### 2. 根因（一句话）与修法
+
+`OCRPageClassifier` 用**页签栏上的字面串 `每日任务`** 判 `Page.DAILY`，
+而 `OPEN_DAILY` 打开面板时停在**第一页签 章节任务**；整个 daily 技能族是在
+**每日任务页签**上标定的。代价可测量：当天活动 285、三个宝箱（80/160/270）全部达标，
+机器一个都看不见。
+
+修法：把"哪个页签在显示"当**画出来的状态**读（未选中=深蓝胶囊+白字，选中=浅色胶囊+深字），
+两条记录都取自**归档真机前后帧**（中间只有一次点击）。**全语料 3503 帧**：
+`BTN_DAILY_TAB_TASKS` 命中 **4**、`TAB_DAILY_TASKS_SELECTED` 命中 **5**，
+**全部是当天运行的面板帧，树里没有别的帧命中**。
+
+⚠ **同类坑第三次出现（本轮现场抓到）**：第一版裁剪把整个胶囊（x 481..704）都裁进去，
+**含右下角红色可领角标**（中心 ≈(688,1158) r≈9）⇒ 那次运行 13 帧里只命中 3 帧，
+恰好是**没有角标**的 3 帧。这正是把 `BTN_OPEN_DAILY` 冻死 8 天的缺陷。
+裁剪改为止于 x=670，**一条记录覆盖有/无角标两态**（5 帧全 d=0）。
+⇒ **注册任何点击/判定模板前先问一句：这个控件会不会画角标？**
+
+### 3. 下一条该做的
+
+1. **每日活跃宝箱的"领取"这一步还没有技能**：三个宝箱今天已达标（285 ≥ 270）
+   但**已被领取**（箱盖是开的）。链路现在是
+   `OPEN_DAILY` → `SELECT_DAILY_TAB`（新）→ 读 `daily` → 领；
+   而旧标定的 `BTN_DAILY_CLAIM_ALL` 在 y≈0.777，与今天的面板版式不符 ⇒ 需重新注册 + verifier。
+2. `CAP-B03/B05`（`CLAIM_REWARD` 进 `VERIFIED_ATOMIC`，受 RR-003 边界约束，需 Codex 裁决）。
+3. `CAP-B09/B10`（VIP，需先发现入口）、`FREE_ITEM` / `FREE_SHOP_ITEM`。
+4. `ALLIANCE_GIFTS` / `ALLY_GIFT_CLAIM`（后者上一轮真机 11 次成功，**可复跑刷价值**）。
+5. `RECALL_MARCH`：只差 `idle_marches==0 ∧ GATHERING 在外` 这个自然状态。
+
+### 4. 环境/协作提醒（本轮新增）
+
+- **GitHub 已进日常工作流**：`tools/git_sync.py status|push`、`tools/scan_public_repo.py`（推前闸门）、
+  `docs/GITHUB_SYNC_RULES.md`（规则全文）。开工先 `git_sync.py status`，
+  一个可验证工作单元完成即 push；**禁止强推 / 重写 main / 盲 reset**。
+- 本机 pytest 全量仍拿不到汇总行（宿主批量删除守卫）⇒ 用 `-o tmp_path_retention_policy=all`，
+  或 `PYTEST_PLUGINS=winter_failwatch`（失败发生时即时落盘）。
+- repo 仍可能有第二个写入方：改完立刻 `git log --oneline -3` 复核。
+
+## 手写：上一轮（2026-09-16 21:0x–22:1x GMT+8）—— 让每日任务入口真正能用；面板不再把人困住
 
 **先读本轮的证据目录**（都是可复核的帧 + README，不需重测）：
 `dataset/truth_audit/daily_entry_template_20260916/` 与 `dataset/truth_audit/daily_tasks_tab_20260916/`。
@@ -915,12 +979,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 18 in the last 2 day(s), 129 all-time, last seen 2026-09-16T13:10:49.548545+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 17 in the last 2 day(s), 129 all-time, last seen 2026-09-16T13:10:49.548545+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 1
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-16T13:52:03.297065+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T135143672097.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_after_20260916T135154147913.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 129, "recent": 18, "last_seen": "2026-09-16T13:10:49.548545+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T13:52:03.297065+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 4
+LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-16T16:56:16.124472+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T165559235449.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_after_20260916T165607438447.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 129, "recent": 17, "last_seen": "2026-09-16T13:10:49.548545+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T16:56:16.124472+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

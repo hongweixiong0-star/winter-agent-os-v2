@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-09-16T15:19:17+00:00",
+  "generated_at": "2026-09-16T17:10:20+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "acdd964",
+  "commit": "cb716da",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-16T13:52:12.585294+00:00",
-    "last_action_time": "2026-09-16T13:51:52.624843+00:00",
-    "last_success_time": "2026-09-16T13:52:03.311349+00:00",
+    "last_tick_time": "2026-09-16T16:56:24.856020+00:00",
+    "last_action_time": "2026-09-16T16:56:05.936340+00:00",
+    "last_success_time": "2026-09-16T16:56:16.136250+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260916T135203334003.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260916T165616137754.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -39,7 +39,7 @@
       "events": {}
     },
     "stop_reason": "daily_panel_already_read_not_actionable",
-    "updated_at": "2026-09-16T13:52:12.653868+00:00"
+    "updated_at": "2026-09-16T16:56:24.859481+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",

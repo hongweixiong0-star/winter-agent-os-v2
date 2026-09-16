@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `cb716da 2026-09-17T00:58:55+08:00 feat(daily): switch the task panel to its 每日任务 tab, live verified`
+- `8510083 2026-09-16T23:19:18+08:00 chore(handoff): publish the weight audit and the final in-sync state`
 - `acdd964 2026-09-16T23:18:57+08:00 docs(sync): measure the mirror's weight and list the historical junk for the operator`
 - `f3c9686 2026-09-16T23:17:37+08:00 chore(sync): stop tracking git_sync.py's own push record`
 - `0fac3c4 2026-09-16T23:16:39+08:00 chore(handoff): record the first push under the sync rules`
@@ -16,11 +18,12 @@ Last 12 commits (newest first):
 - `a42726a 2026-09-16T22:31:10+08:00 chore(memory): record the GitHub remote, the connector's repo-creation 403, and the GCM hazard that cost two hangs`
 - `cc8ba87 2026-09-16T22:30:06+08:00 test(daily): the honest stop is now read-leave-stop, so assert both decisions`
 - `4f51875 2026-09-16T22:09:05+08:00 fix(daily): one verified Back leaves the 任务 panel, so the newly working OPEN_DAILY cannot become a second beast-card dead end`
-- `91667d2 2026-09-16T22:08:55+08:00 chore(gitignore): ignore the out_*.xml / out_*.md / out_crop_* scratch the JUnit and memory captures leave in the repo root`
-- `b2939b5 2026-09-16T20:24:38+08:00 feat(capability): build the machine-readable capability catalog, and land MAIL claiming on traceable evidence`
 
-Uncommitted changes: 1
-- `M .workbuddy-ai/memory/2026-09-16.md`
+Uncommitted changes: 4
+- `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/memory/2026-09-16.md`
+- ` M .workbuddy/memory/2026-09-16.md`
+- ` M docs/ADDING_A_LIVE_OBSERVATION.md`
 <!-- /AUTO:recent_commits -->
 
 ---

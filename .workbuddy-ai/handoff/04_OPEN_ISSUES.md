@@ -6,7 +6,7 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x129 all-time; recent=18 (last 2d), last seen 2026-09-16T13:10:49.548545+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x129 all-time; recent=17 (last 2d), last seen 2026-09-16T13:10:49.548545+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **INTEL_BEAST_TARGET_NOT_PROVEN** x6 all-time; recent=5 (last 2d), last seen 2026-09-16T11:22:47.573385+00:00 — OPEN_INTEL_BEAST_TARGET(6)
 - **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=2 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-15T09:23:53.200251+00:00 — DISMISS_DAILY_REWARD(3)
@@ -21,7 +21,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 1 uncommitted file(s): ['M .workbuddy-ai/memory/2026-09-16.md']
+- 4 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M docs/ADDING_A_LIVE_OBSERVATION.md']
 <!-- /AUTO:open_issues -->
 
 ---
