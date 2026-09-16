@@ -6,7 +6,7 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x127 all-time; recent=23 (last 2d), last seen 2026-09-15T23:37:49.500186+00:00 — SELECT_RESOURCE(43), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x128 all-time; recent=24 (last 2d), last seen 2026-09-16T04:09:40.727152+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **RESOURCE_NOT_FOUND** x30 all-time; recent=22 (last 2d), last seen 2026-09-14T06:42:03.928936+00:00 — SUBMIT_RESOURCE_SEARCH(30)
 - **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=9 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
 - **INTEL_HERO_DISPATCH_NOT_PROVEN** x8 all-time; recent=8 (last 2d), last seen 2026-09-14T12:19:55.812501+00:00 — INTEL_HERO_DISPATCH(8)
@@ -22,12 +22,20 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 27 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/REVIEW_REQUESTS.md', '?? .workbuddy-ai/commander/results/WB-R19-BATTLE-UNKNOWN-RECOVERY.json', '?? .workbuddy-ai/commander/results/WB-R19-LOW-RISK-GOAL-ATTEMPT.json']
+- 52 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json', ' M .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 第 20 轮（2026-09-16 12:1x GMT+8）—— 队列空后收掉 SELECT_RESOURCE；采集链首次跑通
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0br | **`SELECT_RESOURCE` 的失败不是几何，是门禁低于它自己的标定语料** | ✅ **已修 + 真机 PASS** | 我上一轮写的「pitch 157 与真机 145–150 不符」**正式撤回**：那个数字来自**缩放截图上目测**。在选中项已知的帧上实测括号推进 **157/158/157 px**、绝对位置与配置**只差 1 px** ⇒ 几何从来没错。真因是门禁 6.0 **低于自己标定语料的最大值 6.49**（正确总体 0.00–6.49 / 错误 10.65–25.09）⇒ 已在拒绝自己标定帧就能产生的读数。改 **8.0**（余量 1.51 / 2.65）。⚠ 那条让 6.0 显得宽松的旧注释（"active ≤1.2 / non-active ≥13.0"）是**从括号处裁剪**测的，不是门禁实际打分的对象 —— 已更正。⚠ 顺带把两个测试期望从 `None` 改为 `BEAST`/`GIANT_BEAST`，理由是**不含被测机制的独立证据链**（偏移扫描给出唯一 offset +399，括号反解出整数索引 0.00 / 1.00）。 |
+| 0bs | **客户端在选中之前根本不画括号 ⇒ offset 卡在 None，既点不了也滚不了** | ✅ **已修（真机 PASS）** | 阈值修好后暴露的第二缺陷。真机 `04:09:31` 帧 `stroke pairs: []`（面板已开、生肉/木材/煤矿全可见、一个括号都没有）⇒ `resource_tab_offset=None` ⇒ 既不能点（目标位置未知）**也不能滚**（滚动分支要求 offset 已知）⇒ 对着**已经在屏幕上**的目标失败。修法：**offset 与 identity 是两个独立事实** —— 新增 `_offset_from_tab_contents`（用四张模板的已知相对间距反推，要求 ≥2 格一致且每格以自己模板为唯一最优；错误 offset 无法满足），只在括号失败时惰性调用（约 110 ms）。身份仍如实报 `None`。⚠ **未测**：该情形在真机上的出现频率。 |
+| 0bt | **`START_GATHER` 的 37.2% 不是这个技能的属性，是整条链的阻塞被记在了它头上** | ✅ **已解释 + 真机 PASS** | `WB-R19-START-GATHER-MAA-LIVE-AB`。它的历史 94 次 35 成功，**59 次失败全是 `MARCH_PAGE_NOT_OPEN`**（链子从没走到它）。链修好后**首次可达即通过**，且 recog/act/exec **全 MAA**。**通用教训**：高频技能的失败原因高度集中在上游页面时，先查上游。⚠ **A/B 只凑到 1 个 MAA 臂、0 个 fallback 臂**：派出行军后大脑每次都答 `SAFE_STOP reserved_march_for_stamina`（`reserve_for_stamina=2`），其后 3 次运行**一条 episode 都没产生**。要凑样只能等行军回来或 Codex 改策略 —— **召回行军凑样 = 制造状态，禁止**。 |
 
 ### 第 19 轮（2026-09-16 10:1x GMT+8）—— Codex 第 2 批队列 3 单
 

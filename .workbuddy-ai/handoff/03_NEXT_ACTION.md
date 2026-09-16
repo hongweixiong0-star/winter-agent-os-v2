@@ -4,7 +4,66 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 10:1x GMT+8）—— Codex 第 2 批队列 7 单，本节为唯一交接
+## 手写：本轮（2026-09-16 12:1x GMT+8）—— 队列已空后收掉最高杠杆项：**采集链首次跑通**
+
+### 0. 先做这一步（**接管后第一件事**，不变）
+
+```bash
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py plan
+```
+
+### 1. 本轮最重要的一件事：采集链端到端跑通
+
+`2026-09-16T04:15Z`，`--goal GATHER_RESOURCE`，**四步全部 verifier PASS**：
+
+```
+SELECT_RESOURCE         MAP->MAP              sel None->COAL
+SUBMIT_RESOURCE_SEARCH  MAP->RESOURCE_DETAIL  resource_available=True
+START_GATHER            RESOURCE_DETAIL->MARCH  recog/act/exec 全 = MAA
+DISPATCH_MARCH          MARCH->MAP
+```
+
+**并且要理解 `START_GATHER` 的历史 35/94 (37.2%) 是什么**：它 **59 次失败全是 `MARCH_PAGE_NOT_OPEN`**
+⇒ 那 37.2% **不是这个技能的属性**，是**整条链的阻塞被记在了队列里下一个技能头上**。
+**这是一条通用教训**：当一个高频技能的失败原因高度集中在上游页面时，先查上游，别先查它。
+
+### 2. 两个真缺陷（都不是几何 —— 几何从来没错）
+
+**① 门禁阈值低于它自己标定语料的最大值。** 两个总体：正确 `0.00..6.49`、错误 `10.65..25.09`，而配置是 **6.0**
+⇒ 它在拒绝自己标定帧就能产生的读数（6.45 / 6.49）。已改为 **8.0**。
+⚠ 那条让 6.0 显得宽松的旧注释（"active ≤1.2 / non-active ≥13.0"）是**从括号处裁剪**测出来的，已更正。
+
+**② 客户端在选中之前根本不画括号。** 面板刚打开时 `stroke pairs: []` ⇒ `resource_tab_offset=None`
+⇒ 既不能点（目标位置未知）**也不能滚**（滚动分支要求 offset 已知）⇒ 对着**已经在屏幕上**的目标失败。
+修法：**offset 与 identity 是两个独立事实**（`_offset_from_tab_contents`，用模板相对间距反推，只在括号失败时惰性调用）。
+
+### 3. 一个可复用的手法：**偏移扫描**
+
+**不问锚点，直接滑条带，看哪个 offset 让可靠标签的模板各自落回自己的格子。** 它本轮裁决了三个问题：
+确认 pitch 没错；确认两个待改期望值的身份**正确**（整数索引 0.00 / 1.00）；在无括号帧定出 offset=89。
+**改期望值之前，先用一条不含被测机制的证据链复核。**
+
+### 4. 下一步（按价值排序）
+
+1. **`WB-R19-START-GATHER-MAA-LIVE-AB` 的 A/B 只凑到 1 个 MAA 臂**。不是缺陷：派出行军后大脑每次都答
+   `SAFE_STOP reserved_march_for_stamina`（`reserve_for_stamina=2`），其后 3 次运行**一条 episode 都没产生**。
+   要凑样只能**等行军回来**或 Codex 改策略 —— **召回行军凑样 = 制造状态，禁止**。
+2. **`WB-R19-LOW-RISK-GOAL-ATTEMPT` 仍未做**（`NO_SAFE_CANDIDATE`，见 RR-003：6 个技能在
+   `VERIFIED_ATOMIC` 内但**没有 verifier**）。给 `READ_INTEL_LIST` 或 `SELECT_INFANTRY_CAMP` 补 verifier 即可解锁。
+3. **RR-002 / RR-003 仍待 Codex 裁决**（见 `REVIEW_REQUESTS.md`）。
+4. 采集已能派兵 —— 值得接着量的是**行军回来之后的闭环**（召回 / 收获 / 再采集），本轮未碰。
+
+### 5. 环境坑（本轮新增，会让下一轮白花时间）
+
+- **Shell 会退化**：本轮 `timeout` 被解析成 **Windows 的 TIMEOUT.EXE**（不是 GNU timeout），
+  `dirname`/`cat`/`head` 全部 `command not found`（shim 的 PATH 装配失败）。
+  ⇒ 出现这种症状就**改用 PowerShell 工具**。另：`Out-File -Encoding append` 不是合法参数（要用 `-Append`）。
+- **同一文件的多处 Edit 必须逐个做**：同一条消息里发两次 Edit，可能只生效一次、另一次**静默丢失**。改完**务必 grep 复核**。
+- **PowerShell 的 `Out-File` 要等命令结束才落盘**，所以后台运行时输出文件会是空的 —— 别据此判断"卡住了"。
+
+---
+
+## 手写：上一轮（2026-09-16 10:1x GMT+8）—— Codex 第 2 批队列 7 单
 
 ### 0. 先做这一步（**接管后第一件事**，不变）
 
@@ -517,12 +576,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 23 in the last 2 day(s), 127 all-time, last seen 2026-09-15T23:37:49.500186+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 24 in the last 2 day(s), 128 all-time, last seen 2026-09-16T04:09:40.727152+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 27
-LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-16T02:04:36.852442+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T020427229427.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T020429748888.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 127, "recent": 23, "last_seen": "2026-09-15T23:37:49.500186+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 43], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T02:04:36.852442+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 52
+LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-16T04:15:47.610172+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T041534522773.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T041538058317.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 128, "recent": 24, "last_seen": "2026-09-16T04:09:40.727152+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T04:15:47.610172+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

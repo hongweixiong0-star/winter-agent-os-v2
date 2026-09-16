@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `a42d8e7 2026-09-16T10:31:10+08:00 chore(memory): record the R20 queue terminal state and the two open review requests`
+- `7d5c865 2026-09-16T10:30:57+08:00 chore(handoff): queue exhausted (4 DONE / 3 BLOCKED); RR-002 capture_backend name collision and RR-003 missing verifiers`
 - `b7a6028 2026-09-16T10:30:01+08:00 fix(intel-recognition,battle-recovery): stop treating a moved control as an absent one; do not press Back during a live battle`
 - `e58dcc7 2026-09-16T07:53:26+08:00 chore(handoff): regenerate after the R19 round (739 tests, 0 failures, 0 errors); archive Codex's 23:05/23:09 intel evidence`
 - `dbc3610 2026-09-16T07:53:10+08:00 fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence`
@@ -16,30 +18,28 @@ Last 12 commits (newest first):
 - `d91ca08 2026-09-15T23:48:31+08:00 chore(handoff): regenerate truth/metrics after the commander round; archive the 20:43/20:45 acceptance evidence`
 - `000c8e7 2026-09-15T23:48:18+08:00 fix(test-infra): remove the self-defeating pytest basetemp+retention pair (0bd); run the earlier work orders' handoff`
 - `2b78b91 2026-09-15T23:19:33+08:00 feat(commander): adopt the Codex Commander Queue and execute 5 work orders`
-- `59fd8b9 2026-09-15T21:17:26+08:00 test(infra): stop the host bulk-delete guard from faking 26 suite errors (0bd)`
-- `d66f75d 2026-09-15T21:02:37+08:00 docs(handoff): MAA state from production evidence; PAGE_MAP anchor is the city button (0bc)`
 
-Uncommitted changes: 27
+Uncommitted changes: 52
 - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-- ` M .workbuddy-ai/commander/REVIEW_REQUESTS.md`
-- `?? .workbuddy-ai/commander/results/WB-R19-BATTLE-UNKNOWN-RECOVERY.json`
-- `?? .workbuddy-ai/commander/results/WB-R19-LOW-RISK-GOAL-ATTEMPT.json`
+- ` M .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json`
+- ` M .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/memory/2026-09-16.md`
+- ` M .workbuddy/memory/2026-09-16.md`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/resource_rotation.json`
+- ` M learning/runtime_snapshot.json`
+- ` M learning/stamina_supply.json`
+- ` M tests/test_resource_tab_anchor.py`
+- ` M winter_agent_v2/vision.py`
+- `?? dataset/truth_audit/resource_strip_20260916/`
 - `?? out_crop_right_column/`
+- `?? out_crop_strip/`
 - `?? out_junit_audit.xml`
-- `?? out_junit_final_r18.xml`
-- `?? out_junit_fix.xml`
-- `?? out_junit_full_v1.xml`
-- `?? out_junit_full_v3.xml`
-- `?? out_junit_iso.xml`
-- `?? out_junit_r18d.xml`
-- `?? out_junit_r18e.xml`
-- `?? out_junit_r19.xml`
-- `?? out_junit_r20.xml`
-- `?? out_junit_v1.xml`
-- `?? out_junit_v2.xml`
-- `?? out_memory_r18.md`
-- `?? out_memory_r18b.md`
 <!-- /AUTO:recent_commits -->
 
 ---

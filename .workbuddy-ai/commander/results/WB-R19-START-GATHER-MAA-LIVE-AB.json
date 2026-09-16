@@ -1,25 +1,36 @@
 {
   "TASK_ID": "WB-R19-START-GATHER-MAA-LIVE-AB",
-  "BLOCKED_BY_LIVE_STATE": true,
-  "ROOT_CAUSE": "The order's own premise is not met: its objective begins '在 SELECT_RESOURCE 解锁后' and its dependency WB-R19-SELECT-RESOURCE-ANCHOR is BLOCKED. START_GATHER can never be dispatched while SELECT_RESOURCE refuses, because the gather chain reaches START_GATHER only after a resource cell is selected. This is the order's own stop_condition ('依赖任务未解锁') and its own fallback_action ('记录 BLOCKED_BY_LIVE_STATE，不修改生产路由').",
+  "REOPENED_AND_PARTIALLY_CLOSED": true,
+  "PRIOR_STATE": "BLOCKED_BY_LIVE_STATE (2026-09-16T02:06Z): its dependency WB-R19-SELECT-RESOURCE-ANCHOR was BLOCKED, so START_GATHER could never be dispatched and running the order would only repeat the same stall.",
+  "ROOT_CAUSE": "The dependency is resolved, and with it the historical failure of START_GATHER itself. Its record was 35 successes in 94 attempts (37.2%) and EVERY ONE of the 59 failures was MARCH_PAGE_NOT_OPEN -- the march page was never reached, because the chain could not get past SELECT_RESOURCE. So the 37.2% was not a property of START_GATHER at all: it was the gather chain's blockage being recorded against whichever skill happened to be next in line. On the first run where the chain completed, START_GATHER passed, on its own verifier, with recognition, action AND executor all MAA.",
   "CHANGED_FILES": [],
-  "PATCH_STATUS": "NO_PATCH_BY_DESIGN",
-  "TEST_RESULT": "n/a - nothing was changed",
-  "REPLAY_RESULT": "n/a",
-  "LIVE_ATTEMPTS": 0,
-  "LIVE_SUCCESS": 0,
+  "PATCH_STATUS": "NO_PATCH_NEEDED",
+  "PATCH_SUMMARY": "Nothing was changed for this order. The fix that unblocked it belongs to WB-R19-SELECT-RESOURCE-ANCHOR (pathological 0 -> the strip ceiling, plus the bracket-less strip), and the order's own subject -- an MAA-versus-fallback A/B on START_GATHER -- needed no code change to become runnable. Recording that explicitly, because the previous round recorded this as a live-state blocker and the natural reading of 'BLOCKED' is 'needs work', which was not the case here.",
+  "TEST_RESULT": "n/a - no change. The relevant tests are the resource-tab ones (21 passed) that unblocked the chain.",
+  "REPLAY_RESULT": "n/a - the evidence for this order is live by construction (its acceptance requires real button recognition and tapping).",
+  "LIVE_ATTEMPTS": 1,
+  "LIVE_SUCCESS": 1,
   "LIVE_FAILURE": 0,
-  "EVIDENCE": {
-    "dependency_state": "WB-R19-SELECT-RESOURCE-ANCHOR is BLOCKED in EXECUTION_STATE.json; its residual is a strip-geometry recalibration that needs several live frames captured at known selected tabs.",
-    "chain_evidence": "2026-09-15T23:37:06Z-23:37:49Z live GATHER_RESOURCE: OPEN_MAP SUCCESS, SEARCH_RESOURCE SUCCESS (MAA action, executor HYBRID), then SELECT_RESOURCE FAILURE x2 with SEMANTIC_TARGET_NOT_VERIFIED and executed=false. START_GATHER was never reached.",
-    "why_not_attempted": "Running tools/run_live.py --goal GATHER_RESOURCE would dispatch the same chain and stop at SELECT_RESOURCE again, consuming device time without producing either arm of the A/B. The A/B needs at least MAA 2 and fallback 2 alternating live dispatches of START_GATHER itself."
-  },
-  "BEFORE": "START_GATHER: 35/94 historical attempts (37.2%); the MAA node has 3/3 positives and 0/5 negatives on its own corpus but has never been exercised as a production action because the chain cannot reach it.",
-  "AFTER": "Unchanged. No route change, no dispatch.",
-  "VERIFIER_RESULT": "not reached",
-  "REMAINING_ISSUE": [
-    "The A/B cannot start until the SELECT_RESOURCE strip geometry is recalibrated. That recalibration is the blocking item, and it is a measurement job with a ready calibration set (dataset/truth_audit/resource_cells_20260914_120027 holds MEAT/WOOD/COAL/IRON frames each captured at a known selected tab).",
-    "Recommend Codex reorders this order behind the recalibration and ahead-or-behind BATTLE per device availability; running it now on schedule would produce an eighth consecutive 'dependency not unlocked' entry."
+  "LIVE_DETAIL": "2026-09-16T04:15:34Z, goal GATHER_RESOURCE, step 3 of 4: START_GATHER, action TAP_SEMANTIC on BTN_GATHER, result SUCCESS, verifier ok, transition RESOURCE_DETAIL -> MARCH, latency 3.36 s. Backends on that step: capture MAA_MUMU_EXTRAS, recognition MAA, action MAA, executor MAA -- the fully-MAA configuration the order's preferred_backend asks for. The step was reached from a genuine chain: SELECT_RESOURCE (COAL) at 04:15:03 with verifier ok, SUBMIT_RESOURCE_SEARCH at 04:15:22 reporting resource_available True, then START_GATHER, then DISPATCH_MARCH at 04:15:47, all four verifier-passed.",
+  "BEFORE": "START_GATHER 35/94 (37.2%); the MAA node had 3/3 positives and 0/5 negatives on its own corpus but had never once been exercised as a production action, because the chain could not reach it.",
+  "AFTER": "Reached and passed, with recognition/action/executor all MAA. The historical 37.2% is explained rather than improved: it belonged to the chain, not to the skill.",
+  "VERIFIER_RESULT": "PASS -- verify_start_gather returned ok on the live step, with the transition RESOURCE_DETAIL -> MARCH observed.",
+  "EVIDENCE": [
+    "learning/episodes.jsonl (2026-09-16T04:15:34Z)",
+    "out_r21_5b_run1.txt (the four-step run)",
+    "learning/executor_backend.jsonl (the same step, with used_backend=MAA)"
   ],
-  "NEXT_RECOMMENDATION": "Do WB-R19-BACKEND-PROVENANCE-TRUTH next: with this order terminal (BLOCKED), its dependency list is satisfied and it needs no live clicks - its live_plan explicitly reuses existing episodes. Then WB-R19-BATTLE-UNKNOWN-RECOVERY, which needs a natural battle frame."
+  "REMAINING_ISSUE": [
+    "The order's live_plan asks for at least MAA 2 and fallback 2, ALTERNATING. Only the MAA arm exists (1 dispatch, 1 success). The reason is not a defect: after the dispatch the brain answers SAFE_STOP 'reserved_march_for_stamina' on every subsequent GATHER_RESOURCE run, because a march is out (marches=['MARCHING'], march_used 1) and config.reserve_for_stamina is 2. Three further runs at 04:20-04:30 produced no episodes for exactly that reason. Growing the sample needs either the dispatched march to return or a Codex decision on the reserve policy -- and recalling the march to free a slot would be manufacturing state, which the order's own stop_condition forbids.",
+    "The fallback arm is untested for START_GATHER, and its backend evidence is therefore incomplete. What IS measured: the MAA node works in production, and the step's latency was 3.36 s (the highest of the four steps -- DISPATCH_MARCH's own latency is not comparable because the episode records action latency separately).",
+    "The acceptance item 'A/B 次序交替' cannot be satisfied with one arm; it is recorded as unmet rather than reinterpreted."
+  ],
+  "ACCEPTANCE": {
+    "real_button_recognition_and_tap": "MET -- TAP_SEMANTIC on BTN_GATHER, recognition MAA",
+    "after_MARCH_verifier_pass": "MET -- RESOURCE_DETAIL -> MARCH with verifier ok",
+    "AB_order_alternating": "NOT MET -- one arm only; the other needs a free march slot",
+    "backend_evidence_complete": "MET for the MAA arm (capture/recognition/action/executor all present on the step), NOT MET for the fallback arm"
+  },
+  "NEXT_RECOMMENDATION": "Reissue this order when marches are free. Nothing else blocks it: the chain completes end to end, START_GATHER passes, and the MAA arm is recorded. If Codex wants the A/B sooner, the lever is the reserve_for_stamina policy, not this order's code.",
+  "recorded_at": "2026-09-16T04:17:54+00:00"
 }

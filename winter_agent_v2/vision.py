@@ -137,12 +137,34 @@ class SemanticROIVision:
         self.resource_tab_pitch = 157.0 / 720.0
         self.resource_tab_cell = 145.0 / 720.0
         self.resource_tab_first_left = -384.0 / 720.0    # left edge of tab 1 at offset 0
-        # Cell templates are the *whole* selected cell (bracket included), so
-        # every template carries the same bracket contribution and identity is
-        # decided by the icon and label inside.  Two disjoint populations were
-        # measured on live frames: the active resource scores <= 1.2 while any
-        # non-active tab scores >= 13.0, so the gate below has an order of
-        # magnitude of headroom.
+        # Cell templates are the *whole* cell (bracket included) as captured when
+        # that resource was selected, so a template always carries a bracket.  The
+        # probe is a PREDICTED position, which is only the selected cell when the
+        # anchor happens to be that tab -- so the distances here are not the
+        # "active <= 1.2 / non-active >= 13.0" pair the older comment claimed; that
+        # pair described comparing a probe crop taken FROM the bracket.  Measured
+        # again on 2026-09-16 over 10 frames with verified anchors (27 correct and
+        # 37 wrong observations):
+        #
+        #     correct  (predicted position vs its own template)  0.00 .. 6.49
+        #     wrong    (same cell, another template)            10.65 .. 16.17
+        #     wrong    (non-gatherable tab vs any template)     14.74 .. 25.09
+        #
+        # The ceiling has to sit inside 6.49 < gate < 10.65.  It was 6.0, i.e.
+        # BELOW the largest value its own calibration frames produce -- the two
+        # frames that measure 6.45 and 6.49 were rejected by it.  That is the
+        # defect behind the live SELECT_RESOURCE failures: on the 2026-09-15T23:37
+        # frames the geometry is right (bracket on tab index 1 at x=172, which
+        # predicts 生肉 at x=486, and 生肉 is visibly there) and the only reason
+        # nothing was accepted is that the crop scored 6.49 against a limit of 6.0.
+        # 8.0 keeps 1.51 of headroom above the worst correct observation and 2.65
+        # below the best wrong one, and stays clear of the identity margin gate,
+        # which is unchanged at 4.0 and was never the binding constraint (the
+        # live frames' correct reading has a margin of 8.00).
+        self.resource_tab_max_distance = 8.0
+        self.resource_tab_min_margin = 4.0
+        # Cell templates are the *whole* cell (bracket included) as captured when
+        # that resource was selected, so a template always carries a bracket.
         self.resource_tab_cell_templates: dict[str, list[str]] = {}
         for row in payload.get("records", []):
             semantic = str(row.get("semantic", ""))
@@ -150,8 +172,6 @@ class SemanticROIVision:
                 resource = semantic[len("RESOURCE_TAB_"):-len("_SELECTED")]
                 if resource in self.resource_tab_order:
                     self.resource_tab_cell_templates.setdefault(resource, []).append(str(row["template_path"]))
-        self.resource_tab_max_distance = 6.0
-        self.resource_tab_min_margin = 4.0
         # Populated by ``selected_resource`` so the executor can turn a target
         # resource into a tap coordinate without re-deriving the geometry.
         self.resource_tab_offset = None                   # px, or None when unknown
@@ -435,6 +455,98 @@ class SemanticROIVision:
                     lefts.append(first)
         return lefts
 
+    def _offset_from_tab_contents(self, image_path: Path) -> tuple[float, int, float] | None:
+        """Locate the strip from the reviewed cell templates alone.
+
+        The bracket is an OPTIONAL anchor.  Measured 2026-09-16T04:09:31 on the live
+        client: the search panel was open with 生肉, 木材 and 煤矿 all fully visible
+        and no white bracket anywhere, because the client draws no bracket until a
+        tab has been selected.  The stroke-pair detector therefore found nothing,
+        ``resource_tab_offset`` stayed None, and the run could neither tap (the
+        target's position was unknown) nor scroll (the scroll branch requires a known
+        offset) -- so SELECT_RESOURCE failed against a target that was already on
+        screen.  Confirmed by eye on the frame and by the offset scan, which finds a
+        single position where three gatherable templates sit on their own cells.
+
+        The reviewed templates have exactly known relative spacing, so an offset that
+        simultaneously places several of them on their own cells IS the strip
+        position.  Two conditions keep this from being a single coincidental match:
+
+        * at least two template cells must be fully on screen and agree;
+        * every cell that can be scored must match its OWN template with the best
+          distance, and the best must be unique among the templates.
+
+        Both are satisfied with a wide margin on the measured frames (a correct
+        offset puts three or four cells within distance <= 6.5 while the nearest
+        wrong reading is 10.65), and a wrong offset cannot satisfy them at all.
+
+        Returns ``(offset_px, supporting_cells, worst_own_distance)`` or ``None``.
+        """
+        if not self.resource_tab_cell_templates:
+            return None
+        signatures = {
+            resource: [s for s in (_cell_template_signature(Path(p)) for p in paths) if s is not None]
+            for resource, paths in self.resource_tab_cell_templates.items()
+        }
+        if not signatures:
+            return None
+        with Image.open(image_path) as opened:
+            image = opened.convert("RGB")
+            width, height = image.size
+            y0, y1 = self._tab_band_rows(height)
+            cell_px = round(self.resource_tab_cell * width)
+
+            def evaluate(offset: float) -> tuple[int, float] | None:
+                supporting = 0
+                worst = 0.0
+                for resource, own_signatures in signatures.items():
+                    if not own_signatures:
+                        continue
+                    left = (self.resource_tab_first_left
+                            + self.resource_tab_order.index(resource) * self.resource_tab_pitch) * width
+                    x0 = round(left + offset)
+                    if x0 < 0 or x0 + cell_px > width:
+                        continue
+                    probe = _cell_signature(image.crop((x0, y0, x0 + cell_px, y1)))
+                    own = min(_signature_distance(probe, s) for s in own_signatures)
+                    others = [
+                        _signature_distance(probe, s)
+                        for other, other_signatures in signatures.items()
+                        if other != resource
+                        for s in other_signatures
+                    ]
+                    runner = min(others) if others else own + 999.0
+                    if own > self.resource_tab_max_distance or own >= runner:
+                        return None
+                    supporting += 1
+                    worst = max(worst, own)
+                if supporting < 2:
+                    return None
+                return supporting, worst
+
+            # Coarse pass then refine: a 1 px sweep over the whole range would be
+            # thousands of crops, and the answer only needs to land on the right
+            # pixel, not be searched for exhaustively.
+            best: tuple[int, float, float] | None = None
+            for offset in range(-450, 901, 6):
+                verdict = evaluate(float(offset))
+                if verdict is None:
+                    continue
+                supporting, worst = verdict
+                if best is None or (supporting, -worst) > (best[0], -best[1]):
+                    best = (supporting, worst, float(offset))
+            if best is None:
+                return None
+            supporting, worst, coarse = best
+            for offset in range(int(coarse) - 6, int(coarse) + 7):
+                verdict = evaluate(float(offset))
+                if verdict is None:
+                    continue
+                got_support, got_worst = verdict
+                if (got_support, -got_worst) > (supporting, -worst):
+                    supporting, worst, coarse = got_support, got_worst, float(offset)
+            return coarse, supporting, worst
+
     def selected_resource(self, image_path: Path) -> SemanticMatch | None:
         """Identify the active resource tab from the bracket anchor + cell icon.
 
@@ -443,16 +555,20 @@ class SemanticROIVision:
         is the relative layout, and only then a template decides *which* resource
         the anchored cell holds.
 
-        1. locate the bracket (no bracket -> return ``None``: a screen without an
-           active resource tab must never be reported as a selection — the old
-           fixed-ROI version returned ``RESOURCE_COAL_SELECTED`` on the HOME
-           screen);
+        1. locate the bracket.  No bracket -> the identity is ``None``, because a
+           screen without an active resource tab must never be reported as a
+           selection (the old fixed-ROI version returned
+           ``RESOURCE_COAL_SELECTED`` on the HOME screen).  The OFFSET, however, is
+           still resolved when the tab contents pin it -- see step 5: the client
+           draws no bracket at all until something is selected, and refusing to
+           locate the strip then made the run unable to tap a target that was
+           already on screen;
         2. crop the anchored cell and compare it against the reviewed cell
            templates, which all carry the same bracket, so identity comes from
            the icon and label;
-        3. accept only when the best match is both close (``<= 6.0``) and clearly
-           better than the runner-up (``>= 4.0``).  Live measurement: active tab
-           scores <= 1.2, every non-active tab scores >= 13.0;
+        3. accept only when the best match is both close (``<= 8.0``, see the
+           ceiling note in ``__init__``) and clearly better than the runner-up
+           (``>= 4.0``);
         4. if (3) rejects, the anchored tab is one of the three tabs that carry no
            template -- measured 2026-09-16 on the production frame that failed
            `SELECT_RESOURCE`: bracket found at left_px=2.0, fully visible, and the
@@ -467,17 +583,42 @@ class SemanticROIVision:
            alone"; it deliberately adds no template, because the only frame
            available for the missing tabs is the very frame being explained, and
            a template cropped from its own test frame proves nothing.
+        5. if there is no bracket at all -- which is the normal state of a freshly
+           opened search panel, measured live 2026-09-16T04:09:31, where the panel
+           showed 生肉/木材/煤矿 fully visible and the stroke detector found nothing
+           -- the offset is resolved from the tab CONTENTS instead, see
+           ``_offset_from_tab_contents``.  The identity stays ``None`` because no
+           tab is marked as selected, but ``resource_tab_offset`` is set, which is
+           what the executor needs in order to tap or scroll at all.
 
-        On success ``self.resource_tab_offset`` and
-        ``self.resource_tab_visible_span`` are updated, which is what lets the
-        executor compute a correct tap target for any of the four resources.
+        ``self.resource_tab_offset`` and ``self.resource_tab_visible_span`` are
+        updated whenever the strip can be located, which is what lets the executor
+        compute a correct tap target for any of the four resources.  The offset and
+        the identity are therefore independent: a panel with no selection has a
+        known geometry and an unknown selection.
         """
         self.resource_tab_offset = None
         self.resource_tab_visible_span = None
         if not self.resource_tab_cell_templates:
             return None
+
+        def locate_from_contents() -> None:
+            """Set the strip offset from cell contents when the bracket cannot.
+
+            Called only on the paths where the bracket fails, because it is an
+            order of magnitude more expensive than a single crop and the bracket,
+            when it exists, is the better anchor: it names the selected tab.
+            """
+            located = self._offset_from_tab_contents(image_path)
+            if located is not None:
+                self.resource_tab_offset = located[0]
         left_px, fully_visible = self.selected_tab_left(image_path)
         if left_px < 0:
+            # No bracket anywhere: a freshly opened panel, where the client marks no
+            # tab until one is chosen.  The identity is honestly unknown, but the
+            # strip position is not -- and without it the executor can neither tap
+            # nor scroll, which is what stalled SELECT_RESOURCE.
+            locate_from_contents()
             return None
         with Image.open(image_path) as opened:
             image = opened.convert("RGB")
@@ -487,12 +628,15 @@ class SemanticROIVision:
             x0 = round(left_px)
             x1 = x0 + cell_px
             if x0 < 0 or x1 > width:
+                locate_from_contents()
                 return None
             probe = image.crop((x0, y0, x1, y1))
             self.resource_tab_visible_span = (x0, x1)
             if not fully_visible:
                 # A clipped cell cannot be identified reliably; the strip must be
-                # scrolled instead of guessed at.
+                # scrolled instead of guessed at -- and scrolling needs an offset,
+                # so resolve it from the contents rather than leaving it at None.
+                locate_from_contents()
                 return None
             probe_signature = _cell_signature(probe)
             scored: list[tuple[float, str]] = []
@@ -556,6 +700,10 @@ class SemanticROIVision:
                             "support_margin": round(margin, 2),
                         },
                     )
+        # Neither path resolved an identity.  Before giving up on the geometry too,
+        # let the cell contents place the strip: the executor can act on a known
+        # offset even when no tab is marked as selected.
+        locate_from_contents()
         return None
 
     def resource_level(self, image_path: Path) -> int | None:

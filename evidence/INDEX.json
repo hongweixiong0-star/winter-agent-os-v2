@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-16T02:30:54+00:00",
-  "count": 497,
+  "generated_at": "2026-09-16T04:31:55+00:00",
+  "count": 502,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -180,7 +180,7 @@
       "path": "evidence/INDEX.json",
       "kind": "evidence",
       "bytes": 93891,
-      "mtime": "2026-09-16T02:17:44+00:00"
+      "mtime": "2026-09-16T02:30:54+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -2809,6 +2809,36 @@
       "kind": "fixture",
       "bytes": 3888,
       "mtime": "2026-09-14T03:58:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_strip_20260916/bracketless_panel__live_runtime_step_007_before_20260916T040931067046.png",
+      "kind": "fixture",
+      "bytes": 591330,
+      "mtime": "2026-09-16T04:13:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_strip_20260916/live_fail_160609__live_runtime_step_003_before_20260915T160609443785.png",
+      "kind": "fixture",
+      "bytes": 589010,
+      "mtime": "2026-09-16T04:06:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_strip_20260916/live_fail_233727__live_runtime_step_003_before_20260915T233727132656.png",
+      "kind": "fixture",
+      "bytes": 578619,
+      "mtime": "2026-09-16T04:06:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_strip_20260916/live_fail_233739__live_runtime_step_001_before_20260915T233739598714.png",
+      "kind": "fixture",
+      "bytes": 595275,
+      "mtime": "2026-09-16T04:06:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/resource_strip_20260916/README.md",
+      "kind": "fixture",
+      "bytes": 2255,
+      "mtime": "2026-09-16T04:06:44+00:00"
     },
     {
       "path": "dataset/truth_audit/resource_tab_anchor_20260916/gap_ice_beast_anchor__live_runtime_step_003_before_20260915T160609443785.png",

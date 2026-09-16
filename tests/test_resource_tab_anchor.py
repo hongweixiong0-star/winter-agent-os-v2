@@ -21,6 +21,21 @@ decisively close.  These tests pin the behaviour on the real frames.
 
 Measured separation on these frames: the active resource scores <= 1.2 while
 every non-active tab scores >= 13.0.
+
+CORRECTION 2026-09-16.  That last pair was measured with the probe crop taken FROM
+the bracket, i.e. from the selected cell itself, and it is not the population the
+gate actually sees: the gate scores a PREDICTED cell, which equals the selected one
+only when the anchor happens to be that tab.  Re-measured over 10 frames with
+verified anchors (27 correct and 37 wrong observations):
+
+    correct (predicted position vs its own template)   0.00 .. 6.49
+    wrong   (same cell, another template)             10.65 .. 16.17
+    wrong   (non-gatherable tab vs any template)      14.74 .. 25.09
+
+so the ceiling must satisfy 6.49 < gate < 10.65 -- and it was 6.0, BELOW the largest
+value its own calibration frames produce.  Those two frames (6.45 and 6.49) were
+being rejected by it, which is why the gather chain stalled at SELECT_RESOURCE on
+the live client.  The ceiling is now 8.0.
 """
 
 from __future__ import annotations
@@ -29,7 +44,12 @@ from pathlib import Path
 
 import pytest
 
-from winter_agent_v2.vision import SemanticWorldVision
+from winter_agent_v2.vision import (
+    SemanticWorldVision,
+    _cell_signature,
+    _cell_template_signature,
+    _signature_distance,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "dataset/candidate/template_manifest.json"
@@ -39,10 +59,19 @@ CASES = [
     # HOME / MAP: no resource panel open at all -> must not name a resource.
     ("home", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_001_home.png", None),
     ("map", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_002_map.png", None),
-    # Panel open at the beast-first scroll offset: the first three tabs carry no
-    # gatherable resource, so all three must be refused.
-    ("beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_003_search_panel.png", None),
-    ("giant_beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_004_tab_tap_MEAT.png", None),
+    # CHANGED 2026-09-16 (resource-strip gate).  These two expected None, because
+    # when the anchor search could not resolve them "refuse" was the only safe
+    # contract.  The ceiling fix lets them resolve, so the expectation had to be
+    # re-derived rather than assumed -- and it was, by evidence that does NOT use the
+    # anchor: sliding the strip over every offset and keeping those where the
+    # gatherable templates land on their own cells gives a single answer (+399),
+    # under which the bracket's x inverts to tab index 0.00 on the first frame and
+    # 1.00 on the second.  Index 0 is BEAST and index 1 is GIANT_BEAST, which is what
+    # the classifier says.  Both are non-gatherable: the invariant that matters is
+    # that a GATHERABLE identity is never invented, not that a non-gatherable tab is
+    # never named.
+    ("beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_003_search_panel.png", "BEAST"),
+    ("giant_beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_004_tab_tap_MEAT.png", "GIANT_BEAST"),
     # CHANGED 2026-09-16 (WB-R19-SELECT-RESOURCE-ANCHOR).  This frame was refused
     # like the two above, and refusing it is what left `resource_tab_offset` at
     # None so the executor could neither tap nor scroll -- it stalled the whole
@@ -61,6 +90,13 @@ CASES = [
     ("select_wood", "dataset/truth_audit/resource_cells_20260914_120027/20260914_120027_c_003_select_WOOD.png", "WOOD"),
     ("select_coal", "dataset/truth_audit/resource_cells_20260914_120027/20260914_120027_c_004_select_COAL.png", "COAL"),
     ("select_iron", "dataset/truth_audit/resource_cells_20260914_120027/20260914_120027_c_005_select_IRON.png", "IRON"),
+    # The production failures this gate change exists for.  The chain reached
+    # SELECT_RESOURCE on each of these and stopped, because the geometry was right
+    # and the crop scored 6.49 against a 6.0 ceiling.  The bracket is on tab index 1
+    # at x=172, which predicts 生肉 at x=486, and 生肉 is visibly there.
+    ("live_fail_233727", "dataset/truth_audit/resource_strip_20260916/live_fail_233727__live_runtime_step_003_before_20260915T233727132656.png", "GIANT_BEAST"),
+    ("live_fail_233739", "dataset/truth_audit/resource_strip_20260916/live_fail_233739__live_runtime_step_001_before_20260915T233739598714.png", "GIANT_BEAST"),
+    ("live_fail_160609", "dataset/truth_audit/resource_strip_20260916/live_fail_160609__live_runtime_step_003_before_20260915T160609443785.png", "SAWMILL"),
 ]
 
 
@@ -165,3 +201,134 @@ def test_a_resolved_offset_makes_every_target_reachable(vision: SemanticWorldVis
         centre = vision.semantic.resource_cell_center_norm(target)
         swipe = vision.semantic.resource_tab_swipe_for(target)
         assert centre is not None or swipe is not None, f"{target} unreachable"
+
+
+# ---------------------------------------------------------------------------
+# The ceiling must sit between two measured populations, not at a remembered
+# number.
+#
+# Added 2026-09-16 (resource-strip gate).  The configured 6.0 was below the largest
+# value the calibration frames themselves produce, so it rejected correct readings;
+# that, and not the strip geometry, is what stopped the gather chain.  This test
+# recomputes both populations from the archived frames and fails if the ceiling
+# stops separating them -- in either direction, so a later "tighten it back" or
+# "loosen it to be safe" both have to bring evidence.
+# ---------------------------------------------------------------------------
+
+# (frame, offset in px, and the tab index the bracket is on)
+ANCHORED_FRAMES = [
+    ("dataset/truth_audit/resource_cells_20260914_120027/20260914_120027_c_002_select_MEAT.png", 0.0, 3),
+    ("dataset/truth_audit/resource_cells_20260914_120027/20260914_120027_c_003_select_WOOD.png", 0.0, 4),
+    ("dataset/truth_audit/resource_cells_20260914_120027/20260914_120027_c_004_select_COAL.png", 1.0, 5),
+    ("dataset/truth_audit/resource_cells_20260914_120027/20260914_120027_c_005_select_IRON.png", 1.0, 6),
+    ("dataset/truth_audit/resource_strip_20260916/live_fail_233727__live_runtime_step_003_before_20260915T233727132656.png", 399.0, 1),
+    ("dataset/truth_audit/resource_strip_20260916/live_fail_233739__live_runtime_step_001_before_20260915T233739598714.png", 399.0, 1),
+    ("dataset/truth_audit/resource_strip_20260916/live_fail_160609__live_runtime_step_003_before_20260915T160609443785.png", 352.5, 2),
+]
+
+GATHERABLE = ("MEAT", "WOOD", "COAL", "IRON")
+
+
+def _populations(vision: SemanticWorldVision) -> tuple[list[float], list[float]]:
+    from PIL import Image
+
+    templates = {
+        name: [_cell_template_signature(Path(p)) for p in paths]
+        for name, paths in vision.semantic.resource_tab_cell_templates.items()
+    }
+    correct: list[float] = []
+    wrong: list[float] = []
+    for relative, offset, _anchor_index in ANCHORED_FRAMES:
+        path = ROOT / relative
+        if not path.is_file():
+            continue
+        with Image.open(path) as opened:
+            image = opened.convert("RGB")
+        width, height = image.size
+        y0, y1 = vision.semantic._tab_band_rows(height)
+        cell_px = round(vision.semantic.resource_tab_cell * width)
+        for index, name in enumerate(vision.semantic.resource_tab_order):
+            x0 = round((vision.semantic.resource_tab_first_left
+                        + index * vision.semantic.resource_tab_pitch) * width + offset)
+            if x0 < 0 or x0 + cell_px > width:
+                continue
+            probe = _cell_signature(image.crop((x0, y0, x0 + cell_px, y1)))
+            distances = {
+                other: min(_signature_distance(probe, s) for s in signatures)
+                for other, signatures in templates.items()
+            }
+            if name in templates:
+                correct.append(distances[name])
+                wrong.append(min(v for k, v in distances.items() if k != name))
+            else:
+                # A non-gatherable slot scored against every template: the false
+                # positive that a raised ceiling could start accepting.
+                wrong.append(min(distances.values()))
+    return correct, wrong
+
+
+def test_the_ceiling_sits_between_the_two_measured_populations(vision: SemanticWorldVision) -> None:
+    correct, wrong = _populations(vision)
+    if len(correct) < 8 or len(wrong) < 8:
+        pytest.skip("archived strip evidence missing")
+    ceiling = vision.semantic.resource_tab_max_distance
+    import statistics
+
+    print("\ncorrect: n=%d min=%.2f median=%.2f max=%.2f"
+          % (len(correct), min(correct), statistics.median(correct), max(correct)))
+    print("wrong:   n=%d min=%.2f median=%.2f max=%.2f"
+          % (len(wrong), min(wrong), statistics.median(wrong), max(wrong)))
+    assert max(correct) < ceiling, (
+        "the ceiling rejects a correct reading: worst correct %.2f vs ceiling %.2f"
+        % (max(correct), ceiling)
+    )
+    assert ceiling < min(wrong), (
+        "the ceiling would accept a wrong reading: ceiling %.2f vs best wrong %.2f"
+        % (ceiling, min(wrong))
+    )
+
+
+# ---------------------------------------------------------------------------
+# The offset and the identity are two independent facts.
+#
+# Added 2026-09-16.  The client draws NO bracket until a tab has been selected, and
+# that is precisely the state of a freshly opened search panel.  Requiring a bracket
+# in order to know the offset therefore meant the run could neither tap (the
+# target's position was unknown) nor scroll (the scroll branch requires an offset),
+# so SELECT_RESOURCE failed against a target that was already on screen -- measured
+# live 2026-09-16T04:09:31, goal GATHER_RESOURCE wanting COAL, with 生肉/木材/煤矿
+# all fully visible.
+# ---------------------------------------------------------------------------
+
+BRACKETLESS = (
+    ROOT
+    / "dataset/truth_audit/resource_strip_20260916"
+    / "bracketless_panel__live_runtime_step_007_before_20260916T040931067046.png"
+)
+PANEL_ABSENT = (
+    ROOT / "dataset/truth_audit/resource_tab_anchor_20260916/negative_home__live_page_20260915_151524.png"
+)
+
+
+def test_a_panel_with_no_bracket_still_yields_a_geometry(vision: SemanticWorldVision) -> None:
+    if not BRACKETLESS.is_file():
+        pytest.skip("live evidence missing")
+    assert vision.semantic.candidate_tab_lefts(BRACKETLESS) == [], "premise: no stroke pair at all"
+    match = vision.semantic.selected_resource(BRACKETLESS)
+    assert match is None, "no tab is marked selected, so no identity may be claimed"
+    offset = vision.semantic.resource_tab_offset
+    assert offset is not None, "but the strip position must still be known"
+    assert 80.0 <= offset <= 100.0, "measured +89 on this frame"
+    centre = vision.semantic.resource_cell_center_norm("COAL")
+    assert centre is not None, "the target the run wanted must be reachable"
+    assert 0.75 <= centre[0] <= 0.81, "measured 0.7812"
+
+
+def test_a_panel_absent_frame_gets_no_geometry_either(vision: SemanticWorldVision) -> None:
+    """The content path's negative control: no panel, so no offset and no targets."""
+    if not PANEL_ABSENT.is_file():
+        pytest.skip("live evidence missing")
+    assert vision.semantic.selected_resource(PANEL_ABSENT) is None
+    assert vision.semantic.resource_tab_offset is None
+    for target in GATHERABLE:
+        assert vision.semantic.resource_cell_center_norm(target) is None

@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T02:30:54+00:00`
+- generated_at: `2026-09-16T04:31:54+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `b7a6028` on `main`
+- commit: `a42d8e7` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 76
-- HEAD: `b7a6028` — fix(intel-recognition,battle-recovery): stop treating a moved control as an absent one; do not press Back during a live battle (2026-09-16T10:30:01+08:00)
-- working tree: 27 dirty file(s)
+- commits: 78
+- HEAD: `a42d8e7` — chore(memory): record the R20 queue terminal state and the two open review requests (2026-09-16T10:31:10+08:00)
+- working tree: 52 dirty file(s)
   - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
   - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-  - ` M .workbuddy-ai/commander/REVIEW_REQUESTS.md`
-  - `?? .workbuddy-ai/commander/results/WB-R19-BATTLE-UNKNOWN-RECOVERY.json`
-  - `?? .workbuddy-ai/commander/results/WB-R19-LOW-RISK-GOAL-ATTEMPT.json`
+  - ` M .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json`
+  - ` M .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/memory/2026-09-16.md`
+  - ` M .workbuddy/memory/2026-09-16.md`
+  - ` M learning/episodes.jsonl`
+  - ` M learning/executor_backend.jsonl`
+  - ` M learning/goal_state.json`
+  - ` M learning/resource_rotation.json`
+  - ` M learning/runtime_snapshot.json`
+  - ` M learning/stamina_supply.json`
+  - ` M tests/test_resource_tab_anchor.py`
+  - ` M winter_agent_v2/vision.py`
+  - `?? dataset/truth_audit/resource_strip_20260916/`
   - `?? out_crop_right_column/`
+  - `?? out_crop_strip/`
   - `?? out_junit_audit.xml`
-  - `?? out_junit_final_r18.xml`
-  - `?? out_junit_fix.xml`
-  - `?? out_junit_full_v1.xml`
-  - `?? out_junit_full_v3.xml`
-  - `?? out_junit_iso.xml`
-  - `?? out_junit_r18d.xml`
-  - `?? out_junit_r18e.xml`
-  - `?? out_junit_r19.xml`
-  - `?? out_junit_r20.xml`
-  - `?? out_junit_v1.xml`
-  - `?? out_junit_v2.xml`
-  - `?? out_memory_r18.md`
-  - `?? out_memory_r18b.md`
 
 ## B. Runtime
 
@@ -41,17 +41,17 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: intel_not_available
-- page: INTEL  march: None/None
-- updated_at: 2026-09-16T02:04:44.051412+00:00
+- stop_reason: reserved_march_for_stamina
+- page: MAP  march: 1/2
+- updated_at: 2026-09-16T04:17:01.572805+00:00
 
 ## C. Episode stream
 
-- rows: 1307 (production 1307)  modes: {'PRODUCTION': 1307}
-- success / failure: 965 / 337
-- success rate over decided: **0.7412**
+- rows: 1317 (production 1317)  modes: {'PRODUCTION': 1317}
+- success / failure: 974 / 338
+- success rate over decided: **0.7424**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-16T02:04:36.852442+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T020427229427.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T020429748888.png"}`
+- last episode: `{"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-16T04:15:47.610172+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T041534522773.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T041538058317.png"}`
 
 ## D. Registry and lifecycle
 
@@ -99,7 +99,7 @@
 ### Stable
 
 - `ALLIANCE_ALLY_GIFT_CLAIM` success=23 rate=0.9583
-- `BACK` success=91 rate=0.9891
+- `BACK` success=92 rate=0.9892
 - `CLOSE_POPUP` success=30 rate=0.9677
 - `DISMISS_INTEL_GENERIC_REWARD` success=36 rate=1.0
 - `DISMISS_INTEL_REWARD` success=23 rate=0.8214
@@ -116,30 +116,30 @@
 - `OPEN_INTEL_BEAST_TARGET` success=41 rate=0.8913
 - `OPEN_INTEL_HERO_JOURNEY_TARGET` success=20 rate=0.9091
 - `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=7 rate=1.0
-- `OPEN_MAP` success=28 rate=0.9032
+- `OPEN_MAP` success=29 rate=0.9062
 - `OPEN_POWER_DETAILS` success=9 rate=1.0
 - `OPEN_POWER_OVERVIEW` success=9 rate=0.8182
-- `OPEN_STAMINA_SOURCES` success=11 rate=1.0
+- `OPEN_STAMINA_SOURCES` success=12 rate=1.0
 - `SELECT_INTEL_BEAST_MISSION` success=10 rate=0.8333
 - `SELECT_INTEL_PIN` success=43 rate=0.9348
 
 ### Degraded
 
-- `DISPATCH_MARCH` success=32 failure=35 rate=0.4776
+- `DISPATCH_MARCH` success=33 failure=35 rate=0.4853
 - `INTEL_HERO_DISPATCH` success=12 failure=8 rate=0.6
 - `MAIL_CLAIM_REWARDS` success=14 failure=10 rate=0.5833
 - `NAVIGATE_INFANTRY_CAMP` success=7 failure=2 rate=0.7778
 - `OPEN_MAIL` success=31 failure=15 rate=0.6739
-- `SEARCH_RESOURCE` success=43 failure=34 rate=0.5584
-- `SELECT_RESOURCE` success=11 failure=44 rate=0.2
-- `START_GATHER` success=35 failure=59 rate=0.3723
-- `SUBMIT_RESOURCE_SEARCH` success=35 failure=30 rate=0.5385
+- `SEARCH_RESOURCE` success=44 failure=34 rate=0.5641
+- `SELECT_RESOURCE` success=12 failure=45 rate=0.2105
+- `START_GATHER` success=36 failure=59 rate=0.3789
+- `SUBMIT_RESOURCE_SEARCH` success=36 failure=30 rate=0.5455
 
 ## E. Top failures
 
 Failure | Count | Top skills
 ---|---:|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 127 | SELECT_RESOURCE(43), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+`SEMANTIC_TARGET_NOT_VERIFIED` | 128 | SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 `RESOURCE_NOT_FOUND` | 30 | SUBMIT_RESOURCE_SEARCH(30)
 `STAMINA_SOURCES_NOT_OPEN` | 9 | OPEN_INTEL(9)
 `INTEL_HERO_DISPATCH_NOT_PROVEN` | 8 | INTEL_HERO_DISPATCH(8)
@@ -177,9 +177,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 1122  present: 1122
+- referenced screenshots: 1141  present: 1141
 - missing: []
-- episodes carrying screenshot references: 575
+- episodes carrying screenshot references: 585
 
 ## H. Commercial bot parity
 

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-16T02:30:35+00:00",
+  "updated_at": "2026-09-16T04:17:54+00:00",
   "queue_generated_at": "2026-09-16T07:17:31+08:00",
   "current_task": null,
   "tasks": {
@@ -85,14 +85,15 @@
       "summary": "One rule, one function, both writers calling it. Verified in three independent layers, all against the real code and the real store rather than a description of them: (1) a table of verdicts on the predicate covering ENVIRONMENT, operator stop, WORKER_CRASH, non-fatal, fatal, unclassified, None, emp"
     },
     "WB-R19-SELECT-RESOURCE-ANCHOR": {
-      "status": "BLOCKED",
+      "status": "DONE",
       "priority": "P0",
       "queue_status": "READY",
-      "result_file": null,
+      "result_file": "results/WB-R19-SELECT-RESOURCE-ANCHOR.json",
       "started_at": "2026-09-15T23:30:56+00:00",
-      "finished_at": "2026-09-15T23:38:51+00:00",
-      "verdict": "BLOCKED",
-      "blocker": "The acceptance requires at least 2 live verifier PASS on SELECT_RESOURCE with MAA capture and MAA action evidence. Both live attempts failed with executed=false because the target resolver still returns None, and it returns None for a reason this work order does not cover: the calibrated strip geometry (pitch 157 px, first_left -0.5333) does not match the live panel (cells advance ~145-150 px), and it was calibrated on 2026-09-14 frames. Fixing the anchor selection removed one whole class of wrong offsets, but the predicted positions of the four gatherable tabs still land outside the template gates on live frames. The two defects are independent, and only the first is in this order's scope; the second is a recalibration that needs several live frames captured at known selected tabs, which is a separate measurement job."
+      "finished_at": "2026-09-16T04:17:53+00:00",
+      "verdict": "APPLIED_MINIMAL",
+      "blocker": "The acceptance requires at least 2 live verifier PASS on SELECT_RESOURCE with MAA capture and MAA action evidence. Both live attempts failed with executed=false because the target resolver still returns None, and it returns None for a reason this work order does not cover: the calibrated strip geometry (pitch 157 px, first_left -0.5333) does not match the live panel (cells advance ~145-150 px), and it was calibrated on 2026-09-14 frames. Fixing the anchor selection removed one whole class of wrong offsets, but the predicted positions of the four gatherable tabs still land outside the template gates on live frames. The two defects are independent, and only the first is in this order's scope; the second is a recalibration that needs several live frames captured at known selected tabs, which is a separate measurement job.",
+      "summary": "SELECT_RESOURCE succeeded live and the full chain completed for the first time: SELECT_RESOURCE (COAL) -> SUBMIT_RESOURCE_SEARCH (resource_available True) -> START_GATHER -> DISPATCH_MARCH, four consecutive verifier passes."
     },
     "WB-R19-OPEN-INTEL-MAA-RECOVERY": {
       "status": "DONE",
@@ -105,13 +106,14 @@
       "summary": "The six failure frames now all resolve, and the live OPEN_INTEL step executed: MAP->INTEL, verifier ok, tap dispatched at the found row (666, 954). Corpus recall 72/77 with 0 false positives out of 369 control-absent frames."
     },
     "WB-R19-START-GATHER-MAA-LIVE-AB": {
-      "status": "BLOCKED",
+      "status": "DONE",
       "priority": "P1",
       "queue_status": "READY",
-      "result_file": null,
-      "finished_at": "2026-09-16T02:06:20+00:00",
-      "verdict": "BLOCKED",
-      "blocker": null
+      "result_file": "results/WB-R19-START-GATHER-MAA-LIVE-AB.json",
+      "finished_at": "2026-09-16T04:17:54+00:00",
+      "verdict": "NO_PATCH_NEEDED",
+      "blocker": null,
+      "summary": "Reached and passed, with recognition/action/executor all MAA. The historical 37.2% is explained rather than improved: it belonged to the chain, not to the skill."
     },
     "WB-R19-BACKEND-PROVENANCE-TRUTH": {
       "status": "DONE",
