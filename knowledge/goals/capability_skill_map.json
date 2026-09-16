@@ -29,8 +29,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 130,
-          "successes": 111,
+          "attempts": 131,
+          "successes": 112,
           "failures": 19
         },
         {
@@ -95,8 +95,8 @@
           "status": "STABLE",
           "implemented_by": "DISMISS_INTEL_REWARD",
           "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 63,
-          "successes": 58,
+          "attempts": 64,
+          "successes": 59,
           "failures": 5
         }
       ],

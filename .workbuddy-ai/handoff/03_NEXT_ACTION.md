@@ -4,7 +4,70 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-15 23:2x GMT+8）—— 接入 Codex Commander Queue；队列已跑空
+## 手写：本轮（2026-09-16 10:1x GMT+8）—— Codex 第 2 批队列 7 单，本节为唯一交接
+
+### 0. 先做这一步（**接管后第一件事**，不变）
+
+```bash
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py plan
+```
+
+### 1. 本轮队列终态（`EXECUTION_STATE.json` 为准）
+
+| Order | 终态 | 一句话 |
+|---|---|---|
+| `WB-R19-RUNTIME-EXIT-SEMANTICS` | DONE | RR-001 已修：两条写入路径改调**同一个**判据函数 |
+| `WB-R19-OPEN-INTEL-MAA-RECOVERY` | DONE | 真机 `MAP→INTEL` verifier PASS；点击落在**找到的行** (666,954) |
+| `WB-R19-BACKEND-PROVENANCE-TRUTH` | DONE | 68 条声明对 `maafw.log` 可追溯；发现 `capture_backend` 同名两义 |
+| `WB-R19-BATTLE-UNKNOWN-RECOVERY` | DONE | 派发战斗后的未知帧**不再按 BACK**，改为有界等待 |
+| `WB-R19-SELECT-RESOURCE-ANCHOR` | **BLOCKED** | 条带几何需重标定（标定集已存在，见下） |
+| `WB-R19-START-GATHER-MAA-LIVE-AB` | **BLOCKED_BY_LIVE_STATE** | 依赖上一条；跑也只会再停在 SELECT_RESOURCE |
+| `WB-R19-LOW-RISK-GOAL-ATTEMPT` | PENDING / READY | 本轮未做，可接手 |
+
+### 2. 最重要的一件事：`SELECT_RESOURCE` 条带几何重标定
+
+**它是整条采集链的唯一阻塞项**（`SEARCH_RESOURCE` 已 OK，之后永远停在 `SELECT_RESOURCE`）。
+`0bc`（行军计数）修好后链子第一次真正起步，暴露出这是新前沿。
+
+- **现状**：`vision.py` 的标定 pitch = 157 px，真机实测 ~145–150 px，漂移约 1/3 格。
+- **不要**再假设"模板覆盖是瓶颈"（那是上一单被推翻的假设）。
+- **有现成标定集**：`dataset/truth_audit/resource_cells_20260914_120027/`（MEAT/WOOD/COAL/IRON 逐项选中帧）。
+- **先测再改**：在真机搜索面板打开时量资源条（是否需滚动、cell 是否离屏），再决定修几何还是接 MAA 识别。
+
+### 3. 两条给 Codex 的一句话改动（都需 schema 裁决，本轮只报告未动手）
+
+1. **账本 `capture_backend` 删键**：它完全由 `used_backend` 决定（零额外信息），却与 episode 的同名字段描述**不同事实**（观测通道 vs 执行器通道），34 步上必然不等。删掉即消除歧义。
+2. **给 `DISPATCH_INTEL_BEAST` / `DISPATCH_BEAST` 补显式 verifier**：它们**目前没有 verifier**，所以 Beast 战斗无法武装本轮的防误按保护，且其 episode 天生没有可审计的验证结果。
+
+### 5. P2 `WB-R19-LOW-RISK-GOAL-ATTEMPT` 的候选已筛完（工具：`tools/cq_low_risk_candidates.py`）
+
+对 **20 个从未执行**的技能做三重过滤（本单自己的条件）：
+1. 必须在 `LiveRuntime.VERIFIED_ATOMIC` 里（否则真机循环直接拒执行）；
+2. `risk ∈ {NONE, LOW}` 且**同时有** `verifier` 与 `recovery`；
+3. 不在本单禁区（Arena/Labyrinth/Rally/支付/账号）。
+
+**结果：只剩 1 个 —— `RECALL_MARCH`**（verifier `MARCH_RECALLED`、recovery `REFRESH_MARCH_STATE`、risk LOW）。
+
+其余全部被硬条件淘汰，且淘汰原因是**可查的**：
+- `NAVIGATE_TO` / `RECOVER_HOME` / `READ_TIMER` / `READ_COUNTER` / `CLAIM_REWARD` / `SEND_MARCH` —— **有 verifier 有 recovery，但不在 `VERIFIED_ATOMIC`**（真机不可执行）；
+- `READ_INTEL_LIST` / `SELECT_INFANTRY_CAMP` / `SELECT_INTEL_RESCUE_SURVIVORS` / `CANCEL_DUPLICATE_TARGET` / `DISMISS_ALLIANCE_GENERIC_REWARD` / `RELAX_RESOURCE_LEVEL` —— 在 atomic 里，但**根本没有 verifier**；
+- `JOIN_RALLY` / `START_RALLY` —— risk `MEDIUM_COMBAT`，且 Rally 是禁区。
+
+**但 `RECALL_MARCH` 现在也做不了**：它需要**自然存在的进行中行军**，而当前客户端 `march_used=0`。
+⇒ 本单大概率应记 `NO_SAFE_CANDIDATE`（或 `WAITING_FOR_NATURAL_STATE`），**不要**为了凑任务去派一支队伍再召回 ——
+那正是本单 `do_not_touch` 和 §「禁止为验证主动消耗资源」所禁止的。
+
+**顺带得到的一条更值得修的结论**：`DISPATCH_BEAST` / `DISPATCH_INTEL_BEAST` **已被执行过**，但它们**没有 verifier**
+⇒ 它们的 episode 天生缺少可审计的验证结果（与本轮 `WB-R19-BACKEND-PROVENANCE-TRUTH` 的发现同源）。
+
+### 6. 两个本轮踩到的坑（会让下一轮白花时间）
+
+- **同一文件的多处 Edit 必须逐个做**：同一条消息里发两次 Edit，可能只生效一次、另一次**静默丢失**（本轮丢了 3 处，症状是"报告成功但 grep 不到"）。改完**务必 grep 复核**。
+- **`%TEMP%\pytest-of-xhw` 会拖慢全量测试**：本机全量从 ~5 分钟退到 ~16 分钟，与本轮多次中断的 pytest 进程留下的残骸有关。
+
+---
+
+## 手写：上一轮（2026-09-15 23:2x GMT+8）—— 接入 Codex Commander Queue；队列已跑空
 
 ### 0. 先做这一步（**接管后第一件事**）
 
@@ -456,10 +519,10 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 23 in the last 2 day(s), 127 all-time, last seen 2026-09-15T23:37:49.500186+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 29
-LAST PRODUCTION EPISODE: {"skill": "SELECT_RESOURCE", "result": "FAILURE", "recorded_at": "2026-09-15T23:37:49.500186+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260915T233739598714.png", "after_screenshot": ""}
+CURRENT DIRTY FILES: 60
+LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-16T02:04:36.852442+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T020427229427.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T020429748888.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 127, "recent": 23, "last_seen": "2026-09-15T23:37:49.500186+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 43], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-13T23:37:49.500186+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T02:04:36.852442+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

@@ -66,6 +66,14 @@ class LiveRuntime:
     guessing or repeating an action whose result is uncertain.
     """
 
+    # Verifiers whose success means a fight has just been dispatched, so the client
+    # may spend the next seconds rendering a battle the page model cannot name.
+    # Derived from the registry rather than from a skill list: INTEL_HERO_DISPATCH
+    # is the only skill carrying one today (grep verifier=".*_DISPATCHED" in
+    # skills.py), which keeps the branch narrow.  Widening it is a data decision --
+    # each addition weakens the ordinary unknown-page recovery, so it needs frames.
+    FIGHT_STARTING_VERIFIERS = frozenset({"INTEL_HERO_DISPATCHED"})
+
     VERIFIED_ATOMIC: dict[str, Verifier] = {
         "WAIT": verify_environmental_wait,
         "CLOSE_POPUP": verify_popup_closed,
@@ -165,6 +173,7 @@ class LiveRuntime:
         max_resource_switches: int = 2,
         max_stamina_refusals: int = 1,
         max_unknown_page_backs: int = 2,
+        max_battle_reobservations: int = 3,
         observation_retries: int = 2,
         sleeper: Callable[[float], None] = time.sleep,
         episode_store: EpisodeStore | None = None,
@@ -201,6 +210,7 @@ class LiveRuntime:
         self.max_resource_switches = max_resource_switches
         self.max_stamina_refusals = max_stamina_refusals
         self.max_unknown_page_backs = max_unknown_page_backs
+        self.max_battle_reobservations = max_battle_reobservations
         self.observation_retries = observation_retries
         self.sleeper = sleeper
         self.episode_store = episode_store
@@ -389,6 +399,10 @@ class LiveRuntime:
         self._resource_switches = 0
         self._stamina_refusals = 0
         self._unknown_page_backs = 0
+        # Run-scoped: set once a step verifies that a fight has just been
+        # dispatched, cleared as soon as a known page is observed again, so it
+        # cannot outlive the fight it was armed for.
+        self._fight_resolving = False
         self._runtime(agent_state=AgentState.AUTO_RUNNING.value, runtime_thread_alive=True,
                       scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
 
@@ -396,6 +410,12 @@ class LiveRuntime:
             before_path = self._capture_path(index, "before")
             self.device.screenshot(before_path)
             before = self.vision.observe(before_path)
+            # A known page means whatever owned the screen has finished, so the
+            # fight-aware branch of the unknown-page recovery is no longer needed.
+            # Cleared here rather than where the fight is dispatched because this
+            # is the single point where the runtime looks at the screen again.
+            if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
+                self._fight_resolving = False
             # Use the same frame and candidate list for planning and execution.
             # Exhausting this run's attempts is not an empty/complete board and
             # must not become a fabricated semantic-target failure (0ba).
@@ -470,20 +490,45 @@ class LiveRuntime:
                 #   is reported unchanged.  Recovery must not hide the root cause.
                 recovered = False
                 if decision.reason == "unknown_page" and not is_fatal_stop(decision.reason):
-                    while self._unknown_page_backs < self.max_unknown_page_backs:
-                        self._unknown_page_backs += 1
-                        self.device.press_back()
-                        self.sleeper(self.settle_seconds)
-                        recovery_path = self._capture_path(
-                            index, "after", suffix=f"unknown_page_back_{self._unknown_page_backs}"
-                        )
-                        self.device.screenshot(recovery_path)
-                        before = self.vision.observe(recovery_path)
-                        self._record_goals(before)
-                        if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
-                            recovered = True
-                            break
+                    if self._fight_resolving:
+                        # A fight was dispatched and its animation owns the screen.
+                        # The system Back key is this project's trusted recovery for
+                        # a blocker it refuses to touch, but a battle is different:
+                        # the effect of Back on a live fight is UNMEASURED, and this
+                        # order forbids manufacturing one to find out.  The one
+                        # recorded battle frame (2026-09-15 15:14:46, judged
+                        # Page.UNKNOWN at confidence 0.0 -- the page model genuinely
+                        # cannot name it) shows the client clears the screen unaided:
+                        # the next probe 38 s later reads HOME.  So wait and
+                        # re-observe instead of pressing Back.  Bounded exactly like
+                        # the Back loop, and if the screen is still unknown the
+                        # original reason is reported unchanged -- recovery must not
+                        # hide the root cause.
+                        for _ in range(self.max_battle_reobservations):
+                            self.sleeper(self.settle_seconds)
+                            recovery_path = self._capture_path(index, "after", suffix="battle_wait")
+                            self.device.screenshot(recovery_path)
+                            before = self.vision.observe(recovery_path)
+                            self._record_goals(before)
+                            if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
+                                recovered = True
+                                break
+                    else:
+                        while self._unknown_page_backs < self.max_unknown_page_backs:
+                            self._unknown_page_backs += 1
+                            self.device.press_back()
+                            self.sleeper(self.settle_seconds)
+                            recovery_path = self._capture_path(
+                                index, "after", suffix=f"unknown_page_back_{self._unknown_page_backs}"
+                            )
+                            self.device.screenshot(recovery_path)
+                            before = self.vision.observe(recovery_path)
+                            self._record_goals(before)
+                            if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
+                                recovered = True
+                                break
                     if recovered:
+                        self._fight_resolving = False
                         continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(decision.reason) else AgentState.DEGRADED.value,
@@ -694,6 +739,15 @@ class LiveRuntime:
                 before_screenshot=before_path, after_screenshot=after_path,
             )
             steps.append(LiveStep(index, tick.decision, tick.execution, before, after, verification))
+            # Arm the fight-aware recovery.  The verifier is the evidence, not the
+            # skill name: a step that verified "a fight has been dispatched" is the
+            # only one after which a battle animation can legitimately be owning the
+            # screen.  Arming is run-scoped and is cleared as soon as a known page is
+            # observed, so it can never outlive the fight it was armed for.
+            if verification.ok:
+                _skill = self.registry.get(decision.skill)
+                if _skill is not None and _skill.verifier in self.FIGHT_STARTING_VERIFIERS:
+                    self._fight_resolving = True
             if (
                 not verification.ok
                 and decision.skill == "SUBMIT_RESOURCE_SEARCH"

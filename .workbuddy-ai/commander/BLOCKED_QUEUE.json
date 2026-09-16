@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-15T23:38:51+00:00",
+  "updated_at": "2026-09-16T02:06:20+00:00",
   "items": [
     {
       "task_id": "WB-0AZ-BEAST-BACK-VERIFY",
@@ -55,6 +55,15 @@
       ],
       "blocker": "The acceptance requires at least 2 live verifier PASS on SELECT_RESOURCE with MAA capture and MAA action evidence. Both live attempts failed with executed=false because the target resolver still returns None, and it returns None for a reason this work order does not cover: the calibrated strip geometry (pitch 157 px, first_left -0.5333) does not match the live panel (cells advance ~145-150 px), and it was calibrated on 2026-09-14 frames. Fixing the anchor selection removed one whole class of wrong offsets, but the predicted positions of the four gatherable tabs still land outside the template gates on live frames. The two defects are independent, and only the first is in this order's scope; the second is a recalibration that needs several live frames captured at known selected tabs, which is a separate measurement job.",
       "recommended_codex_review": "Three decisions. (1) Is strip recalibration the right next order, and should it use the already-archived dataset/truth_audit/resource_cells_20260914_120027/ select-each frames (MEAT/WOOD/COAL/IRON at known selections) as its calibration set, capturing fresh frames only where the live panel differs from 2026-09-14? That is the smallest path to a real offset. (2) Note that the anchor-order bug is fixed and worth keeping regardless of the recalibration, because it removed a path that could hand the executor a wrong tap target whenever a spurious stroke pair preceded the real bracket -- that class of failure is not visible in aggregate success rates until it causes a wrong-tab selection. (3) The order's own hypothesis was wrong in a way worth recording: it read the symptom (templates do not cover three tabs) as the cause, when measurement showed the crops were being taken from the wrong place. If the next order is written from this result, it should not assume template coverage is the limiter."
+    },
+    {
+      "task_id": "WB-R19-START-GATHER-MAA-LIVE-AB",
+      "root_cause_found": null,
+      "attempts": null,
+      "changes_made": null,
+      "evidence": null,
+      "blocker": null,
+      "recommended_codex_review": null
     }
   ],
   "rule": "A waiting natural-state task never blocks READY work and never authorizes resource spending to manufacture evidence."

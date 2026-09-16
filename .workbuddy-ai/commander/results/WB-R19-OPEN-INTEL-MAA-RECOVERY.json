@@ -1,0 +1,110 @@
+{
+  "TASK_ID": "WB-R19-OPEN-INTEL-MAA-RECOVERY",
+  "ROOT_CAUSE": "Two independent axes, neither of them the threshold. (1) POSITION: BTN_OPEN_INTEL_WILD_HUD is the world-map HUD menu button at x_norm 0.925, and the right-hand button stack is bottom-anchored, so its row depends on which other buttons the client is currently drawing -- y_norm 0.6727 in one layout and 0.7453 in another, 93 px apart. The record used its registration ROI as the search window, so on the six 2026-09-16 failures the phash crop landed on empty sky (distance 34-38 against a threshold of 24) while the control was demonstrably on screen lower down (phash distance 2, ccoeff 0.945). A ROI cannot be both 'where it is' and 'where to look'. (2) THEME: the day/night cycle repaints the HUD, and the single day-colour template scored only 0.390-0.448 on the two night MAP frames even though the control was at the registered position. The work order's hypothesis (animated variant / template coverage) is partly right -- coverage was one of two gaps -- but the dominant cause is geometry, which no template can fix.",
+  "CHANGED_FILES": [
+    "winter_agent_v2/vision.py",
+    "dataset/candidate/template_manifest.json",
+    "dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_1__0.png",
+    "dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_2__0.png",
+    "knowledge/execution/backend_routing.json",
+    "tests/test_intel_entry_recognition.py",
+    "dataset/truth_audit/intel_entry_20260916/",
+    "tools/cq_intel_entry_probe.py",
+    "tools/cq_intel_entry_crop.py",
+    "tools/cq_intel_entry_locate.py",
+    "tools/cq_intel_entry_locate_band.py",
+    "tools/cq_intel_entry_ccoeff.py",
+    "tools/cq_intel_entry_corpus.py",
+    "tools/cq_intel_entry_register_night.py",
+    "tools/cq_intel_entry_route_patch.py",
+    "tools/cq_intel_entry_replay.py",
+    "tools/cq_intel_entry_margin.py",
+    "tools/cq_intel_entry_archive.py",
+    "tools/cq_intel_entry_record.py"
+  ],
+  "PATCH_STATUS": "APPLIED_MINIMAL",
+  "PATCH_SUMMARY": "vision.py: the opt-in ccoeff branch now takes an optional per-record ``search_band`` as the window (margin 0) and reports the bounds it FOUND rather than the registration ROI -- because the executor taps match.center_norm, and reporting the registration would have sent the live tap 93 px above the button. Reporting found bounds is what _find_anywhere already does. matchers.py was not touched: the existing ``margin`` parameter covers the window width. Manifest: the three records of this one semantic gained matcher=ccoeff and search_band {0.72, 0.30, 0.28, 0.55}; two night templates were cropped from the archived night frames at their measured position. No threshold was changed (semantic_max_distance stays 24) and no route/backend was changed.",
+  "TEST_RESULT": "tests/test_intel_entry_recognition.py: 15 passed in 1.68s. It pins the three things the fix depends on -- the six failure frames resolve, the reported centre follows the FOUND row (0.7453) rather than the registration row (0.6727), the night frames resolve, control-absent pages refuse, the threshold is still 24, and every template of this semantic carries the band (a template added later without it would silently fall back to the ROI, which is exactly the state that produced the failures).",
+  "REPLAY_RESULT": "Corpus replay through the real production entry point SemanticWorldVision.find, not a copy: 77 MAP positives (frames the runtime decided OPEN_INTEL on, plus the six failures), 369 control-absent negatives (INTEL/POPUP/HOME/MARCH/ALLIANCE/resource detail), 55 map-derived frames (BEAST/EXPLORATION) reported separately. Result: recall 72/77 (93.5%), 0 false positives out of 369. Raw best distances: positives min 0 / median 9 / max 29; negatives min 28 / median 40 / max 44. The two populations OVERLAP (worst positive 29 vs best negative 28), so no threshold reaches 100% recall with zero false positives. Threshold deliberately left at 24: 25-28 would add 2 positives but the margin to the nearest negative frame becomes 0-3 px, which is the marginal-threshold move the order forbids.",
+  "LIVE_ATTEMPTS": 3,
+  "LIVE_SUCCESS": 1,
+  "LIVE_FAILURE": 0,
+  "LIVE_DETAIL": "All three attempts were the mandated command (tools/run_live.py --goal INTEL --max-actions 2), so the cap was not exceeded. Attempt 1 exercised OPEN_INTEL and PASSED. Attempts 2 and 3 never reached an OPEN_INTEL decision: attempt 1 ended with the client on the INTEL page (max_actions reached), so attempt 2 started there and decided SELECT_INTEL_PIN, and attempt 3 started on a generic reward popup, dismissed it, and then the board was empty (available_count 0) so the brain answered SAFE_STOP intel_not_available. So 1 of 3 attempts was an actual OPEN_INTEL trial; the target_metric of >=2/3 cannot be reached today because the intel board is exhausted and further INTEL runs would SAFE_STOP without exercising the recogniser.",
+  "VERIFIER_RESULT": "PASS. Live 2026-09-16T02:04:04Z, episode skill=OPEN_INTEL, MAP->INTEL, verification {ok: true, reason: OK, evidence: {before_map: true, after_intel: true, stamina: 251}}. Backends on the step: recognition_backend=V2, action_backend=MAA, executor_backend=HYBRID, capture_backend=MAA_MUMU_EXTRAS, latency 51.32 ms. No paid interaction; the goal's own verifier is verify_open_intel.",
+  "TAP_POSITION_PROOF": "The decisive evidence that the fix works as intended rather than by luck. On the live frame dataset/raw/live_runtime/live_runtime_step_002_before_20260916T020345929477.png the production path returns distance=7 at centre (0.9250, 0.7453) -> tap (666, 954). The MAA execution log for that same step reads 'x: 666, y: 954'. The registration ROI centre is (0.925, 0.6727) -> (666, 861), so a correct-looking verifier PASS could still have been produced by tapping 93 px above the control; it was not.",
+  "EVIDENCE_PATH": [
+    "dataset/truth_audit/intel_entry_20260916/README.md",
+    "dataset/truth_audit/intel_entry_20260916/live_pass__live_runtime_step_002_before_20260916T020345929477.png",
+    "dataset/truth_audit/intel_entry_20260916/fail1__intel_pins_20260915_230510_nav_00_step_002_before_20260915T230548379879.png",
+    "dataset/truth_audit/intel_entry_20260916/night_a__live_runtime_step_001_before_20260914T131236556151.png",
+    "dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_1__0.png",
+    ".workbuddy-ai/commander/results/WB-R19-OPEN-INTEL-MAA-RECOVERY.json"
+  ],
+  "BEFORE": "Most recent six OPEN_INTEL decisions: 0/6 executed, all executed=false with SEMANTIC_TARGET_NOT_VERIFIED at distance 34-38 against a threshold of 24. Two of the last three production OPEN_INTEL attempts before that (2026-09-14T13:12Z/13:13Z) also failed.",
+  "AFTER": "The six failure frames now all resolve, and the live OPEN_INTEL step executed: MAP->INTEL, verifier ok, tap dispatched at the found row (666, 954). Corpus recall 72/77 with 0 false positives out of 369 control-absent frames.",
+  "MAA_NODE_STATUS": "NOT_PROMOTED, deliberately. The order's preferred backend is MAA recognition, but the MAA node is a single template at a fixed ROI plus a 0.7 default threshold, so it has the same structural defect this order just fixed -- and the recorded failure of that node (0.448 on a live frame) is now explained: the frame was a NIGHT frame, and the single day-colour template cannot cover it. The corpus gate passed for the V2 route, so V2 recognition is kept and the route is unchanged; the node may be re-measured against the new three-template corpus and a band search in a follow-up.",
+  "REMAINING_ISSUE": [
+    "The target_metric '>=2/3 independent live successes' is not met on attempt count: only 1 of the 3 permitted attempts exercised OPEN_INTEL, because the client was already past the map for the other two and the intel board is now exhausted (available_count 0). A follow-up run of the same command starting from MAP with a non-empty board is needed to add a second independent live trial.",
+    "Five corpus positives (distance 26-29) are still refused: camp_gate_live_20260915_step_006, intel_pins_20260914_094520_pin_00_step_004, intel_pins_20260915_000822_nav_01_step_004, intel_pins_20260915_005907_nav_00_step_010, live_free_gift_claim_20260915_step_004. Accepting them would require a threshold of 28-29, which sits on the best negative frame (28). The order says to stop at Intel rather than chasing edge variants, so these are recorded, not chased.",
+    "The control is NOT MAP-exclusive: BEAST and EXPLORATION keep the world-map HUD visible and score 0.86-0.915. The gate is therefore the page classifier, not the control's presence. If the page model ever misreads a map-derived page as MAP, this semantic will fire there.",
+    "The band search is CPU-bound in the V2 path (3 templates x 3 scales of cv2.matchTemplate per frame per semantic). The live step measured 51.32 ms end to end, so it is not a problem today; it is worth watching if more semantics move to ccoeff."
+  ],
+  "ACCEPTANCE": {
+    "corpus_gate_before_route_change": "MET -- 77 positives / 369 negatives, gate was >=3 and >=3; route changed only after it passed",
+    "live_verifier_pass": "MET -- 1 live PASS with MAA capture and MAA action",
+    "failure_still_safe_and_does_not_click": "MET -- the negative frames report no match at all, and find() returns None so TAP_SEMANTIC returns SEMANTIC_TARGET_NOT_VERIFIED without dispatching",
+    "intel_stops_here": "MET -- no further Intel variants pursued"
+  },
+  "NEXT": "Next READY order: WB-R19-START-GATHER-MAA-LIVE-AB (P1). It remains blocked by SELECT_RESOURCE, whose residual was recorded as a strip-geometry recalibration in WB-R19-SELECT-RESOURCE-ANCHOR; running it now would hit its own stop_condition. WB-R19-BATTLE-UNKNOWN-RECOVERY (P1) is the other READY order and needs a natural battle frame to observe.",
+  "EVIDENCE": [
+    "dataset/truth_audit/intel_entry_20260916/README.md",
+    "dataset/truth_audit/intel_entry_20260916/live_pass__live_runtime_step_002_before_20260916T020345929477.png",
+    "dataset/truth_audit/intel_entry_20260916/fail1__intel_pins_20260915_230510_nav_00_step_002_before_20260915T230548379879.png",
+    "dataset/truth_audit/intel_entry_20260916/night_a__live_runtime_step_001_before_20260914T131236556151.png",
+    "dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_1__0.png",
+    ".workbuddy-ai/commander/results/WB-R19-OPEN-INTEL-MAA-RECOVERY.json"
+  ],
+  "NEXT_RECOMMENDATION": "Two things belong to a follow-up rather than to this order, which the order itself closes: (1) one more live run of the same command starting from MAP with a non-empty intel board, to add the missing second independent live trial for the >=2/3 target; (2) re-measure the MAA recognition node against the new three-template corpus, now that the cause of its recorded 0.448 is known to be the night theme rather than a bad template. Do not pursue the five residual positives by raising the threshold: 28-29 puts it on top of a negative frame. For the queue, WB-R19-START-GATHER-MAA-LIVE-AB is still blocked by the SELECT_RESOURCE strip geometry, and WB-R19-BATTLE-UNKNOWN-RECOVERY needs a natural battle frame - recommend reordering battle ahead of the gather A/B, since the gather one cannot produce a live result yet.",
+  "LIVE_EVIDENCE": {
+    "episode_recorded_at": "2026-09-16T02:04:04Z",
+    "skill": "OPEN_INTEL",
+    "transition": "MAP -> INTEL",
+    "verifier": {
+      "ok": true,
+      "reason": "OK",
+      "evidence": {
+        "before_map": true,
+        "after_intel": true,
+        "stamina": 251
+      }
+    },
+    "backends": {
+      "capture_backend": "MAA_MUMU_EXTRAS",
+      "recognition_backend": "V2",
+      "action_backend": "MAA",
+      "executor_backend": "HYBRID"
+    },
+    "latency_ms": 51.32,
+    "tap_coordinates_px": {
+      "x": 666,
+      "y": 954
+    },
+    "recognition_on_that_frame": {
+      "distance": 7,
+      "centre_norm": [
+        0.925,
+        0.7453
+      ]
+    },
+    "registration_roi_centre_px": {
+      "x": 666,
+      "y": 861
+    },
+    "frames": [
+      "dataset/truth_audit/intel_entry_20260916/live_pass__live_runtime_step_002_before_20260916T020345929477.png"
+    ],
+    "command": "tools/run_live.py --goal INTEL --max-actions 2",
+    "note": "The tap went to the row the matcher FOUND (954), not the registration row (861): the MAA execution log reads x: 666, y: 954. On this frame the old fixed-ROI path had refused (phash 34+ against a threshold of 24), which is the exact failure the order is about."
+  },
+  "recorded_at": "2026-09-16T02:05:55+00:00"
+}

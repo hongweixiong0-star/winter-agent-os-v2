@@ -3,13 +3,13 @@
 本文件回答「项目现在走到哪一步了」。机器事实由生成器刷新，判断由人维护。
 
 <!-- AUTO:progress -->
-Machine progress at 2026-09-15T23:53:24+00:00 (commit dbc3610):
+Machine progress at 2026-09-16T02:17:43+00:00 (commit e58dcc7):
 
 - goals: 16 — FULLY_LIVE_VERIFIED 2, PARTIAL 8, NEVER_TRIED 0, BLOCKED 4, DEGRADED 2
 - mean implementation coverage: 0.54
 - mean live coverage: 0.5452
 - skills: live_verified 26, stable 24, degraded 9, only_failed 10, never_executed 20
-- episodes: 1303 (success 962 / failure 336, rate 0.7411)
+- episodes: 1307 (success 965 / failure 337, rate 0.7412)
 - evidence integrity: PASS
 <!-- /AUTO:progress -->
 

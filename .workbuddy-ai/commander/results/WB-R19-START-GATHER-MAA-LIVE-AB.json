@@ -1,0 +1,25 @@
+{
+  "TASK_ID": "WB-R19-START-GATHER-MAA-LIVE-AB",
+  "BLOCKED_BY_LIVE_STATE": true,
+  "ROOT_CAUSE": "The order's own premise is not met: its objective begins '在 SELECT_RESOURCE 解锁后' and its dependency WB-R19-SELECT-RESOURCE-ANCHOR is BLOCKED. START_GATHER can never be dispatched while SELECT_RESOURCE refuses, because the gather chain reaches START_GATHER only after a resource cell is selected. This is the order's own stop_condition ('依赖任务未解锁') and its own fallback_action ('记录 BLOCKED_BY_LIVE_STATE，不修改生产路由').",
+  "CHANGED_FILES": [],
+  "PATCH_STATUS": "NO_PATCH_BY_DESIGN",
+  "TEST_RESULT": "n/a - nothing was changed",
+  "REPLAY_RESULT": "n/a",
+  "LIVE_ATTEMPTS": 0,
+  "LIVE_SUCCESS": 0,
+  "LIVE_FAILURE": 0,
+  "EVIDENCE": {
+    "dependency_state": "WB-R19-SELECT-RESOURCE-ANCHOR is BLOCKED in EXECUTION_STATE.json; its residual is a strip-geometry recalibration that needs several live frames captured at known selected tabs.",
+    "chain_evidence": "2026-09-15T23:37:06Z-23:37:49Z live GATHER_RESOURCE: OPEN_MAP SUCCESS, SEARCH_RESOURCE SUCCESS (MAA action, executor HYBRID), then SELECT_RESOURCE FAILURE x2 with SEMANTIC_TARGET_NOT_VERIFIED and executed=false. START_GATHER was never reached.",
+    "why_not_attempted": "Running tools/run_live.py --goal GATHER_RESOURCE would dispatch the same chain and stop at SELECT_RESOURCE again, consuming device time without producing either arm of the A/B. The A/B needs at least MAA 2 and fallback 2 alternating live dispatches of START_GATHER itself."
+  },
+  "BEFORE": "START_GATHER: 35/94 historical attempts (37.2%); the MAA node has 3/3 positives and 0/5 negatives on its own corpus but has never been exercised as a production action because the chain cannot reach it.",
+  "AFTER": "Unchanged. No route change, no dispatch.",
+  "VERIFIER_RESULT": "not reached",
+  "REMAINING_ISSUE": [
+    "The A/B cannot start until the SELECT_RESOURCE strip geometry is recalibrated. That recalibration is the blocking item, and it is a measurement job with a ready calibration set (dataset/truth_audit/resource_cells_20260914_120027 holds MEAT/WOOD/COAL/IRON frames each captured at a known selected tab).",
+    "Recommend Codex reorders this order behind the recalibration and ahead-or-behind BATTLE per device availability; running it now on schedule would produce an eighth consecutive 'dependency not unlocked' entry."
+  ],
+  "NEXT_RECOMMENDATION": "Do WB-R19-BACKEND-PROVENANCE-TRUTH next: with this order terminal (BLOCKED), its dependency list is satisfied and it needs no live clicks - its live_plan explicitly reuses existing episodes. Then WB-R19-BATTLE-UNKNOWN-RECOVERY, which needs a natural battle frame."
+}

@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-15T23:53:24+00:00`
+- generated_at: `2026-09-16T02:17:43+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `dbc3610` on `main`
+- commit: `e58dcc7` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 74
-- HEAD: `dbc3610` — fix(evidence,vision): one rule for unexpected_worker_exits; choose the resource anchor by evidence (2026-09-16T07:53:10+08:00)
-- working tree: 29 dirty file(s)
-  - `M docs/CAPABILITY_COVERAGE.md`
-  - ` M evidence/INDEX.json`
-  - ` M knowledge/goals/capability_skill_map.json`
+- commits: 75
+- HEAD: `e58dcc7` — chore(handoff): regenerate after the R19 round (739 tests, 0 failures, 0 errors); archive Codex's 23:05/23:09 intel evidence (2026-09-16T07:53:26+08:00)
+- working tree: 60 dirty file(s)
+  - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
+  - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/memory/2026-09-16.md`
+  - ` M .workbuddy/memory/2026-09-16.md`
+  - ` M dataset/candidate/template_manifest.json`
+  - ` M knowledge/execution/backend_routing.json`
   - ` M learning/episodes.jsonl`
   - ` M learning/executor_backend.jsonl`
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
-  - `?? .workbuddy/memory/2026-09-16.md`
-  - `?? evidence/intel_pins_20260915_230510.json`
-  - `?? evidence/intel_pins_20260915_230917.json`
-  - `?? out_junit_audit.xml`
-  - `?? out_junit_final_r18.xml`
-  - `?? out_junit_fix.xml`
-  - `?? out_junit_full_v1.xml`
-  - `?? out_junit_full_v3.xml`
-  - `?? out_junit_iso.xml`
-  - `?? out_junit_r18d.xml`
-  - `?? out_junit_r18e.xml`
-  - `?? out_junit_r19.xml`
-  - `?? out_junit_v1.xml`
+  - ` M winter_agent_v2/runtime.py`
+  - ` M winter_agent_v2/vision.py`
+  - `?? .workbuddy-ai/commander/results/WB-R19-BACKEND-PROVENANCE-TRUTH.json`
+  - `?? .workbuddy-ai/commander/results/WB-R19-OPEN-INTEL-MAA-RECOVERY.json`
+  - `?? .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json`
+  - `?? dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_1__0.png`
+  - `?? dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__night_2__0.png`
+  - `?? dataset/truth_audit/intel_entry_20260916/`
 
 ## B. Runtime
 
@@ -41,17 +41,17 @@
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: SEMANTIC_TARGET_NOT_VERIFIED
-- page: MAP  march: 0/6
-- updated_at: 2026-09-15T23:37:49.514492+00:00
+- stop_reason: intel_not_available
+- page: INTEL  march: None/None
+- updated_at: 2026-09-16T02:04:44.051412+00:00
 
 ## C. Episode stream
 
-- rows: 1303 (production 1303)  modes: {'PRODUCTION': 1303}
-- success / failure: 962 / 336
-- success rate over decided: **0.7411**
+- rows: 1307 (production 1307)  modes: {'PRODUCTION': 1307}
+- success / failure: 965 / 337
+- success rate over decided: **0.7412**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "SELECT_RESOURCE", "result": "FAILURE", "recorded_at": "2026-09-15T23:37:49.500186+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260915T233739598714.png", "after_screenshot": ""}`
+- last episode: `{"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-16T02:04:36.852442+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T020427229427.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T020429748888.png"}`
 
 ## D. Registry and lifecycle
 
@@ -99,9 +99,9 @@
 ### Stable
 
 - `ALLIANCE_ALLY_GIFT_CLAIM` success=23 rate=0.9583
-- `BACK` success=90 rate=0.989
+- `BACK` success=91 rate=0.9891
 - `CLOSE_POPUP` success=30 rate=0.9677
-- `DISMISS_INTEL_GENERIC_REWARD` success=35 rate=1.0
+- `DISMISS_INTEL_GENERIC_REWARD` success=36 rate=1.0
 - `DISMISS_INTEL_REWARD` success=23 rate=0.8214
 - `DISMISS_MAIL_GENERIC_REWARD` success=6 rate=0.8571
 - `DISPATCH_INTEL_BEAST` success=37 rate=0.881
@@ -112,7 +112,7 @@
 - `OPEN_DAILY` success=5 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
 - `OPEN_HOME` success=20 rate=0.8696
-- `OPEN_INTEL` success=111 rate=0.8538
+- `OPEN_INTEL` success=112 rate=0.855
 - `OPEN_INTEL_BEAST_TARGET` success=41 rate=0.8913
 - `OPEN_INTEL_HERO_JOURNEY_TARGET` success=20 rate=0.9091
 - `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=7 rate=1.0
@@ -121,7 +121,7 @@
 - `OPEN_POWER_OVERVIEW` success=9 rate=0.8182
 - `OPEN_STAMINA_SOURCES` success=11 rate=1.0
 - `SELECT_INTEL_BEAST_MISSION` success=10 rate=0.8333
-- `SELECT_INTEL_PIN` success=43 rate=0.9556
+- `SELECT_INTEL_PIN` success=43 rate=0.9348
 
 ### Degraded
 
@@ -177,9 +177,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 1114  present: 1114
+- referenced screenshots: 1122  present: 1122
 - missing: []
-- episodes carrying screenshot references: 571
+- episodes carrying screenshot references: 575
 
 ## H. Commercial bot parity
 

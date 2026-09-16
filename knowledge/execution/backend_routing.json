@@ -37,14 +37,21 @@
       "recognition": {
         "BTN_HERO_FIGHT": {
           "template": "BTN_HERO_FIGHT",
-          "threshold": [0.6, 0.65],
+          "threshold": [
+            0.6,
+            0.65
+          ],
           "source_template": "dataset/candidate/hero_camp/btn_hero_fight__live_squad.png"
         }
       },
       "evidence": {
         "measured_at": "2026-09-14T12:51:00Z",
         "source": "tools/maa_migrate.py nodes",
-        "corpus": {"positives": 9, "negatives": 8, "positive_runs": "hero_fight_final / hero_fight_seq / hero_fight_manual / fight_why (4 independent sessions)"},
+        "corpus": {
+          "positives": 9,
+          "negatives": 8,
+          "positive_runs": "hero_fight_final / hero_fight_seq / hero_fight_manual / fight_why (4 independent sessions)"
+        },
         "positive_hits": "9/9",
         "negative_hits": "0/8",
         "centre_error_px_max": 0.5,
@@ -61,14 +68,20 @@
       "recognition": {
         "BTN_HERO_CAMP_FIGHT": {
           "template": "BTN_HERO_CAMP_FIGHT",
-          "threshold": [0.6, 0.65],
+          "threshold": [
+            0.6,
+            0.65
+          ],
           "source_template": "dataset/candidate/hero_camp/btn_hero_camp_fight__live_hero_camp.png"
         }
       },
       "evidence": {
         "measured_at": "2026-09-14T12:51:00Z",
         "source": "tools/maa_migrate.py nodes",
-        "corpus": {"positives": 2, "negatives": 4},
+        "corpus": {
+          "positives": 2,
+          "negatives": 4
+        },
         "positive_hits": "2/2",
         "negative_hits": "0/4",
         "latency_ms_mean": 74.8,
@@ -85,14 +98,20 @@
       "recognition": {
         "BTN_OPEN_HOME": {
           "template": "BTN_OPEN_HOME",
-          "threshold": [0.7, 0.75],
+          "threshold": [
+            0.7,
+            0.75
+          ],
           "source_template": "dataset/candidate/templates/btn_open_home__live_attempt8_idle__3.png"
         }
       },
       "evidence": {
         "measured_at": "2026-09-14T12:51:00Z",
         "source": "tools/maa_migrate.py nodes",
-        "corpus": {"positives": 2, "negatives": 4},
+        "corpus": {
+          "positives": 2,
+          "negatives": 4
+        },
         "positive_hits": "2/2",
         "negative_hits": "0/4",
         "latency_ms_mean": 120.3,
@@ -107,10 +126,38 @@
       "migration_priority": "P0",
       "recognition_backend": "LEGACY",
       "evidence": {
-        "measured_at": "2026-09-14T13:12:00Z",
-        "source": "production run tools/run_live.py --goal INTEL (episode stop_reason=SEMANTIC_TARGET_NOT_VERIFIED)",
-        "note": "Device axis only. The MAA recognition node was promoted on a ONE-frame positive corpus and immediately regressed production: on the live map frame MAA located the control at exactly the manifest ROI (623,813,86,96) but correlated only 0.448 against the template, below the 0.7 default, so the action was refused and the run stopped - against a 94% legacy success rate. The control's blue fill animates, which is why the legacy semantic carries a relaxed tolerance. Recognition is reverted to the V2 semantic vision (skill stays HYBRID: MAA frames + MAA tap + V2 target), and the node is re-measured against a >=3-frame live corpus before it may be promoted again.",
-        "regression_reverted": true
+        "measured_at": "2026-09-16T02:04:00Z",
+        "source": "corpus replay through SemanticWorldVision.find + live run tools/run_live.py --goal INTEL (episode 2026-09-16T02:04:04Z)",
+        "prior_evidence": {
+          "measured_at": "2026-09-14T13:12:00Z",
+          "source": "production run tools/run_live.py --goal INTEL (episode stop_reason=SEMANTIC_TARGET_NOT_VERIFIED)",
+          "note": "Device axis only. The MAA recognition node was promoted on a ONE-frame positive corpus and immediately regressed production: on the live map frame MAA located the control at exactly the manifest ROI (623,813,86,96) but correlated only 0.448 against the template, below the 0.7 default, so the action was refused and the run stopped - against a 94% legacy success rate. The control's blue fill animates, which is why the legacy semantic carries a relaxed tolerance. Recognition is reverted to the V2 semantic vision (skill stays HYBRID: MAA frames + MAA tap + V2 target), and the node is re-measured against a >=3-frame live corpus before it may be promoted again.",
+          "regression_reverted": true
+        },
+        "note": "Recognition recalibrated 2026-09-16 (WB-R19-OPEN-INTEL-MAA-RECOVERY), backends unchanged (skill stays preferred MAA / fallback ADB / recognition LEGACY=V2 semantic, and the live step recorded recognition_backend=V2 with action_backend=MAA and executor_backend=HYBRID). Root cause of the six consecutive failures was NOT the threshold. The control is the world-map HUD menu button at x_norm 0.925, and the right-hand button stack is bottom-anchored, so its row moves with the rest of the HUD: y_norm 0.6727 in one layout, 0.7453 in another, 93 px apart. On the failing frames the fixed ROI held empty sky (phash 34-38 against a threshold of 24) while the control was demonstrably on screen lower down (phash 2, ccoeff 0.945). A ROI that is both 'where it is' and 'where to look' cannot follow that, so the record now carries a separate search_band and the match reports the bounds it FOUND - the executor taps match.center_norm, and reporting the registration would have sent the tap 93 px above the button. A second axis is theme: the day/night cycle repaints the HUD and the day-colour template scored only 0.390-0.448 on the two night frames, so a night template was registered from each. Measured over 77 MAP positives and 369 control-absent negatives through the real find() path: recall 72/77 (93.5%), 0 false positives. The two populations overlap (worst positive 29, best negative 28), so the threshold was deliberately left at 24: raising it to catch the last five would put it on top of a negative frame. The control is not MAP-exclusive - BEAST and EXPLORATION keep the HUD visible and score 0.86-0.915 - which is why the discriminator is the page gate, not the control's presence. Live 2026-09-16T02:04:04Z: OPEN_INTEL MAP->INTEL, verifier ok (before_map/after_intel), tap dispatched at (666, 954) - exactly the found row, not the registration row 861.",
+        "corpus": {
+          "positives": 77,
+          "negatives": 369,
+          "map_derived_control_visible": 55,
+          "recall": "72/77",
+          "false_positives": 0,
+          "positive_distance_max": 29,
+          "negative_distance_min": 28,
+          "threshold": 24,
+          "threshold_changed": false,
+          "templates": 3,
+          "themes": [
+            "day",
+            "night"
+          ],
+          "search_band": {
+            "x_norm": 0.72,
+            "y_norm": 0.3,
+            "w_norm": 0.28,
+            "h_norm": 0.55
+          }
+        },
+        "regression_reverted": false
       }
     },
     "BACK": {
@@ -165,14 +212,21 @@
       "recognition": {
         "BTN_GATHER": {
           "template": "BTN_GATHER",
-          "threshold": [0.7, 0.75],
+          "threshold": [
+            0.7,
+            0.75
+          ],
           "source_template": "dataset/candidate/templates/btn_gather__live_resource_attempt6__1.png"
         }
       },
       "evidence": {
         "measured_at": "2026-09-14T13:07:00Z",
         "source": "tools/maa_migrate.py nodes",
-        "corpus": {"positives": 3, "negatives": 5, "positive_runs": "live_resource_attempt6 / attempt7 / live_attempt8_resource (3 independent live runs)"},
+        "corpus": {
+          "positives": 3,
+          "negatives": 5,
+          "positive_runs": "live_resource_attempt6 / attempt7 / live_attempt8_resource (3 independent live runs)"
+        },
         "positive_hits": "3/3",
         "negative_hits": "0/5",
         "latency_ms_mean": 82.6,

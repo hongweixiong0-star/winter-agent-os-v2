@@ -638,12 +638,41 @@ class SemanticROIVision:
                     # Opt-in search-based matcher (tools/ab_matcher.py measures
                     # its separation against the phash path).  Score 1.0 -> 0,
                     # 0.75 -> 16, keeping the SemanticMatch distance contract.
+                    #
+                    # ``search_band`` is the window, and the registration ROI is
+                    # only the fallback.  A record needs the two separated when
+                    # the control moves: measured 2026-09-16 on the world-map HUD,
+                    # the same button sat at y_norm 0.6727 in one HUD layout and
+                    # 0.7453 in another (93 px apart) because the right-hand stack
+                    # is bottom-anchored and its contents vary.  A ROI that is
+                    # both "where it is" and "where to look" cannot express that,
+                    # and a window only 40 px wide around the registration missed
+                    # the real control entirely (ccoeff 0.107 there versus 0.945
+                    # found 93 px lower).
+                    #
+                    # The match reports the bounds it FOUND rather than the
+                    # registration ROI, because the executor taps
+                    # ``match.center_norm``: reporting the registration would send
+                    # the tap to where the control used to be.  ``_find_anywhere``
+                    # already reports found bounds for the same reason.
                     from .matchers import match_ccoeff
 
-                    found = match_ccoeff(image_path, Path(row["template_path"]), row["roi_norm"])
+                    band = row.get("search_band")
+                    found = match_ccoeff(
+                        image_path,
+                        Path(row["template_path"]),
+                        band or row["roi_norm"],
+                        margin=0 if band else 40,
+                    )
                     if found is not None:
                         distance = int(round((1.0 - found.score) * 64))
-                        matches.append(SemanticMatch(semantic, distance, roi))
+                        bx, by, bw, bh = found.bounds
+                        matches.append(SemanticMatch(semantic, distance, {
+                            "x_norm": round(bx / width, 4),
+                            "y_norm": round(by / height, 4),
+                            "w_norm": round(bw / width, 4),
+                            "h_norm": round(bh / height, 4),
+                        }))
                 else:
                     with Image.open(row["template_path"]) as template:
                         distance = hamming(phash(image.crop(bounds)), phash(template))

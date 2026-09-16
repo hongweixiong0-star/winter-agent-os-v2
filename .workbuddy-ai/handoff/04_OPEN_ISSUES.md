@@ -22,12 +22,21 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 29 uncommitted file(s): ['M docs/CAPABILITY_COVERAGE.md', ' M evidence/INDEX.json', ' M knowledge/goals/capability_skill_map.json', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl']
+- 60 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 第 19 轮（2026-09-16 10:1x GMT+8）—— Codex 第 2 批队列 3 单
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0bn | **`OPEN_INTEL` 失败 6 连的真因不是阈值，是两个独立轴：HUD 栈位置 + 昼夜主题** | ✅ **已修 + 真机 PASS** | `WB-R19-OPEN-INTEL-MAA-RECOVERY`。该语义指向的是**世界地图 HUD 上的蓝色「≡」按钮**（x_norm 0.925）。右侧按钮列**底部锚定** ⇒ 它的行随当前画了哪些按钮而变：布局 A `y=0.6727`、布局 B `y=0.7453`，**差 93 px**。6 张失败帧上固定 ROI 是**纯空天空**（phash 34–38 vs 阈值 24），控件其实在下方 93 px（phash **2**、ccoeff **0.945**）。**一个 ROI 不可能同时是「它在哪里」和「该去哪找」。** 第二轴是昼夜循环重绘 HUD：单张日间模板在夜间帧只有 0.390–0.448 ⇒ 注册了两张夜间模板。修法：`vision.py` 的 ccoeff 分支支持 per-record `search_band`，并**上报找到的位置**（executor 点 `match.center_norm`；上报注册点会把点击送到按钮上方 93 px）。**阈值 24 一字未动**。真机 `02:04:04Z` `MAP→INTEL` verifier PASS，点击 **(666, 954)** = 找到的行（注册点是 861），MAA 日志同一时刻为 `[x=666] [y=954]`。⚠ **残留**：5 个正样本（距离 26–29）仍被拒 —— **原始距离两群重叠**（正 max 29 / 负 min 28），放宽到 25–28 余量只剩 0–3 px，故按任务要求**不追**。⚠ `>=2/3 独立真机` 未达成：3 次允许运行里只有 1 次真走到 OPEN_INTEL 决策。 |
+| 0bo | **账本 `capture_backend` 与 episode 同名字段描述的是两个不同事实** | ⚠️ **已报告，未动手（需 schema 裁决）** | `WB-R19-BACKEND-PROVENANCE-TRUTH`。`runtime.py:346` 写的是**观测**设备（这些帧是谁取的）；`executor_router.py:401` 写的是**执行器**设备。HYBRID 下必然不等 —— 本轮 **34 步**全是 `episode=MAA_MUMU_EXTRAS / ledger=ADB_EXEC_OUT`。**两者都不错，名字错**；单看任一侧都无法判断帧的来源。且账本该键**完全由 `used_backend` 决定**（零额外信息）⇒ **建议直接删键**。**未动手的原因**：改动已落盘 schema，且旧行会保留旧键。 |
+| 0bp | **MAA/HYBRID 声明可对 `maafw.log` 追溯，但审计规则本身错过两次** | ✅ **已修 + 测试钉住** | `WB-R19-BACKEND-PROVENANCE-TRUTH`。独立产物 = `learning/maa_logs/maafw.log`（27578 行，**本地时间，需 −8h**）。两个错都是**测量抓出来的**：① 连接窗 3s 太紧 —— 实测 episode 落后动作 **2–13s（median 9.6s）**，20s 才对 ⇒ **先测偏移，别猜容差**。② **MAA 事件必须一对一归属** —— 连续步只隔 ~2.5s，±5s 窗会把**下一步自己的按键**算进上一行（实测 13:35:14.866 的 ADB 行吃掉了 13:35:17.660 的 BACK 键）⇒ 6 个**不存在的「双驱动」嫌疑**。改最近行归属后归零：68 条声明、6 条 `NO_LEDGER_ROW`。⚠ `NO_LEDGER_ROW` 真因 = 那些步**没走路由**（无 MAA adapter 时 `build_router` 原样返回 ADB executor ⇒ 无人写账本），**不是**旧数据（账本起于 09-14T13:11，零条声明早于它）。 |
+| 0bq | **战斗中误按返回的风险，已用 run-scoped 上下文消除；但「战斗 vs 普通未知」在本语料中不可分** | ✅ **已修（真机未验）** | `WB-R19-BATTLE-UNKNOWN-RECOVERY`。实测那张战斗帧被判 `Page.UNKNOWN` **confidence 0.0** ⇒ 既有 `unknown_page` 恢复会**直接按 BACK 进战斗**。**先查可分性，结论是没有**：语料里战斗帧只有 1 张，hero 系列帧**全部**解析为已知页 ⇒ 用现有模板分不开（且注册模板不在本单授权范围）⇒ 走 run-scoped：`FIGHT_STARTING_VERIFIERS={"INTEL_HERO_DISPATCHED"}`（**从 registry 读 verifier，不写死技能名**），验证通过后未知帧**只等不按**（有界），仍上报原 `unknown_page`。**负向对照是验收项**：普通未知帧**仍按 BACK**、仍能恢复。⚠ **armed 分支从未在真实战斗中触发过**（任务禁止制造战斗）—— 这是诚实的剩余缺口。⚠ `DISPATCH_INTEL_BEAST`/`DISPATCH_BEAST` **没有 verifier**，所以 Beast 战斗无法武装此保护。 |
 
 ### 第 18 轮（2026-09-15 23:0x GMT+8）—— 接入 Codex Commander Queue + 执行 6 个 Work Order
 
