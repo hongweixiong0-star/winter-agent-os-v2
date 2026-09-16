@@ -29,6 +29,14 @@ dataset/truth_audit/**/*.jpg
 dataset/external/**/*.png
 dataset/external/**/*.jpg
 
+# tools/role_identity_probe.py writes its frames *and* a probe.json/ocr_tokens.json
+# into dataset/raw/role_identity/<stamp>/.  The PNGs are covered above, but the
+# JSONs are not, and a blanket dataset/raw/**/*.json rule is not an option: 43
+# tracked label files live in that tree (dataset/raw/*/labels.json and friends) and
+# they are curation inputs.  The curated copy of this evidence is kept under
+# dataset/truth_audit/role_identity_*/ (tracked), so the raw one is redundant.
+dataset/raw/role_identity/
+
 # nested third-party clones: they are their own repositories and are
 # REFERENCE_ONLY (see knowledge/external/projects.json).  Tracking them as plain
 # directories made `git status` permanently dirty.
