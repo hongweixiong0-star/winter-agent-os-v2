@@ -98,6 +98,17 @@ dataset/external/repositories/
 # being read as "idle" while that march was still marching.
 # tests/test_march_count_idle.py reads both.
 !dataset/truth_audit/march_counter_overlay_*/**/*.png
+# 2026-09-16: making the daily entry point work end to end.  Two sets, both read by
+# tests/test_daily_entry_template.py and nothing else:
+#   * daily_entry_template_*  the live HOME frame the stale 2026-09-08 tap target
+#     was re-registered from (old record d=18 against a gate of 8), and the overlay
+#     showing the crop rectangle and the point the executor actually taps;
+#   * daily_tasks_tab_*       the one bounded tap that revealed what is behind the
+#     每日任务 tab (the panel lands on 章节任务; the daily tab showed activity 285
+#     with nothing claimable), plus the panel frames either side of the Back that
+#     leaves it.
+!dataset/truth_audit/daily_entry_template_*/**/*.png
+!dataset/truth_audit/daily_tasks_tab_*/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only
@@ -151,3 +162,17 @@ dataset/evidence/maa_probe_*.png
 # outside the frame, so match_ccoeff could not run and SemanticROIVision.find
 # raised ValueError instead of returning None.
 dataset/probe_output/
+
+# command-output capture files, the .xml / .md siblings of the out_*.txt rule
+# above.  pytest's JUnit XML and the paged-back memory notes are written to the
+# repo root by the same no-coreutils workaround, and they are scratch: the
+# findings they carry are meant to be distilled into .workbuddy-ai/handoff/,
+# not versioned.  The r17 batch (out_junit_r17.xml, out_memory_{entry,addendum}_r17.md)
+# slipped into history before this rule existed and stays tracked -- rule 20 of
+# 00_MASTER_RULES forbids deleting them without an itemised confirmation.
+# Ignored rather than deleted: same rationale as the out_*.txt block.
+out_*.xml
+out_*.md
+# probe crop dumps written by the daily-entry / role-identity probes.  Same
+# class as dataset/probe_output/ above, and equally machine-local.
+out_crop_*/
