@@ -4,7 +4,65 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 12:1x GMT+8）—— 队列已空后收掉最高杠杆项：**采集链首次跑通**
+## 手写：本轮（2026-09-16 13:0x GMT+8）—— 角色成长/容量动态建模：审计 + 两项 P0
+
+**先读两份文档，不要只看本条**：`docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`（9 问逐条答案，全带证据）
+与 `docs/ROLE_SCOPED_CAPABILITY_PLAN.md`（剩余项方案 + 阻断性前提）。
+
+### 0. 先做这一步（**接管后第一件事**，不变）
+
+```bash
+"C:/Users/xhw/.workbuddy/binaries/python/versions/3.13.12/python.exe" tools/cq.py plan
+```
+
+### 1. 本轮修了什么（两项，都有真机证据）
+
+1. **页面模型不再编造行军容量与占用**（`vision.py`）。四个 beast/hero 分支原本手写
+   `march_used=1/2/5/6` + 固定 `march_max=6`。**编造占用会喂 `idle_marches`**，
+   其中 `6/6` ⇒ idle=0 ⇒ 大脑据此去**召回采集队**，而那个数字没人测过。
+   ⇒ 模板证明不了"有几个队列位"，未读到就是 `None` → `CHECK_MARCH` 去读。
+2. **`reserve_for_stamina` 不再是绝对位数**（`brain.RuleBrain.reserved_slots`）。
+   真机该角色 `march_max=2`，固定 reserve=2 使 `idle <= reserve` 恒真
+   ⇒ 04:20–04:30 **三次 `GATHER_RESOURCE` 零 episode**。
+   现在 `有效预留 = min(reserve_marches, capacity - 2)`：2 队→0、6 队→2（原始意图保留）。
+   ⚠ **不变式是 `reserved_slots < capacity`**，已写进 `check_wiring.py`。
+
+### 2. ⚠ 下一件最重要的事：角色身份（否则第 6/24/27 节无法落地）
+
+**当前无法观测"这是哪个角色"**：`role_id` 等关键词全仓库零命中；
+`device.serial` / MAA `instance_name` 是**模拟器实例**（同一模拟器可登不同角色），
+`package_name` 是游戏包。`WorldState.account_stage` 存在但恒为 `{}`。
+
+**建议顺序**（详见 PLAN 第二节）：
+1. **先做"观测到就记住"**（单角色内，`account_stage` 写实测容量，零风险）；
+2. **同时把"从客户端读领主名"立为正式任务**（新增一个语义模板 + 一次 OCR ROI 标定 + 负样本）
+   —— 这是唯一能真正自动化的路径，且它同时解锁第 23 节"成长后自动发现"；
+3. **不要**先做"配置声明 role.id"：它会让角色隔离**看起来**已完成，而实际靠人工维护、易静默串档。
+
+### 3. 其余待办（按价值）
+
+1. **第 16 节的 12 次四资源 E2E 现在才真正可行**（容量 2 的角色原本被固定 reserve 锁死）。
+   按 MEAT/WOOD/COAL/IRON 各 ≥3 次立项。
+2. **召回的价值比较不存在**（第 13 节）：现在只有"没空闲位就召回"，
+   没有 `NewGoalPriority vs CurrentGatherValue`。机制部分（RECALLABLE / 有 idle 用 idle /
+   真实 verifier `MARCH_RECALLED`）已齐备。
+3. **未知新入口 → `FEATURE_UNLOCK_CANDIDATE`**（第 19 节）：现状是
+   `SAFE_STOP unknown_page` → 按 BACK ≤2 次 → `DEGRADED` + **结束 run**。
+   改造要守住"**不把阻塞变成游荡**"（有界、只截图不点击、失败仍如实上报原 reason）。
+4. `knowledge/game/feature_unlocks.json`（第 4 节）：纯知识表，沿用 `knowledge/game/` 既有的
+   `gate: DISCOVERED|REVIEWED` 约定。⚠ `furnace_requirement: null` 的含义是**未知**，不是"无要求"。
+5. **技能生命周期 vs 功能可用性是两个轴**，`capability_coverage.py` 现在混在一起（审计第 7 问）。
+
+### 4. 🔧 编辑工具陷阱（本轮新增两条，都会**静默**损坏文件）
+
+- **`old_string` 截断到行中间 ⇒ 只替换前缀，行尾变残片。** 本轮实际发生：`vision.py` 留下
+  `)r": 5107044, "stamina_cost_displayed": 10},` —— **而工具报告"成功"**。
+- **`old_string` 少一个结尾换行 ⇒ 两行被合并**（语法合法所以不报错，但难读）。
+- **对策：每次 Edit 后立刻 `ast.parse` 整个文件 + 读回改动区域**，不要只看"编辑成功"。
+
+---
+
+## 手写：上一轮（2026-09-16 12:1x GMT+8）—— 队列空后收掉最高杠杆项：**采集链首次跑通**
 
 ### 0. 先做这一步（**接管后第一件事**，不变）
 
@@ -578,7 +636,7 @@ WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocke
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 24 in the last 2 day(s), 128 all-time, last seen 2026-09-16T04:09:40.727152+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 52
+CURRENT DIRTY FILES: 39
 LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-16T04:15:47.610172+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T041534522773.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T041538058317.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 128, "recent": 24, "last_seen": "2026-09-16T04:09:40.727152+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-14T04:15:47.610172+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.

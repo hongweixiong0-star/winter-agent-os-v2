@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-16T04:31:54+00:00`
+- generated_at: `2026-09-16T05:43:33+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `a42d8e7` on `main`
+- commit: `1ffc8d2` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 78
-- HEAD: `a42d8e7` — chore(memory): record the R20 queue terminal state and the two open review requests (2026-09-16T10:31:10+08:00)
-- working tree: 52 dirty file(s)
-  - `M .workbuddy-ai/commander/BLOCKED_QUEUE.json`
-  - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
-  - ` M .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json`
-  - ` M .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- commits: 79
+- HEAD: `1ffc8d2` — fix(gather): the strip geometry was never wrong -- the gate was below its own calibration corpus (2026-09-16T12:32:10+08:00)
+- working tree: 39 dirty file(s)
+  - `M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
   - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
   - ` M .workbuddy-ai/memory/2026-09-16.md`
   - ` M .workbuddy/memory/2026-09-16.md`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
-  - ` M learning/goal_state.json`
-  - ` M learning/resource_rotation.json`
-  - ` M learning/runtime_snapshot.json`
-  - ` M learning/stamina_supply.json`
-  - ` M tests/test_resource_tab_anchor.py`
+  - ` M config/v2.json`
+  - ` M tests/test_p0_live_vision.py`
+  - ` M tools/check_wiring.py`
+  - ` M winter_agent_v2/brain.py`
   - ` M winter_agent_v2/vision.py`
-  - `?? dataset/truth_audit/resource_strip_20260916/`
+  - `?? docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`
+  - `?? docs/ROLE_SCOPED_CAPABILITY_PLAN.md`
   - `?? out_crop_right_column/`
   - `?? out_crop_strip/`
   - `?? out_junit_audit.xml`
+  - `?? out_junit_final_r18.xml`
+  - `?? out_junit_fix.xml`
+  - `?? out_junit_full_v1.xml`
+  - `?? out_junit_full_v3.xml`
+  - `?? out_junit_iso.xml`
+  - `?? out_junit_r18d.xml`
 
 ## B. Runtime
 

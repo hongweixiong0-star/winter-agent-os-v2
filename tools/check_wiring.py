@@ -304,6 +304,21 @@ def main() -> int:
     check("config.reserve_for_stamina", int(config.get("march_policy", {}).get("reserve_for_stamina", 0)) >= 1,
           f"={config.get('march_policy', {}).get('reserve_for_stamina')}")
 
+    # The config value above is the operator's INTENT, not a number of slots.
+    # RuleBrain caps it by the observed capacity so the reservation can never claim
+    # the whole army: if it did, `idle <= reserved` would hold at every occupancy and
+    # the goal would be permanently dead rather than merely blocked.  That is exactly
+    # what a capacity-2 role with a standing reserve of 2 did on 2026-09-16 -- three
+    # GATHER_RESOURCE runs in a row produced no episode.  Checked here rather than
+    # only in a unit test because the config value alone cannot reveal the problem.
+    reservation_brain = RuleBrain(
+        current_goal="GATHER_RESOURCE",
+        reserve_marches=int(config.get("march_policy", {}).get("reserve_for_stamina", 0)),
+    )
+    for capacity in (1, 2, 3, 4, 6):
+        reserved = reservation_brain.reserved_slots(WorldState(page=Page.MAP, march_max=capacity))
+        check(f"reservation.leaves_a_usable_slot.capacity_{capacity}", reserved < capacity, f"reserved={reserved}")
+
     registry = skills.v2_registry()
 
     def decide(state, **kwargs):

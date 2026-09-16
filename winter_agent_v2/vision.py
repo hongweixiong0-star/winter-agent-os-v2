@@ -899,7 +899,17 @@ class SemanticWorldVision:
         max_distance: int = 8,
         *,
         calibrated_baseline_used: int = 1,
-        calibrated_march_max: int = 6,
+        # No default.  This used to be 6, which is an assumption about ONE account
+        # at ONE point in its progression presented as a property of the game: the
+        # live client measured on 2026-09-16 runs at capacity 2 and at 6 at other
+        # times, and capacity grows with progression.  Guessing high is the
+        # dangerous direction -- 6 phantom slots authorize a dispatch into a full
+        # queue, the same failure the baseline_used comment below describes.
+        # ``None`` means "not read yet", which makes WorldState.idle_marches None and
+        # sends the brain to CHECK_MARCH; the OCR layer replaces this with the real
+        # count whenever the HUD counter can be read (see the MAP branch and
+        # ocr.read_march_count), which is the observed-truth path.
+        calibrated_march_max: int | None = None,
     ) -> None:
         self.semantic = SemanticROIVision(manifest_path, max_distance=max_distance)
         self.calibrated_baseline_used = calibrated_baseline_used
@@ -1189,37 +1199,58 @@ class SemanticWorldVision:
         if match("PAGE_BEAST_MARCH") and match("STATUS_VICTORY_ASSURED"):
             return WorldState(page=Page.MARCH, beast={"victory_assured": True}, confidence=0.99)
         if match("BTN_BEAST_START_MARCH"):
+            # No march counts here.  This template proves the formation page is up
+            # and which mission it holds; it says nothing about how many march slots
+            # the account has or how many are in use.  The three numbers that used to
+            # be written here (march_used=1/2/5/6 against a fixed march_max=6) were
+            # invented, and inventing occupancy is the dangerous direction: it feeds
+            # idle_marches, and the scheduler then plans against slots that may not
+            # exist.  A count that was not read is `None`, which every consumer
+            # already treats as "not proven" (WorldState.idle_marches, and the
+            # CHECK_MARCH branch in RuleBrain).
             return WorldState(
                 page=Page.BEAST,
-                march_used=1,
-                march_max=6,
-                beast={"mission_id":"INTEL_BEAST_10", "name": "大角鹿", "level": 22, "available": True, "recommended_power": 5107044, "stamina_cost_displayed": 10},
+                beast={"mission_id":"INTEL_BEAST_10", "name": "大角鹿", "level": 22, "available": True,
+                       "recommended_power": 5107044, "stamina_cost_displayed": 10},
                 confidence=0.99,
             )
         if match("STATUS_BEAST_RETURNING"):
+            # A LOWER BOUND, not a reading.  The template proves a beast march is
+            # returning, which implies at least one slot is in use -- that is the
+            # whole of what is claimed.  The CAPACITY stays unknown, because a
+            # phantom slot comes from an over-stated capacity and never from an
+            # under-stated occupancy: with march_max unknown, idle_marches is None
+            # either way and the brain goes to CHECK_MARCH to read the real pair.
             return WorldState(
                 page=Page.MAP,
                 marches=(MarchState.RETURNING,),
-                march_used=2,
-                march_max=6,
+                march_used=1,
                 beast={"name": "大角鹿", "level": 22, "battle_completed": True},
                 confidence=0.99,
             )
         if match("STATUS_BEAST_MARCH_OUTBOUND_MUSK_OX_9"):
+            # A LOWER BOUND, not a reading -- see STATUS_BEAST_RETURNING above.  The
+            # template proves a musk ox march is outbound, so at least one slot is in
+            # use.  The old pair (6 of 6) was the dangerous half: it claimed a
+            # CAPACITY, which is what makes idle_marches compute to 0 and sends the
+            # brain looking for a gathering march to recall -- on a number nobody
+            # measured.  ``verify_beast_dispatch`` legitimately wants "at least one
+            # march is now active" as its evidence, and a proven lower bound
+            # satisfies that without inventing a capacity.
             return WorldState(
                 page=Page.MAP,
                 marches=(MarchState.MARCHING,),
-                march_used=6,
-                march_max=6,
+                march_used=1,
                 beast={"name":"麝牛", "level":9, "status":"MARCHING", "stamina_cost_displayed":10},
                 confidence=0.99,
             )
         if match("STATUS_INTEL_BEAST_MARCHING"):
+            # A LOWER BOUND, not a reading -- see STATUS_BEAST_RETURNING above.
+            # The old "5 of 6" also claimed a capacity; only the lower bound remains.
             return WorldState(
                 page=Page.MAP,
                 marches=(MarchState.MARCHING,),
-                march_used=5,
-                march_max=6,
+                march_used=1,
                 beast={"mission_id":"INTEL_BEAST_10", "level":22, "status":"MARCHING", "stamina_cost_displayed":10},
                 confidence=0.99,
             )

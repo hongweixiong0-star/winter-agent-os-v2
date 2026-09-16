@@ -61,7 +61,12 @@ class P0SemanticVisionTests(unittest.TestCase):
     def test_live_idle(self) -> None:
         state = self.vision.observe(ROOT / "dataset/raw/live_idle_attempt7.png")
         self.assertEqual(state.page, Page.MAP)
-        self.assertEqual(state.march_max, 6)
+        # Only the templates ran here, and a template cannot read a march counter --
+        # so BOTH halves of the count are unknown, not just the used one.  This used
+        # to assert march_max == 6 while asserting march_used is None on the same
+        # frame, i.e. it demanded a capacity from a layer that had provably read
+        # nothing.  The real reading is pinned by the production-stack test below.
+        self.assertIsNone(state.march_max)
         self.assertEqual(state.marches, ())
         self.assertIsNone(state.march_used)
 

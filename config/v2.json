@@ -29,6 +29,7 @@
   "march_policy": {
     "reserve_for_stamina": 2,
     "reason": "Operator policy 2026-09-14: stamina spending beats gathering. Keep slots free for INTEL / beasts and recall the lowest-value gathering march when a stamina sink needs one. Gathering is LAST_RESORT and may only occupy slots with no better use.",
+    "reserve_is_an_intent_not_a_slot_count": "2026-09-16: this number is the INTENT and is capped by the OBSERVED march capacity, because capacity is role-scoped and grows with progression. Effective reservation = min(reserve_for_stamina, capacity - 2), so it can never claim the whole army. On a capacity-2 role the effective reservation is 0 and realtime work is served by recall-on-demand instead; that role produced three empty GATHER_RESOURCE runs while the value was applied as an absolute 2. See RuleBrain.reserved_slots.",
     "recall_on_demand": true,
     "recall_priority": [
       "REALTIME_EVENT",
@@ -41,9 +42,9 @@
   "resource_policy": {
     "gather_priority": "LAST_RESORT",
     "stamina_first": true,
-    "reserve_marches_for_stamina_spend": 2,
     "claim_rewards_promptly": true,
-    "note": "Gathering has low value per march-hour compared with stamina sinks. It must never be the reason a stamina task cannot run."
+    "note": "Gathering has low value per march-hour compared with stamina sinks. It must never be the reason a stamina task cannot run.",
+    "dead_key_removed_2026_09_16": "reserve_marches_for_stamina_spend was a second copy of march_policy.reserve_for_stamina with ZERO consumers; it was removed rather than left as a plausible-looking source of truth that nothing reads."
   },
   "stamina_policy": {
     "claim_free_stamina": true,

@@ -22,12 +22,22 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 52 uncommitted file(s): ['M .workbuddy-ai/commander/BLOCKED_QUEUE.json', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/results/WB-R19-SELECT-RESOURCE-ANCHOR.json', ' M .workbuddy-ai/commander/results/WB-R19-START-GATHER-MAA-LIVE-AB.json', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
+- 39 uncommitted file(s): ['M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-16.md', ' M .workbuddy/memory/2026-09-16.md', ' M config/v2.json']
 <!-- /AUTO:open_issues -->
 
 ---
 
 ## 手写：未决问题
+
+### 第 21 轮（2026-09-16 13:0x GMT+8）—— 角色成长/行军容量动态建模：审计 + 两项 P0
+
+审计全文见 `docs/ROLE_SCOPED_CAPABILITY_AUDIT.md`，方案见 `docs/ROLE_SCOPED_CAPABILITY_PLAN.md`。
+
+| # | 问题 | 状态 | 备注 |
+|---|---|---|---|
+| 0bu | **页面模型在编造行军容量与占用（比"硬编码 2"更糟）** | ✅ **已修 + 测试钉住** | `vision.py` 四个 beast/hero 状态分支手写 `march_used=1/2/5/6` + 固定 `march_max=6`。**编造占用会喂 `idle_marches`**：其中 `6/6` ⇒ idle=0 ⇒ 大脑据此走向**召回采集队**，而那个数字没人测过；反向（默认 6 而真实容量更低）会凭空多出空闲位、授权派进满队列。**模板只能证明"哪一页在屏幕上、某支队伍什么状态"，不能证明"有几个队列位、用了几个"** ⇒ 未读到就是 `None`（既有的"未证实"语义）→ `CHECK_MARCH` 去读。`calibrated_march_max` 默认改 `None`；OCR 读到计数器时会覆盖真值（`ocr.py:698-706` **同时**替换 used 与 max）。 |
+| 0bv | **`reserve_for_stamina=2` 被当成绝对队列位数 ⇒ 把容量 2 的角色彻底锁死** | ✅ **已修 + 真机证据 + 接线检查** | 真机 2026-09-16：该角色 **`march_max = 2`**，派出 1 支后 idle=1 ⇒ `1 <= 2` 恒真 ⇒ **每次** `GATHER_RESOURCE` 都 `SAFE_STOP reserved_march_for_stamina`，04:20–04:30 **三次运行零 episode**。同一常量对写它时的 6 队角色合理 ⇒ **它不是常量，是容量的函数**。改为 `max(0, min(reserve_marches, capacity - 2))`：容量 1→0、2→0、3→1、4→2、**6→2（原始意图完整保留）**。⚠ **正确的不变式是 `reserved_slots < capacity`**（否则 `idle <= reserved` 在任何占用量下都成立 ⇒ 目标**永久**不可达）；我第一次把不变式写错，**是我自己的两条测试互相矛盾当场抓住的**。已同时写进 `check_wiring.py`。⚠ 另删掉 `resource_policy.reserve_marches_for_stamina_spend`（同策略第二份拷贝、**零消费者**）。 |
+| 0bw | **角色隔离的前提不成立：无法观测"这是哪个角色"** | ⚠️ **阻断中，故意未动手** | `role_id|role_switch|multi_role|account_id|切换角色|多角色` 全仓库**零命中**；现有标识都不是角色（`device.serial`/MAA `instance_name` = **模拟器实例**，`package_name` = 游戏包，`block_account_or_role_delete` 只是安全拦截）。`WorldState.account_stage` 字段存在但**恒为 `{}`**、零写入方。⇒ **在没有角色身份之前建"按角色隔离的状态"，只能建在一个猜出来的键上，会制造"已经隔离好了"的假象，比不做更糟。** 三条路径与建议（先做"观测到就记住"；把"从客户端读领主名"立为正式任务；**不要**先做配置声明）写在 PLAN 第二节。 |
 
 ### 第 20 轮（2026-09-16 12:1x GMT+8）—— 队列空后收掉 SELECT_RESOURCE；采集链首次跑通
 

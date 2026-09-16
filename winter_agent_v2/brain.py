@@ -95,6 +95,38 @@ class RuleBrain:
             and MarchState.GATHERING in world.marches
         )
 
+    def reserved_slots(self, world: WorldState) -> int:
+        """How many march slots the policy keeps free, given the OBSERVED capacity.
+
+        ``reserve_marches`` is the operator's *intent* -- "keep some slots for
+        realtime work" -- and it was being applied as an absolute number of slots
+        regardless of how many the account actually has.  That is what stalled the
+        gather chain on 2026-09-16: the live client reports capacity 2 for that
+        role, so a standing reserve of 2 made ``idle <= reserve`` true as soon as a
+        single march was out, and three consecutive GATHER_RESOURCE runs answered
+        SAFE_STOP 'reserved_march_for_stamina' and produced no episode at all.  The
+        same policy is reasonable for the 6-slot role it was written for.
+
+        A reservation that makes the running goal unreachable is not a policy, it is
+        a deadlock, so the intent is capped by what the account can afford: it may
+        never eat into the last two slots, leaving at least one usable by the goal
+        in progress.
+
+            capacity 2 -> 0    one gathering plus one free is already the whole army;
+                               realtime work is served by recall-on-demand instead,
+                               which ``_recallable`` below already implements
+            capacity 3 -> 1
+            capacity 4+ -> reserve_marches, capped the same way
+
+        With the capacity unknown this returns 0: the caller must not act on a
+        capacity it has not read, and the map branch answers CHECK_MARCH before any
+        dispatch decision is reached.
+        """
+        capacity = world.effective_normal_march_slots
+        if capacity is None:
+            return 0
+        return max(0, min(self.reserve_marches, capacity - 2))
+
     def decide(self, world: WorldState, registry: SkillRegistry) -> Decision:
         if not world.known:
             return Decision("SAFE_STOP", "unknown_page", 1.0, "no_action")
@@ -359,7 +391,7 @@ class RuleBrain:
             world.page is Page.RESOURCE_DETAIL
             and self.current_goal in {None, "GATHER_RESOURCE"}
             and world.idle_marches is not None
-            and world.idle_marches <= self.reserve_marches
+            and world.idle_marches <= self.reserved_slots(world)
         ):
             return Decision("SAFE_STOP", "reserved_march_for_stamina", 1.0, "stamina_task_slot_preserved")
         if world.page is Page.RESOURCE_DETAIL and world.resource_available:
@@ -562,7 +594,7 @@ class RuleBrain:
             if (
                 self.current_goal in {None, "GATHER_RESOURCE"}
                 and world.idle_marches is not None
-                and world.idle_marches <= self.reserve_marches
+                and world.idle_marches <= self.reserved_slots(world)
                 and world.resource_search_open
             ):
                 return Decision("BACK", "close_resource_search_to_preserve_stamina_slot", world.confidence, "resource_search_closed")
@@ -596,7 +628,7 @@ class RuleBrain:
                     self.pending_recall = True
                     return Decision("SELECT_MARCH_TO_RECALL", "no_idle_march_and_a_gathering_march_can_be_released", world.confidence, "recall_dialog_open")
                 return Decision("SAFE_STOP", "no_idle_march", 1.0, "no_action")
-            if self.current_goal in {None, "GATHER_RESOURCE"} and world.idle_marches <= self.reserve_marches:
+            if self.current_goal in {None, "GATHER_RESOURCE"} and world.idle_marches <= self.reserved_slots(world):
                 return Decision("SAFE_STOP", "reserved_march_for_stamina", 1.0, "stamina_task_slot_preserved")
             return Decision("SEARCH_RESOURCE", "idle_march_available", world.confidence, "resource_search_open")
         if world.page is Page.MARCH and self.current_goal == "INTEL" and not world.beast:
