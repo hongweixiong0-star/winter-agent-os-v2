@@ -197,3 +197,10 @@
   `403 Resource not accessible by integration`（App 权限不含 Administration）。
   建仓库只有两条路：`gh repo create <name> --public --source=. --remote=origin --push`，
   或操作者在网页手动建。「连不上 git」的判据是 `git remote -v` **为空**，不是 `gh auth status`。
+- **与 ChatGPT 的长期桥梁 = 公开 Issue #2 `CHATGPT-ADVISOR`**（2026-09-16 建）
+  `https://github.com/hongweixiong0-star/winter-agent-os-v2/issues/2`
+  用途：只上报**高价值阻塞 / 架构决策 / 工具选型 / 反复失败的真机问题**，
+  不发流水账。每条必须带 `current commit` + `task_id` + 证据摘要 + 已尝试的修法 + **明确的问题**。
+  **禁止**贴密钥 / token / cookie / 凭据 / 账号隐私 / 大段原始日志。
+  发帖：`gh issue comment 2 --repo hongweixiong0-star/winter-agent-os-v2 --body-file <file>`。
+  ⚠ 这是 **public** 仓库，发帖前按上面红线自查一遍。
