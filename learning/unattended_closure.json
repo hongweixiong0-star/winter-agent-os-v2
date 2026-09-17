@@ -1,0 +1,133 @@
+[
+  {
+    "trace_id": "SPEND_STAMINA_ON_BEAST|VERIFIED_BEAST_TARGET_NOT_VISIBLE|SELECT_BEAST_TARGET",
+    "job_id": "8fd1dfbf",
+    "capability": "SPEND_STAMINA_ON_BEAST",
+    "skill": "SELECT_BEAST_TARGET",
+    "commit": "",
+    "commit_note": "the job's report names no commit; commits landing after the submission are listed as candidates, not attributed",
+    "verdict": "INCOMPLETE",
+    "completed": 9,
+    "applicable": 12,
+    "total": 13,
+    "failure_step": "gap_detected",
+    "steps": [
+      {
+        "name": "gap_detected",
+        "done": false,
+        "evidence": [],
+        "note": "no failing episode of this shape before the escalation",
+        "applicable": true
+      },
+      {
+        "name": "escalation_created",
+        "done": true,
+        "evidence": [
+          "ledger submitted SPEND_STAMINA_ON_BEAST|VERIFIED_BEAST_TARGET_NOT_VISIBLE|SELECT_BEAST_TARGET job=8fd1dfbf",
+          "submission sources recorded: queue, queue (the ledger does not by itself prove whether V2 or the operator triggered it)"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "queue_deduped",
+        "done": false,
+        "evidence": [],
+        "note": "no duplicate arose; the queue's dedupe had nothing to refuse",
+        "applicable": false
+      },
+      {
+        "name": "job_submitted",
+        "done": true,
+        "evidence": [
+          "job 8fd1dfbf submitted at 2026-09-17T12:57:32.582426+00:00"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "job_working",
+        "done": true,
+        "evidence": [
+          "gateway state DONE"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "code_changed",
+        "done": true,
+        "evidence": [
+          "engine reports code_changed; repo_head at submit 19964ec49dbf",
+          "6356124 at 2026-09-18T00:57:55+08:00",
+          "8a35ef4 at 2026-09-18T00:35:57+08:00",
+          "3e27a58 at 2026-09-18T00:34:25+08:00",
+          "7a5ffce at 2026-09-18T00:25:37+08:00"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "tests_passed",
+        "done": true,
+        "evidence": [
+          "check_wiring reports problems: 0"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "live_verify_episode",
+        "done": false,
+        "evidence": [],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "outcome_live_verified",
+        "done": false,
+        "evidence": [
+          "outcome TEST_PASS"
+        ],
+        "note": "engine reported TEST_PASS",
+        "applicable": true
+      },
+      {
+        "name": "reload_requested",
+        "done": true,
+        "evidence": [
+          "reload_id reload:8fd1dfbf:2026-09-17T14:24:07.541928+00:00; marker since cleared"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "reload_settled",
+        "done": true,
+        "evidence": [
+          "marker cleared and 160 episodes recorded after the request"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "auto_resumed",
+        "done": true,
+        "evidence": [
+          "160 episodes after the reload; newest 2026-09-17T16:56:11.082508+00:00"
+        ],
+        "note": "",
+        "applicable": true
+      },
+      {
+        "name": "post_resume_verified",
+        "done": true,
+        "evidence": [
+          "episode 20260918_005337_356895 SCAN_MAP_FOR_BEAST verifier_ok at 2026-09-17T16:56:11.082508+00:00"
+        ],
+        "note": "",
+        "applicable": true
+      }
+    ]
+  }
+]

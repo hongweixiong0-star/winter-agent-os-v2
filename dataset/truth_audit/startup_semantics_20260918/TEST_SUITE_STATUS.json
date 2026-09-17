@@ -1,0 +1,45 @@
+{
+  "record": "TEST_SUITE_STATUS",
+  "as_of": "2026-09-18T01:05:00+08:00",
+  "verdict": "INCONCLUSIVE",
+  "why_not_pass": "Two single full-suite runs each reached 100% and then died before printing a summary, killed by the host's bulk-delete guard intercepting pytest's own cleanup of its accumulated temp garbage. A run with no summary has no verdict; calling it PASS would be exactly the '验证输出 != 验证机制' mistake this project keeps paying for.",
+  "runs": [
+    {
+      "command": "python -m pytest tests -q -o tmp_path_retention_policy=all",
+      "duration_seconds": 3082,
+      "reached": "100%",
+      "failures_visible_in_progress": 0,
+      "summary_line": null,
+      "exit": "1 (process killed)",
+      "terminator": "[safe-delete][SAFE_DELETE_BULK_GUARD_ERROR] exit 3221225794 (0xC0000142)",
+      "caveat": "the output file was also truncated mid-run by a concurrent run, so the visible window is only the tail"
+    },
+    {
+      "command": "python -m pytest tests -q -o tmp_path_retention_policy=all",
+      "duration_seconds": 1177,
+      "reached": "100%",
+      "failures_visible_in_progress": 0,
+      "summary_line": null,
+      "exit": "1 (process killed)",
+      "terminator": "[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {\"count\":196,\"threshold\":50,\"scope\":\"turn\",\"targets\":[\"...\\AppData\\Local\\Temp\\pytest-of-xhw\\garbage-...\"]}",
+      "caveat": "the guard's own payload names the target: pytest's accumulated temp garbage, 196 items against a threshold of 50"
+    }
+  ],
+  "remediation_in_flight": {
+    "tool": "tools/run_tests_batched.py",
+    "approach": "split the 114 test files into batches, give each batch a fresh unique basetemp so pytest never accumulates the garbage the guard reacts to, read each batch's own summary, aggregate; an INCONCLUSIVE batch is split in half once instead of being re-run unchanged",
+    "aggregate_output": "learning/tests_batched_20260918.json",
+    "status": "running"
+  },
+  "gates_that_did_pass_this_round": {
+    "tests/test_startup_semantics.py": "26 passed (includes the real-window AutostartGateTest)",
+    "panel + scheduler group": "134 passed (test_startup_semantics + test_panel_architecture_view + test_control_panel + test_multitask_scheduler)",
+    "beast group": "59 passed, 27 subtests passed",
+    "tools/check_wiring.py": "problems: 0",
+    "real_artifact check": "the production learning/control_panel/latest.log now parses to stop_reason + 4 steps after the payload fix"
+  },
+  "conclusion_recorded_by_operator": {
+    "startup_chain": "VERIFIED -- GUI -> Preflight -> AUTO -> Goal -> Skill -> real MAA execution -> Verifier, 15/15 episodes SUCCESS with verifier_ok and MAA_MUMU_EXTRAS capture; not to be re-developed",
+    "full_suite": "INCONCLUSIVE -- must not be written as PASS in any summary"
+  }
+}
