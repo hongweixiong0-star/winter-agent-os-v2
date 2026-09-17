@@ -8,33 +8,33 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-17T10:06:46+00:00
+HANDOFF TIME: 2026-09-17T11:54:34+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 7 dirty file(s)
-  ['M .workbuddy-ai/memory/2026-09-17.md', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', '?? dataset/truth_audit/power_route_20260917/probe_build_probe_20260917_100507.json']
+WORKING TREE: 18 dirty file(s)
+  ['M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-17.md', ' M .workbuddy/memory/2026-09-17.md', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', ' M learning/stamina_supply.json']
 
-WHAT FINISHED (machine-visible): 25 skills live verified, 30 stable, 126 commit(s) in history
+WHAT FINISHED (machine-visible): 25 skills live verified, 29 stable, 127 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 19 skills never executed, 10 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=DEGRADED stop_reason=verified_beast_target_not_visible
-LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-17T10:06:19.612079+00:00", "episode_id": "20260917_180524_595445", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_180524_595445\\20260917_180524_595445_step_001_before_20260917T100525427395.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_180524_595445\\20260917_180524_595445_step_001_after_20260917T100544215743.png"}
+STOPPED AT: agent_state=GOAL_RUNNING stop_reason=None
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-17T11:54:22.804840+00:00", "episode_id": "20260917_195257_211296", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_195257_211296\\20260917_195257_211296_step_002_before_20260917T115330172418.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_195257_211296\\20260917_195257_211296_step_002_after_20260917T115349058300.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 130, "recent": 12, "last_seen": "2026-09-17T04:45:23.361291+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 7
+DIRTY FILES: 18
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-17T10:06:46+00:00
+SYNC STATE at 2026-09-17T11:54:34+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 22fde85ca1bc0b2790df609c85412fe8186458eb
-remote_head       : 22fde85ca1bc0b2790df609c85412fe8186458eb   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : 02eee435c4487ef580129f4c32812690bd8d009b
+remote_head       : 02eee435c4487ef580129f4c32812690bd8d009b   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (7 path(s))
-last_push_at      : 2026-09-17T10:04:08.787322+00:00
+git_dirty         : True (18 path(s))
+last_push_at      : 2026-09-17T10:06:53.304720+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
 

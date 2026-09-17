@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-17T10:03:16+00:00",
+  "updated_at": "2026-09-17T11:54:13+00:00",
   "queue_generated_at": "2026-09-17T05:05:00+00:00",
-  "current_task": "CAP-B01-BUILDING-IDENTITY-FROM-PIXELS",
+  "current_task": "CAP-E01-ALLIANCE-HELP",
   "tasks": {
     "WB-0BA-PIN-EXHAUSTION": {
       "status": "DONE",
@@ -157,11 +157,14 @@
       "result_file": null
     },
     "CAP-B01-BUILDING-IDENTITY-FROM-PIXELS": {
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "priority": "P0",
       "queue_status": null,
-      "result_file": null,
-      "started_at": "2026-09-17T10:03:16+00:00"
+      "result_file": "results/CAP-B01-BUILDING-IDENTITY-FROM-PIXELS.json",
+      "started_at": "2026-09-17T10:03:16+00:00",
+      "finished_at": "2026-09-17T11:54:13+00:00",
+      "verdict": "DONE",
+      "summary": "The city frame with a building selected now yields the operator's exact contract, measured on a real frame (2026-09-17 19:51 GMT+8, 盾兵营 selected): {\"id\": \"UNKNOWN\", \"name\": \"盾兵营\", \"level\": 12, \"target_level\": 13, \"identity_confidence\": 0.9937, \"identity_source\": \"FLOATING_LABEL_OCR+LEVEL_PLUS_ONE\"}."
     },
     "CAP-C01-LEAF-PAGE-LIVE-EVIDENCE": {
       "status": "PENDING",
@@ -180,10 +183,11 @@
       "summary": "run_live --goal TRAIN 2026-09-17 18:00 GMT+8: step1 OPEN_HOME MAP->HOME verifier OK; steps 2-8 WAIT_FOR_CAMP_MENU verifier OK, page_after HOME every time, menu_drawn false every time, run ended MAX_ACTIONS_REACHED. Bounded re-run 18:03 GMT+8 with --max-actions 4: step1/2 WAIT_FOR_CAMP_MENU verifier "
     },
     "CAP-E01-ALLIANCE-HELP": {
-      "status": "PENDING",
+      "status": "IN_PROGRESS",
       "priority": "P1",
       "queue_status": null,
-      "result_file": null
+      "result_file": null,
+      "started_at": "2026-09-17T11:54:13+00:00"
     },
     "CAP-F01-ARENA": {
       "status": "PENDING",

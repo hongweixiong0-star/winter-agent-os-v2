@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 68,
-          "successes": 61,
+          "attempts": 70,
+          "successes": 63,
           "failures": 7
         },
         {
@@ -198,8 +198,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 88,
-          "successes": 54,
+          "attempts": 91,
+          "successes": 57,
           "failures": 34
         },
         {
@@ -383,9 +383,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_POWER_OVERVIEW",
           "live_verified_by": "OPEN_POWER_OVERVIEW",
-          "attempts": 56,
+          "attempts": 57,
           "successes": 49,
-          "failures": 7
+          "failures": 8
         },
         {
           "capability": "START_TRAINING",

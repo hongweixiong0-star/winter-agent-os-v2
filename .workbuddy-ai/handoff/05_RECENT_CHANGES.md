@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `02eee43 2026-09-17T18:06:47+08:00 chore(state): CAP-D01 closed, CAP-B01 in progress with its read path proven`
 - `22fde85 2026-09-17T18:04:02+08:00 fix(train): model the two stages of a focused camp, and stop tapping in Stage A`
 - `23618f6 2026-09-17T17:47:58+08:00 fix(brain): the TRAIN and RESEARCH goals could not start from the map`
 - `909ced3 2026-09-17T16:51:43+08:00 feat(tooling): enumerate the verifier bindings that can never be called`
@@ -17,16 +18,26 @@ Last 12 commits (newest first):
 - `0c41f3d 2026-09-17T13:12:19+08:00 fix(brain): the leaf-page exit is for a named goal only`
 - `e607a6d 2026-09-17T13:05:45+08:00 fix(brain): name the quit-dialog branch, and measure that closing it cannot quit the client`
 - `8023e88 2026-09-17T12:53:29+08:00 chore(queue): rebuild the Capability-First work queue, and record this round`
-- `3355b81 2026-09-17T12:53:12+08:00 fix(vision,brain): label the shared reward dialog by its signals, and leave a leaf page once`
 
-Uncommitted changes: 7
-- `M .workbuddy-ai/memory/2026-09-17.md`
+Uncommitted changes: 18
+- `M .workbuddy-ai/commander/EXECUTION_STATE.json`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/memory/2026-09-17.md`
+- ` M .workbuddy/memory/2026-09-17.md`
 - ` M learning/control_panel/latest.log`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
+- ` M learning/stamina_supply.json`
+- ` M winter_agent_v2/ocr.py`
+- ` M winter_agent_v2/vision.py`
+- `?? .workbuddy-ai/commander/results/CAP-B01-BUILDING-IDENTITY-FROM-PIXELS.json`
+- `?? dataset/truth_audit/power_route_20260917/probe_build_live2_20260917_115113.json`
+- `?? dataset/truth_audit/power_route_20260917/probe_build_live_20260917_114955.json`
 - `?? dataset/truth_audit/power_route_20260917/probe_build_probe_20260917_100507.json`
+- `?? tests/test_building_identity.py`
+- `?? winter_agent_v2/building_identity.py`
 <!-- /AUTO:recent_commits -->
 
 ---

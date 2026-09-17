@@ -11,6 +11,8 @@ from typing import Protocol
 
 from PIL import Image
 
+from .building_identity import UNKNOWN as UNKNOWN_IDENTITY
+from .building_identity import read_building_identity
 from .models import MarchState, Page, RoleIdentity, WorldState
 
 
@@ -818,6 +820,66 @@ class HybridVision:
             confidence=min(token.confidence for token in tokens),
         )
 
+    def _building_is_selected(self, image_path: Path) -> bool:
+        """True when the city frame is showing a selected building's action controls.
+
+        Cheap template gate, so the OCR pass below only runs on frames where the label
+        can actually be there.  The two entries are the two selection states measured so
+        far, each cropped from the frame that shows it:
+
+          * ``BTN_UPGRADE`` -- the 升级 control of a selected 仓库
+            (``live_build_quest_navigation.png``);
+          * ``BTN_TRAINING_MENU_LABEL`` / ``BTN_OPEN_TRAINING_FROM_CAMP`` -- the radial
+            menu of a selected 盾兵营, live 2026-09-17 19:51 GMT+8
+            (``dataset/truth_audit/power_route_20260917/build_live2_...after_tap_280_640.png``).
+
+        Deliberately a tuple of *observed* states rather than "any HOME frame": extending
+        it as new selection states are measured is cheap, while OCR-ing every city frame
+        would tax the loop for a read that usually has nothing to read.
+        """
+        semantic = getattr(self.template_vision, "semantic", None)
+        if semantic is None:
+            return False
+        for name in ("BTN_UPGRADE", "BTN_TRAINING_MENU_LABEL", "BTN_OPEN_TRAINING_FROM_CAMP"):
+            try:
+                if semantic.find(image_path, name) is not None:
+                    return True
+            except Exception:  # noqa: BLE001 - a missing template must not break observation
+                continue
+        return False
+
+    def _read_building_identity(self, image_path: Path, primary: WorldState) -> WorldState | None:
+        """Attach building identity read off pixels, or ``None`` when this is not that frame.
+
+        The distinction between "not this frame" (``None``) and "this frame, nothing
+        readable" (keys set to UNKNOWN) is deliberate: the first leaves whatever the
+        template layer said, the second records that a read was attempted and failed.
+        Nothing here invents a value -- an unreadable name, a name outside the table, or
+        a name with no spatially associated number all end as UNKNOWN.
+        """
+        is_dialog = primary.page is Page.BUILDING
+        if not is_dialog and not (primary.page is Page.HOME and self._building_is_selected(image_path)):
+            return None
+
+        tokens = [token for token in self.ocr.recognize(image_path).tokens
+                  if token.confidence >= 0.80]
+        if not tokens:
+            return None
+        identity = read_building_identity(tokens, quest_texts=[token.text for token in tokens])
+        read = identity.as_state()
+
+        state = dict(primary.building)
+        for key in ("id", "name", "level", "target_level"):
+            value = read[key]
+            # Never overwrite a previously read value with UNKNOWN/None, never invent one.
+            if value not in (None, UNKNOWN_IDENTITY):
+                state[key] = value
+            elif key not in state:
+                state[key] = value
+        state["identity_confidence"] = read["identity_confidence"]
+        state["identity_source"] = read["identity_source"]
+        return replace(primary, building=state)
+
     def observe(self, image_path: Path) -> WorldState:
         primary = self.template_vision.observe(image_path)
         if primary.known:
@@ -865,6 +927,18 @@ class HybridVision:
                 if countdown is not None:
                     stamina["next_supply_in_seconds"] = countdown
                 return replace(primary, stamina=stamina)
+            # CAP-B01 (2026-09-18).  A building's identity is text, so it is read here
+            # and never guessed by the template layer.  Two frames carry it, and both are
+            # gated on something that proves the frame really is that frame:
+            #   * the city frame with a building selected -- floating label ``26 仓库``
+            #     above it, quest banner naming the target, gated on BTN_UPGRADE (the
+            #     升级 control, cropped from the same live frame as the label);
+            #   * the upgrade dialog, gated on Page.BUILDING, whose title carries the
+            #     name (the dialog has no current level -- only the prerequisite row).
+            # ``None`` means "not one of those frames" and leaves the state untouched.
+            building_state = self._read_building_identity(image_path, primary)
+            if building_state is not None:
+                return building_state
             # Every world-map frame is OCR-enriched, not only the ones where the
             # reviewed layer already saw a march counter: the map is also where
             # the stamina gauge is read, and both facts feed the same decision.

@@ -1298,9 +1298,21 @@ class SemanticWorldVision:
         if match("BTN_DISPATCH"):
             return WorldState(page=Page.MARCH, resource_target="WOOD", confidence=0.99)
         if match("BTN_BUILD_UPGRADE"):
+            # ``upgradeable`` is the fact this frame proves: the 升级 control is drawn.
+            #
+            # CAP-B01 (2026-09-18).  This branch used to answer
+            #     {"id": "STOREHOUSE", "level": 26, "target_level": 27}
+            # and none of those three was read from this frame or any other.  They came
+            # from dataset/raw/live_build_warehouse_upgrade_dialog.png, whose dialog does
+            # not even show the current level -- the only level on it is the
+            # *prerequisite* row 大熔炉 等级 27.  A constant identity is exactly what the
+            # operator forbade ("禁止反推建筑身份"), so the identity is left out here and
+            # supplied by the OCR enrichment in HybridVision.observe, which reads the
+            # floating label on the city frame (26 仓库) or the dialog's own title.
+            # When nothing was read the keys stay absent -- never a plausible default.
             return WorldState(
                 page=Page.BUILDING,
-                building={"id": "STOREHOUSE", "level": 26, "target_level": 27, "upgradeable": True},
+                building={"upgradeable": True},
                 confidence=0.99,
             )
         if match("BTN_TRAINING_MENU_LABEL") or match("BTN_OPEN_TRAINING_FROM_CAMP"):
@@ -1308,9 +1320,21 @@ class SemanticWorldVision:
         if match("TARGET_INFANTRY_CAMP_HIGHLIGHTED"):
             return WorldState(page=Page.HOME, training={"navigation":"INFANTRY_CAMP_HIGHLIGHTED", "queue_available":True}, confidence=0.99)
         if match("BUILDING_QUEUE_TIMER"):
+            # The template proves a construction timer is drawn, and nothing more.  The
+            # queued building and its levels were constants here as well (STOREHOUSE
+            # 26->27, copied from the frame this template was cropped from) and are
+            # dropped for the same reason as above.
+            #
+            # Consequence, recorded rather than hidden: verify_building_upgrade
+            # cross-checks after.building["queue_building"] against the id it was handed,
+            # so until the identity read off the city frame is carried into the dispatch
+            # step (the parameterised-verifier shape described in
+            # tools/verifier_binding_audit.py) that cross-check has nothing to compare
+            # and the upgrade cannot be proven.  BUILDING_UPGRADE has never had a live
+            # attempt, so no working behaviour is lost -- only a passing-on-a-lie was.
             return WorldState(
                 page=Page.HOME,
-                building={"queue_building": "STOREHOUSE", "from_level": 26, "target_level": 27, "timer": "VISIBLE", "status": "UPGRADING"},
+                building={"timer": "VISIBLE", "status": "UPGRADING"},
                 confidence=0.99,
             )
         if match("RESEARCH_BUILDING_QUEUE_TIMER"):

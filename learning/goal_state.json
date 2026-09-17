@@ -1,6 +1,6 @@
 {
-  "observed_at": "2026-09-17T10:06:35.741905+00:00",
-  "written_at": "2026-09-17T10:06:37.505269+00:00",
+  "observed_at": "2026-09-17T11:54:20.524450+00:00",
+  "written_at": "2026-09-17T11:54:22.802063+00:00",
   "page": "MAP",
   "confidence": 0.99,
   "goals": [
@@ -10,7 +10,7 @@
       "completion": 0.0,
       "remaining_seconds": null,
       "reward_value": 100,
-      "daily_loss": 19085,
+      "daily_loss": 80,
       "event_synergy": 0.0,
       "development_value": 0.0,
       "resource_cost": 0.0,
@@ -21,10 +21,10 @@
       ],
       "retry_after": null,
       "evidence": {
-        "current": 3847,
+        "current": 46,
         "threshold": 30
       },
-      "priority": 19185.0
+      "priority": 180.0
     }
   ]
 }
