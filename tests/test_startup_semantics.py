@@ -18,6 +18,7 @@ Every fake below says which measurement it came from.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -268,6 +269,37 @@ class RunResultParseTest(unittest.TestCase):
 
     def test_a_result_without_a_stop_reason_is_not_used(self):
         self.assertEqual(panel.parse_runtime_result(json.dumps({"steps": []})), {})
+
+
+class UnattendedSurvivalTest(unittest.TestCase):
+    """A bounded prune, because an unbounded one kills the unattended panel.
+
+    Measured 2026-09-18: the window ran unattended for **6h45m** and then died when
+    a single retention pass deleted 50 files at once -- the host's bulk-delete
+    threshold -- so the guard intercepted the call and killed the process, taking
+    AUTO with it.  That is what makes "启动 GUI = 长期无人值守" true rather than
+    hopeful, so the cap is pinned here beside the other startup guarantees.
+    """
+
+    def test_a_prune_pass_is_bounded_and_the_backlog_still_drains(self):
+        from winter_agent_v2 import retention
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "runtime"
+            root.mkdir(parents=True)
+            for index in range(25):
+                frame = root / f"step_{index:03d}_before.png"
+                frame.write_bytes(b"x")
+                os.utime(frame, (0, 0))  # old enough for any ttl
+            missing = Path(tmp) / "none.jsonl"
+            passes = [
+                len(retention.prune_runtime_screenshots(
+                    root, max_count=0, ttl_days=0, episodes_path=missing))
+                for _ in range(3)
+            ]
+            self.assertTrue(all(count <= retention.MAX_DELETIONS_PER_PASS for count in passes),
+                            f"a pass exceeded the cap: {passes}")
+            self.assertEqual(list(root.rglob("*.png")), [], "the backlog must still drain")
 
 
 class AutostartGateTest(unittest.TestCase):

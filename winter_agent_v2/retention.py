@@ -122,6 +122,14 @@ def select_prunable_screenshots(
     return sorted(old | overflow, key=lambda path: path.stat().st_mtime)
 
 
+# One prune pass deletes at most this many files.  Measured 2026-09-18: the host
+# kills a process whose single delete call carries 50 items, and the panel -- which
+# had been running unattended for 6h45m -- died exactly there and took AUTO with it.
+# Ten is also the project's own batch size for deletions, because bulk deletion is
+# how evidence was lost before.
+MAX_DELETIONS_PER_PASS = 10
+
+
 def find_repo_root(start: Path) -> Path:
     """Walk up from a capture root until the repository root is found.
 
@@ -141,11 +149,20 @@ def prune_runtime_screenshots(
     ttl_days: int,
     now: datetime | None = None,
     episodes_path: Path | None = None,
+    limit: int = MAX_DELETIONS_PER_PASS,
 ) -> list[Path]:
     """Delete only image files inside one explicitly scoped runtime root.
 
     Referenced production frames inside that root are excluded, so pruning can
     never destroy the evidence an episode points at.
+
+    ``limit`` bounds one pass.  It is not a nicety: measured 2026-09-18, the panel
+    ran unattended for 6h45m and then died because a single prune deleted 50 files
+    at once, which is the host's bulk-delete threshold -- the guard intercepted the
+    call and killed the process, taking AUTO with it.  The panel prunes once per
+    cycle, so a bounded pass drains any backlog within a few minutes and never in a
+    burst.  The project's own rule is that bulk deletion is how evidence was lost
+    before; a cap here makes that structural instead of remembered.
     """
     resolved_root = root.resolve()
     if not resolved_root.is_dir():
@@ -161,6 +178,8 @@ def prune_runtime_screenshots(
     )
     removed: list[Path] = []
     for path in candidates:
+        if len(removed) >= max(0, int(limit)):
+            break
         resolved = path.resolve()
         if not resolved.is_relative_to(resolved_root):
             continue
