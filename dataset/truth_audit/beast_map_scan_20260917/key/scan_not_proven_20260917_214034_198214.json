@@ -1,0 +1,46 @@
+{
+  "set": "beast_map_scan_20260917 / key",
+  "subject": "SCAN_MAP_FOR_BEAST -- the verified pan, and the two times the pan was not a pan",
+  "measured_at": "2026-09-17T16:05:48Z (second failure)",
+  "verified_episodes": "202 of 204 rows carrying recorded_at have verifier_ok true",
+  "failures": [
+    {
+      "episode_id": "20260917_214034_198214",
+      "step_id": 2,
+      "recorded_at": "2026-09-17T13:42:04.001939+00:00",
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "failure_type": "BEAST_SCAN_NOT_PROVEN",
+      "goal_id": "AVOID_STAMINA_WASTE",
+      "state_before_page": "MAP",
+      "state_after_page": "HOME",
+      "what_the_frames_show": "before is the world map.  after is the city with the furnace-upgrade gift popup over it; the two refresh frames behind it are the city plainly, bottom tab bar with the wilderness tab unselected.  The pan left the world map.",
+      "frames": [
+        "20260917_214034_198214_step_002_before_20260917T134103425414.png",
+        "20260917_214034_198214_step_002_after_20260917T134119943992.png",
+        "20260917_214034_198214_step_002_after_refresh_1_20260917T134134171330.png",
+        "20260917_214034_198214_step_002_after_refresh_2_20260917T134150125673.png"
+      ]
+    },
+    {
+      "episode_id": "20260918_000450_845406",
+      "step_id": 1,
+      "recorded_at": "2026-09-17T16:05:48.164537+00:00",
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "failure_type": "BEAST_SCAN_NOT_PROVEN",
+      "goal_id": "AVOID_STAMINA_WASTE",
+      "state_before_page": "MAP",
+      "state_after_page": "RESEARCH",
+      "what_the_frames_show": "before is the world map with a level-4 beast in view.  after is the 生存者试炼 event page.  The pan was not consumed as a pan here either; the client acted on a control instead.",
+      "frames": [
+        "20260918_000450_845406_step_001_before_20260917T160453076950.png",
+        "20260918_000450_845406_step_001_after_20260917T160510011840.png",
+        "20260918_000450_845406_step_001_after_refresh_1_20260917T160523290654.png",
+        "20260918_000450_845406_step_001_after_refresh_2_20260917T160535894169.png"
+      ]
+    }
+  ],
+  "what_both_failures_have_in_common": "The same SWIPE 0.50,0.62 -> 0.50,0.30 at 600 ms was issued from a frame the classifier read as MAP, and the client did not pan the map: it navigated somewhere else (city, then an event page).  The fail-closed verifier refused to call either step proven, which is the correct answer and is why neither became a false success -- but the client had already left the page.",
+  "what_is_still_unexplained": "the mechanism.  No probe has reproduced either misfire, the x=0.50 column does not overlap the icon the second one opened, and no hypothesis here is backed by a measurement.  Do not write a cause for this until a probe produces one.",
+  "escalation_note": "SCAN_MAP_FOR_BEAST|BEAST_SCAN_NOT_PROVEN|SCAN_MAP_FOR_BEAST was escalated STUCK_15_MIN at 14:56 claiming no verified episode.  That claim was false at the time (96 verified episodes since the 13:42 failure) and the classifier now reads the episode stream instead of the clock.",
+  "why_this_is_recorded": "Two independent negative samples of the gap between the gesture's intent and the client's reading of it.  They bound the reliability of the hop: 202/204 with a passing verifier, 2/204 where the pan was not a pan."
+}

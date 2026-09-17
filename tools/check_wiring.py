@@ -519,6 +519,37 @@ def main() -> int:
     check("factory: KEEP_RESEARCH_PRODUCTIVE still names OPEN_RESEARCH + RESEARCH",
           GOAL_REQUIREMENTS["KEEP_RESEARCH_PRODUCTIVE"] == ("OPEN_RESEARCH", "RESEARCH"))
 
+    # The beast hunting search hop (2026-09-17 escalation SCAN_MAP_FOR_BEAST).
+    # A verifier bound to a skill no decision can reach is the defect class this
+    # file exists for (see knowledge/failure_patterns/architecture/
+    # VERIFIER_SHAPE_MISMATCH.md), so all three links are pinned: registered skill,
+    # bound verifier, and a brain decision that really emits it -- plus the
+    # isolation half, because a scan that fires while a verified target is on
+    # screen would pan away from the thing it is looking for.
+    beast = RuleBrain(current_goal="BEAST_HUNT")
+    no_target = WorldState(page=Page.MAP, march_used=0, confidence=0.99)
+    with_target = WorldState(page=Page.MAP, march_used=0,
+                             beast={"visible_target": "MUSK_OX", "level": 9, "available": True},
+                             confidence=0.99)
+    check("brain: BEAST_HUNT on the map without a target scans for one",
+          beast.decide(no_target, registry).skill == "SCAN_MAP_FOR_BEAST")
+    check("brain: BEAST_HUNT does not scan past a verified target",
+          beast.decide(with_target, registry).skill == "SELECT_BEAST_TARGET")
+    check("runtime: SCAN_MAP_FOR_BEAST is bound to a verifier",
+          "SCAN_MAP_FOR_BEAST" in runtime.LiveRuntime.VERIFIED_ATOMIC)
+    scan_judge = runtime.LiveRuntime.VERIFIED_ATOMIC.get("SCAN_MAP_FOR_BEAST")
+    check("runtime: the scan's binding is the map-pan verifier",
+          getattr(scan_judge, "__name__", "") == "verify_beast_scan_observed")
+    from winter_agent_v2.verifier import verify_beast_scan_observed
+    # The live 2026-09-17 failure frame: an alliance gift popup covered the map
+    # mid-pan and the client read as HOME.  The verifier must fail-closed there
+    # rather than call the spend proven.
+    check("verifier: a pan that lands on a covered map is not proven",
+          not verify_beast_scan_observed(
+              no_target, WorldState(page=Page.HOME, confidence=0.98)).ok)
+    check("verifier: a readable map before and after is proven",
+          verify_beast_scan_observed(no_target, no_target).ok)
+
     # The operator's 2-minute Reuse Check (2026-09-17) is a rule about behaviour, so
     # what can be pinned here is that it still exists where a session will read it and
     # that the tool which answers it is runnable.  A rule that quietly disappears from

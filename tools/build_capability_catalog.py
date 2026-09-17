@@ -385,12 +385,22 @@ def main() -> int:
                 "the role IS observable (领主档案 panel behind one tap on the avatar) and "
                 "the reader exists, but no skill calls it yet.")
         if entry["code"] == "SEARCH_BEAST":
+            # The counts are deliberately not restated here: the entry carries
+            # live_attempts / live_success / last_live_verified next to this string
+            # and they move with every run, so a number written into prose goes
+            # stale and contradicts its own row.  Only the settled facts are prose.
             entry["blocked_reason"] = (
-                "the scan hop is live (2026-09-17, three verified pans per hunt cycle) but "
-                "only finds the level-9 Musk Ox the target template was cropped from; the "
+                "the scan hop is live (see live_attempts / last_live_verified) but only "
+                "finds the level-9 Musk Ox the target template was cropped from; the "
                 "current role's map holds a level-24/25 moose instead, whose victory "
                 "assessment is not safely attackable, so no stamina spend has been "
-                "verified on this role.  Evidence: dataset/truth_audit/beast_map_scan_20260917/key/.")
+                "verified on this role.  The hop itself is not perfectly reliable and "
+                "the measurement says so: as of 2026-09-17T16:05, 2 of 204 recorded pans "
+                "were not consumed as pans -- the client left the world map (one to the "
+                "city, one to an event page) -- both times the fail-closed verifier "
+                "refused to call the step proven, which is the correct answer, and the "
+                "mechanism is not reproduced.  Evidence, including both negative frames: "
+                "dataset/truth_audit/beast_map_scan_20260917/key/.")
             entry["current_role_available"] = "OBSERVED_AVAILABLE"
 
     summary = {

@@ -711,6 +711,7 @@ def classify_condition(
     now: datetime | None,
     policy: EscalationPolicy,
     unimplemented: bool = False,
+    verified_episodes: int = 0,
 ) -> tuple[str, str] | None:
     """Choose one of the five conditions, or ``None`` to leave it alone.
 
@@ -718,6 +719,17 @@ def classify_condition(
     step not landing, which AUTO retries by itself.  Only the shapes the operator
     listed get a development agent, and an unknown shape gets none -- guessing a
     condition would send an agent after the wrong problem.
+
+    ``verified_episodes`` is the count of production episodes for this signature's
+    capability, with a passing verifier, recorded between ``first_seen`` and now.
+    ``STUCK_15_MIN`` means "15+ minutes and *still no verified episode*", so a
+    non-zero count decides it: the capability is demonstrably working on the real
+    client and what happened is an ordinary transient AUTO already retried past.
+    Leaving it alone is the honest answer -- escalating it sends an agent to fix
+    something that is not broken.  Measured 2026-09-17:
+    ``SCAN_MAP_FOR_BEAST|BEAST_SCAN_NOT_PROVEN`` was escalated ``STUCK_15_MIN``
+    at 14:56 as "no verified episode" while 130 verifier-passing episodes of that
+    very skill had been recorded since the 13:42 failure.
     """
     moment = now or datetime.now(timezone.utc)
 
@@ -730,6 +742,8 @@ def classify_condition(
     if first_seen is not None:
         age_minutes = (moment - first_seen).total_seconds() / 60.0
         if age_minutes >= policy.stuck_minutes:
+            if verified_episodes:
+                return None
             return STUCK_15_MIN, (
                 f"{signature.describe()} has been failing for {age_minutes:.0f} min "
                 f"(>= {policy.stuck_minutes}) with no verified episode"
@@ -774,6 +788,7 @@ def candidates_from_run(
     now: datetime | None = None,
     unimplemented: Iterable[str] = (),
     root: Path | str | None = None,
+    episodes_path: Path | str | None = None,
 ) -> tuple[EscalationCandidate, ...]:
     """Turn one run's failed episodes into at most a few escalation candidates.
 
@@ -796,6 +811,25 @@ def candidates_from_run(
     unimplemented_set = {str(x) for x in unimplemented}
     seen: set[str] = set()
     out: list[EscalationCandidate] = []
+
+    # One read of the episode stream per distinct ``first_seen``, only for a
+    # signature old enough to be a STUCK_15_MIN candidate at all.  The capability
+    # is asked the same question reconciliation asks it -- "is there a production
+    # episode with a passing verifier after this moment" -- through the existing
+    # reader rather than a second one.
+    proven_cache: dict[datetime, int] = {}
+
+    def proven_since(record: EscalationRecord) -> int:
+        assert record.first_seen is not None
+        if record.first_seen not in proven_cache:
+            proven_cache[record.first_seen] = len(new_live_episodes(
+                record.capability or record.skill,
+                skill=record.skill,
+                since=record.first_seen,
+                root=root,
+                episodes_path=episodes_path,
+            ))
+        return proven_cache[record.first_seen]
 
     failure_list = list(failures)
     if not failure_list and stop_reason in STOP_REASON_WALLS:
@@ -830,6 +864,14 @@ def candidates_from_run(
         occurrences = (record.attempts if record else 0) + 1
         first_seen = (record.first_seen if record else None) or moment
 
+        # Only ask (and only pay for the read) when the elapsed-time branch could
+        # fire: a signature with no record, or a young one, has nothing to prove.
+        verified = 0
+        if record is not None and record.first_seen is not None:
+            age_minutes = (moment - record.first_seen).total_seconds() / 60.0
+            if age_minutes >= policy.stuck_minutes:
+                verified = proven_since(record)
+
         verdict = classify_condition(
             signature,
             occurrences=occurrences,
@@ -837,6 +879,7 @@ def candidates_from_run(
             now=moment,
             policy=policy,
             unimplemented=skill in unimplemented_set,
+            verified_episodes=verified,
         )
         if verdict is None:
             continue

@@ -1,30 +1,28 @@
 {
-  "observed_at": "2026-09-17T14:58:23.655309+00:00",
-  "written_at": "2026-09-17T14:58:24.981314+00:00",
-  "page": "MAP",
-  "confidence": 0.99,
+  "observed_at": "2026-09-17T16:25:08.107325+00:00",
+  "written_at": "2026-09-17T16:25:08.110267+00:00",
+  "page": "RESEARCH",
+  "confidence": 0.9998440941174825,
   "goals": [
     {
-      "goal_id": "AVOID_STAMINA_WASTE",
-      "status": "READY",
-      "completion": 0.0,
+      "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+      "status": "COMPLETE",
+      "completion": 1.0,
       "remaining_seconds": null,
-      "reward_value": 100,
-      "daily_loss": 80,
+      "reward_value": 0.0,
+      "daily_loss": 0.0,
       "event_synergy": 0.0,
-      "development_value": 0.0,
+      "development_value": 80,
       "resource_cost": 0.0,
       "risk": 0.0,
       "available_skills": [
-        "INTEL_CLAIM_REWARDS",
-        "BEAST_HUNT"
+        "RESEARCH"
       ],
       "retry_after": null,
       "evidence": {
-        "current": 46,
-        "threshold": 30
+        "queue_busy": true
       },
-      "priority": 180.0
+      "priority": null
     }
   ]
 }

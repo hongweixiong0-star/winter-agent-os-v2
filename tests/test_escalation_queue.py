@@ -504,6 +504,63 @@ class ClassificationTest(unittest.TestCase):
         )
         self.assertEqual(verdict[0], q.STUCK_15_MIN)
 
+    def test_an_old_signature_that_is_still_working_is_left_alone(self):
+        # STUCK_15_MIN means "15+ minutes and still no verified episode".  A
+        # production episode of the same capability with a passing verifier, after
+        # the signature was first seen, makes the condition false -- what happened
+        # is a transient AUTO already retried past, not a wall.
+        verdict = q.classify_condition(
+            q.FailureSignature("CAP", "SOMETHING_NEW", "SKILL"),
+            occurrences=1, first_seen=NOW - timedelta(minutes=16), now=NOW,
+            policy=q.EscalationPolicy(), verified_episodes=130,
+        )
+        self.assertIsNone(verdict)
+
+    def test_the_stuck_claim_is_read_from_the_episode_stream_not_the_clock(self):
+        """The live 2026-09-17 miss, end to end.
+
+        ``SCAN_MAP_FOR_BEAST|BEAST_SCAN_NOT_PROVEN`` was escalated ``STUCK_15_MIN``
+        with the reason "no verified episode" while 130 verifier-passing episodes of
+        that skill had been recorded since the failure 74 minutes earlier.  The
+        clock alone was asked; the episode stream was not.  Both halves are pinned
+        here: with a verified episode the signature yields no candidate, and with
+        none it still yields ``STUCK_15_MIN`` -- the gate is narrowed, not removed.
+        """
+        skill = "SCAN_MAP_FOR_BEAST"
+        key = f"{skill}|BEAST_SCAN_NOT_PROVEN|{skill}"
+        record = q.EscalationRecord(
+            key=key, capability=skill, failure_type="BEAST_SCAN_NOT_PROVEN", skill=skill,
+            first_seen=NOW - timedelta(minutes=74),
+        )
+        snapshot = q.EscalationSnapshot({key: record})
+        failed = [failure("BEAST_SCAN_NOT_PROVEN", skill)]
+
+        proven_row = {
+            "skill": skill,
+            "result": "SUCCESS",
+            "verifier_ok": True,
+            "recorded_at": (NOW - timedelta(minutes=10)).isoformat(),
+            "before_screenshot": "step_001_before.png",
+            "after_screenshot": "step_001_after.png",
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            stream = Path(tmp) / "episodes.jsonl"
+            stream.write_text(json.dumps(proven_row) + "\n", encoding="utf-8")
+            proven = q.candidates_from_run(
+                stop_reason="", failures=failed, snapshot=snapshot,
+                policy=q.EscalationPolicy(), now=NOW, root=ROOT, episodes_path=stream,
+            )
+            self.assertEqual(proven, ())
+
+            stream.write_text("", encoding="utf-8")
+            unproven = q.candidates_from_run(
+                stop_reason="", failures=failed, snapshot=snapshot,
+                policy=q.EscalationPolicy(), now=NOW, root=ROOT, episodes_path=stream,
+            )
+        self.assertEqual(len(unproven), 1)
+        self.assertEqual(unproven[0].condition, q.STUCK_15_MIN)
+
     def test_a_gameplay_shaped_failure_is_unknown_game_mechanic(self):
         verdict = q.classify_condition(
             q.FailureSignature("CAP", "DISPATCH_NOT_PROVEN", "SKILL"),
