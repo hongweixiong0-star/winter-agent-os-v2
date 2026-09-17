@@ -569,6 +569,50 @@ def parse_role_identity(title_text: str, rows: list[str], *, confidence: float =
 # column of the gift row so a shorter countdown cannot fall outside it.
 NEXT_SUPPLY_ROI = {"x_norm": 0.700, "y_norm": 0.288, "w_norm": 0.200, "h_norm": 0.040}
 
+# The Intel mission dialogs on this client each announce themselves in their title,
+# so which one is on screen is READ, not template-matched (CAP-A01, 2026-09-17).
+#
+# Why this is not a template question.  Measured on the four archived dialogs:
+#
+#   frame                template layer              title band OCR
+#   击败野兽 (beast)     INTEL_BEAST_MISSION/BEAST   击败野兽等级10
+#   英雄之旅 等级10      INTEL_HERO_JOURNEY (d=2)    英雄之旅等级10
+#   英雄之旅 等级2       INTEL_BEAST_MISSION/BEAST   英雄之旅等级2   <-- wrong
+#   大师悬赏             INTEL_MASTER_BOUNTY         大师悬赏：20号
+#
+# The generic anywhere matcher ``TARGET_INTEL_BEAST_MISSION`` (gate 54) answers
+# d=28 on EVERY Intel dialog -- including the beast one -- so it cannot discriminate
+# at all; and the specific title matchers bake the level into their crop
+# (``POPUP_INTEL_HERO_JOURNEY_TITLE`` was cropped from 英雄之旅等级10, so it sat at
+# d=16, threshold 8, on a 等级2 dialog).  The generic one therefore answered, a
+# 英雄之旅 dialog became a beast mission, and ``OPEN_INTEL_BEAST_TARGET`` went
+# looking for a beast target that was never on screen.
+#
+# The level is inside the OCR text too, but OCR reads it rather than hashing it, so
+# the variability is harmless -- and the level is a real reading that ``vision.py``
+# had been hardcoding to 10 for every mission.
+INTEL_TITLE_ROI = {"x_norm": 0.15, "y_norm": 0.19, "w_norm": 0.70, "h_norm": 0.14}
+
+# (title text, popup semantic, mission type).  Only names actually observed on this
+# client are here; anything else leaves the template layer's answer untouched rather
+# than guessing which mission it might be.
+INTEL_DIALOG_TITLES: tuple[tuple[str, str, str], ...] = (
+    ("击败野兽", "INTEL_BEAST_MISSION", "BEAST"),
+    ("英雄之旅", "INTEL_HERO_JOURNEY", "HERO_JOURNEY"),
+    ("大师悬赏", "INTEL_MASTER_BOUNTY", "MASTER_BOUNTY"),
+)
+
+# The mission_id prefix each type must carry.  When the title corrects the type, a
+# mission_id the wrong branch invented is dropped instead of being kept: keeping it
+# would leave ``intel.mission_id = INTEL_BEAST_10`` attached to a hero journey.
+INTEL_MISSION_ID_PREFIX = {
+    "BEAST": "INTEL_BEAST_",
+    "FIREBEAST": "INTEL_FIREBEAST_",
+    "RESCUE_SURVIVORS": "INTEL_RESCUE_SURVIVORS_",
+}
+
+_LEVEL_IN_TITLE = re.compile(r"等级\s*(\d{1,3})")
+
 _NEXT_SUPPLY_PATTERN = re.compile(r"(\d{1,2}):(\d{2}):(\d{2})")
 
 
@@ -848,6 +892,45 @@ class HybridVision:
                 continue
         return False
 
+    def _read_intel_dialog_title(self, image_path: Path, primary: WorldState) -> WorldState | None:
+        """Correct the Intel dialog's type from its title, or ``None`` for any other frame.
+
+        ``None`` means "not an Intel dialog" and leaves the template layer's answer
+        alone.  A frame that *is* an Intel dialog but whose title names no known
+        mission is also left alone -- the alternative would be guessing which mission
+        it is, and a wrong type sends the brain down a route whose verifier then fails
+        for a reason that is not the real one.
+
+        The corrected state keeps every field the template layer read (status, pins,
+        stamina) and only rewrites what the title actually determines: the popup, the
+        mission type, and the level, which the template layer had hardcoded.
+        """
+        if primary.page is not Page.POPUP or not (primary.popup or primary.intel):
+            return None
+        tokens = self.ocr.recognize(image_path, INTEL_TITLE_ROI).tokens
+        joined = "".join(token.text for token in tokens if token.confidence >= 0.85)
+        if not joined:
+            return None
+        for title, popup, mission_type in INTEL_DIALOG_TITLES:
+            if title not in joined:
+                continue
+            intel = dict(primary.intel or {})
+            level = _LEVEL_IN_TITLE.search(joined)
+            intel["mission_type"] = mission_type
+            intel.setdefault("status", "AVAILABLE")
+            if level is not None:
+                intel["mission_level"] = int(level.group(1))
+            # A mission_id belonging to a different type was invented by the branch
+            # that got the type wrong, so it is dropped rather than carried over.
+            prefix = INTEL_MISSION_ID_PREFIX.get(mission_type)
+            current_id = str(intel.get("mission_id") or "")
+            if current_id and (prefix is None or not current_id.startswith(prefix)):
+                intel.pop("mission_id", None)
+            if primary.popup == popup and primary.intel == intel:
+                return None
+            return replace(primary, popup=popup, intel=intel)
+        return None
+
     def _read_building_identity(self, image_path: Path, primary: WorldState) -> WorldState | None:
         """Attach building identity read off pixels, or ``None`` when this is not that frame.
 
@@ -927,6 +1010,14 @@ class HybridVision:
                 if countdown is not None:
                     stamina["next_supply_in_seconds"] = countdown
                 return replace(primary, stamina=stamina)
+            # CAP-A01 (2026-09-17).  Which Intel mission dialog is drawn is written in
+            # its title, so it is read here.  See INTEL_DIALOG_TITLES for the measured
+            # table that makes this a measurement rather than a preference: the loose
+            # generic matcher answers the same distance on every Intel dialog, so the
+            # template layer cannot answer this question at all.
+            intel_state = self._read_intel_dialog_title(image_path, primary)
+            if intel_state is not None:
+                return intel_state
             # CAP-B01 (2026-09-18).  A building's identity is text, so it is read here
             # and never guessed by the template layer.  Two frames carry it, and both are
             # gated on something that proves the frame really is that frame:

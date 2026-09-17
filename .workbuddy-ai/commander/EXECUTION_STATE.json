@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-17T11:54:13+00:00",
+  "updated_at": "2026-09-17T14:33:35+00:00",
   "queue_generated_at": "2026-09-17T05:05:00+00:00",
-  "current_task": "CAP-E01-ALLIANCE-HELP",
+  "current_task": null,
   "tasks": {
     "WB-0BA-PIN-EXHAUSTION": {
       "status": "DONE",
@@ -145,10 +145,13 @@
       "blocker": null
     },
     "CAP-A01-INTEL-BEAST-TARGET": {
-      "status": "PENDING",
+      "status": "DONE",
       "priority": "P0",
       "queue_status": null,
-      "result_file": null
+      "result_file": "results/CAP-A01-INTEL-BEAST-TARGET.json",
+      "finished_at": "2026-09-17T14:33:35+00:00",
+      "verdict": "CODE_CHANGED + TEST_PASS (live verification pending and not claimed)",
+      "summary": "The same six archived frames now observe as: 击败野兽 -> INTEL_BEAST_MISSION / BEAST / id INTEL_BEAST_10 (unchanged); 英雄之旅等级10 -> INTEL_HERO_JOURNEY / level 10; 英雄之旅等级2 -> INTEL_HERO_JOURNEY / level 2; 大师悬赏 -> INTEL_MASTER_BOUNTY / level 20; a daily reward popup -> GENERIC_REWARD (untouched); the hero j"
     },
     "CAP-A02-EXIT-CONFIRM-GUARD": {
       "status": "PENDING",
@@ -201,5 +204,13 @@
       "queue_status": null,
       "result_file": null
     }
-  }
+  },
+  "history": [
+    {
+      "task_id": "CAP-E01-ALLIANCE-HELP",
+      "event": "claim_reset",
+      "reason": "no work was in flight; the claim predates two later work units",
+      "recorded_at": "2026-09-17T22:34:05.016640+08:00"
+    }
+  ]
 }

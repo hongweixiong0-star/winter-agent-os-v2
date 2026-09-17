@@ -2,9 +2,9 @@
   "agent_state": "GOAL_RUNNING",
   "runtime_thread_alive": true,
   "scheduler_loop_alive": true,
-  "last_tick_time": "2026-09-17T13:21:07.850075+00:00",
-  "last_action_time": "2026-09-17T13:21:08.676964+00:00",
-  "last_success_time": "2026-09-17T13:20:48.823607+00:00",
+  "last_tick_time": "2026-09-17T14:35:11.421112+00:00",
+  "last_action_time": "2026-09-17T14:35:12.242414+00:00",
+  "last_success_time": "2026-09-17T14:34:56.979153+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_212008_881088\\20260917_212008_881088_step_002_before_20260917T132048825196.png",
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_223352_097170\\20260917_223352_097170_step_003_before_20260917T143456981112.png",
   "march_used": 0,
   "march_max": null,
   "queues": {
@@ -34,5 +34,5 @@
     "events": {}
   },
   "stop_reason": null,
-  "updated_at": "2026-09-17T13:21:08.676964+00:00"
+  "updated_at": "2026-09-17T14:35:12.242414+00:00"
 }

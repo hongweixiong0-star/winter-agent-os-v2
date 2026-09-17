@@ -1,0 +1,28 @@
+{
+  "TASK_ID": "CAP-A01-INTEL-BEAST-TARGET",
+  "ROOT_CAUSE": "Neither listed candidate was true, and the real cause is in the vision layer's discriminator rather than in the tap. MEASURED on the archived frames. (1) Refuting (a): on the parent frame live_beast_intel_probe.png, BTN_INTEL_VIEW_TARGET matches at d=0 with centre (0.500,0.730) = px (360,934), and OCR reads 前往查看 at centre (360,934) confidence 0.994 -- the ROI centre IS on the control, to the pixel. (2) Refuting (b): the failing step's BEFORE frame is a 英雄之旅等级2 dialog, read by eye and by OCR, yet the template layer typed it INTEL_BEAST_MISSION / mission_type=BEAST / mission_level=10; the tap then did the right thing for the dialog that was actually on screen, which is why the AFTER state is the hero journey page. (3) The mechanism: POPUP_INTEL_HERO_JOURNEY_TITLE was cropped from a 英雄之旅等级10 frame, so on a 等级2 dialog it measures d=16 against the default threshold of 8 and misses; POPUP_INTEL_MASTER_BOUNTY_TITLE also misses at d=26; and TARGET_INTEL_BEAST_MISSION is an anywhere matcher with gate 54 that measures d=28 on ALL FOUR archived dialogs, so it has no discriminating power and was answering a question it cannot answer. A hero journey dialog therefore became a beast mission, OPEN_INTEL_BEAST_TARGET hunted a target that was never on screen, and brain.py's correct INTEL_HERO_JOURNEY route was never taken. Eighth sighting of the crop class (knowledge/failure_patterns/vision/TEMPLATE_CROP_COVERS_THE_VARIABLE.md).",
+  "CHANGED_FILES": [
+    "winter_agent_v2/ocr.py",
+    "tests/test_intel_dialog_typing.py",
+    "tools/register_intel_dialog_title_templates.py",
+    "knowledge/failure_patterns/vision/TEMPLATE_CROP_COVERS_THE_VARIABLE.md"
+  ],
+  "TEST_RESULT": "tests/test_intel_dialog_typing.py 19 passed, five of them replays through the real observation path (HybridVision.observe) on the archived frames; check_wiring problems: 0.",
+  "LIVE_ATTEMPTS": 0,
+  "LIVE_SUCCESS": 0,
+  "LIVE_FAILURE": 0,
+  "BEFORE": "On the archived 英雄之旅等级2 frame, HybridVision.observe returned popup=INTEL_BEAST_MISSION with intel {mission_type: BEAST, mission_id: INTEL_BEAST_10, mission_level: 10}. The level was hardcoded in vision.py for every Intel dialog.",
+  "AFTER": "The same six archived frames now observe as: 击败野兽 -> INTEL_BEAST_MISSION / BEAST / id INTEL_BEAST_10 (unchanged); 英雄之旅等级10 -> INTEL_HERO_JOURNEY / level 10; 英雄之旅等级2 -> INTEL_HERO_JOURNEY / level 2; 大师悬赏 -> INTEL_MASTER_BOUNTY / level 20; a daily reward popup -> GENERIC_REWARD (untouched); the hero journey PAGE -> unchanged, because it is not a dialog.",
+  "VERIFIER_RESULT": "Not exercised on the device: the AUTO worker owned the client for the whole work unit (run_live.py PID 3552, launched by the panel, itself still on the pre-fix interpreter). Frame-level observation is verified instead, which is what this order asked for here -- measure the ROI against the frame before changing anything. No LIVE_VERIFIED claim is made.",
+  "EVIDENCE": [
+    "dataset/raw/live_runtime/live_runtime_step_005_before_20260917T043816219622.png",
+    "dataset/raw/live_runtime/live_runtime_step_005_after_20260917T043818515382.png",
+    "dataset/raw/live_beast_intel_probe.png",
+    "dataset/raw/live_intel_purple_axes_probe.png",
+    "dataset/raw/live_intel_orange_rabbit_probe.png"
+  ],
+  "PATCH_STATUS": "CODE_CHANGED + TEST_PASS (live verification pending and not claimed)",
+  "REMAINING_ISSUE": "vision.py still hardcodes mission_level 10 on the hero-journey PAGE branch (DIALOG_INTEL_HERO_JOURNEY_EXPLORE and the EXPLORATION branch), so a page reading can still carry a wrong level; the title reader only corrects dialogs, which is where the level is actually written. Separately: the control panel must be restarted for the runtime-interpreter fix to take effect -- the AUTO worker running right now is still on the interpreter that cannot import maa.",
+  "NEXT_RECOMMENDATION": "When the device is free, run tools/run_live.py --goal INTEL --max-actions 12 and confirm the hero journey dialog now routes to OPEN_INTEL_HERO_JOURNEY_TARGET instead of OPEN_INTEL_BEAST_TARGET. Then take the next order, CAP-Z01.",
+  "recorded_at": "2026-09-17T14:33:35+00:00"
+}

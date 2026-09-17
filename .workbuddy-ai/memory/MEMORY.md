@@ -266,3 +266,37 @@
 结果打开的是**付费礼包**（硬阻断挡下）——外部坐标**是假设，必须先在当前客户端量**。
 
 **全文**：`docs/ADDING_A_LIVE_ROUTE.md` §0；接管流程 `START_HERE.md` 第 5 步第 2 条。
+
+## 展示层规则（GUI = 派生层，2026-09-17）
+
+**GUI 不拥有状态。** `tools/control_panel.py` 只从既有事实源派生显示：
+`capability_catalog.json` / Skill Registry / `episodes.jsonl` / `executor_backend.jsonl` /
+`runtime_snapshot.json` / `escalation_queue` 的 fold / WorkBuddy jobs API。
+**禁止为 GUI 新增 Manager/Registry/Scheduler 或第二套状态系统**；数字对不上就改那个文件。
+唯一例外是**一个后台轮询线程**（HTTP 不能在 Tk 回调里等，会冻结窗口）。
+
+**四层与状态栏**：`V2大脑 / MAA / MuMu / 游戏 / 页面 / AUTO / WorkBuddy / 时间`。
+**Qwen、Vision 不得作为一级状态出现**（前者是可选离线提供者，后者是 MAA 的职责）。
+**模型名只能作为 WorkBuddy 任务的二级信息显示**（从升级台账读回），面板内不得出现任何模型字面量
+（`tests/test_control_panel.py::test_the_panel_names_no_model` 用 AST 强制）。
+
+**状态词汇（硬规定）**：`未读取 ≠ 未知`。没人读过 ⇒ `未读取`；读过没读出 ⇒ `未知（识别中/原因未分类）`。
+其余真实语义：`待刷新`（只有无 `recorded_at` 的导入声明）· `不可用`（T4/真钱）· `未解锁` ·
+`已识别` · `可执行` · `执行中` · `等待`（普通天气停机：空邮件/队列忙/目标不可见）· `Blocked` ·
+`Live Tried` · `Live Verified` · `Stable`。**禁止再用"未知 / 待识别"当占位符。**
+
+**后端轴必须区分两种 ADB**：`preferred_backend=ADB`（技能未迁移，**按设计**）vs
+`preferred=MAA 但 used=ADB` 或 `fallback_used=true`（**真降级**）。混为一谈会凭空造事故，
+反过来漏报就是静默退化。MAA 单元格的口径：解释器缺 `maa` ⇒ `降级ADB`；缺其它必需模块 ⇒ `异常`。
+
+**KPI 必须标注来源文件**，否则是没人会信的数字。
+
+### 三条展示层实测（重复踩过就照这个办）
+1. **Tk 会静默裁掉超出高度的 tab 内容**（1360×820 实测可用内容高 **638px**）。
+   高页面必须走 `_scroll_area()`（canvas + inner frame），并**在真实映射窗口里量 `scrollregion`** 验证。
+2. **大日志不要每 tick 全文解析**：`episodes.jsonl` 3.3MB ⇒ 单次全文 **34ms**。
+   用 mtime 键控的**一次 pass**（per-skill 计数 + 时长 + 结果 + 失败直方图同遍），热态 ≈1ms。
+3. **冒烟测试不得跑面板事件循环**：`__init__` 的 `root.after(1800, self.start)` 没保存 id、
+   **无法取消**，且 `start()` 不看 `continuous` ⇒ 走过 1.8s 会真的拉起 worker。
+   只 `update_idletasks`，测完即 `destroy`，并临时替换 `_enforce_retention` 以免剪掉证据。
+
