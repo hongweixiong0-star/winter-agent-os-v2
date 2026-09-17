@@ -170,6 +170,20 @@ python tools/truth_audit.py    # 重算 episode / registry / 证据完整性
 详见 `knowledge/failure_patterns/tooling/TOOLING_INTERPRETER_DRIFT.md` 与
 `01_CURRENT_TRUTH.md` **§J 后端轴**。
 
+### WorkBuddy 升级通道（2026-09-17 增补，可选）
+
+```bash
+"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/workbuddy_bridge.py --check
+```
+
+撞墙时可以把**一条** capability 交给本机 WorkBuddy 后台 agent，而不是耗完 timebox
+然后停下。**只有五种情况允许升级**（`CAPABILITY_MISSING` / `UNKNOWN_UI` /
+`UNKNOWN_GAME_MECHANIC` / `REPEATED_LIVE_FAILURE` / `STUCK_15_MIN`），
+**普通游戏 Tick 禁止调用**。凭据只走环境变量 `CODEBUDDY_GATEWAY_PASSWORD`，不进仓库。
+gateway 不可达 ≠ 停机理由。规则见 `00_MASTER_RULES.md` **§10b**，
+操作见 `docs/WORKBUDDY_BRIDGE.md`，实测契约见
+`knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md`。
+
 ### 冲突裁决（不可颠倒）
 
 1. Handoff 文档与**代码**冲突 → **代码优先**

@@ -1,0 +1,163 @@
+# WorkBuddy / CodeBuddy HTTP gateway — the measured contract
+
+Recorded 2026-09-17, against CodeBuddy **2.137.1** on this machine, because the
+escalation bridge (`winter_agent_v2/workbuddy_bridge.py`) depends on facts that
+are not documented anywhere the project can read offline.
+
+Everything below was measured, not inferred. Where a value came from reading the
+bundled OpenAPI spec inside `dist/codebuddy.js`, that is stated as such; where it
+came from an actual request, the request is quoted.
+
+## 1. The binary is not on `PATH`
+
+```
+$ which codebuddy            -> not found
+$ codebuddy --version        -> command not found
+```
+
+The CLI ships inside the desktop application:
+
+```
+E:\work Buddy国内\WorkBuddy\resources\app.asar.unpacked\cli\bin\codebuddy
+```
+
+It is a Node script (`@genie/agent-cli`), so it needs a Node ≥ 18.20.8. The
+managed Node works:
+
+```
+C:\Users\xhw\.workbuddy\binaries\node\versions\22.22.2-3\node.exe \
+  "E:/work Buddy国内/WorkBuddy/resources/app.asar.unpacked/cli/bin/codebuddy" --version
+-> 2.137.1
+```
+
+**Do not** hard-code a launcher to the Codex runtime python that this desktop
+application also ships — that is the same mistake as
+`TOOLING_INTERPRETER_DRIFT.md`, one layer up.
+
+## 2. `--serve` is real, and it needs a password
+
+```
+codebuddy --serve --port 8080 --session-id winter-agent-v2
+```
+
+Measured output:
+
+```
+  Endpoint    http://127.0.0.1:8080
+  Web UI      http://127.0.0.1:8080/?password=<generated>
+  Password    <generated>
+```
+
+Credential resolution order, read from the bundle:
+
+1. `CODEBUDDY_GATEWAY_PASSWORD` environment variable
+2. `settings.gateway.password`
+3. a generated 24-byte `base64url` value, persisted
+
+Verified live: launching with `CODEBUDDY_GATEWAY_PASSWORD=v2-bridge-dev-local-only`
+made that the accepted password **and the previously generated one returned 401**.
+This is the whole reason the bridge can keep credentials out of the repository:
+the secret is pinned by an environment variable that both sides read.
+
+`--auth none` also exists. **Do not use it**: it lets any local process execute
+commands and read/write files through the server, which is a much larger hole
+than one shared password.
+
+## 3. `/api/v1/health` requires authentication
+
+```
+$ curl -s http://127.0.0.1:8080/api/v1/health
+{"error":{"code":"AUTH_REQUIRED","message":"Authentication required"}}   HTTP 401
+
+$ curl -s -H "Authorization: Bearer <pw>" http://127.0.0.1:8080/api/v1/health
+{"data":{"status":"ok","uptime":15.55,"platforms":["generic","wecom","wechat-kf"],"pid":22268}}  HTTP 200
+```
+
+`GET /api/v1/info` additionally reports the server's own `cwd` — measured
+`E:\无尽冬日智能体`, i.e. the gateway inherits the launcher's directory.
+
+There is no reachable OpenAPI document (`/openapi.json`, `/docs`, `/swagger.json`
+all 404), so the spec has to be read out of `dist/codebuddy.js`. The envelope is
+`{"data": ...}` on success and `{"error": {"code", "message", "details"}}` on
+failure.
+
+## 4. `/jobs` is the background path; `/runs` is the interactive one
+
+Both exist. `/api/v1/runs` returns an `runId` designed to be followed over SSE —
+that is the interactive Gateway-Protocol path. `/api/v1/jobs` is what
+`codebuddy agents --jobs` shows, with a durable id and a pollable `state`:
+
+| operation | call |
+| --- | --- |
+| `is_available` | `GET /api/v1/health` |
+| `submit` | `POST /api/v1/jobs` |
+| `status` | `GET /api/v1/jobs/{id}` |
+| `cancel` | `POST /api/v1/jobs/{id}/stop` |
+
+`POST /api/v1/jobs` body (from the bundled spec):
+
+```jsonc
+{
+  "prompt":         "…",              // required
+  "cwd":            "E:\\无尽冬日智能体",
+  "name":           "…",
+  "permissionMode": "default|acceptEdits|plan|auto|dontAsk|bypassPermissions",
+  "bgIsolation":    "none|worktree",  // "首次写文件时是否自动进入隔离 worktree"
+  "model":          "…", "effort": "minimal|low|…|max",
+  "bash": false, "sourceSessionId": "…"
+}
+```
+
+`GET /api/v1/jobs/{id}` returns `{data: {job: AgentJob}}` where `AgentJob` has
+`id`, `shortId`, `sessionId`, `kind`, `state` ∈ `working|blocked|done|failed|stopped`,
+`status` ∈ `busy|idle|waiting|stopped`, `tempo`, `name`, `intent`, `detail`,
+`waitingFor`, `cwd`, `startedAt`, `updatedAt`, `firstTerminalAt`, `webUrl`, `pid`,
+`alive`, `settled`, and `output` (`{result: "…"}`) once terminal.
+
+Measured lifecycle of a trivial job (`BRIDGE_OK` probe):
+
+```
+submit   -> {"id":"5a300a1d","state":"working","settled":false,"alive":false,"detail":"starting…"}
+poll ~2s -> detail "requesting the model", status "busy", alive true, pid 28280
+poll ~12s-> state "done", settled true, alive false, output {"result":"BRIDGE_OK"}
+```
+
+`POST /api/v1/jobs/{id}/stop` -> `{"data":{"stopped":true}}`, and a follow-up read
+reports `state: "stopped", settled: true`. Measured on a real job.
+
+## 5. Two defaults that were measured, not chosen
+
+Both were established with real jobs, and both would have looked fine in a unit
+test while quietly breaking the workflow:
+
+- **`permissionMode: "dontAsk"`.** A probe job told to run `git rev-parse HEAD`
+  came back `HASH=dacf27889c3fcae7b12e834a5968850a6b22f946`, matching the
+  repository HEAD at the time. Unattended escalations must be able to run pytest
+  and git; a mode that stops to ask would simply hang.
+- **`bgIsolation: "none"`.** The spec's own wording is that the default follows a
+  global setting and may auto-enter an isolated worktree on first file write. With
+  a worktree, the escalated agent's commits land on a throwaway branch and V2
+  never sees them — the escalation would report success while the repository was
+  unchanged.
+
+## 6. A CLI wiring bug that only a live run could catch
+
+`tools/workbuddy_bridge.py` first read `args.job_id` for `--status`. argparse had
+stored the value under `args.status` (the option name *is* the dest when the
+option takes a value), so every invocation raised `AttributeError` — while all 48
+unit tests passed, because they exercised `WorkBuddyBridge` directly and never
+the argument plumbing.
+
+Fixed by naming `dest` explicitly (`status_job`, `cancel_job`), and a
+`CliWiringTest` class now drives `main()` so this class of mistake is caught in
+the suite instead of on the first real escalation.
+
+**Lesson, third time in this project:** the thing that gets verified must be the
+thing that runs. A verified library under an unverified entry point is still an
+unverified feature.
+
+## 7. Do not add a proxy
+
+The operator's instruction is explicit: use the official HTTP API, not a
+third-party proxy. Nothing in the measured contract needs one, and each hop would
+be another place the credential lives.

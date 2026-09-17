@@ -1,0 +1,3 @@
+{"event": "submitted", "job_id": "8bd7aea0", "capability": "BRIDGE_TRANSPORT_PROBE", "condition": "STUCK_15_MIN", "goal": "BRIDGE_VERIFY", "skill": "", "session_id": "8bd7aea0-818a-4ab6-9b41-5b4f50d42f94", "permission_mode": "dontAsk", "bg_isolation": "none", "recorded_at": "2026-09-17T12:04:13.758168+00:00"}
+{"event": "submitted", "job_id": "2da2cb8b", "capability": "CANCEL_PROBE", "condition": "UNKNOWN_UI", "goal": "", "skill": "", "session_id": "2da2cb8b-226f-4f8f-b40c-311c9ceb68e1", "permission_mode": "dontAsk", "bg_isolation": "none", "recorded_at": "2026-09-17T12:06:02.964075+00:00"}
+{"event": "cancel", "job_id": "2da2cb8b", "http_status": 200, "recorded_at": "2026-09-17T12:06:08.355660+00:00"}

@@ -416,6 +416,25 @@ ADB 工具、MuMu Recovery、MAA 执行经验、导航经验、Verifier、真实
   提高 Recovery / 消除高频 Failure Pattern。
   只增加报告、只下载 repo → **NO_PRODUCT_VALUE**。
 
+## 10b. WorkBuddy 升级通道（2026-09-17 操作者指令）
+
+V2 自己撞墙时（新玩法 / 新 UI / 反复真机失败），可以**把一条 capability 交给本机
+WorkBuddy 后台 agent**，而不是耗完 timebox 然后停下。
+
+- 传输 = **官方 HTTP gateway**（`codebuddy --serve` 的 `/api/v1/jobs` 族）。
+  **禁止第三方代理**；四个操作只有 `is_available` / `submit` / `status` / `cancel`。
+  实测契约见 `knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md`，
+  操作步骤见 `docs/WORKBUDDY_BRIDGE.md`。
+- **只有五种情况允许升级**：`CAPABILITY_MISSING` / `UNKNOWN_UI` /
+  `UNKNOWN_GAME_MECHANIC` / `REPEATED_LIVE_FAILURE` / `STUCK_15_MIN`。
+  **普通游戏 Tick 禁止调用 WorkBuddy**，`submit` 在联网前就拒绝。
+- 凭据**只存环境变量** `CODEBUDDY_GATEWAY_PASSWORD`。**禁止进入仓库**，
+  禁止写进 `config/v2.json`（`workbuddy_bridge.py` 根本不读该文件）。
+- 工作目录固定 `E:\无尽冬日智能体`；`bgIsolation=none`（否则 agent 的提交落在
+  临时 worktree，V2 永远看不到，而升级会"报告成功"）。
+- 升级 **不是** 停机理由：gateway 不可达 → 记 `GATEWAY_UNREACHABLE` → 继续本地开发。
+- 收到结果后仍须由 **V2 的 verifier + 真机 episode** 判定，升级方自述不算证据。
+
 ## 11. Candidate 不能永远不执行
 
 若 Candidate 满足：Preconditions 完整 + Execute 已实现 + Verifier 存在 + Recovery 存在 + 风险允许
