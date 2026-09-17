@@ -550,6 +550,17 @@ class RuleBrain:
                 return Decision("OPEN_RESEARCH", "research_lab_menu_open", world.confidence, "research_page_open")
             if world.page is Page.HOME:
                 return Decision("OPEN_POWER_OVERVIEW", "research_goal_requires_power_route", world.confidence, "power_overview_open")
+            if world.page is Page.MAP:
+                # The client's resting page is the map, and a named route goal used
+                # to stop here -- research_entry_not_verified / training_entry_not_verified
+                # -- so a 科研 or 训练 task launched after any other task died on its
+                # first step.  The other four route goals (MAIL / EXPLORATION / DAILY /
+                # ALLIANCE) have had this hop all along; these two never did.
+                # Measured 2026-09-17: run_live --goal TRAIN started on MAIL and ended
+                # step 1 with training_entry_not_verified, having taken no action.
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_for_research_goal", world.confidence, "resource_search_closed")
+                return Decision("OPEN_HOME", "research_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.RESEARCH:
                 return Decision("SAFE_STOP", "research_entry_not_verified", 1.0, "refresh_state_or_switch_task")
         if self.current_goal == "TRAIN":
@@ -565,6 +576,12 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "training_queue_busy", 1.0, "switch_task")
             if world.page is Page.HOME:
                 return Decision("OPEN_POWER_OVERVIEW", "training_goal_requires_power_route", world.confidence, "power_overview_open")
+            if world.page is Page.MAP:
+                # See the research goal above: both route goals were missing the hop
+                # the other four have always had.
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_for_training_goal", world.confidence, "resource_search_closed")
+                return Decision("OPEN_HOME", "training_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.TRAINING:
                 return Decision("SAFE_STOP", "training_entry_not_verified", 1.0, "refresh_state_or_switch_task")
         if (

@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 65,
-          "successes": 58,
+          "attempts": 66,
+          "successes": 59,
           "failures": 7
         },
         {
@@ -383,9 +383,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_POWER_OVERVIEW",
           "live_verified_by": "OPEN_POWER_OVERVIEW",
-          "attempts": 52,
-          "successes": 46,
-          "failures": 6
+          "attempts": 56,
+          "successes": 49,
+          "failures": 7
         },
         {
           "capability": "START_TRAINING",
