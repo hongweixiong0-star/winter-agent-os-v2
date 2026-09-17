@@ -229,6 +229,46 @@ Gameplay Commander → Goal Plan → 唯一 Scheduler → Skill → MAA → Veri
 
 ---
 
+## 2d. 四层核心架构（2026-09-17 操作者定稿，**禁止再重构顶层架构**）
+
+```
+WorkBuddy（自动开发平台）
+      ↑  能力缺失 / 未知 / 连续失败
+V2 Gameplay Brain
+      ↓
+MAA Eyes & Hands
+      ↓
+《无尽冬日》
+
+WorkBuddy 内部模型 = 可替换的开发算力（不属于四层中的任何一层）
+```
+
+| 层 | 是什么 | 不是什么 |
+| --- | --- | --- |
+| **MAA** | 眼睛+手脚：截图/识别/定位/点击/滑动/返回/等待/重试/UI 恢复（文字走 RapidOCR，ADB 兜底） | 不决定做什么、不分配资源、不排优先级 |
+| **V2** | 游戏大脑：WorldState → Knowledge → Planner → Goal → Scheduler → Skill → Verifier → Learning | 不手写 UI、不做像素定位、不感知具体模型 |
+| **WorkBuddy** | 自动开发平台：把 V2 不会的**开发成永久能力** | 不是游戏 Runtime Brain、不参与游戏决策 |
+| **模型** | WorkBuddy 的开发算力（推理/编码/视觉） | **不是** Winter Agent OS 的依赖 |
+
+**铁律**：
+
+- **V2 不得依赖任何具体模型**（DeepSeek / GLM / HY / Qwen…）。模型名**只允许**出现在
+  `winter_agent_v2/workbuddy_model_router.py`；`tests/test_workbuddy_model_router.py`
+  扫描整个包来强制这条。换更强/更便宜的模型 = 只改该文件（或它读的战绩），
+  **brain / scheduler / skills / verifier / MAA 一行都不用动**。
+- **模型选择不许写死**：按 `task_type` 的历史战绩动态选"能可靠完成任务的**最低成本**"档；
+  便宜档解决不了才升档；**任务完成后下一个任务重新从高性价比档开始**（禁止永久升档）。
+  记录 `model / task_type / duration / cost / success / live_improvement / retry_count /
+  escalation_count`。**cost 目前取不到**（jobs API 无用量字段，实测），记 `null`+原因，**不许估算**。
+- **Qwen 是可选离线提供者**，不是核心组件。`llm.enabled=false` 时所有规则化/已有 Skill/
+  已 LIVE_VERIFIED 的能力必须照常运行（`tests/test_qwen_decoupling.py` 钉住：
+  运行时路径上不得出现任何模型客户端）。
+- 新增只允许**最薄的连接层**：Escalation Queue Adapter / AUTO Trigger Hook /
+  Job Result Reconciliation / Safe Reload Signal。禁止第二 Scheduler / Planner /
+  WorldState / Skill Registry / Recovery Manager / Agent Orchestrator / Runtime Manager。
+- 除非发现**明确 P0 架构缺陷**，不要再围绕"哪个模型是主脑""要不要换顶层架构"重构。
+  开发重心永远是：**Capability Coverage / LIVE_VERIFIED / 真实闭环 / 稳定长跑 / 自动恢复 / 自动开发**。
+
 ## 3. Goal 与 Skill 的边界
 
 - **Goal = WHAT**（`GoalLibrary` / `RuleBrain` 决定做什么）

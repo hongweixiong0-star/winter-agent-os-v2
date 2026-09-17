@@ -25,7 +25,7 @@ from winter_agent_v2.escalation_queue import (  # noqa: E402
     EscalationLedger,
     EscalationPolicy,
     EscalationQueueAdapter,
-    model_ladder_report,
+    default_router,
 )
 from winter_agent_v2 import escalation_queue as q  # noqa: E402
 from winter_agent_v2.runtime_reload import REQUEST_KIND, ReloadSignal, default_path as reload_path  # noqa: E402
@@ -96,7 +96,7 @@ def cmd_state(args: argparse.Namespace) -> int:
             for note in record.notes[-2:]:
                 _emit(f"{'':9s}   {note[:110]}")
     _emit("")
-    _emit(model_ladder_report())
+    _emit(default_router(ROOT).report())
     return EXIT_OK
 
 

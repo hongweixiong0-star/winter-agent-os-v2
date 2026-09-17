@@ -43,6 +43,14 @@ class RuleBrain:
         # next run work at all -- but a Back that failed to move the client must
         # not be repeated, or the loop ping-pongs between the card and the map.
         self.beast_card_not_actionable_left = False
+        # Bounded map-scan budget for BEAST_HUNT.  Live 2026-09-17: the goal
+        # dead-ended whenever no verified beast sat in the current viewport,
+        # because nothing ever looked for one.  Each scan is one viewport pan
+        # (SCAN_MAP_FOR_BEAST); after ``max_beast_scans`` pans without a
+        # verified target the goal still stops with the original named reason,
+        # so the scan can never become an endless pan loop.
+        self.beast_scans_used = 0
+        self.max_beast_scans = 3
         # Same reasoning for the tabbed 任务 panel that ``OPEN_DAILY`` opens.
         # Measured live 2026-09-16: the panel lands on its 章节任务 tab and the
         # account had nothing claimable on any tab (the four 每日任务 sat at
@@ -827,7 +835,11 @@ class RuleBrain:
                         return Decision("SELECT_MARCH_TO_RECALL", "stamina_goal_needs_a_slot_and_only_gathering_marches_remain", world.confidence, "recall_dialog_open")
                     return Decision("SAFE_STOP", "no_idle_march", 1.0, "wait_for_beast_slot")
                 if world.beast.get("visible_target") == "MUSK_OX" and world.beast.get("level") == 9:
+                    self.beast_scans_used = 0
                     return Decision("SELECT_BEAST_TARGET", "verified_visible_low_level_beast", world.confidence, "beast_target_dialog_open")
+                if self.beast_scans_used < self.max_beast_scans:
+                    self.beast_scans_used += 1
+                    return Decision("SCAN_MAP_FOR_BEAST", "verified_beast_target_not_visible_scanning_map", world.confidence, "beast_target_resent")
                 return Decision("SAFE_STOP", "verified_beast_target_not_visible", 1.0, "refresh_or_switch_task")
             if self.current_goal == "HOME":
                 return Decision("OPEN_HOME", "current_goal_home", world.confidence, "home_opened")

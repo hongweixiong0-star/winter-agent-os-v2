@@ -102,7 +102,40 @@ NON_ESCALATABLE_STOP_REASONS = frozenset({
     "EVENT_CLOSED",
     "RALLY_FULL",
     "WAITING_FOR_NATURAL_STATE",
+    # Added 2026-09-17 with the architecture freeze (operator section 9): these are
+    # conditions the runtime should DEFER / SKIP / RECOVER / move to the next Goal
+    # on, not reasons to spend a development agent.  A busy emulator is not a
+    # defect, and a cooldown is a mechanic working as designed.
+    "DEVICE_TEMPORARILY_BUSY",
+    "DEVICE_BUSY",
+    "COOLDOWN",
+    "ABILITY_ON_COOLDOWN",
+    "QUEUE_FULL",
+    "SKILL_ON_COOLDOWN",
 })
+
+# What the runtime should do instead of escalating.  Named so a reader can see the
+# alternative rather than only the refusal, and so a future caller has somewhere
+# to look when it hits one of the reasons above.
+ORDINARY_WEATHER_RESPONSES: dict[str, str] = {
+    "NOT_REFRESHED": "DEFER",
+    "QUEUE_BUSY": "NEXT_GOAL",
+    "QUEUE_FULL": "NEXT_GOAL",
+    "RESOURCE_SHORTAGE": "NEXT_GOAL",
+    "EVENT_CLOSED": "SKIP",
+    "RALLY_FULL": "SKIP",
+    "WAITING_FOR_NATURAL_STATE": "DEFER",
+    "DEVICE_TEMPORARILY_BUSY": "RECOVER",
+    "DEVICE_BUSY": "RECOVER",
+    "COOLDOWN": "DEFER",
+    "ABILITY_ON_COOLDOWN": "DEFER",
+    "SKILL_ON_COOLDOWN": "DEFER",
+}
+
+
+def ordinary_weather_response(stop_reason: str) -> str | None:
+    """``DEFER`` / ``SKIP`` / ``RECOVER`` / ``NEXT_GOAL`` for a non-escalatable stop."""
+    return ORDINARY_WEATHER_RESPONSES.get(str(stop_reason))
 
 # Failure types whose meaning is "the client did something we did not model" --
 # the inputs or the outcome of a mechanic are unknown.  Narrower than the UI set
@@ -167,96 +200,51 @@ TERMINAL_STATES = frozenset({DONE, FAILED, BLOCKED, COOLDOWN})
 
 # ------------------------------------------------------------------- outcomes
 
+# The operator's full ladder of what a finished job may have achieved.  The order
+# matters: each rung implies the ones before it, and only the last one means the
+# capability actually works in the game.
+#
+#   CODE_CHANGED    files differ; nothing else verified
+#   TEST_PASS       and the fast gate is green
+#   REPLAY_PASS     and a recorded frame replays correctly
+#   LIVE_TRIED      and a real device attempt was made (success unknown)
+#   LIVE_VERIFIED   and a production episode proves it, with a passing verifier
+#   BLOCKED / NO_IMPROVEMENT   the honest ends when none of that happened
+#
+# "WorkBuddy says done" appears nowhere in this list, on purpose.
 CODE_CHANGED = "CODE_CHANGED"
 TEST_PASS = "TEST_PASS"
+REPLAY_PASS = "REPLAY_PASS"
+LIVE_TRIED = "LIVE_TRIED"
 LIVE_VERIFIED = "LIVE_VERIFIED"
 OUTCOME_BLOCKED = "BLOCKED"
 NO_IMPROVEMENT = "NO_IMPROVEMENT"
 
 ALL_OUTCOMES: tuple[str, ...] = (
-    CODE_CHANGED, TEST_PASS, LIVE_VERIFIED, OUTCOME_BLOCKED, NO_IMPROVEMENT,
+    CODE_CHANGED, TEST_PASS, REPLAY_PASS, LIVE_TRIED, LIVE_VERIFIED,
+    OUTCOME_BLOCKED, NO_IMPROVEMENT,
 )
 
+# Outcomes that mean a real device produced evidence.  Only these may be used to
+# promote a capability, and only LIVE_VERIFIED may set it to LIVE_VERIFIED.
+OUTCOMES_WITH_DEVICE_EVIDENCE: frozenset[str] = frozenset({LIVE_TRIED, LIVE_VERIFIED})
+
 # --------------------------------------------------------------- model routing
-
-# The operator's ladder, cheapest first.  Measured 2026-09-17: all four ids are
-# accepted by ``POST /api/v1/jobs`` and ``deepseek-v4.1-flash`` was confirmed end
-# to end (a dispatched job came back ``done`` with its token).
-MODEL_FLASH = "deepseek-v4.1-flash"
-MODEL_GLM_FLASH = "glm-5.3-flash"
-MODEL_HY4 = "hy4-preview-f"
-MODEL_STRONG = "deepseek-v4-pro"
-
-MODEL_LADDER: tuple[str, ...] = (MODEL_FLASH, MODEL_GLM_FLASH, MODEL_HY4, MODEL_STRONG)
-
-# What each rung is *for*.  Used to pick a starting rung from the shape of the
-# problem instead of always paying for the top one.
-MODEL_HINTS: dict[str, str] = {
-    MODEL_FLASH: "default: any ordinary capability, UI or navigation defect",
-    MODEL_GLM_FLASH: "long context -- huge logs, many files, cross-file analysis",
-    MODEL_HY4: "vision-heavy -- image understanding, or a second opinion after "
-               "the first two rungs failed",
-    MODEL_STRONG: "last resort: architecture conflict, or a fix budget already spent",
-}
-
-
-def model_ladder_report() -> str:
-    """The ladder, cheapest first, with what each rung is for."""
-    lines = ["model ladder (cheapest first; a rung is only climbed after the one "
-             "below it produced no live improvement):"]
-    for index, model in enumerate(MODEL_LADDER, start=1):
-        lines.append(f"  {index}. {model:20s} {MODEL_HINTS[model]}")
-    return "\n".join(lines)
-
-
-@dataclass(frozen=True)
-class ModelChoice:
-    """One routing decision, with the reason recorded next to it."""
-
-    model: str
-    reason: str
-    escalated_from: str = ""
-
-    @property
-    def is_escalated(self) -> bool:
-        return bool(self.escalated_from)
-
-
-def select_model(
-    attempt: int,
-    *,
-    needs: str = "",
-    previous_model: str = "",
-) -> ModelChoice:
-    """Pick a rung.  ``attempt`` is 0 for the first honest try.
-
-    Cheap first, and only climb when the rung below has been spent: the operator's
-    rule is that a normal capability must not open with the most expensive model,
-    and that escalation should be driven by real failure rather than taste.
-    ``needs`` is a coarse hint (``"logs"`` / ``"vision"`` / ``"architecture"``)
-    that can start higher for a problem whose shape is known up front.
-    """
-    if attempt <= 0:
-        if needs == "logs":
-            return ModelChoice(MODEL_GLM_FLASH, f"long-context problem stated up front ({MODEL_HINTS[MODEL_GLM_FLASH]})")
-        if needs == "vision":
-            return ModelChoice(MODEL_HY4, f"vision problem stated up front ({MODEL_HINTS[MODEL_HY4]})")
-        return ModelChoice(MODEL_FLASH, f"first attempt; cheapest rung ({MODEL_HINTS[MODEL_FLASH]})")
-
-    index = 0
-    if previous_model in MODEL_LADDER:
-        index = MODEL_LADDER.index(previous_model)
-    step = min(index + 1, len(MODEL_LADDER) - 1)
-    model = MODEL_LADDER[step]
-    return ModelChoice(
-        model=model,
-        reason=(
-            f"attempt {attempt + 1}: the rung below did not produce a live "
-            f"improvement, so climbing to {model} ({MODEL_HINTS[model]})"
-        ),
-        escalated_from=previous_model or MODEL_LADDER[max(step - 1, 0)],
-    )
-
+#
+# Deliberately *not* here.  Which model to spend is WorkBuddy's own strategy, and
+# the operator's architecture puts models below WorkBuddy as replaceable compute --
+# V2 must not perceive them at all.  This queue therefore never names a model: it
+# asks ``winter_agent_v2.workbuddy_model_router`` for a choice and records whatever
+# it returns.  ``tests/test_workbuddy_model_router.py`` asserts that no model
+# literal appears anywhere in ``winter_agent_v2/`` outside that module, which turns
+# "V2 does not depend on a model" into something checkable rather than promised.
+from .workbuddy_model_router import (  # noqa: E402  (kept near its use on purpose)
+    ModelOutcome,
+    ModelRouter,
+    ModelStatsStore,
+    default_stats_path as model_stats_path,
+    task_type_for,
+)
 
 # --------------------------------------------------------------- policy & keys
 
@@ -366,6 +354,11 @@ class EscalationRecord:
     model: str = ""
     model_reason: str = ""
     escalated_from: str = ""
+    # Which bucket of work this was, so the router's evidence accumulates per task
+    # type instead of per capability.  Folded from the submitted event like
+    # repo_head -- a field that is written but never folded reads as empty, which
+    # is how the first version of this silently recorded blank task types.
+    task_type: str = ""
     first_seen: datetime | None = None
     last_seen: datetime | None = None
     submitted_at: datetime | None = None
@@ -451,6 +444,7 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.model = str(event.get("model", record.model))
             record.model_reason = str(event.get("model_reason", record.model_reason))
             record.escalated_from = str(event.get("escalated_from", record.escalated_from))
+            record.task_type = str(event.get("task_type", record.task_type))
             record.attempts = int(event.get("attempt", record.attempts + 1))
             record.submitted_at = _moment(event.get("recorded_at"))
             if event.get("repo_head"):
@@ -558,6 +552,7 @@ class Dispatch:
     model_reason: str = ""
     escalated_from: str = ""
     attempt: int = 0
+    task_type: str = ""
 
     @property
     def should_submit(self) -> bool:
@@ -570,6 +565,7 @@ def decide(
     policy: EscalationPolicy,
     *,
     now: datetime | None = None,
+    router: ModelRouter | None = None,
 ) -> Dispatch:
     """The whole throttle, as one pure function.
 
@@ -627,20 +623,41 @@ def decide(
         )
 
     attempt = prior_repairs
-    choice = select_model(
-        attempt,
-        needs=_needs_hint(candidate),
+    needs = _needs_hint(candidate)
+    choice = (router or default_router()).choose(
+        task_type_for(candidate.condition, needs=needs),
+        attempt=attempt,
+        needs=needs,
         previous_model=record.model if record else "",
     )
     return Dispatch(
         SUBMIT,
         f"attempt {attempt + 1}/{policy.repair_budget + 1} for "
-        f"{candidate.signature.describe()} ({candidate.condition})",
+        f"{candidate.signature.describe()} ({candidate.condition}, {choice.task_type})",
         model=choice.model,
         model_reason=choice.reason,
         escalated_from=choice.escalated_from,
         attempt=attempt,
+        task_type=choice.task_type,
     )
+
+
+_DEFAULT_ROUTER: ModelRouter | None = None
+
+
+def default_router(root: Path | str | None = None) -> ModelRouter:
+    """The process-wide router, reading this project's recorded outcomes.
+
+    Lazy so importing the queue does not touch the disk, and injectable so tests
+    never depend on the developer's local stats file.
+    """
+    global _DEFAULT_ROUTER
+    if root is not None:
+        return ModelRouter(model_stats_path(root))
+    if _DEFAULT_ROUTER is None:
+        base = Path(__file__).resolve().parents[1]
+        _DEFAULT_ROUTER = ModelRouter(model_stats_path(base))
+    return _DEFAULT_ROUTER
 
 
 def _needs_hint(candidate: EscalationCandidate) -> str:
@@ -1170,6 +1187,9 @@ class EscalationQueueAdapter:
             runtime_reload.default_path(self.root)
         )
         self.policy = policy or EscalationPolicy()
+        # The only thing the queue knows about models is that a router exists; the
+        # names live in workbuddy_model_router.py.
+        self.model_stats = ModelStatsStore(model_stats_path(self.root))
         self._build_request = escalation_request_from_project
 
     # -- the AUTO hook ----------------------------------------------------
@@ -1314,6 +1334,7 @@ class EscalationQueueAdapter:
             "model": dispatch.model,
             "model_reason": dispatch.model_reason,
             "escalated_from": dispatch.escalated_from,
+            "task_type": dispatch.task_type,
             "condition": candidate.condition,
             "capability": candidate.signature.capability,
             "skill": candidate.signature.skill,
@@ -1415,6 +1436,29 @@ class EscalationQueueAdapter:
                     "until": until.isoformat(),
                     "reason": f"repair budget exhausted after {outcome}",
                 })
+
+            # One outcome row per finished job, in the router's own vocabulary.
+            # "success" here means the job reached a terminal state and produced
+            # something measurable; "live_improvement" is the only field that means
+            # the capability got better in the game.
+            duration = _duration(record.submitted_at, status.first_terminal_at)
+            try:
+                self.model_stats.append(ModelOutcome(
+                    model=record.model,
+                    task_type=str(_submitted(snapshot, record.key, "task_type") or ""),
+                    duration=duration,
+                    # Cost is not obtainable: the jobs API exposes no usage field
+                    # (measured 2026-09-17), so it stays null with the reason rather
+                    # than an estimate the router might trust.
+                    cost=None,
+                    success=outcome not in (OUTCOME_BLOCKED,),
+                    live_improvement=outcome == LIVE_VERIFIED,
+                    retry_count=record.repairs_used,
+                    escalation_count=record.attempts,
+                    note="cost unavailable: jobs API exposes no usage field",
+                ))
+            except Exception:  # noqa: BLE001 - learning must never break reconciliation
+                errors.append(f"{record.key}: could not record model outcome")
 
             if code_changed:
                 request = self.reload_signal.request(

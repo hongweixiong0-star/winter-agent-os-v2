@@ -24,7 +24,7 @@
   "retry": {
     "default_max": 2,
     "device_busy_wait_seconds": 5,
-    "qwen_busy_fallback": "RULE"
+    "qwen_busy_fallback_removed_2026_09_17": "qwen_busy_fallback was a dead key with ZERO consumers, and it implied a state ('the local Qwen is busy') that cannot occur: there is no LLM client anywhere on the runtime path (measured 2026-09-17 -- no qwen/llm module exists in winter_agent_v2, and parse_qwen_decision in brain.py is called only by a test). It was removed rather than left as a plausible-looking source of truth that nothing reads, the same call as reserve_marches_for_stamina_spend. Qwen is now an OPTIONAL offline provider, never a runtime dependency: every rule-based, skill-backed and LIVE_VERIFIED capability runs with no provider at all. tests/test_qwen_decoupling.py pins that."
   },
   "march_policy": {
     "reserve_for_stamina": 2,

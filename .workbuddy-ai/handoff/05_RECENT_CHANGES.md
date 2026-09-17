@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `d50884b 2026-09-17T21:11:24+08:00 fix(test): synthetic episodes use bare frame names, not repository paths`
+- `55cde8c 2026-09-17T21:06:25+08:00 fix(escalation): the agent could not execute, and a tree diff is not proof of authorship`
 - `19964ec 2026-09-17T20:56:03+08:00 feat(escalation): AUTO finds the wall, the queue throttles, WorkBuddy fixes it`
 - `3092a52 2026-09-17T20:34:47+08:00 test(bridge): stop making the credential gate cry wolf`
 - `002f572 2026-09-17T20:33:34+08:00 fix(vision): the camp-highlight signal cannot tell two states apart`
@@ -16,25 +18,22 @@ Last 12 commits (newest first):
 - `23618f6 2026-09-17T17:47:58+08:00 fix(brain): the TRAIN and RESEARCH goals could not start from the map`
 - `909ced3 2026-09-17T16:51:43+08:00 feat(tooling): enumerate the verifier bindings that can never be called`
 - `92a6f27 2026-09-17T16:39:59+08:00 chore(handoff): record the interpreter guard at f40c684`
-- `f40c684 2026-09-17T16:39:36+08:00 docs(handoff): make the runtime preflight part of taking over`
-- `f49566b 2026-09-17T16:38:18+08:00 fix(runtime): the production entry ran on an interpreter that had no MAA`
 
-Uncommitted changes: 15
-- `M .workbuddy-ai/commander/WORK_QUEUE.json`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/memory/2026-09-17.md`
-- ` M .workbuddy/memory/2026-09-17.md`
-- ` M docs/WORKBUDDY_BRIDGE.md`
-- ` M knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md`
+Uncommitted changes: 14
+- `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+- ` M config/v2.json`
 - ` M learning/control_panel/latest.log`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
-- ` M learning/workbuddy_escalations.jsonl`
 - ` M tests/test_escalation_queue.py`
-- ` M tests/test_workbuddy_bridge.py`
 - ` M tools/escalations.py`
+- ` M winter_agent_v2/brain.py`
 - ` M winter_agent_v2/escalation_queue.py`
-- ` M winter_agent_v2/workbuddy_bridge.py`
+- ` M winter_agent_v2/skills.py`
+- ` M winter_agent_v2/verifier.py`
+- `?? tests/test_qwen_decoupling.py`
+- `?? tests/test_workbuddy_model_router.py`
+- `?? winter_agent_v2/workbuddy_model_router.py`
 <!-- /AUTO:recent_commits -->
 
 ---

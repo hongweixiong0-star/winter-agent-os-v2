@@ -409,6 +409,25 @@ def v2_registry() -> SkillRegistry:
             risk="MEDIUM_STAMINA_SPEND",
             state=SkillState.VERIFIED,
         ),
+        # The verified beast chain (SELECT_BEAST_TARGET -> BEAST_HUNT ->
+        # DISPATCH_BEAST) only ever fires when the level-9 Musk Ox sprite sits
+        # in the current viewport.  Live 2026-09-17: with goal BEAST_HUNT on
+        # PAGE_MAP the viewport held no verified target (only a level-25 moose,
+        # unsafe for this account), so the goal dead-ended at SAFE_STOP
+        # verified_beast_target_not_visible every time and no beast was ever
+        # dispatched.  This skill is the missing "find a target" hop: one
+        # bounded viewport pan, re-observed by the normal loop afterwards.  The
+        # swipe is a viewport gesture (no semantic control exists to locate),
+        # same shape as the resource-strip swipe the runtime already performs.
+        Skill(
+            "SCAN_MAP_FOR_BEAST",
+            "Pan the world map once to bring an off-screen beast target into view",
+            Page.MAP,
+            Action("SWIPE", "0.50,0.62,0.50,0.30", payload={"duration_ms": 600}),
+            timeout=15.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
     ])
     skills.extend([
         Skill(

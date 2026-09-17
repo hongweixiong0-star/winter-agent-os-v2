@@ -41,6 +41,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2 import escalation_queue as q  # noqa: E402
+from winter_agent_v2.workbuddy_model_router import (  # noqa: E402
+    TASK_UI_RECOGNITION,
+    VISION_RUNG,
+)
 from winter_agent_v2 import runtime_reload as reload_mod  # noqa: E402
 from winter_agent_v2.workbuddy_bridge import Availability, JobStatus, Submission  # noqa: E402
 
@@ -520,57 +524,68 @@ class ClassificationTest(unittest.TestCase):
 # ----------------------------------------------------------- model routing
 
 
-class ModelRoutingTest(unittest.TestCase):
-    def test_the_ladder_is_cheapest_first_and_matches_the_operator_order(self):
-        self.assertEqual(
-            q.MODEL_LADDER,
-            ("deepseek-v4.1-flash", "glm-5.3-flash", "hy4-preview-f", "deepseek-v4-pro"),
-        )
+class ModelBoundaryTest(unittest.TestCase):
+    """The queue must not know what a model is.
 
-    def test_the_first_attempt_uses_the_cheap_model(self):
-        choice = q.select_model(0)
-        self.assertEqual(choice.model, q.MODEL_FLASH)
-        self.assertFalse(choice.is_escalated)
+    Model choice is WorkBuddy's strategy, and the operator's architecture puts
+    models *below* WorkBuddy as replaceable compute.  The queue delegates to
+    workbuddy_model_router and only carries whatever string comes back, which is
+    what makes the boundary real rather than promised.  The router's own behaviour
+    is tested in tests/test_workbuddy_model_router.py.
+    """
 
-    def test_each_spent_attempt_climbs_one_rung_and_records_where_it_came_from(self):
-        choice = q.select_model(1, previous_model=q.MODEL_FLASH)
-        self.assertEqual(choice.model, q.MODEL_GLM_FLASH)
-        self.assertEqual(choice.escalated_from, q.MODEL_FLASH)
-        self.assertTrue(choice.is_escalated)
+    def test_the_queue_does_not_name_a_model(self):
+        source = (ROOT / "winter_agent_v2/escalation_queue.py").read_text(encoding="utf-8")
+        for model in ("deepseek", "glm-", "hy4", "gpt", "claude"):
+            self.assertNotIn(model, source.lower(), model)
 
-    def test_the_ladder_is_capped_at_the_top_rung(self):
-        choice = q.select_model(9, previous_model=q.MODEL_STRONG)
-        self.assertEqual(choice.model, q.MODEL_STRONG)
+    def test_the_queue_delegates_to_the_router(self):
+        self.assertTrue(callable(q.default_router))
 
-    def test_a_known_problem_shape_can_start_higher(self):
-        self.assertEqual(q.select_model(0, needs="logs").model, q.MODEL_GLM_FLASH)
-        self.assertEqual(q.select_model(0, needs="vision").model, q.MODEL_HY4)
-
-    def test_the_reason_is_always_recorded(self):
-        for attempt, needs in ((0, ""), (1, ""), (0, "logs"), (0, "vision")):
-            self.assertTrue(q.select_model(attempt, needs=needs).reason.strip())
-
-    def test_routing_hint_recognises_a_visual_defect(self):
-        candidate = q.EscalationCandidate(
-            signature=q.FailureSignature("CAP", "SEMANTIC_TARGET_NOT_VERIFIED", "SKILL"),
-            condition=q.UNKNOWN_UI,
-            reason="the template crop covers the tutorial finger and the ROI is wrong",
-        )
-        self.assertEqual(q._needs_hint(candidate), "vision")
-
-    def test_the_adapter_records_the_model_and_reason_on_the_submission(self):
-        harness = AdapterHarness()
-        try:
-            harness.adapter.observe_run(
-                stop_reason="training_entry_not_verified",
-                failures=[failure("TRAINING_PAGE_NOT_PROVEN")], now=NOW,
+    def test_a_dispatch_carries_the_task_type_the_router_choose(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            router = q.ModelRouter(q.model_stats_path(tmp))
+            candidate = q.EscalationCandidate(
+                signature=q.FailureSignature("CAP", "SEMANTIC_TARGET_NOT_VERIFIED", "SKILL"),
+                condition=q.UNKNOWN_UI, reason="reason",
             )
-            submitted = [e for e in harness.events() if e["event"] == "submitted"][0]
-            self.assertEqual(submitted["model"], q.MODEL_FLASH)
-            self.assertTrue(submitted["model_reason"])
-            self.assertIn("tokens", submitted)
-            self.assertIsNone(submitted["tokens"])
-            self.assertIn("usage_note", submitted)
+            dispatch = q.decide(candidate, q.EscalationSnapshot({}), q.EscalationPolicy(),
+                                now=NOW, router=router)
+            self.assertTrue(dispatch.should_submit)
+            self.assertEqual(dispatch.task_type, TASK_UI_RECOGNITION)
+            self.assertTrue(dispatch.model)
+
+    def test_a_vision_shaped_problem_starts_on_the_vision_rung_when_cold(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            router = q.ModelRouter(q.model_stats_path(tmp))
+            candidate = q.EscalationCandidate(
+                signature=q.FailureSignature("CAP", "SEMANTIC_TARGET_NOT_VERIFIED", "SKILL"),
+                condition=q.UNKNOWN_UI,
+                reason="the template crop covers the tutorial finger",
+            )
+            dispatch = q.decide(candidate, q.EscalationSnapshot({}), q.EscalationPolicy(),
+                                now=NOW, router=router)
+            self.assertEqual(dispatch.model, VISION_RUNG)
+
+    def test_the_adapter_records_the_model_outcome_for_the_router_to_learn_from(self):
+        status = JobStatus(job_id="job-9", gateway_state="done", verdict=q.DONE,
+                           settled=True, first_terminal_at=int(NOW.timestamp() * 1000) + 60_000)
+        harness = AdapterHarness(bridge=FakeBridge(status=status, submitted="job-9"))
+        try:
+            harness.adapter._wiring_problems = lambda: 0
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": "K", "condition": q.UNKNOWN_UI})
+            harness.ledger.append({"source": "queue", "event": "submitted", "key": "K",
+                                   "job_id": "job-9", "model": "some-model",
+                                   "task_type": TASK_UI_RECOGNITION,
+                                   "repo_head": "h", "repo_dirty": 0})
+            with patch.object(q, "repo_revision", return_value=q.RepoRevision("h", 0, True)):
+                harness.adapter.reconcile(now=NOW)
+            rows = harness.adapter.model_stats.rows()
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["task_type"], TASK_UI_RECOGNITION)
+            self.assertIsNone(rows[0]["cost"], "cost is not obtainable and must not be invented")
+            self.assertFalse(rows[0]["live_improvement"])
         finally:
             harness.cleanup()
 

@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-09-17T13:06:01+00:00",
+  "generated_at": "2026-09-17T13:16:43+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "19964ec",
+  "commit": "d50884b",
   "last_good_commit": "e4fd245",
-  "dirty_count": 15,
+  "dirty_count": 14,
   "episodes": {
     "total": 1520,
     "production": 1520,
@@ -16,10 +16,10 @@
     "mixed_case_rows": 35
   },
   "skills": {
-    "registry_total": 91,
+    "registry_total": 92,
     "by_state": {
       "VERIFIED": 46,
-      "CANDIDATE": 43,
+      "CANDIDATE": 44,
       "BLOCKED": 2
     },
     "dispatchable": 75,
@@ -28,7 +28,7 @@
       "stable": 29,
       "degraded": 10,
       "only_failed": 10,
-      "never_executed": 19
+      "never_executed": 20
     }
   },
   "top_failures": [
@@ -264,13 +264,13 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "19964ec49dbffee464bce82ce88c4b1b5ae99d97",
-    "remote_head": "19964ec49dbffee464bce82ce88c4b1b5ae99d97",
+    "local_head": "d50884bf95343387ff752dc04c6b6ac466043beb",
+    "remote_head": "d50884bf95343387ff752dc04c6b6ac466043beb",
     "unpushed_commits": 0,
     "behind": 0,
     "in_sync": true,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-09-17T12:56:11.029314+00:00",
+    "last_push_at": "2026-09-17T13:11:30.481069+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {

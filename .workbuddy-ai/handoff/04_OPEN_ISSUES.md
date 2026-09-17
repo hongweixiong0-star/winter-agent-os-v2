@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 15 uncommitted file(s): ['M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/memory/2026-09-17.md', ' M .workbuddy/memory/2026-09-17.md', ' M docs/WORKBUDDY_BRIDGE.md']
+- 14 uncommitted file(s): ['M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M config/v2.json', ' M learning/control_panel/latest.log', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
 <!-- /AUTO:open_issues -->
 
 ---

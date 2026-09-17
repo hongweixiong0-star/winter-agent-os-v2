@@ -1171,7 +1171,7 @@ WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.5713. The bloc
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 12 in the last 2 day(s), 130 all-time, last seen 2026-09-17T04:45:23.361291+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 15
+CURRENT DIRTY FILES: 14
 LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-17T11:54:22.804840+00:00", "episode_id": "20260917_195257_211296", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_195257_211296\\20260917_195257_211296_step_002_before_20260917T115330172418.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_195257_211296\\20260917_195257_211296_step_002_after_20260917T115349058300.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 130, "recent": 12, "last_seen": "2026-09-17T04:45:23.361291+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-15T11:54:22.804840+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.

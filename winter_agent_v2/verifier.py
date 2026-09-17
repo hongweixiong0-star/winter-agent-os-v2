@@ -695,6 +695,22 @@ def verify_open_intel(before: WorldState, after: WorldState) -> VerificationResu
     return VerificationResult(ok, "OK" if ok else "OPEN_INTEL_NOT_PROVEN", {"before_map":before_ok,"after_intel":after_ok,"stamina":after.intel.get("stamina")})
 
 
+def verify_beast_scan_observed(before: WorldState, after: WorldState) -> VerificationResult:
+    # The scan is a viewport pan, not a semantic tap: its verifiable effect is
+    # that the client is still on a *readable* world map afterwards (a pan
+    # cannot be proven from template hits alone -- the beast fields are world
+    # facts, not action results).  Whether a verified target was actually
+    # found is decided by the *next* hop's verifier (verify_beast_target_selected),
+    # which stays the only judge that SPEND_STAMINA_ON_BEAST really progressed.
+    moved = before.page is Page.MAP and after.page is Page.MAP and after.known
+    return VerificationResult(
+        moved,
+        "OK" if moved else "BEAST_SCAN_NOT_PROVEN",
+        {"before_map": before.page is Page.MAP, "after_map": after.page is Page.MAP,
+         "after_known": after.known, "after_confidence": after.confidence},
+    )
+
+
 def verify_beast_target_selected(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.MAP and before.beast.get("visible_target") == "MUSK_OX" and before.beast.get("level") == 9
     after_ok = after.page is Page.BEAST and after.beast.get("name") == "麝牛" and after.beast.get("level") == 9 and after.beast.get("available") is True

@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-17T13:06:01+00:00`
+- generated_at: `2026-09-17T13:16:43+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `19964ec` on `main`
+- commit: `d50884b` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,24 +10,23 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 132
-- HEAD: `19964ec` — feat(escalation): AUTO finds the wall, the queue throttles, WorkBuddy fixes it (2026-09-17T20:56:03+08:00)
-- working tree: 15 dirty file(s)
-  - `M .workbuddy-ai/commander/WORK_QUEUE.json`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/memory/2026-09-17.md`
-  - ` M .workbuddy/memory/2026-09-17.md`
-  - ` M docs/WORKBUDDY_BRIDGE.md`
-  - ` M knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md`
+- commits: 134
+- HEAD: `d50884b` — fix(test): synthetic episodes use bare frame names, not repository paths (2026-09-17T21:11:24+08:00)
+- working tree: 14 dirty file(s)
+  - `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+  - ` M config/v2.json`
   - ` M learning/control_panel/latest.log`
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
-  - ` M learning/workbuddy_escalations.jsonl`
   - ` M tests/test_escalation_queue.py`
-  - ` M tests/test_workbuddy_bridge.py`
   - ` M tools/escalations.py`
+  - ` M winter_agent_v2/brain.py`
   - ` M winter_agent_v2/escalation_queue.py`
-  - ` M winter_agent_v2/workbuddy_bridge.py`
+  - ` M winter_agent_v2/skills.py`
+  - ` M winter_agent_v2/verifier.py`
+  - `?? tests/test_qwen_decoupling.py`
+  - `?? tests/test_workbuddy_model_router.py`
+  - `?? winter_agent_v2/workbuddy_model_router.py`
 
 ### A2. Public mirror
 
@@ -36,14 +35,14 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-17T13:06:01+00:00
+SYNC STATE at 2026-09-17T13:16:43+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 19964ec49dbffee464bce82ce88c4b1b5ae99d97
-remote_head       : 19964ec49dbffee464bce82ce88c4b1b5ae99d97   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : d50884bf95343387ff752dc04c6b6ac466043beb
+remote_head       : d50884bf95343387ff752dc04c6b6ac466043beb   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (15 path(s))
-last_push_at      : 2026-09-17T12:56:11.029314+00:00
+git_dirty         : True (14 path(s))
+last_push_at      : 2026-09-17T13:11:30.481069+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
 ```
@@ -57,7 +56,7 @@ verdict           : GitHub mirrors the local tree
 - last_fatal_error: None
 - stop_reason: None
 - page: MAP  march: 0/None
-- updated_at: 2026-09-17T13:05:52.097982+00:00
+- updated_at: 2026-09-17T13:16:35.711207+00:00
 
 ## C. Episode stream
 
@@ -69,10 +68,10 @@ verdict           : GitHub mirrors the local tree
 
 ## D. Registry and lifecycle
 
-- registry total: 91  by_state: {'VERIFIED': 46, 'CANDIDATE': 43, 'BLOCKED': 2}
+- registry total: 92  by_state: {'VERIFIED': 46, 'CANDIDATE': 44, 'BLOCKED': 2}
 - live dispatchable (verifier-backed): 75
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **25**  stable: 29  degraded: 10  only_failed: 10  never_executed: 19
+- live_verified: **25**  stable: 29  degraded: 10  only_failed: 10  never_executed: 20
 
 ### Never executed
 
@@ -88,6 +87,7 @@ verdict           : GitHub mirrors the local tree
 - `RECOVER_HOME` (CANDIDATE)
 - `REINFORCE_TARGET` (CANDIDATE)
 - `RELAX_RESOURCE_LEVEL` (CANDIDATE)
+- `SCAN_MAP_FOR_BEAST` (CANDIDATE)
 - `SELECT_INTEL_RESCUE_SURVIVORS` (VERIFIED)
 - `SELECT_MARCH_TO_RECALL` (CANDIDATE)
 - `SELECT_REWARD_OPTION` (CANDIDATE)
@@ -208,7 +208,7 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T13:05:20+00:00", "size_bytes": 1502, "last_stop_reason": "verified_beast_target_not_visible"}
+- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T13:16:03+00:00", "size_bytes": 1870, "last_stop_reason": "verified_beast_target_not_visible"}
 - recent crash reports: (none)
 
 ## J. Backend axis (MAA vs ADB)
