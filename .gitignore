@@ -124,6 +124,11 @@ dataset/external/repositories/
 # measured on, the building panel, and the Intel reward popup that exposed a separate
 # defect.  The rest is machine-local and still on disk.
 !dataset/truth_audit/power_route_20260917/key/**/*.png
+# 2026-09-17, the reward-popup round.  Only three frames, and each one is a distinct
+# observation: the genuine daily reward dialog, and the two Intel reward dialogs that a
+# live run produced -- the pair that shows the same artwork read as two different
+# sources.  They are the populations the fix was measured against.
+!dataset/truth_audit/reward_popup_source_*/key/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only

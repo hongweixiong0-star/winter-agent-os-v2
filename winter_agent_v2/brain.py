@@ -53,6 +53,15 @@ class RuleBrain:
         # leaves it (measured: DAILY -> HOME), and the flag is what stops the loop
         # from re-opening the panel it has already judged empty.
         self.daily_panel_not_actionable_left = False
+        # The training page and the 科技研究 page are leaves: a run that reaches
+        # one and finds nothing to do used to end standing on it, and the NEXT run
+        # -- whatever its goal -- stopped within seconds with ``goal_page_mismatch``
+        # (hit live 2026-09-17, twice: a TRAIN run ended on TRAINING and the
+        # following DAILY run never got further).  One Back is measured to land on
+        # HOME from both, and ``verify_safe_back`` accepts a different known page
+        # afterwards, so leaving is verifiable rather than hopeful.  The flag is
+        # what stops a Back that did not move the client from being repeated.
+        self.terminal_page_left = False
         # The panel opens on its 章节任务 tab, and the daily skills were calibrated on the
         # 每日任务 tab, so one tap is needed to read the content they act on.  One-shot:
         # if the tap does not take, repeating it would spend an action per step forever,
@@ -131,6 +140,37 @@ class RuleBrain:
             "daily_panel_not_actionable_leaving_the_page",
             world.confidence,
             "home_opened",
+        )
+
+    def _leave_terminal_page_once(self, world: WorldState) -> Decision | None:
+        """One Back off a page that has no exit of its own.
+
+        ``Page.TRAINING`` and ``Page.RESEARCH`` are reached by a goal and have no
+        branch that moves the client away again, so a run that finishes on one
+        parks it there.  Measured 2026-09-17 (``tools/probe_power_route.py
+        --leave``): one Back from either lands on ``Page.HOME``, and
+        ``verify_safe_back`` accepts it because ``before`` is neither MAP nor POPUP
+        and ``after`` is a different known page.
+
+        Returns ``None`` once the flag is set, which is what keeps a Back that did
+        not move the client from being repeated forever; the caller then falls
+        through to its honest stop.
+        """
+        if self.terminal_page_left:
+            return None
+        self.terminal_page_left = True
+        return Decision(
+            "BACK",
+            f"{world.page.value.lower()}_page_not_actionable_leaving_the_page",
+            world.confidence,
+            "home_opened",
+        )
+
+    def _owns_terminal_page(self, world: WorldState) -> bool:
+        """True when the current goal is the one that works on this leaf page."""
+        return (
+            (world.page is Page.TRAINING and self.current_goal == "TRAIN")
+            or (world.page is Page.RESEARCH and self.current_goal == "RESEARCH")
         )
 
     def _select_daily_tab_once(self, world: WorldState) -> Decision | None:
@@ -285,6 +325,22 @@ class RuleBrain:
             return Decision("CLOSE_POPUP", "recall_dialog_not_opened_by_this_loop", world.confidence, "dialog_closed_unconfirmed")
         if world.page is Page.POPUP and world.popup:
             return Decision("CLOSE_POPUP", "blocking_popup", world.confidence, "popup_closed")
+        # A previous run can finish on the training or the 科技研究 page, which are
+        # leaves.  A *named* goal that cannot work on such a page would otherwise
+        # answer ``goal_page_mismatch`` within one step and leave the client exactly
+        # where it was, so it is moved off first.  Two cases are deliberately left
+        # alone: the goal that owns the page (it still has actions to take), and a
+        # goal-less sweep, which keeps its old fall-through to the page's own
+        # branches -- a trainable queue there is real work, not a dead end.
+        if (
+            world.page in (Page.TRAINING, Page.RESEARCH)
+            and self.current_goal is not None
+            and not self._owns_terminal_page(world)
+        ):
+            leave = self._leave_terminal_page_once(world)
+            if leave is not None:
+                return leave
+            return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_off_terminal_page")
         # Goal isolation precedes ordinary page actions. A reward sweep opened
         # on a resource or formation page must never inherit Gather behavior.
         if self.current_goal == "MAIL":
@@ -451,6 +507,12 @@ class RuleBrain:
             # (knowledge/skills/RESEARCH_RESEARCH.md line 38) and re-measured
             # 2026-09-17; what it never had was a decision here, so the goal could
             # only ever stop with research_entry_not_verified.
+            # A run that has already read this page and left it must not walk the
+            # route again: the Back below lands on HOME, which is exactly the page
+            # this branch would start from, so without this the loop would be
+            # HOME -> route -> RESEARCH -> Back -> HOME forever.
+            if self.terminal_page_left:
+                return Decision("SAFE_STOP", "research_page_already_read_not_actionable", 1.0, "switch_task")
             if world.page is Page.HOME and world.research.get("queue_available") is False:
                 # A queue that is already running needs nothing from us, so this
                 # precedes the navigation hop: opening the page to confirm it cannot
@@ -465,6 +527,10 @@ class RuleBrain:
             if world.page is not Page.RESEARCH:
                 return Decision("SAFE_STOP", "research_entry_not_verified", 1.0, "refresh_state_or_switch_task")
         if self.current_goal == "TRAIN":
+            # Same re-route guard as the research goal above: after the Back the
+            # client is on HOME, which is where this branch starts.
+            if self.terminal_page_left:
+                return Decision("SAFE_STOP", "training_page_already_read_not_actionable", 1.0, "switch_task")
             if world.page is Page.HOME and world.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED":
                 return Decision("SELECT_INFANTRY_CAMP", "verified_infantry_camp_highlight", world.confidence, "infantry_camp_menu_open")
             if world.page is Page.HOME and world.training.get("menu_open"):
@@ -496,6 +562,9 @@ class RuleBrain:
             return Decision("BUILDING_UPGRADE", "building_prerequisites_satisfied", world.confidence, "building_queue_started")
         if world.page is Page.RESEARCH:
             if world.research.get("status") == "IN_PROGRESS" or world.research.get("queue_available") is False:
+                leave = self._leave_terminal_page_once(world)
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "research_queue_busy", 1.0, "switch_task")
             if world.research.get("researchable"):
                 return Decision("RESEARCH", "research_queue_available", world.confidence, "research_queue_started")
@@ -503,11 +572,21 @@ class RuleBrain:
             # reading exists this is the honest stop, and naming it keeps the goal
             # from looking like it silently did nothing (the previous code fell
             # through every later branch to the same stop with no reason).
+            # Leaving the page first is what keeps the next run schedulable.
+            leave = self._leave_terminal_page_once(world)
+            if leave is not None:
+                return leave
             return Decision("SAFE_STOP", "research_page_no_startable_node", 1.0, "switch_task")
         if world.page is Page.TRAINING:
             if world.training.get("all_queues_busy"):
+                leave = self._leave_terminal_page_once(world)
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "all_training_queues_busy", 1.0, "switch_task")
             if world.training.get("queue_available") is False:
+                leave = self._leave_terminal_page_once(world)
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "training_queue_busy", 1.0, "inspect_other_training_queue")
             if world.training.get("trainable"):
                 return Decision("TRAIN_TROOPS", "training_queue_available", world.confidence, "training_queue_started")

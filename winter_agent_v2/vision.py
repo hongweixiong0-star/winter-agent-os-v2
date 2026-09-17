@@ -1043,14 +1043,32 @@ class SemanticWorldVision:
                 intel={"status":"AVAILABLE", "mission_id":"INTEL_BEAST_10", "mission_type":"BEAST", "mission_level":10},
                 confidence=0.99,
             )
+        # The client draws ONE generic 获得奖励 dialog for every reward source and
+        # its artwork does not name the source.  Measured over 103 production
+        # frames labelled GENERIC_REWARD (65) / INTEL_REWARD (18) /
+        # EXPLORATION_REWARD (12) / DAILY_REWARD (8): the 「点击任意位置退出」
+        # footer scores d<=2 on 102 of them, while the reward-GRID templates are
+        # content-dependent -- POPUP_DAILY_REWARD_CURRENT is cut from the grid
+        # area (x 0.08 y 0.20 w 0.84 h 0.40), so it matches whichever dialog
+        # happens to hold similar items, and it matched 8/8 of the frames that
+        # carried a reward popup over a NON-daily page.
+        #
+        # So the source-independent signal is tested first and the goal-neutral
+        # label is reported; the dismiss is chosen from goal context in the brain
+        # (brain.py routes GENERIC_REWARD by current_goal, and every
+        # *_reward_dismissed verifier already accepts GENERIC_REWARD as the
+        # popup before-state).  Testing the grid templates first is what made two
+        # live Intel claims fail on 2026-09-16/17: the reward popup over the Intel
+        # page read DAILY_REWARD, the daily dismiss ran, and its verifier -- which
+        # requires the DAILY page afterwards -- rejected a dismissal that worked.
+        if match("POPUP_GENERIC_REWARD_HEADER") or match("BTN_DISMISS_INTEL_REWARD"):
+            return WorldState(page=Page.POPUP, popup="GENERIC_REWARD", confidence=0.99)
         if match("POPUP_DAILY_REWARD_CURRENT"):
             return WorldState(page=Page.POPUP, popup="DAILY_REWARD", daily={"claim_feedback": True}, confidence=0.99)
         # Exploration reward artwork can share the generic localized reward
         # title used by Intel. Prefer the more specific full reward template.
         if match("POPUP_EXPLORATION_REWARD"):
             return WorldState(page=Page.POPUP, popup="EXPLORATION_REWARD", exploration={"claim_feedback": True}, confidence=0.99)
-        if match("POPUP_GENERIC_REWARD_HEADER"):
-            return WorldState(page=Page.POPUP, popup="GENERIC_REWARD", confidence=0.99)
         if (match("POPUP_INTEL_REWARD_TITLE") or match("POPUP_INTEL_REWARD")) and not (
             match("BTN_RESOURCE_SEARCH_SUBMIT") or match("BTN_OPEN_RESOURCE_SEARCH")
         ):

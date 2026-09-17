@@ -151,6 +151,15 @@ def main() -> int:
     # the research page, so this is the honest end of the run -- the same class as
     # ``research_queue_busy``, not a failure.
     accepted_stops.add("research_page_no_startable_node")
+    # Added 2026-09-17 with the terminal-page exit: the training and research pages
+    # are leaves, so a run that ends there used to park the client and the NEXT run
+    # stopped within seconds with ``goal_page_mismatch`` (hit live twice that day).
+    # Both goals now Back off the page once before stopping, so their honest end
+    # arrives from HOME and is named after the page that was read.  Same class as
+    # the panel exit above: every verifier passed, and the client was left where a
+    # later run can work from.
+    accepted_stops.add("training_page_already_read_not_actionable")
+    accepted_stops.add("research_page_already_read_not_actionable")
     return 0 if verified and result.stop_reason in accepted_stops else 2
 
 

@@ -1,19 +1,19 @@
 {
-  "agent_state": "DEGRADED",
+  "agent_state": "IDLE",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-17T03:33:17.976952+00:00",
-  "last_action_time": "2026-09-17T03:33:12.439340+00:00",
-  "last_success_time": "2026-09-17T03:33:15.990433+00:00",
+  "last_tick_time": "2026-09-17T04:52:48.574132+00:00",
+  "last_action_time": "2026-09-17T04:47:48.183150+00:00",
+  "last_success_time": "2026-09-17T04:48:03.383109+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
-  "page": "RESEARCH",
-  "current_goal": "KEEP_RESEARCH_PRODUCTIVE",
+  "page": "MAIL",
+  "current_goal": "AUTO_DISCOVERY",
   "current_skill": "SAFE_STOP",
-  "reason": "research_page_no_startable_node",
+  "reason": "mail_all_clear",
   "preconditions": [],
-  "verifier": "PASS",
+  "verifier": null,
   "next_action": "switch_task",
   "risk": "UNKNOWN",
   "confidence": 1.0,
@@ -22,19 +22,17 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_005_before_20260917T033315991408.png",
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_125234_523225\\20260917_125234_523225_step_001_before_20260917T045234968522.png",
   "march_used": null,
   "march_max": null,
   "queues": {
     "building": {},
-    "research": {
-      "status": "UNKNOWN"
-    },
+    "research": {},
     "training": {},
     "intel": {},
     "alliance": {},
     "events": {}
   },
-  "stop_reason": "research_page_no_startable_node",
-  "updated_at": "2026-09-17T03:33:17.980784+00:00"
+  "stop_reason": "mail_all_clear",
+  "updated_at": "2026-09-17T04:52:49.534532+00:00"
 }

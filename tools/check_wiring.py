@@ -341,6 +341,32 @@ def main() -> int:
     check("brain: recall dialog with intent -> RECALL_MARCH",
           with_intent.decide(dialog, registry).skill == "RECALL_MARCH")
 
+    # The client's shared 获得奖励 dialog: one drawing for every reward source, so
+    # vision reports the goal-neutral label and the goal picks the dismiss.  Each
+    # of the five goals that can produce it has to reach its own dismiss, and a
+    # goal that cannot produce it must refuse to guess which page to return to.
+    reward_popup = WorldState(page=Page.POPUP, popup="GENERIC_REWARD", confidence=0.99)
+    for goal, dismiss in (("MAIL", "DISMISS_MAIL_GENERIC_REWARD"),
+                          ("DAILY", "DISMISS_DAILY_GENERIC_REWARD"),
+                          ("INTEL", "DISMISS_INTEL_GENERIC_REWARD"),
+                          ("EXPLORATION", "DISMISS_EXPLORATION_GENERIC_REWARD"),
+                          ("ALLIANCE", "DISMISS_ALLIANCE_GENERIC_REWARD")):
+        check(f"brain: reward popup during {goal} -> {dismiss}",
+              RuleBrain(current_goal=goal).decide(reward_popup, registry).skill == dismiss)
+    check("brain: reward popup without goal context stops rather than guessing",
+          decide(reward_popup).reason == "generic_reward_without_goal_context")
+    # Every one of those dismisses is only usable if its verifier accepts the
+    # shared label as the popup before-state -- that is the whole reason the label
+    # can be goal-neutral.
+    from winter_agent_v2 import verifier as _verifier
+    for name in ("verify_intel_reward_dismissed", "verify_daily_reward_advanced",
+                 "verify_mail_reward_dismissed", "verify_exploration_reward_dismissed",
+                 "verify_alliance_reward_dismissed"):
+        source = _verifier.__dict__[name].__code__.co_consts
+        check(f"verifier: {name} accepts the shared reward label",
+              any(isinstance(c, frozenset) and "GENERIC_REWARD" in c for c in source)
+              or any(c == "GENERIC_REWARD" for c in source))
+
     full = WorldState(page=Page.MAP, march_used=6, march_max=6,
                       marches=(MarchState.GATHERING,), confidence=0.99)
     check("brain: full queue freezes gathering when recall is off",
@@ -414,8 +440,12 @@ def main() -> int:
                             training={"troop_type": "INFANTRY", "status": "IN_PROGRESS",
                                       "queue_available": False},
                             confidence=0.99)
-    check("brain: TRAIN on a busy queue stops instead of spending",
-          train.decide(busy_queue, registry).skill == "SAFE_STOP")
+    check("brain: TRAIN on a busy queue leaves the page before stopping",
+          train.decide(busy_queue, registry).skill == "BACK")
+    # ... and the same run then stops by name instead of walking the route again.
+    check("brain: TRAIN does not re-route after leaving the training page",
+          train.decide(WorldState(page=Page.HOME, confidence=0.99), registry).reason
+          == "training_page_already_read_not_actionable")
     free_queue = WorldState(page=Page.TRAINING,
                             training={"troop_type": "INFANTRY", "status": "AVAILABLE",
                                       "queue_available": True, "trainable": True},
@@ -449,10 +479,24 @@ def main() -> int:
           research.decide(focused_lab, registry).skill == "OPEN_RESEARCH")
     check("brain: TRAIN on the focused lab does not take the research hop",
           train.decide(focused_lab, registry).skill != "OPEN_RESEARCH")
-    check("brain: a research page with nothing startable stops by name",
+    # The page is a leaf, so the run leaves it first and names the stop on the next
+    # tick -- ending on the page is what made the following run answer
+    # goal_page_mismatch.  Both halves are checked, because either one alone can
+    # regress without the other noticing.
+    check("brain: a research page with nothing startable is left first",
           research.decide(WorldState(page=Page.RESEARCH,
                                      research={"status": "UNKNOWN"}, confidence=0.99),
-                          registry).reason == "research_page_no_startable_node")
+                          registry).skill == "BACK")
+    check("brain: a research page with nothing startable then stops by name",
+          research.decide(WorldState(page=Page.HOME, confidence=0.99), registry).reason
+          == "research_page_already_read_not_actionable")
+    check("brain: the named stop the run reports is still a research page state",
+          "research_page_no_startable_node" in
+          (ROOT / "winter_agent_v2/brain.py").read_text(encoding="utf-8"))
+    for stop in ("training_page_already_read_not_actionable",
+                 "research_page_already_read_not_actionable"):
+        check(f"run_live accepts the stop {stop}",
+              stop in (ROOT / "tools/run_live.py").read_text(encoding="utf-8"))
     for step in ("NAVIGATE_RESEARCH_LAB", "OPEN_RESEARCH"):
         check(f"runtime: {step} has a verifier",
               step in runtime.LiveRuntime.VERIFIED_ATOMIC)
