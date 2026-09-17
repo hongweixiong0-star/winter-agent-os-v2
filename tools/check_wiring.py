@@ -341,6 +341,19 @@ def main() -> int:
     check("brain: recall dialog with intent -> RECALL_MARCH",
           with_intent.decide(dialog, registry).skill == "RECALL_MARCH")
 
+    # The quit dialog has its own branch so a future BTN_CLOSE record cannot
+    # silently repoint the close at 确定.  Measured 2026-09-17: the winning record's
+    # ROI centre (635,455) is the X in the title bar, and the two buttons that can
+    # quit the client sit in one row at y 748..842.
+    quit_dialog = WorldState(page=Page.POPUP, popup="EXIT_CONFIRM", confidence=0.99)
+    quit_decision = decide(quit_dialog)
+    check("brain: the quit dialog is closed by name, not as a generic popup",
+          quit_decision.skill == "CLOSE_POPUP"
+          and quit_decision.reason == "exit_confirm_closed_via_its_close_button")
+    check("brain: a session-disconnected popup still reconnects, not closes",
+          decide(WorldState(page=Page.POPUP, popup="SESSION_DISCONNECTED",
+                            confidence=0.99)).skill == "RECONNECT_SESSION")
+
     # The client's shared 获得奖励 dialog: one drawing for every reward source, so
     # vision reports the goal-neutral label and the goal picks the dismiss.  Each
     # of the five goals that can produce it has to reach its own dismiss, and a

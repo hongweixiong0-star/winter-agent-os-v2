@@ -323,6 +323,16 @@ class RuleBrain:
                 self.pending_recall = False
                 return Decision("RECALL_MARCH", "recall_dialog_opened_by_this_loop", world.confidence, "march_returning_slot_freed_on_arrival")
             return Decision("CLOSE_POPUP", "recall_dialog_not_opened_by_this_loop", world.confidence, "dialog_closed_unconfirmed")
+        # The quit dialog needs its own decision, not the generic one.  Measured on
+        # the live dialog 2026-09-17 (「确认退出游戏吗?」 -- 取消 / 确定 / X): the
+        # BTN_CLOSE record that wins scores d=2 and its ROI centre (635,455) is the
+        # X in the title bar, so closing it cannot quit the client; the two buttons
+        # sit ~290 px below in one row (BTN_CANCEL centre (208,793), and the sibling
+        # duplicate-target dialog measures its confirm at (503,787)).  Naming the
+        # branch is what stops a future BTN_CLOSE record from silently repointing
+        # this at a control that quits the game.
+        if world.page is Page.POPUP and world.popup == "EXIT_CONFIRM":
+            return Decision("CLOSE_POPUP", "exit_confirm_closed_via_its_close_button", world.confidence, "popup_closed")
         if world.page is Page.POPUP and world.popup:
             return Decision("CLOSE_POPUP", "blocking_popup", world.confidence, "popup_closed")
         # A previous run can finish on the training or the 科技研究 page, which are

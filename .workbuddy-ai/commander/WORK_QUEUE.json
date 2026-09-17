@@ -45,7 +45,9 @@
     {
       "task_id": "CAP-A02-EXIT-CONFIRM-GUARD",
       "priority": "P0",
-      "priority_reason": "Safety, not coverage: the current path can quit the client.",
+      "status": "DONE 2026-09-17",
+      "resolution": "Measured instead of argued: on the live quit dialog the winning BTN_CLOSE record is d=2 with its ROI centre at (635,455) -- the X in the title bar -- while the two controls that can quit the client share one row at y 748..842 (BTN_CANCEL centre (208,793); the sibling duplicate-target dialog measures its confirm at (503,787)). So the existing path was already safe, but implicitly. brain.py now has an explicit named branch and tests/test_exit_confirm_safety.py pins the clearance (>=200 px above the button row, x in the right half).",
+      "priority_reason": "Safety, not coverage.",
       "objective": "Give EXIT_CONFIRM an explicit decision that only ever taps 取消.",
       "why_now": "vision.py reports popup=EXIT_CONFIRM (line 999) and brain.py has NO branch for it, so it falls to the generic blocking-popup CLOSE_POPUP which taps BTN_CLOSE. Measured on that dialog 2026-09-17: 取消 (orange, left) / 确定 (blue, right) / X (top right). A BTN_CLOSE ROI that lands on 确定 quits the client. It did not happen, but that was luck.",
       "current_evidence": "open issue 26; the dialog appeared live at 04:45:03Z after a BACK on the 英雄之旅 dialog.",
