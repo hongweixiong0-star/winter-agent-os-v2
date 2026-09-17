@@ -12,6 +12,7 @@ from __future__ import annotations
 3. `_is_protected` 必须保护 truth_audit / candidate / seed / evidence。
 """
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -23,20 +24,30 @@ from winter_agent_v2.retention import _is_protected, referenced_evidence, select
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
 
-# 匹配测试源码里写死的图片路径片段，例如
-# ROOT / "dataset/raw/xxx/y.png" 或 Path("dataset/truth_audit/a.png")
-IMAGE_LITERAL = re.compile(r'"([^"\n]+\.(?:png|jpg|jpeg))"', re.IGNORECASE)
+# 判定一个字符串常量是不是图片引用。用后缀匹配而不是整个字面量正则：
+# 字面量的"整段形状"交给 AST 保证，这里只关心它指向一个图片文件。
+IMAGE_SUFFIX = re.compile(r"\.(?:png|jpg|jpeg)$", re.IGNORECASE)
 
 
 def _referenced_images() -> dict[str, list[Path]]:
+    """Image literals as the *interpreter* sees them, not as the text reads.
+
+    原先用正则扫源码，因此会把跨行隐式拼接的字面量只截到后半段——
+    ``ROOT / "dataset/truth_audit/run1" "/frame_a.png"`` 在 Python 里是
+    ``dataset/truth_audit/run1/frame_a.png``，正则却只看到 ``/frame_a.png``，
+    于是报一个不存在的"仓库路径"。改用 AST：隐式拼接在 AST 里本就是**一个**
+    ``Constant``，注释里的示意路径也不会再被当成引用（`ast` 不含注释）。
+    """
     references: dict[str, list[Path]] = {}
     for source in sorted(TESTS.glob("test_*.py")):
-        if source.name == Path(__file__).name:
-            # 本文件的注释里带有示意路径，扫描它会误报自己。
+        try:
+            tree = ast.parse(source.read_text(encoding="utf-8"))
+        except SyntaxError:  # pragma: no cover - a broken test file fails elsewhere
             continue
-        text = source.read_text(encoding="utf-8")
-        for literal in IMAGE_LITERAL.findall(text):
-            references.setdefault(literal, []).append(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                if IMAGE_SUFFIX.search(node.value):
+                    references.setdefault(node.value, []).append(source)
     return references
 
 

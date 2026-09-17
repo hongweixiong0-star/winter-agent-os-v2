@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-17T11:54:34+00:00`
+- generated_at: `2026-09-17T12:32:39+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `02eee43` on `main`
+- commit: `2d3f3f1` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,27 +10,21 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 127
-- HEAD: `02eee43` — chore(state): CAP-D01 closed, CAP-B01 in progress with its read path proven (2026-09-17T18:06:47+08:00)
-- working tree: 18 dirty file(s)
-  - `M .workbuddy-ai/commander/EXECUTION_STATE.json`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- commits: 129
+- HEAD: `2d3f3f1` — feat(bridge): escalate a stuck capability to a local WorkBuddy agent (2026-09-17T20:32:34+08:00)
+- working tree: 12 dirty file(s)
+  - `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
   - ` M .workbuddy-ai/memory/2026-09-17.md`
   - ` M .workbuddy/memory/2026-09-17.md`
   - ` M learning/control_panel/latest.log`
-  - ` M learning/episodes.jsonl`
-  - ` M learning/executor_backend.jsonl`
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
-  - ` M learning/stamina_supply.json`
-  - ` M winter_agent_v2/ocr.py`
-  - ` M winter_agent_v2/vision.py`
-  - `?? .workbuddy-ai/commander/results/CAP-B01-BUILDING-IDENTITY-FROM-PIXELS.json`
+  - ` M tests/test_evidence_integrity.py`
+  - ` M tests/test_training_verifier.py`
   - `?? dataset/truth_audit/power_route_20260917/probe_build_live2_20260917_115113.json`
   - `?? dataset/truth_audit/power_route_20260917/probe_build_live_20260917_114955.json`
   - `?? dataset/truth_audit/power_route_20260917/probe_build_probe_20260917_100507.json`
-  - `?? tests/test_building_identity.py`
-  - `?? winter_agent_v2/building_identity.py`
+  - `?? knowledge/failure_patterns/vision/`
 
 ### A2. Public mirror
 
@@ -39,28 +33,28 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-17T11:54:34+00:00
+SYNC STATE at 2026-09-17T12:32:39+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 02eee435c4487ef580129f4c32812690bd8d009b
-remote_head       : 02eee435c4487ef580129f4c32812690bd8d009b   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (18 path(s))
-last_push_at      : 2026-09-17T10:06:53.304720+00:00
+local_head        : 2d3f3f13d334c3afde4e4dab4c6ad351b5666135
+remote_head       : dacf27889c3fcae7b12e834a5968850a6b22f946   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 1   (behind: 0)
+git_dirty         : True (12 path(s))
+last_push_at      : 2026-09-17T11:54:41.869462+00:00
 last_push_status  : PUSHED
-verdict           : GitHub mirrors the local tree
+verdict           : LOCAL IS AHEAD by 1 commit(s) -- run `python tools/git_sync.py push`
 ```
 
 ## B. Runtime
 
-- agent_state: `GOAL_RUNNING`
-- runtime_thread_alive: True / scheduler_loop_alive: True
+- agent_state: `DEGRADED`
+- runtime_thread_alive: False / scheduler_loop_alive: False
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: None
+- stop_reason: verified_beast_target_not_visible
 - page: MAP  march: 0/None
-- updated_at: 2026-09-17T11:54:22.830051+00:00
+- updated_at: 2026-09-17T12:32:25.261805+00:00
 
 ## C. Episode stream
 
@@ -211,7 +205,7 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T11:52:25+00:00", "size_bytes": 2658, "last_stop_reason": "TRAINING_PAGE_NOT_PROVEN"}
+- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T12:32:24+00:00", "size_bytes": 1348, "last_stop_reason": "verified_beast_target_not_visible"}
 - recent crash reports: (none)
 
 ## J. Backend axis (MAA vs ADB)

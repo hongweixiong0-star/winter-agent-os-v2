@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-17T11:54:34+00:00",
-  "count": 657,
+  "generated_at": "2026-09-17T12:32:39+00:00",
+  "count": 659,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -179,8 +179,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 125579,
-      "mtime": "2026-09-17T10:06:46+00:00"
+      "bytes": 127513,
+      "mtime": "2026-09-17T11:54:34+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -3913,6 +3913,18 @@
       "kind": "fixture",
       "bytes": 1239813,
       "mtime": "2026-09-13T21:09:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_camp_highlight_ambiguity_20260917/camp_with_gold_ring__click_opens_menu__20260908.png",
+      "kind": "fixture",
+      "bytes": 1132639,
+      "mtime": "2026-09-17T12:29:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/training_camp_highlight_ambiguity_20260917/camp_with_officer_badge__click_jumps_to_map__20260917.png",
+      "kind": "fixture",
+      "bytes": 1006132,
+      "mtime": "2026-09-17T12:29:49+00:00"
     },
     {
       "path": "dataset/truth_audit/vip_entry_20260917/01_before_20260916_172230.png",

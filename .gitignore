@@ -129,6 +129,14 @@ dataset/external/repositories/
 # live run produced -- the pair that shows the same artwork read as two different
 # sources.  They are the populations the fix was measured against.
 !dataset/truth_audit/reward_popup_source_*/key/**/*.png
+# 2026-09-17, the camp-highlight round.  Exactly two frames, and they are a *pair* on
+# purpose: both read as `navigation == INFANTRY_CAMP_HIGHLIGHTED` while tapping the camp
+# opens the radial menu in one and jumps to the world map in the other.  They are the
+# counter-example evidence for
+# tests/test_training_verifier.py::test_the_camp_highlight_signal_cannot_tell_the_two_states_apart,
+# so they have to travel with the repository -- a clone without them would silently skip
+# the measurement that keeps the training route from tapping on an ambiguous signal.
+!dataset/truth_audit/training_camp_highlight_ambiguity_*/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only
