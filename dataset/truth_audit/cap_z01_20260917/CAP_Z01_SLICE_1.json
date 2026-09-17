@@ -1,0 +1,54 @@
+{
+  "record": "CAP_Z01_SLICE_1",
+  "capability": "CAP-Z01-BEAST-TARGET-GENERALISATION",
+  "generated_at": "2026-09-17T15:47:00+00:00",
+  "goal": "Stop hard-binding the dispatchable beast to the literal pair (\"MUSK_OX\", 9) so the client's own beast table can add or refuse a target.",
+
+  "before": {
+    "hard_bound_sites": [
+      "winter_agent_v2/brain.py:837  world.beast.get('visible_target') == 'MUSK_OX' and world.beast.get('level') == 9",
+      "winter_agent_v2/verifier.py:715 verify_beast_target_selected (visible_target/麝牛/level 9)",
+      "winter_agent_v2/verifier.py:728 verify_beast_march_open (麝牛/level 9)",
+      "winter_agent_v2/verifier.py:735 verify_beast_dispatch (麝牛)",
+      "winter_agent_v2/skills.py:398,407 TARGET_BEAST_MUSK_OX_9 / BTN_BEAST_DISPATCH_MUSK_OX_9",
+      "winter_agent_v2/vision.py:1594,1675 only TARGET_BEAST_MUSK_OX_9 -> beast={'visible_target':'MUSK_OX','level':9}"
+    ],
+    "why_it_mattered": "knowledge/game/beasts.json already carried 麝牛/9 (dispatched live, green assessment), 北极狼/6 and 雪豹/29 (refused, action_result=BLOCKED_BEFORE_DISPATCH), and the current role's map holds a level-24/25 moose. No code could ask the table about any of them."
+  },
+
+  "after": {
+    "new": "winter_agent_v2/beast_targets.py -- the table, and the predicate that reads it",
+    "data": "knowledge/game/beasts.json: MUSK_OX_9_LIVE gained \"species\":\"MUSK_OX\" and an explicit \"dispatchable\":true (the one row the route may spend on)",
+    "rewired": [
+      "brain.py BEAST_HUNT -> is_dispatchable(world.beast)",
+      "verifier.verify_beast_target_selected -> lookup_by_name(after) + is_dispatchable(before)",
+      "verifier.verify_beast_march_open / verify_beast_dispatch -> lookup_by_name(before), row must be dispatchable"
+    ],
+    "explicit_refusal_is_data": "an explicit \"dispatchable\":false now overrides the green-assessment inference, so a measured refusal can be recorded instead of re-derived",
+    "still_literal_and_named_as_remaining": [
+      "vision.py: only the TARGET_BEAST_MUSK_OX_9 template exists, so an unrecognised species still yields an empty beast fragment -- generalization here needs templates cropped from real frames, which needs the device",
+      "skills.py: the TAP_SEMANTIC names TARGET_BEAST_MUSK_OX_9 / BTN_BEAST_DISPATCH_MUSK_OX_9 are still literals; they can only be generalised once more than one target has templates"
+    ]
+  },
+
+  "gates": {
+    "tests_new": "tests/test_beast_targets.py 17 passed",
+    "tests_beast_group": "tests/test_beast_targets.py + test_beast_map_scan + test_beast_verifier + test_beast_formation_identity + test_beast_card_dead_end_recovery: 59 passed, 27 subtests passed",
+    "check_wiring": "problems: 0",
+    "live_after_fix": "episode 2026-09-17T15:44:09.063195+00:00 SCAN_MAP_FOR_BEAST SUCCESS MAA_MUMU_EXTRAS verifier_ok=true"
+  },
+
+  "incident_this_slice": {
+    "what": "A live AUTO cycle imported a half-written brain.py and crashed with `NameError: name 'is_dispatchable' is not defined` (recorded in learning/control_panel/latest.log).",
+    "why": "The dispatchable predicate landed in the route body while its import was missing: the import edit had been applied and then reverted by the concurrent external writer of brain.py (the documented file-flush hazard), and the reload marker meant to hold AUTO off the tree was never actually written -- the guard script died on an ImportError (`reload_path` lives in control_panel.py, not runtime_reload.py) and the failure was not re-checked before editing.",
+    "so": "the protection silently did not exist; protect-then-verify-the-protection is the lesson, not protect-then-assume",
+    "impact": "one AUTO cycle aborted on the BEAST_HUNT route before any action; no device action, no stamina spent, no evidence lost",
+    "recovery": "import re-applied, tests + check_wiring re-run (the project's documented protocol after an out-of-band flush), and a fresh cycle confirmed clean at 15:44:09Z"
+  },
+
+  "next": [
+    "Live-verify a second target end to end: needs a device window (AUTO owns it), a target present on the current role's map, and its recognition templates",
+    "Generalise the TAP_SEMANTIC names in skills.py once a second target has templates",
+    "Then the level-24/25 moose on this role's map can be judged by data instead of being invisible to the route"
+  ]
+}

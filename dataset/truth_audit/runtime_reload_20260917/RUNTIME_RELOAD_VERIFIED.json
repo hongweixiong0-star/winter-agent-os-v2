@@ -1,0 +1,85 @@
+{
+  "record": "RUNTIME_RELOAD_VERIFIED",
+  "generated_at": "2026-09-17T15:40:00+00:00",
+  "operator_intent": "Restart GUI + AUTO so the running processes actually execute the current code, and prove the MAA production path with a real action rather than with an initialisation check.",
+
+  "code_version": {
+    "head": "c4b5a2f72ebc5e3801977fe94b506d9a7c5e5001",
+    "head_subject": "docs(memory): the wiring audit, and the three defects it found in my own GUI work",
+    "tree_state": "HEAD + the in-flight escalation job's uncommitted edits to winter_agent_v2/escalation_queue.py, tools/check_wiring.py, tools/build_capability_catalog.py, tests/test_escalation_queue.py (proven to be the job's by its own transcript, 20 Edit calls)",
+    "all_three_processes_read_this_tree": true,
+    "evidence": {
+      "panel": "E:\\dongri-mumu-bot\\.venv\\Scripts\\pythonw.exe tools/control_panel.py  (pid 28056, cwd E:\\无尽冬日智能体)",
+      "worker": "E:\\dongri-mumu-bot\\.venv\\Scripts\\python.exe tools\\run_live.py --max-actions 24 --capture-dir ...\\runtime_auto\\20260917_233554_547893 --serial 127.0.0.1:7555  (pid 14756 -> 29736)",
+      "note": "The two-process shape (venv stub -> base interpreter) is the Windows venv redirector, not interpreter drift; sys.prefix stays the venv, which is why maa/cv2/rapidocr import."
+    }
+  },
+
+  "preflight": {
+    "command": "E:\\dongri-mumu-bot\\.venv\\Scripts\\python.exe tools/preflight.py",
+    "verdict": "PASS",
+    "checks": {"numpy": "OK", "PIL": "OK", "cv2": "OK", "maa": "OK", "rapidocr_onnxruntime": "OK"},
+    "maa_import": "OK",
+    "maa_executor_init": "OK (no '[executor] MAA requested but unavailable' line in the new worker's log, and every step since the restart really captured through MAA)",
+    "mumu": "connected 127.0.0.1:7555, 720x1280, foreground com.gof.china (re-read by tools/verify_panel_wiring.py)",
+    "rapidocr": "OK",
+    "workbuddy_gateway": "available OK (GET /api/v1/health -> 200) with the pinned credential"
+  },
+
+  "ma_production_proof": {
+    "claim": "the reloaded process executed the MAA path on the real device",
+    "episodes_after_restart": 7,
+    "episodes_with_capture_backend_MAA_MUMU_EXTRAS": 7,
+    "episodes_before_restart_with_MAA": 0,
+    "first": {
+      "episode_id": "20260917_233356_830706",
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "result": "SUCCESS",
+      "verifier_ok": true,
+      "capture_backend": "MAA_MUMU_EXTRAS",
+      "executor_backend": "ADB",
+      "recorded_at": "2026-09-17T15:34:21.924089+00:00",
+      "evidence_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_233356_830706\\20260917_233356_830706_step_001_before_20260917T153358637188.png"
+    },
+    "why_executor_still_says_ADB": "SCAN_MAP_FOR_BEAST is absent from knowledge/execution/backend_routing.json, so its executor keeps the historical ADB path (default_preferred=ADB). MAA is the observation/device layer: run_live.py swaps observation_device to the MAA adapter, so the frames come through MuMu's extras channel (12.1 ms vs 246.2 ms measured 2026-09-14). Both values are correct; the shared name 'capture_backend' is the known ambiguity already filed in .workbuddy-ai/commander/REVIEW_REQUESTS.md."
+  },
+
+  "workbuddy": {
+    "gateway": "127.0.0.1:8080, pid 30372 (started 2026-09-17T22:55:39+08:00), up and serving",
+    "job_859e3787": "RUNNING (gateway state=working) at 15:38Z -- NOT interrupted by this reload",
+    "panel_reconcile": "succeeded twice after the restart (job_state WORKING at 15:35:17Z and 15:37:17Z), i.e. the panel process can authenticate; before the restart the same call returned HTTP 401 AUTH_REQUIRED",
+    "defect_fixed": "the session environment carried a stale gateway password (the first random one) while the running gateway is pinned; persisted the pinned value to the user environment so any future launch sees it"
+  },
+
+  "gates": {
+    "check_wiring": "problems: 0",
+    "verify_panel_wiring": "16 PASS / 0 FAIL",
+    "runtime_reload_marker": "cleared (no RUNTIME_RELOAD_REQUIRED pending)"
+  },
+
+  "defects_found_this_round": [
+    {
+      "id": "STALE_GATEWAY_CREDENTIAL",
+      "severity": "P1",
+      "finding": "CODEBUDDY_GATEWAY_PASSWORD in the interactive environment was the gateway's first random password; the gateway on :8080 uses a later pinned one. The panel's escalation reconcile therefore failed HTTP 401 and the queue could never advance its in-flight job.",
+      "fix": "pinned value persisted to the user environment; verified GET /api/v1/health -> 200 and a real reconcile of job 859e3787."
+    },
+    {
+      "id": "TOOL_CALL_PROCESS_REAPING",
+      "severity": "operational",
+      "finding": "A GUI started as a child of a tool call dies when that call returns -- verified with a DETACHED_PROCESS + CREATE_BREAKAWAY_FROM_JOB probe that wrote 'alive' and was then gone, and with Start-Process under PowerShell. The long-running panel must be launched as a long-lived task, not as a fire-and-forget child.",
+      "fix": "panel now runs as a persistent background task with the production interpreter and the credential in its environment."
+    },
+    {
+      "id": "OLD_PANEL_HELD_PRE_FIX_CODE",
+      "severity": "P1",
+      "finding": "The previous panel (pid 23268) had been running code from before the interpreter-resolution fix: it logged '[executor] MAA requested but unavailable (MAA_IMPORT_FAILED:ModuleNotFoundError)' while every other producer on the machine resolved the venv correctly. Its death at 23:19:40Z left learning/control_panel/latest.log truncated to 0 bytes and runtime_snapshot claiming AUTO_RUNNING with runtime_thread_alive=true -- an abrupt external termination, cause not identified.",
+      "fix": "restarted from the current tree; the failure line is gone and MAA capture is live."
+    }
+  ],
+
+  "unproven": [
+    "Whether the old panel's abrupt death at 23:19:40Z has a cause that can recur (no crash report was written, so the crash path was not the one that ran).",
+    "Live verification of CAP-Z01 beast-target generalisation: impossible while AUTO owns the device."
+  ]
+}

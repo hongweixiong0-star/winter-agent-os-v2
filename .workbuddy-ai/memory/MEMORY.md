@@ -300,3 +300,20 @@
    **无法取消**，且 `start()` 不看 `continuous` ⇒ 走过 1.8s 会真的拉起 worker。
    只 `update_idletasks`，测完即 `destroy`，并临时替换 `_enforce_retention` 以免剪掉证据。
 
+### 运行期生效四条（2026-09-17 实测，重复踩过就照这个办）
+
+1. **长驻进程的启动方式**：从「工具调用」里起的子进程，会在**该调用结束时被整棵回收** ——
+   `DETACHED_PROCESS | CREATE_BREAKAWAY_FROM_JOB` 也照死（探针先写 `alive` 再消失），
+   PowerShell `Start-Process` 同理。长驻 GUI/AUTO 只能以**长驻任务**形态起，或由操作者双击
+   `Start-Winter-Agent-V2.cmd`。**不要**把「fire-and-forget 子进程」当成守护进程。
+2. **「代码已生效」的判据是进程，不是文件**：长驻面板吃不到修复，必须重启。
+   验证方式是看**它自己的进程命令行**（解释器 + cwd + 脚本），不是看磁盘上的文件。
+   注意 venv 下 `python.exe` 会重定向到基础解释器（两级进程），**那是正常的**，不是解释器漂移。
+3. **MAA 的生产判据是 episode 的 `capture_backend`**（`MAA_MUMU_EXTRAS`），不是「能 import maa」，
+   也不是面板单元格。`executor_backend=ADB` 与它并不矛盾：技能不在 `backend_routing.json` 里就走历史
+   ADB 路径，MAA 在此是**观测/设备层**（`run_live.py` 换掉 `observation_device`）。
+   账本同名 `capture_backend` 含义不同（`REVIEW_REQUESTS.md` 已登记），引用时要说清是哪个来源。
+4. **网关凭据必须与「正在运行的网关」一致**：会话环境里的 `CODEBUDDY_GATEWAY_PASSWORD` 可能是
+   网关首次启动的随机值 ⇒ 面板 `reconcile` 恒 401、队列的 in-flight job 永远推不动。
+   症状是面板显示 `不可用 / AUTH_REJECTED`，而网关本身是好的。凭据只进环境变量（用户级），**不进仓库**。
+

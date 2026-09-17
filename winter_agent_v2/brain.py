@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from .models import Decision, MarchState, Page, WorldState
+from .beast_targets import is_dispatchable
 from .skills import SkillRegistry
 
 
@@ -834,7 +835,13 @@ class RuleBrain:
                         self.pending_recall = True
                         return Decision("SELECT_MARCH_TO_RECALL", "stamina_goal_needs_a_slot_and_only_gathering_marches_remain", world.confidence, "recall_dialog_open")
                     return Decision("SAFE_STOP", "no_idle_march", 1.0, "wait_for_beast_slot")
-                if world.beast.get("visible_target") == "MUSK_OX" and world.beast.get("level") == 9:
+                # CAP-Z01: whether this is spendable is a property of the
+                # client's own beast table, not of a literal pair here.  The
+                # table currently allows exactly the live-verified musk ox, so
+                # this reads identically to the old `=="MUSK_OX" and ==9` while
+                # a target can now be added -- or refused, like the level-29
+                # leopard with its red assessment -- without touching the route.
+                if is_dispatchable(world.beast):
                     self.beast_scans_used = 0
                     return Decision("SELECT_BEAST_TARGET", "verified_visible_low_level_beast", world.confidence, "beast_target_dialog_open")
                 if self.beast_scans_used < self.max_beast_scans:

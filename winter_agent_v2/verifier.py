@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .models import MarchState, Page, VerificationResult, WorldState
+from .beast_targets import is_dispatchable, lookup_by_name
 
 
 def verify_event_points_increased(before: WorldState, after: WorldState) -> VerificationResult:
@@ -732,7 +733,10 @@ def verify_beast_march_open(before: WorldState, after: WorldState) -> Verificati
 
 
 def verify_beast_dispatch(before: WorldState, after: WorldState) -> VerificationResult:
-    before_ok = before.page is Page.MARCH and before.beast.get("name") == "麝牛" and before.beast.get("victory_assured") is True
+    # CAP-Z01: the MARCH page prints 目标：<name> and no level, so the row is
+    # resolved by name and must be one the table allows.
+    target = lookup_by_name(before.beast.get("name"))
+    before_ok = before.page is Page.MARCH and target is not None and target.dispatchable and before.beast.get("victory_assured") is True
     active = after.page is Page.MAP and any(state in {MarchState.MARCHING, MarchState.RETURNING} for state in after.marches)
     queue_visible = after.march_used is not None and after.march_used >= 1
     ok = before_ok and active and queue_visible
