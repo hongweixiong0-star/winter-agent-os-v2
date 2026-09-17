@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `f40c684 2026-09-17T16:39:36+08:00 docs(handoff): make the runtime preflight part of taking over`
+- `f49566b 2026-09-17T16:38:18+08:00 fix(runtime): the production entry ran on an interpreter that had no MAA`
 - `bd204ea 2026-09-17T15:46:12+08:00 feat(tooling): make the 2-minute Reuse Check a command, and put the rule where a session reads it`
 - `abad015 2026-09-17T13:29:33+08:00 chore(handoff): record the closed issues, the narrowed guard, and the green suite`
 - `0c41f3d 2026-09-17T13:12:19+08:00 fix(brain): the leaf-page exit is for a named goal only`
@@ -16,30 +18,11 @@ Last 12 commits (newest first):
 - `ac17ac5 2026-09-17T11:51:25+08:00 chore(evidence): the probe record that left the client on HOME after the research round`
 - `e46b614 2026-09-17T11:48:11+08:00 chore(coverage): regenerate the capability catalog after the research round`
 - `9b1759d 2026-09-17T11:35:36+08:00 docs(research): the authoritative record for 3793a9b, whose message the shell truncated`
-- `3793a9b 2026-09-17T11:34:11+08:00 feat(research): the 科技研究 route, live verified -- the second BLOCKED goal to move`
-- `5445199 2026-09-17T08:31:08+08:00 chore(handoff): refresh the generated state after the training and intel rounds`
 
-Uncommitted changes: 27
-- `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-17.md`
-- ` M .workbuddy/memory/2026-09-17.md`
-- ` M Start-Winter-Agent-V2.cmd`
-- ` M Start-Winter-Agent-V2.ps1`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M evidence/INDEX.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M learning/control_panel/latest.log`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
+Uncommitted changes: 3
+- `M learning/control_panel/latest.log`
 - ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-09-17T08:37:46+00:00",
+  "generated_at": "2026-09-17T08:39:58+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "bd204ea",
+  "commit": "f40c684",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-17T08:37:32.727979+00:00",
+    "last_tick_time": "2026-09-17T08:39:57.700140+00:00",
     "last_action_time": "2026-09-17T08:36:56.931845+00:00",
     "last_success_time": "2026-09-17T08:37:15.740425+00:00",
     "last_fatal_error": null,
@@ -18,7 +18,7 @@
     "current_skill": "SAFE_STOP",
     "reason": "verified_beast_target_not_visible",
     "preconditions": [],
-    "verifier": "PASS",
+    "verifier": null,
     "next_action": "refresh_or_switch_task",
     "risk": "UNKNOWN",
     "confidence": 1.0,
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_163601_836168\\20260917_163601_836168_step_003_before_20260917T083715742020.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_163941_172429\\20260917_163941_172429_step_001_before_20260917T083941599929.png",
     "march_used": 0,
     "march_max": null,
     "queues": {
@@ -39,12 +39,12 @@
       "events": {}
     },
     "stop_reason": "verified_beast_target_not_visible",
-    "updated_at": "2026-09-17T08:37:33.751626+00:00"
+    "updated_at": "2026-09-17T08:39:58.869732+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-17T08:37:32+00:00",
-    "size_bytes": 6610,
+    "modified_at": "2026-09-17T08:39:57+00:00",
+    "size_bytes": 1350,
     "last_stop_reason": "verified_beast_target_not_visible"
   },
   "recent_crash_reports": [],
