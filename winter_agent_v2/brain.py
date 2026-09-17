@@ -183,6 +183,16 @@ class RuleBrain:
             "home_opened",
         )
 
+    def leave_terminal_page(self, world: WorldState) -> Decision | None:
+        """One Back off a leaf page when nothing is runnable and nothing named it.
+
+        Public because the *runtime* is the only caller that knows goal discovery
+        found nothing: the brain cannot tell "this queue is busy and other work is
+        waiting" (a SAFE_STOP the scheduler wants) from "this queue is busy and
+        there is nothing else at all" (a dead end that must be left).
+        """
+        return self._leave_terminal_page_once(world)
+
     def _leave_or_stop(self, world: WorldState, reason: str, transition: str) -> Decision:
         """Leave a leaf page once if a NAMED goal is stuck on it, else stop by name.
 

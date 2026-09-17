@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -37,6 +38,14 @@ if str(ROOT) not in sys.path:
 from winter_agent_v2 import runtime_env  # noqa: E402
 
 LEDGER = ROOT / "learning/executor_backend.jsonl"
+CONFIG = ROOT / "config/v2.json"
+
+# What AUTO may not start without: the interpreter's modules and a device that
+# really answers.  The WorkBuddy gateway is deliberately *not* here -- a gateway
+# outage is an automatic-development outage, not a reason to stop playing (the
+# operator's rule of 2026-09-17: "WorkBuddy Gateway异常不得阻止游戏AUTO").
+CORE_SECTIONS = ("interpreter", "device")
+AUX_SECTIONS = ("gateway",)
 
 
 def ledger_summary(limit: int = 200) -> dict[str, object]:
@@ -74,50 +83,160 @@ def ledger_summary(limit: int = 200) -> dict[str, object]:
     }
 
 
+def config() -> dict[str, object]:
+    try:
+        return json.loads(CONFIG.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def device_report() -> dict[str, object]:
+    """Does the emulator really answer, and is the game in front?
+
+    Reconnects first, because that is what the panel's ``_ensure_device`` does
+    before a cycle, then reads the device.  ``ok`` means all three things the
+    runtime needs before a step can mean anything: attached, the configured
+    resolution, and the configured package in the foreground.
+    """
+    device_cfg = config().get("device") or {}
+    if not isinstance(device_cfg, dict):
+        device_cfg = {}
+    adb = Path(str(device_cfg.get("adb_path") or ""))
+    serial = str(device_cfg.get("serial") or "")
+    package = str(device_cfg.get("package_name") or "")
+    want = tuple(device_cfg.get("resolution") or ())
+    out: dict[str, object] = {
+        "ok": False, "adb": str(adb), "serial": serial, "package": package,
+        "want_resolution": list(want),
+    }
+    if not adb.is_file():
+        out["error"] = "ADB_NOT_FOUND"
+        return out
+    try:
+        from winter_agent_v2.device import ADBDevice
+
+        device = ADBDevice(adb, serial, production=True)
+        subprocess.run([str(adb), "connect", serial], capture_output=True,
+                       text=True, timeout=10, check=False)
+        device.resolve_connection()
+        status = device.status()
+    except Exception as exc:  # noqa: BLE001 - a dead emulator is an answer
+        out["error"] = f"{type(exc).__name__}: {exc}"[:200]
+        return out
+
+    got = tuple(status.resolution or ())
+    front = str(status.foreground_package or "")
+    out.update(
+        ok=bool(status.connected) and (not want or got == want) and (not package or front == package),
+        connected=bool(status.connected),
+        resolution=list(got),
+        foreground=front,
+    )
+    return out
+
+
+def gateway_report() -> dict[str, object]:
+    """The WorkBuddy gateway -- reported always, blocking never.
+
+    Requirement (operator, 2026-09-17): a refusing gateway is an
+    *automatic-development* outage.  V2 keeps playing the capabilities it already
+    has, the development card says 不可用, and the panel keeps retrying in the
+    background.  So this section is aux: it is printed, it is never a reason to
+    refuse the launch.
+    """
+    try:
+        from winter_agent_v2.workbuddy_bridge import WorkBuddyBridge
+
+        availability = WorkBuddyBridge().is_available()
+        return {
+            "ok": bool(availability.available),
+            "reason": availability.reason,
+            "base_url": availability.base_url,
+            "detail": dict(availability.detail) if isinstance(availability.detail, dict) else {},
+        }
+    except Exception as exc:  # noqa: BLE001 - a missing bridge is an answer too
+        return {"ok": False, "reason": f"{type(exc).__name__}", "detail": {"error": str(exc)[:200]}}
+
+
+def report(ledger_limit: int = 200) -> dict[str, object]:
+    """One preflight, in the shape both the CLI and the desktop launcher read."""
+    maa_enabled = runtime_env.maa_enabled_from_config(ROOT)
+    interpreter = runtime_env.resolve_for_project(ROOT)
+    sections = {
+        "interpreter": {
+            "ok": interpreter.ok,
+            "reason": interpreter.reason,
+            "exe": str(interpreter.python_exe),
+            "present": list(interpreter.present),
+            "missing": list(interpreter.missing),
+            "errors": interpreter.errors,
+            "fell_back_from": str(interpreter.fell_back_from) if interpreter.fell_back_from else None,
+        },
+        "device": device_report(),
+        "gateway": gateway_report(),
+    }
+    core_ok = all(bool(sections[name].get("ok")) for name in CORE_SECTIONS)
+    return {
+        "root": str(ROOT),
+        "maa_enabled": maa_enabled,
+        "sections": sections,
+        "core_sections": list(CORE_SECTIONS),
+        "aux_sections": list(AUX_SECTIONS),
+        "core_ok": core_ok,
+        "ready_for_auto": core_ok,
+        "blockers": [name for name in CORE_SECTIONS if not sections[name].get("ok")],
+        "aux_unavailable": [name for name in AUX_SECTIONS if not sections[name].get("ok")],
+        "interpreter": str(interpreter.python_exe),
+        "candidates": [{"exe": exe, "ok": ok} for exe, ok in interpreter.candidates],
+        "requirements": [
+            {"module": module, "role": role, "why": why}
+            for module, role, why in runtime_env.requirements_table(maa_enabled=maa_enabled)
+        ],
+        "ledger": ledger_summary(ledger_limit),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Winter Agent OS V2 runtime preflight")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument("--ledger-limit", type=int, default=200, help="ledger rows to summarise")
     args = parser.parse_args(argv)
 
-    maa_enabled = runtime_env.maa_enabled_from_config(ROOT)
-    report = runtime_env.resolve_for_project(ROOT)
-    ledger = ledger_summary(args.ledger_limit)
+    data = report(args.ledger_limit)
+    sections = data["sections"]
+    interpreter = sections["interpreter"]
+    device = sections["device"]
+    gateway = sections["gateway"]
 
     if args.json:
-        print(json.dumps(
-            {
-                "root": str(ROOT),
-                "maa_enabled": maa_enabled,
-                "ok": report.ok,
-                "reason": report.reason,
-                "interpreter": str(report.python_exe),
-                "present": list(report.present),
-                "missing": list(report.missing),
-                "errors": report.errors,
-                "fell_back_from": str(report.fell_back_from) if report.fell_back_from else None,
-                "candidates": [{"exe": exe, "ok": ok} for exe, ok in report.candidates],
-                "requirements": [
-                    {"module": module, "role": role, "why": why}
-                    for module, role, why in runtime_env.requirements_table(maa_enabled=maa_enabled)
-                ],
-                "ledger": ledger,
-            },
-            ensure_ascii=False,
-            indent=2,
-        ))
-        return 0 if report.ok else 1
+        print(json.dumps(data, ensure_ascii=False, indent=2))
+        return 0 if data["core_ok"] else 1
 
     print("== Winter Agent OS V2 preflight ==")
     print(f"root        : {ROOT}")
-    print(f"MAA enabled : {maa_enabled}  (config/v2.json -> executor.maa.enabled)")
+    print(f"MAA enabled : {data['maa_enabled']}  (config/v2.json -> executor.maa.enabled)")
     print()
-    print(report.describe())
+    print("-- core (AUTO may not start without these) --")
+    print(f"[{'OK  ' if interpreter['ok'] else 'FAIL'}] runtime interpreter : {interpreter['exe']}")
+    print(f"       verdict: {interpreter['reason']}")
+    if interpreter["missing"]:
+        print(f"       missing: {', '.join(interpreter['missing'])}")
+    print(f"[{'OK  ' if device['ok'] else 'FAIL'}] MuMu / device       : {device.get('serial')} "
+          f"{device.get('resolution') or device.get('want_resolution')} foreground={device.get('foreground')}")
+    if not device["ok"]:
+        print(f"       error: {device.get('error')}")
+    print()
+    print("-- auxiliary (reported, never blocks AUTO) --")
+    print(f"[{'OK  ' if gateway['ok'] else 'n/a '}] WorkBuddy gateway  : {gateway.get('reason')} "
+          f"({gateway.get('base_url')})")
+    if not gateway["ok"]:
+        print("       自动开发不可用；V2 继续玩已知 Capability，面板后台周期重试。")
     print()
     print("candidates probed:")
-    for exe, ok in report.candidates:
-        print(f"  [{'OK  ' if ok else 'FAIL'}] {exe}")
+    for candidate in data["candidates"]:
+        print(f"  [{'OK  ' if candidate['ok'] else 'FAIL'}] {candidate['exe']}")
     print()
+    ledger = data["ledger"]
     print("executor ledger (what production has really been using):")
     print(f"  rows              : {ledger.get('rows')}")
     print(f"  used_backend      : {json.dumps(ledger.get('used_backend'), ensure_ascii=False)}")
@@ -125,11 +244,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  last step         : {ledger.get('last_skill')} via {ledger.get('last_used_backend')} "
           f"at {ledger.get('last_recorded_at')}")
     print()
-    if report.ok:
-        print(f"VERDICT: PASS - {report.python_exe} can run production")
+    if data["core_ok"]:
+        print(f"VERDICT: PASS - {interpreter['exe']} can run production on {device.get('serial')}")
+        if data["aux_unavailable"]:
+            print(f"         auxiliary unavailable: {', '.join(data['aux_unavailable'])} "
+                  "(AUTO still allowed; automatic development is marked unavailable)")
         return 0
-    print(f"VERDICT: FAIL - {report.reason}")
-    if maa_enabled and "maa" in report.missing:
+    print(f"VERDICT: FAIL - core blocker(s): {', '.join(data['blockers'])}")
+    if data["maa_enabled"] and "maa" in interpreter["missing"]:
         print("         MAA is enabled but not importable here. The production loop would")
         print("         silently fall back to ADB, which is a defect, not a degradation.")
     print("         Fix the interpreter (config/v2.json -> runtime.python_path) or the env.")

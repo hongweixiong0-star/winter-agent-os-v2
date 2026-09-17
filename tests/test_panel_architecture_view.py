@@ -494,9 +494,11 @@ class PanelIntegrationTest(unittest.TestCase):
     point the 自动开发 tab raised inside a Tk callback and went blank.  Unit tests on the
     pure functions cannot see that class of wiring fault; opening the window does.
 
-    Deliberately never enters ``mainloop``: ``ControlPanel.__init__`` schedules
-    ``start()`` at 1800 ms and does not keep the id, so an event loop that runs past that
-    would spawn a real worker while the operator's own AUTO loop owns the device.
+    Deliberately never enters ``mainloop``.  Until 2026-09-18 the constructor itself
+    scheduled ``start()`` at 1800 ms without keeping the id, so an event loop that ran
+    past that would have spawned a real worker while the operator's own AUTO loop owned
+    the device.  The auto-start now lives only in ``_maybe_autostart`` (called from
+    ``main``), but the rule stands: build the window, read the cells, never loop.
     """
 
     panel = None

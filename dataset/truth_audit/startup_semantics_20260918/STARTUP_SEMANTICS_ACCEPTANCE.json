@@ -1,0 +1,125 @@
+{
+  "record": "STARTUP_SEMANTICS_IMPLEMENTED_AND_ACCEPTED",
+  "operator_directive": "2026-09-18: 启动 GUI = 启动整个无人值守系统（10 条）",
+  "verified_at": "2026-09-18T00:33:00+08:00",
+  "code_version_under_test": "7a5ffce (agent) + this working tree (panel/preflight/brain/runtime)",
+
+  "requirements": [
+    {
+      "n": 1,
+      "ask": "GUI 启动后自动执行真实 Preflight：MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway",
+      "status": "DONE",
+      "how": "tools/preflight.py grew a device section (reconnect + attach + configured resolution + foreground package) and a gateway section, and reports them as core vs auxiliary. The panel runs that exact command with the production interpreter during _maybe_autostart.",
+      "evidence": "panel.log 00:18:04-00:18:05: 启动预检 -> 预检·核心：Runtime OK (venv python) · MuMu OK (127.0.0.1:7555 [720,1280] 前台 com.gof.china) -> 预检·辅助：WorkBuddy Gateway OK"
+    },
+    {
+      "n": 2,
+      "ask": "核心环境正常后自动启动 AUTO，不需要再点开始",
+      "status": "DONE",
+      "how": "_maybe_autostart is the single auto-start (the constructor's second, un-cancellable root.after(start) at 1800 ms was removed); it starts AUTO only when the core preflight passes.",
+      "evidence": "panel.log 00:18:05 自动运行已启动 — 3 s after the window opened, with zero clicks"
+    },
+    {
+      "n": 3,
+      "ask": "Gateway 异常不得阻止游戏 AUTO；标记不可用，后台周期恢复",
+      "status": "DONE",
+      "how": "gateway is an auxiliary section: core_ok ignores it; the panel logs 自动开发不可用 and keeps retrying. Pinned by PreflightContractTest (gateway down + core ok -> ready_for_auto True) and AutostartGateTest (real window: gateway outage still starts AUTO).",
+      "evidence": "tests/test_startup_semantics.py: PreflightContractTest.test_a_refusing_gateway_does_not_stop_auto, AutostartGateTest.test_a_running_intent_with_a_gateway_outage_still_starts_auto"
+    },
+    {
+      "n": 4,
+      "ask": "五类条件自动创建 Escalation → 去重 → Bridge → 后台开发",
+      "status": "DONE (this round end to end, by the live system)",
+      "how": "the queue adapter ran inside the live cycle and decided honestly",
+      "evidence": "job 859e3787 (SCAN_MAP_FOR_BEAST, STUCK_15_MIN) reached DONE with outcome LIVE_VERIFIED and pushed commit 7a5ffce 'fix(escalation): STUCK_15_MIN is read from the episode stream, not the clock'; the same cycle logged '[escalation] skipped 1 ... BUDGET_EXHAUSTED' for the other capability, i.e. dedupe/budget refused rather than duplicated"
+    },
+    {
+      "n": 5,
+      "ask": "WorkBuddy 开发不得阻塞 AUTO",
+      "status": "DONE",
+      "how": "the escalation is handed over after run() returns and never blocks the loop; AUTO kept taking steps throughout the agent's 90-minute job",
+      "evidence": "episodes continued during the job; reconcile/observe_run never raised; active jobs returned to 0 without stopping AUTO"
+    },
+    {
+      "n": 6,
+      "ask": "完成有效代码修改 → RUNTIME_RELOAD_REQUIRED → 等原子动作结束 → 安全 reload → AUTO 自动恢复",
+      "status": "DONE",
+      "how": "the reconciled LIVE_VERIFIED wrote the reload marker; the panel's reload_deferral() held the next cycle off the tree and cleared the marker when the write settled; each cycle is a fresh subprocess so the new code is what runs",
+      "evidence": "ledger row 'reload required: LIVE_VERIFIED on SCAN_MAP_FOR_BEAST ...'; learning/RUNTIME_RELOAD_REQUIRED.json is gone again with no manual step"
+    },
+    {
+      "n": 7,
+      "ask": "关闭 GUI 不留孤儿 AUTO worker",
+      "status": "DONE (and it was a real hole)",
+      "how": "_kill_worker_tree() kills the whole tree (taskkill /PID <pid> /T /F) instead of terminating the venv stub the panel holds; close() uses it",
+      "evidence": "measured: the panel is two processes (venv stub -> base interpreter, the second one driving the device). Killing only the stub would have orphaned it; external shutdown of the tree left no pythonw but the unrelated ollama one"
+    },
+    {
+      "n": 8,
+      "ask": "保留暂停/停止；用户停止后任何自动逻辑不得重启 AUTO",
+      "status": "DONE",
+      "how": "operator intent persisted; stop/pause write STOPPED/PAUSED and only an explicit 开始 writes RUNNING. Watchdog/repeat paths keep their existing not-stop_requested/not-paused guard.",
+      "evidence": "OperatorIntentStateTest; AutostartGateTest.test_a_remembered_stop_wins_over_the_config"
+    },
+    {
+      "n": 9,
+      "ask": "用户停止状态跨 GUI 刷新保持",
+      "status": "DONE",
+      "how": "config/control_panel_state.json gains operator_intent (+ at/reason) through a merge writer, so the task selection and the intent cannot erase each other, and the auto-start consults it before anything else",
+      "evidence": "test_the_two_writers_do_not_erase_each_other; test_a_stop_and_a_pause_both_survive_a_restart"
+    },
+    {
+      "n": 10,
+      "ask": "真实端到端验收：关闭全部 → 启动 GUI → 零点击 → AUTO 自启 → 真实 Goal → MAA 真动作 → Verifier 真结果",
+      "status": "DONE",
+      "evidence": {
+        "closed": "taskkill /T on the panel tree: 28056 and 29744 gone, no run_live left",
+        "opened": "00:18:02 window, 00:18:05 AUTO running — no clicks at any point",
+        "preflight": "Runtime OK · MuMu OK · WorkBuddy Gateway OK",
+        "first_action": {
+          "recorded_at": "2026-09-17T16:26:53.741389+00:00",
+          "skill": "BACK",
+          "action": "PRESS_BACK",
+          "result": "SUCCESS",
+          "verifier_ok": true,
+          "capture_backend": "MAA_MUMU_EXTRAS"
+        },
+        "real_goal_then_actions": [
+          "goal AVOID_STAMINA_WASTE discovered by the runtime itself at 00:27:33",
+          "SCAN_MAP_FOR_BEAST SWIPE, verifier_ok=true, capture=MAA_MUMU_EXTRAS at 16:27:17 / 16:27:41 / 16:28:05 / 16:29:28 / 16:29:53 / 16:30:17 / 16:31:30 / 16:31:52 / 16:32:16"
+        ],
+        "screenshots_on_disk": true,
+        "escalation_when_a_gap_exists": "wired; this window had no eligible gap (the one live capability was already under development and the other was in budget cooldown), and the live log shows the queue refusing by name instead of duplicating"
+      }
+    }
+  ],
+
+  "defects_found_by_this_work": [
+    {
+      "id": "ABSTRACT_DEAD_END_ON_A_LEAF_PAGE",
+      "severity": "P0 for unattended play",
+      "finding": "AUTO passes no --goal, and goal discovery reads the page the client is standing on. With the device parked on the research page (queue IN_PROGRESS 4d21h), every cycle stopped by name 'research_queue_busy' and took no action at all for twenty minutes: the loop was alive and doing nothing. _leave_or_stop refuses to leave without a named goal, by design (a busy queue must not displace observations that do have work).",
+      "fix": "the runtime, which is the only place that knows discovery found nothing, takes one Back off TRAINING/RESEARCH when best_goal is None and no goal named the page (RuleBrain.leave_terminal_page). Pinned by the existing multitask scheduler tests, which still pass.",
+      "evidence": "00:27:02 runtime snapshot: goal=AUTO_DISCOVERY skill=BACK, then AVOID_STAMINA_WASTE"
+    },
+    {
+      "id": "RESULT_PAYLOAD_GLUED_TO_THE_EMULATOR_LINE",
+      "severity": "P1",
+      "finding": "The MuMu adapter's connect line arrives on the SAME line as the result JSON with no newline ('...\"stop_reason\": \"...\"}product: MuMuPlayer-12.0-0'), and parse_runtime_result required the whole line to be JSON -- so it returned {} for every cycle. Every stop_reason-driven decision in the panel (the 邮件→日常→联盟→探险 chain, the run summary, the escalation payload) was dead code in practice, and the window said 暂无结构化结果 while a valid 4-step result sat on the line.",
+      "fix": "scan for the JSON object with raw_decode instead of demanding a clean line; pinned by RunResultParseTest with the verbatim measured shape.",
+      "evidence": "after the fix, the real learning/control_panel/latest.log parses to stop_reason='verified_beast_target_not_visible', steps=4"
+    }
+  ],
+
+  "gates": {
+    "tests_new_file": "tests/test_startup_semantics.py: 26 passed (incl. the real-window AutostartGateTest)",
+    "group": "tests/test_startup_semantics.py + test_panel_architecture_view + test_control_panel + test_multitask_scheduler: 134 passed",
+    "check_wiring": "problems: 0"
+  },
+
+  "not_done": [
+    "The task-switch chain (邮件/日常/联盟/探险) is now reachable for the first time -- its branches are pinned only by the parse fix, not yet by a live observation of each stop_reason.",
+    "requirements 8/9 are pinned by tests, not yet exercised by a human pressing 暂停 and then restarting the window.",
+    "The full test suite was still running when this file was written (0 failures at 48%+, under CPU contention with the development agent's own full run)."
+  ]
+}

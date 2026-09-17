@@ -474,7 +474,26 @@ class LiveRuntime:
                 if index < max_actions:
                     self.sleeper(self.environmental_wait_seconds)
                 continue
-            decision = self.brain.decide(before, self.registry)
+            # Parked on a leaf page with nothing left to do.
+            #
+            # Goal discovery reads the page the client is standing on, so a run
+            # that ends on TRAINING/RESEARCH makes the next run see that page
+            # again and nothing else.  Measured 2026-09-18: with the research
+            # queue busy, every unattended cycle stopped by name on
+            # ``research_queue_busy`` and took no action at all for twenty
+            # minutes -- the loop was alive and doing nothing.  ``_leave_or_stop``
+            # cannot help here: it only leaves for a *named* goal, because
+            # turning a busy queue into a Back while other observations have real
+            # work waiting would displace them (tests/test_multitask_scheduler.py).
+            # The runtime is the only place that knows the difference: discovery
+            # found no goal at all, so one Back off the leaf page (the hop
+            # measured in ``_leave_terminal_page_once``, HOME from either page)
+            # puts the board back in view without spending a step on anything.
+            leave = None
+            if (best_goal is None and self.brain.current_goal is None
+                    and before.page in {Page.TRAINING, Page.RESEARCH}):
+                leave = self.brain.leave_terminal_page(before)
+            decision = leave if leave is not None else self.brain.decide(before, self.registry)
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,
                           current_goal=best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY"),
                           current_skill=decision.skill, reason=decision.reason,

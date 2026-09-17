@@ -112,6 +112,11 @@ def runtime_env_blocker() -> str | None:
 CAPTURE_ROOT = ROOT / "dataset/raw/control_panel"
 LOG_ROOT = ROOT / "learning/control_panel"
 CRASH_ROOT = LOG_ROOT / "crashes"
+# The window's own narration, on disk.  It carries the startup preflight verdict,
+# which is what decides whether AUTO starts -- a decision that has to be auditable
+# from outside the process.
+PANEL_LOG_PATH = LOG_ROOT / "panel.log"
+PANEL_LOG_MAX_BYTES = 1_000_000
 RUNTIME_SNAPSHOT_PATH = ROOT / "learning/runtime_snapshot.json"
 MUMU_PATH = Path(r"D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuNxMain.exe")
 MUMU_MANAGER_PATH = Path(r"D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuManager.exe")
@@ -232,13 +237,30 @@ MARCH_ZH = {MarchState.IDLE: "空闲", MarchState.MARCHING: "行军中", MarchSt
 
 
 def parse_runtime_result(text: str) -> dict:
+    """The runtime's result object, wherever the client's own output lands.
+
+    The MuMu adapter prints its connect lines on stdout, and they arrive glued to
+    the end of the result JSON **on the same line** -- measured 2026-09-18:
+
+        ..."stop_reason": "verified_beast_target_not_visible"}product: MuMuPlayer-12.0-0
+
+    Requiring the whole line to be JSON therefore dropped *every* payload, and
+    with it every ``stop_reason``-driven decision in this file: the window said
+    暂无结构化结果 while a complete, valid result sat on that line.  So scan for
+    the object instead of demanding a clean line.
+    """
+    decoder = json.JSONDecoder()
     for line in reversed(text.splitlines()):
-        try:
-            payload = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(payload, dict) and "stop_reason" in payload:
-            return payload
+        start = line.find("{")
+        while start != -1:
+            try:
+                payload, _ = decoder.raw_decode(line[start:])
+            except json.JSONDecodeError:
+                start = line.find("{", start + 1)
+                continue
+            if isinstance(payload, dict) and "stop_reason" in payload:
+                return payload
+            break
     return {}
 
 
@@ -339,18 +361,63 @@ def load_continuous_selection(path: Path) -> bool:
 
 
 def save_task_selection(path: Path, values: dict[str, bool], continuous: bool | None = None) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
     if continuous is None:
         continuous = load_continuous_selection(path)
-    payload = {
-        "schema_version": "1.1",
-        "task_enabled": {
+    write_panel_state(
+        path,
+        task_enabled={
             name: bool(enabled) for name, enabled in values.items() if name in LIVE_PANEL_TASKS
         },
-        "continuous": bool(continuous),
-        "updated_at": datetime.now().astimezone().isoformat(),
-    }
+        continuous=bool(continuous),
+    )
+
+
+# What the operator last asked for.  This is the one piece of operator intent the
+# window must own, because it has to outlive the process: without it, closing and
+# reopening the GUI re-read `auto_execution` from the config and started AUTO
+# again over the operator's stop -- the loop the operator named as unacceptable
+# (点停止 → 刷新/GUI 重启 → 又自动开起来).  Only the explicit 开始 button clears it.
+OPERATOR_INTENTS = ("RUNNING", "PAUSED", "STOPPED")
+
+
+def read_panel_state(path: Path) -> dict:
+    """The panel state file, or ``{}``.  A broken file is not a state."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def write_panel_state(path: Path, **changes: object) -> dict:
+    """Merge-and-write, so two writers cannot erase each other's field.
+
+    The operator's intent and the task selection are written from different
+    controls; a writer that rewrote the whole file would silently drop the other.
+    """
+    payload = read_panel_state(path)
+    payload.update(changes)
+    payload["schema_version"] = "1.2"
+    payload["updated_at"] = datetime.now().astimezone().isoformat()
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return payload
+
+
+def load_operator_intent(path: Path) -> str:
+    """``RUNNING`` unless the operator explicitly stopped or paused."""
+    value = str(read_panel_state(path).get("operator_intent") or "RUNNING").upper()
+    return value if value in OPERATOR_INTENTS else "RUNNING"
+
+
+def save_operator_intent(path: Path, intent: str, reason: str = "") -> str:
+    wanted = str(intent).upper()
+    if wanted not in OPERATOR_INTENTS:
+        raise ValueError(f"unknown operator intent {intent!r}")
+    write_panel_state(path, operator_intent=wanted,
+                      operator_intent_at=datetime.now().astimezone().isoformat(),
+                      operator_intent_reason=reason)
+    return wanted
 
 
 def count_knowledge() -> dict[str, int]:
@@ -1268,6 +1335,10 @@ class ControlPanel:
         saved_tasks = load_task_selection(PANEL_STATE_PATH, task_names)
         self.task_enabled = {n: tk.BooleanVar(value=saved_tasks[n]) for n in task_names}
         self.continuous = tk.BooleanVar(value=True if self.config.get("auto_execution") else load_continuous_selection(PANEL_STATE_PATH))
+        # The operator's last explicit request, remembered across restarts.  Read
+        # before anything can start: `_maybe_autostart` is the only auto-start.
+        self.operator_intent = load_operator_intent(PANEL_STATE_PATH)
+        self.startup_preflight: dict | None = None
         self.preview_mode = tk.StringVar(value="原始画面")
         self.resource_policy = {"普通资源": tk.StringVar(value="自动使用"), "普通加速": tk.StringVar(value="自动使用"),
                                 "高级加速": tk.StringVar(value="保守"), "钻石": tk.StringVar(value="保守"),
@@ -1283,8 +1354,10 @@ class ControlPanel:
         root.after(250, self._tick)
         root.after(1000, self._refresh_runtime_snapshot)
         self.refresh()
-        if self.config.get("auto_execution") and self.continuous.get():
-            root.after(1800, self.start)
+        # The auto-start lives in ``_maybe_autostart`` (called once from ``main``)
+        # and nowhere else: this block used to schedule a second ``start`` at
+        # 1800 ms while ``main`` scheduled one at 1200 ms, so two paths decided
+        # the same thing and only the guard inside ``start`` kept them apart.
 
     def _style(self) -> None:
         s = ttk.Style()
@@ -2124,6 +2197,27 @@ class ControlPanel:
         if hasattr(self, "log"): self.log.insert("end", line + "\n"); self.log.see("end")
         self.event_lines = (self.event_lines + [line])[-20:]
         if hasattr(self, "event_text"): self.event_text.set("   |   ".join(self.event_lines[-3:]))
+        self._append_to_file(line)
+
+    def _append_to_file(self, line: str) -> None:
+        """Keep the window's own narration on disk, because it is evidence.
+
+        The startup preflight decides whether AUTO starts at all, and a decision
+        that only ever existed inside a Tk text widget cannot be audited afterwards
+        -- the acceptance test for "启动 GUI = 自动运行 + 自动开发" would have to
+        take the window's word for it.  Bounded so an unattended month cannot fill
+        the disk: past ``PANEL_LOG_MAX_BYTES`` the file keeps its tail.
+        """
+        try:
+            LOG_ROOT.mkdir(parents=True, exist_ok=True)
+            if PANEL_LOG_PATH.exists() and PANEL_LOG_PATH.stat().st_size > PANEL_LOG_MAX_BYTES:
+                tail = PANEL_LOG_PATH.read_text(encoding="utf-8", errors="replace").splitlines()[-500:]
+                PANEL_LOG_PATH.write_text("\n".join(tail) + "\n", encoding="utf-8")
+            with PANEL_LOG_PATH.open("a", encoding="utf-8") as handle:
+                handle.write(line + "\n")
+        except OSError:
+            # A log that cannot be written must never take the window down.
+            pass
 
     def _sync_tasks(self) -> None:
         running_task = getattr(self, "active_panel_task", None) if (self.process is not None or self.starting) else None
@@ -2164,6 +2258,120 @@ class ControlPanel:
 
     def _refresh_worker(self) -> None:
         self.events.put(("note", "状态由 Runtime Snapshot 统一提供。"))
+
+    # -- startup semantics -------------------------------------------------
+    #
+    # 启动 GUI = 启动整个无人值守系统 (operator, 2026-09-18), in this order:
+    #   operator intent -> real preflight -> AUTO, with the WorkBuddy gateway
+    #   reported but never a blocker, and the operator's own stop remembered.
+    PREFLIGHT_TIMEOUT_SECONDS = 60.0
+    CORE_RETRY_MS = 60_000
+
+    def _kill_worker_tree(self) -> None:
+        """Stop the worker *and its children*, so closing leaves no orphan.
+
+        The worker is spawned through the production interpreter, and on Windows
+        that is a venv redirector: the process this panel holds is a stub whose
+        child is the one really driving the device (and MAA, 12.1 ms against
+        246.2 ms).  Terminating the stub can leave that grandchild running -- an
+        orphan AUTO worker still tapping the game with no window left to stop it.
+        So the tree goes down, and the handle is cleared either way.
+        """
+        process = self.process
+        if process is None or process.poll() is not None:
+            self.process = None
+            return
+        killed = False
+        if os.name == "nt":
+            try:
+                killed = _background_run(
+                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    capture_output=True, text=True, timeout=15, check=False,
+                ).returncode == 0
+            except Exception:  # noqa: BLE001 - fall through to terminate()
+                killed = False
+        try:
+            process.terminate()
+            process.wait(timeout=10)
+        except Exception:  # noqa: BLE001 - a worker that will not die shows up in poll()
+            pass
+        self._append(f"worker 已停止（进程树{'整体' if killed else '未能整体'}结束）。")
+        self.process = None
+
+    def _run_startup_preflight(self) -> dict | None:
+        """The real preflight, run once at startup with the production interpreter.
+
+        Same command the desktop launcher runs, so what the window reports and
+        what the launcher enforces cannot drift.  Bounded, because a hanging
+        emulator probe must not hold the window hostage.
+        """
+        command = [runtime_python_path(), str(ROOT / "tools/preflight.py"), "--json"]
+        try:
+            done = _background_run(command, cwd=str(ROOT), capture_output=True, text=True,
+                                   timeout=self.PREFLIGHT_TIMEOUT_SECONDS, check=False)
+        except Exception as exc:  # noqa: BLE001 - a preflight that cannot run is a failure
+            self._append(f"启动预检未能执行：{type(exc).__name__}: {exc}")
+            return None
+        try:
+            data = json.loads(done.stdout or "{}")
+        except json.JSONDecodeError:
+            self._append("启动预检输出无法解析；按未通过处理。")
+            return None
+        return data if isinstance(data, dict) else None
+
+    def _log_preflight(self, report: dict) -> None:
+        sections = report.get("sections") or {}
+        interpreter = sections.get("interpreter") or {}
+        device = sections.get("device") or {}
+        gateway = sections.get("gateway") or {}
+        self._append(
+            f"预检·核心：Runtime {'OK' if interpreter.get('ok') else 'FAIL'} "
+            f"({interpreter.get('exe')}) · MuMu {'OK' if device.get('ok') else 'FAIL'} "
+            f"({device.get('serial')} {device.get('resolution') or device.get('want_resolution')} "
+            f"前台 {device.get('foreground')})")
+        if gateway.get("ok"):
+            self._append(f"预检·辅助：WorkBuddy Gateway OK（{gateway.get('base_url')}）")
+        else:
+            self._append(f"预检·辅助：WorkBuddy Gateway 不可用（{gateway.get('reason')}）"
+                         "；自动开发标记为不可用，后台周期重试，不影响 AUTO。")
+
+    def _maybe_autostart(self) -> None:
+        """The only auto-start path: intent first, then a real preflight, then AUTO."""
+        if not self.config.get("auto_execution", False):
+            self._append("manual mode (config auto_execution=false)：等待用户点击“开始自动运行”。")
+            return
+        if self.operator_intent != "RUNNING":
+            stopped = self.operator_intent == "STOPPED"
+            self._append(f"不自动启动：上次由用户{'停止' if stopped else '暂停'}"
+                         "，只有点击“开始自动运行”才会恢复。")
+            self._idle_buttons()
+            self.runtime_store.update(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
+                                      scheduler_loop_alive=False,
+                                      stop_reason="USER_STOPPED" if stopped else "USER_PAUSED")
+            return
+        if not self.continuous.get():
+            self._append("不自动启动：连续运行已关闭。")
+            return
+        self._append("启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）")
+        report = self._run_startup_preflight()
+        self.startup_preflight = report
+        if report is None:
+            self._append("预检未通过（无法执行）；不启动 AUTO。诊断：python tools/preflight.py")
+            self._idle_buttons()
+            return
+        self._log_preflight(report)
+        if not report.get("core_ok"):
+            blockers = "、".join(report.get("blockers") or []) or "unknown"
+            self._append(f"预检未通过：核心环境不可用（{blockers}）；不启动 AUTO，"
+                         f"{self.CORE_RETRY_MS // 1000} 秒后重试。")
+            self._idle_buttons()
+            self.runtime_store.update(agent_state=AgentState.DEGRADED.value, runtime_thread_alive=False,
+                                      scheduler_loop_alive=False, stop_reason=RUNTIME_ENV_STOP_REASON,
+                                      reason=f"预检未通过：{blockers}", next_action="修复核心环境后自动重试")
+            self._cancel_repeat()
+            self.repeat_after_id = self.root.after(self.CORE_RETRY_MS, self._maybe_autostart)
+            return
+        self.start()
 
     def start(self) -> None:
         if self.process is not None or self.starting: return
@@ -2206,6 +2414,9 @@ class ControlPanel:
         self._append(f"运行环境预检通过：{runtime_python_path()}")
         if self.repeat_after_id: self.root.after_cancel(self.repeat_after_id); self.repeat_after_id = None
         self.stop_requested = self.paused = False; self._running_buttons()
+        # An explicit 开始 (or an allowed auto-start) is the operator saying
+        # "run": that is what clears a remembered stop.
+        self.operator_intent = save_operator_intent(PANEL_STATE_PATH, "RUNNING", "started")
         self.runtime_store.update(agent_state=AgentState.RECOVERING.value, runtime_thread_alive=True,
                                   scheduler_loop_alive=False, stop_reason=None, last_fatal_error=None,
                                   current_goal=None, current_skill=None, reason="启动并校准真实客户端",
@@ -2519,7 +2730,8 @@ class ControlPanel:
 
     def pause(self) -> None:
         self.paused = self.stop_requested = True; self.starting = False; self._cancel_repeat()
-        if self.process is not None and self.process.poll() is None: self.process.terminate()
+        self._kill_worker_tree()
+        self.operator_intent = save_operator_intent(PANEL_STATE_PATH, "PAUSED", "user pressed pause")
         self.values["agent"].set("● 等待"); self.values["mode"].set("暂停"); self.values["result"].set("已暂停；状态与截图保留")
         self._clear_running_task_labels()
         self.runtime_store.update(agent_state=AgentState.PAUSED.value, runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason="USER_PAUSED")
@@ -2527,7 +2739,10 @@ class ControlPanel:
 
     def stop(self) -> None:
         self.stop_requested = True; self.paused = False; self.starting = False; self._cancel_repeat()
-        if self.process is not None and self.process.poll() is None: self.process.terminate()
+        self._kill_worker_tree()
+        # Remembered on disk: a GUI restart must not undo the operator's stop
+        # (see ``load_operator_intent``).
+        self.operator_intent = save_operator_intent(PANEL_STATE_PATH, "STOPPED", "user pressed stop")
         self.values["agent"].set("● 等待"); self.values["mode"].set("停止"); self.values["result"].set("用户停止")
         self._clear_running_task_labels(); self._append("智能体已停止。"); self._idle_buttons()
         self.runtime_store.update(agent_state=AgentState.IDLE.value, runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason="USER_STOPPED")
@@ -2729,20 +2944,24 @@ class ControlPanel:
         else: self.values["result"].set("暂无可打开的截图")
 
     def close(self) -> None:
-        if self.process is not None and self.process.poll() is None:
-            self.process.terminate()
+        # No orphan AUTO worker: the whole tree goes down, not just the venv stub
+        # the panel holds (see ``_kill_worker_tree``).
+        self.stop_requested = True
+        self._cancel_repeat()
+        self._kill_worker_tree()
         # The gateway poller is a daemon thread, so the process would exit anyway --
         # stopping it explicitly keeps a closing window from making one last request.
         self.probes.stop()
-        self._cancel_repeat(); self.root.destroy()
+        self.root.destroy()
 
 
 def main() -> int:
     if not _acquire_single_instance():
         return 0
     root = tk.Tk(); panel = ControlPanel(root)
-    if panel.config.get("auto_execution", False):
-        root.after(1200, panel.start)
+    # 启动 GUI = 启动整个无人值守系统: one path, which checks the operator's
+    # remembered intent, runs the real preflight, and then starts AUTO.
+    root.after(1200, panel._maybe_autostart)
     root.mainloop(); return 0
 
 
