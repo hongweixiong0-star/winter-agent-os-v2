@@ -1,0 +1,201 @@
+{
+  "policy": "none",
+  "files": 114,
+  "batches": [
+    {
+      "name": "batch1",
+      "files": [
+        "tests\\test_alliance_gifts_chain.py",
+        "tests\\test_battle_victory_overlay.py",
+        "tests\\test_beast_target_card.py",
+        "tests\\test_camp_panel_stamina.py",
+        "tests\\test_daily_current.py",
+        "tests\\test_device.py",
+        "tests\\test_evidence_integrity.py",
+        "tests\\test_goal_library.py",
+        "tests\\test_intel_list_candidate.py",
+        "tests\\test_mail_dynamic_badge.py",
+        "tests\\test_multitask_scheduler.py",
+        "tests\\test_operator_policy.py",
+        "tests\\test_production_gate.py",
+        "tests\\test_resilient_ocr.py",
+        "tests\\test_resource_tab_calibration.py",
+        "tests\\test_role_scoped_march_capacity.py",
+        "tests\\test_session_reconnect.py",
+        "tests\\test_startup_semantics.py",
+        "tests\\test_verifier_binding_audit.py"
+      ],
+      "returncode": 0,
+      "seconds": 230.185045003891,
+      "summary": "161 passed, 5 skipped, 11 subtests passed in 229.75s (0:03:49)",
+      "verdict": "PASS",
+      "counts": {
+        "passed": 161,
+        "skipped": 5
+      },
+      "note": "basetemp=winter-pytest-_o75_lzq"
+    },
+    {
+      "name": "batch2",
+      "files": [
+        "tests\\test_alliance_gifts_verifier.py",
+        "tests\\test_beast_card_dead_end_recovery.py",
+        "tests\\test_beast_targets.py",
+        "tests\\test_candidate_policy.py",
+        "tests\\test_daily_entry_template.py",
+        "tests\\test_dispatch_cost_affordability.py",
+        "tests\\test_executor_router.py",
+        "tests\\test_handoff.py",
+        "tests\\test_intel_pin_board.py",
+        "tests\\test_mail_notification.py",
+        "tests\\test_navigation_verifier.py",
+        "tests\\test_p0_live_vision.py",
+        "tests\\test_qwen_decoupling.py",
+        "tests\\test_resolution.py",
+        "tests\\test_retention.py",
+        "tests\\test_route_goal_requires_home.py",
+        "tests\\test_signature_vision.py",
+        "tests\\test_template_extraction.py",
+        "tests\\test_vision_never_raises.py"
+      ],
+      "returncode": 0,
+      "seconds": 100.71433186531067,
+      "summary": "166 passed, 1 skipped, 23 subtests passed in 100.31s (0:01:40)",
+      "verdict": "PASS",
+      "counts": {
+        "passed": 166,
+        "skipped": 1
+      },
+      "note": "basetemp=winter-pytest-okoxig08"
+    },
+    {
+      "name": "batch3",
+      "files": [
+        "tests\\test_alliance_verifier.py",
+        "tests\\test_beast_card_runtime_recovery.py",
+        "tests\\test_beast_verifier.py",
+        "tests\\test_capture_naming.py",
+        "tests\\test_daily_panel_dead_end_recovery.py",
+        "tests\\test_duplicate_target_guard.py",
+        "tests\\test_exit_confirm_safety.py",
+        "tests\\test_integration.py",
+        "tests\\test_intel_pin_exhaustion.py",
+        "tests\\test_map_page_anchor.py",
+        "tests\\test_ocr.py",
+        "tests\\test_panel_architecture_view.py",
+        "tests\\test_rally.py",
+        "tests\\test_resource_ledger.py",
+        "tests\\test_reuse_check.py",
+        "tests\\test_runtime_interpreter.py",
+        "tests\\test_skill_factory.py",
+        "tests\\test_terminal_page_exit.py",
+        "tests\\test_wiring_static_resolution.py"
+      ],
+      "returncode": 0,
+      "seconds": 49.401193618774414,
+      "summary": "216 passed, 35 subtests passed in 48.97s",
+      "verdict": "PASS",
+      "counts": {
+        "passed": 216
+      },
+      "note": "basetemp=winter-pytest-va6iyqq9"
+    },
+    {
+      "name": "batch4",
+      "files": [
+        "tests\\test_backend_provenance.py",
+        "tests\\test_beast_formation_identity.py",
+        "tests\\test_build_verifier.py",
+        "tests\\test_check_march_enabled.py",
+        "tests\\test_daily_tab_selection.py",
+        "tests\\test_environmental_states.py",
+        "tests\\test_external_knowledge.py",
+        "tests\\test_intel_claim_reward.py",
+        "tests\\test_intel_verifier.py",
+        "tests\\test_march_count_idle.py",
+        "tests\\test_offline_rewards.py",
+        "tests\\test_panel_redesign.py",
+        "tests\\test_real_money_offer.py",
+        "tests\\test_resource_level_filter.py",
+        "tests\\test_reward_claim_verifier.py",
+        "tests\\test_runtime_snapshot.py",
+        "tests\\test_stamina_beast_runtime.py",
+        "tests\\test_training_camp_two_stages.py",
+        "tests\\test_workbuddy_bridge.py"
+      ],
+      "returncode": 0,
+      "seconds": 357.38956212997437,
+      "summary": "216 passed, 1 skipped, 27 subtests passed in 356.94s (0:05:56)",
+      "verdict": "PASS",
+      "counts": {
+        "passed": 216,
+        "skipped": 1
+      },
+      "note": "basetemp=winter-pytest-789qyjb0"
+    },
+    {
+      "name": "batch5",
+      "files": [
+        "tests\\test_backend_truth_audit.py",
+        "tests\\test_beast_formation_page.py",
+        "tests\\test_building_identity.py",
+        "tests\\test_control_panel.py",
+        "tests\\test_daily_verifier.py",
+        "tests\\test_escalation_queue.py",
+        "tests\\test_failure_matrix.py",
+        "tests\\test_intel_dialog_typing.py",
+        "tests\\test_live_gather_verifier.py",
+        "tests\\test_march_recall_and_stamina.py",
+        "tests\\test_one_decision_per_step.py",
+        "tests\\test_popup_verifier.py",
+        "tests\\test_research_route_templates.py",
+        "tests\\test_resource_rotation.py",
+        "tests\\test_reward_popup_source.py",
+        "tests\\test_semantic_gate.py",
+        "tests\\test_stamina_check_without_a_read.py",
+        "tests\\test_training_verifier.py",
+        "tests\\test_workbuddy_model_router.py"
+      ],
+      "returncode": 0,
+      "seconds": 172.94847989082336,
+      "summary": "283 passed, 22 subtests passed in 172.51s (0:02:52)",
+      "verdict": "PASS",
+      "counts": {
+        "passed": 283
+      },
+      "note": "basetemp=winter-pytest-_rv4pb0q"
+    },
+    {
+      "name": "batch6",
+      "files": [
+        "tests\\test_battle_unknown_recovery.py",
+        "tests\\test_beast_map_scan.py",
+        "tests\\test_camp_fight_refusal_recovery.py",
+        "tests\\test_cost_colour_verdict.py",
+        "tests\\test_dataset_audit.py",
+        "tests\\test_event_goal.py",
+        "tests\\test_game_understanding.py",
+        "tests\\test_intel_entry_recognition.py",
+        "tests\\test_live_runtime.py",
+        "tests\\test_multitask_production_chain.py",
+        "tests\\test_operations_policy.py",
+        "tests\\test_power_route_templates.py",
+        "tests\\test_research_verifier.py",
+        "tests\\test_resource_tab_anchor.py",
+        "tests\\test_role_identity.py",
+        "tests\\test_semantic_roi_vision.py",
+        "tests\\test_stamina_supply_clock.py",
+        "tests\\test_v2_core.py",
+        "tests\\test_worker_exit_semantics.py"
+      ],
+      "returncode": 0,
+      "seconds": 145.89342594146729,
+      "summary": "189 passed, 20 subtests passed in 145.34s (0:02:25)",
+      "verdict": "PASS",
+      "counts": {
+        "passed": 189
+      },
+      "note": "basetemp=winter-pytest-w4epmrt6"
+    }
+  ]
+}
