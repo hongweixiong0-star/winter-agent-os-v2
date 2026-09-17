@@ -137,6 +137,11 @@ dataset/external/repositories/
 # so they have to travel with the repository -- a clone without them would silently skip
 # the measurement that keeps the training route from tapping on an ambiguous signal.
 !dataset/truth_audit/training_camp_highlight_ambiguity_*/**/*.png
+# 2026-09-17, the beast-map-scan round (escalation SPEND_STAMINA_ON_BEAST).  Only
+# key/ is published: the probe frame that shows the live viewport holding a
+# level-25 moose and no verified target (the root cause), plus the scan-run
+# before/after pair whose map coordinates prove the pans really moved the view.
+!dataset/truth_audit/beast_map_scan_20260917/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

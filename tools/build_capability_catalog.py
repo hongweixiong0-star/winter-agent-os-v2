@@ -154,7 +154,12 @@ ALIASES: dict[str, str] = {
     "RECALL_MARCH": "RECALL_MARCH",
     "VERIFY_RETURNING": "RECALL_MARCH",
     # --- beasts / intel -------------------------------------------------------
-    "SEARCH_BEAST": "SELECT_BEAST_TARGET",
+    # 2026-09-17: SEARCH_BEAST used to point at SELECT_BEAST_TARGET, which only
+    # *taps* a target that already sits in the viewport.  The live escalation
+    # SPEND_STAMINA_ON_BEAST|VERIFIED_BEAST_TARGET_NOT_VISIBLE proved the search
+    # itself was the missing half: the goal dead-ended whenever no verified
+    # beast was on screen.  SCAN_MAP_FOR_BEAST is the real search hop now.
+    "SEARCH_BEAST": "SCAN_MAP_FOR_BEAST",
     "ATTACK_BEAST": "BEAST_HUNT",
     "READ_STAMINA": "OPEN_STAMINA_SOURCES",
     "OPEN_LIGHTHOUSE": "OPEN_INTEL",
@@ -379,6 +384,14 @@ def main() -> int:
             entry["blocked_reason"] = (
                 "the role IS observable (领主档案 panel behind one tap on the avatar) and "
                 "the reader exists, but no skill calls it yet.")
+        if entry["code"] == "SEARCH_BEAST":
+            entry["blocked_reason"] = (
+                "the scan hop is live (2026-09-17, three verified pans per hunt cycle) but "
+                "only finds the level-9 Musk Ox the target template was cropped from; the "
+                "current role's map holds a level-24/25 moose instead, whose victory "
+                "assessment is not safely attackable, so no stamina spend has been "
+                "verified on this role.  Evidence: dataset/truth_audit/beast_map_scan_20260917/key/.")
+            entry["current_role_available"] = "OBSERVED_AVAILABLE"
 
     summary = {
         "total": len(entries),
