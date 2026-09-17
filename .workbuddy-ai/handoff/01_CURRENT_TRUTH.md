@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-17T09:47:57+00:00`
+- generated_at: `2026-09-17T10:03:44+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `909ced3` on `main`
+- commit: `23618f6` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,10 +10,12 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 124
-- HEAD: `909ced3` — feat(tooling): enumerate the verifier bindings that can never be called (2026-09-17T16:51:43+08:00)
-- working tree: 11 dirty file(s)
-  - `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- commits: 125
+- HEAD: `23618f6` — fix(brain): the TRAIN and RESEARCH goals could not start from the map (2026-09-17T17:47:58+08:00)
+- working tree: 16 dirty file(s)
+  - `M .workbuddy-ai/commander/EXECUTION_STATE.json`
+  - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
   - ` M .workbuddy-ai/memory/2026-09-17.md`
   - ` M .workbuddy/memory/2026-09-17.md`
   - ` M learning/control_panel/latest.log`
@@ -22,8 +24,11 @@
   - ` M learning/goal_state.json`
   - ` M learning/runtime_snapshot.json`
   - ` M winter_agent_v2/brain.py`
-  - `?? tests/test_route_goal_requires_home.py`
-  - `?? tools/probe_return_to_start.py`
+  - ` M winter_agent_v2/runtime.py`
+  - ` M winter_agent_v2/skills.py`
+  - ` M winter_agent_v2/verifier.py`
+  - `?? .workbuddy-ai/commander/results/CAP-D01-TRAINING-TUTORIAL-STAGE.json`
+  - `?? tests/test_training_camp_two_stages.py`
 
 ### A2. Public mirror
 
@@ -32,43 +37,43 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-17T09:47:57+00:00
+SYNC STATE at 2026-09-17T10:03:44+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 909ced33b129e2bf3c87ced7461b85eba709741a
-remote_head       : 909ced33b129e2bf3c87ced7461b85eba709741a   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : 23618f687223faea9cdac42ee12b2a721b40c8c3
+remote_head       : 23618f687223faea9cdac42ee12b2a721b40c8c3   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (11 path(s))
-last_push_at      : 2026-09-17T08:51:49.024938+00:00
+git_dirty         : True (16 path(s))
+last_push_at      : 2026-09-17T09:48:04.766483+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
 ```
 
 ## B. Runtime
 
-- agent_state: `AUTO_RUNNING`
-- runtime_thread_alive: True / scheduler_loop_alive: True
+- agent_state: `DEGRADED`
+- runtime_thread_alive: False / scheduler_loop_alive: False
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
-- stop_reason: None
-- page: MAP  march: 0/None
-- updated_at: 2026-09-17T09:47:55.937753+00:00
+- stop_reason: camp_menu_never_drawn
+- page: HOME  march: None/None
+- updated_at: 2026-09-17T10:03:42.105454+00:00
 
 ## C. Episode stream
 
-- rows: 1469 (production 1469)  modes: {'PRODUCTION': 1469}
-- success / failure: 1111 / 353
-- success rate over decided: **0.7589**
+- rows: 1501 (production 1501)  modes: {'PRODUCTION': 1501}
+- success / failure: 1143 / 353
+- success rate over decided: **0.764**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "SELECT_INFANTRY_CAMP", "result": "FAILURE", "recorded_at": "2026-09-17T09:46:29.659623+00:00", "episode_id": "20260917_train_homefix", "before_screenshot": "dataset\\raw\\control_panel\\runtime_training\\20260917_train_homefix\\20260917_train_homefix_step_004_before_20260917T094547912932.png", "after_screenshot": "dataset\\raw\\control_panel\\runtime_training\\20260917_train_homefix\\20260917_train_homefix_step_004_after_20260917T094552138166.png"}`
+- last episode: `{"skill": "WAIT_FOR_CAMP_MENU", "result": "SUCCESS", "recorded_at": "2026-09-17T10:03:38.054028+00:00", "episode_id": "20260917_175953_568065", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_175953_568065\\20260917_175953_568065_step_022_before_20260917T100328448987.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_175953_568065\\20260917_175953_568065_step_022_after_20260917T100334035030.png"}`
 
 ## D. Registry and lifecycle
 
-- registry total: 90  by_state: {'VERIFIED': 45, 'CANDIDATE': 43, 'BLOCKED': 2}
-- live dispatchable (verifier-backed): 74
+- registry total: 91  by_state: {'VERIFIED': 46, 'CANDIDATE': 43, 'BLOCKED': 2}
+- live dispatchable (verifier-backed): 75
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **25**  stable: 29  degraded: 9  only_failed: 10  never_executed: 19
+- live_verified: **25**  stable: 30  degraded: 9  only_failed: 10  never_executed: 19
 
 ### Never executed
 
@@ -124,7 +129,7 @@ verdict           : GitHub mirrors the local tree
 - `NAVIGATE_INFANTRY_CAMP` success=12 rate=0.8571
 - `OPEN_DAILY` success=10 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
-- `OPEN_HOME` success=24 rate=0.8889
+- `OPEN_HOME` success=25 rate=0.8929
 - `OPEN_INFANTRY_TRAINING` success=5 rate=0.8333
 - `OPEN_INTEL` success=115 rate=0.8519
 - `OPEN_INTEL_BEAST_TARGET` success=42 rate=0.84
@@ -136,6 +141,7 @@ verdict           : GitHub mirrors the local tree
 - `OPEN_STAMINA_SOURCES` success=14 rate=1.0
 - `SELECT_INTEL_BEAST_MISSION` success=10 rate=0.8333
 - `SELECT_INTEL_PIN` success=48 rate=0.9412
+- `WAIT_FOR_CAMP_MENU` success=31 rate=1.0
 
 ### Degraded
 
@@ -191,9 +197,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 1443  present: 1443
+- referenced screenshots: 1507  present: 1507
 - missing: []
-- episodes carrying screenshot references: 737
+- episodes carrying screenshot references: 769
 
 ## H. Commercial bot parity
 
@@ -203,17 +209,17 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T09:47:24+00:00", "size_bytes": 1350, "last_stop_reason": "verified_beast_target_not_visible"}
+- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T09:59:22+00:00", "size_bytes": 1350, "last_stop_reason": "verified_beast_target_not_visible"}
 - recent crash reports: (none)
 
 ## J. Backend axis (MAA vs ADB)
 
 - source: `learning/executor_backend.jsonl` vs `knowledge/execution/backend_routing.json`
-- ledger rows: 546 (last 200 summarised)
-- used_backend: {"ADB": 123, "MAA": 77}
-- capture_backend: {"ADB_EXEC_OUT": 123, "MAA_MUMU_EXTRAS": 77}
+- ledger rows: 579 (last 200 summarised)
+- used_backend: {"ADB": 143, "MAA": 57}
+- capture_backend: {"ADB_EXEC_OUT": 143, "MAA_MUMU_EXTRAS": 57}
 - promoted to MAA in routing: 10 ['BACK', 'CLOSE_POPUP', 'DISMISS_BATTLE_VICTORY', 'INTEL_HERO_DISPATCH', 'INTEL_HERO_START_MARCH', 'OPEN_HOME', 'OPEN_INTEL', 'SEARCH_RESOURCE', 'SELECT_RESOURCE', 'START_GATHER']
 - promoted but RAN ON ADB: {}
-- last step: SELECT_INFANTRY_CAMP via ADB at 2026-09-17T09:45:50.634311+00:00
+- last step: WAIT_FOR_CAMP_MENU via ADB at 2026-09-17T10:03:42.102829+00:00
 
 > used_backend is what the step really did. A skill listed under promoted_but_ran_on_adb took the 324 ms ADB frame path while its own record claims MAA EmulatorExtras at 8.92 ms -- check tools/preflight.py before trusting the run.

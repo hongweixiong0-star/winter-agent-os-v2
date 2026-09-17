@@ -1,31 +1,31 @@
 {
-  "generated_at": "2026-09-17T09:47:57+00:00",
+  "generated_at": "2026-09-17T10:03:44+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "909ced3",
+  "commit": "23618f6",
   "last_good_commit": "e4fd245",
-  "dirty_count": 11,
+  "dirty_count": 16,
   "episodes": {
-    "total": 1469,
-    "production": 1469,
-    "success": 1111,
+    "total": 1501,
+    "production": 1501,
+    "success": 1143,
     "failure": 353,
-    "success_rate_over_decided": 0.7589,
+    "success_rate_over_decided": 0.764,
     "modes": {
-      "PRODUCTION": 1469
+      "PRODUCTION": 1501
     },
     "mixed_case_rows": 35
   },
   "skills": {
-    "registry_total": 90,
+    "registry_total": 91,
     "by_state": {
-      "VERIFIED": 45,
+      "VERIFIED": 46,
       "CANDIDATE": 43,
       "BLOCKED": 2
     },
-    "dispatchable": 74,
+    "dispatchable": 75,
     "counts": {
       "live_verified": 25,
-      "stable": 29,
+      "stable": 30,
       "degraded": 9,
       "only_failed": 10,
       "never_executed": 19
@@ -35,7 +35,7 @@
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
       "count": 130,
-      "recent": 14,
+      "recent": 12,
       "last_seen": "2026-09-17T04:45:23.361291+00:00",
       "dates": {
         "2026-09-12": 36,
@@ -251,9 +251,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 1443,
-    "present_on_disk": 1443,
-    "traceable_episodes": 737,
+    "referenced_screenshots": 1507,
+    "present_on_disk": 1507,
+    "traceable_episodes": 769,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -264,20 +264,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "909ced33b129e2bf3c87ced7461b85eba709741a",
-    "remote_head": "909ced33b129e2bf3c87ced7461b85eba709741a",
+    "local_head": "23618f687223faea9cdac42ee12b2a721b40c8c3",
+    "remote_head": "23618f687223faea9cdac42ee12b2a721b40c8c3",
     "unpushed_commits": 0,
     "behind": 0,
     "in_sync": true,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-09-17T08:51:49.024938+00:00",
+    "last_push_at": "2026-09-17T09:48:04.766483+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "AUTO_RUNNING",
+    "agent_state": "DEGRADED",
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": null
+    "stop_reason": "camp_menu_never_drawn"
   }
 }

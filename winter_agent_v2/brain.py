@@ -62,6 +62,14 @@ class RuleBrain:
         # afterwards, so leaving is verifiable rather than hopeful.  The flag is
         # what stops a Back that did not move the client from being repeated.
         self.terminal_page_left = False
+        # Consecutive Stage A re-observations in this run.  Measured 2026-09-17:
+        # the highlighted-camp state is NOT a transient animation -- seven waits in a
+        # row all reported ``menu_drawn: false`` and ended with MAX_ACTIONS_REACHED,
+        # so an unbounded wait burns a whole run on a state that is not converging.
+        self._camp_menu_waits = 0
+        # Two waits is the whole budget: measured, the state does not converge, so the
+        # third Stage A observation is a blocker rather than another wait.
+        self.MAX_CAMP_MENU_WAITS = 2
         # The panel opens on its 章节任务 tab, and the daily skills were calibrated on the
         # 每日任务 tab, so one tap is needed to read the content they act on.  One-shot:
         # if the tap does not take, repeating it would spend an action per step forever,
@@ -569,7 +577,23 @@ class RuleBrain:
             if self.terminal_page_left:
                 return Decision("SAFE_STOP", "training_page_already_read_not_actionable", 1.0, "switch_task")
             if world.page is Page.HOME and world.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED":
-                return Decision("SELECT_INFANTRY_CAMP", "verified_infantry_camp_highlight", world.confidence, "infantry_camp_menu_open")
+                # Stage A (2026-09-17, #28).  The camp is highlighted but the radial
+                # menu has not been drawn yet -- a large tutorial finger sits over the
+                # camp.  Tapping it in that state took the client to the MAP (frame
+                # step_004_after_refresh_2 in
+                # dataset/raw/control_panel/runtime_training/20260917_train_homefix/),
+                # so the route waits and re-observes instead of tapping.  Stage B is
+                # the menu itself, handled by the ``menu_open`` branch just below.
+                #
+                # The wait is bounded because the state was measured to be persistent
+                # rather than transient: live 2026-09-17 18:00 GMT+8, seven consecutive
+                # Stage A re-observations each returned menu_drawn=false and the run
+                # ended MAX_ACTIONS_REACHED.  After two waits the honest answer is a
+                # named blocker, so the run is handed back instead of spent.
+                self._camp_menu_waits += 1
+                if self._camp_menu_waits > self.MAX_CAMP_MENU_WAITS:
+                    return Decision("SAFE_STOP", "camp_menu_never_drawn", 1.0, "switch_task")
+                return Decision("WAIT_FOR_CAMP_MENU", "camp_highlight_is_stage_a_reobserve", world.confidence, "camp_menu_open")
             if world.page is Page.HOME and world.training.get("menu_open"):
                 return Decision("OPEN_INFANTRY_TRAINING", "idle_infantry_camp_selected", world.confidence, "training_page_open")
             if world.page is Page.HOME and world.training.get("queue_available") is False:

@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 66,
-          "successes": 59,
+          "attempts": 67,
+          "successes": 60,
           "failures": 7
         },
         {

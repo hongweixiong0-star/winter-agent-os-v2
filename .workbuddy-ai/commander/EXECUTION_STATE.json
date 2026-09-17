@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-16T13:08:33+00:00",
-  "queue_generated_at": "2026-09-16T07:17:31+08:00",
-  "current_task": null,
+  "updated_at": "2026-09-17T10:03:16+00:00",
+  "queue_generated_at": "2026-09-17T05:05:00+00:00",
+  "current_task": "CAP-B01-BUILDING-IDENTITY-FROM-PIXELS",
   "tasks": {
     "WB-0BA-PIN-EXHAUSTION": {
       "status": "DONE",
@@ -143,6 +143,59 @@
       "finished_at": "2026-09-16T02:30:35+00:00",
       "verdict": "BLOCKED",
       "blocker": null
+    },
+    "CAP-A01-INTEL-BEAST-TARGET": {
+      "status": "PENDING",
+      "priority": "P0",
+      "queue_status": null,
+      "result_file": null
+    },
+    "CAP-A02-EXIT-CONFIRM-GUARD": {
+      "status": "PENDING",
+      "priority": "P0",
+      "queue_status": "DONE 2026-09-17",
+      "result_file": null
+    },
+    "CAP-B01-BUILDING-IDENTITY-FROM-PIXELS": {
+      "status": "IN_PROGRESS",
+      "priority": "P0",
+      "queue_status": null,
+      "result_file": null,
+      "started_at": "2026-09-17T10:03:16+00:00"
+    },
+    "CAP-C01-LEAF-PAGE-LIVE-EVIDENCE": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": null,
+      "result_file": null
+    },
+    "CAP-D01-TRAINING-TUTORIAL-STAGE": {
+      "status": "DONE",
+      "priority": "P1",
+      "queue_status": null,
+      "result_file": "results/CAP-D01-TRAINING-TUTORIAL-STAGE.json",
+      "started_at": "2026-09-17T09:59:49+00:00",
+      "finished_at": "2026-09-17T10:03:16+00:00",
+      "verdict": "DONE",
+      "summary": "run_live --goal TRAIN 2026-09-17 18:00 GMT+8: step1 OPEN_HOME MAP->HOME verifier OK; steps 2-8 WAIT_FOR_CAMP_MENU verifier OK, page_after HOME every time, menu_drawn false every time, run ended MAX_ACTIONS_REACHED. Bounded re-run 18:03 GMT+8 with --max-actions 4: step1/2 WAIT_FOR_CAMP_MENU verifier "
+    },
+    "CAP-E01-ALLIANCE-HELP": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": null,
+      "result_file": null
+    },
+    "CAP-F01-ARENA": {
+      "status": "PENDING",
+      "priority": "P1",
+      "queue_status": null,
+      "result_file": null
+    },
+    "CAP-G01-OPPORTUNISTIC": {
+      "status": "PENDING",
+      "priority": "P2",
+      "queue_status": null,
+      "result_file": null
     }
   }
 }

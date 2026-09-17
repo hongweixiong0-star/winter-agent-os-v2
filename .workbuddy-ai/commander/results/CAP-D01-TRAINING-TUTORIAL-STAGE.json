@@ -1,0 +1,34 @@
+{
+  "TASK_ID": "CAP-D01-TRAINING-TUTORIAL-STAGE",
+  "ROOT_CAUSE": "Two independent defects sat on the same four hops. (1) Neither the TRAIN nor the RESEARCH goal could start from the MAP, which is the client's resting page: MAIL / EXPLORATION / DAILY / ALLIANCE have had a MAP -> OPEN_HOME hop all along and these two never did, so a 训练 or 科研 task launched after any other task stopped on step 1 with training_entry_not_verified taking zero actions, and the non-zero exit code looked like a normal stop. (2) Stage A of the focused camp -- camp highlighted with a large tutorial finger, radial menu not drawn -- was answered by SELECT_INFANTRY_CAMP (tap the camp), and the live tap moved the client to the world map, so the route ended with INFANTRY_CAMP_MENU_NOT_PROVEN.",
+  "CHANGED_FILES": [
+    "winter_agent_v2/brain.py (MAP -> OPEN_HOME hop for TRAIN and RESEARCH; Stage A now routes to WAIT_FOR_CAMP_MENU and is bounded at 2 waits before a named stop)",
+    "winter_agent_v2/skills.py (new WAIT_FOR_CAMP_MENU, action OBSERVE -- sends no input)",
+    "winter_agent_v2/verifier.py (new verify_camp_menu_reobserved; a wait that ends on the MAP is never a success)",
+    "winter_agent_v2/runtime.py (binding WAIT_FOR_CAMP_MENU)",
+    "tools/probe_return_to_start.py (new; bounded BACK-only probe that puts the client back on a page a named goal can start from)",
+    "tests/test_route_goal_requires_home.py (12 tests)",
+    "tests/test_training_camp_two_stages.py (13 tests)",
+    "tools/verifier_binding_audit.py (new; how this task was found)",
+    ".workbuddy-ai/handoff/04_OPEN_ISSUES.md (#28 reproduction + new measurement)"
+  ],
+  "TEST_RESULT": "tests/test_training_camp_two_stages.py 13 passed; tests/test_route_goal_requires_home.py 12 passed; with tests/test_terminal_page_exit.py 33 passed / 18 subtests; tools/check_wiring.py problems: 0",
+  "LIVE_ATTEMPTS": 12,
+  "LIVE_SUCCESS": 12,
+  "LIVE_FAILURE": 0,
+  "BEFORE": "run_live --goal TRAIN 2026-09-17 17:42 GMT+8, client on MAIL: step 1 SAFE_STOP training_entry_not_verified with ZERO actions. Then, once home: step 4 SELECT_INFANTRY_CAMP verifier FAIL INFANTRY_CAMP_MENU_NOT_PROVEN and the after frame was the world map.",
+  "AFTER": "run_live --goal TRAIN 2026-09-17 18:00 GMT+8: step1 OPEN_HOME MAP->HOME verifier OK; steps 2-8 WAIT_FOR_CAMP_MENU verifier OK, page_after HOME every time, menu_drawn false every time, run ended MAX_ACTIONS_REACHED. Bounded re-run 18:03 GMT+8 with --max-actions 4: step1/2 WAIT_FOR_CAMP_MENU verifier OK, step3 SAFE_STOP camp_menu_never_drawn. The client is no longer thrown to the map.",
+  "VERIFIER_RESULT": "WAIT_FOR_CAMP_MENU 9/9 OK (evidence: before_highlighted true, still_highlighted true, page_after HOME). OPEN_HOME 1/1 OK (before_map true, after_home true).",
+  "EVIDENCE": [
+    "dataset/raw/control_panel/runtime_training/20260917_train_homefix/ (step_004_before = camp highlighted + tutorial finger; step_004_after_refresh_2 = the world map, the old failure)",
+    "dataset/raw/control_panel/runtime_training/20260917_train_stageAB/ (8 steps, the unbounded wait that proved the state is persistent)",
+    "dataset/raw/control_panel/runtime_training/20260917_train_bound/ (2 waits then the named blocker)",
+    "dataset/raw/control_panel/probe/return_to_start_20260917T095918/ (MAIL -> HOME in two BACKs)",
+    "learning/episodes.jsonl rows for WAIT_FOR_CAMP_MENU (recorded_at present)"
+  ],
+  "LIVE_EVIDENCE": "learning/episodes.jsonl + the four capture directories above; every WAIT_FOR_CAMP_MENU row carries a recorded_at, an episode_id, screenshots and verifier_ok=true",
+  "PATCH_STATUS": "DONE",
+  "REMAINING_ISSUE": "Stage B is modelled and routed but could not be exercised: over 9 consecutive Stage A re-observations the radial menu never drew (menu_drawn false every time), so waiting is the SAFE answer but NOT a sufficient one -- something has to dismiss the tutorial finger. The highlight record itself is suspect: TARGET_INFANTRY_CAMP_HIGHLIGHTED has roi_norm w=0.59 h=0.285 (x .185 y .39), i.e. 59% of the screen width, and it was cropped on 2026-09-08, so its match centre is not the camp -- the old tap landed somewhere that went to the map. Fixing Stage B needs a camp template cropped to the building itself (>=3 independent live positives, negatives from the settled-menu frames), not a wider ROI.",
+  "NEXT_RECOMMENDATION": "Open a follow-up order for Stage B: crop TARGET_INFANTRY_CAMP_HIGHLIGHTED down to the camp building on today's client (the frames in 20260917_train_stageAB are the corpus), then re-run --goal TRAIN. Until then TRAIN stays reachable-but-not-completable, and CAP-B01 (building identity from pixels) is the next runnable P0.",
+  "recorded_at": "2026-09-17T10:03:16+00:00"
+}

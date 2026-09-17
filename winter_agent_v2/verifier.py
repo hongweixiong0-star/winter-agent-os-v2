@@ -165,6 +165,47 @@ def verify_duplicate_target_cancelled(before: WorldState, after: WorldState) -> 
     )
 
 
+def verify_camp_menu_reobserved(before: WorldState, after: WorldState) -> VerificationResult:
+    """Training-route Stage A: re-observe while the camp's radial menu draws.
+
+    Measured 2026-09-17 17:45 GMT+8 (open issue #28, and the frames under
+    ``dataset/raw/control_panel/runtime_training/20260917_train_homefix/``).  After
+    ``NAVIGATE_INFANTRY_CAMP`` the client sits on HOME with the infantry camp
+    highlighted and a large tutorial finger over it, and the radial menu is **not**
+    drawn yet.  Tapping the camp in that state moved the client to the MAP
+    (``step_004_after_refresh_2`` is the world map), which is why the route must wait
+    instead of tapping.
+
+    Nothing is sent, so the only honest expectations are:
+
+      * the client is still on HOME, and
+      * the camp is still highlighted (menu not drawn) or the menu has since drawn.
+
+    A wait that ends on the MAP is precisely the failure this guards against, so it
+    must never be recorded as a successful wait.
+    """
+    before_ok = (
+        before.page is Page.HOME
+        and before.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED"
+    )
+    still_highlighted = (
+        after.page is Page.HOME
+        and after.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED"
+    )
+    menu_drawn = after.page is Page.HOME and after.training.get("menu_open") is True
+    ok = before_ok and (still_highlighted or menu_drawn)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "CAMP_MENU_REOBSERVE_NOT_PROVEN",
+        {
+            "before_highlighted": before_ok,
+            "still_highlighted": still_highlighted,
+            "menu_drawn": menu_drawn,
+            "page_after": after.page.value,
+        },
+    )
+
+
 def verify_environmental_wait(before: WorldState, after: WorldState) -> VerificationResult:
     """Confirm an environment wait changed nothing on the client.
 

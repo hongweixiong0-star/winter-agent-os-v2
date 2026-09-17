@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `23618f6 2026-09-17T17:47:58+08:00 fix(brain): the TRAIN and RESEARCH goals could not start from the map`
 - `909ced3 2026-09-17T16:51:43+08:00 feat(tooling): enumerate the verifier bindings that can never be called`
 - `92a6f27 2026-09-17T16:39:59+08:00 chore(handoff): record the interpreter guard at f40c684`
 - `f40c684 2026-09-17T16:39:36+08:00 docs(handoff): make the runtime preflight part of taking over`
@@ -17,10 +18,11 @@ Last 12 commits (newest first):
 - `8023e88 2026-09-17T12:53:29+08:00 chore(queue): rebuild the Capability-First work queue, and record this round`
 - `3355b81 2026-09-17T12:53:12+08:00 fix(vision,brain): label the shared reward dialog by its signals, and leave a leaf page once`
 - `ac694ee 2026-09-17T11:52:04+08:00 docs: the live-route recipe, written after running it twice in one day`
-- `ac17ac5 2026-09-17T11:51:25+08:00 chore(evidence): the probe record that left the client on HOME after the research round`
 
-Uncommitted changes: 11
-- `M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+Uncommitted changes: 16
+- `M .workbuddy-ai/commander/EXECUTION_STATE.json`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
 - ` M .workbuddy-ai/memory/2026-09-17.md`
 - ` M .workbuddy/memory/2026-09-17.md`
 - ` M learning/control_panel/latest.log`
@@ -29,8 +31,11 @@ Uncommitted changes: 11
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
 - ` M winter_agent_v2/brain.py`
-- `?? tests/test_route_goal_requires_home.py`
-- `?? tools/probe_return_to_start.py`
+- ` M winter_agent_v2/runtime.py`
+- ` M winter_agent_v2/skills.py`
+- ` M winter_agent_v2/verifier.py`
+- `?? .workbuddy-ai/commander/results/CAP-D01-TRAINING-TUTORIAL-STAGE.json`
+- `?? tests/test_training_camp_two_stages.py`
 <!-- /AUTO:recent_commits -->
 
 ---

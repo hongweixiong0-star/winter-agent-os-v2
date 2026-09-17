@@ -21,7 +21,11 @@
       "LIVE_TRIED": 2,
       "MISSING": 452
     },
-    "goal_summary": {"blocked": 3, "partial": 9, "live_coverage_mean": 0.5765},
+    "goal_summary": {
+      "blocked": 3,
+      "partial": 9,
+      "live_coverage_mean": 0.5765
+    },
     "registry_skills": 90,
     "evidence_policy": "Only a live episode with verifier_ok=true, a recorded_at, and before/after screenshots may promote a capability. Offline measurement gates support a change; they do not promote it."
   },
@@ -34,18 +38,31 @@
       "current_evidence": "episodes 04:37:47 OPEN_INTEL OK, 04:37:57 SELECT_INTEL_PIN OK, 04:38:06 BACK OK, 04:38:16 SELECT_INTEL_PIN OK (after popup=INTEL_BEAST_MISSION mission_id=INTEL_BEAST_10), 04:38:27 OPEN_INTEL_BEAST_TARGET FAILURE verifier INTEL_BEAST_TARGET_NOT_PROVEN with evidence {mission_dialog: true, target: false}.",
       "root_cause_or_hypothesis": "Two candidates, not yet separated: (a) BTN_INTEL_VIEW_TARGET's ROI centre is off the 前往查看 control so the tap lands elsewhere; (b) the beast mission dialog is replaced by the hero-journey dialog between the observation and the tap. Measure the ROI against the frame before changing anything.",
       "root_cause_confidence": 0.5,
-      "files_to_inspect": ["dataset/truth_audit/reward_popup_source_20260917/04_intel_hero_journey_instead_of_beast.png", "dataset/candidate/template_manifest.json", "winter_agent_v2/verifier.py", "winter_agent_v2/brain.py"],
-      "do_not_touch": ["the Intel claim chain that already verifies", "global thresholds", "new Manager/Scheduler/Registry"],
+      "files_to_inspect": [
+        "dataset/truth_audit/reward_popup_source_20260917/04_intel_hero_journey_instead_of_beast.png",
+        "dataset/candidate/template_manifest.json",
+        "winter_agent_v2/verifier.py",
+        "winter_agent_v2/brain.py"
+      ],
+      "do_not_touch": [
+        "the Intel claim chain that already verifies",
+        "global thresholds",
+        "new Manager/Scheduler/Registry"
+      ],
       "verifier": "verify_intel_beast_target_open reachable from the observed state",
-      "acceptance": ["a live --goal INTEL run reaches INTEL_BEAST_TARGET verifier OK", "no coordinate action is added"],
+      "acceptance": [
+        "a live --goal INTEL run reaches INTEL_BEAST_TARGET verifier OK",
+        "no coordinate action is added"
+      ],
       "timebox_minutes": 60,
       "stop_condition": "the dialog cannot be reached with the current account state today",
-      "fallback_action": "record the measured ROI and file the blocked state, then take the next order"
+      "fallback_action": "record the measured ROI and file the blocked state, then take the next order",
+      "status": "READY"
     },
     {
       "task_id": "CAP-A02-EXIT-CONFIRM-GUARD",
       "priority": "P0",
-      "status": "DONE 2026-09-17",
+      "status": "DONE",
       "resolution": "Measured instead of argued: on the live quit dialog the winning BTN_CLOSE record is d=2 with its ROI centre at (635,455) -- the X in the title bar -- while the two controls that can quit the client share one row at y 748..842 (BTN_CANCEL centre (208,793); the sibling duplicate-target dialog measures its confirm at (503,787)). So the existing path was already safe, but implicitly. brain.py now has an explicit named branch and tests/test_exit_confirm_safety.py pins the clearance (>=200 px above the button row, x in the right half).",
       "priority_reason": "Safety, not coverage.",
       "objective": "Give EXIT_CONFIRM an explicit decision that only ever taps 取消.",
@@ -53,10 +70,21 @@
       "current_evidence": "open issue 26; the dialog appeared live at 04:45:03Z after a BACK on the 英雄之旅 dialog.",
       "root_cause": "Missing branch, not a wrong branch.",
       "root_cause_confidence": 0.95,
-      "files_to_inspect": ["winter_agent_v2/vision.py", "winter_agent_v2/brain.py", "dataset/candidate/template_manifest.json", "winter_agent_v2/verifier.py"],
-      "do_not_touch": ["BTN_CLOSE for other popups", "input actions other than TAP_SEMANTIC"],
+      "files_to_inspect": [
+        "winter_agent_v2/vision.py",
+        "winter_agent_v2/brain.py",
+        "dataset/candidate/template_manifest.json",
+        "winter_agent_v2/verifier.py"
+      ],
+      "do_not_touch": [
+        "BTN_CLOSE for other popups",
+        "input actions other than TAP_SEMANTIC"
+      ],
       "verifier": "popup gone and the page is a known non-POPUP page",
-      "acceptance": ["EXIT_CONFIRM is never closed by BTN_CLOSE", "a test pins 取消 as the only target"],
+      "acceptance": [
+        "EXIT_CONFIRM is never closed by BTN_CLOSE",
+        "a test pins 取消 as the only target"
+      ],
       "timebox_minutes": 45,
       "fallback_action": "at minimum, make the branch stop instead of tapping anything"
     },
@@ -68,12 +96,25 @@
       "current_evidence": "open issue 21; dataset/truth_audit/power_route_20260917/key/04_building_focused.png; registering the button now would fabricate a building identity for whatever is focused, and verify_building_upgrade judges on exactly those fields.",
       "root_cause": "vision.py's BTN_BUILD_UPGRADE branch returns a literal dict copied from one 2026-09-08 building.",
       "root_cause_confidence": 0.99,
-      "files_to_inspect": ["winter_agent_v2/vision.py", "winter_agent_v2/verifier.py", "tools/register_power_route_templates.py", "dataset/truth_audit/power_route_20260917"],
-      "do_not_touch": ["BUILDING_UPGRADE business semantics", "the working 战力 route"],
+      "files_to_inspect": [
+        "winter_agent_v2/vision.py",
+        "winter_agent_v2/verifier.py",
+        "tools/register_power_route_templates.py",
+        "dataset/truth_audit/power_route_20260917"
+      ],
+      "do_not_touch": [
+        "BUILDING_UPGRADE business semantics",
+        "the working 战力 route"
+      ],
       "verifier": "verify_building_upgrade against the read identity, or a named environment stop when the cost is unmet",
-      "acceptance": ["OPEN_BUILDING_PAGE live verified", "no value is invented when the panel does not draw it", "a resource-short panel is an environment state, not a skill failure"],
+      "acceptance": [
+        "OPEN_BUILDING_PAGE live verified",
+        "no value is invented when the panel does not draw it",
+        "a resource-short panel is an environment state, not a skill failure"
+      ],
       "timebox_minutes": 90,
-      "fallback_action": "land OPEN_BUILDING_PAGE alone and pin the identity gap with a test"
+      "fallback_action": "land OPEN_BUILDING_PAGE alone and pin the identity gap with a test",
+      "status": "READY"
     },
     {
       "task_id": "CAP-C01-LEAF-PAGE-LIVE-EVIDENCE",
@@ -83,10 +124,16 @@
       "current_evidence": "the two-tick sequence is proven in-process: RESEARCH -> BACK (research_page_not_actionable_leaving_the_page) -> HOME -> named stop; and for DAILY -> BACK -> OPEN_DAILY (it recovers and continues).",
       "root_cause": "Evidence gap, not a code gap.",
       "root_cause_confidence": 0.9,
-      "files_to_inspect": ["winter_agent_v2/brain.py", "tools/run_live.py"],
-      "acceptance": ["one live run whose first observed page is TRAINING or RESEARCH, ending with the named stop and every verifier OK"],
+      "files_to_inspect": [
+        "winter_agent_v2/brain.py",
+        "tools/run_live.py"
+      ],
+      "acceptance": [
+        "one live run whose first observed page is TRAINING or RESEARCH, ending with the named stop and every verifier OK"
+      ],
       "timebox_minutes": 30,
-      "fallback_action": "chain the goal run inside the same command as the route walk so the page cannot expire"
+      "fallback_action": "chain the goal run inside the same command as the route walk so the page cannot expire",
+      "status": "READY"
     },
     {
       "task_id": "CAP-D01-TRAINING-TUTORIAL-STAGE",
@@ -96,10 +143,18 @@
       "current_evidence": "open issue 28; dataset/raw/live_runtime/live_runtime_step_003_after_20260917T044124283776.png",
       "root_cause_or_hypothesis": "TARGET_INFANTRY_CAMP_HIGHLIGHTED matches the tutorial stage; BTN_OPEN_TRAINING_FROM_CAMP matches the menu stage. The brain treats the first as 'the menu is open'.",
       "root_cause_confidence": 0.8,
-      "files_to_inspect": ["winter_agent_v2/vision.py", "winter_agent_v2/brain.py", "tools/probe_power_route.py"],
-      "acceptance": ["a --goal TRAIN run converges without the camp tap", "KEEP_TRAINING_PRODUCTIVE stays live proven"],
+      "files_to_inspect": [
+        "winter_agent_v2/vision.py",
+        "winter_agent_v2/brain.py",
+        "tools/probe_power_route.py"
+      ],
+      "acceptance": [
+        "a --goal TRAIN run converges without the camp tap",
+        "KEEP_TRAINING_PRODUCTIVE stays live proven"
+      ],
       "timebox_minutes": 60,
-      "fallback_action": "WAITING_FOR_NATURAL_STATE if the tutorial stage is one-shot per account"
+      "fallback_action": "WAITING_FOR_NATURAL_STATE if the tutorial stage is one-shot per account",
+      "status": "READY"
     },
     {
       "task_id": "CAP-E01-ALLIANCE-HELP",
@@ -107,10 +162,18 @@
       "objective": "OPEN_ALLIANCE -> HELP -> a badge/count reduction verifier.",
       "why_now": "ALLIANCE_HELP is CANDIDATE with no live episode. Check knowledge/external/external_capability_map.json first: the external AutoJoin table suggests the client may have a set-once auto-help toggle, which would make this a setting rather than a per-round action.",
       "current_evidence": "catalog: ALLIANCE_HELP lifecycle=CANDIDATE.",
-      "files_to_inspect": ["knowledge/external/external_capability_map.json", "winter_agent_v2/skills.py", "winter_agent_v2/vision.py", "dataset/truth_audit/alliance_gifts_chain_*"],
-      "acceptance": ["either a live HELP with a reduction verifier, or WAITING_FOR_NATURAL_STATE recorded"],
+      "files_to_inspect": [
+        "knowledge/external/external_capability_map.json",
+        "winter_agent_v2/skills.py",
+        "winter_agent_v2/vision.py",
+        "dataset/truth_audit/alliance_gifts_chain_*"
+      ],
+      "acceptance": [
+        "either a live HELP with a reduction verifier, or WAITING_FOR_NATURAL_STATE recorded"
+      ],
       "timebox_minutes": 60,
-      "fallback_action": "WAITING_FOR_NATURAL_STATE and move on"
+      "fallback_action": "WAITING_FOR_NATURAL_STATE and move on",
+      "status": "READY"
     },
     {
       "task_id": "CAP-F01-ARENA",
@@ -118,11 +181,21 @@
       "objective": "OPEN_ARENA -> READ_FREE_ATTEMPTS -> SELECT_OPPONENT -> START_ARENA -> VERIFY_RESULT, free attempts only.",
       "why_now": "The next unstarted leaf after the daily, training and research routes. Frostguard's ArenaRoutine supplies measured priors only (720x1280, row pitch, challenge button region, the power-colour comparison, free-only refresh) -- it is AGPL-3.0 and no code or asset may be copied.",
       "current_evidence": "knowledge/external/external_capability_map.json ARENA entry.",
-      "files_to_inspect": ["knowledge/external/external_capability_map.json", "docs/ADDING_A_LIVE_ROUTE.md"],
-      "do_not_touch": ["diamond refresh", "any paid path"],
-      "acceptance": ["the first live verified step of the Arena route", "every coordinate re-measured on this client through a corpus gate"],
+      "files_to_inspect": [
+        "knowledge/external/external_capability_map.json",
+        "docs/ADDING_A_LIVE_ROUTE.md"
+      ],
+      "do_not_touch": [
+        "diamond refresh",
+        "any paid path"
+      ],
+      "acceptance": [
+        "the first live verified step of the Arena route",
+        "every coordinate re-measured on this client through a corpus gate"
+      ],
       "timebox_minutes": 90,
-      "fallback_action": "BLOCKED with the measured entry point recorded"
+      "fallback_action": "BLOCKED with the measured entry point recorded",
+      "status": "READY"
     },
     {
       "task_id": "CAP-G01-OPPORTUNISTIC",
@@ -130,8 +203,12 @@
       "objective": "Take the two states the operator pre-authorised when they appear naturally.",
       "why_now": "Both are cheap and both are real product value.",
       "current_evidence": "RECALL_MARCH: if MarchState.GATHERING is visible, run SELECT_MARCH_TO_RECALL -> RECALL_MARCH -> RETURNING -> IDLE (operationally sanctioned). START_RESEARCH: if a startable node appears, select node -> read cost -> START_RESEARCH -> queue IN_PROGRESS with a timer. BTN_START_RESEARCH currently has zero templates, so the node/cost reading has to be built first.",
-      "acceptance": ["a live verified episode for whichever state appears", "no waiting for the state: if it is not there, fall through"],
-      "timebox_minutes": 30
+      "acceptance": [
+        "a live verified episode for whichever state appears",
+        "no waiting for the state: if it is not there, fall through"
+      ],
+      "timebox_minutes": 30,
+      "status": "READY"
     }
   ],
   "rules": [
