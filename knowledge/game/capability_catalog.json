@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-09-16T12:23:35.380106+00:00",
+  "generated_at_utc": "2026-09-17T03:46:18.185991+00:00",
   "source": "operator CAPABILITY-FIRST directive 2026-09-16 §4 (capability tree), joined with winter_agent_v2.skills.v2_registry(), LiveRuntime.VERIFIED_ATOMIC and learning/episodes.jsonl",
   "evidence_policy": "only episodes carrying ``recorded_at`` count as live evidence; rows without it cannot support LIVE_VERIFIED (live-verification gate). excluded rows: 478 across 51 skills",
   "definition": "Coverage table for the game's capabilities. NOT a skill registry: v2_registry() remains the only table of executable skills. lifecycle is derived from real evidence; nothing here invents a status.",
@@ -8,9 +8,9 @@
     "total": 522,
     "by_lifecycle": {
       "MISSING": 452,
-      "LIVE_VERIFIED": 29,
+      "LIVE_VERIFIED": 31,
       "LIVE_TRIED": 2,
-      "CANDIDATE": 39
+      "CANDIDATE": 37
     },
     "by_implementation": {
       "MISSING": 452,
@@ -167,11 +167,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "OPEN_MAP",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 9,
-      "live_success": 6,
+      "live_attempts": 12,
+      "live_success": 9,
       "live_failure": 3,
-      "success_rate": 0.6667,
-      "last_live_verified": "2026-09-16T04:08:28.612823+00:00",
+      "success_rate": 0.75,
+      "last_live_verified": "2026-09-17T03:14:24.419698+00:00",
       "blocked_reason": null
     },
     {
@@ -192,11 +192,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "BACK",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 84,
-      "live_success": 83,
+      "live_attempts": 88,
+      "live_success": 87,
       "live_failure": 1,
-      "success_rate": 0.9881,
-      "last_live_verified": "2026-09-16T11:08:43.460300+00:00",
+      "success_rate": 0.9886,
+      "last_live_verified": "2026-09-17T03:11:56.737786+00:00",
       "blocked_reason": null
     },
     {
@@ -217,11 +217,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "BACK",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 84,
-      "live_success": 83,
+      "live_attempts": 88,
+      "live_success": 87,
       "live_failure": 1,
-      "success_rate": 0.9881,
-      "last_live_verified": "2026-09-16T11:08:43.460300+00:00",
+      "success_rate": 0.9886,
+      "last_live_verified": "2026-09-17T03:11:56.737786+00:00",
       "blocked_reason": null
     },
     {
@@ -583,7 +583,7 @@
       "unlock_status": "UNKNOWN",
       "current_role_available": "UNKNOWN",
       "implementation_status": "EXISTING",
-      "lifecycle": "CANDIDATE",
+      "lifecycle": "LIVE_VERIFIED",
       "risk": "T0",
       "requires_march": false,
       "requires_stamina": false,
@@ -592,11 +592,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "DAILY_CLAIM_REWARDS",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 0,
-      "live_success": 0,
+      "live_attempts": 1,
+      "live_success": 1,
       "live_failure": 0,
-      "success_rate": null,
-      "last_live_verified": null,
+      "success_rate": 1.0,
+      "last_live_verified": "2026-09-16T16:33:52.282345+00:00",
       "blocked_reason": null
     },
     {
@@ -833,7 +833,7 @@
       "unlock_status": "UNKNOWN",
       "current_role_available": "UNKNOWN",
       "implementation_status": "EXISTING",
-      "lifecycle": "CANDIDATE",
+      "lifecycle": "LIVE_VERIFIED",
       "risk": "T0",
       "requires_march": false,
       "requires_stamina": false,
@@ -842,11 +842,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "DAILY_CLAIM_REWARDS",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 0,
-      "live_success": 0,
+      "live_attempts": 1,
+      "live_success": 1,
       "live_failure": 0,
-      "success_rate": null,
-      "last_live_verified": null,
+      "success_rate": 1.0,
+      "last_live_verified": "2026-09-16T16:33:52.282345+00:00",
       "blocked_reason": null
     },
     {
@@ -3767,11 +3767,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "OPEN_INTEL",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 78,
-      "live_success": 62,
+      "live_attempts": 80,
+      "live_success": 64,
       "live_failure": 16,
-      "success_rate": 0.7949,
-      "last_live_verified": "2026-09-16T02:04:04.371910+00:00",
+      "success_rate": 0.8,
+      "last_live_verified": "2026-09-17T00:26:00.265084+00:00",
       "blocked_reason": null
     },
     {
@@ -3842,11 +3842,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "SELECT_INTEL_PIN",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 46,
-      "live_success": 43,
+      "live_attempts": 49,
+      "live_success": 46,
       "live_failure": 3,
-      "success_rate": 0.9348,
-      "last_live_verified": "2026-09-15T13:35:16.993308+00:00",
+      "success_rate": 0.9388,
+      "last_live_verified": "2026-09-17T03:12:06.849995+00:00",
       "blocked_reason": null
     },
     {
@@ -3892,11 +3892,11 @@
       "preferred_backend": "MAA",
       "existing_skill": "INTEL_CLAIM_REWARDS",
       "external_reference": "REFERENCE_ONLY",
-      "live_attempts": 47,
-      "live_success": 45,
+      "live_attempts": 49,
+      "live_success": 47,
       "live_failure": 2,
-      "success_rate": 0.9574,
-      "last_live_verified": "2026-09-15T09:37:33.124103+00:00",
+      "success_rate": 0.9592,
+      "last_live_verified": "2026-09-17T00:26:06.248357+00:00",
       "blocked_reason": null
     },
     {
