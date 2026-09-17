@@ -41,6 +41,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
+LOG_DIR = ROOT / "learning/tests_batched"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 SUMMARY = re.compile(
     r"(?:(?P<failed>\d+) failed)?[,\s]*"
@@ -114,6 +116,13 @@ def run_batch(batch: Batch, *, policy: str, timeout: float) -> Batch:
     batch.seconds = time.time() - started
     batch.returncode = done.returncode
     text = (done.stdout or "") + (done.stderr or "")
+    # Keep each batch's own output: the aggregate says *that* a batch failed, and
+    # the name of the failing test only exists in here.  Measured 2026-09-18: the
+    # first batched run reported "1 failed" in batch3 and the aggregate alone could
+    # not say which test it was.
+    if LOG_DIR is not None:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        (LOG_DIR / f"{batch.name}.log").write_text(text, encoding="utf-8")
     batch.counts = parse_counts(text)
     tail = [line for line in text.splitlines() if line.strip()]
     batch.summary = tail[-1][:200] if tail else "(no output)"

@@ -226,14 +226,47 @@ class PreflightCommandTest(unittest.TestCase):
         from tools import preflight
 
         ready = runtime_env.InterpreterReport(python_exe=Path(sys.executable), exists=True)
-        with patch.object(preflight.runtime_env, "resolve_for_project", return_value=ready):
+        # The device probe is stubbed: since 2026-09-18 the device is part of the
+        # core verdict, and a test that reached for the real emulator would pass or
+        # fail depending on whether MuMu happened to be up -- measured 2026-09-18,
+        # this test failed in a batched run with DEVICE_NOT_CONNECTED for exactly
+        # that reason.
+        up = {"ok": True, "serial": "127.0.0.1:7555", "resolution": [720, 1280],
+              "foreground": "com.gof.china"}
+        with patch.object(preflight, "device_report", return_value=up), \
+             patch.object(preflight.runtime_env, "resolve_for_project", return_value=ready):
             self.assertEqual(preflight.main(["--json"]), 0)
 
         blocked = runtime_env.InterpreterReport(
             python_exe=Path("Z:/nope/python.exe"), exists=False, missing=("maa",)
         )
-        with patch.object(preflight.runtime_env, "resolve_for_project", return_value=blocked):
+        with patch.object(preflight, "device_report", return_value=up), \
+             patch.object(preflight.runtime_env, "resolve_for_project", return_value=blocked):
             self.assertEqual(preflight.main([]), 1)
+
+    def test_the_device_is_core_but_the_gateway_is_not(self):
+        """启动 GUI 要求核心环境正常；网关异常只标记自动开发不可用。
+
+        Operator directive 2026-09-18, requirements 2 and 3: AUTO may not start
+        without the game environment, and a refusing WorkBuddy gateway must never
+        stop it.  Both halves are the exit code of the launcher's own command, so
+        this is where they have to hold.
+        """
+        from tools import preflight
+
+        ready = runtime_env.InterpreterReport(python_exe=Path(sys.executable), exists=True)
+        up = {"ok": True, "serial": "127.0.0.1:7555", "resolution": [720, 1280],
+              "foreground": "com.gof.china"}
+        down = {"ok": False, "error": "DEVICE_NOT_CONNECTED"}
+        refusing = {"ok": False, "reason": "AUTH_REJECTED", "base_url": "http://127.0.0.1:8080"}
+
+        with patch.object(preflight.runtime_env, "resolve_for_project", return_value=ready):
+            with patch.object(preflight, "device_report", return_value=down):
+                self.assertEqual(preflight.main([]), 1, "a dead device must refuse AUTO")
+            with patch.object(preflight, "device_report", return_value=up), \
+                 patch.object(preflight, "gateway_report", return_value=refusing):
+                self.assertEqual(preflight.main([]), 0,
+                                 "a refusing gateway must not stop AUTO")
 
 
 if __name__ == "__main__":
