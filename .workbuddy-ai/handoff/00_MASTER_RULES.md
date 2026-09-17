@@ -145,6 +145,90 @@ backend 支持），不是新架构。
 
 
 
+## 2c. 三层分工与统一生产链（2026-09-17 操作者指令）
+
+项目的开发与运行按三层分工，**三层不可互换**：
+
+| 层 | 回答什么 | 负责 |
+|---|---|---|
+| **External Knowledge** | 别人已经知道怎么玩 | 页面入口 / 跳转顺序 / 页签结构 / 按钮区域 / ROI / 行距 / OCR 文本 / enabled·disabled / 成功后的页面变化 / 前置条件 / 队列逻辑 / 免费次数 / 冷却 / Rally·Bear·Arena·Pet·Alliance 等玩法机制 / 失败恢复方式 |
+| **MAA**（默认 UI Engine） | 怎么可靠地看和点 | Screenshot / Fast Capture / TemplateMatch / FeatureMatch / ColorMatch / ROI Search / Button Locate / Page Detect / Click / Swipe / Back / Wait Page / Wait Button Appear·Disappear / Retry / UI Recovery / Debug Draw |
+| **V2** | 为什么做、做什么、是否成功 | WorldState / Goal / Strategy / Planner·Gameplay Commander / ResourceBank / Event Planning / Scheduler / Skill semantics / Verifier / Recovery policy / Knowledge / Experience·Learning / Capability Lifecycle |
+
+优先使用既有接入：`MaaExecutorAdapter` + `ExecutorRouter` + `backend_routing.json`；
+默认 **MuMu EmulatorExtras Capture + MAA Action**。
+
+**禁止重新实现** `ADB screenshot` / `ADB tap` / 手写全屏模板搜索 / 手写 retry loop /
+手写 wait-page / 手写 wait-disappear —— **除非 MAA 真实失败且有证据**。
+文字·数字 → **RapidOCR**（当前 MAA OCR bundle 不完整）；图标·页面·按钮·颜色 → MAA。
+**禁止让 Qwen 做像素级定位。**
+
+⚠ 识别轴仍按 **§2b 的实测结论**逐语义、按证据决定：MAA 全帧识别比 V2 固定 ROI 慢 3.3×，
+且 `OPEN_INTEL` 有过一次真实回归。本节说"MAA 负责识别"是指**能力已具备、默认入口**，
+不是要求每一处都强制切换。**不为了"必须用 MAA"而伪造更好结论。**
+
+标准生产链（唯一）：
+
+```
+External / Local Knowledge → WorldState prior → V2 Goal/Planner/Brain
+→ V2 Skill semantic → MAA Capture → MAA Recognition → RapidOCR（如需文字）
+→ MAA Action → V2 Verifier → WorldState Update → Replan
+```
+
+一句话：**Knowledge 告诉它「怎么可能做」，V2 决定「现在做不做」，
+MAA 负责「把动作可靠执行出来」，Verifier 证明「到底成功没」。**
+
+### 外部知识的定位：Prior，不是 Production Truth
+
+**允许**：同游戏、同分辨率（720×1280）的外部测量**直接作为 Candidate Prior**
+——坐标 / ROI / 行距 / 页签顺序 / 按钮区域。先在当前客户端验证：
+**对 → 采用；偏 → 校准；错 → 淘汰。**
+
+**禁止**：把外部实现当成已完成的 Production 路径；外部只提供
+`Navigation / Recognition / Action / Verification / Recovery` 五要素作先验，
+必须在当前客户端用真机探针过一遍。复制外部**代码**仍受 §10 约束（许可证优先）。
+
+### 新 Capability 默认五步
+
+```
+1 Local Reuse Check     skill / brain route / verifier / knowledge / legacy evidence / MAA node
+                        → 已有成熟实现：直接复用（先跑 tools/reuse_check.py <CAPABILITY>）
+2 External Prior Check  knowledge/external/external_capability_map.json
+                        → 读记录的 source_files，提取
+                          Navigation / Recognition / Action / Verification / Recovery
+3 MAA Fast Probe        只验证：入口对不对 / 按钮在哪 / 页面顺序 / 模板是否匹配 /
+                        颜色·文字是否一致 / 成功状态是什么 —— 不重新探索整个 UI
+4 Minimal V2 Adaptation 只补真正缺的：Skill / WorldState field / Brain decision / Verifier / Recovery
+                        （禁止新增第二 Scheduler / Vision Engine / Registry / 无必要 Manager）
+5 Live Verify           真实动作 + 真实页面变化 + Verifier PASS + Evidence
+                        → LIVE_VERIFIED → catalog → commit → push → 下一 Capability
+```
+
+### 时间预算（Lane）
+
+| Lane | 范围 | 预算 |
+|---|---|---|
+| **Fast** | 免费领取 / 打开页面 / 切页签 / Mail / VIP / Alliance Help / Pet 免费日常 / Arena 免费次数 | **20–45 分钟** |
+| **Normal** | BUILD / RESEARCH / TRAIN / HEAL / PROMOTE / GATHER / RALLY | **45–90 分钟** |
+| **Strict** | 真钱 / 账号安全 / 不可逆操作 / 大额宝石 / 高风险 PvP / 状态转移 | 门禁不放宽（§8） |
+
+**15 分钟规则**：任何 UI Capability，15 分钟后仍在「找按钮 / 猜页面 / 写截图逻辑 /
+写点击逻辑 / 写 retry / 写模板搜索」→ **立即 STOP**，转 External Prior Check + MAA Tool Check。
+**禁止继续手搓。**
+
+### AI 指挥中心（Gameplay Commander）的边界
+
+只决定：当前做什么 / 今天做什么 / 活动何时插队 / 资源怎么分配 / 哪个 Goal 优先 /
+哪些任务延期 / 哪些状态触发 Replan。
+
+**不得**：点坐标 / 写 UI 流程 / 替代 Scheduler / 替代 Skill / 替代 MAA。
+
+```
+Gameplay Commander → Goal Plan → 唯一 Scheduler → Skill → MAA → Verifier
+```
+
+---
+
 ## 3. Goal 与 Skill 的边界
 
 - **Goal = WHAT**（`GoalLibrary` / `RuleBrain` 决定做什么）

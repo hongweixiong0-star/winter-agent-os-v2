@@ -198,8 +198,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 80,
-          "successes": 46,
+          "attempts": 87,
+          "successes": 53,
           "failures": 34
         },
         {
@@ -383,9 +383,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_POWER_OVERVIEW",
           "live_verified_by": "OPEN_POWER_OVERVIEW",
-          "attempts": 51,
+          "attempts": 52,
           "successes": 46,
-          "failures": 5
+          "failures": 6
         },
         {
           "capability": "START_TRAINING",

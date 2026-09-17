@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from winter_agent_v2 import runtime_env
 from winter_agent_v2.device import ADBDevice
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
 from winter_agent_v2.retention import prune_runtime_screenshots
@@ -35,8 +36,48 @@ from winter_agent_v2.runtime_snapshot import (
 
 CONFIG_PATH = ROOT / "config/v2.json"
 PANEL_STATE_PATH = ROOT / "config/control_panel_state.json"
-PYTHON_PATH = Path(sys.executable).with_name("python.exe")
 RUNTIME_PATH = ROOT / "tools/run_live.py"
+
+# Raised when the panel is asked to start work on an interpreter that cannot run
+# the production loop.  It is classified as an environment failure (see
+# ENVIRONMENT_FAILURES) so refusing to start is never counted as a worker crash.
+RUNTIME_ENV_STOP_REASON = "RUNTIME_ENV_NOT_PRODUCTION_READY"
+
+_INTERPRETER_LOCK = threading.Lock()
+_INTERPRETER_REPORT: runtime_env.InterpreterReport | None = None
+
+
+def runtime_interpreter_report() -> runtime_env.InterpreterReport:
+    """The interpreter the worker will be spawned with, probed exactly once.
+
+    ``PYTHON_PATH`` used to be derived from the panel's own ``sys.executable``,
+    which made the worker inherit whichever interpreter launched the panel.  The
+    panel running on 2026-09-17 had been launched with a generic runtime python
+    without ``maa`` or ``cv2``, and the worker said so in its piped stdout
+    ("MAA_IMPORT_FAILED:ModuleNotFoundError ... observations stay on ADB").  No
+    *executed* step in those runs belonged to a skill promoted to MAA, so nothing
+    was measured through the slow path yet -- but the next AUTO run would have
+    taken ADB capture at 324 ms where MAA EmulatorExtras costs 8.92 ms, and the
+    run would still have looked healthy.  The interpreter is now resolved and
+    *proved* before it is used.
+    """
+    global _INTERPRETER_REPORT
+    if _INTERPRETER_REPORT is None:
+        with _INTERPRETER_LOCK:
+            if _INTERPRETER_REPORT is None:
+                _INTERPRETER_REPORT = runtime_env.resolve_for_project(ROOT)
+    return _INTERPRETER_REPORT
+
+
+def runtime_python_path() -> str:
+    """The production interpreter as an executable path, for spawning the worker."""
+    return str(runtime_interpreter_report().python_exe)
+
+
+def runtime_env_blocker() -> str | None:
+    """``None`` when production can run here, otherwise why it cannot."""
+    report = runtime_interpreter_report()
+    return None if report.ok else report.reason
 CAPTURE_ROOT = ROOT / "dataset/raw/control_panel"
 LOG_ROOT = ROOT / "learning/control_panel"
 CRASH_ROOT = LOG_ROOT / "crashes"
@@ -85,7 +126,7 @@ def _background_popen(command: list[str], **kwargs: Any) -> subprocess.Popen[str
 ENVIRONMENT_FAILURES = (
     "DEVICE_NOT_CONNECTED", "DEVICE_AMBIGUOUS", "ADB_DISCOVERY_FAILED", "ADB_FAILED",
     "MuMu 未连接", "MuMu 实例启动失败", "等待 MuMu 连接超时", "用户已停止",
-    "SCREENSHOT_NOT_PNG", "SCREENSHOT_DAMAGED",
+    "SCREENSHOT_NOT_PNG", "SCREENSHOT_DAMAGED", RUNTIME_ENV_STOP_REASON,
 )
 
 
@@ -881,7 +922,26 @@ class ControlPanel:
 
     def start(self) -> None:
         if self.process is not None or self.starting: return
+        blocker = runtime_env_blocker()
+        if blocker is not None:
+            # Refuse rather than degrade.  Starting work on an interpreter that
+            # cannot import MAA means every measurement afterwards is taken
+            # through a path the project already paid to replace, and the run
+            # still looks healthy.  See runtime_interpreter_report() above.
+            self._append(f"未启动：运行环境不满足生产要求（{blocker}）。")
+            for line in runtime_interpreter_report().describe().splitlines():
+                self._append(f"    {line}")
+            self._append("    诊断：python tools/preflight.py；"
+                         "修复：在 config/v2.json 的 runtime.python_path 指定可用解释器。")
+            self.runtime_store.update(
+                agent_state=AgentState.DEGRADED.value, runtime_thread_alive=False,
+                scheduler_loop_alive=False, stop_reason=RUNTIME_ENV_STOP_REASON,
+                reason=f"解释器不可用：{blocker}", next_action="修复运行环境后重新启动",
+            )
+            self.events.put(("note", f"未启动：{blocker}"))
+            return
         self.starting = True
+        self._append(f"运行环境预检通过：{runtime_python_path()}")
         if self.repeat_after_id: self.root.after_cancel(self.repeat_after_id); self.repeat_after_id = None
         self.stop_requested = self.paused = False; self._running_buttons()
         self.runtime_store.update(agent_state=AgentState.RECOVERING.value, runtime_thread_alive=True,
@@ -894,12 +954,15 @@ class ControlPanel:
     def _run_unified_worker(self) -> None:
         """Lifecycle adapter only; it never selects a Goal or Skill."""
         try:
+            blocker = runtime_env_blocker()
+            if blocker is not None:
+                raise RuntimeError(f"{RUNTIME_ENV_STOP_REASON}: {blocker}")
             self.active_panel_task = "AUTO"
             self._ensure_device()
             if self.stop_requested: return
             LOG_ROOT.mkdir(parents=True, exist_ok=True); CAPTURE_ROOT.mkdir(parents=True, exist_ok=True)
             stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            command = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "24",
+            command = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "24",
                        "--capture-dir", str(CAPTURE_ROOT / "runtime_auto" / stamp), "--serial", self.device.serial]
             self.process = _background_popen(command, cwd=str(ROOT), stdout=subprocess.PIPE,
                                              stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
@@ -971,6 +1034,9 @@ class ControlPanel:
 
     def _run_worker(self) -> None:
         try:
+            blocker = runtime_env_blocker()
+            if blocker is not None:
+                raise RuntimeError(f"{RUNTIME_ENV_STOP_REASON}: {blocker}")
             self._ensure_device()
             if self.stop_requested: return
             LOG_ROOT.mkdir(parents=True, exist_ok=True); CAPTURE_ROOT.mkdir(parents=True, exist_ok=True)
@@ -990,7 +1056,7 @@ class ControlPanel:
             # make os.replace fail with WinError 5.  A unique evidence folder
             # also preserves each unattended run as an auditable episode.
             run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            cmd = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", goal, "--capture-dir", str(CAPTURE_ROOT / capture_name / run_stamp)]
+            cmd = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", goal, "--capture-dir", str(CAPTURE_ROOT / capture_name / run_stamp)]
             if stop_after:
                 cmd.extend(["--stop-after", stop_after])
             self.process = _background_popen(cmd + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
@@ -1003,7 +1069,7 @@ class ControlPanel:
                 self.events.put(("note", "邮件奖励已清空，继续检查每日任务奖励。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "DAILY", "--capture-dir", str(CAPTURE_ROOT / "runtime_daily" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "DAILY", "--capture-dir", str(CAPTURE_ROOT / "runtime_daily" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1016,7 +1082,7 @@ class ControlPanel:
                 self.events.put(("note", "邮件奖励已清空，继续检查联盟赠礼。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "ALLIANCE", "--capture-dir", str(CAPTURE_ROOT / "runtime_alliance" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "ALLIANCE", "--capture-dir", str(CAPTURE_ROOT / "runtime_alliance" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1029,7 +1095,7 @@ class ControlPanel:
                 self.events.put(("note", "邮件奖励已清空，继续检查探险挂机收益。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1042,7 +1108,7 @@ class ControlPanel:
                 self.events.put(("note", "每日奖励已检查，继续检查联盟赠礼。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "ALLIANCE", "--capture-dir", str(CAPTURE_ROOT / "runtime_alliance" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "ALLIANCE", "--capture-dir", str(CAPTURE_ROOT / "runtime_alliance" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1055,7 +1121,7 @@ class ControlPanel:
                 self.events.put(("note", "每日奖励已检查，继续检查探险挂机收益。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1068,7 +1134,7 @@ class ControlPanel:
                 self.events.put(("note", "联盟赠礼已检查，继续检查部队训练。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "10", "--goal", "TRAIN", "--capture-dir", str(CAPTURE_ROOT / "runtime_training" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "10", "--goal", "TRAIN", "--capture-dir", str(CAPTURE_ROOT / "runtime_training" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1081,7 +1147,7 @@ class ControlPanel:
                 self.events.put(("note", "联盟赠礼已检查，继续检查探险挂机收益。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1094,7 +1160,7 @@ class ControlPanel:
                 self.events.put(("note", "部队训练已检查，继续检查探险挂机收益。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1107,7 +1173,7 @@ class ControlPanel:
                 self.events.put(("note", "探险收益已检查，继续检查情报任务。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1120,7 +1186,7 @@ class ControlPanel:
                 self.events.put(("note", "邮件奖励已清空，继续检查情报任务。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1133,7 +1199,7 @@ class ControlPanel:
                 self.events.put(("note", "探险收益已检查，继续检查情报任务。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1150,7 +1216,7 @@ class ControlPanel:
                 self.events.put(("note", "当前没有可验证的蓝色情报兽任务，切换到普通野怪消耗体力。"))
                 self._ensure_device()
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "BEAST_HUNT", "--stop-after", "DISPATCH_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_beast" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "BEAST_HUNT", "--stop-after", "DISPATCH_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_beast" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
@@ -1166,7 +1232,7 @@ class ControlPanel:
                 self.run_chain_tasks.add("采集")
                 self.events.put(("note", "当前画面没有已验证的低等级普通野怪，切换到保留行军位的采集检查。"))
                 fallback_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                fallback = [str(PYTHON_PATH), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "GATHER_RESOURCE", "--stop-after", "DISPATCH_MARCH", "--capture-dir", str(CAPTURE_ROOT / "runtime" / fallback_stamp)]
+                fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "GATHER_RESOURCE", "--stop-after", "DISPATCH_MARCH", "--capture-dir", str(CAPTURE_ROOT / "runtime" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode

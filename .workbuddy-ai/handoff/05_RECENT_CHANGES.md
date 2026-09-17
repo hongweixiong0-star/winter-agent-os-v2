@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `bd204ea 2026-09-17T15:46:12+08:00 feat(tooling): make the 2-minute Reuse Check a command, and put the rule where a session reads it`
+- `abad015 2026-09-17T13:29:33+08:00 chore(handoff): record the closed issues, the narrowed guard, and the green suite`
 - `0c41f3d 2026-09-17T13:12:19+08:00 fix(brain): the leaf-page exit is for a named goal only`
 - `e607a6d 2026-09-17T13:05:45+08:00 fix(brain): name the quit-dialog branch, and measure that closing it cannot quit the client`
 - `8023e88 2026-09-17T12:53:29+08:00 chore(queue): rebuild the Capability-First work queue, and record this round`
@@ -16,14 +18,28 @@ Last 12 commits (newest first):
 - `9b1759d 2026-09-17T11:35:36+08:00 docs(research): the authoritative record for 3793a9b, whose message the shell truncated`
 - `3793a9b 2026-09-17T11:34:11+08:00 feat(research): the 科技研究 route, live verified -- the second BLOCKED goal to move`
 - `5445199 2026-09-17T08:31:08+08:00 chore(handoff): refresh the generated state after the training and intel rounds`
-- `d95b2fe 2026-09-17T08:30:47+08:00 evidence(intel): two runs, both delivering value, both stopped by the same reward dialog`
-- `b87ac94 2026-09-17T08:24:30+08:00 fix(train): the power entry was never broken -- correct the record and drop the record I added for it`
 
-Uncommitted changes: 4
-- `M .workbuddy-ai/memory/MEMORY.md`
+Uncommitted changes: 27
+- `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-09-17.md`
+- ` M .workbuddy/memory/2026-09-17.md`
+- ` M Start-Winter-Agent-V2.cmd`
+- ` M Start-Winter-Agent-V2.ps1`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/goals/capability_skill_map.json`
 - ` M learning/control_panel/latest.log`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
 <!-- /AUTO:recent_commits -->
 
 ---

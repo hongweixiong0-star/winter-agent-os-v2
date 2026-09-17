@@ -9,9 +9,9 @@ Machine-detected issues (recomputed every run):
 - **SEMANTIC_TARGET_NOT_VERIFIED** x130 all-time; recent=14 (last 2d), last seen 2026-09-17T04:45:23.361291+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **INTEL_BEAST_TARGET_NOT_PROVEN** x8 all-time; recent=6 (last 2d), last seen 2026-09-17T04:38:27.078429+00:00 — OPEN_INTEL_BEAST_TARGET(8)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x5 all-time; recent=3 (last 2d), last seen 2026-09-17T00:26:34.147170+00:00 — DISMISS_DAILY_REWARD(5)
+- **SAFE_BACK_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-17T08:01:06.434755+00:00 — BACK(3)
 - **MARCH_PAGE_NOT_OPEN** x60 all-time; recent=1 (last 2d), last seen 2026-09-16T11:22:23.403295+00:00 — START_GATHER(60)
 - **NO_EXECUTION** x5 all-time; recent=1 (last 2d), last seen 2026-09-15T12:27:40.810551+00:00 — SAFE_STOP(5)
-- **OPEN_MAP_NOT_PROVEN** x3 all-time; recent=1 (last 2d), last seen 2026-09-15T15:16:47.597321+00:00 — OPEN_MAP(3)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 4 uncommitted file(s): ['M .workbuddy-ai/memory/MEMORY.md', ' M learning/control_panel/latest.log', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
+- 27 uncommitted file(s): ['M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md']
 <!-- /AUTO:open_issues -->
 
 ---

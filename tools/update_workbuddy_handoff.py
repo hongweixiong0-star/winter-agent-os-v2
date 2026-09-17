@@ -444,11 +444,95 @@ def _raw_episodes() -> list[dict]:
     return rows
 
 
+# ------------------------------------------------------------------- backends
+def _ledger_rows(ledger: Path) -> list[dict]:
+    if not ledger.is_file():
+        return []
+    rows = []
+    for line in ledger.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return rows
+
+
+def _maa_promoted_skills(routing: Path) -> list[str]:
+    if not routing.is_file():
+        return []
+    try:
+        data = json.loads(routing.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    skills = data.get("skills")
+    if not isinstance(skills, dict):
+        return []
+    return sorted(
+        name for name, row in skills.items()
+        if isinstance(row, dict) and str(row.get("preferred", "")).upper() == "MAA"
+    )
+
+
+def backend_state(limit: int = 200) -> dict:
+    """What the executor ledger says production has *really* been using.
+
+    ``learning/executor_backend.jsonl`` has recorded ``used_backend`` and
+    ``capture_backend`` per step since 2026-09-14, and the difference is the
+    whole point: MAA EmulatorExtras capture costs 8.92 ms against 324 ms for ADB
+    ``exec-out screencap -p`` (live A/B, 20 alternating samples), so a skill that
+    is promoted to MAA and quietly runs on ADB is 36x slower than its own record.
+    Nothing summarised this ledger into the truth files, so on 2026-09-17 a whole
+    session of production ran with ``MAA_IMPORT_FAILED`` -- the desktop launcher
+    had pinned an interpreter without ``maa``/``cv2`` -- while
+    01_CURRENT_TRUTH.md still read like a healthy system.  This section is that
+    comparison, generated rather than remembered.
+    """
+    ledger = ROOT / "learning/executor_backend.jsonl"
+    routing = ROOT / "knowledge/execution/backend_routing.json"
+    rows = _ledger_rows(ledger)
+    recent = rows[-limit:]
+    used = Counter(str(row.get("used_backend") or "(none)") for row in recent)
+    capture = Counter(str(row.get("capture_backend") or "(none)") for row in recent)
+    promoted = _maa_promoted_skills(routing)
+    promoted_set = set(promoted)
+    # A skill the routing file promoted to MAA that a recent step ran without it.
+    on_adb = Counter(
+        str(row.get("skill_id")) for row in recent
+        if str(row.get("skill_id")) in promoted_set
+        and str(row.get("used_backend", "")).upper() != "MAA"
+    )
+    last = recent[-1] if recent else {}
+    return {
+        "ledger": str(ledger),
+        "rows": len(rows),
+        "rows_examined": len(recent),
+        "used_backend": dict(used.most_common()),
+        "capture_backend": dict(capture.most_common()),
+        "promoted_to_maa": promoted,
+        "promoted_but_ran_on_adb": dict(on_adb.most_common()),
+        "last": {
+            "recorded_at": last.get("recorded_at"),
+            "skill": last.get("skill_id"),
+            "used_backend": last.get("used_backend"),
+        },
+        "note": (
+            "used_backend is what the step really did. A skill listed under "
+            "promoted_but_ran_on_adb took the 324 ms ADB frame path while its own "
+            "record claims MAA EmulatorExtras at 8.92 ms -- check "
+            "tools/preflight.py before trusting the run."
+        ),
+    }
+
+
 # ------------------------------------------------------------------- markdown
 def current_truth_md(state: dict) -> str:
     git, reg, ep = state["git"], state["registry"], state["episodes"]
     lc, cov = state["lifecycle"], state["coverage"]
     rt, ev, par = state["runtime"], state["evidence"], state["parity"]
+    bk = state.get("backends", {})
     snap = rt.get("snapshot", {})
     lines = [
         "# 01 — CURRENT TRUTH",
@@ -563,6 +647,20 @@ def current_truth_md(state: dict) -> str:
         "",
         f"- {json.dumps(rt.get('latest_log'), ensure_ascii=False)}",
         f"- recent crash reports: {[c['path'] for c in rt.get('recent_crash_reports', [])] or '(none)'}",
+        "",
+        "## J. Backend axis (MAA vs ADB)",
+        "",
+        "- source: `learning/executor_backend.jsonl` vs `knowledge/execution/backend_routing.json`",
+        f"- ledger rows: {bk.get('rows')} (last {bk.get('rows_examined')} summarised)",
+        f"- used_backend: {json.dumps(bk.get('used_backend', {}), ensure_ascii=False)}",
+        f"- capture_backend: {json.dumps(bk.get('capture_backend', {}), ensure_ascii=False)}",
+        f"- promoted to MAA in routing: {len(bk.get('promoted_to_maa', []))} "
+        f"{bk.get('promoted_to_maa', [])}",
+        f"- promoted but RAN ON ADB: {json.dumps(bk.get('promoted_but_ran_on_adb', {}), ensure_ascii=False)}",
+        f"- last step: {bk.get('last', {}).get('skill')} via {bk.get('last', {}).get('used_backend')} "
+        f"at {bk.get('last', {}).get('recorded_at')}",
+        "",
+        f"> {bk.get('note')}",
         "",
     ]
     return "\n".join(lines)
@@ -999,6 +1097,7 @@ def collect() -> dict:
         "parity": parity_state(),
         "runtime": runtime_state(),
         "evidence": evidence_state(episodes),
+        "backends": backend_state(),
     }
 
 
