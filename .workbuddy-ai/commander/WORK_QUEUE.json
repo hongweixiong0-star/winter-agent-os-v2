@@ -209,6 +209,36 @@
       ],
       "timebox_minutes": 30,
       "status": "READY"
+    },
+    {
+      "task_id": "CAP-Z01-BEAST-TARGET-GENERALISATION",
+      "priority": "P0",
+      "objective": "Turn the ordinary-beast target from one hard-coded instance (9-level Musk Ox) into a card family whose name and level are read from the card, so a beast can be dispatched whenever any beast is visible.",
+      "why_now": "It is the most frequent end of a run: verified_beast_target_not_visible stops most cycles, produces zero failed episodes, and was the first escalation the queue created (job 8fd1dfbf).",
+      "current_evidence": "TARGET_BEAST_MUSK_OX_9 has exactly 1 manifest record (144x128, roi x .505 y .155 w .2 h .1, CANDIDATE, threshold 38, dhash search region (0.25,0.10,0.95,0.82)) while the sister semantic TARGET_INTEL_BEAST_MISSION has 10. Hard bindings: vision.py:1675 writes {visible_target: MUSK_OX, level: 9}; brain.py:829 requires MUSK_OX and level==9; verifier.py:699 requires the literal on both halves; skills.py fixes TARGET_BEAST_MUSK_OX_9. Live counter-example: SELECT_BEAST_TARGET -> BEAST_TARGET_SELECTION_NOT_PROVEN with state_after == state_before.",
+      "root_cause_or_hypothesis": "A single instance was used where a family is needed; identity is asserted by a constant instead of read from the card. Same class as the camp-highlight and training-troop-type defects.",
+      "root_cause_confidence": "high",
+      "files_to_inspect": [
+        "winter_agent_v2/vision.py",
+        "winter_agent_v2/brain.py",
+        "winter_agent_v2/verifier.py",
+        "winter_agent_v2/skills.py",
+        "dataset/candidate/template_manifest.json"
+      ],
+      "do_not_touch": [
+        "the four no_claim/not_actionable stop reasons",
+        "verifier thresholds (crop instead)"
+      ],
+      "verifier": "verify_beast_target_visible: a beast card is read off the map with its name and level from OCR, and the verifier compares those read values rather than the literal MUSK_OX/9.",
+      "acceptance": [
+        "world.beast carries a name and level read from the card when any beast is visible",
+        "one live episode with recorded_at, verifier_ok and an evidence frame",
+        "check_wiring problems: 0 and the suite green"
+      ],
+      "timebox_minutes": 90,
+      "stop_condition": "A live run dispatches a beast and the episode records verifier_ok.",
+      "fallback_action": "If the card OCR is not readable, record the crop that must change and leave the route BLOCKED by name.",
+      "status": "READY"
     }
   ],
   "rules": [

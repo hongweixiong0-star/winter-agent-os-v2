@@ -130,10 +130,24 @@ reports `state: "stopped", settled: true`. Measured on a real job.
 Both were established with real jobs, and both would have looked fine in a unit
 test while quietly breaking the workflow:
 
-- **`permissionMode: "dontAsk"`.** A probe job told to run `git rev-parse HEAD`
-  came back `HASH=dacf27889c3fcae7b12e834a5968850a6b22f946`, matching the
-  repository HEAD at the time. Unattended escalations must be able to run pytest
-  and git; a mode that stops to ask would simply hang.
+- **`permissionMode: "bypassPermissions"`.** Four real jobs, one prompt, 2026-09-17:
+
+  | mode | result |
+  | --- | --- |
+  | `dontAsk` | DENIED (`DENIED=git rev-parse --short HEAD`) |
+  | `acceptEdits` | DENIED (`DENIED=1`) |
+  | `auto` | DENIED |
+  | `bypassPermissions` | **EXECUTED** (`GIT=19964ec PY=42`) |
+
+  **This corrects an earlier claim in this file.** A first probe used `dontAsk`,
+  asked for `git rev-parse HEAD` and returned the correct 40-character hash, which
+  was read as proof that `dontAsk` runs shells. It proved nothing of the kind:
+  `.git/refs/heads/main` holds the same hash and Read was permitted, and an agent
+  later described the mechanism exactly -- `Bash` denied outright, the shell
+  fallback restricted to a **read-only allowlist** where `git rev-parse` passed and
+  `python` / `pytest` / `git commit` did not. That earlier measurement had verified
+  the output and not the mechanism. A pipeline whose agent can only read cannot fix
+  a capability, which is why the default is now the one mode that executes.
 - **`bgIsolation: "none"`.** The spec's own wording is that the default follows a
   global setting and may auto-enter an isolated worktree on first file write. With
   a worktree, the escalated agent's commits land on a throwaway branch and V2

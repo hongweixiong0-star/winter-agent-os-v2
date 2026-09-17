@@ -2,7 +2,7 @@
   "agent_state": "AUTO_RUNNING",
   "runtime_thread_alive": true,
   "scheduler_loop_alive": true,
-  "last_tick_time": "2026-09-17T12:55:12.039089+00:00",
+  "last_tick_time": "2026-09-17T13:05:19.996969+00:00",
   "last_action_time": "2026-09-17T11:53:47.556214+00:00",
   "last_success_time": "2026-09-17T11:54:22.829508+00:00",
   "last_fatal_error": null,
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_205455_091317\\20260917_205455_091317_step_001_before_20260917T125455564544.png",
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_210502_409507\\20260917_210502_409507_step_001_before_20260917T130502934250.png",
   "march_used": 0,
   "march_max": null,
   "queues": {
@@ -34,5 +34,5 @@
     "events": {}
   },
   "stop_reason": null,
-  "updated_at": "2026-09-17T12:55:43.816134+00:00"
+  "updated_at": "2026-09-17T13:05:52.097982+00:00"
 }

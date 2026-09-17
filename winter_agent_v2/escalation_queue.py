@@ -48,6 +48,7 @@ What it is careful about
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
@@ -584,7 +585,14 @@ def decide(
 
     record = snapshot.get(candidate.signature.key)
 
-    if record is not None and record.state in (SUBMITTED, WORKING, QUEUED, NEW):
+    # Dedup is about *dispatched* work.  ``QUEUED`` means "decided but never sent"
+    # -- the gateway was unreachable -- and treating that as active would let one
+    # outage strand the escalation permanently: the key would be skipped forever
+    # while no job ever existed.  Live proof: the unattended loop recorded
+    # ``queued: gateway unavailable`` for
+    # SPEND_STAMINA_ON_BEAST|VERIFIED_BEAST_TARGET_NOT_VISIBLE|SELECT_BEAST_TARGET
+    # and had no path back.
+    if record is not None and record.state in (SUBMITTED, WORKING):
         return Dispatch(
             DEDUP_SKIP,
             f"{candidate.signature.describe()} already has an active escalation "
@@ -981,6 +989,7 @@ def reconcile_outcome(
     before: RepoRevision,
     after: RepoRevision,
     wiring_problems: int | None,
+    agent_report: str = "",
     root: Path | str | None = None,
     episodes_path: Path | str | None = None,
 ) -> tuple[str, str, tuple[dict[str, Any], ...]]:
@@ -990,6 +999,16 @@ def reconcile_outcome(
     gateway's word for the job (``DONE``/``FAILED``/``STOPPED``) and is used only
     to distinguish "the agent did nothing" from "the agent failed"; it is never
     treated as proof of a fixed capability.
+
+    ``agent_report`` is the agent's own text, used as **corroboration and nothing
+    more**.  A tree that differs from dispatch time is a fact, but attributing it
+    to the agent is not: this project is edited from more than one place at once
+    (that is why ``run_live.py`` carries a ``VERIFIER_MAPPING_CORRUPT`` guard).
+    The first real escalation proved the point -- its agent reported "No code was
+    changed" while the reconciler measured a changed tree, and the change was the
+    harness's own concurrent edit.  So a code change is only called the agent's
+    when the agent also says it made one, and the explanation names the
+    corroboration instead of claiming proof.
     """
     episodes = new_live_episodes(capability, skill=skill, since=submitted_at,
                                 root=root, episodes_path=episodes_path)
@@ -1004,25 +1023,64 @@ def reconcile_outcome(
         )
 
     changed = before.differs_from(after)
+    claimed = agent_claims_change(agent_report)
+    revision_delta = (
+        f"HEAD {before.head[:8] if before.ok else '?'}->{after.head[:8] if after.ok else '?'}, "
+        f"dirty {before.dirty}->{after.dirty}"
+    )
+
+    if changed and not claimed:
+        return (
+            CODE_CHANGED,
+            f"the tree differs from dispatch time ({revision_delta}) but the agent's "
+            f"own report does not claim a change, so the difference may not be the "
+            f"agent's -- this repository is edited from more than one place",
+            (),
+        )
     if changed and wiring_problems == 0:
         return (
             TEST_PASS,
-            f"tree changed (HEAD {before.head[:8] if before.ok else '?'}->"
-            f"{after.head[:8] if after.ok else '?'}, dirty {before.dirty}->{after.dirty}) "
-            f"and check_wiring reports problems: 0. NOT a verified capability: no new "
+            f"tree changed ({revision_delta}) with the agent corroborating a change, and "
+            f"check_wiring reports problems: 0. NOT a verified capability: no new "
             f"production episode with a passing verifier exists.",
             (),
         )
     if changed:
         return (
             CODE_CHANGED,
-            f"tree changed but the wiring gate reported "
+            f"tree changed ({revision_delta}) but the wiring gate reported "
             f"{'not run' if wiring_problems is None else f'{wiring_problems} problem(s)'}",
             (),
         )
     if job_verdict in ("FAILED", "STOPPED"):
         return OUTCOME_BLOCKED, f"job ended {job_verdict} and nothing changed in the tree", ()
     return NO_IMPROVEMENT, "job finished, no code change and no new verified episode", ()
+
+
+# Phrases an agent uses when it actually changed something.  Coarse on purpose:
+# this is corroboration for a fact measured elsewhere, so a false positive costs
+# little and a false negative just downgrades TEST_PASS to CODE_CHANGED.
+_CHANGE_CLAIM = re.compile(
+    r"(?i)(commit\s+hash|committed|files?\s+changed|changed\s+\d+\s+file|"
+    r"\bedited\b|\bmodified\b|\bpatched\b|\bwrote\b|\bcreated\b|\bit\s+is\s+fixed\b)"
+)
+_HEX_COMMIT = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+
+def agent_claims_change(report: str) -> bool:
+    """Does the agent's own report claim that it changed the tree?
+
+    Used only to corroborate a tree diff the reconciler already measured.  An
+    agent that *denies* changing anything is believed about that, because the
+    alternative -- attributing any diff in the window to the agent -- silently
+    credits it with a human's or a sibling process's edit.
+    """
+    text = str(report or "")
+    if not text:
+        return False
+    if re.search(r"(?i)no code was changed|did not change|nothing changed|unchanged", text):
+        return False
+    return bool(_CHANGE_CLAIM.search(text) or _HEX_COMMIT.search(text))
 
 
 # ------------------------------------------------------------------- adapter
@@ -1210,12 +1268,17 @@ class EscalationQueueAdapter:
         self._record(candidate, dispatch)
 
         if not availability:
-            self.ledger.append({
-                "source": "queue",
-                "event": "queued",
-                "key": candidate.signature.key,
-                "reason": f"gateway {availability.reason}",
-            })
+            # One queued row per transition, not one per cycle: the loop retries
+            # every run, and rewriting the same line 200 times a day would bury the
+            # events that matter in the events that do not.
+            existing = self.ledger.snapshot().get(candidate.signature.key)
+            if existing is None or existing.state != QUEUED:
+                self.ledger.append({
+                    "source": "queue",
+                    "event": "queued",
+                    "key": candidate.signature.key,
+                    "reason": f"gateway {availability.reason}",
+                })
             return ""
 
         context = self._build_request(
@@ -1313,6 +1376,7 @@ class EscalationQueueAdapter:
                 before=before,
                 after=after,
                 wiring_problems=wiring,
+                agent_report=status.result,
                 root=self.root,
             )
             code_changed = after.differs_from(before)

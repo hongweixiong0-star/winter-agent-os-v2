@@ -181,6 +181,36 @@ class DedupTest(unittest.TestCase):
         finally:
             harness.cleanup()
 
+    def test_a_queued_escalation_is_retried_once_the_gateway_returns(self):
+        """QUEUED means "decided but never sent", so it must not be deduped.
+
+        Found by tracing the live path: the unattended loop recorded
+        ``queued: gateway unavailable`` and, under the first version of the dedup
+        rule, had no way back -- an outage would have stranded the key forever
+        while no job ever existed.
+        """
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+            condition=q.UNKNOWN_UI, reason="queued earlier",
+        )
+        record = q.EscalationRecord(key=candidate.signature.key, state=q.QUEUED)
+        dispatch = q.decide(
+            candidate, q.EscalationSnapshot({record.key: record}), q.EscalationPolicy(), now=NOW
+        )
+        self.assertTrue(dispatch.should_submit, dispatch.reason)
+
+    def test_a_repeated_outage_writes_one_queued_row_per_transition(self):
+        harness = AdapterHarness(bridge=FakeBridge(available=False, reason="GATEWAY_UNREACHABLE"))
+        try:
+            for _ in range(4):
+                harness.adapter.observe_run(
+                    stop_reason="training_entry_not_verified",
+                    failures=[failure("TRAINING_PAGE_NOT_PROVEN")], now=NOW,
+                )
+            self.assertEqual(harness.event_kinds().count("queued"), 1)
+        finally:
+            harness.cleanup()
+
 
 # ------------------------------------------------------------- concurrency
 
@@ -753,7 +783,8 @@ class ReconciliationTest(unittest.TestCase):
             outcome, explanation, _ = q.reconcile_outcome(
                 capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",
                 before=q.RepoRevision("a", 0, True), after=q.RepoRevision("b", 1, True),
-                wiring_problems=0, root=Path(tmp),
+                wiring_problems=0, agent_report="files changed: vision.py, verifier.py",
+                root=Path(tmp),
             )
         self.assertEqual(outcome, q.TEST_PASS)
         self.assertIn("NOT a verified capability", explanation)
@@ -820,6 +851,107 @@ class ReconciliationTest(unittest.TestCase):
             self.assertIsNone(harness.signal.pending())
         finally:
             harness.cleanup()
+
+
+class AttributionTest(unittest.TestCase):
+    """A tree diff is a fact; whose diff it is, is not.
+
+    The first real escalation proved this the hard way: the reconciler measured a
+    changed tree and recorded ``TEST_PASS``, while the agent's own report said "No
+    code was changed" -- the diff was the harness editing the escalation queue
+    while the job ran.  This project is edited from more than one place at once
+    (that is why ``run_live.py`` carries a VERIFIER_MAPPING_CORRUPT guard), so the
+    reconciler must corroborate before it credits.
+    """
+
+    def test_an_agent_denying_a_change_is_believed_about_that(self):
+        for denial in ("No code was changed.", "I did not change any file",
+                       "nothing changed in the tree", "the tree is unchanged"):
+            self.assertFalse(q.agent_claims_change(denial), denial)
+
+    def test_an_agent_claiming_a_change_is_recognised(self):
+        for claim in ("files changed: a.py, b.py", "committed as 19964ec",
+                      "I edited vision.py", "patched the verifier"):
+            self.assertTrue(q.agent_claims_change(claim), claim)
+
+    def test_an_empty_report_claims_nothing(self):
+        self.assertFalse(q.agent_claims_change(""))
+
+    def test_a_tree_diff_the_agent_denies_is_not_credited(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outcome, explanation, _ = q.reconcile_outcome(
+                capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("b", 1, True),
+                wiring_problems=0, agent_report="No code was changed.", root=Path(tmp),
+            )
+        self.assertEqual(outcome, q.CODE_CHANGED)
+        self.assertIn("may not be the agent's", explanation)
+
+    def test_a_tree_diff_the_agent_corroborates_is_test_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outcome, explanation, _ = q.reconcile_outcome(
+                capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("b", 1, True),
+                wiring_problems=0, agent_report="committed as 19964ec, files changed: 2",
+                root=Path(tmp),
+            )
+        self.assertEqual(outcome, q.TEST_PASS)
+        self.assertIn("corroborating", explanation)
+        self.assertIn("NOT a verified capability", explanation)
+
+    def test_a_new_verified_episode_outranks_corroboration_entirely(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "learning").mkdir(parents=True)
+            (root / "learning/episodes.jsonl").write_text(json.dumps({
+                "skill": "SKILL", "recorded_at": (NOW + timedelta(minutes=1)).isoformat(),
+                "verifier_ok": True, "result": "SUCCESS",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+            }), encoding="utf-8")
+            outcome, _, _ = q.reconcile_outcome(
+                capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=None, agent_report="I changed nothing", root=root,
+            )
+        self.assertEqual(outcome, q.LIVE_VERIFIED)
+
+
+class PermissionDefaultTest(unittest.TestCase):
+    def test_only_bypass_permissions_can_execute_measured(self):
+        """Four real jobs, one prompt: only one mode ran a shell."""
+        measured = {
+            "dontAsk": False,
+            "acceptEdits": False,
+            "auto": False,
+            "bypassPermissions": True,
+        }
+        from winter_agent_v2.workbuddy_bridge import (
+            DEFAULT_PERMISSION_MODE,
+            WorkBuddyBridge,
+        )
+
+        self.assertEqual(DEFAULT_PERMISSION_MODE, "bypassPermissions")
+        self.assertTrue(measured[DEFAULT_PERMISSION_MODE])
+        self.assertEqual(WorkBuddyBridge().permission_mode, DEFAULT_PERMISSION_MODE)
+
+
+class CorrectionTest(unittest.TestCase):
+    def test_a_correction_overwrites_the_outcome_without_spending_a_shot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = q.EscalationLedger(Path(tmp) / "ledger.jsonl")
+            ledger.append({"source": "queue", "event": "escalation_created",
+                           "key": "K", "condition": q.UNKNOWN_UI})
+            ledger.append({"source": "queue", "event": "reconciled", "key": "K",
+                           "outcome": q.TEST_PASS, "repair_used": True})
+            self.assertEqual(ledger.snapshot().get("K").outcome, q.TEST_PASS)
+            self.assertEqual(ledger.snapshot().get("K").repairs_used, 1)
+
+            ledger.append({"source": "queue", "event": "reconciled", "correction": True,
+                           "key": "K", "outcome": q.NO_IMPROVEMENT, "repair_used": False,
+                           "explanation": "corrected by the operator: not the agent's diff"})
+            record = ledger.snapshot().get("K")
+            self.assertEqual(record.outcome, q.NO_IMPROVEMENT)
+            self.assertEqual(record.repairs_used, 1, "a correction is not a new failure")
 
 
 class RepoRevisionTest(unittest.TestCase):

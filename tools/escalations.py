@@ -27,6 +27,7 @@ from winter_agent_v2.escalation_queue import (  # noqa: E402
     EscalationQueueAdapter,
     model_ladder_report,
 )
+from winter_agent_v2 import escalation_queue as q  # noqa: E402
 from winter_agent_v2.runtime_reload import REQUEST_KIND, ReloadSignal, default_path as reload_path  # noqa: E402
 
 EXIT_OK = 0
@@ -136,6 +137,47 @@ def cmd_reload_done(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_correct(args: argparse.Namespace) -> int:
+    """Append a correcting ``reconciled`` event for one key.
+
+    The ledger is append-only, so a wrong outcome is corrected by a later event
+    rather than by rewriting history -- and the correction carries its reason, so
+    the record shows both what was believed and why it changed.  Needed in
+    practice: the first real escalation was recorded ``TEST_PASS`` on a tree diff
+    that turned out to be the harness's own concurrent edit.
+    """
+    ledger = EscalationLedger(args.ledger)
+    record = ledger.snapshot().get(args.correct)
+    if record is None:
+        _emit(f"no escalation with key {args.correct!r}")
+        return EXIT_FAILED
+    if not args.reason:
+        _emit("--reason is required: a correction without its reason is just a second guess")
+        return EXIT_FAILED
+    ledger.append({
+        "source": "queue",
+        "event": "reconciled",
+        "correction": True,
+        "key": args.correct,
+        "job_id": record.job_id,
+        "job_state": q_state(record.state),
+        "outcome": args.outcome or q.NO_IMPROVEMENT,
+        "explanation": f"corrected by the operator: {args.reason}",
+        # A correction does not spend a repair shot: it is not a new failure.
+        "repair_used": False,
+        "live_improvement": (args.outcome == q.LIVE_VERIFIED),
+    })
+    _emit(f"corrected {args.correct}: outcome -> {args.outcome or q.NO_IMPROVEMENT}")
+    _emit(f"  was : {record.outcome or '(none)'}")
+    _emit(f"  why : {args.reason}")
+    return EXIT_OK
+
+
+def q_state(state: str) -> str:
+    """The job-state word that belongs with an escalation state."""
+    return "FAILED" if state == "FAILED" else "DONE"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--ledger", default=str(ROOT / "learning/workbuddy_escalations.jsonl"))
@@ -143,6 +185,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--reconcile", action="store_true", help="poll in-flight jobs and measure outcomes")
     parser.add_argument("--reload", action="store_true", help="report a pending RUNTIME_RELOAD_REQUIRED")
     parser.add_argument("--reload-done", action="store_true", help="clear the reload marker")
+    parser.add_argument("--correct", metavar="KEY", help="append a correcting outcome for one key")
+    parser.add_argument("--outcome", default="", help="the corrected outcome constant")
+    parser.add_argument("--reason", default="", help="why the earlier outcome was wrong (required)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -152,6 +197,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_reload(args)
     if args.reload_done:
         return cmd_reload_done(args)
+    if args.correct:
+        return cmd_correct(args)
     return cmd_state(args)
 
 

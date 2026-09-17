@@ -138,6 +138,12 @@ dataset/external/repositories/
 # the measurement that keeps the training route from tapping on an ambiguous signal.
 !dataset/truth_audit/training_camp_highlight_ambiguity_*/**/*.png
 
+# learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
+# development agent touches the tree, cleared when the next cycle has started on
+# the new code.  It is machine state, not evidence, and committing it would make a
+# checkout claim a reload is pending.
+learning/RUNTIME_RELOAD_REQUIRED.json
+
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only
 # record of what the unstable tap targets did.

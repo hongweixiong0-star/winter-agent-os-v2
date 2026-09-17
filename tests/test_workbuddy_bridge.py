@@ -358,12 +358,37 @@ class SubmitContractTest(unittest.TestCase):
         method, path, payload = transport.calls[-1]
         self.assertEqual(method, "POST")
         self.assertEqual(path, bridge.JOBS_PATH)
-        # Measured on 2026-09-17: dontAsk really runs a shell tool unattended,
-        # and any isolation other than "none" strands the agent's commits on a
-        # throwaway branch where V2 would never see them.
-        self.assertEqual(payload["permissionMode"], "dontAsk")
+        # Measured 2026-09-17 with four real jobs on one prompt:
+        #   dontAsk           -> DENIED
+        #   acceptEdits       -> DENIED
+        #   auto              -> DENIED
+        #   bypassPermissions -> GIT=19964ec PY=42   (executed)
+        # Only one of them lets an escalation do anything, so that is the default.
+        self.assertEqual(payload["permissionMode"], "bypassPermissions")
+        self.assertEqual(bridge.DEFAULT_PERMISSION_MODE, "bypassPermissions")
+        # And a real escalation with `dontAsk` said so in its own words: "Permission
+        # to use Bash has been denied ... Read/Write/Edit work; execution does not."
         self.assertEqual(payload["bgIsolation"], "none")
         self.assertEqual(payload["cwd"], str(bridge.PROJECT_ROOT))
+
+    def test_a_read_only_success_is_not_evidence_that_a_shell_ran(self):
+        """The mistake this default was corrected from.
+
+        An earlier probe used ``dontAsk``, asked for ``git rev-parse HEAD`` and came
+        back with the correct 40-character hash -- which was read as proof that
+        ``dontAsk`` runs shells.  It proved nothing: ``.git/refs/heads/main`` holds
+        the same hash and Read was allowed, and a later agent reported that even
+        ``PowerShell`` was restricted to a read-only allowlist in which
+        ``git rev-parse`` passed while ``python``/``pytest``/``git commit`` did not.
+        So the harness had verified the *output* and not the *mechanism*.  This test
+        pins the corrected conclusion rather than the misleading observation.
+        """
+        self.assertNotEqual(bridge.DEFAULT_PERMISSION_MODE, "dontAsk")
+        self.assertIn("bypassPermissions", bridge.DEFAULT_PERMISSION_MODE)
+
+    def test_the_permission_mode_can_still_be_overridden_by_the_environment(self):
+        with patch.dict(os.environ, {bridge.ENV_PERMISSION_MODE: "acceptEdits"}):
+            self.assertEqual(bridge.WorkBuddyBridge().permission_mode, "acceptEdits")
 
     def test_the_working_directory_is_fixed_to_this_project(self):
         transport, submission, _ = self._submit()

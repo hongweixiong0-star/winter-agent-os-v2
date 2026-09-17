@@ -43,7 +43,7 @@ python tools/workbuddy_bridge.py --check
 base url      : http://127.0.0.1:8080
 credential    : set via CODEBUDDY_GATEWAY_PASSWORD
 cwd (fixed)   : E:\无尽冬日智能体
-permission    : dontAsk
+permission    : bypassPermissions
 bg isolation  : none
 
 gateway    : http://127.0.0.1:8080
@@ -136,11 +136,27 @@ commit hash, and explicitly for anything still unproven.
 Full transcript and the exact payloads: `knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md`.
 The two that matter operationally:
 
-- `permissionMode: dontAsk` — measured running a shell tool unattended (a probe
-  job ran `git rev-parse HEAD` and returned the real hash).
+- `permissionMode: bypassPermissions` — **the only mode measured to execute.** Four
+  real jobs, one prompt: `dontAsk` DENIED, `acceptEdits` DENIED, `auto` DENIED,
+  `bypassPermissions` ran both commands (`GIT=19964ec PY=42`). A pipeline whose
+  agent cannot execute can only read, so this is the default.
 - `bgIsolation: none` — with a worktree the agent's commits land on a throwaway
   branch and V2 never sees them, so the escalation would report success while the
   repository was unchanged.
+
+### How the permission default was got wrong first (worth keeping)
+
+An earlier probe used `dontAsk`, asked for `git rev-parse HEAD`, and came back with
+the correct 40-character hash — read at the time as proof that `dontAsk` runs
+shells. It proved nothing: `.git/refs/heads/main` holds the same hash and the Read
+tool was permitted, and a later agent explained the mechanism exactly — `Bash` was
+denied outright while `PowerShell` was restricted to a **read-only allowlist** in
+which `git rev-parse` passed and `python` / `pytest` / `git commit` did not.
+
+So the harness had verified the *output* and not the *mechanism*, which is the same
+mistake as `TOOLING_INTERPRETER_DRIFT` one layer down. The correction came from the
+agent itself: the first real escalation reported "Read/Write/Edit work; execution
+does not."
 
 ## 7. Phase 2 (reserved, not implemented)
 

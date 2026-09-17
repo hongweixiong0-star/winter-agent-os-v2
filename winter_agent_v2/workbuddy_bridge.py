@@ -93,12 +93,28 @@ JOBS_PATH = "/api/v1/jobs"
 SUBMIT_TIMEOUT_SECONDS = 60.0
 READ_TIMEOUT_SECONDS = 15.0
 
-# ``dontAsk`` was measured to run a shell tool unattended (a probe job ran
-# ``git rev-parse HEAD`` and came back with 2f946), which is the minimum for an
-# escalation to be able to run pytest and commit.  ``bgIsolation: none`` is the
-# other half of the same measurement: with a worktree the agent's edits and
-# commits land on a throwaway branch and V2 would never see them.
-DEFAULT_PERMISSION_MODE = "dontAsk"
+# Measured 2026-09-17, four modes, same prompt, real jobs: ``dontAsk`` DENIED
+# (``DENIED=git rev-parse --short HEAD``), ``acceptEdits`` DENIED, and
+# ``bypassPermissions`` EXECUTED (``GIT=19964ec PY=42``).  So ``bypassPermissions``
+# is the only mode in which an escalation can do anything at all.
+#
+# This corrects an earlier claim, and the way it was wrong is the interesting part.
+# A first probe with ``dontAsk`` had come back with the correct 40-character HEAD,
+# which was read as proof that ``dontAsk`` runs shells.  It proves nothing of the
+# kind: ``.git/refs/heads/main`` holds the same hash and the Read tool was allowed,
+# so the answer was reachable without a shell.  The harness verified the *output*
+# and not the *mechanism*, and then an escalation with `dontAsk` reported, in its
+# own words, "Permission to use Bash has been denied ... permission prompts are not
+# available in non-interactive mode.  ... Read/Write/Edit work; execution does
+# not."  A pipeline that can only read cannot fix a capability.
+#
+# ``bypassPermissions`` is a real widening and is chosen deliberately: the operator's
+# DEVELOPMENT_VALIDATION policy requires the development agent to run tests, probe the
+# live device and commit.  The permanent prohibitions (real money, account or role
+# deletion, account security, irreversible operations) are *not* left to the tool
+# permission layer -- ``HARD_BOUNDARIES`` states them in every prompt, and the
+# project's own ``production_gate`` still refuses them at the action layer.
+DEFAULT_PERMISSION_MODE = "bypassPermissions"
 DEFAULT_BG_ISOLATION = "none"
 
 # ---------------------------------------------------------------- escalation gate
