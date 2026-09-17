@@ -430,10 +430,44 @@ WorkBuddy 后台 agent**，而不是耗完 timebox 然后停下。
   **普通游戏 Tick 禁止调用 WorkBuddy**，`submit` 在联网前就拒绝。
 - 凭据**只存环境变量** `CODEBUDDY_GATEWAY_PASSWORD`。**禁止进入仓库**，
   禁止写进 `config/v2.json`（`workbuddy_bridge.py` 根本不读该文件）。
+  注意：**面板进程也要能看到这个变量**，否则 AUTO 只能建单（记为 `QUEUED`）而发不出。
 - 工作目录固定 `E:\无尽冬日智能体`；`bgIsolation=none`（否则 agent 的提交落在
   临时 worktree，V2 永远看不到，而升级会"报告成功"）。
 - 升级 **不是** 停机理由：gateway 不可达 → 记 `GATEWAY_UNREACHABLE` → 继续本地开发。
 - 收到结果后仍须由 **V2 的 verifier + 真机 episode** 判定，升级方自述不算证据。
+
+## 10c. 升级队列：AUTO 发现，队列限流，WorkBuddy 异步修（2026-09-17 操作者指令）
+
+三层分工，**AUTO 永不等待 WorkBuddy**：
+
+```
+AUTO runtime      发现问题、建单、继续玩
+Escalation Queue  去重 / 并发 / 预算 / 冷却 / 状态
+WorkBuddy Bridge  异步派发（只传输）
+WorkBuddy Agent   自己的进程里干活
+```
+
+- **禁止 AUTO 同步等 WorkBuddy**：hook 在 `run()` 返回后（动作已结束）执行，
+  **只**做"对账已结束的 job + 交出不超过并发上限的决定"，然后返回。
+- **去重键** = `capability | failure_type | skill`，一个键同时只允许一个 active job。
+- **`max_concurrent_jobs = 1`**：禁止两个 agent 同时改同一仓库。
+- **修复预算**：同一签名第一次免费，之后每次失败算一枪，用尽 → `BLOCKED + COOLDOWN`
+  → AUTO 转下一个 Capability。**禁止 Runtime ↔ WorkBuddy 无限修复循环。**
+- **普通天气永不升级**（按名拒绝）：`mail_all_clear` / `QUEUE_BUSY` / `NOT_REFRESHED` /
+  `RESOURCE_SHORTAGE` / `EVENT_CLOSED` / `RALLY_FULL` / `WAITING_FOR_NATURAL_STATE` 等。
+- **job DONE ≠ Capability 成功**：只有"真机 episode（带 `recorded_at` + `verifier_ok` + 证据）
+  且时间晚于派发"才算 `LIVE_VERIFIED`；只改代码 + 过闸门只能记 `TEST_PASS`，
+  且解释里必须写明"这不是已验证能力"。
+- **一个台账** `learning/workbuddy_escalations.jsonl`，状态是事件流的 **fold**。
+  禁止再建第二个 store/registry。
+- 代码变更 → 写 `RUNTIME_RELOAD_REQUIRED` 标记；面板 `start()` 在标记新鲜或 job 仍活跃时
+  延后启动（每轮 worker 是新子进程，代码自然生效，**不需要也不允许新建 Runtime Manager**），
+  **但 15 分钟上限后必须放弃延后**，绝不让卡住的开发 agent 拖停游戏运行时。
+- 模型路由：**最小阶梯**，不新增 Model Manager。
+  `deepseek-v4.1-flash` → `glm-5.3-flash`（长上下文/大日志/跨文件）→
+  `hy4-preview-f`（视觉，或前两者失败后的第二意见）→ `deepseek-v4-pro`（兜底）。
+  只有当前档在时间盒内**没有 Live Improvement** 才升档；每次 job 记录
+  `model / model_reason / escalated_from / duration / result / live_improvement`。
 
 ## 11. Candidate 不能永远不执行
 

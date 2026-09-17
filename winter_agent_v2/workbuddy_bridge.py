@@ -625,6 +625,7 @@ class WorkBuddyBridge:
         data = body.get("data") if isinstance(body.get("data"), Mapping) else {}
         if code != 200 or not data:
             self._ledger({
+                "source": "bridge",
                 "event": "submit_failed",
                 "capability": ctx.capability,
                 "condition": ctx.condition,
@@ -644,6 +645,10 @@ class WorkBuddyBridge:
             raw=dict(data),
         )
         self._ledger({
+            # source tells the escalation queue's fold that this is transport
+            # audit rather than queue state; the two share one file on purpose so
+            # there is a single place to look, without one impersonating the other.
+            "source": "bridge",
             "event": "submitted",
             "job_id": submission.job_id,
             "capability": ctx.capability,

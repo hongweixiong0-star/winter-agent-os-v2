@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +48,14 @@ def main() -> int:
              "one-decision-per-step bug (Scheduler.tick now takes the "
              "runtime's decision).  No caller passes it any more; "
              "config/v2.json asks for the free gift to be claimed.",
+    )
+    parser.add_argument(
+        "--no-escalate",
+        action="store_true",
+        help="Do not hand a stuck capability to a local WorkBuddy agent at the "
+             "end of the run.  The escalation queue is what makes AUTO able to "
+             "keep playing while a development agent works; this flag exists so a "
+             "diagnostic run can be kept purely observational.",
     )
     args = parser.parse_args()
 
@@ -109,6 +118,7 @@ def main() -> int:
                 "The source tree was rewritten while it was loaded; do not run live."
             )
     verifier_skills = set(LiveRuntime.VERIFIED_ATOMIC)
+    started_at = datetime.now(timezone.utc)
     result = LiveRuntime(
         device=observation_device,
         adb_device=device,
@@ -136,6 +146,34 @@ def main() -> int:
         stamina_supply=StaminaSupplyStore(ROOT / "learning/stamina_supply.json"),
     ).run(max_actions=args.max_actions, stop_after_skill=args.stop_after)
     print(json.dumps(asdict(result), ensure_ascii=False, default=str))
+
+    # The AUTO hook.  It runs *after* the last atomic action has finished and
+    # before the exit code is decided, and it never waits for a development
+    # agent: it reconciles jobs that already ended, hands off at most the number
+    # of decisions the concurrency cap allows, and returns.  A gateway that is
+    # down, a slow status read or a broken ledger are all reported on the
+    # observation -- AUTO must keep playing either way, so nothing here may raise
+    # or change the exit code.
+    if not args.no_escalate:
+        try:
+            from winter_agent_v2.escalation_queue import (
+                EscalationQueueAdapter,
+                failures_since,
+            )
+
+            adapter = EscalationQueueAdapter(root=ROOT)
+            observation = adapter.observe_run(
+                stop_reason=result.stop_reason,
+                failures=failures_since(started_at, root=ROOT),
+            )
+            print(observation.line)
+            for key, why in observation.skipped:
+                print(f"[escalation]   skipped {key}: {why}")
+            for error in observation.errors:
+                print(f"[escalation]   error {error}")
+        except Exception as exc:  # noqa: BLE001 - the hook must never break a run
+            print(f"[escalation] unavailable ({type(exc).__name__}: {exc}); run unaffected")
+
     accepted_stops = {"TARGET_SKILL_VERIFIED", "MAX_ACTIONS_REACHED", "no_idle_march", "reserved_march_for_stamina", "verified_beast_target_not_visible", "intel_available_no_claim", "intel_not_available", "intel_expired", "mail_all_clear", "exploration_income_not_ready", "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable", "alliance_action_not_needed", "research_queue_busy", "training_queue_busy"}
     verified = all(step.verification is None or step.verification.ok for step in result.steps)
     accepted_stops.add("intel_no_untried_pins")

@@ -1,0 +1,917 @@
+"""The escalation queue: dedup, throttle, budget, model rungs, reconciliation.
+
+What these tests defend, in the operator's words
+------------------------------------------------
+*Dedup* -- one active WorkBuddy job per ``capability | failure_type | skill``, so a
+failure that recurs every six minutes does not summon an agent every six minutes.
+
+*Concurrency* -- ``max_concurrent_jobs = 1``; two agents must never edit this
+repository at once.
+
+*Budget and cooldown* -- the repair loop is bounded, and when the budget is spent
+the signature goes ``BLOCKED + COOLDOWN`` and AUTO moves to another capability
+instead of retrying forever.
+
+*Ordinary weather never escalates* -- an empty mailbox, a busy queue, an event
+that has not refreshed.  These are correct observations, and escalating them would
+spend a development agent on a working system.
+
+*DONE is not success* -- ``LIVE_VERIFIED`` requires a production episode with
+``recorded_at``, ``verifier_ok`` and evidence that appeared after the job was
+dispatched.  Code changes and a green wiring gate produce ``TEST_PASS``, and the
+explanation says in words that it is not a verified capability.
+
+*The hook cannot hurt the runtime* -- a gateway that is down, or a bridge that
+raises, must come back as an observation on the run rather than an exception, and
+must never leave AUTO waiting.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from winter_agent_v2 import escalation_queue as q  # noqa: E402
+from winter_agent_v2 import runtime_reload as reload_mod  # noqa: E402
+from winter_agent_v2.workbuddy_bridge import Availability, JobStatus, Submission  # noqa: E402
+
+NOW = datetime(2026, 9, 17, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def failure(failure_type: str, skill: str = "OPEN_INFANTRY_TRAINING", **extra):
+    row = {
+        "failure_type": failure_type,
+        "skill": skill,
+        "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+        "before_screenshot": r"E:\evidence\x\step_001_before.png",
+        "after_screenshot": r"E:\evidence\x\step_001_after.png",
+        "recorded_at": NOW.isoformat(),
+        "state_before": {"page": "HOME"},
+    }
+    row.update(extra)
+    return row
+
+
+class FakeBridge:
+    """A bridge whose HTTP surface is scripted.  Records what it was asked."""
+
+    def __init__(self, *, available=True, reason="OK", status=None, submitted="job-1"):
+        self._available = available
+        self._reason = reason
+        self._status = status
+        self._submitted = submitted
+        self.submits: list[dict] = []
+        self.status_calls: list[str] = []
+
+    def is_available(self):
+        return Availability(self._available, self._reason, "http://127.0.0.1:8080")
+
+    def submit(self, context, *, name=None, model=None, effort=None):
+        self.submits.append({"capability": context.capability, "name": name, "model": model})
+        return Submission(job_id=self._submitted, state="working")
+
+    def status(self, job_id):
+        self.status_calls.append(job_id)
+        return self._status
+
+
+class ExplodingBridge(FakeBridge):
+    def is_available(self):
+        raise RuntimeError("gateway exploded")
+
+    def submit(self, context, **kwargs):
+        raise RuntimeError("gateway exploded")
+
+    def status(self, job_id):
+        raise RuntimeError("gateway exploded")
+
+
+class AdapterHarness:
+    """An adapter wired to a temp ledger and a scripted bridge."""
+
+    def __init__(self, bridge=None, policy=None, tmp: Path | None = None):
+        self._tmp = tempfile.TemporaryDirectory()
+        root = Path(self._tmp.name)
+        (root / "knowledge/goals").mkdir(parents=True)
+        (root / "learning").mkdir(parents=True)
+        (root / "knowledge/goals/capability_skill_map.json").write_text(
+            json.dumps({"goals": []}), encoding="utf-8"
+        )
+        self.root = root
+        self.ledger = q.EscalationLedger(root / q.DEFAULT_LEDGER)
+        self.signal = reload_mod.ReloadSignal(reload_mod.default_path(root))
+        self.bridge = bridge if bridge is not None else FakeBridge()
+        self.adapter = q.EscalationQueueAdapter(
+            root=root, ledger=self.ledger, bridge=self.bridge,
+            reload_signal=self.signal, policy=policy or q.EscalationPolicy(),
+        )
+        self.adapter._build_request = self._request
+
+    @staticmethod
+    def _request(capability, condition, reason, **kwargs):
+        from winter_agent_v2.workbuddy_bridge import EscalationContext
+
+        return EscalationContext(
+            capability=capability, condition=condition, failure_reason=reason,
+            goal=kwargs.get("goal", ""), skill=kwargs.get("skill", ""),
+            evidence_paths=tuple(kwargs.get("evidence_paths") or ()),
+        )
+
+    def cleanup(self):
+        self._tmp.cleanup()
+
+    def events(self):
+        return self.ledger.events()
+
+    def event_kinds(self):
+        return [e["event"] for e in self.events()]
+
+
+# ------------------------------------------------------------------- dedup
+
+
+class DedupTest(unittest.TestCase):
+    def test_a_second_candidate_with_the_same_key_is_not_dispatched_again(self):
+        harness = AdapterHarness()
+        try:
+            candidate = q.EscalationCandidate(
+                signature=q.FailureSignature("KEEP_TRAINING", "TRAINING_PAGE_NOT_PROVEN", "OPEN_INFANTRY_TRAINING"),
+                condition=q.UNKNOWN_UI, reason="page not proven",
+            )
+            first = q.decide(candidate, harness.ledger.snapshot(), harness.adapter.policy, now=NOW)
+            self.assertTrue(first.should_submit)
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": candidate.signature.key, "condition": candidate.condition})
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": candidate.signature.key, "job_id": "job-1"})
+
+            second = q.decide(candidate, harness.ledger.snapshot(), harness.adapter.policy, now=NOW)
+            self.assertEqual(second.action, q.DEDUP_SKIP)
+            self.assertIn("job-1", second.reason)
+        finally:
+            harness.cleanup()
+
+    def test_the_key_is_capability_plus_failure_type_plus_skill(self):
+        signature = q.FailureSignature("CAP", "TYPE", "SKILL")
+        self.assertEqual(signature.key, "CAP|TYPE|SKILL")
+        # A different skill is a different key: same reason, different place.
+        self.assertNotEqual(
+            signature.key, q.FailureSignature("CAP", "TYPE", "OTHER").key
+        )
+
+    def test_the_adapter_submits_only_one_job_for_a_recurring_failure(self):
+        harness = AdapterHarness()
+        try:
+            for _ in range(3):
+                harness.adapter.observe_run(
+                    stop_reason="training_entry_not_verified",
+                    failures=[failure("TRAINING_PAGE_NOT_PROVEN")],
+                    now=NOW,
+                )
+            self.assertEqual(len(harness.bridge.submits), 1)
+        finally:
+            harness.cleanup()
+
+
+# ------------------------------------------------------------- concurrency
+
+
+class ConcurrencyTest(unittest.TestCase):
+    def test_the_second_distinct_key_waits_for_the_first_job(self):
+        harness = AdapterHarness()
+        try:
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": "OTHER|TYPE|SKILL", "condition": q.UNKNOWN_UI})
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": "OTHER|TYPE|SKILL", "job_id": "job-running"})
+            candidate = q.EscalationCandidate(
+                signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+                condition=q.UNKNOWN_UI, reason="new wall",
+            )
+            dispatch = q.decide(candidate, harness.ledger.snapshot(), harness.adapter.policy, now=NOW)
+            self.assertEqual(dispatch.action, q.CONCURRENCY_WAIT)
+            self.assertIn("max_concurrent_jobs=1", dispatch.reason)
+        finally:
+            harness.cleanup()
+
+    def test_the_adapter_honours_the_cap_across_two_candidates_in_one_run(self):
+        harness = AdapterHarness()
+        try:
+            observation = harness.adapter.observe_run(
+                stop_reason="some_real_failure",
+                failures=[
+                    failure("SEMANTIC_TARGET_NOT_VERIFIED", skill="A"),
+                    failure("SEMANTIC_TARGET_NOT_VERIFIED", skill="B"),
+                ],
+                now=NOW,
+            )
+            self.assertEqual(len(observation.submitted), 1)
+            self.assertTrue(any("CONCURRENCY_WAIT" in why for _, why in observation.skipped))
+        finally:
+            harness.cleanup()
+
+    def test_the_cap_is_configurable_and_defaults_to_one(self):
+        self.assertEqual(q.EscalationPolicy().max_concurrent_jobs, 1)
+        harness = AdapterHarness(policy=q.EscalationPolicy(max_concurrent_jobs=2))
+        try:
+            observation = harness.adapter.observe_run(
+                stop_reason="some_real_failure",
+                failures=[
+                    failure("SEMANTIC_TARGET_NOT_VERIFIED", skill="A"),
+                    failure("SEMANTIC_TARGET_NOT_VERIFIED", skill="B"),
+                ],
+                now=NOW,
+            )
+            self.assertEqual(len(observation.submitted), 2)
+        finally:
+            harness.cleanup()
+
+
+# --------------------------------------------------------- budget & cooldown
+
+
+def record_with_repairs(key: str, repairs: int, state: str = q.DONE, cooldown_until=None):
+    record = q.EscalationRecord(key=key, state=state)
+    record.repairs_used = repairs
+    record.cooldown_until = cooldown_until
+    return record
+
+
+class BudgetAndCooldownTest(unittest.TestCase):
+    def _snapshot(self, record):
+        return q.EscalationSnapshot({record.key: record})
+
+    def test_the_budget_stops_the_repair_loop(self):
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+            condition=q.REPEATED_LIVE_FAILURE, reason="again",
+        )
+        snapshot = self._snapshot(record_with_repairs(candidate.signature.key, 2))
+        dispatch = q.decide(candidate, snapshot, q.EscalationPolicy(), now=NOW)
+        self.assertEqual(dispatch.action, q.BUDGET_EXHAUSTED)
+
+    def test_the_first_shot_is_free_even_for_a_repeat(self):
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+            condition=q.REPEATED_LIVE_FAILURE, reason="second sighting",
+        )
+        snapshot = self._snapshot(record_with_repairs(candidate.signature.key, 0))
+        self.assertTrue(q.decide(candidate, snapshot, q.EscalationPolicy(), now=NOW).should_submit)
+
+    def test_a_cooldown_is_reported_with_the_remaining_time(self):
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+            condition=q.REPEATED_LIVE_FAILURE, reason="again",
+        )
+        snapshot = self._snapshot(
+            record_with_repairs(candidate.signature.key, 2, state=q.COOLDOWN,
+                                cooldown_until=NOW + timedelta(minutes=30))
+        )
+        dispatch = q.decide(candidate, snapshot, q.EscalationPolicy(), now=NOW)
+        self.assertEqual(dispatch.action, q.IN_COOLDOWN)
+        self.assertIn("30 min", dispatch.reason)
+
+    def test_an_expired_cooldown_lets_the_capital_try_again_after_the_budget_resets(self):
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+            condition=q.REPEATED_LIVE_FAILURE, reason="again",
+        )
+        snapshot = self._snapshot(
+            record_with_repairs(candidate.signature.key, 1, state=q.COOLDOWN,
+                                cooldown_until=NOW - timedelta(minutes=1))
+        )
+        dispatch = q.decide(candidate, snapshot, q.EscalationPolicy(), now=NOW)
+        self.assertTrue(dispatch.should_submit, dispatch.reason)
+
+    def test_spending_the_budget_writes_blocked_then_cooldown(self):
+        """The real sequence: one shot already spent, the second just finished badly.
+
+        Reconstructed rather than invented -- ``reconciled`` moves a record out of
+        the in-flight states, so the second submission is what the reconciler then
+        finds, and the budget is what turns it into BLOCKED + COOLDOWN instead of a
+        third dispatch.
+        """
+        status = JobStatus(job_id="job-2", gateway_state="done", verdict=q.DONE,
+                           settled=True, detail="finished without a verified episode")
+        harness = AdapterHarness(bridge=FakeBridge(status=status, submitted="job-2"))
+        try:
+            harness.adapter._wiring_problems = lambda: 0
+            key = "CAP|TYPE|SKILL"
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": key, "condition": q.UNKNOWN_UI})
+            # First shot: dispatched, finished, spent (no live improvement).
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": key, "job_id": "job-1",
+                                   "repo_head": "head1", "repo_dirty": 0})
+            harness.ledger.append({"source": "queue", "event": "reconciled",
+                                   "key": key, "job_id": "job-1", "job_state": q.DONE,
+                                   "outcome": q.NO_IMPROVEMENT, "repair_used": True})
+            # Second shot, in flight when reconcile runs.
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": key, "job_id": "job-2",
+                                   "repo_head": "head1", "repo_dirty": 0})
+
+            self.assertEqual(harness.ledger.snapshot().get(key).repairs_used, 1)
+            with patch.object(q, "repo_revision", return_value=q.RepoRevision("head1", 0, True)):
+                settled, errors = harness.adapter.reconcile(now=NOW)
+
+            self.assertEqual(errors, [])
+            self.assertEqual(settled, [key])
+            kinds = harness.event_kinds()
+            self.assertIn("reconciled", kinds)
+            self.assertIn("blocked", kinds)
+            self.assertIn("cooldown_started", kinds)
+            self.assertEqual(harness.ledger.snapshot().get(key).state, q.COOLDOWN)
+        finally:
+            harness.cleanup()
+
+    def test_a_blocked_signature_stops_being_dispatched(self):
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+            condition=q.STUCK_15_MIN, reason="old",
+        )
+        record = q.EscalationRecord(key=candidate.signature.key, state=q.COOLDOWN)
+        record.repairs_used = 2
+        record.cooldown_until = NOW - timedelta(minutes=1)  # expired, but budget spent
+        dispatch = q.decide(
+            candidate, q.EscalationSnapshot({record.key: record}), q.EscalationPolicy(), now=NOW
+        )
+        self.assertEqual(dispatch.action, q.BUDGET_EXHAUSTED)
+
+
+# ------------------------------------------------------- ordinary weather
+
+
+class OrdinaryWeatherTest(unittest.TestCase):
+    def test_the_operators_non_escalatable_reasons_are_all_named(self):
+        for stop in ("mail_all_clear", "research_queue_busy", "NOT_REFRESHED",
+                     "QUEUE_BUSY", "RESOURCE_SHORTAGE", "EVENT_CLOSED",
+                     "RALLY_FULL", "WAITING_FOR_NATURAL_STATE"):
+            self.assertIn(stop, q.NON_ESCALATABLE_STOP_REASONS, stop)
+
+    def test_a_step_that_failed_during_an_ordinary_stop_escalates_nothing(self):
+        snapshot = q.EscalationSnapshot({})
+        candidates = q.candidates_from_run(
+            stop_reason="mail_all_clear",
+            failures=[failure("SEMANTIC_TARGET_NOT_VERIFIED")],
+            snapshot=snapshot, policy=q.EscalationPolicy(), now=NOW, root=ROOT,
+        )
+        self.assertEqual(candidates, ())
+
+    def test_a_game_tick_is_refused_rather_than_downgraded(self):
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "TYPE", "SKILL"),
+            condition="GAME_TICK", reason="routine",
+        )
+        dispatch = q.decide(candidate, q.EscalationSnapshot({}), q.EscalationPolicy(), now=NOW)
+        self.assertEqual(dispatch.action, q.NOT_ESCALATABLE)
+
+    def test_the_adapter_records_nothing_for_an_ordinary_tick(self):
+        harness = AdapterHarness()
+        try:
+            observation = harness.adapter.observe_run(
+                stop_reason="daily_no_claimable_rewards",
+                failures=[failure("SEMANTIC_TARGET_NOT_VERIFIED")], now=NOW,
+            )
+            self.assertEqual(observation.submitted, ())
+            self.assertEqual(harness.bridge.submits, [])
+        finally:
+            harness.cleanup()
+
+    def test_an_unknown_failure_shape_gets_no_condition_at_all(self):
+        verdict = q.classify_condition(
+            q.FailureSignature("CAP", "SOMETHING_NEW", "SKILL"),
+            occurrences=1, first_seen=None, now=NOW, policy=q.EscalationPolicy(),
+        )
+        self.assertIsNone(verdict)
+
+    def test_a_wall_that_only_appears_as_a_stop_reason_is_still_escalated(self):
+        # verified_beast_target_not_visible ends most cycles and produces zero
+        # failed episodes, because the runtime stops before issuing an action.
+        candidates = q.candidates_from_run(
+            stop_reason="verified_beast_target_not_visible",
+            failures=[], snapshot=q.EscalationSnapshot({}),
+            policy=q.EscalationPolicy(), now=NOW, root=ROOT,
+        )
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].condition, q.UNKNOWN_UI)
+        self.assertEqual(candidates[0].signature.skill, "SELECT_BEAST_TARGET")
+
+    def test_a_failed_episode_still_wins_over_the_stop_reason_wall(self):
+        candidates = q.candidates_from_run(
+            stop_reason="verified_beast_target_not_visible",
+            failures=[failure("BEAST_TARGET_CARD_NOT_PROVEN", skill="SELECT_BEAST_TARGET")],
+            snapshot=q.EscalationSnapshot({}), policy=q.EscalationPolicy(), now=NOW, root=ROOT,
+        )
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].signature.failure_type, "BEAST_TARGET_CARD_NOT_PROVEN")
+
+    def test_the_stop_reason_wall_map_is_not_a_blanket_rule(self):
+        # Anything not named in it, with no failed episodes, escalates nothing.
+        candidates = q.candidates_from_run(
+            stop_reason="some_unlisted_stop", failures=[],
+            snapshot=q.EscalationSnapshot({}), policy=q.EscalationPolicy(), now=NOW, root=ROOT,
+        )
+        self.assertEqual(candidates, ())
+
+    def test_ui_unread_matching_is_by_shape_not_by_a_frozen_list(self):
+        for reason in ("TRAINING_PAGE_NOT_PROVEN", "MARCH_PAGE_NOT_OPEN",
+                       "SEMANTIC_TARGET_NOT_VERIFIED", "RESOURCE_NOT_FOUND",
+                       "SOMETHING_BRAND_NEW_NOT_PROVEN"):
+            self.assertTrue(q.is_ui_unread(reason), reason)
+        self.assertFalse(q.is_ui_unread("SOMETHING_ELSE_ENTIRELY"))
+        # gameplay shapes are excluded from the UI family even though the suffix fits
+        self.assertIn("DISPATCH_NOT_PROVEN", q.GAMEPLAY_UNKNOWN_FAILURE_TYPES)
+
+
+# ------------------------------------------------------- classification
+
+
+class ClassificationTest(unittest.TestCase):
+    def test_an_unimplemented_skill_is_capability_missing(self):
+        verdict = q.classify_condition(
+            q.FailureSignature("CAP", "ANY", "SKILL"),
+            occurrences=1, first_seen=None, now=NOW, policy=q.EscalationPolicy(),
+            unimplemented=True,
+        )
+        self.assertEqual(verdict[0], q.CAPABILITY_MISSING)
+
+    def test_a_repeat_is_labelled_repeated_live_failure(self):
+        verdict = q.classify_condition(
+            q.FailureSignature("CAP", "SEMANTIC_TARGET_NOT_VERIFIED", "SKILL"),
+            occurrences=3, first_seen=None, now=NOW, policy=q.EscalationPolicy(),
+        )
+        self.assertEqual(verdict[0], q.REPEATED_LIVE_FAILURE)
+
+    def test_a_first_sighting_that_could_not_be_read_is_unknown_ui(self):
+        verdict = q.classify_condition(
+            q.FailureSignature("CAP", "SEMANTIC_TARGET_NOT_VERIFIED", "SKILL"),
+            occurrences=1, first_seen=None, now=NOW, policy=q.EscalationPolicy(),
+        )
+        self.assertEqual(verdict[0], q.UNKNOWN_UI)
+
+    def test_an_old_signature_becomes_stuck_15_min(self):
+        verdict = q.classify_condition(
+            q.FailureSignature("CAP", "SOMETHING_NEW", "SKILL"),
+            occurrences=1, first_seen=NOW - timedelta(minutes=16), now=NOW,
+            policy=q.EscalationPolicy(),
+        )
+        self.assertEqual(verdict[0], q.STUCK_15_MIN)
+
+    def test_a_gameplay_shaped_failure_is_unknown_game_mechanic(self):
+        verdict = q.classify_condition(
+            q.FailureSignature("CAP", "DISPATCH_NOT_PROVEN", "SKILL"),
+            occurrences=1, first_seen=None, now=NOW, policy=q.EscalationPolicy(),
+        )
+        self.assertEqual(verdict[0], q.UNKNOWN_GAME_MECHANIC)
+
+    def test_the_interface_conditions_are_not_condition_types(self):
+        # The five named conditions are also the interface constants, so a typo
+        # in either place cannot silently become a sixth.
+        self.assertEqual(
+            set(q.AUTO_ESCALATION_CONDITIONS),
+            {q.CAPABILITY_MISSING, q.UNKNOWN_UI, q.UNKNOWN_GAME_MECHANIC,
+             q.REPEATED_LIVE_FAILURE, q.STUCK_15_MIN},
+        )
+
+
+# ----------------------------------------------------------- model routing
+
+
+class ModelRoutingTest(unittest.TestCase):
+    def test_the_ladder_is_cheapest_first_and_matches_the_operator_order(self):
+        self.assertEqual(
+            q.MODEL_LADDER,
+            ("deepseek-v4.1-flash", "glm-5.3-flash", "hy4-preview-f", "deepseek-v4-pro"),
+        )
+
+    def test_the_first_attempt_uses_the_cheap_model(self):
+        choice = q.select_model(0)
+        self.assertEqual(choice.model, q.MODEL_FLASH)
+        self.assertFalse(choice.is_escalated)
+
+    def test_each_spent_attempt_climbs_one_rung_and_records_where_it_came_from(self):
+        choice = q.select_model(1, previous_model=q.MODEL_FLASH)
+        self.assertEqual(choice.model, q.MODEL_GLM_FLASH)
+        self.assertEqual(choice.escalated_from, q.MODEL_FLASH)
+        self.assertTrue(choice.is_escalated)
+
+    def test_the_ladder_is_capped_at_the_top_rung(self):
+        choice = q.select_model(9, previous_model=q.MODEL_STRONG)
+        self.assertEqual(choice.model, q.MODEL_STRONG)
+
+    def test_a_known_problem_shape_can_start_higher(self):
+        self.assertEqual(q.select_model(0, needs="logs").model, q.MODEL_GLM_FLASH)
+        self.assertEqual(q.select_model(0, needs="vision").model, q.MODEL_HY4)
+
+    def test_the_reason_is_always_recorded(self):
+        for attempt, needs in ((0, ""), (1, ""), (0, "logs"), (0, "vision")):
+            self.assertTrue(q.select_model(attempt, needs=needs).reason.strip())
+
+    def test_routing_hint_recognises_a_visual_defect(self):
+        candidate = q.EscalationCandidate(
+            signature=q.FailureSignature("CAP", "SEMANTIC_TARGET_NOT_VERIFIED", "SKILL"),
+            condition=q.UNKNOWN_UI,
+            reason="the template crop covers the tutorial finger and the ROI is wrong",
+        )
+        self.assertEqual(q._needs_hint(candidate), "vision")
+
+    def test_the_adapter_records_the_model_and_reason_on_the_submission(self):
+        harness = AdapterHarness()
+        try:
+            harness.adapter.observe_run(
+                stop_reason="training_entry_not_verified",
+                failures=[failure("TRAINING_PAGE_NOT_PROVEN")], now=NOW,
+            )
+            submitted = [e for e in harness.events() if e["event"] == "submitted"][0]
+            self.assertEqual(submitted["model"], q.MODEL_FLASH)
+            self.assertTrue(submitted["model_reason"])
+            self.assertIn("tokens", submitted)
+            self.assertIsNone(submitted["tokens"])
+            self.assertIn("usage_note", submitted)
+        finally:
+            harness.cleanup()
+
+
+# ----------------------------------------------------------------- folding
+
+
+class FoldTest(unittest.TestCase):
+    def test_bridge_audit_rows_do_not_become_queue_state(self):
+        # The bridge writes transport rows into the same file.  Folding those as
+        # queue state would invent records for jobs the queue never created.
+        events = [
+            {"source": "bridge", "event": "submitted", "job_id": "job-x", "capability": "CAP"},
+            {"source": "queue", "event": "escalation_created", "key": "K", "condition": q.UNKNOWN_UI},
+        ]
+        snapshot = q.fold(events)
+        self.assertEqual(list(snapshot.records), ["K"])
+        self.assertEqual(snapshot.get("K").state, q.NEW)
+
+    def test_replaying_the_same_events_twice_gives_the_same_state(self):
+        events = [
+            {"source": "queue", "event": "escalation_created", "key": "K", "condition": q.UNKNOWN_UI},
+            {"source": "queue", "event": "submitted", "key": "K", "job_id": "j", "attempt": 0},
+        ]
+        self.assertEqual(q.fold(events).get("K").state, q.fold(events).get("K").state)
+
+    def test_a_job_reaching_a_terminal_state_moves_the_record(self):
+        events = [
+            {"source": "queue", "event": "escalation_created", "key": "K", "condition": q.UNKNOWN_UI},
+            {"source": "queue", "event": "submitted", "key": "K", "job_id": "j"},
+            {"source": "queue", "event": "job_state", "key": "K", "state": q.DONE},
+        ]
+        self.assertEqual(q.fold(events).get("K").state, q.DONE)
+
+    def test_active_jobs_drive_the_concurrency_answer(self):
+        events = [
+            {"source": "queue", "event": "escalation_created", "key": "K", "condition": q.UNKNOWN_UI},
+            {"source": "queue", "event": "submitted", "key": "K", "job_id": "j"},
+        ]
+        self.assertEqual(len(q.fold(events).active_jobs()), 1)
+        self.assertEqual(len(q.fold(events[:1]).active_jobs()), 0)
+
+
+# ------------------------------------------------- the hook must not hurt AUTO
+
+
+class HookSafetyTest(unittest.TestCase):
+    def test_a_dead_gateway_is_an_observation_not_an_exception(self):
+        harness = AdapterHarness(bridge=FakeBridge(available=False, reason="GATEWAY_UNREACHABLE"))
+        try:
+            observation = harness.adapter.observe_run(
+                stop_reason="training_entry_not_verified",
+                failures=[failure("TRAINING_PAGE_NOT_PROVEN")], now=NOW,
+            )
+            self.assertEqual(observation.submitted, ())
+            self.assertEqual(observation.errors, ())
+            self.assertTrue(observation.skipped, "the candidate must be reported as skipped")
+            self.assertIn("queued", harness.event_kinds())
+        finally:
+            harness.cleanup()
+
+    def test_a_dead_gateway_leaves_the_escalation_queued_not_submitted(self):
+        harness = AdapterHarness(bridge=FakeBridge(available=False, reason="GATEWAY_UNREACHABLE"))
+        try:
+            harness.adapter.observe_run(
+                stop_reason="training_entry_not_verified",
+                failures=[failure("TRAINING_PAGE_NOT_PROVEN")], now=NOW,
+            )
+            record = harness.ledger.snapshot().records
+            self.assertEqual(len(record), 1)
+            self.assertEqual(list(record.values())[0].state, q.QUEUED)
+        finally:
+            harness.cleanup()
+
+    def test_a_bridge_that_raises_is_reported_and_swallowed(self):
+        harness = AdapterHarness(bridge=ExplodingBridge())
+        try:
+            observation = harness.adapter.observe_run(
+                stop_reason="training_entry_not_verified",
+                failures=[failure("TRAINING_PAGE_NOT_PROVEN")], now=NOW,
+            )
+            self.assertTrue(observation.errors)
+            self.assertIn("exploded", observation.errors[0])
+        finally:
+            harness.cleanup()
+
+    def test_a_job_that_is_not_terminal_does_not_make_the_hook_wait(self):
+        running = JobStatus(job_id="job-1", gateway_state="working", verdict=q.WORKING)
+        harness = AdapterHarness(bridge=FakeBridge(status=running))
+        try:
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": "K", "condition": q.UNKNOWN_UI})
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": "K", "job_id": "job-1"})
+            settled, errors = harness.adapter.reconcile(now=NOW)
+            self.assertEqual(settled, [])
+            self.assertEqual(errors, [])
+            self.assertEqual(harness.bridge.status_calls, ["job-1"])
+        finally:
+            harness.cleanup()
+
+    def test_a_gateway_that_lost_the_job_does_not_leave_it_working_forever(self):
+        class GoneBridge(FakeBridge):
+            def status(self, job_id):
+                raise RuntimeError("404 NOT_FOUND")
+
+        harness = AdapterHarness(bridge=GoneBridge())
+        try:
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": "K", "condition": q.UNKNOWN_UI})
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": "K", "job_id": "job-gone"})
+            settled, errors = harness.adapter.reconcile(now=NOW)
+            self.assertEqual(settled, [])
+            self.assertTrue(errors)
+            # Still SUBMITTED in the fold, but the run is not blocked by it for
+            # longer than the operator's patience: the error is visible.
+            self.assertIn("job-gone", errors[0])
+        finally:
+            harness.cleanup()
+
+    def test_the_hook_reports_a_line_either_way(self):
+        harness = AdapterHarness()
+        try:
+            observation = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            self.assertTrue(observation.line.startswith("[escalation]"))
+        finally:
+            harness.cleanup()
+
+
+# --------------------------------------------------------- reconciliation
+
+
+class ReconciliationTest(unittest.TestCase):
+    def _episodes(self, root: Path, rows) -> Path:
+        path = root / "learning/episodes.jsonl"
+        path.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+        return path
+
+    def test_a_new_verified_episode_is_the_only_route_to_live_verified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "learning").mkdir(parents=True)
+            self._episodes(root, [{
+                "skill": "OPEN_INFANTRY_TRAINING", "recorded_at": (NOW + timedelta(minutes=5)).isoformat(),
+                "verifier_ok": True, "result": "SUCCESS",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+            }])
+            outcome, explanation, episodes = q.reconcile_outcome(
+                capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
+                submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=0, root=root,
+            )
+        self.assertEqual(outcome, q.LIVE_VERIFIED)
+        self.assertEqual(len(episodes), 1)
+        self.assertIn("verifier_ok", explanation)
+
+    def test_an_episode_without_recorded_at_is_history_not_proof(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "learning").mkdir(parents=True)
+            self._episodes(root, [{
+                "skill": "OPEN_INFANTRY_TRAINING", "verifier_ok": True, "result": "SUCCESS",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+            }])
+            outcome, _, _ = q.reconcile_outcome(
+                capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
+                submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=0, root=root,
+            )
+        self.assertNotEqual(outcome, q.LIVE_VERIFIED)
+
+    def test_an_episode_before_the_job_is_not_evidence_for_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "learning").mkdir(parents=True)
+            self._episodes(root, [{
+                "skill": "OPEN_INFANTRY_TRAINING",
+                "recorded_at": (NOW - timedelta(hours=1)).isoformat(),
+                "verifier_ok": True, "result": "SUCCESS",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+            }])
+            outcome, _, _ = q.reconcile_outcome(
+                capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
+                submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=0, root=root,
+            )
+        self.assertNotEqual(outcome, q.LIVE_VERIFIED)
+
+    def test_an_episode_without_a_failing_verifier_is_not_proof(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "learning").mkdir(parents=True)
+            self._episodes(root, [{
+                "skill": "OPEN_INFANTRY_TRAINING",
+                "recorded_at": (NOW + timedelta(minutes=5)).isoformat(),
+                "verifier_ok": False, "result": "FAILURE",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+            }])
+            outcome, _, _ = q.reconcile_outcome(
+                capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
+                submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=0, root=root,
+            )
+        self.assertNotEqual(outcome, q.LIVE_VERIFIED)
+
+    def test_a_code_change_with_a_clean_gate_is_test_pass_and_says_what_it_is_not(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outcome, explanation, _ = q.reconcile_outcome(
+                capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("b", 1, True),
+                wiring_problems=0, root=Path(tmp),
+            )
+        self.assertEqual(outcome, q.TEST_PASS)
+        self.assertIn("NOT a verified capability", explanation)
+
+    def test_a_code_change_with_a_dirty_gate_is_only_code_changed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outcome, _, _ = q.reconcile_outcome(
+                capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("b", 1, True),
+                wiring_problems=3, root=Path(tmp),
+            )
+        self.assertEqual(outcome, q.CODE_CHANGED)
+
+    def test_a_job_that_changed_nothing_is_no_improvement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outcome, _, _ = q.reconcile_outcome(
+                capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=0, root=Path(tmp),
+            )
+        self.assertEqual(outcome, q.NO_IMPROVEMENT)
+
+    def test_a_failed_job_with_no_change_is_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outcome, _, _ = q.reconcile_outcome(
+                capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="FAILED",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=None, root=Path(tmp),
+            )
+        self.assertEqual(outcome, q.OUTCOME_BLOCKED)
+
+    def test_a_code_change_raises_the_reload_signal(self):
+        status = JobStatus(job_id="job-7", gateway_state="done", verdict=q.DONE, settled=True)
+        harness = AdapterHarness(bridge=FakeBridge(status=status, submitted="job-7"))
+        try:
+            harness.adapter._wiring_problems = lambda: 0
+            key = "CAP|TYPE|SKILL"
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": key, "condition": q.UNKNOWN_UI})
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": key, "job_id": "job-7",
+                                   "repo_head": "old", "repo_dirty": 0})
+            with patch.object(q, "repo_revision", return_value=q.RepoRevision("new", 1, True)):
+                harness.adapter.reconcile(now=NOW)
+            pending = harness.signal.pending()
+            self.assertIsNotNone(pending)
+            self.assertEqual(pending.job_id, "job-7")
+            self.assertIn("reload_required", harness.event_kinds())
+        finally:
+            harness.cleanup()
+
+    def test_no_code_change_raises_no_reload_signal(self):
+        status = JobStatus(job_id="job-8", gateway_state="done", verdict=q.DONE, settled=True)
+        harness = AdapterHarness(bridge=FakeBridge(status=status, submitted="job-8"))
+        try:
+            harness.adapter._wiring_problems = lambda: 0
+            harness.ledger.append({"source": "queue", "event": "escalation_created",
+                                   "key": "K", "condition": q.UNKNOWN_UI})
+            harness.ledger.append({"source": "queue", "event": "submitted",
+                                   "key": "K", "job_id": "job-8",
+                                   "repo_head": "same", "repo_dirty": 0})
+            with patch.object(q, "repo_revision", return_value=q.RepoRevision("same", 0, True)):
+                harness.adapter.reconcile(now=NOW)
+            self.assertIsNone(harness.signal.pending())
+        finally:
+            harness.cleanup()
+
+
+class RepoRevisionTest(unittest.TestCase):
+    def test_a_revision_differs_when_the_head_or_the_dirty_count_moves(self):
+        base = q.RepoRevision("a", 0, True)
+        self.assertFalse(base.differs_from(q.RepoRevision("a", 0, True)))
+        self.assertTrue(base.differs_from(q.RepoRevision("b", 0, True)))
+        self.assertTrue(base.differs_from(q.RepoRevision("a", 1, True)))
+
+    def test_an_unavailable_revision_never_claims_a_difference(self):
+        self.assertFalse(q.RepoRevision("a", 0, True).differs_from(q.RepoRevision(ok=False)))
+
+    def test_repo_revision_reads_the_real_repository(self):
+        revision = q.repo_revision(ROOT)
+        self.assertTrue(revision.ok)
+        self.assertEqual(len(revision.head), 40)
+
+
+class CapabilityResolutionTest(unittest.TestCase):
+    def test_a_known_skill_resolves_to_its_capability(self):
+        self.assertTrue(q.capability_for_skill("OPEN_INTEL", root=ROOT))
+
+    def test_an_unknown_skill_resolves_to_itself_rather_than_a_guess(self):
+        self.assertEqual(q.capability_for_skill("NOT_A_REAL_SKILL", root=ROOT), "NOT_A_REAL_SKILL")
+
+
+class ReloadSignalTest(unittest.TestCase):
+    def test_a_fresh_marker_defers_the_next_cycle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            signal = reload_mod.ReloadSignal(reload_mod.default_path(tmp))
+            signal.request("job-1", "code changed")
+            deferral = signal.evaluate(now=datetime.now(timezone.utc))
+            self.assertTrue(deferral.defer)
+            self.assertIn("settle", deferral.reason)
+
+    def test_an_active_job_keeps_deferring_past_the_settle_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            signal = reload_mod.ReloadSignal(reload_mod.default_path(tmp))
+            signal.request("job-1", "code changed")
+            deferral = signal.evaluate(active_jobs=1, now=datetime.now(timezone.utc)
+                                       + timedelta(seconds=reload_mod.SETTLE_SECONDS + 5))
+            self.assertTrue(deferral.defer)
+            self.assertIn("still active", deferral.reason)
+
+    def test_the_ceiling_stops_deferring_so_a_hung_agent_cannot_stall_auto(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            signal = reload_mod.ReloadSignal(reload_mod.default_path(tmp))
+            signal.request("job-1", "code changed")
+            deferral = signal.evaluate(active_jobs=5, now=datetime.now(timezone.utc)
+                                       + timedelta(seconds=reload_mod.MAX_DEFER_SECONDS + 1))
+            self.assertFalse(deferral.defer)
+            self.assertIn("ceiling", deferral.reason)
+
+    def test_no_marker_never_defers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            signal = reload_mod.ReloadSignal(reload_mod.default_path(tmp))
+            self.assertFalse(signal.evaluate().defer)
+
+    def test_a_broken_marker_is_treated_as_absent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = reload_mod.default_path(tmp)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("{not json", encoding="utf-8")
+            signal = reload_mod.ReloadSignal(path)
+            self.assertIsNone(signal.pending())
+            self.assertFalse(signal.evaluate().defer)
+
+    def test_a_marker_of_another_kind_is_ignored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = reload_mod.default_path(tmp)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps({"kind": "SOMETHING_ELSE"}), encoding="utf-8")
+            self.assertIsNone(reload_mod.ReloadSignal(path).pending())
+
+    def test_clear_removes_the_marker_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            signal = reload_mod.ReloadSignal(reload_mod.default_path(tmp))
+            signal.request("job-1", "code changed")
+            self.assertTrue(signal.clear())
+            self.assertFalse(signal.clear())
+            self.assertIsNone(signal.pending())
+
+
+class CredentialHygieneTest(unittest.TestCase):
+    def test_the_queue_never_writes_a_credential_to_its_ledger(self):
+        # The queue shares the bridge's ledger, and the bridge redacts; this pins
+        # the property at the queue level too, because the queue is what builds the
+        # payload that carries the environment.
+        source = (ROOT / "winter_agent_v2/escalation_queue.py").read_text(encoding="utf-8")
+        for forbidden in ("CODEBUDDY_GATEWAY_PASSWORD", "gateway_password"):
+            self.assertNotIn(forbidden, source, forbidden)
+
+
+if __name__ == "__main__":
+    unittest.main()

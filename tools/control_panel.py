@@ -23,8 +23,10 @@ if str(ROOT) not in sys.path:
 
 from winter_agent_v2 import runtime_env
 from winter_agent_v2.device import ADBDevice
+from winter_agent_v2.escalation_queue import DEFAULT_LEDGER, EscalationLedger
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
 from winter_agent_v2.retention import prune_runtime_screenshots
+from winter_agent_v2.runtime_reload import REQUEST_KIND, ReloadSignal, default_path as reload_path
 from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.runtime_snapshot import (
     UNCLASSIFIED_EVENT,
@@ -42,6 +44,31 @@ RUNTIME_PATH = ROOT / "tools/run_live.py"
 # the production loop.  It is classified as an environment failure (see
 # ENVIRONMENT_FAILURES) so refusing to start is never counted as a worker crash.
 RUNTIME_ENV_STOP_REASON = "RUNTIME_ENV_NOT_PRODUCTION_READY"
+
+# How long to wait before re-checking a deferred start.  Each cycle is a fresh
+# subprocess, so "reload" here means "do not import a half-written tree" -- there
+# is no in-process hot swap to perform (see winter_agent_v2/runtime_reload.py).
+RELOAD_RETRY_MS = 5000
+
+_ESCALATION_LEDGER_PATH = ROOT / DEFAULT_LEDGER
+
+
+def reload_deferral() -> tuple[ReloadSignal, object]:
+    """Should this start be postponed because a development agent just wrote code?
+
+    Returns the signal so the caller can clear it once the wait is over.  Reads
+    the escalation ledger for in-flight jobs, because a marker whose job is still
+    working must keep the runtime off the tree for longer than a plain settle
+    window -- but never longer than the signal's own ceiling, so a hung agent
+    cannot stall AUTO.
+    """
+    signal = ReloadSignal(reload_path(ROOT))
+    try:
+        active = len(EscalationLedger(_ESCALATION_LEDGER_PATH).snapshot().active_jobs())
+    except Exception:  # noqa: BLE001 - an unreadable ledger must not block a start
+        active = 0
+    return signal, signal.evaluate(active_jobs=active)
+
 
 _INTERPRETER_LOCK = threading.Lock()
 _INTERPRETER_REPORT: runtime_env.InterpreterReport | None = None
@@ -940,6 +967,23 @@ class ControlPanel:
             )
             self.events.put(("note", f"未启动：{blocker}"))
             return
+        # A development agent may have just written code.  Each cycle is a fresh
+        # subprocess that imports vision/brain/skills from disk, so the new code
+        # takes effect by itself -- what must not happen is importing a tree
+        # mid-write, which is the failure `run_live.py`'s VERIFIER_MAPPING_CORRUPT
+        # guard was added for.  The wait is bounded inside the signal.
+        reload_signal, deferral = reload_deferral()
+        if deferral:
+            self._append(f"延后启动：{deferral.reason}")
+            self.events.put(("note", deferral.reason))
+            self.runtime_store.update(
+                agent_state=AgentState.RECOVERING.value, runtime_thread_alive=False,
+                scheduler_loop_alive=False, stop_reason=REQUEST_KIND,
+                reason=deferral.reason, next_action="等待代码写入落定后自动继续",
+            )
+            self.repeat_after_id = self.root.after(RELOAD_RETRY_MS, self.start)
+            return
+        reload_signal.clear("settled")
         self.starting = True
         self._append(f"运行环境预检通过：{runtime_python_path()}")
         if self.repeat_after_id: self.root.after_cancel(self.repeat_after_id); self.repeat_after_id = None
