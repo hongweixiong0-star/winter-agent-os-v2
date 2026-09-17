@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-17T04:51:33+00:00`
+- generated_at: `2026-09-17T05:22:58+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `ac694ee` on `main`
+- commit: `0c41f3d` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,29 +10,13 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 114
-- HEAD: `ac694ee` — docs: the live-route recipe, written after running it twice in one day (2026-09-17T11:52:04+08:00)
-- working tree: 39 dirty file(s)
-  - `M .gitignore`
-  - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
-  - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-  - ` M .workbuddy-ai/memory/2026-09-17.md`
-  - ` M .workbuddy/memory/2026-09-17.md`
-  - ` M config/control_panel_state.json`
-  - ` M config/policy_state.json`
-  - ` M docs/CAPABILITY_COVERAGE.md`
-  - ` M evidence/INDEX.json`
-  - ` M knowledge/game/capability_catalog.json`
-  - ` M knowledge/goals/capability_skill_map.json`
+- commits: 118
+- HEAD: `0c41f3d` — fix(brain): the leaf-page exit is for a named goal only (2026-09-17T13:12:19+08:00)
+- working tree: 4 dirty file(s)
+  - `M .workbuddy-ai/memory/MEMORY.md`
   - ` M learning/control_panel/latest.log`
-  - ` M learning/episodes.jsonl`
+  - ` M learning/goal_state.json`
+  - ` M learning/runtime_snapshot.json`
 
 ### A2. Public mirror
 
@@ -41,16 +25,16 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-17T04:51:33+00:00
+SYNC STATE at 2026-09-17T05:22:58+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : ac694ee8b5f338be6a6ba7ce3640939b625c56d4
+local_head        : 0c41f3d6ea51b9ff77bdcab539644d3b5395bb40
 remote_head       : ac694ee8b5f338be6a6ba7ce3640939b625c56d4   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (39 path(s))
+unpushed_commits  : 4   (behind: 0)
+git_dirty         : True (4 path(s))
 last_push_at      : 2026-09-17T03:52:09.336810+00:00
 last_push_status  : PUSHED
-verdict           : GitHub mirrors the local tree
+verdict           : LOCAL IS AHEAD by 4 commit(s) -- run `python tools/git_sync.py push`
 ```
 
 ## B. Runtime
@@ -62,7 +46,7 @@ verdict           : GitHub mirrors the local tree
 - last_fatal_error: None
 - stop_reason: mail_all_clear
 - page: MAIL  march: None/None
-- updated_at: 2026-09-17T04:51:18.374776+00:00
+- updated_at: 2026-09-17T05:22:40.795820+00:00
 
 ## C. Episode stream
 
@@ -212,5 +196,5 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T04:51:17+00:00", "size_bytes": 1244, "last_stop_reason": "mail_all_clear"}
+- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T05:22:39+00:00", "size_bytes": 1244, "last_stop_reason": "mail_all_clear"}
 - recent crash reports: (none)

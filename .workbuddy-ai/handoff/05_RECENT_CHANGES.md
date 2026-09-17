@@ -6,6 +6,10 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `0c41f3d 2026-09-17T13:12:19+08:00 fix(brain): the leaf-page exit is for a named goal only`
+- `e607a6d 2026-09-17T13:05:45+08:00 fix(brain): name the quit-dialog branch, and measure that closing it cannot quit the client`
+- `8023e88 2026-09-17T12:53:29+08:00 chore(queue): rebuild the Capability-First work queue, and record this round`
+- `3355b81 2026-09-17T12:53:12+08:00 fix(vision,brain): label the shared reward dialog by its signals, and leave a leaf page once`
 - `ac694ee 2026-09-17T11:52:04+08:00 docs: the live-route recipe, written after running it twice in one day`
 - `ac17ac5 2026-09-17T11:51:25+08:00 chore(evidence): the probe record that left the client on HOME after the research round`
 - `e46b614 2026-09-17T11:48:11+08:00 chore(coverage): regenerate the capability catalog after the research round`
@@ -14,32 +18,12 @@ Last 12 commits (newest first):
 - `5445199 2026-09-17T08:31:08+08:00 chore(handoff): refresh the generated state after the training and intel rounds`
 - `d95b2fe 2026-09-17T08:30:47+08:00 evidence(intel): two runs, both delivering value, both stopped by the same reward dialog`
 - `b87ac94 2026-09-17T08:24:30+08:00 fix(train): the power entry was never broken -- correct the record and drop the record I added for it`
-- `49bca81 2026-09-17T08:14:28+08:00 chore(handoff): record the training round, and the three things it did not finish`
-- `22ee03b 2026-09-17T08:14:20+08:00 feat(train): the power route that TRAIN was stuck behind, live verified in four hops`
-- `8070958 2026-09-17T01:26:14+08:00 docs(external): record the sweep-in mistake and the two gaps it exposed`
-- `3b04848 2026-09-17T01:25:33+08:00 fix(repo): stop tracking the external sources a git add -A swept in`
 
-Uncommitted changes: 39
-- `M .gitignore`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/2026-09-17.md`
-- ` M .workbuddy/memory/2026-09-17.md`
-- ` M config/control_panel_state.json`
-- ` M config/policy_state.json`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M evidence/INDEX.json`
-- ` M knowledge/game/capability_catalog.json`
-- ` M knowledge/goals/capability_skill_map.json`
+Uncommitted changes: 4
+- `M .workbuddy-ai/memory/MEMORY.md`
 - ` M learning/control_panel/latest.log`
-- ` M learning/episodes.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-09-17T04:51:33+00:00",
+  "generated_at": "2026-09-17T05:22:58+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "ac694ee",
+  "commit": "0c41f3d",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "IDLE",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-17T04:51:17.451547+00:00",
+    "last_tick_time": "2026-09-17T05:22:39.889908+00:00",
     "last_action_time": "2026-09-17T04:47:48.183150+00:00",
     "last_success_time": "2026-09-17T04:48:03.383109+00:00",
     "last_fatal_error": null,
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_125102_743344\\20260917_125102_743344_step_001_before_20260917T045103224414.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_132226_692730\\20260917_132226_692730_step_001_before_20260917T052227139843.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -39,11 +39,11 @@
       "events": {}
     },
     "stop_reason": "mail_all_clear",
-    "updated_at": "2026-09-17T04:51:18.374776+00:00"
+    "updated_at": "2026-09-17T05:22:40.795820+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-17T04:51:17+00:00",
+    "modified_at": "2026-09-17T05:22:39+00:00",
     "size_bytes": 1244,
     "last_stop_reason": "mail_all_clear"
   },

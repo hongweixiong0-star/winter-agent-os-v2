@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at_utc": "2026-09-17T04:51:32.432488+00:00",
+  "generated_at_utc": "2026-09-17T05:22:59.391196+00:00",
   "source": "operator CAPABILITY-FIRST directive 2026-09-16 §4 (capability tree), joined with winter_agent_v2.skills.v2_registry(), LiveRuntime.VERIFIED_ATOMIC and learning/episodes.jsonl",
   "evidence_policy": "only episodes carrying ``recorded_at`` count as live evidence; rows without it cannot support LIVE_VERIFIED (live-verification gate). excluded rows: 478 across 51 skills",
   "definition": "Coverage table for the game's capabilities. NOT a skill registry: v2_registry() remains the only table of executable skills. lifecycle is derived from real evidence; nothing here invents a status.",

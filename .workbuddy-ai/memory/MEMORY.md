@@ -223,3 +223,16 @@
   **禁止**贴密钥 / token / cookie / 凭据 / 账号隐私 / 大段原始日志。
   发帖：`gh issue comment 2 --repo hongweixiong0-star/winter-agent-os-v2 --body-file <file>`。
   ⚠ 这是 **public** 仓库，发帖前按上面红线自查一遍。
+- **`SAFE_STOP` 是「让调度器跳过这条观测」的信号，不是"没事干"的兜底**（2026-09-17 学到。
+  `Scheduler.select_next` 把**每一条 `skill != "SAFE_STOP"`** 的决策都放进候选并按优先级排序）。
+  ⇒ **任何"恢复/清理"类动作（BACK、关闭弹窗）都会把一条死端提升成一个任务**，从而挤掉真正有活干的观测。
+  实测：给"忙碌的研究队列"加了一次 BACK 之后，`test_multitask_scheduler` 立刻从选 index 3（每日）
+  变成选 index 0（那条 BACK）。**规矩：恢复动作只对"命名 goal"发出；goal-less 的自动扫掠必须保持 SAFE_STOP。**
+  （`brain._leave_or_stop` 就是这条规矩的落点。）
+- **模板裁剪若覆盖"内容会变"的区域，识别的是内容、不是身份/来源** —— 这个坑已出现四次：
+  `BTN_OPEN_DAILY` 的**角标**、训练按钮上的**引导手指动画**、奖励弹窗的**奖励格**、
+  以及把**战力数字**裁进战力图标。**判据：问"这个控件的哪一部分会随状态变化"，把它排除掉。**
+- **探针的匹配配置可能 ≠ 生产配置**：`SemanticWorldVision(max_distance=8)` 内部构造的
+  `SemanticROIVision` 用的是 **8**，而独立 `SemanticROIVision(...)` 默认 **6**。
+  用独立探针量读数会**偏严**，本轮差点据此误判"模板坏了"。量之前先确认用的是**生产那条路径**，
+  或直接读 `w.semantic`。
