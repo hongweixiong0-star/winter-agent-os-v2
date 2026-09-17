@@ -277,6 +277,7 @@ class AutostartGateTest(unittest.TestCase):
     root = None
     store = None
     _state_patch = None
+    _log_patch = None
     _tmp = None
 
     @classmethod
@@ -290,10 +291,17 @@ class AutostartGateTest(unittest.TestCase):
         module.ControlPanel._enforce_retention = lambda self: None
         # The constructor saves the panel state, and that file is the operator's
         # own (it now carries the remembered stop).  A test must not rewrite it.
+        # The window's narration is persisted too, and `_maybe_autostart` narrates
+        # through it -- measured 2026-09-18: this class wrote its fake interpreter
+        # path and its "manual mode" line into the production panel.log, which is
+        # the file the startup decision is audited from.  Redirect both.
         cls._tmp = tempfile.TemporaryDirectory()
         cls._state_patch = mock.patch.object(module, "PANEL_STATE_PATH",
                                              Path(cls._tmp.name) / "panel_state.json")
+        cls._log_patch = mock.patch.object(module, "PANEL_LOG_PATH",
+                                           Path(cls._tmp.name) / "panel.log")
         cls._state_patch.start()
+        cls._log_patch.start()
         try:
             cls.root = tk.Tk()
         except Exception as exc:  # noqa: BLE001 - no display
@@ -316,6 +324,8 @@ class AutostartGateTest(unittest.TestCase):
             cls.root.destroy()
         if cls._state_patch is not None:
             cls._state_patch.stop()
+        if cls._log_patch is not None:
+            cls._log_patch.stop()
         if cls._tmp is not None:
             cls._tmp.cleanup()
 
