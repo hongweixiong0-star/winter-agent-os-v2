@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `22fde85 2026-09-17T18:04:02+08:00 fix(train): model the two stages of a focused camp, and stop tapping in Stage A`
 - `23618f6 2026-09-17T17:47:58+08:00 fix(brain): the TRAIN and RESEARCH goals could not start from the map`
 - `909ced3 2026-09-17T16:51:43+08:00 feat(tooling): enumerate the verifier bindings that can never be called`
 - `92a6f27 2026-09-17T16:39:59+08:00 chore(handoff): record the interpreter guard at f40c684`
@@ -17,25 +18,15 @@ Last 12 commits (newest first):
 - `e607a6d 2026-09-17T13:05:45+08:00 fix(brain): name the quit-dialog branch, and measure that closing it cannot quit the client`
 - `8023e88 2026-09-17T12:53:29+08:00 chore(queue): rebuild the Capability-First work queue, and record this round`
 - `3355b81 2026-09-17T12:53:12+08:00 fix(vision,brain): label the shared reward dialog by its signals, and leave a leaf page once`
-- `ac694ee 2026-09-17T11:52:04+08:00 docs: the live-route recipe, written after running it twice in one day`
 
-Uncommitted changes: 16
-- `M .workbuddy-ai/commander/EXECUTION_STATE.json`
-- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/memory/2026-09-17.md`
-- ` M .workbuddy/memory/2026-09-17.md`
+Uncommitted changes: 7
+- `M .workbuddy-ai/memory/2026-09-17.md`
 - ` M learning/control_panel/latest.log`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
-- ` M winter_agent_v2/brain.py`
-- ` M winter_agent_v2/runtime.py`
-- ` M winter_agent_v2/skills.py`
-- ` M winter_agent_v2/verifier.py`
-- `?? .workbuddy-ai/commander/results/CAP-D01-TRAINING-TUTORIAL-STAGE.json`
-- `?? tests/test_training_camp_two_stages.py`
+- `?? dataset/truth_audit/power_route_20260917/probe_build_probe_20260917_100507.json`
 <!-- /AUTO:recent_commits -->
 
 ---
