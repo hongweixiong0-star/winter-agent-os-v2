@@ -409,7 +409,23 @@ EPISODES_PATH = ROOT / "learning/episodes.jsonl"
 BACKEND_LEDGER_PATH = ROOT / "learning/executor_backend.jsonl"
 MODEL_STATS_PATH = ROOT / "learning/workbuddy_model_stats.jsonl"
 
-MAA_NORMAL, MAA_ADB_FALLBACK, MAA_BROKEN = "● 正常", "● 降级ADB", "● 异常"
+MAA_NORMAL, MAA_ADB_FALLBACK, MAA_BROKEN = "● 正常", "● 降级ADB", "● 不可用"
+MAA_UNINITIALISED = "● 未初始化"
+
+# How stale the newest MAA execution may be before the cell stops claiming 正常.
+# Measured 2026-09-17: the ledger's last 200 rows held 30 steps that asked for MAA and
+# all 30 got MAA -- and every one of them was more than an hour old, while the loop kept
+# running on ADB-only skills.  A cell that answered from ``preferred_backend`` would have
+# said 正常 throughout.  This constant is what makes it say "正常 · 64 分钟无 MAA 执行"
+# instead, which is the honest reading of the same evidence.
+MAA_FRESH_SECONDS = 900.0
+
+# AUTO is a control-surface verdict, so it is derived from what the panel itself is
+# doing (its worker process, its pause flag, its scheduled restart) rather than from
+# a status file that a dead worker may have left behind.
+AUTO_RUNNING, AUTO_STARTING, AUTO_PAUSED, AUTO_WAITING, AUTO_STOPPED = (
+    "● 运行中", "● 启动中", "● 已暂停", "● 等待下一轮", "● 已停止",
+)
 WORKBUDDY_LABELS = {
     "IDLE": "● 待命", "QUEUED": "● 排队", "WORKING": "● 开发中",
     "VERIFYING": "● 验证中", "BLOCKED": "● Blocked", "UNAVAILABLE": "● 不可用",
@@ -678,6 +694,18 @@ def backend_axis(rows: list[dict[str, Any]]) -> dict[str, Any]:
     else:
         label = f"ADB · {capture}（该技能未迁移 MAA）{suffix}"
     mix = Counter(str(row.get("used_backend") or "?") for row in rows)
+    maa_rows = [row for row in rows if str(row.get("used_backend") or "").upper() == "MAA"]
+    # A MAA_* reason is the adapter saying it could not come up (MAA_IMPORT_FAILED /
+    # MAA_CONNECT_FAILED / MAA_SCREENCAP_FAILED).  Note that SEMANTIC_TARGET_NOT_VERIFIED
+    # also lands in ``attempts[].error`` and is NOT a backend failure -- it is a
+    # recognition miss -- so the prefix test is what keeps the two apart.
+    failures = sorted({
+        str(attempt.get("error"))
+        for row in rows
+        for attempt in (row.get("attempts") or [])
+        if str(attempt.get("error") or "").startswith("MAA_")
+    } | {str(row.get("error")) for row in rows if str(row.get("error") or "").startswith("MAA_")})
+    newest_maa = str(maa_rows[-1].get("recorded_at") or "") if maa_rows else ""
     return {
         "label": label, "used": used, "capture": capture, "preferred": preferred,
         "latency_ms": latency, "recorded_at": str(last.get("recorded_at") or ""),
@@ -686,25 +714,141 @@ def backend_axis(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "errors": sum(1 for row in rows if row.get("error")),
         "mix": f"MAA {mix.get('MAA', 0)} / ADB {mix.get('ADB', 0)}（近 {len(rows)} 步）",
         "steps": len(rows),
+        "maa_used": mix.get("MAA", 0),
+        "maa_failures": tuple(failures),
+        "maa_last_at": newest_maa,
     }
 
 
-def maa_cell(report: runtime_env.InterpreterReport, axis: dict[str, Any]) -> str:
-    """MAA's health as one of the operator's three words.
+def age_seconds(stamp: str, now: datetime | None = None) -> float | None:
+    """Seconds since an ISO timestamp, or ``None`` when it cannot be parsed."""
+    if not stamp:
+        return None
+    try:
+        moment = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return ((now or datetime.now(timezone.utc)) - moment).total_seconds()
 
-    降级ADB is the honest label for the defect that was live on 2026-09-17: the
-    production interpreter cannot import ``maa``, so MAA is nominally the default
-    and actually absent.  It is not 异常 -- ADB still works -- and calling it 正常
-    is exactly the silent degradation the doctrine forbids.
+
+def _human_age(seconds: float | None) -> str:
+    if seconds is None:
+        return "时间未知"
+    if seconds < 60:
+        return f"{seconds:.0f} 秒前"
+    if seconds < 3600:
+        return f"{seconds / 60:.0f} 分钟前"
+    return f"{seconds / 3600:.1f} 小时前"
+
+
+def maa_cell(report: runtime_env.InterpreterReport, axis: dict[str, Any], *, now: datetime | None = None) -> str:
+    """MAA's state, from initialisation evidence and from when it last actually ran.
+
+    Ordered so that a *positive* failure outranks a stale success, and so that silence
+    is never rendered as health:
+
+    * no ledger rows at all          -> 未初始化 (nothing has ever executed)
+    * the worker interpreter cannot import maa, or cannot run the loop -> 不可用
+    * a MAA_* reason recorded        -> 不可用 (the adapter said so itself)
+    * MAA was asked for and ADB ran  -> 降级ADB
+    * MAA ran recently               -> 正常
+    * none of the above              -> 正常, with how long ago it last ran
+
+    The last case is the one this cell was rebuilt for.  On 2026-09-17 the ledger held 30
+    MAA-preferred steps that all really used MAA, the newest of them 64 minutes old, while
+    the loop kept working through ADB-only skills.  ``preferred_backend`` would have said
+    正常 and been wrong about the present; the probe says the capability is intact, and the
+    freshness note says the evidence is old.  Both facts, neither invented.
     """
-    if not getattr(report, "exists", False):
-        return MAA_BROKEN
+    if not axis.get("steps"):
+        return MAA_UNINITIALISED
     missing = tuple(getattr(report, "missing", ()) or ())
-    if "maa" in missing or axis.get("degraded"):
-        return MAA_ADB_FALLBACK
-    if missing:
+    if not getattr(report, "exists", False) or missing or axis.get("maa_failures"):
         return MAA_BROKEN
-    return MAA_NORMAL
+    if axis.get("degraded"):
+        return MAA_ADB_FALLBACK
+    seconds = age_seconds(str(axis.get("maa_last_at") or ""), now)
+    if seconds is not None and seconds <= MAA_FRESH_SECONDS:
+        return f"{MAA_NORMAL} · {_human_age(seconds)}执行"
+    if seconds is None:
+        return MAA_NORMAL
+    return f"{MAA_NORMAL} · {_human_age(seconds)}无 MAA 执行"
+
+
+def maa_note(report: runtime_env.InterpreterReport, axis: dict[str, Any]) -> str:
+    """The evidence behind :func:`maa_cell`, for the system tab and for the log."""
+    if not axis.get("steps"):
+        return "未初始化：执行台账里没有任何一步，MAA 尚未被真正调用过"
+    if not getattr(report, "exists", False):
+        return f"不可用：生产解释器不存在（{report.python_exe}）"
+    if getattr(report, "missing", ()):
+        return "不可用：解释器缺少 " + "、".join(report.missing)
+    if axis.get("maa_failures"):
+        return "不可用：台账记录了 " + "、".join(axis["maa_failures"])
+    if axis.get("degraded"):
+        return "降级ADB：有步骤请求了 MAA 但由 ADB 执行（fallback_used / preferred=MAA, used=ADB）"
+    seconds = age_seconds(str(axis.get("maa_last_at") or ""))
+    if seconds is None:
+        return f"正常：解释器可导入 maa，但近 {axis.get('steps', 0)} 步里没有 MAA 执行记录"
+    return (f"正常：解释器可导入 maa；最近一次 MAA 执行在 {_human_age(seconds)}"
+            f"（{axis.get('mix', '')}）")
+
+
+def auto_cell(*, starting: bool, worker_alive: bool, paused: bool, stop_requested: bool,
+              restart_scheduled: bool) -> str:
+    """What AUTO is doing, from the panel's own control state.
+
+    A status *file* is the wrong source here: a worker that died between cycles leaves
+    ``agent_state=AUTO_RUNNING`` behind, so a GUI reading that file would show a running
+    loop with no process behind it.  These inputs are the ones the buttons actually
+    change, which is also why this function is the one the button tests drive.
+    """
+    if stop_requested:
+        return AUTO_STOPPED
+    if paused:
+        return AUTO_PAUSED
+    if starting:
+        return AUTO_STARTING
+    if worker_alive:
+        return AUTO_RUNNING
+    if restart_scheduled:
+        return AUTO_WAITING
+    return AUTO_STOPPED
+
+
+def device_cells(state: dict[str, Any], expected_package: str) -> tuple[str, str]:
+    """``(MuMu, 游戏)`` from a real device probe -- never from configuration.
+
+    ``state`` is the probe's record, so that "the probe has not run yet" and "the probe
+    ran and the device was not there" are different answers.  They were the same answer
+    until this was measured: a failed ``ADBDevice.status()`` stored ``status=None`` and
+    the cell rendered 未探测, which would have shown 未探测 forever on an unplugged
+    emulator -- silence dressed up as "no data yet" when it was in fact a disconnection.
+    """
+    probed = state.get("ok")
+    if probed is None:
+        return "未探测", PENDING
+    if probed is False:
+        reason = str(state.get("error") or "").strip()
+        return ("● 未连接" + (f"（{reason}）" if reason else ""), PENDING)
+    status = state.get("status")
+    if status is None:
+        return "● 未连接（探测未返回状态）", PENDING
+    if not getattr(status, "connected", False):
+        # ADBDevice.status() only ever returns connected=True, so this is a guard for a
+        # future probe rather than a live path -- but a status that says "not connected"
+        # must not be rendered as 已连接 on the strength of its other fields.
+        return "● 未连接", PENDING
+    serial = str(getattr(status, "serial", "") or "")
+    resolution = getattr(status, "resolution", None)
+    size = f" {resolution[0]}x{resolution[1]}" if resolution else ""
+    foreground = str(getattr(status, "foreground_package", "") or "")
+    if not foreground:
+        return f"● 已连接 {serial}{size}", PENDING
+    return (f"● 已连接 {serial}{size}",
+            "运行中" if foreground == expected_package else f"未在前台（{foreground}）")
 
 
 def _records_sorted(snapshot: Any) -> list[Any]:
@@ -776,6 +920,27 @@ GATEWAY_REASON_ZH = {
     "AUTH_REJECTED": "凭据被拒绝（环境里的密码与正在运行的网关不一致）",
     "GATEWAY_UNREACHABLE": "网关不可达（未启动或端口不同）",
 }
+
+
+GATEWAY_STALE_SECONDS = 20.0
+
+
+def gateway_cell(gateway: dict[str, Any], *, now: datetime | None = None) -> str:
+    """The gateway line, including how old the reading is.
+
+    "网关正常" from a four-minute-old poll is a claim about the past, and a disconnect
+    has to show up when it happens -- so a reading older than three poll intervals says
+    so instead of presenting itself as current.
+    """
+    checked = str(gateway.get("checked_at") or "")
+    age = age_seconds(str(gateway.get("checked_at_utc") or ""), now)
+    if age is not None and age > GATEWAY_STALE_SECONDS:
+        return f"网关状态待测（最近检查 {checked or '—'}，{_human_age(age)}）"
+    if gateway.get("available") is False:
+        return f"网关不可用 · {gateway_reason_cn(gateway.get('reason'))}"
+    if gateway.get("available") is True:
+        return f"网关正常 · 检查于 {checked or '—'}"
+    return "网关状态待测"
 
 
 def gateway_reason_cn(reason: str) -> str:
@@ -956,38 +1121,62 @@ def status_defaults() -> dict[str, str]:
     }
 
 
-class WorkBuddyGatewayCache:
-    """Polls the WorkBuddy gateway on a daemon thread so the window never blocks.
+class PanelProbes:
+    """Off-thread reads of the two facts the panel cannot get from a file.
 
-    The panel already had to learn this lesson for subprocesses (see
-    ``_background_run``): anything that can take seconds must not run inside a Tk
-    callback.  The jobs API is HTTP, so it runs here and the UI only reads
-    ``snapshot()``.  A gateway that is down is a *reported state*, not an
-    exception, and it never blocks AUTO -- same rule as the escalation queue's.
+    The WorkBuddy jobs API is HTTP and the device state is ``adb shell``; either one
+    inside a Tk callback freezes the window, and the panel already learned that lesson
+    once with subprocesses (see ``_background_run``).  Both live here on one daemon
+    thread, and the UI only ever reads ``gateway()`` / ``device()``.
+
+    A probe that fails is a *reported state*, not an exception: a gateway that is down or
+    an emulator that is unplugged must show up in the window (the operator asked for
+    exactly that) and must never stop the AUTO loop.
     """
 
-    INTERVAL_SECONDS = 10.0
+    GATEWAY_INTERVAL = 5.0
+    DEVICE_INTERVAL = 10.0
 
-    def __init__(self, root: Path | None = None) -> None:
+    def __init__(self, root: Path | None = None, device: Any | None = None) -> None:
         self.root = root or ROOT
+        self._device_probe = device
         self._lock = threading.Lock()
-        self._state: dict[str, Any] = {"available": None, "reason": "", "job": {}, "checked_at": ""}
+        self._gateway: dict[str, Any] = {"available": None, "reason": "", "job": {}, "checked_at": ""}
+        self._device: dict[str, Any] = {"ok": None, "status": None, "error": "", "checked_at": ""}
         self._watch: str = ""
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+
+    # -- readers (called from the UI thread) -------------------------------
+
+    def gateway(self) -> dict[str, Any]:
+        with self._lock:
+            return dict(self._gateway)
+
+    def device(self) -> Any:
+        """The probed ``DeviceStatus``, or ``None`` when the probe has not answered."""
+        with self._lock:
+            return self._device.get("status")
+
+    def device_state(self) -> dict[str, Any]:
+        """The probe's whole record, so "not probed" and "probe failed" stay distinct."""
+        with self._lock:
+            return dict(self._device)
+
+    def device_note(self) -> str:
+        with self._lock:
+            return str(self._device.get("error") or "")
 
     def watch(self, job_id: str) -> None:
         with self._lock:
             self._watch = job_id or ""
 
-    def snapshot(self) -> dict[str, Any]:
-        with self._lock:
-            return dict(self._state)
+    # -- lifecycle ---------------------------------------------------------
 
     def start(self) -> None:
         if self._thread is not None:
             return
-        self._thread = threading.Thread(target=self._loop, name="workbuddy-gateway-poll", daemon=True)
+        self._thread = threading.Thread(target=self._loop, name="panel-probes", daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
@@ -995,11 +1184,16 @@ class WorkBuddyGatewayCache:
 
     def _loop(self) -> None:
         while not self._stop.is_set():
-            self._poll_once()
-            self._stop.wait(self.INTERVAL_SECONDS)
+            self._poll_gateway()
+            self._poll_device()
+            self._stop.wait(self.GATEWAY_INTERVAL)
 
-    def _poll_once(self) -> None:
-        state: dict[str, Any] = {"available": None, "reason": "", "job": {}, "checked_at": datetime.now().strftime("%H:%M:%S")}
+    # -- the two probes ----------------------------------------------------
+
+    def _poll_gateway(self) -> None:
+        state: dict[str, Any] = {"available": None, "reason": "", "job": {},
+                                 "checked_at": datetime.now().strftime("%H:%M:%S"),
+                                 "checked_at_utc": datetime.now(timezone.utc).isoformat()}
         try:
             from winter_agent_v2.workbuddy_bridge import WorkBuddyBridge
 
@@ -1019,7 +1213,23 @@ class WorkBuddyGatewayCache:
             state["available"] = False
             state["reason"] = f"{type(exc).__name__}: {exc}"
         with self._lock:
-            self._state = state
+            self._gateway = state
+
+    def _poll_device(self) -> None:
+        """Read the real device state.  Read-only: it never connects or launches anything."""
+        if self._device_probe is None:
+            return
+        state: dict[str, Any] = {"ok": None, "status": None, "error": "",
+                                 "checked_at": datetime.now().strftime("%H:%M:%S")}
+        try:
+            state["status"] = self._device_probe.status()
+            state["ok"] = bool(state["status"].connected)
+        except Exception as exc:  # noqa: BLE001
+            state["ok"] = False
+            message = str(exc) or type(exc).__name__
+            state["error"] = message.strip().splitlines()[-1][:120] if message.strip() else type(exc).__name__
+        with self._lock:
+            self._device = state
 
 
 class ControlPanel:
@@ -1050,10 +1260,10 @@ class ControlPanel:
         defaults = status_defaults()
         self.values = {k: tk.StringVar(value=v) for k, v in defaults.items()}
         self.kpi: dict[str, tk.StringVar] = {}
-        # Polls the jobs API off the UI thread; every value below is read from a
-        # file that already exists, so the window still owns no state of its own.
-        self.gateway = WorkBuddyGatewayCache(ROOT)
-        self.gateway.start()
+        # Reads the device and the WorkBuddy jobs API off the UI thread; every value below
+        # is read from a file that already exists, so the window still owns no state.
+        self.probes = PanelProbes(ROOT, device=self.device)
+        self.probes.start()
         task_names = ("邮件", "探险", "采集", "建筑", "科技", "训练", "Intel", "联盟", "日常", "野怪", "巨熊")
         saved_tasks = load_task_selection(PANEL_STATE_PATH, task_names)
         self.task_enabled = {n: tk.BooleanVar(value=saved_tasks[n]) for n in task_names}
@@ -1685,8 +1895,14 @@ class ControlPanel:
     def _model_rows(self) -> list[dict[str, str]]:
         """Model record, straight from the router's own outcome log.
 
-        Cost is not obtainable: the jobs API exposes no usage field, so the column
-        says so instead of inventing an estimate the router might start trusting.
+        Field names are the router's, not this table's: ``Rung`` counts ``samples`` and
+        ``live_improvements``.  The first version of this method read ``jobs`` and
+        ``live_verified``, which do not exist -- and nothing noticed until the reconcile
+        wrote the stats file for the first time, at which point this raised inside a Tk
+        callback and blanked the tab.  A test now drives this against that real file.
+
+        Cost is not obtainable: the jobs API exposes no usage field, so the column says
+        so instead of inventing an estimate the router might start trusting.
         """
         from winter_agent_v2.workbuddy_model_router import (
             ModelStatsStore, default_stats_path, stats_for,
@@ -1701,12 +1917,12 @@ class ControlPanel:
         out: list[dict[str, str]] = []
         for task_type in sorted({str(row.get("task_type") or "") for row in rows}):
             for model, rung in sorted(stats_for(rows, task_type).items()):
-                if not rung.jobs:
+                if not rung.samples:
                     continue
                 out.append({
-                    "model": model, "task_type": task_type or PENDING, "jobs": str(rung.jobs),
+                    "model": model, "task_type": task_type or PENDING, "jobs": str(rung.samples),
                     "success": f"{rung.success_rate:.0%}",
-                    "live": f"{rung.live_rate:.0%}" if rung.live_verified else "0%",
+                    "live": f"{rung.live_rate:.0%}" if rung.live_improvements else "0%",
                     "duration": f"{rung.mean_duration:.0f}s" if rung.mean_duration else "—",
                     "cost": "不可得（jobs API 无用量字段）",
                 })
@@ -1728,6 +1944,16 @@ class ControlPanel:
         ttk.Label(bar, text="完整日志 / Vision Debug / Replay", style="Section.TLabel").pack(side="left")
         for label, path in (("日志目录", LOG_ROOT), ("截图目录", CAPTURE_ROOT), ("Evidence", ROOT / "evidence"), ("Replay", ROOT / "tests/replay")):
             ttk.Button(bar, text=label, command=lambda p=path: self._open(p)).pack(side="right", padx=3)
+        # The evidence behind the two header cells an operator is most likely to doubt.
+        # Both lines are produced by the same functions that drive the cells, so they
+        # cannot drift apart from what is displayed.
+        evidence = ttk.Frame(tab, style="Card.TFrame", padding=(10, 8)); evidence.pack(fill="x")
+        ttk.Label(evidence, text="顶部状态的真实依据", style="Section.TLabel", background=PANEL).grid(row=0, column=0, columnspan=2, sticky="w")
+        self.maa_note_var = tk.StringVar(value=PENDING)
+        self.device_note_var = tk.StringVar(value=PENDING)
+        for index, (label, var) in enumerate((("MAA", self.maa_note_var), ("MuMu", self.device_note_var)), 1):
+            ttk.Label(evidence, text=label, style="Muted.TLabel", background=PANEL, width=8).grid(row=index, column=0, sticky="w", pady=2)
+            ttk.Label(evidence, textvariable=var, background=PANEL, wraplength=1000, justify="left").grid(row=index, column=1, sticky="w", pady=2)
         self.log = tk.Text(tab, bg="#070b10", fg="#bccbda", relief="flat", font=("Consolas", 9), padx=12, pady=10, wrap="word", height=14); self.log.pack(fill="both", expand=True)
         self._append("控制台已启动。")
 
@@ -1743,15 +1969,36 @@ class ControlPanel:
         self.values["verifier"].set(human_reason(snapshot.verifier)); self.values["next"].set(human_reason(snapshot.next_action))
         self.values["risk"].set(snapshot.risk if snapshot.risk and snapshot.risk != "UNKNOWN" else PENDING)
         self.values["confidence"].set(f"{snapshot.confidence:.0%}")
-        self.values["mode"].set("自动运行" if running else ("暂停" if snapshot.agent_state == "PAUSED" else "等待"))
+        # AUTO is derived from this panel's own control state -- the worker process it
+        # spawned, its pause flag, its scheduled restart -- not from the status file a
+        # dead worker may have left behind.  See auto_cell().
+        worker = self.process
+        self.values["mode"].set(auto_cell(
+            starting=self.starting,
+            worker_alive=bool(worker is not None and worker.poll() is None),
+            paused=self.paused,
+            stop_requested=self.stop_requested,
+            restart_scheduled=self.repeat_after_id is not None,
+        ))
         self.values["runtime_state"].set(runtime_status_cn(snapshot.stop_reason, running=running))
         # MAA / backend axis.  Taken from the executor ledger and the resolved
         # production interpreter, so this cell cannot claim MAA is fine while the
-        # worker is quietly running on ADB capture.
+        # worker is quietly running on ADB capture -- and it reports how old the newest
+        # MAA execution is, because "asked for MAA" is not the same as "MAA ran".
         axis = backend_axis(tail_jsonl(BACKEND_LEDGER_PATH, 200))
-        self.values["maa"].set(maa_cell(runtime_interpreter_report(), axis))
+        report = runtime_interpreter_report()
+        self.values["maa"].set(maa_cell(report, axis))
         self.values["backend"].set(axis["label"])
         self.values["backend_detail"].set(f"{axis['mix']} · 最近错误 {axis['errors']} 次")
+        # MuMu / 游戏 come from a real device probe running off the UI thread.  Nothing
+        # here reads the configuration: a configured serial is not a connected device,
+        # and 未探测 is what an unanswered probe says.
+        mumu, game = device_cells(self.probes.device_state(), str(self.config["device"]["package_name"]))
+        self.values["device"].set(mumu)
+        self.values["game"].set(game)
+        if hasattr(self, "maa_note_var"):
+            self.maa_note_var.set(maa_note(report, axis))
+            self.device_note_var.set(self.probes.device_note() or "设备探测正常（adb shell 直读）")
         if snapshot.march_used is not None and snapshot.march_max is not None:
             march = f"{snapshot.march_used}/{snapshot.march_max}"; self.values["march"].set(f"行军：{march}"); self.queues["行军"].set(march)
         queue_names = {"建筑": "building", "科技": "research", "训练": "training", "Intel": "intel", "联盟": "alliance", "活动": "events"}
@@ -1779,16 +2026,11 @@ class ControlPanel:
         doing -- which is the whole point of not building a second state store.
         """
         view = escalation_view()
-        gateway = self.gateway.snapshot()
+        gateway = self.probes.gateway()
         label, detail = workbuddy_cell(view, gateway)
         self.values["workbuddy"].set(label)
         self.values["wb_state"].set(label + (f"（{detail}）" if detail else ""))
-        if gateway.get("available") is False:
-            self.values["wb_gateway"].set(f"网关不可用 · {gateway_reason_cn(gateway.get('reason'))}")
-        elif gateway.get("available") is True:
-            self.values["wb_gateway"].set(f"网关正常 · 检查于 {gateway.get('checked_at') or '—'}")
-        else:
-            self.values["wb_gateway"].set("网关状态待测")
+        self.values["wb_gateway"].set(gateway_cell(gateway))
         current = view.get("current")
         settled = view.get("pending_verify") or ()
         if current is None and settled:
@@ -1805,7 +2047,7 @@ class ControlPanel:
             self.values["wb_job_state"].set(PENDING)
             self.values["wb_improvement"].set(PENDING)
             self.values["wb_result"].set("尚未产生开发任务：升级队列为空。")
-            self.gateway.watch("")
+            self.probes.watch("")
         else:
             self.values["wb_capability"].set(current.capability or current.skill or current.key)
             self.values["wb_reason"].set(current.condition or PENDING)
@@ -1828,7 +2070,7 @@ class ControlPanel:
                 "是" if current.outcome == "LIVE_VERIFIED" else ("否" if current.outcome else "待对账")
             )
             self.values["wb_result"].set(self._describe_escalation(current))
-            self.gateway.watch(current.job_id)
+            self.probes.watch(current.job_id)
         kpi = overview_kpis(view=view)
         for key, var in self.kpi.items():
             var.set(kpi.get(key, {}).get("value", NO_DATA))
@@ -2491,7 +2733,7 @@ class ControlPanel:
             self.process.terminate()
         # The gateway poller is a daemon thread, so the process would exit anyway --
         # stopping it explicitly keeps a closing window from making one last request.
-        self.gateway.stop()
+        self.probes.stop()
         self._cancel_repeat(); self.root.destroy()
 
 
