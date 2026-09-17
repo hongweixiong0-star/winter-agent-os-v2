@@ -317,3 +317,25 @@
    网关首次启动的随机值 ⇒ 面板 `reconcile` 恒 401、队列的 in-flight job 永远推不动。
    症状是面板显示 `不可用 / AUTH_REJECTED`，而网关本身是好的。凭据只进环境变量（用户级），**不进仓库**。
 
+### 启动语义与两处静默失效（2026-09-18 实测）
+
+**启动 GUI = 自动运行 + 自动开发**：`_maybe_autostart`（只在 `main` 里调用一次）按
+**操作者意图 → 真实 preflight → AUTO** 顺序决定。preflight 分 **core**（解释器 + MuMu 设备）
+与 **aux**（WorkBuddy Gateway）：core 失败**拒启**并按 60s 周期重试，gateway 失败**只标不可用**
+（「网关异常不得阻止游戏 AUTO」已固化为 `CORE_SECTIONS` / `AUX_SECTIONS` 两个常量）。
+
+- **操作者意图必须落盘**：`config/control_panel_state.json` 的 `operator_intent`
+  （RUNNING/PAUSED/STOPPED）跨 GUI 重启保持，只有显式「开始」清除；状态文件必须**合并式写入**，
+  否则任务选择与意图会互相擦除。
+- **关窗要杀进程树**：面板持有的是 **venv stub**，真身是它的子进程（`taskkill /T`）——
+  只 `terminate()` stub 会留下**孤儿 AUTO worker**继续点游戏。
+
+**两类「看起来在工作、其实什么都没做」的失效（都会静默）**：
+
+1. **无命名目标 + 叶子页 = 死端**：AUTO 不传 `--goal`，目标发现**只读当前页**；
+   `_leave_or_stop` 在 `current_goal is None` 时**故意不离开**（免得挤掉真有活的观测）
+   ⇒ 停在 RESEARCH/TRAINING 且队列忙时**每轮零动作**。修：运行时在
+   「discovery 为空」时退一步离页（`RuleBrain.leave_terminal_page`）。
+2. **解析要求「整行是 JSON」= 恒失败**：MuMu 连接行**紧贴**结果 JSON 同一行、无换行
+   ⇒ `parse_runtime_result` 每轮返回 `{}`，所有 `stop_reason` 决策链/摘要/升级载荷
+   沦为死代码，界面只说「暂无结构化结果」。**遇到「暂无结构化结果」先怀疑解析，别怀疑大脑。**
