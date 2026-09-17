@@ -274,4 +274,13 @@ Machine-detected issues (recomputed every run):
 | 19 | **没有"第三方许可"闸门** | ⚠️ 已知缺口 | `scan_public_repo.py` 只查凭据（token/cookie/手机号/邮箱），**不查第三方代码与许可证**。2026-09-17 一次 `git add -A` 把 4 个 AGPL-3.0 Java 源文件扫进公开仓库（已在下个提交移除，历史未重写）。缺口在于：`out_*` 的忽略规则只覆盖 txt/md/xml/json/png，**不覆盖 .toml，也不覆盖整个抓取目录** —— 已补 `out_*.toml` / `out_ext_*/` / `out_ext_java/` / `dataset/external/`，但**这只是补漏，不是闸门**。真要防，需要在 `scan_public_repo.py` 里加一条"外部源码目录/许可头"检查。 |
 | 20 | **VIP 入口仍未找到** | ⚠️ 待发现 | 外部假设（Frostguard `(430,48)-(530,85)`）在 V2 客户端**被证伪**：那一点打开的是 `REAL_MONEY_OFFER`（硬阻断正确挡下）。HOME 全屏 OCR（28 个高置信 token）**没有 VIP/特权/贵族/会员 文本**，右缘只有 `常规活动`(634–700,176–203) 与 `超值活动`(623–700,275–297)。下一步：用同一有界探针逐个探这两个面板，或探领主档案面板的页签 —— 找到显示 VIP 等级/到期时间的那个。证据：`dataset/truth_audit/vip_entry_20260917/`。 |
 
+### 2026-09-17 第二轮（训练/建筑）新增
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 21 | **建筑身份是被写死的** | 🔴 阻塞 BUILD 落地 | `vision.py` 的 `BTN_BUILD_UPGRADE` 分支返回 `building={"id":"STOREHOUSE","level":26,"target_level":27}` —— 这是 2026-09-08 某个具体建筑的字面值。今天实测 `建筑实力 提升`(605,550) 聚焦的是 **民居1 3级**，开出的是家具面板与 `升级`（费用 157.7万肉 / 当时只有 16.6万 ⇒ 禁用）。一旦把该按钮注册进生产，视觉就会为**任何**被聚焦的建筑编造 STOREHOUSE 那套值，而 `verify_building_upgrade` 正是按 `before.building` 的 id/level 判定的 ⇒ **会验证通过一个根本没发生的事实**。落地 BUILD 前必须先让 id/level/target_level **从画面读**（面板标题 `民居1 3级` + `升级` 上的费用行）。证据：`dataset/truth_audit/power_route_20260917/key/04_building_focused.png`，测试 `TheBuildingPanelIsStillUnrecognisedTests` 把缺口钉住。 |
+| 22 | **情报奖励弹窗被误读成每日奖励** | ⚠️ 待修（需先测两个总体） | `--goal INTEL` 实跑：步骤 3 `INTEL_CLAIM_REWARDS` **verifier OK、真的领到一份奖励**，步骤 4 却失败（`DAILY_REWARD_ADVANCE_NOT_PROVEN`，exit 2）。根因：情报奖励用的是客户端**通用「获得奖励」弹窗**（五格 + 点击任意位置退出），该帧上唯一命中的是 `POPUP_GENERIC_REWARD_HEADER`(d=12)，daily/intel 奖励标题模板都不命中；但 `vision.py` 第 1046 行的 `POPUP_DAILY_REWARD_CURRENT` 排在前面对它假阳性 ⇒ 跑了**每日**的解除技能。大脑里**已有**正确的 goal 上下文分支（brain.py 221–232：`GENERIC_REWARD`+goal INTEL → `DISMISS_INTEL_GENERIC_REWARD`），所以修法在**视觉判定顺序或那条 daily 记录**上；必须先量出「真每日奖励」与「通用奖励」两个总体，不要靠调阈值。证据：`key/11_intel_reward_popup.png`，测试 `TheIntelRewardPopupIsMisreadTests`。 |
+| 23 | **TRAIN 运行结束后客户端停在训练页** | ⚠️ 未决 | `--goal TRAIN` 以 `training_queue_busy` 收尾时把客户端留在 TRAINING 页；下一次运行换 goal 会撞 `goal_page_mismatch` → SAFE_STOP 立刻结束（本轮实测发生过一次：`--goal INTEL` 第一次跑只走了 1 步）。与上一轮每日面板"死胡同"同类，但这次是**运行结束时的落点**问题。可选修法：镜像 `_leave_daily_panel_once`，在 `training_queue_busy` 之前先 BACK 一次并置一次性旗标（注意不能让旗标把重入也堵死，否则同一轮会反复重走路线）。 |
+| 24 | `PAGE_TRAINING_*` 分不出兵营种类 | ⚠️ 设计债 | 三个兵营页签（盾兵营/矛兵营/射手营）上 `PAGE_TRAINING_INFANTRY` **都命中**（标题文字的 phash 相似），所以 `world.training.troop_type` 恒为 `INFANTRY`；而 OCR 标题读得很干净（`百战盾兵`/`刚毅矛兵`/`刚毅射手`）。`verify_training_started` 用 troop_type 判定，所以"在矛兵营开始训练"可能被记成"在盾兵营"。修法：troop_type 从 OCR 标题读，别靠模板。 |
+
 

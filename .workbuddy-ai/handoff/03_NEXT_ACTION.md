@@ -4,7 +4,72 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮（2026-09-16 23:0x–00:5x GMT+8）—— 专家包 v1.1.0 增量升级；任务面板页签切换落地
+## 手写：本轮（2026-09-17 07:2x–08:3x GMT+8）—— 训练路线真机跑通（7 步 → 4 步）；建筑入口找到但**没落地**；情报领到了奖励却在弹窗识别上翻车
+
+**先读证据**：`dataset/truth_audit/power_route_20260917/README.md`（`key/` 是每态一帧，可复核，不需重测）。
+
+### 0. 操作者要求 vs 交付
+
+要求 = 「建筑和训练优先落地，继续，情报记得及时做」。
+
+| 项 | 结果 |
+|---|---|
+| **训练（TRAIN）** | ✅ **路线 4 跳全部真机 verifier OK**，收敛为 4 步（原 7 步），exit 0 |
+| **建筑（BUILD）** | ⚠️ **入口找到但故意没落地** —— 视觉还不认识那个面板，且既有分支把建筑身份写死（问题 #21）。落地会**编造建筑身份**，比不落地更糟 |
+| **情报（INTEL）** | ⚠️ **真的领到一份奖励**（步骤 3 verifier OK），但步骤 4 因弹窗被误读成每日奖励而失败（问题 #22） |
+
+### 1. 训练路线的真实改进（有真机 episode）
+
+```
+1 OPEN_POWER_OVERVIEW    HOME -> POPUP/POWER_OVERVIEW        verifier OK
+2 OPEN_POWER_DETAILS     POPUP/POWER_OVERVIEW -> POWER_DETAILS verifier OK
+3 NAVIGATE_INFANTRY_CAMP POPUP/POWER_DETAILS -> HOME(camp focused) verifier OK
+4 OPEN_INFANTRY_TRAINING HOME(menu_open) -> TRAINING          verifier OK
+5 SAFE_STOP              training_queue_busy
+```
+
+⚠ **这条链路的决策与 verifier 2026-09-17 之前就全部存在**（`brain.py` 243–246 / 446–456、
+`VERIFIED_ATOMIC` 已绑 5 个 verifier、`run_live --goal` 已收 `TRAIN`）。
+**唯一断点是模板全裁自 2026-09-08 的另一个账号**（战力 5,708万 vs 今天的 82.6万、
+不同头像、**城市镜头更远**）⇒ `world.training` 永为空 ⇒ 那些分支一条都不可达。
+所以本轮**没有改大脑、没有改 verifier**，只换了模板 + 收了一处门禁。
+
+两个缺陷（都属"同一控件多种外观"这一类）：
+1. **战力入口是值依赖模板**：旧裁剪 `x 97..302` 把战力**数字**裁了进去 ⇒ 只能匹配裁它那个账号。
+   实测新裁剪（只裁拳头图标）在两账号间 phash **d=2**，旧裁剪 **d=28**，非城市帧 30。
+2. **兵营聚焦浮层带引导手指动画 + 呼吸光圈**：旧裁剪一次运行 7 帧只中 3 帧，
+   害 verifier **连刷 21 秒**（07:41:18→29→39）才通过，而浮层寿命约 2 秒 ⇒
+   下一步观测时已消失 ⇒ **整条路线重走一遍**。新裁剪为**以训练按钮为圆心的 300×300**
+   （点击落点 = 该记录 ROI 中心，执行器只有 `TAP_SEMANTIC`，没有绝对坐标动作），
+   一次运行 7 帧全 0–8 ⇒ verifier 第一次观测即通过 ⇒ **收敛 4 步**。
+
+**门禁 17 → 12**（两个总体，全语料 3522 帧，`tools/probe_camp_menu_gate.py`）：
+≤8 有 17 帧、≤12 有 22 帧（**抽查 OCR 全是兵营菜单帧**）、≤17 有 36 帧
+—— 但 **plain HOME 帧是 16**（落进 17 里！）⇒ 保留 17 会让普通城市帧报 `menu_open`
+并把训练点击送进城市。09-08 的菜单帧（新裁剪 d=18）靠**它自己的旧记录 d=0** 仍命中，故不丢召回。
+
+### 2. 下一条该做的（按价值排序）
+
+1. **BUILD 落地的前置**（问题 #21）：让建筑 id/level/target_level **从画面读**，
+   再注册 `升级` 按钮 + verifier。今天的入口已实测：`建筑实力 提升`(605,550) → 民居1 3级。
+   ⚠ 顺手会发现：该面板 `page=UNKNOWN`，`building={}`，而既有 `BTN_BUILD_UPGRADE` 分支
+   **写死 STOREHOUSE/26/27** ⇒ 必须先修它，否则一注册就会**验证通过没发生的事**。
+2. **每日活跃宝箱领取**（上一轮定位：只差一个"可领宝箱"帧的启用/禁用模板对）。
+3. **`ALLIANCE_GIFTS` / `ALLY_GIFT_CLAIM`**（后者 11 次真机成功，可复跑刷价值）。
+4. **`RECALL_MARCH`**：只差 `idle_marches==0 ∧ GATHERING 在外` 这个自然状态。
+5. **问题 #22**（情报弹窗误读）、**#23**（TRAIN 结束停训练页）、**#24**（troop_type 恒为 INFANTRY）。
+
+### 3. 环境/协作提醒（本轮新增）
+
+- **客户端落点要留意**：`--goal TRAIN` 以 `training_queue_busy` 收尾会把客户端**留在训练页**，
+  下一次换 goal 会立刻 `goal_page_mismatch`（本轮亲历）。跑下一个 goal 前先确认页；见问题 #23。
+- 本机 pytest 全量仍拿不到汇总行 ⇒ 用 `-o tmp_path_retention_policy=all`
+  或 `PYTEST_PLUGINS=winter_failwatch`。
+- repo 仍可能有第二个写入方：改完立刻 `git log --oneline -3` 复核。
+- 新探针 `tools/probe_power_route.py` 可复用：`--tap x,y` 逐跳推进、每跳留帧 + 全量 OCR token、
+  `--allow-page` 显式声明"我认得这个页"、`--leave` 收尾 BACK 一次。**它只点你给的坐标。**
+
+## 手写：上一轮（2026-09-16 23:0x–00:5x GMT+8）—— 专家包 v1.1.0 增量升级；任务面板页签切换落地
 
 ### 0. 本轮两个交付物
 
