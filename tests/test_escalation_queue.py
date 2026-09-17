@@ -48,12 +48,15 @@ NOW = datetime(2026, 9, 17, 12, 0, 0, tzinfo=timezone.utc)
 
 
 def failure(failure_type: str, skill: str = "OPEN_INFANTRY_TRAINING", **extra):
+    # Bare filenames on purpose: these are synthetic episode rows, not repository
+    # evidence, and tests/test_evidence_integrity.py treats any literal containing
+    # a path separator as a claim about a real file.
     row = {
         "failure_type": failure_type,
         "skill": skill,
         "goal_id": "KEEP_TRAINING_PRODUCTIVE",
-        "before_screenshot": r"E:\evidence\x\step_001_before.png",
-        "after_screenshot": r"E:\evidence\x\step_001_after.png",
+        "before_screenshot": "step_001_before.png",
+        "after_screenshot": "step_001_after.png",
         "recorded_at": NOW.isoformat(),
         "state_before": {"page": "HOME"},
     }

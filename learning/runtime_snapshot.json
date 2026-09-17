@@ -1,20 +1,20 @@
 {
-  "agent_state": "AUTO_RUNNING",
-  "runtime_thread_alive": true,
-  "scheduler_loop_alive": true,
-  "last_tick_time": "2026-09-17T13:05:19.996969+00:00",
+  "agent_state": "DEGRADED",
+  "runtime_thread_alive": false,
+  "scheduler_loop_alive": false,
+  "last_tick_time": "2026-09-17T13:11:05.558883+00:00",
   "last_action_time": "2026-09-17T11:53:47.556214+00:00",
   "last_success_time": "2026-09-17T11:54:22.829508+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
   "page": "MAP",
-  "current_goal": null,
-  "current_skill": null,
-  "reason": "启动并校准真实客户端",
+  "current_goal": "AVOID_STAMINA_WASTE",
+  "current_skill": "SAFE_STOP",
+  "reason": "verified_beast_target_not_visible",
   "preconditions": [],
   "verifier": null,
-  "next_action": "启动唯一 Scheduler",
+  "next_action": "refresh_or_switch_task",
   "risk": "UNKNOWN",
   "confidence": 1.0,
   "device": "UNKNOWN",
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_210502_409507\\20260917_210502_409507_step_001_before_20260917T130502934250.png",
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_211047_328400\\20260917_211047_328400_step_001_before_20260917T131047840667.png",
   "march_used": 0,
   "march_max": null,
   "queues": {
@@ -33,6 +33,6 @@
     "alliance": {},
     "events": {}
   },
-  "stop_reason": null,
-  "updated_at": "2026-09-17T13:05:52.097982+00:00"
+  "stop_reason": "verified_beast_target_not_visible",
+  "updated_at": "2026-09-17T13:11:06.786043+00:00"
 }

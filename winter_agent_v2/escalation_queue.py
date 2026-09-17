@@ -843,8 +843,12 @@ def candidates_from_run(
 
 
 def _episode_dir(failure: Mapping[str, Any]) -> str:
+    """The evidence directory behind an episode's frame, when it has one."""
     shot = failure.get("before_screenshot")
-    return str(Path(str(shot)).parent) if shot else ""
+    if not shot:
+        return ""
+    parent = Path(str(shot)).parent
+    return "" if str(parent) in (".", "") else str(parent)
 
 
 # ---------------------------------------------------------------- reconciling
