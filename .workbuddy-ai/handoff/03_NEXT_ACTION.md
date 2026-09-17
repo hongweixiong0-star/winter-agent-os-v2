@@ -4,7 +4,76 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
-## 手写：本轮续（2026-09-17 11:1x–12:0x GMT+8）—— 研究路线真机跑通（第二个 BLOCKED 目标打通）
+## 手写：本轮（2026-09-17 12:1x–13:0x GMT+8）—— 打开 #22（奖励弹窗来源）；终止页退出落地但**真机 episode 未取到**；工作队列按 CAPABILITY-FIRST 重建
+
+接手时 `HEAD == origin/main == ac694ee8`，工作树 8 项脏（KEEP 3 / UNKNOWN 5）。旧 `WORK_QUEUE.json`
+是 09-16 的 R19 版，按指令**不执行其 READY 项**，已归档为
+`.workbuddy-ai/commander/WORK_QUEUE_20260916_R19_ARCHIVED.json` 并**重写**为 CAPABILITY-FIRST 队列
+（8 单：INTEL 巨兽目标 / EXIT_CONFIRM 安全 / 建筑身份 / 叶页真机证据 / 训练两阶段 / ALLIANCE_HELP / ARENA / 机会型）。
+
+### 一、#22 已修（**真机已验证**）：奖励弹窗的来源不在画面里
+
+**根因不是阈值，是问错了问题。** `POPUP_DAILY_REWARD_CURRENT` 的 ROI 是 `x .08 y .20 w .84 h .40`
+= **整个奖励格区域**，它回答"这些图标像不像我裁下来的那批"（**内容**问题），却被排在通用横幅之前。
+
+在 **103 帧有标签的生产帧**上量四个总体（`SemanticWorldVision`，`max_distance=8`）：
+
+| 语义 | DAILY(8) | EXPLOR(12) | GENERIC(65) | INTEL(18) |
+|---|---:|---:|---:|---:|
+| `BTN_DISMISS_INTEL_REWARD`（页脚） | **8/8** | **12/12** | **65/65** | **17/18** |
+| `POPUP_GENERIC_REWARD_HEADER`（横幅） | 5/8 | 8/12 | 64/65 | 1/18 |
+| `POPUP_DAILY_REWARD_CURRENT`（奖励格） | 8/8 | 0/12 | 0/65 | 0/18 |
+
+只有**页脚**几乎处处在场（102/103、距离 ≤2）。且**真实每日帧与真实情报帧的页脚区域 phash=4、横幅=4**
+⇒ 两帧是**同一个「获得奖励」弹窗**，只是奖励格不同。**来源不在画面里。**
+
+修法：视觉层先判"这是共用的奖励弹窗"（横幅**或**页脚），报**目标中立**的 `GENERIC_REWARD`，
+由 goal 上下文选解除技能。**没碰任何 verifier** —— 五个 `*_reward_dismissed` **早已**接受
+`GENERIC_REWARD`，这正是 `verifier.py` 第 953–961 行与 `REWARD_POPUPS` 不含 `DAILY_REWARD` 的设计意图。
+
+真机（都可追溯）：
+```
+04:44:20  DAILY_CLAIM_REWARDS           DAILY -> POPUP  verifier OK  after.popup=GENERIC_REWARD
+04:44:29  DISMISS_DAILY_GENERIC_REWARD  POPUP -> DAILY  verifier OK
+04:46:31  MAIL_CLAIM_REWARDS            MAIL  -> POPUP  verifier OK  after.popup=GENERIC_REWARD
+```
+`DISMISS_*_GENERIC_REWARD` **只有 `popup==GENERIC_REWARD` 时可达** ⇒ 这次修复真的生效了。
+**闸门**：全语料 3007 帧，命中页脚 186 / 横幅 134，**假阳性 0**。
+
+### 二、#23 叶页退出：**已实现，真机 episode 还没取到**
+
+`TRAINING`/`RESEARCH` 是叶子页，上一轮 TRAIN 停在那里 ⇒ 下一轮一步都走不了就 `goal_page_mismatch`。
+修法镜像 `_leave_daily_panel_once`：**命名 goal** 站在自己没有用的叶页上 → 一次 BACK
+（`verify_safe_back` 接受 `TRAINING/RESEARCH → HOME`，两方向用探针量过）；自己的叶页上无事可做 →
+先 BACK 再具名停止；**同一轮不再重走路线**；**拥有该页的 goal 与无 goal 的扫掠行为不变**
+（可训练队列、可开始节点照旧动作 —— 这一条是第一版写宽了、被 `check_wiring` 抓住后收窄的）。
+
+单测 12 项 + `check_wiring` 4 条（problems: 0）。**没有真机 episode**：叶页**存活很短** ——
+探针刚放上去（`after#4 page=RESEARCH`），几十秒后运行起跑已读回 `HOME`（问题 #27）。
+取证办法：把 goal 轮**接在同一条命令链内**，别隔一次探针。
+
+### 三、⚠ 三件必须知道的事
+
+1. **INTEL 链现在卡在新的一步（#25，当前真实前沿）**：04:38Z 跑了 4 步 verifier 全 OK，
+   第 5 步 `OPEN_INTEL_BEAST_TARGET` 点「前往查看」后**打开的是「英雄之旅」弹窗**
+   （`after.page=EXPLORATION`、`intel.mission_type=HERO_JOURNEY`），verifier
+   `INTEL_BEAST_TARGET_NOT_PROVEN {mission_dialog:true, target:false}`。**不是本轮的改动造成的**，
+   是这条链走到这里才第一次被看见。证据帧已归档。
+2. **`EXIT_CONFIRM` 在大脑里没有分支（#26，安全缺口）**：实测该弹窗是
+   「确认退出游戏吗? / 取消(橙,左) / 确定(蓝,右) / X(右上)」，而 brain 只走通用 `CLOSE_POPUP` 点 `BTN_CLOSE`。
+   当次没出事（弹窗自行消失），但**这条路径不该靠运气**。
+3. **训练路线出现回归信号（#28）**：兵营聚焦后**先出现教程手指**，径向菜单还没画
+   ⇒ `TARGET_INFANTRY_CAMP_HIGHLIGHTED` 命中而 `BTN_OPEN_TRAINING_FROM_CAMP` 未命中
+   ⇒ 大脑选 `SELECT_INFANTRY_CAMP` 去点兵营，那一下把客户端带到地图。**训练路线有两个阶段**，需分别建模。
+
+### 四、本轮新增文件
+
+`tools/probe_reward_popup_gate.py`（可复用的奖励弹窗负样本闸门）、
+`tests/test_reward_popup_source.py`（10 项）、`tests/test_terminal_page_exit.py`（12 项）、
+`dataset/truth_audit/reward_popup_source_20260917/`（README + 4 帧）。
+`check_wiring.py` 新增 11 条（奖励弹窗 5 goal + 无上下文 + 5 verifier + 叶页 2 + run_live 2）。
+
+
 
 **先读证据**：`dataset/truth_audit/power_route_20260917/README.md` 的「研究（RESEARCH）」一节
 （`key/14`、`key/15`、`key/16` 三帧可复核）。
@@ -1100,12 +1169,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.5713. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 14 in the last 2 day(s), 129 all-time, last seen 2026-09-16T13:10:49.548545+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 14 in the last 2 day(s), 130 all-time, last seen 2026-09-17T04:45:23.361291+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 1
-LAST PRODUCTION EPISODE: {"skill": "OPEN_RESEARCH", "result": "SUCCESS", "recorded_at": "2026-09-17T03:33:15.976684+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260917T033309886763.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260917T033313941365.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 129, "recent": 14, "last_seen": "2026-09-16T13:10:49.548545+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-15T03:33:15.976684+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 39
+LAST PRODUCTION EPISODE: {"skill": "MAIL_CLAIM_REWARDS", "result": "SUCCESS", "recorded_at": "2026-09-17T04:48:03.357533+00:00", "episode_id": "20260917_124703_927617", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_124703_927617\\20260917_124703_927617_step_002_before_20260917T044735567802.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_124703_927617\\20260917_124703_927617_step_002_after_20260917T044749685815.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 130, "recent": 14, "last_seen": "2026-09-17T04:45:23.361291+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-15T04:48:03.357533+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

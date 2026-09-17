@@ -6,8 +6,8 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x129 all-time; recent=14 (last 2d), last seen 2026-09-16T13:10:49.548545+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-- **INTEL_BEAST_TARGET_NOT_PROVEN** x7 all-time; recent=5 (last 2d), last seen 2026-09-17T03:12:18.062059+00:00 — OPEN_INTEL_BEAST_TARGET(7)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x130 all-time; recent=14 (last 2d), last seen 2026-09-17T04:45:23.361291+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **INTEL_BEAST_TARGET_NOT_PROVEN** x8 all-time; recent=6 (last 2d), last seen 2026-09-17T04:38:27.078429+00:00 — OPEN_INTEL_BEAST_TARGET(8)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x5 all-time; recent=3 (last 2d), last seen 2026-09-17T00:26:34.147170+00:00 — DISMISS_DAILY_REWARD(5)
 - **MARCH_PAGE_NOT_OPEN** x60 all-time; recent=1 (last 2d), last seen 2026-09-16T11:22:23.403295+00:00 — START_GATHER(60)
 - **NO_EXECUTION** x5 all-time; recent=1 (last 2d), last seen 2026-09-15T12:27:40.810551+00:00 — SAFE_STOP(5)
@@ -20,8 +20,9 @@ Machine-detected issues (recomputed every run):
 - `RESEARCH` never succeeded (attempts=1, failure=0)
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
+- `SELECT_INFANTRY_CAMP` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 1 uncommitted file(s): ['M dataset/truth_audit/power_route_20260917/README.md']
+- 39 uncommitted file(s): ['M .gitignore', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -279,8 +280,12 @@ Machine-detected issues (recomputed every run):
 | # | 问题 | 状态 | 说明 |
 |---|---|---|---|
 | 21 | **建筑身份是被写死的** | 🔴 阻塞 BUILD 落地 | `vision.py` 的 `BTN_BUILD_UPGRADE` 分支返回 `building={"id":"STOREHOUSE","level":26,"target_level":27}` —— 这是 2026-09-08 某个具体建筑的字面值。今天实测 `建筑实力 提升`(605,550) 聚焦的是 **民居1 3级**，开出的是家具面板与 `升级`（费用 157.7万肉 / 当时只有 16.6万 ⇒ 禁用）。一旦把该按钮注册进生产，视觉就会为**任何**被聚焦的建筑编造 STOREHOUSE 那套值，而 `verify_building_upgrade` 正是按 `before.building` 的 id/level 判定的 ⇒ **会验证通过一个根本没发生的事实**。落地 BUILD 前必须先让 id/level/target_level **从画面读**（面板标题 `民居1 3级` + `升级` 上的费用行）。证据：`dataset/truth_audit/power_route_20260917/key/04_building_focused.png`，测试 `TheBuildingPanelIsStillUnrecognisedTests` 把缺口钉住。 |
-| 22 | **情报奖励弹窗被误读成每日奖励**（**已复现两次**，阻塞情报链收尾） | 🔴 待修（需先测"真每日奖励"那一侧） | 两次 `--goal INTEL` 都**真拿到价值**（各领到一份奖励；第二次还 `DISPATCH_INTEL_BEAST` 真派出一队、体力 237→227），却都停在同一处：`DISMISS_DAILY_REWARD` verifier `DAILY_REWARD_ADVANCE_NOT_PROVEN`（exit 2）。**根因已量清（不是阈值问题）**：`POPUP_DAILY_REWARD_CURRENT` 的 ROI 是 `x 0.08 y 0.2 w 0.84 h 0.4` = **整个奖励格区域** ⇒ 对**任何来源**的奖励弹窗都命中（两次情报弹窗实测 **d=6 / d=2**），而带来源信息的 `POPUP_GENERIC_REWARD_HEADER` 是 12 / 16；`vision.py` 第 1046 行又把它排在通用表头**之前**且距离更小 ⇒ 报成 `DAILY_REWARD` ⇒ 跑每日的解除技能。⇒ **该裁剪在结构上无法区分来源**。修法方向：来源只能由**目标上下文**决定（大脑已有 brain.py 221–232 的分支），但**改前必须先量"真每日奖励弹窗"**：若它也走通用路径，`goal=None` 时会不会落到 `SAFE_STOP generic_reward_without_goal_context` 把奖励晾着 —— 本轮手边没有一张真每日奖励帧，**答不了**。**禁止靠调阈值修。** 证据：`key/11_intel_reward_popup.png`、`key/13_intel_reward_popup_run2.png`，测试 `TheIntelRewardPopupIsMisreadTests`。 |
-| 23 | **TRAIN 运行结束后客户端停在训练页** | ⚠️ 未决 | `--goal TRAIN` 以 `training_queue_busy` 收尾时把客户端留在 TRAINING 页；下一次运行换 goal 会撞 `goal_page_mismatch` → SAFE_STOP 立刻结束（本轮实测发生过一次：`--goal INTEL` 第一次跑只走了 1 步）。与上一轮每日面板"死胡同"同类，但这次是**运行结束时的落点**问题。可选修法：镜像 `_leave_daily_panel_once`，在 `training_queue_busy` 之前先 BACK 一次并置一次性旗标（注意不能让旗标把重入也堵死，否则同一轮会反复重走路线）。 |
+| 22 | **情报奖励弹窗被误读成每日奖励** | ✅ **已修（2026-09-17）** | 修法已验证：视觉层改为**先**判"这是客户端共用的「获得奖励」弹窗"（横幅或页脚，页脚在 103 帧上命中 102 帧、距离 ≤2）并报**目标中立**的 `GENERIC_REWARD`，由 goal 上下文选解除技能。改动**不碰任何 verifier** —— 五个 `*_reward_dismissed` 早已接受 `GENERIC_REWARD`。真机：`DAILY_CLAIM_REWARDS`（真领到）→ after `popup=GENERIC_REWARD` → `DISMISS_DAILY_GENERIC_REWARD` verifier OK；`MAIL_CLAIM_REWARDS`（真领到）→ after `popup=GENERIC_REWARD`。全语料 3007 帧闸门 **0 假阳性**（`tools/probe_reward_popup_gate.py`）。证据：`dataset/truth_audit/reward_popup_source_20260917/`，测试 `tests/test_reward_popup_source.py`。 | 两次 `--goal INTEL` 都**真拿到价值**（各领到一份奖励；第二次还 `DISPATCH_INTEL_BEAST` 真派出一队、体力 237→227），却都停在同一处：`DISMISS_DAILY_REWARD` verifier `DAILY_REWARD_ADVANCE_NOT_PROVEN`（exit 2）。**根因已量清（不是阈值问题）**：`POPUP_DAILY_REWARD_CURRENT` 的 ROI 是 `x 0.08 y 0.2 w 0.84 h 0.4` = **整个奖励格区域** ⇒ 对**任何来源**的奖励弹窗都命中（两次情报弹窗实测 **d=6 / d=2**），而带来源信息的 `POPUP_GENERIC_REWARD_HEADER` 是 12 / 16；`vision.py` 第 1046 行又把它排在通用表头**之前**且距离更小 ⇒ 报成 `DAILY_REWARD` ⇒ 跑每日的解除技能。⇒ **该裁剪在结构上无法区分来源**。修法方向：来源只能由**目标上下文**决定（大脑已有 brain.py 221–232 的分支），但**改前必须先量"真每日奖励弹窗"**：若它也走通用路径，`goal=None` 时会不会落到 `SAFE_STOP generic_reward_without_goal_context` 把奖励晾着 —— 本轮手边没有一张真每日奖励帧，**答不了**。**禁止靠调阈值修。** 证据：`key/11_intel_reward_popup.png`、`key/13_intel_reward_popup_run2.png`，测试 `TheIntelRewardPopupIsMisreadTests`。 |
+| 23 | **TRAIN/RESEARCH 运行结束后客户端停在叶子页** | 🟡 **已实现，真机 episode 待取** | 镜像 `_leave_daily_panel_once` 的做法已落地：命名 goal 站在自己没有用的叶页上 → 一次 BACK（`verify_safe_back` 接受 `TRAINING/RESEARCH → HOME`，两方向都用 `tools/probe_power_route.py --leave` 量过）；"自己的叶页上无事可做" → 先 BACK 再具名停止；**同一轮不再重走路线**；拥有该页的 goal 与无 goal 的扫掠行为不变。单测 12 项 + `check_wiring` 4 条。**真机 episode 尚未取得**：叶页存活时间很短（探针刚放上去，几十秒后运行起跑已读回 HOME）⇒ 见下面 #27。 |
 | 24 | `PAGE_TRAINING_*` 分不出兵营种类 | ⚠️ 设计债 | 三个兵营页签（盾兵营/矛兵营/射手营）上 `PAGE_TRAINING_INFANTRY` **都命中**（标题文字的 phash 相似），所以 `world.training.troop_type` 恒为 `INFANTRY`；而 OCR 标题读得很干净（`百战盾兵`/`刚毅矛兵`/`刚毅射手`）。`verify_training_started` 用 troop_type 判定，所以"在矛兵营开始训练"可能被记成"在盾兵营"。修法：troop_type 从 OCR 标题读，别靠模板。 |
+| 25 | **点情报「前往查看」打开的是「英雄之旅」而不是巨兽任务** | 🔴 待修（阻塞 INTEL 链收尾） | 2026-09-17 04:38Z `--goal INTEL`：步骤 4 `SELECT_INTEL_PIN` 成功，`after.popup=INTEL_BEAST_MISSION {"mission_id":"INTEL_BEAST_10"}`；步骤 5 `OPEN_INTEL_BEAST_TARGET`（点 `BTN_INTEL_VIEW_TARGET`）后 `after.page=EXPLORATION`、`intel={"mission_type":"HERO_JOURNEY"}`，verifier `INTEL_BEAST_TARGET_NOT_PROVEN`（`mission_dialog=true, target=false`）。**帧显示打开的是「英雄之旅」弹窗**（叠在世界地图上）。⇒ 要么 `BTN_INTEL_VIEW_TARGET` 的落点偏了，要么巨兽任务弹窗被另一个弹窗顶掉。证据帧：`dataset/truth_audit/reward_popup_source_20260917/04_intel_hero_journey_instead_of_beast.png`。**这是 INTEL 链当前的真实前沿。** |
+| 26 | **`EXIT_CONFIRM` 在大脑里没有任何分支** | ⚠️ 安全缺口 | `vision.py` 第 999 行会报 `popup="EXIT_CONFIRM"`，但 `brain.py` **没有对应分支** ⇒ 落到通用 `if world.page is Page.POPUP and world.popup: CLOSE_POPUP`，点 `BTN_CLOSE`。2026-09-17 实测该弹窗（「确认退出游戏吗?」）上：**取消(橙, 左) / 确定(蓝, 右) / X(右上)** —— 若 `BTN_CLOSE` 的 ROI 落偏，点到「确定」就是**退出客户端**。当次未出事（弹窗自行消失），但这条路径不该靠运气。建议：给 `EXIT_CONFIRM` 一个显式分支，只点「取消」，verifier 要求弹窗消失且回到非 POPUP 页，**不新增坐标动作**（先注册取消按钮模板，仍用 `TAP_SEMANTIC`）。 |
+| 27 | **叶页（TRAINING/RESEARCH）存活时间很短** | ⚠️ 观察中 | 探针刚把客户端放到科技研究页（`after#4 page=RESEARCH`），几十秒后 `run_live` 起跑时已读回 `HOME` ⇒ 让"下一轮开局就站在叶页上"这个前提难以稳定复现，也是 #23 真机 episode 至今没取到的原因。需要在同一命令链内紧接一次运行，或先量叶页存活时长。 |
+| 28 | **兵营聚焦后先出现教程手指，不是径向菜单** | ⚠️ 训练路线回归信号 | 2026-09-17 04:41Z `--goal TRAIN`：`NAVIGATE_INFANTRY_CAMP` verifier OK（`after=HOME`），但随后 `SELECT_INFANTRY_CAMP` **verifier 失败**（`INFANTRY_CAMP_MENU_NOT_PROVEN`）、客户端 `HOME→MAP`。帧显示：兵营被高亮 + **一只巨大的教程手指**指向它，**径向菜单（详情/升级/加速/训练）尚未绘制**。所以 `TARGET_INFANTRY_CAMP_HIGHLIGHTED` 命中、`BTN_OPEN_TRAINING_FROM_CAMP` 未命中 ⇒ 大脑选 `SELECT_INFANTRY_CAMP` 去点兵营，那一下把客户端带到了地图。昨天同一路线是 4 步收敛的（菜单先出现）⇒ 训练路线有**两个阶段**（手指态 → 菜单态），需要分别建模。 |
 
 

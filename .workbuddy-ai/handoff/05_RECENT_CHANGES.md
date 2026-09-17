@@ -6,6 +6,10 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `ac694ee 2026-09-17T11:52:04+08:00 docs: the live-route recipe, written after running it twice in one day`
+- `ac17ac5 2026-09-17T11:51:25+08:00 chore(evidence): the probe record that left the client on HOME after the research round`
+- `e46b614 2026-09-17T11:48:11+08:00 chore(coverage): regenerate the capability catalog after the research round`
+- `9b1759d 2026-09-17T11:35:36+08:00 docs(research): the authoritative record for 3793a9b, whose message the shell truncated`
 - `3793a9b 2026-09-17T11:34:11+08:00 feat(research): the 科技研究 route, live verified -- the second BLOCKED goal to move`
 - `5445199 2026-09-17T08:31:08+08:00 chore(handoff): refresh the generated state after the training and intel rounds`
 - `d95b2fe 2026-09-17T08:30:47+08:00 evidence(intel): two runs, both delivering value, both stopped by the same reward dialog`
@@ -14,13 +18,28 @@ Last 12 commits (newest first):
 - `22ee03b 2026-09-17T08:14:20+08:00 feat(train): the power route that TRAIN was stuck behind, live verified in four hops`
 - `8070958 2026-09-17T01:26:14+08:00 docs(external): record the sweep-in mistake and the two gaps it exposed`
 - `3b04848 2026-09-17T01:25:33+08:00 fix(repo): stop tracking the external sources a git add -A swept in`
-- `2ef496f 2026-09-17T01:24:07+08:00 evidence(vip): the external VIP-entry hypothesis, tested on the live client and rejected`
-- `cebedaa 2026-09-17T01:22:00+08:00 docs(external): source-level reuse index for the two P0 WOS projects, and the licences that bound it`
-- `8da036f 2026-09-17T01:14:01+08:00 docs(issues): open the three questions this round could not answer`
-- `9c6abce 2026-09-17T01:10:21+08:00 chore(handoff): record the expert upgrade and the daily-tab round, plus the third badge bite`
 
-Uncommitted changes: 1
-- `M dataset/truth_audit/power_route_20260917/README.md`
+Uncommitted changes: 39
+- `M .gitignore`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-09-17.md`
+- ` M .workbuddy/memory/2026-09-17.md`
+- ` M config/control_panel_state.json`
+- ` M config/policy_state.json`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/game/capability_catalog.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M learning/control_panel/latest.log`
+- ` M learning/episodes.jsonl`
 <!-- /AUTO:recent_commits -->
 
 ---
