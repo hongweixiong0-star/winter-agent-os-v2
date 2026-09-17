@@ -28,7 +28,11 @@ class CurrentDailyTests(unittest.TestCase):
         self.assertTrue(verify_daily_reward_advanced(reward_one, reward_two).ok)
         self.assertTrue(verify_daily_reward_advanced(reward_two, after).ok)
         self.assertEqual(after.daily.get("activity"), 70)
-        self.assertEqual(RuleBrain(current_goal="DAILY").decide(reward_one, v2_registry()).skill, "DISMISS_DAILY_REWARD")
+        # Since 2026-09-17 the shared 获得奖励 dialog is reported as GENERIC_REWARD,
+        # so a daily goal reaches the goal-context dismiss rather than the
+        # DAILY_REWARD-specific one.  Same verifier (verify_daily_reward_advanced),
+        # which accepts either label as the popup before-state.
+        self.assertEqual(RuleBrain(current_goal="DAILY").decide(reward_one, v2_registry()).skill, "DISMISS_DAILY_GENERIC_REWARD")
 
     def test_open_daily_verifier(self):
         before = self.state("live_20260908_offline_after.png")

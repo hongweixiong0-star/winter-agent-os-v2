@@ -166,6 +166,22 @@ class RuleBrain:
             "home_opened",
         )
 
+    def _leave_or_stop(self, world: WorldState, reason: str, transition: str) -> Decision:
+        """Leave a leaf page once if a NAMED goal is stuck on it, else stop by name.
+
+        ``SAFE_STOP`` is how the brain tells the scheduler "skip this observation",
+        so turning a busy queue into a Back would make it look like work and
+        displace an observation that has real work waiting -- which is exactly what
+        ``tests/test_multitask_scheduler.py`` pins.  A named goal, by contrast, is
+        not choosing between observations; it is stuck where nothing can happen, so
+        for it the Back is the only way out.
+        """
+        if self.current_goal is not None:
+            leave = self._leave_terminal_page_once(world)
+            if leave is not None:
+                return leave
+        return Decision("SAFE_STOP", reason, 1.0, transition)
+
     def _owns_terminal_page(self, world: WorldState) -> bool:
         """True when the current goal is the one that works on this leaf page."""
         return (
@@ -572,32 +588,19 @@ class RuleBrain:
             return Decision("BUILDING_UPGRADE", "building_prerequisites_satisfied", world.confidence, "building_queue_started")
         if world.page is Page.RESEARCH:
             if world.research.get("status") == "IN_PROGRESS" or world.research.get("queue_available") is False:
-                leave = self._leave_terminal_page_once(world)
-                if leave is not None:
-                    return leave
-                return Decision("SAFE_STOP", "research_queue_busy", 1.0, "switch_task")
+                return self._leave_or_stop(world, "research_queue_busy", "switch_task")
             if world.research.get("researchable"):
                 return Decision("RESEARCH", "research_queue_available", world.confidence, "research_queue_started")
             # Nothing on the page says a node can be started.  Until the node/cost
             # reading exists this is the honest stop, and naming it keeps the goal
             # from looking like it silently did nothing (the previous code fell
             # through every later branch to the same stop with no reason).
-            # Leaving the page first is what keeps the next run schedulable.
-            leave = self._leave_terminal_page_once(world)
-            if leave is not None:
-                return leave
-            return Decision("SAFE_STOP", "research_page_no_startable_node", 1.0, "switch_task")
+            return self._leave_or_stop(world, "research_page_no_startable_node", "switch_task")
         if world.page is Page.TRAINING:
             if world.training.get("all_queues_busy"):
-                leave = self._leave_terminal_page_once(world)
-                if leave is not None:
-                    return leave
-                return Decision("SAFE_STOP", "all_training_queues_busy", 1.0, "switch_task")
+                return self._leave_or_stop(world, "all_training_queues_busy", "switch_task")
             if world.training.get("queue_available") is False:
-                leave = self._leave_terminal_page_once(world)
-                if leave is not None:
-                    return leave
-                return Decision("SAFE_STOP", "training_queue_busy", 1.0, "inspect_other_training_queue")
+                return self._leave_or_stop(world, "training_queue_busy", "inspect_other_training_queue")
             if world.training.get("trainable"):
                 return Decision("TRAIN_TROOPS", "training_queue_available", world.confidence, "training_queue_started")
         if world.page is Page.INTEL:

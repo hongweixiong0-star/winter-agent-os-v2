@@ -70,9 +70,20 @@ class EveryOtherGoalLeavesTheLeafPageTests(unittest.TestCase):
                     self.assertEqual(decision.skill, "BACK")
                     self.assertEqual(decision.expected_result, "home_opened")
 
-    def test_without_a_goal_the_client_is_still_moved(self):
-        decision = _decide(TRAINING_BUSY, None)
-        self.assertEqual(decision.skill, "BACK")
+    def test_a_goal_less_sweep_keeps_the_stop_so_the_scheduler_still_skips_it(self):
+        """SAFE_STOP is how the scheduler is told to skip an observation.
+
+        Turning a busy queue into a Back would make it look like work and displace
+        an observation that has real work waiting, which is what
+        tests/test_multitask_scheduler.py pins.  So the leave is for a NAMED goal
+        only, and a sweep keeps answering exactly what it answered before.
+        """
+        for page, reason in ((TRAINING_BUSY, "training_queue_busy"),
+                             (RESEARCH_IDLE, "research_page_no_startable_node")):
+            with self.subTest(page=page.page.value):
+                decision = _decide(page, None)
+                self.assertEqual(decision.skill, "SAFE_STOP")
+                self.assertEqual(decision.reason, reason)
 
     def test_the_back_lands_on_home_which_the_verifier_accepts(self):
         """The transition is checked, not hoped for."""

@@ -264,6 +264,15 @@ class TheIntelRewardPopupIsMisreadTests(unittest.TestCase):
     generic_reward_without_goal_context`` and leaves the reward unclaimed.  This
     round had no genuine daily-reward frame to answer that, so the repair waits for
     one.  Do not fix this by moving the threshold.
+
+    FIXED 2026-09-17.  The missing population arrived: DAILY_CLAIM_REWARDS produced a
+    real daily reward popup, and it and the two Intel ones score phash 4 on their
+    footer and 4 on their banner -- the SAME drawing, so the source is not in the
+    artwork at all.  vision.py now reports the goal-neutral label from the two
+    source-independent signals (the banner and the 「点击任意位置退出」 footer, which
+    matched 102 of 103 labelled frames at distance <= 2) and the brain picks the
+    dismiss from goal context.  The grids below are kept because they are the
+    mechanism of the old defect.  See tests/test_reward_popup_source.py.
     """
 
     def test_the_grid_record_matches_every_reward_dialog_regardless_of_source(self):
@@ -276,12 +285,20 @@ class TheIntelRewardPopupIsMisreadTests(unittest.TestCase):
             # the grid wins on distance, and it is checked first -- both, not either
             self.assertLess(grid.distance, header.distance, frame.name)
 
-    def test_both_runs_produce_the_same_wrong_page(self):
+    def test_both_runs_now_read_the_shared_label(self):
+        """The repair: both Intel popups resolve to the goal-neutral label.
+
+        They used to read ``DAILY_REWARD`` because the reward-GRID record was
+        checked first, which sent a working dismissal to the *daily* verifier.
+        The label is now source-independent, and the source is chosen from goal
+        context -- see tests/test_reward_popup_source.py for the four-population
+        measurement behind that.
+        """
         world = SemanticWorldVision(MANIFEST)
         for frame in (INTEL_REWARD, INTEL_REWARD_2):
             state = world.observe(frame)
             self.assertIs(state.page, Page.POPUP, frame.name)
-            self.assertEqual(state.popup, "DAILY_REWARD", frame.name)
+            self.assertEqual(state.popup, "GENERIC_REWARD", frame.name)
 
     def test_the_daily_and_intel_reward_titles_do_not_resolve_here(self):
         for frame in (INTEL_REWARD, INTEL_REWARD_2):
