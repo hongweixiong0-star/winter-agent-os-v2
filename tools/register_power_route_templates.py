@@ -25,23 +25,32 @@ HOME frame:
 `tools/probe_power_route.py` then walked the route on the live client and every
 hop was observed.  This tool turns those frames into records.
 
-Two defects it fixes rather than reproduces
--------------------------------------------
-1. **The power entry was a value-dependent template.**  The old
-   `BTN_OPEN_POWER_OVERVIEW` crop (x 97..302) contained the account's power
-   NUMBER, so it could only ever match the account it was cut from.  Measured: a
-   crop of the fist icon alone has phash distance **2** between today's frame
-   (826,444) and the 2026-09-08 frame (57,083,909) -- a 68x difference in the
-   value -- while the old wide crop sits at **28** (threshold 8), and non-city
-   frames sit at **30**.  One icon record covers both accounts.
+Two things this tool learned the hard way
+-----------------------------------------
+1. **The power entry was never broken, and I nearly recorded it as fixed.**  The first
+   measurement of the route used the name ``BTN_OPEN_POWER_OVERVIEW``, which MISSed, and
+   concluded the entry was a value-dependent template that had to be re-cut.  It is not
+   the name the skill taps: ``skills.py`` targets ``BTN_OPEN_POWER_OVERVIEW_ICON``, a
+   separate semantic that already existed and already resolves on today's client
+   (measured on the archived key frames: d=4 on every city frame, d=10 on the
+   2026-09-08 account, both inside its gate of 12).  Somebody had already made exactly
+   the icon-only fix this tool was about to make, under a different name.  The record
+   this tool had added for ``BTN_OPEN_POWER_OVERVIEW`` was therefore dead weight -- no
+   production action references that semantic -- and was removed again.  The entry is
+   covered as a report-only row in ``ALREADY_WORKING`` below, and pinned by
+   ``test_the_power_entry_resolves_on_both_accounts``.  **Lesson: before concluding a
+   control is broken, find the semantic the action actually targets.**
 2. **The 实力详情 panel's row positions move with the account.**
-   `BTN_POWER_TROOP_IMPROVE` was registered at y 538..608 on 2026-09-08, when the
+   ``BTN_POWER_TROOP_IMPROVE`` was registered at y 538..608 on 2026-09-08, when the
    advanced account's panel drew seven rows (建筑/部队/英雄/英雄装备/领主装备/
    领主宝石/科技).  Today's account draws five (no 领主装备/领主宝石), so the
    panel is shorter and 部队实力's 提升 button is at y 631..676 -- the old ROI now
    lands on 建筑实力's row.  A row-relative ROI cannot be right for both layouts,
    so the new record is registered alongside the old one and the gate below proves
-   which one wins on today's frame (`find()` takes the minimum distance).
+   which one wins on today's frame (``find()`` takes the minimum distance).
+
+The real blockers, for the record, were the two popups, the 详情 button and the
+提升 button -- four semantics that MISSed on today's client -- plus the camp-menu gate.
 
 Usage
 -----
@@ -79,17 +88,9 @@ OLD_DETAILS = ROOT / "dataset" / "raw" / "live_20260908_power_details.png"
 
 SPECS: dict[str, dict] = {
     # (left, top, right, bottom) in 720x1280 frame pixels.
-    "BTN_OPEN_POWER_OVERVIEW": {
-        "box": (99, 50, 132, 95),
-        "source_frame": HOME_FRAME,
-        "template_id": "btn_open_power_overview__live_20260917_icon",
-        "note": ("the fist icon only, deliberately excluding the power NUMBER: the "
-                 "control's appearance is fixed but the digits are not, and the old "
-                 "crop (x 97..302) could therefore only ever match the account it was "
-                 "cut from (measured phash d=2 between two accounts for this crop "
-                 "versus d=28 for the old one, threshold 8)"),
-        "evidence": "power_route_20260917/build_route_..._00_before.png",
-    },
+    # NOTE: there is deliberately no BTN_OPEN_POWER_OVERVIEW spec.  The power entry is
+    # reached through BTN_OPEN_POWER_OVERVIEW_ICON, which already resolves; see the
+    # docstring.
     "POPUP_POWER_OVERVIEW": {
         "box": (20, 122, 700, 198),
         "source_frame": OVERVIEW_FRAME,
@@ -149,10 +150,12 @@ SPECS: dict[str, dict] = {
     },
 }
 
-# Reported, not registered: these already resolve today's client, which is why the
-# last two hops of the route needed no new record.  The gate prints them so the
-# claim is checkable rather than asserted.
+# Reported, not registered: these already resolve today's client, which is why parts of
+# the route needed no new record.  The gate prints them so the claim is checkable rather
+# than asserted.  BTN_OPEN_POWER_OVERVIEW_ICON is the one the round first mistook for
+# broken -- it is what ``skills.py`` actually taps, and it resolves on both accounts.
 ALREADY_WORKING = [
+    "BTN_OPEN_POWER_OVERVIEW_ICON",
     "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
     "BTN_OPEN_TRAINING_FROM_CAMP",
     "BTN_TRAINING_MENU_LABEL",

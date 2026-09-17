@@ -10,18 +10,22 @@
 - `LiveRuntime.VERIFIED_ATOMIC` 早已绑好每一跳的 verifier；
 - `run_live.py --goal` 早已接受 `TRAIN`。
 
-**唯一断点是模板。** 今天真机 HOME 帧上实测，路线需要的语义**全部 MISS**：
+**唯一断点是模板。** 今天真机 HOME 帧上实测，路线需要的语义**多数 MISS**：
 
 ```
-BTN_OPEN_POWER_OVERVIEW            MISS
-TARGET_INFANTRY_CAMP_HIGHLIGHTED   MISS
-BTN_OPEN_TRAINING_FROM_CAMP        MISS
+POPUP_POWER_OVERVIEW               MISS   ← 真正的断点
+BTN_OPEN_POWER_DETAILS             MISS   ← 真正的断点
+POPUP_POWER_DETAILS                MISS   ← 真正的断点
+BTN_POWER_TROOP_IMPROVE            MISS   ← 真正的断点
+BTN_OPEN_TRAINING_FROM_CAMP        3/7 帧 MISS（门禁过宽，见下）
 PAGE_TRAINING_INFANTRY             MISS
 BTN_START_TRAINING                 MISS
+BTN_OPEN_POWER_OVERVIEW_ICON       d=4（**本来就通**，见"更正"一节）
 ```
 
-原因：这些模板全部裁自 **2026-09-08 的另一个账号**（战力 57,083,909 对今天的
-826,444、不同头像、**城市镜头拉得更远**，能看到今天客户端根本不显示的楼）。
+原因：这些模板（除最后一条）裁自 **2026-09-08 的另一个账号**
+（战力 57,083,909 对今天的 826,444、不同头像、**城市镜头拉得更远**，
+能看到今天客户端根本不显示的楼）。
 `world.training` 因此永远为空，上面那些分支**一条都不可达**。
 
 ## 这一轮实测走通的链路
@@ -48,21 +52,29 @@ HOME --[点战力图标 (115,72)]--> POPUP / POWER_OVERVIEW  （加成总览）
 5 SAFE_STOP              training_queue_busy
 ```
 
-## 顺手修掉的两个缺陷（都属于「同一控件有多种外观」这一类）
+## 顺手修掉的缺陷，以及一处**被我自己写错的因果**
 
-### 1. 战力入口是**值依赖模板**
+### 0. ⚠ 更正：第一跳（战力入口）**从来没坏**
 
-旧 `BTN_OPEN_POWER_OVERVIEW` 的裁剪 `x 97..302` **把战力数字裁了进去**，
-所以它只能匹配裁它时那个账号。实测：
+第一次量这条路线时我用的是 `BTN_OPEN_POWER_OVERVIEW`，它 MISS ⇒ 我写下"入口是值依赖模板、
+必须重裁"。**这个结论是错的**：`skills.py` 点的是**另一个语义**
+`BTN_OPEN_POWER_OVERVIEW_ICON`，它**早就存在**、而且**今天就能命中**：
 
-| 裁剪 | 今天(826,444) ↔ 09-08(57,083,909) | 非城市帧 |
-|---|---:|---:|
-| 旧宽裁剪（含数字） | **28** | — |
-| **只裁拳头图标（采用）** | **2**（dhash 0） | **30** |
+| 语义 | 今天城市帧 | 09-08 另一账号 | 门禁 |
+|---|---:|---:|---:|
+| `BTN_OPEN_POWER_OVERVIEW`（宽裁剪，含战力数字；**没有任何动作点它**） | 28 | — | 8 |
+| `BTN_OPEN_POWER_OVERVIEW_ICON`（55×40 只裁图标；**技能实际点它**） | **4** | **10** | 12 |
 
-一个图标记录同时覆盖两个账号 —— 见 `test_the_power_entry_is_the_same_control_on_both_accounts`。
+⇒ **"只裁图标、避开会变的数字"这件事早就有人做过了**，只是换了名字。
+本轮为 `BTN_OPEN_POWER_OVERVIEW` 加的那条记录因此是**死重**（没有动作引用该语义），
+**已删除**；改为由 `test_the_power_entry_resolves_on_both_accounts` 把这个事实钉住。
+⇒ **教训：判定一个控件"坏了"之前，先找到动作真正指向的那个语义名。**
 
-### 2. 兵营聚焦浮层是**动画**，而旧裁剪只命中一次运行里的 3/7 帧
+**真正的断点是四跳里的三个**（今天帧全部 MISS）：`POPUP_POWER_OVERVIEW`、
+`BTN_OPEN_POWER_DETAILS`、`POPUP_POWER_DETAILS`、`BTN_POWER_TROOP_IMPROVE`，
+加上兵营菜单的门禁。第一跳本来就是通的。
+
+### 1. 兵营聚焦浮层是**动画**，而旧裁剪只命中一次运行里的 3/7 帧
 
 聚焦后盾兵营周围浮出 `详情 / 立即完成(1,039钻) / 加速 / 训练`，
 其中**训练按钮上有引导手指动画 + 呼吸光圈**。旧裁剪的距离在一次运行里

@@ -15,19 +15,28 @@ zoomed far enough out that buildings the current client does not show were visib
 Measured on the live HOME frame, all five route semantics MISSed.
 
 `tools/probe_power_route.py` walked the route on the live client and
-`tools/register_power_route_templates.py` turned those frames into records.  Two
-defects were fixed on the way, and both are pinned here:
+`tools/register_power_route_templates.py` turned those frames into records: four
+semantics that MISSed on today's client (``POPUP_POWER_OVERVIEW``,
+``BTN_OPEN_POWER_DETAILS``, ``POPUP_POWER_DETAILS``, ``BTN_POWER_TROOP_IMPROVE``) plus a
+re-cut of the focused-camp menu.
 
-1. **The power entry was a value-dependent template.**  The 2026-09-08 record's crop
-   (x 97..302) contained the power NUMBER, so it could only match the account it was
-   cut from.  An icon-only crop measures phash distance 2 between the two accounts
-   (a 68x difference in the value) against a gate of 8.
-2. **The focused-camp menu carries an ANIMATED overlay** -- a pulsing highlight ring
-   and a tutorial pointing hand.  The old crop matched 3 of 7 frames of one run
-   (d = 4/8/16, the rest MISS), which cost `NAVIGATE_INFANTRY_CAMP` its whole refresh
-   budget (~21 s at 07:41:18/29/39Z); by the time the next step observed, the overlay
-   had faded, and the loop re-walked the route (7 steps instead of 4).  The
-   replacement crop is centred on the 训练 button and measures 0..8 across the run.
+A correction this file carries, because the first version of it said the opposite: the
+**power entry was never broken**.  The route was first measured with the name
+``BTN_OPEN_POWER_OVERVIEW``, which MISSes -- but that is not what the skill taps.
+``skills.py`` targets ``BTN_OPEN_POWER_OVERVIEW_ICON``, a separate semantic that already
+existed and already resolves on today's client.  Somebody had already made the
+icon-only, value-independent cut; the round nearly recorded itself as having made it
+again.  The redundant record was removed again and
+``test_the_power_entry_resolves_on_both_accounts`` now pins the fact instead.
+**Lesson: before concluding a control is broken, find the semantic the action targets.**
+
+The second defect is real and did need fixing: **the focused-camp menu carries an
+ANIMATED overlay** -- a pulsing highlight ring and a tutorial pointing hand.  The old
+crop matched 3 of 7 frames of one run (d = 4/8/16, the rest MISS), which cost
+`NAVIGATE_INFANTRY_CAMP` its whole refresh budget (~21 s at 07:41:18/29/39Z); by the
+time the next step observed, the overlay had faded, and the loop re-walked the route
+(7 steps instead of 4).  The replacement crop is centred on the 训练 button and
+measures 0..8 across the run.
 
 These frames are archived under ``dataset/truth_audit/`` rather than read out of
 ``dataset/raw``: the raw tree is rotated by the retention pass, and
@@ -64,7 +73,6 @@ CAMP_FRAMES = (CAMP_FOCUSED, CAMP_AFTER_TAP, CAMP_REFRESH_1, CAMP_SECOND_PASS, C
 # The four records this round added, each of which must be the one that resolves on
 # its own frame and must not resolve anywhere else in the route.
 ROUTE_OWNERS = {
-    "BTN_OPEN_POWER_OVERVIEW": {HOME_PLAIN, OLD_ACCOUNT_HOME, CAMP_FOCUSED, BUILDING_FOCUSED},
     "POPUP_POWER_OVERVIEW": {POWER_OVERVIEW},
     "BTN_OPEN_POWER_DETAILS": {POWER_OVERVIEW},
     "POPUP_POWER_DETAILS": {POWER_DETAILS},
@@ -137,19 +145,29 @@ class EachNewRecordOwnsExactlyItsOwnFrameTests(unittest.TestCase):
                 else:
                     self.assertIsNone(match, f"{semantic} must not resolve on {frame.name}")
 
-    def test_the_power_entry_is_the_same_control_on_both_accounts(self):
-        """The old crop could only ever match the account it was cut from.
+    def test_the_power_entry_resolves_on_both_accounts(self):
+        """The entry the round first thought was broken, and why it was not.
 
-        Today's frame carries 826,444 power and the 2026-09-08 frame carries
-        57,083,909 -- 68x -- but the fist icon is drawn identically, so an icon-only
-        crop resolves on both whereas the old wide crop (which included the number)
-        scored 28 against a gate of 8.
+        `BTN_OPEN_POWER_OVERVIEW` (the wide, 2026-09-08 crop that contains the power
+        number) does MISS on today's client -- measured 28 against a gate of 8 -- but
+        nothing taps it.  `skills.py` targets `BTN_OPEN_POWER_OVERVIEW_ICON`, whose
+        55x40 px crop is icon-only and therefore value-independent: it resolves at
+        d=4 on today's city frames and d=10 on the 2026-09-08 account (826,444 versus
+        57,083,909 power), both inside its gate of 12.  The round's first measurement
+        used the wrong name and nearly recorded a fix that was already in place.
         """
         vision = _roi()
-        for frame in (HOME_PLAIN, OLD_ACCOUNT_HOME):
-            match = vision.find(frame, "BTN_OPEN_POWER_OVERVIEW")
+        for frame in (HOME_PLAIN, OLD_ACCOUNT_HOME, CAMP_FOCUSED, BUILDING_FOCUSED):
+            match = vision.find(frame, "BTN_OPEN_POWER_OVERVIEW_ICON")
             self.assertIsNotNone(match, frame.name)
-            self.assertLessEqual(match.distance, 8, frame.name)
+            self.assertLessEqual(match.distance, 12, frame.name)
+
+    def test_the_icon_semantic_is_rejected_off_the_city(self):
+        """The HUD row is not drawn on the panels the route opens, so a stale reading
+        there would let the route restart from inside its own popup."""
+        vision = _roi()
+        for frame in (POWER_OVERVIEW, POWER_DETAILS, TRAINING_PAGE):
+            self.assertIsNone(vision.find(frame, "BTN_OPEN_POWER_OVERVIEW_ICON"), frame.name)
 
     def test_the_troop_improve_button_is_the_troop_power_row(self):
         """Pin which row the winning ROI points at, not merely that something won.

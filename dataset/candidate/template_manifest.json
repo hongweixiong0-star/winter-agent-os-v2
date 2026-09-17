@@ -1,6 +1,6 @@
 {
-  "count": 399,
-  "generated_at": "2026-09-16T23:45:46.663335+00:00",
+  "count": 398,
+  "generated_at": "2026-09-17T00:18:15.281163+00:00",
   "records": [
     {
       "confidence": 0.99,
@@ -7044,26 +7044,6 @@
       "width": 189,
       "height": 82,
       "note": "the same tab drawn SELECTED (light pill, dark label) -- the drawn state the verifier reads, one tap after the frame above"
-    },
-    {
-      "semantic": "BTN_OPEN_POWER_OVERVIEW",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\btn_open_power_overview__live_20260917_icon.png",
-      "roi_norm": {
-        "x_norm": 0.1375,
-        "y_norm": 0.039062,
-        "w_norm": 0.045833,
-        "h_norm": 0.035156
-      },
-      "source": "power_route_20260917",
-      "provenance": "LIVE_CLIENT",
-      "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "btn_open_power_overview__live_20260917_icon",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_00_before.png",
-      "width": 33,
-      "height": 45,
-      "note": "the fist icon only, deliberately excluding the power NUMBER: the control's appearance is fixed but the digits are not, and the old crop (x 97..302) could therefore only ever match the account it was cut from (measured phash d=2 between two accounts for this crop versus d=28 for the old one, threshold 8)",
-      "evidence": "power_route_20260917/build_route_..._00_before.png"
     },
     {
       "semantic": "POPUP_POWER_OVERVIEW",
