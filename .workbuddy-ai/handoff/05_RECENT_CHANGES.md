@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `3793a9b 2026-09-17T11:34:11+08:00 feat(research): the 科技研究 route, live verified -- the second BLOCKED goal to move`
+- `5445199 2026-09-17T08:31:08+08:00 chore(handoff): refresh the generated state after the training and intel rounds`
 - `d95b2fe 2026-09-17T08:30:47+08:00 evidence(intel): two runs, both delivering value, both stopped by the same reward dialog`
 - `b87ac94 2026-09-17T08:24:30+08:00 fix(train): the power entry was never broken -- correct the record and drop the record I added for it`
 - `49bca81 2026-09-17T08:14:28+08:00 chore(handoff): record the training round, and the three things it did not finish`
@@ -16,14 +18,9 @@ Last 12 commits (newest first):
 - `cebedaa 2026-09-17T01:22:00+08:00 docs(external): source-level reuse index for the two P0 WOS projects, and the licences that bound it`
 - `8da036f 2026-09-17T01:14:01+08:00 docs(issues): open the three questions this round could not answer`
 - `9c6abce 2026-09-17T01:10:21+08:00 chore(handoff): record the expert upgrade and the daily-tab round, plus the third badge bite`
-- `cb716da 2026-09-17T00:58:55+08:00 feat(daily): switch the task panel to its 每日任务 tab, live verified`
-- `8510083 2026-09-16T23:19:18+08:00 chore(handoff): publish the weight audit and the final in-sync state`
 
-Uncommitted changes: 4
-- `M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/runtime_snapshot.json`
+Uncommitted changes: 1
+- `M dataset/truth_audit/power_route_20260917/README.md`
 <!-- /AUTO:recent_commits -->
 
 ---

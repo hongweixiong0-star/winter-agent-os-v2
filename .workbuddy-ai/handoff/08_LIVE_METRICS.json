@@ -1,30 +1,30 @@
 {
-  "generated_at": "2026-09-17T00:31:08+00:00",
+  "generated_at": "2026-09-17T03:35:35+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d95b2fe",
+  "commit": "3793a9b",
   "last_good_commit": "e4fd245",
-  "dirty_count": 4,
+  "dirty_count": 1,
   "episodes": {
-    "total": 1391,
-    "production": 1391,
-    "success": 1043,
-    "failure": 343,
-    "success_rate_over_decided": 0.7525,
+    "total": 1408,
+    "production": 1408,
+    "success": 1059,
+    "failure": 344,
+    "success_rate_over_decided": 0.7548,
     "modes": {
-      "PRODUCTION": 1391
+      "PRODUCTION": 1408
     },
     "mixed_case_rows": 35
   },
   "skills": {
-    "registry_total": 88,
+    "registry_total": 90,
     "by_state": {
       "VERIFIED": 45,
-      "CANDIDATE": 41,
+      "CANDIDATE": 43,
       "BLOCKED": 2
     },
-    "dispatchable": 72,
+    "dispatchable": 74,
     "counts": {
-      "live_verified": 25,
+      "live_verified": 27,
       "stable": 27,
       "degraded": 9,
       "only_failed": 9,
@@ -35,7 +35,7 @@
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
       "count": 129,
-      "recent": 17,
+      "recent": 14,
       "last_seen": "2026-09-16T13:10:49.548545+00:00",
       "dates": {
         "2026-09-12": 36,
@@ -62,19 +62,20 @@
     },
     {
       "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
-      "count": 6,
-      "recent": 4,
-      "last_seen": "2026-09-16T11:22:47.573385+00:00",
+      "count": 7,
+      "recent": 5,
+      "last_seen": "2026-09-17T03:12:18.062059+00:00",
       "dates": {
         "2026-09-14": 2,
         "2026-09-15": 3,
-        "2026-09-16": 1
+        "2026-09-16": 1,
+        "2026-09-17": 1
       },
       "undated": 0,
       "top_skills": [
         [
           "OPEN_INTEL_BEAST_TARGET",
-          6
+          7
         ]
       ]
     },
@@ -115,23 +116,6 @@
       ]
     },
     {
-      "failure_type": "STAMINA_SOURCES_NOT_OPEN",
-      "count": 9,
-      "recent": 1,
-      "last_seen": "2026-09-15T02:31:47.501403+00:00",
-      "dates": {
-        "2026-09-14": 8,
-        "2026-09-15": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_INTEL",
-          9
-        ]
-      ]
-    },
-    {
       "failure_type": "NO_EXECUTION",
       "count": 5,
       "recent": 1,
@@ -167,38 +151,6 @@
       ]
     },
     {
-      "failure_type": "BEAST_MARCH_NOT_PROVEN",
-      "count": 1,
-      "recent": 1,
-      "last_seen": "2026-09-15T02:10:52.818544+00:00",
-      "dates": {
-        "2026-09-15": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "BEAST_HUNT",
-          1
-        ]
-      ]
-    },
-    {
-      "failure_type": "EXPLORATION_REWARD_DISMISS_NOT_PROVEN",
-      "count": 1,
-      "recent": 1,
-      "last_seen": "2026-09-15T02:27:53.750160+00:00",
-      "dates": {
-        "2026-09-15": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "DISMISS_EXPLORATION_REWARD",
-          1
-        ]
-      ]
-    },
-    {
       "failure_type": "INTEL_HERO_MARCH_REFUSED_FOR_STAMINA",
       "count": 1,
       "recent": 1,
@@ -213,27 +165,76 @@
           1
         ]
       ]
+    },
+    {
+      "failure_type": "MARCH_COUNT_NOT_READ",
+      "count": 1,
+      "recent": 1,
+      "last_seen": "2026-09-15T12:59:36.927458+00:00",
+      "dates": {
+        "2026-09-15": 1
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "CHECK_MARCH",
+          1
+        ]
+      ]
+    },
+    {
+      "failure_type": "INTEL_PIN_CARD_NOT_OPENED",
+      "count": 1,
+      "recent": 1,
+      "last_seen": "2026-09-16T02:04:23.288081+00:00",
+      "dates": {
+        "2026-09-16": 1
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SELECT_INTEL_PIN",
+          1
+        ]
+      ]
+    },
+    {
+      "failure_type": "RESOURCE_NOT_FOUND",
+      "count": 30,
+      "recent": 0,
+      "last_seen": "2026-09-14T06:42:03.928936+00:00",
+      "dates": {
+        "2026-09-13": 8,
+        "2026-09-14": 22
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SUBMIT_RESOURCE_SEARCH",
+          30
+        ]
+      ]
     }
   ],
   "goals": {
     "total": 16,
     "fully_live_verified": 2,
-    "partial": 8,
+    "partial": 9,
     "never_tried": 0,
-    "blocked": 4,
+    "blocked": 3,
     "degraded": 2,
     "missing": 0,
     "fully_live_verified_percent": 12.5,
     "never_tried_percent": 0.0,
-    "automation_coverage_mean": 0.54,
-    "live_coverage_mean": 0.5452
+    "automation_coverage_mean": 0.5713,
+    "live_coverage_mean": 0.5765
   },
   "goal_status": {
     "CLEAR_INTEL": "PARTIAL",
     "AVOID_STAMINA_WASTE": "PARTIAL",
     "KEEP_MARCHES_PRODUCTIVE": "PARTIAL",
     "KEEP_BUILDING_PRODUCTIVE": "PARTIAL",
-    "KEEP_RESEARCH_PRODUCTIVE": "BLOCKED",
+    "KEEP_RESEARCH_PRODUCTIVE": "PARTIAL",
     "KEEP_TRAINING_PRODUCTIVE": "FULLY_LIVE_VERIFIED",
     "MAIL_ROUTINE": "DEGRADED",
     "DAILY_ACTIVITY_TARGET": "PARTIAL",
@@ -248,9 +249,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 1288,
-    "present_on_disk": 1288,
-    "traceable_episodes": 659,
+    "referenced_screenshots": 1322,
+    "present_on_disk": 1322,
+    "traceable_episodes": 676,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -261,13 +262,13 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "d95b2fe0b80a1faf8ad15cb70705d3579142115f",
-    "remote_head": "d95b2fe0b80a1faf8ad15cb70705d3579142115f",
+    "local_head": "3793a9bdb1870ada0f670adc85a474c1a2a08b49",
+    "remote_head": "3793a9bdb1870ada0f670adc85a474c1a2a08b49",
     "unpushed_commits": 0,
     "behind": 0,
     "in_sync": true,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-09-17T00:30:53.444811+00:00",
+    "last_push_at": "2026-09-17T03:35:11.001920+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
@@ -275,6 +276,6 @@
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "DAILY_REWARD_ADVANCE_NOT_PROVEN"
+    "stop_reason": "research_page_no_startable_node"
   }
 }

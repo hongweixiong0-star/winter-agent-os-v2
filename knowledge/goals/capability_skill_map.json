@@ -4,15 +4,15 @@
   "summary": {
     "total": 16,
     "fully_live_verified": 2,
-    "partial": 8,
+    "partial": 9,
     "never_tried": 0,
-    "blocked": 4,
+    "blocked": 3,
     "degraded": 2,
     "missing": 0,
     "fully_live_verified_percent": 12.5,
     "never_tried_percent": 0.0,
-    "automation_coverage_mean": 0.54,
-    "live_coverage_mean": 0.5452
+    "automation_coverage_mean": 0.5713,
+    "live_coverage_mean": 0.5765
   },
   "goals": [
     {
@@ -70,9 +70,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 144,
+          "attempts": 145,
           "successes": 125,
-          "failures": 19
+          "failures": 20
         },
         {
           "capability": "CLAIM_INTEL_REWARD",
@@ -141,9 +141,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 135,
+          "attempts": 136,
           "successes": 122,
-          "failures": 13
+          "failures": 14
         },
         {
           "capability": "SPEND_STAMINA_ON_RALLY",
@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 57,
-          "successes": 51,
+          "attempts": 61,
+          "successes": 55,
           "failures": 6
         },
         {
@@ -324,18 +324,18 @@
       "goal": "KEEP_RESEARCH_PRODUCTIVE",
       "category": "持续发展",
       "composition": "ALL_OF",
-      "status": "BLOCKED",
+      "status": "PARTIAL",
       "capabilities": [
         {
           "capability": "OPEN_RESEARCH_PAGE",
           "alternatives": [
             "OPEN_RESEARCH"
           ],
-          "status": "BLOCKED",
-          "implemented_by": null,
-          "live_verified_by": null,
-          "attempts": 0,
-          "successes": 0,
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "OPEN_RESEARCH",
+          "live_verified_by": "OPEN_RESEARCH",
+          "attempts": 3,
+          "successes": 3,
           "failures": 0
         },
         {
@@ -352,16 +352,15 @@
         }
       ],
       "design_requirements_total": 2,
-      "implemented_capabilities": 0,
-      "live_verified_capabilities": 0,
+      "implemented_capabilities": 1,
+      "live_verified_capabilities": 1,
       "stable_capabilities": 0,
       "design_coverage": 1.0,
-      "implementation_coverage": 0.0,
-      "live_coverage": 0.0,
+      "implementation_coverage": 0.5,
+      "live_coverage": 0.5,
       "stable_coverage": 0.0,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
-        "OPEN_RESEARCH_PAGE",
         "START_RESEARCH"
       ]
     },
@@ -384,8 +383,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_POWER_OVERVIEW",
           "live_verified_by": "OPEN_POWER_OVERVIEW",
-          "attempts": 43,
-          "successes": 39,
+          "attempts": 47,
+          "successes": 43,
           "failures": 4
         },
         {
@@ -1248,14 +1247,6 @@
       ]
     },
     {
-      "skill_id": "OPEN_RESEARCH",
-      "blocked_goals": 1,
-      "never_tried_goals": 0,
-      "goals": [
-        "KEEP_RESEARCH_PRODUCTIVE"
-      ]
-    },
-    {
       "skill_id": "READ_ALLIANCE_EVENT_TIMER",
       "blocked_goals": 1,
       "never_tried_goals": 0,
@@ -1301,6 +1292,14 @@
       "never_tried_goals": 0,
       "goals": [
         "EVENT_MINIMUM_GUARANTEE"
+      ]
+    },
+    {
+      "skill_id": "READ_FREE_ATTEMPTS",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "USE_FREE_ARENA_ATTEMPTS"
       ]
     }
   ]

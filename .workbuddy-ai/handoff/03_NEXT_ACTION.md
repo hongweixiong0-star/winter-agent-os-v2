@@ -1095,19 +1095,19 @@ step 3 = `OPEN_STAMINA_SOURCES` / `TAP_SEMANTIC HUD_STAMINA_GAUGE` / `MAP → PO
 5. 设计受阻的技能（见 AUTO 块 `DESIGN-BLOCKED`）：需要先拿真机帧再设计语义，不要照草稿硬写。
 
 <!-- AUTO:next_action -->
-CURRENT PRIORITY: fill the missing skills that block 4 goal(s)
+CURRENT PRIORITY: fill the missing skills that block 3 goal(s)
 CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draft is implementable from the manifest alone (14 NOT_REGISTERED, 6 NO_VERIFIER); see DESIGN-BLOCKED below
 
-WHY: 4 goal(s) BLOCKED, 8 PARTIAL, mean implementation coverage 0.54. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
+WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.5713. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 17 in the last 2 day(s), 129 all-time, last seen 2026-09-16T13:10:49.548545+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 14 in the last 2 day(s), 129 all-time, last seen 2026-09-16T13:10:49.548545+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 4
-LAST PRODUCTION EPISODE: {"skill": "DISMISS_DAILY_REWARD", "result": "FAILURE", "recorded_at": "2026-09-17T00:26:34.147170+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_007_before_20260917T002606263189.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_007_after_20260917T002608762372.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 129, "recent": 17, "last_seen": "2026-09-16T13:10:49.548545+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-15T00:26:34.147170+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 1
+LAST PRODUCTION EPISODE: {"skill": "OPEN_RESEARCH", "result": "SUCCESS", "recorded_at": "2026-09-17T03:33:15.976684+00:00", "episode_id": "live_runtime", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260917T033309886763.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260917T033313941365.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 129, "recent": 14, "last_seen": "2026-09-16T13:10:49.548545+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-15T03:33:15.976684+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
-BLOCKED GOALS: ['KEEP_RESEARCH_PRODUCTIVE', 'ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
+BLOCKED GOALS: ['ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
 DESIGN-BLOCKED (not implementable from the draft alone; each needs a live frame of its page first): CHECK_ALLIANCE_EVENT [NOT_REGISTERED] — requires semantic(s) `ALLIANCE_EVENT_ENTRY` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; CLAIM_EVENT_TIER [NOT_REGISTERED] — requires semantic(s) `EVENT_TIER_CLAIMABLE` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; JOIN_RALLY [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_BEAR_TIMER [NOT_REGISTERED] — requires semantic(s) `BEAR_TIMER` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; READ_COUNTER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_TIMER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined ... and 14 more
 NEVER EXECUTED SKILLS (first 12): ['CANCEL_DUPLICATE_TARGET', 'CLAIM_REWARD', 'DISMISS_ALLIANCE_GENERIC_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER', 'RECALL_MARCH', 'RECOVER_HOME', 'REINFORCE_TARGET', 'RELAX_RESOURCE_LEVEL']

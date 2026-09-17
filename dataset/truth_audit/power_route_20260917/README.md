@@ -169,6 +169,10 @@ verifier 因此**第一次观测就通过**，路线收敛为 **4 步**。
 
 ## 研究（RESEARCH）：同一路线按**科技实力**那一行走，第二个 BLOCKED 目标打通
 
+> ⚠ 提交 `3793a9b` 的 message 被 shell 引号**截断**在中途（那句里带了双引号）。
+> `--amend` 会重写已推送的 main，规则 12 禁止，所以**本小节是该提交的完整记录**：
+> 路线、两处缺陷、真机 episode、门禁两个总体、"没有声称"的部分，全在下面。
+
 `KEEP_RESEARCH_PRODUCTIVE` 是四个 BLOCKED 目标之一，卡法与训练**一模一样**：
 
 - 路线**早已被记录**：`knowledge/skills/RESEARCH_RESEARCH.md` 第 38 行 ——

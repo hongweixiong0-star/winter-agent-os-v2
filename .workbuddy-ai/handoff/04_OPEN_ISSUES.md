@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x129 all-time; recent=17 (last 2d), last seen 2026-09-16T13:10:49.548545+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-- **INTEL_BEAST_TARGET_NOT_PROVEN** x6 all-time; recent=4 (last 2d), last seen 2026-09-16T11:22:47.573385+00:00 — OPEN_INTEL_BEAST_TARGET(6)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x129 all-time; recent=14 (last 2d), last seen 2026-09-16T13:10:49.548545+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **INTEL_BEAST_TARGET_NOT_PROVEN** x7 all-time; recent=5 (last 2d), last seen 2026-09-17T03:12:18.062059+00:00 — OPEN_INTEL_BEAST_TARGET(7)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x5 all-time; recent=3 (last 2d), last seen 2026-09-17T00:26:34.147170+00:00 — DISMISS_DAILY_REWARD(5)
 - **MARCH_PAGE_NOT_OPEN** x60 all-time; recent=1 (last 2d), last seen 2026-09-16T11:22:23.403295+00:00 — START_GATHER(60)
-- **STAMINA_SOURCES_NOT_OPEN** x9 all-time; recent=1 (last 2d), last seen 2026-09-15T02:31:47.501403+00:00 — OPEN_INTEL(9)
 - **NO_EXECUTION** x5 all-time; recent=1 (last 2d), last seen 2026-09-15T12:27:40.810551+00:00 — SAFE_STOP(5)
+- **OPEN_MAP_NOT_PROVEN** x3 all-time; recent=1 (last 2d), last seen 2026-09-15T15:16:47.597321+00:00 — OPEN_MAP(3)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
@@ -21,7 +21,7 @@ Machine-detected issues (recomputed every run):
 - `SAFE_STOP` never succeeded (attempts=5, failure=5)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 4 uncommitted file(s): ['M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
+- 1 uncommitted file(s): ['M dataset/truth_audit/power_route_20260917/README.md']
 <!-- /AUTO:open_issues -->
 
 ---
