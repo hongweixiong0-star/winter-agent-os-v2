@@ -152,6 +152,24 @@ python tools/truth_audit.py    # 重算 episode / registry / 证据完整性
 - **latest logs**：`learning/control_panel/latest.log` 的最后 `stop_reason`；
   `learning/control_panel/crashes/` 有没有新的崩溃报告？
 
+### 运行环境预检（2026-09-17 增补，接管必做）
+
+```bash
+"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/preflight.py
+```
+
+一条命令回答两件事：**当前解释器能不能跑生产**（`numpy` / `PIL` / `cv2` / `maa` /
+`rapidocr_onnxruntime`），以及**台账里最近实际在用什么后端**
+（`learning/executor_backend.jsonl` 的 `used_backend` / `capture_backend`）。
+判定 FAIL ⇒ **不要相信之后任何一轮的数字**。
+
+为什么有这一步：2026-09-17 发现桌面启动器 pin 的解释器里**没有 MAA**，而
+`control_panel.py` 用 `sys.executable` 派生 worker，于是整条 AUTO 链静默退回 ADB
+（取帧 324 ms，对 MAA EmulatorExtras 的 8.92 ms），唯一痕迹是 worker stdout 里一行
+`MAA_IMPORT_FAILED`，而它只写进 `latest.log`。**记下来 ≠ 发现得了。**
+详见 `knowledge/failure_patterns/tooling/TOOLING_INTERPRETER_DRIFT.md` 与
+`01_CURRENT_TRUTH.md` **§J 后端轴**。
+
 ### 冲突裁决（不可颠倒）
 
 1. Handoff 文档与**代码**冲突 → **代码优先**
