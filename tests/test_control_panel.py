@@ -161,9 +161,51 @@ class ControlPanelTests(unittest.TestCase):
     def test_command_center_has_exactly_seven_primary_tabs(self):
         source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8")
         build = source[source.index("    def _build(self)"):source.index("    def _tab(self")]
-        self.assertIn("self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._learning_center(); self._system()", build)
-        for legacy in ("self._tasks()", "self._coverage()", "self._knowledge()", "self._logs()", "self._settings()"):
+        self.assertIn("self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._auto_development(); self._system()", build)
+        for legacy in ("self._tasks()", "self._coverage()", "self._knowledge()", "self._logs()", "self._settings()", "self._learning()"):
             self.assertNotIn(legacy, build)
+
+    def test_header_shows_the_frozen_layers_and_no_provider(self):
+        # Operator directive 2026-09-17: the first status row is V2大脑 / MAA /
+        # MuMu / 游戏 / 页面 / AUTO / WorkBuddy / 时间.  Qwen is not a layer (it is an
+        # optional offline provider) and recognition is MAA's job, so neither may
+        # appear as a first-class status again.
+        source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8")
+        build = source[source.index("    def _build(self)"):source.index("    def _tab(self")]
+        for label, key in (("V2大脑", "agent"), ("MAA", "maa"), ("MuMu", "device"), ("游戏", "game"),
+                           ("页面", "page"), ("AUTO", "mode"), ("WorkBuddy", "workbuddy"), ("时间", "clock")):
+            self.assertIn(f'("{label}", "{key}")', build)
+        for gone in ('("Qwen", "qwen")', '("Vision", "vision")'):
+            self.assertNotIn(gone, build)
+
+    def test_the_panel_names_no_model(self):
+        # Same boundary the rest of the package holds: a model is WorkBuddy's
+        # replaceable compute, so the window may display whatever name the ledger
+        # recorded but must not contain a literal of its own.  Comments are exempt
+        # (they explain history); code is not.
+        import ast
+
+        tree = ast.parse((Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8"))
+        words = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                words.add(node.value.lower())
+            elif isinstance(node, ast.Name):
+                words.add(node.id.lower())
+        for model in ("deepseek", "glm-", "hy4", "qwen", "gpt", "claude"):
+            self.assertFalse([w for w in words if model in w], model)
+
+    def test_the_status_defaults_cover_every_header_and_workbuddy_cell(self):
+        from tools import control_panel as panel_module
+
+        defaults = panel_module.status_defaults()
+        for key in ("agent", "maa", "device", "game", "page", "mode", "workbuddy", "clock"):
+            self.assertIn(key, defaults)
+        for key in ("wb_state", "wb_capability", "wb_reason", "wb_job", "wb_model", "wb_duration",
+                    "wb_job_state", "wb_improvement", "wb_result"):
+            self.assertIn(key, defaults)
+        self.assertNotIn("qwen", defaults)
+
 
     def test_gui_launches_unified_runtime_without_selecting_goal(self):
         source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8")

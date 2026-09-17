@@ -195,7 +195,11 @@ class TheRealHandlersMoveTheCounterCorrectlyTests(unittest.TestCase):
 
         fake = _Self()
         fake.runtime_store = store
-        fake.values = {"vision": _Var(), "result": _Var()}
+        # Built from the panel's own defaults, not from a hand-written key list: a
+        # stub with its own idea of which status variables exist stops testing the
+        # real handler the moment one is renamed (it raised KeyError the first time
+        # Qwen and Vision were replaced by MAA and WorkBuddy).
+        fake.values = {key: _Var() for key in self.panel.status_defaults()}
         fake.continuous = _Var(False)  # no watchdog restart, no tk after()
         fake.stop_requested = False
         fake.paused = False

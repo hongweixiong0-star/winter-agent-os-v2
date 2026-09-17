@@ -23,7 +23,11 @@ if str(ROOT) not in sys.path:
 
 from winter_agent_v2 import runtime_env
 from winter_agent_v2.device import ADBDevice
-from winter_agent_v2.escalation_queue import DEFAULT_LEDGER, EscalationLedger
+from winter_agent_v2.escalation_queue import (
+    AUTO_ESCALATION_CONDITIONS,
+    DEFAULT_LEDGER,
+    EscalationLedger,
+)
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
 from winter_agent_v2.retention import prune_runtime_screenshots
 from winter_agent_v2.runtime_reload import REQUEST_KIND, ReloadSignal, default_path as reload_path
@@ -372,6 +376,652 @@ def count_knowledge() -> dict[str, int]:
     }
 
 
+# ------------------------------------------------------- architecture status layer
+#
+# The four layers this panel displays, frozen by the operator on 2026-09-17:
+#
+#     MAA        = eyes + hands          (UI perception and execution)
+#     V2         = gameplay brain        (state, goals, scheduling, verification)
+#     WorkBuddy  = development platform  (turns a capability gap into a capability)
+#     models     = replaceable compute   (inside WorkBuddy -- never a V2 component)
+#
+# Everything in this section is a *derivation* from files that already exist: the
+# capability catalog, the skill registry, the episode log, the executor backend
+# ledger, the runtime snapshot and the escalation ledger.  Nothing here owns
+# state, so the window cannot become a second source of truth -- if a number here
+# is wrong, the file it came from is where to fix it.  That is why there is no
+# new Manager, Registry or Scheduler behind any of it.
+
+# Two different kinds of "we don't know", deliberately spelled differently.  The
+# panel used to print "未知 / 待识别" for both, which reads as if V2 had looked and
+# failed -- nine times out of ten it had simply never looked.  The operator's
+# wording: only a genuine unknown may say 未知.
+PENDING = "未读取"
+NO_DATA = "暂无数据"
+UNKNOWN_NOW = "未知（识别中）"
+# A stop reason the panel cannot classify while nothing is running.  Distinct from
+# UNKNOWN_NOW because nothing is being recognised at that moment -- the honest
+# reading is that the reason itself is unclassified, not that a look is in flight.
+UNKNOWN_STOP = "未知（原因未分类）"
+
+CATALOG_PATH = ROOT / "knowledge/game/capability_catalog.json"
+EPISODES_PATH = ROOT / "learning/episodes.jsonl"
+BACKEND_LEDGER_PATH = ROOT / "learning/executor_backend.jsonl"
+MODEL_STATS_PATH = ROOT / "learning/workbuddy_model_stats.jsonl"
+
+MAA_NORMAL, MAA_ADB_FALLBACK, MAA_BROKEN = "● 正常", "● 降级ADB", "● 异常"
+WORKBUDDY_LABELS = {
+    "IDLE": "● 待命", "QUEUED": "● 排队", "WORKING": "● 开发中",
+    "VERIFYING": "● 验证中", "BLOCKED": "● Blocked", "UNAVAILABLE": "● 不可用",
+}
+
+# Stop reasons that mean "come back later", not "something is broken".  A runtime
+# sitting on one of these is *waiting*, which is a real state the operator asked
+# to see by name instead of a blanket unknown.
+RUNTIME_WAITING_STOPS = frozenset({
+    "no_idle_march", "reserved_march_for_stamina", "training_queue_busy", "research_queue_busy",
+    "NOT_REFRESHED", "EVENT_CLOSED", "QUEUE_BUSY", "RALLY_FULL", "DEVICE_BUSY",
+    "DEVICE_TEMPORARILY_BUSY", "mail_all_clear", "exploration_income_not_ready",
+    "daily_no_claimable_rewards", "alliance_action_not_needed", "intel_not_available",
+    "verified_beast_target_not_visible", "WAITING_FOR_NATURAL_STATE",
+})
+
+CATALOG_META = {
+    "observed": ("已读取特性", "capability_catalog.json · 角色可用性或真机尝试已读到"),
+    "implemented": ("已实现", "capability_catalog.json · implementation_status=EXISTING"),
+    "tried": ("Live Tried", "capability_catalog.json · live_attempts>0"),
+    "verified": ("Live Verified", "capability_catalog.json · lifecycle=LIVE_VERIFIED"),
+    "stable": ("Stable", "Skill Registry · SkillState.STABLE"),
+    "never": ("从未尝试", "capability_catalog.json · MISSING 且 0 次真机"),
+    "blocked": ("Blocked", "capability_catalog.json · 带 blocked_reason"),
+    "queue": ("WorkBuddy Queue", "workbuddy_escalations.jsonl · 活跃 / 累计"),
+}
+
+_CACHE_LOCK = threading.Lock()
+_CATALOG_CACHE: tuple[float, dict[str, Any]] | None = None
+# Keyed by (mtime, scan dict): one entry holds the per-skill tally, the durations,
+# the timestamped outcomes and the failure histogram from a single pass.
+_EPISODE_CACHE: tuple[float, dict[str, Any]] | None = None
+
+# The five conditions that may summon a development agent, in Chinese.  They come
+# from winter_agent_v2.escalation_queue.AUTO_ESCALATION_CONDITIONS -- the panel
+# only translates them, so it cannot drift from what the queue actually accepts.
+CONDITION_ZH = {
+    "CAPABILITY_MISSING": "能力缺失",
+    "UNKNOWN_UI": "未识别界面",
+    "UNKNOWN_GAME_MECHANIC": "未知玩法机制",
+    "REPEATED_LIVE_FAILURE": "真机反复失败",
+    "STUCK_15_MIN": "15 分钟未解决",
+    "（不升级）": "不升级（普通状态）",
+}
+
+STATE_ZH = {
+    "NEW": "新建", "QUEUED": "排队", "SUBMITTED": "已提交", "WORKING": "开发中",
+    "DONE": "完成", "FAILED": "失败", "BLOCKED": "Blocked", "COOLDOWN": "冷却",
+}
+
+
+def tail_jsonl(path: Path, limit: int = 60, *, max_bytes: int = 96_000) -> list[dict[str, Any]]:
+    """The last ``limit`` JSON objects of a JSONL file, without reading all of it.
+
+    ``learning/executor_backend.jsonl`` is a few hundred KB and growing, and the
+    panel polls every 1.5 s, so reading the whole file each time would be pure
+    waste.  A partial first line (from seeking into the middle of a record) is
+    dropped rather than parsed.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return []
+    offset = max(0, size - max_bytes)
+    try:
+        with path.open("rb") as handle:
+            if offset:
+                handle.seek(offset)
+            blob = handle.read().decode("utf-8", errors="replace")
+    except OSError:
+        return []
+    lines = blob.splitlines()
+    if offset and lines:
+        lines = lines[1:]
+    out: list[dict[str, Any]] = []
+    for line in lines[-limit:]:
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            out.append(parsed)
+    return out
+
+
+def capability_catalog(root: Path | None = None) -> dict[str, Any]:
+    """The capability coverage table, cached until the file changes.
+
+    Read-only and mtime-keyed: the file is regenerated by tooling, and the panel
+    must show the new numbers the moment it is.
+    """
+    global _CATALOG_CACHE
+    path = (root / "knowledge/game/capability_catalog.json") if root else CATALOG_PATH
+    try:
+        stamp = path.stat().st_mtime
+    except OSError:
+        return {"capabilities": [], "summary": {}}
+    with _CACHE_LOCK:
+        if _CATALOG_CACHE is not None and _CATALOG_CACHE[0] == stamp:
+            return _CATALOG_CACHE[1]
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"capabilities": [], "summary": {}}
+    if not isinstance(payload, dict):
+        payload = {"capabilities": [], "summary": {}}
+    with _CACHE_LOCK:
+        _CATALOG_CACHE = (stamp, payload)
+    return payload
+
+
+def episode_scan(root: Path | None = None) -> dict[str, Any]:
+    """One cached pass over the episode log, with everything the panel needs from it.
+
+    ``episodes.jsonl`` is 3.3 MB and the runtime appends to it while AUTO runs, so a
+    caller that reads it directly pays a full parse on every refresh -- which is what
+    the capability page used to do every 1.5 s.  Parsed once per change instead, and
+    the per-skill tally, the durations and the timestamped outcomes all come from the
+    same pass so they cannot disagree with each other.
+
+    The split between live rows and imported ones is the catalog's own evidence
+    policy: only rows carrying ``recorded_at`` count.
+    """
+    global _EPISODE_CACHE
+    path = (root / "learning/episodes.jsonl") if root else EPISODES_PATH
+    try:
+        stamp = path.stat().st_mtime
+    except OSError:
+        return {"index": {}, "durations": [], "results": []}
+    with _CACHE_LOCK:
+        if _EPISODE_CACHE is not None and _EPISODE_CACHE[0] == stamp:
+            return _EPISODE_CACHE[1]
+    scan: dict[str, Any] = {"index": {}, "durations": [], "results": [], "failures": Counter()}
+    index: dict[str, dict[str, Any]] = scan["index"]
+    failures: Counter = scan["failures"]
+    for line in _iter_jsonl(path):
+        skill = str(line.get("skill") or "")
+        if skill:
+            entry = index.setdefault(skill, {"live": 0, "claims": 0, "verified": 0, "failed": 0, "last": ""})
+            if line.get("recorded_at"):
+                entry["live"] += 1
+                entry["verified"] += int(line.get("verifier_ok") is True)
+                entry["failed"] += int(line.get("verifier_ok") is False)
+                entry["last"] = str(line.get("recorded_at"))[:19]
+            else:
+                entry["claims"] += 1
+        if isinstance(line.get("duration"), (int, float)):
+            scan["durations"].append(float(line["duration"]))
+        if line.get("recorded_at"):
+            scan["results"].append((str(line["recorded_at"]), line.get("result") == "SUCCESS"))
+            if line.get("failure_type"):
+                failures[str(line["failure_type"])] += 1
+    with _CACHE_LOCK:
+        _EPISODE_CACHE = (stamp, scan)
+    return scan
+
+
+def episode_index(root: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Per-skill tally from :func:`episode_scan`."""
+    return episode_scan(root)["index"]
+
+
+def _iter_jsonl(path: Path):
+    """Yield each JSON object of a JSONL file, skipping anything unparseable."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            yield row
+
+
+def live_failure_counts(root: Path | None = None) -> Counter:
+    """How often each failure type appeared on a row that carries ``recorded_at``.
+
+    Part of the same cached pass as the per-skill tally, so the panel parses the
+    episode log once per change rather than once per question.
+    """
+    return episode_scan(root)["failures"]
+
+
+def escalation_buckets(root: Path | None = None) -> dict[str, dict[str, int]]:
+    """Distinct failure types and live occurrences per escalation condition.
+
+    Runs ``classify_condition`` -- the same function the AUTO hook calls -- rather
+    than re-implementing the rule here.  A panel that decided for itself which
+    failures deserve a development agent would be exactly the second state system
+    the operator forbids.
+    """
+    from winter_agent_v2.escalation_queue import (
+        CAPABILITY_MISSING, EscalationPolicy, FailureSignature, classify_condition,
+    )
+
+    buckets: dict[str, dict[str, int]] = {}
+    policy = EscalationPolicy()
+    now = datetime.now(timezone.utc)
+    for key in (*AUTO_ESCALATION_CONDITIONS, CAPABILITY_MISSING, "（不升级）"):
+        buckets[key] = {"types": 0, "episodes": 0}
+    for failure_type, occurrences in live_failure_counts(root).items():
+        signature = FailureSignature(capability="", failure_type=failure_type, skill="")
+        verdict = classify_condition(signature, occurrences=occurrences, first_seen=None, now=now, policy=policy)
+        condition = verdict[0] if verdict else "（不升级）"
+        entry = buckets.setdefault(condition, {"types": 0, "episodes": 0})
+        entry["types"] += 1
+        entry["episodes"] += occurrences
+    return buckets
+
+
+def capability_gap_view(root: Path | None = None) -> dict[str, Any]:
+    """Goal-level gaps, read from the project's own capability -> skill map.
+
+    This is the second capability table and it is *not* merged with the 522-row
+    coverage catalog on purpose: the catalog counts what the game contains, this
+    one tracks the 16 goals and which capability blocks each.  Two questions, two
+    files, and the panel labels which one it is answering.
+    """
+    base = Path(root) if root else ROOT
+    try:
+        payload = json.loads((base / "knowledge/goals/capability_skill_map.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"summary": {}, "goals": (), "highest_leverage": (), "readable": False}
+    goals: list[tuple[str, str, int, str]] = []
+    for goal in payload.get("goals") or []:
+        blocked = [str(c.get("capability")) for c in (goal.get("capabilities") or [])
+                   if str(c.get("status") or "").upper() in ("BLOCKED", "DEGRADED")]
+        goals.append((str(goal.get("goal")), str(goal.get("status")), len(blocked), "、".join(blocked[:3])))
+    return {
+        "summary": payload.get("summary") or {},
+        "goals": tuple(goals),
+        "highest_leverage": tuple(payload.get("highest_leverage") or ()),
+        "readable": True,
+    }
+
+
+def backend_axis(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Which of MAA / ADB actually executed the recent steps, and whether that is a fallback.
+
+    The distinction that matters and that a bare backend name hides: several
+    skills are *deliberately* still on ADB (they are not migrated yet, and
+    ``backend_routing.json`` says so), while a step whose ``preferred_backend``
+    was MAA but whose ``used_backend`` is ADB is a real degradation.
+    """
+    last = rows[-1] if rows else {}
+    used = str(last.get("used_backend") or "").upper()
+    capture = str(last.get("capture_backend") or "")
+    preferred = str(last.get("preferred_backend") or "").upper()
+    latency = last.get("latency_ms")
+    suffix = f" · {latency:.0f}ms" if isinstance(latency, (int, float)) else ""
+    if not last:
+        label = PENDING
+    elif used == "MAA":
+        label = f"MAA · {capture}{suffix}"
+    elif preferred == "MAA":
+        label = f"ADB 降级 · {capture}{suffix}"
+    else:
+        label = f"ADB · {capture}（该技能未迁移 MAA）{suffix}"
+    mix = Counter(str(row.get("used_backend") or "?") for row in rows)
+    return {
+        "label": label, "used": used, "capture": capture, "preferred": preferred,
+        "latency_ms": latency, "recorded_at": str(last.get("recorded_at") or ""),
+        "degraded": bool(used and used == "ADB" and preferred == "MAA")
+        or any(row.get("fallback_used") for row in rows),
+        "errors": sum(1 for row in rows if row.get("error")),
+        "mix": f"MAA {mix.get('MAA', 0)} / ADB {mix.get('ADB', 0)}（近 {len(rows)} 步）",
+        "steps": len(rows),
+    }
+
+
+def maa_cell(report: runtime_env.InterpreterReport, axis: dict[str, Any]) -> str:
+    """MAA's health as one of the operator's three words.
+
+    降级ADB is the honest label for the defect that was live on 2026-09-17: the
+    production interpreter cannot import ``maa``, so MAA is nominally the default
+    and actually absent.  It is not 异常 -- ADB still works -- and calling it 正常
+    is exactly the silent degradation the doctrine forbids.
+    """
+    if not getattr(report, "exists", False):
+        return MAA_BROKEN
+    missing = tuple(getattr(report, "missing", ()) or ())
+    if "maa" in missing or axis.get("degraded"):
+        return MAA_ADB_FALLBACK
+    if missing:
+        return MAA_BROKEN
+    return MAA_NORMAL
+
+
+def _records_sorted(snapshot: Any) -> list[Any]:
+    records = list(getattr(snapshot, "records", {}).values())
+    return sorted(records, key=lambda r: (r.last_seen or r.first_seen or datetime.min.replace(tzinfo=timezone.utc)), reverse=True)
+
+
+def escalation_view(root: Path | None = None) -> dict[str, Any]:
+    """The development escalation queue, folded from its own ledger.
+
+    Uses ``winter_agent_v2.escalation_queue.fold`` rather than re-deriving states
+    here: the queue already knows what SUBMITTED means, and a panel that
+    recomputed it would be the second source of truth the operator forbids.
+    """
+    from winter_agent_v2.escalation_queue import (
+        BLOCKED, CODE_CHANGED, COOLDOWN, DONE, FAILED, LIVE_VERIFIED, NEW,
+        OUTCOME_BLOCKED, QUEUED, REPLAY_PASS, SUBMITTED, TEST_PASS, WORKING,
+        EscalationPolicy,
+    )
+
+    path = (root / DEFAULT_LEDGER) if root else _ESCALATION_LEDGER_PATH
+    try:
+        snapshot = EscalationLedger(path).snapshot()
+    except Exception:  # noqa: BLE001 - an unreadable ledger shows as empty, never crashes the window
+        return {"total": 0, "records": (), "current": None, "counts": {}, "conditions": Counter(),
+                "pending_verify": (), "blocked": (), "verified": (), "max_concurrent": 1, "readable": False}
+    records = _records_sorted(snapshot)
+    active = [r for r in records if r.state in (NEW, QUEUED, SUBMITTED, WORKING)]
+    pending_verify = [r for r in records if r.state == DONE and r.outcome in (CODE_CHANGED, TEST_PASS, REPLAY_PASS)]
+    blocked = [r for r in records if r.state in (BLOCKED, FAILED, COOLDOWN) or r.outcome == OUTCOME_BLOCKED]
+    conditions: Counter[str] = Counter()
+    for record in records:
+        for condition in [record.condition] if record.condition else []:
+            conditions[condition] += 1
+    return {
+        "total": len(records), "records": tuple(records), "current": active[0] if active else None,
+        "active": tuple(active), "counts": snapshot.count_by_state(), "conditions": conditions,
+        "pending_verify": tuple(pending_verify), "blocked": tuple(blocked),
+        "verified": tuple(r for r in records if r.outcome == LIVE_VERIFIED),
+        "max_concurrent": EscalationPolicy().max_concurrent_jobs, "readable": True,
+    }
+
+
+def workbuddy_cell(view: dict[str, Any], gateway: dict[str, Any]) -> tuple[str, str]:
+    """``(状态, 说明)`` for the header cell -- WorkBuddy's own state, never a model name.
+
+    Order matters.  A job that is running outranks one waiting for its live
+    verification, which outranks a blocked one, which outranks idle.
+    """
+    from winter_agent_v2.escalation_queue import NEW, QUEUED, SUBMITTED, WORKING
+
+    if gateway.get("available") is False:
+        return WORKBUDDY_LABELS["UNAVAILABLE"], str(gateway.get("reason") or "")
+    current = view.get("current")
+    if current is not None:
+        if current.state in (SUBMITTED, WORKING):
+            return WORKBUDDY_LABELS["WORKING"], current.job_id or current.key
+        if current.state in (NEW, QUEUED):
+            return WORKBUDDY_LABELS["QUEUED"], current.key
+    if view.get("pending_verify"):
+        return WORKBUDDY_LABELS["VERIFYING"], view["pending_verify"][0].key
+    if view.get("blocked"):
+        return WORKBUDDY_LABELS["BLOCKED"], view["blocked"][0].key
+    return WORKBUDDY_LABELS["IDLE"], ""
+
+
+GATEWAY_REASON_ZH = {
+    "NO_CREDENTIAL": "未配置凭据（需在环境变量里设置网关密码，禁止写入仓库）",
+    "AUTH_REJECTED": "凭据被拒绝（环境里的密码与正在运行的网关不一致）",
+    "GATEWAY_UNREACHABLE": "网关不可达（未启动或端口不同）",
+}
+
+
+def gateway_reason_cn(reason: str) -> str:
+    """The escalation gateway's answer, in Chinese.
+
+    Worth translating rather than passing through: NO_CREDENTIAL and
+    AUTH_REJECTED look equally like "unavailable" but need different fixes, and
+    the 2026-09-17 session found the environment holding a stale password while a
+    different one was actually serving -- exactly the case the second string names.
+    """
+    text = str(reason or "")
+    if text in GATEWAY_REASON_ZH:
+        return GATEWAY_REASON_ZH[text]
+    if text.startswith("HTTP_"):
+        return f"网关返回 HTTP {text[5:]}"
+    if text.startswith("UNHEALTHY"):
+        return f"网关健康检查未通过：{text.split(':', 1)[-1]}"
+    return text or "原因未提供"
+
+
+def duration_label(record: Any, now: datetime | None = None) -> str:
+    """How long the job has been running (or ran), in the operator's units."""
+    started = getattr(record, "submitted_at", None) or getattr(record, "first_seen", None)
+    if started is None:
+        return NO_DATA
+    ended = getattr(record, "settled_at", None)
+    moment = now or datetime.now(timezone.utc)
+    seconds = ((ended or moment) - started).total_seconds()
+    if seconds < 0:
+        return NO_DATA
+    if seconds < 60:
+        return f"{seconds:.0f} 秒"
+    if seconds < 3600:
+        return f"{seconds / 60:.0f} 分钟"
+    return f"{seconds / 3600:.1f} 小时"
+
+
+def capability_lifecycle_cn(entry: dict[str, Any], *, skill_state: str = "") -> str:
+    """Coverage lifecycle in plain Chinese, from the catalog's own field."""
+    if entry.get("blocked_reason"):
+        return "Blocked"
+    lifecycle = str(entry.get("lifecycle") or "").upper()
+    if lifecycle == "LIVE_VERIFIED":
+        return "Stable" if skill_state == SkillState.STABLE.value else "Live Verified"
+    if lifecycle == "LIVE_TRIED":
+        return "Live Tried"
+    if lifecycle == "CANDIDATE":
+        return "候选"
+    if lifecycle == "MISSING":
+        return "未实现"
+    return PENDING
+
+
+def capability_state_cn(
+    entry: dict[str, Any],
+    *,
+    skill_state: str = "",
+    running_skill: str = "",
+    claims: int = 0,
+) -> str:
+    """The availability half of a capability's status.
+
+    Every branch is a fact from an existing file.  ``claims`` is the number of
+    episode rows for this capability's skill that carry no ``recorded_at`` -- the
+    catalog's own evidence policy says those cannot support a verification, so
+    the honest word is 待刷新 rather than 可执行.
+    """
+    skill = str(entry.get("existing_skill") or "")
+    if str(entry.get("real_money_cost") or "").upper() == "FORBIDDEN":
+        return "不可用"
+    if str(entry.get("unlock_status") or "").upper() == "LOCKED":
+        return "未解锁"
+    if running_skill and skill and running_skill == skill:
+        return "执行中"
+    if entry.get("blocked_reason"):
+        return "Blocked"
+    if str(entry.get("lifecycle") or "").upper() in ("LIVE_VERIFIED", "LIVE_TRIED"):
+        return "可执行"
+    if skill and skill_state == SkillState.BLOCKED.value:
+        return "Blocked"
+    if claims:
+        return "待刷新"
+    if str(entry.get("implementation_status") or "").upper() == "EXISTING":
+        return "可执行"
+    if str(entry.get("current_role_available") or "").upper() == "OBSERVED_AVAILABLE":
+        return "已识别"
+    return PENDING
+
+
+def runtime_status_cn(stop_reason: str | None, *, running: bool) -> str:
+    """What the current runtime state is called in the panel.
+
+    This is where 等待 lives: a runtime sitting on an ordinary-weather stop is
+    waiting, which is different from unread and different from broken.
+    """
+    reason = str(stop_reason or "")
+    if reason in RUNTIME_WAITING_STOPS:
+        return "等待"
+    if running:
+        return "执行中"
+    if not reason:
+        return PENDING
+    return UNKNOWN_STOP
+
+
+def overview_kpis(root: Path | None = None, *, registry: Any = None, view: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    """The eight numbers the operator asked to see first.
+
+    Each card carries the file it came from, because a KPI nobody can trace back
+    to a source is a number people learn to ignore.
+    """
+    catalog = capability_catalog(root)
+    entries = catalog.get("capabilities") or []
+    index = episode_index(root)
+    view = view if view is not None else escalation_view(root)
+    if registry is None:
+        registry = v2_registry()
+    skills = registry.all()
+    stable = sum(1 for skill in registry.all() if skill.state is SkillState.STABLE)
+    # The registry is the only place "Stable" is defined, and today it holds none --
+    # showing a bare 0 with no context would read as a bug rather than as the state
+    # of the promotion gate, so the card carries the real distribution beside it.
+    state_mix = Counter(skill.state.value for skill in skills)
+    stable_source = "Skill Registry · " + " / ".join(
+        f"{name} {state_mix.get(name, 0)}" for name in ("STABLE", "VERIFIED", "CANDIDATE", "BLOCKED")
+    )
+    observed = implemented = tried = verified = never = blocked = 0
+    for entry in entries:
+        lifecycle = str(entry.get("lifecycle") or "").upper()
+        attempts = int(entry.get("live_attempts") or 0)
+        if (str(entry.get("current_role_available") or "").upper() != "UNKNOWN"
+                or str(entry.get("unlock_status") or "").upper() != "UNKNOWN" or attempts):
+            observed += 1
+        if str(entry.get("implementation_status") or "").upper() == "EXISTING":
+            implemented += 1
+        if attempts:
+            tried += 1
+        if lifecycle == "LIVE_VERIFIED":
+            verified += 1
+        if lifecycle == "MISSING":
+            never += 1
+        if entry.get("blocked_reason"):
+            blocked += 1
+    active = len(view.get("active") or ())
+    values = {
+        "observed": str(observed), "implemented": str(implemented), "tried": str(tried),
+        "verified": str(verified), "stable": str(stable), "never": str(never),
+        "blocked": str(blocked), "queue": f"{active} 活跃 / {view.get('total', 0)} 累计",
+    }
+    return {key: {"label": CATALOG_META[key][0], "value": values[key],
+                  "source": stable_source if key == "stable" else CATALOG_META[key][1]}
+            for key in CATALOG_META}
+
+
+def status_defaults() -> dict[str, str]:
+    """Every status variable the panel owns, with its value before anything is read.
+
+    A function rather than an inline literal because the handler tests need to
+    build a stub mapping for ``ControlPanel`` without a Tk window, and a stub that
+    hard-codes its own key list silently stops matching the real panel the moment
+    a key is added -- which is exactly what happened when MAA and WorkBuddy
+    replaced the previous provider and recognition cells in the header.  Deriving
+    the stub from here makes the two impossible to desynchronise.
+    """
+    return {
+        "agent": "● 等待", "maa": MAA_NORMAL, "device": "未探测", "game": PENDING, "page": PENDING,
+        "mode": "停止", "workbuddy": WORKBUDDY_LABELS["IDLE"], "clock": "--:--:--",
+        "march": "行军：暂无数据", "task_cn": "等待启动", "skill": NO_DATA,
+        "reason": "尚未产生决策", "preconditions": PENDING, "next": "截图并识别当前页面",
+        "backend": PENDING, "backend_detail": PENDING, "risk": PENDING,
+        "confidence": NO_DATA, "runtime_state": PENDING,
+        "verifier": "等待任务执行", "result": "尚未运行",
+        "wb_state": WORKBUDDY_LABELS["IDLE"], "wb_capability": PENDING, "wb_reason": PENDING,
+        "wb_job": PENDING, "wb_model": PENDING, "wb_duration": PENDING,
+        "wb_job_state": PENDING, "wb_improvement": PENDING, "wb_result": "尚未产生开发任务",
+        "wb_gateway": PENDING, "wb_queue_line": PENDING, "wb_gap": PENDING,
+        "stats": "本次启动：0 轮 · 0 动作",
+    }
+
+
+class WorkBuddyGatewayCache:
+    """Polls the WorkBuddy gateway on a daemon thread so the window never blocks.
+
+    The panel already had to learn this lesson for subprocesses (see
+    ``_background_run``): anything that can take seconds must not run inside a Tk
+    callback.  The jobs API is HTTP, so it runs here and the UI only reads
+    ``snapshot()``.  A gateway that is down is a *reported state*, not an
+    exception, and it never blocks AUTO -- same rule as the escalation queue's.
+    """
+
+    INTERVAL_SECONDS = 10.0
+
+    def __init__(self, root: Path | None = None) -> None:
+        self.root = root or ROOT
+        self._lock = threading.Lock()
+        self._state: dict[str, Any] = {"available": None, "reason": "", "job": {}, "checked_at": ""}
+        self._watch: str = ""
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def watch(self, job_id: str) -> None:
+        with self._lock:
+            self._watch = job_id or ""
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return dict(self._state)
+
+    def start(self) -> None:
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(target=self._loop, name="workbuddy-gateway-poll", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _loop(self) -> None:
+        while not self._stop.is_set():
+            self._poll_once()
+            self._stop.wait(self.INTERVAL_SECONDS)
+
+    def _poll_once(self) -> None:
+        state: dict[str, Any] = {"available": None, "reason": "", "job": {}, "checked_at": datetime.now().strftime("%H:%M:%S")}
+        try:
+            from winter_agent_v2.workbuddy_bridge import WorkBuddyBridge
+
+            bridge = WorkBuddyBridge(cwd=self.root)
+            probe = bridge.is_available()
+            state["available"] = bool(probe)
+            state["reason"] = str(getattr(probe, "reason", "") or "")
+            with self._lock:
+                job_id = self._watch
+            if probe and job_id:
+                status = bridge.status(job_id)
+                state["job"] = {
+                    "job_id": status.job_id, "verdict": status.verdict, "state": status.gateway_state,
+                    "settled": status.settled, "detail": status.detail, "result": status.result,
+                }
+        except Exception as exc:  # noqa: BLE001 - a poll must never reach the UI as an exception
+            state["available"] = False
+            state["reason"] = f"{type(exc).__name__}: {exc}"
+        with self._lock:
+            self._state = state
+
+
 class ControlPanel:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
@@ -397,13 +1047,13 @@ class ControlPanel:
         self.session = Counter()
         self.event_lines: list[str] = []
         self.watchdog_restart_pending = False
-        defaults = {"agent": "● 等待", "device": "检查中", "game": "暂无数据", "page": "页面未识别",
-                    "mode": "停止", "qwen": "按需待命", "vision": "等待截图", "clock": "--:--:--",
-                    "march": "行军：暂无数据", "task_cn": "等待启动", "skill": "暂无数据",
-                    "reason": "尚未产生决策", "preconditions": "未知 / 待识别", "next": "截图并识别当前页面", "risk": "未知",
-                    "confidence": "暂无数据",
-                    "verifier": "等待任务执行", "result": "尚未运行", "stats": "本次启动：0 轮 · 0 动作"}
+        defaults = status_defaults()
         self.values = {k: tk.StringVar(value=v) for k, v in defaults.items()}
+        self.kpi: dict[str, tk.StringVar] = {}
+        # Polls the jobs API off the UI thread; every value below is read from a
+        # file that already exists, so the window still owns no state of its own.
+        self.gateway = WorkBuddyGatewayCache(ROOT)
+        self.gateway.start()
         task_names = ("邮件", "探险", "采集", "建筑", "科技", "训练", "Intel", "联盟", "日常", "野怪", "巨熊")
         saved_tasks = load_task_selection(PANEL_STATE_PATH, task_names)
         self.task_enabled = {n: tk.BooleanVar(value=saved_tasks[n]) for n in task_names}
@@ -455,19 +1105,56 @@ class ControlPanel:
         ttk.Label(title, text="Winter Agent OS V2", style="Title.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(title, text="《无尽冬日》AI 指挥中心", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         status = ttk.Frame(header, style="Card.TFrame"); status.pack(side="right", expand=True, fill="x", padx=(26, 0))
-        for i, (label, key) in enumerate((("智能体", "agent"), ("MuMu", "device"), ("游戏", "game"), ("页面", "page"),
-                                          ("模式", "mode"), ("Qwen", "qwen"), ("Vision", "vision"), ("时间", "clock"))):
+        # The four frozen layers, in order, and nothing else.  Qwen and Vision used
+        # to sit here as first-class components; they are not layers of this
+        # architecture (Qwen is an optional offline provider, recognition is MAA's
+        # job), so a model or provider name in this row would misstate the design.
+        # A model name appears only as WorkBuddy's second-level detail.
+        for i, (label, key) in enumerate((("V2大脑", "agent"), ("MAA", "maa"), ("MuMu", "device"), ("游戏", "game"),
+                                          ("页面", "page"), ("AUTO", "mode"), ("WorkBuddy", "workbuddy"), ("时间", "clock"))):
             cell = ttk.Frame(status, style="Card.TFrame"); cell.grid(row=0, column=i, padx=7, sticky="w")
             ttk.Label(cell, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w")
             ttk.Label(cell, textvariable=self.values[key], background=PANEL).pack(anchor="w")
         self.tabs = ttk.Notebook(shell); self.tabs.pack(fill="both", expand=True, pady=(10, 0))
-        self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._learning_center(); self._system()
+        self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._auto_development(); self._system()
 
-    def _tab(self, name: str) -> ttk.Frame:
-        f = ttk.Frame(self.tabs, padding=10); self.tabs.add(f, text=name); return f
+    def _tab(self, name: str, scroll: bool = False) -> ttk.Frame:
+        f = ttk.Frame(self.tabs, padding=10); self.tabs.add(f, text=name)
+        return self._scroll_area(f) if scroll else f
+
+    def _scroll_area(self, parent: ttk.Frame) -> ttk.Frame:
+        """Wrap tall tab content in a scrollbar.
+
+        Measured rather than guessed: with the 2026-09-17 information architecture
+        the 总览 tab requested 1282 px of height, 自动开发 1101 and 能力 912, while the
+        window hands the notebook about 660.  Tk does not scroll a notebook tab, so
+        everything below the fold -- including the run controls -- was simply
+        clipped and unreachable.  This is the standard canvas-plus-inner-frame pair,
+        not a second layout system: the frame the tab returns is the same frame it
+        would have returned before, so every existing `pack`/`grid` call inside is
+        unchanged.
+
+        The wheel binding is scoped to pointer enter/leave so it cannot capture
+        scrolling from the treeviews, which scroll themselves.
+        """
+        canvas = tk.Canvas(parent, bg=BG, highlightthickness=0, borderwidth=0)
+        bar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        inner = ttk.Frame(canvas, padding=10)
+        window = canvas.create_window((0, 0), window=inner, anchor="nw")
+        canvas.configure(yscrollcommand=bar.set)
+        bar.pack(side="right", fill="y"); canvas.pack(side="left", fill="both", expand=True)
+        inner.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda event: canvas.itemconfigure(window, width=event.width))
+
+        def on_wheel(event: tk.Event) -> None:
+            canvas.yview_scroll(-int(event.delta / 120), "units")
+
+        canvas.bind("<Enter>", lambda _e: canvas.bind_all("<MouseWheel>", on_wheel))
+        canvas.bind("<Leave>", lambda _e: canvas.unbind_all("<MouseWheel>"))
+        return inner
 
     def _overview(self) -> None:
-        tab = self._tab("总览"); tab.rowconfigure(0, weight=1); tab.columnconfigure(1, weight=1)
+        tab = self._tab("总览", scroll=True); tab.rowconfigure(0, weight=1); tab.columnconfigure(1, weight=1)
         left = ttk.Frame(tab, style="Card.TFrame", padding=14, width=215); left.grid(row=0, column=0, sticky="nsew", padx=(0, 8)); left.grid_propagate(False)
         center = ttk.Frame(tab, style="Card.TFrame", padding=10); center.grid(row=0, column=1, sticky="nsew")
         right = ttk.Frame(tab, style="Card.TFrame", padding=14, width=270); right.grid(row=0, column=2, sticky="nsew", padx=(8, 0)); right.grid_propagate(False)
@@ -480,32 +1167,72 @@ class ControlPanel:
         for task in ("活动低保", "情报", "体力", "训练", "科研", "建筑", "奖励"):
             row = ttk.Frame(left, style="Card.TFrame"); row.pack(fill="x", pady=3)
             ttk.Label(row, text=task, background=PANEL).pack(side="left")
-            self.today[task] = tk.StringVar(value="未知 / 待识别")
+            self.today[task] = tk.StringVar(value=PENDING)
             ttk.Label(row, textvariable=self.today[task], style="Muted.TLabel", background=PANEL).pack(side="right")
         bar = ttk.Frame(center, style="Card.TFrame"); bar.pack(fill="x", pady=(0, 8))
         ttk.Label(bar, text="游戏实时画面", style="Section.TLabel", background=PANEL).pack(side="left")
         choice = ttk.Combobox(bar, textvariable=self.preview_mode, values=("原始画面", "Vision", "OCR", "识别结果"), width=12, state="readonly")
         choice.pack(side="right"); choice.bind("<<ComboboxSelected>>", lambda _e: self._render_preview())
-        self.preview = tk.Label(center, text="正在获取 MuMu 截图…", bg="#070b10", fg=MUTED, font=("Microsoft YaHei UI", 11))
+        # Fixed-height holder: inside a scroll area the preview has no leftover space
+        # to expand into, so without a declared height it would render at whatever
+        # the last label measured and jump when the first screenshot arrived.
+        holder = tk.Frame(center, bg="#070b10", height=300)
+        holder.pack(fill="both", expand=True); holder.pack_propagate(False)
+        self.preview = tk.Label(holder, text="正在获取 MuMu 截图…", bg="#070b10", fg=MUTED, font=("Microsoft YaHei UI", 11))
         self.preview.pack(fill="both", expand=True); self.preview.bind("<Configure>", lambda _e: self._render_preview())
-        self.preview_meta = tk.StringVar(value="暂无识别数据")
+        self.preview_meta = tk.StringVar(value=NO_DATA)
         ttk.Label(center, textvariable=self.preview_meta, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(8, 0))
         ttk.Label(right, text="当前决策", style="Section.TLabel", background=PANEL).pack(anchor="w")
+        # V2 decides, MAA executes.  The backend is the first thing in this column
+        # because "which hands moved" is the fact that makes every other line here
+        # trustworthy or not: a measurement taken through the ADB fallback is not
+        # the same measurement as one taken through MAA.
+        ttk.Label(right, text="执行后端", style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(10, 1))
+        ttk.Label(right, textvariable=self.values["backend"], style="Value.TLabel", background=PANEL, wraplength=235, justify="left").pack(anchor="w")
+        ttk.Label(right, textvariable=self.values["backend_detail"], style="Muted.TLabel", background=PANEL, wraplength=235, justify="left").pack(anchor="w")
+        ttk.Label(right, text="V2 决定做什么 · MAA 负责执行 · Verifier 判定成功", style="Muted.TLabel", background=PANEL, wraplength=235, justify="left").pack(anchor="w", pady=(2, 0))
         for label, key, style in (("当前 Goal", "task_cn", "Value.TLabel"), ("当前 Universal Skill", "skill", "Muted.TLabel"),
-                                  ("当前状态", "page", "Value.TLabel"), ("为什么执行", "reason", "TLabel"),
+                                  ("当前状态", "runtime_state", "Value.TLabel"), ("为什么执行", "reason", "TLabel"),
                                   ("Preconditions", "preconditions", "TLabel"), ("Verifier", "verifier", "TLabel"),
                                   ("下一步", "next", "TLabel"), ("风险", "risk", "TLabel"),
                                   ("置信度", "confidence", "Value.TLabel")):
-            ttk.Label(right, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(12, 1))
+            ttk.Label(right, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(10, 1))
             ttk.Label(right, textvariable=self.values[key], style=style, background=PANEL, wraplength=235, justify="left").pack(anchor="w")
         ttk.Label(right, textvariable=self.values["stats"], style="Muted.TLabel", background=PANEL, wraplength=235).pack(anchor="w", side="bottom")
-        cards = ttk.Frame(tab, style="Card.TFrame", padding=10); cards.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        # Row 1: coverage and verification progress, first thing the eye lands on.
+        kpis = ttk.Frame(tab, style="Card.TFrame", padding=10); kpis.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        self.kpi_source: dict[str, tk.StringVar] = {}
+        for i, (key, meta) in enumerate(CATALOG_META.items()):
+            card = ttk.Frame(kpis, style="Card2.TFrame", padding=(12, 7)); card.grid(row=0, column=i, sticky="ew", padx=4); kpis.columnconfigure(i, weight=1)
+            ttk.Label(card, text=meta[0], style="Muted.TLabel", background=PANEL2).pack(anchor="w")
+            self.kpi[key] = tk.StringVar(value=NO_DATA)
+            ttk.Label(card, textvariable=self.kpi[key], style="Value.TLabel", background=PANEL2).pack(anchor="w")
+            self.kpi_source[key] = tk.StringVar(value=meta[1])
+            ttk.Label(card, textvariable=self.kpi_source[key], style="Muted.TLabel", background=PANEL2, wraplength=140, justify="left", font=("Microsoft YaHei UI", 7)).pack(anchor="w")
+        # Row 2: what the development platform is doing right now.
+        wb = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); wb.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        head = ttk.Frame(wb, style="Card.TFrame"); head.pack(fill="x")
+        ttk.Label(head, text="WorkBuddy 自动开发", style="Section.TLabel", background=PANEL).pack(side="left")
+        ttk.Label(head, textvariable=self.values["wb_gateway"], style="Muted.TLabel", background=PANEL).pack(side="right")
+        grid = ttk.Frame(wb, style="Card.TFrame"); grid.pack(fill="x", pady=(6, 0))
+        for index, (label, key) in enumerate((("状态", "wb_state"), ("当前 Capability", "wb_capability"),
+                                              ("Escalation Reason", "wb_reason"), ("Job ID", "wb_job"),
+                                              ("当前模型", "wb_model"), ("运行时间", "wb_duration"),
+                                              ("Job 状态", "wb_job_state"), ("Live Improvement", "wb_improvement"))):
+            cell = ttk.Frame(grid, style="Card.TFrame"); cell.grid(row=index // 4, column=index % 4, sticky="w", padx=(0, 22), pady=2)
+            ttk.Label(cell, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w")
+            ttk.Label(cell, textvariable=self.values[key], background=PANEL, wraplength=190, justify="left").pack(anchor="w")
+            grid.columnconfigure(index % 4, weight=1)
+        result = ttk.Frame(grid, style="Card.TFrame"); result.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(6, 0))
+        ttk.Label(result, text="最近结果", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        ttk.Label(result, textvariable=self.values["wb_result"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
+        cards = ttk.Frame(tab, style="Card.TFrame", padding=10); cards.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         self.queues: dict[str, tk.StringVar] = {}
         for i, name in enumerate(("行军", "建筑", "科技", "训练", "Intel", "联盟", "活动")):
             card = ttk.Frame(cards, style="Card2.TFrame", padding=(14, 8)); card.grid(row=0, column=i, sticky="ew", padx=4); cards.columnconfigure(i, weight=1)
             ttk.Label(card, text=name, style="Muted.TLabel", background=PANEL2).pack(anchor="w")
-            self.queues[name] = tk.StringVar(value="未知 / 待识别"); ttk.Label(card, textvariable=self.queues[name], style="Value.TLabel", background=PANEL2).pack(anchor="w")
-        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+            self.queues[name] = tk.StringVar(value=PENDING); ttk.Label(card, textvariable=self.queues[name], style="Value.TLabel", background=PANEL2).pack(anchor="w")
+        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         controls = ttk.Frame(bottom, style="Card.TFrame"); controls.pack(side="left")
         self.start_button = ttk.Button(controls, text="开始自动运行", style="Accent.TButton", command=self.start); self.start_button.pack(side="left", padx=(0, 4))
         self.pause_button = ttk.Button(controls, text="暂停", command=self.pause, state="disabled"); self.pause_button.pack(side="left", padx=3)
@@ -582,10 +1309,10 @@ class ControlPanel:
         except (OSError, json.JSONDecodeError):
             return
         names = {"CLEAR_INTEL":"清空情报", "AVOID_STAMINA_WASTE":"避免体力溢出", "KEEP_TRAINING_PRODUCTIVE":"保持训练", "KEEP_RESEARCH_PRODUCTIVE":"保持研究", "KEEP_BUILDING_PRODUCTIVE":"保持建筑", "EVENT_MINIMUM_GUARANTEE":"活动低保"}
-        statuses = {"READY":"待执行", "IN_PROGRESS":"进行中", "COMPLETE":"✓ 完成", "BLOCKED":"暂时阻塞", "UNKNOWN":"未知", "DISCOVERED":"已发现"}
+        statuses = {"READY":"待执行", "IN_PROGRESS":"进行中", "COMPLETE":"✓ 完成", "BLOCKED":"暂时阻塞", "UNKNOWN":"未知（引擎未判定）", "DISCOVERED":"已发现"}
         goals = snapshot.get("goals", [])
         if not goals:
-            self.goal_board.insert("", "end", values=("等待下一次可验证 Goal", "运行时", "—", "未知 / 待识别", "—", "—", "观察 WorldState", "当前页面信息不足", "Vision / GoalLibrary", f"{float(snapshot.get('confidence',0)):.0%}"))
+            self.goal_board.insert("", "end", values=("等待下一次可验证 Goal", "运行时", "—", PENDING, "—", "—", "观察 WorldState", "当前页面信息不足", "GoalLibrary / Scheduler", f"{float(snapshot.get('confidence',0)):.0%}"))
         for goal in goals:
             remaining = goal.get("remaining_seconds")
             deadline = "—" if remaining is None else f"{int(remaining)//3600:02d}:{int(remaining)%3600//60:02d}"
@@ -607,7 +1334,7 @@ class ControlPanel:
         self.goal_board_meta.set(f"识别页面：{snapshot.get('page','UNKNOWN')} · 置信度：{float(snapshot.get('confidence',0)):.0%} · 时间：{snapshot.get('observed_at','—')}")
 
     def _event_goal(self) -> None:
-        tab = self._tab("活动")
+        tab = self._tab("活动", scroll=True)
         ttk.Label(tab, text="活动低保", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
         ttk.Label(tab, text="当前活动页拥有最终事实优先级；外部资料只提供候选先验。", style="Muted.TLabel").pack(anchor="w", pady=(0, 16))
         box = ttk.Frame(tab, style="Card.TFrame", padding=22); box.pack(fill="x")
@@ -682,78 +1409,128 @@ class ControlPanel:
             self.queues["活动"].set(("低保完成" if item.get("minimum_guarantee_complete") else f"缺 {int(item.get('points_missing', 0)):,}") if current_record else "今日待检查")
 
     def _capabilities(self) -> None:
-        tab = self._tab("能力")
-        ttk.Label(tab, text="Universal Skill 与自动化覆盖", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
-        ttk.Label(tab, text="默认展示 Universal Skill；组合能力、活动适配器、Legacy 仅作为折叠分层，不定义主架构。", style="Muted.TLabel").pack(anchor="w", pady=(0, 10))
-        summary = ttk.Frame(tab, style="Card.TFrame", padding=12); summary.pack(fill="x")
-        self.capability_summary = {key: tk.StringVar(value="待统计") for key in ("live", "stable", "coverage", "success")}
-        for index, (key, label) in enumerate((("live", "Live Verified Skills"), ("stable", "Stable Skills"), ("coverage", "P0/P1 Goal Coverage"), ("success", "Real Success Rate"))):
+        tab = self._tab("能力", scroll=True)
+        ttk.Label(tab, text="Capability 覆盖与 Skill 执行层", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
+        ttk.Label(tab, text="上表是 Capability 覆盖表（capability_catalog.json）——游戏里有什么、验证到哪一步；"
+                            "下表是 Skill 执行注册表（v2_registry）——谁能把动作做出来。两张表各自独立，面板不合并、不改写任何一个。",
+                  style="Muted.TLabel", wraplength=1250, justify="left").pack(anchor="w", pady=(0, 8))
+        summary = ttk.Frame(tab, style="Card.TFrame", padding=10); summary.pack(fill="x")
+        self.capability_summary = {key: tk.StringVar(value=NO_DATA) for key in ("implemented", "tried", "verified", "blocked")}
+        for index, (key, label) in enumerate((("implemented", "已实现"), ("tried", "Live Tried"),
+                                              ("verified", "Live Verified"), ("blocked", "Blocked"))):
             card = ttk.Frame(summary, style="Card2.TFrame", padding=12); card.grid(row=0, column=index, sticky="ew", padx=4); summary.columnconfigure(index, weight=1)
             ttk.Label(card, text=label, style="Muted.TLabel", background=PANEL2).pack(anchor="w")
             ttk.Label(card, textvariable=self.capability_summary[key], style="Value.TLabel", background=PANEL2).pack(anchor="w")
-        self.skill_tree = ttk.Treeview(tab, columns=("layer", "skill", "goal", "params", "verifier", "recovery", "risk", "latency", "lifecycle", "live", "robust"), show="headings", height=16)
-        columns = (("layer", "层级", 105), ("skill", "Universal Skill", 185), ("goal", "Semantic Goal", 170),
-                   ("params", "Parameters", 110), ("verifier", "Verifier", 140), ("recovery", "Recovery", 110),
-                   ("risk", "Risk", 70), ("latency", "Latency", 70), ("lifecycle", "Lifecycle", 95),
-                   ("live", "Live Success", 90), ("robust", "语义稳健性", 110))
-        for key, title, width in columns: self.skill_tree.heading(key, text=title); self.skill_tree.column(key, width=width, anchor="w")
-        self.skill_tree.pack(fill="both", expand=True, pady=(10, 0))
+        # The vocabulary is printed, not implied: the whole point of section 5 is that
+        # a reader can tell 未读取 from 未知 from Blocked without guessing.
+        ttk.Label(tab, text="状态词义：未读取＝没人读过它（不是未知）· 待刷新＝只有未带 recorded_at 的导入记录，不能作为证据 · "
+                            "可执行＝已实现且可派发 · 执行中＝正在跑 · Blocked＝有具名阻塞原因 · Live Tried / Live Verified＝真机证据。",
+                  style="Muted.TLabel", wraplength=1250, justify="left").pack(anchor="w", pady=(6, 0))
+        head = ttk.Frame(tab); head.pack(fill="x", pady=(10, 4))
+        ttk.Label(head, text="Capability 覆盖表", style="Section.TLabel").pack(side="left")
+        self.show_all_capabilities = tk.BooleanVar(value=False)
+        ttk.Checkbutton(head, text="显示全部（默认只看已实现 / 已尝试 / 被阻塞）", variable=self.show_all_capabilities,
+                        command=self._refresh_capabilities).pack(side="right")
+        self.capability_tree = ttk.Treeview(tab, columns=("id", "code", "category", "lifecycle", "state", "backend", "live", "rate", "blocked"),
+                                            show="headings", height=10)
+        for key, title, width in (("id", "Capability ID", 105), ("code", "能力", 235), ("category", "分类", 165),
+                                  ("lifecycle", "生命周期", 95), ("state", "可用性", 90), ("backend", "首选后端", 70),
+                                  ("live", "真机成功/尝试", 95), ("rate", "成功率", 70), ("blocked", "阻塞原因", 260)):
+            self.capability_tree.heading(key, text=title); self.capability_tree.column(key, width=width, anchor="w")
+        self.capability_tree.pack(fill="both", expand=True, pady=(0, 10))
+        ttk.Label(tab, text="Skill 执行注册表", style="Section.TLabel").pack(anchor="w", pady=(0, 4))
+        self.skill_tree = ttk.Treeview(tab, columns=("layer", "skill", "verifier", "risk", "state", "live", "claims", "meaning"),
+                                       show="headings", height=8)
+        for key, title, width in (("layer", "层级", 90), ("skill", "Skill", 200), ("verifier", "Verifier", 130),
+                                  ("risk", "风险", 55), ("state", "阶段", 90), ("live", "真机验证/尝试", 95),
+                                  ("claims", "无时间戳声明", 100), ("meaning", "说明", 330)):
+            self.skill_tree.heading(key, text=title); self.skill_tree.column(key, width=width, anchor="w")
+        self.skill_tree.pack(fill="both", expand=True, pady=(0, 8))
         runtime_quality = ttk.Frame(tab, style="Card.TFrame", padding=8); runtime_quality.pack(fill="x", pady=(8, 0))
-        self.runtime_quality_vars = {key: tk.StringVar(value="待统计") for key in ("success24", "recovery", "exit", "latency")}
+        self.runtime_quality_vars = {key: tk.StringVar(value=NO_DATA) for key in ("success24", "recovery", "exit", "latency")}
         for index, (key, label) in enumerate((("success24", "24h Skill Success"), ("recovery", "Recovery Success"), ("exit", "Unexpected Worker Exit"), ("latency", "Average Realtime Latency"))):
             ttk.Label(runtime_quality, text=label, style="Muted.TLabel", background=PANEL).grid(row=0, column=index, sticky="w", padx=8)
             ttk.Label(runtime_quality, textvariable=self.runtime_quality_vars[key], background=PANEL).grid(row=1, column=index, sticky="w", padx=8); runtime_quality.columnconfigure(index, weight=1)
         self._refresh_capabilities()
 
     def _refresh_capabilities(self) -> None:
-        if not hasattr(self, "skill_tree"): return
+        if not hasattr(self, "capability_tree"): return
+        from winter_agent_v2.runtime import LiveRuntime
+
         universal_ids = {"CLAIM_REWARD", "NAVIGATE_TO", "SEND_MARCH", "START_RALLY", "JOIN_RALLY", "START_BUILD", "START_RESEARCH", "TRAIN_OR_PROMOTE", "USE_ACTIVITY_ATTEMPT", "READ_EVENT_STATE", "OPEN_HOME", "OPEN_MAP", "BACK", "CLOSE_POPUP", "DISPATCH_MARCH"}
-        episodes: dict[str, list[bool]] = {}
-        recent_results: list[bool] = []
-        recent_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
-        try:
-            for line in (ROOT / "learning/episodes.jsonl").read_text(encoding="utf-8").splitlines():
-                item = json.loads(line); success = item.get("result") == "SUCCESS"; episodes.setdefault(str(item.get("skill")), []).append(success)
-                try:
-                    recorded = datetime.fromisoformat(str(item.get("recorded_at", "")).replace("Z", "+00:00"))
-                    if recorded >= recent_cutoff: recent_results.append(success)
-                except ValueError: pass
-        except (OSError, json.JSONDecodeError): pass
+        index = episode_index()
+        snapshot = self.runtime_store.read()
+        running_skill = str(snapshot.current_skill or "")
+        catalog = capability_catalog()
+        entries = catalog.get("capabilities") or []
+        cataloged_skills = {str(e.get("existing_skill")) for e in entries if e.get("existing_skill")}
+        for row in self.capability_tree.get_children(): self.capability_tree.delete(row)
+        shown = 0
+        for entry in entries:
+            skill = str(entry.get("existing_skill") or "")
+            tally = index.get(skill, {}) if skill else {}
+            interesting = (bool(skill) or int(entry.get("live_attempts") or 0) or bool(entry.get("blocked_reason")))
+            if not (self.show_all_capabilities.get() or interesting):
+                continue
+            shown += 1
+            rate = entry.get("success_rate")
+            self.capability_tree.insert("", "end", values=(
+                entry.get("capability_id"), entry.get("code"), entry.get("name_cn"),
+                capability_lifecycle_cn(entry, skill_state=self._skill_state(skill)),
+                capability_state_cn(entry, skill_state=self._skill_state(skill), running_skill=running_skill,
+                                    claims=int(tally.get("claims") or 0)),
+                entry.get("preferred_backend") or PENDING,
+                f"{int(entry.get('live_success') or 0)}/{int(entry.get('live_attempts') or 0)}",
+                f"{float(rate):.0%}" if isinstance(rate, (int, float)) else "—",
+                str(entry.get("blocked_reason") or "—")[:150],
+            ))
         for row in self.skill_tree.get_children(): self.skill_tree.delete(row)
-        live_verified = stable = 0
+        verified_skills = stable_skills = 0
         for skill in self.registry.all():
             layer = "Universal" if skill.id in universal_ids else ("Event Adapter" if any(k in skill.id for k in ("BEAR", "EVENT")) else "Composite")
-            results = episodes.get(skill.id, [])
-            live = (f"{sum(results)}/{len(results)}" if results else "未实机")
-            if results and any(results): live_verified += 1
-            if skill.state is SkillState.STABLE: stable += 1
-            verifier = "状态变化" if skill.id in getattr(__import__("winter_agent_v2.runtime", fromlist=["LiveRuntime"]).LiveRuntime, "VERIFIED_ATOMIC", {}) else "待接入"
-            robust = "通过" if skill.state is SkillState.STABLE else ("警告：待语义 Gate" if layer == "Universal" else "—")
-            self.skill_tree.insert("", "end", values=(layer, skill.id, skill.description, "参数化", verifier, "标准恢复", skill.risk, "按场景", skill.state.value, live, robust))
-        total_results = [ok for values in episodes.values() for ok in values]
-        self.capability_summary["live"].set(str(live_verified)); self.capability_summary["stable"].set(str(stable))
-        self.capability_summary["success"].set(f"{sum(total_results)/len(total_results):.1%}" if total_results else "无真实样本")
+            tally = index.get(skill.id, {})
+            live = f"{tally.get('verified', 0)}/{tally.get('live', 0)}" if tally.get("live") else "未实机"
+            if tally.get("live") and tally.get("verified"): verified_skills += 1
+            if skill.state is SkillState.STABLE: stable_skills += 1
+            bound = skill.id in LiveRuntime.VERIFIED_ATOMIC
+            meaning = ("已绑定 verifier，可由 Scheduler 派发" if bound
+                       else "未绑定 verifier：写好了但不会被派发（见 VERIFIER_SHAPE_MISMATCH）")
+            if tally.get("claims") and not tally.get("live"):
+                meaning = f"{tally['claims']} 行导入声明未带 recorded_at，需要一次真机刷新才算证据"
+            self.skill_tree.insert("", "end", values=(layer, skill.id, "已绑定" if bound else "未绑定",
+                                                      skill.risk, skill.state.value, live,
+                                                      str(tally.get("claims") or 0), meaning))
+        kpi = overview_kpis(registry=self.registry)
+        for key in ("implemented", "tried", "verified", "blocked"):
+            self.capability_summary[key].set(kpi[key]["value"])
         if hasattr(self, "runtime_quality_vars"):
-            durations = []
-            try:
-                for line in (ROOT / "learning/episodes.jsonl").read_text(encoding="utf-8").splitlines():
-                    episode = json.loads(line)
-                    if isinstance(episode.get("duration"), (int, float)): durations.append(float(episode["duration"]))
-            except (OSError, json.JSONDecodeError): pass
-            snapshot = self.runtime_store.read()
-            self.runtime_quality_vars["success24"].set(f"{sum(recent_results)}/{len(recent_results)}" if recent_results else "无24h时间戳样本")
+            scan = episode_scan()
+            recent_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+            recent: list[bool] = []
+            for stamp, ok in scan["results"]:
+                try:
+                    if datetime.fromisoformat(stamp.replace("Z", "+00:00")) >= recent_cutoff:
+                        recent.append(ok)
+                except ValueError:
+                    pass
+            durations = scan["durations"]
+            self.runtime_quality_vars["success24"].set(f"{sum(recent)}/{len(recent)}" if recent else "无24h时间戳样本")
             self.runtime_quality_vars["recovery"].set(f"{snapshot.watchdog_restart_count} 次重启")
             self.runtime_quality_vars["exit"].set(str(snapshot.unexpected_worker_exits))
-            self.runtime_quality_vars["latency"].set(f"{sum(durations)/len(durations):.1f}s" if durations else "待统计")
+            self.runtime_quality_vars["latency"].set(f"{sum(durations)/len(durations):.1f}s" if durations else PENDING)
+
+    def _skill_state(self, skill_id: str) -> str:
+        if not skill_id:
+            return ""
         try:
-            audit = json.loads((ROOT / "learning/goal_coverage.json").read_text(encoding="utf-8")); value = audit.get("summary", {}).get("automated_percent")
-            high = [goal for goal in audit.get("goals", []) if int(goal.get("goal_priority", 0)) >= 9]
-            high_verified = sum(goal.get("status") == "AUTOMATED_VERIFIED" for goal in high)
-            self.capability_summary["coverage"].set(f"{high_verified}/{len(high)}" if high else "待统计")
-        except (OSError, json.JSONDecodeError, TypeError, ValueError): self.capability_summary["coverage"].set("待统计")
+            skill = self.registry.get(skill_id)
+        except Exception:  # noqa: BLE001 - an unknown skill simply has no state here
+            return ""
+        return skill.state.value if skill is not None else ""
+
 
     def _skills(self) -> None:
-        tab = self._tab("能力"); ttk.Label(tab, text="能力目录", style="Title.TLabel").pack(anchor="w", pady=(5, 10))
+        tab = self._tab("能力", scroll=True); ttk.Label(tab, text="能力目录", style="Title.TLabel").pack(anchor="w", pady=(5, 10))
         tree = ttk.Treeview(tab, columns=("name", "id", "state", "risk"), show="headings")
         for key, title, width in (("name", "能力", 220), ("id", "内部标识", 300), ("state", "验证阶段", 140), ("risk", "资源影响", 200)):
             tree.heading(key, text=title); tree.column(key, width=width, anchor="w")
@@ -774,54 +1551,167 @@ class ControlPanel:
         ttk.Label(tab, text="最近学会", style="Section.TLabel").pack(anchor="w", pady=(22, 8))
         ttk.Label(tab, text=" · ".join(verified[-8:]) or "暂无数据", style="Muted.TLabel", wraplength=1000).pack(anchor="w")
 
-    def _learning(self) -> None:
-        tab = self._tab("学习"); ttk.Label(tab, text="学习与改进", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
-        ttk.Label(tab, text="来自现有 Episode；这里不直接修改 Production。", style="Muted.TLabel").pack(anchor="w", pady=(0, 16))
-        text = tk.Text(tab, bg=PANEL, fg=TEXT, relief="flat", font=("Microsoft YaHei UI", 10), padx=16, pady=14); text.pack(fill="both", expand=True)
-        counts: Counter[str] = Counter(); total = 0
-        try:
-            for line in (ROOT / "learning/episodes.jsonl").read_text(encoding="utf-8").splitlines():
-                item = json.loads(line); total += 1
-                if item.get("failure_type"): counts[str(item["failure_type"])] += 1
-        except (OSError, json.JSONDecodeError): pass
-        lines = [f"已记录 Episode：{total}", "", "最近失败分类"] + ([f"  {human_reason(k)}  {v}" for k, v in counts.most_common(8)] or ["  暂无失败数据"])
-        text.insert("1.0", "\n".join(lines)); text.configure(state="disabled")
+    def _auto_development(self) -> None:
+        """The development platform's own page.
 
-    def _learning_center(self) -> None:
-        tab = self._tab("学习")
-        ttk.Label(tab, text="学习与问题优先级中心", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
-        counts = count_knowledge()
-        quality = ttk.Frame(tab, style="Card.TFrame", padding=12); quality.pack(fill="x")
-        ttk.Label(quality, text="Knowledge Quality", style="Section.TLabel", background=PANEL).grid(row=0, column=0, columnspan=6, sticky="w")
-        labels = (("LIVE_CLIENT", counts.get("Replay", 0)), ("VERIFIED", counts.get("UI 语义", 0)),
-                  ("PRIOR", counts.get("游戏知识", 0)), ("CONFLICT", "待审计"), ("OUTDATED", "待审计"), ("UNKNOWN", "运行中发现"))
-        for index, (name, value) in enumerate(labels):
-            card = ttk.Frame(quality, style="Card2.TFrame", padding=10); card.grid(row=1, column=index, sticky="ew", padx=3, pady=(8, 0)); quality.columnconfigure(index, weight=1)
-            ttk.Label(card, text=name, style="Muted.TLabel", background=PANEL2).pack(anchor="w"); ttk.Label(card, text=str(value), background=PANEL2).pack(anchor="w")
-        notes = ttk.Frame(tab, style="Card.TFrame", padding=12); notes.pack(fill="x", pady=(10, 0))
-        for i, (label, value) in enumerate((("最近学会", "从 Live Verifier 成功记录更新"), ("最近纠正", "从 Knowledge correction 记录更新"),
-                                            ("当前冲突", "待 Knowledge Audit 刷新"), ("阻塞 Goal 的 UNKNOWN", "从 Runtime Failure 自动聚合"))):
-            ttk.Label(notes, text=label, style="Muted.TLabel", background=PANEL, width=22).grid(row=i, column=0, sticky="w", pady=3)
-            ttk.Label(notes, text=value, background=PANEL).grid(row=i, column=1, sticky="w", pady=3)
-        self.failure_tree = ttk.Treeview(tab, columns=("type", "count", "goals", "priority", "last", "status", "repair"), show="headings", height=10)
-        for key, title, width in (("type", "问题", 245), ("count", "次数", 60), ("goals", "影响目标", 170), ("priority", "优先级", 75), ("last", "最近出现", 160), ("status", "状态", 90), ("repair", "修复状态", 130)):
+        Renamed from 学习 on 2026-09-17: what happens here is not the runtime
+        learning from experience, it is a development agent being handed a
+        capability gap and returning either a working capability or an honest
+        BLOCKED.  Every number on this page comes from the escalation ledger or
+        from ``classify_condition`` -- the same rule the AUTO hook uses.
+        """
+        from winter_agent_v2.escalation_queue import ALL_STATES
+
+        tab = self._tab("自动开发", scroll=True)
+        ttk.Label(tab, text="WorkBuddy 自动开发平台", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
+        ttk.Label(tab, text="V2 发现能力缺口 → 升级队列（去重 / 并发 1 / 修复预算）→ WorkBuddy 后台开发 → 真机验证。"
+                            "模型只是 WorkBuddy 内部的可替换算力，不是 Winter Agent OS 的组件。",
+                  style="Muted.TLabel").pack(anchor="w", pady=(0, 10))
+        status = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); status.pack(fill="x")
+        head = ttk.Frame(status, style="Card.TFrame"); head.pack(fill="x")
+        ttk.Label(head, text="WorkBuddy 状态", style="Section.TLabel", background=PANEL).pack(side="left")
+        ttk.Label(head, textvariable=self.values["wb_gateway"], style="Muted.TLabel", background=PANEL).pack(side="right")
+        grid = ttk.Frame(status, style="Card.TFrame"); grid.pack(fill="x", pady=(6, 0))
+        for index, (label, key) in enumerate((("状态", "wb_state"), ("当前 Capability", "wb_capability"),
+                                              ("Escalation Reason", "wb_reason"), ("Job ID", "wb_job"),
+                                              ("当前模型", "wb_model"), ("运行时间", "wb_duration"),
+                                              ("Job 状态", "wb_job_state"), ("Live Improvement", "wb_improvement"))):
+            cell = ttk.Frame(grid, style="Card.TFrame"); cell.grid(row=index // 4, column=index % 4, sticky="w", padx=(0, 22), pady=3)
+            ttk.Label(cell, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w")
+            ttk.Label(cell, textvariable=self.values[key], background=PANEL, wraplength=280, justify="left").pack(anchor="w")
+            grid.columnconfigure(index % 4, weight=1)
+        result = ttk.Frame(grid, style="Card.TFrame"); result.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(6, 0))
+        ttk.Label(result, text="最近结果", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        ttk.Label(result, textvariable=self.values["wb_result"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
+        queue = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8)); queue.pack(fill="x", pady=(10, 0))
+        qhead = ttk.Frame(queue, style="Card.TFrame"); qhead.pack(fill="x")
+        ttk.Label(qhead, text="Development Escalation Queue", style="Section.TLabel", background=PANEL).pack(side="left")
+        ttk.Label(qhead, textvariable=self.values["wb_queue_line"], style="Muted.TLabel", background=PANEL).pack(side="right")
+        strip = ttk.Frame(queue, style="Card.TFrame"); strip.pack(fill="x", pady=(6, 0))
+        self.escalation_state_vars: dict[str, tk.StringVar] = {}
+        for index, state in enumerate(ALL_STATES):
+            card = ttk.Frame(strip, style="Card2.TFrame", padding=(10, 5)); card.grid(row=0, column=index, sticky="ew", padx=3); strip.columnconfigure(index, weight=1)
+            ttk.Label(card, text=STATE_ZH.get(state, state), style="Muted.TLabel", background=PANEL2).pack(anchor="w")
+            self.escalation_state_vars[state] = tk.StringVar(value="0")
+            ttk.Label(card, textvariable=self.escalation_state_vars[state], style="Value.TLabel", background=PANEL2).pack(anchor="w")
+        cond = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8)); cond.pack(fill="x", pady=(10, 0))
+        chead = ttk.Frame(cond, style="Card.TFrame"); chead.pack(fill="x")
+        ttk.Label(chead, text="Capability Gap · 升级条件分桶", style="Section.TLabel", background=PANEL).pack(side="left")
+        ttk.Label(chead, text="按 escalation_queue.classify_condition 分类当前真机失败", style="Muted.TLabel", background=PANEL).pack(side="right")
+        cstrip = ttk.Frame(cond, style="Card.TFrame"); cstrip.pack(fill="x", pady=(6, 0))
+        self.bucket_vars: dict[str, tk.StringVar] = {}
+        for index, condition in enumerate((*AUTO_ESCALATION_CONDITIONS, "（不升级）")):
+            card = ttk.Frame(cstrip, style="Card2.TFrame", padding=(10, 5)); card.grid(row=0, column=index, sticky="ew", padx=3); cstrip.columnconfigure(index, weight=1)
+            ttk.Label(card, text=CONDITION_ZH.get(condition, condition), style="Muted.TLabel", background=PANEL2).pack(anchor="w")
+            self.bucket_vars[condition] = tk.StringVar(value=NO_DATA)
+            ttk.Label(card, textvariable=self.bucket_vars[condition], style="Value.TLabel", background=PANEL2).pack(anchor="w")
+        ttk.Label(tab, text="Job 历史", style="Section.TLabel").pack(anchor="w", pady=(12, 4))
+        self.job_tree = ttk.Treeview(tab, columns=("time", "capability", "reason", "state", "model", "outcome", "changed", "duration"),
+                                     show="headings", height=6)
+        for key, title, width in (("time", "时间", 150), ("capability", "Capability", 210), ("reason", "Escalation Reason", 150),
+                                  ("state", "状态", 80), ("model", "模型", 130), ("outcome", "结果", 110),
+                                  ("changed", "代码", 70), ("duration", "耗时", 80)):
+            self.job_tree.heading(key, text=title); self.job_tree.column(key, width=width, anchor="w")
+        self.job_tree.pack(fill="x", pady=(0, 10))
+        pair = ttk.Frame(tab); pair.pack(fill="both", expand=True)
+        left = ttk.Frame(pair, style="Card.TFrame", padding=8); left.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        ttk.Label(left, text="模型战绩（WorkBuddy 内部算力，只读）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        self.model_tree = ttk.Treeview(left, columns=("model", "task", "jobs", "success", "live", "duration", "cost"),
+                                       show="headings", height=6)
+        for key, title, width in (("model", "模型", 130), ("task", "任务类型", 130), ("jobs", "样本", 55),
+                                  ("success", "成功率", 70), ("live", "Live 改进", 80), ("duration", "平均耗时", 90), ("cost", "成本", 110)):
+            self.model_tree.heading(key, text=title); self.model_tree.column(key, width=width, anchor="w")
+        self.model_tree.pack(fill="both", expand=True, pady=(4, 0))
+        right = ttk.Frame(pair, style="Card.TFrame", padding=8); right.pack(side="left", fill="both", expand=True, padx=(5, 0))
+        ttk.Label(right, text="最近失败分类（真机 episode）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        self.failure_tree = ttk.Treeview(right, columns=("type", "count", "priority", "last"), show="headings", height=6)
+        for key, title, width in (("type", "问题", 260), ("count", "次数", 60), ("priority", "优先级", 70), ("last", "最近出现", 160)):
             self.failure_tree.heading(key, text=title); self.failure_tree.column(key, width=width, anchor="w")
-        self.failure_tree.pack(fill="both", expand=True, pady=(10, 0)); self._refresh_learning_center()
+        self.failure_tree.pack(fill="both", expand=True, pady=(4, 0))
+        self.dev_note = tk.StringVar(value=PENDING)
+        ttk.Label(tab, textvariable=self.dev_note, style="Muted.TLabel", wraplength=1250, justify="left").pack(anchor="w", pady=(8, 0))
+        ttk.Button(tab, text="打开升级台账", command=lambda: self._open(ROOT / "learning/workbuddy_escalations.jsonl")).pack(anchor="w", pady=(6, 0))
+        self._refresh_auto_development()
 
-    def _refresh_learning_center(self) -> None:
-        if not hasattr(self, "failure_tree"): return
-        rows: dict[str, dict[str, Any]] = {}
+    def _refresh_auto_development(self) -> None:
+        if not hasattr(self, "job_tree"): return
+        view = escalation_view()
+        buckets = escalation_buckets()
+        for state, var in self.escalation_state_vars.items():
+            var.set(str((view.get("counts") or {}).get(state, 0)))
+        for condition, var in self.bucket_vars.items():
+            entry = buckets.get(condition) or {}
+            var.set(f"{entry.get('types', 0)} 类 / {entry.get('episodes', 0)} 次" if entry else "0 类 / 0 次")
+        for row in self.job_tree.get_children(): self.job_tree.delete(row)
+        for record in view.get("records") or ():
+            stamp = (record.submitted_at or record.first_seen)
+            self.job_tree.insert("", "end", values=(
+                stamp.astimezone().strftime("%m-%d %H:%M") if stamp else "—",
+                record.capability or record.skill or record.key,
+                record.condition or "—",
+                STATE_ZH.get(record.state, record.state),
+                record.model or PENDING,
+                record.outcome or "待对账",
+                "已变更" if record.code_changed else "未变更",
+                duration_label(record),
+            ))
+        for row in self.model_tree.get_children(): self.model_tree.delete(row)
+        for row in self._model_rows():
+            self.model_tree.insert("", "end", values=(row["model"], row["task_type"], row["jobs"], row["success"],
+                                                      row["live"], row["duration"], row["cost"]))
+        for row in self.failure_tree.get_children(): self.failure_tree.delete(row)
+        for failure, count in live_failure_counts().most_common(12):
+            priority = "P0" if count >= 10 else ("P1" if count >= 3 else "P2")
+            self.failure_tree.insert("", "end", values=(human_reason(failure), count, priority, ""))
+        gap = capability_gap_view()
+        summary = gap.get("summary") or {}
+        leverage = gap.get("highest_leverage") or ()
+        notes = [
+            f"最近成功开发 Capability：{self._developed_capabilities(view) or '尚无（还没有升级任务达到 Live Verified）'}",
+            f"Goal 覆盖：{summary.get('fully_live_verified', 0)}/{summary.get('total', 0)} 完全真机验证"
+            f" · 部分 {summary.get('partial', 0)} · 阻塞 {summary.get('blocked', 0)} · 退化 {summary.get('degraded', 0)}"
+            f" · 从未尝试 {summary.get('never_tried', 0)}（源：capability_skill_map.json）",
+            "最高杠杆缺口：" + ("、".join(
+                f"{entry.get('skill_id')}（阻塞 {entry.get('blocked_goals', 0)} 个 Goal）" for entry in leverage[:3]
+            ) or "无"),
+        ]
+        self.dev_note.set("\n".join(notes))
+
+    def _developed_capabilities(self, view: dict[str, Any]) -> str:
+        """Capabilities a development job actually pushed to Live Verified."""
+        names = [r.capability or r.skill for r in (view.get("verified") or ()) if (r.capability or r.skill)]
+        return "、".join(list(dict.fromkeys(names))[:4])
+
+    def _model_rows(self) -> list[dict[str, str]]:
+        """Model record, straight from the router's own outcome log.
+
+        Cost is not obtainable: the jobs API exposes no usage field, so the column
+        says so instead of inventing an estimate the router might start trusting.
+        """
+        from winter_agent_v2.workbuddy_model_router import (
+            ModelStatsStore, default_stats_path, stats_for,
+        )
+
         try:
-            for line in (ROOT / "learning/episodes.jsonl").read_text(encoding="utf-8").splitlines():
-                item = json.loads(line); failure = item.get("failure_type")
-                if not failure: continue
-                row = rows.setdefault(str(failure), {"count": 0, "last": "—", "goals": set()}); row["count"] += 1
-                row["last"] = item.get("created_at", item.get("timestamp", "最近")); row["goals"].add(str(item.get("goal", "当前 Goal")))
-        except (OSError, json.JSONDecodeError): pass
-        for item in self.failure_tree.get_children(): self.failure_tree.delete(item)
-        for failure, row in sorted(rows.items(), key=lambda pair: pair[1]["count"], reverse=True)[:15]:
-            priority = "P0" if row["count"] >= 10 else ("P1" if row["count"] >= 3 else "P2")
-            self.failure_tree.insert("", "end", values=(human_reason(failure), row["count"], ", ".join(row["goals"]), priority, row["last"], "已分类", "待候选修复"))
+            rows = ModelStatsStore(default_stats_path(ROOT)).rows()
+        except Exception:  # noqa: BLE001 - an unreadable stats file is an empty table
+            return []
+        if not rows:
+            return []
+        out: list[dict[str, str]] = []
+        for task_type in sorted({str(row.get("task_type") or "") for row in rows}):
+            for model, rung in sorted(stats_for(rows, task_type).items()):
+                if not rung.jobs:
+                    continue
+                out.append({
+                    "model": model, "task_type": task_type or PENDING, "jobs": str(rung.jobs),
+                    "success": f"{rung.success_rate:.0%}",
+                    "live": f"{rung.live_rate:.0%}" if rung.live_verified else "0%",
+                    "duration": f"{rung.mean_duration:.0f}s" if rung.mean_duration else "—",
+                    "cost": "不可得（jobs API 无用量字段）",
+                })
+        return out
+
 
     def _system(self) -> None:
         tab = self._tab("系统")
@@ -844,15 +1734,24 @@ class ControlPanel:
     def _refresh_runtime_snapshot(self, schedule_next: bool = True) -> None:
         snapshot = self.runtime_store.read()
         names = {"AUTO_RUNNING": "● 自动运行", "IDLE": "● 空闲", "GOAL_RUNNING": "● Goal 执行中", "RECOVERING": "● 恢复中", "DEGRADED": "● 退化运行", "SAFE_STOP": "● 安全停止", "FATAL_STOPPED": "● 致命停止", "PAUSED": "● 已暂停"}
+        running = snapshot.agent_state in {"AUTO_RUNNING", "GOAL_RUNNING", "RECOVERING"}
         self.values["agent"].set(names.get(snapshot.agent_state, snapshot.agent_state))
-        self.values["page"].set(PAGE_ZH.get(snapshot.page, snapshot.page or "未知 / 待识别"))
-        self.values["task_cn"].set("自动目标发现" if snapshot.current_goal == "AUTO_DISCOVERY" else (snapshot.current_goal or "未知 / 待识别"))
-        self.values["skill"].set(snapshot.current_skill or "未知 / 待识别")
-        self.values["reason"].set(human_reason(snapshot.reason)); self.values["preconditions"].set(" · ".join(snapshot.preconditions) or "待 Runtime 提供")
-        self.values["verifier"].set(human_reason(snapshot.verifier)); self.values["next"].set(human_reason(snapshot.next_action)); self.values["risk"].set(snapshot.risk)
+        self.values["page"].set(PAGE_ZH.get(snapshot.page, snapshot.page or (UNKNOWN_NOW if running else PENDING)))
+        self.values["task_cn"].set("自动目标发现" if snapshot.current_goal == "AUTO_DISCOVERY" else (snapshot.current_goal or PENDING))
+        self.values["skill"].set(snapshot.current_skill or PENDING)
+        self.values["reason"].set(human_reason(snapshot.reason)); self.values["preconditions"].set(" · ".join(snapshot.preconditions) or PENDING)
+        self.values["verifier"].set(human_reason(snapshot.verifier)); self.values["next"].set(human_reason(snapshot.next_action))
+        self.values["risk"].set(snapshot.risk if snapshot.risk and snapshot.risk != "UNKNOWN" else PENDING)
         self.values["confidence"].set(f"{snapshot.confidence:.0%}")
-        self.values["mode"].set("自动运行" if snapshot.agent_state in {"AUTO_RUNNING", "GOAL_RUNNING", "RECOVERING"} else ("暂停" if snapshot.agent_state == "PAUSED" else "等待"))
-        self.values["vision"].set("● 正常" if snapshot.vision == "READY" else "● 待识别")
+        self.values["mode"].set("自动运行" if running else ("暂停" if snapshot.agent_state == "PAUSED" else "等待"))
+        self.values["runtime_state"].set(runtime_status_cn(snapshot.stop_reason, running=running))
+        # MAA / backend axis.  Taken from the executor ledger and the resolved
+        # production interpreter, so this cell cannot claim MAA is fine while the
+        # worker is quietly running on ADB capture.
+        axis = backend_axis(tail_jsonl(BACKEND_LEDGER_PATH, 200))
+        self.values["maa"].set(maa_cell(runtime_interpreter_report(), axis))
+        self.values["backend"].set(axis["label"])
+        self.values["backend_detail"].set(f"{axis['mix']} · 最近错误 {axis['errors']} 次")
         if snapshot.march_used is not None and snapshot.march_max is not None:
             march = f"{snapshot.march_used}/{snapshot.march_max}"; self.values["march"].set(f"行军：{march}"); self.queues["行军"].set(march)
         queue_names = {"建筑": "building", "科技": "research", "训练": "training", "Intel": "intel", "联盟": "alliance", "活动": "events"}
@@ -869,8 +1768,85 @@ class ControlPanel:
                     "tick": snapshot.last_tick_time or "无", "action": snapshot.last_action_time or "无", "success": snapshot.last_success_time or "无",
                     "fatal": snapshot.last_fatal_error or "无", "restart": str(snapshot.watchdog_restart_count), "unexpected": str(snapshot.unexpected_worker_exits)}
             for key, value in vals.items(): self.runtime_detail_vars[key].set(value)
-        self._refresh_capabilities(); self._refresh_learning_center()
+        self._refresh_workbuddy(); self._refresh_capabilities(); self._refresh_auto_development()
         if schedule_next: self.root.after(1500, self._refresh_runtime_snapshot)
+
+    def _refresh_workbuddy(self) -> None:
+        """Keep every WorkBuddy surface on one set of derived facts.
+
+        The header cell, the overview card and the development tab all read these
+        same values, so they cannot disagree about what the development platform is
+        doing -- which is the whole point of not building a second state store.
+        """
+        view = escalation_view()
+        gateway = self.gateway.snapshot()
+        label, detail = workbuddy_cell(view, gateway)
+        self.values["workbuddy"].set(label)
+        self.values["wb_state"].set(label + (f"（{detail}）" if detail else ""))
+        if gateway.get("available") is False:
+            self.values["wb_gateway"].set(f"网关不可用 · {gateway_reason_cn(gateway.get('reason'))}")
+        elif gateway.get("available") is True:
+            self.values["wb_gateway"].set(f"网关正常 · 检查于 {gateway.get('checked_at') or '—'}")
+        else:
+            self.values["wb_gateway"].set("网关状态待测")
+        current = view.get("current")
+        settled = view.get("pending_verify") or ()
+        if current is None and settled:
+            current = settled[0]
+        self.values["wb_queue_line"].set(
+            " · ".join(f"{state} {count}" for state, count in sorted((view.get("counts") or {}).items())) or PENDING
+        )
+        if current is None:
+            self.values["wb_capability"].set(PENDING)
+            self.values["wb_reason"].set(PENDING)
+            self.values["wb_job"].set(PENDING)
+            self.values["wb_model"].set(PENDING)
+            self.values["wb_duration"].set(PENDING)
+            self.values["wb_job_state"].set(PENDING)
+            self.values["wb_improvement"].set(PENDING)
+            self.values["wb_result"].set("尚未产生开发任务：升级队列为空。")
+            self.gateway.watch("")
+        else:
+            self.values["wb_capability"].set(current.capability or current.skill or current.key)
+            self.values["wb_reason"].set(current.condition or PENDING)
+            self.values["wb_job"].set(current.job_id or "尚未提交")
+            # The model is WorkBuddy's own compute, read back from the ledger it
+            # wrote -- the panel never names one and never chooses one.
+            self.values["wb_model"].set(current.model or PENDING)
+            # "运行时间" only means something once a job exists.  For a gap that has
+            # been noticed but not submitted, the honest reading is how long we have
+            # been sitting on it -- calling that a job's runtime would overstate it.
+            self.values["wb_duration"].set(
+                f"未提交（发现于 {duration_label(current)}前）" if not current.submitted_at
+                else duration_label(current)
+            )
+            job = gateway.get("job") or {}
+            self.values["wb_job_state"].set(
+                f"{current.state}" + (f" · 网关 {job.get('verdict')}" if job.get("verdict") else "")
+            )
+            self.values["wb_improvement"].set(
+                "是" if current.outcome == "LIVE_VERIFIED" else ("否" if current.outcome else "待对账")
+            )
+            self.values["wb_result"].set(self._describe_escalation(current))
+            self.gateway.watch(current.job_id)
+        kpi = overview_kpis(view=view)
+        for key, var in self.kpi.items():
+            var.set(kpi.get(key, {}).get("value", NO_DATA))
+        if hasattr(self, "kpi_source"):
+            for key, var in self.kpi_source.items():
+                var.set(kpi.get(key, {}).get("source", PENDING))
+
+    def _describe_escalation(self, record: Any) -> str:
+        """One honest line about what a finished development job achieved."""
+        parts = [f"结果 {record.outcome or '待对账'}"]
+        if record.repairs_used:
+            parts.append(f"已用修复预算 {record.repairs_used}")
+        parts.append("代码已变更" if record.code_changed else "代码未变更")
+        if record.notes:
+            parts.append(str(record.notes[-1])[:200])
+        if record.evidence:
+            parts.append(f"证据 {Path(str(record.evidence[0])).name}")
+        return " · ".join(parts)
 
     def _logs(self) -> None:
         tab = self._tab("日志"); bar = ttk.Frame(tab); bar.pack(fill="x", pady=(0, 8))
@@ -939,7 +1915,7 @@ class ControlPanel:
 
     def refresh(self) -> None:
         self._refresh_runtime_snapshot(schedule_next=False)
-        self._append("已从统一 Runtime Snapshot 刷新；GUI 未调用 OCR/Qwen。")
+        self._append("已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。")
 
     def take_screenshot(self) -> None:
         self._append("截图由 Runtime 统一采集；已显示最新 Runtime Evidence。"); self.refresh()
@@ -1357,7 +2333,7 @@ class ControlPanel:
             last_fatal_error=message if fatal else previous.last_fatal_error,
             unexpected_worker_exits=previous.unexpected_worker_exits + (1 if counts_as_exit else 0),
         )
-        self.values["vision"].set("异常"); self.values["result"].set(message)
+        self.values["runtime_state"].set("异常"); self.values["result"].set(message)
         self._append(f"⚠ {message}（{classification}）")
         if report: self._append(f"  根因证据：{report}")
         self._idle_buttons(); self._clear_running_task_labels()
@@ -1392,7 +2368,7 @@ class ControlPanel:
             last_fatal_error=message if fatal else previous.last_fatal_error,
             unexpected_worker_exits=previous.unexpected_worker_exits + (1 if counts_as_exit else 0),
         )
-        self.values["vision"].set("异常"); self.values["result"].set(message); self._append(f"⚠ {message}")
+        self.values["runtime_state"].set("异常"); self.values["result"].set(message); self._append(f"⚠ {message}")
         self._idle_buttons(); self._clear_running_task_labels()
         if self.continuous.get() and not fatal and not self.stop_requested and not self.paused:
             self.runtime_store.update(watchdog_restart_count=previous.watchdog_restart_count + 1)
@@ -1404,8 +2380,9 @@ class ControlPanel:
         self.values["device"].set("● 已连接")
         expected_package = self.config["device"]["package_name"]
         self.values["game"].set("运行中" if status.foreground_package == expected_package else "未在前台")
-        self.values["page"].set(PAGE_ZH.get(world.page.value, world.page.value)); self.values["vision"].set("● 正常" if world.known else "● 未识别")
+        self.values["page"].set(PAGE_ZH.get(world.page.value, world.page.value) if world.known else UNKNOWN_NOW)
         self.values["confidence"].set(f"{world.confidence:.0%}")
+        self.values["runtime_state"].set("执行中" if world.known else UNKNOWN_NOW)
         self._refresh_event_goal_display()
         self._refresh_goal_board()
         self._refresh_coverage()
@@ -1420,7 +2397,7 @@ class ControlPanel:
 
     @staticmethod
     def _compact(value: dict[str, Any]) -> str:
-        if not value: return "未知 / 待识别"
+        if not value: return PENDING
         for key in ("status", "state", "available", "claimable", "queue"):
             if key in value: return human_reason(value[key])
         return f"已识别 {len(value)} 项"
@@ -1512,6 +2489,9 @@ class ControlPanel:
     def close(self) -> None:
         if self.process is not None and self.process.poll() is None:
             self.process.terminate()
+        # The gateway poller is a daemon thread, so the process would exit anyway --
+        # stopping it explicitly keeps a closing window from making one last request.
+        self.gateway.stop()
         self._cancel_repeat(); self.root.destroy()
 
 
