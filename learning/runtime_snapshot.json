@@ -2,8 +2,8 @@
   "agent_state": "DEGRADED",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-16T23:53:18.437152+00:00",
-  "last_action_time": "2026-09-16T23:53:18.636557+00:00",
+  "last_tick_time": "2026-09-17T00:26:07.065107+00:00",
+  "last_action_time": "2026-09-17T00:26:07.261101+00:00",
   "last_success_time": null,
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T235320138296.png",
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_007_after_20260917T002608762372.png",
   "march_used": null,
   "march_max": null,
   "queues": {
@@ -31,7 +31,8 @@
     "training": {},
     "intel": {
       "status": "AVAILABLE",
-      "stamina": 237,
+      "stamina": 227,
+      "refresh": "07:33:34",
       "available_count": 6,
       "pins": 6,
       "list_read": true
@@ -40,5 +41,5 @@
     "events": {}
   },
   "stop_reason": "DAILY_REWARD_ADVANCE_NOT_PROVEN",
-  "updated_at": "2026-09-16T23:53:44.270267+00:00"
+  "updated_at": "2026-09-17T00:26:34.162281+00:00"
 }

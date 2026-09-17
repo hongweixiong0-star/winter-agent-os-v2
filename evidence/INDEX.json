@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-16T17:24:07+00:00",
-  "count": 532,
+  "generated_at": "2026-09-17T00:31:08+00:00",
+  "count": 575,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -179,8 +179,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 100092,
-      "mtime": "2026-09-16T17:10:20+00:00"
+      "bytes": 101048,
+      "mtime": "2026-09-16T17:24:07+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -2593,6 +2593,264 @@
       "kind": "fixture",
       "bytes": 755597,
       "mtime": "2026-09-13T16:02:47+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/12_camp_focus_run1_refresh_2.png",
+      "kind": "fixture",
+      "bytes": 1062943,
+      "mtime": "2026-09-16T23:41:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/back_for_intel_20260916_235213_00_before.png",
+      "kind": "fixture",
+      "bytes": 654356,
+      "mtime": "2026-09-16T23:52:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/back_for_intel_20260916_235213_99_after_back.png",
+      "kind": "fixture",
+      "bytes": 1130637,
+      "mtime": "2026-09-16T23:52:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/back_from_build_20260916_234027_00_before.png",
+      "kind": "fixture",
+      "bytes": 642175,
+      "mtime": "2026-09-16T23:40:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/back_from_build_20260916_234027_99_after_back.png",
+      "kind": "fixture",
+      "bytes": 1131335,
+      "mtime": "2026-09-16T23:40:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/back_from_training_20260916_234820_00_before.png",
+      "kind": "fixture",
+      "bytes": 656319,
+      "mtime": "2026-09-16T23:48:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/back_from_training_20260916_234820_99_after_back.png",
+      "kind": "fixture",
+      "bytes": 1127211,
+      "mtime": "2026-09-16T23:48:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/01_home_plain.png",
+      "kind": "fixture",
+      "bytes": 1119647,
+      "mtime": "2026-09-16T23:36:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/02_power_overview_panel.png",
+      "kind": "fixture",
+      "bytes": 238896,
+      "mtime": "2026-09-16T23:36:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/03_power_details_panel.png",
+      "kind": "fixture",
+      "bytes": 298999,
+      "mtime": "2026-09-16T23:36:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/04_building_focused.png",
+      "kind": "fixture",
+      "bytes": 646969,
+      "mtime": "2026-09-16T23:36:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/05_camp_focused.png",
+      "kind": "fixture",
+      "bytes": 1182120,
+      "mtime": "2026-09-16T23:33:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/06_training_page.png",
+      "kind": "fixture",
+      "bytes": 624248,
+      "mtime": "2026-09-16T23:34:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/07_camp_focus_after_tap.png",
+      "kind": "fixture",
+      "bytes": 1053694,
+      "mtime": "2026-09-16T23:41:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/08_camp_focus_refresh_1.png",
+      "kind": "fixture",
+      "bytes": 1055542,
+      "mtime": "2026-09-16T23:41:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/09_camp_focus_second_pass.png",
+      "kind": "fixture",
+      "bytes": 1060031,
+      "mtime": "2026-09-16T23:41:57+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/10_camp_focus_late_observation.png",
+      "kind": "fixture",
+      "bytes": 1056381,
+      "mtime": "2026-09-16T23:41:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/11_intel_reward_popup.png",
+      "kind": "fixture",
+      "bytes": 291238,
+      "mtime": "2026-09-16T23:53:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/12_old_account_home_20260908.png",
+      "kind": "fixture",
+      "bytes": 1250620,
+      "mtime": "2026-09-08T04:52:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/key/13_intel_reward_popup_run2.png",
+      "kind": "fixture",
+      "bytes": 286623,
+      "mtime": "2026-09-17T00:26:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_20260916_233117_00_before.png",
+      "kind": "fixture",
+      "bytes": 982971,
+      "mtime": "2026-09-16T23:31:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_20260916_233117_01_after_tap_115_72.png",
+      "kind": "fixture",
+      "bytes": 252053,
+      "mtime": "2026-09-16T23:31:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_camps_20260916_233451_00_before.png",
+      "kind": "fixture",
+      "bytes": 617490,
+      "mtime": "2026-09-16T23:34:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_camps_20260916_233451_01_after_tap_361_1260.png",
+      "kind": "fixture",
+      "bytes": 599578,
+      "mtime": "2026-09-16T23:35:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_camps_20260916_233451_02_after_tap_586_1260.png",
+      "kind": "fixture",
+      "bytes": 522301,
+      "mtime": "2026-09-16T23:35:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_hop2_20260916_233211_00_before.png",
+      "kind": "fixture",
+      "bytes": 253040,
+      "mtime": "2026-09-16T23:32:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_hop2_20260916_233211_01_after_tap_360_660.png",
+      "kind": "fixture",
+      "bytes": 300325,
+      "mtime": "2026-09-16T23:32:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_hop3_20260916_233250_00_before.png",
+      "kind": "fixture",
+      "bytes": 300325,
+      "mtime": "2026-09-16T23:32:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_hop3_20260916_233330_00_before.png",
+      "kind": "fixture",
+      "bytes": 300325,
+      "mtime": "2026-09-16T23:33:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/power_route_hop4_20260916_233412_00_before.png",
+      "kind": "fixture",
+      "bytes": 1178447,
+      "mtime": "2026-09-16T23:34:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_back_for_intel_20260916_235213.json",
+      "kind": "fixture",
+      "bytes": 8540,
+      "mtime": "2026-09-16T23:52:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_back_from_build_20260916_234027.json",
+      "kind": "fixture",
+      "bytes": 8934,
+      "mtime": "2026-09-16T23:40:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_back_from_training_20260916_234820.json",
+      "kind": "fixture",
+      "bytes": 8556,
+      "mtime": "2026-09-16T23:48:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_build_route_20260916_233614.json",
+      "kind": "fixture",
+      "bytes": 20569,
+      "mtime": "2026-09-16T23:36:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_power_route_20260916_233117.json",
+      "kind": "fixture",
+      "bytes": 10765,
+      "mtime": "2026-09-16T23:31:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_power_route_camps_20260916_233451.json",
+      "kind": "fixture",
+      "bytes": 8602,
+      "mtime": "2026-09-16T23:35:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_power_route_hop2_20260916_233211.json",
+      "kind": "fixture",
+      "bytes": 11039,
+      "mtime": "2026-09-16T23:32:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_power_route_hop3_20260916_233330.json",
+      "kind": "fixture",
+      "bytes": 13896,
+      "mtime": "2026-09-16T23:33:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_power_route_hop4_20260916_233412.json",
+      "kind": "fixture",
+      "bytes": 10128,
+      "mtime": "2026-09-16T23:34:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_route_back_home_20260916_233543.json",
+      "kind": "fixture",
+      "bytes": 8716,
+      "mtime": "2026-09-16T23:36:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/README.md",
+      "kind": "fixture",
+      "bytes": 10881,
+      "mtime": "2026-09-17T00:28:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/route_back_home_20260916_233543_00_before.png",
+      "kind": "fixture",
+      "bytes": 526594,
+      "mtime": "2026-09-16T23:35:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/route_back_home_20260916_233543_99_after_back.png",
+      "kind": "fixture",
+      "bytes": 1126036,
+      "mtime": "2026-09-16T23:35:55+00:00"
     },
     {
       "path": "dataset/truth_audit/pre_search_lvl1.png",

@@ -29,8 +29,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 131,
-          "successes": 112,
+          "attempts": 133,
+          "successes": 114,
           "failures": 19
         },
         {
@@ -70,8 +70,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 141,
-          "successes": 122,
+          "attempts": 144,
+          "successes": 125,
           "failures": 19
         },
         {
@@ -82,8 +82,8 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 63,
-          "successes": 60,
+          "attempts": 65,
+          "successes": 62,
           "failures": 3
         },
         {
@@ -141,8 +141,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 132,
-          "successes": 119,
+          "attempts": 135,
+          "successes": 122,
           "failures": 13
         },
         {
@@ -186,8 +186,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 56,
-          "successes": 50,
+          "attempts": 57,
+          "successes": 51,
           "failures": 6
         },
         {
@@ -384,8 +384,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_POWER_OVERVIEW",
           "live_verified_by": "OPEN_POWER_OVERVIEW",
-          "attempts": 32,
-          "successes": 28,
+          "attempts": 43,
+          "successes": 39,
           "failures": 4
         },
         {
@@ -533,9 +533,9 @@
           "status": "DEGRADED",
           "implemented_by": "DISMISS_DAILY_REWARD",
           "live_verified_by": "DISMISS_DAILY_REWARD",
-          "attempts": 6,
+          "attempts": 8,
           "successes": 3,
-          "failures": 3
+          "failures": 5
         }
       ],
       "design_requirements_total": 4,
@@ -572,8 +572,8 @@
           "status": "STABLE",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 126,
-          "successes": 108,
+          "attempts": 128,
+          "successes": 110,
           "failures": 18
         },
         {

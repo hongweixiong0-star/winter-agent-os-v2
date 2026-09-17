@@ -6,26 +6,24 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `d95b2fe 2026-09-17T08:30:47+08:00 evidence(intel): two runs, both delivering value, both stopped by the same reward dialog`
+- `b87ac94 2026-09-17T08:24:30+08:00 fix(train): the power entry was never broken -- correct the record and drop the record I added for it`
+- `49bca81 2026-09-17T08:14:28+08:00 chore(handoff): record the training round, and the three things it did not finish`
+- `22ee03b 2026-09-17T08:14:20+08:00 feat(train): the power route that TRAIN was stuck behind, live verified in four hops`
+- `8070958 2026-09-17T01:26:14+08:00 docs(external): record the sweep-in mistake and the two gaps it exposed`
+- `3b04848 2026-09-17T01:25:33+08:00 fix(repo): stop tracking the external sources a git add -A swept in`
+- `2ef496f 2026-09-17T01:24:07+08:00 evidence(vip): the external VIP-entry hypothesis, tested on the live client and rejected`
 - `cebedaa 2026-09-17T01:22:00+08:00 docs(external): source-level reuse index for the two P0 WOS projects, and the licences that bound it`
 - `8da036f 2026-09-17T01:14:01+08:00 docs(issues): open the three questions this round could not answer`
 - `9c6abce 2026-09-17T01:10:21+08:00 chore(handoff): record the expert upgrade and the daily-tab round, plus the third badge bite`
 - `cb716da 2026-09-17T00:58:55+08:00 feat(daily): switch the task panel to its 每日任务 tab, live verified`
 - `8510083 2026-09-16T23:19:18+08:00 chore(handoff): publish the weight audit and the final in-sync state`
-- `acdd964 2026-09-16T23:18:57+08:00 docs(sync): measure the mirror's weight and list the historical junk for the operator`
-- `f3c9686 2026-09-16T23:17:37+08:00 chore(sync): stop tracking git_sync.py's own push record`
-- `0fac3c4 2026-09-16T23:16:39+08:00 chore(handoff): record the first push under the sync rules`
-- `64d234a 2026-09-16T23:06:14+08:00 feat(sync): make the public mirror part of the development loop, not a manual chore`
-- `5dd5931 2026-09-16T22:59:45+08:00 test(daily): the scheduler guard is about registry fall-through, not about which stop is chosen`
-- `94480d8 2026-09-16T22:53:00+08:00 chore(handoff): record the daily-entry round -- the corpus-gated template fix, the panel exit, and why CAP-B01 is not the cheap one`
-- `ceba904 2026-09-16T22:38:06+08:00 chore(memory): point the project at issue 2 as the standing ChatGPT advisor bridge, with its posting red lines`
 
-Uncommitted changes: 6
-- `M .gitignore`
-- ` M .workbuddy-ai/memory/2026-09-16.md`
-- `?? dataset/truth_audit/vip_entry_20260917/`
-- `?? out_amil_pyproject.toml`
-- `?? out_ext_java/`
-- `?? tools/probe_vip_entry.py`
+Uncommitted changes: 4
+- `M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
+- ` M learning/goal_state.json`
+- ` M learning/runtime_snapshot.json`
 <!-- /AUTO:recent_commits -->
 
 ---
