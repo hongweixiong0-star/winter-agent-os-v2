@@ -113,9 +113,9 @@ verifier 因此**第一次观测就通过**，路线收敛为 **4 步**。
 `before.building` 的 id/level 判定的。所以落地 BUILD 前必须先让建筑身份**从画面读**。
 已立为未决问题。测试 `TheBuildingPanelIsStillUnrecognisedTests` 把这个缺口钉住。
 
-### B. 情报：领到了奖励，却在**弹窗识别**上失败（独立缺陷）
+### B. 情报：**两次运行都真的拿到了价值**，却都倒在同一处弹窗识别上
 
-`--goal INTEL` 实跑：
+**第一次** `--goal INTEL`：
 
 ```
 1 OPEN_MAP            HOME -> MAP                     verifier OK
@@ -125,17 +125,40 @@ verifier 因此**第一次观测就通过**，路线收敛为 **4 步**。
       DAILY_REWARD_ADVANCE_NOT_PROVEN   (exit 2)
 ```
 
-情报奖励反馈用的是客户端的**通用「获得奖励」弹窗**（五格奖励 + 点击任意位置退出，
-见 `key/11_intel_reward_popup.png`）。该帧上**唯一**命中的是
-`POPUP_GENERIC_REWARD_HEADER`(d=12)，而 daily/intel 的奖励标题模板都不命中；
-但 `vision.py` 第 1046 行的 `POPUP_DAILY_REWARD_CURRENT` 排在前面对它假阳性，
-于是页面被报成 `DAILY_REWARD`、跑了**每日**的解除技能，其 verifier 期待"进入每日页"
-而实际回到了情报页 ⇒ 失败。
+**第二次**（补跑，离开第一页情报后）：
 
-大脑里**已经有**正确的 goal 上下文分支（`GENERIC_REWARD` + `current_goal=="INTEL"`
-→ `DISMISS_INTEL_GENERIC_REWARD`，brain.py 221–232 行），所以修法在视觉的判定顺序
-或那条 daily 记录上，**需要先量出两个总体**（真每日奖励 vs 通用奖励）。
-测试 `TheIntelRewardPopupIsMisreadTests` 把这个测量钉住。
+```
+1 SELECT_INTEL_PIN        INTEL -> POPUP(野兽任务卡)   verifier OK
+2 OPEN_INTEL_BEAST_TARGET POPUP -> BEAST              verifier OK
+3 INTEL_BEAST_START_MARCH BEAST -> MARCH              verifier OK
+4 DISPATCH_INTEL_BEAST    MARCH -> MAP                verifier OK ← 真派出一队（体力 237→227）
+5 OPEN_INTEL              MAP -> INTEL                verifier OK
+6 INTEL_CLAIM_REWARDS     INTEL -> POPUP              verifier OK ← 又领到一份（未试 pin 6→5）
+7 DISMISS_DAILY_REWARD    -> INTEL                    verifier FALSE
+      DAILY_REWARD_ADVANCE_NOT_PROVEN   (exit 2)
+```
+
+⇒ **6 步真机动作、2 份奖励、1 次真派兵**；只有解除那一步判错。**缺陷已复现两次。**
+
+**根因（已量，不是"阈值没调好"）**：情报奖励反馈用的是客户端的**通用「获得奖励」弹窗**。
+`POPUP_DAILY_REWARD_CURRENT` 这条记录的 ROI 是 `x 0.08 y 0.2 w 0.84 h 0.4` ——
+**整个奖励格区域**，它对**任何**来源的奖励弹窗都命中：
+
+| 帧 | `POPUP_DAILY_REWARD_CURRENT` | `POPUP_GENERIC_REWARD_HEADER` | 奖励标题模板 |
+|---|---:|---:|---|
+| `key/11_intel_reward_popup.png`（第一次） | **6** | 12 | 都不命中 |
+| `key/13_intel_reward_popup_run2.png`（第二次） | **2** | 16 | 都不命中 |
+
+而 `vision.py` 第 1046 行把它**排在通用表头之前** ⇒ 距离更小 ⇒ 页面被报成 `DAILY_REWARD`
+⇒ 大脑跑了**每日**的解除技能，其 verifier 期待"进入每日页"而实际回到情报页 ⇒ 失败。
+
+⇒ **这条裁剪在结构上无法区分来源**（它不是"太松"，而是"问错了问题"）。
+修法方向：**来源只能由目标上下文决定，不能由奖励格决定** ——
+大脑里**已经**有这条分支（brain.py 221–232：`GENERIC_REWARD` + `current_goal=="INTEL"`
+→ `DISMISS_INTEL_GENERIC_REWARD`）。但**改之前必须先量"真每日奖励弹窗"那一侧**：
+若它也走通用路径，则 `goal=None` 时会不会落到 `SAFE_STOP generic_reward_without_goal_context`
+而把奖励晾着 —— 这是本轮的证据**不足以**回答的问题（手边没有一张真每日奖励弹窗帧）。
+⇒ 记入问题 #22，**不靠调阈值修**。
 
 ### C. TRAIN 运行结束后客户端**停在训练页**
 

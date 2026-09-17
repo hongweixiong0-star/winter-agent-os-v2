@@ -66,6 +66,7 @@ CAMP_REFRESH_1 = KEY / "08_camp_focus_refresh_1.png"
 CAMP_SECOND_PASS = KEY / "09_camp_focus_second_pass.png"
 CAMP_LATE = KEY / "10_camp_focus_late_observation.png"
 INTEL_REWARD = KEY / "11_intel_reward_popup.png"
+INTEL_REWARD_2 = KEY / "13_intel_reward_popup_run2.png"
 OLD_ACCOUNT_HOME = KEY / "12_old_account_home_20260908.png"
 
 CAMP_FRAMES = (CAMP_FOCUSED, CAMP_AFTER_TAP, CAMP_REFRESH_1, CAMP_SECOND_PASS, CAMP_LATE)
@@ -238,33 +239,54 @@ class TheBuildingPanelIsStillUnrecognisedTests(unittest.TestCase):
 
 
 class TheIntelRewardPopupIsMisreadTests(unittest.TestCase):
-    """A separate defect this round exposed, pinned with its measurement.
+    """A separate defect this round exposed twice, pinned with its measurement.
 
     The Intel reward feedback is the client's *generic* 获得奖励 dialog (五个奖励格 +
-    点击任意位置退出) -- the same artwork other sources use.  The frame resolves
-    ``POPUP_GENERIC_REWARD_HEADER`` at distance 12 and neither the daily nor the Intel
-    reward title template, yet ``vision.py`` checks ``POPUP_DAILY_REWARD_CURRENT``
-    first and that record false-positives here, so the page is reported as
-    ``DAILY_REWARD``.  The brain then runs the *daily* dismiss skill, whose verifier
-    expects a daily-page transition, and the live Intel run ended
+    点击任意位置退出) -- the same artwork other sources use.  Two live Intel runs
+    claimed a reward (both ``INTEL_CLAIM_REWARDS`` verifiers OK, the second run also
+    dispatching a real beast march) and both stopped on the dismissal:
 
-        step 4 DISMISS_DAILY_REWARD  verify=False  DAILY_REWARD_ADVANCE_NOT_PROVEN
+        step 7 DISMISS_DAILY_REWARD  verify=False  DAILY_REWARD_ADVANCE_NOT_PROVEN
 
-    (exit 2, after step 3 ``INTEL_CLAIM_REWARDS`` had verified and actually claimed a
-    reward).  The brain already has the goal-context branch that would do the right
-    thing -- ``popup == "GENERIC_REWARD"`` plus ``current_goal == "INTEL"`` routes to
-    ``DISMISS_INTEL_GENERIC_REWARD`` (brain.py lines 221-232) -- so the repair belongs
-    in the vision ordering or in the daily record, and needs the two populations
-    (genuine daily reward versus generic) measured first.
+    The cause is not a loose threshold.  ``POPUP_DAILY_REWARD_CURRENT``'s ROI is
+    x 0.08 y 0.2 w 0.84 h 0.4 -- the whole reward-GRID area -- so it matches *any*
+    reward dialog regardless of source (d=6 and d=2 on the two Intel popups), while
+    the source-bearing signal is ``POPUP_GENERIC_REWARD_HEADER`` (d=12 and 16).  The
+    grid record is checked first in vision.py (line 1046) and has the smaller
+    distance, so the page is reported as ``DAILY_REWARD`` and the brain runs the
+    *daily* dismiss skill, whose verifier expects a daily-page transition.
+
+    Fix direction: the source can only come from goal context, not from the grid --
+    and brain.py already has that branch (``GENERIC_REWARD`` + ``current_goal ==
+    "INTEL"`` -> ``DISMISS_INTEL_GENERIC_REWARD``, lines 221-232).  Changing it needs
+    the *other* population measured first: if a genuine daily reward also routes
+    generic, then with no goal it reaches ``SAFE_STOP
+    generic_reward_without_goal_context`` and leaves the reward unclaimed.  This
+    round had no genuine daily-reward frame to answer that, so the repair waits for
+    one.  Do not fix this by moving the threshold.
     """
 
-    def test_the_generic_header_is_the_signal_that_actually_resolves(self):
-        self.assertIsNotNone(_roi().find(INTEL_REWARD, "POPUP_GENERIC_REWARD_HEADER"))
+    def test_the_grid_record_matches_every_reward_dialog_regardless_of_source(self):
+        vision = _roi()
+        for frame in (INTEL_REWARD, INTEL_REWARD_2):
+            grid = vision.find(frame, "POPUP_DAILY_REWARD_CURRENT")
+            header = vision.find(frame, "POPUP_GENERIC_REWARD_HEADER")
+            self.assertIsNotNone(grid, frame.name)
+            self.assertIsNotNone(header, frame.name)
+            # the grid wins on distance, and it is checked first -- both, not either
+            self.assertLess(grid.distance, header.distance, frame.name)
+
+    def test_both_runs_produce_the_same_wrong_page(self):
+        world = SemanticWorldVision(MANIFEST)
+        for frame in (INTEL_REWARD, INTEL_REWARD_2):
+            state = world.observe(frame)
+            self.assertIs(state.page, Page.POPUP, frame.name)
+            self.assertEqual(state.popup, "DAILY_REWARD", frame.name)
 
     def test_the_daily_and_intel_reward_titles_do_not_resolve_here(self):
-        for semantic in ("POPUP_DAILY_REWARD_TITLE", "POPUP_INTEL_REWARD_TITLE",
-                         "POPUP_INTEL_REWARD"):
-            self.assertIsNone(_roi().find(INTEL_REWARD, semantic), semantic)
+        for frame in (INTEL_REWARD, INTEL_REWARD_2):
+            for semantic in ("POPUP_DAILY_REWARD_TITLE",):
+                self.assertIsNone(_roi().find(frame, semantic), f"{frame.name} {semantic}")
 
 
 if __name__ == "__main__":
