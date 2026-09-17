@@ -117,6 +117,13 @@ dataset/external/repositories/
 # (the point opens a paid offer instead).  Kept because the negative result is the cheap
 # half of discovery, and because the frames show what the HOME screen does expose.
 !dataset/truth_audit/vip_entry_*/**/*.png
+# 2026-09-17, the training/building round: the 战力 route that TRAIN and BUILD were both
+# stuck behind.  The directory holds ~27 frames from the probe walk (each ~1 MB, and
+# mostly repeats of the same state) -- rule 8 says large evidence stays local, so only
+# `key/` is published: the five states of the route, the camp-focus frames the gate was
+# measured on, the building panel, and the Intel reward popup that exposed a separate
+# defect.  The rest is machine-local and still on disk.
+!dataset/truth_audit/power_route_20260917/key/**/*.png
 
 # run_live.py debug dumps: body-detection retries leave these in the repo root
 # (see 04_OPEN_ISSUES 0v).  Ignored rather than deleted -- they are the only

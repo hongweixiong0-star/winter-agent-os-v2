@@ -236,9 +236,20 @@ class SemanticROIVision:
             # distance 20-22; this semantic is requested only from HOME and
             # still uses its reviewed fixed sidebar ROI.
             "BTN_OPEN_MAIL": 24,
-            # Animated hand/glow changes the selected-camp menu (positives
-            # 12-16). Live Home frames without the menu measured >=20.
-            "BTN_OPEN_TRAINING_FROM_CAMP": 17,
+            # Animated hand/glow changes the selected-camp menu.  The 2026-09-08
+            # crop needed 12-16 while live Home frames without the menu measured
+            # >=20, hence the original 17.  The 2026-09-17 crop (the 300x300 block
+            # centred on the 训练 button, which is also this semantic's tap target)
+            # sits at 0-8 on all seven frames of one live run, 16 on a plain HOME
+            # frame and 36 on the training page -- so 17 would let a plain city
+            # frame report ``menu_open`` and send the training tap into the city.
+            # ``tools/probe_camp_menu_gate.py`` scanned all 3522 corpus frames: the
+            # <=12 population is entirely camp-menu frames of the 2026-09-08/09
+            # navigation runs (spot-checked by OCR: each carries 盾兵营/详情/训练),
+            # while the plain-HOME and training-page negatives are 16 and 36.  The
+            # 2026-09-08 menu frame (d=18 on the new crop) still resolves at d=0
+            # through its own old record, so tightening does not cost that recall.
+            "BTN_OPEN_TRAINING_FROM_CAMP": 12,
             # The ordinary Beast and Master Bounty target cards share most of
             # their layout.  Only accept the reviewed high-power card at a
             # near-exact distance so the ordinary verified Beast path wins.

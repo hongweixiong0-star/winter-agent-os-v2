@@ -1,0 +1,432 @@
+{
+  "probe": "power_route_camps",
+  "recorded_at": "2026-09-16T23:35:23.211845+00:00",
+  "self_limits": [
+    "aborts unless the first observed page is HOME (or an explicitly allowed page)",
+    "taps only the coordinates passed on the command line, once each, in order",
+    "hard cap of 6 taps",
+    "dumps every OCR token so the next hop is measured, not guessed"
+  ],
+  "allowed_start_pages": [
+    "HOME",
+    "TRAINING"
+  ],
+  "taps_px": [
+    [
+      361,
+      1260
+    ],
+    [
+      586,
+      1260
+    ]
+  ],
+  "steps": [
+    {
+      "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\power_route_camps_20260916_233451_00_before.png",
+      "page": "TRAINING",
+      "popup": null,
+      "training": {
+        "status": "IN_PROGRESS",
+        "queue_available": false,
+        "troop_type": "INFANTRY",
+        "timer": "01:16:43",
+        "batch_count": 216
+      },
+      "building": {},
+      "tokens": [
+        {
+          "text": "百战盾兵",
+          "conf": 0.992,
+          "px": [
+            284,
+            20,
+            441,
+            63
+          ]
+        },
+        {
+          "text": "500",
+          "conf": 0.999,
+          "px": [
+            61,
+            771,
+            102,
+            792
+          ]
+        },
+        {
+          "text": "611",
+          "conf": 0.989,
+          "px": [
+            333,
+            772,
+            362,
+            791
+          ]
+        },
+        {
+          "text": "训练中",
+          "conf": 0.997,
+          "px": [
+            195,
+            919,
+            281,
+            954
+          ]
+        },
+        {
+          "text": "01:16:43",
+          "conf": 0.978,
+          "px": [
+            472,
+            922,
+            583,
+            951
+          ]
+        },
+        {
+          "text": "正在训练216位百战盾兵",
+          "conf": 0.993,
+          "px": [
+            239,
+            965,
+            500,
+            991
+          ]
+        },
+        {
+          "text": "立即完成",
+          "conf": 0.998,
+          "px": [
+            139,
+            1089,
+            243,
+            1119
+          ]
+        },
+        {
+          "text": "1,023",
+          "conf": 0.959,
+          "px": [
+            137,
+            1120,
+            243,
+            1153
+          ]
+        },
+        {
+          "text": "盾兵营",
+          "conf": 0.997,
+          "px": [
+            92,
+            1243,
+            177,
+            1277
+          ]
+        },
+        {
+          "text": "矛兵营",
+          "conf": 0.986,
+          "px": [
+            318,
+            1245,
+            404,
+            1276
+          ]
+        },
+        {
+          "text": "射手营",
+          "conf": 0.995,
+          "px": [
+            544,
+            1245,
+            629,
+            1276
+          ]
+        }
+      ]
+    },
+    {
+      "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\power_route_camps_20260916_233451_01_after_tap_361_1260.png",
+      "page": "TRAINING",
+      "popup": null,
+      "training": {
+        "status": "IN_PROGRESS",
+        "queue_available": false,
+        "troop_type": "INFANTRY",
+        "batch_count": 216,
+        "timer": "01:51:39"
+      },
+      "building": {},
+      "tokens": [
+        {
+          "text": "刚毅矛兵",
+          "conf": 0.94,
+          "px": [
+            284,
+            20,
+            442,
+            63
+          ]
+        },
+        {
+          "text": "500",
+          "conf": 0.999,
+          "px": [
+            45,
+            771,
+            86,
+            792
+          ]
+        },
+        {
+          "text": "618",
+          "conf": 0.998,
+          "px": [
+            179,
+            771,
+            215,
+            793
+          ]
+        },
+        {
+          "text": "训练中",
+          "conf": 0.997,
+          "px": [
+            195,
+            919,
+            281,
+            954
+          ]
+        },
+        {
+          "text": "01:51:39",
+          "conf": 0.974,
+          "px": [
+            474,
+            923,
+            580,
+            950
+          ]
+        },
+        {
+          "text": "正在训练216位刚毅矛兵",
+          "conf": 0.994,
+          "px": [
+            239,
+            965,
+            500,
+            991
+          ]
+        },
+        {
+          "text": "立即完成",
+          "conf": 0.998,
+          "px": [
+            139,
+            1089,
+            243,
+            1119
+          ]
+        },
+        {
+          "text": "加速",
+          "conf": 1.0,
+          "px": [
+            492,
+            1099,
+            568,
+            1142
+          ]
+        },
+        {
+          "text": "1,489",
+          "conf": 0.976,
+          "px": [
+            135,
+            1121,
+            245,
+            1154
+          ]
+        },
+        {
+          "text": "盾兵营",
+          "conf": 0.995,
+          "px": [
+            91,
+            1244,
+            177,
+            1278
+          ]
+        },
+        {
+          "text": "矛兵营",
+          "conf": 0.993,
+          "px": [
+            317,
+            1243,
+            404,
+            1277
+          ]
+        },
+        {
+          "text": "射手营",
+          "conf": 0.995,
+          "px": [
+            544,
+            1245,
+            629,
+            1276
+          ]
+        }
+      ]
+    },
+    {
+      "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\power_route_camps_20260916_233451_02_after_tap_586_1260.png",
+      "page": "TRAINING",
+      "popup": null,
+      "training": {
+        "status": "IN_PROGRESS",
+        "queue_available": false,
+        "troop_type": "INFANTRY",
+        "batch_count": 216,
+        "timer": "01:51:31"
+      },
+      "building": {},
+      "tokens": [
+        {
+          "text": "刚毅射手",
+          "conf": 0.998,
+          "px": [
+            284,
+            20,
+            441,
+            63
+          ]
+        },
+        {
+          "text": "500",
+          "conf": 0.999,
+          "px": [
+            177,
+            771,
+            218,
+            792
+          ]
+        },
+        {
+          "text": "205",
+          "conf": 0.999,
+          "px": [
+            310,
+            771,
+            349,
+            792
+          ]
+        },
+        {
+          "text": "训练中",
+          "conf": 0.997,
+          "px": [
+            195,
+            919,
+            281,
+            954
+          ]
+        },
+        {
+          "text": "01:51:31",
+          "conf": 0.973,
+          "px": [
+            482,
+            923,
+            582,
+            950
+          ]
+        },
+        {
+          "text": "正在训练216位刚毅射手",
+          "conf": 0.998,
+          "px": [
+            239,
+            965,
+            500,
+            990
+          ]
+        },
+        {
+          "text": "立即完成",
+          "conf": 0.998,
+          "px": [
+            139,
+            1089,
+            243,
+            1119
+          ]
+        },
+        {
+          "text": "加速",
+          "conf": 1.0,
+          "px": [
+            492,
+            1099,
+            568,
+            1142
+          ]
+        },
+        {
+          "text": "1,487",
+          "conf": 0.984,
+          "px": [
+            138,
+            1121,
+            244,
+            1154
+          ]
+        },
+        {
+          "text": "K",
+          "conf": 0.645,
+          "px": [
+            569,
+            1201,
+            607,
+            1236
+          ]
+        },
+        {
+          "text": "盾兵营",
+          "conf": 0.992,
+          "px": [
+            90,
+            1242,
+            177,
+            1279
+          ]
+        },
+        {
+          "text": "矛兵营",
+          "conf": 0.99,
+          "px": [
+            318,
+            1245,
+            404,
+            1276
+          ]
+        },
+        {
+          "text": "射手营",
+          "conf": 0.998,
+          "px": [
+            543,
+            1243,
+            630,
+            1277
+          ]
+        }
+      ]
+    }
+  ],
+  "after_back": null
+}

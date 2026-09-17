@@ -389,6 +389,45 @@ def main() -> int:
     goals_source = (ROOT / "winter_agent_v2/goal_library.py").read_text(encoding="utf-8")
     check("goal_library reads world.stamina", "world.stamina" in goals_source)
 
+    # The 战力 route: HOME -> 加成总览 -> 实力详情 -> 部队实力 提升 -> camp focus -> 训练.
+    # It is four skills whose decisions all already existed; what it never had was
+    # templates that resolve on today's client, so `world.training` stayed empty and
+    # every branch below was unreachable.  Pinned here because a decision that no
+    # frame can trigger is indistinguishable from a missing decision.
+    train = RuleBrain(current_goal="TRAIN")
+    check("brain: TRAIN on HOME enters the power route",
+          train.decide(WorldState(page=Page.HOME, confidence=0.99), registry).skill
+          == "OPEN_POWER_OVERVIEW")
+    check("brain: TRAIN on the power overview opens the details panel",
+          train.decide(WorldState(page=Page.POPUP, popup="POWER_OVERVIEW", confidence=0.99),
+                       registry).skill == "OPEN_POWER_DETAILS")
+    check("brain: TRAIN on the details panel focuses the infantry camp",
+          train.decide(WorldState(page=Page.POPUP, popup="POWER_DETAILS", confidence=0.99),
+                       registry).skill == "NAVIGATE_INFANTRY_CAMP")
+    focused_camp = WorldState(page=Page.HOME,
+                              training={"building": "INFANTRY_CAMP", "menu_open": True,
+                                        "queue_available": True},
+                              confidence=0.99)
+    check("brain: TRAIN on the focused camp opens the training page",
+          train.decide(focused_camp, registry).skill == "OPEN_INFANTRY_TRAINING")
+    busy_queue = WorldState(page=Page.TRAINING,
+                            training={"troop_type": "INFANTRY", "status": "IN_PROGRESS",
+                                      "queue_available": False},
+                            confidence=0.99)
+    check("brain: TRAIN on a busy queue stops instead of spending",
+          train.decide(busy_queue, registry).skill == "SAFE_STOP")
+    free_queue = WorldState(page=Page.TRAINING,
+                            training={"troop_type": "INFANTRY", "status": "AVAILABLE",
+                                      "queue_available": True, "trainable": True},
+                            confidence=0.99)
+    check("brain: a free training queue starts a batch",
+          decide(free_queue).skill == "TRAIN_TROOPS")
+
+    for step in ("OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP",
+                 "OPEN_INFANTRY_TRAINING", "TRAIN_TROOPS"):
+        check(f"runtime: {step} has a verifier",
+              step in runtime.LiveRuntime.VERIFIED_ATOMIC)
+
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():
         check(label, False, detail)
