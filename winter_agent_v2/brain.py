@@ -240,10 +240,16 @@ class RuleBrain:
             return Decision("DISMISS_EXPLORATION_REWARD", "exploration_reward_requires_dismiss", world.confidence, "exploration_claimed")
         if world.page is Page.POPUP and world.popup == "EXPLORATION_IDLE_DIALOG":
             return Decision("CONFIRM_EXPLORATION_IDLE_CLAIM", "verified_idle_income_dialog", world.confidence, "exploration_reward_feedback")
-        if self.current_goal == "TRAIN" and world.page is Page.POPUP and world.popup == "POWER_OVERVIEW":
-            return Decision("OPEN_POWER_DETAILS", "training_goal_power_overview", world.confidence, "power_details_open")
-        if self.current_goal == "TRAIN" and world.page is Page.POPUP and world.popup == "POWER_DETAILS":
+        # The 加成总览 panel is shared by every route that walks the power-category
+        # list, so the first hop is expressed once rather than per goal.  The two
+        # goals differ only in which row's 提升 they take: TRAIN goes to 部队实力,
+        # RESEARCH to 科技实力.
+        if world.page is Page.POPUP and world.popup == "POWER_OVERVIEW" and self.current_goal in ("TRAIN", "RESEARCH"):
+            return Decision("OPEN_POWER_DETAILS", f"{self.current_goal.lower()}_goal_power_overview", world.confidence, "power_details_open")
+        if world.page is Page.POPUP and world.popup == "POWER_DETAILS" and self.current_goal == "TRAIN":
             return Decision("NAVIGATE_INFANTRY_CAMP", "training_goal_troop_power_route", world.confidence, "infantry_camp_highlighted")
+        if world.page is Page.POPUP and world.popup == "POWER_DETAILS" and self.current_goal == "RESEARCH":
+            return Decision("NAVIGATE_RESEARCH_LAB", "research_goal_technology_power_route", world.confidence, "research_lab_highlighted")
         if world.page is Page.POPUP and world.popup == "INTEL_BEAST_MISSION":
             return Decision("OPEN_INTEL_BEAST_TARGET", "reviewed_intel_beast_mission", world.confidence, "intel_beast_target_open")
         if world.page is Page.POPUP and world.popup == "INTEL_RESCUE_SURVIVORS_MISSION":
@@ -439,8 +445,23 @@ class RuleBrain:
             if world.alliance.get("section") == "HOME":
                 return Decision("OPEN_ALLIANCE_GIFTS", "alliance_gifts_badge_visible", world.confidence, "alliance_gifts_open")
         if self.current_goal == "RESEARCH":
+            # Same route shape as the training goal below, one category row across:
+            # 加成总览 -> 实力详情 -> 科技实力 提升 -> the 科研所's 研究 button.
+            # The route was measured live on 2026-09-04
+            # (knowledge/skills/RESEARCH_RESEARCH.md line 38) and re-measured
+            # 2026-09-17; what it never had was a decision here, so the goal could
+            # only ever stop with research_entry_not_verified.
             if world.page is Page.HOME and world.research.get("queue_available") is False:
+                # A queue that is already running needs nothing from us, so this
+                # precedes the navigation hop: opening the page to confirm it cannot
+                # start anything is a wasted round trip.  (Both facts can be true at
+                # once -- the 科研所's menu is open *and* the queue is busy -- which is
+                # why vision reports them separately.)
                 return Decision("SAFE_STOP", "research_queue_busy", 1.0, "switch_task")
+            if world.page is Page.HOME and world.research.get("menu_open"):
+                return Decision("OPEN_RESEARCH", "research_lab_menu_open", world.confidence, "research_page_open")
+            if world.page is Page.HOME:
+                return Decision("OPEN_POWER_OVERVIEW", "research_goal_requires_power_route", world.confidence, "power_overview_open")
             if world.page is not Page.RESEARCH:
                 return Decision("SAFE_STOP", "research_entry_not_verified", 1.0, "refresh_state_or_switch_task")
         if self.current_goal == "TRAIN":
@@ -478,6 +499,11 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "research_queue_busy", 1.0, "switch_task")
             if world.research.get("researchable"):
                 return Decision("RESEARCH", "research_queue_available", world.confidence, "research_queue_started")
+            # Nothing on the page says a node can be started.  Until the node/cost
+            # reading exists this is the honest stop, and naming it keeps the goal
+            # from looking like it silently did nothing (the previous code fell
+            # through every later branch to the same stop with no reason).
+            return Decision("SAFE_STOP", "research_page_no_startable_node", 1.0, "switch_task")
         if world.page is Page.TRAINING:
             if world.training.get("all_queues_busy"):
                 return Decision("SAFE_STOP", "all_training_queues_busy", 1.0, "switch_task")

@@ -1296,9 +1296,30 @@ class SemanticWorldVision:
                 confidence=0.99,
             )
         if match("RESEARCH_BUILDING_QUEUE_TIMER"):
+            # The 科研所 is upgrading, which is a fact about the QUEUE.  Whether its
+            # radial menu is also open is a fact about NAVIGATION, and the two are
+            # independent: the 2026-09-08 frame this record came from has both.  They
+            # are merged here rather than split across two branches because a branch
+            # that returns early would silently drop the queue fact -- which is
+            # exactly what the first version of the BTN_OPEN_RESEARCH branch below
+            # did, and ``tests/test_research_verifier.py`` caught it.
+            menu_open = match("BTN_OPEN_RESEARCH") is not None
             return WorldState(
                 page=Page.HOME,
-                research={"building": "RESEARCH_CENTER", "status": "IN_PROGRESS", "timer": "VISIBLE", "queue_available": False},
+                research={"building": "RESEARCH_CENTER", "status": "IN_PROGRESS", "timer": "VISIBLE", "queue_available": False, "menu_open": menu_open},
+                confidence=0.99,
+            )
+        if match("BTN_OPEN_RESEARCH"):
+            # The 科研所's radial menu: 详情 / 升级 / 研究.  Our own
+            # NAVIGATE_RESEARCH_LAB opens it and OPEN_RESEARCH taps 研究, so the
+            # presence of that control is what "the menu is open" means.  This branch
+            # deliberately claims NO queue state: ``queue_available`` is a fact about
+            # the queue and inventing it here would let the goal library call a busy
+            # queue free -- the lie the training branch above does tell with its
+            # hard-coded ``True``.
+            return WorldState(
+                page=Page.HOME,
+                research={"building": "RESEARCH_LAB", "menu_open": True},
                 confidence=0.99,
             )
         if match("RESEARCH_QUEUE_TIMER") or match("STATUS_RESEARCH_IN_PROGRESS"):

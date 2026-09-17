@@ -4,6 +4,55 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：本轮续（2026-09-17 11:1x–12:0x GMT+8）—— 研究路线真机跑通（第二个 BLOCKED 目标打通）
+
+**先读证据**：`dataset/truth_audit/power_route_20260917/README.md` 的「研究（RESEARCH）」一节
+（`key/14`、`key/15`、`key/16` 三帧可复核）。
+
+### 1. 真实改进（有真机 episode）
+
+```
+1 OPEN_POWER_OVERVIEW    HOME -> POPUP/POWER_OVERVIEW            verifier OK
+2 OPEN_POWER_DETAILS     POPUP/POWER_OVERVIEW -> POWER_DETAILS   verifier OK
+3 NAVIGATE_RESEARCH_LAB  POPUP/POWER_DETAILS -> HOME(科研所聚焦)   verifier OK
+4 OPEN_RESEARCH          HOME(菜单已开) -> RESEARCH               verifier OK
+5 SAFE_STOP              research_page_no_startable_node
+```
+`run_live.py --goal RESEARCH` exit 0。**还是那条「战力路线」**，只是取 `科技实力` 那一行而不是
+`部队实力`（`加成总览 → 实力详情 → 科技实力 提升 → 科研所的「研究」按钮`）。
+
+⚠ 与训练**同一模式**：路线**早已记录**（`knowledge/skills/RESEARCH_RESEARCH.md` 第 38 行，
+2026-09-04 在 30 级账号上量过）、`skill_factory.GOAL_REQUIREMENTS` 早已点名要
+`("OPEN_RESEARCH","RESEARCH")`、verifier 早已绑定。**缺的是真机模板 + 决策。**
+
+### 2. 本轮修的两处（都不靠调阈值）
+
+1. **旧 `BTN_OPEN_RESEARCH` 的 ROI 中心不在控件上**：旧记录 ROI 中心 **(536,840)**，
+   而 OCR 实测「研究」按钮六边形是 **435..520 × 855..910，中心 (478,878)** ⇒
+   即使匹配成功也会点偏约 **65px**（执行器点的是命中记录的 ROI 中心）。
+   新裁剪 = **以按钮为圆心的 340×340**（同时吃掉按钮上的引导手指动画）。
+   三次路线正样本 **0/8/8**、所有负样本含它通往的研究页**全部不命中（最近 28）**；
+   旧记录在真机帧上 26–36（阈值 12）⇒ 保留无害。
+2. **没有任何东西读"科研所菜单已打开"，且 RESEARCH goal 没有导航** ⇒
+   只可能以 `research_entry_not_verified` 结束。现已补成四跳。
+   ⚠ 城市帧里**不写** `queue_available`（隔壁训练分支硬编码了 `True`，goal library 会读成
+   "队列空闲"——那是谎言；本路线只写 `menu_open`）。
+
+### 3. 本轮**没有**声称的（重要）
+
+**不能开始研究。** 科技研究页今天没有可开始的东西、节点/花费读数不存在、
+`BTN_START_RESEARCH` **零模板**。所以以 `research_page_no_startable_node` 收尾 ——
+**具名的诚实停止**（原代码是从后面所有分支掉下去、以同样停止但无理由结束）。
+晋升条件已写在 `RESEARCH_RESEARCH.md`：队列空出 → 看节点的前置/花费屏 →
+要求 `queue_available=true → IN_PROGRESS + timer + 期望节点`。
+
+### 4. 下一条该做的（按价值排序）
+
+1. **研究的"开始"那一步**（上面的晋升条件）：需要读节点选中态 + 研究按钮花费。
+2. **BUILD 落地的前置**（问题 #21）：建筑身份从画面读（`BTN_BUILD_UPGRADE` 仍写死 STOREHOUSE/26/27）。
+   入口已实测：`建筑实力 提升`(605,550) → 民居1 3级。
+3. 问题 #22（情报奖励弹窗误读，**已复现两次**）、#23（TRAIN 结束停训练页）、#24（troop_type 恒 INFANTRY）。
+
 ## 手写：本轮（2026-09-17 07:2x–08:3x GMT+8）—— 训练路线真机跑通（7 步 → 4 步）；建筑入口找到但**没落地**；情报领到了奖励却在弹窗识别上翻车
 
 **先读证据**：`dataset/truth_audit/power_route_20260917/README.md`（`key/` 是每态一帧，可复核，不需重测）。

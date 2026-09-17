@@ -145,6 +145,12 @@ def main() -> int:
     # ``daily_no_claimable_rewards``.  Same class: all verifiers passed, the
     # client was left somewhere a later run can work from.
     accepted_stops.add("daily_panel_already_read_not_actionable")
+    # Added 2026-09-17 with the research route: the goal can now actually reach the
+    # 科技研究 page, and today the page offers nothing startable (the node/cost reading
+    # does not exist yet).  Every hop's verifier passed and the client is standing on
+    # the research page, so this is the honest end of the run -- the same class as
+    # ``research_queue_busy``, not a failure.
+    accepted_stops.add("research_page_no_startable_node")
     return 0 if verified and result.stop_reason in accepted_stops else 2
 
 

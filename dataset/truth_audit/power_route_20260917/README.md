@@ -167,6 +167,51 @@ verifier 因此**第一次观测就通过**，路线收敛为 **4 步**。
 与上一轮每日面板的"死胡同"同类，但这次是**运行结束时**没把客户端放回 HOME。
 已立为未决问题。
 
+## 研究（RESEARCH）：同一路线按**科技实力**那一行走，第二个 BLOCKED 目标打通
+
+`KEEP_RESEARCH_PRODUCTIVE` 是四个 BLOCKED 目标之一，卡法与训练**一模一样**：
+
+- 路线**早已被记录**：`knowledge/skills/RESEARCH_RESEARCH.md` 第 38 行 ——
+  「顶部战力 → 实力详情 → 科技实力 → 提升 → 科研所」，2026-09-04 在当时的账号上量过
+  （科研所 30 级、病房扩建VII 2/3）；
+- `skill_factory.GOAL_REQUIREMENTS["KEEP_RESEARCH_PRODUCTIVE"]` 早就点名需要
+  `("OPEN_RESEARCH", "RESEARCH")` 两个技能；
+- `BTN_OPEN_RESEARCH` 语义与它的 12 距离容差、`verify_research_started` /
+  `verify_research_queue` 也早就在。
+
+**断点是两处：**
+
+1. **旧 `BTN_OPEN_RESEARCH` 的 ROI 中心根本不在控件上。** 两条记录都是 REPLAY 裁剪，
+   ROI `x .68 y .596 w .13 h .12` → 像素 490..583 × 763..917，**中心 (536,840)**；
+   而 OCR 实测「研究」按钮的六边形是 **435..520 × 855..910，中心 (478,878)**。
+   执行器点的是**命中记录的 ROI 中心** ⇒ 就算匹配成功也会点偏约 65px。
+   新裁剪是**以按钮为圆心的 340×340**（同时也吃掉按钮上的**引导手指动画** —— 与训练营同一类浮层）。
+2. **没有任何东西读"科研所菜单已打开"**，而 RESEARCH goal 的决策**完全没有导航** ——
+   它只可能以 `research_entry_not_verified` 结束。这条现在补上了。
+
+**真机 episode（`run_live.py --goal RESEARCH`，exit 0，4 跳全 OK）：**
+
+```
+1 OPEN_POWER_OVERVIEW    HOME -> POPUP/POWER_OVERVIEW            verifier OK
+2 OPEN_POWER_DETAILS     POPUP/POWER_OVERVIEW -> POWER_DETAILS   verifier OK
+3 NAVIGATE_RESEARCH_LAB  POPUP/POWER_DETAILS -> HOME(科研所聚焦)   verifier OK
+4 OPEN_RESEARCH          HOME(菜单已开) -> RESEARCH               verifier OK
+5 SAFE_STOP              research_page_no_startable_node
+```
+
+三次独立走这条路线，`详情`/`升级` 的 OCR 框**像素级一致** ⇒ 340×340 裁剪正样本 0/8/8、
+**所有负样本（含它通往的研究页本身）全部不命中（最近 28）**；旧记录在真机帧上是 26–36
+（阈值 12）⇒ **永远赢不了，故保留无害**。
+
+**没有声称**：能**开始**研究。科技研究页今天没有可开始的东西，节点/花费读数不存在，
+且 `BTN_START_RESEARCH` **零模板**，所以以 `research_page_no_startable_node` 收尾 ——
+这是**具名的诚实停止**，不是静默落空（原代码是从后面所有分支掉下去、以同样的停止但无理由结束）。
+`RESEARCH_RESEARCH.md` 已写明升级条件：队列空出 → 看节点的前置/花费屏 → 要求
+`queue_available=true → IN_PROGRESS + timer + 期望节点` 的转移。
+
+另外：`menu_open` 是**导航事实**不是队列事实 —— 城市帧里**不写** `queue_available`
+（隔壁训练分支硬编码了 `queue_available: True`，goal library 会把它当成"队列空闲"，这是谎言）。
+
 ## 帧清单（`key/`，已白名单进公开仓库）
 
 | 文件 | 是什么 |
@@ -180,6 +225,8 @@ verifier 因此**第一次观测就通过**，路线收敛为 **4 步**。
 | `07/08/09/10_camp_focus_*.png` | 一次运行里对同一浮层的四次观测（d=4/8/0/4）——门禁的**正向**总体 |
 | `11_intel_reward_popup.png` | 通用「获得奖励」弹窗（情报奖励，被误读为 DAILY_REWARD） |
 | `12_old_account_home_20260908.png` | 09-08 另一账号的 HUD（战力 5,708万）——值无关性的证据 |
+| `14/15_research_lab_focused*.png` | 科研所聚焦（两次独立走这条路线）：`详情 / 升级 / 研究` |
+| `16_research_page.png` | 科技研究页（发展/经济/战斗 三页签 + 研究树，无进行中的项目） |
 
 本目录另有约 19 帧探针原始输出（每态重复、返回前后帧等，约 17 MB），
 **按规则 8 留本地**、被 `.gitignore` 忽略；它们仍在磁盘上可查。

@@ -428,6 +428,40 @@ def main() -> int:
         check(f"runtime: {step} has a verifier",
               step in runtime.LiveRuntime.VERIFIED_ATOMIC)
 
+    # The 科技研究 route: the same four hops, one category row across (科技实力 instead
+    # of 部队实力).  The route was measured on 2026-09-04 and again on 2026-09-17, but
+    # the RESEARCH goal had no navigation at all -- it could only ever stop with
+    # research_entry_not_verified, which is why the goal sat BLOCKED.
+    research = RuleBrain(current_goal="RESEARCH")
+    check("brain: RESEARCH on HOME enters the power route",
+          research.decide(WorldState(page=Page.HOME, confidence=0.99), registry).skill
+          == "OPEN_POWER_OVERVIEW")
+    check("brain: RESEARCH on the power overview opens the details panel",
+          research.decide(WorldState(page=Page.POPUP, popup="POWER_OVERVIEW", confidence=0.99),
+                          registry).skill == "OPEN_POWER_DETAILS")
+    check("brain: RESEARCH on the details panel focuses the 科研所",
+          research.decide(WorldState(page=Page.POPUP, popup="POWER_DETAILS", confidence=0.99),
+                          registry).skill == "NAVIGATE_RESEARCH_LAB")
+    focused_lab = WorldState(page=Page.HOME,
+                             research={"building": "RESEARCH_LAB", "menu_open": True},
+                             confidence=0.99)
+    check("brain: RESEARCH on the focused lab opens the technology page",
+          research.decide(focused_lab, registry).skill == "OPEN_RESEARCH")
+    check("brain: TRAIN on the focused lab does not take the research hop",
+          train.decide(focused_lab, registry).skill != "OPEN_RESEARCH")
+    check("brain: a research page with nothing startable stops by name",
+          research.decide(WorldState(page=Page.RESEARCH,
+                                     research={"status": "UNKNOWN"}, confidence=0.99),
+                          registry).reason == "research_page_no_startable_node")
+    for step in ("NAVIGATE_RESEARCH_LAB", "OPEN_RESEARCH"):
+        check(f"runtime: {step} has a verifier",
+              step in runtime.LiveRuntime.VERIFIED_ATOMIC)
+    # The skill factory's own contract for this goal -- it names the two skills the
+    # goal needs, so a rename has to be caught here.
+    from winter_agent_v2.skill_factory import GOAL_REQUIREMENTS
+    check("factory: KEEP_RESEARCH_PRODUCTIVE still names OPEN_RESEARCH + RESEARCH",
+          GOAL_REQUIREMENTS["KEEP_RESEARCH_PRODUCTIVE"] == ("OPEN_RESEARCH", "RESEARCH"))
+
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():
         check(label, False, detail)

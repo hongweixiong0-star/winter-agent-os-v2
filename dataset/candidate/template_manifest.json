@@ -1,6 +1,6 @@
 {
-  "count": 398,
-  "generated_at": "2026-09-17T00:18:15.281163+00:00",
+  "count": 400,
+  "generated_at": "2026-09-17T03:21:58.339975+00:00",
   "records": [
     {
       "confidence": 0.99,
@@ -7144,6 +7144,46 @@
       "height": 300,
       "note": "the 训练 button of the focused-camp radial menu, framed so the crop is centred on the button (tap centre (526,855)) while including enough of the fixed ring around it to survive the client's ANIMATED overlay: the button carries a pulsing highlight ring and a tutorial pointing-hand, so a crop of the button alone swung between phash d=12 and d=22 across one run (2026-09-17 07:41Z) and made NAVIGATE_INFANTRY_CAMP burn its full refresh budget (~21 s) to verify -- by which time the overlay had faded and the loop had to re-walk the whole route.  This crop measures 0..8 on all seven frames of that run while plain HOME is 16, the training page 36 and the building panel 26.  The 详情 button is the most stable part of the ring (d=0..2) but it cannot be used as the tap target, and the executor only supports TAP_SEMANTIC -- no coordinate action -- so the tap point has to come from a crop centred on 训练.",
       "evidence": "power_route_20260917/power_route_hop3_..._01_after_tap_605_653.png"
+    },
+    {
+      "semantic": "BTN_POWER_RESEARCH_IMPROVE",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\research_route_20260917\\btn_power_research_improve__live_20260917.png",
+      "roi_norm": {
+        "x_norm": 0.781944,
+        "y_norm": 0.730469,
+        "w_norm": 0.118056,
+        "h_norm": 0.044531
+      },
+      "source": "research_route_20260917",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "btn_power_research_improve__live_20260917",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\research_route_20260917_031529_02_after_tap_360_660.png",
+      "width": 85,
+      "height": 57,
+      "note": "科技实力's row 提升 button (OCR-measured at 569..643 x 941..986; the crop's centre is 605,963, inside the button).  Value-independent: the row's numbers sit at x <= 366, left of this crop.  Like the 部队实力 record, the row's y depends on how many categories the account has unlocked, and 科技实力 is the LAST row, so a new category above it shifts this button down.",
+      "evidence": "power_route_20260917/research_route_..._02_after_tap_360_660.png"
+    },
+    {
+      "semantic": "BTN_OPEN_RESEARCH",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\research_route_20260917\\btn_open_research__live_20260917_lab_focus.png",
+      "roi_norm": {
+        "x_norm": 0.427778,
+        "y_norm": 0.553125,
+        "w_norm": 0.472222,
+        "h_norm": 0.265625
+      },
+      "source": "research_route_20260917",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "btn_open_research__live_20260917_lab_focus",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\research_route_20260917_031529_03_after_tap_606_963.png",
+      "width": 340,
+      "height": 340,
+      "note": "the 研究 button of the focused 科研所 radial menu.  Framed as a 340x340 block CENTRED on the button (478,878) for two reasons: the executor taps the winning record's ROI centre and supports only TAP_SEMANTIC, so the crop has to be centred on the control; and the button carries the same animated tutorial hand the training camp's does, so a tight crop is unstable.  The old records' ROI centre (536,840) is ~65 px right of the control.  Measured on three walks: positives 0/8/8, and the nearest negative (the research page itself, which is where this navigates to) 28.",
+      "evidence": "power_route_20260917/research_route_..._03_after_tap_606_963.png"
     }
   ],
   "schema_version": "1.0",

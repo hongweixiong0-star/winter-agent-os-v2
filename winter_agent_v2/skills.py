@@ -145,6 +145,13 @@ def p0_registry() -> SkillRegistry:
         Skill("NAVIGATE_INFANTRY_CAMP", "Use Troop Power improvement to highlight the infantry camp", Page.POPUP, Action("TAP_SEMANTIC", "BTN_POWER_TROOP_IMPROVE"), state=SkillState.CANDIDATE),
         Skill("SELECT_INFANTRY_CAMP", "Select the highlighted infantry camp", Page.HOME, Action("TAP_SEMANTIC", "TARGET_INFANTRY_CAMP_HIGHLIGHTED"), state=SkillState.CANDIDATE),
         Skill("OPEN_INFANTRY_TRAINING", "Open training from the selected infantry camp", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_TRAINING_FROM_CAMP"), state=SkillState.CANDIDATE),
+        # The 科技研究 route, the same shape as the training one.  The route itself was
+        # verified on 2026-09-04 (knowledge/skills/RESEARCH_RESEARCH.md line 38) but
+        # never wired here, and both of its controls are templates that had to be cut
+        # from today's client -- the old BTN_OPEN_RESEARCH centre sat ~65 px off the
+        # 研究 button.  See tools/register_research_route_templates.py.
+        Skill("NAVIGATE_RESEARCH_LAB", "Use Technology Power improvement to highlight the 科研所", Page.POPUP, Action("TAP_SEMANTIC", "BTN_POWER_RESEARCH_IMPROVE"), state=SkillState.CANDIDATE),
+        Skill("OPEN_RESEARCH", "Open 科技研究 from the focused 科研所", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_RESEARCH"), state=SkillState.CANDIDATE),
         Skill("DISMISS_DAILY_REWARD", "Advance one verified Daily reward overlay", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_DAILY_REWARD_CURRENT"), state=SkillState.CANDIDATE),
         Skill("SELECT_MAIL_ALLIANCE_TAB", "Open the Alliance mail category", Page.MAIL, Action("TAP_SEMANTIC", "BTN_MAIL_TAB_ALLIANCE"), state=SkillState.VERIFIED),
         Skill("SELECT_MAIL_SYSTEM_TAB", "Open the System mail category", Page.MAIL, Action("TAP_SEMANTIC", "BTN_MAIL_TAB_SYSTEM"), state=SkillState.VERIFIED),

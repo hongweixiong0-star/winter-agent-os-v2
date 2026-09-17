@@ -332,6 +332,20 @@ def verify_training_page_open(before: WorldState, after: WorldState) -> Verifica
     return VerificationResult(ok, "OK" if ok else "TRAINING_PAGE_NOT_PROVEN", {"menu_before": before.training.get("menu_open"), "training_after": after.page is Page.TRAINING})
 
 
+# The 科技研究 route, hop for hop the same shape as the training one above.  The route
+# itself was measured on 2026-09-04 (knowledge/skills/RESEARCH_RESEARCH.md line 38);
+# these two verifiers are the ones it was missing, which is why the goal could not move.
+def verify_research_lab_focused(before: WorldState, after: WorldState) -> VerificationResult:
+    arrived = after.research.get("menu_open") is True
+    ok = before.page is Page.POPUP and before.popup == "POWER_DETAILS" and after.page is Page.HOME and arrived
+    return VerificationResult(ok, "OK" if ok else "RESEARCH_LAB_HIGHLIGHT_NOT_PROVEN", {"power_details_before": before.popup == "POWER_DETAILS", "menu_open_after": after.research.get("menu_open")})
+
+
+def verify_research_page_open(before: WorldState, after: WorldState) -> VerificationResult:
+    ok = before.page is Page.HOME and before.research.get("menu_open") is True and after.page is Page.RESEARCH
+    return VerificationResult(ok, "OK" if ok else "RESEARCH_PAGE_NOT_PROVEN", {"menu_before": before.research.get("menu_open"), "research_after": after.page is Page.RESEARCH})
+
+
 def verify_ally_gift_claim_feedback(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.ALLIANCE and before.alliance.get("section") == "GIFTS" and before.alliance.get("tab") == "ALLY_GIFT" and before.alliance.get("status") == "CLAIMABLE"
     reward_ok = after.page is Page.POPUP and after.popup == "GENERIC_REWARD"
