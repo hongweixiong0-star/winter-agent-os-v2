@@ -188,7 +188,31 @@ def run_scanner() -> tuple[bool, str]:
     return proc.returncode == 0, "; ".join(tail) or f"rc={proc.returncode}"
 
 
-def do_push(skip_scan: bool) -> int:
+def active_escalation_jobs() -> list[str]:
+    """Job ids currently editing this tree, if any.
+
+    Read from the escalation ledger rather than guessing from timestamps: the queue
+    already knows, and the alternative is exactly the mistake this check exists to
+    prevent.  Measured 2026-09-17: an escalation job was mid-edit while a commit
+    ran, so its in-progress ``brain.py``/``skills.py``/``verifier.py`` changes were
+    swept into an unrelated commit, and ``main`` was briefly inconsistent -- the
+    brain decided a skill whose verifier binding was still uncommitted in the
+    working tree.  The design says one writer at a time; this makes the commit path
+    respect it too.
+    """
+    try:
+        import sys as _sys
+
+        _sys.path.insert(0, str(ROOT))
+        from winter_agent_v2.escalation_queue import EscalationLedger
+
+        snapshot = EscalationLedger(ROOT / "learning/workbuddy_escalations.jsonl").snapshot()
+    except Exception:  # noqa: BLE001 - a missing ledger must not block a push
+        return []
+    return [record.job_id or record.key for record in snapshot.active_jobs()]
+
+
+def do_push(skip_scan: bool, allow_active_agent: bool = False) -> int:
     info = status(fetch=True)
     if not info["remote_url"]:
         print("no remote configured; nothing to push")
@@ -198,6 +222,17 @@ def do_push(skip_scan: bool) -> int:
         print(f"REFUSING: local is behind {REMOTE}/{BRANCH} by {info['behind']} commit(s).\n"
               f"Fetch, look at the remote changes, then merge or rebase -- this tool will\n"
               f"not force, rewrite or reset anything.")
+        return 2
+
+    active = active_escalation_jobs()
+    if active and not allow_active_agent:
+        print("active agent      : " + ", ".join(active))
+        print("REFUSING: a WorkBuddy escalation job is editing this tree right now.\n"
+              "          Committing while it works sweeps its half-finished files into\n"
+              "          your commit and can leave main inconsistent -- which happened\n"
+              "          once, on 2026-09-17.  Wait for the job to settle, or pass\n"
+              "          --allow-active-agent if you have checked that the tree is\n"
+              "          coherent (compiles, check_wiring problems: 0, tests green).")
         return 2
 
     if not skip_scan:
@@ -251,6 +286,12 @@ def main() -> int:
     p_status.add_argument("--no-fetch", action="store_true")
     p_push = sub.add_parser("push")
     p_push.add_argument("--skip-scan", action="store_true")
+    p_push.add_argument(
+        "--allow-active-agent", action="store_true",
+        help="Push even though a WorkBuddy escalation job is editing this tree. "
+             "Only after checking the tree is coherent: it compiles, check_wiring "
+             "reports problems: 0, and the tests are green.",
+    )
     args = parser.parse_args()
 
     if args.command == "status":
@@ -265,7 +306,7 @@ def main() -> int:
             print(f"wrote {target.relative_to(ROOT)}")
         return 0
 
-    return do_push(args.skip_scan)
+    return do_push(args.skip_scan, args.allow_active_agent)
 
 
 if __name__ == "__main__":
