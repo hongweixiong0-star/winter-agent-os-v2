@@ -6,6 +6,7 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `92a6f27 2026-09-17T16:39:59+08:00 chore(handoff): record the interpreter guard at f40c684`
 - `f40c684 2026-09-17T16:39:36+08:00 docs(handoff): make the runtime preflight part of taking over`
 - `f49566b 2026-09-17T16:38:18+08:00 fix(runtime): the production entry ran on an interpreter that had no MAA`
 - `bd204ea 2026-09-17T15:46:12+08:00 feat(tooling): make the 2-minute Reuse Check a command, and put the rule where a session reads it`
@@ -17,12 +18,19 @@ Last 12 commits (newest first):
 - `ac694ee 2026-09-17T11:52:04+08:00 docs: the live-route recipe, written after running it twice in one day`
 - `ac17ac5 2026-09-17T11:51:25+08:00 chore(evidence): the probe record that left the client on HOME after the research round`
 - `e46b614 2026-09-17T11:48:11+08:00 chore(coverage): regenerate the capability catalog after the research round`
-- `9b1759d 2026-09-17T11:35:36+08:00 docs(research): the authoritative record for 3793a9b, whose message the shell truncated`
 
-Uncommitted changes: 3
-- `M learning/control_panel/latest.log`
+Uncommitted changes: 11
+- `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+- ` M .workbuddy-ai/memory/2026-09-17.md`
+- ` M .workbuddy/memory/2026-09-17.md`
+- ` M learning/control_panel/latest.log`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
 - ` M learning/runtime_snapshot.json`
+- `?? knowledge/failure_patterns/architecture/`
+- `?? tests/test_verifier_binding_audit.py`
+- `?? tools/verifier_binding_audit.py`
 <!-- /AUTO:recent_commits -->
 
 ---

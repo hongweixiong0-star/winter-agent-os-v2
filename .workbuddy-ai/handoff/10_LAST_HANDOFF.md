@@ -8,33 +8,33 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-17T08:39:58+00:00
+HANDOFF TIME: 2026-09-17T08:51:23+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 3 dirty file(s)
-  ['M learning/control_panel/latest.log', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
+WORKING TREE: 11 dirty file(s)
+  ['M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M .workbuddy-ai/memory/2026-09-17.md', ' M .workbuddy/memory/2026-09-17.md', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json', '?? knowledge/failure_patterns/architecture/', '?? tests/test_verifier_binding_audit.py']
 
-WHAT FINISHED (machine-visible): 25 skills live verified, 29 stable, 122 commit(s) in history
+WHAT FINISHED (machine-visible): 25 skills live verified, 29 stable, 123 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 19 skills never executed, 10 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=DEGRADED stop_reason=verified_beast_target_not_visible
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-17T08:37:15.718206+00:00", "episode_id": "20260917_163601_836168", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_163601_836168\\20260917_163601_836168_step_002_before_20260917T083639520209.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_163601_836168\\20260917_163601_836168_step_002_after_20260917T083658433588.png"}
+STOPPED AT: agent_state=IDLE stop_reason=mail_all_clear
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "FAILURE", "recorded_at": "2026-09-17T08:48:22.009081+00:00", "episode_id": "20260917_164719_351898", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_164719_351898\\20260917_164719_351898_step_001_before_20260917T084719820763.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_164719_351898\\20260917_164719_351898_step_001_after_20260917T084739016698.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 130, "recent": 14, "last_seen": "2026-09-17T04:45:23.361291+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 1}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 3
+DIRTY FILES: 11
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-17T08:39:58+00:00
+SYNC STATE at 2026-09-17T08:51:23+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : f40c6848fda11d665589355a86918f4f01911a70
-remote_head       : f40c6848fda11d665589355a86918f4f01911a70   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : 92a6f27c9432d5917d5a8f3ebe2a761696ee08ad
+remote_head       : 92a6f27c9432d5917d5a8f3ebe2a761696ee08ad   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (3 path(s))
-last_push_at      : 2026-09-17T08:39:42.017530+00:00
+git_dirty         : True (11 path(s))
+last_push_at      : 2026-09-17T08:40:26.595742+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
 
