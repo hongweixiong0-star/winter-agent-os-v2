@@ -169,19 +169,26 @@ LIVE CLIENT > PRODUCTION EVIDENCE > VERIFIER RESULT > CURRENT CODE
 
 1. 承接 `03_NEXT_ACTION.md` 里的**当前最高价值任务**。若你认为它不是最高价值，
    先用真实数据说明理由，再换。
-2. **禁止重新设计架构。** 见 `00_MASTER_RULES.md` §2。
-3. **禁止重复已经 Live Verified 的工作。** 见 `02_CURRENT_PROGRESS.md` 的「已 Live 且应守住」表。
-4. 进入循环：
+2. **任何 Capability 开工前先跑 2 分钟 Reuse Check** —— 见 `docs/ADDING_A_LIVE_ROUTE.md` §0。
+   先查本地五件事（skill / brain route / verifier / 契约 / legacy evidence）；
+   **本地已有明确路径 ⇒ 用本地，不查外部**。只有命中"从未实现 / UI 或玩法未知 / 导航不知道 /
+   连续失败 / 15~30 分钟仍无可靠实现"才升级到
+   `knowledge/external/external_capability_map.json`，并按里面记的 `source_files` 直接读源码。
+   **两条禁令：已经有成熟本地实现还跑去 GitHub 重新研究；外部已有成熟实现却自己摸 UI 两小时。**
+   外部实现**只是 prior**：`External → Adapt → Current Client Probe → Live Verify`。
+3. **禁止重新设计架构。** 见 `00_MASTER_RULES.md` §2。
+4. **禁止重复已经 Live Verified 的工作。** 见 `02_CURRENT_PROGRESS.md` 的「已 Live 且应守住」表。
+5. 进入循环：
 
 ```
 RUN → FAILURE → FIX → REPLAY → LIVE → VERIFY → EVIDENCE → NEXT
 ```
 
-5. 只有真实客户端 + 真实动作 + 真实状态变化 + Verifier PASS + 可追溯 Evidence
+6. 只有真实客户端 + 真实动作 + 真实状态变化 + Verifier PASS + 可追溯 Evidence
    才能把能力标为 `LIVE_VERIFIED` / `STABLE`。
-6. **不要每完成一步就停下来问用户。** 自动继续下一最高价值任务
+7. **不要每完成一步就停下来问用户。** 自动继续下一最高价值任务
    （唯一例外：真实支付、账号安全、不可恢复破坏）。
-7. 会话准备结束时（或完成一个重要节点后）：
+8. 会话准备结束时（或完成一个重要节点后）：
 
 ```bash
 python tools/update_workbuddy_handoff.py
@@ -191,7 +198,7 @@ python tools/update_workbuddy_handoff.py
 新的 Live Verified / Goal Coverage 变化 / Stable·Degraded 变化 / 重大 Failure 修复 /
 重大 Runtime Failure / 外部模式真正接入 / 重要 checkpoint / 会话准备结束。
 
-8. 若本轮改动「逻辑完整 + 测试通过 + 值得保留」，建 checkpoint：
+9. 若本轮改动「逻辑完整 + 测试通过 + 值得保留」，建 checkpoint：
 
 ```bash
 "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest tests -q

@@ -1,7 +1,30 @@
 {
-  "observed_at": "2026-09-17T05:29:19.494528+00:00",
-  "written_at": "2026-09-17T05:29:21.120485+00:00",
-  "page": "MAIL",
+  "observed_at": "2026-09-17T07:45:48.609215+00:00",
+  "written_at": "2026-09-17T07:45:51.415744+00:00",
+  "page": "MAP",
   "confidence": 0.99,
-  "goals": []
+  "goals": [
+    {
+      "goal_id": "AVOID_STAMINA_WASTE",
+      "status": "READY",
+      "completion": 0.0,
+      "remaining_seconds": null,
+      "reward_value": 100,
+      "daily_loss": 19085,
+      "event_synergy": 0.0,
+      "development_value": 0.0,
+      "resource_cost": 0.0,
+      "risk": 0.0,
+      "available_skills": [
+        "INTEL_CLAIM_REWARDS",
+        "BEAST_HUNT"
+      ],
+      "retry_after": null,
+      "evidence": {
+        "current": 3847,
+        "threshold": 30
+      },
+      "priority": 19185.0
+    }
+  ]
 }

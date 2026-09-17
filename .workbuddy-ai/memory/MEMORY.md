@@ -236,3 +236,33 @@
   `SemanticROIVision` 用的是 **8**，而独立 `SemanticROIVision(...)` 默认 **6**。
   用独立探针量读数会**偏严**，本轮差点据此误判"模板坏了"。量之前先确认用的是**生产那条路径**，
   或直接读 `w.semantic`。
+
+## 操作者定规：任何 Capability 开工前先跑 **2 分钟 Reuse Check**（2026-09-17）
+
+**两条禁令（原文）**：
+> 禁止已经有成熟本地实现还跑去 GitHub 重新研究。
+> 禁止外部已有成熟实现却自己摸 UI 两小时。
+
+**顺序**：
+1. **先查本地 V2 五件事**（≤2 分钟，**默认不查外部**）：
+   `skill`（`v2_registry()` 的 id/action.target/state）·
+   `brain route`（`grep` 目标名于 brain.py）·
+   `verifier`（`LiveRuntime.VERIFIED_ATOMIC`）·
+   `契约`（`skill_factory.GOAL_REQUIREMENTS` + `knowledge/skills/<X>_RESEARCH.md`）·
+   `legacy evidence / knowledge`（`knowledge/`、`episodes.jsonl`、`dataset/truth_audit/`、`evidence/INDEX.json`）。
+2. **本地已有明确路径 ⇒ 直接用本地，不查外部。**
+3. **命中任一条才升级外部**：`MISSING` / 从未实现 / UI 未知 / 玩法未知 / 导航不知道 /
+   连续失败 / **15~30 分钟仍未找到可靠实现**。
+4. 升级顺序：**先查** `knowledge/external/external_capability_map.json` →
+   有映射就**直接读它记的 GitHub `source_files`** → 没有映射才用 GitHub 搜索成熟 WOS 项目，
+   并把结果**回写索引**（否则下次重查）。
+5. 外部实现**只是 prior，不是结论**：`External → Adapt → Current Client Probe → Live Verify`。
+   坐标/颜色/阈值**每一处都要在本客户端重量**；`DIRECT_REUSE_ALLOWED` 之外不复制源码与资源；
+   README 里写的许可证不算证据（看 LICENSE + license API，缺席即 `UNVERIFIED`）。
+
+**为什么写进宪法级记忆**：2026-09-17 一天内把训练与研究两个 BLOCKED 目标打成 LIVE，
+**两次都在最后一步之前以为"要从零摸索 UI"，实际机制早已存在**（路由/verifier/契约/实测路线全在本地）。
+反面案例同期也真实发生过：拿外部 Frostguard 的 VIP 入口坐标直接上真机，
+结果打开的是**付费礼包**（硬阻断挡下）——外部坐标**是假设，必须先在当前客户端量**。
+
+**全文**：`docs/ADDING_A_LIVE_ROUTE.md` §0；接管流程 `START_HERE.md` 第 5 步第 2 条。

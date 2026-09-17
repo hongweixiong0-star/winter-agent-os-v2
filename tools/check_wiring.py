@@ -519,6 +519,25 @@ def main() -> int:
     check("factory: KEEP_RESEARCH_PRODUCTIVE still names OPEN_RESEARCH + RESEARCH",
           GOAL_REQUIREMENTS["KEEP_RESEARCH_PRODUCTIVE"] == ("OPEN_RESEARCH", "RESEARCH"))
 
+    # The operator's 2-minute Reuse Check (2026-09-17) is a rule about behaviour, so
+    # what can be pinned here is that it still exists where a session will read it and
+    # that the tool which answers it is runnable.  A rule that quietly disappears from
+    # the route document is how the TRAIN/RESEARCH rounds nearly re-researched routes
+    # that were already in the repository.
+    route_doc = (ROOT / "docs" / "ADDING_A_LIVE_ROUTE.md").read_text(encoding="utf-8")
+    check("docs: the route document still opens with the Reuse Check",
+          "2 分钟 Reuse Check" in route_doc)
+    check("docs: both prohibitions are still stated",
+          "禁止已经有成熟本地实现还跑去 GitHub" in route_doc
+          and "自己摸 UI 两小时" in route_doc)
+    check("docs: the escalation ladder still points at the external index",
+          "external_capability_map.json" in route_doc)
+    check("tooling: the Reuse Check is runnable as one command",
+          (ROOT / "tools" / "reuse_check.py").is_file())
+    start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
+    check("START_HERE: step 5 still requires the Reuse Check before a capability",
+          "Reuse Check" in start_here)
+
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():
         check(label, False, detail)

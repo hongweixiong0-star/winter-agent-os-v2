@@ -7,22 +7,60 @@
 > `KEEP_RESEARCH_PRODUCTIVE` → PARTIAL）。剩下 BUILD / ARENA / ALLIANCE_HELP / LABYRINTH
 > 是同一形状，照抄即可。**两次都在最后一步之前以为"要从零摸索 UI"，实际上机制早已存在。**
 
-## 第 0 步：先确认"缺的到底是什么"（最省时间的一步）
+## 第 0 步：2 分钟 Reuse Check（**任何 Capability 开工前的强制前置**）
 
-**先读，别先写。** 按顺序查四件事：
+> 2026-09-17 操作者定规。两条禁令：
+> **禁止已经有成熟本地实现还跑去 GitHub 重新研究；禁止外部已有成熟实现却自己摸 UI 两小时。**
 
-1. **决策**：`grep` 目标名于 `brain.py`。训练与研究都**已经有完整路由**，
-   研究只是"没有导航决策"。没有路由 ≠ 没有能力。
-2. **verifier**：`LiveRuntime.VERIFIED_ATOMIC` 里有没有该步的绑定。
+### 0.1 先查本地 V2（≤2 分钟，**默认不查外部**）
+
+按顺序查五件事 —— 下面第 0.2 节的四条是其中四件，另加一条 legacy 证据：
+
+1. **skill**：`v2_registry()` 里有没有该技能（`s.id`、`s.action.target`、`s.state`）。
+2. **brain route**：`grep` 目标名于 `brain.py`。训练与研究都**已经有完整路由**，
+   研究只是"没有导航决策"。**没有路由 ≠ 没有能力。**
+3. **verifier**：`LiveRuntime.VERIFIED_ATOMIC` 里有没有该步的绑定。
    两次都是**早就绑好了**（`verify_training_page_open`、`verify_research_page_open` 等）。
-3. **技能与契约**：`skill_factory.GOAL_REQUIREMENTS[<goal>]` 点名了这个目标需要哪几个技能；
+4. **契约**：`skill_factory.GOAL_REQUIREMENTS[<goal>]` 点名了这个目标需要哪几个技能；
    `knowledge/skills/<X>_RESEARCH.md` 里往往**已经写着实测路线**（研究那条在第 38 行）。
-4. **语义名**：`grep` 技能的 `action.target`。
-   ⚠ **同一个控件常有两个语义名**（`BTN_OPEN_POWER_OVERVIEW` 宽裁剪含数字、只能匹配裁它的账号；
-   `BTN_OPEN_POWER_OVERVIEW_ICON` 只裁图标、两账号都命中。**技能点的是后者**）。
-   **判定控件"坏了"之前，先找到动作真正指向的那个语义名。**
+5. **legacy evidence / knowledge**：`knowledge/`、`learning/episodes.jsonl`、`dataset/truth_audit/`、
+   `evidence/INDEX.json` 里有没有**已经量过的坐标/ROI/路线/失败原因**。
 
-⇒ 结论多半是：**只缺"今天能命中的模板" + "可能缺一两跳决策"**，不是缺能力。
+⇒ **本地已有明确路径 ⇒ 直接用本地，不查外部。** 结论多半是：
+**只缺"今天能命中的模板" + "可能缺一两跳决策"**，不是缺能力。
+
+### 0.2 什么时候才升级到外部（命中任一条即升级，不要硬撑）
+
+- `MISSING`（能力总表里根本没有）
+- **从未实现**（没有 skill / 没有 verifier）
+- **UI 未知**（不知道入口长什么样或在哪）
+- **玩法未知**（不清楚机制的输入与结果）
+- **导航不知道**（不知道从哪个页面、走哪几跳）
+- **连续失败**（同一处真机反复失败）
+- **15~30 分钟仍未找到可靠实现**
+
+### 0.3 升级顺序（按此顺序，不跳级）
+
+1. **先查索引**：`knowledge/external/external_capability_map.json`
+   —— 每行都带 `repo` / `repo_commit` / `source_files` / `navigation` / `recognition` /
+   `action` / `verification` / `recovery` / `license` / `reuse_level` / `current_gap`。
+2. **索引里有映射** ⇒ **直接打开记录的 GitHub `source_files` 读那段源码**，不要重新全仓审计。
+3. **索引里没有** ⇒ 再用 GitHub 搜索成熟的 Whiteout Survival 项目实现，并把结果**回写索引**
+   （否则下次又要重查一遍）。
+
+### 0.4 外部实现的地位：**只是 prior，不是结论**
+
+```
+External → Adapt → Current Client Probe → Live Verify
+```
+
+- 语言/分辨率/客户端版本都可能不同（Frostguard 是 720×1280 与 V2 同配置 ⇒ 其像素常数**可**比对；
+  另一个项目是 1080×2456 ⇒ **y 轴百分比不可迁移**）。**每一处坐标/颜色/阈值都要在本客户端重量。**
+- **许可证**：`DIRECT_REUSE_ALLOWED` 之外一律不复制源码与资源。AGPL 项目只学**测量事实与流程**；
+  README 里写的许可证**不算证据**（要看 LICENSE 文件与 license API，缺席即 `UNVERIFIED`）。
+- ⚠ **索引里的坐标是假设，不是事实。** 已实测一次证伪：
+  Frostguard 的 VIP 入口 `(430,48)-(530,85)` 在 V2 中文客户端上打开的是**付费礼包**
+  （硬阻断正确挡下）。**负结果也要留帧归档** —— 它移除了一个错误假设，是最便宜的一半发现。
 
 ## 第 1 步：有界探针逐跳走（`tools/probe_power_route.py`）
 

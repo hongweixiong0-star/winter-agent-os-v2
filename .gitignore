@@ -262,6 +262,9 @@ learning/git_sync_state.json
 # is rule 12 (no force-push, no rewriting main).  Everything read from an external
 # repository belongs in these paths, never in the tracked tree.
 out_*.toml
+# The same class: a scratch script written at the repo root to answer one question
+# (out_probe_*.py).  It belongs to the session that wrote it, not to the project.
+out_*.py
 out_ext_*/
 out_ext_java/
 dataset/external/

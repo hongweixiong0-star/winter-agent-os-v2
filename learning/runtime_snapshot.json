@@ -1,20 +1,20 @@
 {
-  "agent_state": "IDLE",
+  "agent_state": "DEGRADED",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-17T05:29:21.118522+00:00",
-  "last_action_time": "2026-09-17T04:47:48.183150+00:00",
-  "last_success_time": "2026-09-17T04:48:03.383109+00:00",
+  "last_tick_time": "2026-09-17T07:45:51.413754+00:00",
+  "last_action_time": "2026-09-17T07:35:45.114888+00:00",
+  "last_success_time": "2026-09-17T07:35:55.910877+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
-  "page": "MAIL",
-  "current_goal": "AUTO_DISCOVERY",
+  "page": "MAP",
+  "current_goal": "AVOID_STAMINA_WASTE",
   "current_skill": "SAFE_STOP",
-  "reason": "mail_all_clear",
+  "reason": "verified_beast_target_not_visible",
   "preconditions": [],
   "verifier": null,
-  "next_action": "switch_task",
+  "next_action": "refresh_or_switch_task",
   "risk": "UNKNOWN",
   "confidence": 1.0,
   "device": "UNKNOWN",
@@ -22,8 +22,8 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_132908_234039\\20260917_132908_234039_step_001_before_20260917T052908713008.png",
-  "march_used": null,
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_154533_649329\\20260917_154533_649329_step_001_before_20260917T074534133013.png",
+  "march_used": 0,
   "march_max": null,
   "queues": {
     "building": {},
@@ -33,6 +33,6 @@
     "alliance": {},
     "events": {}
   },
-  "stop_reason": "mail_all_clear",
-  "updated_at": "2026-09-17T05:29:21.981105+00:00"
+  "stop_reason": "verified_beast_target_not_visible",
+  "updated_at": "2026-09-17T07:45:52.408993+00:00"
 }
