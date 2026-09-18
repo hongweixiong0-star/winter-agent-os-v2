@@ -1,7 +1,7 @@
 {
  "schema_version": "1.0",
  "generated_by": "winter_agent_v2.capability_bootstrap",
- "generated_at": "2026-09-18T03:44:21.598119+00:00",
+ "generated_at": "2026-09-18T03:45:05.394877+00:00",
  "policy": {
   "max_lifecycle": "READY_FOR_LIVE_VERIFY",
   "never_from_a_bootstrap": [
@@ -2608,7 +2608,7 @@
     "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
    },
    "notes": [
-    "先读项目内知识：knowledge/game/research.json, knowledge/game/fire_crystal.json（第 5 级）；读不到再上真机探针"
+    "先读项目内知识：knowledge/game/fire_crystal.json, knowledge/game/research.json（第 5 级）；读不到再上真机探针"
    ]
   },
   {

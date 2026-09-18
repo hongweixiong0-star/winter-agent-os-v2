@@ -11,11 +11,11 @@
   "recovery_prior"
  ],
  "conflicts": [],
- "live_calibration_status": "PENDING_RESEARCH",
+ "live_calibration_status": "",
  "question": "基础 Recovery：失败后怎么恢复",
- "research_attempts": 1,
- "created_at": "2026-09-18T03:18:39.095870+00:00",
- "updated_at": "2026-09-18T03:18:39.095870+00:00",
+ "research_attempts": 0,
+ "created_at": "2026-09-18T03:45:05.406771+00:00",
+ "updated_at": "2026-09-18T03:45:05.406771+00:00",
  "evidence": [],
  "notes": [
   "未注册语义（需要一帧真机页面）：TROOP_PRESET",

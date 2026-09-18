@@ -338,17 +338,31 @@ class Controller(unittest.TestCase):
         # source would be PRIOR; the difference is the point of the ladder.
         self.assertEqual(record.status, kp.UNVERIFIED)
         self.assertEqual(record.source_type, kp.LIVE_VERIFIED_ASSET)
-        self.assertEqual(record.live_calibration_status, cb.PENDING_RESEARCH)
         # The synthetic row's other fields came from the project's own OPEN_ARENA prior,
         # so the one thing still missing is what the research job must ask for.
         self.assertIn("失败后怎么恢复", record.question)
+        # A dry run sends nothing, so it claims nothing: no attempt is consumed and the
+        # record does not pretend a research job is out.
+        self.assertEqual(record.research_attempts, 0)
+        self.assertEqual(record.live_calibration_status, "")
+
+    def test_a_dispatched_research_is_recorded_as_pending(self):
+        controller = cb.KnowledgeBootstrapController(
+            self.tmp, store=self.store, adapter=ScriptedAdapter(job="job-research-1"))
+        report = controller.cycle(now=NOW)
+        self.assertEqual(report.decision, cb.DECISION_RESEARCH_QUEUED)
+        record = self.store.load("OPEN_ARENA")
+        self.assertEqual(record.live_calibration_status, cb.PENDING_RESEARCH)
+        self.assertEqual(record.research_attempts, 1)
 
     def test_a_second_cycle_moves_on_instead_of_asking_the_same_question_twice(self):
         """§七: one hard-to-find manual must not stall the whole loop."""
-        first = self.controller.cycle(now=NOW, dispatch=False)
+        controller = cb.KnowledgeBootstrapController(
+            self.tmp, store=self.store, adapter=ScriptedAdapter(job="job-research-1"))
+        first = controller.cycle(now=NOW)
         self.assertEqual(first.selected, "OPEN_ARENA")
         record = self.store.load("OPEN_ARENA")
-        report = self.controller.cycle(now=NOW, dispatch=False)
+        report = controller.cycle(now=NOW)
         self.assertEqual(report.selected, "OPEN_VIP", "the loop moved on, it did not stall")
         self.assertTrue(
             any("research already out" in reason for reason in report.skipped),
@@ -510,6 +524,22 @@ class MergeWithRuntimeGaps(unittest.TestCase):
         self.assertEqual(merged, [])
         record = q.fold(events).get("OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA")
         self.assertEqual(record.notes, [])
+
+
+class ScriptedAdapter:
+    """The queue adapter's one method, scripted, so a test can be "dispatched"."""
+
+    def __init__(self, *, job: str = "", note: str = ""):
+        self._job, self._note = job, note
+        self.calls: list[dict] = []
+
+    def preload(self, *, now=None, plan=None, mode="PRELOAD", questions=()):
+        self.calls.append({"plan": getattr(plan, "code", ""), "mode": mode,
+                           "questions": tuple(questions)})
+        return q.RunObservation(
+            preloaded=(getattr(plan, "code", ""),) if self._job else (),
+            preload_note=self._note,
+        )
 
 
 class FakeBridge:

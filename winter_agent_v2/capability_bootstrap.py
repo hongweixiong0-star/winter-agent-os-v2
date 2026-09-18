@@ -1724,16 +1724,8 @@ class KnowledgeBootstrapController:
             )
             base.capability = plan.code
             base.capability_id = plan.capability_id
-            base.research_attempts = (record.research_attempts if record else 0) + (1 if needs else 0)
             base.notes = tuple((record.notes if record else ())) + tuple(base.notes) + (why,)
             base.evidence = tuple(record.evidence) if record else ()
-            enough, missing = sufficiency(base)
-            # A queued research job is *pending*; the blocked state is reserved for
-            # "we already asked and the gap survived", which is what §七 calls
-            # KNOWLEDGE_BLOCKED.  Conflating them made a live research request read as
-            # a dead end.
-            base.live_calibration_status = PENDING_RESEARCH if needs else KNOWLEDGE_BLOCKED
-            self.store.save(base, now=moment)
 
             decision = DECISION_KNOWLEDGE_BLOCKED
             note = f"本地知识不足且无法再研究：{why}" if not needs else why
@@ -1750,6 +1742,17 @@ class KnowledgeBootstrapController:
             elif needs:
                 decision = DECISION_RESEARCH_QUEUED
                 note = f"定向研究待派（dry run）：{question}"
+
+            # Progress is only counted when a job actually left the machine.  A dry run
+            # that recorded "research out" would have made every later run skip the
+            # capability -- an unclaimed state is the honest record of a pass that sent
+            # nothing, and the same rule applies to the preload branch below.
+            sent = dispatched.startswith("job dispatched")
+            base.research_attempts = (record.research_attempts if record else 0) + (1 if sent else 0)
+            base.live_calibration_status = (
+                PENDING_RESEARCH if sent else (KNOWLEDGE_BLOCKED if not needs else "")
+            )
+            self.store.save(base, now=moment)
             self.store.write_index(now=moment)
             report = CycleReport(
                 stage="TARGETED_RESEARCH", selected=plan.code, tier=tier,
@@ -1778,22 +1781,23 @@ class KnowledgeBootstrapController:
             stored.evidence = record.evidence
             stored.conflicts = record.conflicts
             stored.notes = tuple(record.notes) + tuple(stored.notes)
-        enough, missing = sufficiency(stored)
-        ready = plan.plan_state == READY_FOR_LIVE_VERIFY
-        stored.live_calibration_status = (
-            CALIBRATION_QUEUED if ready else "PENDING_DEVELOPMENT"
-        )
-        self.store.save(stored, now=moment)
 
         dispatched = ""
         if dispatch:
             dispatched = self._dispatch(plan, mode="PRELOAD", questions=(), now=moment)
+        sent = dispatched.startswith("job dispatched")
         if not dispatch:
             decision = DECISION_PRELOADED
-        elif dispatched.startswith("job dispatched"):
+        elif sent:
             decision = DECISION_PRELOADED
         else:
             decision = DECISION_GATE_REFUSED
+        # Same rule as the research branch: only a dispatched job advances the state.
+        stored.live_calibration_status = (
+            (CALIBRATION_QUEUED if plan.plan_state == READY_FOR_LIVE_VERIFY else "PENDING_DEVELOPMENT")
+            if sent else ""
+        )
+        self.store.save(stored, now=moment)
         self.store.write_index(now=moment)
 
         # Stage 9-10: update knowledge, then name the next one -- so the state file

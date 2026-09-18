@@ -864,6 +864,14 @@ def main() -> int:
           and "def _next_after(" in _bootstrap_source
           and "NEXT_SELECTED" in _bootstrap_source
           and "knowledge_updated" in _queue_source)
+    check("knowledge: only a dispatched job advances a capability's state",
+          _bootstrap_source.count("sent = dispatched.startswith(\"job dispatched\")") == 2
+          and "PENDING_RESEARCH if sent else" in _bootstrap_source
+          and "if sent else \"\"" in _bootstrap_source)
+    check("knowledge: a degraded capability is refused as a repair, not preloaded",
+          "DEGRADED_MIN_FAILURES = 2" in _bootstrap_source
+          and "CLASS_DEGRADED" in _bootstrap_source
+          and 'return "DEGRADED"' in _bootstrap_source)
     check("knowledge: a real failure merges into the preload job instead of a second one",
           "def _merge_into_preload(" in _queue_source
           and "MERGED_INTO_PRELOAD_JOB" in _queue_source
