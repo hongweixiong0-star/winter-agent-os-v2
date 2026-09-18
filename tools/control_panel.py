@@ -1449,6 +1449,8 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
             state = ""
             outcome = ""
             before_version = after_version = active_version = ""
+            activation_episode_id = live_try_episode_id = live_verify_episode_id = ""
+            reuse_episode_id = ""
             try:
                 snapshot = fold(EscalationLedger(ledger_path).events())
                 record = snapshot.get(chain.trace_id)
@@ -1468,6 +1470,15 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
                     before_version = str(record.before_version or "")
                     after_version = str(record.after_version or "")
                     active_version = str(record.active_version or "")
+                    # The three episode ids the operator's §8 requires the cells to be graded on.
+                    # Read from the record, never inferred from the chain tool's own steps:
+                    # ``auto_resumed``/``post_resume_verified`` describe the *reload* mechanism,
+                    # and using them for 生产复用 produced a state that cannot exist -- "LIVE
+                    # VERIFIED 等待" beside "生产复用 ✓".
+                    activation_episode_id = str(record.activation_episode_id or "")
+                    live_try_episode_id = str(record.live_try_episode_id or "")
+                    live_verify_episode_id = str(record.live_verify_episode_id or "")
+                    reuse_episode_id = str(record.production_reuse_episode_id or "")
             except Exception as exc:  # noqa: BLE001
                 # Reported rather than swallowed.  Measured: a NameError here (``fold`` was
                 # not imported) surfaced as an empty version cell, which reads exactly like
@@ -1494,6 +1505,10 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
                 "before_version": before_version,
                 "after_version": after_version,
                 "active_version": active_version,
+                "activation_episode_id": activation_episode_id,
+                "live_try_episode_id": live_try_episode_id,
+                "live_verify_episode_id": live_verify_episode_id,
+                "production_reuse_episode_id": reuse_episode_id,
             }
     except Exception as exc:  # noqa: BLE001 - a card must never take the window down
         card = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"}
@@ -1532,10 +1547,24 @@ def render_loop_card(card: Mapping[str, Any] | None) -> str:
         "LIVE_VERIFY_PENDING": "等待真机验证",
         "VERSION_ACTIVATION_PENDING": "等待新版本首次加载",
     }
+    # §8: three of the eight cells are graded on the *episode ids the ledger recorded*, because
+    # that is where those facts live.  The chain tool's own steps describe the reload mechanism,
+    # and reading them here produced states that cannot exist -- measured 2026-09-18: "LIVE
+    # VERIFIED 等待" beside "生产复用 ✓", i.e. reuse credited before verification.
+    evidence_cells = {
+        "真机校准": (str(card.get("live_try_episode_id") or "")
+                    or str(card.get("live_verify_episode_id") or "")),
+        "LIVE VERIFIED": str(card.get("live_verify_episode_id") or ""),
+        "生产复用": str(card.get("production_reuse_episode_id") or ""),
+    }
     cells: list[str] = []
     for label, members in LOOP_CELLS:
         if label == "Version":
             cells.append(f"{label} {version_zh.get(state, '等待')}")
+            continue
+        if label in evidence_cells:
+            episode = evidence_cells[label]
+            cells.append(f"{label} ✓" if episode else f"{label} 等待")
             continue
         if not members:
             # "Next Capability" has no step of its own: it is a statement about what the
@@ -1564,12 +1593,23 @@ def render_loop_card(card: Mapping[str, Any] | None) -> str:
     return "   ".join(cells) + f"\n{trace}{version_note}   {tail}"
 
 
-def render_soak(record: Mapping[str, Any] | None) -> str:
-    """The acceptance soak as one operator-readable line, or an honest "not started"."""
+def render_soak(record: Mapping[str, Any] | None, soak_error: str = "") -> str:
+    """The acceptance soak as one operator-readable line, or a *named* reason it is not running.
+
+    The distinction the operator asked for (§6): 尚未开始 must never stand in for "it declined".
+    A soak is either running (with its timer and sample count), finished (with its verdict), or
+    not started -- and in the last case the window says which of the two it is: not triggered
+    yet, or triggered and refused, with the refusal's own words.
+    """
     if not record:
-        return "尚未开始（GUI 启动后由窗口自行测量，无需任何手工命令）"
+        if soak_error:
+            return f"启动失败：{soak_error}（不是「尚未开始」——窗口已尝试并给出了原因）"
+        return "尚未触发（GUI 启动后由窗口自行测量；若长时间如此即为异常，而非等待）"
     verdict = (record.get("verdict") or {})
     overall = str(verdict.get("overall") or "INCOMPLETE")
+    elapsed = float(record.get("duration_minutes") or 0.0)
+    window = float(record.get("window_seconds") or 900.0) / 60.0
+    complete = bool(record.get("complete"))
     failed = [name for name, item in (verdict.get("conditions") or {}).items()
               if item.get("ok") is False]
     unknown = [name for name, item in (verdict.get("conditions") or {}).items()
@@ -1582,7 +1622,8 @@ def render_soak(record: Mapping[str, Any] | None) -> str:
         ("no_duplicate_job", "无重复Job"), ("no_extra_spawn_per_refresh", "无额外spawn"),
         ("no_black_console", "无黑窗"), ("topbar_agrees", "顶部一致"),
     )}
-    line = (f"{overall} · {record.get('duration_minutes', 0)} 分钟 / "
+    phase = "完成" if complete else "运行中"
+    line = (f"{phase} {overall} · {elapsed:.1f}/{window:.0f} 分钟 / "
             f"{record.get('sample_count', 0)} 样本 · 重启 "
             f"{record.get('distinct_gateway_pids') and len(record['distinct_gateway_pids']) or 0} 个网关进程"
             f" · 黑窗 {record.get('black_console_windows', 0)}")
@@ -2175,6 +2216,12 @@ class PanelProbes:
                 self._soak_context = (context, why)
             if self._soak is None:
                 if context != "production":
+                    # Recorded, never silent.  Measured 2026-09-18 23:14: the window showed
+                    # "尚未开始（GUI 启动后由窗口自行测量，无需任何手工命令）" -- a sentence that
+                    # promises the measurement will happen -- while this branch had already
+                    # decided it would not.  The operator's rule is explicit: a refusal is a
+                    # state to display, not a blank.
+                    self._soak_error = f"未启动：{why or context}"
                     return
                 from winter_agent_v2.gateway_soak import GatewaySoak
                 from winter_agent_v2.gateway_soak import EVIDENCE_RELATIVE
@@ -3914,7 +3961,8 @@ class ControlPanel:
         else:
             self.values["loop_trace"].set("—")
             self.values["loop_break"].set(f"尚未开始：{card.get('reason')}")
-        self.values["soak"].set(render_soak(self.probes.soak_payload()))
+        self.values["soak"].set(render_soak(self.probes.soak_payload(),
+                                            getattr(self.probes, "_soak_error", "")))
         # §1-§5: is this window itself stale?  Checked here, on the same refresh that recomputes
         # the gateway cell -- because the measured symptom was exactly this cell showing 异常
         # from code that had already been fixed on disk.
