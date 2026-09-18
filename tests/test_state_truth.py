@@ -53,9 +53,15 @@ def write(root: Path, relative: str, payload) -> None:
 
 def episode(stamp: str, *, page: str = "MAP", goal: str = "AUTO_DISCOVERY",
             skill: str = "OPEN_MAP", verifier: bool = True, revision: str = "abc1234",
-            resources=None) -> dict:
+            resources=None, tag: str = "") -> dict:
+    """One synthetic row.  ``tag`` keeps ``episode_id`` unique across a batch.
+
+    Uniqueness matters: the role-scope check asks "is this foreign row among the *recent*
+    ones", and an id derived only from the timestamp makes every row in a batch the same
+    episode -- so the check saw one id and called all of history current.
+    """
     return {
-        "episode_id": stamp.replace("-", "").replace(":", ""),
+        "episode_id": stamp.replace("-", "").replace(":", "") + (f"_{tag}" if tag else ""),
         "recorded_at": stamp, "repo_revision": revision, "verifier_ok": verifier,
         "skill": skill, "goal_id": goal, "result": "SUCCESS",
         "state_after": {"page": page, "resources": resources or {}},
@@ -338,6 +344,85 @@ def code_only(source: str) -> str:
                 break
         kept.append(line[:cut].rstrip())
     return "\n".join(kept)
+
+
+class EpisodesAreScopedToARole(unittest.TestCase):
+    """The audit's #1 finding: every metric pooled two accounts.
+
+    The corpus already contained 70,206,322 power / 6 march slots and 542,443 / 2, and
+    nothing on an episode said which account it came from.  The field is now on the schema,
+    so the honest reading of history is "unscoped" and never a guessed name.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        write(self.tmp, f"{st.ROLE_PROBE_DIR}/probe.json", {
+            "stamp": "20260916_184004",
+            "candidate_identity_tokens": [{"text": "账号：1171757165"}],
+        })
+
+    def test_an_episode_carries_the_role_it_was_taken_under(self):
+        from winter_agent_v2.learning import Episode
+
+        episode_row = Episode(
+            skill="OPEN_MAP", state_before={}, action={}, state_after={},
+            result="SUCCESS", failure_type=None, duration=1.0, mode="PRODUCTION",
+            role_id="1171757165", role_scope=st.PERSISTED,
+        )
+        self.assertEqual(episode_row.role_id, "1171757165")
+        self.assertEqual(episode_row.role_scope, st.PERSISTED)
+
+    def test_an_episode_with_no_role_says_so_rather_than_guessing(self):
+        from winter_agent_v2.learning import Episode
+
+        episode_row = Episode(
+            skill="OPEN_MAP", state_before={}, action={}, state_after={},
+            result="SUCCESS", failure_type=None, duration=1.0, mode="PRODUCTION",
+        )
+        self.assertEqual(episode_row.role_id, "")
+        self.assertEqual(episode_row.role_scope, "")
+
+    def test_unscoped_history_is_reported_as_unscoped(self):
+        write(self.tmp, st.EPISODES, [episode(NOW.isoformat()), episode(NOW.isoformat())])
+        value = st.TruthAudit(self.tmp, now=NOW).report().by_name("episode_role_scope")
+        self.assertEqual(value.status, st.UNKNOWN)
+        self.assertEqual(value.value, "0/2")
+        self.assertIn("全部未按角色限定", value.note)
+
+    def test_scoped_episodes_are_counted(self):
+        write(self.tmp, st.EPISODES, [
+            {**episode(NOW.isoformat()), "role_id": "1171757165", "role_scope": st.PERSISTED},
+        ])
+        value = st.TruthAudit(self.tmp, now=NOW).report().by_name("episode_role_scope")
+        self.assertEqual(value.value, "1/1")
+        self.assertEqual(value.role_id, "1171757165")
+        self.assertNotEqual(value.status, st.CONFLICT)
+
+    def test_another_account_in_the_same_corpus_is_a_conflict(self):
+        """A metric computed across both accounts is an average of two players."""
+        write(self.tmp, st.EPISODES, [
+            {**episode(NOW.isoformat()), "role_id": "1171757165"},
+            {**episode(NOW.isoformat(), goal="OTHER"), "role_id": "9999999999"},
+        ])
+        report = st.TruthAudit(self.tmp, now=NOW).report()
+        self.assertEqual(report.by_name("episode_role_scope").status, st.CONFLICT)
+        self.assertIn("分角色的", report.conflicts_for("episode_role_scope")[0].note)
+
+    def test_history_from_a_previous_account_is_not_a_live_conflict(self):
+        """The old pooled rows are a fact about history, not a running disagreement.
+
+        The distinction is by recency, not by presence: rows from another account that sit
+        far enough back are the corpus's past, while one inside the recent window means the
+        two accounts are being mixed *now*.
+        """
+        foreign = [{**episode(NOW.isoformat(), goal=f"OLD{i}", tag=f"o{i}"), "role_id": "9999999999"}
+                   for i in range(250)]
+        mine = [{**episode(NOW.isoformat(), goal=f"NEW{i}", tag=f"n{i}"), "role_id": "1171757165"}
+                for i in range(250)]
+        write(self.tmp, st.EPISODES, foreign + mine)
+        report = st.TruthAudit(self.tmp, now=NOW).report()
+        self.assertEqual(report.conflicts_for("episode_role_scope"), ())
+        self.assertEqual(report.by_name("episode_role_scope").status, st.LIVE_OBSERVED)
 
 
 if __name__ == "__main__":

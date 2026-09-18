@@ -203,6 +203,8 @@ class LiveRuntime:
         backend_ledger: BackendLedger | None = None,
         capability_gate: CapabilityGate | None = None,
         code_revision: str = "",
+        role_id: str = "",
+        role_scope: str = "",
         device_lease: DeviceLease | None = None,
     ) -> None:
         self.device = device
@@ -221,6 +223,11 @@ class LiveRuntime:
         self.capture_dir = capture_dir
         self.registry = registry or v2_registry()
         self.brain = brain or RuleBrain()
+        # The goal this run has already committed to.  See ``_step_goal``: it is the
+        # label an episode gets for a step taken on a page whose own discovery finds
+        # no goal at all, which is the case on every step of the gather route after
+        # the search result opens.
+        self._committed_goal = ""
         self.settle_seconds = settle_seconds
         self.environmental_wait_seconds = environmental_wait_seconds
         self.max_relax_attempts = max_relax_attempts
@@ -259,6 +266,14 @@ class LiveRuntime:
         # tell an episode that ran the *new* code from one that ran the code the job
         # was about to replace.
         self.code_revision = str(code_revision)
+        # Which account this run's episodes belong to, read once by the caller from the
+        # persisted role artifact (one small file per run, the same shape as
+        # ``code_revision``).  ``""`` means the role was never read off the client, and it
+        # stays empty rather than being filled with a configured or default name -- the
+        # whole point is that an unscoped metric must be *visible* as unscoped, because
+        # the corpus was already pooled from two accounts without anyone noticing.
+        self.role_id = str(role_id or "")
+        self.role_scope = str(role_scope or "")
         # The single-UI-owner lock (operator §8/§19).  Injectable so a test can hold it
         # without touching the real file; ``None`` means "no lease file exists", which is
         # the same as gameplay owning the device and keeps the guard free in tests that
@@ -398,6 +413,36 @@ class LiveRuntime:
         for goal in goals or ():
             self._goal_meters[goal.goal_id] = goal.distance
 
+    def _step_goal(self, best_goal) -> str:
+        """The goal an episode is recorded under.
+
+        Goal discovery reads the page the client is standing on, which is right for
+        *choosing* and wrong for *attributing*.  A route leaves the page that
+        discovered its goal almost immediately, and on the pages where it finishes
+        nothing is discoverable at all, so the label used to fall straight through to
+        the synthetic ``AUTO_DISCOVERY`` placeholder.  That placeholder owns no meter:
+        the steps filed under it could be neither called progress nor called stalled.
+
+        Measured 2026-09-18: this is what deferred ``KEEP_MARCHES_PRODUCTIVE``.  Its
+        whole route ran -- ``SEARCH_RESOURCE`` -> ``SELECT_RESOURCE`` ->
+        ``SUBMIT_RESOURCE_SEARCH`` -> ``START_GATHER`` -> ``DISPATCH_MARCH``, every
+        verifier passing -- but only the three MAP steps carried the goal's own name
+        while the two that advanced it carried ``AUTO_DISCOVERY``.  No episode of the
+        goal ever showed ``goal_progress=True``, so after three such runs the
+        capability gate filed a ``NO_GOAL_PROGRESS`` deferral naming
+        ``OPEN_MARCH_FORMATION``: the one step of that route which works (16/16 live
+        attempts that day) and the one that is therefore not the wall.  The run's own
+        commitment is the honest label for a step taken on the way to the goal it
+        committed to.
+
+        ``brain.current_goal`` still wins where it exists.  It is the named task mode a
+        run was launched under, and overriding it would relabel evidence the other
+        routes are already recorded under.
+        """
+        if best_goal is not None:
+            return best_goal.goal_id
+        return self.brain.current_goal or self._committed_goal or "AUTO_DISCOVERY"
+
     def _record_goals(self, world: WorldState):
         """Discover this frame's goals, persist the board, and hand them back.
 
@@ -482,6 +527,8 @@ class LiveRuntime:
             action_backend=execution.backend if execution is not None else "",
             executor_latency_ms=execution.latency_ms if execution is not None else None,
             repo_revision=self.code_revision,
+            role_id=self.role_id,
+            role_scope=self.role_scope,
         )
         try:
             self.episode_store.append(episode)
@@ -527,6 +574,7 @@ class LiveRuntime:
         self._printed_deferrals: set[str] = set()
         # The meters this run has read so far; see _remember_goal_meters.
         self._goal_meters: dict[str, float] = {}
+        self._committed_goal = ""
         gate = self._gate()
 
         def finish(reason: str) -> LiveRun:
@@ -601,6 +649,8 @@ class LiveRuntime:
             goals = self.goal_library.discover(before)
             self._remember_goal_meters(goals)
             best_goal = self.goal_library.best(self._selectable(goals, deferrals))
+            if best_goal is not None:
+                self._committed_goal = best_goal.goal_id
             if deferrals:
                 # Written every run, not only when it changes: the panel and the
                 # escalation hook both read the current answer, and a stale one would
@@ -627,7 +677,7 @@ class LiveRuntime:
                 # a long, bounded interval before re-observing.
                 decision = self.brain.decide(before, self.registry)
                 self._runtime(agent_state=AgentState.IDLE.value,
-                              current_goal=best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY"),
+                              current_goal=self._step_goal(best_goal),
                               current_skill=decision.skill, reason=decision.reason,
                               next_action=decision.expected_result, confidence=decision.confidence)
                 steps.append(LiveStep(index, decision, None, before, None, None))
@@ -657,7 +707,7 @@ class LiveRuntime:
                 leave = self._deferral_replan(before, deferrals, best_goal)
             decision = leave if leave is not None else self.brain.decide(before, self.registry)
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,
-                          current_goal=best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY"),
+                          current_goal=self._step_goal(best_goal),
                           current_skill=decision.skill, reason=decision.reason,
                           next_action=decision.expected_result, confidence=decision.confidence)
             if decision.skill == "SAFE_STOP":
@@ -873,7 +923,7 @@ class LiveRuntime:
                     decision=tick.decision, before=before, execution=tick.execution,
                     after=None, verification=None, started_at=started_at,
                     step_id=index,
-                    goal_id=best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY"),
+                    goal_id=self._step_goal(best_goal),
                     before_screenshot=before_path,
                 )
                 steps.append(LiveStep(index, tick.decision, tick.execution, before, None, None))
@@ -932,7 +982,7 @@ class LiveRuntime:
                 # the escalation read as "V2 saw something it could not read"
                 # with nothing to look at.
                 after_path = refresh_path
-            step_goal = best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY")
+            step_goal = self._step_goal(best_goal)
             self._record_episode(
                 decision=tick.decision, before=before, execution=tick.execution,
                 after=after, verification=verification, started_at=started_at,

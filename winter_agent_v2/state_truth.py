@@ -284,9 +284,23 @@ class TruthAudit:
         self.now = now or datetime.now(timezone.utc)
         self._snapshot = _read_json(self.root / SNAPSHOT)
         self._episodes = _tail_jsonl(self.root / EPISODES, 3)
+        self._all_episodes_cache: tuple[Mapping[str, Any], ...] | None = None
         self._executor = _tail_jsonl(self.root / EXECUTOR_LEDGER, 2)
         self._pump = _read_json(self.root / PUMP)
         self._conflicts: list[Conflict] = []
+
+    @property
+    def _all_episodes(self) -> tuple[Mapping[str, Any], ...]:
+        """The whole episode stream, read at most once per audit.
+
+        Lazy because it is four megabytes and most states do not need it: the panel asks
+        this question on a slower cadence than it asks for the page, and paying for the
+        whole stream on every refresh would make the window stutter for a number nobody
+        looks at that often.
+        """
+        if self._all_episodes_cache is None:
+            self._all_episodes_cache = _tail_jsonl(self.root / EPISODES, 5000)
+        return self._all_episodes_cache
 
     # -- primitives --------------------------------------------------------
 
@@ -739,6 +753,56 @@ class TruthAudit:
             note=f"trace={payload.get('trace_id') or '-'} job={payload.get('job_id') or '-'}",
         )
 
+    def episode_role_scope(self) -> TruthValue:
+        """Are the episodes we draw conclusions from actually scoped to this role?
+
+        This is the operator's role-isolation question, made answerable.  The corpus was
+        already pooled from two accounts with different power and different march slots, so
+        a metric computed across episodes is an average of two different players unless the
+        episodes carry a role.  The field was added to the schema on 2026-09-18; every
+        episode written before that is permanently unscoped, and saying so is the honest
+        reading -- not a gap to be filled in by guessing.
+        """
+        role = self.role()
+        total = len(self._all_episodes)
+        scoped = [e for e in self._all_episodes if e.get("role_id")]
+        mine = [e for e in scoped if str(e.get("role_id")) == role.role_id] if role.role_id else []
+        foreign = [e for e in scoped
+                   if role.role_id and str(e.get("role_id")) != role.role_id]
+        note = (f"{len(scoped)}/{total} 条 episode 带角色；"
+                f"{len(mine)} 条属于上次已知角色 {role.value or '未知'}")
+        if foreign and self._recent(foreign):
+            self._conflicts.append(Conflict(
+                "episode_role_scope",
+                (("current_role", role.role_id or "UNKNOWN"),
+                 ("recent episodes", ", ".join(sorted({str(e.get("role_id")) for e in foreign})[:3]))),
+                "有别的角色的 episode 混在同一份语料里 —— 任何跨 episode 的统计都必须是分角色的",
+            ))
+            return TruthValue(
+                name="episode_role_scope", value=f"{len(scoped)}/{total}",
+                status=CONFLICT, source=EPISODES, role_id=role.role_id,
+                note=note + "；发现非当前角色的 episode",
+            )
+        if not scoped:
+            return TruthValue(
+                name="episode_role_scope", value=f"0/{total}", status=UNKNOWN,
+                source=EPISODES, role_id=role.role_id,
+                note=note + "；**全部未按角色限定** —— 跨 episode 统计不得当作单角色结论",
+            )
+        status, age = self._episode_stamp(
+            str(scoped[-1].get("episode_id") or ""), str(scoped[-1].get("recorded_at") or "")
+        )
+        return TruthValue(
+            name="episode_role_scope", value=f"{len(scoped)}/{total}", status=status,
+            source=EPISODES, observed_at=str(scoped[-1].get("recorded_at") or ""),
+            age_seconds=age, role_id=role.role_id, note=note,
+        )
+
+    def _recent(self, episodes: Sequence[Mapping[str, Any]], within: int = 200) -> bool:
+        """Are any of these among the most recent rows?  Old history is not a live conflict."""
+        recent_ids = {e.get("episode_id") for e in self._all_episodes[-within:]}
+        return any(e.get("episode_id") in recent_ids for e in episodes)
+
     def capability_lifecycle(self) -> TruthValue:
         catalog = _read_json(self.root / "knowledge/game/capability_catalog.json")
         rows = catalog.get("capabilities") or ()
@@ -775,6 +839,7 @@ class TruthAudit:
             self.feature_unlock(), self.event_state(),
             self.executor_backend(), self.version_active(), self.verifier(),
             self.workbuddy_jobs(), self.device_lease(), self.capability_lifecycle(),
+            self.episode_role_scope(),
         )
         return TruthReport(
             values=values, conflicts=tuple(self._conflicts), role_id=role.role_id,
@@ -832,6 +897,7 @@ def audited_names() -> tuple[str, ...]:
         "auto_state", "panel_heartbeat", "march_capacity", "resources", "queues",
         "feature_unlock", "event_state", "executor_backend", "version_active",
         "verifier", "workbuddy_jobs", "device_lease", "capability_lifecycle",
+        "episode_role_scope",
     )
 
 

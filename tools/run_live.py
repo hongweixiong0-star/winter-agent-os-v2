@@ -129,6 +129,16 @@ def main() -> int:
     revision = tree_revision(ROOT)
     code_revision = revision.token
     print(f"[code] revision {code_revision or 'unknown'}", flush=True)
+    # Which account this run's episodes belong to, read once from the one role artifact.
+    # Deliberately allowed to be empty: an episode with no role is an *unscoped* episode,
+    # and that fact must stay visible.  Filling it from config or a default is what let the
+    # window print a role nobody had observed.
+    from winter_agent_v2.state_truth import TruthAudit
+
+    role = TruthAudit(ROOT).report().by_name("current_role")
+    role_id = role.role_id if role is not None else ""
+    role_scope = role.status if role is not None else ""
+    print(f"[role] {role_id or 'unscoped'} ({role_scope or 'UNKNOWN'})", flush=True)
     result = LiveRuntime(
         device=observation_device,
         adb_device=device,
@@ -160,6 +170,8 @@ def main() -> int:
         # the step it is about to take.
         capability_gate=CapabilityGate.load(ROOT),
         code_revision=code_revision,
+        role_id=role_id,
+        role_scope=role_scope,
         # The single-UI-owner lock.  Gameplay holds the device by default; a development
         # validation takes it, and this run yields at the next atomic boundary rather
         # than being interrupted mid-transaction (operator §8/§19).

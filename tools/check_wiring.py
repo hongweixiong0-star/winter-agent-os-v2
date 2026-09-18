@@ -614,6 +614,38 @@ def main() -> int:
               WorldState(page=Page.HOME, confidence=0.98),
           ).ok)
 
+    # OPEN_MARCH_FORMATION (2026-09-18 escalation
+    # OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH).  The same three
+    # links as the two blocks above -- registered skill, bound verifier, and a brain
+    # decision that really emits it -- plus the fourth link that escalation was
+    # actually about: the capability name the project maps that skill to, so an
+    # episode of this step is evidence for *this capability* and not merely for a
+    # skill that happens to be registered somewhere.
+    gather = registry.get("START_GATHER")
+    check("registry: START_GATHER is the detail-page skill that opens the formation page",
+          gather is not None and gather.required_page is Page.RESOURCE_DETAIL
+          and gather.action.target == "BTN_GATHER")
+    check("dispatchable: START_GATHER is bound to a verifier",
+          "START_GATHER" in runtime.LiveRuntime.VERIFIED_ATOMIC)
+    check("runtime: START_GATHER's binding is verify_march_page_open",
+          runtime.LiveRuntime.VERIFIED_ATOMIC.get("START_GATHER") is verifier.verify_march_page_open)
+    check("brain: a goal-less RESOURCE_DETAIL sweep emits START_GATHER",
+          RuleBrain().decide(
+              WorldState(page=Page.RESOURCE_DETAIL, resource_available=True, confidence=0.99),
+              registry).skill == "START_GATHER")
+    from winter_agent_v2.escalation_queue import capability_for_skill as _capability_for_skill
+    check("capability: START_GATHER is OPEN_MARCH_FORMATION in the project's own table",
+          _capability_for_skill("START_GATHER") == "OPEN_MARCH_FORMATION")
+    # The isolation half: the formation page is not proven while the detail page is
+    # still on screen, which is the failure the capability's history is made of.
+    check("verifier: an unmoved detail page is not a formed march",
+          not verifier.verify_march_page_open(
+              WorldState(page=Page.RESOURCE_DETAIL, resource_available=True,
+                         resource_target="WOOD", confidence=0.99),
+              WorldState(page=Page.RESOURCE_DETAIL, resource_available=True,
+                         resource_target="WOOD", confidence=0.99),
+          ).ok)
+
     # The operator's 2-minute Reuse Check (2026-09-17) is a rule about behaviour, so
     # what can be pinned here is that it still exists where a session will read it and
     # that the tool which answers it is runnable.  A rule that quietly disappears from
@@ -985,8 +1017,12 @@ def main() -> int:
           not any(
               word in _truth_source
               for word in ("def save(", "def write_index(", "class TruthStore",
-                           "class WorldState", ".write_text(")
+                           "class WorldState")
           )
+          # Exactly one writer, and it is the role artifact: the vision reader existed and
+          # nothing wrote its answer anywhere, which is why the window had a literal.
+          and _truth_source.count(".write_text(") == 1
+          and "def record_role(" in _truth_source
           and _truth_source.count("_read_json(") >= 5)
     _panel_code = code_only(_panel_source)
     check("truth: the window reads the audit instead of printing a constant",
@@ -1001,6 +1037,22 @@ def main() -> int:
           and _panel_source.index("def _poll_truth(self)")
           < _panel_source.index("def _refresh_truth(self)")
           and "TruthAudit(" in _panel_source)
+    _learning_source = (PKG / "learning.py").read_text(encoding="utf-8")
+    _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
+    _run_live_source = (ROOT / "tools/run_live.py").read_text(encoding="utf-8")
+    check("truth: an episode carries the role it was taken under",
+          "role_id: str = \"\"" in _learning_source
+          and "role_scope: str = \"\"" in _learning_source
+          and "role_id=self.role_id" in _runtime_source
+          and "role_scope=self.role_scope" in _runtime_source
+          and "role_id=role_id," in _run_live_source
+          and "role_scope=role_scope," in _run_live_source)
+    check("truth: an unscoped episode stays visibly unscoped",
+          'role_id = role.role_id if role is not None else ""' in _run_live_source
+          and 'role_scope = role.status if role is not None else ""' in _run_live_source
+          and "def episode_role_scope(" in _truth_source
+          and "全部未按角色限定" in _truth_source
+          and "有别的角色的 episode 混在同一份语料里" in _truth_source)
     check("knowledge: calibration fixes differences instead of discarding the prior",
           "def prior_vs_live_diff(" in _knowledge_source
           and "PRIOR_VS_LIVE_DIFF" in _knowledge_source

@@ -57,6 +57,19 @@ class Episode:
     # new version works" from "AUTO happened to succeed again while a job was open"
     # (RR-004, measured 2026-09-18).
     repo_revision: str = ""
+    # Which *account* this step belongs to.  The project's own role audit found the corpus
+    # was already pooled from two accounts (70,206,322 power / 6 march slots vs 542,443 /
+    # 2), so every metric that pooled them was un-scoped -- and this was the one field the
+    # episode stream did not carry.  Read once per run from the persisted role artifact.
+    #
+    # ``""`` is honest and load-bearing: it means the role was never read off the client,
+    # which is true for all of history and for any run where the panel has no fresh read.
+    # It is deliberately NOT filled in with a configured or default name.
+    role_id: str = ""
+    # How that role is known: LIVE_OBSERVED / PERSISTED / STALE / UNKNOWN.  A role-scoped
+    # claim may only be made from an episode whose scope is at least PERSISTED, and a
+    # fresh read never inherits an older run's scope.
+    role_scope: str = ""
     recorded_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

@@ -1271,6 +1271,10 @@ class PanelProbes:
 
     GATEWAY_INTERVAL = 5.0
     DEVICE_INTERVAL = 10.0
+    # The truth audit walks several megabytes of episode stream, so it runs on a slower
+    # cadence than the gateway poll.  Its answers change on the scale of an AUTO cycle,
+    # not a few seconds, and the window must not stutter for a number nobody re-reads.
+    TRUTH_EVERY = 4
 
     def __init__(self, root: Path | None = None, device: Any | None = None) -> None:
         self.root = root or ROOT
@@ -1329,10 +1333,13 @@ class PanelProbes:
         self._stop.set()
 
     def _loop(self) -> None:
+        passes = 0
         while not self._stop.is_set():
             self._poll_gateway()
             self._poll_device()
-            self._poll_truth()
+            if passes % max(1, self.TRUTH_EVERY) == 0:
+                self._poll_truth()
+            passes += 1
             self._stop.wait(self.GATEWAY_INTERVAL)
 
     # -- the probes --------------------------------------------------------
