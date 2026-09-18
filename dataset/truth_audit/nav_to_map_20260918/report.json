@@ -68,6 +68,14 @@
     "old_verifier": "OPEN_MAP_NOT_PROVEN (march_used=None)",
     "new_verifier": "OK (before_home=true, after_map=true, march_used=None)"
   },
+  "dispatch_proof": {
+    "what": "that the production loop really executed the patched verifier, not merely that it is bound",
+    "artifact": "live_open_map_step1_run.txt -- the run's stdout, kept verbatim",
+    "how_to_read": "its first line is the run's result JSON; the lines after it are the MuMu emulator banner that the runner prints on the same stream (the co-joined-output defect recorded in .workbuddy/memory/2026-09-18.md), which is why the panel's parser once read every round as {}",
+    "evidence_keys": ["before_home", "after_map", "after_confidence", "march_used", "march_max", "resource_search_open"],
+    "why_it_discriminates": "the old verifier's evidence dict had exactly three keys -- before_home, after_map, map_controls.  after_confidence can only be produced by the patched function, and map_controls is absent, so this step was judged by the new code.  step 1 is OPEN_MAP / intel_goal_requires_map, HOME 0.98 -> MAP 0.99, stop_reason TARGET_SKILL_VERIFIED.",
+    "what_it_does_not_show": "learning/episodes.jsonl stores verifier_ok but NOT the verifier's evidence dict (no episode in the stream carries after_confidence or map_controls), so 'which verifier ran, and why did it say ok' cannot be reconstructed from the episode stream alone.  This artifact is the substitute, and it is machine-local unless promoted -- which is what this file does."
+  },
   "unproven": [
     "the 2026-09-17 escalated tap itself: at +1.5 s the frame was the unchanged HOME and 12 s later the client was on the 常规活动/护送货车 page. Whether the single input tap was swallowed by the client or the client auto-navigated to that event page cannot be decided from the two recorded frames; both remain possible.",
     "the 常规活动 / 护送货车 page has no template in the page model, so it still reads as Page.UNKNOWN (confidence 0.0). Any capability that needs the map while that page is on screen will fail closed, correctly but uselessly.",
