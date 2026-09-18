@@ -29,6 +29,11 @@ from winter_agent_v2.escalation_queue import (
     AUTO_ESCALATION_CONDITIONS,
     DEFAULT_LEDGER,
     EscalationLedger,
+    # Needed by the closed-loop card, which reads the record's own lifecycle state so §十一's
+    # "Version must read the real ledger" is satisfied.  Its absence was invisible for a
+    # while: the call sat inside a broad ``except`` that turned a NameError into an empty
+    # version cell rather than into a failure.
+    fold,
 )
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
 from winter_agent_v2.retention import prune_runtime_screenshots
@@ -771,6 +776,12 @@ STATE_ZH = {
     # The operator's §21 word for the rung between "a developer finished" and "the
     # game proved it": the version exists and is waiting for its own examination.
     "LIVE_VERIFY_PENDING": "等待真机验证",
+    # The two rungs the operator added on 2026-09-18 evening (§一/§八), each named for the
+    # fact it represents rather than for the step that produced it: the new version is
+    # *loaded* (proved by an episode whose revision equals after_version), and the capability
+    # has *re-joined* normal play (proved by a production episode, not by the examination).
+    "VERSION_ACTIVE": "新版本已加载",
+    "REJOINED": "已回到正常Gameplay",
     "DONE": "完成", "FAILED": "失败", "BLOCKED": "Blocked", "COOLDOWN": "冷却",
 }
 
@@ -1388,6 +1399,38 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
                                     "reason": "台账中没有带 Job 的升级记录，闭环尚未开始"}
         else:
             chain = chains[-1]
+            # The record's own lifecycle state, so §十一's "Version must read the real
+            # ledger" is satisfied: VERSION_ACTIVATION_PENDING and VERSION_ACTIVE are states
+            # in the ledger, and the card shows which one it is rather than inferring a
+            # version step from ``git HEAD`` -- which only describes the disk, not what ran.
+            state = ""
+            outcome = ""
+            before_version = after_version = active_version = ""
+            try:
+                snapshot = fold(EscalationLedger(ledger_path).events())
+                record = snapshot.get(chain.trace_id)
+                if record is None:
+                    # ``build`` falls back to matching by capability when no ledger row
+                    # carries the key (a bridge-only submission does not), so the card has to
+                    # make the same fallback or it would show an empty version cell for a
+                    # record that does exist.
+                    record = next(
+                        (r for r in snapshot.records.values()
+                         if r.capability and r.capability == chain.capability),
+                        None,
+                    )
+                if record is not None:
+                    state = str(record.state or "")
+                    outcome = str(record.outcome or "")
+                    before_version = str(record.before_version or "")
+                    after_version = str(record.after_version or "")
+                    active_version = str(record.active_version or "")
+            except Exception as exc:  # noqa: BLE001
+                # Reported rather than swallowed.  Measured: a NameError here (``fold`` was
+                # not imported) surfaced as an empty version cell, which reads exactly like
+                # "there is no version yet" -- the one answer that is wrong in a way nobody
+                # would question.
+                state = f"读取失败：{type(exc).__name__}"
             card = {
                 "ok": True,
                 "trace_id": chain.trace_id,
@@ -1395,9 +1438,19 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
                 "capability": chain.capability,
                 "completed": chain.completed,
                 "total": len(chain.applicable),
-                "verdict": chain.verdict(),
+                # ``verdict``, ``completed``, ``failure_step`` and ``applicable`` are
+                # properties on ``Chain``, not methods.  Calling ``verdict()`` raised
+                # "'str' object is not callable", which only a live run showed: the card is
+                # wrapped in a broad except so the window stayed up, and the failure surfaced
+                # as a reason string rather than as a crash.
+                "verdict": chain.verdict,
                 "breakpoint": chain.failure_step,
                 "steps": [(step.name, step.done, step.note) for step in chain.steps],
+                "record_state": state,
+                "outcome": outcome,
+                "before_version": before_version,
+                "after_version": after_version,
+                "active_version": active_version,
             }
     except Exception as exc:  # noqa: BLE001 - a card must never take the window down
         card = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"}
@@ -1427,13 +1480,25 @@ def render_loop_card(card: Mapping[str, Any] | None) -> str:
     if not card or not card.get("ok"):
         return f"闭环尚未开始（{str((card or {}).get('reason') or '无记录')}）"
     done = {name: bool(state) for name, state, _ in card.get("steps") or ()}
+    # §十一: the Version cell is graded on the *ledger state*, because that is where the fact
+    # lives.  ``reload_requested``/``reload_settled`` are the chain tool's own steps and they
+    # describe the reload mechanism, not whether this version was ever loaded.
+    state = str(card.get("record_state") or "")
+    version_zh = {
+        "VERSION_ACTIVE": "✓ 已加载",
+        "LIVE_VERIFY_PENDING": "等待真机验证",
+        "VERSION_ACTIVATION_PENDING": "等待新版本首次加载",
+    }
     cells: list[str] = []
     for label, members in LOOP_CELLS:
+        if label == "Version":
+            cells.append(f"{label} {version_zh.get(state, '等待')}")
+            continue
         if not members:
             # "Next Capability" has no step of its own: it is a statement about what the
             # bootstrap controller selected next, and it is reported on its own row.  Saying
             # ✓ here because the other seven are done would be the conflation again.
-            cells.append(f"{label} {'—'}")
+            cells.append(f"{label} —")
             continue
         if all(done.get(name) for name in members):
             cells.append(f"{label} ✓")
@@ -1444,10 +1509,16 @@ def render_loop_card(card: Mapping[str, Any] | None) -> str:
     trace = f"trace_id {card.get('trace_id')}"
     if card.get("job_id"):
         trace += f" · job {card.get('job_id')}"
+    version_note = ""
+    if card.get("after_version"):
+        version_note = (f" · 版本 {str(card.get('before_version') or '?')[:8]} → "
+                        f"{str(card.get('after_version'))[:8]}"
+                        + (f"（已加载 {str(card.get('active_version'))[:8]}）"
+                           if card.get("active_version") else "（尚未被真实 Episode 加载）"))
     breakpoint = str(card.get("breakpoint") or "")
     tail = (f"{card.get('completed')}/{card.get('total')} 步 · 断点：{breakpoint}"
             if breakpoint else f"{card.get('completed')}/{card.get('total')} 步 · 无断点 · PASS")
-    return "   ".join(cells) + f"\n{trace}   {tail}"
+    return "   ".join(cells) + f"\n{trace}{version_note}   {tail}"
 
 
 def render_soak(record: Mapping[str, Any] | None) -> str:
@@ -3734,9 +3805,16 @@ class ControlPanel:
                 + (f" · job {card.get('job_id')}" if card.get("job_id") else "")
                 + (f" · {card.get('capability')}" if card.get("capability") else "")
             )
-            self.values["loop_break"].set(
-                str(card.get("breakpoint") or "无断点 · 闭环 PASS")
-            )
+            # §十一 asks the breakpoint to say what it is *waiting for*, in the operator's own
+            # words, when the wait is at the activation rung -- "INCOMPLETE" is true but it
+            # does not tell a reader which fact is missing.
+            state = str(card.get("record_state") or "")
+            breakpoint = str(card.get("breakpoint") or "无断点 · 闭环 PASS")
+            if state == "LIVE_VERIFY_PENDING" and str(card.get("outcome")) == "VERSION_ACTIVATION_PENDING":
+                breakpoint = "VERSION_ACTIVATION_PENDING：等待 after_version 首次被真实 Episode 加载"
+            elif state == "VERSION_ACTIVE":
+                breakpoint = "VERSION_ACTIVE：等待真机校准（Development Validation Lease）"
+            self.values["loop_break"].set(breakpoint)
         else:
             self.values["loop_trace"].set("—")
             self.values["loop_break"].set(f"尚未开始：{card.get('reason')}")

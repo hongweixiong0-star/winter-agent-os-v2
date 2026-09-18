@@ -232,8 +232,20 @@ STOPPED = "STOPPED"
 # from starving the queue the way a stopped job once did.
 LIVE_VERIFY_PENDING = "LIVE_VERIFY_PENDING"
 
+# The two rungs the operator added on 2026-09-18 evening (§一/§八).  Declared here, above
+# ``ALL_STATES``, because that tuple is evaluated at import time and names them; the reasoning
+# for each is written out beside ``VERSION_ACTIVATION_PENDING`` below.
+#
+#   VERSION_ACTIVE  the new version has been *loaded and run* by a fresh process, and a real
+#                   episode whose ``repo_revision`` equals ``after_version`` says so.
+#   REJOINED        the capability has been exercised on the real device, released its lease,
+#                   and gone back into normal play.
+VERSION_ACTIVE = "VERSION_ACTIVE"
+REJOINED = "REJOINED"
+
 ALL_STATES: tuple[str, ...] = (
-    NEW, QUEUED, SUBMITTED, WORKING, LIVE_VERIFY_PENDING, DONE, FAILED, BLOCKED, COOLDOWN,
+    NEW, QUEUED, SUBMITTED, WORKING, LIVE_VERIFY_PENDING, VERSION_ACTIVE, REJOINED,
+    DONE, FAILED, BLOCKED, COOLDOWN,
 )
 # A key in one of these is "being worked on": no second job for it.
 ACTIVE_STATES = frozenset({NEW, QUEUED, SUBMITTED, WORKING})
@@ -266,6 +278,19 @@ TEST_PASS = "TEST_PASS"
 # Without it the ladder read CODE_CHANGED -> LIVE_VERIFIED -> Reload, which credits a
 # fix that the measuring process had never loaded.
 VERSION_ACTIVATION_PENDING = "VERSION_ACTIVATION_PENDING"
+# ``VERSION_ACTIVE`` and ``REJOINED`` are declared above ``ALL_STATES``, which names them.
+#
+# VERSION_ACTIVE has to be a lifecycle state rather than a GUI inference: every rung above it
+# (LIVE_VERIFY_PENDING, LIVE_TRIED, LIVE_VERIFIED, REJOINED, DONE) is gated on "the version
+# under test is the version that ran", and a value the window computed for display could never
+# gate anything.  It is neither active (no agent is working, and the single slot must stay
+# free) nor terminal (the next pass still has to measure it), which is why it is in neither
+# set -- the same reasoning as LIVE_VERIFY_PENDING.
+#
+# Its only lawful evidence is: job settled AND after_version known AND a real episode AND
+# episode.repo_revision == after_version.  Not "files changed", not "the agent said DONE",
+# not "the tests passed" -- all three are facts about the tree, and none of them is evidence
+# that anything loaded it.
 REPLAY_PASS = "REPLAY_PASS"
 LIVE_TRIED = "LIVE_TRIED"
 LIVE_VERIFIED = "LIVE_VERIFIED"
@@ -443,6 +468,17 @@ class EscalationRecord:
     # job's own time: a reconcile that runs an hour later must not push the boundary
     # forward, or the episodes that closed the rung would fall on the wrong side of it.
     version_since: datetime | None = None
+    # The version the new code became.  ``before_version`` is the tree the job started
+    # against and ``after_version`` the tree it produced; ``active_version`` is the version a
+    # *measured episode* proves was actually loaded, which is the only one of the three that
+    # says anything about what ran.  Operator §三: HEAD only describes the disk.
+    before_version: str = ""
+    after_version: str = ""
+    active_version: str = ""
+    activation_episode_id: str = ""
+    activated_at: datetime | None = None
+    # The episode a REJOINED/Production-Reuse step is credited to (operator §九).
+    production_reuse_episode_id: str = ""
     # The agent's own words at settle time, carried forward so the re-measure does not
     # have to re-ask the gateway -- and so the corroboration behind a later LIVE_VERIFIED
     # is the same sentence the first measurement used, not a fresh guess.
@@ -595,11 +631,48 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.outcome = str(event.get("outcome", record.outcome))
             record.code_changed = bool(event.get("code_changed", record.code_changed))
             record.settled_at = _moment(event.get("recorded_at")) or record.settled_at
+            # The two versions the job produced.  Folded here because every rung above this
+            # one is gated on them: without ``after_version`` on the record, "is the version
+            # under test the version that ran" cannot be asked at all, and the activation
+            # step would have nothing to compare an episode against.
+            record.before_version = str(event.get("before_version") or record.before_version)
+            record.after_version = str(event.get("after_version") or record.after_version)
             job_state = str(event.get("job_state", ""))
             if job_state in (DONE, FAILED):
                 record.state = job_state
             if event.get("repair_used"):
                 record.repairs_used += 1
+            continue
+
+        if kind == "version_active":
+            # Operator §二/§三: the new version has been *loaded*.  The evidence is a real
+            # episode recorded after the job settled whose ``repo_revision`` equals
+            # ``after_version`` -- not a git HEAD read, which only describes the disk, and
+            # not the agent's own word.
+            record = get(key)
+            record.state = VERSION_ACTIVE
+            record.active_version = str(event.get("active_version")
+                                        or event.get("after_version")
+                                        or record.after_version)
+            record.activation_episode_id = str(event.get("activation_episode_id") or "")
+            record.activated_at = _moment(event.get("activated_at")) or _moment(
+                event.get("recorded_at"))
+            record.notes.append(
+                f"version active: {record.active_version or 'unknown'} "
+                f"(episode {record.activation_episode_id or 'unrecorded'})"
+            )
+            continue
+
+        if kind == "rejoined":
+            record = get(key)
+            record.state = REJOINED
+            record.production_reuse_episode_id = str(
+                event.get("production_reuse_episode_id") or ""
+            )
+            record.notes.append(
+                f"rejoined normal gameplay (episode "
+                f"{record.production_reuse_episode_id or 'unrecorded'})"
+            )
             continue
 
         if kind == "job_lost":
@@ -2481,12 +2554,27 @@ class EscalationQueueAdapter:
                 settled=settled, errors=errors,
             )
 
+        # The activation rung, before anything asks whether the capability works: a version
+        # that has not been loaded cannot have been verified, and the operator's §四 is
+        # explicit that this must be recoverable after a restart rather than re-triggered by
+        # hand -- so it is re-derived from the ledger and the episode stream on every pass.
+        activated = self._activate_pending_versions(snapshot, moment)
+        just_activated = {key for key, _ in activated}
+        for key, message in activated:
+            settled.append(message)
+
         # Records whose job is done and whose version has not been exercised yet.  This
         # is the rung the operator added on 2026-09-18 (VERSION_ACTIVATION_PENDING ->
         # VERSION_ACTIVE -> LIVE_VERIFY_PENDING), re-measured on every pass because the
         # evidence that closes it is an episode, and episodes arrive on their own.
         for record in snapshot.records.values():
             if record.state != LIVE_VERIFY_PENDING or not record.job_id:
+                continue
+            if record.key in just_activated:
+                # This pass has just moved it to VERSION_ACTIVE.  ``snapshot`` was folded
+                # before that event was appended, so without this guard the record would be
+                # re-measured against a state it no longer holds -- and the pass would report
+                # both "the version became active" and "the version has not been exercised".
                 continue
             before = RepoRevision(
                 head=str(_submitted(snapshot, record.key, "repo_head") or ""),
@@ -2555,6 +2643,77 @@ class EscalationQueueAdapter:
             })
         except Exception:  # noqa: BLE001 - audit must not break the hook
             pass
+
+    def _activate_pending_versions(
+        self, snapshot: EscalationSnapshot, moment: datetime,
+    ) -> list[tuple[str, str]]:
+        """Append ``version_active`` once a fresh episode proves the new version is loaded.
+
+        Returns ``(key, message)`` pairs, so the caller can both report the rung and stop the
+        same pass from re-measuring a record it has just moved on.
+
+        Operator §二, and every part of it is load-bearing:
+
+            job settled  +  after_version known  +  a real episode  +
+            episode.repo_revision == after_version
+
+        *The job must be settled*, because before that the tree is still being edited and an
+        episode is a statement about a version that no longer exists.  *A revision must have
+        changed*, because otherwise there is no new version to activate.  *The episode must
+        be real* -- ``new_live_episodes`` already refuses rows without ``recorded_at``,
+        ``verifier_ok`` and evidence.  And *the revision must match exactly*: every cycle is a
+        fresh process that imports the package from disk, so an episode whose
+        ``repo_revision`` equals ``after_version`` is the machine saying "this is what ran",
+        where git HEAD only says what is on the disk.
+
+        Forbidden, and this is the point: file changed, agent said DONE, and tests passed are
+        all facts about the *tree*.  None of them is evidence that anything loaded it.
+        """
+        activated: list[tuple[str, str]] = []
+        for record in list(snapshot.records.values()):
+            if record.state != LIVE_VERIFY_PENDING:
+                continue
+            if str(record.outcome) != VERSION_ACTIVATION_PENDING:
+                continue
+            if not (record.after_version and record.settled_at):
+                continue
+            try:
+                episodes = new_live_episodes(
+                    record.capability, skill=record.skill, since=record.settled_at,
+                    root=self.root, after=record.settled_at,
+                    version_changed_from=record.before_version,
+                )
+            except Exception:  # noqa: BLE001 - a measurement failure is a skip, not a crash
+                continue
+            match = next(
+                (row for row in episodes
+                 if str(row.get("repo_revision") or "") == record.after_version),
+                None,
+            )
+            if match is None:
+                continue
+            episode_id = str(match.get("episode_id") or "")
+            self.ledger.append({
+                "event": "version_active",
+                "key": record.key,
+                "job_id": record.job_id,
+                "capability": record.capability,
+                "skill": record.skill,
+                "failure_type": record.failure_type,
+                "goal": record.goal,
+                "origin": record.origin,
+                "before_version": record.before_version,
+                "after_version": record.after_version,
+                "active_version": record.after_version,
+                "activation_episode_id": episode_id,
+                "activated_at": str(match.get("recorded_at") or ""),
+                "recorded_at": moment.isoformat(),
+            })
+            activated.append((record.key, (
+                f"{record.capability}: VERSION_ACTIVE（after_version "
+                f"{record.after_version[:12]} 首次被真实 Episode {episode_id} 加载）"
+            )))
+        return activated
 
     def _settle(
         self, *, snapshot, record, outcome, explanation, episodes, before, after, wiring,
