@@ -24,6 +24,7 @@ from winter_agent_v2.learning import EpisodeStore
 from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.goal_library import GoalStateStore
 from winter_agent_v2.candidate_policy import CandidateAttemptPool
+from winter_agent_v2.capability_gate import CapabilityGate
 from winter_agent_v2.vision import SemanticWorldVision
 from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
 from winter_agent_v2.resource_rotation import ResourceRotationStore
@@ -144,7 +145,15 @@ def main() -> int:
         runtime_store=RuntimeSnapshotStore(ROOT / "learning/runtime_snapshot.json"),
         resource_rotation=ResourceRotationStore(ROOT / "learning/resource_rotation.json"),
         stamina_supply=StaminaSupplyStore(ROOT / "learning/stamina_supply.json"),
+        # Which goal paths must step aside, projected from this project's escalation
+        # ledger and episode stream.  Read once per run because a run is one cycle of
+        # the scheduler: a deferral that appears mid-run would change the route under
+        # the step it is about to take.
+        capability_gate=CapabilityGate.load(ROOT),
     ).run(max_actions=args.max_actions, stop_after_skill=args.stop_after)
+    for deferral in result.deferrals:
+        print(f"[schedule] deferred {deferral.get('goal_id')} -> {deferral.get('state')}"
+              f" on {deferral.get('capability') or '(unnamed path)'}: {deferral.get('reason')}")
     print(json.dumps(asdict(result), ensure_ascii=False, default=str))
 
     # The AUTO hook.  It runs *after* the last atomic action has finished and
@@ -165,6 +174,10 @@ def main() -> int:
             observation = adapter.observe_run(
                 stop_reason=result.stop_reason,
                 failures=failures_since(started_at, root=ROOT),
+                # A goal the scheduler refused to re-enter is a wall the run reached
+                # without failing a step, so it would otherwise leave no trace at all
+                # for the queue to act on.
+                deferrals=result.deferrals,
             )
             print(observation.line)
             for key, why in observation.skipped:

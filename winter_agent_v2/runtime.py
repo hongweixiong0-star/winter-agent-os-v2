@@ -13,7 +13,8 @@ from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
 from .scheduler import Scheduler
-from .goal_library import GoalLibrary, GoalStateStore
+from .goal_library import GoalLibrary, GoalStateStore, progress_moved
+from .capability_gate import CapabilityGate, Deferral
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
@@ -38,6 +39,10 @@ class LiveStep:
 class LiveRun:
     steps: tuple[LiveStep, ...]
     stop_reason: str
+    # Goal paths this run refused to select, with the evidence for refusing.  Carried
+    # out of the run rather than re-derived, so the escalation hook hands off exactly
+    # what the scheduler decided and the two cannot disagree.
+    deferrals: tuple[dict, ...] = ()
 
 
 Verifier = Callable[[WorldState, WorldState], VerificationResult]
@@ -195,6 +200,7 @@ class LiveRuntime:
         adb_device=None,
         routing=None,
         backend_ledger: BackendLedger | None = None,
+        capability_gate: CapabilityGate | None = None,
     ) -> None:
         self.device = device
         # The ADB device behind the fallback executor.  When MAA observation is
@@ -238,6 +244,13 @@ class LiveRuntime:
         # board changes between runs, and a pin that produced nothing may be
         # workable later (the hourly harness re-runs from a cold start).
         self._tapped_intel_pins: list[tuple[int, int]] = []
+        # Which goal paths must step aside, projected from the escalation ledger and
+        # the episode stream.  Built once per run (see ``_gate``) and injectable, so a
+        # test can drive the scheduler's input without touching the real ledger.
+        self.capability_gate = capability_gate
+        # True once this run has taken its one hop toward a page where more goals are
+        # observable, so leaving cannot become a two-page ping-pong.
+        self._replan_attempted = False
 
     @property
     def _semantic(self):
@@ -294,13 +307,85 @@ class LiveRuntime:
             except (OSError, TypeError, ValueError):
                 pass
 
-    def _record_goals(self, world: WorldState) -> None:
+    def _gate(self) -> CapabilityGate:
+        """The deferral projection, built once per run from this project's evidence.
+
+        Anchored on the episode store, because that is the artifact that proves this
+        loop is the one producing evidence: ``learning/episodes.jsonl`` sits at the
+        root of the tree whose ledger is worth reading.  A caller with no episode
+        store has no production evidence, and gets a gate that defers nothing rather
+        than one that reads a ledger belonging to someone else's project.
+        """
+        if self.capability_gate is None:
+            if self.episode_store is None:
+                self.capability_gate = CapabilityGate.empty()
+            else:
+                self.capability_gate = CapabilityGate.load(Path(self.episode_store.path).resolve().parents[1])
+        return self.capability_gate
+
+    def _selectable(self, goals, deferrals: list[Deferral]):
+        """The operator's policy and the deferral gate, applied to discovered goals.
+
+        This is the single gate in front of the single Scheduler.  A goal is offered
+        only when its category is enabled *and* nothing has decided its path must step
+        aside; the reasons are collected rather than logged away, because "why is AUTO
+        not doing this" has to be answerable from the artifacts afterwards.
+        """
+        out = []
+        for goal in goals:
+            if not self._policy_allows(goal.goal_id):
+                continue
+            blocked = self._gate().blocks(goal)
+            if blocked is not None:
+                if all(item.goal_id != blocked.goal_id for item in deferrals):
+                    deferrals.append(blocked)
+                continue
+            out.append(goal)
+        return out
+
+    def _deferral_replan(self, world: WorldState, deferrals: list[Deferral]) -> Decision | None:
+        """One hop toward the page where more goals are observable.
+
+        A deferred goal is not a reason to stand still, and the map is a page with
+        exactly one goal on it (measured 2026-09-18: a live MAP frame discovers
+        ``AVOID_STAMINA_WASTE`` and nothing else).  HOME is where the queue goals are
+        readable -- 97 HOME frames in the recorded corpus read
+        ``KEEP_TRAINING_PRODUCTIVE`` -- so the run takes the hop the project already
+        trusts (``OPEN_HOME``, ``verify_open_home``, VERIFIED) instead of re-entering
+        the path that just stepped aside.
+
+        Bounded to once per run, refused on any page but MAP, and silent when the hop
+        is not actually ready: this is a recovery, not a new route engine.
+        """
+        if not deferrals or self._replan_attempted or world.page is not Page.MAP:
+            return None
+        home = self.registry.get("OPEN_HOME")
+        if home is None or not home.ready(world):
+            return None
+        self._replan_attempted = True
+        stepped_aside = deferrals[0]
+        return Decision(
+            "OPEN_HOME",
+            f"deferred_{stepped_aside.capability or stepped_aside.goal_id}_left_nothing_to_do_here",
+            world.confidence,
+            "home_opened",
+        )
+
+    def _record_goals(self, world: WorldState):
+        """Discover this frame's goals, persist the board, and hand them back.
+
+        Returning them is what makes goal progress measurable: the caller compares
+        the goals read before a step with the goals read after it, which is the only
+        way to tell "the action worked" from "the goal advanced".
+        """
+        goals = self.goal_library.discover(world)
         if self.goal_store is None:
-            return
+            return goals
         try:
-            self.goal_store.write(world, self.goal_library.discover(world))
+            self.goal_store.write(world, goals)
         except (OSError, TypeError, ValueError):
             pass
+        return goals
 
     def _record_episode(
         self,
@@ -313,6 +398,7 @@ class LiveRuntime:
         started_at: float,
         step_id: int = 0,
         goal_id: str = "",
+        goal_progress: bool | None = None,
         before_screenshot: Path | None = None,
         after_screenshot: Path | None = None,
     ) -> None:
@@ -337,6 +423,7 @@ class LiveRuntime:
             # goal to skill to the two frames that prove the state change.
             episode_id=self.capture_dir.name,
             goal_id=goal_id,
+            goal_progress=goal_progress,
             step_id=step_id,
             before_screenshot=str(before_screenshot) if before_screenshot else "",
             after_screenshot=str(after_screenshot) if after_screenshot else "",
@@ -402,6 +489,15 @@ class LiveRuntime:
             raise ValueError("max_actions must be positive")
         allowed = allowed_skills or set(self.VERIFIED_ATOMIC)
         steps: list[LiveStep] = []
+        # Goals this run refused to select, and the reason.  One list for the whole
+        # run so the end-of-run escalation hook reads the scheduler's own decision
+        # instead of re-deriving it from the stop reason.
+        deferrals: list[Deferral] = []
+        gate = self._gate()
+
+        def finish(reason: str) -> LiveRun:
+            return LiveRun(tuple(steps), reason, tuple(item.as_row() for item in deferrals))
+
         self.capture_dir.mkdir(parents=True, exist_ok=True)
         self._relax_attempts = 0
         self._scroll_attempts = 0
@@ -453,7 +549,14 @@ class LiveRuntime:
                                   "intel": before.intel, "alliance": before.alliance, "events": before.events})
             self._record_goals(before)
             goals = self.goal_library.discover(before)
-            best_goal = self.goal_library.best(goal for goal in goals if self._policy_allows(goal.goal_id))
+            best_goal = self.goal_library.best(self._selectable(goals, deferrals))
+            if deferrals:
+                # Written every run, not only when it changes: the panel and the
+                # escalation hook both read the current answer, and a stale one would
+                # make "why is it doing that" unanswerable from outside.
+                self._runtime(deferred_goals=[item.as_row() for item in deferrals])
+                for item in deferrals:
+                    print(f"[schedule] deferred {item.describe()}", flush=True)
             if self.brain.current_goal is None and best_goal is not None:
                 self.brain.current_goal = {
                     "CLEAR_INTEL": "INTEL", "AVOID_STAMINA_WASTE": "BEAST_HUNT",
@@ -493,6 +596,8 @@ class LiveRuntime:
             if (best_goal is None and self.brain.current_goal is None
                     and before.page in {Page.TRAINING, Page.RESEARCH}):
                 leave = self.brain.leave_terminal_page(before)
+            if leave is None:
+                leave = self._deferral_replan(before, deferrals)
             decision = leave if leave is not None else self.brain.decide(before, self.registry)
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,
                           current_goal=best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY"),
@@ -562,10 +667,10 @@ class LiveRuntime:
                 self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(decision.reason) else AgentState.DEGRADED.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=decision.reason,
                               last_fatal_error=decision.reason if is_fatal_stop(decision.reason) else None)
-                return LiveRun(tuple(steps), decision.reason)
+                return finish(decision.reason)
             if decision.skill not in allowed or decision.skill not in self.VERIFIED_ATOMIC:
                 steps.append(LiveStep(index, decision, None, before, None, None))
-                return LiveRun(tuple(steps), "SKILL_NOT_ENABLED_FOR_LIVE_LOOP")
+                return finish("SKILL_NOT_ENABLED_FOR_LIVE_LOOP")
 
             def resolve(semantic: str):
                 if semantic == "RESOURCE_DYNAMIC":
@@ -719,7 +824,7 @@ class LiveRuntime:
                 self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(reason) else AgentState.DEGRADED.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=reason,
                               last_fatal_error=reason if is_fatal_stop(reason) else None)
-                return LiveRun(tuple(steps), tick.execution.error if tick.execution else "NO_EXECUTION")
+                return finish(tick.execution.error if tick.execution else "NO_EXECUTION")
 
             self.sleeper(self.settle_seconds)
             after_path = self._capture_path(index, "after")
@@ -742,7 +847,7 @@ class LiveRuntime:
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
                 after_path = recovery_path
-            self._record_goals(after)
+            goals_after = self._record_goals(after)
             verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
             for refresh in range(1, self.observation_retries + 1):
                 # A known page can still be an intermediate animation/frame.
@@ -757,13 +862,29 @@ class LiveRuntime:
                 after = self.vision.observe(refresh_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
-                self._record_goals(after)
+                goals_after = self._record_goals(after)
                 verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+                # The episode must point at the frame its recorded ``after``
+                # state was actually read from.  ``after_path`` used to stay on
+                # the first post-action frame, so a step whose refreshes changed
+                # the reading recorded one picture and described another --
+                # the escalated NAVIGATE_TO_MAP episode showed an unchanged HOME
+                # screenshot next to ``after.page == UNKNOWN``, which was read
+                # from ``..._after_refresh_2_...png``.  An audit of that episode
+                # cannot be done from the picture it names, and that is what made
+                # the escalation read as "V2 saw something it could not read"
+                # with nothing to look at.
+                after_path = refresh_path
+            step_goal = best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY")
             self._record_episode(
                 decision=tick.decision, before=before, execution=tick.execution,
                 after=after, verification=verification, started_at=started_at,
                 step_id=index,
-                goal_id=best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY"),
+                goal_id=step_goal,
+                # The verifier passed means the action landed.  This says whether the
+                # *goal* moved, and the two are not the same statement: 58 episodes
+                # passed their verifier while stamina sat at 457 (2026-09-18).
+                goal_progress=progress_moved(goals, goals_after, step_goal),
                 before_screenshot=before_path, after_screenshot=after_path,
             )
             steps.append(LiveStep(index, tick.decision, tick.execution, before, after, verification))
@@ -872,14 +993,14 @@ class LiveRuntime:
             if not verification.ok:
                 self._runtime(agent_state=AgentState.DEGRADED.value, runtime_thread_alive=False,
                               scheduler_loop_alive=False, stop_reason=verification.reason)
-                return LiveRun(tuple(steps), verification.reason)
+                return finish(verification.reason)
             if decision.skill == "DISPATCH_MARCH" and self.resource_rotation is not None:
                 self.resource_rotation.completed(planned_resource)
             if decision.skill == stop_after_skill:
                 self._runtime(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
                               scheduler_loop_alive=False, stop_reason="TARGET_SKILL_VERIFIED")
-                return LiveRun(tuple(steps), "TARGET_SKILL_VERIFIED")
+                return finish("TARGET_SKILL_VERIFIED")
 
         self._runtime(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
                       scheduler_loop_alive=False, stop_reason="MAX_ACTIONS_REACHED")
-        return LiveRun(tuple(steps), "MAX_ACTIONS_REACHED")
+        return finish("MAX_ACTIONS_REACHED")

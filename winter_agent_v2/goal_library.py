@@ -36,6 +36,16 @@ class GoalState:
     available_skills: tuple[str, ...] = ()
     retry_after: str | None = None
     evidence: dict[str, Any] = field(default_factory=dict)
+    # How much is left before this goal is satisfied; smaller is closer, 0 is done.
+    # This is the goal's own progress meter and it exists so that "the action's
+    # verifier passed" and "the goal advanced" can never be the same statement
+    # again.  Measured 2026-09-18: 58 consecutive AVOID_STAMINA_WASTE episodes all
+    # passed their verifier while stamina never moved off 457 -- action progress
+    # with no goal progress, which the scheduler read as a healthy goal.  Every
+    # goal therefore has to answer "how far are you from being satisfied?" in a
+    # comparable number, and the number is decided here, in the one place that
+    # knows what the goal means.
+    distance: float = 0.0
 
     @property
     def priority(self) -> float:
@@ -76,6 +86,7 @@ class GoalLibrary:
                 reward_value=300, daily_loss=500,
                 available_skills=("INTEL_CLAIM_REWARDS", "SELECT_INTEL_BEAST_MISSION", "SELECT_INTEL_RESCUE_SURVIVORS"),
                 evidence={"status": intel_status},
+                distance=0.0 if complete else 1.0,
             ))
         stamina = _optional_int(world.stamina.get("current") if world.stamina else world.intel.get("stamina"))
         if stamina is not None:
@@ -83,6 +94,9 @@ class GoalLibrary:
                 "AVOID_STAMINA_WASTE", GoalStatus.READY if stamina > 30 else GoalStatus.COMPLETE,
                 completion=1.0 if stamina <= 30 else 0.0, reward_value=100, daily_loss=max(0, stamina - 30) * 5,
                 available_skills=("INTEL_CLAIM_REWARDS", "BEAST_HUNT"), evidence={"current": stamina, "threshold": 30},
+                # Stamina still above the floor is exactly the work left to do, and
+                # it is what makes a beast kill progress while a map pan does not.
+                distance=float(max(0, stamina - 30)),
             ))
         self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training, ("TRAIN_TROOPS",), 90)
         self._append_queue_goal(goals, "KEEP_RESEARCH_PRODUCTIVE", world.research, ("RESEARCH",), 80)
@@ -99,6 +113,7 @@ class GoalLibrary:
                 event_synergy=500, resource_cost=float(minimum.get("estimated_cost", 0)),
                 available_skills=tuple(str(x) for x in minimum.get("available_skills", ())),
                 evidence={"points_missing": missing, "claimed": claimed},
+                distance=float(max(0, missing)),
             ))
         bear = world.events.get("bear") if isinstance(world.events, dict) else None
         if isinstance(bear, dict):
@@ -124,11 +139,15 @@ class GoalLibrary:
                 evidence={"phase":phase.value, "reserved_start_time":bear.get("reserved_start_time"),
                           "normal_idle_slots":world.idle_marches,
                           "bear_rally_special_available":world.bear_rally_special_available},
+                distance=0.0 if finished else 1.0,
             ))
         for page in world.rewards.get("verified_claimable", ()):
             goals.append(GoalState(
                 f"CLAIM_FREE_{page}", GoalStatus.READY, reward_value=250, daily_loss=250,
                 available_skills=tuple(world.rewards.get("skills", {}).get(page, ())), evidence={"page": page},
+                # Only ever discovered while something is claimable, so the one
+                # unit of remaining work is the claim itself.
+                distance=1.0,
             ))
         return tuple(goals)
 
@@ -139,7 +158,8 @@ class GoalLibrary:
         busy = state.get("queue_available") is False or state.get("status") == "IN_PROGRESS" or state.get("all_queues_busy") is True
         goals.append(GoalState(goal_id, GoalStatus.COMPLETE if busy else GoalStatus.READY,
                                completion=1.0 if busy else 0.0, development_value=value,
-                               available_skills=skills, evidence={"queue_busy": busy}))
+                               available_skills=skills, evidence={"queue_busy": busy},
+                               distance=0.0 if busy else 1.0))
 
     def best(self, goals: Iterable[GoalState]) -> GoalState | None:
         actionable = [goal for goal in goals if goal.priority != float("-inf") and goal.available_skills]
@@ -156,6 +176,79 @@ def _optional_int(value: object) -> int | None:
         return None if value is None else int(value)
     except (TypeError, ValueError):
         return None
+
+
+def progress_moved(
+    before: Iterable[GoalState],
+    after: Iterable[GoalState],
+    goal_id: str,
+) -> bool | None:
+    """Did the goal itself advance between two observations?
+
+    The action's verifier answers "did the input land and did the client respond
+    the way this skill predicts".  This answers a different question: "is the goal
+    closer to satisfied".  A successful swipe that pans the map answers yes to the
+    first and no to the second, and conflating them is what let AUTO spend twenty
+    minutes on 58 passing steps that changed nothing (2026-09-18).
+
+    ``None`` means the goal was not observable on both frames.  That is not "no
+    progress" -- a queue goal only exists while its page is on screen, and calling
+    an unobserved goal stalled would defer work that is merely not being watched.
+    """
+    was = next((goal for goal in before if goal.goal_id == goal_id), None)
+    now = next((goal for goal in after if goal.goal_id == goal_id), None)
+    if was is None or now is None:
+        return None
+    return now.distance < was.distance
+
+
+@dataclass(frozen=True)
+class GoalComposition:
+    """How a goal is composed out of capabilities, as the project already maps it.
+
+    ``SEQUENCE`` means every capability is required, so one unavailable capability
+    blocks the goal.  ``ANY_OF`` means any single capability satisfies it, so the
+    goal is only blocked when *all* of its paths are unavailable -- which is what
+    keeps a deferred beast route from also switching off the intel and rally routes
+    that reach the same goal.
+    """
+
+    goal_id: str
+    composition: str
+    capabilities: tuple[str, ...]
+
+
+GOAL_CAPABILITY_MAP = "knowledge/goals/goal_capability_map.json"
+
+
+def goal_compositions(root: Path | str | None = None) -> dict[str, GoalComposition]:
+    """Goal -> capability composition, read from the existing project table.
+
+    Reads ``knowledge/goals/goal_capability_map.json`` (the ``Goal -> Capability``
+    input the coverage report is already built from) rather than introducing a
+    second mapping.  A goal the table does not describe simply has no composition,
+    which the caller must treat as "unknown", never as "nothing required".
+    """
+    base = Path(root) if root else Path(__file__).resolve().parents[1]
+    try:
+        payload = json.loads((base / GOAL_CAPABILITY_MAP).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return {}
+    out: dict[str, GoalComposition] = {}
+    for goal_id, entry in (payload.get("goals") or {}).items():
+        if not isinstance(entry, dict):
+            continue
+        capabilities = tuple(
+            str(item.get("capability"))
+            for item in (entry.get("capabilities") or ())
+            if isinstance(item, dict) and item.get("capability")
+        )
+        out[str(goal_id)] = GoalComposition(
+            goal_id=str(goal_id),
+            composition=str(entry.get("composition") or "SEQUENCE").upper(),
+            capabilities=capabilities,
+        )
+    return out
 
 
 class GoalStateStore:

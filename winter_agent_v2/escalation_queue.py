@@ -789,6 +789,7 @@ def candidates_from_run(
     unimplemented: Iterable[str] = (),
     root: Path | str | None = None,
     episodes_path: Path | str | None = None,
+    deferrals: Iterable[Mapping[str, Any]] = (),
 ) -> tuple[EscalationCandidate, ...]:
     """Turn one run's failed episodes into at most a few escalation candidates.
 
@@ -802,15 +803,57 @@ def candidates_from_run(
     names is still a wall: the runtime looked, gave up, and issued no action, so
     nothing reached the episode stream.  Without that path the pipeline would be
     blind to this project's most frequent blocker.
+
+    ``deferrals`` are the goal paths the scheduler itself refused to re-enter this
+    run, with the evidence for refusing.  They are the third blind spot: a goal that
+    steps aside produces no failure and no wall, so without this the queue would see
+    a run in which nothing at all happened and never learn why.  Only
+    ``NO_GOAL_PROGRESS`` deferrals become candidates -- a capability already sitting
+    in ``DEVELOPMENT_PENDING``/``COOLDOWN``/``BLOCKED`` is the queue's own business
+    and it must not receive a second job through a different name.
     """
     moment = now or datetime.now(timezone.utc)
-
-    if stop_reason in NON_ESCALATABLE_STOP_REASONS:
-        return ()
 
     unimplemented_set = {str(x) for x in unimplemented}
     seen: set[str] = set()
     out: list[EscalationCandidate] = []
+
+    # The deferred-goal path runs *before* the ordinary-weather gate, because that
+    # gate exists to keep a mailbox that is simply empty out of the queue, and a run
+    # whose goal stepped aside is not empty -- it is a wall the scheduler reported by
+    # name.  Everything below this block keeps the behaviour it had.
+    for deferral in deferrals:
+        if str(deferral.get("source") or "") != "NO_GOAL_PROGRESS":
+            continue
+        parts = [part for part in str(deferral.get("failure_signature") or "").split("|") if part]
+        if len(parts) < 2:
+            continue
+        capability = parts[0]
+        skill = parts[2] if len(parts) > 2 else ""
+        signature = FailureSignature(capability=capability, failure_type="NO_GOAL_PROGRESS", skill=skill)
+        if signature.key in seen:
+            continue
+        seen.add(signature.key)
+        goal = str(deferral.get("goal_id") or "")
+        streak = deferral.get("streak") or 0
+        out.append(
+            EscalationCandidate(
+                signature=signature,
+                condition=REPEATED_LIVE_FAILURE,
+                reason=(
+                    f"{goal or capability} was attempted {streak} time(s) in a row and no part "
+                    f"of it advanced, while every step passed its own verifier: the route is "
+                    f"running but it cannot reach the goal.  This is not a retry that will "
+                    f"succeed on the next cycle, and it is not the same failure shape the "
+                    f"capability was previously escalated for"
+                ),
+                goal=goal,
+                evidence=(f"deferral:{goal}:{streak}",),
+            )
+        )
+
+    if stop_reason in NON_ESCALATABLE_STOP_REASONS:
+        return tuple(out)
 
     # One read of the episode stream per distinct ``first_seen``, only for a
     # signature old enough to be a STUCK_15_MIN candidate at all.  The capability
@@ -834,17 +877,21 @@ def candidates_from_run(
     failure_list = list(failures)
     if not failure_list and stop_reason in STOP_REASON_WALLS:
         condition, skill, reason = STOP_REASON_WALLS[stop_reason]
-        return (
-            EscalationCandidate(
-                signature=FailureSignature(
-                    capability=capability_for_skill(skill, root=root),
-                    failure_type=stop_reason.upper(),
-                    skill=skill,
-                ),
-                condition=condition,
-                reason=reason,
+        wall = EscalationCandidate(
+            signature=FailureSignature(
+                capability=capability_for_skill(skill, root=root),
+                failure_type=stop_reason.upper(),
+                skill=skill,
             ),
+            condition=condition,
+            reason=reason,
         )
+        # Appended rather than returned so a run can report both a wall and a
+        # deferral; the failure loop below has nothing to do in this branch.
+        if wall.signature.key not in seen:
+            seen.add(wall.signature.key)
+            out.append(wall)
+        return tuple(out)
 
     for failure in failure_list:
         failure_type = str(failure.get("failure_type") or "")
@@ -1242,6 +1289,7 @@ class EscalationQueueAdapter:
         *,
         stop_reason: str,
         failures: Sequence[Mapping[str, Any]] = (),
+        deferrals: Sequence[Mapping[str, Any]] = (),
         now: datetime | None = None,
         reconcile: bool = True,
     ) -> RunObservation:
@@ -1274,6 +1322,7 @@ class EscalationQueueAdapter:
                 now=moment,
                 unimplemented=unimplemented_skills(self.root),
                 root=self.root,
+                deferrals=deferrals,
             )
             for candidate in candidates:
                 # Re-fold each time: a submission inside this loop changes the

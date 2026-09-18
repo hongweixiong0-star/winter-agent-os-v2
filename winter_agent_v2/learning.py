@@ -33,6 +33,14 @@ class Episode:
     after_screenshot: str = ""
     verifier_ok: bool | None = None
     recovery_result: str | None = None
+    # Did the *goal* move, which is a different question from whether the action
+    # worked.  Measured 2026-09-18: 58 of 60 consecutive episodes were
+    # AVOID_STAMINA_WASTE / SCAN_MAP_FOR_BEAST with ``verifier_ok=True`` and a
+    # stamina reading that never left 457 -- every step passed its verifier and the
+    # goal made no progress at all for twenty minutes, because "the swipe landed"
+    # was the only thing being measured.  ``None`` means the goal was not
+    # observable on both frames, which is not the same as "no progress".
+    goal_progress: bool | None = None
     # Which backend actually executed this step ("MAA" / "ADB" / "" when nothing
     # was issued).  Recorded per episode so the MAA rollout is auditable from the
     # production stream instead of from a migration document.
