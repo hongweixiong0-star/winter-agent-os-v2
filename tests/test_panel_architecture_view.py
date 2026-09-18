@@ -387,11 +387,35 @@ class WorkBuddyCellTest(unittest.TestCase):
         self.assertEqual(label, panel.WORKBUDDY_LABELS["WORKING"])
         self.assertEqual(detail, "f465a6c9")
 
-    def test_a_noticed_but_unsubmitted_gap_is_queued(self):
+    def test_a_created_but_never_dispatched_gap_is_not_shown_as_queued(self):
+        """The operator's 2026-09-18 correction, on the state that caused it.
+
+        A record in ``NEW`` has been noticed and nothing has been sent anywhere.
+        Showing it as "● 排队" claimed a job was waiting its turn; the real answer is
+        "● 待提交", and the difference matters because the queue's own consumer has to
+        drive it from there.
+        """
+        from winter_agent_v2.escalation_queue import NEW
+
+        label, detail = panel.workbuddy_cell({"current": self._record(state=NEW)}, {"available": True})
+        self.assertEqual(label, panel.WORKBUDDY_LABELS["PENDING_SUBMIT"])
+        self.assertEqual(detail, "CAP|TYPE|SKILL")
+
+    def test_a_decided_but_unsent_gap_is_queued(self):
         from winter_agent_v2.escalation_queue import QUEUED
 
         label, _ = panel.workbuddy_cell({"current": self._record(state=QUEUED)}, {"available": True})
         self.assertEqual(label, panel.WORKBUDDY_LABELS["QUEUED"])
+
+    def test_a_gap_with_a_job_id_is_submitted_before_it_is_developing(self):
+        """A job id means the gateway took it; 开发中 means an agent is editing."""
+        from winter_agent_v2.escalation_queue import SUBMITTED
+
+        label, detail = panel.workbuddy_cell(
+            {"current": self._record(state=SUBMITTED, job_id="2934e9cd")}, {"available": True}
+        )
+        self.assertEqual(label, panel.WORKBUDDY_LABELS["SUBMITTED"])
+        self.assertEqual(detail, "2934e9cd")
 
     def test_a_changed_tree_waiting_for_live_verification_is_verifying(self):
         # CODE_CHANGED means code moved but no production episode proves anything:
@@ -419,9 +443,17 @@ class WorkBuddyCellTest(unittest.TestCase):
         label, _ = panel.workbuddy_cell({}, {"available": None})
         self.assertEqual(label, panel.WORKBUDDY_LABELS["IDLE"])
 
-    def test_the_six_labels_are_the_operators_six_words(self):
-        self.assertEqual(set(panel.WORKBUDDY_LABELS.values()),
-                         {"● 待命", "● 排队", "● 开发中", "● 验证中", "● Blocked", "● 不可用"})
+    def test_the_labels_are_the_operators_words_for_each_real_state(self):
+        """One distinct word per state: the ladder is 待提交 -> 排队 -> 已提交 -> 开发中."""
+        self.assertEqual(
+            set(panel.WORKBUDDY_LABELS.values()),
+            {"● 待提交", "● 待命", "● 排队", "● 已提交", "● 开发中", "● 验证中",
+             "● Blocked", "● 不可用"},
+        )
+        self.assertEqual(panel.STATE_ZH["NEW"], "待提交")
+        self.assertEqual(panel.STATE_ZH["QUEUED"], "排队")
+        self.assertEqual(panel.STATE_ZH["SUBMITTED"], "已提交")
+        self.assertEqual(panel.STATE_ZH["WORKING"], "开发中")
 
 
 class GatewayReasonTest(unittest.TestCase):

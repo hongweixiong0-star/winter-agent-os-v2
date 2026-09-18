@@ -685,6 +685,34 @@ class FoldTest(unittest.TestCase):
         self.assertEqual(len(q.fold(events).active_jobs()), 1)
         self.assertEqual(len(q.fold(events[:1]).active_jobs()), 0)
 
+    def test_a_stopped_job_settles_instead_of_holding_the_slot_forever(self):
+        """``STOPPED`` is terminal at the gateway and has to be terminal here too.
+
+        Measured while tracing the operator's P0: the fold settled only DONE/FAILED, so a
+        cancelled job stayed ``WORKING`` and held the one concurrency slot -- starving
+        every pending escalation behind it, which is the same "nothing ever consumes it"
+        failure the consumer exists to remove.
+        """
+        snapshot = q.fold([
+            {"source": "queue", "event": "escalation_created", "key": "K", "condition": q.UNKNOWN_UI},
+            {"source": "queue", "event": "submitted", "key": "K", "job_id": "j"},
+            {"source": "queue", "event": "job_state", "key": "K", "state": q.WORKING},
+            {"source": "queue", "event": "job_state", "key": "K", "state": q.STOPPED,
+             "recorded_at": NOW.isoformat()},
+        ])
+        record = snapshot.get("K")
+        self.assertEqual(record.state, q.FAILED)
+        self.assertIsNotNone(record.settled_at)
+        self.assertEqual(snapshot.active_jobs(), ())
+
+    def test_the_creation_refusal_is_folded_so_a_consumer_can_quote_it(self):
+        """``dispatch_reason`` was written at creation and never folded, so it read blank."""
+        snapshot = q.fold([{
+            "source": "queue", "event": "escalation_created", "key": "K", "condition": q.UNKNOWN_UI,
+            "dispatch": q.CONCURRENCY_WAIT, "dispatch_reason": "max_concurrent_jobs=1 is already used",
+        }])
+        self.assertIn("already used", snapshot.get("K").dispatch_reason)
+
 
 # ------------------------------------------------- the hook must not hurt AUTO
 
@@ -769,6 +797,129 @@ class HookSafetyTest(unittest.TestCase):
         try:
             observation = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
             self.assertTrue(observation.line.startswith("[escalation]"))
+        finally:
+            harness.cleanup()
+
+
+# ------------------------------------------------------- pending consumer
+#
+# Measured 2026-09-18, the operator's P0: two records were created with
+# ``dispatch: CONCURRENCY_WAIT`` naming job a7ce58f0 (the one slot was busy) and then sat
+# in ``NEW`` for 54 minutes after that job finished, with the gateway healthy and the
+# console showing "WorkBuddy 排队".  A candidate is only ever derived from the run that
+# produced it, so nothing re-offered them: "created" did not mean "will reach the bridge".
+
+PENDING_KEY = "DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|DISPATCH_MARCH"
+
+
+class PendingConsumerTest(unittest.TestCase):
+    def _created_while_busy(self, harness, key=PENDING_KEY):
+        """The exact row shape the live ledger has for a record born during CONCURRENCY_WAIT."""
+        harness.ledger.append({
+            "source": "queue",
+            "event": "escalation_created",
+            "key": key,
+            "capability": "DISPATCH_GATHER_MARCH",
+            "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+            "skill": "DISPATCH_MARCH",
+            "condition": q.UNKNOWN_UI,
+            "goal": "AUTO_DISCOVERY",
+            "dispatch": q.CONCURRENCY_WAIT,
+            "dispatch_reason": "max_concurrent_jobs=1 is already used by a7ce58f0; "
+                               "two agents must not edit this repository at once",
+        })
+
+    def test_a_record_created_while_the_slot_was_busy_is_submitted_later(self):
+        harness = AdapterHarness()
+        try:
+            self._created_while_busy(harness)
+            # No failing episode, no stop-reason wall, no deferral: the run itself says
+            # nothing happened.  The record still has to reach the bridge.
+            observation = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            record = harness.ledger.snapshot().get(PENDING_KEY)
+            self.assertEqual(observation.submitted, ("job-1",))
+            self.assertEqual(record.state, q.SUBMITTED)
+            self.assertEqual(record.job_id, "job-1")
+            self.assertIn("pending_consumed", harness.event_kinds())
+        finally:
+            harness.cleanup()
+
+    def test_the_consumer_waits_for_the_slot_instead_of_overrunning_it(self):
+        """The cap still wins: a busy slot defers the pending record, it does not queue-jump."""
+        harness = AdapterHarness()
+        try:
+            harness.ledger.append({
+                "source": "queue", "event": "escalation_created", "key": "OTHER|UI|SKILL",
+                "condition": q.UNKNOWN_UI,
+            })
+            harness.ledger.append({
+                "source": "queue", "event": "submitted", "key": "OTHER|UI|SKILL", "job_id": "job-busy",
+            })
+            harness.ledger.append({
+                "source": "queue", "event": "job_state", "key": "OTHER|UI|SKILL", "state": q.WORKING,
+            })
+            self._created_while_busy(harness)
+
+            first = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            self.assertEqual(first.submitted, ())
+            self.assertTrue(
+                any(key == PENDING_KEY and q.CONCURRENCY_WAIT in why for key, why in first.skipped),
+                first.skipped,
+            )
+            self.assertEqual(harness.ledger.snapshot().get(PENDING_KEY).state, q.NEW)
+
+            # The holder finishes; the next run must pick the pending record up.
+            harness.ledger.append({
+                "source": "queue", "event": "job_state", "key": "OTHER|UI|SKILL", "state": q.DONE,
+            })
+            second = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            self.assertEqual(second.submitted, ("job-1",))
+        finally:
+            harness.cleanup()
+
+    def test_a_refused_condition_is_not_re_offered(self):
+        """Refused on creation for a reason that has not changed -- not re-refused forever."""
+        harness = AdapterHarness()
+        try:
+            harness.ledger.append({
+                "source": "queue", "event": "escalation_created", "key": "CAP|QUEUE_BUSY|SKILL",
+                "capability": "CAP", "failure_type": "QUEUE_BUSY", "skill": "SKILL",
+                "condition": q.NOT_ESCALATABLE,
+            })
+            observation = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            self.assertEqual(observation.submitted, ())
+            self.assertEqual(observation.skipped, ())
+        finally:
+            harness.cleanup()
+
+    def test_an_already_submitted_record_is_not_sent_twice(self):
+        harness = AdapterHarness()
+        try:
+            self._created_while_busy(harness)
+            harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            second = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            self.assertEqual(second.submitted, ())
+            self.assertEqual(sum(1 for e in harness.events() if e["event"] == "submitted"), 1)
+        finally:
+            harness.cleanup()
+
+    def test_a_live_verified_record_is_left_alone(self):
+        """Learned means released, not re-dispatched."""
+        harness = AdapterHarness()
+        try:
+            self._created_while_busy(harness)
+            harness.ledger.append({
+                "source": "queue", "event": "submitted", "key": PENDING_KEY, "job_id": "job-old",
+            })
+            harness.ledger.append({
+                "source": "queue", "event": "job_state", "key": PENDING_KEY, "state": q.DONE,
+            })
+            harness.ledger.append({
+                "source": "queue", "event": "reconciled", "key": PENDING_KEY,
+                "job_state": q.DONE, "outcome": q.LIVE_VERIFIED,
+            })
+            observation = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            self.assertEqual(observation.submitted, ())
         finally:
             harness.cleanup()
 

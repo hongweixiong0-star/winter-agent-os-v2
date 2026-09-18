@@ -494,7 +494,14 @@ AUTO_RUNNING, AUTO_STARTING, AUTO_PAUSED, AUTO_WAITING, AUTO_STOPPED = (
     "● 运行中", "● 启动中", "● 已暂停", "● 等待下一轮", "● 已停止",
 )
 WORKBUDDY_LABELS = {
-    "IDLE": "● 待命", "QUEUED": "● 排队", "WORKING": "● 开发中",
+    # One label per real state, because collapsing them was a lie the operator caught:
+    # until 2026-09-18 a record created but never dispatched (``NEW``) was shown as
+    # "● 排队", which says a job is waiting its turn when in fact nothing has been sent
+    # anywhere.  NEW means "not submitted yet"; QUEUED means "decided, waiting to be
+    # sent"; SUBMITTED means "the gateway issued a job id"; WORKING means a development
+    # agent is actually editing the tree.
+    "PENDING_SUBMIT": "● 待提交", "IDLE": "● 待命", "QUEUED": "● 排队",
+    "SUBMITTED": "● 已提交", "WORKING": "● 开发中",
     "VERIFYING": "● 验证中", "BLOCKED": "● Blocked", "UNAVAILABLE": "● 不可用",
 }
 
@@ -539,7 +546,10 @@ CONDITION_ZH = {
 }
 
 STATE_ZH = {
-    "NEW": "新建", "QUEUED": "排队", "SUBMITTED": "已提交", "WORKING": "开发中",
+    # NEW is "created, not dispatched yet": 新建 reads like a form field and hid the
+    # fact that nothing had been sent.  The four first states are the operator's own
+    # ladder -- 待提交 -> 排队 -> 已提交 -> 开发中 -- and each one is a different fact.
+    "NEW": "待提交", "QUEUED": "排队", "SUBMITTED": "已提交", "WORKING": "开发中",
     "DONE": "完成", "FAILED": "失败", "BLOCKED": "Blocked", "COOLDOWN": "冷却",
 }
 
@@ -972,8 +982,14 @@ def workbuddy_cell(view: dict[str, Any], gateway: dict[str, Any]) -> tuple[str, 
     current = view.get("current")
     if current is not None:
         if current.state in (SUBMITTED, WORKING):
-            return WORKBUDDY_LABELS["WORKING"], current.job_id or current.key
-        if current.state in (NEW, QUEUED):
+            label = (
+                WORKBUDDY_LABELS["SUBMITTED"] if current.state == SUBMITTED
+                else WORKBUDDY_LABELS["WORKING"]
+            )
+            return label, current.job_id or current.key
+        if current.state == NEW:
+            return WORKBUDDY_LABELS["PENDING_SUBMIT"], current.key
+        if current.state == QUEUED:
             return WORKBUDDY_LABELS["QUEUED"], current.key
     if view.get("pending_verify"):
         return WORKBUDDY_LABELS["VERIFYING"], view["pending_verify"][0].key

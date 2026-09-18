@@ -192,6 +192,10 @@ DONE = "DONE"
 FAILED = "FAILED"
 BLOCKED = "BLOCKED"
 COOLDOWN = "COOLDOWN"
+# A gateway state, not a lifecycle state: a job that was stopped is settled as FAILED
+# (see the ``job_state`` branch in ``fold``).  Named here because the reconciler writes
+# it into the ledger verbatim.
+STOPPED = "STOPPED"
 
 ALL_STATES: tuple[str, ...] = (NEW, QUEUED, SUBMITTED, WORKING, DONE, FAILED, BLOCKED, COOLDOWN)
 # A key in one of these is "being worked on": no second job for it.
@@ -359,6 +363,10 @@ class EscalationRecord:
     # repo_head -- a field that is written but never folded reads as empty, which
     # is how the first version of this silently recorded blank task types.
     task_type: str = ""
+    # Why this record was not dispatched when it was created (``CONCURRENCY_WAIT`` and
+    # its reason, for instance).  Folded for the same reason as ``task_type``, and it is
+    # what the consumer quotes back when it re-offers a record it inherited.
+    dispatch_reason: str = ""
     first_seen: datetime | None = None
     last_seen: datetime | None = None
     submitted_at: datetime | None = None
@@ -423,6 +431,7 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.skill = str(event.get("skill", record.skill))
             record.condition = str(event.get("condition", record.condition))
             record.goal = str(event.get("goal", record.goal))
+            record.dispatch_reason = str(event.get("dispatch_reason", record.dispatch_reason))
             record.first_seen = record.first_seen or _moment(event.get("recorded_at"))
             record.last_seen = _moment(event.get("recorded_at")) or record.last_seen
             record.evidence = tuple(str(e) for e in (event.get("evidence") or record.evidence))
@@ -457,10 +466,17 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             state = str(event.get("state", ""))
             if state == WORKING:
                 record.state = WORKING
-            elif state in (DONE, FAILED) and record.state != COOLDOWN:
-                # SUBMITTED -> DONE/FAILED; reconciliation may still overwrite
+            elif state in (DONE, FAILED, STOPPED) and record.state != COOLDOWN:
+                # SUBMITTED -> DONE/FAILED/STOPPED; reconciliation may still overwrite
                 # the *outcome*, but the lifecycle state is honest from here.
-                record.state = state
+                #
+                # STOPPED is settled like FAILED on purpose.  A job that was stopped will
+                # never report again, and the gateway already maps "stopped" to a terminal
+                # verdict -- but the fold only knew two states, so a cancelled job stayed
+                # ``WORKING`` and held the one concurrency slot forever.  Measured while
+                # tracing why a NEW record was never consumed: with one slot, a stranded
+                # record starves every pending escalation behind it.
+                record.state = DONE if state == DONE else FAILED
                 record.settled_at = _moment(event.get("recorded_at"))
             continue
 
@@ -1336,6 +1352,7 @@ class EscalationQueueAdapter:
         reconciled: list[str] = []
         submitted: list[str] = []
         skipped: list[tuple[str, str]] = []
+        handled: set[str] = set()
 
         if reconcile:
             try:
@@ -1359,6 +1376,7 @@ class EscalationQueueAdapter:
                 # Re-fold each time: a submission inside this loop changes the
                 # concurrency answer for the next candidate.
                 dispatch = decide(candidate, self.ledger.snapshot(), self.policy, now=moment)
+                handled.add(candidate.signature.key)
                 if not dispatch.should_submit:
                     skipped.append((candidate.signature.key, f"{dispatch.action}: {dispatch.reason}"))
                     self._record(candidate, dispatch)
@@ -1369,6 +1387,31 @@ class EscalationQueueAdapter:
                 else:
                     skipped.append((candidate.signature.key, "queued: gateway unavailable"))
                     self._record(candidate, dispatch)
+
+            # The consumer for records that were created but never dispatched.
+            #
+            # A candidate exists only for the run that produced it, so a record made
+            # while the one concurrency slot was busy had nothing to re-offer it later.
+            # Measured 2026-09-18: DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|
+            # DISPATCH_MARCH and DISMISS_REAL_MONEY_OFFER|POPUP_CLOSE_NOT_PROVEN|
+            # DISMISS_REAL_MONEY_OFFER both carry `dispatch: CONCURRENCY_WAIT` naming
+            # job a7ce58f0, and both sat NEW for 54 minutes after that job finished,
+            # with the gateway healthy and the operator watching.  "Created" has to
+            # mean "will reach the bridge", not "was noticed once".
+            for record in self.pending(snapshot=self.ledger.snapshot()):
+                if record.key in handled:
+                    continue
+                handled.add(record.key)
+                candidate = self._candidate_from_record(record)
+                dispatch = decide(candidate, self.ledger.snapshot(), self.policy, now=moment)
+                if not dispatch.should_submit:
+                    skipped.append((record.key, f"{dispatch.action}: {dispatch.reason}"))
+                    continue
+                job_id = self._submit(candidate, dispatch, pending_since=record.first_seen)
+                if job_id:
+                    submitted.append(job_id)
+                else:
+                    skipped.append((record.key, "queued: gateway unavailable"))
         except Exception as exc:  # noqa: BLE001
             errors.append(f"dispatch failed: {type(exc).__name__}: {exc}")
 
@@ -1382,6 +1425,44 @@ class EscalationQueueAdapter:
         )
 
     # -- ledger helpers ---------------------------------------------------
+
+    def pending(self, *, snapshot: EscalationSnapshot | None = None) -> tuple[EscalationRecord, ...]:
+        """Records that were created and never reached the bridge, oldest first.
+
+        ``NEW`` means "created, never dispatched"; ``QUEUED`` means "decided, and the
+        gateway was unreachable" -- both are work the queue owes the operator, and both
+        are invisible to a pipeline that only looks at the current run.
+
+        Records whose condition is not one of the five are left out on purpose: they
+        were refused on creation for a reason that has not changed, and re-offering them
+        would write the same refusal on every cycle.
+        """
+        records = (snapshot or self.ledger.snapshot()).records.values()
+        waiting = [
+            record for record in records
+            if record.state in (NEW, QUEUED) and record.condition in AUTO_ESCALATION_CONDITIONS
+        ]
+        waiting.sort(key=lambda record: (record.first_seen is None, record.first_seen))
+        return tuple(waiting)
+
+    def _candidate_from_record(self, record: EscalationRecord) -> EscalationCandidate:
+        """Re-offer an existing record as a candidate for the same throttle."""
+        created = record.first_seen.isoformat() if record.first_seen else "unknown"
+        why = f"; it was first refused with: {record.dispatch_reason}" if record.dispatch_reason else ""
+        return EscalationCandidate(
+            signature=FailureSignature(
+                capability=record.capability or record.skill,
+                failure_type=record.failure_type,
+                skill=record.skill,
+            ),
+            condition=record.condition,
+            reason=(
+                f"pending escalation re-offered: created {created}, state {record.state}, "
+                f"never reached the bridge{why}"
+            ),
+            goal=record.goal,
+            evidence=record.evidence,
+        )
 
     def _record(self, candidate: EscalationCandidate, dispatch: Dispatch) -> None:
         """One row the first time a key is seen, even when nothing is dispatched.
@@ -1409,7 +1490,19 @@ class EscalationQueueAdapter:
         except Exception:  # noqa: BLE001 - audit must not break the hook
             pass
 
-    def _submit(self, candidate: EscalationCandidate, dispatch: Dispatch) -> str:
+    def _submit(
+        self,
+        candidate: EscalationCandidate,
+        dispatch: Dispatch,
+        *,
+        pending_since: datetime | None = None,
+    ) -> str:
+        """Send one candidate.  ``pending_since`` records how long it waited for a slot.
+
+        That number is the whole point of the consumer: "created but never dispatched"
+        was invisible in the ledger, so a record could sit NEW for an hour while every
+        row made it look like nothing was wrong.
+        """
         availability = self.bridge.is_available()
         revision = repo_revision(self.root)
         self._record(candidate, dispatch)
@@ -1470,6 +1563,16 @@ class EscalationQueueAdapter:
             "cost": None,
             "usage_note": "jobs API exposes output.result only; no token/cost field present",
         })
+        if pending_since is not None:
+            waited = (datetime.now(timezone.utc) - pending_since).total_seconds() / 60.0
+            self.ledger.append({
+                "source": "queue",
+                "event": "pending_consumed",
+                "key": candidate.signature.key,
+                "job_id": submission.job_id,
+                "pending_minutes": round(waited, 1),
+                "reason": "created but never dispatched until the consumer re-offered it",
+            })
         return submission.job_id
 
     # -- reconciliation ---------------------------------------------------
@@ -1496,7 +1599,7 @@ class EscalationQueueAdapter:
                 continue
 
             live_state = (
-                status.verdict if status.verdict in (WORKING, DONE, FAILED)
+                status.verdict if status.verdict in (WORKING, DONE, FAILED, STOPPED)
                 else (status.gateway_state or "UNKNOWN").upper()
             )
             self.ledger.append({
