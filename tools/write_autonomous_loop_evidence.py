@@ -158,12 +158,30 @@ payload = {
     "not_proven": [
         "Stage 2: the job learning the capability (LIVE_VERIFIED), the safe reload, and A rejoining the "
         "pool on its own. The job is WORKING, so the ladder reports failure_step=job_working.",
-        "A measured goal_progress=True for the gather route under live load: the goal and its meter were "
-        "added after that run, so the run that dispatched the march recorded goal_progress=None while its "
-        "goal_id read AUTO_DISCOVERY. The next runs measure it; tests pin the meter, not the live episode.",
-        "The deferral's own probe window has not elapsed yet (30 minutes), so no probe run of the beast "
+        "A measured goal_progress=True for the gather route under live load. The goal and its meter "
+        "existed only after the run that dispatched the marches, and the round after that ended with "
+        "reserved_march_for_stamina (the config reserves 2 marches for the stamina goal while 1 was "
+        "idle), so no dispatch has been measured yet. Tests pin the meter; the live sample is pending.",
+        "The deferral's own probe window (30 minutes) has not elapsed, so no probe run of the beast "
         "route has been observed since it stepped aside.",
     ],
+    "measurement_gap_found_while_watching": {
+        "symptom": "DISPATCH_MARCH's before-frame is the formation page (no march counter) and its "
+                   "after-frame is MAP with one more march out, so a strict before/after comparison "
+                   "reported the one step that advances the goal as 'not observable'.",
+        "measured": "march_used on the chain: 0 -> 0 -> 1 (dispatch) -> 1 -> 1 -> 2 (dispatch), max 3",
+        "fix": "progress_moved compares against the last meter the run actually read, so a step that "
+               "ends where the goal is readable is measured even when it starts where it is not.",
+        "commit": "51d23bc",
+    },
+    "live_confirmation_after_the_change": {
+        "snapshot_deferrals": "learning/runtime_snapshot.json now carries the deferral with its reason, "
+                              "source, failure_signature and streak -- the field the store was silently "
+                              "dropping before commit 6bec174.",
+        "next_round": "the round after the change selected goal=KEEP_MARCHES_PRODUCTIVE on MAP and took "
+                      "the deferred hop again, then ended with reserved_march_for_stamina rather than "
+                      "repeating the beast path.",
+    },
     "gates": {
         "tests": "tests/test_capability_gate.py 33 passed; goal/escalation/runtime group 131 passed; "
                  "panel+startup group 174 passed with 15 subtests",
