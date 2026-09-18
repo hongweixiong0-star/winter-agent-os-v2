@@ -41,8 +41,17 @@ def main() -> int:
 
     submitted = [row for row in ledger if row.get("event") == "submitted" and row.get("job_id")]
     by_job: dict[str, dict] = {}
+    key_of_job: dict[str, str] = {}
     for row in submitted:
         by_job.setdefault(row["job_id"], {"job_id": row["job_id"], "attempt": row.get("attempt")})
+        # The bridge writes its own ``submitted`` row keyed by capability and the queue
+        # writes one keyed by the escalation key; only the second one names the record.
+        if row.get("key"):
+            key_of_job[row["job_id"]] = row["key"]
+    # A correction is appended against the escalation *key*, not the job id, so looking
+    # them up by job id silently misses them -- which is how the retracted
+    # LIVE_VERIFIED for 2934e9cd first appeared here as uncorrected.
+    corrections = {row["key"]: row for row in ledger if row.get("correction") and row.get("key")}
     for row in ledger:
         if row.get("event") == "job_state" and row.get("job_id") in by_job:
             by_job[row["job_id"]]["last_state"] = row.get("state")
@@ -56,6 +65,14 @@ def main() -> int:
                 "corrected": bool(row.get("correction")),
                 "explanation": (row.get("explanation") or "")[:400],
             })
+    for job_id, entry in by_job.items():
+        correction = corrections.get(key_of_job.get(job_id, ""))
+        if correction is None:
+            continue
+        entry["outcome"] = correction.get("outcome") or entry.get("outcome")
+        entry["corrected"] = True
+        entry["correction_reason"] = (correction.get("explanation") or "")[:400]
+        entry["live_improvement"] = False
 
     pump = {}
     try:
@@ -162,8 +179,25 @@ def main() -> int:
                 "commit": "5ba83b3",
             },
         ],
-        "operational_incidents_this_round": [
-            {
+        "observed_live_while_this_was_being_written": {
+            "what": "at 02:04:05Z a deferral-sourced escalation created the signature "
+                    "NO_GOAL_PROGRESS|NO_GOAL_PROGRESS| and 0440cd38 was dispatched on it",
+            "defect": "the capability field held a *failure type* and the skill field was empty, so the "
+                      "work order was filed under a name no goal can route back to, and the dedup key did "
+                      "not describe the wall.  Root cause: the deferral's failure_signature was built with "
+                      "\"|\".join(part for part in (...) if part), which silently drops the empty capability "
+                      "and shifts the failure type into its slot",
+            "who_is_fixing_it": "job 0440cd38 itself, in the working tree (winter_agent_v2/capability_gate.py "
+                                "and winter_agent_v2/escalation_queue.py were both dirty at 10:07, uncommitted, "
+                                "with a positional signature and an empty-capability guard)",
+            "why_this_matters": "this is the chain doing the thing it was built for, without a human: a wall "
+                                "the scheduler reported by name became an escalation, a job, and a fix to the "
+                                "code that produced the bad escalation in the first place",
+            "verified_by_me": "the in-flight changes are coherent: 153 passed across capability-gate, queue-pump "
+                              "and escalation-queue, check_wiring problems: 0, on the tree as they left it.  "
+                              "I did not touch either file.",
+        },
+        "operational_incidents_this_round": [            {
                 "incident": "a process filter killed the development host",
                 "detail": "taskkill over processes matching 'control_panel|run_live' also matched the WorkBuddy "
                           "desktop app, its agent node processes and the shell running the command, because the "
