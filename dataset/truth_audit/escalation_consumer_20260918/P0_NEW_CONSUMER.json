@@ -1,0 +1,157 @@
+{
+  "recorded_at": "2026-09-18T01:29:46.755031+00:00",
+  "operator_report": "DISPATCH_GATHER_MARCH / UNKNOWN_UI, discovered 54 minutes ago, state still NEW, Job ID not submitted, gateway healthy. Gap -> Escalation NEW -> Queue Consumer -> Bridge submit -> Job -> SUBMITTED -> WORKING must advance on its own.",
+  "root_cause": {
+    "finding": "Each stuck record had exactly ONE ledger row -- its escalation_created row -- and that row names why it was not dispatched at the time: dispatch=CONCURRENCY_WAIT with 'max_concurrent_jobs=1 is already used by a7ce58f0'. Correct at that instant and permanent afterwards, because candidates were only ever derived from the run that produced them: once a7ce58f0 finished there was nothing left to re-offer the record. NEW meant 'noticed once', not 'will reach the bridge'.",
+    "rows": {
+      "DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|DISPATCH_MARCH": {
+        "source": "queue",
+        "event": "escalation_created",
+        "key": "DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|DISPATCH_MARCH",
+        "capability": "DISPATCH_GATHER_MARCH",
+        "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+        "skill": "DISPATCH_MARCH",
+        "condition": "UNKNOWN_UI",
+        "goal": "AUTO_DISCOVERY",
+        "evidence": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072807_540935\\20260918_072807_540935_step_001_before_20260917T232809509626.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072807_540935"
+        ],
+        "dispatch": "CONCURRENCY_WAIT",
+        "dispatch_reason": "max_concurrent_jobs=1 is already used by a7ce58f0; two agents must not edit this repository at once",
+        "recorded_at": "2026-09-17T23:28:18.457809+00:00"
+      },
+      "DISMISS_REAL_MONEY_OFFER|POPUP_CLOSE_NOT_PROVEN|DISMISS_REAL_MONEY_OFFER": {
+        "source": "queue",
+        "event": "escalation_created",
+        "key": "DISMISS_REAL_MONEY_OFFER|POPUP_CLOSE_NOT_PROVEN|DISMISS_REAL_MONEY_OFFER",
+        "capability": "DISMISS_REAL_MONEY_OFFER",
+        "failure_type": "POPUP_CLOSE_NOT_PROVEN",
+        "skill": "DISMISS_REAL_MONEY_OFFER",
+        "condition": "UNKNOWN_UI",
+        "goal": "AUTO_DISCOVERY",
+        "evidence": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419\\20260918_072033_690419_step_001_before_20260917T232035678448.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419\\20260918_072033_690419_step_001_after_20260917T232048790561.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_072033_690419"
+        ],
+        "dispatch": "CONCURRENCY_WAIT",
+        "dispatch_reason": "max_concurrent_jobs=1 is already used by a7ce58f0; two agents must not edit this repository at once",
+        "recorded_at": "2026-09-17T23:21:24.200267+00:00"
+      }
+    },
+    "secondary": [
+      "The fold settled only DONE/FAILED, so a stopped job (terminal at the gateway) stayed WORKING and held the one concurrency slot forever -- the same stall by another route.",
+      "dispatch_reason was written at creation and never folded, so a consumer had nothing to quote.",
+      "The console rendered NEW as '排队', which claims a job is waiting its turn when nothing has been sent anywhere."
+    ]
+  },
+  "fix": {
+    "consumer": "EscalationQueueAdapter.pending() re-offers every record in NEW (created, never dispatched) or QUEUED (decided, gateway was down), oldest first, through the same decide() throttle -- dedup, the one concurrency slot, the per-signature budget, cooldown -- so it cannot overrun the rules that throttled it.",
+    "release": "A record whose capability the device has already proven (verifier-passing production episode after creation) is settled DONE / LIVE_VERIFIED with released_by=self_proven, naming the episodes. live_improvement and repair_used stay false: no job ran.",
+    "labels": "待提交 (NEW) -> 排队 (QUEUED) -> 已提交 (SUBMITTED) -> 开发中 (WORKING), one word per real state, pinned by a test.",
+    "commits": [
+      "27b8e44",
+      "992a025"
+    ]
+  },
+  "live_acceptance": {
+    "round": "09:28:51 local, worker revision 992a0257ca54+21 (the consumer's own commit)",
+    "narration": [
+      "[code] revision 992a0257ca54+21",
+      "[escalation] released 2 (already proven on the device), skipped 1",
+      "[escalation]   released DISMISS_REAL_MONEY_OFFER|POPUP_CLOSE_NOT_PROVEN|DISMISS_REAL_MONEY_OFFER: the device proved it without a job",
+      "[escalation]   released DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|DISPATCH_MARCH: the device proved it without a job",
+      "[escalation]   skipped SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: DEDUP_SKIP: SPEND_STAMINA_ON_BEAST / NO_GOAL_PROGRESS / SCAN_MAP_FOR_BEAST already has an active escalation (state=WORKING, job=2934e9cd)"
+    ],
+    "released": {
+      "DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|DISPATCH_MARCH": {
+        "source": "queue",
+        "event": "reconciled",
+        "key": "DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|DISPATCH_MARCH",
+        "job_id": "",
+        "job_state": "DONE",
+        "outcome": "LIVE_VERIFIED",
+        "released_by": "self_proven",
+        "explanation": "released without a job: 4 verifier-passing production episode(s) of DISPATCH_MARCH were recorded after this escalation was created, so the device proved the capability itself (latest 2026-09-18T01:18:29.846278+00:00, revision 098be81ec853+20)",
+        "verified_episodes": 4,
+        "live_verify_episode": "20260918_091145_572260",
+        "live_verify_revision": "098be81ec853+20",
+        "code_changed": false,
+        "live_improvement": false,
+        "repair_used": false,
+        "recorded_at": "2026-09-18T01:29:12.464066+00:00"
+      },
+      "DISMISS_REAL_MONEY_OFFER|POPUP_CLOSE_NOT_PROVEN|DISMISS_REAL_MONEY_OFFER": {
+        "source": "queue",
+        "event": "reconciled",
+        "key": "DISMISS_REAL_MONEY_OFFER|POPUP_CLOSE_NOT_PROVEN|DISMISS_REAL_MONEY_OFFER",
+        "job_id": "",
+        "job_state": "DONE",
+        "outcome": "LIVE_VERIFIED",
+        "released_by": "self_proven",
+        "explanation": "released without a job: 2 verifier-passing production episode(s) of DISMISS_REAL_MONEY_OFFER were recorded after this escalation was created, so the device proved the capability itself (latest 2026-09-17T23:25:20.774277+00:00, revision unknown)",
+        "verified_episodes": 2,
+        "live_verify_episode": "20260918_072409_543422",
+        "live_verify_revision": "",
+        "code_changed": false,
+        "live_improvement": false,
+        "repair_used": false,
+        "recorded_at": "2026-09-18T01:29:12.395352+00:00"
+      }
+    },
+    "queue_counts_after": {
+      "COOLDOWN": 1,
+      "DONE": 4,
+      "WORKING": 1
+    },
+    "pending_after": [],
+    "verified_episodes_since_creation": {
+      "DISPATCH_GATHER_MARCH|SEMANTIC_TARGET_NOT_VERIFIED|DISPATCH_MARCH": [
+        {
+          "recorded_at": "2026-09-18T00:42:02.680877+00:00",
+          "skill": "DISPATCH_MARCH",
+          "result": "SUCCESS",
+          "repo_revision": ""
+        },
+        {
+          "recorded_at": "2026-09-18T00:44:47.895692+00:00",
+          "skill": "DISPATCH_MARCH",
+          "result": "SUCCESS",
+          "repo_revision": ""
+        },
+        {
+          "recorded_at": "2026-09-18T01:15:56.280167+00:00",
+          "skill": "DISPATCH_MARCH",
+          "result": "SUCCESS",
+          "repo_revision": "098be81ec853+20"
+        },
+        {
+          "recorded_at": "2026-09-18T01:18:29.846278+00:00",
+          "skill": "DISPATCH_MARCH",
+          "result": "SUCCESS",
+          "repo_revision": "098be81ec853+20"
+        }
+      ],
+      "DISMISS_REAL_MONEY_OFFER|POPUP_CLOSE_NOT_PROVEN|DISMISS_REAL_MONEY_OFFER": [
+        {
+          "recorded_at": "2026-09-17T23:22:22.204954+00:00",
+          "skill": "DISMISS_REAL_MONEY_OFFER",
+          "result": "SUCCESS",
+          "repo_revision": ""
+        },
+        {
+          "recorded_at": "2026-09-17T23:25:20.774277+00:00",
+          "skill": "DISMISS_REAL_MONEY_OFFER",
+          "result": "SUCCESS",
+          "repo_revision": ""
+        }
+      ]
+    }
+  },
+  "not_shown_and_why": [
+    "NEW -> SUBMITTED -> job id -> WORKING was NOT demonstrated on these two records, because both turned out to be walls the device had already climbed: DISPATCH_MARCH had 4 verifier-passing episodes after its record was created (two on the current tree) and the money-offer skill 2. Dispatching a development agent at that point would be manufacturing work.",
+    "The submit hop itself is proven by tests (5 consumer tests, including 'waits for the slot' and 'not sent twice') and by a dry run against a copy of the live ledger, and it is gated on the operator's own max_concurrent_jobs=1: the single slot is held by job 2934e9cd, which is still genuinely working on the beast capability.",
+    "The running console still shows the old words: the label fix takes effect when the window next starts, and it was not force-restarted while the operator may be using it."
+  ]
+}
