@@ -1513,6 +1513,7 @@ def reconcile_outcome(
     episodes_path: Path | str | None = None,
     failure_type: str = "",
     settled_at: datetime | None = None,
+    from_development_job: bool = False,
 ) -> tuple[str, str, tuple[dict[str, Any], ...]]:
     """Decide what the job actually achieved, from local measurements only.
 
@@ -1544,7 +1545,7 @@ def reconcile_outcome(
                                 version_changed_from=before.token,
                                 require_goal_progress=str(failure_type).upper() in PROOF_IS_GOAL_PROGRESS,
                                 after=settled_at)
-    if episodes:
+    if episodes and not from_development_job:
         latest = episodes[-1]
         return (
             LIVE_VERIFIED,
@@ -1552,6 +1553,33 @@ def reconcile_outcome(
             f"differs from dispatch time (latest {latest.get('recorded_at')}, revision "
             f"{str(latest.get('repo_revision'))} vs {before.token or 'unknown'}), "
             f"evidence {Path(str(latest.get('before_screenshot'))).name}",
+            episodes,
+        )
+
+    if episodes:
+        # The shortcut above is the one the operator closed on 2026-09-18, and this branch is
+        # what replaces it for a *developed* trace.
+        #
+        # A production episode proves the capability works on the tree it ran.  It does not
+        # prove the capability works on the version the job produced, and it certainly does not
+        # prove the job taught V2 anything -- the same episode would exist if the agent had done
+        # nothing at all.  So for a trace that came from a WorkBuddy job the ladder is
+        # VERSION_ACTIVE -> LIVE_VERIFY_PENDING -> Development Validation -> LIVE_TRIED ->
+        # LIVE_VERIFIED, and this returns the rung that routes into it rather than the rung that
+        # ends it.
+        #
+        # ``version_changed_from=before.token`` admits any tree that differs from dispatch time,
+        # which includes a *third* version, so "the new version has run" is not established by
+        # these episodes even though they pass.  VERSION_ACTIVATION_PENDING is the honest word:
+        # it says the produced version has not been shown to be running yet.
+        return (
+            VERSION_ACTIVATION_PENDING,
+            f"{len(episodes)} production episode(s) with verifier_ok exist, but this trace came "
+            f"from a development job: a production success is not the job's proof and may not "
+            f"certify the version it produced. The capability must be examined on the version "
+            f"itself (VERSION_ACTIVE -> LIVE_VERIFY_PENDING -> 真机校准 -> LIVE_TRIED -> "
+            f"LIVE_VERIFIED); these episodes ran a tree that differs from dispatch time but is "
+            f"not shown to be {after.token[:12] or 'the produced version'}.",
             episodes,
         )
 
@@ -2597,6 +2625,9 @@ class EscalationQueueAdapter:
                 skill=record.skill,
                 submitted_at=record.submitted_at,
                 job_verdict=STOPPED if reclaimed else status.verdict,
+                # §4: a trace with a job id is a *developed* trace, and may not be certified
+                # by a production episode that merely proves the capability still works.
+                from_development_job=bool(record.job_id),
                 before=before,
                 after=after,
                 wiring_problems=wiring,
@@ -2668,6 +2699,9 @@ class EscalationQueueAdapter:
             outcome, explanation, episodes = reconcile_outcome(
                 capability=record.capability, skill=record.skill,
                 submitted_at=record.submitted_at, job_verdict=DONE,
+                # Same rule on the re-measure path: a version that has become active still has
+                # to be examined, not certified by whatever production episode happens to exist.
+                from_development_job=bool(record.job_id),
                 before=before, after=after, wiring_problems=wiring,
                 agent_report=record.agent_report, root=self.root,
                 failure_type=record.failure_type,
