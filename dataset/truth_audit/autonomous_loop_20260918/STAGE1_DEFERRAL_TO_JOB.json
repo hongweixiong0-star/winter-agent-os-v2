@@ -1,0 +1,224 @@
+{
+  "recorded_at": "2026-09-18T00:48:29.429893+00:00",
+  "operator_instruction": "不会做 A 不能一直重复做 A；A 交给 WorkBuddy；V2 立即继续做 B/C/D；学会后自动交还",
+  "stage_1_verdict": "PROVEN_LIVE (deferral -> escalation -> background job, zero human action)",
+  "stage_2_verdict": "PENDING (the job is WORKING; learn -> reload -> rejoin needs it to finish)",
+  "measurement_change": {
+    "goal_progress": "GoalState.distance is each goal's own meter and every episode records whether the goal moved between its before and after frames. The action verifier answers a different question, and before this change 'the swipe landed' was the only thing measured.",
+    "deferral_source": "winter_agent_v2/capability_gate.py projects the escalation ledger and the episode stream. It stores nothing: one scheduler, one registry, one world state, one queue."
+  },
+  "stage_1_chain": {
+    "a_could_not_advance": {
+      "goal": "AVOID_STAMINA_WASTE",
+      "capability": "SPEND_STAMINA_ON_BEAST",
+      "evidence": "three consecutive runs of 3 SCAN_MAP_FOR_BEAST swipes, every step verifier_ok, every episode goal_progress=False, stamina fixed at 457"
+    },
+    "runs": [
+      {
+        "episode_id": "20260918_082843_302206",
+        "started_at": "2026-09-18T00:30:15.840326+00:00",
+        "ended_at": "2026-09-18T00:30:15.840326+00:00",
+        "episodes": 1,
+        "goals": {
+          "AVOID_STAMINA_WASTE": {
+            "episodes": 1,
+            "progress": [
+              null
+            ],
+            "skills": [
+              "SCAN_MAP_FOR_BEAST"
+            ]
+          }
+        },
+        "all_verifiers_ok": true,
+        "capture_backends": [
+          "MAA_MUMU_EXTRAS"
+        ]
+      },
+      {
+        "episode_id": "20260918_083210_043496",
+        "started_at": "2026-09-18T00:32:45.653266+00:00",
+        "ended_at": "2026-09-18T00:33:42.517388+00:00",
+        "episodes": 3,
+        "goals": {
+          "AVOID_STAMINA_WASTE": {
+            "episodes": 3,
+            "progress": [
+              false,
+              false,
+              false
+            ],
+            "skills": [
+              "SCAN_MAP_FOR_BEAST",
+              "SCAN_MAP_FOR_BEAST",
+              "SCAN_MAP_FOR_BEAST"
+            ]
+          }
+        },
+        "all_verifiers_ok": true,
+        "capture_backends": [
+          "MAA_MUMU_EXTRAS"
+        ]
+      },
+      {
+        "episode_id": "20260918_083427_476837",
+        "started_at": "2026-09-18T00:34:58.391681+00:00",
+        "ended_at": "2026-09-18T00:35:54.085917+00:00",
+        "episodes": 3,
+        "goals": {
+          "AVOID_STAMINA_WASTE": {
+            "episodes": 3,
+            "progress": [
+              false,
+              false,
+              false
+            ],
+            "skills": [
+              "SCAN_MAP_FOR_BEAST",
+              "SCAN_MAP_FOR_BEAST",
+              "SCAN_MAP_FOR_BEAST"
+            ]
+          }
+        },
+        "all_verifiers_ok": true,
+        "capture_backends": [
+          "MAA_MUMU_EXTRAS"
+        ]
+      },
+      {
+        "episode_id": "20260918_083638_347108",
+        "started_at": "2026-09-18T00:37:09.747579+00:00",
+        "ended_at": "2026-09-18T00:38:07.543912+00:00",
+        "episodes": 3,
+        "goals": {
+          "AVOID_STAMINA_WASTE": {
+            "episodes": 3,
+            "progress": [
+              false,
+              false,
+              false
+            ],
+            "skills": [
+              "SCAN_MAP_FOR_BEAST",
+              "SCAN_MAP_FOR_BEAST",
+              "SCAN_MAP_FOR_BEAST"
+            ]
+          }
+        },
+        "all_verifiers_ok": true,
+        "capture_backends": [
+          "MAA_MUMU_EXTRAS"
+        ]
+      },
+      {
+        "episode_id": "20260918_083852_587901",
+        "started_at": "2026-09-18T00:39:22.287490+00:00",
+        "ended_at": "2026-09-18T00:44:47.895692+00:00",
+        "episodes": 12,
+        "goals": {
+          "AUTO_DISCOVERY": {
+            "episodes": 12,
+            "progress": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "skills": [
+              "OPEN_HOME",
+              "OPEN_MAP",
+              "SEARCH_RESOURCE",
+              "SELECT_RESOURCE",
+              "SUBMIT_RESOURCE_SEARCH",
+              "START_GATHER",
+              "DISPATCH_MARCH",
+              "SEARCH_RESOURCE",
+              "SELECT_RESOURCE",
+              "SUBMIT_RESOURCE_SEARCH",
+              "START_GATHER",
+              "DISPATCH_MARCH"
+            ]
+          }
+        },
+        "all_verifiers_ok": true,
+        "capture_backends": [
+          "MAA_MUMU_EXTRAS"
+        ]
+      }
+    ],
+    "a_stepped_aside": {
+      "state": "DEFERRED",
+      "rule": "three consecutive runs of this goal advanced no part of it",
+      "effect": "the fourth run selected no beast step at all and took a different capability"
+    },
+    "scheduler_replanned": {
+      "goal": "KEEP_MARCHES_PRODUCTIVE (emitted from idle march slots)",
+      "skills": [
+        "OPEN_HOME",
+        "OPEN_MAP",
+        "SEARCH_RESOURCE",
+        "SELECT_RESOURCE",
+        "SUBMIT_RESOURCE_SEARCH",
+        "START_GATHER",
+        "DISPATCH_MARCH"
+      ],
+      "note": "the run that dispatched the march is the last of the runs above"
+    },
+    "escalation": {
+      "key": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+      "condition": "REPEATED_LIVE_FAILURE",
+      "capability": "SPEND_STAMINA_ON_BEAST",
+      "failure_type": "NO_GOAL_PROGRESS",
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "goal": "AVOID_STAMINA_WASTE",
+      "evidence": [
+        "deferral:AVOID_STAMINA_WASTE:3"
+      ],
+      "dispatch": "SUBMIT",
+      "recorded_at": "2026-09-18T00:45:07.907110+00:00"
+    },
+    "queue_throttle_in_the_same_run": {
+      "skipped_by_budget": [],
+      "explanation": "the older signature for this capability was skipped BUDGET_EXHAUSTED in the same run; the new signature is a different failure shape (NO_GOAL_PROGRESS), so it is entitled to its own budget, and the throttle that bounds it (dedup, concurrency cap, per-signature budget, cooldown) is unchanged. No repair budget was raised to make this happen."
+    },
+    "job": {
+      "job_id": "2934e9cd",
+      "model": "deepseek-v4.1-flash",
+      "task_type": "REGRESSION_FIX",
+      "submitted_at": "2026-09-18T00:45:07.978723+00:00",
+      "repo_head_at_submit": "e2da4626123e784e40bdeef8f386a30a92f686b6",
+      "repo_dirty_at_submit": 27,
+      "permission_mode": "bypassPermissions",
+      "bg_isolation": "none"
+    },
+    "auto_did_not_wait": "AUTO kept running in the same round and started the next one on its own; no operator click, no hand-made job, no hand-made escalation, no hand-made reload."
+  },
+  "closure_ladder": {
+    "tool": "tools/unattended_closure.py",
+    "trace_id": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+    "step_1_gap_detected": "9 measured episodes whose verifier passed while the goal did not move",
+    "step_2_escalation_created": "queue",
+    "step_3_queue_deduped": "n/a, no duplicate arose",
+    "step_4_job_submitted": "yes",
+    "steps_5_to_13": "PENDING -- failure_step=job_working",
+    "verdict": "INCOMPLETE 3/10 applicable; not PASS 13/13"
+  },
+  "not_proven": [
+    "Stage 2: the job learning the capability (LIVE_VERIFIED), the safe reload, and A rejoining the pool on its own. The job is WORKING, so the ladder reports failure_step=job_working.",
+    "A measured goal_progress=True for the gather route under live load: the goal and its meter were added after that run, so the run that dispatched the march recorded goal_progress=None while its goal_id read AUTO_DISCOVERY. The next runs measure it; tests pin the meter, not the live episode.",
+    "The deferral's own probe window has not elapsed yet (30 minutes), so no probe run of the beast route has been observed since it stepped aside."
+  ],
+  "gates": {
+    "tests": "tests/test_capability_gate.py 33 passed; goal/escalation/runtime group 131 passed; panel+startup group 174 passed with 15 subtests",
+    "check_wiring": "problems: 0, including six new links for the gate and the march goal",
+    "note": "the batched full-suite verdict for this revision is recorded separately in learning/tests_batched_*.json; a single full run on this host is INCONCLUSIVE"
+  }
+}

@@ -103,6 +103,7 @@ class Chain:
     failure_type: str = ""
     commit: str = ""
     commit_note: str = ""
+    submitted_at: datetime | None = None
     reload_id: str = ""
     steps: list[Step] = field(default_factory=list)
 
@@ -148,6 +149,7 @@ def build(trace_id: str, ledger: list[dict[str, Any]], episodes: list[dict[str, 
     job_id = str((submitted or {}).get("job_id") or "")
     chain.job_id = job_id
     at = moment((submitted or {}).get("recorded_at"))
+    chain.submitted_at = at
     repo_head = str((submitted or {}).get("repo_head") or "")
 
     steps: dict[str, Step] = {name: Step(name) for name in STEPS}
@@ -168,6 +170,33 @@ def build(trace_id: str, ledger: list[dict[str, Any]], episodes: list[dict[str, 
             f"episode {episode.get('episode_id')} {episode.get('failure_type')} at {episode.get('recorded_at')}")
     if not steps["gap_detected"].done:
         steps["gap_detected"].note = "no failing episode of this shape before the escalation"
+
+    # 1b. ...or the gap is a deferral.  A goal the scheduler refused to re-enter
+    # produced no failing step at all -- that is the whole point of refusing it -- so
+    # there is no FAILURE episode to find, and the chain would look like it began from
+    # nothing.  The queue was handed the scheduler's own deferral, and the run's
+    # episodes carry the measurement behind it: episodes of that goal that passed their
+    # verifier and moved nothing.  2026-09-18 is the first chain of this shape
+    # (SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST).
+    creation = next((row for row in mine if row.get("event") == "escalation_created"), None)
+    if creation is not None and str(creation.get("failure_type") or "") == "NO_GOAL_PROGRESS":
+        goal_id = str(creation.get("goal") or "")
+        stalled = [
+            episode for episode in episodes
+            if str(episode.get("goal_id") or "") == goal_id
+            and episode.get("goal_progress") is False
+            and (when := moment(episode.get("recorded_at"))) is not None
+            and at is not None and when <= at
+        ]
+        if stalled:
+            steps["gap_detected"].done = True
+            steps["gap_detected"].evidence.append(
+                f"{len(stalled)} measured episode(s) of {goal_id} whose verifier passed "
+                f"while the goal did not move, before {at.isoformat()}")
+        handed = [str(item) for item in (creation.get("evidence") or [])]
+        if handed:
+            steps["gap_detected"].evidence.append(
+                "the queue was handed the scheduler's own deferral: " + ", ".join(handed))
 
     # 2. escalation_created
     created = [row for row in mine if row.get("event") in {"submitted", "candidate", "dispatch"}]
@@ -326,7 +355,11 @@ def main(argv: list[str] | None = None) -> int:
             keys.append(key)
     chains = [build(key, ledger, episodes, commits) for key in keys]
     chains = [chain for chain in chains if chain.job_id]
-    chains.sort(key=lambda chain: chain.job_id)
+    # By submission time, not by job id.  Job ids are opaque hex, and sorting them
+    # string-wise put an older chain after a newer one -- so the default view reported
+    # the wrong chain as the newest (measured 2026-09-18: 2934e9cd sorted before
+    # a7ce58f0, and a7ce58f0 is three hours older).
+    chains.sort(key=lambda chain: (chain.submitted_at is None, chain.submitted_at))
     if not args.all:
         chains = chains[-1:]
 
