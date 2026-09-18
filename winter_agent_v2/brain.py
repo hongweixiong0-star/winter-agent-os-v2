@@ -50,8 +50,16 @@ class RuleBrain:
         # (SCAN_MAP_FOR_BEAST); after ``max_beast_scans`` pans without a
         # verified target the goal still stops with the original named reason,
         # so the scan can never become an endless pan loop.
+        #
+        # Raised 3 -> 5 on 2026-09-19.  The bound is the operator's 4-6 local moves,
+        # and three pans is a small patch of a world map: a beast one viewport away
+        # was unreachable, and the failure it produced then cost the capability its
+        # whole repair budget (see ``STOP_REASON_WALLS``).  Five keeps the search
+        # finite while giving "the beast is simply not here right now" a fair chance
+        # to be wrong.  The stop itself is no longer treated as a capability wall, so
+        # exhausting this budget defers one attempt instead of blocking the goal.
         self.beast_scans_used = 0
-        self.max_beast_scans = 3
+        self.max_beast_scans = 5
         # Same reasoning for the tabbed 任务 panel that ``OPEN_DAILY`` opens.
         # Measured live 2026-09-16: the panel lands on its 章节任务 tab and the
         # account had nothing claimable on any tab (the four 每日任务 sat at
@@ -728,6 +736,15 @@ class RuleBrain:
             # on a page it does not own.
             if world.beast.get("mission_id") in {"INTEL_BEAST_10", "INTEL_FIREBEAST_10"} and world.beast.get("available"):
                 return Decision("INTEL_BEAST_START_MARCH", "intel_beast_target_verified", world.confidence, "intel_beast_march_page_open")
+            if world.beast.get("attack_card"):
+                # The world-map beast card's 攻击 control (2026-09-18
+                # escalation SPEND_STAMINA_ON_BEAST).  Vision claims only the
+                # control itself, never a species, so this branch is the
+                # species-independent way to a wilderness formation page --
+                # the convergence the viewport pan never had.  The stamina is
+                # not spent here: the tap only opens the formation page, and
+                # DISPATCH_BEAST plus its verifier decide and prove the spend.
+                return Decision("ATTACK_BEAST_CARD", "beast_card_attack_control_visible", world.confidence, "beast_march_page_open")
             if self.current_goal == "INTEL" and not world.beast:
                 # A Hero Journey camp target card: same layout as the beast
                 # target card (the 出征 button drives the page) but without the
@@ -853,6 +870,13 @@ class RuleBrain:
                 # leopard with its red assessment -- without touching the route.
                 if is_dispatchable(world.beast):
                     self.beast_scans_used = 0
+                    # One sprite template per species is the data cost of a
+                    # target (CAP-Z01's design note): the skill's tap target is
+                    # the sprite itself, so a second dispatchable species gets
+                    # its own selection skill rather than reusing the musk
+                    # ox's tap.
+                    if world.beast.get("visible_target") == "MAMMOTH":
+                        return Decision("SELECT_BEAST_TARGET_MAMMOTH", "verified_visible_mammoth_target", world.confidence, "beast_target_dialog_open")
                     return Decision("SELECT_BEAST_TARGET", "verified_visible_low_level_beast", world.confidence, "beast_target_dialog_open")
                 if self.beast_scans_used < self.max_beast_scans:
                     self.beast_scans_used += 1

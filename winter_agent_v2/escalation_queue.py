@@ -158,6 +158,12 @@ ORDINARY_WEATHER_RESPONSES: dict[str, str] = {
     "COOLDOWN": "DEFER",
     "ABILITY_ON_COOLDOWN": "DEFER",
     "SKILL_ON_COOLDOWN": "DEFER",
+    # Withdrawn from STOP_REASON_WALLS on 2026-09-19 (see the note there).  A beast
+    # outside the current viewport is the map's own state: pan a bounded number of
+    # times, then defer this attempt and let another goal run.  Documented here because
+    # this table is where a reader looks for "what should happen instead" -- no caller
+    # branches on it, and the classification above is what actually changes behaviour.
+    "verified_beast_target_not_visible": "DEFER",
 }
 
 
@@ -196,19 +202,35 @@ UI_UNREAD_EXPLICIT = frozenset({"NO_EXECUTION", "RESOURCE_NOT_FOUND"})
 # decides it cannot proceed, and issues no action -- so the episode stream carries
 # no failed step and the failure-type tables above never see it.
 #
-# Without this map the pipeline would be blind to this project's most frequent
-# blocker: ``verified_beast_target_not_visible`` has ended a run on most cycles
-# since 2026-09-17 and was named as the current top failure in the handoff, yet it
-# produces zero failed episodes.  Listed one at a time on purpose -- each entry
-# claims "this stop is a wall, not the weather", and that claim has to be earned.
-STOP_REASON_WALLS: dict[str, tuple[str, str, str]] = {
-    "verified_beast_target_not_visible": (
-        UNKNOWN_UI,
-        "SELECT_BEAST_TARGET",
-        "the run stops because the beast target card cannot be verified on the map, "
-        "so no beast can be dispatched at all",
-    ),
-}
+# Without this map the pipeline would be blind to a stop that produces no failed
+# episode at all: the runtime decides it cannot proceed, issues no action, and the
+# episode stream carries no failed step for the failure-type tables to see.
+#
+# The one entry this map ever had was withdrawn on 2026-09-19, and the reason is worth
+# keeping because it is the general lesson: a claim has to be re-earned, not inherited.
+#
+#   ``verified_beast_target_not_visible`` was listed as ``UNKNOWN_UI`` ->
+#   ``SELECT_BEAST_TARGET`` on 2026-09-17, on the reading that "the run cannot dispatch
+#   a beast at all, so the selection capability is missing".  Measured since:
+#
+#   * Both repair jobs spent on that signature (8fd1dfbf, f465a6c9) came back
+#     ``TEST_PASS`` -- code changed, tests passed, and **no production episode with a
+#     passing verifier** was ever produced.  Neither one demonstrated the wall.
+#   * That spent the capability's entire repair budget (2/2), which turned into
+#     ``BLOCKED`` and deferred ``AVOID_STAMINA_WASTE`` -- the highest-priority goal the
+#     project has (2615) -- down to a 180-minute probe.
+#   * The actual cause is weather, not a wall.  A beast that is not inside the current
+#     viewport is a fact about the map, and the runtime's own answer to it already
+#     exists: a bounded ``SCAN_MAP_FOR_BEAST`` pan (``RuleBrain.max_beast_scans``).
+#     Panning is the response; a development agent is not.
+#
+# So the entry moved to the ordinary side.  Note what this does *not* do: it does not
+# join :data:`NON_ESCALATABLE_STOP_REASONS`, because that set returns before the failure
+# loop and would suppress a **real** failure in the same run.  A genuine
+# ``SELECT_BEAST_TARGET`` verifier/ROI/template error must still reach a developer --
+# that is the whole second half of the same rule.  What is withdrawn is only the claim
+# that the stop reason alone is a wall.
+STOP_REASON_WALLS: dict[str, tuple[str, str, str]] = {}
 
 # --------------------------------------------------------------------- states
 

@@ -431,19 +431,41 @@ class OrdinaryWeatherTest(unittest.TestCase):
         )
         self.assertIsNone(verdict)
 
-    def test_a_wall_that_only_appears_as_a_stop_reason_is_still_escalated(self):
-        # verified_beast_target_not_visible ends most cycles and produces zero
-        # failed episodes, because the runtime stops before issuing an action.
+    def test_a_beast_that_is_simply_not_on_the_map_is_not_a_capability_wall(self):
+        """Withdrawn 2026-09-19: this stop reason was a STOP_REASON_WALL, and that was wrong.
+
+        Measured: both repair jobs spent on signature
+        ``SPEND_STAMINA_ON_BEAST|VERIFIED_BEAST_TARGET_NOT_VISIBLE|SELECT_BEAST_TARGET``
+        came back ``TEST_PASS`` -- code changed, tests passed, and no production episode
+        with a passing verifier was ever produced -- which burned the capability's entire
+        repair budget (2/2) and deferred ``AVOID_STAMINA_WASTE``, the highest-priority goal
+        the project has, down to a 180-minute probe.
+
+        A beast outside the current viewport is the map's own state.  The runtime already
+        answers it with a bounded pan (``RuleBrain.max_beast_scans``), so the stop is
+        weather: defer this attempt, let another goal run, and spend no repair budget.
+        """
         candidates = q.candidates_from_run(
             stop_reason="verified_beast_target_not_visible",
             failures=[], snapshot=q.EscalationSnapshot({}),
             policy=q.EscalationPolicy(), now=NOW, root=ROOT,
         )
-        self.assertEqual(len(candidates), 1)
-        self.assertEqual(candidates[0].condition, q.UNKNOWN_UI)
-        self.assertEqual(candidates[0].signature.skill, "SELECT_BEAST_TARGET")
+        self.assertEqual(candidates, ())
+        self.assertNotIn("verified_beast_target_not_visible", q.STOP_REASON_WALLS)
+        self.assertEqual(
+            q.ordinary_weather_response("verified_beast_target_not_visible"), "DEFER",
+            "the intended response is recorded, not merely the refusal",
+        )
 
-    def test_a_failed_episode_still_wins_over_the_stop_reason_wall(self):
+    def test_a_real_beast_selection_failure_still_reaches_a_developer(self):
+        """The other half of the same rule, and why the reason is not simply non-escalatable.
+
+        A verifier/ROI/template error in the selection skill is a code problem and must
+        still open a job.  This is why the stop reason was *not* added to
+        ``NON_ESCALATABLE_STOP_REASONS``: that set returns before the failure loop, so it
+        would suppress exactly this case along with the weather.
+        """
+        self.assertNotIn("verified_beast_target_not_visible", q.NON_ESCALATABLE_STOP_REASONS)
         candidates = q.candidates_from_run(
             stop_reason="verified_beast_target_not_visible",
             failures=[failure("BEAST_TARGET_CARD_NOT_PROVEN", skill="SELECT_BEAST_TARGET")],

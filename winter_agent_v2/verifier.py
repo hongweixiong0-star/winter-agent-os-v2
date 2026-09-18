@@ -752,6 +752,29 @@ def verify_beast_target_selected(before: WorldState, after: WorldState) -> Verif
     return VerificationResult(ok, "OK" if ok else "BEAST_TARGET_SELECTION_NOT_PROVEN", {"before_visible":before_ok,"after_target":after_ok})
 
 
+def verify_beast_mammoth_target_selected(before: WorldState, after: WorldState) -> VerificationResult:
+    # The mammoth card carries no printed species name the vision layer can
+    # claim (the card is recognized by its 攻击 control, which is generic), so
+    # the after half asserts the card state vision actually measured --
+    # attack_card -- and the identity is carried by the before half: the
+    # sprite template that only matches the level-5 mammoth.
+    before_ok = before.page is Page.MAP and before.beast.get("visible_target") == "MAMMOTH" and before.beast.get("level") == 5
+    after_ok = after.page is Page.BEAST and after.beast.get("attack_card") is True
+    ok = before_ok and after_ok
+    return VerificationResult(ok, "OK" if ok else "BEAST_TARGET_SELECTION_NOT_PROVEN", {"before_visible":before_ok,"after_card":after_ok})
+
+
+def verify_beast_card_march_open(before: WorldState, after: WorldState) -> VerificationResult:
+    # Tapping 攻击 opens the formation page; the page's own victory strip is
+    # what the after half accepts (the same safety line the musk-ox march
+    # verifier uses).  The stamina spend itself is not proven here -- opening
+    # a formation costs nothing -- so this stays honest about what moved.
+    before_ok = before.page is Page.BEAST and before.beast.get("attack_card") is True
+    after_ok = after.page is Page.MARCH and after.beast.get("victory_assured") is True
+    ok = before_ok and after_ok
+    return VerificationResult(ok, "OK" if ok else "BEAST_MARCH_NOT_PROVEN", {"before_card":before_ok,"victory_assured":after_ok})
+
+
 def verify_beast_march_open(before: WorldState, after: WorldState) -> VerificationResult:
     # The identity is bound on the BEAST side, where the client prints
     # 等级9 麝牛 on the target card.  The formation page prints only

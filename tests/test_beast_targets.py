@@ -60,11 +60,51 @@ def record(**overrides) -> dict:
 
 
 class TableTest(unittest.TestCase):
-    def test_todays_table_allows_exactly_the_live_verified_musk_ox(self):
+    def test_the_live_verified_musk_ox_is_still_the_anchored_target(self):
+        """The one row a live dispatch proved end to end, and its green assessment."""
+        ox = bt.lookup("MUSK_OX", 9)
+        self.assertIsNotNone(ox)
+        self.assertTrue(ox.dispatchable)
+        self.assertEqual(ox.name, "麝牛")
+        self.assertEqual(ox.victory_assessment, bt.GREEN_ASSESSMENT)
+
+    def test_every_dispatchable_row_is_justified_by_its_own_data(self):
+        """The discipline, rather than a frozen count -- this test replaces one that said
+        "exactly the musk ox".
+
+        That assertion was written when the table held one target, and it went stale the
+        moment a second row was added deliberately (MAMMOTH/5, 2026-09-18).  Freezing a
+        count does not protect anything: what protects the route is that no row becomes
+        dispatchable *without its own evidence saying why*.  So the rule asserted here is
+        the one that must hold whatever the table grows to:
+
+          * a live-verified row carries the exact green assessment string the dialog
+            printed on a run whose dispatch verified; or
+          * an explicitly-marked CANDIDATE carries a note naming the verifier that still
+            gates each spend, and does not claim to be verified.
+
+        A dispatchable row with neither is the overclaim this test exists to catch.
+        """
         allowed = bt.dispatchable()
-        self.assertEqual([(t.species, t.level) for t in allowed], [("MUSK_OX", 9)])
-        self.assertEqual(allowed[0].name, "麝牛")
-        self.assertEqual(allowed[0].victory_assessment, bt.GREEN_ASSESSMENT)
+        self.assertTrue(allowed, "an empty dispatchable table would mean the route is dead")
+        for target in allowed:
+            if target.victory_assessment == bt.GREEN_ASSESSMENT:
+                continue
+            self.assertNotEqual(
+                target.status, "VERIFIED",
+                f"{target.species}/{target.level} claims VERIFIED without the green "
+                f"assessment the client prints",
+            )
+            self.assertEqual(
+                target.status, "CANDIDATE",
+                f"{target.species}/{target.level} is dispatchable with no evidence at all: "
+                f"status={target.status}, assessment={target.victory_assessment!r}",
+            )
+            self.assertTrue(
+                target.notes and "verifier" in target.notes.lower(),
+                f"{target.species}/{target.level} is a CANDIDATE without a note saying what "
+                f"still gates the spend: {target.notes!r}",
+            )
 
     def test_the_refused_row_still_records_why_it_is_refused(self):
         # 雪豹/29 is in the table on purpose: it was shown to the operator and

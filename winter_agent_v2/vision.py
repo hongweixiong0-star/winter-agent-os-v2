@@ -326,12 +326,25 @@ class SemanticROIVision:
             # ever proposes a target; BEAST_HUNT still has to pass its own
             # target/dialog/victory verifiers.
             "TARGET_BEAST_MUSK_OX_9": 38,
+            # Level-5 猛犸象 sprite (2026-09-18 escalation frames).  Measured:
+            # its own live frame self-matches at 0 and the sprite animates, so
+            # the threshold keeps room above loop variation; ten real frames
+            # without the sprite (today's panning MAP corpus, the musk-ox card,
+            # the intel formation page) measured 66..82, so 32 sits between the
+            # populations with margin on both sides.  A hit only proposes a
+            # target; the route's verifiers still have to prove selection.
+            "TARGET_BEAST_MAMMOTH_5": 32,
             "TARGET_LIGHTHOUSE_BUILDING": 50,
             "BTN_INTEL_VIEW_TARGET": 55,
             "TARGET_INTEL_BEAST_MISSION": 54,
         }
         self.anywhere_regions = {
             "TARGET_BEAST_MUSK_OX_9": (0.25, 0.10, 0.95, 0.82),
+            # The mammoth wandered the upper-left map quadrant on the live
+            # frame; keep the central map band and exclude the right-hand HUD
+            # stack, which is where the level-27 beast and the activity icons
+            # live.
+            "TARGET_BEAST_MAMMOTH_5": (0.02, 0.10, 0.75, 0.60),
             "TARGET_LIGHTHOUSE_BUILDING": (0.05, 0.08, 0.95, 0.82),
             "BTN_INTEL_VIEW_TARGET": (0.15, 0.55, 0.85, 0.82),
             "TARGET_INTEL_BEAST_MISSION": (0.15, 0.16, 0.95, 0.70),
@@ -1217,6 +1230,21 @@ class SemanticWorldVision:
                 beast={"name":"麝牛", "level":9, "available":True, "recommended_power":9000, "stamina_cost_displayed":10},
                 confidence=0.99,
             )
+        if match("BTN_BEAST_CARD_ATTACK"):
+            # The world-map beast card's 攻击 control (2026-09-18 escalation,
+            # dataset/truth_audit/map_beast_search_20260918/): the card a
+            # tapped wilderness sprite opens, with the stamina cost drawn
+            # inside the button.  The species identity is deliberately NOT
+            # claimed from this template -- 攻击 is the generic attack control
+            # and any huntable card carries one.  What the brain may do with
+            # it (tap it into the formation page) is gated by the card's own
+            # page: Page.BEAST with attack_card, verified afterwards by the
+            # march page that only a real tap can open.
+            return WorldState(
+                page=Page.BEAST,
+                beast={"attack_card": True},
+                confidence=0.99,
+            )
         if match("BTN_BEAST_DISPATCH"):
             return WorldState(
                 page=Page.MARCH,
@@ -1651,6 +1679,7 @@ class SemanticWorldVision:
             # the panel covers the map HUD and would otherwise be misread.
             return WorldState(page=Page.BEAST, beast={}, confidence=0.99)
         visible_musk_ox = match("TARGET_BEAST_MUSK_OX_9")
+        visible_mammoth = match("TARGET_BEAST_MAMMOTH_5")
         search_submit = match("BTN_RESOURCE_SEARCH_SUBMIT")
         # The active resource tab is decided by the calibrated strip
         # classifier instead of four fixed-ROI probes: the reviewed strip
@@ -1687,7 +1716,7 @@ class SemanticWorldVision:
         # A hard-coded 8 made the search unusable whenever the nearby map had
         # no level-8 node ("在您的城镇附近没有发现条件相符的目标").
         level = self.semantic.resource_level(image_path) if search_submit else None
-        if visible_musk_ox or search_submit or returning or gathering or marching or count_one or count_two or map_hud or match("BTN_OPEN_RESOURCE_SEARCH"):
+        if visible_musk_ox or visible_mammoth or search_submit or returning or gathering or marching or count_one or count_two or map_hud or match("BTN_OPEN_RESOURCE_SEARCH"):
             marches: list[MarchState] = []
             if marching:
                 marches.append(MarchState.MARCHING)
@@ -1731,7 +1760,13 @@ class SemanticWorldVision:
                 resource_search_open=bool(search_submit),
                 resource_selected=selected_resource,
                 resource_level=level,
-                beast={"visible_target":"MUSK_OX", "level":9, "available":True} if visible_musk_ox else {},
+                beast=(
+                    {"visible_target":"MUSK_OX", "level":9, "available":True}
+                    if visible_musk_ox
+                    else {"visible_target":"MAMMOTH", "level":5, "available":True}
+                    if visible_mammoth
+                    else {}
+                ),
                 confidence=0.99,
             )
         if match("PAGE_MAP"):

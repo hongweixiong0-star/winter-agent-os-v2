@@ -428,6 +428,32 @@ def v2_registry() -> SkillRegistry:
             risk="LOW",
             state=SkillState.CANDIDATE,
         ),
+        # 2026-09-18 escalation SPEND_STAMINA_ON_BEAST: the pan never converges
+        # because it has no way to fly to a target.  The mammoth sprite is the
+        # second dispatchable species on this account's map (measured live,
+        # dataset/candidate/beast_card_route/); selection taps the sprite
+        # wherever the anywhere-search found it.
+        Skill(
+            "SELECT_BEAST_TARGET_MAMMOTH",
+            "Select the verified level-5 mammoth target on the world map",
+            Page.MAP,
+            Action("TAP_SEMANTIC", "TARGET_BEAST_MAMMOTH_5"),
+            timeout=15.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
+        # The world-map beast card's 攻击 control: the hop from "a target card
+        # is open" to "the formation page is open".  Opening the formation
+        # spends nothing; the stamina is spent (and verified) by DISPATCH_BEAST.
+        Skill(
+            "ATTACK_BEAST_CARD",
+            "Open the formation page from a visible world-map beast card",
+            Page.BEAST,
+            Action("TAP_SEMANTIC", "BTN_BEAST_CARD_ATTACK"),
+            timeout=30.0,
+            risk="MEDIUM_STAMINA_SPEND",
+            state=SkillState.CANDIDATE,
+        ),
     ])
     skills.extend([
         Skill(

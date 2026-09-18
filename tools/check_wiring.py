@@ -919,6 +919,7 @@ def main() -> int:
     # the pump is removed from the window, if the pump stops being the same
     # consumer, or if the window stops starting it.
     _queue_source = (PKG / "escalation_queue.py").read_text(encoding="utf-8")
+    _bridge_source = (PKG / "workbuddy_bridge.py").read_text(encoding="utf-8")
     _panel_source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
     _reload_source = (PKG / "runtime_reload.py").read_text(encoding="utf-8")
     _bootstrap_source = (PKG / "capability_bootstrap.py").read_text(encoding="utf-8")
@@ -955,9 +956,20 @@ def main() -> int:
     check("slot: the timebox the job is told is the one that is enforced",
           "timebox_minutes=self.policy.job_timebox_minutes" in _queue_source
           and "box = self.policy.job_timebox_minutes" in _queue_source)
-    check("slot: an expired job is only cancelled when records wait behind it",
-          "if not waiting or record.submitted_at is None:" in _queue_source
-          and "def _reclaim_expired_slot(" in _queue_source)
+    # Two independent reasons to take the slot back, and the guard has to name both or it
+    # would pin the half that cannot fire on an empty queue.  Measured 2026-09-19: job
+    # c743127e held the only slot for 66 minutes with an empty queue and a progress clock
+    # frozen 6 seconds after it started; the waiting-behind half could never act on that.
+    check("slot: a job loses the slot either for starving the queue or for being wedged",
+          "if not waiting or record.submitted_at is None:" not in _queue_source
+          and "def _reclaim_expired_slot(" in _queue_source
+          and "stalled = _progress_stall_minutes(status, moment)" in _queue_source
+          and "def _progress_stall_minutes(" in _queue_source
+          and "job_progress_stall_minutes" in _queue_source)
+    check("slot: 'cannot judge' the progress clock must not become 'assume the worst'",
+          "if stalled is None or stalled < self.policy.job_progress_stall_minutes:" in _queue_source
+          and "class JobStatus" in _bridge_source
+          and "def progress_at(" in _bridge_source)
     check("order: a changed tree waits for its own activation before any verification",
           "VERSION_ACTIVATION_PENDING" in _queue_source
           and "LIVE_VERIFY_PENDING = \"LIVE_VERIFY_PENDING\"" in _queue_source

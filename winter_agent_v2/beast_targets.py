@@ -57,6 +57,11 @@ class BeastTarget:
     victory_assessment: str | None
     status: str
     source_id: str
+    # Why this row may be dispatched, in the row's own words.  Carried through rather than
+    # left in the JSON because it is the *evidence* for a CANDIDATE being dispatchable at
+    # all: a row with no green assessment is allowed only when it says which verifier still
+    # gates each spend, and that claim should be checkable without opening the file.
+    notes: str = ""
 
     @property
     def route(self) -> str:
@@ -132,6 +137,7 @@ def load(path: Path | str | None = None) -> tuple[BeastTarget, ...]:
                 victory_assessment=str(assessment) if isinstance(assessment, str) else None,
                 status=str(record.get("status") or ""),
                 source_id=source_id,
+                notes=str(record.get("notes") or ""),
             )
         )
     return tuple(out)
