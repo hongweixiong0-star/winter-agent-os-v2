@@ -53,6 +53,14 @@ from winter_agent_v2.resource_rotation import ResourceRotationStore
 from winter_agent_v2.stamina_supply import StaminaSupplyStore
 
 
+#: Which kind of cycle this process is.  An ordinary AUTO cycle is PRODUCTION; a cycle that
+#: exists to examine a version a development job produced is DEVELOPMENT_VALIDATION, and the
+#: two must be tellable apart on the episode row -- the operator's §8 rule is that a validation
+#: episode may never be read as production reuse.
+PRODUCTION_MODE = "PRODUCTION"
+VALIDATION_MODE = "DEVELOPMENT_VALIDATION"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the bounded, verifier-gated V2 live loop")
     parser.add_argument("--max-actions", type=int, default=10)
@@ -60,6 +68,26 @@ def main() -> int:
     parser.add_argument("--goal", choices=["HOME", "GATHER_RESOURCE", "BEAST_HUNT", "INTEL", "MAIL", "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN"], default=None)
     parser.add_argument("--stop-after", default=None, help="Stop after this skill passes its verifier")
     parser.add_argument("--serial", default=None, help="Device selected by the control panel")
+    # Operator §2: the validation context travels as explicit arguments, not as environment
+    # variables.  An environment variable is inherited by whatever the process spawns and is
+    # silently lost by whatever forgets to pass it -- and this context decides whether an
+    # episode may be credited to a version, so it must be impossible to half-carry it.
+    parser.add_argument(
+        "--execution-mode", default=PRODUCTION_MODE, choices=(PRODUCTION_MODE, VALIDATION_MODE),
+        help="PRODUCTION for an ordinary AUTO cycle; DEVELOPMENT_VALIDATION when this cycle "
+             "exists to examine a version a development job produced.",
+    )
+    parser.add_argument("--trace-id", default="",
+                        help="The escalation key this validation belongs to (validation only)")
+    parser.add_argument("--job-id", default="", help="The development job id (validation only)")
+    parser.add_argument("--capability", default="",
+                        help="The capability under examination (validation only)")
+    parser.add_argument(
+        "--expected-after-version", default="",
+        help="The version this cycle must be running for its evidence to count.  Checked "
+             "against the frozen process revision *before* the first device action, because "
+             "an episode that has to be thrown away afterwards has already touched the game.",
+    )
     parser.add_argument(
         "--no-stamina-check",
         action="store_true",
@@ -177,6 +205,31 @@ def main() -> int:
             flush=True,
         )
         return 3
+
+    # ---------------------------------------------------------------- §3 version binding
+    # The most important gate in the chain, and it is here on purpose: *before* LiveRuntime is
+    # constructed, which is the first thing that can touch the device.
+    #
+    # A validation cycle exists to answer one question -- does this version make the capability
+    # work.  If the version it is running is not the version under examination, then every
+    # action it takes proves something about the wrong code, and the only safe amount of device
+    # activity is none.  Checking *after* the episode exists would mean the game had already
+    # been clicked, and the options would be to discard a real episode or to credit it to the
+    # wrong version -- which is the false credit this whole chain exists to prevent.
+    #
+    # Not a refusal to recover from mid-run: nothing has happened yet, so this costs one cycle
+    # and leaves no half-done work.
+    if args.expected_after_version and args.expected_after_version != code_revision:
+        print(
+            "VALIDATION_VERSION_MISMATCH: "
+            f"trace_id={args.trace_id or 'unknown'} job_id={args.job_id or 'unknown'} "
+            f"capability={args.capability or 'unknown'} "
+            f"expected_version={args.expected_after_version} actual_version={code_revision or 'unknown'} "
+            "—— 进程加载的版本不是被验证的版本；本轮不执行任何真机动作，不产生可记功的 "
+            "Validation Episode，不写 LIVE_TRIED / LIVE_VERIFIED；等待正确版本重新激活后再验证。",
+            flush=True,
+        )
+        return 4
     # Which account this run's episodes belong to, read once from the one role artifact.
     # Deliberately allowed to be empty: an episode with no role is an *unscoped* episode,
     # and that fact must stay visible.  Filling it from config or a default is what let the
@@ -220,6 +273,14 @@ def main() -> int:
         code_revision=code_revision,
         role_id=role_id,
         role_scope=role_scope,
+        # §2: the context that decides what this cycle's evidence may be used for.  Passed
+        # explicitly and stamped on every episode, so a reader never has to infer from the
+        # caller's intent whether a step was production play or an examination.
+        execution_mode=args.execution_mode,
+        trace_id=args.trace_id,
+        job_id=args.job_id,
+        capability=args.capability,
+        expected_after_version=args.expected_after_version,
         # The single-UI-owner lock.  Gameplay holds the device by default; a development
         # validation takes it, and this run yields at the next atomic boundary rather
         # than being interrupted mid-transaction (operator §8/§19).

@@ -19,7 +19,7 @@ from .device_lease import OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
-from .verifier import verify_ally_gift_claim, verify_beast_dispatch, verify_beast_march_open, verify_beast_scan_observed, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
+from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
@@ -126,7 +126,9 @@ class LiveRuntime:
         "CHECK_MARCH": verify_march_count_readable,
         "DISPATCH_MARCH": verify_wood_dispatch_from_march,
         "SELECT_BEAST_TARGET": verify_beast_target_selected,
+        "SELECT_BEAST_TARGET_MAMMOTH": verify_beast_mammoth_target_selected,
         "SCAN_MAP_FOR_BEAST": verify_beast_scan_observed,
+        "ATTACK_BEAST_CARD": verify_beast_card_march_open,
         "BEAST_HUNT": verify_beast_march_open,
         "DISPATCH_BEAST": verify_beast_dispatch,
         "INTEL_CLAIM_REWARDS": verify_intel_claim_feedback,
@@ -206,6 +208,11 @@ class LiveRuntime:
         role_id: str = "",
         role_scope: str = "",
         device_lease: DeviceLease | None = None,
+        execution_mode: str = "PRODUCTION",
+        trace_id: str = "",
+        job_id: str = "",
+        capability: str = "",
+        expected_after_version: str = "",
     ) -> None:
         self.device = device
         # The ADB device behind the fallback executor.  When MAA observation is
@@ -274,6 +281,16 @@ class LiveRuntime:
         # the corpus was already pooled from two accounts without anyone noticing.
         self.role_id = str(role_id or "")
         self.role_scope = str(role_scope or "")
+        # Which kind of cycle this is, and -- for a Development Validation cycle -- the trace
+        # it is examining (operator §2).  Stamped on every episode this runtime writes, because
+        # the operator's §8 rule is that a validation episode must never be readable as
+        # production reuse: the distinction has to survive on the row, not in the caller's
+        # intentions.  ``PRODUCTION`` is the default, which is what an AUTO cycle is.
+        self.execution_mode = str(execution_mode or "PRODUCTION")
+        self.trace_id = str(trace_id or "")
+        self.job_id = str(job_id or "")
+        self.capability = str(capability or "")
+        self.expected_after_version = str(expected_after_version or "")
         # The single-UI-owner lock (operator §8/§19).  Injectable so a test can hold it
         # without touching the real file; ``None`` means "no lease file exists", which is
         # the same as gameplay owning the device and keeps the guard free in tests that
@@ -529,6 +546,11 @@ class LiveRuntime:
             repo_revision=self.code_revision,
             role_id=self.role_id,
             role_scope=self.role_scope,
+            execution_mode=self.execution_mode,
+            trace_id=self.trace_id,
+            job_id=self.job_id,
+            capability=self.capability,
+            expected_after_version=self.expected_after_version,
         )
         try:
             self.episode_store.append(episode)

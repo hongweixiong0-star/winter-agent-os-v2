@@ -57,6 +57,18 @@ class Episode:
     # new version works" from "AUTO happened to succeed again while a job was open"
     # (RR-004, measured 2026-09-18).
     repo_revision: str = ""
+    # Which kind of cycle produced this step.  ``PRODUCTION`` is the default because that is
+    # what an AUTO cycle is, and a default of ``""`` would have made every existing producer
+    # silently ambiguous -- the operator's rule is that a *validation* episode must never be
+    # mistaken for production reuse, and that distinction has to be explicit on the row.
+    execution_mode: str = "PRODUCTION"
+    # The trace this step belongs to when it was produced by a Development Validation cycle:
+    # which escalation, which job, which capability, and which version the cycle expected to
+    # be running.  Empty on a production step, where there is no version being examined.
+    trace_id: str = ""
+    job_id: str = ""
+    capability: str = ""
+    expected_after_version: str = ""
     # Which *account* this step belongs to.  The project's own role audit found the corpus
     # was already pooled from two accounts (70,206,322 power / 6 march slots vs 542,443 /
     # 2), so every metric that pooled them was un-scoped -- and this was the one field the
