@@ -197,31 +197,62 @@ def kill_tree(pid: int, *, timeout: float = 20.0) -> bool:
     return result.returncode == 0
 
 
-def alive(pid: int, *, timeout: float = 20.0) -> bool:
-    """Is this pid a live python process?  Asked by number, never by pattern.
+def process_name(pid: int, *, timeout: float = 20.0) -> str:
+    """The image name of ``pid`` (``node.exe``, ``python.exe``), or ``""`` when it is gone.
 
-    A pattern over the whole process table matched the agent host process on 2026-09-18
-    and killed it, so this stays a single-pid query.
+    Asked by number, never by pattern: a pattern over the whole process table matched the
+    agent host process on 2026-09-18 and killed it.
     """
     if pid <= 0:
-        return False
+        return ""
     if os.name != "nt":
         try:
             os.kill(pid, 0)
-            return True
         except OSError:
-            return False
+            return ""
+        return "process"
     result = run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], timeout=timeout)
-    return "python" in (result.stdout or "").lower()
+    text = (result.stdout or "").strip()
+    if not text or "No tasks" in text or "没有运行的任务" in text:
+        return ""
+    first = text.splitlines()[0]
+    if not first.startswith('"'):
+        return ""
+    return first.split(",")[0].strip('"')
+
+
+def pid_exists(pid: int, *, timeout: float = 20.0) -> bool:
+    """Is *any* process running under this pid?
+
+    Name-agnostic on purpose.  Measured 2026-09-18: the gateway was started as pid 5184,
+    ``node.exe`` held port 8080 and ``/api/v1/health`` answered 200 -- and the lifecycle
+    owner's liveness check said the pid was dead, because it had been written for the
+    panel's interpreter and looked for the word "python".  It read a live process as gone,
+    which is precisely the input that leads to starting a second one.  A liveness question
+    must not assume the answer's process name.
+    """
+    return bool(process_name(pid, timeout=timeout))
+
+
+def alive(pid: int, *, timeout: float = 20.0) -> bool:
+    """Is this pid the *panel's* interpreter?  For the launcher, which starts python.
+
+    Kept separate from :func:`pid_exists` rather than folded into it: the launcher's
+    question is "is the window I started still running", and for that the name is part of
+    the answer -- a recycled pid belonging to some other program is not the panel.
+    """
+    return "python" in process_name(pid, timeout=timeout).lower()
 
 
 def port_owner(port: int, *, timeout: float = 20.0) -> tuple[int, str]:
     """``(pid, process_name)`` listening on ``port``, or ``(0, "")`` when nobody is.
 
-    The operator asked for this explicitly (P0 §五): one gateway, one instance, one
-    owner of 8080.  Nothing in this project starts the service -- ``codebuddy --serve``
-    is started by hand -- so the honest answer to "is there a second one?" is a
-    measurement rather than an assumption.
+    The operator asked for this explicitly (P0 §五): one gateway, one instance, one owner
+    of 8080.  This used to end with "nothing in this project starts the service --
+    ``codebuddy --serve`` is started by hand", which was true until
+    ``gateway_service.py`` was written and is exactly the prerequisite that工单 removed.
+    Kept as a measurement rather than an assumption: "is there a second one?" is a question
+    about the port, and the port does not care who asked.
     """
     result = run(["netstat", "-ano"], timeout=timeout)
     if result.returncode != 0:

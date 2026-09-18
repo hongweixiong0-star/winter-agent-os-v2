@@ -122,8 +122,7 @@ class TheGuardKeepsItFixed(unittest.TestCase):
 
 
 class PortOwnershipIsMeasured(unittest.TestCase):
-    """The operator asked for one gateway and one owner of 8080 (P0 §五).  Nothing in this
-    project starts the service, so what can be proven is the measurement, not a spawn."""
+    """The operator asked for one gateway and one owner of 8080 (P0 §五)."""
 
     def test_nobody_listening_is_an_answer_not_an_error(self):
         pid, name = w.port_owner(9)
@@ -134,6 +133,40 @@ class PortOwnershipIsMeasured(unittest.TestCase):
         pid, name = w.port_owner(8080)
         self.assertIsInstance(pid, int)
         self.assertIsInstance(name, str)
+
+
+class LivenessDoesNotAssumeTheProcessName(unittest.TestCase):
+    """Measured 2026-09-18, first live gateway launch: pid 5184, ``node.exe`` holding port
+    8080, ``/api/v1/health`` answering 200 -- and the lifecycle owner reported the pid as
+    dead, because the liveness check looked for the word "python".  A live process read as
+    gone is the input that produces a second gateway, so this is a §五 regression guard."""
+
+    def test_our_own_interpreter_is_alive_under_both_questions(self):
+        self.assertTrue(w.pid_exists(os.getpid()))
+        self.assertTrue(w.alive(os.getpid()))
+        self.assertIn("python", w.process_name(os.getpid()).lower())
+
+    def test_a_live_process_that_is_not_python_is_still_alive(self):
+        node = os.environ.get("CODEBUDDY_NODE_BIN") or "node"
+        script = "setTimeout(()=>{},8000)"
+        with tempfile.TemporaryDirectory() as tmp:
+            argv = [node, "-e", script]
+            child = w.spawn_detached(argv, log_path=Path(tmp) / "node.log")
+            try:
+                name = w.process_name(child.pid)
+                if not name:
+                    self.skipTest("node did not stay alive long enough to measure")
+                self.assertTrue(w.pid_exists(child.pid),
+                                f"a live {name} must count as alive")
+                # And the panel's own question still answers "no": the name is part of it.
+                self.assertFalse(w.alive(child.pid))
+            finally:
+                w.kill_tree(child.pid)
+
+    def test_a_pid_that_is_gone_is_not_alive(self):
+        self.assertFalse(w.pid_exists(999999))
+        self.assertFalse(w.alive(0))
+        self.assertEqual(w.process_name(0), "")
 
 
 if __name__ == "__main__":

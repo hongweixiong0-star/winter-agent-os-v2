@@ -150,6 +150,34 @@ def gateway_probe_path() -> Path:
     return Path(PANEL_LOG_PATH).parent / "gateway.json"
 
 
+def gateway_service_state_path() -> Path:
+    """Where the gateway *lifecycle* record lives (pid, ladder, launch).
+
+    Separate from ``gateway.json``, and separated on purpose: that file answers "is the
+    gateway answering", which is what the truth audit grades; this one answers "is there a
+    process, and what has been done about it".  Mixing a pid and a restart counter into the
+    health probe would make ``gateway_health`` claim more than a health check measured.
+
+    Derived from ``PANEL_LOG_PATH`` at call time, for the reason recorded on
+    ``gateway_probe_path``: a module-level constant kept pointing at production while every
+    test redirected the log path.
+    """
+    return Path(PANEL_LOG_PATH).parent / "gateway_service.json"
+
+
+def gateway_service_log_path() -> Path:
+    """Where the gateway's stdout/stderr go.
+
+    **Not** derived from the panel's log directory, unlike every other path here.  The
+    gateway's banner contains its effective password, so a file beside ``panel.log`` would
+    put a live credential one ``git add`` away from the repository.  ``state_path`` has no
+    such constraint; this one does.  See ``gateway_service.default_log_path``.
+    """
+    from winter_agent_v2.gateway_service import default_log_path
+
+    return default_log_path()
+
+
 def observes_only(panel: Any) -> bool:
     """Is another window ticking the clock, making this one read-only?
 
@@ -1484,7 +1512,8 @@ class PanelProbes:
     # not a few seconds, and the window must not stutter for a number nobody re-reads.
     TRUTH_EVERY = 4
 
-    def __init__(self, root: Path | None = None, device: Any | None = None) -> None:
+    def __init__(self, root: Path | None = None, device: Any | None = None,
+                 gateway_service: Any | None = None) -> None:
         self.root = root or ROOT
         self._device_probe = device
         self._lock = threading.Lock()
@@ -1492,11 +1521,38 @@ class PanelProbes:
         # The gateway back-off ladder's position, and when the next probe may happen.
         self._gateway_failures = 0
         self._gateway_next_at: datetime | None = None
+        # The gateway's *process* lifecycle.  The panel owns it because the operator asked
+        # for exactly one action to start the system, and a manual ``codebuddy --serve`` in
+        # another terminal is a second action.  Injectable so a test can drive the probe
+        # loop without a port or a process.
+        self._gateway_service = gateway_service
+        self._gateway_lifecycle: dict[str, Any] = {}
         self._device: dict[str, Any] = {"ok": None, "status": None, "error": "", "checked_at": ""}
         self._truth: dict[str, Any] = {"ok": None, "report": None, "checked_at": ""}
         self._watch: str = ""
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+
+    def gateway_service(self) -> Any:
+        """The lifecycle owner, built on first use against the *current* log directory.
+
+        Built here rather than in ``__init__`` so the paths are read at call time, and so a
+        window that never reaches this code never constructs one.
+        """
+        if self._gateway_service is None:
+            from winter_agent_v2.gateway_service import GatewayService
+
+            self._gateway_service = GatewayService(
+                self.root,
+                state_path=gateway_service_state_path(),
+                log_path=gateway_service_log_path(),
+            )
+        return self._gateway_service
+
+    def lifecycle(self) -> dict[str, Any]:
+        """The last lifecycle record, for the window's WorkBuddy detail cells and for tests."""
+        with self._lock:
+            return dict(self._gateway_lifecycle)
 
     # -- readers (called from the UI thread) -------------------------------
 
@@ -1583,6 +1639,20 @@ class PanelProbes:
         with self._lock:
             self._truth = state
 
+    def _intent(self) -> str:
+        """The operator's persisted intent, read at call time.
+
+        Read from the persisted state rather than from a panel attribute because this
+        thread starts before the window finishes building: on the first cycles there is no
+        ``self.operator_intent`` to read, and a STOP left over from the previous session
+        must still outrank the watchdog (§二十五).  A reader that raises is an intent we
+        do not know, and the safe answer to an unknown intent is the passive one.
+        """
+        try:
+            return load_operator_intent(PANEL_STATE_PATH)
+        except Exception:  # noqa: BLE001
+            return "STOPPED"
+
     def _poll_gateway(self) -> None:
         # A gateway that is not answering must not be asked every five seconds.  Measured
         # 2026-09-18: the log carried a 15-second timeout per poll, back to back, while
@@ -1615,11 +1685,34 @@ class PanelProbes:
         except Exception as exc:  # noqa: BLE001 - a poll must never reach the UI as an exception
             state["available"] = False
             state["reason"] = f"{type(exc).__name__}: {exc}"
+
+        # Hand the health we just measured to the lifecycle owner, so the whole P0 §二
+        # sequence -- measure, decide, start if absent, reuse if healthy -- happens in one
+        # place and one HTTP round trip.  It runs before the record is written so the
+        # window can show the lifecycle alongside the health it came from.
+        lifecycle = self._ensure_gateway(state, moment)
+        state["lifecycle"] = lifecycle
         self._record_gateway(state, now=moment)
+
+    def _ensure_gateway(self, state: dict[str, Any], moment: datetime) -> dict[str, Any]:
+        """One lifecycle pass.  Never raises: this thread also drives gameplay's probes."""
+        try:
+            lifecycle = self.gateway_service().ensure(
+                operator_intent=self._intent(),
+                observed=(state.get("available"), str(state.get("reason") or "")),
+            )
+        except Exception as exc:  # noqa: BLE001
+            lifecycle = {"state": "UNKNOWN", "detail": f"{type(exc).__name__}: {exc}"}
+        with self._lock:
+            self._gateway_lifecycle = dict(lifecycle)
+        return dict(lifecycle)
 
     # Back-off ladder for a gateway that keeps timing out.  Bounded: the last rung is five
     # minutes, so a gateway that comes back is noticed without the panel ever giving up.
     GATEWAY_BACKOFF = (30.0, 60.0, 120.0, 300.0)
+    # While a launch is in flight the probe runs at its normal cadence instead of climbing
+    # the ladder: the point of starting a gateway is to watch it bind.
+    GATEWAY_STARTING_INTERVAL = 5.0
 
     def _record_gateway(self, state: dict[str, Any], *, now: datetime) -> None:
         """Persist the probe and decide when the next one may happen.
@@ -1631,14 +1724,34 @@ class PanelProbes:
         """
         with self._lock:
             previous = dict(self._gateway)
+            lifecycle = dict(state.get("lifecycle") or {})
+            # The failure count is *the service's*, not a second one computed here.  Two
+            # counters for one fact is how the earlier bug happened: the probe backed off on
+            # a ladder the restarter knew nothing about, so the window waited five minutes
+            # while the lifecycle owner was ready to act immediately.
+            ladder = int(lifecycle.get("consecutive_failures") or 0)
+            starting = str(lifecycle.get("action") or "") in ("START", "RESTART") or (
+                str(lifecycle.get("state") or "") == "STARTING"
+            )
             if state.get("available") is True:
                 self._gateway_failures = 0
                 self._gateway_next_at = None
                 state["consecutive_failures"] = 0
                 state["last_ok_at"] = now.isoformat()
                 state["backoff_seconds"] = 0
+            elif starting:
+                # A launch is in flight.  Backing off now would be the worst possible
+                # moment to stop looking: the whole point of starting it is to see it bind.
+                self._gateway_failures = int(lifecycle.get("consecutive_failures") or 0)
+                self._gateway_next_at = now + timedelta(seconds=self.GATEWAY_STARTING_INTERVAL)
+                state["consecutive_failures"] = self._gateway_failures
+                state["backoff_seconds"] = self.GATEWAY_STARTING_INTERVAL
+                state["last_ok_at"] = str(previous.get("last_ok_at") or "")
             elif state.get("available") is False:
-                self._gateway_failures = int(self._gateway_failures or 0) + 1
+                # Prefer the lifecycle owner's count; fall back to a local one only when
+                # there is no lifecycle record at all (a health check with no service wired).
+                local = int(self._gateway_failures or 0) + 1
+                self._gateway_failures = ladder if lifecycle else local
                 rung = min(self._gateway_failures, len(self.GATEWAY_BACKOFF)) - 1
                 wait = self.GATEWAY_BACKOFF[max(rung, 0)]
                 self._gateway_next_at = now + timedelta(seconds=wait)

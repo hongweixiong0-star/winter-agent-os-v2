@@ -330,3 +330,18 @@ out_*.py
 out_ext_*/
 out_ext_java/
 dataset/external/
+
+# --- the gateway's process truth (added 2026-09-18) ------------------------------------
+# The gateway's log used to be written to learning/control_panel/gateway.log, beside the
+# panel's own logs.  Measured on the first live launch: `codebuddy --serve` announces its
+# effective password on stdout, so that file held a working credential and `git status`
+# showed it as an untracked file inside the tree -- one `git add` from being committed.
+# It now goes under %LOCALAPPDATA%\WinterAgentV2\ (gateway_service.default_log_path), and
+# this rule is the second line of defence for anyone who points it back here.
+learning/control_panel/gateway.log
+# Process truth: a pid and a restart counter are facts about THIS machine and THIS boot,
+# meaningless in a checkout.  The gateway's health is a probe the panel rewrites every few
+# seconds, and the lifecycle record names a pid.  Neither belongs in version control.
+learning/control_panel/gateway.json
+learning/control_panel/gateway_service.json
+learning/control_panel/live_gateway_proof.json
