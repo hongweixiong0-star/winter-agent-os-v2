@@ -25,7 +25,9 @@ if str(ROOT) not in sys.path:
 #
 # Safe to call this early because `version_identity` is stdlib-only by design, and
 # `winter_agent_v2/__init__.py` is three lines: nothing of the runtime is imported to get here.
-from winter_agent_v2.version_identity import freeze_process_revision  # noqa: E402
+from winter_agent_v2.version_identity import (  # noqa: E402
+    freeze_process_revision, startup_fence,
+)
 
 #: The revision object, kept whole: the episode wants the token plus the parts it was built
 #: from, and re-parsing a token back into them would be a second decoder to keep in step.
@@ -153,6 +155,28 @@ def main() -> int:
     code_revision = PROCESS_CODE_REVISION
     revision = PROCESS_CODE_REVISION_DETAIL
     print(f"[code] revision {code_revision or 'unknown'}", flush=True)
+
+    # Startup version fence (operator, 2026-09-18).  R1 was frozen before this process imported
+    # anything; R2 is the version-relevant tree *now*, after the imports and the verifier
+    # mapping assertion above.  Between them another agent may have committed, a reload may
+    # have swapped files, or a checkout may have run -- and then this process is executing a
+    # mixture whose episodes would be evidence for no particular version.
+    #
+    # Refusing here costs one cycle.  Not refusing would write episodes that a later reader
+    # (activation, version binding, production reuse) would attribute to whichever version
+    # they assumed -- which is exactly the class of false credit this whole chain exists to
+    # prevent.  No device action happens, so nothing is left half-done; the next cycle after a
+    # safe reload starts from a tree that agrees with the frozen revision again.
+    fence_ok, frozen_revision, current_revision = startup_fence(ROOT)
+    if not fence_ok:
+        print(
+            f"STARTUP_VERSION_CHANGED: 加载时冻结 R1={frozen_revision.token or 'unknown'}，"
+            f"启动前复测 R2={current_revision.token or 'unknown'}；"
+            "本轮不执行真机动作，不产生任何可用于 VERSION_ACTIVE / LIVE_VERIFIED 的 Episode，"
+            "等安全 reload 后由下一轮重新开始。",
+            flush=True,
+        )
+        return 3
     # Which account this run's episodes belong to, read once from the one role artifact.
     # Deliberately allowed to be empty: an episode with no role is an *unscoped* episode,
     # and that fact must stay visible.  Filling it from config or a default is what let the

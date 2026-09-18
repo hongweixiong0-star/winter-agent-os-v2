@@ -292,9 +292,27 @@ def reset_process_revision_for_tests() -> None:
     _FROZEN = None
 
 
+def startup_fence(root: Path | str, *, timeout: float = 30.0) -> tuple[bool, Revision, Revision]:
+    """``(ok, frozen, current)`` -- has the tree moved since this process froze it?
+
+    The freeze says which code the process *loaded*; this says the tree has not moved
+    *since*.  Between the two lie the whole runtime import block and the verifier-mapping
+    assertion, and during that window another agent's edit, a reload or a ``git checkout``
+    would leave the process running a mixture -- whose episodes belong to no version at all.
+
+    A failed fence is not an error to recover from mid-run: the honest answer is to produce
+    nothing this cycle, because an episode written by a half-changed process would be evidence
+    for whichever version a later reader assumed.  Keeping the comparison here rather than
+    inline in the entry point means it can be exercised without running a live cycle.
+    """
+    frozen = process_revision() or freeze_process_revision(root, timeout=timeout)
+    current = canonical_revision(root, timeout=timeout)
+    return (bool(frozen.token) and frozen.token == current.token), frozen, current
+
+
 __all__ = [
     "Revision", "VERSION_RELEVANT_PREFIXES", "VERSION_RELEVANT_FILES", "EXCLUDED_PREFIXES",
     "is_version_relevant", "dirty_entries", "canonical_revision",
     "freeze_process_revision", "process_revision", "process_revision_token",
-    "reset_process_revision_for_tests",
+    "reset_process_revision_for_tests", "startup_fence",
 ]
