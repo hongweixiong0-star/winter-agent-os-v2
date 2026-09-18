@@ -6,6 +6,11 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `1e89502 2026-09-18T13:37:48+08:00 fix(restart): a guard that under-reports is the one that says 'safe to stop'`
+- `8dfc610 2026-09-18T13:29:42+08:00 test(evidence): OPEN_MARCH_FORMATION is not the wall its deferral named`
+- `cc17a1f 2026-09-18T13:14:01+08:00 feat(truth): an episode now says which account it was taken under`
+- `dc34933 2026-09-18T13:11:39+08:00 test(evidence): record the suite verdict next to the frames it was measured on`
+- `43c9ae6 2026-09-18T12:59:46+08:00 docs(handoff): the truth-source audit, and the role chain closed end to end`
 - `bb09a0a 2026-09-18T12:58:48+08:00 feat(truth): a displayed state names its source, or says it does not know`
 - `c300f89 2026-09-18T12:47:23+08:00 docs(handoff): the preload clock is running in production; arming still waits on P0-D`
 - `d6e51cf 2026-09-18T12:46:19+08:00 fix(vision): the beast tab sits at index 1, and a clipped tab needs a positive drag`
@@ -13,17 +18,13 @@ Last 12 commits (newest first):
 - `872608e 2026-09-18T12:07:07+08:00 feat(preload): the answer comes back, and the loop can say what it is doing`
 - `a4e6c40 2026-09-18T11:56:35+08:00 docs(handoff): mark the lease requester done and say what still needs the panel restart`
 - `c9562de 2026-09-18T11:56:20+08:00 docs(handoff): the device hand-off is closed end to end`
-- `7f05fae 2026-09-18T11:56:06+08:00 feat(lease): someone finally asks for the device, and someone finally drives it`
-- `1b0df37 2026-09-18T11:45:59+08:00 fix(preload): a dry run must not claim the progress a dispatched job would have made`
-- `084bebb 2026-09-18T11:44:38+08:00 fix(preload): a degraded capability is a repair, and --write was silently ignored next to --cycle`
-- `0474cdb 2026-09-18T11:31:21+08:00 fix(order): a no-progress wall is named by the step the route never reached`
-- `6cf5931 2026-09-18T11:22:01+08:00 docs(handoff): the route change and the persistent preload loop, written where the next account will look`
 
-Uncommitted changes: 48
-- `M .workbuddy-ai/memory/MEMORY.md`
-- ` M .workbuddy/memory/2026-09-18.md`
+Uncommitted changes: 64
+- `M .workbuddy/memory/2026-09-18.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
+- ` M dataset/candidate/template_manifest.json`
+- ` M knowledge/game/beasts.json`
 - ` M knowledge/preload/INDEX.json`
 - ` M knowledge/preload/TROOP_SELECT.json`
 - ` M learning/candidate_attempt_pool.json`
@@ -35,11 +36,10 @@ Uncommitted changes: 48
 - ` M learning/resource_rotation.json`
 - ` M learning/runtime_snapshot.json`
 - ` M learning/stamina_supply.json`
+- ` M learning/truth_source_audit/STATE_TRUTH.json`
 - ` M learning/workbuddy_escalations.jsonl`
 - ` M learning/workbuddy_model_stats.jsonl`
-- ` M winter_agent_v2/runtime.py`
-- `?? dataset/raw/control_panel/probe/`
-- `?? dataset/truth_audit/map_beast_search_20260918/key/baseline_20260918_014520.json`
+- ` M winter_agent_v2/brain.py`
 <!-- /AUTO:recent_commits -->
 
 ---
