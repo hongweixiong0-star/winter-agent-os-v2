@@ -69,6 +69,22 @@ EXCLUDED_PREFIXES: tuple[str, ...] = (
     "out_",
 )
 
+#: Files that live under an *included* prefix but are written by the running system rather
+#: than by a developer.  Listed individually because their prefix cannot be excluded wholesale
+#: -- ``config/`` holds real configuration alongside them.
+#:
+#: Measured 2026-09-18, and it cost a restart loop: the panel writes
+#: ``config/control_panel_state.json`` on start-up to persist the operator's intent, so the
+#: fingerprint changed the instant the window opened.  The window then compared its frozen
+#: version with the disk, found them different, and concluded a control-plane file had changed
+#: -- so it restarted itself, wrote the file again, and restarted again.  A file the system
+#: writes about its own state is not a change to the system's code, and a version identity that
+#: fires on it is a version identity that fires on nothing.
+EXCLUDED_FILES: tuple[str, ...] = (
+    "config/control_panel_state.json",
+    "config/policy_state.json",
+)
+
 
 def is_version_relevant(relative: str) -> bool:
     """Would a change to this path change what the runtime loads?"""
@@ -82,6 +98,8 @@ def is_version_relevant(relative: str) -> bool:
     if path.endswith(".pyc"):
         return False
     if any(path.startswith(prefix) for prefix in EXCLUDED_PREFIXES):
+        return False
+    if path in EXCLUDED_FILES:
         return False
     if path in VERSION_RELEVANT_FILES:
         return True

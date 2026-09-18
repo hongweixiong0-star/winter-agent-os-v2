@@ -3866,11 +3866,20 @@ class ControlPanel:
             # §十一 asks the breakpoint to say what it is *waiting for*, in the operator's own
             # words, when the wait is at the activation rung -- "INCOMPLETE" is true but it
             # does not tell a reader which fact is missing.
-            state = str(card.get("record_state") or "")
+            #
+            # Named ``record_state``, not ``state``: this block was first written with the
+            # shorter name and it happens to sit inside ``_narrate_pump``, whose ``state`` is
+            # the pump's snapshot dict.  Shadowing it turned every later ``state.get(...)``
+            # into ``AttributeError: 'str' object has no attribute 'get'`` -- and because this
+            # runs on the refresh path, the window died moments after opening, which the
+            # operator experienced as "点击桌面GUI无法启动".  A local name is not local when the
+            # function already has one; the fix is the name, and the guard is that the panel is
+            # now started and observed rather than merely imported.
+            record_state = str(card.get("record_state") or "")
             breakpoint = str(card.get("breakpoint") or "无断点 · 闭环 PASS")
-            if state == "LIVE_VERIFY_PENDING" and str(card.get("outcome")) == "VERSION_ACTIVATION_PENDING":
+            if record_state == "LIVE_VERIFY_PENDING" and str(card.get("outcome")) == "VERSION_ACTIVATION_PENDING":
                 breakpoint = "VERSION_ACTIVATION_PENDING：等待 after_version 首次被真实 Episode 加载"
-            elif state == "VERSION_ACTIVE":
+            elif record_state == "VERSION_ACTIVE":
                 breakpoint = "VERSION_ACTIVE：等待真机校准（Development Validation Lease）"
             self.values["loop_break"].set(breakpoint)
         else:
