@@ -133,11 +133,20 @@ PANEL_LOG_PATH = LOG_ROOT / "panel.log"
 # know whether the consumer is actually running -- a thread inside a GUI cannot be
 # checked from outside any other way, and "it is started on line N" is not evidence.
 PUMP_STATE_PATH = LOG_ROOT / "pump.json"
-# The gateway probe's last result.  Persisted for the same reason the pump's tick is: a
-# state that lives only in this process's memory cannot be audited from outside, and
-# "the job says WORKING so the gateway must be fine" is exactly the inference that made
-# the top bar say 正常 while the log was full of 15-second timeouts.
-GATEWAY_PROBE_PATH = LOG_ROOT / "gateway.json"
+
+
+def gateway_probe_path() -> Path:
+    """Where the gateway probe records its last result.
+
+    Derived from ``PANEL_LOG_PATH`` at *call* time, exactly like ``panel_pid_path``, and
+    for the same reason: every window-building test redirects ``PANEL_LOG_PATH``, and a
+    module-level constant would keep pointing at production.  Measured 2026-09-18: the
+    first version was a constant, and running the suite wrote
+    ``learning/control_panel/gateway.json`` from a test window -- so the next audit read
+    "gateway 正常" out of a file a test had just produced.  A value that a test wrote is
+    not a measurement of anything.
+    """
+    return Path(PANEL_LOG_PATH).parent / "gateway.json"
 
 
 def observes_only(panel: Any) -> bool:
@@ -1586,7 +1595,7 @@ class PanelProbes:
                 state["last_ok_at"] = str(previous.get("last_ok_at") or "")
             self._gateway = state
         try:
-            path = Path(GATEWAY_PROBE_PATH)
+            path = gateway_probe_path()
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
         except Exception:  # noqa: BLE001 - an unwritable probe must not kill the thread

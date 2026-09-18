@@ -17,6 +17,14 @@ NOW = datetime(2026, 9, 18, 8, 40, 0, tzinfo=timezone.utc)
 
 
 class OneWindowOwnsTheClock(unittest.TestCase):
+    def test_the_probe_path_follows_the_log_path_it_is_derived_from(self):
+        """A probe file that stays in production while tests redirect the log is how a
+        test came to write the file the next audit read "gateway 正常" out of."""
+        with TemporaryDirectory() as tmp:
+            redirected = Path(tmp) / "panel.log"
+            with patch.object(cp, "PANEL_LOG_PATH", redirected):
+                self.assertEqual(cp.gateway_probe_path(), Path(tmp) / "gateway.json")
+                self.assertEqual(cp.panel_pid_path(), Path(tmp) / "panel.pid")
     """Two panels in one minute, measured 2026-09-18: pump.json named pid 26428 at
     16:34:52, a console start was logged at 16:35:19, pump.json then named pid 16508 at
     16:36:22.  Two pumps and two would-be AUTOs on one device -- the Single UI Owner

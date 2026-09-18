@@ -1160,7 +1160,8 @@ def main() -> int:
           "def gateway_health(" in _truth_source
           and 'self._set_health("dot_wb", report.by_name("gateway_health"))' in _panel_source
           and "不能" in _truth_source
-          and "GATEWAY_PROBE_PATH" in _panel_source
+          and "def gateway_probe_path(" in _panel_source
+          and "path = gateway_probe_path()" in _panel_source
           and '"consecutive_failures"' in _panel_source)
     check("gui: a timing-out gateway backs off instead of being retried flat out",
           "GATEWAY_BACKOFF" in _panel_source
