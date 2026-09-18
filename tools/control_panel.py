@@ -36,6 +36,10 @@ from winter_agent_v2.escalation_queue import (
     fold,
 )
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
+# The job-lost answer, so "this job is gone" can be told apart from "the gateway is down"
+# without catching a bare Exception and guessing.  Measured 2026-09-18: conflating them made a
+# healthy gateway look dead and restarted it 51 times.
+from winter_agent_v2.workbuddy_bridge import JobLost
 from winter_agent_v2.retention import prune_runtime_screenshots
 from winter_agent_v2.runtime_reload import (
     REQUEST_KIND,
@@ -1999,17 +2003,42 @@ class PanelProbes:
             probe = bridge.is_available()
             state["available"] = bool(probe)
             state["reason"] = str(getattr(probe, "reason", "") or "")
-            with self._lock:
-                job_id = self._watch
-            if probe and job_id:
-                status = bridge.status(job_id)
-                state["job"] = {
-                    "job_id": status.job_id, "verdict": status.verdict, "state": status.gateway_state,
-                    "settled": status.settled, "detail": status.detail, "result": status.result,
-                }
         except Exception as exc:  # noqa: BLE001 - a poll must never reach the UI as an exception
+            bridge = None
             state["available"] = False
             state["reason"] = f"{type(exc).__name__}: {exc}"
+
+        # The *job's* answer, in a try of its own -- the operator's P0-3 rule applied to the
+        # code that reads the job: "what is this job doing" and "is the gateway reachable" are
+        # two questions, and one may not answer for the other.
+        #
+        # Measured 2026-09-18 23:11: the two shared a try, so `status(job)` raising
+        # ``JobLost`` wrote `JobLost: GET /api/v1/jobs/06271322 -> HTTP 404` into the *health*
+        # record with ``available=False``.  Three consequences from one conflation: the top bar
+        # said WorkBuddy 异常 about a gateway that was answering; the lifecycle owner read
+        # "unreachable", took the ladder and restarted a healthy gateway repeatedly (51
+        # consecutive failures); and the probe then went into its 300-second backoff, so the
+        # probe file stopped being rewritten and the window reported 网关状态待测 -- which is
+        # what the operator saw.
+        if state.get("available") and bridge is not None:
+            with self._lock:
+                job_id = self._watch
+            if job_id:
+                try:
+                    status = bridge.status(job_id)
+                    state["job"] = {
+                        "job_id": status.job_id, "verdict": status.verdict,
+                        "state": status.gateway_state, "settled": status.settled,
+                        "detail": status.detail, "result": status.result,
+                    }
+                except JobLost as exc:
+                    # A job the gateway says is gone.  Recorded as the job's state and nothing
+                    # more: it is a fact about the work, not about the connection.
+                    state["job"] = {"job_id": job_id, "verdict": "JOB_LOST",
+                                    "state": "JOB_LOST", "detail": str(exc)[:300]}
+                except Exception as exc:  # noqa: BLE001
+                    state["job"] = {"job_id": job_id, "verdict": "UNKNOWN", "state": "UNKNOWN",
+                                    "detail": f"{type(exc).__name__}: {exc}"[:300]}
 
         # Hand the health we just measured to the lifecycle owner, so the whole P0 §二
         # sequence -- measure, decide, start if absent, reuse if healthy -- happens in one
