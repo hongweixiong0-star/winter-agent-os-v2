@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-09-18T03:56:19+00:00",
+  "generated_at": "2026-09-18T04:47:22+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "7f05fae",
+  "commit": "d6e51cf",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "IDLE",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-18T03:46:40.665306+00:00",
-    "last_action_time": "2026-09-18T03:46:14.496016+00:00",
-    "last_success_time": "2026-09-18T03:46:28.134089+00:00",
+    "last_tick_time": "2026-09-18T04:39:19.574781+00:00",
+    "last_action_time": "2026-09-18T04:38:55.530547+00:00",
+    "last_success_time": "2026-09-18T04:39:08.426446+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_114537_043168\\20260918_114537_043168_step_003_before_20260918T034628136195.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_123625_890481\\20260918_123625_890481_step_008_before_20260918T043908429377.png",
     "march_used": 2,
     "march_max": 3,
     "queues": {
@@ -44,32 +44,32 @@
         "goal_id": "AVOID_STAMINA_WASTE",
         "capability": "SPEND_STAMINA_ON_BEAST",
         "state": "DEFERRED",
-        "reason": "6 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "7 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
         "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
-        "streak": 6,
+        "streak": 7,
         "until": "",
         "last_skill": "SCAN_MAP_FOR_BEAST"
       },
       {
         "goal_id": "KEEP_MARCHES_PRODUCTIVE",
-        "capability": "NAVIGATE_TO_MAP",
-        "state": "DEVELOPMENT_PENDING",
-        "reason": "a development job owns it (job=57848179)",
-        "source": "ESCALATION_QUEUE",
-        "failure_signature": "",
-        "streak": 0,
+        "capability": "OPEN_MARCH_FORMATION",
+        "state": "DEFERRED",
+        "reason": "3 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "source": "NO_GOAL_PROGRESS",
+        "failure_signature": "OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH",
+        "streak": 3,
         "until": "",
-        "last_skill": ""
+        "last_skill": "SUBMIT_RESOURCE_SEARCH"
       }
     ],
-    "updated_at": "2026-09-18T03:46:43.495648+00:00"
+    "updated_at": "2026-09-18T04:39:23.293805+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-18T03:46:41+00:00",
-    "size_bytes": 7846,
-    "last_stop_reason": "reserved_march_for_stamina"
+    "modified_at": "2026-09-18T04:39:20+00:00",
+    "size_bytes": 21048,
+    "last_stop_reason": null
   },
   "recent_crash_reports": [],
   "process_alive_interpretation": "runtime_thread_alive/scheduler_loop_alive mean the in-process worker loop is running. They do NOT mean the emulator or the game is reachable; check the device separately."

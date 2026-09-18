@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-18T03:56:20+00:00",
-  "count": 785,
+  "generated_at": "2026-09-18T04:47:22+00:00",
+  "count": 806,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -180,7 +180,7 @@
       "path": "evidence/INDEX.json",
       "kind": "evidence",
       "bytes": 153773,
-      "mtime": "2026-09-18T03:21:25+00:00"
+      "mtime": "2026-09-18T03:56:20+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -1159,6 +1159,60 @@
       "kind": "fixture",
       "bytes": 261572,
       "mtime": "2026-09-18T00:52:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/baseline_20260918_014520_000_before.png",
+      "kind": "fixture",
+      "bytes": 749388,
+      "mtime": "2026-09-18T01:45:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/finding.json",
+      "kind": "fixture",
+      "bytes": 5861,
+      "mtime": "2026-09-18T04:17:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/go_20260918_014947_001_after_382_844.png",
+      "kind": "fixture",
+      "bytes": 724351,
+      "mtime": "2026-09-18T01:50:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/measure_now.png",
+      "kind": "fixture",
+      "bytes": 704449,
+      "mtime": "2026-09-18T04:04:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/measure_now_tabband.png",
+      "kind": "fixture",
+      "bytes": 342391,
+      "mtime": "2026-09-18T04:05:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/probe_b_search_open.png",
+      "kind": "fixture",
+      "bytes": 715573,
+      "mtime": "2026-09-18T04:08:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/scroll0.png",
+      "kind": "fixture",
+      "bytes": 724770,
+      "mtime": "2026-09-18T04:06:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/scroll1.png",
+      "kind": "fixture",
+      "bytes": 714552,
+      "mtime": "2026-09-18T04:06:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_search_wiring_20260918/key/tapox_20260918_014906_001_after_60_655.png",
+      "kind": "fixture",
+      "bytes": 792065,
+      "mtime": "2026-09-18T01:49:22+00:00"
     },
     {
       "path": "dataset/truth_audit/camp_panel_stamina_gate_20260915/01_camp_panel_stamina_read_live.png",
@@ -2247,6 +2301,78 @@
       "mtime": "2026-09-18T01:50:02+00:00"
     },
     {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/measure_now.png",
+      "kind": "fixture",
+      "bytes": 704449,
+      "mtime": "2026-09-18T04:04:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/measure_now_tabband.png",
+      "kind": "fixture",
+      "bytes": 342391,
+      "mtime": "2026-09-18T04:05:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/now_20260918_040350.json",
+      "kind": "fixture",
+      "bytes": 165,
+      "mtime": "2026-09-18T04:04:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/now_20260918_040350_000_before.png",
+      "kind": "fixture",
+      "bytes": 675440,
+      "mtime": "2026-09-18T04:03:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/probe_a_map.png",
+      "kind": "fixture",
+      "bytes": 858722,
+      "mtime": "2026-09-18T04:07:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/probe_b_search_open.png",
+      "kind": "fixture",
+      "bytes": 715573,
+      "mtime": "2026-09-18T04:08:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/probe_c_scrolled.png",
+      "kind": "fixture",
+      "bytes": 838346,
+      "mtime": "2026-09-18T04:08:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/probe_d0_pre.png",
+      "kind": "fixture",
+      "bytes": 657364,
+      "mtime": "2026-09-18T04:09:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/probe_d1_pre.png",
+      "kind": "fixture",
+      "bytes": 545163,
+      "mtime": "2026-09-18T04:09:17+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/probe_e_open.png",
+      "kind": "fixture",
+      "bytes": 649678,
+      "mtime": "2026-09-18T04:09:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/scroll0.png",
+      "kind": "fixture",
+      "bytes": 724770,
+      "mtime": "2026-09-18T04:06:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/scroll1.png",
+      "kind": "fixture",
+      "bytes": 714552,
+      "mtime": "2026-09-18T04:06:18+00:00"
+    },
+    {
       "path": "dataset/truth_audit/map_beast_search_20260918/key/tapox_20260918_014906.json",
       "kind": "fixture",
       "bytes": 10308,
@@ -2885,8 +3011,8 @@
     {
       "path": "dataset/truth_audit/p0_loop_20260918/P0_LOOP_STATUS.json",
       "kind": "fixture",
-      "bytes": 19297,
-      "mtime": "2026-09-18T02:25:11+00:00"
+      "bytes": 23439,
+      "mtime": "2026-09-18T04:07:20+00:00"
     },
     {
       "path": "dataset/truth_audit/panel_redesign/_check_panel2_MEAT_a.png",

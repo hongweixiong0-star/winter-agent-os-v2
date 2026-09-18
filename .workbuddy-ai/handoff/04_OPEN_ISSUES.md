@@ -6,8 +6,8 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x132 all-time; recent=5 (last 2d), last seen 2026-09-17T23:29:36.626405+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **BEAST_SCAN_NOT_PROVEN** x5 all-time; recent=5 (last 2d), last seen 2026-09-17T23:42:38.305798+00:00 — SCAN_MAP_FOR_BEAST(5)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x132 all-time; recent=4 (last 2d), last seen 2026-09-17T23:29:36.626405+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
 - **INTEL_BEAST_TARGET_NOT_PROVEN** x8 all-time; recent=3 (last 2d), last seen 2026-09-17T04:38:27.078429+00:00 — OPEN_INTEL_BEAST_TARGET(8)
 - **OPEN_MAP_NOT_PROVEN** x6 all-time; recent=3 (last 2d), last seen 2026-09-18T02:56:04.526909+00:00 — OPEN_MAP(6)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x5 all-time; recent=2 (last 2d), last seen 2026-09-17T00:26:34.147170+00:00 — DISMISS_DAILY_REWARD(5)
@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 35 uncommitted file(s): ['M config/control_panel_state.json', ' M config/policy_state.json', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl']
+- 44 uncommitted file(s): ['M config/control_panel_state.json', ' M config/policy_state.json', ' M knowledge/preload/INDEX.json', ' M knowledge/preload/TROOP_SELECT.json', ' M learning/control_panel/latest.log']
 <!-- /AUTO:open_issues -->
 
 ---

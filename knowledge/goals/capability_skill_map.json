@@ -195,8 +195,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 111,
-          "successes": 102,
+          "attempts": 113,
+          "successes": 104,
           "failures": 9,
           "evidence": "dataset/truth_audit/nav_to_map_20260918/key/"
         },
@@ -208,8 +208,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 110,
-          "successes": 76,
+          "attempts": 111,
+          "successes": 77,
           "failures": 34,
           "evidence": ""
         },
@@ -221,8 +221,8 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_RESOURCE",
           "live_verified_by": "SELECT_RESOURCE",
-          "attempts": 74,
-          "successes": 29,
+          "attempts": 75,
+          "successes": 30,
           "failures": 45,
           "evidence": ""
         },
@@ -234,8 +234,8 @@
           "status": "DEGRADED",
           "implemented_by": "SUBMIT_RESOURCE_SEARCH",
           "live_verified_by": "SUBMIT_RESOURCE_SEARCH",
-          "attempts": 84,
-          "successes": 54,
+          "attempts": 85,
+          "successes": 55,
           "failures": 30,
           "evidence": ""
         },
@@ -247,8 +247,8 @@
           "status": "DEGRADED",
           "implemented_by": "START_GATHER",
           "live_verified_by": "START_GATHER",
-          "attempts": 112,
-          "successes": 52,
+          "attempts": 113,
+          "successes": 53,
           "failures": 60,
           "evidence": ""
         },
@@ -260,8 +260,8 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 86,
-          "successes": 49,
+          "attempts": 87,
+          "successes": 50,
           "failures": 37,
           "evidence": ""
         },
@@ -1005,8 +1005,8 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 86,
-          "successes": 49,
+          "attempts": 87,
+          "successes": 50,
           "failures": 37,
           "evidence": ""
         }

@@ -6,6 +6,11 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `d6e51cf 2026-09-18T12:46:19+08:00 fix(vision): the beast tab sits at index 1, and a clipped tab needs a positive drag`
+- `80f6e58 2026-09-18T12:37:04+08:00 fix(restart): a stale snapshot is not a claim, so it must not refuse a safe reload`
+- `872608e 2026-09-18T12:07:07+08:00 feat(preload): the answer comes back, and the loop can say what it is doing`
+- `a4e6c40 2026-09-18T11:56:35+08:00 docs(handoff): mark the lease requester done and say what still needs the panel restart`
+- `c9562de 2026-09-18T11:56:20+08:00 docs(handoff): the device hand-off is closed end to end`
 - `7f05fae 2026-09-18T11:56:06+08:00 feat(lease): someone finally asks for the device, and someone finally drives it`
 - `1b0df37 2026-09-18T11:45:59+08:00 fix(preload): a dry run must not claim the progress a dispatched job would have made`
 - `084bebb 2026-09-18T11:44:38+08:00 fix(preload): a degraded capability is a repair, and --write was silently ignored next to --cycle`
@@ -13,33 +18,28 @@ Last 12 commits (newest first):
 - `6cf5931 2026-09-18T11:22:01+08:00 docs(handoff): the route change and the persistent preload loop, written where the next account will look`
 - `6b31d45 2026-09-18T11:20:56+08:00 feat(preload): read once, store once, reuse many times`
 - `b5c962c 2026-09-18T11:02:46+08:00 docs(handoff): refresh after the preload mechanism, 1405 tests green`
-- `a641b6d 2026-09-18T11:02:31+08:00 feat(preload): prepare the lesson before the wall, without a second pipeline`
-- `3884725 2026-09-18T10:25:12+08:00 docs(evidence): regenerate the P0 ladder from the artifacts after the ordering fix`
-- `8c605de 2026-09-18T10:25:06+08:00 docs(memory): the corrected verification order, and a lease that really releases`
-- `dbf4b8c 2026-09-18T10:24:13+08:00 feat(lease): Single Device / Single UI Owner, as a lock and not a lifecycle`
-- `309f7c6 2026-09-18T10:18:44+08:00 feat(order): LIVE_VERIFIED cannot be granted to a version nothing has loaded`
 
-Uncommitted changes: 35
+Uncommitted changes: 44
 - `M config/control_panel_state.json`
 - ` M config/policy_state.json`
+- ` M knowledge/preload/INDEX.json`
+- ` M knowledge/preload/TROOP_SELECT.json`
 - ` M learning/control_panel/latest.log`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
+- ` M learning/knowledge_bootstrap/STATE.json`
 - ` M learning/resource_rotation.json`
 - ` M learning/runtime_snapshot.json`
+- ` M learning/stamina_supply.json`
 - ` M learning/workbuddy_escalations.jsonl`
 - ` M learning/workbuddy_model_stats.jsonl`
+- ` M winter_agent_v2/runtime.py`
 - `?? dataset/raw/control_panel/probe/`
-- `?? dataset/truth_audit/map_beast_search_20260918/`
-- `?? dataset/truth_audit/no_goal_progress_20260918/`
+- `?? dataset/truth_audit/map_beast_search_20260918/key/baseline_20260918_014520.json`
+- `?? dataset/truth_audit/map_beast_search_20260918/key/go_20260918_014947.json`
+- `?? dataset/truth_audit/map_beast_search_20260918/key/tapox_20260918_014906.json`
 - `?? dataset/truth_audit/power_route_20260917/probe_nav_map_tap1_20260917_232526.json`
-- `?? learning/DEVICE_LEASE.json`
-- `?? learning/commit_msg_nav.txt`
-- `?? learning/control_panel/panel.log`
-- `?? learning/control_panel/panel.pid`
-- `?? learning/control_panel/panel_launch.log`
-- `?? learning/control_panel/panel_stdout.log`
 <!-- /AUTO:recent_commits -->
 
 ---
