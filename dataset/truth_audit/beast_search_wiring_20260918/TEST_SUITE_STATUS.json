@@ -1,0 +1,16 @@
+{
+  "recorded_at": "2026-09-18T05:11:16+00:00",
+  "set": "beast_search_wiring_20260918",
+  "capability": "SPEND_STAMINA_ON_BEAST",
+  "escalation": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+  "revision_covered": "HEAD d6e51cf (the beast-tab fix) at launch.  A second escalation job (06271322, OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH) was editing this same working tree while the run proceeded, so the run covers d6e51cf plus that job's then-uncommitted edits (winter_agent_v2/runtime.py and tools/check_wiring.py modified; winter_agent_v2/truth_audit.py and tests/test_march_formation_attribution.py new).  It is not a statement about d6e51cf in isolation, and it is not quoted as one.",
+  "method": "one full run, E:\\dongri-mumu-bot\\.venv\\Scripts\\python.exe -m pytest tests -q -o tmp_path_retention_policy=all --junitxml=out_junit_r18.xml",
+  "verdict": "PASS -- 1475 passed, 7 skipped, 138 subtests passed in 1408.97s (0:23:28), process exit 0",
+  "junit_totals": {"tests": 1620, "failures": 0, "errors": 0, "skipped": 7},
+  "focused_gates_on_the_fix_itself": {
+    "tests/test_resource_tab_anchor.py": "23 passed in 3.45s",
+    "tools/check_wiring.py": "problems: 0"
+  },
+  "why_the_run_is_reported_rather_than_withheld": "The alternative was to freeze the tree for the run (git stash or a linked worktree).  Both were rejected: the other job is live and stashing its work would destroy it, and a linked worktree would arrive without the machine-local dataset/raw frames that many tests read, so it would produce failures that say nothing about the code.",
+  "what_this_does_not_claim": "A green suite is not a live capability.  No episode in this run spends stamina on a beast, and criterion 2 of the escalation stays unmet: see not_done in finding.json."
+}
