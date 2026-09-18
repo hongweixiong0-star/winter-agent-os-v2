@@ -1172,11 +1172,18 @@ def main() -> int:
           "DEGRADED_MIN_FAILURES = 2" in _bootstrap_source
           and "CLASS_DEGRADED" in _bootstrap_source
           and 'return "DEGRADED"' in _bootstrap_source)
-    check("knowledge: a real failure merges into the preload job instead of a second one",
-          "def _merge_into_preload(" in _queue_source
-          and "MERGED_INTO_PRELOAD_JOB" in _queue_source
+    check("knowledge: a real failure merges into the running job instead of a second one",
+          "def _merge_into_active_job(" in _queue_source
+          and "MERGED_INTO_ACTIVE_JOB" in _queue_source
           and "evidence_appended" in _queue_source
-          and "priority_raised" in _queue_source)
+          and "priority_raised" in _queue_source
+          and 'if record.origin == "bootstrap":' in _queue_source
+          and "record.key == candidate.signature.key" in _queue_source)
+    check("knowledge: one capability can never have two jobs, whatever the signature key",
+          "is the same capability as" in _queue_source
+          and "must not have two jobs" in _queue_source
+          and "and capability in {other.capability, other.skill}" in _queue_source
+          and "other.key != candidate.signature.key" in _queue_source)
     check("knowledge: coverage is reported over the unlocked subset, with definitions",
           "def coverage(" in _bootstrap_source
           and '"unlocked": tally(unlocked)' in _bootstrap_source

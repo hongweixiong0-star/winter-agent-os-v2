@@ -741,6 +741,30 @@ def decide(
             f"(state={record.state}, job={record.job_id or 'not submitted yet'})",
         )
 
+    # The operator's §九: two WorkBuddy jobs must never edit one capability.  A signature
+    # key is per-*failure*, not per-capability, and the resolver that builds it is
+    # order-dependent (`_merge_into_active_job` carries the measurement), so key equality
+    # cannot enforce this rule.  Enforced here -- in the one throttle every path goes
+    # through -- so a re-key cannot open a second job on a capability already in flight.
+    capability = candidate.signature.capability or candidate.signature.skill
+    sibling = next(
+        (
+            other for other in snapshot.records.values()
+            if other.key != candidate.signature.key
+            and other.state in (*ACTIVE_STATES, LIVE_VERIFY_PENDING)
+            and capability
+            and capability in {other.capability, other.skill}
+        ),
+        None,
+    )
+    if sibling is not None:
+        return Dispatch(
+            DEDUP_SKIP,
+            f"{candidate.signature.describe()} is the same capability as {sibling.key} "
+            f"(state={sibling.state}, job={sibling.job_id or 'not submitted yet'}); one "
+            f"capability must not have two jobs",
+        )
+
     if record is not None and record.state == COOLDOWN:
         if record.cooldown_until and record.cooldown_until > moment:
             remaining = (record.cooldown_until - moment).total_seconds() / 60.0
@@ -1689,14 +1713,24 @@ class EscalationQueueAdapter:
         except Exception as exc:  # noqa: BLE001 - a background pass must never raise
             return RunObservation(preload_note=f"preload failed: {type(exc).__name__}: {exc}")
 
-    def _merge_into_preload(self, candidate: EscalationCandidate) -> str:
-        """Fold a real failure into the preload job that already owns its capability.
+    def _merge_into_active_job(self, candidate: EscalationCandidate) -> str:
+        """Fold a real failure into whichever job already owns its capability.
 
-        The operator's §12: when the runtime hits a capability WorkBuddy is already
-        preloading, do **not** create a second job -- append the episode, screenshot,
-        failure signature and world state to the existing one and raise it to P0.  Two
-        agents editing one capability is a merge conflict by construction, and the
-        preload job is the one with the brief.
+        The operator's §12: when the runtime hits a capability an agent is already
+        working, do **not** create a second job -- append the episode, screenshot,
+        failure signature and world state to the existing one, and raise it to P0 when
+        it is a preload job.  Two agents editing one capability is a merge conflict by
+        construction, and the running job is the one holding the brief.
+
+        Matched on the **capability**, deliberately not on the dedupe key.  Signature
+        keys are not stable: ``capability_for_skill`` resolves through a map in which 22
+        of 89 skills name two capabilities, and it returns the first match in file order,
+        so an edit that adds a skill to an earlier entry silently re-keys every future
+        escalation for that skill.  Measured 2026-09-18: adding ``SCAN_MAP_FOR_BEAST`` to
+        ``SPEND_STAMINA_ON_BEAST``'s alternatives moved it from resolving to itself to
+        resolving to ``SPEND_STAMINA_ON_BEAST`` -- a *different* signature key for the
+        same wall, with a WORKING job already open on that very capability.  Key equality
+        would have called that a new problem and opened a second job on it.
 
         Returns the existing record's key, or ``""`` when nothing matched.
         """
@@ -1706,7 +1740,11 @@ class EscalationQueueAdapter:
         names = {capability, candidate.signature.skill}
         names.discard("")
         for record in self.ledger.snapshot().records.values():
-            if record.origin != "bootstrap" or record.state not in (*ACTIVE_STATES, LIVE_VERIFY_PENDING):
+            if record.state not in (*ACTIVE_STATES, LIVE_VERIFY_PENDING):
+                continue
+            if record.key == candidate.signature.key:
+                # The identical signature: ``decide`` owns that answer (dedup, cooldown,
+                # budget), and folding it in here would append evidence to itself.
                 continue
             if not names & {record.capability, record.skill}:
                 continue
@@ -1714,6 +1752,8 @@ class EscalationQueueAdapter:
                 "source": "queue",
                 "event": "evidence_appended",
                 "key": record.key,
+                "into_key": record.key,
+                "from_key": candidate.signature.key,
                 "capability": capability,
                 "failure_type": candidate.signature.failure_type,
                 "skill": candidate.signature.skill,
@@ -1722,16 +1762,19 @@ class EscalationQueueAdapter:
                 "reason": candidate.reason,
                 "evidence": list(candidate.evidence),
             })
-            self.ledger.append({
-                "source": "queue",
-                "event": "priority_raised",
-                "key": record.key,
-                "tier": "P0",
-                "reason": (
-                    "a real gameplay failure hit a capability this preload job already "
-                    "owns; the evidence is appended instead of opening a second job"
-                ),
-            })
+            if record.origin == "bootstrap":
+                # Only a preload job has a priority to raise: a runtime escalation is
+                # already the P0 it was born as.
+                self.ledger.append({
+                    "source": "queue",
+                    "event": "priority_raised",
+                    "key": record.key,
+                    "tier": "P0",
+                    "reason": (
+                        "a real gameplay failure hit a capability this preload job already "
+                        "owns; the evidence is appended instead of opening a second job"
+                    ),
+                })
             return record.key
         return ""
 
@@ -1939,11 +1982,11 @@ class EscalationQueueAdapter:
                 # Re-fold each time: a submission inside this loop changes the
                 # concurrency answer for the next candidate.
                 handled.add(candidate.signature.key)
-                merged = self._merge_into_preload(candidate)
+                merged = self._merge_into_active_job(candidate)
                 if merged:
                     skipped.append((
                         candidate.signature.key,
-                        f"MERGED_INTO_PRELOAD_JOB: {merged} (evidence appended, priority P0)",
+                        f"MERGED_INTO_ACTIVE_JOB: {merged} (evidence appended, no second job)",
                     ))
                     continue
                 dispatch = decide(candidate, self.ledger.snapshot(), self.policy, now=moment)

@@ -483,7 +483,7 @@ class MergeWithRuntimeGaps(unittest.TestCase):
         )
         self.assertEqual(len(self.bridge.submits), before, "no second job may be created")
         self.assertTrue(
-            any("MERGED_INTO_PRELOAD_JOB" in reason for _key, reason in observation.skipped),
+            any("MERGED_INTO_ACTIVE_JOB" in reason for _key, reason in observation.skipped),
             observation.skipped,
         )
         events = q.EscalationLedger(self.ledger).events()

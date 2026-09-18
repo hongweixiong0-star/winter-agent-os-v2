@@ -580,11 +580,19 @@ class ClassificationTest(unittest.TestCase):
         clock alone was asked; the episode stream was not.  Both halves are pinned
         here: with a verified episode the signature yields no candidate, and with
         none it still yields ``STUCK_15_MIN`` -- the gate is narrowed, not removed.
+
+        The record is keyed through the project's own resolver rather than by hand.
+        Keying it by hand pinned an accident -- this skill was absent from
+        ``capability_skill_map.json``, so it resolved to itself -- and the test then broke
+        when an unrelated edit gave the skill a capability, without the gate it exists to
+        protect changing at all.  A test may pin a resolution; it must not pin "this skill
+        is missing from the map" while claiming to test the episode stream.
         """
         skill = "SCAN_MAP_FOR_BEAST"
-        key = f"{skill}|BEAST_SCAN_NOT_PROVEN|{skill}"
+        capability = q.capability_for_skill(skill, root=ROOT)
+        key = f"{capability}|BEAST_SCAN_NOT_PROVEN|{skill}"
         record = q.EscalationRecord(
-            key=key, capability=skill, failure_type="BEAST_SCAN_NOT_PROVEN", skill=skill,
+            key=key, capability=capability, failure_type="BEAST_SCAN_NOT_PROVEN", skill=skill,
             first_seen=NOW - timedelta(minutes=74),
         )
         snapshot = q.EscalationSnapshot({key: record})
@@ -1338,6 +1346,115 @@ class CapabilityResolutionTest(unittest.TestCase):
 
     def test_an_unknown_skill_resolves_to_itself_rather_than_a_guess(self):
         self.assertEqual(q.capability_for_skill("NOT_A_REAL_SKILL", root=ROOT), "NOT_A_REAL_SKILL")
+
+    def test_a_skill_can_gain_a_capability_and_thereby_a_new_key(self):
+        """The reason the one-job rule is by *capability*, measured on the real map.
+
+        Deliberately not pinned to the capability's name -- the point is not which
+        capability ``SCAN_MAP_FOR_BEAST`` belongs to, it is that a skill which once
+        resolved to itself can stop doing so after an unrelated map edit, which changes
+        the signature key of a wall that did not change.  22 of the 89 skills in the map
+        already name two capabilities, and the resolver returns the first match in file
+        order, so this is a class of change rather than one occurrence.
+        """
+        self.assertNotEqual(
+            q.capability_for_skill("SCAN_MAP_FOR_BEAST", root=ROOT),
+            "SCAN_MAP_FOR_BEAST",
+            "this skill now carries a capability: an escalation for it is keyed differently "
+            "than it was, which is exactly the re-key the capability-level rule defends against",
+        )
+
+
+class OneCapabilityOneJobTest(unittest.TestCase):
+    """The operator's §九: two agents must never edit one capability.
+
+    A signature key is per-*failure*, and the resolver that builds it is order-dependent
+    (see ``CapabilityResolutionTest``), so key equality cannot answer "is someone already
+    working on this capability".  Capability identity can.
+    """
+
+    def _sibling(self, state: str, capability: str = "SPEND_STAMINA_ON_BEAST"):
+        return q.EscalationRecord(
+            key=f"{capability}|NO_GOAL_PROGRESS|SELECT_BEAST_TARGET", state=state,
+            capability=capability, skill="SELECT_BEAST_TARGET", job_id="job-live",
+        )
+
+    def _candidate(self, capability: str = "SPEND_STAMINA_ON_BEAST"):
+        return q.EscalationCandidate(
+            signature=q.FailureSignature(capability, "BEAST_SCAN_NOT_PROVEN", "SCAN_MAP_FOR_BEAST"),
+            condition=q.UNKNOWN_UI, reason="the client showed something V2 could not read",
+        )
+
+    def test_a_second_key_for_the_same_capability_is_refused(self):
+        sibling = self._sibling(q.WORKING)
+        dispatch = q.decide(
+            self._candidate(), q.EscalationSnapshot({sibling.key: sibling}),
+            q.EscalationPolicy(), now=NOW,
+        )
+        self.assertEqual(dispatch.action, q.DEDUP_SKIP)
+        self.assertIn("job-live", dispatch.reason)
+        self.assertIn("must not have two jobs", dispatch.reason)
+
+    def test_a_settled_sibling_does_not_block_the_next_escalation(self):
+        # The same capability may be escalated again once the previous job is over --
+        # otherwise a capability could be developed at most once, ever.  Iterating the
+        # real set rather than a hand list, so a terminal state added later is covered.
+        for settled in sorted(q.TERMINAL_STATES) + [q.LIVE_VERIFIED]:
+            with self.subTest(state=settled):
+                sibling = self._sibling(settled)
+                dispatch = q.decide(
+                    self._candidate(), q.EscalationSnapshot({sibling.key: sibling}),
+                    q.EscalationPolicy(), now=NOW,
+                )
+                self.assertNotEqual(dispatch.action, q.DEDUP_SKIP)
+
+    def test_another_capability_is_left_alone(self):
+        sibling = self._sibling(q.WORKING, capability="SOMETHING_ELSE")
+        dispatch = q.decide(
+            self._candidate(), q.EscalationSnapshot({sibling.key: sibling}),
+            q.EscalationPolicy(), now=NOW,
+        )
+        self.assertNotEqual(dispatch.action, q.DEDUP_SKIP)
+
+    def test_a_real_failure_is_appended_to_a_running_job_rather_than_resubmitted(self):
+        """§12, generalised: any active job owning the capability, not only a preload.
+
+        Before this, the merge matched ``origin == "bootstrap"`` -- so a runtime job and a
+        re-keyed signature produced *two* records for one capability and relied on the
+        concurrency cap (1) to avoid two agents.  A cap is luck; this is a rule.
+        """
+        harness = AdapterHarness()
+        try:
+            sibling = q.EscalationRecord(
+                key="SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SELECT_BEAST_TARGET",
+                state=q.WORKING, capability="SPEND_STAMINA_ON_BEAST",
+                skill="SPEND_STAMINA_ON_BEAST", job_id="job-live",
+            )
+            harness.ledger.append({
+                "source": "queue", "event": "escalation_created", "key": sibling.key,
+                "capability": sibling.capability, "failure_type": "NO_GOAL_PROGRESS",
+                "skill": sibling.skill, "condition": q.STUCK_15_MIN, "job_id": "job-live",
+            })
+            harness.ledger.append({
+                "source": "queue", "event": "submitted", "key": sibling.key, "job_id": "job-live",
+            })
+
+            harness.adapter.observe_run(
+                stop_reason="", now=NOW,
+                failures=[failure("BEAST_SCAN_NOT_PROVEN", "SPEND_STAMINA_ON_BEAST")],
+            )
+
+            kinds = harness.event_kinds()
+            self.assertIn("evidence_appended", kinds)
+            self.assertEqual(harness.bridge.submits, [], "a second job was opened")
+            self.assertEqual(kinds.count("escalation_created"), 1, "a second record was opened")
+            appended = [e for e in harness.events() if e["event"] == "evidence_appended"][0]
+            self.assertEqual(appended["key"], sibling.key)
+            self.assertNotEqual(appended["from_key"], sibling.key)
+            # Only a preload job has a priority to raise; a runtime escalation is P0 already.
+            self.assertNotIn("priority_raised", kinds)
+        finally:
+            harness.cleanup()
 
 
 class ReloadSignalTest(unittest.TestCase):
