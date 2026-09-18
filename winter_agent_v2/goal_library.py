@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 import json
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -205,27 +205,38 @@ def _optional_int(value: object) -> int | None:
 
 
 def progress_moved(
-    before: Iterable[GoalState],
+    observed: Mapping[str, float],
     after: Iterable[GoalState],
     goal_id: str,
 ) -> bool | None:
-    """Did the goal itself advance between two observations?
+    """Did the goal itself advance, compared with the last value we actually read?
 
-    The action's verifier answers "did the input land and did the client respond
-    the way this skill predicts".  This answers a different question: "is the goal
-    closer to satisfied".  A successful swipe that pans the map answers yes to the
-    first and no to the second, and conflating them is what let AUTO spend twenty
-    minutes on 58 passing steps that changed nothing (2026-09-18).
+    The action's verifier answers "did the input land and did the client respond the
+    way this skill predicts".  This answers a different question: "is the goal closer
+    to satisfied".  A successful swipe that pans the map answers yes to the first and
+    no to the second, and conflating them is what let AUTO spend twenty minutes on 58
+    passing steps that changed nothing (2026-09-18).
 
-    ``None`` means the goal was not observable on both frames.  That is not "no
-    progress" -- a queue goal only exists while its page is on screen, and calling
-    an unobserved goal stalled would defer work that is merely not being watched.
+    ``observed`` is the running meter of goals read so far *in this run*, and it is
+    carried forward on purpose.  Measured 2026-09-18 on the gather route: the march
+    counter is only readable on the MAP page, so the step that consumes a march slot
+    (``DISPATCH_MARCH``) has the formation page as its before-frame -- the goal is
+    unobservable there, and a strict before/after comparison called every dispatch
+    "not measured" while the counter plainly went 1 -> 2 marches used.  Comparing
+    against the last real reading is what makes that step show as progress.
+
+    ``None`` means the goal was not observable at all (absent from ``after``, or never
+    read in this run).  That is not "no progress": a queue goal does not exist while
+    its page is off screen, and calling unobserved work stalled would defer goals for
+    being unwatched.
     """
-    was = next((goal for goal in before if goal.goal_id == goal_id), None)
     now = next((goal for goal in after if goal.goal_id == goal_id), None)
-    if was is None or now is None:
+    if now is None:
         return None
-    return now.distance < was.distance
+    previous = observed.get(goal_id)
+    if previous is None:
+        return None
+    return now.distance < previous
 
 
 @dataclass(frozen=True)

@@ -66,19 +66,34 @@ class GoalProgressIsNotActionProgressTests(unittest.TestCase):
     """``verifier_ok`` answers "did the step work"; this answers "did the goal move"."""
 
     def test_an_action_that_changed_nothing_is_not_goal_progress(self):
-        before = [goal("AVOID_STAMINA_WASTE", distance=427.0)]
-        after = [goal("AVOID_STAMINA_WASTE", distance=427.0)]
-        self.assertIs(progress_moved(before, after, "AVOID_STAMINA_WASTE"), False)
+        observed = {"AVOID_STAMINA_WASTE": 427.0}
+        self.assertIs(
+            progress_moved(observed, [goal("AVOID_STAMINA_WASTE", distance=427.0)], "AVOID_STAMINA_WASTE"),
+            False,
+        )
 
     def test_spending_stamina_is_goal_progress(self):
-        before = [goal("AVOID_STAMINA_WASTE", distance=427.0)]
-        after = [goal("AVOID_STAMINA_WASTE", distance=407.0)]
-        self.assertIs(progress_moved(before, after, "AVOID_STAMINA_WASTE"), True)
+        observed = {"AVOID_STAMINA_WASTE": 427.0}
+        self.assertIs(
+            progress_moved(observed, [goal("AVOID_STAMINA_WASTE", distance=407.0)], "AVOID_STAMINA_WASTE"),
+            True,
+        )
+
+    def test_a_step_whose_before_frame_could_not_see_the_goal_still_measures(self):
+        """The case that made this signature necessary.
+
+        Measured 2026-09-18: DISPATCH_MARCH's before-frame is the formation page, which
+        has no march counter, and its after-frame is MAP with one more march out.  A
+        strict before/after comparison called every dispatch "not measured".
+        """
+        observed = {"KEEP_MARCHES_PRODUCTIVE": 2.0}  # last real reading, on MAP
+        after = [goal("KEEP_MARCHES_PRODUCTIVE", distance=1.0)]
+        self.assertIs(progress_moved(observed, after, "KEEP_MARCHES_PRODUCTIVE"), True)
 
     def test_a_goal_that_was_not_observable_is_unmeasured_not_stalled(self):
         """A queue goal does not exist while its page is off screen."""
-        self.assertIsNone(progress_moved([], [goal("KEEP_TRAINING_PRODUCTIVE")], "KEEP_TRAINING_PRODUCTIVE"))
-        self.assertIsNone(progress_moved([goal("X")], [], "X"))
+        self.assertIsNone(progress_moved({}, [goal("KEEP_TRAINING_PRODUCTIVE")], "KEEP_TRAINING_PRODUCTIVE"))
+        self.assertIsNone(progress_moved({"X": 1.0}, [], "X"))
 
     def test_the_stamina_goal_meters_the_work_still_left(self):
         live = WorldState(page=Page.MAP, stamina={"current": 457}, confidence=0.99)
@@ -102,7 +117,8 @@ class GoalProgressIsNotActionProgressTests(unittest.TestCase):
         self.assertEqual(after["KEEP_MARCHES_PRODUCTIVE"].distance, 0.0)
         self.assertIs(after["KEEP_MARCHES_PRODUCTIVE"].status, GoalStatus.COMPLETE)
         self.assertIs(
-            progress_moved(list(states.values()), list(after.values()), "KEEP_MARCHES_PRODUCTIVE"),
+            progress_moved({"KEEP_MARCHES_PRODUCTIVE": 4.0},
+                           list(after.values()), "KEEP_MARCHES_PRODUCTIVE"),
             True,
             "sending a march is progress, and now it is measurable",
         )

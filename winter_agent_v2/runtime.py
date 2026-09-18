@@ -377,6 +377,16 @@ class LiveRuntime:
             "home_opened",
         )
 
+    def _remember_goal_meters(self, goals) -> None:
+        """Record every goal's meter as this run reads it.
+
+        Run-scoped on purpose: several goals are only observable on one page, and the
+        step that satisfies them ends somewhere else (``DISPATCH_MARCH`` reads the
+        march counter only after it lands back on MAP).
+        """
+        for goal in goals or ():
+            self._goal_meters[goal.goal_id] = goal.distance
+
     def _record_goals(self, world: WorldState):
         """Discover this frame's goals, persist the board, and hand them back.
 
@@ -504,6 +514,8 @@ class LiveRuntime:
         # recomputed per step, and a twelve-step run printed the identical line twelve
         # times (measured 2026-09-18).
         self._printed_deferrals: set[str] = set()
+        # The meters this run has read so far; see _remember_goal_meters.
+        self._goal_meters: dict[str, float] = {}
         gate = self._gate()
 
         def finish(reason: str) -> LiveRun:
@@ -560,6 +572,7 @@ class LiveRuntime:
                                   "intel": before.intel, "alliance": before.alliance, "events": before.events})
             self._record_goals(before)
             goals = self.goal_library.discover(before)
+            self._remember_goal_meters(goals)
             best_goal = self.goal_library.best(self._selectable(goals, deferrals))
             if deferrals:
                 # Written every run, not only when it changes: the panel and the
@@ -901,7 +914,7 @@ class LiveRuntime:
                 # The verifier passed means the action landed.  This says whether the
                 # *goal* moved, and the two are not the same statement: 58 episodes
                 # passed their verifier while stamina sat at 457 (2026-09-18).
-                goal_progress=progress_moved(goals, goals_after, step_goal),
+                goal_progress=progress_moved(self._goal_meters, goals_after, step_goal),
                 before_screenshot=before_path, after_screenshot=after_path,
             )
             steps.append(LiveStep(index, tick.decision, tick.execution, before, after, verification))
