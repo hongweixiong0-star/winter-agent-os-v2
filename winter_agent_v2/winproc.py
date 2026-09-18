@@ -162,10 +162,17 @@ def spawn_detached(
     if env is not None:
         kwargs["env"] = dict(env)
     if os.name == "nt":
-        kwargs.update(hidden_kwargs())
-        # A new process group so a Ctrl+C aimed at the panel's console does not reach it.
-        kwargs["creationflags"] = kwargs.get("creationflags", 0) | getattr(
-            subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+        # Two different problems, two different flags.  ``CREATE_NO_WINDOW`` answers "do
+        # not flash a console"; ``DETACHED_PROCESS`` answers "do not belong to whoever
+        # launched you".  A *service* needs the second: measured 2026-09-18, launching the
+        # panel with only CREATE_NO_WINDOW (and CREATE_NEW_PROCESS_GROUP) meant it was
+        # still inside the launcher's process tree and it died the moment that tool call
+        # ended -- the panel looked like it had been restarted and then simply was not
+        # there.  MSDN: CREATE_NO_WINDOW is ignored when DETACHED_PROCESS is given, and a
+        # detached process has no console, which is the same outcome by a stronger route.
+        kwargs["creationflags"] = (
+            getattr(subprocess, "DETACHED_PROCESS", 0)
+            | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
         )
     else:
         kwargs["start_new_session"] = True

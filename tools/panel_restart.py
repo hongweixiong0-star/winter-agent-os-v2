@@ -36,6 +36,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# Run as a script from ``tools/``, so the repo root has to be importable before any
+# helper can reach the package.  Measured 2026-09-18: without this, routing the process
+# helpers through ``winter_agent_v2.winproc`` made ``--status`` die with
+# ``ModuleNotFoundError: No module named 'winter_agent_v2'`` -- a fix that broke the tool
+# it was meant to protect.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 PANEL_SCRIPT = ROOT / "tools/control_panel.py"
 PID_PATH = ROOT / "learning/control_panel/panel.pid"
 PEEK_LOG = ROOT / "learning/control_panel/panel_launch.log"
