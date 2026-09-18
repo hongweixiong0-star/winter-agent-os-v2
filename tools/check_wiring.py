@@ -1003,7 +1003,21 @@ def main() -> int:
           hasattr(_escalation.EscalationQueueAdapter, "preload")
           and "def preload(" in _queue_source
           and "condition=CAPABILITY_MISSING" in _queue_source
-          and 'origin="bootstrap"' in _queue_source)
+          and 'origin = "bootstrap_seed" if seed else "bootstrap"' in _queue_source)
+    # The seed's "one at a time" rule counts records whose origin is ``bootstrap_seed``, so an
+    # origin that never reaches the ledger silently disables the rule.  Both of preload's dispatch
+    # sites -- recorded-but-not-submitted, and submitted -- plus ``_submit``'s own ``_record`` must
+    # therefore carry the computed value rather than a literal.  Pinning "no literal" is what makes
+    # this a rule instead of a coincidence: the version that hard-coded ``origin="bootstrap"`` at
+    # both sites looked perfectly correct and never wrote the seed origin at all.
+    check("preload: the seed's origin is computed once and reaches every dispatch site",
+          'origin = "bootstrap_seed" if seed else "bootstrap"' in _queue_source
+          and _queue_source.count("origin=origin") >= 3
+          and 'origin="bootstrap"' not in _queue_source
+          and 'origin="bootstrap_seed"' not in _queue_source)
+    check("preload: selection has one authority, so the seed's candidate policy cannot be bypassed",
+          "bootstrap.KnowledgeBootstrapController(self.root).select(" in _queue_source
+          and "chosen = plan if plan is not None else candidates[0]" not in _queue_source)
     check("preload: it is an origin on the one ledger, not a second pipeline",
           _bootstrap_source.count("DEFAULT_LEDGER") >= 1
           and '"learning/workbuddy_escalations.jsonl"' not in _bootstrap_source
@@ -1113,7 +1127,7 @@ def main() -> int:
     check("knowledge: the ingest runs before the selection that it must be able to change",
           "ingest = self._ingest(now=moment)" in _bootstrap_source
           and _bootstrap_source.index("ingest = self._ingest(now=moment)")
-          < _bootstrap_source.index("plan, skipped = self.select(scanner)")
+          < _bootstrap_source.index("plan, skipped = self.select(scanner, arm_reason=arm_reason)")
           and "def _ingest(" in _bootstrap_source)
     check("knowledge: the controller reports its named running state, not just a heartbeat",
           _bootstrap.BOOTSTRAP_STATES == (

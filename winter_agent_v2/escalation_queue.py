@@ -2087,6 +2087,7 @@ class EscalationQueueAdapter:
         plan: Any | None = None,
         mode: str = "PRELOAD",
         questions: Sequence[str] = (),
+        arm_reason: str = "",
     ) -> RunObservation:
         """One Capability Bootstrap pass: offer at most one *prepared* capability.
 
@@ -2097,8 +2098,12 @@ class EscalationQueueAdapter:
 
         Deliberately not a second pipeline: the candidate goes through the same
         ``decide()`` throttle, the same one-slot budget, the same ledger and the same
-        bridge, and its record is marked ``origin=bootstrap`` so a reader can always
-        tell "we were blocked here" from "we prepared this in advance".
+        bridge.  The record is marked with its ``origin`` so a reader can always tell
+        "we were blocked here" (``queue``) from "we prepared this in advance"
+        (``bootstrap``) from "this is the one-shot cold-start acceptance seed"
+        (``bootstrap_seed``) -- and the last of those is load-bearing: the seed's
+        "only one at a time" rule is enforced by counting records with that origin, so
+        an origin that never reaches the ledger silently disables the rule.
 
         It is also deliberately *last*: :func:`capability_bootstrap.preload_gate`
         refuses while a real gap is owed, while an agent holds the single slot, while
@@ -2112,14 +2117,19 @@ class EscalationQueueAdapter:
         moment = now or datetime.now(timezone.utc)
         try:
             snapshot = self.ledger.snapshot()
-            armed, arm_reason, arm_detail = bootstrap.arm_state(self.root)
+            armed, current_reason, arm_detail = bootstrap.arm_state(self.root)
+            # The caller may have already resolved the mode; otherwise this is the same single
+            # source.  Either way exactly one value decides both the gate and the origin.
+            reason = arm_reason or current_reason
+            seed = reason == bootstrap.SEED_ARMED
+            origin = "bootstrap_seed" if seed else "bootstrap"
             scanner = bootstrap.BootstrapScanner.load(
                 self.root, ledger_snapshot=snapshot, policy=self.policy, now=moment
             )
             candidates = scanner.candidates()
             gate = bootstrap.preload_gate(
                 armed=armed,
-                arm_reason=arm_reason,
+                arm_reason=current_reason,
                 arm_detail=arm_detail,
                 active_jobs=len(snapshot.active_jobs()),
                 pending_records=len(self.pending(snapshot=snapshot)),
@@ -2132,10 +2142,24 @@ class EscalationQueueAdapter:
             if plan is None and not candidates:
                 return RunObservation(preload_note="no preloadable capability")
 
-            # The controller may hand in the capability it already selected (same scan,
-            # same projection) so there is one selection authority; with no plan this
-            # pass selects for itself, which is what the CLI does.
-            chosen = plan if plan is not None else candidates[0]
+            if plan is None:
+                # One selection authority (operator §4).  This used to take ``candidates[0]``,
+                # which meant the CLI -- and any caller that did not hand in a plan -- bypassed
+                # ``select()`` entirely and dispatched the scanner's top row regardless of the
+                # knowledge refusals and the seed's candidate policy.  Under the seed that was
+                # measurable: it offered TROOP_SELECT, a capability nothing had ever observed.
+                plan, seed_skips = bootstrap.KnowledgeBootstrapController(self.root).select(
+                    scanner, arm_reason=reason
+                )
+                if plan is None:
+                    detail = "; ".join(seed_skips[-3:]) or "catalog has no actionable row"
+                    return RunObservation(
+                        preload_note=(
+                            f"{bootstrap.DECISION_SEED_NO_ELIGIBLE}: {detail}"
+                            if seed else f"nothing selectable: {detail}"
+                        )
+                    )
+            chosen = plan
             brief_path = bootstrap.write_brief(self.root, chosen)
             if mode == "TARGETED_RESEARCH":
                 reason = (
@@ -2155,6 +2179,18 @@ class EscalationQueueAdapter:
                     f"({chosen.knowledge_source}); plan state {chosen.plan_state}; "
                     f"brief {brief_path.as_posix()}"
                 )
+            if seed:
+                # The seed's reason carries its own justification, because the ledger is the only
+                # place a later reader can check *why* the one-shot ticket was spent here: which
+                # availability rung it cleared, and the artefact that rung names.
+                reason = (
+                    f"{reason}\n"
+                    f"[P0_ACCEPTANCE_SEED] 一次性冷启动种子："
+                    f"可用性证据 {chosen.availability}（{chosen.availability_detail}）；"
+                    f"risk {chosen.risk}；real_money_cost {chosen.real_money_cost}；"
+                    f"requires_march {chosen.requires_march}；requires_stamina "
+                    f"{chosen.requires_stamina}；origin bootstrap_seed"
+                )
             candidate = EscalationCandidate(
                 signature=FailureSignature(
                     capability=chosen.code or chosen.capability_id,
@@ -2168,12 +2204,12 @@ class EscalationQueueAdapter:
             )
             dispatch = decide(candidate, snapshot, self.policy, now=moment)
             if not dispatch.should_submit:
-                self._record(candidate, dispatch, origin="bootstrap")
+                self._record(candidate, dispatch, origin=origin)
                 return RunObservation(
                     preload_note=f"{chosen.code}: {dispatch.action}: {dispatch.reason}"
                 )
             job_id = self._submit(
-                candidate, dispatch, origin="bootstrap",
+                candidate, dispatch, origin=origin,
                 extra_notes=bootstrap.work_order_brief(chosen),
             )
             if not job_id:
@@ -2668,6 +2704,11 @@ class EscalationQueueAdapter:
                 "skill": candidate.signature.skill,
                 "condition": candidate.condition,
                 "goal": candidate.goal,
+                # The candidate's own "why".  Recorded here rather than only in the work order,
+                # because this row is what a reader has when the job is long gone: without it the
+                # ledger could say *that* the one-shot acceptance seed was spent but never which
+                # availability rung justified spending it on this capability.
+                "reason": candidate.reason,
                 "evidence": list(candidate.evidence),
                 "dispatch": dispatch.action,
                 "dispatch_reason": dispatch.reason,

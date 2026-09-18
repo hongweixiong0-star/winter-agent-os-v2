@@ -533,9 +533,10 @@ class ScriptedAdapter:
         self._job, self._note = job, note
         self.calls: list[dict] = []
 
-    def preload(self, *, now=None, plan=None, mode="PRELOAD", questions=()):
+    def preload(self, *, now=None, plan=None, mode="PRELOAD", questions=(), arm_reason=""):
         self.calls.append({"plan": getattr(plan, "code", ""), "mode": mode,
-                           "questions": tuple(questions)})
+                           "questions": tuple(questions),
+                           "arm_reason": arm_reason})
         return q.RunObservation(
             preloaded=(getattr(plan, "code", ""),) if self._job else (),
             preload_note=self._note,

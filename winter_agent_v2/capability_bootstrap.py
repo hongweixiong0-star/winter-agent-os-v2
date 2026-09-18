@@ -288,6 +288,15 @@ class BootstrapPlan:
     unlocked: str = "UNKNOWN"
     existing_skill: str = ""
     has_verifier: bool = False
+    # Availability is a per-capability fact with its own ladder, because ``unlocked`` alone is a
+    # family statement -- see ``seed_eligible``.  ``availability`` names the strongest artefact
+    # about *this* capability; ``""`` means there is none and only the family was inferred.
+    availability: str = ""
+    availability_detail: str = ""
+    real_money_cost: str = ""
+    requires_march: bool = False
+    requires_stamina: bool = False
+    has_asset: bool = False
     missing_semantics: tuple[str, ...] = ()
     reuse: Mapping[str, Any] = field(default_factory=dict)
     external: Mapping[str, Any] = field(default_factory=dict)
@@ -317,6 +326,12 @@ class BootstrapPlan:
             "knowledge_rank": self.knowledge_rank,
             "unlocked": self.unlocked,
             "risk": self.risk,
+            "availability": self.availability,
+            "availability_detail": self.availability_detail,
+            "real_money_cost": self.real_money_cost,
+            "requires_march": self.requires_march,
+            "requires_stamina": self.requires_stamina,
+            "has_asset": self.has_asset,
             "existing_skill": self.existing_skill,
             "has_verifier": self.has_verifier,
             "missing_semantics": list(self.missing_semantics),
@@ -475,6 +490,86 @@ SEED_ARMED = "P0_ACCEPTANCE_SEED"
 #: Written once a real production reuse has been observed.  Its existence closes the seed for
 #: good: an exception that stays open becomes the rule.
 PROVEN_ONCE_PATH = "learning/knowledge_bootstrap/MAIN_LOOP_PROVEN_ONCE.json"
+#: The seed's own audit chain: which generations were used, what each one ended as, and any
+#: explicit supersede.  A second seed is never created silently -- this file is where the
+#: replacement relation has to exist first.
+SEED_CHAIN_PATH = "learning/knowledge_bootstrap/acceptance_seed_chain.json"
+#: How many acceptance seeds may ever be spent.  Bounded on purpose: a replacement that can happen
+#: without limit is not an exception any more.
+SEED_MAX_GENERATIONS = 3
+#: States in which a record still owes work.  A seed in one of these owns the ticket.  Ordered as
+#: the original sweep ordered them, so the reported "which record is in the way" is unchanged.
+SEED_OPEN_STATES = ("WORKING", "SUBMITTED", "NEW", "QUEUED")
+
+
+def _seed_chain(root: Path) -> dict[str, Any]:
+    """The seed audit chain, or an empty skeleton.  Never raises."""
+    try:
+        payload = json.loads((root / SEED_CHAIN_PATH).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    generations = payload.get("generations")
+    if not isinstance(generations, list):
+        payload["generations"] = []
+    return payload
+
+
+def record_seed_block(root: Path | str | None, *, predecessor: str, state: str, note: str) -> None:
+    """Write down that a spent seed ended without a reuse, once.
+
+    Non-silent, and deliberately *not* an authorisation: this records why the ticket is not being
+    reissued, so a later reader sees a decision instead of a mystery.  Idempotent per predecessor.
+    """
+    base = Path(root) if root else Path(__file__).resolve().parents[1]
+    chain = _seed_chain(base)
+    if any(str(g.get("predecessor") or "") == predecessor for g in chain["generations"]):
+        return
+    chain["generations"].append({
+        "predecessor": predecessor,
+        "predecessor_state": state,
+        "outcome": "NO_PRODUCTION_REUSE",
+        "note": note,
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "supersedes_allowed_by": None,
+    })
+    try:
+        (base / SEED_CHAIN_PATH).parent.mkdir(parents=True, exist_ok=True)
+        (base / SEED_CHAIN_PATH).write_text(
+            json.dumps(chain, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+    except OSError:
+        pass
+
+
+def write_seed_supersede(root: Path | str | None, *, predecessor: str, by: str, note: str) -> None:
+    """The explicit replacement relation a further seed requires.
+
+    Only ever written by an explicit act (operator, or a product step that decided to retry after
+    reading the predecessor's outcome) -- never as a side effect of merely *looking* at the state.
+    """
+    base = Path(root) if root else Path(__file__).resolve().parents[1]
+    chain = _seed_chain(base)
+    for entry in chain["generations"]:
+        if str(entry.get("predecessor") or "") == predecessor:
+            entry["supersedes_allowed_by"] = by
+            entry["superseded_at"] = datetime.now(timezone.utc).isoformat()
+            entry["supersede_note"] = note
+    chain["generations"].append({
+        "predecessor": predecessor,
+        "outcome": "SUPERSEDED",
+        "supersedes_allowed_by": by,
+        "note": note,
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+    })
+    try:
+        (base / SEED_CHAIN_PATH).parent.mkdir(parents=True, exist_ok=True)
+        (base / SEED_CHAIN_PATH).write_text(
+            json.dumps(chain, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+    except OSError:
+        pass
 
 
 def acceptance_seed_allowed(root: Path | str | None = None) -> tuple[bool, str]:
@@ -486,10 +581,10 @@ def acceptance_seed_allowed(root: Path | str | None = None) -> tuple[bool, str]:
 
     Two of the operator's thirteen conditions are deliberately **not** checked here and are
     named so they are not mistaken for enforced ones: the risk tier (T0/T1) and the exclusion of
-    the permanent prohibitions are properties of the *candidate*, and are enforced at selection.
-    This function answers "is the system in a state where a seed is allowed at all"; the selector
-    answers "is this particular capability a lawful one".  Putting the candidate rules here would
-    make them look checked while nothing had looked at a candidate yet.
+    the permanent prohibitions are properties of the *candidate*, and are enforced in
+    :func:`seed_eligible`.  This function answers "is the system in a state where a seed is allowed
+    at all"; that one answers "is this particular capability a lawful one".  Putting the candidate
+    rules here would make them look checked while nothing had looked at a candidate yet.
     """
     base = Path(root) if root else Path(__file__).resolve().parents[1]
     proven = base / PROVEN_ONCE_PATH
@@ -520,15 +615,63 @@ def acceptance_seed_allowed(root: Path | str | None = None) -> tuple[bool, str]:
         return False, f"{PROVEN_ONCE_PATH} 存在：本次冷启动豁免已经用过"
 
     # §二 conditions 2-4, 13: nothing open, nothing in flight, and no second seed trace.
+    #
+    # Order matters, and it is the seed's own record that has to be read first: an *open* seed is
+    # also "a record in WORKING", so leaving this after the generic sweep would make the
+    # seed-specific refusal unreachable -- a branch nothing can arrive at is indistinguishable from
+    # one that was never written, which is how a rule quietly stops being enforced.
+    seed_rows = [
+        r for r in snapshot.records.values() if str(r.origin or "") == "bootstrap_seed"
+    ]
+    open_seeds = [r for r in seed_rows if r.state in SEED_OPEN_STATES]
+    if open_seeds:
+        return False, (
+            f"台账里已有在飞的 bootstrap_seed 记录（{open_seeds[0].key}，状态 "
+            f"{open_seeds[0].state}）：同时只允许一个"
+        )
+
     current = current_development_trace(snapshot)
     if current is not None:
         return False, f"已有未完成 trace（{current.key}），不需要种子"
-    for state_name in ("WORKING", "SUBMITTED", "NEW", "QUEUED"):
+    for state_name in SEED_OPEN_STATES:
         holders = [r for r in snapshot.records.values() if r.state == state_name]
         if holders:
             return False, f"台账里已有 {state_name} 记录（{holders[0].key}），不需要种子"
-    if any(str(r.origin or "") == "bootstrap_seed" for r in snapshot.records.values()):
-        return False, "台账里已有 bootstrap_seed 记录：同时只允许一个"
+
+    if seed_rows:
+        # The ticket is spent.  Whether a *further* seed is lawful depends entirely on how the last
+        # one ended, and the answer is never a silent yes:
+        #   * terminal, no reuse -> refuse and *write down why*.  Quietly issuing a second one would
+        #     turn the one-shot exception into a retry loop, which is exactly what an exception must
+        #     not become; the flow continues from the predecessor instead (its evidence, its trace),
+        #     and a further seed requires an explicit recorded supersede.
+        #   * terminal + explicit supersede -> allowed, bounded by SEED_MAX_GENERATIONS.
+        chain = _seed_chain(base)
+        generations = [g for g in chain.get("generations") or [] if isinstance(g, dict)]
+        superseded = {
+            str(g.get("predecessor") or "")
+            for g in generations
+            if str(g.get("outcome")) == "SUPERSEDED"
+        }
+        latest = max(
+            seed_rows,
+            key=lambda r: str(r.last_seen or r.first_seen or r.settled_at or ""),
+        )
+        if latest.key not in superseded:
+            record_seed_block(
+                base, predecessor=latest.key, state=latest.state,
+                note="上一个种子终结时没有 production_reuse：不静默补发第二条",
+            )
+            return False, (
+                f"上一个 bootstrap_seed（{latest.key}，状态 {latest.state}）已终结但"
+                f"未产生 production_reuse：不得静默补发第二条，继续同一条验收流程；"
+                f"若确需新种子，需先写入显式替换关系（{SEED_CHAIN_PATH}）"
+            )
+        if len(generations) >= SEED_MAX_GENERATIONS:
+            return False, (
+                f"种子已用满 {SEED_MAX_GENERATIONS} 代（{SEED_CHAIN_PATH}）："
+                f"冷启动豁免不再自动续期，需要人工介入"
+            )
 
     # §二 condition 5: no examination holding the device.
     try:
@@ -567,6 +710,115 @@ def acceptance_seed_allowed(root: Path | str | None = None) -> tuple[bool, str]:
 
     return True, ("冷启动种子条件全部成立：无未完成 trace、无在飞 Job、无租约、"
                   "操作员 RUNNING、生产 GUI 存活、网关 HEALTHY")
+
+
+# ------------------------------------------------- the seed's candidate policy
+#
+# ``acceptance_seed_allowed`` answers "is the *system* in a state where a seed is allowed".  It
+# deliberately does not look at any candidate (see its docstring).  This section is the other half:
+# "is this *capability* a lawful first seed".  Both halves are needed and neither is sufficient.
+#
+# Measured 2026-09-18 before this existed: the first pass chose ``TROOP_SELECT`` (CAP-G09), whose
+# ``unlocked`` reads OBSERVED only because ``_sibling_observed("G")`` found ``RECALL_MARCH`` in the
+# same family.  Nothing had observed TROOP_SELECT itself -- its row says
+# ``current_role_available=UNKNOWN`` and it has no artefact of its own.  Dispatching the one-shot
+# free ticket to a capability nobody has seen is how the seed gets spent without proof.
+
+#: Reason codes from :func:`seed_eligible`.  Named, because "not chosen" is not actionable.
+SEED_ELIGIBLE = "SEED_ELIGIBLE"
+SEED_NOT_CURRENTLY_OBSERVED = "SEED_NOT_CURRENTLY_OBSERVED"
+SEED_FAMILY_NEVER_SHOWN = "SEED_FAMILY_NEVER_SHOWN"
+SEED_RISK_TOO_HIGH = "SEED_RISK_TOO_HIGH"
+SEED_REAL_MONEY = "SEED_REAL_MONEY"
+SEED_FORBIDDEN_ACTION = "SEED_FORBIDDEN_ACTION"
+SEED_IN_FLIGHT = "SEED_IN_FLIGHT"
+
+#: Risk tiers the first trace may carry.  T2 is excluded as well as T3/T4: the first trace is also
+#: the first *unattended* one, and "T0/T1" is the operator's ceiling rather than a preference.
+SEED_RISKS = frozenset({"T0", "T1"})
+
+#: Names something the operator forbids permanently (§七), matched as a **token set** against the
+#: capability code's tokens.  Subset matching, not equality: ``STATE_TRANSFER`` is two tokens and
+#: comparing it to a single token silently matched nothing at all -- a denylist that cannot fire is
+#: worse than no denylist, because it reads as protection.  Token sets also keep
+#: ``ATTACK_BEAST`` (PvE, allowed) clear of ``ATTACK_CITY`` / ``ATTACK_GATHERER`` (high-risk PvP).
+SEED_FORBIDDEN_TOKENS = frozenset({
+    "DELETE", "DELETION", "DESTROY_ACCOUNT",
+    "SECURITY", "PASSWORD", "BIND", "REBIND",
+    "STATE_TRANSFER", "TRANSFER_STATE", "MIGRATE",
+    "RECHARGE", "PURCHASE", "BUY", "PAY", "PAYMENT", "MONEY", "CASH",
+    "ATTACK_CITY", "ATTACK_GATHERER", "ATTACK_PLAYER", "ATTACK_TARGET",
+    "ATTACK_EVENT_TARGET", "RAID", "SCOUT_ENEMY",
+})
+
+#: The availability-evidence ladder, strongest first.  Every rung is an artefact about **this**
+#: capability -- never about its family.  ``CATALOG_OBSERVED_AVAILABLE`` is the operator's
+#: preferred form; the other two are what this project actually has.
+AVAIL_CATALOG_OBSERVED = "CATALOG_OBSERVED_AVAILABLE"
+AVAIL_LIVE_SKILL = "LIVE_SKILL_EVIDENCE"
+AVAIL_PAGE_ASSET = "PAGE_ASSET_MEASURED"
+AVAILABILITY_ORDER = (AVAIL_CATALOG_OBSERVED, AVAIL_LIVE_SKILL, AVAIL_PAGE_ASSET)
+AVAILABILITY_ZH = {
+    AVAIL_CATALOG_OBSERVED: "总表直接观测该能力对当前角色可用",
+    AVAIL_LIVE_SKILL: "该能力自己的技能有真机 episode / 已绑定 Verifier",
+    AVAIL_PAGE_ASSET: "存在该能力自己的实测资产（真机截图等）",
+}
+
+
+def seed_eligible(plan: "BootstrapPlan") -> tuple[bool, str, str]:
+    """``(ok, reason_code, detail)`` for one capability as the **first** acceptance seed.
+
+    Hard gates in order of how unrecoverable the mistake would be: a forbidden action or real
+    money is a permanent block; risk above T1 is a block; having no evidence of its own is a
+    block.  Everything the operator phrased as "优先" (no march, no stamina, verifier bound)
+    stays in :func:`seed_order_key` as an ordering preference -- turning a preference into a gate
+    would refuse the seed whenever the only lawful candidate happens to need a march.
+    """
+    if plan.in_flight:
+        return False, SEED_IN_FLIGHT, plan.in_flight
+    if str(plan.real_money_cost or "") != "NONE_ALLOWED":
+        return False, SEED_REAL_MONEY, f"real_money_cost={plan.real_money_cost or 'UNKNOWN'}"
+    code_tokens = _tokens(plan.code)
+    forbidden = sorted(
+        entry for entry in SEED_FORBIDDEN_TOKENS if _tokens(entry) <= code_tokens
+    )
+    if forbidden:
+        return False, SEED_FORBIDDEN_ACTION, f"code 命中永久禁止动作 {forbidden}"
+    if plan.risk not in SEED_RISKS:
+        return False, SEED_RISK_TOO_HIGH, (
+            f"risk={plan.risk or 'UNKNOWN'} 不在 {sorted(SEED_RISKS)}"
+        )
+    if not plan.availability:
+        # The TROOP_SELECT case, stated exactly: everything the scanner knows about availability
+        # here came from the *family*, and a family is not this capability.
+        return False, SEED_NOT_CURRENTLY_OBSERVED, (
+            f"{plan.code} 没有自己的当前可用证据"
+            f"（unlocked={plan.unlocked} 只是族/分类推断）"
+        )
+    if plan.unlocked != "OBSERVED":
+        return False, SEED_FAMILY_NEVER_SHOWN, (
+            f"{plan.code} 所在族在总表中没有任何已观测行（unlocked={plan.unlocked}）"
+        )
+    return True, SEED_ELIGIBLE, plan.availability_detail or plan.availability
+
+
+def seed_order_key(plan: "BootstrapPlan") -> tuple:
+    """Best-first ordering **within** the eligible set.
+
+    Evidence rung first (a capability with a live screenshot of its own page outranks one whose
+    only trace is a file name), then risk, then the operator's preferences, then the scanner's own
+    score.  Ordering only -- :func:`seed_eligible` decides membership.
+    """
+    rung = AVAILABILITY_ORDER.index(plan.availability) if plan.availability in AVAILABILITY_ORDER else 9
+    return (
+        rung,
+        0 if plan.risk == "T0" else 1,
+        1 if plan.requires_march else 0,
+        1 if plan.requires_stamina else 0,
+        0 if plan.has_verifier else 1,
+        -float(plan.score),
+        plan.capability_id,
+    )
 
 
 def preload_gate(
@@ -1072,6 +1324,19 @@ class BootstrapScanner:
             found.append(CLASS_DEGRADED)
         return tuple(found)
 
+    def _asset_hits(self, row: Mapping[str, Any]) -> tuple[str, ...]:
+        """The in-project artefacts whose names contain every token of this capability's code.
+
+        Names, not a boolean, because "an asset exists" is not auditable on its own: the seed's
+        evidence rung has to name the file a reader may go and look at.
+        """
+        tokens = _tokens(row.get("code"))
+        if len(tokens) >= 2:
+            hit = _contained(tokens, self._asset_index)
+            return (hit,) if hit else ()
+        stem = _token_key(row.get("code"))
+        return (stem,) if stem and stem in self._asset_stems else ()
+
     def _has_asset(self, row: Mapping[str, Any]) -> bool:
         """Is there already an internal/Legacy artefact for this capability?
 
@@ -1080,11 +1345,7 @@ class BootstrapScanner:
         almost everything, and "an asset exists but is unwired" would then mean
         nothing at all.
         """
-        tokens = _tokens(row.get("code"))
-        if len(tokens) >= 2:
-            return bool(_contained(tokens, self._asset_index))
-        stem = _token_key(row.get("code"))
-        return bool(stem) and stem in self._asset_stems
+        return bool(self._asset_hits(row))
 
     def _wiki_files(self, row: Mapping[str, Any]) -> tuple[str, ...]:
         """The in-project game knowledge that should be read before exploring.
@@ -1330,6 +1591,29 @@ class BootstrapScanner:
         maa = self._maa_check(row)
         targeted = self._targeted_test(row, skill, facets, missing, verifier_bound)
 
+        # The per-capability availability ladder.  Strongest first, and it never consults the
+        # family: ``unlocked`` below may be OBSERVED on the strength of a sibling, and a sibling is
+        # not evidence about this capability.  The seed reads ``availability`` for exactly that
+        # reason, so an empty rung has to mean empty.
+        direct_available = str(row.get("current_role_available")) == "OBSERVED_AVAILABLE"
+        live_evidence = verifier_bound or int(reuse.get("episodes") or 0) > 0
+        asset_hits = self._asset_hits(row)
+        if direct_available:
+            availability = AVAIL_CATALOG_OBSERVED
+            availability_detail = "总表 current_role_available=OBSERVED_AVAILABLE"
+        elif live_evidence:
+            availability = AVAIL_LIVE_SKILL
+            availability_detail = (
+                f"技能 {skill} 真机 episode {int(reuse.get('episodes') or 0)} 次"
+                f"{'、Verifier 已绑定' if verifier_bound else ''}"
+            )
+        elif asset_hits:
+            availability = AVAIL_PAGE_ASSET
+            availability_detail = "实测资产 " + "、".join(asset_hits[:2])
+        else:
+            availability = ""
+            availability_detail = ""
+
         if state:
             plan_state = IN_FLIGHT
         elif any(not f.known for f in facets):
@@ -1403,6 +1687,12 @@ class BootstrapScanner:
             unlocked=unlocked,
             existing_skill=existing,
             has_verifier=verifier_bound,
+            availability=availability,
+            availability_detail=availability_detail,
+            real_money_cost=str(row.get("real_money_cost") or ""),
+            requires_march=bool(row.get("requires_march")),
+            requires_stamina=bool(row.get("requires_stamina")),
+            has_asset=bool(asset_hits),
             missing_semantics=missing,
             reuse=reuse,
             external=(
@@ -1623,6 +1913,10 @@ DECISION_KNOWLEDGE_BLOCKED = "KNOWLEDGE_BLOCKED"
 DECISION_GATE_REFUSED = "GATE_REFUSED"
 DECISION_NOTHING_TO_DO = "NOTHING_TO_DO"
 DECISION_SKIPPED_IN_FLIGHT = "SKIPPED_IN_FLIGHT"
+#: Seed mode only: the catalog has candidates, but none of them is a lawful *first* seed.  Kept
+#: distinct from NOTHING_TO_DO so a reader can tell "nothing to preload" from "the free ticket
+#: was refused by the candidate policy" -- the second one is a policy fact worth acting on.
+DECISION_SEED_NO_ELIGIBLE = "SEED_NO_ELIGIBLE_CANDIDATE"
 
 # The controller's running states (operator §十五), named once so the panel, the state
 # file and the watchdog all say the same word for the same thing.
@@ -1661,6 +1955,7 @@ DECISION_ZH: dict[str, str] = {
     DECISION_GATE_REFUSED: "让路（更重要的在跑）",
     DECISION_NOTHING_TO_DO: "没有可预装的能力",
     DECISION_SKIPPED_IN_FLIGHT: "已在流程中",
+    DECISION_SEED_NO_ELIGIBLE: "种子模式：没有通过 seed_eligible 的候选",
 }
 
 # How a capability's knowledge record reads while it moves through the live half.
@@ -1789,16 +2084,39 @@ class KnowledgeBootstrapController:
 
     # -- stage 2: select ---------------------------------------------------
 
-    def select(self, scanner: BootstrapScanner) -> tuple[BootstrapPlan | None, tuple[str, ...]]:
+    def select(
+        self,
+        scanner: BootstrapScanner,
+        *,
+        arm_reason: str = "",
+    ) -> tuple[BootstrapPlan | None, tuple[str, ...]]:
         """The highest-value preloadable capability, or ``None`` with the reasons.
 
         Two refusals happen here rather than in the gate, because both are *knowledge*
         facts rather than scheduling facts: a capability whose knowledge is already
         confirmed is not a preload, and one already queued for live calibration must
         not be given a second research or development job (operator §九/§十).
+
+        ``arm_reason`` makes this one selector cover both products instead of adding a
+        second one.  Under ``P0_ACCEPTANCE_SEED`` the same scan is filtered by
+        :func:`seed_eligible` and re-ordered by :func:`seed_order_key`; every other mode
+        takes the scanner's own ranking untouched.  There is still exactly one place that
+        answers "which capability", which is what keeps the GUI and the adapter able to
+        consume the answer instead of computing their own.
         """
+        seed_mode = arm_reason == SEED_ARMED
+        plans = scanner.candidates()
+        if seed_mode:
+            plans = tuple(sorted(plans, key=seed_order_key))
         skipped: list[str] = []
-        for plan in scanner.candidates():
+        for plan in plans:
+            if seed_mode:
+                ok, why, detail = seed_eligible(plan)
+                if not ok:
+                    # Skip, never BLOCKED: a capability that is not a lawful *first* seed is
+                    # still a perfectly good ordinary bootstrap candidate (operator §3).
+                    skipped.append(f"{plan.code}: {why}（{detail}）")
+                    continue
             record = self.store.load(plan.code)
             if record is not None:
                 if record.status == "CONFIRMED":
@@ -1871,10 +2189,16 @@ class KnowledgeBootstrapController:
             self.write_state(now=moment)
             return report
 
-        plan, skipped = self.select(scanner)
+        # Which product is armed decides what "eligible" means, so it is resolved once, here, and
+        # handed to the selector and to dispatch alike.  A second answer computed later is how the
+        # selector and the dispatcher start disagreeing about which mode is running.
+        _, arm_reason, _ = arm_state(self.root)
+        seed_mode = arm_reason == SEED_ARMED
+        plan, skipped = self.select(scanner, arm_reason=arm_reason)
         if plan is None:
             report = CycleReport(
-                stage="SELECT", decision=DECISION_NOTHING_TO_DO,
+                stage="SELECT",
+                decision=(DECISION_SEED_NO_ELIGIBLE if seed_mode else DECISION_NOTHING_TO_DO),
                 note=(skipped[-3:] and "; ".join(skipped[-3:])) or "catalog has no actionable row",
                 ingested=ingest.accepted, ingest_line=ingest.line,
             )
@@ -1915,7 +2239,8 @@ class KnowledgeBootstrapController:
             dispatched = ""
             if needs and dispatch:
                 dispatched = self._dispatch(
-                    plan, mode="TARGETED_RESEARCH", questions=questions, now=moment
+                    plan, mode="TARGETED_RESEARCH", questions=questions, now=moment,
+                    arm_reason=arm_reason,
                 )
                 decision = (
                     DECISION_RESEARCH_QUEUED if dispatched.startswith("job dispatched")
@@ -1967,7 +2292,9 @@ class KnowledgeBootstrapController:
 
         dispatched = ""
         if dispatch:
-            dispatched = self._dispatch(plan, mode="PRELOAD", questions=(), now=moment)
+            dispatched = self._dispatch(
+                plan, mode="PRELOAD", questions=(), now=moment, arm_reason=arm_reason
+            )
         sent = dispatched.startswith("job dispatched")
         if not dispatch:
             decision = DECISION_PRELOADED
@@ -2006,15 +2333,23 @@ class KnowledgeBootstrapController:
         mode: str,
         questions: Sequence[str],
         now: datetime,
+        arm_reason: str = "",
     ) -> str:
         """Send one prepared capability through the existing queue, or explain why not.
 
         The gate lives in the adapter, so this cannot route around it: a real gap, an
         active job, a device lease, a REALTIME activity or an unproven main loop all
         refuse here exactly as they do for the runtime's own escalations.
+
+        ``arm_reason`` is passed through rather than re-derived downstream, so the mode that
+        chose this candidate is the same mode that stamps its origin.  Re-deriving it would let a
+        seed-selected candidate be recorded as an ordinary preload (and vice versa), and the
+        ledger's "one seed at a time" rule counts on that stamp.
         """
         try:
-            observation = self.adapter.preload(now=now, plan=plan, mode=mode, questions=questions)
+            observation = self.adapter.preload(
+                now=now, plan=plan, mode=mode, questions=questions, arm_reason=arm_reason
+            )
         except Exception as exc:  # noqa: BLE001
             return f"dispatch failed: {type(exc).__name__}: {exc}"
         if observation.preloaded:
