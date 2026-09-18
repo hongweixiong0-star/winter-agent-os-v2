@@ -201,6 +201,7 @@ class LiveRuntime:
         routing=None,
         backend_ledger: BackendLedger | None = None,
         capability_gate: CapabilityGate | None = None,
+        code_revision: str = "",
     ) -> None:
         self.device = device
         # The ADB device behind the fallback executor.  When MAA observation is
@@ -251,6 +252,11 @@ class LiveRuntime:
         # True once this run has taken its one hop toward a page where more goals are
         # observable, so leaving cannot become a two-page ping-pong.
         self._replan_attempted = False
+        # The tree revision this process imported.  Read once by the caller (one git
+        # call per run) and stamped on every episode, so a later reconciliation can
+        # tell an episode that ran the *new* code from one that ran the code the job
+        # was about to replace.
+        self.code_revision = str(code_revision)
 
     @property
     def _semantic(self):
@@ -454,6 +460,7 @@ class LiveRuntime:
             recognition_backend=execution.recognition_backend if execution is not None else "",
             action_backend=execution.backend if execution is not None else "",
             executor_latency_ms=execution.latency_ms if execution is not None else None,
+            repo_revision=self.code_revision,
         )
         try:
             self.episode_store.append(episode)

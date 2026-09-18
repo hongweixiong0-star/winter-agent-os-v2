@@ -49,6 +49,12 @@ class RuntimeSnapshot:
     march_max: int | None = None
     queues: dict[str, Any] = field(default_factory=dict)
     stop_reason: str | None = None
+    # The goal paths the scheduler refused to re-enter this run, with the evidence for
+    # refusing (goal, capability, state, reason, streak).  Declared here because
+    # ``update`` filters unknown keys -- measured 2026-09-18: the runtime's write of
+    # this field was silently dropped, so the one place an operator looks to ask "why
+    # is AUTO not doing that" would have said nothing.
+    deferred_goals: list[dict[str, Any]] = field(default_factory=list)
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

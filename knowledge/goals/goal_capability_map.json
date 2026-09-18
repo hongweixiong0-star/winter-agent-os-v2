@@ -61,7 +61,7 @@
     "KEEP_MARCHES_PRODUCTIVE": {
       "category": "持续发展",
       "composition": "SEQUENCE",
-      "runtime_goal": false,
+      "runtime_goal": true,
       "capabilities": [
         {"capability": "NAVIGATE_TO_MAP", "alternatives": ["OPEN_MAP", "OPEN_HOME"], "evidence": "dataset/truth_audit/nav_to_map_20260918/key/"},
         {"capability": "OPEN_RESOURCE_SEARCH", "alternatives": ["SEARCH_RESOURCE"]},

@@ -969,6 +969,17 @@ class RepoRevision:
     dirty: int = 0
     ok: bool = False
 
+    @property
+    def token(self) -> str:
+        """The comparable form of this revision: head plus dirty count.
+
+        The dirty count is part of the version on purpose.  A development agent edits
+        this tree without committing, and an uncommitted edit is still a different
+        version of the code -- comparing bare heads would call a working-tree fix a
+        non-change.
+        """
+        return f"{(self.head or '')[:12]}+{self.dirty}" if self.ok else ""
+
     def differs_from(self, other: "RepoRevision") -> bool:
         if not (self.ok and other.ok):
             return False
@@ -1014,6 +1025,7 @@ def new_live_episodes(
     since: datetime | None,
     root: Path | str | None = None,
     episodes_path: Path | str | None = None,
+    version_changed_from: str = "",
 ) -> tuple[dict[str, Any], ...]:
     """Production episodes proving the capability after ``since``.
 
@@ -1021,6 +1033,14 @@ def new_live_episodes(
     indistinguishable otherwise) and only ``verifier_ok`` rows count, and evidence
     paths must be present.  This is the gate that keeps ``LIVE_VERIFIED`` from
     being something an agent can claim.
+
+    ``version_changed_from`` is the tree revision at dispatch time, and it is the
+    second half of that gate: an episode only counts when it ran a *different* tree
+    than the one the job started against.  Without it, AUTO's own concurrent work on
+    the same skill is credited to the job -- measured 2026-09-18, the NAVIGATE_TO_MAP
+    reconciliation counted three episodes recorded while the job was still WORKING,
+    i.e. against the code it was about to replace.  An episode with no recorded
+    ``repo_revision`` cannot show a version change and therefore cannot prove one.
     """
     base = Path(root) if root else Path(__file__).resolve().parents[1]
     path = Path(episodes_path) if episodes_path else base / "learning/episodes.jsonl"
@@ -1050,6 +1070,10 @@ def new_live_episodes(
                 continue
         if not (row.get("before_screenshot") and row.get("after_screenshot")):
             continue
+        if version_changed_from:
+            revision = str(row.get("repo_revision") or "")
+            if not revision or revision == version_changed_from:
+                continue
         found.append(row)
     return tuple(found)
 
@@ -1120,16 +1144,23 @@ def reconcile_outcome(
     harness's own concurrent edit.  So a code change is only called the agent's
     when the agent also says it made one, and the explanation names the
     corroboration instead of claiming proof.
+
+    ``LIVE_VERIFIED`` needs an episode that ran a *different* tree than the one the
+    job started against (see :func:`new_live_episodes`).  AUTO works the same skill
+    while a job runs, and those concurrent successes are not the job's; three of them
+    were counted for NAVIGATE_TO_MAP on 2026-09-18 while the job was still WORKING.
     """
     episodes = new_live_episodes(capability, skill=skill, since=submitted_at,
-                                root=root, episodes_path=episodes_path)
+                                root=root, episodes_path=episodes_path,
+                                version_changed_from=before.token)
     if episodes:
         latest = episodes[-1]
         return (
             LIVE_VERIFIED,
-            f"{len(episodes)} production episode(s) with verifier_ok after the job "
-            f"(latest {latest.get('recorded_at')}), evidence "
-            f"{Path(str(latest.get('before_screenshot'))).name}",
+            f"{len(episodes)} production episode(s) with verifier_ok on a tree that "
+            f"differs from dispatch time (latest {latest.get('recorded_at')}, revision "
+            f"{str(latest.get('repo_revision'))} vs {before.token or 'unknown'}), "
+            f"evidence {Path(str(latest.get('before_screenshot'))).name}",
             episodes,
         )
 
@@ -1512,6 +1543,23 @@ class EscalationQueueAdapter:
                 "duration_seconds": _duration(record.submitted_at, status.first_terminal_at),
                 "live_improvement": outcome == LIVE_VERIFIED,
                 "repair_used": outcome != LIVE_VERIFIED,
+                # The causal chain, so one row answers "what proved what" without
+                # joining four files by hand: which capability and failure shape the
+                # job was for, which tree it started and ended against, and which
+                # production episode (if any) is the one that proves the new version
+                # works.  ``live_verify_episode`` empty while ``verified_episodes`` is
+                # non-zero is the RR-004 shape: episodes exist, none of them ran the
+                # new version.
+                "capability": record.capability,
+                "failure_signature": record.key,
+                "skill": record.skill,
+                "before_version": before.head,
+                "before_dirty": before.dirty,
+                "after_version": after.head,
+                "after_dirty": after.dirty,
+                "live_verify_episode": str((episodes[-1] if episodes else {}).get("episode_id") or ""),
+                "live_verify_revision": str((episodes[-1] if episodes else {}).get("repo_revision") or ""),
+                "reload_id": str(_submitted(snapshot, record.key, "reload_id") or ""),
             })
             settled.append(record.key)
 

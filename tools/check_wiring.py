@@ -13,6 +13,7 @@ import ast
 import builtins
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -608,6 +609,42 @@ def main() -> int:
     start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
     check("START_HERE: step 5 still requires the Reuse Check before a capability",
           "Reuse Check" in start_here)
+
+    # The deferral gate (2026-09-18).  Its whole value is that a capability the
+    # development pipeline cannot fix stops being re-selected, so what has to be
+    # pinned is that the gate is on the scheduler's input path at all -- a gate that
+    # nothing consults, or one that a schema filter drops, is the silent-failure class
+    # this file exists for.
+    from winter_agent_v2.capability_gate import BLOCKED, CapabilityGate
+    from winter_agent_v2.goal_library import GoalComposition as _GoalComposition
+    from winter_agent_v2.goal_library import GoalLibrary as _GoalLibrary
+    from winter_agent_v2.goal_library import GoalState as _GoalState
+    from winter_agent_v2.goal_library import GoalStatus as _GoalStatus
+    from winter_agent_v2.runtime_snapshot import RuntimeSnapshot as _RuntimeSnapshot
+
+    _gate = CapabilityGate(
+        compositions={"G": _GoalComposition("G", "SEQUENCE", ("CAP",))},
+        capabilities={"CAP": (BLOCKED, "repair budget exhausted", None)},
+        streaks={"G": (9, datetime.now(timezone.utc) - timedelta(minutes=1), "SKILL")},
+        attempted={"G": frozenset({"SKILL"})},
+        reached={"G": frozenset({"CAP"})},
+    )
+    _blocked = _gate.blocks(_GoalState("G", _GoalStatus.READY))
+    check("gate: a blocked capability defers the goal that needs it",
+          _blocked is not None and _blocked.state == BLOCKED and _blocked.capability == "CAP")
+    check("gate: an empty gate leaves the same goal alone",
+          CapabilityGate.empty().allows(_GoalState("G", _GoalStatus.READY)))
+    check("gate: the runtime consults it when it selects a goal",
+          "self._selectable(goals, deferrals)" in (PKG / "runtime.py").read_text(encoding="utf-8"))
+    check("gate: the snapshot can carry the deferrals it is given",
+          "deferred_goals" in _RuntimeSnapshot.__dataclass_fields__)
+    _march_states = {g.goal_id: g for g in _GoalLibrary().discover(
+        WorldState(page=Page.MAP, march_used=2, march_max=6, confidence=0.99)
+    )}
+    check("goal: idle marches are a measurable goal",
+          _march_states.get("KEEP_MARCHES_PRODUCTIVE") is not None
+          and _march_states["KEEP_MARCHES_PRODUCTIVE"].distance == 4.0
+          and _march_states["KEEP_MARCHES_PRODUCTIVE"].status is _GoalStatus.READY)
 
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():

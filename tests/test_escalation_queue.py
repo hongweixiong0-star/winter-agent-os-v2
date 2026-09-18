@@ -790,6 +790,8 @@ class ReconciliationTest(unittest.TestCase):
                 "skill": "OPEN_INFANTRY_TRAINING", "recorded_at": (NOW + timedelta(minutes=5)).isoformat(),
                 "verifier_ok": True, "result": "SUCCESS",
                 "before_screenshot": "b.png", "after_screenshot": "a.png",
+                # Ran a tree that differs from the one at dispatch ("a").
+                "repo_revision": "b+0", "episode_id": "20260918_090000_000000",
             }])
             outcome, explanation, episodes = q.reconcile_outcome(
                 capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
@@ -800,6 +802,49 @@ class ReconciliationTest(unittest.TestCase):
         self.assertEqual(outcome, q.LIVE_VERIFIED)
         self.assertEqual(len(episodes), 1)
         self.assertIn("verifier_ok", explanation)
+
+    def test_a_concurrent_success_on_the_old_tree_is_not_the_jobs_proof(self):
+        """RR-004: AUTO works the same skill while a job runs.
+
+        Measured 2026-09-18: the NAVIGATE_TO_MAP reconciliation counted three verified
+        episodes recorded while the job was still WORKING -- i.e. against the code it
+        was about to replace.  A passing episode that ran the *dispatch* tree proves
+        the old code still works, not that the new code does.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "learning").mkdir(parents=True)
+            self._episodes(root, [{
+                "skill": "OPEN_INFANTRY_TRAINING", "recorded_at": (NOW + timedelta(minutes=5)).isoformat(),
+                "verifier_ok": True, "result": "SUCCESS",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+                "repo_revision": "a+0",
+            }])
+            outcome, explanation, episodes = q.reconcile_outcome(
+                capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
+                submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=0, root=root,
+            )
+        self.assertNotEqual(outcome, q.LIVE_VERIFIED)
+        self.assertEqual(episodes, ())
+
+    def test_an_episode_without_a_revision_cannot_prove_a_version_change(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "learning").mkdir(parents=True)
+            self._episodes(root, [{
+                "skill": "OPEN_INFANTRY_TRAINING", "recorded_at": (NOW + timedelta(minutes=5)).isoformat(),
+                "verifier_ok": True, "result": "SUCCESS",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+            }])
+            outcome, _, _ = q.reconcile_outcome(
+                capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
+                submitted_at=NOW, job_verdict="DONE",
+                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                wiring_problems=0, root=root,
+            )
+        self.assertNotEqual(outcome, q.LIVE_VERIFIED)
 
     def test_an_episode_without_recorded_at_is_history_not_proof(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -982,6 +1027,9 @@ class AttributionTest(unittest.TestCase):
                 "skill": "SKILL", "recorded_at": (NOW + timedelta(minutes=1)).isoformat(),
                 "verifier_ok": True, "result": "SUCCESS",
                 "before_screenshot": "b.png", "after_screenshot": "a.png",
+                # A version that differs from dispatch: the episode is what proves the
+                # capability, so the agent's own report cannot outrank it either way.
+                "repo_revision": "b+1",
             }), encoding="utf-8")
             outcome, _, _ = q.reconcile_outcome(
                 capability="CAP", skill="SKILL", submitted_at=NOW, job_verdict="DONE",

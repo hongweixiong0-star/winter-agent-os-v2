@@ -25,6 +25,7 @@ from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.goal_library import GoalStateStore
 from winter_agent_v2.candidate_policy import CandidateAttemptPool
 from winter_agent_v2.capability_gate import CapabilityGate
+from winter_agent_v2.escalation_queue import repo_revision as tree_revision
 from winter_agent_v2.vision import SemanticWorldVision
 from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
 from winter_agent_v2.resource_rotation import ResourceRotationStore
@@ -120,6 +121,13 @@ def main() -> int:
             )
     verifier_skills = set(LiveRuntime.VERIFIED_ATOMIC)
     started_at = datetime.now(timezone.utc)
+    # The tree this process is about to import its code from, read once and stamped on
+    # every episode.  It is what lets a later reconciliation separate "this run used
+    # the version the job produced" from "AUTO succeeded again while the job was still
+    # open" -- the difference between learning a capability and being credited for it.
+    revision = tree_revision(ROOT)
+    code_revision = revision.token
+    print(f"[code] revision {code_revision or 'unknown'}", flush=True)
     result = LiveRuntime(
         device=observation_device,
         adb_device=device,
@@ -150,6 +158,7 @@ def main() -> int:
         # the scheduler: a deferral that appears mid-run would change the route under
         # the step it is about to take.
         capability_gate=CapabilityGate.load(ROOT),
+        code_revision=code_revision,
     ).run(max_actions=args.max_actions, stop_after_skill=args.stop_after)
     for deferral in result.deferrals:
         print(f"[schedule] deferred {deferral.get('goal_id')} -> {deferral.get('state')}"

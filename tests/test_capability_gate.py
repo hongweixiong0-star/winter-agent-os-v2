@@ -89,6 +89,30 @@ class GoalProgressIsNotActionProgressTests(unittest.TestCase):
         after = {state.goal_id: state for state in GoalLibrary().discover(spent)}
         self.assertEqual(after["AVOID_STAMINA_WASTE"].distance, 407.0)
 
+    def test_the_gather_goal_meters_idle_marches(self):
+        """GATHER as a goal with a meter: work left is the idle march slots."""
+        idle = WorldState(page=Page.MAP, march_used=2, march_max=6, confidence=0.99)
+        states = {state.goal_id: state for state in GoalLibrary().discover(idle)}
+        self.assertIn("KEEP_MARCHES_PRODUCTIVE", states)
+        self.assertEqual(states["KEEP_MARCHES_PRODUCTIVE"].distance, 4.0)
+        self.assertIs(states["KEEP_MARCHES_PRODUCTIVE"].status, GoalStatus.READY)
+
+        busy = WorldState(page=Page.MAP, march_used=6, march_max=6, confidence=0.99)
+        after = {state.goal_id: state for state in GoalLibrary().discover(busy)}
+        self.assertEqual(after["KEEP_MARCHES_PRODUCTIVE"].distance, 0.0)
+        self.assertIs(after["KEEP_MARCHES_PRODUCTIVE"].status, GoalStatus.COMPLETE)
+        self.assertIs(
+            progress_moved(list(states.values()), list(after.values()), "KEEP_MARCHES_PRODUCTIVE"),
+            True,
+            "sending a march is progress, and now it is measurable",
+        )
+
+    def test_an_unread_march_counter_is_not_an_empty_one(self):
+        """Unknown is not zero: a goal invented from a failed read would be a fiction."""
+        unknown = WorldState(page=Page.MAP, confidence=0.99)
+        ids = {state.goal_id for state in GoalLibrary().discover(unknown)}
+        self.assertNotIn("KEEP_MARCHES_PRODUCTIVE", ids)
+
 
 def ledger(*events):
     return fold(list(events))
@@ -474,6 +498,46 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
 
 class EpisodeMeasurementTests(unittest.TestCase):
     """The measurement has to reach the artifact, or nothing downstream can use it."""
+
+    def test_the_snapshot_keeps_the_deferrals_it_is_given(self):
+        """The store filters unknown keys, so the field has to be declared.
+
+        Measured 2026-09-18: the runtime's write of ``deferred_goals`` was silently
+        dropped -- no error, no field -- which would have made the one place an
+        operator asks "why is AUTO not doing that" answer nothing.
+        """
+        from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
+
+        with TemporaryDirectory() as temp:
+            store = RuntimeSnapshotStore(Path(temp) / "snapshot.json")
+            store.update(deferred_goals=[{"goal_id": "G", "state": "BLOCKED", "reason": "spent"}])
+            written = json.loads((Path(temp) / "snapshot.json").read_text(encoding="utf-8"))
+            reread = store.read()
+        self.assertEqual(written["deferred_goals"][0]["goal_id"], "G")
+        self.assertEqual(reread.deferred_goals[0]["state"], "BLOCKED")
+
+    def test_a_deferred_run_writes_the_reason_to_the_snapshot(self):
+        states = [
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
+            WorldState(page=Page.HOME, confidence=0.99),
+        ]
+        with TemporaryDirectory() as temp:
+            snapshot_path = Path(temp) / "snapshot.json"
+            from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
+
+            device = FakeDevice()
+            LiveRuntime(
+                device=device,
+                vision=FakeVision(states),
+                semantic_vision=FakeSemantic(),
+                capture_dir=Path(temp) / "captures",
+                sleeper=lambda _seconds: None,
+                runtime_store=RuntimeSnapshotStore(snapshot_path),
+                capability_gate=DeferredGoalSchedulingTests()._gate(),
+            ).run(max_actions=1, allowed_skills={"OPEN_HOME"})
+            written = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        self.assertEqual(written["deferred_goals"][0]["goal_id"], "AVOID_STAMINA_WASTE")
+        self.assertTrue(written["deferred_goals"][0]["reason"])
 
     def test_a_verifier_pass_without_goal_progress_is_recorded_as_such(self):
         states = [

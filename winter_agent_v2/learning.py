@@ -52,6 +52,11 @@ class Episode:
     recognition_backend: str = ""
     action_backend: str = ""
     executor_latency_ms: float | None = None
+    # Which tree revision this run imported its code from.  Stamped per run, because
+    # the worker is a fresh process every cycle: it is the fact that separates "the
+    # new version works" from "AUTO happened to succeed again while a job was open"
+    # (RR-004, measured 2026-09-18).
+    repo_revision: str = ""
     recorded_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

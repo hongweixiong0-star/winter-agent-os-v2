@@ -101,6 +101,32 @@ class GoalLibrary:
         self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training, ("TRAIN_TROOPS",), 90)
         self._append_queue_goal(goals, "KEEP_RESEARCH_PRODUCTIVE", world.research, ("RESEARCH",), 80)
         self._append_queue_goal(goals, "KEEP_BUILDING_PRODUCTIVE", world.building, ("BUILDING_UPGRADE",), 80)
+        # GATHER, as the operator's goal list names it, in the runtime form the
+        # project's own table already describes (KEEP_MARCHES_PRODUCTIVE).
+        #
+        # Every march slot that could be sent gathering and is not is one unit of
+        # work left, so dispatching a march is measurable progress and a route that
+        # dispatches nothing advanced nothing.  Measured 2026-09-18: with the beast
+        # route deferred, AUTO ran the whole gather chain (SEARCH_RESOURCE ->
+        # SELECT_RESOURCE -> SUBMIT_RESOURCE_SEARCH -> START_GATHER -> DISPATCH_MARCH,
+        # seven verified steps) under ``goal_id=AUTO_DISCOVERY``, which has no meter --
+        # real work the scheduler could neither call progress nor call stalled.
+        #
+        # Deliberately *not* given a named brain route here.  ``RuleBrain`` serves it
+        # through the goal-less sweep, and naming it ``GATHER_RESOURCE`` would send a
+        # run standing on TRAINING/RESEARCH down brain.py's named-goal exit instead of
+        # letting the page's own branches start the queue item it can see.
+        idle = _optional_int(world.idle_marches)
+        if idle is not None:
+            goals.append(GoalState(
+                "KEEP_MARCHES_PRODUCTIVE",
+                GoalStatus.READY if idle > 0 else GoalStatus.COMPLETE,
+                completion=0.0 if idle > 0 else 1.0,
+                development_value=70,
+                available_skills=("DISPATCH_MARCH", "SEARCH_RESOURCE"),
+                evidence={"idle_marches": idle, "march_max": world.march_max},
+                distance=float(max(0, idle)),
+            ))
         minimum = world.events.get("minimum_guarantee") if isinstance(world.events, dict) else None
         if isinstance(minimum, dict):
             missing = int(minimum.get("points_missing", 0))
