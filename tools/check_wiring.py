@@ -729,6 +729,17 @@ def main() -> int:
     check("order: a version awaiting its examination does not hold the agent slot",
           "def _note_activation_pending(" in _queue_source
           and 'record.state = LIVE_VERIFY_PENDING' in _queue_source)
+    check("lease: the runtime yields at an atomic boundary when another owner holds it",
+          "self.device_lease.holder()" in (PKG / "runtime.py").read_text(encoding="utf-8")
+          and "held.owner != OWNER_GAMEPLAY" in (PKG / "runtime.py").read_text(encoding="utf-8"))
+    check("lease: releasing really returns the device",
+          "if record.released_at is not None:" in (PKG / "device_lease.py").read_text(encoding="utf-8"))
+    check("lease: an expired owner does not hold it",
+          "def expired(" in (PKG / "device_lease.py").read_text(encoding="utf-8")
+          and "if record.expired(now):" in (PKG / "device_lease.py").read_text(encoding="utf-8"))
+    check("lease: the window reports the owner from the lease file",
+          "def _report_device_owner(" in _panel_source
+          and '"lease": PENDING' in _panel_source)
     check("proof: a no-progress signature needs a measured move, not a green step",
           "PROOF_IS_GOAL_PROGRESS = frozenset({\"NO_GOAL_PROGRESS\"})" in _queue_source
           and "require_goal_progress and row.get(\"goal_progress\") is not True"

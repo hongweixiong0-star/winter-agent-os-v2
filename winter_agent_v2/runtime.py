@@ -15,6 +15,7 @@ from .models import Decision, ExecutionResult, Page, VerificationResult, WorldSt
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved
 from .capability_gate import CapabilityGate, Deferral
+from .device_lease import OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
@@ -202,6 +203,7 @@ class LiveRuntime:
         backend_ledger: BackendLedger | None = None,
         capability_gate: CapabilityGate | None = None,
         code_revision: str = "",
+        device_lease: DeviceLease | None = None,
     ) -> None:
         self.device = device
         # The ADB device behind the fallback executor.  When MAA observation is
@@ -257,6 +259,11 @@ class LiveRuntime:
         # tell an episode that ran the *new* code from one that ran the code the job
         # was about to replace.
         self.code_revision = str(code_revision)
+        # The single-UI-owner lock (operator §8/§19).  Injectable so a test can hold it
+        # without touching the real file; ``None`` means "no lease file exists", which is
+        # the same as gameplay owning the device and keeps the guard free in tests that
+        # do not care about it.
+        self.device_lease = device_lease
 
     @property
     def _semantic(self):
@@ -539,6 +546,22 @@ class LiveRuntime:
                       scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
 
         for index in range(1, max_actions + 1):
+            # The single-UI-owner boundary (operator §8/§19), checked at the only moment
+            # when no input is in flight: the previous step's action and verification are
+            # finished and the next one has not begun.  A lease held by anyone else ends
+            # the run here, so V2 yields the device at a safe point instead of being
+            # interrupted mid-transaction -- which is why this is at the top of an
+            # iteration and not inside one.
+            held = self.device_lease.holder() if self.device_lease is not None else None
+            if held is not None and held.owner != OWNER_GAMEPLAY:
+                reason = "device_leased_for_development"
+                self._runtime(
+                    agent_state=AgentState.PAUSED.value, runtime_thread_alive=False,
+                    scheduler_loop_alive=False, stop_reason=reason,
+                    reason=f"{held.owner} owns the device for {held.capability_id or 'validation'}",
+                    next_action="yielded at a safe point; resumes when the lease is released",
+                )
+                return finish(reason)
             before_path = self._capture_path(index, "before")
             self.device.screenshot(before_path)
             before = self.vision.observe(before_path)

@@ -23,6 +23,7 @@ from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, Resil
 from winter_agent_v2.learning import EpisodeStore
 from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.goal_library import GoalStateStore
+from winter_agent_v2.device_lease import DeviceLease
 from winter_agent_v2.candidate_policy import CandidateAttemptPool
 from winter_agent_v2.capability_gate import CapabilityGate
 from winter_agent_v2.escalation_queue import repo_revision as tree_revision
@@ -159,6 +160,10 @@ def main() -> int:
         # the step it is about to take.
         capability_gate=CapabilityGate.load(ROOT),
         code_revision=code_revision,
+        # The single-UI-owner lock.  Gameplay holds the device by default; a development
+        # validation takes it, and this run yields at the next atomic boundary rather
+        # than being interrupted mid-transaction (operator §8/§19).
+        device_lease=DeviceLease(ROOT),
     ).run(max_actions=args.max_actions, stop_after_skill=args.stop_after)
     for deferral in result.deferrals:
         print(f"[schedule] deferred {deferral.get('goal_id')} -> {deferral.get('state')}"

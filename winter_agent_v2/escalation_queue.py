@@ -116,6 +116,10 @@ NON_ESCALATABLE_STOP_REASONS = frozenset({
     "EVENT_CLOSED",
     "RALLY_FULL",
     "WAITING_FOR_NATURAL_STATE",
+    # Operator §2 A: the device is not available to gameplay because a development
+    # validation owns it.  That is a condition, not a capability gap -- escalating it
+    # would spend a development agent on the fact that a development agent is working.
+    "device_leased_for_development",
     # Added 2026-09-17 with the architecture freeze (operator section 9): these are
     # conditions the runtime should DEFER / SKIP / RECOVER / move to the next Goal
     # on, not reasons to spend a development agent.  A busy emulator is not a

@@ -544,6 +544,9 @@ RUNTIME_WAITING_STOPS = frozenset({
     "DEVICE_TEMPORARILY_BUSY", "mail_all_clear", "exploration_income_not_ready",
     "daily_no_claimable_rewards", "alliance_action_not_needed", "intel_not_available",
     "verified_beast_target_not_visible", "WAITING_FOR_NATURAL_STATE",
+    # The device belongs to a development validation right now (§2 A).  Waiting, not
+    # broken -- and the device row says which of the operator's four states it is in.
+    "device_leased_for_development",
 })
 
 CATALOG_META = {
@@ -1241,7 +1244,7 @@ def status_defaults() -> dict[str, str]:
         "wb_job": PENDING, "wb_model": PENDING, "wb_duration": PENDING,
         "wb_job_state": PENDING, "wb_improvement": PENDING, "wb_result": "尚未产生开发任务",
         "wb_gateway": PENDING, "wb_queue_line": PENDING, "wb_gap": PENDING,
-        "wb_pump": PENDING,
+        "wb_pump": PENDING, "lease": PENDING,
         "stats": "本次启动：0 轮 · 0 动作",
     }
 
@@ -2064,6 +2067,12 @@ class ControlPanel:
         pump_row = ttk.Frame(grid, style="Card.TFrame"); pump_row.grid(row=3, column=0, columnspan=4, sticky="ew", pady=(6, 0))
         ttk.Label(pump_row, text="队列消费泵（面板常驻）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(pump_row, textvariable=self.values["wb_pump"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
+        # §21's device row: who owns MuMu at this moment.  Read from the lease file, never
+        # hardcoded, and 恢复AUTO is a real answer -- an expired lease means gameplay is
+        # about to take the device back, which is not the same as a broken AUTO.
+        lease_row = ttk.Frame(grid, style="Card.TFrame"); lease_row.grid(row=4, column=0, columnspan=4, sticky="ew", pady=(6, 0))
+        ttk.Label(lease_row, text="设备所有权（Single UI Owner）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        ttk.Label(lease_row, textvariable=self.values["lease"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
         queue = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8)); queue.pack(fill="x", pady=(10, 0))
         qhead = ttk.Frame(queue, style="Card.TFrame"); qhead.pack(fill="x")
         ttk.Label(qhead, text="Development Escalation Queue", style="Section.TLabel", background=PANEL).pack(side="left")
@@ -2299,6 +2308,7 @@ class ControlPanel:
         view = escalation_view()
         gateway = self.probes.gateway()
         self._narrate_pump()
+        self._report_device_owner()
         label, detail = workbuddy_cell(view, gateway)
         self.values["workbuddy"].set(label)
         self.values["wb_state"].set(label + (f"（{detail}）" if detail else ""))
@@ -2349,6 +2359,22 @@ class ControlPanel:
         if hasattr(self, "kpi_source"):
             for key, var in self.kpi_source.items():
                 var.set(kpi.get(key, {}).get("source", PENDING))
+
+    def _report_device_owner(self) -> None:
+        """§21's device row, read from the lease file rather than inferred.
+
+        The four words are the operator's, and none of them is "故障": a validation
+        holding the device is the system working, and an expired lease reads 恢复AUTO
+        because that is what happens next.  A missing file is not an error either -- it
+        means gameplay owns the device, which is the normal case.
+        """
+        try:
+            from winter_agent_v2.device_lease import DeviceLease
+
+            lease = DeviceLease(ROOT)
+            self.values["lease"].set(f"{lease.state()} · {lease.describe()}")
+        except Exception as exc:  # noqa: BLE001 - the row must never break the window
+            self.values["lease"].set(f"{PENDING}（{type(exc).__name__}）")
 
     def _narrate_pump(self) -> None:
         """Report the queue pump on the UI thread, where the log lives.
