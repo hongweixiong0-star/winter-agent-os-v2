@@ -515,6 +515,12 @@ class EscalationRecord:
     activated_at: datetime | None = None
     # The episode a REJOINED/Production-Reuse step is credited to (operator §九).
     production_reuse_episode_id: str = ""
+    # The examination's own evidence: the episode that *attempted* the capability (LIVE_TRIED)
+    # and the one that passed it (LIVE_VERIFIED).  Two fields rather than one because they are
+    # different facts and a failure must still leave a trace of having tried.
+    live_try_episode_id: str = ""
+    live_verify_episode_id: str = ""
+    verified_at: datetime | None = None
     # The agent's own words at settle time, carried forward so the re-measure does not
     # have to re-ask the gateway -- and so the corroboration behind a later LIVE_VERIFIED
     # is the same sentence the first measurement used, not a fresh guess.
@@ -708,6 +714,61 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.notes.append(
                 f"rejoined normal gameplay (episode "
                 f"{record.production_reuse_episode_id or 'unrecorded'})"
+            )
+            continue
+
+        if kind == "validation_result":
+            # One examination's result when it is not a pass.  Recorded as its own event rather
+            # than as a generic error, because the outcome decides the next action and the three
+            # cases genuinely differ (operator §6/§7).
+            record = get(key)
+            outcome = str(event.get("outcome") or VALIDATION_NO_PROOF)
+            record.outcome = outcome
+            record.notes.append(
+                f"validation: {outcome} -- {str(event.get('reason') or '')[:200]}"
+            )
+            if event.get("validation_episode_id"):
+                record.live_try_episode_id = str(event["validation_episode_id"])
+            if outcome == VALIDATION_VERSION_MISMATCH:
+                # Not a failed capability -- a failed *measurement*.  The attempt proved
+                # something about the wrong code, so the version under test has still not been
+                # exercised: route back to the activation rung, where a later episode running
+                # the right revision can move it forward again.  Parking it as a failure would
+                # spend the repair budget on a code problem that does not exist.
+                record.outcome = VERSION_ACTIVATION_PENDING
+                record.state = LIVE_VERIFY_PENDING
+            continue
+
+        if kind == "live_tried":
+            # The capability really ran on the version under test.  Success unknown, and the
+            # operator's rule is that a start, a screenshot or a SAFE_STOP is not a try.
+            record = get(key)
+            record.outcome = LIVE_TRIED
+            record.live_try_episode_id = str(event.get("validation_episode_id") or "")
+            record.notes.append(
+                f"live tried: {str(event.get('skill') or '')} "
+                f"(episode {record.live_try_episode_id or 'unrecorded'}, "
+                f"verifier_ok={event.get('verifier_ok')!r}, "
+                f"goal_progress={event.get('goal_progress')!r})"
+            )
+            continue
+
+        if kind == "live_verified":
+            record = get(key)
+            # Deliberately still LIVE_VERIFY_PENDING: a verified capability has not yet
+            # re-joined normal play, and the operator's §8 rule is that those are two different
+            # facts.  REJOINED -- appended once the device has actually been given back -- is
+            # the state that says it is back in the production pool.  Neither is terminal while
+            # production reuse is still unproven, which is what keeps the capability in
+            # ``UNFINISHED_TRACE_STATES`` and stops a second job for it.
+            record.state = LIVE_VERIFY_PENDING
+            record.outcome = LIVE_VERIFIED
+            record.live_verify_episode_id = str(event.get("validation_episode_id") or "")
+            record.verified_at = _moment(event.get("verified_at")) or _moment(
+                event.get("recorded_at"))
+            record.notes.append(
+                f"live verified on {record.active_version or record.after_version or 'unknown'}"
+                f" (episode {record.live_verify_episode_id or 'unrecorded'})"
             )
             continue
 
@@ -1647,6 +1708,134 @@ _CHANGE_CLAIM = re.compile(
     r"\bedited\b|\bmodified\b|\bpatched\b|\bwrote\b|\bcreated\b|\bit\s+is\s+fixed\b)"
 )
 _HEX_COMMIT = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+
+#: The word used when a validation cycle ran but produced no episode that may be credited.
+VALIDATION_NO_PROOF = "VALIDATION_NO_PROOF"
+#: The cycle produced episodes, but not for this trace / job / capability.  A refusal, not a
+#: failure: nothing about the capability has been learned, and crediting it would be the
+#: "first LIVE_VERIFY_PENDING" mistake one layer down.
+VALIDATION_CONTEXT_MISMATCH = "VALIDATION_CONTEXT_MISMATCH"
+#: The attempt was real but ran the wrong code.  Distinct from a failed capability, and routed
+#: back to the activation rung rather than spending the repair budget on a problem that is not
+#: in the code.
+VALIDATION_VERSION_MISMATCH = "VALIDATION_VERSION_MISMATCH"
+
+
+def validation_settlement(
+    *, trace_key: str, job_id: str, capability: str, skill: str,
+    after_version: str, failure_type: str = "",
+    episodes: Iterable[Mapping[str, Any]], since: datetime | None = None,
+) -> tuple[str, str, dict[str, Any]]:
+    """What did one Development Validation cycle achieve?  ``(outcome, why, episode)``.
+
+    Operator §5-§7, as one function, because the gates have to be applied together: an
+    examination whose episode matches on four of five axes is not "mostly verified", it is
+    unusable, and the failure modes are different enough that each needs its own name.
+
+    The ladder this decides between:
+
+        LIVE_VERIFIED          everything matched *and* the capability was proved
+        LIVE_TRIED             the capability really ran; success unknown
+        VALIDATION_VERSION_MISMATCH    a real attempt, but not on the version under test
+        VALIDATION_CONTEXT_MISMATCH    an episode that is not this trace's at all
+        VALIDATION_NO_PROOF    nothing ran the target -- a start, a screenshot or a SAFE_STOP
+                               is not a try
+
+    Only episodes from a ``DEVELOPMENT_VALIDATION`` cycle count.  A production episode is
+    evidence for a different question, and the operator's §8 rule is that it may never be read
+    as the examination's result.
+
+    ``LIVE_VERIFIED`` additionally requires the verifier to have passed, the evidence frames to
+    exist, and -- for a defect whose proof *is* goal progress -- actual goal progress.  So a
+    SAFE_STOP that "succeeded", navigation that completed, or an action that ran while the goal
+    did not move cannot become a verified capability.
+    """
+    seen = [dict(row) for row in episodes]
+    ours = [row for row in seen
+            if str(row.get("execution_mode") or "").upper() == "DEVELOPMENT_VALIDATION"]
+    if not ours:
+        return (VALIDATION_NO_PROOF,
+                "本轮没有产生 DEVELOPMENT_VALIDATION 模式的 Episode：启动过进程、截图成功或 "
+                "SAFE_STOP 都不算真机尝试。",
+                {})
+    if since is not None:
+        ours = [row for row in ours
+                if (_moment(row.get("recorded_at")) or datetime.min.replace(tzinfo=timezone.utc))
+                >= since] or ours
+
+    # Context first: an episode from another trace says nothing about this one, and treating it
+    # as this trace's attempt would be the "first LIVE_VERIFY_PENDING" mistake one layer down.
+    trace = str(trace_key or "")
+    mine = [row for row in ours
+            if (not trace or str(row.get("trace_id") or "") == trace)]
+    if not mine:
+        got = ", ".join(sorted({str(row.get("trace_id") or "") for row in ours}))[:200]
+        return (VALIDATION_CONTEXT_MISMATCH,
+                f"找到 {len(ours)} 条 DEVELOPMENT_VALIDATION Episode，但没有一条属于 trace "
+                f"{trace or '(未指名)'}（实际来自：{got or '空'}）。不碰设备、不记功。",
+                {})
+    context_ok = [row for row in mine
+                  if str(row.get("job_id") or "") == str(job_id or "")
+                  and str(row.get("capability") or "") == str(capability or "")]
+    if not context_ok:
+        return (VALIDATION_CONTEXT_MISMATCH,
+                f"trace 匹配但 job/capability 不匹配：期望 job={job_id or '空'} "
+                f"capability={capability or '空'}，实际 job="
+                f"{str(mine[0].get('job_id') or '空')} capability="
+                f"{str(mine[0].get('capability') or '空')}。",
+                dict(mine[0]))
+
+    # Version next, and before anything is credited: an attempt on the wrong code proves
+    # something about the wrong code.
+    expected = str(after_version or "")
+    version_ok = [row for row in context_ok
+                  if str(row.get("repo_revision") or "") == expected
+                  and str(row.get("expected_after_version") or expected) == expected]
+    if not version_ok:
+        latest = context_ok[-1]
+        return (VALIDATION_VERSION_MISMATCH,
+                f"校准跑的不是被测版本：expected={expected or '空'}，"
+                f"episode repo_revision={str(latest.get('repo_revision') or '空')}，"
+                f"expected_after_version={str(latest.get('expected_after_version') or '空')}。"
+                "不得记 LIVE_TRIED / LIVE_VERIFIED，等待正确版本重新激活。",
+                dict(latest))
+
+    # Did the *target* run?  A cycle that only navigated, or stopped safely, has not tried.
+    target_skill = str(skill or "")
+    ran = [row for row in version_ok
+           if not target_skill or str(row.get("skill") or "") == target_skill]
+    if not ran:
+        latest = version_ok[-1]
+        return (VALIDATION_NO_PROOF,
+                f"版本正确但没有一条 Episode 执行了目标 skill {target_skill or '(未指名)'}"
+                f"（实际：{str(latest.get('skill') or '空')}）。仅启动、截图或 SAFE_STOP 不算真机尝试。",
+                dict(latest))
+
+    latest = ran[-1]
+    needs_goal = str(failure_type).upper() in PROOF_IS_GOAL_PROGRESS
+    verifier_ok = latest.get("verifier_ok") is True
+    goal_ok = latest.get("goal_progress") is True
+    evidence = bool(str(latest.get("before_screenshot") or "")
+                    and str(latest.get("after_screenshot") or ""))
+    if not verifier_ok:
+        return (LIVE_TRIED,
+                f"目标 {target_skill} 已在真机执行，但 Verifier 未通过"
+                f"（verifier_ok={latest.get('verifier_ok')!r}）。这是真机尝试，不是成功证明。",
+                dict(latest))
+    if not evidence:
+        return (LIVE_TRIED,
+                "Verifier 通过但缺 before/after 证据帧，不能算已验证。",
+                dict(latest))
+    if needs_goal and not goal_ok:
+        return (LIVE_TRIED,
+                f"Verifier 通过、证据齐全，但该缺陷的证明条件是 Goal Progress，"
+                f"而 goal_progress={latest.get('goal_progress')!r}。动作成功不等于目标推进。",
+                dict(latest))
+    return (LIVE_VERIFIED,
+            f"目标 {target_skill} 在被测版本 {expected[:12]} 上真机执行，Verifier 通过，"
+            f"证据齐全" + ("，Goal Progress 成立" if needs_goal else "") + "。",
+            dict(latest))
 
 
 def agent_claims_change(report: str) -> bool:
