@@ -45,6 +45,14 @@ def state_of(all_rows: list[dict], key: str) -> tuple[str, str]:
             value = str(row.get("state") or "")
             if value in ("WORKING", "DONE", "FAILED", "STOPPED"):
                 state = value
+        elif kind == "reconciled":
+            # A reconciled row may settle a record with no job at all: the consumer
+            # releases a record the device has already proven, and an earlier version of
+            # this watcher kept reporting NEW forever because it only understood
+            # submission.  A watcher that cannot see a release would make a fixed queue
+            # look broken.
+            released = str(row.get("released_by") or "")
+            state = "RELEASED" if released else (str(row.get("job_state") or state))
         elif kind == "queued":
             state = "QUEUED"
     return state, job
@@ -67,8 +75,8 @@ while time.time() < deadline:
     for row in fresh:
         kind = str(row.get("event") or "")
         key = str(row.get("key") or "")
-        if kind in ("submitted", "queued", "pending_consumed", "job_state") and key:
-            print(f"     + {kind:16} {key[:52]} {row.get('job_id') or row.get('state') or ''}", flush=True)
+        if kind in ("submitted", "queued", "pending_consumed", "job_state", "reconciled") and key:
+            print(f"     + {kind:16} {key[:52]} {row.get('job_id') or row.get('state') or row.get('released_by') or ''}", flush=True)
     if any(state_of(all_rows, key)[1] for key in KEYS):
         print("CONSUMED", flush=True)
         break
