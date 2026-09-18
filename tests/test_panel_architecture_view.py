@@ -569,9 +569,13 @@ class PanelIntegrationTest(unittest.TestCase):
             module, "_ESCALATION_LEDGER_PATH",
             Path(cls._log_dir.name) / "learning/workbuddy_escalations.jsonl",
         )
+        cls._pump_patch = mock.patch.object(
+            module, "PUMP_STATE_PATH", Path(cls._log_dir.name) / "pump.json"
+        )
         cls._log_patch.start()
         cls._state_patch.start()
         cls._ledger_patch.start()
+        cls._pump_patch.start()
         try:
             cls.root = tk.Tk()
         except Exception as exc:  # noqa: BLE001 - no display
@@ -603,6 +607,8 @@ class PanelIntegrationTest(unittest.TestCase):
             cls._state_patch.stop()
         if getattr(cls, "_ledger_patch", None) is not None:
             cls._ledger_patch.stop()
+        if getattr(cls, "_pump_patch", None) is not None:
+            cls._pump_patch.stop()
         if getattr(cls, "_log_dir", None) is not None:
             cls._log_dir.cleanup()
 

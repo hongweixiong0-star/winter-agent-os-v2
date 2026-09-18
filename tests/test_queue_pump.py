@@ -23,6 +23,7 @@ hook follows, and it is the reason the pump lives on a daemon thread at all.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import threading
@@ -405,9 +406,40 @@ class QueuePumpStateTest(unittest.TestCase):
 
     @staticmethod
     def _module():
-        from tools import control_panel
+        return panel_module()
 
-        return control_panel
+    def setUp(self):
+        self.module = panel_module()
+        self._tmp = tempfile.TemporaryDirectory()
+        self._state_patch = mock.patch.object(
+            self.module, "PUMP_STATE_PATH", Path(self._tmp.name) / "pump.json")
+        self._state_patch.start()
+
+    def tearDown(self):
+        self._state_patch.stop()
+        self._tmp.cleanup()
+
+    def test_each_tick_is_written_where_a_reader_outside_the_gui_can_see_it(self):
+        """A consumer on a thread inside a window cannot be checked any other way."""
+        pump = self.module.QueuePump()
+        adapter = mock.Mock()
+        adapter.pump.return_value = q.RunObservation(submitted=("job-7",), reconciled=("K",))
+        pump._build = lambda: adapter
+        pump.tick()
+        written = json.loads(Path(self._tmp.name, "pump.json").read_text(encoding="utf-8"))
+        self.assertEqual(written["passes"], 1)
+        self.assertEqual(written["submitted"], 1)
+        self.assertEqual(written["reconciled"], 1)
+        self.assertIn("written_at", written)
+        self.assertEqual(written["process"], os.getpid())
+
+    def test_a_gated_pump_still_says_so_in_the_file(self):
+        """A stale file and a stopped pump must not look the same."""
+        pump = self.module.QueuePump(enabled=lambda: False)
+        pump.tick()
+        written = json.loads(Path(self._tmp.name, "pump.json").read_text(encoding="utf-8"))
+        self.assertEqual(written["gated"], "operator stopped")
+        self.assertEqual(written["passes"], 0)
 
     def test_a_disabled_pump_touches_nothing(self):
         """The operator's stop outranks the clock: no adapter, no ledger, no submission."""
@@ -505,6 +537,7 @@ class PanelOwnsTheClockTest(unittest.TestCase):
             module.ControlPanel._enforce_retention = lambda self: None
             with mock.patch.object(module, "PANEL_STATE_PATH", state), \
                  mock.patch.object(module, "PANEL_LOG_PATH", log), \
+                 mock.patch.object(module, "PUMP_STATE_PATH", Path(temp) / "pump.json"), \
                  mock.patch.object(module, "_ESCALATION_LEDGER_PATH", ledger):
                 panel = module.ControlPanel(root)
                 try:

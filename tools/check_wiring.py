@@ -671,6 +671,10 @@ def main() -> int:
           and "self.pump.start()" in _panel_source)
     check("pump: closing the window stops it",
           "self.pump.stop()" in _panel_source)
+    check("pump: every tick is written where a reader outside the GUI can see it",
+          'PUMP_STATE_PATH = LOG_ROOT / "pump.json"' in _panel_source
+          and "def _persist(self)" in _panel_source
+          and _panel_source.count("self._persist()") >= 3)
     check("pump: the operator's stop gates it, a pause does not",
           "self.operator_intent != \"STOPPED\"" in _panel_source)
     check("slot: the timebox the job is told is the one that is enforced",

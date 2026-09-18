@@ -311,6 +311,7 @@ class AutostartGateTest(unittest.TestCase):
     _state_patch = None
     _log_patch = None
     _ledger_patch = None
+    _pump_patch = None
     _tmp = None
 
     @classmethod
@@ -339,15 +340,19 @@ class AutostartGateTest(unittest.TestCase):
         cls._ledger_patch = mock.patch.object(
             module, "_ESCALATION_LEDGER_PATH",
             Path(cls._tmp.name) / "learning/workbuddy_escalations.jsonl")
+        cls._pump_patch = mock.patch.object(
+            module, "PUMP_STATE_PATH", Path(cls._tmp.name) / "pump.json")
         cls._state_patch.start()
         cls._log_patch.start()
         cls._ledger_patch.start()
+        cls._pump_patch.start()
         try:
             cls.root = tk.Tk()
         except Exception as exc:  # noqa: BLE001 - no display
             cls._state_patch.stop()
             cls._log_patch.stop()
             cls._ledger_patch.stop()
+            cls._pump_patch.stop()
             cls._tmp.cleanup()
             raise unittest.SkipTest(f"no display: {exc}")
         cls.root.withdraw()
@@ -374,6 +379,8 @@ class AutostartGateTest(unittest.TestCase):
             cls._log_patch.stop()
         if cls._ledger_patch is not None:
             cls._ledger_patch.stop()
+        if cls._pump_patch is not None:
+            cls._pump_patch.stop()
         if cls._tmp is not None:
             cls._tmp.cleanup()
 

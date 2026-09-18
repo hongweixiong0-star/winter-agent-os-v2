@@ -126,6 +126,10 @@ CRASH_ROOT = LOG_ROOT / "crashes"
 # which is what decides whether AUTO starts -- a decision that has to be auditable
 # from outside the process.
 PANEL_LOG_PATH = LOG_ROOT / "panel.log"
+# The queue pump's last tick.  Written every pass and read by anyone who wants to
+# know whether the consumer is actually running -- a thread inside a GUI cannot be
+# checked from outside any other way, and "it is started on line N" is not evidence.
+PUMP_STATE_PATH = LOG_ROOT / "pump.json"
 PANEL_LOG_MAX_BYTES = 1_000_000
 RUNTIME_SNAPSHOT_PATH = ROOT / "learning/runtime_snapshot.json"
 MUMU_PATH = Path(r"D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuNxMain.exe")
@@ -1387,6 +1391,7 @@ class QueuePump:
         if not self._enabled():
             with self._lock:
                 self._state["gated"] = "operator stopped"
+            self._persist()
             return self.state()
         with self._lock:
             self._state["gated"] = ""
@@ -1400,6 +1405,7 @@ class QueuePump:
                 self._state["errors"] += 1
                 self._state["last_error"] = f"{type(exc).__name__}: {exc}"
                 self._state["last_tick"] = datetime.now().strftime("%H:%M:%S")
+            self._persist()
             return self.state()
         with self._lock:
             self._state["passes"] += 1
@@ -1410,7 +1416,27 @@ class QueuePump:
             self._state["last_error"] = observation.errors[-1] if observation.errors else ""
             self._state["last_line"] = observation.line
             self._state["last_tick"] = datetime.now().strftime("%H:%M:%S")
+        self._persist()
         return self.state()
+
+    def _persist(self) -> None:
+        """Write the tick where a reader outside this process can see it.
+
+        A consumer that lives on a thread inside a GUI is exactly the kind of
+        mechanism that stops quietly and leaves no trace, and the operator asked to
+        be able to check that it is running rather than assume it.  The timestamp is
+        also a watchdog signal: a stale file means the thread died, which is
+        otherwise indistinguishable from a queue with nothing to do.
+        """
+        try:
+            path = Path(PUMP_STATE_PATH)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            payload = dict(self.state())
+            payload["written_at"] = datetime.now(timezone.utc).isoformat()
+            payload["process"] = os.getpid()
+            path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+        except Exception:  # noqa: BLE001 - an unwritable log must not stop the pump
+            pass
 
     def _build(self) -> Any:
         """A real adapter on the real ledger -- the same one ``run_live`` uses.
