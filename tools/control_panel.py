@@ -2252,6 +2252,7 @@ class PanelProbes:
                     # decided it would not.  The operator's rule is explicit: a refusal is a
                     # state to display, not a blank.
                     self._soak_error = f"未启动：{why or context}"
+                    self._log_soak_once(f"验收 Soak 未启动：{self._soak_error}")
                     return
                 from winter_agent_v2.gateway_soak import GatewaySoak
                 from winter_agent_v2.gateway_soak import EVIDENCE_RELATIVE
@@ -2264,8 +2265,8 @@ class PanelProbes:
                     console_counter=self._console_windows_for_this_window,
                     launch_context=context,
                 )
-                self._log_soak(f"验收 Soak 已启动（{why}）：窗口 {self._soak.window_seconds:.0f} 秒，"
-                               f"由 GUI 自行测量，无需任何手工命令")
+                self._log_soak_once(f"验收 Soak 已启动（{why}）：窗口 {self._soak.window_seconds:.0f} 秒，"
+                                    f"由 GUI 自行测量，无需任何手工命令")
             soak = self._soak
             if soak.finished():
                 return
@@ -2278,7 +2279,13 @@ class PanelProbes:
                                f"（{record.get('sample_count')} 样本 / "
                                f"{record.get('duration_minutes')} 分钟）")
         except Exception as exc:  # noqa: BLE001 - a measurement must never take the window down
+            # Both the page *and* the log.  Measured 2026-09-18: the soak declined in a live
+            # window and the only place the reason existed was a process's memory -- the page
+            # could show it but a reader of the log could not, and the window could not be
+            # interrogated from outside.  A reason that only exists on screen is a reason that
+            # cannot be diagnosed.
             self._soak_error = f"{type(exc).__name__}: {exc}"
+            self._log_soak_once(f"验收 Soak 驱动失败：{self._soak_error}")
 
     def _console_windows_for_this_window(self) -> int | None:
         """Visible console windows owned by *this* window's process tree (§二 condition 11)."""
@@ -2296,6 +2303,19 @@ class PanelProbes:
                 handle.write(f"{datetime.now().strftime('%H:%M:%S')}  {message}\n")
         except Exception:  # noqa: BLE001
             pass
+
+    def _log_soak_once(self, message: str) -> None:
+        """Log a soak decision the first time it is taken, and never again.
+
+        The driver runs every probe pass, so an unconditional write would put the same line in
+        the log every ten seconds and bury it -- which is the failure mode the pump's own
+        narration already solved the same way.  A change of decision logs again, because that is
+        news.
+        """
+        if getattr(self, "_soak_noted", "") == message:
+            return
+        self._soak_noted = message
+        self._log_soak(message)
 
     def _record_gateway(self, state: dict[str, Any], *, now: datetime) -> None:
         """Persist the probe and decide when the next one may happen.
