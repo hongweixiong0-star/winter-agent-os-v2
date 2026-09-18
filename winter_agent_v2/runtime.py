@@ -500,6 +500,10 @@ class LiveRuntime:
         # run so the end-of-run escalation hook reads the scheduler's own decision
         # instead of re-deriving it from the stop reason.
         deferrals: list[Deferral] = []
+        # One narration per distinct deferral reason, not one per step: the reason is
+        # recomputed per step, and a twelve-step run printed the identical line twelve
+        # times (measured 2026-09-18).
+        self._printed_deferrals: set[str] = set()
         gate = self._gate()
 
         def finish(reason: str) -> LiveRun:
@@ -560,9 +564,15 @@ class LiveRuntime:
             if deferrals:
                 # Written every run, not only when it changes: the panel and the
                 # escalation hook both read the current answer, and a stale one would
-                # make "why is it doing that" unanswerable from outside.
+                # make "why is it doing that" unanswerable from outside.  Printed once
+                # per distinct reason, though -- the test is per step, and a twelve-step
+                # run repeated the same line twelve times, which buries the signal it
+                # exists to provide (measured 2026-09-18).
                 self._runtime(deferred_goals=[item.as_row() for item in deferrals])
                 for item in deferrals:
+                    if item.describe() in self._printed_deferrals:
+                        continue
+                    self._printed_deferrals.add(item.describe())
                     print(f"[schedule] deferred {item.describe()}", flush=True)
             if self.brain.current_goal is None and best_goal is not None:
                 self.brain.current_goal = {

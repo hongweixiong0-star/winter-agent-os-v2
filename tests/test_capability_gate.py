@@ -401,6 +401,26 @@ class FakeVision:
         return next(self.states)
 
 
+class StickyVision(FakeVision):
+    """Keeps answering with the last state.
+
+    A run decides when to re-observe (refresh loops, recovery waits), so a fake that
+    runs dry mid-run turns the loop's own behaviour into a StopIteration instead of
+    letting the test assert on it.
+    """
+
+    def __init__(self, states):
+        super().__init__(states)
+        self.last = None
+
+    def observe(self, _path):
+        try:
+            self.last = next(self.states)
+        except StopIteration:
+            pass
+        return self.last
+
+
 class FakeDevice:
     def __init__(self):
         self.taps = []
@@ -494,6 +514,31 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         device, run, _rows = self._run(states, CapabilityGate.empty())
         self.assertEqual(run.deferrals, ())
         self.assertEqual(run.steps[0].decision.skill, "SCAN_MAP_FOR_BEAST")
+
+    def test_a_deferral_is_narrated_once_per_reason_not_once_per_step(self):
+        """A twelve-step run printed the identical line twelve times (2026-09-18)."""
+        import contextlib
+        import io
+
+        device = FakeDevice()
+        states = [
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
+            WorldState(page=Page.HOME, confidence=0.99),
+            WorldState(page=Page.HOME, confidence=0.99),
+        ]
+        with TemporaryDirectory() as temp:
+            capture = io.StringIO()
+            with contextlib.redirect_stdout(capture):
+                run = LiveRuntime(
+                    device=device,
+                    vision=StickyVision(states),
+                    semantic_vision=FakeSemantic(),
+                    capture_dir=Path(temp) / "captures",
+                    sleeper=lambda _seconds: None,
+                    capability_gate=DeferredGoalSchedulingTests()._gate(),
+                ).run(max_actions=3, allowed_skills={"OPEN_HOME", "OPEN_MAP", "SCAN_MAP_FOR_BEAST"})
+        self.assertGreaterEqual(len(run.steps), 2, "the run has to take more than one step")
+        self.assertEqual(capture.getvalue().count("[schedule] deferred"), 1)
 
 
 class EpisodeMeasurementTests(unittest.TestCase):
