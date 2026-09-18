@@ -149,6 +149,57 @@ def _inflight_lines(scanner: BootstrapScanner, top: int = 12) -> list[str]:
     return lines
 
 
+def _inbox_block(root: Path, *, ingest: bool) -> int:
+    """The executor's half of READ ONCE: what came back, and what it changed.
+
+    Kept as its own command so "did anything actually get written down" is one
+    question with one answer, rather than something a reader has to infer from the
+    absence of a complaint.
+    """
+    from winter_agent_v2.knowledge_preload import KnowledgeStore
+
+    store = KnowledgeStore(root)
+    print("RESEARCH INBOX (answers waiting for the knowledge base)")
+    print(f"  directory : {store.inbox.as_posix()}")
+    pending = store.pending_research()
+    print(f"  pending   : {len(pending)}")
+    for path in pending:
+        print(f"    {path.name}")
+    if ingest:
+        result = store.ingest()
+        print()
+        print("INGEST")
+        print(f"  {result.line}")
+        for item in result.accepted:
+            print(f"    accepted: {item}")
+        for item in result.rejected:
+            print(f"    rejected: {item}")
+        for item in result.notes:
+            print(f"    note    : {item}")
+    print()
+    print("ANSWER FORMAT (write one file per capability, then run --ingest)")
+    print(json.dumps({
+        "capability": "TROOP_SELECT",
+        "answers": [{
+            "field": "<preconditions|navigation|page_semantics|recognition|actions|"
+                     "success_state|failure_states|verifier_prior|recovery_prior|"
+                     "resource_rules|risk|client_specific_notes>",
+            "value": "<the answer>",
+            "source": "<file:line | url | frame id>",
+            "source_type": "<LIVE_VERIFIED_ASSET|INTERNAL_KNOWLEDGE|EPISODE_EVIDENCE|"
+                           "LEGACY_VERIFIED_ASSET|FAILURE_PATTERN|EXTERNAL_MAP|"
+                           "OPEN_SOURCE_PROJECT|GAME_WIKI|SELF_EXPLORATION>",
+            "source_confidence": 0.5,
+            "observed_date": "YYYY-MM-DD",
+        }],
+    }, ensure_ascii=False, indent=1))
+    print()
+    print("  external rungs cap at PRIOR, an in-repo answer at UNVERIFIED, a real-device "
+          "look at OBSERVED -- only a live episode with a passing verifier confirms.")
+    print()
+    return 0
+
+
 def _one_brief(scanner: BootstrapScanner, code: str) -> int:
     wanted = code.strip().upper()
     for plan in scanner.plans():
@@ -177,6 +228,10 @@ def main() -> int:
                         help="with --cycle: do everything except send a job")
     parser.add_argument("--state", action="store_true",
                         help="print the controller's live state (the watchdog's questions)")
+    parser.add_argument("--inbox", action="store_true",
+                        help="show research answers waiting to be folded into the knowledge base")
+    parser.add_argument("--ingest", action="store_true",
+                        help="fold the research inbox into knowledge/preload/ and report counts")
     parser.add_argument("--coverage", action="store_true",
                         help="print the five coverages, over the unlocked subset")
     parser.add_argument("--json", action="store_true", help="machine-readable report on stdout")
@@ -186,6 +241,9 @@ def main() -> int:
 
     if args.capability:
         return _one_brief(scanner, args.capability)
+
+    if args.inbox or args.ingest:
+        return _inbox_block(ROOT, ingest=args.ingest)
 
     # The controller branch runs *before* the report writer and falls through to it, so
     # `--cycle --write` really writes the report the cycle produced.  An earlier version
@@ -223,10 +281,13 @@ def main() -> int:
             state = controller.state(scanner=scanner)
             path = controller.write_state(scanner=scanner)
             print("CONTROLLER STATE (the watchdog's seven questions)")
-            for key in ("controller", "stage", "decision", "learning", "learning_missing",
-                        "preloading", "developing", "awaiting_calibration", "knowledge_blocked",
-                        "last_preload_at", "last_confirmed_at", "next_capability",
-                        "knowledge_records"):
+            for key in ("controller", "status", "stage", "decision", "learning",
+                        "learning_missing", "preloading", "developing",
+                        "awaiting_calibration", "waiting_live_verify_count",
+                        "knowledge_blocked", "knowledge_gap", "last_preload_at",
+                        "last_confirmed_at", "last_success", "last_ingest",
+                        "next_capability", "current_capability", "current_job",
+                        "queue_depth", "queue_new", "knowledge_records"):
                 value = state.get(key)
                 if isinstance(value, list):
                     value = ", ".join(str(v) for v in value) or "-"

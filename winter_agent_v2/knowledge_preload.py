@@ -122,6 +122,21 @@ def acquisition_rank(source_type: str) -> int:
         return len(ACQUISITION_ORDER) + 1
 
 
+def trust_for_source(source_type: str) -> str:
+    """The most a claim from this rung may ever be trusted with.
+
+    Deliberately a ceiling, not a promotion ladder: an answer is capped here and can
+    only go higher through live evidence.  ``CONFIRMED`` is unreachable from any rung,
+    which is what makes "an external guide can never mark a capability verified" a
+    property of the code rather than a promise in a document.
+    """
+    if source_type == SELF_EXPLORATION:
+        return OBSERVED          # the real device looked at it: seen, not yet proved
+    if source_type in EXTERNAL_RUNGS:
+        return PRIOR             # right for *their* client, maybe
+    return UNVERIFIED            # in-repo: believed, no live episode behind it
+
+
 # --------------------------------------------------------- the field contract
 
 # The operator's field list, verbatim, plus the two bookkeeping fields.  A record is
@@ -202,6 +217,32 @@ def _text(value: Any) -> str:
 
 
 @dataclass
+class ResearchIngest:
+    """What one ingest pass did, counted rather than assumed.
+
+    Kept as a value so the controller can put the counts into its own state file: an
+    executor that never writes anything must show up as ``accepted 0``, not as a
+    silently quiet loop.
+    """
+
+    accepted: tuple[str, ...] = ()
+    rejected: tuple[str, ...] = ()
+    moved: tuple[str, ...] = ()
+    notes: tuple[str, ...] = ()
+
+    @property
+    def line(self) -> str:
+        parts: list[str] = []
+        if self.accepted:
+            parts.append(f"accepted {len(self.accepted)}")
+        if self.rejected:
+            parts.append(f"rejected {len(self.rejected)}")
+        if self.notes:
+            parts.append(f"kept-stronger {len(self.notes)}")
+        return "[ingest] " + (", ".join(parts) if parts else "nothing to ingest")
+
+
+@dataclass
 class KnowledgeRecord:
     """One capability's durable knowledge, with provenance on every value.
 
@@ -268,6 +309,25 @@ class KnowledgeRecord:
 
     def field_trust(self, name: str) -> str:
         return self.field_status.get(name) or self.status
+
+    def headline_status(self) -> str:
+        """The record's own trust, derived -- never taken from its best field.
+
+        Two guards, both of which were needed in practice:
+
+        * a record is only as strong as its **shakiest known** field, so one confirmed
+          field cannot certify seven doubtful ones;
+        * a record with a **hole** can never be CONFIRMED at all.  Without this, a row
+          with one CONFIRMED field and seven missing gate fields would read as CONFIRMED
+          and ``select()`` would refuse to preload it forever -- the research that
+          answered one question would have permanently un-scheduled the capability.
+        """
+        if not self.known_fields:
+            return PRIOR
+        weakest = self.weakest_field_trust()
+        if self.missing and TRUST_RANK.get(weakest, 0) >= TRUST_RANK[CONFIRMED]:
+            return OBSERVED
+        return weakest
 
     def weakest_field_trust(self) -> str:
         """The trust of the *least* confirmed gate field.
@@ -485,6 +545,16 @@ class KnowledgeStore:
             return True, "the record carries no question yet, so nothing was asked"
         if record.question != question:
             return True, f"a different question is on file: {record.question}"
+        if record.missing:
+            # The question is on file but the field it asked about is still blank, so
+            # nothing ever wrote an answer back.  Without this, the record looked
+            # "answered" the moment its question was recorded, and the capabilities that
+            # most needed research were exactly the ones permanently refused it --
+            # KNOWLEDGE_BLOCKED instead of a job.
+            return True, (
+                f"the question is on file but {'、'.join(record.missing)} is still blank "
+                f"(no answer was ever written back)"
+            )
         if record.conflicts:
             return True, f"unresolved prior-vs-live conflict: {record.conflicts[0]}"
         if game_version and record.game_version and game_version != record.game_version:
@@ -494,6 +564,155 @@ class KnowledgeStore:
         if record.live_calibration_status in ("UI_CHANGED", "DEGRADED"):
             return True, f"live calibration reported {record.live_calibration_status}"
         return False, f"already answered at {record.status} from {record.source_type}"
+
+    # -- targeted research: where the answer comes back (operator §五/§六) --
+
+    @property
+    def inbox(self) -> Path:
+        return self.directory / "inbox"
+
+    def pending_research(self) -> tuple[Path, ...]:
+        """Answer files waiting to be folded into the knowledge base."""
+        if not self.inbox.is_dir():
+            return ()
+        return tuple(sorted(p for p in self.inbox.glob("*.json") if p.is_file()))
+
+    def ingest(self, *, now: datetime | None = None) -> "ResearchIngest":
+        """Fold finished research into the durable knowledge, field by field.
+
+        This is the half that was missing: the controller could *ask* a question --
+        it could put a work order with the missing fields in it onto the one queue --
+        but nothing ever put the answer back, so every loop re-researched the same
+        capability and the knowledge base never grew.  Reading is only half of
+        "READ ONCE".
+
+        Rules that are enforced here rather than trusted:
+
+        * an unknown **field** is rejected by name -- the gate reads exact field
+          names, so a renamed field would otherwise sever the answer from the gate
+          silently (the ``task_type`` lesson, one layer up);
+        * an unknown **source_type** is rejected, because trust cannot be assigned
+          without it and guessing the trust of a claim is how a prior becomes a fact;
+        * an answer may **never** write ``CONFIRMED`` -- external sources land at
+          ``PRIOR``, in-repo sources at ``UNVERIFIED``, and a real-device observation
+          at ``OBSERVED``.  Only the reconciler, holding a live episode with a passing
+          verifier, may confirm (``confirm_from_live``);
+        * an answer may never *downgrade* a stronger existing value; the conflict is
+          recorded in ``notes`` instead of being silently overwritten.
+        """
+        moment = now or datetime.now(timezone.utc)
+        accepted: list[str] = []
+        rejected: list[str] = []
+        moved: list[str] = []
+        notes: list[str] = []
+
+        for path in self.pending_research():
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                rejected.append(f"{path.name}: unreadable ({type(exc).__name__})")
+                moved.append(self._file_away(path, "rejected"))
+                continue
+            if not isinstance(payload, Mapping):
+                rejected.append(f"{path.name}: not a JSON object")
+                moved.append(self._file_away(path, "rejected"))
+                continue
+
+            capability = str(payload.get("capability") or "").strip()
+            if not capability:
+                rejected.append(f"{path.name}: no capability named")
+                moved.append(self._file_away(path, "rejected"))
+                continue
+
+            record = self.load(capability) or KnowledgeRecord(capability=capability)
+            taken = 0
+            for answer in payload.get("answers") or ():
+                if not isinstance(answer, Mapping):
+                    rejected.append(f"{capability}: an answer was not an object")
+                    continue
+                field_name = str(answer.get("field") or "").strip()
+                if field_name not in KNOWLEDGE_FIELDS:
+                    rejected.append(f"{capability}: unknown field '{field_name}'")
+                    continue
+                value = _text(answer.get("value"))
+                if _blank(value):
+                    rejected.append(f"{capability}.{field_name}: empty value")
+                    continue
+                source_type = str(answer.get("source_type") or "").strip()
+                if source_type not in ACQUISITION_ORDER:
+                    rejected.append(
+                        f"{capability}.{field_name}: unknown source_type '{source_type}'"
+                    )
+                    continue
+
+                trust = trust_for_source(source_type)
+                current = record.value(field_name)
+                current_trust = record.field_trust(field_name) if not _blank(current) else ""
+                if current_trust and TRUST_RANK.get(current_trust, 0) > TRUST_RANK[trust]:
+                    notes.append(
+                        f"{capability}.{field_name}: kept the stronger {current_trust} value; "
+                        f"the {trust} answer from {source_type} is recorded as a note"
+                    )
+                    record.notes = record.notes + (
+                        f"{TRUST_LADDER[-1]} answer not applied to {field_name} "
+                        f"({trust} < {current_trust}) from {answer.get('source') or source_type}: {value}",
+                    )
+                    taken += 1
+                    continue
+
+                setattr(record, field_name, value)
+                record.field_status[field_name] = trust
+                record.field_source[field_name] = _text(answer.get("source")) or source_type
+                taken += 1
+                accepted.append(f"{capability}.{field_name}")
+                if not record.observed_date:
+                    record.observed_date = _text(answer.get("observed_date"))
+                if not record.source:
+                    record.source = _text(answer.get("source")) or source_type
+                    record.source_type = source_type
+                    try:
+                        record.source_confidence = max(
+                            0.0, min(1.0, float(answer.get("source_confidence") or 0.0))
+                        )
+                    except (TypeError, ValueError):
+                        record.source_confidence = 0.0
+
+            # The record's headline status is *derived* from its fields, never raised by
+            # the best one: a single well-sourced field must not certify the other seven.
+            if taken:
+                record.status = record.headline_status()
+                record.notes = record.notes + (
+                    f"research ingest {moment.isoformat()}: {taken} field(s) answered",
+                )
+                self.save(record, now=moment)
+                moved.append(self._file_away(path, "done"))
+            else:
+                if not any(r.startswith(f"{capability}") for r in rejected):
+                    rejected.append(f"{capability}: no usable answer in {path.name}")
+                moved.append(self._file_away(path, "rejected"))
+
+        if moved:
+            self.write_index(now=moment)
+        return ResearchIngest(
+            accepted=tuple(accepted), rejected=tuple(rejected),
+            moved=tuple(moved), notes=tuple(notes),
+        )
+
+    def _file_away(self, path: Path, bucket: str) -> str:
+        """Move a consumed answer file aside for audit -- never delete research."""
+        target = self.inbox / bucket
+        target.mkdir(parents=True, exist_ok=True)
+        destination = target / path.name
+        counter = 1
+        while destination.exists():
+            destination = target / f"{path.stem}_{counter}{path.suffix}"
+            counter += 1
+        try:
+            path.replace(destination)
+        except OSError:
+            return ""
+        return destination.as_posix()
+
 
 
 # --------------------------------------------------- normalize / calibrate

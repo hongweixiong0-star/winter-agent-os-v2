@@ -1735,13 +1735,18 @@ class EscalationQueueAdapter:
             return record.key
         return ""
 
-    def validation_lease_consumer(self) -> str:
+    def validation_lease_consumer(self, *, now: datetime | None = None) -> str:
         """Is anyone actually able to *drive* a validation right now?
 
         The lease is only requested when the panel owns the clock, because requesting it
         makes V2 yield at the next atomic boundary -- and a device that yields while
         nobody drives it is worse than a version that waits.  The panel therefore has to
         prove it is alive first: its pump heartbeat is the evidence, not its existence.
+
+        ``now`` is the *pass's* clock, not the wall clock.  Reading ``datetime.now()``
+        here made the answer irreproducible: a caller replaying a recorded pass got a
+        different verdict depending on how long ago the recording was made, and every
+        test that pinned a timestamp started failing ninety seconds later.
         """
         try:
             payload = json.loads(
@@ -1752,7 +1757,7 @@ class EscalationQueueAdapter:
         stamp = _moment(payload.get("written_at"))
         if stamp is None:
             return ""
-        age = (datetime.now(timezone.utc) - stamp).total_seconds()
+        age = ((now or datetime.now(timezone.utc)) - stamp).total_seconds()
         if age > PANEL_HEARTBEAT_MAX_AGE_SECONDS:
             return ""
         return f"panel pid {payload.get('process') or '?'} (heartbeat {int(age)}s ago)"
@@ -1804,7 +1809,7 @@ class EscalationQueueAdapter:
         holder = lease.holder(now=moment)
         if holder is not None and holder.owner == OWNER_DEVELOPMENT_VALIDATION:
             return ""  # already ours; the runtime is standing down for it
-        consumer = self.validation_lease_consumer()
+        consumer = self.validation_lease_consumer(now=moment)
         if not consumer:
             existing = self.ledger.snapshot().get(target.key)
             if existing is None or not any(

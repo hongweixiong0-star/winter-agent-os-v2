@@ -669,5 +669,144 @@ class ValidationLease(unittest.TestCase):
         self.assertEqual(payload["trace_id"], "OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA")
 
 
+class ResearchComesBack(unittest.TestCase):
+    """The half of READ ONCE that was missing: writing the answer down.
+
+    The controller could ask a question -- it could put a work order carrying the
+    missing fields onto the one queue -- but nothing put the answer back, so every
+    loop re-researched the same capability and the knowledge base never grew.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.store = kp.KnowledgeStore(self.tmp)
+
+    def _answer(self, name, payload):
+        self.store.inbox.mkdir(parents=True, exist_ok=True)
+        (self.store.inbox / name).write_text(
+            json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+        )
+
+    def _seed(self, **fields):
+        record = kp.KnowledgeRecord(capability="TROOP_SELECT", capability_id="CAP-A01")
+        for name, value in fields.items():
+            setattr(record, name, value)
+        self.store.save(record)
+        return record
+
+    def test_an_answer_lands_in_the_record_with_its_own_trust(self):
+        self._seed()
+        self._answer("a.json", {
+            "capability": "TROOP_SELECT",
+            "answers": [{
+                "field": "recovery_prior", "value": "失败点 BACK 关掉弹窗",
+                "source": "frame probe", "source_type": kp.SELF_EXPLORATION,
+            }],
+        })
+        result = self.store.ingest()
+        self.assertEqual(result.accepted, ("TROOP_SELECT.recovery_prior",))
+        record = self.store.load("TROOP_SELECT")
+        self.assertEqual(record.value("recovery_prior"), "失败点 BACK 关掉弹窗")
+        # A real-device look is OBSERVED, never CONFIRMED -- only a live episode can do that.
+        self.assertEqual(record.field_trust("recovery_prior"), kp.OBSERVED)
+
+    def test_an_external_answer_can_never_be_more_than_a_prior(self):
+        self._seed()
+        self._answer("a.json", {
+            "capability": "TROOP_SELECT",
+            "answers": [{
+                "field": "navigation", "value": "HOME -> ARMY",
+                "source": "wosbot/ui.py:12", "source_type": kp.OPEN_SOURCE_PROJECT,
+            }],
+        })
+        self.store.ingest()
+        self.assertEqual(self.store.load("TROOP_SELECT").field_trust("navigation"), kp.PRIOR)
+
+    def test_an_external_answer_may_not_disagree_with_a_confirmed_field(self):
+        """The prior loses to the client; the disagreement is kept, not hidden."""
+        self._seed(recognition="部队弹窗（真机确认）")
+        record = self.store.load("TROOP_SELECT")
+        record.field_status["recognition"] = kp.CONFIRMED
+        self.store.save(record)
+        self._answer("a.json", {
+            "capability": "TROOP_SELECT",
+            "answers": [{
+                "field": "recognition", "value": "wiki 说是行军页",
+                "source": "wiki", "source_type": kp.GAME_WIKI,
+            }],
+        })
+        result = self.store.ingest()
+        self.assertEqual(result.notes and len(result.notes), 1)
+        after = self.store.load("TROOP_SELECT")
+        self.assertEqual(after.value("recognition"), "部队弹窗（真机确认）")
+        self.assertEqual(after.field_trust("recognition"), kp.CONFIRMED)
+        self.assertTrue(any("wiki 说是行军页" in note for note in after.notes))
+
+    def test_a_renamed_field_is_refused_by_name(self):
+        """The gate reads exact names, so a rename must fail loudly, not silently."""
+        self._seed()
+        self._answer("a.json", {
+            "capability": "TROOP_SELECT",
+            "answers": [{"field": "recovery", "value": "BACK", "source": "x",
+                         "source_type": kp.GAME_WIKI}],
+        })
+        result = self.store.ingest()
+        self.assertEqual(result.accepted, ())
+        self.assertTrue(any("unknown field 'recovery'" in r for r in result.rejected))
+
+    def test_a_claim_without_a_known_source_rung_is_refused(self):
+        """Trust cannot be assigned to an unknown rung, and guessing it is how a
+        prior becomes a fact."""
+        self._seed()
+        self._answer("a.json", {
+            "capability": "TROOP_SELECT",
+            "answers": [{"field": "actions", "value": "tap", "source": "x",
+                         "source_type": "BECAUSE_I_SAID_SO"}],
+        })
+        result = self.store.ingest()
+        self.assertEqual(result.accepted, ())
+        self.assertTrue(any("unknown source_type" in r for r in result.rejected))
+
+    def test_an_answer_never_makes_a_holey_record_confirmed(self):
+        """Otherwise the research that answered one question would un-schedule the
+        capability forever, because ``select()`` refuses CONFIRMED records."""
+        record = self._seed()
+        record.field_status["preconditions"] = kp.CONFIRMED
+        self.store.save(record)
+        self._answer("a.json", {
+            "capability": "TROOP_SELECT",
+            "answers": [{"field": "risk", "value": "T0", "source": "frame",
+                         "source_type": kp.SELF_EXPLORATION}],
+        })
+        self.store.ingest()
+        after = self.store.load("TROOP_SELECT")
+        self.assertTrue(after.missing)
+        self.assertNotEqual(after.status, kp.CONFIRMED)
+
+    def test_an_answer_is_kept_for_audit_rather_than_deleted(self):
+        self._seed()
+        self._answer("a.json", {
+            "capability": "TROOP_SELECT",
+            "answers": [{"field": "risk", "value": "T0", "source": "frame",
+                         "source_type": kp.SELF_EXPLORATION}],
+        })
+        self.store.ingest()
+        self.assertEqual([p.name for p in self.store.pending_research()], [])
+        self.assertTrue((self.store.inbox / "done" / "a.json").exists())
+        self.assertEqual(self.store.ingest().accepted, (), "ingesting twice must not re-apply")
+
+    def test_an_unreadable_answer_is_set_aside_with_its_reason(self):
+        self.store.inbox.mkdir(parents=True, exist_ok=True)
+        (self.store.inbox / "broken.json").write_text("{not json", encoding="utf-8")
+        result = self.store.ingest()
+        self.assertTrue(any("broken.json" in r for r in result.rejected))
+        self.assertTrue((self.store.inbox / "rejected" / "broken.json").exists())
+
+    def test_it_reports_zero_accepted_rather_than_looking_healthy(self):
+        """An executor that writes nothing must be visible, not quiet."""
+        self.assertEqual(self.store.ingest().line, "[ingest] nothing to ingest")
+        self.assertEqual(self.store.ingest().accepted, ())
+
+
 if __name__ == "__main__":
     unittest.main()

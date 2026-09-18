@@ -855,6 +855,43 @@ def main() -> int:
           and "already answered at" in _knowledge_source
           and "def local_knowledge_check(" in _knowledge_source
           and "禁止重新联网研究" in _knowledge_source)
+    check("knowledge: reading is only half of READ ONCE -- the answer comes back and lands",
+          "def ingest(" in _knowledge_source
+          and "def pending_research(" in _knowledge_source
+          and "class ResearchIngest" in _knowledge_source
+          and "def trust_for_source(" in _knowledge_source
+          and "not in KNOWLEDGE_FIELDS" in _knowledge_source
+          and "self.write_index(now=moment)" in _knowledge_source)
+    check("knowledge: an answer may never outrank what the real client showed",
+          _knowledge.trust_for_source(_knowledge.SELF_EXPLORATION) == _knowledge.OBSERVED
+          and _knowledge.trust_for_source(_knowledge.GAME_WIKI) == _knowledge.PRIOR
+          and _knowledge.trust_for_source(_knowledge.OPEN_SOURCE_PROJECT) == _knowledge.PRIOR
+          and _knowledge.trust_for_source(_knowledge.LIVE_VERIFIED_ASSET) == _knowledge.UNVERIFIED
+          and _knowledge.CONFIRMED not in {
+              _knowledge.trust_for_source(rung) for rung in _knowledge.ACQUISITION_ORDER
+          })
+    check("knowledge: a hole is never confirmed, so research cannot un-schedule its own row",
+          "def headline_status(" in _knowledge_source
+          and "if self.missing and TRUST_RANK.get(weakest, 0) >= TRUST_RANK[CONFIRMED]" in _knowledge_source
+          and "and not record.sufficient" in _bootstrap_source)
+    check("knowledge: the ingest runs before the selection that it must be able to change",
+          "ingest = self._ingest(now=moment)" in _bootstrap_source
+          and _bootstrap_source.index("ingest = self._ingest(now=moment)")
+          < _bootstrap_source.index("plan, skipped = self.select(scanner)")
+          and "def _ingest(" in _bootstrap_source)
+    check("knowledge: the controller reports its named running state, not just a heartbeat",
+          _bootstrap.BOOTSTRAP_STATES == (
+              "RUNNING", "LEARNING", "PRELOADING", "WAITING_LIVE_VERIFY",
+              "LIVE_CALIBRATING", "BLOCKED", "IDLE_NO_WORK")
+          and "def machine_state(" in _bootstrap_source
+          and '"status": self.machine_state(' in _bootstrap_source
+          and '"waiting_live_verify_count"' in _bootstrap_source
+          and '"queue_depth"' in _bootstrap_source
+          and '"last_ingest"' in _bootstrap_source)
+    check("knowledge: the window shows the state the controller recorded, not its own opinion",
+          "BOOTSTRAP_STATE_ZH" in _panel_source
+          and '"preload_status"' in _panel_source
+          and '"preload_ingest"' in _panel_source)
     check("knowledge: calibration fixes differences instead of discarding the prior",
           "def prior_vs_live_diff(" in _knowledge_source
           and "PRIOR_VS_LIVE_DIFF" in _knowledge_source

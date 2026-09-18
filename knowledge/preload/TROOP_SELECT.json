@@ -14,12 +14,16 @@
  "live_calibration_status": "",
  "question": "基础 Recovery：失败后怎么恢复",
  "research_attempts": 0,
- "created_at": "2026-09-18T03:45:05.406771+00:00",
- "updated_at": "2026-09-18T03:45:05.406771+00:00",
+ "created_at": "2026-09-18T04:06:51.835384+00:00",
+ "updated_at": "2026-09-18T04:06:51.835384+00:00",
  "evidence": [],
  "notes": [
   "未注册语义（需要一帧真机页面）：TROOP_PRESET",
-  "no knowledge record yet"
+  "no knowledge record yet",
+  "未注册语义（需要一帧真机页面）：TROOP_PRESET",
+  "already answered at UNVERIFIED from LIVE_VERIFIED_ASSET",
+  "未注册语义（需要一帧真机页面）：TROOP_PRESET",
+  "the question is on file but recovery_prior is still blank (no answer was ever written back)"
  ],
  "field_status": {
   "preconditions": "UNVERIFIED",

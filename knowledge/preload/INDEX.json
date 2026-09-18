@@ -1,7 +1,7 @@
 {
  "schema_version": "1.0",
  "generated_by": "winter_agent_v2.knowledge_preload.KnowledgeStore.write_index",
- "generated_at": "2026-09-18T03:45:05.406771+00:00",
+ "generated_at": "2026-09-18T04:06:51.835384+00:00",
  "note": "derived from knowledge/preload/*.json -- not a skill registry and not a lifecycle authority; delete any row and it returns from the files",
  "acquired_vs_external": "the point of this index is that acquisition_rung should drift toward 1-5 over time: external priors are a starting cost, not a permanent one",
  "summary": {
@@ -30,7 +30,7 @@
    ],
    "conflicts": [],
    "live_calibration_status": "",
-   "updated_at": "2026-09-18T03:45:05.406771+00:00"
+   "updated_at": "2026-09-18T04:06:51.835384+00:00"
   }
  ]
 }

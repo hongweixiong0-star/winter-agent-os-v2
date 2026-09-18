@@ -1396,6 +1396,9 @@ class QueuePump:
             "last_tick": "", "last_line": "", "last_error": "", "gated": "",
             "preload_ticks": 0, "preloads": 0, "preload_last": "", "preload_note": "",
             "preload_decision": "", "preload_selected": "", "preload_next": "",
+            "preload_status": "", "preload_learning": "", "preload_current": "",
+            "preload_waiting": 0, "preload_gap": "", "preload_ingest": "",
+            "preload_coverage": {},
             "preload_every": self.PRELOAD_EVERY if preload_every is None else int(preload_every),
         }
         self._stop = threading.Event()
@@ -1489,6 +1492,18 @@ class QueuePump:
             self._adapter = adapter
             controller = KnowledgeBootstrapController(self._root_path, adapter=adapter)
             report = controller.cycle()
+            # The controller wrote its own state file during that pass; read it back
+            # rather than recomputing, so the GUI shows what the loop actually recorded
+            # (including "the executor wrote nothing back this time") and not a second
+            # opinion that could drift from it.
+            snapshot: dict[str, Any] = {}
+            try:
+                snapshot = json.loads(
+                    (Path(self._root_path) / "learning/knowledge_bootstrap/STATE.json")
+                    .read_text(encoding="utf-8")
+                )
+            except (OSError, json.JSONDecodeError):
+                snapshot = {}
             with self._lock:
                 # Both halves: the structured line, and the decision's own sentence --
                 # which of the five gates refused, or what is missing, is the difference
@@ -1499,6 +1514,13 @@ class QueuePump:
                 self._state["preload_decision"] = report.decision
                 self._state["preload_selected"] = report.selected
                 self._state["preload_next"] = report.next_capability
+                self._state["preload_status"] = snapshot.get("status", "")
+                self._state["preload_learning"] = snapshot.get("learning", "")
+                self._state["preload_current"] = snapshot.get("current_capability", "")
+                self._state["preload_waiting"] = snapshot.get("waiting_live_verify_count", 0)
+                self._state["preload_gap"] = ", ".join(snapshot.get("knowledge_gap") or ())
+                self._state["preload_ingest"] = snapshot.get("last_ingest", "")
+                self._state["preload_coverage"] = snapshot.get("coverage", {})
                 if report.decision == "PRELOADED":
                     self._state["preloads"] = int(self._state.get("preloads") or 0) + 1
                 self._state["preload_last"] = datetime.now().strftime("%H:%M:%S")
@@ -2491,14 +2513,22 @@ class ControlPanel:
         knowledge = (state.get("coverage") or {}).get("knowledge") or {}
         learning = str(state.get("learning") or "-")
         missing = state.get("learning_missing") or []
+        # The running state is translated here from the controller's own vocabulary, so
+        # the window and the state file cannot disagree about what "waiting" means.
+        from winter_agent_v2.capability_bootstrap import BOOTSTRAP_STATE_ZH
+
+        status = BOOTSTRAP_STATE_ZH.get(str(state.get("status") or ""), str(state.get("status") or "-"))
         parts = [
-            f"控制器：运行中 · {beat} · 阶段 {state.get('stage') or '-'} · "
+            f"控制器：运行中（{status}） · {beat} · 阶段 {state.get('stage') or '-'} · "
             f"决策 {state.get('decision') or '-'} · 下一个 {state.get('next_capability') or '-'}",
             f"正在学习：{learning}"
             + (f"（缺 {'、'.join(missing)}）" if missing else "")
             + f" · 正在预装：{state.get('preloading') or '-'}"
-            + f" · 等待真机校准：{len(state.get('awaiting_calibration') or [])}"
+            + f" · 等待真机校准：{state.get('waiting_live_verify_count') or len(state.get('awaiting_calibration') or [])}"
             + f" · 知识阻塞：{len(state.get('knowledge_blocked') or [])}",
+            f"在飞：开发中 {state.get('developing') or '-'} · 当前 Job {state.get('current_job') or '-'}"
+            f" · 队列 {state.get('queue_depth') or 0}（NEW {state.get('queue_new') or 0}）"
+            f" · 知识回写 {state.get('last_ingest') or '尚无'}",
             "Coverage（已解锁 {total}）：LIVE_VERIFIED {live}% ({verified} 项) · "
             "Candidate {cand}% · LIVE_TRIED {tried}".format(
                 total=coverage.get("total", "-"),

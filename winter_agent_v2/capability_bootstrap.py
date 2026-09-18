@@ -1508,6 +1508,36 @@ DECISION_GATE_REFUSED = "GATE_REFUSED"
 DECISION_NOTHING_TO_DO = "NOTHING_TO_DO"
 DECISION_SKIPPED_IN_FLIGHT = "SKIPPED_IN_FLIGHT"
 
+# The controller's running states (operator §十五), named once so the panel, the state
+# file and the watchdog all say the same word for the same thing.
+BOOTSTRAP_RUNNING = "RUNNING"
+BOOTSTRAP_LEARNING = "LEARNING"
+BOOTSTRAP_PRELOADING = "PRELOADING"
+BOOTSTRAP_WAITING_LIVE_VERIFY = "WAITING_LIVE_VERIFY"
+BOOTSTRAP_LIVE_CALIBRATING = "LIVE_CALIBRATING"
+BOOTSTRAP_BLOCKED = "BLOCKED"
+BOOTSTRAP_IDLE_NO_WORK = "IDLE_NO_WORK"
+
+BOOTSTRAP_STATES: tuple[str, ...] = (
+    BOOTSTRAP_RUNNING,
+    BOOTSTRAP_LEARNING,
+    BOOTSTRAP_PRELOADING,
+    BOOTSTRAP_WAITING_LIVE_VERIFY,
+    BOOTSTRAP_LIVE_CALIBRATING,
+    BOOTSTRAP_BLOCKED,
+    BOOTSTRAP_IDLE_NO_WORK,
+)
+
+BOOTSTRAP_STATE_ZH: dict[str, str] = {
+    BOOTSTRAP_RUNNING: "运行中",
+    BOOTSTRAP_LEARNING: "学习中",
+    BOOTSTRAP_PRELOADING: "预装中",
+    BOOTSTRAP_WAITING_LIVE_VERIFY: "等待真机校准",
+    BOOTSTRAP_LIVE_CALIBRATING: "真机校准中",
+    BOOTSTRAP_BLOCKED: "知识阻塞",
+    BOOTSTRAP_IDLE_NO_WORK: "无可开发工作",
+}
+
 DECISION_ZH: dict[str, str] = {
     DECISION_PRELOADED: "已预装（交开发队列）",
     DECISION_RESEARCH_QUEUED: "已派定向研究",
@@ -1541,6 +1571,11 @@ class CycleReport:
     next_capability: str = ""
     dispatch: str = ""
     skipped: tuple[str, ...] = ()
+    # Research that came back and was folded into the durable knowledge this pass.
+    # Counted separately so "the executor never wrote anything" is visible as
+    # ``accepted 0`` instead of as a quietly empty loop.
+    ingested: tuple[str, ...] = ()
+    ingest_line: str = ""
 
     @property
     def line(self) -> str:
@@ -1552,6 +1587,8 @@ class CycleReport:
             parts.append("missing " + ",".join(GATE_ZH.get(m, m) for m in self.missing))
         if self.skipped:
             parts.append(f"skipped {len(self.skipped)}")
+        if self.ingested:
+            parts.append(f"ingested {len(self.ingested)}")
         if self.next_capability:
             parts.append(f"next {self.next_capability}")
         return "[bootstrap] " + " · ".join(parts)
@@ -1568,6 +1605,8 @@ class CycleReport:
             "next_capability": self.next_capability,
             "dispatch": self.dispatch,
             "skipped": list(self.skipped),
+            "ingested": list(self.ingested),
+            "ingest_line": self.ingest_line,
         }
 
 
@@ -1617,6 +1656,21 @@ class KnowledgeBootstrapController:
         self._scanner = BootstrapScanner.load(self.root, now=now)
         return self._scanner
 
+    def _ingest(self, *, now: datetime | None = None) -> Any:
+        """Stage 0.  Fold finished research into the durable knowledge.
+
+        Never raises: a background loop that dies on a malformed answer file is worse
+        than one that records the rejection and moves on.  The result carries the
+        *counts*, so "the executor never wrote anything back" reads as ``accepted 0``
+        rather than as a loop that looks healthy and grows no knowledge.
+        """
+        from .knowledge_preload import ResearchIngest
+
+        try:
+            return self.store.ingest(now=now)
+        except Exception as exc:  # noqa: BLE001
+            return ResearchIngest(rejected=(f"ingest failed: {type(exc).__name__}: {exc}",))
+
     # -- stage 2: select ---------------------------------------------------
 
     def select(self, scanner: BootstrapScanner) -> tuple[BootstrapPlan | None, tuple[str, ...]]:
@@ -1640,11 +1694,17 @@ class KnowledgeBootstrapController:
                 if (
                     record.live_calibration_status in (PENDING_RESEARCH, KNOWLEDGE_BLOCKED)
                     and record.research_attempts >= 1
+                    and not record.sufficient
                 ):
                     # Its question is already out (PENDING) or already came back without
                     # closing the gap (BLOCKED).  Re-offering it would either spam the
                     # queue or stall the whole loop on one hard-to-find manual, and §七
                     # says neither: record the gap, move to the next capability.
+                    #
+                    # ``not record.sufficient`` is what makes the loop close: when the
+                    # research *answer* has landed, the gap is closed and this row is
+                    # selectable again -- otherwise a capability would be skipped forever
+                    # by the very research that answered it.
                     skipped.append(
                         f"{plan.code}: research already out for "
                         f"{'、'.join(record.missing) or 'its missing fields'}"
@@ -1680,11 +1740,17 @@ class KnowledgeBootstrapController:
         )
 
         moment = now or datetime.now(timezone.utc)
+        # Stage 0: fold in research that has come back.  This runs *before* SELECT on
+        # purpose -- an answered question must be able to change what gets selected, and
+        # a record whose gap just closed must stop being skipped as "research already
+        # out".  Reading is only half of READ ONCE; this is the writing half.
+        ingest = self._ingest(now=moment)
         try:
             scanner = self.scan(now=moment)
         except Exception as exc:  # noqa: BLE001
             report = CycleReport(stage="SCAN", decision="SCAN_FAILED",
-                                 note=f"{type(exc).__name__}: {exc}")
+                                 note=f"{type(exc).__name__}: {exc}",
+                                 ingested=ingest.accepted, ingest_line=ingest.line)
             self._last = report
             self.write_state(now=moment)
             return report
@@ -1694,6 +1760,7 @@ class KnowledgeBootstrapController:
             report = CycleReport(
                 stage="SELECT", decision=DECISION_NOTHING_TO_DO,
                 note=(skipped[-3:] and "; ".join(skipped[-3:])) or "catalog has no actionable row",
+                ingested=ingest.accepted, ingest_line=ingest.line,
             )
             self._last = report
             self.write_state(now=moment, scanner=scanner)
@@ -1758,7 +1825,7 @@ class KnowledgeBootstrapController:
                 stage="TARGETED_RESEARCH", selected=plan.code, tier=tier,
                 decision=decision, note=note, missing=check.missing, questions=questions,
                 next_capability=self._next_after(scanner, plan.code), dispatch=dispatched,
-                skipped=skipped,
+                skipped=skipped, ingested=ingest.accepted, ingest_line=ingest.line,
             )
             self._last = report
             self.write_state(now=moment, scanner=scanner)
@@ -1810,6 +1877,7 @@ class KnowledgeBootstrapController:
             next_capability=self._next_after(scanner, plan.code),
             dispatch=dispatched,
             skipped=skipped,
+            ingested=ingest.accepted, ingest_line=ingest.line,
         )
         self._last = report
         self.write_state(now=moment, scanner=scanner)
@@ -1995,6 +2063,75 @@ class KnowledgeBootstrapController:
 
     # -- state (operator §十三) -------------------------------------------
 
+    def machine_state(
+        self,
+        *,
+        records: Sequence[Any] = (),
+        awaiting: int = 0,
+        last: "CycleReport | None" = None,
+    ) -> str:
+        """The operator's named states, folded in priority order.
+
+        Order is the whole value here: a capability waiting on the *device* is a
+        different answer from one waiting on a *manual*, and "there is nothing left to
+        do" must not be readable as "the loop is running fine".  A controller that
+        cannot tell those apart is the "代码支持但根本没运行" failure with extra steps.
+        """
+        for record in records:
+            if record.live_calibration_status == KNOWLEDGE_BLOCKED:
+                return BOOTSTRAP_BLOCKED
+        if self._device_is_leased():
+            return BOOTSTRAP_LIVE_CALIBRATING
+        if awaiting:
+            return BOOTSTRAP_WAITING_LIVE_VERIFY
+        if last is not None and last.decision == DECISION_NOTHING_TO_DO:
+            return BOOTSTRAP_IDLE_NO_WORK
+        if last is not None and last.stage == "PRELOAD":
+            return BOOTSTRAP_PRELOADING
+        for record in records:
+            if record.live_calibration_status in (PENDING_RESEARCH, "PENDING_DEVELOPMENT"):
+                return BOOTSTRAP_LEARNING
+        return BOOTSTRAP_RUNNING
+
+    def _device_is_leased(self) -> bool:
+        """Is a validation holding the one device right now?  Read from the one lock."""
+        try:
+            from .device_lease import OWNER_DEVELOPMENT_VALIDATION, DeviceLease
+
+            holder = DeviceLease(self.root).holder()
+            return bool(holder and holder.owner == OWNER_DEVELOPMENT_VALIDATION)
+        except Exception:  # noqa: BLE001 - a missing lease module is not a crash here
+            return False
+
+    def _last_success(self, records: Sequence[Any]) -> str:
+        """The most recent thing that actually completed, in the operator's words."""
+        best = max((r.updated_at for r in records if r.status == "CONFIRMED"), default="")
+        if best:
+            return f"CONFIRMED knowledge at {best}"
+        best = max((r.updated_at for r in records if r.sufficient), default="")
+        return f"sufficient knowledge at {best}" if best else ""
+
+    def _queue_snapshot(self) -> dict[str, Any]:
+        """Counts from the one escalation ledger -- never a second bookkeeping file."""
+        try:
+            from .escalation_queue import DEFAULT_LEDGER, EscalationLedger, fold
+
+            snapshot = fold(EscalationLedger(self.root / DEFAULT_LEDGER).events())
+            records = list(snapshot.records.values())
+            working = next(
+                (r for r in records
+                 if r.state in ("WORKING", "SUBMITTED", "VERSION_ACTIVATION_PENDING")),
+                None,
+            )
+            return {
+                "depth": len(records),
+                "new": sum(1 for r in records if r.state in ("NEW", "QUEUED")),
+                "working_job": working.job_id if working else "",
+                "working_capability": working.capability if working else "",
+            }
+        except Exception:  # noqa: BLE001
+            return {"depth": 0, "new": 0, "working_job": "", "working_capability": ""}
+
     def state(
         self,
         *,
@@ -2015,10 +2152,12 @@ class KnowledgeBootstrapController:
         awaiting = [r for r in records if r.live_calibration_status in (CALIBRATION_QUEUED, "QUEUED")]
         developing = [r for r in records if r.live_calibration_status == "PENDING_DEVELOPMENT"]
         last = self._last
+        job = self._queue_snapshot()
         return {
             "written_at": moment.isoformat(),
             "process": os.getpid(),
             "controller": "RUNNING",
+            "status": self.machine_state(records=records, awaiting=len(awaiting), last=last),
             "stage": last.stage if last else "IDLE",
             "decision": last.decision if last else "",
             "note": note or (last.note if last else ""),
@@ -2046,6 +2185,18 @@ class KnowledgeBootstrapController:
             "knowledge_blocked": [
                 r.capability for r in records if r.live_calibration_status == "KNOWLEDGE_BLOCKED"
             ][:8],
+            # 6. the work queue behind it (real counts, read from the one ledger)
+            "queue_depth": job.get("depth", 0),
+            "queue_new": job.get("new", 0),
+            "current_job": job.get("working_job", ""),
+            "current_capability": job.get("working_capability", "") or (
+                last.selected if last else ""
+            ),
+            "knowledge_gap": list(learning.missing) if learning else [],
+            "waiting_live_verify_count": len(awaiting),
+            # 7. the executor half of READ ONCE: 0 here means nothing is written back
+            "last_ingest": last.ingest_line if last else "",
+            "last_success": self._last_success(records),
             "coverage": coverage,
         }
 

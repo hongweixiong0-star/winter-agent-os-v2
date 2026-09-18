@@ -683,5 +683,66 @@ class ThePanelClock(unittest.TestCase):
         self.assertEqual(pump.state()["preload_last"], "")
 
 
+class TheControllerSaysWhatItIsDoing(unittest.TestCase):
+    """§十五's seven answers, as a state machine rather than a heartbeat.
+
+    A timestamp proves the loop ran.  It does not say whether the loop is *waiting for
+    the device*, *waiting for a manual*, or *out of work* -- and those three need
+    different actions from whoever reads the panel.
+    """
+
+    def setUp(self):
+        from winter_agent_v2 import knowledge_preload as kp
+        from winter_agent_v2.capability_bootstrap import KnowledgeBootstrapController
+
+        self.kp = kp
+        self.tmp = Path(tempfile.mkdtemp())
+        self.controller = KnowledgeBootstrapController(
+            self.tmp, store=kp.KnowledgeStore(self.tmp)
+        )
+
+    def _record(self, name, **fields):
+        record = self.kp.KnowledgeRecord(capability=name, capability_id="CAP-Z")
+        for key, value in fields.items():
+            setattr(record, key, value)
+        return record
+
+    def test_an_empty_loop_is_idle_not_running(self):
+        report = cb.CycleReport(stage="SELECT", decision=cb.DECISION_NOTHING_TO_DO)
+        state = self.controller.machine_state(records=(), awaiting=0, last=report)
+        self.assertEqual(state, cb.BOOTSTRAP_IDLE_NO_WORK)
+
+    def test_a_queued_research_question_reads_as_learning(self):
+        record = self._record("A", live_calibration_status=cb.PENDING_RESEARCH)
+        state = self.controller.machine_state(records=(record,), awaiting=0, last=None)
+        self.assertEqual(state, cb.BOOTSTRAP_LEARNING)
+
+    def test_a_version_waiting_for_the_device_outranks_a_question_in_flight(self):
+        """The device is the scarcer resource; the panel should name that first."""
+        records = (
+            self._record("A", live_calibration_status=cb.PENDING_RESEARCH),
+            self._record("B", live_calibration_status=cb.CALIBRATION_QUEUED),
+        )
+        state = self.controller.machine_state(records=records, awaiting=1, last=None)
+        self.assertEqual(state, cb.BOOTSTRAP_WAITING_LIVE_VERIFY)
+
+    def test_a_blocked_knowledge_gap_is_named_as_blocked(self):
+        record = self._record("A", live_calibration_status=cb.KNOWLEDGE_BLOCKED)
+        state = self.controller.machine_state(records=(record,), awaiting=0, last=None)
+        self.assertEqual(state, cb.BOOTSTRAP_BLOCKED)
+
+    def test_every_state_it_can_return_is_one_of_the_operators_seven(self):
+        cases = [
+            self.controller.machine_state(records=(), awaiting=0, last=None),
+            self.controller.machine_state(
+                records=(self._record("A", live_calibration_status=cb.KNOWLEDGE_BLOCKED),),
+                awaiting=0, last=None),
+        ]
+        for state in cases:
+            self.assertIn(state, cb.BOOTSTRAP_STATES)
+        self.assertEqual(len(cb.BOOTSTRAP_STATES), 7)
+        self.assertEqual(set(cb.BOOTSTRAP_STATE_ZH), set(cb.BOOTSTRAP_STATES))
+
+
 if __name__ == "__main__":
     unittest.main()
