@@ -1,5 +1,5 @@
 {
-  "recorded_at": "2026-09-18T01:11:54.147526+00:00",
+  "recorded_at": "2026-09-18T01:12:34.643047+00:00",
   "operator_instruction": "不会做 A 不能一直重复做 A；A 交给 WorkBuddy；V2 立即继续做 B/C/D；学会后自动交还",
   "stage_1_verdict": "PROVEN_LIVE (deferral -> escalation -> background job, zero human action)",
   "stage_2_verdict": "PENDING (the job is WORKING; learn -> reload -> rejoin needs it to finish)",
@@ -218,6 +218,27 @@
         "capture_backends": [
           "MAA_MUMU_EXTRAS"
         ]
+      },
+      {
+        "episode_id": "20260918_091145_572260",
+        "started_at": "2026-09-18T01:12:25.203397+00:00",
+        "ended_at": "2026-09-18T01:12:25.203397+00:00",
+        "episodes": 1,
+        "goals": {
+          "AUTO_DISCOVERY": {
+            "episodes": 1,
+            "progress": [
+              null
+            ],
+            "skills": [
+              "OPEN_HOME"
+            ]
+          }
+        },
+        "all_verifiers_ok": true,
+        "capture_backends": [
+          "MAA_MUMU_EXTRAS"
+        ]
       }
     ],
     "a_stepped_aside": {
@@ -290,7 +311,9 @@
   },
   "live_confirmation_after_the_change": {
     "snapshot_deferrals": "learning/runtime_snapshot.json now carries the deferral with its reason, source, failure_signature and streak -- the field the store was silently dropping before commit 6bec174.",
-    "next_round": "the round after the change selected goal=KEEP_MARCHES_PRODUCTIVE on MAP and took the deferred hop again, then ended with reserved_march_for_stamina rather than repeating the beast path."
+    "next_round": "the round after the change selected goal=KEEP_MARCHES_PRODUCTIVE on MAP and took the deferred hop again, then ended with reserved_march_for_stamina rather than repeating the beast path.",
+    "probe_window_observed": "01:08Z: the goal was allowed again for exactly one run, 30.0 minutes after its last real attempt (00:38:07), which is the designed low-frequency probe and not a relapse -- the two rounds in between (00:39 gather, 00:55) never touched the beast path. The probe run did its three scans, recorded goal_progress=False on all three, and the streak therefore stands at 4, so it steps aside again for another window. Verified by folding the episode stream at that instant: AVOID_STAMINA_WASTE -> DEFERRED, KEEP_MARCHES_PRODUCTIVE -> ALLOWED.",
+    "measurement_fix_needs_one_more_round": "the gather goal's meter was fixed in 51d23bc after the 00:39 run, and the rounds since ended before a dispatch (2 marches reserved, 1 idle), so a live goal_progress=True for that goal is still pending."
   },
   "gates": {
     "tests": "tests/test_capability_gate.py 33 passed; goal/escalation/runtime group 131 passed; panel+startup group 174 passed with 15 subtests",

@@ -181,6 +181,18 @@ payload = {
         "next_round": "the round after the change selected goal=KEEP_MARCHES_PRODUCTIVE on MAP and took "
                       "the deferred hop again, then ended with reserved_march_for_stamina rather than "
                       "repeating the beast path.",
+        "probe_window_observed": (
+            "01:08Z: the goal was allowed again for exactly one run, 30.0 minutes after its last real "
+            "attempt (00:38:07), which is the designed low-frequency probe and not a relapse -- the two "
+            "rounds in between (00:39 gather, 00:55) never touched the beast path. The probe run did its "
+            "three scans, recorded goal_progress=False on all three, and the streak therefore stands at 4, "
+            "so it steps aside again for another window. Verified by folding the episode stream at that "
+            "instant: AVOID_STAMINA_WASTE -> DEFERRED, KEEP_MARCHES_PRODUCTIVE -> ALLOWED."
+        ),
+        "measurement_fix_needs_one_more_round": "the gather goal's meter was fixed in 51d23bc after the "
+                                                "00:39 run, and the rounds since ended before a dispatch "
+                                                "(2 marches reserved, 1 idle), so a live goal_progress=True "
+                                                "for that goal is still pending.",
     },
     "gates": {
         "tests": "tests/test_capability_gate.py 33 passed; goal/escalation/runtime group 131 passed; "
