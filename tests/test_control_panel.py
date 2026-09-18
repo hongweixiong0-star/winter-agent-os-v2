@@ -1,13 +1,93 @@
+import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from tools.control_panel import NO_WINDOW_FLAGS, _background_popen, _background_run, bootstrap_recovery_action, event_goal_is_current, human_reason, load_continuous_selection, load_task_selection, parse_runtime_result, save_task_selection, summarize_runtime_result, task_toggle_label
+from tools import control_panel as cp
+from tools.control_panel import NO_WINDOW_FLAGS, _background_popen, _background_run, bootstrap_recovery_action, event_goal_is_current, human_reason, load_continuous_selection, load_task_selection, parse_runtime_result, panel_clock_owner, save_task_selection, summarize_runtime_result, task_toggle_label
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.skills import v2_registry
+
+
+NOW = datetime(2026, 9, 18, 8, 40, 0, tzinfo=timezone.utc)
+
+
+class OneWindowOwnsTheClock(unittest.TestCase):
+    """Two panels in one minute, measured 2026-09-18: pump.json named pid 26428 at
+    16:34:52, a console start was logged at 16:35:19, pump.json then named pid 16508 at
+    16:36:22.  Two pumps and two would-be AUTOs on one device -- the Single UI Owner
+    rule had no equivalent at the window layer."""
+
+    def _owner(self, payload, *, path):
+        with patch.object(cp, "PUMP_STATE_PATH", path):
+            return panel_clock_owner(now=NOW)
+
+    def test_a_fresh_heartbeat_names_its_owner(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "pump.json"
+            path.write_text(json.dumps(
+                {"process": 4242, "written_at": (NOW - timedelta(seconds=12)).isoformat()}
+            ), encoding="utf-8")
+            self.assertEqual(self._owner(None, path=path), (4242, 12.0))
+
+    def test_a_stale_heartbeat_is_still_reported_with_its_age(self):
+        # Reported, not hidden: the caller decides, and the age is the evidence.
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "pump.json"
+            path.write_text(json.dumps(
+                {"process": 4242, "written_at": (NOW - timedelta(seconds=600)).isoformat()}
+            ), encoding="utf-8")
+            pid, age = self._owner(None, path=path)
+            self.assertEqual(pid, 4242)
+            self.assertGreater(age, cp.PANEL_CLOCK_MAX_AGE_SECONDS)
+
+    def test_a_clock_that_never_ticked_has_no_owner(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(self._owner(None, path=Path(tmp) / "pump.json"), (0, float("inf")))
+
+    def test_an_unparseable_stamp_cannot_be_read_as_recent(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "pump.json"
+            path.write_text(json.dumps({"process": 4242, "written_at": "not a time"}),
+                            encoding="utf-8")
+            # Neither half is offered: a pid the caller cannot date is not an owner.
+            self.assertEqual(self._owner(None, path=path), (0, float("inf")))
+
+    def test_a_missing_pid_is_not_a_owner(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "pump.json"
+            path.write_text(json.dumps({"written_at": NOW.isoformat()}), encoding="utf-8")
+            self.assertEqual(self._owner(None, path=path), (0, float("inf")))
+
+    def test_the_losing_window_does_not_consume_the_queue(self):
+        stub = SimpleNamespace(_other_instance=4242, operator_intent="RUNNING")
+        self.assertFalse(cp.ControlPanel._auto_development_allowed(stub))
+
+    def test_the_owning_window_still_consumes_unless_the_operator_stopped(self):
+        running = SimpleNamespace(_other_instance=0, operator_intent="RUNNING")
+        stopped = SimpleNamespace(_other_instance=0, operator_intent="STOPPED")
+        self.assertTrue(cp.ControlPanel._auto_development_allowed(running))
+        self.assertFalse(cp.ControlPanel._auto_development_allowed(stopped))
+
+    def test_three_gates_consult_it_and_the_window_says_so(self):
+        """Source-level, because each gate is one early return in a long method."""
+        source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(
+            encoding="utf-8"
+        )
+        for gate in ("def _auto_development_allowed", "def _maybe_validate",
+                     "def _maybe_autostart", "def _narrate_pump"):
+            body = source[source.index(gate):]
+            body = body[:body.index("\n    def ", 1)] if "\n    def " in body else body
+            self.assertIn("_other_instance", body, gate)
+        self.assertIn("panel_clock_owner()", source)
+        self.assertIn("只读", source)
+        # The pump is started only by the window that owns the clock.
+        start = source.index("self.pump = QueuePump(")
+        self.assertIn("else:\n            self.pump.start()", source[start:start + 900])
 
 
 class ControlPanelTests(unittest.TestCase):

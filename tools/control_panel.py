@@ -146,6 +146,71 @@ def panel_pid_path() -> Path:
     the pid a launcher holds is dead within a second while the panel runs on.
     """
     return Path(PANEL_LOG_PATH).parent / "panel.pid"
+
+
+# How long a queue-clock heartbeat stays meaningful.  The same 90 seconds the queue
+# itself uses to decide whether a validation lease may be requested: one number, so
+# "the panel is running" cannot mean two different things in two places.
+PANEL_CLOCK_MAX_AGE_SECONDS = 90.0
+
+
+def panel_clock_owner(*, now: "datetime | None" = None) -> tuple[int, float]:
+    """``(pid, age_seconds)`` of whoever is ticking the queue clock right now.
+
+    Read from the one heartbeat that already exists (``pump.json``), not from a second
+    bookkeeping file: the pump writes its own pid on every tick, so a fresh file *is*
+    the ownership evidence.  0 means "nobody", which is also the answer when the file
+    is missing or unreadable -- a clock that has never ticked has no owner to name.
+
+    Measured 2026-09-18: two panels were alive within the same minute (pump.json named
+    pid 26428 at 16:34:52, a console start was logged at 16:35:19, then pump.json named
+    pid 16508 at 16:36:22).  Both ran a ``QueuePump`` and both would have auto-started
+    AUTO: two owners of one device and a second consumer on one queue.  The operator's
+    Single UI Owner rule had no equivalent at the window layer.
+    """
+    moment = now or datetime.now(timezone.utc)
+    try:
+        payload = json.loads(Path(PUMP_STATE_PATH).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ValueError):
+        return 0, float("inf")
+    try:
+        pid = int(payload.get("process") or 0)
+    except (TypeError, ValueError):
+        return 0, float("inf")
+    try:
+        written = datetime.fromisoformat(str(payload.get("written_at") or ""))
+    except ValueError:
+        # A pid we cannot date is as useless as no pid: the caller may only act on an
+        # owner it can vouch for, so neither half is offered.
+        return 0, float("inf")
+    if written.tzinfo is None:
+        written = written.replace(tzinfo=timezone.utc)
+    if pid <= 0:
+        # Same rule for a dated file with no usable pid: "nobody" comes with no age,
+        # so a caller cannot report "just now" about an owner it does not have.
+        return 0, float("inf")
+    return pid, (moment - written).total_seconds()
+
+
+def _pid_is_live(pid: int) -> bool:
+    """Ask about one pid by number.  Never by pattern over the process table.
+
+    Delegated to the restart tool, where this question already lives: a pattern over
+    the whole table matched the agent host process on 2026-09-18 and killed it, and a
+    second implementation would be a second place for that mistake to live.  An
+    unanswerable question returns True -- refusing to open a window because a liveness
+    check failed is worse than opening a read-only one.
+    """
+    if pid <= 0:
+        return False
+    try:
+        from panel_restart import alive  # type: ignore[import-not-found]
+
+        return bool(alive(pid))
+    except Exception:  # noqa: BLE001
+        return True
+
+
 PANEL_LOG_MAX_BYTES = 1_000_000
 RUNTIME_SNAPSHOT_PATH = ROOT / "learning/runtime_snapshot.json"
 MUMU_PATH = Path(r"D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuNxMain.exe")
@@ -1720,8 +1785,32 @@ class ControlPanel:
         # The queue's clock.  Started with the window, not with AUTO: the operator's
         # rule is that a running GUI keeps consuming its development backlog even
         # while the game side is between rounds.
+        # Who owns the queue clock, decided before anything can act on it.  Measured
+        # 2026-09-18: two panels alive in the same minute, each with a pump and each
+        # about to start AUTO.  The window that loses still opens -- the operator gets
+        # their view -- but it is read-only, and says so.
+        try:
+            owner_pid, owner_age = panel_clock_owner()
+        except Exception:  # noqa: BLE001
+            owner_pid, owner_age = 0, float("inf")
+        self._other_instance = (
+            owner_pid
+            if owner_pid and owner_pid != os.getpid()
+            and owner_age <= PANEL_CLOCK_MAX_AGE_SECONDS
+            and _pid_is_live(owner_pid)
+            else 0
+        )
         self.pump = QueuePump(enabled=self._auto_development_allowed)
-        self.pump.start()
+        if self._other_instance:
+            # A second window must not become a second clock.  It starts no pump, so it
+            # writes no heartbeat and cannot be mistaken for the owner by anything that
+            # reads pump.json -- including the queue's own lease consumer.
+            self._append(
+                f"另一个实例正在运行（pid {self._other_instance}）：本窗口只读，"
+                "不消费队列、不启动 AUTO、不申请设备租约。"
+            )
+        else:
+            self.pump.start()
         # Counters, plus the last preload note so a repeating "resting" answer is
         # narrated once rather than every ten minutes.
         self._pump_prev: dict[str, Any] = {}
@@ -2879,7 +2968,14 @@ class ControlPanel:
             previous[key] = now
         gated = str(state.get("gated") or "")
         passes = int(state.get("passes") or 0)
-        if gated:
+        if self._other_instance:
+            # The cell a reader looks at to ask "is the queue being consumed".  It must
+            # not say "运行中" in a window that is not the one consuming it.
+            self.values["wb_pump"].set(
+                f"只读：另一个实例（pid {self._other_instance}）持有队列时钟；"
+                "本窗口不消费、不提交、不启动 AUTO"
+            )
+        elif gated:
             self.values["wb_pump"].set(f"已暂停：{gated}（用户已停止，不自动提交开发任务）")
         elif not passes:
             self.values["wb_pump"].set(f"{PENDING}（尚未完成第一次消费；每 30 秒一次）")
@@ -3106,11 +3202,24 @@ class ControlPanel:
         An explicit stop is different: their rule is that nothing may restart
         automatic work after a stop without them, and submitting development jobs
         is automatic work.
+
+        A second window is refused outright: one device, one queue, one clock.
         """
+        if self._other_instance:
+            return False
         return self.operator_intent != "STOPPED"
 
     def _maybe_autostart(self) -> None:
         """The only auto-start path: intent first, then a real preflight, then AUTO."""
+        if self._other_instance:
+            # Two AUTO trees on one device.  The owner keeps running the system; this
+            # window only observes it.
+            self._append(
+                f"不自动启动 AUTO：另一个实例（pid {self._other_instance}）正在运行。"
+                "本窗口只读。"
+            )
+            self._idle_buttons()
+            return
         if not self.config.get("auto_execution", False):
             self._append("manual mode (config auto_execution=false)：等待用户点击“开始自动运行”。")
             return
@@ -3210,6 +3319,10 @@ class ControlPanel:
         already held, and only between AUTO rounds.  ``_run_validation_worker`` always
         releases in a ``finally``, so a crash cannot freeze gameplay.
         """
+        if self._other_instance:
+            # The clock's owner drives calibrations; a second window driving its own
+            # would be the second device owner the lease exists to prevent.
+            return
         if self.validating or self.process is not None or self.starting:
             return
         if self.paused or self.stop_requested or self.operator_intent != "RUNNING":
