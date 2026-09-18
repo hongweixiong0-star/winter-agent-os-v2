@@ -49,8 +49,8 @@ from __future__ import annotations
 
 from .winproc import hidden_kwargs
 from .workbuddy_bridge import JobLost
+from .version_identity import canonical_revision
 
-import hashlib
 import json
 import re
 import subprocess
@@ -1368,17 +1368,15 @@ def repo_revision(root: Path | str, *, timeout: float = 20.0) -> RepoRevision:
     dirty = len([line for line in status.splitlines() if line.strip()])
     digest = ""
     if dirty:
-        # Only paid when the tree is dirty, which is the case that actually needs an identity.
-        # Hashed in three parts rather than one ``git diff``: staged and unstaged changes are
-        # both part of the version, and an untracked file is a change to the tree even though
-        # no diff mentions it -- a digest over ``git diff`` alone would call a newly added file
-        # "no change", which is the same class of mistake as counting instead of hashing.
-        parts = [
-            run(["diff"]),
-            run(["diff", "--cached"]),
-            run(["ls-files", "--others", "--exclude-standard"]),
-        ]
-        digest = hashlib.sha256("\n\x00\n".join(parts).encode("utf-8", "replace")).hexdigest()
+        # The canonical fingerprint lives in ``version_identity`` so the queue, the live
+        # runtime and the process bootstrap all compute the same thing; a second copy here is
+        # a second answer to "which version is this", and the two would drift.  Only the
+        # version-*relevant* dirty paths are covered -- a log line must not create a version.
+        canonical = canonical_revision(base)
+        dirty = canonical.dirty
+        digest = canonical.digest
+        if not canonical.ok:
+            return RepoRevision(ok=False)
     return RepoRevision(head=head, dirty=dirty, ok=True, digest=digest)
 
 

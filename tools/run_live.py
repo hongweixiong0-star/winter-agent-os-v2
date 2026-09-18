@@ -16,6 +16,22 @@ CONFIG_PATH = Path(os.environ.get("WINTER_AGENT_CONFIG", ROOT / "config/v2.json"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# Operator §B: capture the version this process is *about to load*, before it loads it.
+# Everything below this line is the code under test, and the revision is read from git only
+# here.  Reading it later -- which is what this file used to do, inside `main()` after fifteen
+# runtime imports -- describes the disk at that moment, not the code those imports actually
+# pulled in.  A cycle that started before a job finished and read its revision afterwards
+# would have stamped the *new* version on an episode produced by the old one.
+#
+# Safe to call this early because `version_identity` is stdlib-only by design, and
+# `winter_agent_v2/__init__.py` is three lines: nothing of the runtime is imported to get here.
+from winter_agent_v2.version_identity import freeze_process_revision  # noqa: E402
+
+#: The revision object, kept whole: the episode wants the token plus the parts it was built
+#: from, and re-parsing a token back into them would be a second decoder to keep in step.
+PROCESS_CODE_REVISION_DETAIL = freeze_process_revision(ROOT)
+PROCESS_CODE_REVISION = PROCESS_CODE_REVISION_DETAIL.token
+
 from winter_agent_v2.device import ADBDevice
 from winter_agent_v2.executor_router import build_maa_adapter
 from winter_agent_v2.brain import RuleBrain
@@ -26,7 +42,9 @@ from winter_agent_v2.goal_library import GoalStateStore
 from winter_agent_v2.device_lease import DeviceLease
 from winter_agent_v2.candidate_policy import CandidateAttemptPool
 from winter_agent_v2.capability_gate import CapabilityGate
-from winter_agent_v2.escalation_queue import repo_revision as tree_revision
+# ``repo_revision`` is deliberately NOT imported any more: this process stamps the *frozen*
+# revision it captured before its own imports (operator §B), and a live read available here
+# would be an invitation to write "what the disk says now" onto an episode again.
 from winter_agent_v2.vision import SemanticWorldVision
 from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
 from winter_agent_v2.resource_rotation import ResourceRotationStore
@@ -126,8 +144,14 @@ def main() -> int:
     # every episode.  It is what lets a later reconciliation separate "this run used
     # the version the job produced" from "AUTO succeeded again while the job was still
     # open" -- the difference between learning a capability and being credited for it.
-    revision = tree_revision(ROOT)
-    code_revision = revision.token
+    #
+    # Read from the *frozen* revision (operator §B): re-reading git here would answer "what is
+    # on the disk now", which is not "what this process loaded".  Measured 2026-09-18, the
+    # fifteen runtime imports above happen at module scope, so the old read happened after the
+    # code it was describing had already been imported -- and a job finishing mid-cycle would
+    # have its new revision credited to an episode that ran the old one.
+    code_revision = PROCESS_CODE_REVISION
+    revision = PROCESS_CODE_REVISION_DETAIL
     print(f"[code] revision {code_revision or 'unknown'}", flush=True)
     # Which account this run's episodes belong to, read once from the one role artifact.
     # Deliberately allowed to be empty: an episode with no role is an *unscoped* episode,
