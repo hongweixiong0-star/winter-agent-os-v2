@@ -550,6 +550,46 @@ def main() -> int:
     check("verifier: a readable map before and after is proven",
           verify_beast_scan_observed(no_target, no_target).ok)
 
+    # NAVIGATE_TO_MAP (2026-09-18 escalation OPEN_MAP_NOT_PROVEN).  Same three
+    # links as the beast block above -- registered skill, bound verifier, and a
+    # brain decision that really emits it -- because a verifier nothing can
+    # dispatch is the defect class this file exists for.  The escalated run was
+    # a goal-less AUTO_DISCOVERY sweep sitting on HOME, so that path is pinned
+    # explicitly alongside the named goal that shares the same first hop.
+    nav_skill = registry.get("OPEN_MAP")
+    check("registry: OPEN_MAP is the HOME skill that opens the world map",
+          nav_skill is not None and nav_skill.required_page is Page.HOME
+          and nav_skill.action.target == "PAGE_MAP")
+    check("dispatchable: OPEN_MAP is bound to a verifier",
+          "OPEN_MAP" in runtime.LiveRuntime.VERIFIED_ATOMIC)
+    check("runtime: OPEN_MAP's binding is verify_open_map",
+          runtime.LiveRuntime.VERIFIED_ATOMIC.get("OPEN_MAP") is verifier.verify_open_map)
+    check("brain: a goal-less HOME sweep emits OPEN_MAP",
+          RuleBrain().decide(WorldState(page=Page.HOME, confidence=0.98),
+                             registry).skill == "OPEN_MAP")
+    check("brain: the INTEL goal reaches the map through OPEN_MAP",
+          RuleBrain(current_goal="INTEL").decide(
+              WorldState(page=Page.HOME, confidence=0.98), registry).skill == "OPEN_MAP")
+    # The live 2026-09-14 defect: the map really opened, and the verifier still
+    # said NOT_PROVEN because an unrelated march-counter read came back empty.
+    # That term must stay out of the pass condition.
+    check("verifier: a proven HOME->MAP counts even with no counter read",
+          verifier.verify_open_map(
+              WorldState(page=Page.HOME, confidence=0.98),
+              WorldState(page=Page.MAP, march_used=None, march_max=None, confidence=0.99),
+          ).ok)
+    # The isolation half: an unmodelled page after the tap is still a failure.
+    check("verifier: an unreadable page after the tap is not proven",
+          not verifier.verify_open_map(
+              WorldState(page=Page.HOME, confidence=0.98),
+              WorldState(page=Page.UNKNOWN, confidence=0.0),
+          ).ok)
+    check("verifier: staying on HOME is not proven",
+          not verifier.verify_open_map(
+              WorldState(page=Page.HOME, confidence=0.98),
+              WorldState(page=Page.HOME, confidence=0.98),
+          ).ok)
+
     # The operator's 2-minute Reuse Check (2026-09-17) is a rule about behaviour, so
     # what can be pinned here is that it still exists where a session will read it and
     # that the tool which answers it is runnable.  A rule that quietly disappears from

@@ -93,6 +93,7 @@ def _markdown(payload: dict) -> str:
             f"{row['design_coverage']:.0%} | {row['implementation_coverage']:.0%} | "
             f"{row['live_coverage']:.0%} | {row['stable_coverage']:.0%}"
         )
+    referenced = []
     lines += ["", "## Capabilities", "", "Goal | Capability | Status | Implemented By | Live | Attempts | Success", "---|---|---|---|---|---:|---:"]
     for row in payload["goals"]:
         for capability in row["capabilities"]:
@@ -101,9 +102,28 @@ def _markdown(payload: dict) -> str:
                 f"{capability['implemented_by'] or '-'} | {capability['live_verified_by'] or '-'} | "
                 f"{capability['attempts']} | {capability['successes']}"
             )
+            if capability.get("evidence"):
+                referenced.append((row["goal"], capability["capability"], capability["evidence"]))
     lines += ["", "## Highest-Leverage Blockers", "", "Skill | Blocked Goals | Never-Tried Goals", "---|---:|---:"]
     for item in payload["highest_leverage"]:
         lines.append(f"{item['skill_id']} | {item['blocked_goals']} | {item['never_tried_goals']}")
+    if referenced:
+        # Every "LIVE_VERIFIED" / "STABLE" in the table above is a claim that some
+        # frame on disk shows the page transition.  Name the frame here so the
+        # claim can be checked instead of trusted.  Empty means no evidence set
+        # has been published yet, not that no episode exists.
+        lines += [
+            "",
+            "## Published Evidence Sets",
+            "",
+            "Each path below holds the archived frames behind a capability's live claim; "
+            "the directory's `report.json` records what was measured and what stayed unproven.",
+            "",
+            "Goal | Capability | Evidence",
+            "---|---|---",
+        ]
+        for goal, capability, evidence in referenced:
+            lines.append(f"{goal} | {capability} | `{evidence}`")
     return "\n".join(lines) + "\n"
 
 

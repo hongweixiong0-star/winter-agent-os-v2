@@ -142,6 +142,15 @@ dataset/external/repositories/
 # level-25 moose and no verified target (the root cause), plus the scan-run
 # before/after pair whose map coordinates prove the pans really moved the view.
 !dataset/truth_audit/beast_map_scan_20260917/key/**/*.png
+# 2026-09-18, the NAVIGATE_TO_MAP round (escalation OPEN_MAP_NOT_PROVEN).  Only
+# key/ is published, and each of the eight frames is load-bearing: the
+# 2026-09-14 production pair that verifies ONLY after the fix (before=HOME,
+# after=MAP with an unreadable counter), the three frames of the escalated
+# episode (before=HOME, after=unchanged HOME, refresh_2=the event page the page
+# model cannot name), the live-verified 2026-09-18 pair, and the HOME frame the
+# transition-latency series started from.  A clone without them cannot re-derive
+# either the root cause or the regression.
+!dataset/truth_audit/nav_to_map_20260918/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

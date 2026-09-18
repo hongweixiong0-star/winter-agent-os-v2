@@ -63,7 +63,7 @@
       "composition": "SEQUENCE",
       "runtime_goal": false,
       "capabilities": [
-        {"capability": "NAVIGATE_TO_MAP", "alternatives": ["OPEN_MAP", "OPEN_HOME"]},
+        {"capability": "NAVIGATE_TO_MAP", "alternatives": ["OPEN_MAP", "OPEN_HOME"], "evidence": "dataset/truth_audit/nav_to_map_20260918/key/"},
         {"capability": "OPEN_RESOURCE_SEARCH", "alternatives": ["SEARCH_RESOURCE"]},
         {"capability": "SELECT_RESOURCE_TYPE", "alternatives": ["SELECT_RESOURCE"]},
         {"capability": "FIND_RESOURCE_NODE", "alternatives": ["SUBMIT_RESOURCE_SEARCH"]},

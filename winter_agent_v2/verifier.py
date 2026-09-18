@@ -667,14 +667,47 @@ def verify_intel_rescue_started(before: WorldState, after: WorldState) -> Verifi
 
 
 def verify_open_map(before: WorldState, after: WorldState) -> VerificationResult:
+    """``HOME -> MAP`` is the whole claim; the march counter is not part of it.
+
+    The pass condition used to be
+    ``before.page is HOME and after.page is MAP and (after.march_used is not None
+    or after.resource_search_open)``.  The last term folded a *queue* read into a
+    *navigation* proof, and it failed navigations the page model had already
+    proven.  Measured on the production episode stream: 2026-09-14T13:12:13,
+    ``after.page`` was MAP at confidence 0.99 with ``march_max == 6``, a MAP_HUD
+    stamina reading of 177, and ``resource_target == "COAL"`` -- the world map
+    was plainly open -- yet ``march_used`` was ``None`` because neither
+    ``MARCH_COUNT_1_OF_6`` nor ``MARCH_COUNT_2_OF_6`` matched that frame, so
+    OPEN_MAP was recorded as OPEN_MAP_NOT_PROVEN and the run stopped.
+    ``00_MASTER_RULES.md`` §6 names this exact anti-pattern: "Verifier 不应把无关
+    的观测塞进自己的条件里（会让一个脆弱读取拖垮整条判定）".
+
+    The page pair is the proof, and it is independent of the counter:
+    ``SemanticWorldVision`` returns MAP only when the world-map HUD anchor
+    (``BTN_OPEN_HOME``) matched *and* the HOME-only ``PAGE_MAP`` control did not,
+    and returns HOME only when ``PAGE_MAP`` matched.  Both templates are
+    reviewed, sit in the same bottom-right box, and are mutually exclusive by
+    construction (``live_back_safe_home.png`` = PAGE_MAP / HOME;
+    ``live_attempt8_idle.png`` = BTN_OPEN_HOME / MAP).
+
+    ``march_used`` / ``march_max`` stay in the evidence dict as diagnostics --
+    ``CHECK_MARCH`` -> ``verify_march_count_readable`` owns that fact -- but they
+    no longer decide this one.
+    """
     before_ok = before.page is Page.HOME
-    after_ok = after.page is Page.MAP
-    map_controls = after.march_used is not None or after.resource_search_open
-    ok = before_ok and after_ok and map_controls
+    after_ok = after.page is Page.MAP and after.confidence >= 0.9
+    ok = before_ok and after_ok
     return VerificationResult(
         ok,
         "OK" if ok else "OPEN_MAP_NOT_PROVEN",
-        {"before_home": before_ok, "after_map": after_ok, "map_controls": map_controls},
+        {
+            "before_home": before_ok,
+            "after_map": after_ok,
+            "after_confidence": round(after.confidence, 3),
+            "march_used": after.march_used,
+            "march_max": after.march_max,
+            "resource_search_open": after.resource_search_open,
+        },
     )
 
 

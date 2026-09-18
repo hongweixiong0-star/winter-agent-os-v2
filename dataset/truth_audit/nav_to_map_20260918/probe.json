@@ -1,0 +1,156 @@
+{
+ "frames": [
+  {
+   "frame": "20260918_071842_873395_step_002_before_20260917T231909587334.png",
+   "size": [
+    720,
+    1280
+   ],
+   "state": {
+    "page": "HOME",
+    "confidence": 0.98,
+    "march_used": null,
+    "resource_search_open": false
+   },
+   "page_map_candidates": [
+    {
+     "template_id": "page_map__legacy_home__0",
+     "parent": "E:/无尽冬日智能体/dataset/raw/legacy_home.png",
+     "roi_norm": {
+      "h_norm": 0.09,
+      "w_norm": 0.145,
+      "x_norm": 0.851,
+      "y_norm": 0.908
+     },
+     "bounds": [
+      613,
+      1162,
+      717,
+      1277
+     ],
+     "center_px": [
+      665,
+      1220
+     ],
+     "distance": 6,
+     "threshold": 6
+    },
+    {
+     "template_id": "page_map__live_back_safe_home__0",
+     "parent": "E:/无尽冬日智能体/dataset/raw/live_back_safe_home.png",
+     "roi_norm": {
+      "h_norm": 0.088,
+      "w_norm": 0.148,
+      "x_norm": 0.85,
+      "y_norm": 0.91
+     },
+     "bounds": [
+      612,
+      1165,
+      719,
+      1277
+     ],
+     "center_px": [
+      666,
+      1221
+     ],
+     "distance": 4,
+     "threshold": 6
+    }
+   ],
+   "find_result": {
+    "distance": 4,
+    "roi": {
+     "h_norm": 0.088,
+     "w_norm": 0.148,
+     "x_norm": 0.85,
+     "y_norm": 0.91
+    },
+    "center_norm": [
+     0.9239999999999999,
+     0.9540000000000001
+    ],
+    "center_px": [
+     665,
+     1221
+    ]
+   }
+  },
+  {
+   "frame": "20260918_071842_873395_step_002_after_20260917T231921546245.png",
+   "size": [
+    720,
+    1280
+   ],
+   "state": {
+    "page": "HOME",
+    "confidence": 0.98,
+    "march_used": null,
+    "resource_search_open": false
+   },
+   "page_map_candidates": [
+    {
+     "template_id": "page_map__legacy_home__0",
+     "parent": "E:/无尽冬日智能体/dataset/raw/legacy_home.png",
+     "roi_norm": {
+      "h_norm": 0.09,
+      "w_norm": 0.145,
+      "x_norm": 0.851,
+      "y_norm": 0.908
+     },
+     "bounds": [
+      613,
+      1162,
+      717,
+      1277
+     ],
+     "center_px": [
+      665,
+      1220
+     ],
+     "distance": 6,
+     "threshold": 6
+    },
+    {
+     "template_id": "page_map__live_back_safe_home__0",
+     "parent": "E:/无尽冬日智能体/dataset/raw/live_back_safe_home.png",
+     "roi_norm": {
+      "h_norm": 0.088,
+      "w_norm": 0.148,
+      "x_norm": 0.85,
+      "y_norm": 0.91
+     },
+     "bounds": [
+      612,
+      1165,
+      719,
+      1277
+     ],
+     "center_px": [
+      666,
+      1221
+     ],
+     "distance": 4,
+     "threshold": 6
+    }
+   ],
+   "find_result": {
+    "distance": 4,
+    "roi": {
+     "h_norm": 0.088,
+     "w_norm": 0.148,
+     "x_norm": 0.85,
+     "y_norm": 0.91
+    },
+    "center_norm": [
+     0.9239999999999999,
+     0.9540000000000001
+    ],
+    "center_px": [
+     665,
+     1221
+    ]
+   }
+  }
+ ]
+}

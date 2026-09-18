@@ -67,6 +67,13 @@ class CapabilityRow:
     attempts: int = 0
     successes: int = 0
     failures: int = 0
+    # Where the archived evidence for this capability lives, when a round has
+    # published some.  Hand-written in ``goal_capability_map.json`` and carried
+    # through so ``docs/CAPABILITY_COVERAGE.md`` names the frames instead of
+    # leaving the reader to guess which screenshots back a "LIVE_VERIFIED".
+    # Empty means "no published evidence set", which is the honest state for
+    # most capabilities and must not read as "no evidence exists".
+    evidence: str = ""
 
 
 @dataclass
@@ -183,6 +190,7 @@ class CapabilityCoverage:
                     attempts=attempts,
                     successes=successes,
                     failures=failures,
+                    evidence=str(entry.get("evidence", "") or ""),
                 ))
 
             total = len(capabilities)

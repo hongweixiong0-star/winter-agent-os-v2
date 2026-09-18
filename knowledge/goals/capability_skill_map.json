@@ -31,7 +31,8 @@
           "live_verified_by": "OPEN_INTEL",
           "attempts": 135,
           "successes": 115,
-          "failures": 20
+          "failures": 20,
+          "evidence": ""
         },
         {
           "capability": "READ_INTEL_LIST",
@@ -43,7 +44,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "SELECT_INTEL_MISSION",
@@ -57,7 +59,8 @@
           "live_verified_by": "SELECT_INTEL_BEAST_MISSION",
           "attempts": 13,
           "successes": 11,
-          "failures": 2
+          "failures": 2,
+          "evidence": ""
         },
         {
           "capability": "EXECUTE_INTEL_MISSION",
@@ -72,7 +75,8 @@
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
           "attempts": 146,
           "successes": 125,
-          "failures": 21
+          "failures": 21,
+          "evidence": ""
         },
         {
           "capability": "CLAIM_INTEL_REWARD",
@@ -84,7 +88,8 @@
           "live_verified_by": "INTEL_CLAIM_REWARDS",
           "attempts": 65,
           "successes": 62,
-          "failures": 3
+          "failures": 3,
+          "evidence": ""
         },
         {
           "capability": "DISMISS_INTEL_REWARD",
@@ -97,7 +102,8 @@
           "live_verified_by": "DISMISS_INTEL_REWARD",
           "attempts": 64,
           "successes": 59,
-          "failures": 5
+          "failures": 5,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 6,
@@ -129,7 +135,8 @@
           "live_verified_by": "BEAST_HUNT",
           "attempts": 5,
           "successes": 2,
-          "failures": 3
+          "failures": 3,
+          "evidence": ""
         },
         {
           "capability": "SPEND_STAMINA_ON_INTEL",
@@ -143,7 +150,8 @@
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
           "attempts": 137,
           "successes": 122,
-          "failures": 15
+          "failures": 15,
+          "evidence": ""
         },
         {
           "capability": "SPEND_STAMINA_ON_RALLY",
@@ -155,7 +163,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 3,
@@ -186,9 +195,10 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 70,
-          "successes": 63,
-          "failures": 7
+          "attempts": 75,
+          "successes": 67,
+          "failures": 8,
+          "evidence": "dataset/truth_audit/nav_to_map_20260918/key/"
         },
         {
           "capability": "OPEN_RESOURCE_SEARCH",
@@ -200,7 +210,8 @@
           "live_verified_by": "SEARCH_RESOURCE",
           "attempts": 91,
           "successes": 57,
-          "failures": 34
+          "failures": 34,
+          "evidence": ""
         },
         {
           "capability": "SELECT_RESOURCE_TYPE",
@@ -212,7 +223,8 @@
           "live_verified_by": "SELECT_RESOURCE",
           "attempts": 59,
           "successes": 14,
-          "failures": 45
+          "failures": 45,
+          "evidence": ""
         },
         {
           "capability": "FIND_RESOURCE_NODE",
@@ -224,7 +236,8 @@
           "live_verified_by": "SUBMIT_RESOURCE_SEARCH",
           "attempts": 68,
           "successes": 38,
-          "failures": 30
+          "failures": 30,
+          "evidence": ""
         },
         {
           "capability": "OPEN_MARCH_FORMATION",
@@ -236,7 +249,8 @@
           "live_verified_by": "START_GATHER",
           "attempts": 97,
           "successes": 37,
-          "failures": 60
+          "failures": 60,
+          "evidence": ""
         },
         {
           "capability": "DISPATCH_GATHER_MARCH",
@@ -246,9 +260,10 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 69,
+          "attempts": 71,
           "successes": 34,
-          "failures": 35
+          "failures": 37,
+          "evidence": ""
         },
         {
           "capability": "VERIFY_GATHERING",
@@ -260,7 +275,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 7,
@@ -292,7 +308,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "START_BUILD",
@@ -304,7 +321,8 @@
           "live_verified_by": "BUILDING_UPGRADE",
           "attempts": 1,
           "successes": 1,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 2,
@@ -336,7 +354,8 @@
           "live_verified_by": "OPEN_RESEARCH",
           "attempts": 4,
           "successes": 4,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "START_RESEARCH",
@@ -348,7 +367,8 @@
           "live_verified_by": null,
           "attempts": 1,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 2,
@@ -385,7 +405,8 @@
           "live_verified_by": "OPEN_POWER_OVERVIEW",
           "attempts": 57,
           "successes": 49,
-          "failures": 8
+          "failures": 8,
+          "evidence": ""
         },
         {
           "capability": "START_TRAINING",
@@ -398,7 +419,8 @@
           "live_verified_by": "TRAIN_TROOPS",
           "attempts": 3,
           "successes": 2,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 2,
@@ -428,7 +450,8 @@
           "live_verified_by": "OPEN_MAIL",
           "attempts": 49,
           "successes": 34,
-          "failures": 15
+          "failures": 15,
+          "evidence": ""
         },
         {
           "capability": "READ_MAIL_TABS",
@@ -442,7 +465,8 @@
           "live_verified_by": "SELECT_MAIL_ALLIANCE_TAB",
           "attempts": 16,
           "successes": 11,
-          "failures": 5
+          "failures": 5,
+          "evidence": ""
         },
         {
           "capability": "CLAIM_MAIL_ATTACHMENTS",
@@ -454,7 +478,8 @@
           "live_verified_by": "MAIL_CLAIM_REWARDS",
           "attempts": 29,
           "successes": 19,
-          "failures": 10
+          "failures": 10,
+          "evidence": ""
         },
         {
           "capability": "DISMISS_MAIL_REWARD",
@@ -467,7 +492,8 @@
           "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
           "attempts": 9,
           "successes": 7,
-          "failures": 2
+          "failures": 2,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 4,
@@ -497,7 +523,8 @@
           "live_verified_by": "OPEN_DAILY",
           "attempts": 12,
           "successes": 10,
-          "failures": 2
+          "failures": 2,
+          "evidence": ""
         },
         {
           "capability": "READ_DAILY_PROGRESS",
@@ -509,7 +536,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "CLAIM_DAILY_REWARD",
@@ -521,7 +549,8 @@
           "live_verified_by": "DAILY_CLAIM_REWARDS",
           "attempts": 5,
           "successes": 5,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "DISMISS_DAILY_REWARD",
@@ -534,7 +563,8 @@
           "live_verified_by": "DISMISS_DAILY_REWARD",
           "attempts": 9,
           "successes": 4,
-          "failures": 5
+          "failures": 5,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 4,
@@ -573,7 +603,8 @@
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
           "attempts": 132,
           "successes": 114,
-          "failures": 18
+          "failures": 18,
+          "evidence": ""
         },
         {
           "capability": "DISMISS_FREE_REWARD_POPUP",
@@ -588,7 +619,8 @@
           "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
           "attempts": 12,
           "successes": 11,
-          "failures": 1
+          "failures": 1,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 2,
@@ -618,7 +650,8 @@
           "live_verified_by": "OPEN_EXPLORATION",
           "attempts": 12,
           "successes": 11,
-          "failures": 1
+          "failures": 1,
+          "evidence": ""
         },
         {
           "capability": "CLAIM_IDLE_INCOME",
@@ -631,7 +664,8 @@
           "live_verified_by": "EXPLORATION_IDLE_CLAIM",
           "attempts": 7,
           "successes": 2,
-          "failures": 5
+          "failures": 5,
+          "evidence": ""
         },
         {
           "capability": "DISMISS_EXPLORATION_REWARD",
@@ -644,7 +678,8 @@
           "live_verified_by": "DISMISS_EXPLORATION_GENERIC_REWARD",
           "attempts": 2,
           "successes": 1,
-          "failures": 1
+          "failures": 1,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 3,
@@ -674,7 +709,8 @@
           "live_verified_by": "OPEN_ALLIANCE",
           "attempts": 1,
           "successes": 1,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "ALLIANCE_HELP",
@@ -686,7 +722,8 @@
           "live_verified_by": null,
           "attempts": 1,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "ALLIANCE_TECH_CONTRIBUTE",
@@ -698,7 +735,8 @@
           "live_verified_by": "ALLIANCE_TECH_CONTRIBUTE",
           "attempts": 4,
           "successes": 4,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "CLAIM_ALLIANCE_GIFTS",
@@ -712,7 +750,8 @@
           "live_verified_by": "ALLIANCE_GIFTS",
           "attempts": 28,
           "successes": 26,
-          "failures": 2
+          "failures": 2,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 4,
@@ -745,7 +784,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "READ_EVENT_RULES",
@@ -757,7 +797,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "READ_EVENT_PROGRESS",
@@ -770,7 +811,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "READ_EVENT_TIMER",
@@ -783,7 +825,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "CONTRIBUTE_TO_EVENT_SCORE",
@@ -797,7 +840,8 @@
           "live_verified_by": "TRAIN_TROOPS",
           "attempts": 5,
           "successes": 3,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "CLAIM_EVENT_TIER",
@@ -809,7 +853,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 6,
@@ -845,7 +890,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "READ_ALLIANCE_EVENT_TIMER",
@@ -859,7 +905,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "CLAIM_EVENT_TIER",
@@ -871,7 +918,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 3,
@@ -906,7 +954,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "SELECT_TROOP_PRESET",
@@ -918,7 +967,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "START_RALLY",
@@ -930,7 +980,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "JOIN_RALLY",
@@ -942,7 +993,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "CONFIRM_MARCH",
@@ -953,9 +1005,10 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 69,
+          "attempts": 71,
           "successes": 34,
-          "failures": 35
+          "failures": 37,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 5,
@@ -990,7 +1043,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "READ_FREE_ATTEMPTS",
@@ -1003,7 +1057,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "SELECT_ARENA_OPPONENT",
@@ -1015,7 +1070,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "START_ARENA",
@@ -1028,7 +1084,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "VERIFY_ARENA_RESULT",
@@ -1040,7 +1097,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 5,
@@ -1076,7 +1134,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "READ_LABYRINTH_ATTEMPTS",
@@ -1089,7 +1148,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "START_LABYRINTH",
@@ -1102,7 +1162,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         },
         {
           "capability": "VERIFY_LABYRINTH_RESULT",
@@ -1114,7 +1175,8 @@
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
-          "failures": 0
+          "failures": 0,
+          "evidence": ""
         }
       ],
       "design_requirements_total": 4,
