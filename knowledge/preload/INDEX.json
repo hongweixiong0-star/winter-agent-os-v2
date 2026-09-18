@@ -1,15 +1,18 @@
 {
  "schema_version": "1.0",
  "generated_by": "winter_agent_v2.knowledge_preload.KnowledgeStore.write_index",
- "generated_at": "2026-09-18T03:18:39.095870+00:00",
+ "generated_at": "2026-09-18T03:44:21.609902+00:00",
  "note": "derived from knowledge/preload/*.json -- not a skill registry and not a lifecycle authority; delete any row and it returns from the files",
  "acquired_vs_external": "the point of this index is that acquisition_rung should drift toward 1-5 over time: external priors are a starting cost, not a permanent one",
  "summary": {
-  "records": 1,
+  "records": 6,
   "by_status": {
-   "UNVERIFIED": 1
+   "PRIOR": 2,
+   "UNVERIFIED": 4
   },
   "by_acquisition_rung": {
+   "6": 2,
+   "4": 3,
    "1": 1
   },
   "sufficient": 0,
@@ -17,6 +20,96 @@
   "awaiting_calibration": 0
  },
  "records": [
+  {
+   "capability": "VIP_FREE_CHEST",
+   "capability_id": "CAP-B10",
+   "status": "PRIOR",
+   "weakest_field": "PRIOR",
+   "source_type": "EXTERNAL_MAP",
+   "acquisition_rung": 6,
+   "sufficient": false,
+   "missing_fields": [
+    "preconditions"
+   ],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-09-18T03:44:21.609902+00:00"
+  },
+  {
+   "capability": "CLAIM_VIP_DAILY",
+   "capability_id": "CAP-B09",
+   "status": "PRIOR",
+   "weakest_field": "PRIOR",
+   "source_type": "EXTERNAL_MAP",
+   "acquisition_rung": 6,
+   "sufficient": false,
+   "missing_fields": [
+    "preconditions"
+   ],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-09-18T03:43:48.785473+00:00"
+  },
+  {
+   "capability": "BATTLE_RESEARCH",
+   "capability_id": "CAP-E09",
+   "status": "UNVERIFIED",
+   "weakest_field": "UNVERIFIED",
+   "source_type": "LEGACY_VERIFIED_ASSET",
+   "acquisition_rung": 4,
+   "sufficient": false,
+   "missing_fields": [
+    "preconditions",
+    "navigation",
+    "actions",
+    "success_state",
+    "verifier_prior",
+    "recovery_prior"
+   ],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-09-18T03:43:14.056474+00:00"
+  },
+  {
+   "capability": "GROWTH_RESEARCH",
+   "capability_id": "CAP-E08",
+   "status": "UNVERIFIED",
+   "weakest_field": "UNVERIFIED",
+   "source_type": "LEGACY_VERIFIED_ASSET",
+   "acquisition_rung": 4,
+   "sufficient": false,
+   "missing_fields": [
+    "preconditions",
+    "navigation",
+    "actions",
+    "success_state",
+    "verifier_prior",
+    "recovery_prior"
+   ],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-09-18T03:42:50.933521+00:00"
+  },
+  {
+   "capability": "ECONOMY_RESEARCH",
+   "capability_id": "CAP-E07",
+   "status": "UNVERIFIED",
+   "weakest_field": "UNVERIFIED",
+   "source_type": "LEGACY_VERIFIED_ASSET",
+   "acquisition_rung": 4,
+   "sufficient": false,
+   "missing_fields": [
+    "preconditions",
+    "navigation",
+    "actions",
+    "success_state",
+    "verifier_prior",
+    "recovery_prior"
+   ],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-09-18T03:22:18.620124+00:00"
+  },
   {
    "capability": "TROOP_SELECT",
    "capability_id": "CAP-G09",

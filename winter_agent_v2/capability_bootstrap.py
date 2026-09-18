@@ -215,6 +215,10 @@ PRIORITY_ZH: dict[str, str] = {
     PRIO_FUTURE_LOCKED: "P5 未来 / 低价值",
 }
 
+# The project's own threshold (``goal_capability_map.json`` lifecycle_rules): a
+# capability with this many real failures is degraded rather than merely imperfect.
+DEGRADED_MIN_FAILURES = 2
+
 # Risk grades that count as "free value" when claimed by no real-money path.
 FREE_RISKS = frozenset({"T0", "T1"})
 FREE_BONUS = 8.0
@@ -910,14 +914,17 @@ class BootstrapScanner:
                 )
         if skill and skill in self.drafts:
             return "CANDIDATE", f"a design draft already exists at dataset/candidate/{skill}.json"
-        if str(row.get("lifecycle")) == "DEGRADED":
+        if str(row.get("lifecycle")) == "DEGRADED" or (
+            str(row.get("implementation_status")) == "EXISTING"
+            and int(row.get("live_failure") or 0) >= DEGRADED_MIN_FAILURES
+        ):
             # Implemented, and measurably worse than it was.  Its repair is the runtime
             # path (a real failure already exists, with an episode behind it), so a
             # preload would be the second job the operator forbids -- but the refusal
             # says *why*, so a reader does not have to guess.
             return "DEGRADED", (
-                "the catalog reports this capability as DEGRADED: it is a repair with real "
-                "failure evidence, not a preload"
+                f"the catalog records {int(row.get('live_failure') or 0)} real failures for an "
+                f"implemented capability: this is a repair with failure evidence, not a preload"
             )
         return "", ""
 
@@ -939,13 +946,13 @@ class BootstrapScanner:
             found.append(CLASS_EXTERNAL_PRIOR_UNIMPLEMENTED)
         if not implemented and not skill and self._has_asset(row):
             found.append(CLASS_LEGACY_ASSET_UNWIRED)
-        if str(row.get("lifecycle")) == "DEGRADED":
-            # Named for visibility even though it is refused below (and refused even
-            # when no registry state matches): a capability that broke because the
-            # client changed is a *repair* (route B), and the operator wants it visible
-            # rather than silently missing from the preload list.  A ``blocked_reason``
-            # alone does NOT make a row degraded -- the catalog uses it for notes like
-            # "the role IS observable", which are the opposite of a regression.
+        if str(row.get("lifecycle")) == "DEGRADED" or (
+            implemented and int(row.get("live_failure") or 0) >= DEGRADED_MIN_FAILURES
+        ):
+            # "因 UI 变化而 DEGRADED" is a *repair* (route B), so this is named for
+            # visibility and refused as a preload below.  The catalog never emits the
+            # DEGRADED lifecycle today, so the real signal is its own failure count --
+            # the same threshold the project's ``degraded_min_failures`` names.
             found.append(CLASS_DEGRADED)
         return tuple(found)
 

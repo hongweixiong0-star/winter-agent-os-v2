@@ -1,0 +1,56 @@
+{
+ "capability": "CLAIM_VIP_DAILY",
+ "capability_id": "CAP-B09",
+ "game_version": "",
+ "observed_date": "2026-09-18",
+ "source": "preload plan (EXTERNAL_MAP)",
+ "source_type": "EXTERNAL_MAP",
+ "source_confidence": 0.5,
+ "status": "PRIOR",
+ "missing_fields": [
+  "preconditions"
+ ],
+ "conflicts": [],
+ "live_calibration_status": "PENDING_RESEARCH",
+ "question": "前置条件：从哪里、在什么状态下可以开始",
+ "research_attempts": 1,
+ "created_at": "2026-09-18T03:43:48.785473+00:00",
+ "updated_at": "2026-09-18T03:43:48.785473+00:00",
+ "evidence": [],
+ "notes": [
+  "no knowledge record yet"
+ ],
+ "field_status": {
+  "preconditions": "PRIOR",
+  "navigation": "PRIOR",
+  "recognition": "PRIOR",
+  "actions": "PRIOR",
+  "success_state": "PRIOR",
+  "verifier_prior": "PRIOR",
+  "recovery_prior": "PRIOR",
+  "risk": "PRIOR"
+ },
+ "field_source": {
+  "preconditions": "",
+  "navigation": "EXTERNAL_MAP",
+  "recognition": "EXTERNAL_MAP",
+  "actions": "EXTERNAL_MAP",
+  "success_state": "EXTERNAL_MAP",
+  "verifier_prior": "EXTERNAL_MAP",
+  "recovery_prior": "EXTERNAL_MAP",
+  "risk": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）"
+ },
+ "acquisition_rung": 6,
+ "preconditions": "",
+ "navigation": "tapInside(VIP_MENU_BUTTON (430,48)-(530,85)) -> verify with TemplatesEnum.VIP_MENU; pressBack() to leave",
+ "page_semantics": "",
+ "recognition": "template VIP_MENU to confirm the panel; OcrSettingsData SINGLE_LINE + charWhitelist('0123456789d') over VIP_EXPIRATION_TIME (273,1170)-(461,1213) accepted by GameTimeUtils.isAcceptedFormat",
+ "actions": "tapInside(DAILY_CHEST_REWARDS (540,813)-(624,835), attempts=3, 300ms) then tapInside(VIP_POINT_REWARDS (602,263)-(650,293), attempts=3, 300ms)",
+ "success_state": "NONE for the claims — the taps are blind fixed-coordinate, repeated 3x. Only the menu opening is verified (template).",
+ "failure_states": "",
+ "verifier_prior": "NONE for the claims — the taps are blind fixed-coordinate, repeated 3x. Only the menu opening is verified (template).",
+ "recovery_prior": "if the menu template is not found -> log + reschedule; no retry of the panel itself",
+ "resource_rules": "",
+ "risk": "T0（总表判定，资源成本 UNKNOWN）",
+ "client_specific_notes": ""
+}

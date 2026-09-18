@@ -1,25 +1,25 @@
 {
- "written_at": "2026-09-18T03:18:39.994567+00:00",
- "process": 26772,
+ "written_at": "2026-09-18T03:44:22.095566+00:00",
+ "process": 28740,
  "controller": "RUNNING",
  "stage": "TARGETED_RESEARCH",
- "decision": "GATE_REFUSED",
- "note": "NOT_ARMED_MAIN_LOOP_P0: main loop not fully proven yet: P0-A=PARTIAL, P0-B=PROVEN, P0-C=PROVEN, P0-D=NOT PROVEN, P0-E=PARTIAL, P0-F=NOT PROVEN",
- "line": "[bootstrap] TARGETED_RESEARCH · P1 TROOP_SELECT · GATE_REFUSED · missing recovery_prior · next ECONOMY_RESEARCH",
- "learning": "TROOP_SELECT",
+ "decision": "RESEARCH_QUEUED",
+ "note": "定向研究待派（dry run）：前置条件：从哪里、在什么状态下可以开始",
+ "line": "[bootstrap] TARGETED_RESEARCH · P1 VIP_FREE_CHEST · RESEARCH_QUEUED · missing preconditions · skipped 5 · next TROOP_SELECT",
+ "learning": "VIP_FREE_CHEST",
  "learning_missing": [
-  "recovery_prior"
+  "preconditions"
  ],
  "learning_questions": [
-  "基础 Recovery：失败后怎么恢复"
+  "前置条件：从哪里、在什么状态下可以开始"
  ],
  "preloading": "",
  "developing": [],
  "awaiting_calibration": [],
  "last_preload_at": "",
  "last_confirmed_at": "",
- "next_capability": "ECONOMY_RESEARCH",
- "knowledge_records": 1,
+ "next_capability": "TROOP_SELECT",
+ "knowledge_records": 6,
  "knowledge_blocked": [],
  "coverage": {
   "unlocked": {
@@ -49,15 +49,15 @@
    "live_verified_percent": 6.1
   },
   "knowledge": {
-   "records": 1,
+   "records": 6,
    "sufficient": 0,
    "confirmed": 0,
    "observed": 0,
-   "prior_only": 0,
+   "prior_only": 2,
    "conflicts": 0,
    "awaiting_calibration": 0,
    "blocked": 0,
-   "external_share": 0.0
+   "external_share": 33.3
   },
   "definitions": {
    "unlocked": "该能力所在 category 出现过证据（EXISTING 行或有真机尝试）",

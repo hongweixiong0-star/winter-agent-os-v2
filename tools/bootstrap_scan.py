@@ -187,7 +187,12 @@ def main() -> int:
     if args.capability:
         return _one_brief(scanner, args.capability)
 
-    if args.state or args.cycle or args.coverage:
+    # The controller branch runs *before* the report writer and falls through to it, so
+    # `--cycle --write` really writes the report the cycle produced.  An earlier version
+    # returned early and `--write` was silently ignored -- which is how a stale report
+    # survives a code change.
+    handled_states = args.state or args.cycle or args.coverage
+    if handled_states:
         from winter_agent_v2.capability_bootstrap import KnowledgeBootstrapController
 
         controller = KnowledgeBootstrapController(ROOT)
@@ -228,12 +233,14 @@ def main() -> int:
                 print(f"  {key:<20}: {value or '-'}")
             print(f"  written: {path}")
             print()
-        return 0
 
     if args.write:
         json_path, md_path = bootstrap.write_report(ROOT, scanner, limit=max(args.top, 40))
         print(f"wrote {json_path}")
         print(f"wrote {md_path}")
+
+    if handled_states:
+        return 0
 
     if args.json:
         print(json.dumps(scanner.report(limit=max(args.top, 40)), ensure_ascii=False, indent=1))

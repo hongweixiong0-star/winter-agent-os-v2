@@ -1,7 +1,7 @@
 {
  "schema_version": "1.0",
  "generated_by": "winter_agent_v2.capability_bootstrap",
- "generated_at": "2026-09-18T02:55:04.653190+00:00",
+ "generated_at": "2026-09-18T03:44:21.598119+00:00",
  "policy": {
   "max_lifecycle": "READY_FOR_LIVE_VERIFY",
   "never_from_a_bootstrap": [
@@ -22,6 +22,7 @@
    "UNLOCKED_MISSING",
    "HIGH_FREQ_FREE_VALUE",
    "OTHER_UNLOCKED",
+   "NEAR_UNLOCK",
    "FUTURE_LOCKED"
   ],
   "classes": [
@@ -29,7 +30,8 @@
    "NEVER_TRIED",
    "DEFINED_NO_IMPLEMENTATION",
    "EXTERNAL_PRIOR_UNIMPLEMENTED",
-   "LEGACY_ASSET_UNWIRED"
+   "LEGACY_ASSET_UNWIRED",
+   "DEGRADED"
   ],
   "fields": [
    "Preconditions",
@@ -49,14 +51,16 @@
    "UNLOCKED_MISSING": 124,
    "HIGH_FREQ_FREE_VALUE": 52,
    "OTHER_UNLOCKED": 18,
-   "FUTURE_LOCKED": 328
+   "FUTURE_LOCKED": 322,
+   "NEAR_UNLOCK": 6
   },
   "by_plan_state": {
    "NEEDS_LIVE_FRAME": 452,
    "IN_FLIGHT": 70
   },
   "by_class": {
-   "MISSING": 439,
+   "MISSING": 421,
+   "DEGRADED": 18,
    "NEVER_TRIED": 36,
    "EXTERNAL_PRIOR_UNIMPLEMENTED": 38,
    "LEGACY_ASSET_UNWIRED": 20,
@@ -80,7 +84,7 @@
     "DEFINED_NO_IMPLEMENTATION"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 119.0,
+   "score": 749.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "V2_EVIDENCE",
    "knowledge_rank": 1,
@@ -179,7 +183,7 @@
     "LEGACY_ASSET_UNWIRED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 110.0,
+   "score": 740.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "LEGACY_ASSET",
    "knowledge_rank": 2,
@@ -277,7 +281,7 @@
     "LEGACY_ASSET_UNWIRED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 110.0,
+   "score": 740.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "LEGACY_ASSET",
    "knowledge_rank": 2,
@@ -375,7 +379,7 @@
     "LEGACY_ASSET_UNWIRED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 110.0,
+   "score": 740.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "LEGACY_ASSET",
    "knowledge_rank": 2,
@@ -472,7 +476,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -574,7 +578,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -676,7 +680,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -778,7 +782,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -880,7 +884,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -982,7 +986,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1087,7 +1091,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1192,7 +1196,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1295,7 +1299,7 @@
     "LEGACY_ASSET_UNWIRED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1400,7 +1404,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1504,7 +1508,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 104.0,
+   "score": 734.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1606,7 +1610,7 @@
     "EXTERNAL_PRIOR_UNIMPLEMENTED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 96.0,
+   "score": 726.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1712,7 +1716,7 @@
     "LEGACY_ASSET_UNWIRED"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 96.0,
+   "score": 726.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "EXTERNAL_MAP",
    "knowledge_rank": 3,
@@ -1816,7 +1820,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -1916,7 +1920,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2016,7 +2020,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2116,7 +2120,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2216,7 +2220,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2316,7 +2320,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2416,7 +2420,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2516,7 +2520,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2616,7 +2620,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2716,7 +2720,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2816,7 +2820,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -2916,7 +2920,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3016,7 +3020,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3116,7 +3120,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3216,7 +3220,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3316,7 +3320,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3416,7 +3420,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3516,7 +3520,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3616,7 +3620,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3716,7 +3720,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3816,7 +3820,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -3916,7 +3920,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,
@@ -4016,7 +4020,7 @@
     "MISSING"
    ],
    "priority": "UNLOCKED_MISSING",
-   "score": 92.0,
+   "score": 722.0,
    "plan_state": "NEEDS_LIVE_FRAME",
    "knowledge_source": "GAME_DB_WIKI",
    "knowledge_rank": 5,

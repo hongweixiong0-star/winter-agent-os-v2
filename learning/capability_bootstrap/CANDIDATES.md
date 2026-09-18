@@ -4,7 +4,7 @@
 > **Bootstrap 完成 ≠ LIVE_VERIFIED**：这里的最高状态是 `READY_FOR_LIVE_VERIFY`，真机验证仍走统一 Development Validation 流程。
 
 - 总表行数：522　可预载：452　已在流程中（禁止重复 Bootstrap）：70
-- 按优先级：{'UNLOCKED_MISSING': 124, 'HIGH_FREQ_FREE_VALUE': 52, 'OTHER_UNLOCKED': 18, 'FUTURE_LOCKED': 328}
+- 按优先级：{'UNLOCKED_MISSING': 124, 'HIGH_FREQ_FREE_VALUE': 52, 'OTHER_UNLOCKED': 18, 'FUTURE_LOCKED': 322, 'NEAR_UNLOCK': 6}
 - 按计划状态：{'NEEDS_LIVE_FRAME': 452, 'IN_FLIGHT': 70}
 - 按来源：{'GAME_DB_WIKI': 76, 'SELF_EXPLORATION': 328, 'V2_EVIDENCE': 78, 'EXTERNAL_MAP': 35, 'LEGACY_ASSET': 5}
 
@@ -12,7 +12,7 @@
 
 - 目标：`PARTICIPATE_BEAR`　技能：`SELECT_TROOP_PRESET`　风险：`T1`
 - 分类：有设计草稿但没有实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 119.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 749.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：V2 已验收代码 / Knowledge / Episode / Evidence
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -31,7 +31,7 @@
 
 - 目标：`-`　技能：`ECONOMY_RESEARCH`　风险：`T1`
 - 分类：总表里根本没有实现, 有 Legacy / 内部资产但未接入
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 110.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 740.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：Legacy 与内部可复用资产（带真实证据）
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -50,7 +50,7 @@
 
 - 目标：`-`　技能：`GROWTH_RESEARCH`　风险：`T1`
 - 分类：总表里根本没有实现, 有 Legacy / 内部资产但未接入
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 110.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 740.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：Legacy 与内部可复用资产（带真实证据）
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -69,7 +69,7 @@
 
 - 目标：`-`　技能：`BATTLE_RESEARCH`　风险：`T1`
 - 分类：总表里根本没有实现, 有 Legacy / 内部资产但未接入
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 110.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 740.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：Legacy 与内部可复用资产（带真实证据）
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -88,7 +88,7 @@
 
 - 目标：`-`　技能：`CLAIM_VIP_DAILY`　风险：`T0`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -107,7 +107,7 @@
 
 - 目标：`-`　技能：`VIP_FREE_CHEST`　风险：`T0`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -126,7 +126,7 @@
 
 - 目标：`-`　技能：`CLAIM_ONLINE_REWARD`　风险：`T0`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -145,7 +145,7 @@
 
 - 目标：`-`　技能：`CLAIM_IDLE_REWARD`　风险：`T0`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -164,7 +164,7 @@
 
 - 目标：`-`　技能：`CLAIM_EVENT_REWARD`　风险：`T0`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -183,7 +183,7 @@
 
 - 目标：`-`　技能：`FREE_SHOP_ITEM`　风险：`T0`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -202,7 +202,7 @@
 
 - 目标：`-`　技能：`SEARCH_POLAR_TERROR`　风险：`T0`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -221,7 +221,7 @@
 
 - 目标：`-`　技能：`CLAIM_BEAST_REWARD`　风险：`T1`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -240,7 +240,7 @@
 
 - 目标：`-`　技能：`ALLIANCE_TECH`　风险：`T1`
 - 分类：有外部先验但 V2 未实现, 有 Legacy / 内部资产但未接入
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -259,7 +259,7 @@
 
 - 目标：`-`　技能：`AUTO_JOIN_RALLY`　风险：`T1`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -278,7 +278,7 @@
 
 - 目标：`-`　技能：`CLAIM_CRAZY_JOE_REWARD`　风险：`T1`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 104.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 734.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -297,7 +297,7 @@
 
 - 目标：`-`　技能：`START_POLAR_TERROR_RALLY`　风险：`T2`
 - 分类：有外部先验但 V2 未实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 96.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 726.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -316,7 +316,7 @@
 
 - 目标：`-`　技能：`JOIN_POLAR_TERROR_RALLY`　风险：`T2`
 - 分类：有外部先验但 V2 未实现, 有 Legacy / 内部资产但未接入
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 96.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 726.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：knowledge/external/external_capability_map.json
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -335,7 +335,7 @@
 
 - 目标：`-`　技能：`LAUNCH_GAME`　风险：`T0`
 - 分类：总表里根本没有实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 92.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 722.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：游戏数据库 / Wiki / 攻略
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -354,7 +354,7 @@
 
 - 目标：`-`　技能：`FIRE_CRYSTAL_BUILDING`　风险：`T1`
 - 分类：总表里根本没有实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 92.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 722.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：游戏数据库 / Wiki / 攻略
 
 | 字段 | 内容 | 来源 | 置信 |
@@ -373,7 +373,7 @@
 
 - 目标：`-`　技能：`CRYSTAL_LAB`　风险：`T1`
 - 分类：总表里根本没有实现
-- 优先级：当前角色已解锁的 MISSING / NEVER_TRIED（score 92.0）
+- 优先级：P1 已解锁的 MISSING / NEVER_TRIED（score 722.0）
 - 计划状态：`NEEDS_LIVE_FRAME`　知识来源：游戏数据库 / Wiki / 攻略
 
 | 字段 | 内容 | 来源 | 置信 |
