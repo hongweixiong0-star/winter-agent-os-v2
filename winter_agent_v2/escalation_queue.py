@@ -521,6 +521,9 @@ class EscalationRecord:
     live_try_episode_id: str = ""
     live_verify_episode_id: str = ""
     verified_at: datetime | None = None
+    #: When the capability went back into the production pool.  The reuse detector needs it:
+    #: only an episode recorded *after* this moment is ordinary play using the new version.
+    rejoined_at: datetime | None = None
     # The agent's own words at settle time, carried forward so the re-measure does not
     # have to re-ask the gateway -- and so the corroboration behind a later LIVE_VERIFIED
     # is the same sentence the first measurement used, not a fresh guess.
@@ -708,12 +711,14 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
         if kind == "rejoined":
             record = get(key)
             record.state = REJOINED
-            record.production_reuse_episode_id = str(
-                event.get("production_reuse_episode_id") or ""
-            )
+            # When it re-joined, kept because the reuse detector needs it: §9's evidence is an
+            # episode recorded *after* the capability went back into the production pool.  A
+            # production episode from before the rejoin is ordinary play that happened while the
+            # job was still being examined, and it proves nothing about the new version.
+            record.rejoined_at = _moment(event.get("rejoined_at")) or _moment(
+                event.get("recorded_at"))
             record.notes.append(
-                f"rejoined normal gameplay (episode "
-                f"{record.production_reuse_episode_id or 'unrecorded'})"
+                f"rejoined normal gameplay on {record.after_version or 'unknown'}"
             )
             continue
 
@@ -769,6 +774,22 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.notes.append(
                 f"live verified on {record.active_version or record.after_version or 'unknown'}"
                 f" (episode {record.live_verify_episode_id or 'unrecorded'})"
+            )
+            continue
+
+        if kind == "production_reuse":
+            # The end of the chain, and the only rung that distinguishes "WorkBuddy taught V2
+            # the capability" from "the capability passed its exam".  Terminal on purpose: the
+            # capability is back in normal play and no longer owes anything, which is what
+            # releases it from UNFINISHED_TRACE_STATES so a future gap for it may open a new
+            # job on its own merits.
+            record = get(key)
+            record.state = DONE
+            record.production_reuse_episode_id = str(
+                event.get("production_reuse_episode_id") or "")
+            record.notes.append(
+                f"production reuse on {record.after_version or 'unknown'}"
+                f" (episode {record.production_reuse_episode_id or 'unrecorded'})"
             )
             continue
 
@@ -1720,6 +1741,13 @@ VALIDATION_CONTEXT_MISMATCH = "VALIDATION_CONTEXT_MISMATCH"
 #: back to the activation rung rather than spending the repair budget on a problem that is not
 #: in the code.
 VALIDATION_VERSION_MISMATCH = "VALIDATION_VERSION_MISMATCH"
+
+
+def _is_true(value: Any) -> bool:
+    """Is this a truthy flag, whether it arrived as a bool or as its JSON spelling?"""
+    if value is True:
+        return True
+    return str(value or "").strip().lower() in ("true", "1")
 
 
 def validation_settlement(
@@ -2865,6 +2893,13 @@ class EscalationQueueAdapter:
         for key, message in self._request_validation(snapshot, moment):
             settled.append(message)
 
+        # §5-§10: settle whatever examinations have finished, then look for production reuse.
+        # Runs after the request phase so a record activated and requested in this pass has its
+        # examination settled on the next one -- one rung per pass, which keeps the ledger
+        # readable as a ladder rather than as a burst.
+        for message in self.settle_validations(moment):
+            settled.append(message)
+
         # Records whose job is done and whose version has not been exercised yet.  This
         # is the rung the operator added on 2026-09-18 (VERSION_ACTIVATION_PENDING ->
         # VERSION_ACTIVE -> LIVE_VERIFY_PENDING), re-measured on every pass because the
@@ -3073,6 +3108,192 @@ class EscalationQueueAdapter:
                 f"（after_version {record.after_version[:12]}，无人工点击）"
             )))
         return requested
+
+    def _device_returned(self) -> bool:
+        """Is the device back in normal play's hands?  Asked of the lease file, never assumed.
+
+        Section 8 hangs on this: a capability may only be recorded as re-joined once nothing is
+        holding the device for its examination.  An unreadable lease is treated as "not
+        returned", because the failure mode of guessing wrong here is a claim that the scheduler
+        has resumed work it is in fact still holding off.
+        """
+        try:
+            from .device_lease import DeviceLease
+
+            return not str(DeviceLease(self.root).holder() or "").strip()
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _read_episodes(self) -> list[dict[str, Any]]:
+        """The episode stream as rows.  Read whole: the gates need mode, trace and version."""
+        path = self.root / "learning/episodes.jsonl"
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return []
+        rows: list[dict[str, Any]] = []
+        for line in text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                payload = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(payload, dict):
+                rows.append(payload)
+        return rows
+
+    def settle_validations(self, moment: datetime | None = None) -> list[str]:
+        """Turn each finished examination into its rung, then look for production reuse.
+
+        Operator §5-§10, driven from the ledger rather than from the worker's exit code: the
+        worker says only that a process ended, and what that process *achieved* is a question
+        about the episodes it wrote.  Reading them here also makes the driver restart-proof --
+        a GUI that died mid-examination re-derives the same answer from the same rows.
+
+        Two phases, in order, because they answer different questions:
+
+        1. a record waiting for its examination gets ``live_tried``, ``live_verified`` or a
+           refusal named after what was actually wrong;
+        2. a capability that has re-joined normal play gets ``production_reuse`` -- and only
+           from a *production* episode, which is the one thing a validation episode can never
+           stand in for.
+        """
+        now = moment or datetime.now(timezone.utc)
+        events: list[str] = []
+        snapshot = self.ledger.snapshot()
+        episodes = self._read_episodes()
+
+        for record in list(snapshot.records.values()):
+            if record.state != LIVE_VERIFY_PENDING:
+                continue
+            if str(record.outcome) != VERSION_ACTIVE:
+                # Not yet handed to an examination; §一's driver is what requests that.
+                continue
+            outcome, why, episode = validation_settlement(
+                trace_key=record.key, job_id=record.job_id, capability=record.capability,
+                skill=record.skill, after_version=record.after_version,
+                failure_type=record.failure_type, episodes=episodes,
+            )
+            episode_id = str(episode.get("episode_id") or "")
+            if outcome == LIVE_VERIFIED:
+                self.ledger.append({
+                    "event": "live_verified", "key": record.key, "job_id": record.job_id,
+                    "capability": record.capability, "skill": record.skill,
+                    "validation_episode_id": episode_id,
+                    "after_version": record.after_version, "reason": why,
+                    "verified_at": now.isoformat(), "recorded_at": now.isoformat(),
+                })
+                events.append(f"{record.capability}: LIVE_VERIFIED（episode {episode_id}）")
+                # §8: the capability goes back into the production pool, and it is a separate
+                # fact from having been verified.  Appended only once the device is *confirmed*
+                # returned -- checked rather than assumed, because a rejoin recorded while an
+                # examination still held the device would be a claim about scheduling that the
+                # scheduler had not made.  The event carries no production_reuse_episode_id:
+                # re-joining is not reuse, and the operator's §9 is explicit that conflating
+                # them is what makes "the exam passed" read as "the capability works in play".
+                if self._device_returned():
+                    self.ledger.append({
+                        "event": "rejoined", "key": record.key, "job_id": record.job_id,
+                        "capability": record.capability, "skill": record.skill,
+                        "after_version": record.after_version,
+                        "rejoined_at": now.isoformat(), "recorded_at": now.isoformat(),
+                    })
+                    events.append(f"{record.capability}: REJOINED（已回到普通 Gameplay 池）")
+                else:
+                    events.append(
+                        f"{record.capability}: 已验证但设备尚未归还，等租约释放后再 REJOINED"
+                    )
+            elif outcome == LIVE_TRIED:
+                self.ledger.append({
+                    "event": "live_tried", "key": record.key, "job_id": record.job_id,
+                    "capability": record.capability, "skill": record.skill,
+                    "validation_episode_id": episode_id, "after_version": record.after_version,
+                    "verifier_ok": episode.get("verifier_ok"),
+                    "goal_progress": episode.get("goal_progress"),
+                    "failure_type": record.failure_type, "reason": why,
+                    "recorded_at": now.isoformat(),
+                })
+                events.append(f"{record.capability}: LIVE_TRIED（episode {episode_id}）")
+            else:
+                self.ledger.append({
+                    "event": "validation_result", "key": record.key, "job_id": record.job_id,
+                    "capability": record.capability, "skill": record.skill,
+                    "outcome": outcome, "validation_episode_id": episode_id,
+                    "reason": why, "recorded_at": now.isoformat(),
+                })
+                events.append(f"{record.capability}: {outcome}")
+
+        events.extend(self.detect_production_reuse(snapshot=self.ledger.snapshot(), moment=now))
+        return events
+
+    def detect_production_reuse(self, *, snapshot: EscalationSnapshot | None = None,
+                                moment: datetime | None = None) -> list[str]:
+        """Has a verified capability been used by ordinary play, on the version it was for?
+
+        The last question in the chain, and the only one that distinguishes "WorkBuddy taught V2
+        the capability" from "the capability passed its exam".  The evidence must be a
+        *production* episode: same capability, the version the job produced, a passing verifier,
+        and goal progress where the defect demands it.  A validation episode is excluded by mode
+        on purpose -- the operator's §10 is that it can never count, however well it passed.
+        """
+        now = moment or datetime.now(timezone.utc)
+        snapshot = snapshot or self.ledger.snapshot()
+        episodes = self._read_episodes()
+        events: list[str] = []
+
+        for record in list(snapshot.records.values()):
+            if record.state != REJOINED:
+                continue
+            if record.production_reuse_episode_id:
+                continue
+            expected = str(record.after_version or "")
+            if not expected:
+                continue
+            needs_goal = str(record.failure_type).upper() in PROOF_IS_GOAL_PROGRESS
+            for row in episodes:
+                if str(row.get("execution_mode") or "PRODUCTION").upper() != "PRODUCTION":
+                    continue
+                if str(row.get("repo_revision") or "") != expected:
+                    continue
+                # §9: only an episode from *after* the capability re-joined.  A production
+                # episode from before it is play that happened while the capability was still
+                # being examined -- it may well have run the new version, but it is not evidence
+                # that the capability is back in normal use, which is the thing being proved.
+                if record.rejoined_at is not None:
+                    recorded = _moment(row.get("recorded_at"))
+                    if recorded is None or recorded <= record.rejoined_at:
+                        continue
+                # Accepts a real bool or its JSON spelling: this row may be read back from a
+                # file written by an older producer, and a version of this check that insisted
+                # on one spelling would silently stop finding reuse rather than failing loudly.
+                if not _is_true(row.get("verifier_ok")):
+                    continue
+                if needs_goal and not _is_true(row.get("goal_progress")):
+                    continue
+                if not (str(row.get("before_screenshot") or "")
+                        and str(row.get("after_screenshot") or "")):
+                    continue
+                capability = str(row.get("capability") or "")
+                skill = str(row.get("skill") or "")
+                if record.capability and capability != record.capability \
+                        and skill != record.skill:
+                    continue
+                episode_id = str(row.get("episode_id") or "")
+                self.ledger.append({
+                    "event": "production_reuse", "key": record.key, "job_id": record.job_id,
+                    "capability": record.capability, "skill": skill,
+                    "production_reuse_episode_id": episode_id,
+                    "after_version": expected,
+                    "reused_at": str(row.get("recorded_at") or now.isoformat()),
+                    "recorded_at": now.isoformat(),
+                    "reason": "普通 PRODUCTION 模式在 after_version 上复用了该能力，非校准模式",
+                })
+                events.append(
+                    f"{record.capability}: PRODUCTION_REUSE（episode {episode_id}）→ DONE")
+                break
+        return events
 
     def _settle(
         self, *, snapshot, record, outcome, explanation, episodes, before, after, wiring,

@@ -115,17 +115,39 @@ def test_a_version_active_event_moves_the_state_and_keeps_the_cause():
     assert any("version active" in note for note in record.notes)
 
 
-def test_a_rejoined_event_records_the_production_reuse_episode():
-    """§九: DONE is earned by a *production* episode, not by the examination passing."""
+def test_rejoined_is_a_separate_fact_from_production_reuse():
+    """§9's correction, which this test used to assert the opposite of.
+
+    It was written before the operator split the two: ``rejoined`` means the capability has gone
+    back into the production pool, and ``production_reuse`` -- a later, separate event -- is the
+    only thing that may fill ``production_reuse_episode_id``.  Carrying the id on the rejoin is
+    how "the exam passed" starts reading as "the capability works in play".
+    """
     snapshot = fold(_rows() + [
         _activation_event(),
         {"event": "rejoined", "key": KEY, "job_id": "j1",
-         "production_reuse_episode_id": "ep-prod-9",
+         "rejoined_at": "2026-09-18T10:30:00+00:00",
          "recorded_at": "2026-09-18T10:30:00+00:00"},
     ])
     record = snapshot.get(KEY)
     assert record.state == REJOINED
-    assert record.production_reuse_episode_id == "ep-prod-9"
+    assert record.rejoined_at is not None
+    assert record.production_reuse_episode_id == "", (
+        "re-joining is not reuse: only a later PRODUCTION episode may fill this"
+    )
+
+    done = fold(_rows() + [
+        _activation_event(),
+        {"event": "rejoined", "key": KEY, "job_id": "j1",
+         "rejoined_at": "2026-09-18T10:30:00+00:00",
+         "recorded_at": "2026-09-18T10:30:00+00:00"},
+        {"event": "production_reuse", "key": KEY, "job_id": "j1",
+         "production_reuse_episode_id": "ep-prod-9",
+         "after_version": AFTER, "reused_at": "2026-09-18T11:00:00+00:00",
+         "recorded_at": "2026-09-18T11:00:01+00:00"},
+    ]).get(KEY)
+    assert done.state == DONE
+    assert done.production_reuse_episode_id == "ep-prod-9"
 
 
 def test_tests_passing_is_not_activation():
