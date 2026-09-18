@@ -88,12 +88,14 @@ VERIFY BEFORE TRUST`。**真机从"探索工具"降为"校准工具"**。
 AUTO 当时正在跑一轮，为加载一个后台时钟去打断有效轮次不值得 ⇒ **这一环不算已生效**。
 
 **下一个最高价值动作**（按操作者顺序）：
-1. 打通 P0-D/P0-F（新版本生效 → 真机 live episode → LIVE_VERIFIED → 回到 scheduler）——
-   缺的那一环是**"取租约的一方"**（替 `LIVE_VERIFY_PENDING` 记录申请
-   `DEVELOPMENT_VALIDATION_DEVICE_LEASE`），闭环一旦 LIVE VERIFIED，预载会自动启用。
+1. ✅ **取租约的一方已补齐（`7f05fae`）**：`EscalationQueueAdapter.service_validation_lease()`
+   为最老的 `LIVE_VERIFY_PENDING` 记录申请 `DEVELOPMENT_VALIDATION_DEVICE_LEASE`，
+   面板 `_maybe_validate()` 用**同一个** `run_live.py --goal <记录自己的 goal> --max-actions 12`
+   驱动一次有界校准，`finally` 无条件归还；**没人能驱动时绝不申请**（判据是面板心跳 >90 秒即视为无消费者）。
+   ⚠ **仍需一次面板重启才在真机生效**（`_maybe_validate` 在 UI 刷新里）。
 2. 补**定向外部研究的执行者**：控制器能把带问题的工作单发进队列，
    但没人把答案写回 `knowledge/preload/<CAP>`（完成 Hook 只做对账与状态迁移）。
-3. 统一 `trace_id` 仍未落字段。
+3. 统一 `trace_id` 仍未落字段（租约已用 `trace_id=记录 key`，但队列行本身没有该列）。
 
 **不要重复**：不要重新设计这两条路线；不要把 `NEEDS_LIVE_FRAME` 当成失败（它是诚实答案）；
 不要因为"读了攻略 / 离线测试过 / Replay 过"就把任何能力写进 `LIVE_VERIFIED`。
