@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 40 uncommitted file(s): ['M config/control_panel_state.json', ' M config/policy_state.json', ' M docs/CAPABILITY_COVERAGE.md', ' M knowledge/game/capability_catalog.json', ' M knowledge/goals/capability_skill_map.json']
+- 35 uncommitted file(s): ['M config/control_panel_state.json', ' M config/policy_state.json', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl']
 <!-- /AUTO:open_issues -->
 
 ---

@@ -6,6 +6,11 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `7f05fae 2026-09-18T11:56:06+08:00 feat(lease): someone finally asks for the device, and someone finally drives it`
+- `1b0df37 2026-09-18T11:45:59+08:00 fix(preload): a dry run must not claim the progress a dispatched job would have made`
+- `084bebb 2026-09-18T11:44:38+08:00 fix(preload): a degraded capability is a repair, and --write was silently ignored next to --cycle`
+- `0474cdb 2026-09-18T11:31:21+08:00 fix(order): a no-progress wall is named by the step the route never reached`
+- `6cf5931 2026-09-18T11:22:01+08:00 docs(handoff): the route change and the persistent preload loop, written where the next account will look`
 - `6b31d45 2026-09-18T11:20:56+08:00 feat(preload): read once, store once, reuse many times`
 - `b5c962c 2026-09-18T11:02:46+08:00 docs(handoff): refresh after the preload mechanism, 1405 tests green`
 - `a641b6d 2026-09-18T11:02:31+08:00 feat(preload): prepare the lesson before the wall, without a second pipeline`
@@ -13,18 +18,10 @@ Last 12 commits (newest first):
 - `8c605de 2026-09-18T10:25:06+08:00 docs(memory): the corrected verification order, and a lease that really releases`
 - `dbf4b8c 2026-09-18T10:24:13+08:00 feat(lease): Single Device / Single UI Owner, as a lock and not a lifecycle`
 - `309f7c6 2026-09-18T10:18:44+08:00 feat(order): LIVE_VERIFIED cannot be granted to a version nothing has loaded`
-- `f1128fd 2026-09-18T10:08:09+08:00 fix(evidence): a correction is filed against the key, not the job id`
-- `d368818 2026-09-18T10:05:47+08:00 docs(p0): the loop's status, generated from the artifacts, with two stages NOT PROVEN`
-- `5ba83b3 2026-09-18T10:02:01+08:00 fix(bridge): a credential that exists and is wrong is not a gateway that is down`
-- `003dae6 2026-09-18T09:55:43+08:00 feat(pump): the consumer's liveness is a file, not a claim`
-- `8071b00 2026-09-18T09:50:01+08:00 fix(proof): the fix for "the goal does not move" was six episodes where it did not move`
 
-Uncommitted changes: 40
+Uncommitted changes: 35
 - `M config/control_panel_state.json`
 - ` M config/policy_state.json`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M knowledge/game/capability_catalog.json`
-- ` M knowledge/goals/capability_skill_map.json`
 - ` M learning/control_panel/latest.log`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
@@ -33,13 +30,16 @@ Uncommitted changes: 40
 - ` M learning/runtime_snapshot.json`
 - ` M learning/workbuddy_escalations.jsonl`
 - ` M learning/workbuddy_model_stats.jsonl`
-- ` M tests/test_capability_gate.py`
-- ` M winter_agent_v2/capability_gate.py`
 - `?? dataset/raw/control_panel/probe/`
 - `?? dataset/truth_audit/map_beast_search_20260918/`
-- `?? dataset/truth_audit/nav_to_map_20260918/key/live_20260918_job57848179_after_MAP.png`
-- `?? dataset/truth_audit/nav_to_map_20260918/key/live_20260918_job57848179_before_HOME.png`
-- `?? dataset/truth_audit/nav_to_map_20260918/regression_fix_57848179.json`
+- `?? dataset/truth_audit/no_goal_progress_20260918/`
+- `?? dataset/truth_audit/power_route_20260917/probe_nav_map_tap1_20260917_232526.json`
+- `?? learning/DEVICE_LEASE.json`
+- `?? learning/commit_msg_nav.txt`
+- `?? learning/control_panel/panel.log`
+- `?? learning/control_panel/panel.pid`
+- `?? learning/control_panel/panel_launch.log`
+- `?? learning/control_panel/panel_stdout.log`
 <!-- /AUTO:recent_commits -->
 
 ---

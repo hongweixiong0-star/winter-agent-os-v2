@@ -8,33 +8,33 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-18T03:21:24+00:00
+HANDOFF TIME: 2026-09-18T03:56:19+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 40 dirty file(s)
-  ['M config/control_panel_state.json', ' M config/policy_state.json', ' M docs/CAPABILITY_COVERAGE.md', ' M knowledge/game/capability_catalog.json', ' M knowledge/goals/capability_skill_map.json', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/resource_rotation.json']
+WORKING TREE: 35 dirty file(s)
+  ['M config/control_panel_state.json', ' M config/policy_state.json', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/resource_rotation.json', ' M learning/runtime_snapshot.json', ' M learning/workbuddy_escalations.jsonl', ' M learning/workbuddy_model_stats.jsonl']
 
-WHAT FINISHED (machine-visible): 24 skills live verified, 30 stable, 188 commit(s) in history
+WHAT FINISHED (machine-visible): 24 skills live verified, 30 stable, 193 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 19 skills never executed, 10 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
 STOPPED AT: agent_state=IDLE stop_reason=reserved_march_for_stamina
-LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-18T03:17:20.803377+00:00", "episode_id": "20260918_111617_064140", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_111617_064140\\20260918_111617_064140_step_002_before_20260918T031650768487.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_111617_064140\\20260918_111617_064140_step_002_after_20260918T031705875798.png"}
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-18T03:46:28.103556+00:00", "episode_id": "20260918_114537_043168", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_114537_043168\\20260918_114537_043168_step_002_before_20260918T034603842348.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_114537_043168\\20260918_114537_043168_step_002_after_20260918T034615997995.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 132, "recent": 5, "last_seen": "2026-09-17T23:29:36.626405+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 40
+DIRTY FILES: 35
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-18T03:21:24+00:00
+SYNC STATE at 2026-09-18T03:56:19+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 6b31d45722e129adfe264ef926d14f3ce2a817bf
-remote_head       : b5c962cb3ba9e912ea2ea8f81f4bd83083c6e46d   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : 7f05fae73bef298e5d9e6eb1bc4c8e0900577509
+remote_head       : 1b0df37409880074803b457bc6f9646b3445e774   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 1   (behind: 0)
-git_dirty         : True (40 path(s))
-last_push_at      : 2026-09-18T03:03:28.160217+00:00
+git_dirty         : True (35 path(s))
+last_push_at      : 2026-09-18T03:46:05.911779+00:00
 last_push_status  : PUSHED
 verdict           : LOCAL IS AHEAD by 1 commit(s) -- run `python tools/git_sync.py push`
 

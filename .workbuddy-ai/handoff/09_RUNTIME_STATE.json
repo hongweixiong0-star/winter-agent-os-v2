@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-09-18T03:21:24+00:00",
+  "generated_at": "2026-09-18T03:56:19+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "6b31d45",
+  "commit": "7f05fae",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "IDLE",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-18T03:17:36.108251+00:00",
-    "last_action_time": "2026-09-18T03:17:04.373488+00:00",
-    "last_success_time": "2026-09-18T03:17:20.834133+00:00",
+    "last_tick_time": "2026-09-18T03:46:40.665306+00:00",
+    "last_action_time": "2026-09-18T03:46:14.496016+00:00",
+    "last_success_time": "2026-09-18T03:46:28.134089+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_111617_064140\\20260918_111617_064140_step_003_before_20260918T031720835106.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_114537_043168\\20260918_114537_043168_step_003_before_20260918T034628136195.png",
     "march_used": 2,
     "march_max": 3,
     "queues": {
@@ -44,10 +44,10 @@
         "goal_id": "AVOID_STAMINA_WASTE",
         "capability": "SPEND_STAMINA_ON_BEAST",
         "state": "DEFERRED",
-        "reason": "5 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "6 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
         "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
-        "streak": 5,
+        "streak": 6,
         "until": "",
         "last_skill": "SCAN_MAP_FOR_BEAST"
       },
@@ -63,12 +63,12 @@
         "last_skill": ""
       }
     ],
-    "updated_at": "2026-09-18T03:17:39.325489+00:00"
+    "updated_at": "2026-09-18T03:46:43.495648+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-18T03:17:36+00:00",
-    "size_bytes": 7820,
+    "modified_at": "2026-09-18T03:46:41+00:00",
+    "size_bytes": 7846,
     "last_stop_reason": "reserved_march_for_stamina"
   },
   "recent_crash_reports": [],
