@@ -152,8 +152,14 @@ def current_worker(pid: int | None = None) -> list[str]:
     return [row for row in rows if str(pid) in row.split("|")[:2]]
 
 
-def runtime_claim() -> str:
-    """What the runtime snapshot says, if it is fresh enough to mean anything."""
+def runtime_observation() -> str:
+    """What the runtime snapshot says -- including "too stale to judge".
+
+    For *display*.  Deliberately separate from :func:`runtime_claim`, because a stale
+    snapshot is not evidence of a run: it is the absence of evidence, and an earlier
+    version conflated the two and refused to stop whenever AUTO had been idle long
+    enough for the snapshot to age out -- i.e. exactly when stopping is safest.
+    """
     try:
         snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -169,9 +175,24 @@ def runtime_claim() -> str:
     if age > SNAPSHOT_FRESH_SECONDS:
         return f"snapshot is {age:.0f}s old, too stale to judge"
     state = str(snapshot.get("agent_state") or "")
-    if state in ("GOAL_RUNNING", "RECOVERING") and snapshot.get("runtime_thread_alive"):
-        return (f"{state} · skill={snapshot.get('current_skill')} · goal={snapshot.get('current_goal')}"
-                f" · updated {age:.0f}s ago")
+    return (f"{state} · skill={snapshot.get('current_skill')} · goal={snapshot.get('current_goal')}"
+            f" · updated {age:.0f}s ago") if state else ""
+
+
+def runtime_claim() -> str:
+    """A *positive* claim that a round is running.  Empty means "no evidence of one"."""
+    observation = runtime_observation()
+    if observation.startswith("snapshot is"):
+        return ""
+    state = observation.split(" · ")[0] if observation else ""
+    if state in ("GOAL_RUNNING", "RECOVERING"):
+        snapshot = {}
+        try:
+            snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return ""
+        if snapshot.get("runtime_thread_alive"):
+            return observation
     return ""
 
 
@@ -186,7 +207,9 @@ def cmd_status() -> int:
           f"  heartbeat age={age:.0f}s" if heartbeat else "pump process: (no heartbeat)")
     _emit(f"panel alive : {bool(pids)}" + (f"  pids={pids}" if pids else ""))
     claim = runtime_claim()
-    _emit(f"runtime     : {claim or 'no run in flight'}")
+    _emit(f"runtime     : {claim or runtime_observation() or 'no run in flight'}")
+    if not claim:
+        _emit("              (no claim: stopping is safe, whatever the snapshot age)")
     workers = current_worker()
     _emit(f"workers     : {len(workers)}")
     for row in workers:
@@ -210,6 +233,9 @@ def cmd_stop(force: bool = False) -> int:
             _emit(f"    snapshot {claim}")
         _emit("        wait for the cycle to end, or pass --force to accept the truncation")
         return 1
+    stale = runtime_observation()
+    if stale and not claim:
+        _emit(f"    snapshot {stale} -- not a claim, proceeding")
     for pid in pids:
         _emit(f"stopping panel tree at pid {pid}"
               + (" (forced during a run)" if (workers or claim) else ""))

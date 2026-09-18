@@ -702,3 +702,42 @@ LIVE_VERIFIED 32（16.5%）、Candidate 54.6%、已观测 36.1%；全表 522 项
 
 **仍然未完成**：真正的**定向外部研究执行者**（工作单能派出，没人把答案写回
 `knowledge/preload/`）；面板仍是旧进程（要重启才加载新的 `_maybe_validate`）。
+
+## READ ONCE 的另一半：研究答案必须落盘（2026-09-18 12:20）
+
+上面那条「未完成」已经补上：`knowledge_preload.ingest()` + `knowledge/preload/inbox/`。
+**只派研究不回写 = 每个循环重问同一个问题、知识库永不增长**（操作者原话：READ ONCE）。
+- 答案文件形状：`{capability, answers:[{field,value,source,source_type,source_confidence,observed_date}]}`。
+- 三条**在代码里强制**的规则（不是文档承诺）：① 字段名不认识 → **按名字拒绝**
+  （闸门读的是精确字段名，改名会让答案与闸门**悄悄脱钩**）；② `source_type` 不认识 → 拒绝
+  （给一个不知道的等级赋信任，就是先验变成事实的路径）；③ 答案**永远不能写 CONFIRMED** ——
+  `trust_for_source()` 是**天花板不是阶梯**：外部 rung 封顶 `PRIOR`，仓内 `UNVERIFIED`，
+  真机看到 `OBSERVED`；**`CONFIRMED` 不在任何 rung 的返回值里**，只有
+  reconciler 拿着「真机 episode + verifier PASS」才能调 `confirm_from_live()`。
+- 消费掉的答案移到 `inbox/done/`，坏文件移到 `inbox/rejected/`——**不删研究**。
+- 命令：`tools/bootstrap_scan.py --inbox` / `--ingest`。
+
+**三个真实缺陷（这轮才浮出来，都已修）**：
+1. **一条 CONFIRMED 字段把整条记录读成 CONFIRMED** → `select()` 会**永久**拒绝预载它。
+   改 `KnowledgeRecord.headline_status()`：记录只和它**最弱的已知字段**一样强；
+   **有洞的记录永远不能 CONFIRMED**。否则「回答了一个问题」会让这个能力永久下架
+   —— 回答者反而成了取消调度者。
+2. **`needs_research()` 把「问题已记录」当成「问题已回答」**：字段还空着却回
+   `already answered at UNVERIFIED`，于是**最需要研究的能力恰好被永久拒绝研究**
+   （TROOP_SELECT 实测 `research_attempts=0`、`recovery_prior` 缺、却被拒绝去找）。
+   现在 **有缺失字段 ⇒ 必须研究**。
+3. **`validation_lease_consumer()` 读墙上时钟而非本轮时钟** → 答案不可复现；
+   所有钉时间戳的测试都是**定时炸弹**（写完后 90 秒开始永久红，5 个租约测试就是这么挂的）。
+   现在收 `now=` 参数。
+
+**控制器状态机（§15）**：`machine_state()` 按优先级折叠出
+`RUNNING / LEARNING / PRELOADING / WAITING_LIVE_VERIFY / LIVE_CALIBRATING / BLOCKED / IDLE_NO_WORK`，
+对外还报 `waiting_live_verify_count / queue_depth / current_job / last_ingest / last_success`。
+**顺序就是价值**：等设备 ≠ 等资料 ≠ 没活干，面板要能分辨。
+面板「能力学习 / 预装」行**读控制器自己写的 STATE.json**，不自己再算一遍。
+
+**寒野 Expert 已升到 V2.1**（原地升，未新增第二个专家）：`winter-agent-v2-dev` v2.1.0，
+新增永久 SOP、`READ ONCE / STORE ONCE / REUSE MANY TIMES`、「寒野不是什么」边界、
+`HOW TO LEARN（专家）vs WHAT WAS LEARNED（Knowledge）`、连续自主验收纪律。
+**玩法不进提示词**，操作细节进 `capability-preload`（§11 回写 / §12 连续验收 / §13 重启恢复）。
+

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T02:25:11.923425+00:00",
+  "generated_at": "2026-09-18T04:07:20.029646+00:00",
   "generated_by": "tools/write_p0_loop_evidence.py",
   "principle": "nothing here is typed by hand; every field is read back from the artifacts named beside it",
   "stages": {
@@ -72,8 +72,36 @@
         {
           "job_id": "0440cd38",
           "attempt": null,
+          "last_state": "STOPPED",
+          "detail": "job exceeded its 45-minute timebox (45 min) while 1 record(s) waited for the single concurrency slot; cancelled to free it",
+          "outcome": "CODE_CHANGED",
+          "code_changed": true,
+          "verified_episodes": 0,
+          "live_improvement": false,
+          "corrected": false,
+          "explanation": "cancelled: job exceeded its 45-minute timebox (45 min) while 1 record(s) waited for the single concurrency slot; cancelled to free it. the tree differs from dispatch time (HEAD 5ba83b3c->3884725c, dirty 30->51) but the agent's own report does not claim a change, so the difference may not be the agent's -- this repository is edited from more than one place"
+        },
+        {
+          "job_id": "57848179",
+          "attempt": null,
+          "last_state": "DONE",
+          "detail": "result: ## (1) Status: DONE — with one gate item honestly qualified",
+          "outcome": "CODE_CHANGED",
+          "code_changed": true,
+          "verified_episodes": 0,
+          "live_improvement": false,
+          "corrected": false,
+          "explanation": "the tree differs from dispatch time (HEAD 3884725c->1b0df374, dirty 51->35) but the agent's own report does not claim a change, so the difference may not be the agent's -- this repository is edited from more than one place NOTE: 4 verifier-passing production episode(s) exist on a tree that differs from dispatch time, but this signature is NO_GOAL_PROGRESS -- its proof is the goal actually moving, "
+        },
+        {
+          "job_id": "22d9e69d",
+          "attempt": null,
           "last_state": "WORKING",
-          "detail": "{\"summary\": \"Debugging NOGOALPROGRESS stamina waste automation escalati…"
+          "detail": "{\"summary\": \"Implementing beast stamina-spend capability with OCR\"}",
+          "outcome": "TEST_PASS",
+          "corrected": true,
+          "correction_reason": "corrected by the operator: LIVE_VERIFIED does not survive the progress bar: all 6 verifier-passing episodes after dispatch had goal_progress=False, and this signature is defined by the goal NOT moving, so they are the failure rather than its fix. The job's own report agrees ('criterion 2 does not hold'). Corrected after PROOF_IS_GOAL_PROGRESS was added (commit 8071b00); the code change itself is r",
+          "live_improvement": false
         }
       ],
       "why": "the submit hop is real and repeated (three job ids today, each with a job_state row), but no record has been observed going NEW -> SUBMITTED inside a single pump tick yet; the pump has had nothing pending to consume since it started"
@@ -105,7 +133,9 @@
         "a7ce58f0": "LIVE_VERIFIED",
         "2934e9cd": "TEST_PASS",
         "f31ce2de": "TEST_PASS",
-        "0440cd38": null
+        "0440cd38": "CODE_CHANGED",
+        "57848179": "CODE_CHANGED",
+        "22d9e69d": "TEST_PASS"
       },
       "why": "job 2934e9cd returned code_changed=true with wiring_problems=0 and named its own root cause; its LIVE_VERIFIED was retracted (see below) and corrected to TEST_PASS"
     },
@@ -126,10 +156,11 @@
     "counts": {
       "COOLDOWN": 1,
       "DONE": 5,
-      "WORKING": 1
+      "WORKING": 1,
+      "FAILED": 1
     },
     "active_jobs": [
-      "NO_GOAL_PROGRESS|NO_GOAL_PROGRESS|"
+      "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST"
     ],
     "source": "learning/workbuddy_escalations.jsonl folded by escalation_queue.fold"
   },
@@ -267,22 +298,50 @@
     "0440cd38": {
       "job_id": "0440cd38",
       "attempt": null,
+      "last_state": "STOPPED",
+      "detail": "job exceeded its 45-minute timebox (45 min) while 1 record(s) waited for the single concurrency slot; cancelled to free it",
+      "outcome": "CODE_CHANGED",
+      "code_changed": true,
+      "verified_episodes": 0,
+      "live_improvement": false,
+      "corrected": false,
+      "explanation": "cancelled: job exceeded its 45-minute timebox (45 min) while 1 record(s) waited for the single concurrency slot; cancelled to free it. the tree differs from dispatch time (HEAD 5ba83b3c->3884725c, dirty 30->51) but the agent's own report does not claim a change, so the difference may not be the agent's -- this repository is edited from more than one place"
+    },
+    "57848179": {
+      "job_id": "57848179",
+      "attempt": null,
+      "last_state": "DONE",
+      "detail": "result: ## (1) Status: DONE — with one gate item honestly qualified",
+      "outcome": "CODE_CHANGED",
+      "code_changed": true,
+      "verified_episodes": 0,
+      "live_improvement": false,
+      "corrected": false,
+      "explanation": "the tree differs from dispatch time (HEAD 3884725c->1b0df374, dirty 51->35) but the agent's own report does not claim a change, so the difference may not be the agent's -- this repository is edited from more than one place NOTE: 4 verifier-passing production episode(s) exist on a tree that differs from dispatch time, but this signature is NO_GOAL_PROGRESS -- its proof is the goal actually moving, "
+    },
+    "22d9e69d": {
+      "job_id": "22d9e69d",
+      "attempt": null,
       "last_state": "WORKING",
-      "detail": "{\"summary\": \"Debugging NOGOALPROGRESS stamina waste automation escalati…"
+      "detail": "{\"summary\": \"Implementing beast stamina-spend capability with OCR\"}",
+      "outcome": "TEST_PASS",
+      "corrected": true,
+      "correction_reason": "corrected by the operator: LIVE_VERIFIED does not survive the progress bar: all 6 verifier-passing episodes after dispatch had goal_progress=False, and this signature is defined by the goal NOT moving, so they are the failure rather than its fix. The job's own report agrees ('criterion 2 does not hold'). Corrected after PROOF_IS_GOAL_PROGRESS was added (commit 8071b00); the code change itself is r",
+      "live_improvement": false
     }
   },
   "pump": {
     "state": {
-      "passes": 42,
-      "submitted": 0,
+      "passes": 242,
+      "submitted": 1,
       "released": 0,
-      "reconciled": 0,
+      "reconciled": 2,
       "errors": 0,
-      "last_tick": "10:25:11",
+      "last_tick": "12:06:56",
       "last_line": "[escalation] nothing to do",
       "last_error": "",
       "gated": "",
-      "written_at": "2026-09-18T02:25:11.299292+00:00",
+      "written_at": "2026-09-18T04:06:56.835910+00:00",
       "process": 18508
     },
     "source": "learning/control_panel/pump.json (written by the panel every tick)"
@@ -339,14 +398,11 @@
     }
   ],
   "live_state": {
-    "gateway_preflight_lines": [
-      "09:59:24  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。",
-      "10:04:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）"
-    ],
+    "gateway_preflight_lines": [],
     "deferral_lines_in_the_last_60": 0,
     "episodes_goal_progress": {
-      "None": 1908,
-      "False": 32
+      "None": 1970,
+      "False": 47
     }
   },
   "not_done": [
