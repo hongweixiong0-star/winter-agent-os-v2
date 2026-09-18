@@ -349,21 +349,25 @@ class LiveRuntime:
             out.append(goal)
         return out
 
-    def _deferral_replan(self, world: WorldState, deferrals: list[Deferral]) -> Decision | None:
+    def _deferral_replan(self, world: WorldState, deferrals: list[Deferral], best_goal) -> Decision | None:
         """One hop toward the page where more goals are observable.
 
-        A deferred goal is not a reason to stand still, and the map is a page with
-        exactly one goal on it (measured 2026-09-18: a live MAP frame discovers
-        ``AVOID_STAMINA_WASTE`` and nothing else).  HOME is where the queue goals are
-        readable -- 97 HOME frames in the recorded corpus read
-        ``KEEP_TRAINING_PRODUCTIVE`` -- so the run takes the hop the project already
-        trusts (``OPEN_HOME``, ``verify_open_home``, VERIFIED) instead of re-entering
-        the path that just stepped aside.
+        Only when the deferral left *nothing* to do here.  A deferred goal is not a
+        reason to leave a page that still has real work on it, and getting this wrong
+        is visible in the live log: measured 2026-09-18 08:55, the guard was missing,
+        so the first step of a run whose gather goal was selectable hopped HOME anyway
+        and the run paid a round trip to come back to the same map.
 
-        Bounded to once per run, refused on any page but MAP, and silent when the hop
-        is not actually ready: this is a recovery, not a new route engine.
+        The map is a page with one goal on it (measured: a live MAP frame discovers
+        AVOID_STAMINA_WASTE and nothing else), and HOME is where the queue goals are
+        readable -- 97 HOME frames in the recorded corpus read
+        ``KEEP_TRAINING_PRODUCTIVE`` -- so the hop is the existing trusted one
+        (``OPEN_HOME``, ``verify_open_home``, VERIFIED) rather than a new route engine.
+
+        Bounded to once per run, refused on any page but MAP, and silent when
+        ``best_goal`` exists or the hop is not actually ready.
         """
-        if not deferrals or self._replan_attempted or world.page is not Page.MAP:
+        if best_goal is not None or not deferrals or self._replan_attempted or world.page is not Page.MAP:
             return None
         home = self.registry.get("OPEN_HOME")
         if home is None or not home.ready(world):
@@ -627,7 +631,7 @@ class LiveRuntime:
                     and before.page in {Page.TRAINING, Page.RESEARCH}):
                 leave = self.brain.leave_terminal_page(before)
             if leave is None:
-                leave = self._deferral_replan(before, deferrals)
+                leave = self._deferral_replan(before, deferrals, best_goal)
             decision = leave if leave is not None else self.brain.decide(before, self.registry)
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,
                           current_goal=best_goal.goal_id if best_goal else (self.brain.current_goal or "AUTO_DISCOVERY"),

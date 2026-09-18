@@ -459,6 +459,12 @@ class FakeDevice:
         self.taps.append(("swipe", x1, y1, x2, y2))
 
 
+GATHER_ROUTE = frozenset({
+    "OPEN_HOME", "OPEN_MAP", "SCAN_MAP_FOR_BEAST", "SEARCH_RESOURCE", "SELECT_RESOURCE",
+    "SUBMIT_RESOURCE_SEARCH", "START_GATHER", "DISPATCH_MARCH",
+})
+
+
 class DeferredGoalSchedulingTests(unittest.TestCase):
     """The whole point: a deferred goal does not stop the run, and it is recorded."""
 
@@ -487,8 +493,13 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
                 episode_store=EpisodeStore(path),
                 capability_gate=gate,
                 **kwargs,
-            ).run(max_actions=1, allowed_skills={"OPEN_HOME", "OPEN_MAP", "SCAN_MAP_FOR_BEAST"})
-            rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
+            # A run that records no episode is a valid outcome (it may stop before
+            # acting), so an absent file means "no episodes", not a broken test.
+            rows = [
+                json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ] if path.exists() else []
         return device, run, rows
 
     def test_a_deferred_goal_is_reported_by_the_run(self):
@@ -502,9 +513,13 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         self.assertEqual(run.deferrals[0]["state"], BLOCKED)
 
     def test_a_deferred_goal_is_replaced_by_a_hop_to_where_goals_are_observable(self):
-        """Standing on the map doing nothing is not a plan."""
+        """Standing on the map doing nothing is not a plan.
+
+        The frame carries no march reading on purpose: with one, the gather goal would
+        be selectable and the run should stay and work, which the next test pins.
+        """
         states = [
-            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
+            WorldState(page=Page.MAP, stamina={"current": 457}, confidence=0.99),
             WorldState(page=Page.HOME, confidence=0.99),
         ]
         device, run, _rows = self._run(states, self._gate())
@@ -512,15 +527,34 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         self.assertTrue(run.steps[0].decision.reason.startswith("deferred_"))
         self.assertEqual(len(device.taps), 1)
 
+    def test_a_deferred_goal_does_not_displace_work_that_is_still_selectable(self):
+        """Measured 2026-09-18 08:55: the missing guard cost a round trip.
+
+        The run's first step hopped HOME even though the gather goal was selectable on
+        that frame, and the run paid two steps to come back to the map it had left.
+        """
+        states = [
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
+        ]
+        _device, run, _rows = self._run(states, self._gate())
+        self.assertEqual(len(run.deferrals), 1, "the beast goal is still reported as deferred")
+        self.assertNotEqual(
+            run.steps[0].decision.skill, "OPEN_HOME",
+            "a deferred goal must not switch off a goal that is still selectable",
+        )
+
     def test_the_run_still_plays_when_the_blocked_goal_is_all_there_is(self):
         """Failure isolation: one blocked capability must not end unattended operation."""
         states = [
-            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
-            WorldState(page=Page.HOME, confidence=0.99),
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
         ]
         _device, run, _rows = self._run(states, self._gate())
+        self.assertNotEqual(run.steps[0].decision.skill, "SCAN_MAP_FOR_BEAST")
         self.assertNotIn(run.stop_reason, {"verified_beast_target_not_visible", "SAFE_STOP"})
-        self.assertIsNotNone(run.steps[0].execution)
+        self.assertIsNotNone(run.steps[0].execution, "a real action was issued instead of the blocked path")
+        self.assertEqual(run.steps[0].decision.skill, "SEARCH_RESOURCE")
 
     def test_an_allowed_goal_is_untouched_by_the_gate(self):
         states = [
@@ -537,8 +571,10 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         import io
 
         device = FakeDevice()
+        # No march reading, so the deferral leaves nothing selectable here and the run
+        # takes its hop -- which is what gives this test more than one step.
         states = [
-            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
+            WorldState(page=Page.MAP, stamina={"current": 457}, confidence=0.99),
             WorldState(page=Page.HOME, confidence=0.99),
             WorldState(page=Page.HOME, confidence=0.99),
         ]
