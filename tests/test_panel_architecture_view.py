@@ -18,9 +18,11 @@ driven without one, which is also why the panel's own handlers can be tested.
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -545,6 +547,17 @@ class PanelIntegrationTest(unittest.TestCase):
         from tools import control_panel as module
 
         module.ControlPanel._enforce_retention = lambda self: None  # never prune evidence here
+        # The window narrates through the real ``_append``, which writes the panel log,
+        # so a test that builds one used to land its lines in the production
+        # learning/control_panel/panel.log -- the file the startup decision is audited
+        # from.  Measured 2026-09-18: "控制台已启动" appeared there at 09:13, 09:19 and
+        # 09:20 with no window ever having been opened, once per test run.  Redirected
+        # next to the state path, same as the other window-building test.
+        cls._log_dir = tempfile.TemporaryDirectory()
+        cls._log_patch = mock.patch.object(
+            module, "PANEL_LOG_PATH", Path(cls._log_dir.name) / "panel.log"
+        )
+        cls._log_patch.start()
         try:
             cls.root = tk.Tk()
         except Exception as exc:  # noqa: BLE001 - no display
@@ -566,6 +579,10 @@ class PanelIntegrationTest(unittest.TestCase):
                 pass
         if cls.root is not None:
             cls.root.destroy()
+        if getattr(cls, "_log_patch", None) is not None:
+            cls._log_patch.stop()
+        if getattr(cls, "_log_dir", None) is not None:
+            cls._log_dir.cleanup()
 
     def test_every_header_cell_is_populated_after_a_refresh(self):
         self.panel._refresh_runtime_snapshot(schedule_next=False)
