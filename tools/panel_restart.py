@@ -1,0 +1,302 @@
+"""Stop and start the control panel at a safe point, by pid.
+
+Why this exists
+---------------
+The panel has to be restarted to pick up panel-side code (the worker imports the
+package fresh each cycle, so AUTO does not need it).  Doing that by hand is how
+this went wrong on 2026-09-18: a process filter of ``control_panel|run_live``
+matched far more than the panel -- it also matched the WorkBuddy desktop app, its
+agent node processes and the shell running the command, because the workspace path
+and ``tools/control_panel.py`` appear in *their* command lines too.  The kill took
+out the development host along with the window.
+
+So: no pattern matching over the process table, ever.  The panel writes its own pid
+where this tool can read it, and this tool kills exactly that pid's tree.
+
+Two more rules the incident made obvious:
+
+* a restart waits for a safe point.  ``run_live.py`` drives the game, and killing
+  the panel kills its child, so a restart during a run truncates an atomic action.
+  The runtime snapshot is the project's own answer to "is a run in flight"; it is
+  read here rather than re-derived, and a stale snapshot is not trusted.
+* the gateway password comes from the user environment, which is where the
+  operator put it.  The panel is launched with it, never with a copy of it on a
+  command line or in a file this tool writes.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PANEL_SCRIPT = ROOT / "tools/control_panel.py"
+PID_PATH = ROOT / "learning/control_panel/panel.pid"
+PEEK_LOG = ROOT / "learning/control_panel/panel_launch.log"
+SNAPSHOT = ROOT / "learning/runtime_snapshot.json"
+VENV_PYTHONW = Path(r"E:\dongri-mumu-bot\.venv\Scripts\pythonw.exe")
+GATEWAY_PASSWORD_ENV = "CODEBUDDY_GATEWAY_PASSWORD"
+
+# A snapshot older than this says nothing about now, so it must not be used to
+# decide that no run is in flight.
+SNAPSHOT_FRESH_SECONDS = 90.0
+
+
+def _emit(message: str) -> None:
+    print(message, flush=True)
+
+
+def user_env(name: str) -> str:
+    """The user's persisted environment variable, then the process's own."""
+    try:
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            value, _ = winreg.QueryValueEx(key, name)
+            if value:
+                return str(value)
+    except Exception:  # noqa: BLE001 - missing key, missing module, locked hive
+        pass
+    return os.environ.get(name, "")
+
+
+def read_pid() -> int | None:
+    try:
+        return int(PID_PATH.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return None
+
+
+def alive(pid: int) -> bool:
+    """Is this a live python process?  Queried by pid, never by matching the table.
+
+    Checked by asking about that one pid so a recycled pid cannot be mistaken for
+    the panel, and so the query cannot match the agent host the way a pattern over
+    the whole table did on 2026-09-18.
+    """
+    if pid <= 0:
+        return False
+    try:
+        done = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+            capture_output=True, text=True, errors="replace", timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return "python" in (done.stdout or "").lower()
+
+
+def pump_process() -> tuple[int, float]:
+    """``(pid, age_seconds)`` from the pump's own heartbeat, or ``(0, inf)``.
+
+    The panel's ``pythonw.exe`` is a venv stub: it spawns the real interpreter and
+    exits, so the pid this tool recorded is dead within a second of a successful
+    start.  Measured 2026-09-18: the stub was gone while the real panel (its child)
+    was writing pump.json every thirty seconds.  The heartbeat is therefore the
+    authoritative liveness signal, and it is read rather than guessed.
+    """
+    try:
+        payload = json.loads((ROOT / "learning/control_panel/pump.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0, float("inf")
+    try:
+        written = datetime.fromisoformat(str(payload.get("written_at")))
+    except ValueError:
+        return 0, float("inf")
+    if written.tzinfo is None:
+        written = written.replace(tzinfo=timezone.utc)
+    age = (datetime.now(timezone.utc) - written).total_seconds()
+    return int(payload.get("process") or 0), age
+
+
+def live_pids() -> list[int]:
+    """Every pid that is plausibly this panel's, stub and real."""
+    found: list[int] = []
+    recorded = read_pid()
+    if recorded is not None and alive(recorded):
+        found.append(recorded)
+    heartbeat, age = pump_process()
+    if heartbeat and age <= SNAPSHOT_FRESH_SECONDS and alive(heartbeat) and heartbeat not in found:
+        found.append(heartbeat)
+    return found
+
+
+def current_worker(pid: int | None = None) -> list[str]:
+    """Command lines of any ``run_live.py`` process, for the safe-point report."""
+    script = (
+        "$ErrorActionPreference='SilentlyContinue';"
+        "Get-CimInstance Win32_Process |"
+        # The PowerShell query's own command line contains this literal, so without
+        # the name filter the tool reports itself as a worker -- measured
+        # 2026-09-18, right after the same class of mistake cost a host process.
+        " Where-Object { $_.Name -notmatch 'powershell|pwsh' -and $_.CommandLine -like '*run_live*py*' } |"
+        " ForEach-Object { \"$($_.ProcessId)|$($_.ParentProcessId)|$($_.CommandLine)\" }"
+    )
+    try:
+        done = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            capture_output=True, text=True, errors="replace", timeout=40,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    rows = [line for line in (done.stdout or "").splitlines() if line.strip()]
+    if pid is None:
+        return rows
+    # A worker the panel owns: its parent is the panel, or the panel's venv stub.
+    return [row for row in rows if str(pid) in row.split("|")[:2]]
+
+
+def runtime_claim() -> str:
+    """What the runtime snapshot says, if it is fresh enough to mean anything."""
+    try:
+        snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    stamp = str(snapshot.get("updated_at") or "")
+    try:
+        when = datetime.fromisoformat(stamp)
+    except ValueError:
+        return ""
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    age = (datetime.now(timezone.utc) - when).total_seconds()
+    if age > SNAPSHOT_FRESH_SECONDS:
+        return f"snapshot is {age:.0f}s old, too stale to judge"
+    state = str(snapshot.get("agent_state") or "")
+    if state in ("GOAL_RUNNING", "RECOVERING") and snapshot.get("runtime_thread_alive"):
+        return (f"{state} · skill={snapshot.get('current_skill')} · goal={snapshot.get('current_goal')}"
+                f" · updated {age:.0f}s ago")
+    return ""
+
+
+def cmd_status() -> int:
+    recorded = read_pid()
+    heartbeat, age = pump_process()
+    pids = live_pids()
+    _emit(f"pid file    : {PID_PATH}")
+    _emit(f"recorded pid: {recorded if recorded else '(none)'}"
+          + (f"  alive={alive(recorded)}" if recorded else ""))
+    _emit(f"pump process: {heartbeat or '(none)'}"
+          f"  heartbeat age={age:.0f}s" if heartbeat else "pump process: (no heartbeat)")
+    _emit(f"panel alive : {bool(pids)}" + (f"  pids={pids}" if pids else ""))
+    claim = runtime_claim()
+    _emit(f"runtime     : {claim or 'no run in flight'}")
+    workers = current_worker()
+    _emit(f"workers     : {len(workers)}")
+    for row in workers:
+        _emit(f"    {row[:150]}")
+    return 0
+
+
+def cmd_stop(force: bool = False) -> int:
+    pids = live_pids()
+    if not pids:
+        _emit("nothing to stop: no live panel pid on record and no fresh heartbeat")
+        PID_PATH.unlink(missing_ok=True)
+        return 0
+    workers = current_worker()
+    claim = runtime_claim()
+    if (workers or claim) and not force:
+        _emit("refusing to stop: a run is in flight, and killing the panel kills its worker")
+        for row in workers:
+            _emit(f"    worker {row[:140]}")
+        if claim:
+            _emit(f"    snapshot {claim}")
+        _emit("        wait for the cycle to end, or pass --force to accept the truncation")
+        return 1
+    for pid in pids:
+        _emit(f"stopping panel tree at pid {pid}"
+              + (" (forced during a run)" if (workers or claim) else ""))
+        try:
+            done = subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"],
+                                  capture_output=True, text=True, errors="replace", timeout=60)
+        except (OSError, subprocess.SubprocessError) as exc:
+            _emit(f"taskkill failed for {pid}: {type(exc).__name__}: {exc}")
+            continue
+        _emit((done.stdout or "").strip() or (done.stderr or "").strip())
+    time.sleep(2)
+    left = current_worker()
+    _emit(f"workers left after the kill: {len(left)}")
+    still = live_pids()
+    _emit(f"panel pids still alive: {still if still else 'none'}")
+    PID_PATH.unlink(missing_ok=True)
+    return 0 if not still else 1
+
+
+def cmd_start(verify_seconds: float = 6.0) -> int:
+    existing = read_pid()
+    if existing is not None and alive(existing):
+        _emit(f"already running at pid {existing}; stop it first")
+        return 1
+    if not VENV_PYTHONW.exists():
+        _emit(f"the production interpreter is missing: {VENV_PYTHONW}")
+        return 1
+    env = dict(os.environ)
+    password = user_env(GATEWAY_PASSWORD_ENV)
+    env[GATEWAY_PASSWORD_ENV] = password
+    PEEK_LOG.parent.mkdir(parents=True, exist_ok=True)
+    log = open(PEEK_LOG, "a", encoding="utf-8")
+    _emit(f"starting {VENV_PYTHONW.name} {PANEL_SCRIPT.name}"
+          f" (gateway credential: {'from the user environment' if password else 'ABSENT'})")
+    flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    process = subprocess.Popen(
+        [str(VENV_PYTHONW), str(PANEL_SCRIPT)], cwd=str(ROOT), env=env,
+        stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+        creationflags=flags,
+    )
+    PID_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PID_PATH.write_text(str(process.pid), encoding="utf-8")
+    _emit(f"launched pid {process.pid}; waiting {verify_seconds:.0f}s to see whether it survives")
+    time.sleep(verify_seconds)
+    if live_pids() or alive(process.pid):
+        _emit("panel is up (the panel rewrites this file with the pid that is really running)")
+        return 0
+    _emit("")
+    _emit("the panel did not survive the launch.  This host reclaims a detached child's")
+    _emit("whole process tree when the calling process finishes its turn -- measured")
+    _emit("2026-09-18: the window wrote pump.json once at +19s and was gone by +25s, with")
+    _emit("no crash and no log line.  A launcher cannot outlive that, so start the panel")
+    _emit("from a long-lived task instead:")
+    _emit(f"    {VENV_PYTHONW} {PANEL_SCRIPT}")
+    _emit("and use this tool for --status and --stop.")
+    PID_PATH.unlink(missing_ok=True)
+    return 1
+
+
+def cmd_restart(force: bool = False) -> int:
+    stopped = cmd_stop(force=force)
+    if stopped != 0:
+        return stopped
+    return cmd_start()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Stop/start the Winter Agent OS V2 panel by pid")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--status", action="store_true", help="report the recorded pid and any run in flight")
+    group.add_argument("--stop", action="store_true", help="stop the panel tree at a safe point")
+    group.add_argument("--start", action="store_true", help="start the panel and record its pid")
+    group.add_argument("--restart", action="store_true", help="stop then start")
+    parser.add_argument("--force", action="store_true", help="stop even if a run is in flight")
+    args = parser.parse_args(argv)
+
+    if args.status:
+        return cmd_status()
+    if args.stop:
+        return cmd_stop(force=args.force)
+    if args.start:
+        return cmd_start()
+    if args.restart:
+        return cmd_restart(force=args.force)
+    parser.print_help()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -130,6 +130,19 @@ PANEL_LOG_PATH = LOG_ROOT / "panel.log"
 # know whether the consumer is actually running -- a thread inside a GUI cannot be
 # checked from outside any other way, and "it is started on line N" is not evidence.
 PUMP_STATE_PATH = LOG_ROOT / "pump.json"
+
+
+def panel_pid_path() -> Path:
+    """Where the panel records its own pid, derived from the log path.
+
+    Derived rather than a second constant so that redirecting ``PANEL_LOG_PATH``
+    (which every window-building test already does) also redirects this: a test
+    window writing the production pid file would aim the stop command at the wrong
+    process.  Written by the panel itself because the launcher cannot know it -- a
+    venv ``pythonw.exe`` is a stub that spawns the real interpreter and exits, so
+    the pid a launcher holds is dead within a second while the panel runs on.
+    """
+    return Path(PANEL_LOG_PATH).parent / "panel.pid"
 PANEL_LOG_MAX_BYTES = 1_000_000
 RUNTIME_SNAPSHOT_PATH = ROOT / "learning/runtime_snapshot.json"
 MUMU_PATH = Path(r"D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuNxMain.exe")
@@ -1490,6 +1503,12 @@ class ControlPanel:
         self.pump = QueuePump(enabled=self._auto_development_allowed)
         self.pump.start()
         self._pump_prev: dict[str, int] = {}
+        try:
+            pid_path = panel_pid_path()
+            pid_path.parent.mkdir(parents=True, exist_ok=True)
+            pid_path.write_text(str(os.getpid()), encoding="utf-8")
+        except OSError:
+            pass
         task_names = ("邮件", "探险", "采集", "建筑", "科技", "训练", "Intel", "联盟", "日常", "野怪", "巨熊")
         saved_tasks = load_task_selection(PANEL_STATE_PATH, task_names)
         self.task_enabled = {n: tk.BooleanVar(value=saved_tasks[n]) for n in task_names}

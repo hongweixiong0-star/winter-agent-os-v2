@@ -281,12 +281,60 @@ class CredentialHygieneTest(unittest.TestCase):
         with patch.dict(os.environ, {bridge.ENV_PASSWORD: self.CREDENTIAL_FIXTURE}):
             self.assertEqual(bridge.redact(f"token={self.CREDENTIAL_FIXTURE}"), "token=***")
 
-    def test_the_password_is_read_from_the_environment_only(self):
+    def test_the_password_is_an_environment_variable_and_nothing_else(self):
         with patch.dict(os.environ, {bridge.ENV_PASSWORD: "from-env-value"}):
             self.assertEqual(bridge.gateway_password(), "from-env-value")
-        with patch.dict(os.environ, {}, clear=False):
+        # With no process value the persisted user environment is consulted.  Still
+        # an environment variable -- that is why it is allowed -- and the test pins
+        # both branches explicitly rather than depending on what this machine has
+        # set, so it means the same thing on a clean host.
+        with patch.dict(os.environ, {}, clear=False), \
+             patch.object(bridge, "persisted_password", return_value="from-user-env"):
+            os.environ.pop(bridge.ENV_PASSWORD, None)
+            self.assertEqual(bridge.gateway_password(), "from-user-env")
+        with patch.dict(os.environ, {}, clear=False), \
+             patch.object(bridge, "persisted_password", return_value=None):
             os.environ.pop(bridge.ENV_PASSWORD, None)
             self.assertIsNone(bridge.gateway_password())
+
+    def test_a_stale_process_credential_falls_back_to_the_persisted_one(self):
+        """Measured 2026-09-18: the shell that launched the panel carried a
+        43-character value answering 401 while the user environment's 24-character
+        value answered 200 -- same machine, same moment.  A credential that exists
+        and is wrong is indistinguishable from a gateway that is down."""
+        import urllib.error
+        import urllib.request as urllib_request
+
+        offered: list[str] = []
+
+        class Response:
+            status = 200
+
+            def read(self) -> bytes:
+                return b'{"data": {}}'
+
+            def __enter__(self) -> "Response":
+                return self
+
+            def __exit__(self, *exc: object) -> bool:
+                return False
+
+        def opener(request, timeout=None):  # noqa: ANN001, ANN202 - urllib signature
+            offered.append(request.get_header("Authorization"))
+            if len(offered) == 1:
+                raise urllib.error.HTTPError(request.full_url, 401, "Unauthorized", {}, None)
+            return Response()
+
+        with patch.dict(os.environ, {bridge.ENV_PASSWORD: "stale-process-value"}), \
+             patch.object(bridge, "persisted_password", return_value="good-user-env-value"), \
+             patch.object(urllib_request, "urlopen", opener):
+            instance = bridge.WorkBuddyBridge()
+            code, _body = instance._request("GET", "/api/v1/health")
+            self.assertEqual(code, 200)
+            self.assertEqual(offered, ["Bearer stale-process-value", "Bearer good-user-env-value"])
+            # The working one is adopted, so the extra round trip is paid at most once.
+            self.assertEqual(instance._password, "good-user-env-value")
+            self.assertIsNone(instance._fallback_password)
 
     def test_config_v2_json_is_never_consulted_for_a_credential(self):
         # A credential in a tracked file is what this design forbids, so the

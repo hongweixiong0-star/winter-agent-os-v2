@@ -204,9 +204,35 @@ def redact(text: str, secrets: Iterable[str | None] = None) -> str:
 
 
 def gateway_password() -> str | None:
-    """The gateway password, from the environment only."""
+    """The gateway password, from the process environment first.
+
+    ``persisted_password()`` is the fallback, and it is not decoration: the process
+    environment can hold a value that predates the gateway's current one, and this
+    cost two sessions before it was measured.  2026-09-18: the shell that launched
+    the panel carried a 43-character value that answered 401, while the value in the
+    user environment answered 200 -- same machine, same moment.  A credential that
+    exists and is wrong reads exactly like a gateway that is down.
+    """
     value = os.environ.get(ENV_PASSWORD, "")
-    return value.strip() or None
+    return value.strip() or persisted_password()
+
+
+def persisted_password() -> str | None:
+    """The same variable as Windows keeps it for the user, not just this process.
+
+    Read from ``HKCU\\Environment`` so a process started before the variable was set
+    (or started by a launcher with a stale copy) still finds it.  Still an
+    environment variable and never a file in the repository, which is the operator's
+    rule.
+    """
+    try:
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            value, _ = winreg.QueryValueEx(key, ENV_PASSWORD)
+        return str(value).strip() or None
+    except Exception:  # noqa: BLE001 - absent key, absent module, locked hive
+        return None
 
 
 def gateway_base_url() -> str:
@@ -532,6 +558,11 @@ class WorkBuddyBridge:
         # Deliberately not stored on ``self``: a password held as an attribute
         # ends up in a repr, a traceback or a dataclass dump sooner or later.
         self._password = password if password is not None else gateway_password()
+        # The one the user environment holds, kept only for the retry below and only
+        # when it differs -- a process-env value can be stale, and a stale credential
+        # is indistinguishable from a down gateway until you try the other one.
+        persisted = None if password is not None else persisted_password()
+        self._fallback_password = persisted if persisted and persisted != self._password else None
         self.cwd = Path(cwd)
         self.permission_mode = (
             permission_mode
@@ -572,6 +603,12 @@ class WorkBuddyBridge:
                 return response.status, _parse_json(body)
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", "replace")
+            if exc.code == 401 and self._fallback_password:
+                # The process credential was refused.  Try the one the user
+                # environment holds, once, and adopt it when it works so the extra
+                # round trip is paid at most once per process.
+                self._password, self._fallback_password = self._fallback_password, None
+                return self._request(method, path, payload, timeout)
             return exc.code, _parse_json(body)
         except urllib.error.URLError as exc:
             raise GatewayUnavailable(f"{url}: {exc.reason}") from exc
