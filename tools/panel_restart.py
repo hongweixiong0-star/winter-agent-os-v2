@@ -36,6 +36,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+#: The one place the operator's intent is persisted.  Read (never written) by the gateway
+#: re-check below so a launcher cannot start work the operator has stopped.
+PANEL_STATE = ROOT / "config/control_panel_state.json"
 # Run as a script from ``tools/``, so the repo root has to be importable before any
 # helper can reach the package.  Measured 2026-09-18: without this, routing the process
 # helpers through ``winter_agent_v2.winproc`` made ``--status`` die with
@@ -269,7 +272,53 @@ def cmd_stop(force: bool = False) -> int:
     still = live_pids()
     _emit(f"panel pids still alive: {still if still else 'none'}")
     PID_PATH.unlink(missing_ok=True)
+    _ensure_gateway_after_stop()
     return 0 if not still else 1
+
+
+def _ensure_gateway_after_stop() -> None:
+    """Bring the gateway back if stopping the window took it down with it.
+
+    The gateway is a **service**, not a child of the window (operator §24): it is started
+    detached precisely so it outlives the window, and a window restart must not become a
+    gateway outage.  Measured 2026-09-18 evening: it did.  ``taskkill /PID <panel> /T`` follows
+    *parentage*, and ``DETACHED_PROCESS`` does not change parentage -- so the tree kill that
+    stops the window also killed a perfectly healthy gateway, and the next window would have
+    shown 工作Buddy 异常 until it started one again.  A failed start (which is exactly what
+    happened on the development host) then leaves no gateway at all.
+
+    Re-ensured through the one lifecycle owner rather than spawned here: two places that can
+    start a gateway is how two gateways happen, and ``GatewayService`` already knows how to
+    reuse a healthy one, refuse a port conflict and respect an operator STOP -- none of which
+    this launcher has any business deciding for itself.
+    """
+    try:
+        from winter_agent_v2.gateway_service import GatewayService
+
+        service = GatewayService(ROOT)
+        record = service.ensure(operator_intent=_operator_intent())
+        if record.get("spawned"):
+            _emit(f"gateway restarted after the stop (pid {record.get('pid')}) -- "
+                  f"it is a service and must not die with the window")
+        else:
+            _emit(f"gateway left as it is ({record.get('state')}): {record.get('detail')}")
+    except Exception as exc:  # noqa: BLE001 - the device must not be left unattended over this
+        _emit(f"gateway re-check failed: {type(exc).__name__}: {exc}")
+
+
+def _operator_intent() -> str:
+    """The persisted operator intent, read without importing the window.
+
+    Importing ``tools/control_panel.py`` for one string would pull in Tk and PIL, and this
+    launcher runs before the window exists.  An unreadable state file reads as STOPPED: the
+    safe answer to "we do not know what the operator asked for" is the passive one, and the
+    cost of guessing wrong here is starting a developer nobody asked for.
+    """
+    try:
+        return str(json.loads(PANEL_STATE.read_text(encoding="utf-8"))
+                   .get("operator_intent") or "STOPPED").upper()
+    except Exception:  # noqa: BLE001
+        return "STOPPED"
 
 
 def cmd_start(verify_seconds: float = 6.0) -> int:
