@@ -530,6 +530,9 @@ WORKBUDDY_LABELS = {
     "PENDING_SUBMIT": "● 待提交", "IDLE": "● 待命", "QUEUED": "● 排队",
     "SUBMITTED": "● 已提交", "WORKING": "● 开发中",
     "VERIFYING": "● 验证中", "BLOCKED": "● Blocked", "UNAVAILABLE": "● 不可用",
+    # §21's word for the rung the operator added: the version exists and is waiting for
+    # its own examination.  Distinct from 验证中, which is a verification happening now.
+    "VERIFY_PENDING": "● 等待真机验证",
 }
 
 # Stop reasons that mean "come back later", not "something is broken".  A runtime
@@ -577,6 +580,9 @@ STATE_ZH = {
     # fact that nothing had been sent.  The four first states are the operator's own
     # ladder -- 待提交 -> 排队 -> 已提交 -> 开发中 -- and each one is a different fact.
     "NEW": "待提交", "QUEUED": "排队", "SUBMITTED": "已提交", "WORKING": "开发中",
+    # The operator's §21 word for the rung between "a developer finished" and "the
+    # game proved it": the version exists and is waiting for its own examination.
+    "LIVE_VERIFY_PENDING": "等待真机验证",
     "DONE": "完成", "FAILED": "失败", "BLOCKED": "Blocked", "COOLDOWN": "冷却",
 }
 
@@ -968,8 +974,8 @@ def escalation_view(root: Path | None = None) -> dict[str, Any]:
     recomputed it would be the second source of truth the operator forbids.
     """
     from winter_agent_v2.escalation_queue import (
-        BLOCKED, CODE_CHANGED, COOLDOWN, DONE, FAILED, LIVE_VERIFIED, NEW,
-        OUTCOME_BLOCKED, QUEUED, REPLAY_PASS, SUBMITTED, TEST_PASS, WORKING,
+        BLOCKED, CODE_CHANGED, COOLDOWN, DONE, FAILED, LIVE_VERIFIED, LIVE_VERIFY_PENDING,
+        NEW, OUTCOME_BLOCKED, QUEUED, REPLAY_PASS, SUBMITTED, TEST_PASS, WORKING,
         EscalationPolicy,
     )
 
@@ -981,6 +987,10 @@ def escalation_view(root: Path | None = None) -> dict[str, Any]:
                 "pending_verify": (), "blocked": (), "verified": (), "max_concurrent": 1, "readable": False}
     records = _records_sorted(snapshot)
     active = [r for r in records if r.state in (NEW, QUEUED, SUBMITTED, WORKING)]
+    # A version that exists and has not been examined yet.  It is neither active (no
+    # agent is working, so it does not hold the agent slot) nor finished, and leaving it
+    # out of every list is how it became invisible in the window on 2026-09-18.
+    awaiting = [r for r in records if r.state == LIVE_VERIFY_PENDING]
     pending_verify = [r for r in records if r.state == DONE and r.outcome in (CODE_CHANGED, TEST_PASS, REPLAY_PASS)]
     blocked = [r for r in records if r.state in (BLOCKED, FAILED, COOLDOWN) or r.outcome == OUTCOME_BLOCKED]
     conditions: Counter[str] = Counter()
@@ -990,6 +1000,7 @@ def escalation_view(root: Path | None = None) -> dict[str, Any]:
     return {
         "total": len(records), "records": tuple(records), "current": active[0] if active else None,
         "active": tuple(active), "counts": snapshot.count_by_state(), "conditions": conditions,
+        "awaiting_verification": tuple(awaiting),
         "pending_verify": tuple(pending_verify), "blocked": tuple(blocked),
         "verified": tuple(r for r in records if r.outcome == LIVE_VERIFIED),
         "max_concurrent": EscalationPolicy().max_concurrent_jobs, "readable": True,
@@ -1018,6 +1029,9 @@ def workbuddy_cell(view: dict[str, Any], gateway: dict[str, Any]) -> tuple[str, 
             return WORKBUDDY_LABELS["PENDING_SUBMIT"], current.key
         if current.state == QUEUED:
             return WORKBUDDY_LABELS["QUEUED"], current.key
+    if view.get("awaiting_verification"):
+        record = view["awaiting_verification"][0]
+        return WORKBUDDY_LABELS["VERIFY_PENDING"], record.capability or record.key
     if view.get("pending_verify"):
         return WORKBUDDY_LABELS["VERIFYING"], view["pending_verify"][0].key
     if view.get("blocked"):

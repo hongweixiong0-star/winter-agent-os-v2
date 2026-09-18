@@ -280,6 +280,54 @@ class GateRuleTests(unittest.TestCase):
     def test_an_empty_gate_defers_nothing(self):
         self.assertIsNone(CapabilityGate.empty().blocks(goal("ANY")))
 
+    def test_a_no_progress_deferral_names_the_capability_the_goal_itself_declares(self):
+        """The stalled route's steps need not be things the capability table names.
+
+        Measured 2026-09-18: ``AVOID_STAMINA_WASTE`` stalled while running
+        ``SCAN_MAP_FOR_BEAST`` alone, a navigation step that resolves to itself, so
+        nothing in the goal's ``reached`` set intersected its composition and the
+        deferral went out with an empty capability.  The goal's own declared skills
+        still say which capabilities would satisfy it, and the project already maps
+        ``BEAST_HUNT`` to ``SPEND_STAMINA_ON_BEAST``.
+        """
+        gate = CapabilityGate(
+            compositions={
+                "GOAL": GoalComposition(
+                    "GOAL", "ANY_OF",
+                    ("SPEND_STAMINA_ON_BEAST", "SPEND_STAMINA_ON_INTEL", "SPEND_STAMINA_ON_RALLY"),
+                ),
+            },
+            streaks={"GOAL": (3, NOW - timedelta(minutes=1), "SCAN_MAP_FOR_BEAST")},
+            attempted={"GOAL": frozenset({"SCAN_MAP_FOR_BEAST"})},
+            reached={"GOAL": frozenset({"SCAN_MAP_FOR_BEAST"})},
+        )
+        found = gate.blocks(
+            goal("GOAL", skills=("INTEL_CLAIM_REWARDS", "BEAST_HUNT")),
+            now=NOW,
+        )
+        self.assertIsNotNone(found)
+        self.assertEqual(found.capability, "SPEND_STAMINA_ON_BEAST")
+        self.assertEqual(
+            found.failure_signature,
+            "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+        )
+
+    def test_a_no_progress_signature_keeps_its_three_positional_fields(self):
+        """An unresolvable capability leaves the field empty; it never collapses.
+
+        Collapsing is what let the escalation queue read the failure type as the
+        capability, so the shape has to be stable even when it says nothing.
+        """
+        gate = self._gate(
+            streaks={"ANY": (3, NOW - timedelta(minutes=1), "SWIPE")},
+            attempted={"ANY": frozenset({"SWIPE"})},
+            reached={"ANY": frozenset({"SWIPE"})},
+        )
+        found = gate.blocks(goal("ANY", skills=("SWIPE",)), now=NOW)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.capability, "")
+        self.assertEqual(found.failure_signature, "|NO_GOAL_PROGRESS|SWIPE")
+
 
 class StreakCountingTests(unittest.TestCase):
     """A streak is counted in runs, and runs that never attempted the goal are skipped."""

@@ -79,6 +79,9 @@ NO_PROGRESS_STREAK = 3
 EPISODE_TAIL = 400
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
+# Skill -> capability memo, so a per-step deferral check does not re-read the table.
+_SKILL_CAPABILITY_CACHE: dict[str, str] = {}
+
 
 @dataclass(frozen=True)
 class Deferral:
@@ -180,6 +183,20 @@ def capability_states(
                 DEVELOPMENT_PENDING,
                 f"a development job owns it (job={record.job_id or 'not submitted yet'})",
                 None,
+            )
+            continue
+        if record.state == "LIVE_VERIFY_PENDING":
+            # The one case a deferring gate would deadlock, and the operator names it in
+            # section 4: gameplay may not re-enter the failed path, and validation has no
+            # *other* executor in this project, so if both refused, the proof that closes
+            # the loop could never be produced.  The operator's own words are "允许 A 进行
+            # 受控真机验证"; the only executor that exists is V2's own loop, so allowing the
+            # goal *is* the controlled verification.  It is deliberately not deferred and
+            # deliberately not active: no agent is working, so the agent slot stays free.
+            out[capability] = (
+                RUNNABLE,
+                f"new version waiting for live verification (job={record.job_id or 'unknown'})",
+                record.settled_at,
             )
             continue
         if record.state == "COOLDOWN":
@@ -469,31 +486,45 @@ class CapabilityGate:
             return False
         return (now - last).total_seconds() / 60.0 >= window_minutes
 
-    def _no_progress_deferral(self, goal_id: str, now: datetime) -> Deferral | None:
+    def _no_progress_deferral(self, goal: GoalState, now: datetime) -> Deferral | None:
+        goal_id = goal.goal_id
         streak, last, last_skill = self.streaks.get(goal_id, (0, None, ""))
         if streak < self.no_progress_threshold:
             return None
+        capability = self._route_capability(goal_id, goal.available_skills)
         return Deferral(
             goal_id=goal_id,
             state=DEFERRED,
+            capability=capability,
             reason=(
                 f"{streak} consecutive production episodes passed their verifier and "
                 f"advanced no part of this goal"
             ),
             source=SOURCE_NO_PROGRESS,
-            failure_signature="|".join(
-                part for part in (self._route_capability(goal_id), "NO_GOAL_PROGRESS", last_skill) if part
-            ),
+            # The signature is positional: ``<capability>|<failure_type>|<skill>``,
+            # with the capability field allowed to be empty.  Filtering the empty
+            # fields out made a two-field signature of it, and the escalation queue
+            # then read the *failure type* as the capability -- measured 2026-09-18:
+            # ``NO_GOAL_PROGRESS`` was filed as a capability and took a development
+            # job that no goal can ever route back to (see ``_route_capability``).
+            failure_signature=f"{capability}|NO_GOAL_PROGRESS|{last_skill}",
             probe_minutes=self.no_progress_probe_minutes,
             streak=streak,
             last_attempt=last,
             last_skill=last_skill,
         )
 
-    def _route_capability(self, goal_id: str) -> str:
+    def _route_capability(self, goal_id: str, declared_skills: Iterable[str] = ()) -> str:
         """The capability name a deferral should be handed off under.
 
         First the composition entry the goal's own attempted skills resolve to.
+        Then the capability the goal's *declared* skills resolve to: a route can be
+        attempted entirely through steps the capability table does not name (measured
+        2026-09-18: ``AVOID_STAMINA_WASTE``'s stalled route ran ``SCAN_MAP_FOR_BEAST``,
+        a navigation step that resolves to itself), and the goal still says which
+        capabilities would satisfy it.  ``BEAST_HUNT`` is one of those and the project
+        already maps it to ``SPEND_STAMINA_ON_BEAST``, which is the honest name for
+        that wall and the one the earlier escalation in the ledger already used.
         Failing that, the capability of this goal that is already in the worst state:
         that is the name the development pipeline already knows this project by, and
         naming a *skill* as if it were a capability would file the request under a
@@ -506,6 +537,10 @@ class CapabilityGate:
         for capability in composition.capabilities:
             if capability in reached:
                 return capability
+        for skill in declared_skills:
+            routed = self._capability_of_skill(str(skill))
+            if routed in composition.capabilities:
+                return routed
         blocked = [
             (capability, self.capabilities[capability][0])
             for capability in composition.capabilities
@@ -517,12 +552,26 @@ class CapabilityGate:
             return composition.capabilities[0]
         return ""
 
+    @staticmethod
+    def _capability_of_skill(skill: str) -> str:
+        """Skill -> capability, through the project's own table (never a second one)."""
+        if not skill:
+            return ""
+        cached = _SKILL_CAPABILITY_CACHE.get(skill)
+        if cached is not None:
+            return cached
+        from .escalation_queue import capability_for_skill
+
+        resolved = capability_for_skill(skill)
+        _SKILL_CAPABILITY_CACHE[skill] = resolved
+        return resolved
+
     def blocks(self, goal: GoalState, *, now: datetime | None = None) -> Deferral | None:
         """Why this goal must step aside, or ``None`` when it may be selected."""
         moment = now or datetime.now(timezone.utc)
         found = self._capability_deferral(goal.goal_id)
         if found is None:
-            found = self._no_progress_deferral(goal.goal_id, moment)
+            found = self._no_progress_deferral(goal, moment)
             if found is None:
                 return None
             window = self.no_progress_probe_minutes

@@ -450,12 +450,30 @@ class WorkBuddyCellTest(unittest.TestCase):
         self.assertEqual(
             set(panel.WORKBUDDY_LABELS.values()),
             {"● 待提交", "● 待命", "● 排队", "● 已提交", "● 开发中", "● 验证中",
-             "● Blocked", "● 不可用"},
+             "● 等待真机验证", "● Blocked", "● 不可用"},
         )
         self.assertEqual(panel.STATE_ZH["NEW"], "待提交")
         self.assertEqual(panel.STATE_ZH["QUEUED"], "排队")
         self.assertEqual(panel.STATE_ZH["SUBMITTED"], "已提交")
         self.assertEqual(panel.STATE_ZH["WORKING"], "开发中")
+        self.assertEqual(panel.STATE_ZH["LIVE_VERIFY_PENDING"], "等待真机验证")
+
+    def test_a_version_waiting_for_its_examination_is_visible(self):
+        """§21: the rung between a finished job and a proven capability shows by name.
+
+        It appears in neither ``current`` nor ``pending_verify`` -- no agent is working
+        and the job has not settled -- so without its own list it disappeared from the
+        window while the queue still owed it an examination.
+        """
+        record = type("R", (), {
+            "state": "LIVE_VERIFY_PENDING", "capability": "SPEND_STAMINA_ON_BEAST",
+            "key": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+            "job_id": "job-1",
+        })()
+        label, detail = panel.workbuddy_cell({"awaiting_verification": (record,)},
+                                             {"available": True})
+        self.assertEqual(label, panel.WORKBUDDY_LABELS["VERIFY_PENDING"])
+        self.assertEqual(detail, "SPEND_STAMINA_ON_BEAST")
 
 
 class GatewayReasonTest(unittest.TestCase):

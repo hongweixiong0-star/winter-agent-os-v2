@@ -211,7 +211,17 @@ COOLDOWN = "COOLDOWN"
 # it into the ledger verbatim.
 STOPPED = "STOPPED"
 
-ALL_STATES: tuple[str, ...] = (NEW, QUEUED, SUBMITTED, WORKING, DONE, FAILED, BLOCKED, COOLDOWN)
+# The version the job produced has not been exercised yet, so the capability is
+# waiting for its live examination rather than for a developer.  Deliberately in
+# neither ACTIVE_STATES nor TERMINAL_STATES: it must not hold the single agent slot
+# (no agent is working), and it must not be settled (the next tick still has to
+# measure it).  Leaving it out of ACTIVE_STATES is what keeps a pending verification
+# from starving the queue the way a stopped job once did.
+LIVE_VERIFY_PENDING = "LIVE_VERIFY_PENDING"
+
+ALL_STATES: tuple[str, ...] = (
+    NEW, QUEUED, SUBMITTED, WORKING, LIVE_VERIFY_PENDING, DONE, FAILED, BLOCKED, COOLDOWN,
+)
 # A key in one of these is "being worked on": no second job for it.
 ACTIVE_STATES = frozenset({NEW, QUEUED, SUBMITTED, WORKING})
 TERMINAL_STATES = frozenset({DONE, FAILED, BLOCKED, COOLDOWN})
@@ -222,16 +232,27 @@ TERMINAL_STATES = frozenset({DONE, FAILED, BLOCKED, COOLDOWN})
 # matters: each rung implies the ones before it, and only the last one means the
 # capability actually works in the game.
 #
-#   CODE_CHANGED    files differ; nothing else verified
-#   TEST_PASS       and the fast gate is green
-#   REPLAY_PASS     and a recorded frame replays correctly
-#   LIVE_TRIED      and a real device attempt was made (success unknown)
-#   LIVE_VERIFIED   and a production episode proves it, with a passing verifier
-#   BLOCKED / NO_IMPROVEMENT   the honest ends when none of that happened
+# The operator's full ladder of what a finished job may have achieved.  The order
+# matters: each rung implies the ones before it, and only the last one means the
+# capability actually works in the game.
+#
+#   CODE_CHANGED                 files differ; nothing else verified
+#   TEST_PASS                    and the fast gate is green
+#   VERSION_ACTIVATION_PENDING   and the new version has not been exercised yet
+#   REPLAY_PASS                  and a recorded frame replays correctly
+#   LIVE_TRIED                   and a real device attempt was made (success unknown)
+#   LIVE_VERIFIED                and a production episode proves it, with a passing verifier
+#   BLOCKED / NO_IMPROVEMENT     the honest ends when none of that happened
 #
 # "WorkBuddy says done" appears nowhere in this list, on purpose.
 CODE_CHANGED = "CODE_CHANGED"
 TEST_PASS = "TEST_PASS"
+# The correction the operator made on 2026-09-18: LIVE_VERIFIED cannot be granted to a
+# version that has not run yet, so the rung between "the gate is green" and "a
+# production episode proves it" is "the new version is actually what is running".
+# Without it the ladder read CODE_CHANGED -> LIVE_VERIFIED -> Reload, which credits a
+# fix that the measuring process had never loaded.
+VERSION_ACTIVATION_PENDING = "VERSION_ACTIVATION_PENDING"
 REPLAY_PASS = "REPLAY_PASS"
 LIVE_TRIED = "LIVE_TRIED"
 LIVE_VERIFIED = "LIVE_VERIFIED"
@@ -239,8 +260,8 @@ OUTCOME_BLOCKED = "BLOCKED"
 NO_IMPROVEMENT = "NO_IMPROVEMENT"
 
 ALL_OUTCOMES: tuple[str, ...] = (
-    CODE_CHANGED, TEST_PASS, REPLAY_PASS, LIVE_TRIED, LIVE_VERIFIED,
-    OUTCOME_BLOCKED, NO_IMPROVEMENT,
+    CODE_CHANGED, TEST_PASS, VERSION_ACTIVATION_PENDING, REPLAY_PASS, LIVE_TRIED,
+    LIVE_VERIFIED, OUTCOME_BLOCKED, NO_IMPROVEMENT,
 )
 
 # Outcomes that mean a real device produced evidence.  Only these may be used to
@@ -391,6 +412,16 @@ class EscalationRecord:
     last_seen: datetime | None = None
     submitted_at: datetime | None = None
     settled_at: datetime | None = None
+    # The moment the gateway says the job actually ended, as opposed to when this
+    # process happened to observe it.  It is the boundary the activation rung measures
+    # against ("has anything run the code this job produced"), and it has to be the
+    # job's own time: a reconcile that runs an hour later must not push the boundary
+    # forward, or the episodes that closed the rung would fall on the wrong side of it.
+    version_since: datetime | None = None
+    # The agent's own words at settle time, carried forward so the re-measure does not
+    # have to re-ask the gateway -- and so the corroboration behind a later LIVE_VERIFIED
+    # is the same sentence the first measurement used, not a fresh guess.
+    agent_report: str = ""
     cooldown_until: datetime | None = None
     code_changed: bool = False
     # The repository revision at dispatch time, so reconciliation can tell whether
@@ -421,6 +452,23 @@ def _moment(value: Any) -> datetime | None:
     except ValueError:
         return None
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _from_millis(value: Any) -> datetime | None:
+    """A gateway timestamp (milliseconds since epoch) as an aware datetime.
+
+    The jobs API reports ``firstTerminalAt`` in milliseconds, and passing that int
+    where a datetime belongs compares an int to a datetime -- measured 2026-09-18, when
+    ``settled_at`` silently accepted it and the activation rung never fired.  Named
+    explicitly so the two shapes cannot be confused again.
+    """
+    try:
+        millis = float(value)
+    except (TypeError, ValueError):
+        return None
+    if millis <= 0:
+        return None
+    return datetime.fromtimestamp(millis / 1000.0, timezone.utc)
 
 
 def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
@@ -498,6 +546,22 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
                 # record starves every pending escalation behind it.
                 record.state = DONE if state == DONE else FAILED
                 record.settled_at = _moment(event.get("recorded_at"))
+            continue
+
+        if kind == "live_verify_pending":
+            record = get(key)
+            # The version exists and has not run.  Not terminal (the next pass still has
+            # to measure it) and not active (no agent is working, and the single slot
+            # must stay free), which is exactly why this state is in neither set.
+            record.state = LIVE_VERIFY_PENDING
+            # The outcome is folded too, so the panel can say "等待真机验证" from the
+            # record rather than from a sentence someone has to parse.
+            record.outcome = str(event.get("outcome") or record.outcome)
+            record.version_since = _moment(event.get("version_since")) or record.version_since
+            record.agent_report = str(event.get("agent_report") or record.agent_report)
+            record.notes.append(
+                f"version not active yet: {str(event.get('reason') or '')[:160]}"
+            )
             continue
 
         if kind == "reconciled":
@@ -861,12 +925,24 @@ def candidates_from_run(
     for deferral in deferrals:
         if str(deferral.get("source") or "") != "NO_GOAL_PROGRESS":
             continue
-        parts = [part for part in str(deferral.get("failure_signature") or "").split("|") if part]
-        if len(parts) < 2:
+        fields = str(deferral.get("failure_signature") or "").split("|")
+        # Positional, with empty fields kept: ``<capability>|<failure_type>|<skill>``.
+        # Dropping the empties made this a two-field string and the failure type then
+        # read as the capability -- measured 2026-09-18, ``NO_GOAL_PROGRESS`` was
+        # escalated as a capability of its own, which is a name no goal can route to
+        # and a dedup key that does not match the wall it describes.  The failure
+        # type is the anchor, so the field that equals it is never the capability.
+        failure_type = "NO_GOAL_PROGRESS"
+        if failure_type not in fields:
             continue
-        capability = parts[0]
-        skill = parts[2] if len(parts) > 2 else ""
-        signature = FailureSignature(capability=capability, failure_type="NO_GOAL_PROGRESS", skill=skill)
+        at = fields.index(failure_type)
+        capability = "|".join(fields[:at]).strip()
+        skill = fields[at + 1].strip() if len(fields) > at + 1 else ""
+        if not capability:
+            # Nothing to hand a development agent, and inventing a name is exactly
+            # the defect above; the deferral stays visible in the runtime snapshot.
+            continue
+        signature = FailureSignature(capability=capability, failure_type=failure_type, skill=skill)
         if signature.key in seen:
             continue
         seen.add(signature.key)
@@ -1063,6 +1139,7 @@ def new_live_episodes(
     episodes_path: Path | str | None = None,
     version_changed_from: str = "",
     require_goal_progress: bool = False,
+    after: datetime | None = None,
 ) -> tuple[dict[str, Any], ...]:
     """Production episodes proving the capability after ``since``.
 
@@ -1070,6 +1147,14 @@ def new_live_episodes(
     indistinguishable otherwise) and only ``verifier_ok`` rows count, and evidence
     paths must be present.  This is the gate that keeps ``LIVE_VERIFIED`` from
     being something an agent can claim.
+
+    ``after`` is the correction the operator made on 2026-09-18, and it is the half
+    that was missing: an episode must have been recorded *after the job finished*,
+    because each cycle is a fresh process that imports the package from disk, so a
+    cycle that started after the job terminated is a cycle running the code the job
+    produced.  Without it the ladder credited a fix to episodes recorded while the
+    developer was still working -- which is the difference between "a different tree"
+    and "the new version".
 
     ``version_changed_from`` is the tree revision at dispatch time, and it is the
     second half of that gate: an episode only counts when it ran a *different* tree
@@ -1107,6 +1192,8 @@ def new_live_episodes(
             continue
         recorded = _moment(row.get("recorded_at"))
         if since is not None and (recorded is None or recorded <= since):
+            continue
+        if after is not None and (recorded is None or recorded <= after):
             continue
         if skill and row.get("skill") != skill:
             continue
@@ -1175,6 +1262,7 @@ def reconcile_outcome(
     root: Path | str | None = None,
     episodes_path: Path | str | None = None,
     failure_type: str = "",
+    settled_at: datetime | None = None,
 ) -> tuple[str, str, tuple[dict[str, Any], ...]]:
     """Decide what the job actually achieved, from local measurements only.
 
@@ -1197,11 +1285,15 @@ def reconcile_outcome(
     job started against (see :func:`new_live_episodes`).  AUTO works the same skill
     while a job runs, and those concurrent successes are not the job's; three of them
     were counted for NAVIGATE_TO_MAP on 2026-09-18 while the job was still WORKING.
+    ``settled_at`` is the stronger form of the same rule and the operator's correction
+    of 2026-09-18: the episode must also have been recorded after the job finished,
+    because only then is it a cycle that loaded the code the job produced.
     """
     episodes = new_live_episodes(capability, skill=skill, since=submitted_at,
                                 root=root, episodes_path=episodes_path,
                                 version_changed_from=before.token,
-                                require_goal_progress=str(failure_type).upper() in PROOF_IS_GOAL_PROGRESS)
+                                require_goal_progress=str(failure_type).upper() in PROOF_IS_GOAL_PROGRESS,
+                                after=settled_at)
     if episodes:
         latest = episodes[-1]
         return (
@@ -1229,11 +1321,32 @@ def reconcile_outcome(
             (),
         )
     if changed and wiring_problems == 0:
+        # The operator's correction of 2026-09-18: this rung is where the ladder used
+        # to jump straight to LIVE_VERIFIED.  A green gate and a changed tree describe
+        # the *source*, not what is running; the next cycle is the first process that
+        # can have loaded it, so until an episode recorded after the job finished
+        # exists, the honest word is "the new version has not been exercised yet".
+        ran_after_job = new_live_episodes(
+            capability, skill=skill, since=submitted_at, root=root,
+            episodes_path=episodes_path, version_changed_from=before.token,
+            after=settled_at,
+        )
+        if settled_at is not None and not ran_after_job:
+            return (
+                VERSION_ACTIVATION_PENDING,
+                f"tree changed ({revision_delta}) with the agent corroborating a change, and "
+                f"check_wiring reports problems: 0. The new version has NOT run yet: every "
+                f"cycle is a fresh process that imports the package from disk, so the first "
+                f"episode recorded after {settled_at.isoformat()} is the first that can carry "
+                f"it. LIVE_VERIFIED is not granted to a version nothing has loaded.",
+                (),
+            )
         return (
             TEST_PASS,
             f"tree changed ({revision_delta}) with the agent corroborating a change, and "
-            f"check_wiring reports problems: 0. NOT a verified capability: no new "
-            f"production episode with a passing verifier exists.",
+            f"check_wiring reports problems: 0. NOT a verified capability: the version is "
+            f"running, but no production episode with a passing verifier exists -- see the "
+            f"note below when verifier-passing episodes do exist.",
             (),
         )
     if changed:
@@ -1853,98 +1966,201 @@ class EscalationQueueAdapter:
                 agent_report=status.result,
                 root=self.root,
                 failure_type=record.failure_type,
+                settled_at=_from_millis(status.first_terminal_at),
             )
             if reclaimed:
                 explanation = f"cancelled: {reclaimed}. " + explanation
             if outcome != LIVE_VERIFIED:
                 explanation += self._flat_episode_note(record, before)
-            code_changed = after.differs_from(before)
+            if outcome == VERSION_ACTIVATION_PENDING:
+                # Not settled: the version exists but nothing has loaded it, so the
+                # honest state is "waiting for its own activation", and the next pass
+                # re-measures.  It is deliberately excluded from ACTIVE_STATES, so it
+                # does not hold the agent slot while it waits.
+                self._note_activation_pending(
+                    record, explanation,
+                    version_since=_from_millis(status.first_terminal_at),
+                    agent_report=status.result,
+                )
+                continue
+            self._settle(
+                snapshot=snapshot, record=record, outcome=outcome, explanation=explanation,
+                episodes=episodes, before=before, after=after, wiring=wiring,
+                moment=moment, detail=status.detail,
+                terminal_verdict=DONE if status.verdict == "DONE" else FAILED,
+                duration=_duration(record.submitted_at, status.first_terminal_at),
+                settled=settled, errors=errors,
+            )
+
+        # Records whose job is done and whose version has not been exercised yet.  This
+        # is the rung the operator added on 2026-09-18 (VERSION_ACTIVATION_PENDING ->
+        # VERSION_ACTIVE -> LIVE_VERIFY_PENDING), re-measured on every pass because the
+        # evidence that closes it is an episode, and episodes arrive on their own.
+        for record in snapshot.records.values():
+            if record.state != LIVE_VERIFY_PENDING or not record.job_id:
+                continue
+            before = RepoRevision(
+                head=str(_submitted(snapshot, record.key, "repo_head") or ""),
+                dirty=int(_submitted(snapshot, record.key, "repo_dirty") or 0),
+                ok=bool(_submitted(snapshot, record.key, "repo_head")),
+            )
+            after = repo_revision(self.root)
+            wiring = self._wiring_problems()
+            outcome, explanation, episodes = reconcile_outcome(
+                capability=record.capability, skill=record.skill,
+                submitted_at=record.submitted_at, job_verdict=DONE,
+                before=before, after=after, wiring_problems=wiring,
+                agent_report=record.agent_report, root=self.root,
+                failure_type=record.failure_type,
+                # The gateway's terminal time, carried on the record, not "now": the
+                # observation time would put every episode that closed this rung on the
+                # wrong side of the boundary.
+                settled_at=record.version_since,
+            )
+            if outcome == VERSION_ACTIVATION_PENDING:
+                continue
+            explanation = "re-measured after the version became active. " + explanation
+            self._settle(
+                snapshot=snapshot, record=record, outcome=outcome, explanation=explanation,
+                episodes=episodes, before=before, after=after, wiring=wiring,
+                moment=moment, detail="measured after the new version ran",
+                terminal_verdict=DONE,
+                # ``settled_at`` here is a datetime from the fold, not the gateway's
+                # millisecond integer, so the duration is a subtraction rather than
+                # ``_duration`` -- passing one where the other belongs is the mistake
+                # this round already made once.
+                duration=(round((record.settled_at - record.submitted_at).total_seconds(), 1)
+                          if record.settled_at and record.submitted_at else None),
+                settled=settled, errors=errors,
+            )
+
+        return settled, errors
+
+    def _note_activation_pending(
+        self,
+        record: EscalationRecord,
+        explanation: str,
+        *,
+        version_since: datetime | None,
+        agent_report: str,
+    ) -> None:
+        """Record that the tree changed but nothing has loaded it yet.
+
+        The job's own terminal time is written here rather than recomputed later: it is
+        the boundary the re-measure has to use, and the only place it is known exactly
+        is the moment the gateway first reported it.
+        """
+        try:
             self.ledger.append({
-                "event": "reconciled",
+                "source": "queue",
+                "event": "live_verify_pending",
                 "key": record.key,
                 "job_id": record.job_id,
-                "job_state": DONE if status.verdict == "DONE" else FAILED,
-                "job_detail": status.detail,
-                "outcome": outcome,
-                "explanation": explanation,
-                "code_changed": code_changed,
-                "wiring_problems": wiring,
-                "verified_episodes": len(episodes),
-                "model": record.model,
-                "duration_seconds": _duration(record.submitted_at, status.first_terminal_at),
-                "live_improvement": outcome == LIVE_VERIFIED,
-                "repair_used": outcome != LIVE_VERIFIED,
-                # The causal chain, so one row answers "what proved what" without
-                # joining four files by hand: which capability and failure shape the
-                # job was for, which tree it started and ended against, and which
-                # production episode (if any) is the one that proves the new version
-                # works.  ``live_verify_episode`` empty while ``verified_episodes`` is
-                # non-zero is the RR-004 shape: episodes exist, none of them ran the
-                # new version.
                 "capability": record.capability,
                 "failure_signature": record.key,
                 "skill": record.skill,
-                "before_version": before.head,
-                "before_dirty": before.dirty,
-                "after_version": after.head,
-                "after_dirty": after.dirty,
-                "live_verify_episode": str((episodes[-1] if episodes else {}).get("episode_id") or ""),
-                "live_verify_revision": str((episodes[-1] if episodes else {}).get("repo_revision") or ""),
-                "reload_id": str(_submitted(snapshot, record.key, "reload_id") or ""),
+                "reason": explanation[:400],
+                "outcome": VERSION_ACTIVATION_PENDING,
+                "version_since": version_since.isoformat() if version_since else "",
+                "agent_report": (agent_report or "")[:400],
             })
-            settled.append(record.key)
+        except Exception:  # noqa: BLE001 - audit must not break the hook
+            pass
 
-            if outcome != LIVE_VERIFIED and (record.repairs_used + 1) >= self.policy.repair_budget:
-                until = moment + timedelta(minutes=self.policy.cooldown_minutes)
-                self.ledger.append({
-                    "event": "blocked",
-                    "key": record.key,
-                    "reason": f"repair budget ({self.policy.repair_budget}) spent, outcome={outcome}",
-                })
-                self.ledger.append({
-                    "event": "cooldown_started",
-                    "key": record.key,
-                    "until": until.isoformat(),
-                    "reason": f"repair budget exhausted after {outcome}",
-                })
+    def _settle(
+        self, *, snapshot, record, outcome, explanation, episodes, before, after, wiring,
+        moment, detail, terminal_verdict, duration, settled, errors,
+    ) -> None:
+        """Write the terminal outcome for one record, and everything that follows it.
 
-            # One outcome row per finished job, in the router's own vocabulary.
-            # "success" here means the job reached a terminal state and produced
-            # something measurable; "live_improvement" is the only field that means
-            # the capability got better in the game.
-            duration = _duration(record.submitted_at, status.first_terminal_at)
-            try:
-                self.model_stats.append(ModelOutcome(
-                    model=record.model,
-                    task_type=str(_submitted(snapshot, record.key, "task_type") or ""),
-                    duration=duration,
-                    # Cost is not obtainable: the jobs API exposes no usage field
-                    # (measured 2026-09-17), so it stays null with the reason rather
-                    # than an estimate the router might trust.
-                    cost=None,
-                    success=outcome not in (OUTCOME_BLOCKED,),
-                    live_improvement=outcome == LIVE_VERIFIED,
-                    retry_count=record.repairs_used,
-                    escalation_count=record.attempts,
-                    note="cost unavailable: jobs API exposes no usage field",
-                ))
-            except Exception:  # noqa: BLE001 - learning must never break reconciliation
-                errors.append(f"{record.key}: could not record model outcome")
+        Extracted so the two measuring paths -- "the job just finished" and "the version
+        it produced has now run" -- cannot drift apart on what settling means: the
+        reconciled row, the repair budget, the model's own record and the reload signal.
+        """
+        code_changed = after.differs_from(before)
+        self.ledger.append({
+            "event": "reconciled",
+            "key": record.key,
+            "job_id": record.job_id,
+            "job_state": terminal_verdict,
+            "job_detail": detail,
+            "outcome": outcome,
+            "explanation": explanation,
+            "code_changed": code_changed,
+            "wiring_problems": wiring,
+            "verified_episodes": len(episodes),
+            "model": record.model,
+            "duration_seconds": duration,
+            "live_improvement": outcome == LIVE_VERIFIED,
+            "repair_used": outcome != LIVE_VERIFIED,
+            # The causal chain, so one row answers "what proved what" without
+            # joining four files by hand: which capability and failure shape the
+            # job was for, which tree it started and ended against, and which
+            # production episode (if any) is the one that proves the new version
+            # works.  ``live_verify_episode`` empty while ``verified_episodes`` is
+            # non-zero is the RR-004 shape: episodes exist, none of them ran the
+            # new version.
+            "capability": record.capability,
+            "failure_signature": record.key,
+            "skill": record.skill,
+            "before_version": before.head,
+            "before_dirty": before.dirty,
+            "after_version": after.head,
+            "after_dirty": after.dirty,
+            "live_verify_episode": str((episodes[-1] if episodes else {}).get("episode_id") or ""),
+            "live_verify_revision": str((episodes[-1] if episodes else {}).get("repo_revision") or ""),
+            "reload_id": str(_submitted(snapshot, record.key, "reload_id") or ""),
+        })
+        settled.append(record.key)
 
-            if code_changed:
-                request = self.reload_signal.request(
-                    record.job_id,
-                    f"{outcome} on {record.key}: the tree changed while the agent ran",
-                )
-                self.ledger.append({
-                    "event": "reload_required",
-                    "key": record.key,
-                    "job_id": record.job_id,
-                    "reason": request.reason,
-                    "requested_at": request.requested_at.isoformat(),
-                })
+        if outcome != LIVE_VERIFIED and (record.repairs_used + 1) >= self.policy.repair_budget:
+            until = moment + timedelta(minutes=self.policy.cooldown_minutes)
+            self.ledger.append({
+                "event": "blocked",
+                "key": record.key,
+                "reason": f"repair budget ({self.policy.repair_budget}) spent, outcome={outcome}",
+            })
+            self.ledger.append({
+                "event": "cooldown_started",
+                "key": record.key,
+                "until": until.isoformat(),
+                "reason": f"repair budget exhausted after {outcome}",
+            })
 
-        return settled, errors
+        # One outcome row per finished job, in the router's own vocabulary.
+        # "success" here means the job reached a terminal state and produced
+        # something measurable; "live_improvement" is the only field that means
+        # the capability got better in the game.
+        try:
+            self.model_stats.append(ModelOutcome(
+                model=record.model,
+                task_type=str(_submitted(snapshot, record.key, "task_type") or ""),
+                duration=duration,
+                # Cost is not obtainable: the jobs API exposes no usage field
+                # (measured 2026-09-17), so it stays null with the reason rather
+                # than an estimate the router might trust.
+                cost=None,
+                success=outcome not in (OUTCOME_BLOCKED,),
+                live_improvement=outcome == LIVE_VERIFIED,
+                retry_count=record.repairs_used,
+                escalation_count=record.attempts,
+                note="cost unavailable: jobs API exposes no usage field",
+            ))
+        except Exception:  # noqa: BLE001 - learning must never break reconciliation
+            errors.append(f"{record.key}: could not record model outcome")
+
+        if code_changed:
+            request = self.reload_signal.request(
+                record.job_id,
+                f"{outcome} on {record.key}: the tree changed while the agent ran",
+            )
+            self.ledger.append({
+                "event": "reload_required",
+                "key": record.key,
+                "job_id": record.job_id,
+                "reason": request.reason,
+                "requested_at": request.requested_at.isoformat(),
+            })
 
     def _wiring_problems(self) -> int | None:
         """Run the fast wiring gate.  ``None`` when it could not be run.

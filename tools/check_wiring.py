@@ -638,6 +638,37 @@ def main() -> int:
           "self._selectable(goals, deferrals)" in (PKG / "runtime.py").read_text(encoding="utf-8"))
     check("gate: the snapshot can carry the deferrals it is given",
           "deferred_goals" in _RuntimeSnapshot.__dataclass_fields__)
+    # Measured 2026-09-18: the no-progress deferral for AVOID_STAMINA_WASTE went
+    # out with an empty capability, the signature collapsed to two fields, and the
+    # queue read the failure type as the capability -- a key no goal can route back
+    # to.  What has to hold is that the capability the *goal's own* skills resolve
+    # to is named, and that the capability field is never dropped.
+    _gate_source = (PKG / "capability_gate.py").read_text(encoding="utf-8")
+    _stalled = CapabilityGate(
+        compositions={"G": _GoalComposition("G", "ANY_OF", ("SPEND_STAMINA_ON_BEAST",))},
+        streaks={"G": (3, datetime.now(timezone.utc) - timedelta(minutes=1), "SCAN_MAP_FOR_BEAST")},
+        attempted={"G": frozenset({"SCAN_MAP_FOR_BEAST"})},
+        reached={"G": frozenset({"SCAN_MAP_FOR_BEAST"})},
+    ).blocks(_GoalState("G", _GoalStatus.READY, available_skills=("INTEL_CLAIM_REWARDS", "BEAST_HUNT")))
+    check("gate: a stalled beast route is named as SPEND_STAMINA_ON_BEAST, not as its own failure",
+          "for skill in declared_skills:" in _gate_source
+          and "capability_for_skill" in _gate_source
+          and _stalled is not None
+          and _stalled.capability == "SPEND_STAMINA_ON_BEAST"
+          and _stalled.failure_signature
+              == "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST")
+    _nameless = CapabilityGate(
+        # Two capabilities, neither reached and neither mapped from any skill, so
+        # there is genuinely no name to hand over and the field stays empty.
+        compositions={"G": _GoalComposition("G", "ANY_OF", ("CAP_A", "CAP_B"))},
+        streaks={"G": (3, datetime.now(timezone.utc) - timedelta(minutes=1), "SWIPE")},
+        attempted={"G": frozenset({"SWIPE"})},
+        reached={"G": frozenset({"SWIPE"})},
+    ).blocks(_GoalState("G", _GoalStatus.READY, available_skills=("SWIPE",)))
+    check("gate: a no-progress signature is always the three positional fields",
+          'failure_signature=f"{capability}|NO_GOAL_PROGRESS|{last_skill}"' in _gate_source
+          and _nameless is not None
+          and _nameless.failure_signature == "|NO_GOAL_PROGRESS|SWIPE")
     _march_states = {g.goal_id: g for g in _GoalLibrary().discover(
         WorldState(page=Page.MAP, march_used=2, march_max=6, confidence=0.99)
     )}
@@ -659,6 +690,10 @@ def main() -> int:
     _reload_source = (PKG / "runtime_reload.py").read_text(encoding="utf-8")
     from winter_agent_v2 import escalation_queue as _escalation
 
+    check("queue: a no-progress deferral is never filed under the failure type",
+          'if failure_type not in fields:' in _queue_source
+          and 'if not capability:' in _queue_source
+          and 'fields.index(failure_type)' in _queue_source)
     check("pump: the adapter exposes one consume pass with no run behind it",
           hasattr(_escalation.EscalationQueueAdapter, "pump")
           and "self._drain(" in _queue_source
@@ -683,6 +718,17 @@ def main() -> int:
     check("slot: an expired job is only cancelled when records wait behind it",
           "if not waiting or record.submitted_at is None:" in _queue_source
           and "def _reclaim_expired_slot(" in _queue_source)
+    check("order: a changed tree waits for its own activation before any verification",
+          "VERSION_ACTIVATION_PENDING" in _queue_source
+          and "LIVE_VERIFY_PENDING = \"LIVE_VERIFY_PENDING\"" in _queue_source
+          and "LIVE_VERIFY_PENDING," not in _queue_source.split("ACTIVE_STATES = ")[1].split("\n")[0])
+    check("order: the activation boundary is the gateway's terminal time, not now",
+          "def _from_millis(" in _queue_source
+          and "version_since=_from_millis(status.first_terminal_at)" in _queue_source
+          and "settled_at=record.version_since" in _queue_source)
+    check("order: a version awaiting its examination does not hold the agent slot",
+          "def _note_activation_pending(" in _queue_source
+          and 'record.state = LIVE_VERIFY_PENDING' in _queue_source)
     check("proof: a no-progress signature needs a measured move, not a green step",
           "PROOF_IS_GOAL_PROGRESS = frozenset({\"NO_GOAL_PROGRESS\"})" in _queue_source
           and "require_goal_progress and row.get(\"goal_progress\") is not True"

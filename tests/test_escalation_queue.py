@@ -470,6 +470,61 @@ class OrdinaryWeatherTest(unittest.TestCase):
         self.assertIn("DISPATCH_NOT_PROVEN", q.GAMEPLAY_UNKNOWN_FAILURE_TYPES)
 
 
+class NoGoalProgressDeferralTest(unittest.TestCase):
+    """A goal that steps aside must name a capability, not the failure type.
+
+    Measured 2026-09-18 on the real ledger: the no-progress deferral for
+    ``AVOID_STAMINA_WASTE`` carried an empty capability field, so the signature
+    collapsed to two fields and the queue read ``NO_GOAL_PROGRESS`` -- the failure
+    type -- as the capability.  That produced the key
+    ``NO_GOAL_PROGRESS|NO_GOAL_PROGRESS|``, a second escalation for a wall already
+    on record as ``SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST``,
+    and handed a development agent a name no goal can route back to.
+    """
+
+    def _deferral(self, signature, **extra):
+        row = {
+            "goal_id": "AVOID_STAMINA_WASTE",
+            "source": "NO_GOAL_PROGRESS",
+            "state": "DEFERRED",
+            "streak": 3,
+            "last_skill": "SCAN_MAP_FOR_BEAST",
+            "failure_signature": signature,
+        }
+        row.update(extra)
+        return row
+
+    def _candidates(self, *deferrals):
+        return q.candidates_from_run(
+            stop_reason="some_unlisted_stop", failures=[],
+            snapshot=q.EscalationSnapshot({}), policy=q.EscalationPolicy(), now=NOW,
+            root=ROOT, deferrals=list(deferrals),
+        )
+
+    def test_a_named_capability_is_what_the_signature_keys_on(self):
+        candidates = self._candidates(
+            self._deferral("SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST")
+        )
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(
+            candidates[0].signature.key,
+            "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+        )
+        self.assertEqual(candidates[0].condition, q.REPEATED_LIVE_FAILURE)
+        self.assertEqual(candidates[0].signature.capability, "SPEND_STAMINA_ON_BEAST")
+        self.assertEqual(candidates[0].signature.skill, "SCAN_MAP_FOR_BEAST")
+
+    def test_a_missing_capability_field_does_not_become_the_failure_type(self):
+        """The old two-field shape must never file ``NO_GOAL_PROGRESS`` as a capability."""
+        candidates = self._candidates(self._deferral("NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST"))
+        self.assertEqual(candidates, ())
+
+    def test_an_explicitly_empty_capability_is_not_filed_either(self):
+        """The new positional shape has an empty field, and empty is not a name."""
+        candidates = self._candidates(self._deferral("|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST"))
+        self.assertEqual(candidates, ())
+
+
 # ------------------------------------------------------- classification
 
 

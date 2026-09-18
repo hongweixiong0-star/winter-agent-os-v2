@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import threading
@@ -246,6 +247,138 @@ class ProofBarTest(unittest.TestCase):
             self.assertEqual(observation.released, (), "a flat episode must not release a record")
         finally:
             harness.cleanup()
+
+
+class VersionActivationTest(unittest.TestCase):
+    """The operator's §6: a version nothing has loaded cannot be LIVE_VERIFIED.
+
+    The ladder used to read CODE_CHANGED -> TEST_PASS -> LIVE_VERIFIED -> Reload, which
+    credits a fix to a process that never loaded it.  The corrected order puts "the new
+    version is what is running" between the green gate and the live examination, and the
+    measured fact that closes it is an episode recorded *after the job finished* -- each
+    cycle is a fresh process that imports the package from disk.
+    """
+
+    SETTLED = datetime.now(timezone.utc) - timedelta(minutes=2)
+
+    def _harness(self):
+        # ``first_terminal_at`` is milliseconds since epoch, which is what the gateway
+        # reports and what ``_duration`` consumes -- not a datetime.
+        status = JobStatus(job_id="job-1", gateway_state="done", verdict=q.DONE,
+                           settled=True, detail="finished",
+                           result="I changed 2 files and committed them",
+                           first_terminal_at=int(self.SETTLED.timestamp() * 1000))
+        harness = Harness(bridge=FakeBridge(status=status))
+        harness.adapter._wiring_problems = lambda: 0
+        # A real repository in the temp root: the reconciler measures the tree, and a
+        # directory without git reads as "cannot tell", which is a different answer from
+        # "nothing changed" and would have made this test vacuous.
+        for command in (["init", "-q"], ["add", "-A"],
+                        ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"]):
+            subprocess.run(["git", *command], cwd=harness.root, capture_output=True)
+        (Path(harness.root) / "changed.py").write_text("x = 1\n", encoding="utf-8")
+        harness.ledger.append({"source": "queue", "event": "escalation_created",
+                               "key": "CAP|UI|SKILL", "capability": "CAP",
+                               "failure_type": "UI", "skill": "SKILL",
+                               "condition": q.UNKNOWN_UI})
+        harness.ledger.append({"source": "queue", "event": "submitted", "key": "CAP|UI|SKILL",
+                               "job_id": "job-1", "recorded_at":
+                               (self.SETTLED - timedelta(minutes=30)).isoformat(),
+                               "repo_head": "aaa", "repo_dirty": 0})
+        harness.ledger.append({"source": "queue", "event": "job_state", "key": "CAP|UI|SKILL",
+                               "job_id": "job-1", "state": q.WORKING})
+        return harness
+
+    def _episode(self, when):
+        return {
+            "skill": "SKILL", "recorded_at": when.isoformat(), "verifier_ok": True,
+            "result": "SUCCESS", "goal_progress": True,
+            "before_screenshot": "b.png", "after_screenshot": "a.png",
+            "episode_id": "e1", "repo_revision": "bbb+1",
+        }
+
+    def test_a_changed_tree_with_no_episode_since_the_job_waits_for_activation(self):
+        harness = self._harness()
+        try:
+            harness.adapter.reconcile(now=datetime.now(timezone.utc))
+            record = harness.ledger.snapshot().get("CAP|UI|SKILL")
+            self.assertEqual(record.outcome, q.VERSION_ACTIVATION_PENDING)
+            self.assertEqual(record.state, q.LIVE_VERIFY_PENDING)
+            # It must not hold the single agent slot while it waits.
+            self.assertEqual(harness.ledger.snapshot().active_jobs(), ())
+            # And activation is not a failure, so it may not spend a repair shot.
+            self.assertEqual(record.repairs_used, 0)
+        finally:
+            harness.cleanup()
+
+    def test_the_same_record_settles_once_an_episode_has_run_the_new_version(self):
+        harness = self._harness()
+        try:
+            harness.adapter.reconcile(now=datetime.now(timezone.utc))
+            self.assertEqual(harness.ledger.snapshot().get("CAP|UI|SKILL").state,
+                             q.LIVE_VERIFY_PENDING)
+
+            (Path(harness.root) / "learning/episodes.jsonl").write_text(
+                json.dumps(self._episode(self.SETTLED + timedelta(minutes=1))), encoding="utf-8")
+            harness.adapter.reconcile(now=datetime.now(timezone.utc))
+
+            record = harness.ledger.snapshot().get("CAP|UI|SKILL")
+            self.assertEqual(record.state, q.DONE)
+            self.assertEqual(record.outcome, q.LIVE_VERIFIED)
+        finally:
+            harness.cleanup()
+
+    def test_an_episode_from_before_the_job_finished_is_not_the_new_version(self):
+        """The RR-004 shape, now measured on the settled boundary rather than the tree."""
+        harness = self._harness()
+        try:
+            (Path(harness.root) / "learning/episodes.jsonl").write_text(
+                json.dumps(self._episode(self.SETTLED - timedelta(minutes=1))), encoding="utf-8")
+            harness.adapter.reconcile(now=datetime.now(timezone.utc))
+            record = harness.ledger.snapshot().get("CAP|UI|SKILL")
+            self.assertEqual(record.outcome, q.VERSION_ACTIVATION_PENDING)
+            self.assertEqual(record.state, q.LIVE_VERIFY_PENDING)
+        finally:
+            harness.cleanup()
+
+    @staticmethod
+    def _pending_rows(state):
+        return [
+            {"source": "queue", "event": "escalation_created", "key": "SPEND_STAMINA_ON_BEAST|UI|SKILL",
+             "capability": "SPEND_STAMINA_ON_BEAST", "failure_type": "UI", "skill": "SKILL",
+             "condition": q.UNKNOWN_UI},
+            {"source": "queue", "event": "submitted", "key": "SPEND_STAMINA_ON_BEAST|UI|SKILL",
+             "job_id": "job-1"},
+            {"source": "queue", "event": "job_state", "key": "SPEND_STAMINA_ON_BEAST|UI|SKILL",
+             "state": q.WORKING},
+            {"source": "queue", "event": "live_verify_pending",
+             "key": "SPEND_STAMINA_ON_BEAST|UI|SKILL", "job_id": "job-1",
+             "reason": "tree changed and nothing has loaded it"},
+        ][:3 if state == q.WORKING else 4]
+
+    def _gate(self, rows):
+        from winter_agent_v2.capability_gate import CapabilityGate
+
+        return CapabilityGate.load(ROOT, snapshot=q.fold(rows), episodes=[])
+
+    def test_the_gate_allows_the_goal_waiting_for_live_verification(self):
+        """Operator §4: refusing here deadlocks -- no executor would ever produce proof."""
+        from winter_agent_v2.capability_gate import DEFERRING_STATES
+
+        gate = self._gate(self._pending_rows(q.LIVE_VERIFY_PENDING))
+        state = gate.capabilities.get("SPEND_STAMINA_ON_BEAST", ("", "", None))[0]
+        self.assertTrue(state, "the capability must be known to the gate")
+        self.assertNotIn(state, DEFERRING_STATES,
+                         "a version waiting for its examination must not be refused")
+
+    def test_an_in_flight_job_still_owns_its_path(self):
+        """The allowance is specific: a job that is still working still defers the goal."""
+        from winter_agent_v2.capability_gate import DEFERRING_STATES
+
+        gate = self._gate(self._pending_rows(q.WORKING))
+        state = gate.capabilities.get("SPEND_STAMINA_ON_BEAST", ("", "", None))[0]
+        self.assertIn(state, DEFERRING_STATES,
+                      "a working job must keep the failed path out of gameplay")
 
 
 class SlotReclaimTest(unittest.TestCase):
