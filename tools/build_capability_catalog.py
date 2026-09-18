@@ -400,7 +400,21 @@ def main() -> int:
                 "city, one to an event page) -- both times the fail-closed verifier "
                 "refused to call the step proven, which is the correct answer, and the "
                 "mechanism is not reproduced.  Evidence, including both negative frames: "
-                "dataset/truth_audit/beast_map_scan_20260917/key/.")
+                "dataset/truth_audit/beast_map_scan_20260917/key/.  "
+                # 2026-09-18, second escalation shape (NO_GOAL_PROGRESS).  The pan was
+                # re-measured live before anything was changed, because "the gesture is
+                # dead" is the first guess and it is wrong: the production Executor pans
+                # the viewport on this client at 600 ms and 1500 ms, and production
+                # episode frames pan too.  So the blocker is not the gesture and the
+                # gesture must not be rewritten; the missing half is a way to *reach* a
+                # target -- the client's own map search already flies the camera to a
+                # beast (dataset/raw/beast_search_exploration/beast5_found.png), its
+                # templates are CANDIDATE and no skill references them.
+                "Re-measured live 2026-09-18: the pan itself works (ADB 600 ms and "
+                "1500 ms both move the viewport, and production episode frames move it "
+                "too), so the open defect is the missing target-reaching hop, not the "
+                "gesture.  Evidence: dataset/truth_audit/beast_scan_pan_20260918/key/."
+            )
             entry["current_role_available"] = "OBSERVED_AVAILABLE"
 
     summary = {
