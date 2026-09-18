@@ -1,33 +1,33 @@
 {
-  "generated_at": "2026-09-17T13:16:43+00:00",
+  "generated_at": "2026-09-18T03:02:39+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d50884b",
+  "commit": "a641b6d",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
-    "agent_state": "AUTO_RUNNING",
+    "agent_state": "GOAL_RUNNING",
     "runtime_thread_alive": true,
     "scheduler_loop_alive": true,
-    "last_tick_time": "2026-09-17T13:16:03.698152+00:00",
-    "last_action_time": "2026-09-17T11:53:47.556214+00:00",
-    "last_success_time": "2026-09-17T11:54:22.829508+00:00",
+    "last_tick_time": "2026-09-18T03:02:27.795926+00:00",
+    "last_action_time": "2026-09-18T03:02:28.028767+00:00",
+    "last_success_time": "2026-09-18T03:02:13.298788+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
     "page": "MAP",
-    "current_goal": null,
-    "current_skill": null,
-    "reason": "启动并校准真实客户端",
+    "current_goal": "AUTO_DISCOVERY",
+    "current_skill": "SELECT_RESOURCE",
+    "reason": "balanced_resource_not_selected",
     "preconditions": [],
-    "verifier": null,
-    "next_action": "启动唯一 Scheduler",
+    "verifier": "PASS",
+    "next_action": "meat_selected",
     "risk": "UNKNOWN",
-    "confidence": 1.0,
+    "confidence": 0.99,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_211545_937821\\20260917_211545_937821_step_001_before_20260917T131546402044.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_110045_613293\\20260918_110045_613293_step_004_before_20260918T030213300739.png",
     "march_used": 0,
     "march_max": null,
     "queues": {
@@ -39,13 +39,26 @@
       "events": {}
     },
     "stop_reason": null,
-    "updated_at": "2026-09-17T13:16:35.711207+00:00"
+    "deferred_goals": [
+      {
+        "goal_id": "AVOID_STAMINA_WASTE",
+        "capability": "SPEND_STAMINA_ON_BEAST",
+        "state": "DEFERRED",
+        "reason": "5 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "source": "NO_GOAL_PROGRESS",
+        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+        "streak": 5,
+        "until": "",
+        "last_skill": "SCAN_MAP_FOR_BEAST"
+      }
+    ],
+    "updated_at": "2026-09-18T03:02:28.028767+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-17T13:16:03+00:00",
-    "size_bytes": 1870,
-    "last_stop_reason": "verified_beast_target_not_visible"
+    "modified_at": "2026-09-18T03:00:13+00:00",
+    "size_bytes": 22427,
+    "last_stop_reason": null
   },
   "recent_crash_reports": [],
   "process_alive_interpretation": "runtime_thread_alive/scheduler_loop_alive mean the in-process worker loop is running. They do NOT mean the emulator or the game is reachable; check the device separately."

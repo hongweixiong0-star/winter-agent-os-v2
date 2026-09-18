@@ -1,8 +1,8 @@
 # 01 — CURRENT TRUTH
 
-- generated_at: `2026-09-17T13:16:43+00:00`
+- generated_at: `2026-09-18T03:02:39+00:00`
 - source: `tools/update_workbuddy_handoff.py` (reads git, registry, capability map, episode stream, snapshot, logs)
-- commit: `d50884b` on `main`
+- commit: `a641b6d` on `main`
 
 > This file is regenerated. Never hand-edit it; edit the project instead.
 
@@ -10,23 +10,29 @@
 
 - repository: yes
 - last good commit: `e4fd245`
-- commits: 134
-- HEAD: `d50884b` — fix(test): synthetic episodes use bare frame names, not repository paths (2026-09-17T21:11:24+08:00)
-- working tree: 14 dirty file(s)
-  - `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
-  - ` M config/v2.json`
+- commits: 186
+- HEAD: `a641b6d` — feat(preload): prepare the lesson before the wall, without a second pipeline (2026-09-18T11:02:31+08:00)
+- working tree: 49 dirty file(s)
+  - `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+  - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+  - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+  - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+  - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+  - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+  - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+  - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+  - ` M config/control_panel_state.json`
+  - ` M config/policy_state.json`
+  - ` M docs/CAPABILITY_COVERAGE.md`
+  - ` M evidence/INDEX.json`
+  - ` M knowledge/goals/capability_skill_map.json`
   - ` M learning/control_panel/latest.log`
+  - ` M learning/episodes.jsonl`
+  - ` M learning/executor_backend.jsonl`
   - ` M learning/goal_state.json`
+  - ` M learning/resource_rotation.json`
   - ` M learning/runtime_snapshot.json`
-  - ` M tests/test_escalation_queue.py`
-  - ` M tools/escalations.py`
-  - ` M winter_agent_v2/brain.py`
-  - ` M winter_agent_v2/escalation_queue.py`
-  - ` M winter_agent_v2/skills.py`
-  - ` M winter_agent_v2/verifier.py`
-  - `?? tests/test_qwen_decoupling.py`
-  - `?? tests/test_workbuddy_model_router.py`
-  - `?? winter_agent_v2/workbuddy_model_router.py`
+  - ` M learning/workbuddy_escalations.jsonl`
 
 ### A2. Public mirror
 
@@ -35,43 +41,43 @@ reports, not a side note. `remote_head` is the local remote-tracking ref: it is 
 fresh as the last fetch, and `tools/git_sync.py status` is what refreshes it.
 
 ```
-SYNC STATE at 2026-09-17T13:16:43+00:00
+SYNC STATE at 2026-09-18T03:02:39+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : d50884bf95343387ff752dc04c6b6ac466043beb
-remote_head       : d50884bf95343387ff752dc04c6b6ac466043beb   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (14 path(s))
-last_push_at      : 2026-09-17T13:11:30.481069+00:00
+local_head        : a641b6d3ab8a79da45b7916de17b95c37a3015e7
+remote_head       : 4ccc9434e2ac9f9bee49a81cb657da36b4d78a05   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 17   (behind: 0)
+git_dirty         : True (49 path(s))
+last_push_at      : 2026-09-18T01:20:37.879806+00:00
 last_push_status  : PUSHED
-verdict           : GitHub mirrors the local tree
+verdict           : LOCAL IS AHEAD by 17 commit(s) -- run `python tools/git_sync.py push`
 ```
 
 ## B. Runtime
 
-- agent_state: `AUTO_RUNNING`
+- agent_state: `GOAL_RUNNING`
 - runtime_thread_alive: True / scheduler_loop_alive: True
 - unexpected_worker_exits: 15
 - watchdog_restart_count: 13
 - last_fatal_error: None
 - stop_reason: None
 - page: MAP  march: 0/None
-- updated_at: 2026-09-17T13:16:35.711207+00:00
+- updated_at: 2026-09-18T03:02:28.028767+00:00
 
 ## C. Episode stream
 
-- rows: 1520 (production 1520)  modes: {'PRODUCTION': 1520}
-- success / failure: 1161 / 354
-- success rate over decided: **0.7663**
+- rows: 1974 (production 1974)  modes: {'PRODUCTION': 1974}
+- success / failure: 1603 / 366
+- success rate over decided: **0.8141**
 - mixed-case `result` rows (normalise on read, never rewrite): 35
-- last episode: `{"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-17T11:54:22.804840+00:00", "episode_id": "20260917_195257_211296", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_195257_211296\\20260917_195257_211296_step_002_before_20260917T115330172418.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_195257_211296\\20260917_195257_211296_step_002_after_20260917T115349058300.png"}`
+- last episode: `{"skill": "SEARCH_RESOURCE", "result": "SUCCESS", "recorded_at": "2026-09-18T03:02:13.260888+00:00", "episode_id": "20260918_110045_613293", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_110045_613293\\20260918_110045_613293_step_003_before_20260918T030144240733.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_110045_613293\\20260918_110045_613293_step_003_after_20260918T030159924795.png"}`
 
 ## D. Registry and lifecycle
 
 - registry total: 92  by_state: {'VERIFIED': 46, 'CANDIDATE': 44, 'BLOCKED': 2}
-- live dispatchable (verifier-backed): 75
+- live dispatchable (verifier-backed): 76
 - BLOCKED skills: ['ALLIANCE_HELP', 'RESEARCH']
-- live_verified: **25**  stable: 29  degraded: 10  only_failed: 10  never_executed: 20
+- live_verified: **24**  stable: 30  degraded: 11  only_failed: 10  never_executed: 19
 
 ### Never executed
 
@@ -87,7 +93,6 @@ verdict           : GitHub mirrors the local tree
 - `RECOVER_HOME` (CANDIDATE)
 - `REINFORCE_TARGET` (CANDIDATE)
 - `RELAX_RESOURCE_LEVEL` (CANDIDATE)
-- `SCAN_MAP_FOR_BEAST` (CANDIDATE)
 - `SELECT_INTEL_RESCUE_SURVIVORS` (VERIFIED)
 - `SELECT_MARCH_TO_RECALL` (CANDIDATE)
 - `SELECT_REWARD_OPTION` (CANDIDATE)
@@ -112,10 +117,10 @@ verdict           : GitHub mirrors the local tree
 ### Stable
 
 - `ALLIANCE_ALLY_GIFT_CLAIM` success=23 rate=0.9583
-- `BACK` success=116 rate=0.9748
+- `BACK` success=123 rate=0.9762
 - `CHECK_MARCH` success=21 rate=0.9545
 - `CLAIM_FREE_STAMINA` success=6 rate=1.0
-- `CLOSE_POPUP` success=34 rate=0.9444
+- `CLOSE_POPUP` success=37 rate=0.9487
 - `DAILY_CLAIM_REWARDS` success=5 rate=1.0
 - `DISMISS_INTEL_GENERIC_REWARD` success=36 rate=1.0
 - `DISMISS_INTEL_REWARD` success=23 rate=0.8214
@@ -128,46 +133,48 @@ verdict           : GitHub mirrors the local tree
 - `NAVIGATE_INFANTRY_CAMP` success=12 rate=0.8571
 - `OPEN_DAILY` success=10 rate=0.8333
 - `OPEN_EXPLORATION` success=11 rate=0.9167
-- `OPEN_HOME` success=26 rate=0.8966
+- `OPEN_HOME` success=37 rate=0.925
 - `OPEN_INTEL` success=115 rate=0.8519
 - `OPEN_INTEL_BEAST_TARGET` success=42 rate=0.84
 - `OPEN_INTEL_HERO_JOURNEY_TARGET` success=20 rate=0.9091
 - `OPEN_INTEL_RESCUE_SURVIVORS_TARGET` success=7 rate=1.0
-- `OPEN_MAP` success=37 rate=0.9024
+- `OPEN_MAP` success=55 rate=0.9016
 - `OPEN_POWER_DETAILS` success=16 rate=1.0
 - `OPEN_POWER_OVERVIEW` success=16 rate=0.8889
 - `OPEN_STAMINA_SOURCES` success=16 rate=1.0
+- `SCAN_MAP_FOR_BEAST` success=355 rate=0.9861
 - `SELECT_INTEL_BEAST_MISSION` success=10 rate=0.8333
 - `SELECT_INTEL_PIN` success=48 rate=0.9412
 - `WAIT_FOR_CAMP_MENU` success=35 rate=1.0
 
 ### Degraded
 
-- `DISPATCH_MARCH` success=34 failure=35 rate=0.4928
+- `DISMISS_REAL_MONEY_OFFER` success=6 failure=5 rate=0.5455
+- `DISPATCH_MARCH` success=42 failure=37 rate=0.5316
 - `INTEL_HERO_DISPATCH` success=12 failure=8 rate=0.6
 - `MAIL_CLAIM_REWARDS` success=19 failure=10 rate=0.6552
 - `OPEN_INFANTRY_TRAINING` success=5 failure=2 rate=0.7143
 - `OPEN_MAIL` success=34 failure=15 rate=0.6939
-- `SEARCH_RESOURCE` success=57 failure=34 rate=0.6264
+- `SEARCH_RESOURCE` success=69 failure=34 rate=0.6699
 - `SELECT_MAIL_ALLIANCE_TAB` success=7 failure=4 rate=0.6364
-- `SELECT_RESOURCE` success=14 failure=45 rate=0.2373
-- `START_GATHER` success=37 failure=60 rate=0.3814
-- `SUBMIT_RESOURCE_SEARCH` success=38 failure=30 rate=0.5588
+- `SELECT_RESOURCE` success=22 failure=45 rate=0.3284
+- `START_GATHER` success=45 failure=60 rate=0.4286
+- `SUBMIT_RESOURCE_SEARCH` success=46 failure=30 rate=0.6053
 
 ## E. Top failures
 
 Failure | Count | Top skills
 ---|---:|---
-`SEMANTIC_TARGET_NOT_VERIFIED` | 130 | SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+`SEMANTIC_TARGET_NOT_VERIFIED` | 132 | SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+`BEAST_SCAN_NOT_PROVEN` | 5 | SCAN_MAP_FOR_BEAST(5)
 `INTEL_BEAST_TARGET_NOT_PROVEN` | 8 | OPEN_INTEL_BEAST_TARGET(8)
+`OPEN_MAP_NOT_PROVEN` | 6 | OPEN_MAP(6)
 `DAILY_REWARD_ADVANCE_NOT_PROVEN` | 5 | DISMISS_DAILY_REWARD(5)
-`OPEN_MAP_NOT_PROVEN` | 4 | OPEN_MAP(4)
 `SAFE_BACK_NOT_PROVEN` | 3 | BACK(3)
 `INFANTRY_CAMP_MENU_NOT_PROVEN` | 2 | SELECT_INFANTRY_CAMP(2)
 `TRAINING_PAGE_NOT_PROVEN` | 2 | OPEN_INFANTRY_TRAINING(2)
+`DAILY_TAB_NOT_SELECTED` | 2 | SELECT_DAILY_TAB(2)
 `MARCH_PAGE_NOT_OPEN` | 60 | START_GATHER(60)
-`NO_EXECUTION` | 5 | SAFE_STOP(5)
-`MARCH_COUNT_NOT_READ` | 1 | CHECK_MARCH(1)
 
 ## F. Goal capability coverage
 
@@ -178,7 +185,7 @@ Goal | Status | Runtime | design | impl | live | stable | blocked by
 ---|---|---|---:|---:|---:|---:|---
 CLEAR_INTEL | PARTIAL | RUNTIME_DISCOVERED | 100% | 100% | 83% | 83% | -
 AVOID_STAMINA_WASTE | PARTIAL | RUNTIME_DISCOVERED | 100% | 67% | 67% | 33% | SPEND_STAMINA_ON_RALLY
-KEEP_MARCHES_PRODUCTIVE | PARTIAL | NOT_A_RUNTIME_GOAL | 100% | 86% | 86% | 14% | VERIFY_GATHERING
+KEEP_MARCHES_PRODUCTIVE | PARTIAL | RUNTIME_DISCOVERED | 100% | 86% | 86% | 14% | VERIFY_GATHERING
 KEEP_BUILDING_PRODUCTIVE | PARTIAL | RUNTIME_DISCOVERED | 100% | 50% | 50% | 0% | OPEN_BUILDING_PAGE
 KEEP_RESEARCH_PRODUCTIVE | PARTIAL | RUNTIME_DISCOVERED | 100% | 50% | 50% | 0% | START_RESEARCH
 KEEP_TRAINING_PRODUCTIVE | FULLY_LIVE_VERIFIED | RUNTIME_DISCOVERED | 100% | 100% | 100% | 50% | -
@@ -196,9 +203,9 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 ## G. Evidence integrity
 
 - status: **PASS**
-- referenced screenshots: 1545  present: 1545
+- referenced screenshots: 2451  present: 2451
 - missing: []
-- episodes carrying screenshot references: 788
+- episodes carrying screenshot references: 1242
 
 ## H. Commercial bot parity
 
@@ -208,17 +215,17 @@ LABYRINTH_DAILY | BLOCKED | RUNTIME_DISCOVERED | 100% | 0% | 0% | 0% | OPEN_LABY
 
 ## I. Latest runtime log
 
-- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-17T13:16:03+00:00", "size_bytes": 1870, "last_stop_reason": "verified_beast_target_not_visible"}
+- {"path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log", "modified_at": "2026-09-18T03:00:13+00:00", "size_bytes": 22427, "last_stop_reason": null}
 - recent crash reports: (none)
 
 ## J. Backend axis (MAA vs ADB)
 
 - source: `learning/executor_backend.jsonl` vs `knowledge/execution/backend_routing.json`
-- ledger rows: 597 (last 200 summarised)
-- used_backend: {"ADB": 143, "MAA": 57}
-- capture_backend: {"ADB_EXEC_OUT": 143, "MAA_MUMU_EXTRAS": 57}
+- ledger rows: 1053 (last 200 summarised)
+- used_backend: {"ADB": 152, "MAA": 48}
+- capture_backend: {"ADB_EXEC_OUT": 152, "MAA_MUMU_EXTRAS": 48}
 - promoted to MAA in routing: 10 ['BACK', 'CLOSE_POPUP', 'DISMISS_BATTLE_VICTORY', 'INTEL_HERO_DISPATCH', 'INTEL_HERO_START_MARCH', 'OPEN_HOME', 'OPEN_INTEL', 'SEARCH_RESOURCE', 'SELECT_RESOURCE', 'START_GATHER']
 - promoted but RAN ON ADB: {}
-- last step: OPEN_MAP via ADB at 2026-09-17T11:53:47.553489+00:00
+- last step: SELECT_RESOURCE via MAA at 2026-09-18T03:02:28.026589+00:00
 
 > used_backend is what the step really did. A skill listed under promoted_but_ran_on_adb took the 324 ms ADB frame path while its own record claims MAA EmulatorExtras at 8.92 ms -- check tools/preflight.py before trusting the run.

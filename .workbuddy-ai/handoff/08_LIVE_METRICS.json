@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-17T13:16:43+00:00",
+  "generated_at": "2026-09-18T03:02:39+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d50884b",
+  "commit": "a641b6d",
   "last_good_commit": "e4fd245",
-  "dirty_count": 14,
+  "dirty_count": 49,
   "episodes": {
-    "total": 1520,
-    "production": 1520,
-    "success": 1161,
-    "failure": 354,
-    "success_rate_over_decided": 0.7663,
+    "total": 1974,
+    "production": 1974,
+    "success": 1603,
+    "failure": 366,
+    "success_rate_over_decided": 0.8141,
     "modes": {
-      "PRODUCTION": 1520
+      "PRODUCTION": 1974
     },
     "mixed_case_rows": 35
   },
@@ -22,28 +22,28 @@
       "CANDIDATE": 44,
       "BLOCKED": 2
     },
-    "dispatchable": 75,
+    "dispatchable": 76,
     "counts": {
-      "live_verified": 25,
-      "stable": 29,
-      "degraded": 10,
+      "live_verified": 24,
+      "stable": 30,
+      "degraded": 11,
       "only_failed": 10,
-      "never_executed": 20
+      "never_executed": 19
     }
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 130,
-      "recent": 12,
-      "last_seen": "2026-09-17T04:45:23.361291+00:00",
+      "count": 132,
+      "recent": 5,
+      "last_seen": "2026-09-17T23:29:36.626405+00:00",
       "dates": {
         "2026-09-12": 36,
         "2026-09-13": 37,
         "2026-09-14": 8,
         "2026-09-15": 15,
         "2026-09-16": 2,
-        "2026-09-17": 1
+        "2026-09-17": 3
       },
       "undated": 31,
       "top_skills": [
@@ -62,9 +62,25 @@
       ]
     },
     {
+      "failure_type": "BEAST_SCAN_NOT_PROVEN",
+      "count": 5,
+      "recent": 5,
+      "last_seen": "2026-09-17T23:42:38.305798+00:00",
+      "dates": {
+        "2026-09-17": 5
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SCAN_MAP_FOR_BEAST",
+          5
+        ]
+      ]
+    },
+    {
       "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
       "count": 8,
-      "recent": 4,
+      "recent": 3,
       "last_seen": "2026-09-17T04:38:27.078429+00:00",
       "dates": {
         "2026-09-14": 2,
@@ -77,6 +93,26 @@
         [
           "OPEN_INTEL_BEAST_TARGET",
           8
+        ]
+      ]
+    },
+    {
+      "failure_type": "OPEN_MAP_NOT_PROVEN",
+      "count": 6,
+      "recent": 3,
+      "last_seen": "2026-09-18T02:56:04.526909+00:00",
+      "dates": {
+        "2026-09-13": 1,
+        "2026-09-14": 1,
+        "2026-09-15": 1,
+        "2026-09-17": 2,
+        "2026-09-18": 1
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_MAP",
+          6
         ]
       ]
     },
@@ -96,25 +132,6 @@
         [
           "DISMISS_DAILY_REWARD",
           5
-        ]
-      ]
-    },
-    {
-      "failure_type": "OPEN_MAP_NOT_PROVEN",
-      "count": 4,
-      "recent": 2,
-      "last_seen": "2026-09-17T08:48:22.009081+00:00",
-      "dates": {
-        "2026-09-13": 1,
-        "2026-09-14": 1,
-        "2026-09-15": 1,
-        "2026-09-17": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "OPEN_MAP",
-          4
         ]
       ]
     },
@@ -168,6 +185,22 @@
       ]
     },
     {
+      "failure_type": "DAILY_TAB_NOT_SELECTED",
+      "count": 2,
+      "recent": 2,
+      "last_seen": "2026-09-17T23:18:08.251111+00:00",
+      "dates": {
+        "2026-09-17": 2
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SELECT_DAILY_TAB",
+          2
+        ]
+      ]
+    },
+    {
       "failure_type": "MARCH_PAGE_NOT_OPEN",
       "count": 60,
       "recent": 1,
@@ -181,39 +214,6 @@
         [
           "START_GATHER",
           60
-        ]
-      ]
-    },
-    {
-      "failure_type": "NO_EXECUTION",
-      "count": 5,
-      "recent": 1,
-      "last_seen": "2026-09-15T12:27:40.810551+00:00",
-      "dates": {
-        "2026-09-14": 4,
-        "2026-09-15": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "SAFE_STOP",
-          5
-        ]
-      ]
-    },
-    {
-      "failure_type": "MARCH_COUNT_NOT_READ",
-      "count": 1,
-      "recent": 1,
-      "last_seen": "2026-09-15T12:59:36.927458+00:00",
-      "dates": {
-        "2026-09-15": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "CHECK_MARCH",
-          1
         ]
       ]
     }
@@ -251,9 +251,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 1545,
-    "present_on_disk": 1545,
-    "traceable_episodes": 788,
+    "referenced_screenshots": 2451,
+    "present_on_disk": 2451,
+    "traceable_episodes": 1242,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -264,17 +264,17 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "d50884bf95343387ff752dc04c6b6ac466043beb",
-    "remote_head": "d50884bf95343387ff752dc04c6b6ac466043beb",
-    "unpushed_commits": 0,
+    "local_head": "a641b6d3ab8a79da45b7916de17b95c37a3015e7",
+    "remote_head": "4ccc9434e2ac9f9bee49a81cb657da36b4d78a05",
+    "unpushed_commits": 17,
     "behind": 0,
-    "in_sync": true,
+    "in_sync": false,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-09-17T13:11:30.481069+00:00",
+    "last_push_at": "2026-09-18T01:20:37.879806+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "AUTO_RUNNING",
+    "agent_state": "GOAL_RUNNING",
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,

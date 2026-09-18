@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-17T13:16:43+00:00",
-  "count": 659,
+  "generated_at": "2026-09-18T03:02:40+00:00",
+  "count": 785,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -179,8 +179,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 128005,
-      "mtime": "2026-09-17T13:06:02+00:00"
+      "bytes": 152353,
+      "mtime": "2026-09-18T02:26:07+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -837,6 +837,12 @@
       "mtime": "2026-09-09T13:17:06+00:00"
     },
     {
+      "path": "dataset/truth_audit/autonomous_loop_20260918/STAGE1_DEFERRAL_TO_JOB.json",
+      "kind": "fixture",
+      "bytes": 12903,
+      "mtime": "2026-09-18T01:12:34+00:00"
+    },
+    {
       "path": "dataset/truth_audit/beast_dispatch_cost_colour_20260915/01_unaffordable_2026-09-15.png",
       "kind": "fixture",
       "bytes": 475664,
@@ -993,6 +999,168 @@
       "mtime": "2026-09-15T02:24:44+00:00"
     },
     {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260917_214034_198214_step_002_after_20260917T134119943992.png",
+      "kind": "fixture",
+      "bytes": 247646,
+      "mtime": "2026-09-17T13:41:20+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260917_214034_198214_step_002_after_refresh_1_20260917T134134171330.png",
+      "kind": "fixture",
+      "bytes": 651111,
+      "mtime": "2026-09-17T13:41:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260917_214034_198214_step_002_after_refresh_2_20260917T134150125673.png",
+      "kind": "fixture",
+      "bytes": 1083870,
+      "mtime": "2026-09-17T13:41:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260917_214034_198214_step_002_before_20260917T134103425414.png",
+      "kind": "fixture",
+      "bytes": 619378,
+      "mtime": "2026-09-17T13:41:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260918_000450_845406_step_001_after_20260917T160510011840.png",
+      "kind": "fixture",
+      "bytes": 554909,
+      "mtime": "2026-09-17T16:20:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260918_000450_845406_step_001_after_refresh_1_20260917T160523290654.png",
+      "kind": "fixture",
+      "bytes": 554519,
+      "mtime": "2026-09-17T16:20:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260918_000450_845406_step_001_after_refresh_2_20260917T160535894169.png",
+      "kind": "fixture",
+      "bytes": 554928,
+      "mtime": "2026-09-17T16:20:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/20260918_000450_845406_step_001_before_20260917T160453076950.png",
+      "kind": "fixture",
+      "bytes": 517605,
+      "mtime": "2026-09-17T16:20:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/live_page_20260917_131305.png",
+      "kind": "fixture",
+      "bytes": 791400,
+      "mtime": "2026-09-17T13:36:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/live_run_result.jsonl",
+      "kind": "fixture",
+      "bytes": 8961,
+      "mtime": "2026-09-17T13:36:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/live_runtime_step_001_after_20260917T133330867332.png",
+      "kind": "fixture",
+      "bytes": 592257,
+      "mtime": "2026-09-17T13:36:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/live_runtime_step_001_before_20260917T133308856422.png",
+      "kind": "fixture",
+      "bytes": 587147,
+      "mtime": "2026-09-17T13:36:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/live_runtime_step_003_after_20260917T133452711280.png",
+      "kind": "fixture",
+      "bytes": 690065,
+      "mtime": "2026-09-17T13:36:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_map_scan_20260917/key/scan_not_proven_20260917_214034_198214.json",
+      "kind": "fixture",
+      "bytes": 3396,
+      "mtime": "2026-09-17T16:20:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/finding.json",
+      "kind": "fixture",
+      "bytes": 3946,
+      "mtime": "2026-09-18T01:01:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/live_adb1500_after.png",
+      "kind": "fixture",
+      "bytes": 799690,
+      "mtime": "2026-09-18T00:51:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/live_adb1500_before.png",
+      "kind": "fixture",
+      "bytes": 761416,
+      "mtime": "2026-09-18T00:51:28+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/live_adb600_after.png",
+      "kind": "fixture",
+      "bytes": 682044,
+      "mtime": "2026-09-18T00:50:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/live_adb600_before.png",
+      "kind": "fixture",
+      "bytes": 656847,
+      "mtime": "2026-09-18T00:50:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/live_page_before_probe.png",
+      "kind": "fixture",
+      "bytes": 756500,
+      "mtime": "2026-09-18T00:48:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/live_probe_side_by_side.png",
+      "kind": "fixture",
+      "bytes": 1142497,
+      "mtime": "2026-09-18T00:52:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/probe_adb1500.json",
+      "kind": "fixture",
+      "bytes": 750,
+      "mtime": "2026-09-18T00:52:17+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/probe_adb600.json",
+      "kind": "fixture",
+      "bytes": 746,
+      "mtime": "2026-09-18T00:51:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/probe_first_measurement.json",
+      "kind": "fixture",
+      "bytes": 712,
+      "mtime": "2026-09-18T00:49:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/prod_run_after.png",
+      "kind": "fixture",
+      "bytes": 463037,
+      "mtime": "2026-09-18T00:36:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/prod_run_before.png",
+      "kind": "fixture",
+      "bytes": 559916,
+      "mtime": "2026-09-18T00:36:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/beast_scan_pan_20260918/key/prod_run_side_by_side.png",
+      "kind": "fixture",
+      "bytes": 261572,
+      "mtime": "2026-09-18T00:52:37+00:00"
+    },
+    {
       "path": "dataset/truth_audit/camp_panel_stamina_gate_20260915/01_camp_panel_stamina_read_live.png",
       "kind": "fixture",
       "bytes": 687966,
@@ -1033,6 +1201,12 @@
       "kind": "fixture",
       "bytes": 4534,
       "mtime": "2026-09-15T03:48:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/cap_z01_20260917/CAP_Z01_SLICE_1.json",
+      "kind": "fixture",
+      "bytes": 4373,
+      "mtime": "2026-09-17T15:44:37+00:00"
     },
     {
       "path": "dataset/truth_audit/chuzheng_btn.png",
@@ -1153,6 +1327,12 @@
       "kind": "fixture",
       "bytes": 186161,
       "mtime": "2026-09-13T15:21:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/escalation_consumer_20260918/P0_NEW_CONSUMER.json",
+      "kind": "fixture",
+      "bytes": 9385,
+      "mtime": "2026-09-18T01:29:47+00:00"
     },
     {
       "path": "dataset/truth_audit/fight_why_20260914/00_state.png",
@@ -2037,6 +2217,54 @@
       "mtime": "2026-09-14T09:34:38+00:00"
     },
     {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/baseline_20260918_014520.json",
+      "kind": "fixture",
+      "bytes": 4671,
+      "mtime": "2026-09-18T01:45:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/baseline_20260918_014520_000_before.png",
+      "kind": "fixture",
+      "bytes": 749388,
+      "mtime": "2026-09-18T01:45:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/go_20260918_014947.json",
+      "kind": "fixture",
+      "bytes": 11494,
+      "mtime": "2026-09-18T01:50:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/go_20260918_014947_000_before.png",
+      "kind": "fixture",
+      "bytes": 805624,
+      "mtime": "2026-09-18T01:49:47+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/go_20260918_014947_001_after_382_844.png",
+      "kind": "fixture",
+      "bytes": 724351,
+      "mtime": "2026-09-18T01:50:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/tapox_20260918_014906.json",
+      "kind": "fixture",
+      "bytes": 10308,
+      "mtime": "2026-09-18T01:49:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/tapox_20260918_014906_000_before.png",
+      "kind": "fixture",
+      "bytes": 753847,
+      "mtime": "2026-09-18T01:49:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/map_beast_search_20260918/key/tapox_20260918_014906_001_after_60_655.png",
+      "kind": "fixture",
+      "bytes": 792065,
+      "mtime": "2026-09-18T01:49:22+00:00"
+    },
+    {
       "path": "dataset/truth_audit/map_overlay_20260914/map_march_list_open__misread_as_event.png",
       "kind": "fixture",
       "bytes": 925353,
@@ -2139,6 +2367,486 @@
       "mtime": "2026-09-14T05:53:06+00:00"
     },
     {
+      "path": "dataset/truth_audit/nav_to_map_20260918/20260918_071842_873395_step_002_after_20260917T231921546245__annotated.png",
+      "kind": "fixture",
+      "bytes": 1028327,
+      "mtime": "2026-09-17T23:22:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/20260918_071842_873395_step_002_after_20260917T231921546245__page_map__legacy_home__0__crop.png",
+      "kind": "fixture",
+      "bytes": 16606,
+      "mtime": "2026-09-17T23:22:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/20260918_071842_873395_step_002_after_20260917T231921546245__page_map__live_back_safe_home__0__crop.png",
+      "kind": "fixture",
+      "bytes": 16694,
+      "mtime": "2026-09-17T23:22:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/20260918_071842_873395_step_002_before_20260917T231909587334__annotated.png",
+      "kind": "fixture",
+      "bytes": 1007367,
+      "mtime": "2026-09-17T23:21:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/20260918_071842_873395_step_002_before_20260917T231909587334__page_map__legacy_home__0__crop.png",
+      "kind": "fixture",
+      "bytes": 16601,
+      "mtime": "2026-09-17T23:21:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/20260918_071842_873395_step_002_before_20260917T231909587334__page_map__live_back_safe_home__0__crop.png",
+      "kind": "fixture",
+      "bytes": 16702,
+      "mtime": "2026-09-17T23:21:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/beforebar_measured.png",
+      "kind": "fixture",
+      "bytes": 567177,
+      "mtime": "2026-09-17T23:26:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/bottom_bar_zoom.png",
+      "kind": "fixture",
+      "bytes": 195604,
+      "mtime": "2026-09-17T23:23:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/cur00.png",
+      "kind": "fixture",
+      "bytes": 322696,
+      "mtime": "2026-09-17T23:32:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/cur01_after_tap_665_1221.png",
+      "kind": "fixture",
+      "bytes": 778408,
+      "mtime": "2026-09-17T23:32:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/dir00_map.png",
+      "kind": "fixture",
+      "bytes": 793410,
+      "mtime": "2026-09-17T23:32:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/dir01_after_tap_665_1221.png",
+      "kind": "fixture",
+      "bytes": 1099698,
+      "mtime": "2026-09-17T23:32:47+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232456_00.png",
+      "kind": "fixture",
+      "bytes": 734560,
+      "mtime": "2026-09-17T23:24:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232456_01.png",
+      "kind": "fixture",
+      "bytes": 1254390,
+      "mtime": "2026-09-17T23:25:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232829_00.png",
+      "kind": "fixture",
+      "bytes": 1008292,
+      "mtime": "2026-09-17T23:28:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232829_01.png",
+      "kind": "fixture",
+      "bytes": 988906,
+      "mtime": "2026-09-17T23:28:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232829_02.png",
+      "kind": "fixture",
+      "bytes": 1015290,
+      "mtime": "2026-09-17T23:28:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232829_03.png",
+      "kind": "fixture",
+      "bytes": 974842,
+      "mtime": "2026-09-17T23:29:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232829_04.png",
+      "kind": "fixture",
+      "bytes": 810761,
+      "mtime": "2026-09-17T23:29:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232829_05.png",
+      "kind": "fixture",
+      "bytes": 388062,
+      "mtime": "2026-09-17T23:29:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/home_reset_20260917_232829_06.png",
+      "kind": "fixture",
+      "bytes": 962139,
+      "mtime": "2026-09-17T23:29:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/after_map_unreadable_counter__live_runtime_step_001_after_20260914T131135967458.png",
+      "kind": "fixture",
+      "bytes": 406970,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/before_home__live_runtime_step_001_before_20260914T131124123677.png",
+      "kind": "fixture",
+      "bytes": 1018662,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/escalation_step002_after_still_home.png",
+      "kind": "fixture",
+      "bytes": 1031604,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/escalation_step002_before_home.png",
+      "kind": "fixture",
+      "bytes": 1010476,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/escalation_step002_refresh2_event_page.png",
+      "kind": "fixture",
+      "bytes": 625840,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/live20260918_home_frame_for_latency.png",
+      "kind": "fixture",
+      "bytes": 1161390,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/live20260918_open_map_after_map.png",
+      "kind": "fixture",
+      "bytes": 504289,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/live20260918_open_map_before_home.png",
+      "kind": "fixture",
+      "bytes": 772485,
+      "mtime": "2026-09-17T23:47:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/live_20260918_job57848179_after_MAP.png",
+      "kind": "fixture",
+      "bytes": 429509,
+      "mtime": "2026-09-18T02:55:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/key/live_20260918_job57848179_before_HOME.png",
+      "kind": "fixture",
+      "bytes": 792273,
+      "mtime": "2026-09-18T02:55:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat00.png",
+      "kind": "fixture",
+      "bytes": 647645,
+      "mtime": "2026-09-17T23:35:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat00b.png",
+      "kind": "fixture",
+      "bytes": 1161390,
+      "mtime": "2026-09-17T23:35:19+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_00_0_5.png",
+      "kind": "fixture",
+      "bytes": 224891,
+      "mtime": "2026-09-17T23:35:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_01_1_0.png",
+      "kind": "fixture",
+      "bytes": 757749,
+      "mtime": "2026-09-17T23:35:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_02_1_5.png",
+      "kind": "fixture",
+      "bytes": 760371,
+      "mtime": "2026-09-17T23:35:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_03_2_0.png",
+      "kind": "fixture",
+      "bytes": 761455,
+      "mtime": "2026-09-17T23:36:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_04_2_5.png",
+      "kind": "fixture",
+      "bytes": 786541,
+      "mtime": "2026-09-17T23:36:19+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_05_3_0.png",
+      "kind": "fixture",
+      "bytes": 777704,
+      "mtime": "2026-09-17T23:36:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_06_4_0.png",
+      "kind": "fixture",
+      "bytes": 786341,
+      "mtime": "2026-09-17T23:36:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lat_07_5_0.png",
+      "kind": "fixture",
+      "bytes": 841008,
+      "mtime": "2026-09-17T23:36:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/live_open_map_step1_run.txt",
+      "kind": "fixture",
+      "bytes": 2607,
+      "mtime": "2026-09-18T00:56:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/loop0_after.png",
+      "kind": "fixture",
+      "bytes": 758434,
+      "mtime": "2026-09-17T23:33:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/loop0_before.png",
+      "kind": "fixture",
+      "bytes": 1159970,
+      "mtime": "2026-09-17T23:33:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/loop1_before.png",
+      "kind": "fixture",
+      "bytes": 758640,
+      "mtime": "2026-09-17T23:33:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lv_prep_00_start.png",
+      "kind": "fixture",
+      "bytes": 728227,
+      "mtime": "2026-09-17T23:45:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/lv_prep_01_toggled.png",
+      "kind": "fixture",
+      "bytes": 1163434,
+      "mtime": "2026-09-17T23:45:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/prep_after.png",
+      "kind": "fixture",
+      "bytes": 1131654,
+      "mtime": "2026-09-17T23:42:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/prep_before.png",
+      "kind": "fixture",
+      "bytes": 580686,
+      "mtime": "2026-09-17T23:41:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/probe.json",
+      "kind": "fixture",
+      "bytes": 2942,
+      "mtime": "2026-09-17T23:22:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/refreshbar_917T231933042140.png",
+      "kind": "fixture",
+      "bytes": 134882,
+      "mtime": "2026-09-17T23:37:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/refreshbar_917T231944932874.png",
+      "kind": "fixture",
+      "bytes": 36901,
+      "mtime": "2026-09-17T23:37:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/refreshzoom_917T231933042140.png",
+      "kind": "fixture",
+      "bytes": 120358,
+      "mtime": "2026-09-17T23:37:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/refreshzoom_917T231944932874.png",
+      "kind": "fixture",
+      "bytes": 28184,
+      "mtime": "2026-09-17T23:37:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/regression_fix_57848179.json",
+      "kind": "fixture",
+      "bytes": 7558,
+      "mtime": "2026-09-18T02:56:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/report.json",
+      "kind": "fixture",
+      "bytes": 7105,
+      "mtime": "2026-09-18T00:56:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_00.png",
+      "kind": "fixture",
+      "bytes": 636475,
+      "mtime": "2026-09-17T23:29:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_01.png",
+      "kind": "fixture",
+      "bytes": 620344,
+      "mtime": "2026-09-17T23:30:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_02.png",
+      "kind": "fixture",
+      "bytes": 661189,
+      "mtime": "2026-09-17T23:30:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_03.png",
+      "kind": "fixture",
+      "bytes": 304789,
+      "mtime": "2026-09-17T23:30:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_04.png",
+      "kind": "fixture",
+      "bytes": 302362,
+      "mtime": "2026-09-17T23:30:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_05.png",
+      "kind": "fixture",
+      "bytes": 657458,
+      "mtime": "2026-09-17T23:30:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_06.png",
+      "kind": "fixture",
+      "bytes": 303692,
+      "mtime": "2026-09-17T23:31:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_07.png",
+      "kind": "fixture",
+      "bytes": 683131,
+      "mtime": "2026-09-17T23:31:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_08.png",
+      "kind": "fixture",
+      "bytes": 286177,
+      "mtime": "2026-09-17T23:31:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/reset2_09.png",
+      "kind": "fixture",
+      "bytes": 656226,
+      "mtime": "2026-09-17T23:31:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/tapmap_20260917_232713.json",
+      "kind": "fixture",
+      "bytes": 116,
+      "mtime": "2026-09-17T23:28:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/tapmap_20260917_232713_01_pre0.png",
+      "kind": "fixture",
+      "bytes": 919513,
+      "mtime": "2026-09-17T23:27:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/tapmap_20260917_232713_01_pre1.png",
+      "kind": "fixture",
+      "bytes": 668894,
+      "mtime": "2026-09-17T23:27:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/tapmap_20260917_232713_01_pre2.png",
+      "kind": "fixture",
+      "bytes": 737284,
+      "mtime": "2026-09-17T23:27:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/tapmap_20260917_232713_01_pre3.png",
+      "kind": "fixture",
+      "bytes": 766502,
+      "mtime": "2026-09-17T23:27:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/v2_job57848179_prep_00_start.png",
+      "kind": "fixture",
+      "bytes": 746624,
+      "mtime": "2026-09-18T02:54:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/v2_job57848179_prep_01_toggled.png",
+      "kind": "fixture",
+      "bytes": 818257,
+      "mtime": "2026-09-18T02:54:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/v2_job57848179_prep_02_back1.png",
+      "kind": "fixture",
+      "bytes": 318995,
+      "mtime": "2026-09-18T02:54:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/nav_to_map_20260918/v2_job57848179_prep_02_back2.png",
+      "kind": "fixture",
+      "bytes": 857550,
+      "mtime": "2026-09-18T02:54:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/no_goal_progress_20260918/key/runtime_auto_step_001_after_20260918T020920705393.png",
+      "kind": "fixture",
+      "bytes": 552488,
+      "mtime": "2026-09-18T02:09:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/no_goal_progress_20260918/key/runtime_auto_step_001_before_20260918T020907579172.png",
+      "kind": "fixture",
+      "bytes": 651869,
+      "mtime": "2026-09-18T02:09:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/no_goal_progress_20260918/key/runtime_auto_step_003_after_refresh_1_20260918T021010809473.png",
+      "kind": "fixture",
+      "bytes": 696439,
+      "mtime": "2026-09-18T02:10:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/no_goal_progress_20260918/key/runtime_auto_step_003_before_20260918T020955702695.png",
+      "kind": "fixture",
+      "bytes": 697837,
+      "mtime": "2026-09-18T02:09:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/no_goal_progress_20260918/report.json",
+      "kind": "fixture",
+      "bytes": 9007,
+      "mtime": "2026-09-18T02:11:06+00:00"
+    },
+    {
       "path": "dataset/truth_audit/one_decision_per_step_20260915/01_before_failure_map.png",
       "kind": "fixture",
       "bytes": 681210,
@@ -2173,6 +2881,12 @@
       "kind": "fixture",
       "bytes": 312512,
       "mtime": "2026-09-14T15:49:19+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/p0_loop_20260918/P0_LOOP_STATUS.json",
+      "kind": "fixture",
+      "bytes": 19297,
+      "mtime": "2026-09-18T02:25:11+00:00"
     },
     {
       "path": "dataset/truth_audit/panel_redesign/_check_panel2_MEAT_a.png",
@@ -2853,6 +3567,24 @@
       "mtime": "2026-09-17T03:17:12+00:00"
     },
     {
+      "path": "dataset/truth_audit/power_route_20260917/nav_map_tap1_20260917_232526_00_before.png",
+      "kind": "fixture",
+      "bytes": 985654,
+      "mtime": "2026-09-17T23:25:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/nav_map_tap1_20260917_232526_01_after_tap_665_1221.png",
+      "kind": "fixture",
+      "bytes": 735428,
+      "mtime": "2026-09-17T23:25:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/nav_map_tap1_20260917_232526_99_after_back.png",
+      "kind": "fixture",
+      "bytes": 509160,
+      "mtime": "2026-09-17T23:25:53+00:00"
+    },
+    {
       "path": "dataset/truth_audit/power_route_20260917/p03_home_20260917_044448_00_before.png",
       "kind": "fixture",
       "bytes": 540478,
@@ -3061,6 +3793,12 @@
       "kind": "fixture",
       "bytes": 12114,
       "mtime": "2026-09-17T03:12:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/power_route_20260917/probe_nav_map_tap1_20260917_232526.json",
+      "kind": "fixture",
+      "bytes": 10427,
+      "mtime": "2026-09-17T23:25:54+00:00"
     },
     {
       "path": "dataset/truth_audit/power_route_20260917/probe_p03_home_20260917_044448.json",
@@ -3783,6 +4521,12 @@
       "mtime": "2026-09-13T15:59:00+00:00"
     },
     {
+      "path": "dataset/truth_audit/runtime_reload_20260917/RUNTIME_RELOAD_VERIFIED.json",
+      "kind": "fixture",
+      "bytes": 6100,
+      "mtime": "2026-09-17T15:38:55+00:00"
+    },
+    {
       "path": "dataset/truth_audit/slider_box.png",
       "kind": "fixture",
       "bytes": 13851,
@@ -3865,6 +4609,18 @@
       "kind": "fixture",
       "bytes": 112,
       "mtime": "2026-09-15T08:17:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/startup_semantics_20260918/STARTUP_SEMANTICS_ACCEPTANCE.json",
+      "kind": "fixture",
+      "bytes": 9074,
+      "mtime": "2026-09-17T16:34:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/startup_semantics_20260918/TEST_SUITE_STATUS.json",
+      "kind": "fixture",
+      "bytes": 1520,
+      "mtime": "2026-09-18T01:11:23+00:00"
     },
     {
       "path": "dataset/truth_audit/tabstrips/coal_strip2x.png",

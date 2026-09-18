@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x130 all-time; recent=12 (last 2d), last seen 2026-09-17T04:45:23.361291+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-- **INTEL_BEAST_TARGET_NOT_PROVEN** x8 all-time; recent=4 (last 2d), last seen 2026-09-17T04:38:27.078429+00:00 — OPEN_INTEL_BEAST_TARGET(8)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x132 all-time; recent=5 (last 2d), last seen 2026-09-17T23:29:36.626405+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
+- **BEAST_SCAN_NOT_PROVEN** x5 all-time; recent=5 (last 2d), last seen 2026-09-17T23:42:38.305798+00:00 — SCAN_MAP_FOR_BEAST(5)
+- **INTEL_BEAST_TARGET_NOT_PROVEN** x8 all-time; recent=3 (last 2d), last seen 2026-09-17T04:38:27.078429+00:00 — OPEN_INTEL_BEAST_TARGET(8)
+- **OPEN_MAP_NOT_PROVEN** x6 all-time; recent=3 (last 2d), last seen 2026-09-18T02:56:04.526909+00:00 — OPEN_MAP(6)
 - **DAILY_REWARD_ADVANCE_NOT_PROVEN** x5 all-time; recent=2 (last 2d), last seen 2026-09-17T00:26:34.147170+00:00 — DISMISS_DAILY_REWARD(5)
-- **OPEN_MAP_NOT_PROVEN** x4 all-time; recent=2 (last 2d), last seen 2026-09-17T08:48:22.009081+00:00 — OPEN_MAP(4)
 - **SAFE_BACK_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-17T08:01:06.434755+00:00 — BACK(3)
-- **INFANTRY_CAMP_MENU_NOT_PROVEN** x2 all-time; recent=2 (last 2d), last seen 2026-09-17T09:46:29.659623+00:00 — SELECT_INFANTRY_CAMP(2)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 14 uncommitted file(s): ['M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M config/v2.json', ' M learning/control_panel/latest.log', ' M learning/goal_state.json', ' M learning/runtime_snapshot.json']
+- 49 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
 <!-- /AUTO:open_issues -->
 
 ---

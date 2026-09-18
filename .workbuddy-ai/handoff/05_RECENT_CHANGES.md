@@ -6,34 +6,40 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `d50884b 2026-09-17T21:11:24+08:00 fix(test): synthetic episodes use bare frame names, not repository paths`
-- `55cde8c 2026-09-17T21:06:25+08:00 fix(escalation): the agent could not execute, and a tree diff is not proof of authorship`
-- `19964ec 2026-09-17T20:56:03+08:00 feat(escalation): AUTO finds the wall, the queue throttles, WorkBuddy fixes it`
-- `3092a52 2026-09-17T20:34:47+08:00 test(bridge): stop making the credential gate cry wolf`
-- `002f572 2026-09-17T20:33:34+08:00 fix(vision): the camp-highlight signal cannot tell two states apart`
-- `2d3f3f1 2026-09-17T20:32:34+08:00 feat(bridge): escalate a stuck capability to a local WorkBuddy agent`
-- `dacf278 2026-09-17T19:54:35+08:00 feat(build): read building identity off pixels, and stop asserting a constant one`
-- `02eee43 2026-09-17T18:06:47+08:00 chore(state): CAP-D01 closed, CAP-B01 in progress with its read path proven`
-- `22fde85 2026-09-17T18:04:02+08:00 fix(train): model the two stages of a focused camp, and stop tapping in Stage A`
-- `23618f6 2026-09-17T17:47:58+08:00 fix(brain): the TRAIN and RESEARCH goals could not start from the map`
-- `909ced3 2026-09-17T16:51:43+08:00 feat(tooling): enumerate the verifier bindings that can never be called`
-- `92a6f27 2026-09-17T16:39:59+08:00 chore(handoff): record the interpreter guard at f40c684`
+- `a641b6d 2026-09-18T11:02:31+08:00 feat(preload): prepare the lesson before the wall, without a second pipeline`
+- `3884725 2026-09-18T10:25:12+08:00 docs(evidence): regenerate the P0 ladder from the artifacts after the ordering fix`
+- `8c605de 2026-09-18T10:25:06+08:00 docs(memory): the corrected verification order, and a lease that really releases`
+- `dbf4b8c 2026-09-18T10:24:13+08:00 feat(lease): Single Device / Single UI Owner, as a lock and not a lifecycle`
+- `309f7c6 2026-09-18T10:18:44+08:00 feat(order): LIVE_VERIFIED cannot be granted to a version nothing has loaded`
+- `f1128fd 2026-09-18T10:08:09+08:00 fix(evidence): a correction is filed against the key, not the job id`
+- `d368818 2026-09-18T10:05:47+08:00 docs(p0): the loop's status, generated from the artifacts, with two stages NOT PROVEN`
+- `5ba83b3 2026-09-18T10:02:01+08:00 fix(bridge): a credential that exists and is wrong is not a gateway that is down`
+- `003dae6 2026-09-18T09:55:43+08:00 feat(pump): the consumer's liveness is a file, not a claim`
+- `8071b00 2026-09-18T09:50:01+08:00 fix(proof): the fix for "the goal does not move" was six episodes where it did not move`
+- `21486ce 2026-09-18T09:44:07+08:00 fix(escalation): a job past its timebox was holding the only slot forever`
+- `336437f 2026-09-18T09:38:29+08:00 feat(escalation): the queue had a consumer but no clock`
 
-Uncommitted changes: 14
-- `M .workbuddy-ai/handoff/00_MASTER_RULES.md`
-- ` M config/v2.json`
+Uncommitted changes: 49
+- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M config/control_panel_state.json`
+- ` M config/policy_state.json`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/goals/capability_skill_map.json`
 - ` M learning/control_panel/latest.log`
+- ` M learning/episodes.jsonl`
+- ` M learning/executor_backend.jsonl`
 - ` M learning/goal_state.json`
+- ` M learning/resource_rotation.json`
 - ` M learning/runtime_snapshot.json`
-- ` M tests/test_escalation_queue.py`
-- ` M tools/escalations.py`
-- ` M winter_agent_v2/brain.py`
-- ` M winter_agent_v2/escalation_queue.py`
-- ` M winter_agent_v2/skills.py`
-- ` M winter_agent_v2/verifier.py`
-- `?? tests/test_qwen_decoupling.py`
-- `?? tests/test_workbuddy_model_router.py`
-- `?? winter_agent_v2/workbuddy_model_router.py`
+- ` M learning/workbuddy_escalations.jsonl`
 <!-- /AUTO:recent_commits -->
 
 ---
