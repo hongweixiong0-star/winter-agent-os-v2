@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-09-18T04:47:22+00:00",
+  "generated_at": "2026-09-18T04:59:45+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d6e51cf",
+  "commit": "bb09a0a",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "IDLE",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-18T04:39:19.574781+00:00",
-    "last_action_time": "2026-09-18T04:38:55.530547+00:00",
-    "last_success_time": "2026-09-18T04:39:08.426446+00:00",
+    "last_tick_time": "2026-09-18T04:53:06.887991+00:00",
+    "last_action_time": "2026-09-18T04:52:39.173210+00:00",
+    "last_success_time": "2026-09-18T04:52:53.676442+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
     "page": "MAP",
-    "current_goal": "AUTO_DISCOVERY",
+    "current_goal": "AVOID_STAMINA_WASTE",
     "current_skill": "SAFE_STOP",
-    "reason": "reserved_march_for_stamina",
+    "reason": "no_idle_march",
     "preconditions": [],
     "verifier": "PASS",
-    "next_action": "stamina_task_slot_preserved",
+    "next_action": "wait_for_beast_slot",
     "risk": "UNKNOWN",
     "confidence": 1.0,
     "device": "UNKNOWN",
@@ -27,8 +27,8 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_123625_890481\\20260918_123625_890481_step_008_before_20260918T043908429377.png",
-    "march_used": 2,
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_125144_408660\\20260918_125144_408660_step_004_before_20260918T045253679366.png",
+    "march_used": 21,
     "march_max": 3,
     "queues": {
       "building": {},
@@ -38,37 +38,26 @@
       "alliance": {},
       "events": {}
     },
-    "stop_reason": "reserved_march_for_stamina",
+    "stop_reason": "no_idle_march",
     "deferred_goals": [
-      {
-        "goal_id": "AVOID_STAMINA_WASTE",
-        "capability": "SPEND_STAMINA_ON_BEAST",
-        "state": "DEFERRED",
-        "reason": "7 consecutive production episodes passed their verifier and advanced no part of this goal",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
-        "streak": 7,
-        "until": "",
-        "last_skill": "SCAN_MAP_FOR_BEAST"
-      },
       {
         "goal_id": "KEEP_MARCHES_PRODUCTIVE",
         "capability": "OPEN_MARCH_FORMATION",
-        "state": "DEFERRED",
-        "reason": "3 consecutive production episodes passed their verifier and advanced no part of this goal",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH",
-        "streak": 3,
+        "state": "DEVELOPMENT_PENDING",
+        "reason": "a development job owns it (job=06271322)",
+        "source": "ESCALATION_QUEUE",
+        "failure_signature": "",
+        "streak": 0,
         "until": "",
-        "last_skill": "SUBMIT_RESOURCE_SEARCH"
+        "last_skill": ""
       }
     ],
-    "updated_at": "2026-09-18T04:39:23.293805+00:00"
+    "updated_at": "2026-09-18T04:53:10.580445+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-18T04:39:20+00:00",
-    "size_bytes": 21048,
+    "modified_at": "2026-09-18T04:53:08+00:00",
+    "size_bytes": 9390,
     "last_stop_reason": null
   },
   "recent_crash_reports": [],

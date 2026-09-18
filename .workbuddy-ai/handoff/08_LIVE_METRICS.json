@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-18T04:47:22+00:00",
+  "generated_at": "2026-09-18T04:59:45+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d6e51cf",
+  "commit": "bb09a0a",
   "last_good_commit": "e4fd245",
-  "dirty_count": 44,
+  "dirty_count": 48,
   "episodes": {
-    "total": 2039,
-    "production": 2039,
-    "success": 1668,
+    "total": 2045,
+    "production": 2045,
+    "success": 1674,
     "failure": 366,
-    "success_rate_over_decided": 0.8201,
+    "success_rate_over_decided": 0.8206,
     "modes": {
-      "PRODUCTION": 2039
+      "PRODUCTION": 2045
     },
     "mixed_case_rows": 35
   },
@@ -24,11 +24,11 @@
     },
     "dispatchable": 76,
     "counts": {
-      "live_verified": 24,
+      "live_verified": 26,
       "stable": 30,
       "degraded": 11,
       "only_failed": 10,
-      "never_executed": 19
+      "never_executed": 17
     }
   },
   "top_failures": [
@@ -251,9 +251,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 2581,
-    "present_on_disk": 2581,
-    "traceable_episodes": 1307,
+    "referenced_screenshots": 2593,
+    "present_on_disk": 2593,
+    "traceable_episodes": 1313,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -264,20 +264,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "d6e51cfd906e5ea0254cc3042822462a535a50af",
-    "remote_head": "a4e6c40a09cc8939810daa33fb55a36e00d180e6",
-    "unpushed_commits": 3,
+    "local_head": "bb09a0a0621dd7823f2243d281e9676d0ba2206e",
+    "remote_head": "c300f89a0fd299f331cc40b2a5c55a73a9971c92",
+    "unpushed_commits": 1,
     "behind": 0,
     "in_sync": false,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-09-18T03:56:41.930269+00:00",
-    "last_push_status": "PUSHED"
+    "last_push_at": "2026-09-18T04:50:13.023823+00:00",
+    "last_push_status": "ALREADY_IN_SYNC"
   },
   "runtime": {
     "agent_state": "IDLE",
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 13,
     "last_fatal_error": null,
-    "stop_reason": "reserved_march_for_stamina"
+    "stop_reason": "no_idle_march"
   }
 }

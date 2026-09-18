@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 44 uncommitted file(s): ['M config/control_panel_state.json', ' M config/policy_state.json', ' M knowledge/preload/INDEX.json', ' M knowledge/preload/TROOP_SELECT.json', ' M learning/control_panel/latest.log']
+- 48 uncommitted file(s): ['M .workbuddy-ai/memory/MEMORY.md', ' M .workbuddy/memory/2026-09-18.md', ' M config/control_panel_state.json', ' M config/policy_state.json', ' M knowledge/preload/INDEX.json']
 <!-- /AUTO:open_issues -->
 
 ---

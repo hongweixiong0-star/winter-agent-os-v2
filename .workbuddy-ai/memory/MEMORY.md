@@ -741,3 +741,43 @@ LIVE_VERIFIED 32（16.5%）、Candidate 54.6%、已观测 36.1%；全表 522 项
 `HOW TO LEARN（专家）vs WHAT WAS LEARNED（Knowledge）`、连续自主验收纪律。
 **玩法不进提示词**，操作细节进 `capability-preload`（§11 回写 / §12 连续验收 / §13 重启恢复）。
 
+## Truth Source 审计：显示状态必须有来源（2026-09-18 13:00）
+
+**操作者报的实例**：GUI `current_role=xhw`，真机不是 xhw。
+根因不是缓存 —— 是 `tools/control_panel.py` 里的**字符串字面量** `text="xhw"`，
+旁边还有 `text="● 在线"`（无条件宣称在线）。**常量无法与测量区分**，
+所以它能漂多远就漂多远。结论：这是「显示状态可以没有来源」的系统性质，不是一格子的 bug。
+
+**`winter_agent_v2/state_truth.py`（投影，不是第二套 WorldState）**：
+只读既有工件，对 17 个关键状态回答五问（value/source/observed_at/evidence/role·episode·version/过期），
+按阶梯定级：
+
+```
+LIVE_OBSERVED > FRESH_RUNTIME > PERSISTED > REQUESTED ＞ ASSUMED（字面量或默认值）
+```
+
+- 缓存允许**帮助恢复**，禁止**冒充当前**；`display` 永不裸输出值。
+- 两源不一致 → `STATE_CONFLICT`，**两条读数都记**，不静默选一个。
+- 不可能的数（`march_used > march_max`）**是冲突，不是读数**。
+- 空 ≠ 没有：没读到必须显示「未知」，不得显示 0 或「正常」。
+
+**第一次跑就抓到**：`march_capacity = 21/3`（占用>容量）、
+`current_goal` 快照 `AVOID_STAMINA_WASTE` vs episode `BEAST_HUNT`、`resources`/`queues` 空被读成「没有」。
+角色真实是 **`xhw小号`**（账号 1171757165、zoe、王国 4298、54.2万），
+**其余状态全部没有按角色限定**（语料本来就是两个账号混的）。
+
+**角色链闭环**：`HybridVision.read_role_identity`（归档帧验证过；最新真机帧 6/6 无假阳性）
+→ `learning/role_identity.json`（`record_role` **拒绝无帧的身份**；
+**回放按帧时间戳记，不按当前时钟**）→ 审计 → 窗口。
+缺的是**写入方**：`tools/state_truth_audit.py --record-role <frame.png>`。
+**读得出来却没人写，窗口只能印字面量** —— 与知识回写同一类缺口。
+
+**防复发不变量**：测试与 `check_wiring` 直接读面板**源码**，
+状态格又变回字面量就红；**先剥注释**（注释引用被删字面量是文档，不是缺陷——
+第一版两边都被自己的注释绊倒过）。
+
+**未做到（排名第一的未决项）**：① 没有一次**新鲜**真机角色读取（要点左上头像；
+设备由 AUTO 与另一位 beast 探针开发者占用，按 Single UI Owner 不抢）；
+② **角色切换后的 State 隔离尚不存在** —— 没有任何状态带 role 命名空间。
+
+

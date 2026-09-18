@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `bb09a0a 2026-09-18T12:58:48+08:00 feat(truth): a displayed state names its source, or says it does not know`
+- `c300f89 2026-09-18T12:47:23+08:00 docs(handoff): the preload clock is running in production; arming still waits on P0-D`
 - `d6e51cf 2026-09-18T12:46:19+08:00 fix(vision): the beast tab sits at index 1, and a clipped tab needs a positive drag`
 - `80f6e58 2026-09-18T12:37:04+08:00 fix(restart): a stale snapshot is not a claim, so it must not refuse a safe reload`
 - `872608e 2026-09-18T12:07:07+08:00 feat(preload): the answer comes back, and the loop can say what it is doing`
@@ -16,14 +18,15 @@ Last 12 commits (newest first):
 - `084bebb 2026-09-18T11:44:38+08:00 fix(preload): a degraded capability is a repair, and --write was silently ignored next to --cycle`
 - `0474cdb 2026-09-18T11:31:21+08:00 fix(order): a no-progress wall is named by the step the route never reached`
 - `6cf5931 2026-09-18T11:22:01+08:00 docs(handoff): the route change and the persistent preload loop, written where the next account will look`
-- `6b31d45 2026-09-18T11:20:56+08:00 feat(preload): read once, store once, reuse many times`
-- `b5c962c 2026-09-18T11:02:46+08:00 docs(handoff): refresh after the preload mechanism, 1405 tests green`
 
-Uncommitted changes: 44
-- `M config/control_panel_state.json`
+Uncommitted changes: 48
+- `M .workbuddy-ai/memory/MEMORY.md`
+- ` M .workbuddy/memory/2026-09-18.md`
+- ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
 - ` M knowledge/preload/INDEX.json`
 - ` M knowledge/preload/TROOP_SELECT.json`
+- ` M learning/candidate_attempt_pool.json`
 - ` M learning/control_panel/latest.log`
 - ` M learning/episodes.jsonl`
 - ` M learning/executor_backend.jsonl`
@@ -37,9 +40,6 @@ Uncommitted changes: 44
 - ` M winter_agent_v2/runtime.py`
 - `?? dataset/raw/control_panel/probe/`
 - `?? dataset/truth_audit/map_beast_search_20260918/key/baseline_20260918_014520.json`
-- `?? dataset/truth_audit/map_beast_search_20260918/key/go_20260918_014947.json`
-- `?? dataset/truth_audit/map_beast_search_20260918/key/tapox_20260918_014906.json`
-- `?? dataset/truth_audit/power_route_20260917/probe_nav_map_tap1_20260917_232526.json`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -8,35 +8,35 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-18T04:47:22+00:00
+HANDOFF TIME: 2026-09-18T04:59:45+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 44 dirty file(s)
-  ['M config/control_panel_state.json', ' M config/policy_state.json', ' M knowledge/preload/INDEX.json', ' M knowledge/preload/TROOP_SELECT.json', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/knowledge_bootstrap/STATE.json', ' M learning/resource_rotation.json']
+WORKING TREE: 48 dirty file(s)
+  ['M .workbuddy-ai/memory/MEMORY.md', ' M .workbuddy/memory/2026-09-18.md', ' M config/control_panel_state.json', ' M config/policy_state.json', ' M knowledge/preload/INDEX.json', ' M knowledge/preload/TROOP_SELECT.json', ' M learning/candidate_attempt_pool.json', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl']
 
-WHAT FINISHED (machine-visible): 24 skills live verified, 30 stable, 198 commit(s) in history
+WHAT FINISHED (machine-visible): 26 skills live verified, 30 stable, 200 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
-WHAT NOT VERIFIED: 19 skills never executed, 10 never succeeded
+WHAT NOT VERIFIED: 17 skills never executed, 10 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=IDLE stop_reason=reserved_march_for_stamina
-LAST PRODUCTION EPISODE: {"skill": "DISPATCH_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-18T04:39:08.400061+00:00", "episode_id": "20260918_123625_890481", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_123625_890481\\20260918_123625_890481_step_007_before_20260918T043853129258.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_123625_890481\\20260918_123625_890481_step_007_after_20260918T043857032436.png"}
+STOPPED AT: agent_state=IDLE stop_reason=no_idle_march
+LAST PRODUCTION EPISODE: {"skill": "RECALL_MARCH", "result": "SUCCESS", "recorded_at": "2026-09-18T04:52:53.607125+00:00", "episode_id": "20260918_125144_408660", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_125144_408660\\20260918_125144_408660_step_003_before_20260918T045238395166.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_125144_408660\\20260918_125144_408660_step_003_after_20260918T045240674551.png"}
 TOP FAILURE: {"failure_type": "BEAST_SCAN_NOT_PROVEN", "count": 5, "recent": 5, "last_seen": "2026-09-17T23:42:38.305798+00:00", "dates": {"2026-09-17": 5}, "undated": 0, "top_skills": [["SCAN_MAP_FOR_BEAST", 5]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 44
+DIRTY FILES: 48
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-18T04:47:22+00:00
+SYNC STATE at 2026-09-18T04:59:45+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : d6e51cfd906e5ea0254cc3042822462a535a50af
-remote_head       : a4e6c40a09cc8939810daa33fb55a36e00d180e6   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 3   (behind: 0)
-git_dirty         : True (44 path(s))
-last_push_at      : 2026-09-18T03:56:41.930269+00:00
-last_push_status  : PUSHED
-verdict           : LOCAL IS AHEAD by 3 commit(s) -- run `python tools/git_sync.py push`
+local_head        : bb09a0a0621dd7823f2243d281e9676d0ba2206e
+remote_head       : c300f89a0fd299f331cc40b2a5c55a73a9971c92   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 1   (behind: 0)
+git_dirty         : True (48 path(s))
+last_push_at      : 2026-09-18T04:50:13.023823+00:00
+last_push_status  : ALREADY_IN_SYNC
+verdict           : LOCAL IS AHEAD by 1 commit(s) -- run `python tools/git_sync.py push`
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.
