@@ -234,6 +234,46 @@ def pid_exists(pid: int, *, timeout: float = 20.0) -> bool:
     return bool(process_name(pid, timeout=timeout))
 
 
+def command_line(pid: int, *, timeout: float = 90.0) -> str:
+    """The full command line of ``pid``, or ``""`` when it cannot be read.
+
+    Needed because **a pid is not an identity**.  Measured 2026-09-18: the gateway was
+    launched as pid 15140 and recorded; by 19:40 pid 15140 was alive again but was the
+    sheetagent MCP server (``.../sheetagent/.../mcp/start.mjs``, parent a WorkBuddy.exe).
+    A liveness check that asks only "does this pid exist" answers "yes, our gateway is
+    fine" about an unrelated program -- and then never restarts the gateway that is
+    actually gone.  So the lifecycle asks this instead, and matches the CLI path it
+    launched.
+
+    ``wmic`` is not available on this machine (measured: ``FileNotFoundError``), so this
+    goes through PowerShell.  Measured cost: 0.35s, which is why it is only called on the
+    ambiguous branch (a recorded pid with nobody listening) rather than on every probe.
+    """
+    if pid <= 0:
+        return ""
+    if os.name != "nt":
+        return ""
+    script = (
+        f"$p = Get-CimInstance Win32_Process -Filter \"ProcessId={int(pid)}\" "
+        "| Select-Object -First 1 -ExpandProperty CommandLine; "
+        "if ($p) { Write-Output $p }"
+    )
+    result = run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+                 timeout=timeout)
+    return (result.stdout or "").strip()
+
+
+def pid_runs(pid: int, needle: str, *, timeout: float = 90.0) -> bool:
+    """Is ``pid`` running a process whose command line contains ``needle``?
+
+    The identity question behind :func:`command_line`, in the form its callers ask it.
+    """
+    if not needle:
+        return False
+    line = command_line(pid, timeout=timeout).lower()
+    return bool(line) and needle.lower() in line
+
+
 def alive(pid: int, *, timeout: float = 20.0) -> bool:
     """Is this pid the *panel's* interpreter?  For the launcher, which starts python.
 

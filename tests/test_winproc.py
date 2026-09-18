@@ -169,5 +169,25 @@ class LivenessDoesNotAssumeTheProcessName(unittest.TestCase):
         self.assertEqual(w.process_name(0), "")
 
 
+class APidIsNotAnIdentity(unittest.TestCase):
+    """Measured 2026-09-18: the recorded gateway pid 15140 was later alive as the sheetagent
+    MCP server.  ``pid_exists`` said yes, so a gateway that was actually gone would never
+    have been restarted -- the number came back, so the answer looked positive."""
+
+    def test_the_command_line_of_a_live_process_can_be_read(self):
+        line = w.command_line(os.getpid())
+        self.assertTrue(line, "a live process must have a readable command line")
+        self.assertIn("python", line.lower())
+
+    def test_identity_is_a_question_about_the_needle(self):
+        self.assertTrue(w.pid_runs(os.getpid(), os.path.basename(sys.executable).split(".")[0]))
+        self.assertFalse(w.pid_runs(os.getpid(), "a-needle-that-cannot-possibly-match"))
+
+    def test_the_degenerate_inputs_answer_no_rather_than_raising(self):
+        self.assertFalse(w.pid_runs(0, "anything"))
+        self.assertFalse(w.pid_runs(os.getpid(), ""))
+        self.assertEqual(w.command_line(0), "")
+
+
 if __name__ == "__main__":
     unittest.main()

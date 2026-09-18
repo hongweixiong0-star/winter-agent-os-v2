@@ -128,6 +128,12 @@ SESSION_ID = "winter-agent-v2"
 #: location is not writable or a test needs it in a temp directory.
 ENV_LOG_DIR = "WINTER_AGENT_GATEWAY_LOG_DIR"
 
+#: An explicit path to the CLI, for a machine where nothing else in the discovery chain
+#: answers.  Named rather than guessed at: the工单 asks that starting the gateway not depend
+#: on the desktop having started normally, and the last resort has to be something an
+#: operator can set deliberately.
+ENV_CLI_OVERRIDE = "WINTER_AGENT_CODEBUDDY_CLI"
+
 
 def default_log_path() -> Path:
     """Where the gateway's stdout goes.  **Outside the repository, deliberately.**
@@ -175,32 +181,32 @@ class LaunchPlan:
     #: Environment *additions*, never replacements, and never containing the password --
     #: it is already in the parent environment and is inherited.
     env: Mapping[str, str] = field(default_factory=dict)
+    #: Which link of the discovery chain answered, kept so §1 of the工单 can be audited.
+    cli: str = ""
+    cli_source: str = ""
 
     def as_record(self) -> dict[str, Any]:
         """The launch, as it may be persisted: argv is safe, the password is not present."""
-        return {"argv": list(self.argv), "cwd": str(self.cwd), "log_path": str(self.log_path)}
+        return {"argv": list(self.argv), "cwd": str(self.cwd), "log_path": str(self.log_path),
+                "cli": self.cli, "cli_source": self.cli_source}
 
 
 def cli_path(env: Mapping[str, str] | None = None) -> Path | None:
-    """The bundled ``codebuddy`` entry point, or ``None`` when it cannot be found.
+    """The bundled ``codebuddy`` entry point from the desktop's own environment, or ``None``.
 
-    Derived from ``WORKBUDDY_APP_PATH`` (``.../resources/app.asar``) rather than hard-coded
-    to an installation path: the app directory contains a space and a Chinese character on
-    this machine, and a literal would be one more thing to break on an upgrade.
+    One link of :func:`discover_cli`'s chain, kept separate because it is the only link the
+    desktop sets up for us -- and, measured 2026-09-18, the only one the first version had.
+    A launcher that did not inherit that environment therefore could not start a gateway at
+    all, which is why the chain no longer ends here.
     """
     environment = env if env is not None else os.environ
     app_path = str(environment.get(ENV_APP_PATH) or "").strip()
-    if app_path:
-        base = Path(app_path)
-        # ``app.asar`` -> ``app.asar.unpacked``: the packed archive holds no executables.
-        unpacked = base.with_name(base.name + ".unpacked") if base.suffix == ".asar" else base
-        candidate = unpacked / CLI_RELATIVE
-        if candidate.exists():
-            return candidate
-        candidate = base / CLI_RELATIVE
-        if candidate.exists():
-            return candidate
-    return None
+    if not app_path:
+        return None
+    base = Path(app_path)
+    # ``app.asar`` -> ``app.asar.unpacked``: the packed archive holds no executables.
+    unpacked = base.with_name(base.name + ".unpacked") if base.suffix == ".asar" else base
+    return _candidate_from_root(unpacked) or _candidate_from_root(base)
 
 
 def node_path(env: Mapping[str, str] | None = None) -> str:
@@ -209,24 +215,125 @@ def node_path(env: Mapping[str, str] | None = None) -> str:
     return str(environment.get(ENV_NODE) or "").strip() or "node"
 
 
-def build_plan(root: Path, *, port: int = DEFAULT_PORT, log_path: Path,
-               env: Mapping[str, str] | None = None) -> LaunchPlan:
-    """The measured command: ``--serve --port <port> --session-id <id>``.
+def _candidate_from_root(base: Path) -> Path | None:
+    """The bundled CLI under ``base``, accepting any of the roots its callers actually hold.
 
-    No ``--model``: the operator's rule for this工单 is explicit that the model is not to be
-    hard-coded here, and a gateway that pins one would silently override every escalation's
-    own choice.  No ``--auth none``, ever.
+    ``base`` may be the install root (``...\\WorkBuddy``), its ``resources`` directory, or
+    the unpacked directory itself.  Measuring this once, in one place, is cheaper than four
+    callers each guessing which one they have -- and the first version did guess wrong: it
+    passed the *install root* to a helper that expected the unpacked directory, so the
+    desktop-derivation link silently never matched and the refusal message claimed nothing
+    on disk when the binary was there.  ``CLI_RELATIVE`` is relative to
+    ``app.asar.unpacked``; the install-root case needs ``resources`` prepended, and that is
+    the layout measured on this machine (``E:\\work Buddy国内\\WorkBuddy\\resources\\...``).
+    """
+    for candidate in (
+        base / CLI_RELATIVE,                                       # app.asar.unpacked
+        base / "app.asar.unpacked" / CLI_RELATIVE,                  # resources/
+        base / "resources" / "app.asar.unpacked" / CLI_RELATIVE,    # the install root
+    ):
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def running_desktop_exe(timeout: float = 90.0) -> str:
+    """Where the desktop's own binary lives, asked of the OS rather than of the environment.
+
+    Measured 2026-09-18, and this is the whole point of the工单: the panel was refused a
+    gateway because ``WORKBUDDY_APP_PATH`` was missing -- that variable is set *for the
+    desktop's children*, and the panel had been launched by a different agent's
+    interpreter.  The desktop was running the entire time.  A running process knows where
+    its own binary is, so this asks that instead of asking a variable the launcher may not
+    have passed on.  Cost measured at 0.35s, and it is only reached when the environment
+    and the remembered plan have both failed to answer.
+    """
+    script = (
+        "$p = Get-CimInstance Win32_Process -Filter \"Name='WorkBuddy.exe'\" "
+        "| Select-Object -First 1 -ExpandProperty ExecutablePath; if ($p) { Write-Output $p }"
+    )
+    result = winproc.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+                         timeout=timeout)
+    return (result.stdout or "").strip().splitlines()[0].strip() if result.stdout else ""
+
+
+def discover_cli(env: Mapping[str, str] | None = None,
+                 remembered: Path | str | None = None,
+                 desktop_exe: Callable[[], str] | None = None) -> tuple[Path | None, str]:
+    """``(cli, how_it_was_found)`` -- a chain, because no single link is guaranteed.
+
+    The operator's §5 is explicit that starting the gateway must not depend on the desktop
+    having started normally.  Reading only ``WORKBUDDY_APP_PATH`` failed exactly that way:
+    measured 2026-09-18, the panel sat in ``OFFLINE / RESTART / restart_attempts 0`` with
+    ``consecutive_failures`` climbing to 20, refusing every attempt with "找不到 codebuddy
+    CLI" while a working command line was already written down in its own record and the
+    binary was on disk the whole time.
+
+    So, in order: an explicit operator override, the desktop's environment (best when
+    present), **the plan that was recorded when this worked before**, and finally the
+    running desktop's own image path.  The provenance is returned rather than discarded:
+    §1 of the工单 asks which of these is actually being used, and a discovery nobody can
+    audit is a guess with a filename.
+
+    ``desktop_exe`` is injectable so a test does not silently depend on whether a real
+    desktop happens to be installed on the machine running the suite.
     """
     environment = env if env is not None else os.environ
-    cli = cli_path(environment)
+
+    override = str(environment.get(ENV_CLI_OVERRIDE) or "").strip()
+    if override and Path(override).exists():
+        return Path(override), f"{ENV_CLI_OVERRIDE}（操作员显式指定）"
+
+    found = cli_path(environment)
+    if found is not None:
+        return found, f"{ENV_APP_PATH}={environment.get(ENV_APP_PATH)}"
+
+    if remembered:
+        candidate = Path(str(remembered))
+        if candidate.exists():
+            return candidate, "上一次成功启动时记录的路径（环境变量缺失，但这条命令跑通过）"
+
+    probe = desktop_exe if desktop_exe is not None else running_desktop_exe
+    exe = probe()
+    if exe:
+        derived = _candidate_from_root(Path(exe).parent)
+        if derived:
+            return derived, f"由运行中的桌面程序位置推导（{exe}）"
+
+    return None, ""
+
+
+def build_plan(root: Path, *, port: int = DEFAULT_PORT, log_path: Path,
+               env: Mapping[str, str] | None = None,
+               remembered_argv: Sequence[str] | None = None,
+               desktop_exe: Callable[[], str] | None = None) -> LaunchPlan:
+    """The measured command: ``--serve --port <port> --session-id <id>``.
+
+    No ``--model``: the operator's rule is explicit that the model is not to be hard-coded
+    here, and a gateway that pins one would silently override every escalation's own
+    choice.  No ``--auth none``, ever.
+    """
+    environment = env if env is not None else os.environ
+    remembered = list(remembered_argv or ())
+    remembered_cli = remembered[1] if len(remembered) > 1 else None
+    cli, source = discover_cli(environment, remembered_cli, desktop_exe)
     if cli is None:
         raise GatewayStartRefused(
-            f"找不到 codebuddy CLI：{ENV_APP_PATH} 未指向可用的应用目录（见 "
-            f"knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md §1）"
+            "找不到 codebuddy CLI：依次尝试了 "
+            f"{ENV_CLI_OVERRIDE} / {ENV_APP_PATH} / 上次成功的启动命令 / 运行中的桌面程序位置，"
+            "都没有指向可执行文件（见 "
+            "knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md §1）"
         )
-    argv = (node_path(environment), str(cli), "--serve", "--port", str(int(port)),
+    # The interpreter: this environment's Node wins, then the one the remembered plan used
+    # (it is the same managed Node and it demonstrably works), then bare ``node``.
+    node = str(environment.get(ENV_NODE) or "").strip()
+    if not node and remembered and Path(str(remembered[0])).exists():
+        node = str(remembered[0])
+    node = node or "node"
+    argv = (node, str(cli), "--serve", "--port", str(int(port)),
             "--session-id", SESSION_ID)
-    return LaunchPlan(argv=argv, cwd=Path(root), log_path=Path(log_path))
+    return LaunchPlan(argv=argv, cwd=Path(root), log_path=Path(log_path),
+                      cli=str(cli), cli_source=source)
 
 
 # --------------------------------------------------------------------- the decision
@@ -243,10 +350,23 @@ class Measurement:
     health_reason: str = ""
     #: Is the pid this service last launched still alive?
     own_pid_alive: bool = False
+    #: ...and is that pid still *our gateway*?  A pid is not an identity: measured
+    #: 2026-09-18, the recorded gateway pid 15140 was later alive as the sheetagent MCP
+    #: server.  ``own_pid_alive`` alone would have reported "our gateway is running" about
+    #: an unrelated program, and the gateway that was actually gone would never be
+    #: restarted.  ``None`` means the question was not asked (the cheap branch).
+    own_pid_is_gateway: bool | None = None
 
     @property
     def port_taken(self) -> bool:
         return self.port_pid > 0
+
+    @property
+    def ours_running(self) -> bool:
+        """Our gateway is alive: the pid exists *and* it is still running our command line."""
+        if not self.own_pid_alive:
+            return False
+        return self.own_pid_is_gateway is not False
 
 
 def decide(
@@ -301,7 +421,8 @@ def decide(
                 f"复用已有网关（端口 {DEFAULT_PORT} 属于 pid {measurement.port_pid}"
                 f" {measurement.port_name}，health 正常）"
             )
-        ours = own_pid and measurement.port_pid == own_pid
+        ours = (own_pid and measurement.port_pid == own_pid
+                and measurement.own_pid_is_gateway is not False)
         if ours:
             # Our own process holds the port but is not answering.  Inside the grace window
             # that is simply a slow bind.
@@ -328,7 +449,7 @@ def decide(
         # stronger evidence rather than starting a second instance.
         return HEALTHY, ACT_REUSE, "health 正常（端口查询与应答竞争，按健康复用）"
 
-    if measurement.own_pid_alive:
+    if measurement.ours_running:
         if launched_at and (now - launched_at) < STARTUP_GRACE_SECONDS:
             return STARTING, ACT_WAIT, (
                 f"网关进程存在但尚未监听（pid {own_pid}，已 {(now - launched_at):.0f}s）"
@@ -337,10 +458,25 @@ def decide(
             return RESTARTING, ACT_RESTART, f"本服务的网关进程（pid {own_pid}）未监听且已过宽限期，重启"
         return DEGRADED, ACT_WAIT, f"网关未就绪，退避中（还剩 {max(0.0, next_attempt_at - now):.0f}s）"
 
+    # A recorded pid that is alive but is *not* our gateway: the number was reused.  This
+    # must not read as "our gateway is fine" -- see ``own_pid_is_gateway``.  Treated as
+    # nothing running at all, which is what it is.
+    reused = measurement.own_pid_alive and measurement.own_pid_is_gateway is False
+
     # Nothing at all.  The panel came up and found no gateway -- that is §二, and it starts
     # one immediately.  A gateway that died mid-run has to wait for the ladder.
     if not started_ever:
         return OFFLINE, ACT_START, "未发现网关；按 P0 §二 自动启动一个（GUI 启动 = 系统启动）"
+    if reused:
+        # Said out loud rather than silently: a pid that came back as somebody else is worth
+        # a line in the record, because it is exactly the reading that would otherwise look
+        # like "our gateway is alive".
+        note = f"记录的 pid {own_pid} 已被其它进程复用（它已不是我们的网关），按未运行处理"
+        if failures < DEGRADED_AFTER_FAILURES:
+            return OFFLINE, ACT_WAIT, f"{note}；连续失败 {failures}/{DEGRADED_AFTER_FAILURES}，未达降级阈值"
+        if now >= next_attempt_at:
+            return OFFLINE, ACT_RESTART, f"{note}；连续失败 {failures} 次（≥ 阈值），第 {attempts + 1} 次自动重启"
+        return DEGRADED, ACT_WAIT, f"{note}；退避中（还剩 {max(0.0, next_attempt_at - now):.0f}s）"
     if failures < DEGRADED_AFTER_FAILURES:
         return OFFLINE, ACT_WAIT, (
             f"未发现网关，连续失败 {failures}/{DEGRADED_AFTER_FAILURES}，"
@@ -376,6 +512,8 @@ class GatewayService:
         probe: Callable[[], tuple[bool | None, str]] | None = None,
         alive: Callable[[int], bool] | None = None,
         kill: Callable[[int], bool] | None = None,
+        runs: Callable[[int, str], bool] | None = None,
+        desktop_exe: Callable[[], str] | None = None,
         clock: Callable[[], float] | None = None,
     ) -> None:
         self.root = Path(root)
@@ -393,6 +531,9 @@ class GatewayService:
         # launch -- node.exe holding 8080, health 200, and the check calling it dead.
         self._alive = alive or (lambda pid: winproc.pid_exists(pid))
         self._kill = kill or (lambda pid: winproc.kill_tree(pid))
+        self._runs = runs or (lambda pid, needle: winproc.pid_runs(pid, needle))
+        # Injectable so a test never depends on whether a real desktop is installed here.
+        self._desktop_exe = desktop_exe if desktop_exe is not None else running_desktop_exe
         self._clock = clock or time.time
 
     # -- persistence -------------------------------------------------------
@@ -445,13 +586,33 @@ class GatewayService:
             health, reason = observed
         own = int(current.get("pid") or 0)
         own_alive = False
+        identity: bool | None = None
         if own:
             try:
                 own_alive = bool(self._alive(own))
             except Exception:  # noqa: BLE001
                 own_alive = False
+            if own_alive:
+                # Ask the identity question -- but only here, where it can change the
+                # answer, and only when there is something to match against.  A record with
+                # no remembered launch (never started by us, or an older format) has no
+                # needle, and an unverifiable identity is *not* the same as a negative one:
+                # ``own_pid_is_gateway`` stays ``None`` and the conservative reading is
+                # "assume it is ours, do not start a second one".
+                expected = self._expected_cli(current)
+                if expected:
+                    try:
+                        identity = bool(self._runs(own, expected))
+                    except Exception:  # noqa: BLE001
+                        identity = None
         return Measurement(port_pid=int(pid or 0), port_name=str(name or ""),
-                           health=health, health_reason=reason, own_pid_alive=own_alive)
+                           health=health, health_reason=reason, own_pid_alive=own_alive,
+                           own_pid_is_gateway=identity)
+
+    def _expected_cli(self, record: Mapping[str, Any]) -> str:
+        """The CLI path the recorded launch used -- the needle that proves identity."""
+        argv = (record.get("launch") or {}).get("argv") or []
+        return str(argv[1]) if len(argv) > 1 else ""
 
     def has_credential(self) -> bool:
         return bool(str(self.env.get(ENV_PASSWORD) or "").strip())
@@ -473,8 +634,15 @@ class GatewayService:
         return int(child.pid or 0)
 
     def start(self, *, record: Mapping[str, Any], now: float) -> dict[str, Any]:
-        """One spawn attempt.  Returns the record to persist; raises only on a real refusal."""
-        plan = build_plan(self.root, port=self.port, log_path=self.log_path, env=self.env)
+        """One spawn attempt.  Returns the record to persist; raises only on a real refusal.
+
+        The remembered command line is offered to :func:`build_plan`, which is what makes a
+        launcher without the desktop's environment able to start a gateway anyway: the
+        previous successful launch is evidence, and evidence outranks a missing variable.
+        """
+        remembered = (record.get("launch") or {}).get("argv") or None
+        plan = build_plan(self.root, port=self.port, log_path=self.log_path, env=self.env,
+                          remembered_argv=remembered, desktop_exe=self._desktop_exe)
         pid = int(self._spawn(plan) or 0)
         attempts = int(record.get("restart_attempts") or 0) + 1
         rung = min(attempts, len(RESTART_BACKOFF)) - 1
@@ -574,7 +742,9 @@ class GatewayService:
 
 __all__ = [
     "GatewayService", "Measurement", "LaunchPlan", "GatewayStartRefused",
-    "decide", "build_plan", "cli_path", "node_path",
+    "decide", "build_plan", "cli_path", "node_path", "discover_cli",
+    "running_desktop_exe", "default_log_path",
+    "ENV_CLI_OVERRIDE", "ENV_LOG_DIR",
     "STARTING", "HEALTHY", "DEGRADED", "OFFLINE", "RESTARTING", "PORT_CONFLICT",
     "UNREACHABLE", "NO_CREDENTIAL", "PASSIVE_STOPPED", "UNKNOWN", "STATES",
     "ACT_PASSIVE", "ACT_REUSE", "ACT_WAIT", "ACT_START", "ACT_RESTART",

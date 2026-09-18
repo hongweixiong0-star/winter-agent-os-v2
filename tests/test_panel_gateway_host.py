@@ -70,6 +70,10 @@ def _probes(tmp, *, health, port=(0, ""), alive=False, intent="RUNNING", spawns=
         port_owner=lambda: port,
         probe=lambda: (health, "seam"),
         alive=lambda pid: alive,
+        # Hermetic: the suite must not depend on a real desktop being installed, nor on a
+        # real process table being queried by the identity check.
+        runs=lambda pid, needle: True,
+        desktop_exe=lambda: "",
         clock=lambda: 1000.0,
     )
     probes = cp.PanelProbes(tmp, device=None, gateway_service=service)

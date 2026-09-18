@@ -158,10 +158,83 @@ def test_the_plan_never_pins_a_model_and_never_disables_auth(tmp_path):
     assert "--auth" not in argv
 
 
-def test_no_cli_on_disk_is_a_refusal_that_says_where_to_look(tmp_path):
+def test_no_cli_on_disk_is_a_refusal_that_says_what_it_tried(tmp_path):
+    """When every link of the chain fails, the refusal names all of them.
+
+    ``desktop_exe`` is injected as empty so this test does not depend on whether a real
+    desktop is installed on the machine running the suite -- a chain that probed for one
+    unconditionally would find the developer's own and never refuse.
+    """
     with pytest.raises(gs.GatewayStartRefused) as excinfo:
-        gs.build_plan(tmp_path, log_path=tmp_path / "gw.log", env={gs.ENV_APP_PATH: str(tmp_path)})
-    assert "WORKBUDDY_GATEWAY_CONTRACT" in str(excinfo.value)
+        gs.build_plan(tmp_path, log_path=tmp_path / "gw.log",
+                      env={gs.ENV_APP_PATH: str(tmp_path)}, desktop_exe=lambda: "")
+    message = str(excinfo.value)
+    assert "WORKBUDDY_GATEWAY_CONTRACT" in message
+    assert gs.ENV_CLI_OVERRIDE in message and gs.ENV_APP_PATH in message
+
+
+# --------------------------------------------------------------------- the discovery chain
+
+
+def _fake_install(tmp_path, name="WorkBuddy"):
+    """A desktop install layout: ``<root>/WorkBuddy.exe`` and the bundled CLI."""
+    root = tmp_path / name
+    cli = root / "resources" / "app.asar.unpacked" / "cli" / "bin" / "codebuddy"
+    cli.parent.mkdir(parents=True, exist_ok=True)
+    cli.write_text("x", encoding="utf-8")
+    exe = root / "WorkBuddy.exe"
+    exe.write_text("x", encoding="utf-8")
+    return cli, exe
+
+
+def test_a_launcher_without_the_desktops_environment_can_still_start_a_gateway(tmp_path):
+    """The measured production break, 2026-09-18 19:40.
+
+    The panel was refused a gateway because ``WORKBUDDY_APP_PATH`` was missing -- that
+    variable is set for the desktop's *children*, and the panel had been launched by a
+    different agent's interpreter.  It sat in ``OFFLINE / RESTART / restart_attempts 0``
+    while ``consecutive_failures`` climbed to 20, refusing every attempt, even though a
+    working command line was already written down in its own record and the binary was on
+    disk.  §5 of the工单: starting the gateway must not depend on the desktop having started
+    normally.
+    """
+    cli, _ = _fake_install(tmp_path)
+    remembered = ["node.exe", str(cli), "--serve", "--port", "8080"]
+    plan = gs.build_plan(tmp_path, log_path=tmp_path / "gw.log",
+                         env={}, remembered_argv=remembered, desktop_exe=lambda: "")
+    assert plan.argv[1] == str(cli)
+    assert "记录" in plan.cli_source
+
+
+def test_the_running_desktops_own_location_is_the_last_resort(tmp_path):
+    """With no environment and nothing remembered, ask the OS where the desktop lives."""
+    cli, exe = _fake_install(tmp_path)
+    plan = gs.build_plan(tmp_path, log_path=tmp_path / "gw.log", env={},
+                         desktop_exe=lambda: str(exe))
+    assert plan.argv[1] == str(cli)
+    assert "桌面程序位置" in plan.cli_source
+
+
+def test_an_explicit_override_outranks_everything(tmp_path):
+    """A machine where nothing else answers must have something an operator can set."""
+    cli, exe = _fake_install(tmp_path, "Elsewhere")
+    plan = gs.build_plan(tmp_path, log_path=tmp_path / "gw.log",
+                         env={gs.ENV_CLI_OVERRIDE: str(cli), gs.ENV_APP_PATH: ""},
+                         desktop_exe=lambda: str(exe))
+    assert plan.argv[1] == str(cli)
+    assert gs.ENV_CLI_OVERRIDE in plan.cli_source
+
+
+def test_the_discovered_path_survives_into_the_record_for_the_next_launch(tmp_path):
+    """The chain's own memory: what worked is written down, so env loss cannot repeat."""
+    cli, exe = _fake_install(tmp_path)
+    plan = gs.build_plan(tmp_path, log_path=tmp_path / "gw.log", env={},
+                         desktop_exe=lambda: str(exe))
+    recorded = plan.as_record()
+    assert recorded["cli"] == str(cli)
+    assert recorded["cli_source"]
+    # And it is still credential-free.
+    assert "password" not in json.dumps(recorded, ensure_ascii=False).lower()
 
 
 def test_the_persisted_launch_record_carries_no_credential(tmp_path):
@@ -191,7 +264,7 @@ class _Spawns:
 
 
 def _service(tmp_path, *, health, port=(0, ""), alive=False, spawn=None, state=None,
-             killed=None):
+             killed=None, ours=True):
     path = tmp_path / "gateway_service.json"
     if state is not None:
         path.write_text(json.dumps(state), encoding="utf-8")
@@ -207,6 +280,11 @@ def _service(tmp_path, *, health, port=(0, ""), alive=False, spawn=None, state=N
         probe=lambda: (health, "seam"),
         alive=lambda pid: alive,
         kill=lambda pid: (killed if killed is not None else []).append(pid) or True,
+        # Identity: does the recorded pid still run *our* command line?  Default yes, so
+        # the pid-reuse case has to be asked for explicitly.
+        runs=lambda pid, needle: ours,
+        # No desktop dependency in the suite.
+        desktop_exe=lambda: "",
         clock=lambda: 1000.0,
     )
     # The CLI must exist for a spawn to be attempted; the plan builder is measured above.
@@ -277,6 +355,50 @@ def test_the_reason_it_gives_agrees_with_the_count_it_records(tmp_path):
     second = service.ensure()
     assert second["consecutive_failures"] == 2
     assert "连续失败 2/3" in second["detail"], second["detail"]
+
+
+_LAUNCHED = {
+    "launch": {"argv": ["node.exe", r"E:\fake\cli\bin\codebuddy", "--serve",
+                        "--port", "8080"],
+               "cwd": ".", "log_path": "gw.log", "cli": r"E:\fake\cli\bin\codebuddy",
+               "cli_source": "test"},
+}
+
+
+def test_a_recorded_pid_that_was_reused_is_not_our_gateway(tmp_path):
+    """Measured 2026-09-18: the recorded gateway pid 15140 was later alive as the
+    sheetagent MCP server.  "Does the pid exist" answered yes, so the gateway that was
+    actually gone would never have been restarted."""
+    spawns = _Spawns(pid=777)
+    state = {**_LAUNCHED, "pid": 15140, "started_ever": True, "launched_at": 100.0,
+             "consecutive_failures": 3, "next_attempt_at": 0.0}
+    service = _service(tmp_path, health=False, alive=True, ours=False, spawn=spawns,
+                       state=state)
+    record = service.ensure(operator_intent="RUNNING")
+    assert record["action"] == gs.ACT_RESTART, record["detail"]
+    assert "复用" in record["detail"], record["detail"]
+    assert record["pid"] == 777
+
+
+def test_the_pid_reuse_case_still_respects_the_ladder(tmp_path):
+    """It is not a licence to spawn on one failure: it is the offline path, with a note."""
+    state = {**_LAUNCHED, "pid": 15140, "started_ever": True, "launched_at": 100.0,
+             "consecutive_failures": 0}
+    service = _service(tmp_path, health=False, alive=True, ours=False, state=state)
+    record = service.ensure(operator_intent="RUNNING")
+    assert record["action"] == gs.ACT_WAIT
+    assert "复用" in record["detail"]
+
+
+def test_without_a_remembered_command_line_identity_cannot_be_claimed(tmp_path):
+    """No needle, no verdict: assuming "not ours" would spawn a second gateway beside a
+    live one, so the unverifiable case stays conservative."""
+    spawns = _Spawns()
+    service = _service(tmp_path, health=False, alive=True, ours=False, spawn=spawns,
+                       state={"pid": 15140, "started_ever": True, "launched_at": 1000.0})
+    record = service.ensure(operator_intent="RUNNING")
+    assert spawns.calls == 0, "an unverifiable pid must not become a second gateway"
+    assert "我们的网关" in record["detail"] or "尚未监听" in record["detail"]
 
 
 def test_a_healthy_gateway_is_adopted_without_spawning(tmp_path):
