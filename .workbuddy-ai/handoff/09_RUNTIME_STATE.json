@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-09-18T03:02:39+00:00",
+  "generated_at": "2026-09-18T03:21:24+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "a641b6d",
+  "commit": "6b31d45",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
-    "agent_state": "GOAL_RUNNING",
-    "runtime_thread_alive": true,
-    "scheduler_loop_alive": true,
-    "last_tick_time": "2026-09-18T03:02:27.795926+00:00",
-    "last_action_time": "2026-09-18T03:02:28.028767+00:00",
-    "last_success_time": "2026-09-18T03:02:13.298788+00:00",
+    "agent_state": "IDLE",
+    "runtime_thread_alive": false,
+    "scheduler_loop_alive": false,
+    "last_tick_time": "2026-09-18T03:17:36.108251+00:00",
+    "last_action_time": "2026-09-18T03:17:04.373488+00:00",
+    "last_success_time": "2026-09-18T03:17:20.834133+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 13,
     "unexpected_worker_exits": 15,
     "page": "MAP",
     "current_goal": "AUTO_DISCOVERY",
-    "current_skill": "SELECT_RESOURCE",
-    "reason": "balanced_resource_not_selected",
+    "current_skill": "SAFE_STOP",
+    "reason": "reserved_march_for_stamina",
     "preconditions": [],
     "verifier": "PASS",
-    "next_action": "meat_selected",
+    "next_action": "stamina_task_slot_preserved",
     "risk": "UNKNOWN",
-    "confidence": 0.99,
+    "confidence": 1.0,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_110045_613293\\20260918_110045_613293_step_004_before_20260918T030213300739.png",
-    "march_used": 0,
-    "march_max": null,
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_111617_064140\\20260918_111617_064140_step_003_before_20260918T031720835106.png",
+    "march_used": 2,
+    "march_max": 3,
     "queues": {
       "building": {},
       "research": {},
@@ -38,7 +38,7 @@
       "alliance": {},
       "events": {}
     },
-    "stop_reason": null,
+    "stop_reason": "reserved_march_for_stamina",
     "deferred_goals": [
       {
         "goal_id": "AVOID_STAMINA_WASTE",
@@ -50,15 +50,26 @@
         "streak": 5,
         "until": "",
         "last_skill": "SCAN_MAP_FOR_BEAST"
+      },
+      {
+        "goal_id": "KEEP_MARCHES_PRODUCTIVE",
+        "capability": "NAVIGATE_TO_MAP",
+        "state": "DEVELOPMENT_PENDING",
+        "reason": "a development job owns it (job=57848179)",
+        "source": "ESCALATION_QUEUE",
+        "failure_signature": "",
+        "streak": 0,
+        "until": "",
+        "last_skill": ""
       }
     ],
-    "updated_at": "2026-09-18T03:02:28.028767+00:00"
+    "updated_at": "2026-09-18T03:17:39.325489+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-18T03:00:13+00:00",
-    "size_bytes": 22427,
-    "last_stop_reason": null
+    "modified_at": "2026-09-18T03:17:36+00:00",
+    "size_bytes": 7820,
+    "last_stop_reason": "reserved_march_for_stamina"
   },
   "recent_crash_reports": [],
   "process_alive_interpretation": "runtime_thread_alive/scheduler_loop_alive mean the in-process worker loop is running. They do NOT mean the emulator or the game is reachable; check the device separately."

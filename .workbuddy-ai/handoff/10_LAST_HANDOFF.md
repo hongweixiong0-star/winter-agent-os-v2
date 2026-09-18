@@ -8,35 +8,35 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-18T03:02:39+00:00
+HANDOFF TIME: 2026-09-18T03:21:24+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 49 dirty file(s)
-  ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md', ' M .workbuddy-ai/handoff/08_LIVE_METRICS.json', ' M .workbuddy-ai/handoff/09_RUNTIME_STATE.json', ' M .workbuddy-ai/handoff/10_LAST_HANDOFF.md', ' M config/control_panel_state.json', ' M config/policy_state.json']
+WORKING TREE: 40 dirty file(s)
+  ['M config/control_panel_state.json', ' M config/policy_state.json', ' M docs/CAPABILITY_COVERAGE.md', ' M knowledge/game/capability_catalog.json', ' M knowledge/goals/capability_skill_map.json', ' M learning/control_panel/latest.log', ' M learning/episodes.jsonl', ' M learning/executor_backend.jsonl', ' M learning/goal_state.json', ' M learning/resource_rotation.json']
 
-WHAT FINISHED (machine-visible): 24 skills live verified, 30 stable, 186 commit(s) in history
+WHAT FINISHED (machine-visible): 24 skills live verified, 30 stable, 188 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 19 skills never executed, 10 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=GOAL_RUNNING stop_reason=None
-LAST PRODUCTION EPISODE: {"skill": "SEARCH_RESOURCE", "result": "SUCCESS", "recorded_at": "2026-09-18T03:02:13.260888+00:00", "episode_id": "20260918_110045_613293", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_110045_613293\\20260918_110045_613293_step_003_before_20260918T030144240733.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_110045_613293\\20260918_110045_613293_step_003_after_20260918T030159924795.png"}
+STOPPED AT: agent_state=IDLE stop_reason=reserved_march_for_stamina
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-18T03:17:20.803377+00:00", "episode_id": "20260918_111617_064140", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_111617_064140\\20260918_111617_064140_step_002_before_20260918T031650768487.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_111617_064140\\20260918_111617_064140_step_002_after_20260918T031705875798.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 132, "recent": 5, "last_seen": "2026-09-17T23:29:36.626405+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3}, "undated": 31, "top_skills": [["SELECT_RESOURCE", 44], ["SEARCH_RESOURCE", 32], ["OPEN_MAIL", 13]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 49
+DIRTY FILES: 40
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-18T03:02:39+00:00
+SYNC STATE at 2026-09-18T03:21:24+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : a641b6d3ab8a79da45b7916de17b95c37a3015e7
-remote_head       : 4ccc9434e2ac9f9bee49a81cb657da36b4d78a05   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 17   (behind: 0)
-git_dirty         : True (49 path(s))
-last_push_at      : 2026-09-18T01:20:37.879806+00:00
+local_head        : 6b31d45722e129adfe264ef926d14f3ce2a817bf
+remote_head       : b5c962cb3ba9e912ea2ea8f81f4bd83083c6e46d   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 1   (behind: 0)
+git_dirty         : True (40 path(s))
+last_push_at      : 2026-09-18T03:03:28.160217+00:00
 last_push_status  : PUSHED
-verdict           : LOCAL IS AHEAD by 17 commit(s) -- run `python tools/git_sync.py push`
+verdict           : LOCAL IS AHEAD by 1 commit(s) -- run `python tools/git_sync.py push`
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.
@@ -53,7 +53,52 @@ DO NOT REPEAT:
 
 ## 手写：人类补充（生成器读不出来的部分）
 
-### 🔄 情报任务已做完 + 常驻循环自动化（第六轮，2026-09-14 17:00）— 读这一节就够了
+### ⭐ 能力扩展主路线已变更 + 常驻知识预载已上线（2026-09-18 11:24，`a641b6d` / `6b31d45`）— 先读这一节
+
+**操作者定规**：主路线不再是「跑起来撞到不会 → 从零开发」。现在是
+
+```
+Knowledge Preload → Capability Preload → Live Calibration → LIVE_VERIFIED → Production
+（兜底）Runtime Gap → DEVELOPMENT_PENDING → WorkBuddy → Live Calibration → LIVE_VERIFIED
+```
+
+四条永久原则：`PRELOAD BEFORE ENCOUNTER / CALIBRATE ON REAL DEVICE / LEARN FROM REAL FAILURE /
+VERIFY BEFORE TRUST`。**真机从"探索工具"降为"校准工具"**。
+
+- **机制**：`winter_agent_v2/capability_bootstrap.py`（扫描 / 排序 / 七字段简报 / 闸门 /
+  `KnowledgeBootstrapController` 十段循环）+ `winter_agent_v2/knowledge_preload.py`
+  （知识落盘 / 九级获取 / 充分性闸门 / 差异校准）。
+- **入口**：`tools/bootstrap_scan.py --status | --top N | --capability CODE | --cycle [--dry-run] |
+  --state | --coverage | --write`。**选能力不要手工挑，先跑这个。**
+- **知识**：`knowledge/preload/<CAPABILITY>.json`（每字段带来源与信任级别
+  `PRIOR→UNVERIFIED→OBSERVED→CONFIRMED`，冲突记 `CONFLICT`）+ 派生的 `INDEX.json`。
+  **本地 1-5 级够用就禁止联网**；不够才带**具体问题**做定向研究。
+- **状态**：`learning/knowledge_bootstrap/STATE.json`（看门狗那七个问题的答案）
+  + 面板「能力学习 / 预装」行 + `pump.json` 的 `preload_note`。
+- **硬边界（check_wiring 18 条断言钉住）**：预载上限 `READY_FOR_LIVE_VERIFY`；
+  `WORKING / DEVELOPMENT_PENDING / CANDIDATE / LIVE_VERIFY_PENDING / LIVE_VERIFIED`
+  （含 `COOLDOWN / BLOCKED`）一律按名字拒绝；`confirm_from_live()` 是唯一升 CONFIRMED 的入口，
+  只有 reconciler 能调；**不建第二套 Registry / Scheduler / 台账**。
+
+**当前实测（真机跑 `--cycle`）**：主闭环 P0 未过（P0-A/E=PARTIAL、P0-D/F=NOT PROVEN）
+⇒ 闸门 `GATE_REFUSED: NOT_ARMED_MAIN_LOOP_P0`，**台账 0 条 bootstrap 行**——这是操作者要求的顺序。
+覆盖率：已解锁 194 项里 LIVE_VERIFIED 32（16.5%）、Candidate 54.6%；全表 522 项 6.1%。
+
+**⚠ 面板仍是旧进程**（pid 见 `panel.pid`）：`_preload_tick` 要下次安全边界重启后才在真机 GUI 里跑。
+AUTO 当时正在跑一轮，为加载一个后台时钟去打断有效轮次不值得 ⇒ **这一环不算已生效**。
+
+**下一个最高价值动作**（按操作者顺序）：
+1. 打通 P0-D/P0-F（新版本生效 → 真机 live episode → LIVE_VERIFIED → 回到 scheduler）——
+   缺的那一环是**"取租约的一方"**（替 `LIVE_VERIFY_PENDING` 记录申请
+   `DEVELOPMENT_VALIDATION_DEVICE_LEASE`），闭环一旦 LIVE VERIFIED，预载会自动启用。
+2. 补**定向外部研究的执行者**：控制器能把带问题的工作单发进队列，
+   但没人把答案写回 `knowledge/preload/<CAP>`（完成 Hook 只做对账与状态迁移）。
+3. 统一 `trace_id` 仍未落字段。
+
+**不要重复**：不要重新设计这两条路线；不要把 `NEEDS_LIVE_FRAME` 当成失败（它是诚实答案）；
+不要因为"读了攻略 / 离线测试过 / Replay 过"就把任何能力写进 `LIVE_VERIFIED`。
+
+### 🔄 情报任务已做完 + 常驻循环自动化（第六轮，2026-09-14 17:00）
 
 > ⏸️ **最新状态覆盖本节（2026-09-15 18:37 GMT+8）**：**操作者已主动要求取消「情报定时循环」**，
 > 当前自动化 **`43aef0ad-d5bc-4d79-9291-0a4da0b0dc27`「Winter V2 情报循环（每小时）」= `PAUSED`**

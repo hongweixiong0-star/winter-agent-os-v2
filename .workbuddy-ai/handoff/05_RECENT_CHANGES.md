@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `6b31d45 2026-09-18T11:20:56+08:00 feat(preload): read once, store once, reuse many times`
+- `b5c962c 2026-09-18T11:02:46+08:00 docs(handoff): refresh after the preload mechanism, 1405 tests green`
 - `a641b6d 2026-09-18T11:02:31+08:00 feat(preload): prepare the lesson before the wall, without a second pipeline`
 - `3884725 2026-09-18T10:25:12+08:00 docs(evidence): regenerate the P0 ladder from the artifacts after the ordering fix`
 - `8c605de 2026-09-18T10:25:06+08:00 docs(memory): the corrected verification order, and a lease that really releases`
@@ -16,22 +18,12 @@ Last 12 commits (newest first):
 - `5ba83b3 2026-09-18T10:02:01+08:00 fix(bridge): a credential that exists and is wrong is not a gateway that is down`
 - `003dae6 2026-09-18T09:55:43+08:00 feat(pump): the consumer's liveness is a file, not a claim`
 - `8071b00 2026-09-18T09:50:01+08:00 fix(proof): the fix for "the goal does not move" was six episodes where it did not move`
-- `21486ce 2026-09-18T09:44:07+08:00 fix(escalation): a job past its timebox was holding the only slot forever`
-- `336437f 2026-09-18T09:38:29+08:00 feat(escalation): the queue had a consumer but no clock`
 
-Uncommitted changes: 49
-- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M config/control_panel_state.json`
+Uncommitted changes: 40
+- `M config/control_panel_state.json`
 - ` M config/policy_state.json`
 - ` M docs/CAPABILITY_COVERAGE.md`
-- ` M evidence/INDEX.json`
+- ` M knowledge/game/capability_catalog.json`
 - ` M knowledge/goals/capability_skill_map.json`
 - ` M learning/control_panel/latest.log`
 - ` M learning/episodes.jsonl`
@@ -40,6 +32,14 @@ Uncommitted changes: 49
 - ` M learning/resource_rotation.json`
 - ` M learning/runtime_snapshot.json`
 - ` M learning/workbuddy_escalations.jsonl`
+- ` M learning/workbuddy_model_stats.jsonl`
+- ` M tests/test_capability_gate.py`
+- ` M winter_agent_v2/capability_gate.py`
+- `?? dataset/raw/control_panel/probe/`
+- `?? dataset/truth_audit/map_beast_search_20260918/`
+- `?? dataset/truth_audit/nav_to_map_20260918/key/live_20260918_job57848179_after_MAP.png`
+- `?? dataset/truth_audit/nav_to_map_20260918/key/live_20260918_job57848179_before_HOME.png`
+- `?? dataset/truth_audit/nav_to_map_20260918/regression_fix_57848179.json`
 <!-- /AUTO:recent_commits -->
 
 ---

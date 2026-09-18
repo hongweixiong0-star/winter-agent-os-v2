@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 49 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
+- 40 uncommitted file(s): ['M config/control_panel_state.json', ' M config/policy_state.json', ' M docs/CAPABILITY_COVERAGE.md', ' M knowledge/game/capability_catalog.json', ' M knowledge/goals/capability_skill_map.json']
 <!-- /AUTO:open_issues -->
 
 ---
