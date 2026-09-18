@@ -3338,8 +3338,63 @@ class EscalationQueueAdapter:
                 })
                 events.append(
                     f"{record.capability}: PRODUCTION_REUSE（episode {episode_id}）→ DONE")
+                # Only here, and only now (operator §一).  This is the first moment anything
+                # knows the capability works in ordinary play on the version the job produced --
+                # which is what "learned" means.  Everything before it (CODE_CHANGED,
+                # TEST_PASS, VERSION_ACTIVE, LIVE_TRIED, LIVE_VERIFIED) describes the process,
+                # not the outcome, and a hook at any of those rungs would report a capability
+                # learned because a job stopped editing.
+                events.extend(self._complete_bootstrap(
+                    record, episode_id=episode_id, moment=now))
                 break
         return events
+
+    def _complete_bootstrap(self, record: EscalationRecord, *, episode_id: str,
+                            moment: datetime) -> list[str]:
+        """The bootstrap completion hook, after production reuse and never before.
+
+        Idempotent by evidence rather than by a flag: ``completion_hook`` carries the episode id
+        it is completing, and a second call for the same episode finds the first one on the
+        ledger and does nothing.  A flag in memory would be lost on the restart that this whole
+        design exists to survive.
+        """
+        out: list[str] = []
+        if record.origin != "bootstrap" or not record.capability:
+            return out
+        already = [
+            row for row in self.ledger.events()
+            if row.get("event") == "knowledge_updated"
+            and row.get("key") == record.key
+            and str(row.get("reuse_episode_id") or "") == episode_id
+        ]
+        if already:
+            return out
+        try:
+            from .capability_bootstrap import KnowledgeBootstrapController
+
+            summary = KnowledgeBootstrapController(self.root).completion_hook(
+                capability=record.capability,
+                outcome="PRODUCTION_REUSE_PASS",
+                evidence=record.evidence,
+                agent_report=record.agent_report,
+                now=moment,
+            )
+            self.ledger.append({
+                "source": "queue",
+                "event": "knowledge_updated",
+                "key": record.key,
+                "capability": record.capability,
+                "job_id": record.job_id,
+                "outcome": "PRODUCTION_REUSE_PASS",
+                "reuse_episode_id": episode_id,
+                "summary": summary,
+                "recorded_at": moment.isoformat(),
+            })
+            out.append(f"{record.capability}: 知识/能力目录已更新（PRODUCTION_REUSE_PASS，"
+                       f"episode {episode_id}）→ Bootstrap 选择下一个能力")
+        except Exception as exc:  # noqa: BLE001 - a hook must not break reconciliation
+            out.append(f"{record.capability}: knowledge hook failed: {type(exc).__name__}: {exc}")
+        return out
 
     def _settle(
         self, *, snapshot, record, outcome, explanation, episodes, before, after, wiring,
@@ -3438,32 +3493,29 @@ class EscalationQueueAdapter:
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{record.key}: lease release failed: {type(exc).__name__}: {exc}")
 
-        # The bootstrap completion hook (operator §15).  A preloaded capability that
-        # just settled re-enters the loop *here*, whatever the outcome was, so
-        # "完成一个 Capability 后不再等指令" is a code path and not a promise.  It runs
-        # for bootstrap-origin records only: a runtime escalation already has the
-        # runtime as its next step.
+        # What settling is allowed to conclude (operator §二).  A development job finishing
+        # means the *work* is over; it says nothing about whether the version loaded, whether the
+        # device proved it, or whether ordinary play ever used it.  So this records
+        # DEVELOPMENT_COMPLETED -- an intermediate state -- and does **not** touch the bootstrap
+        # controller.
+        #
+        # Measured 2026-09-18: this block called `completion_hook(...)` here, on every outcome
+        # including CODE_CHANGED.  That made "the agent stopped editing" indistinguishable from
+        # "the capability was learned", and it advanced the bootstrap to the next capability
+        # before anything had been examined.  The hook now runs only after a real
+        # production-reuse episode exists (see `detect_production_reuse`).
         if record.origin == "bootstrap" and record.capability:
-            try:
-                from .capability_bootstrap import KnowledgeBootstrapController
-
-                summary = KnowledgeBootstrapController(self.root).completion_hook(
-                    capability=record.capability,
-                    outcome=outcome,
-                    evidence=record.evidence,
-                    agent_report=record.agent_report,
-                    now=moment,
-                )
-                self.ledger.append({
-                    "source": "queue",
-                    "event": "knowledge_updated",
-                    "key": record.key,
-                    "capability": record.capability,
-                    "outcome": outcome,
-                    "summary": summary,
-                })
-            except Exception as exc:  # noqa: BLE001 - a hook must not break reconciliation
-                errors.append(f"{record.key}: knowledge hook failed: {type(exc).__name__}: {exc}")
+            self.ledger.append({
+                "source": "queue",
+                "event": "development_completed",
+                "key": record.key,
+                "capability": record.capability,
+                "job_id": record.job_id,
+                "outcome": outcome,
+                "note": ("开发结束，仅代表代码工作完成；未加载 / 未真机验证 / 未在普通 Gameplay 复用，"
+                         "因此不触发 Bootstrap 完成钩子"),
+                "recorded_at": moment.isoformat() if moment else "",
+            })
 
         if code_changed:
             request = self.reload_signal.request(
