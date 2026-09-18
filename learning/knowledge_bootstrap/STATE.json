@@ -1,0 +1,69 @@
+{
+ "written_at": "2026-09-18T03:18:39.994567+00:00",
+ "process": 26772,
+ "controller": "RUNNING",
+ "stage": "TARGETED_RESEARCH",
+ "decision": "GATE_REFUSED",
+ "note": "NOT_ARMED_MAIN_LOOP_P0: main loop not fully proven yet: P0-A=PARTIAL, P0-B=PROVEN, P0-C=PROVEN, P0-D=NOT PROVEN, P0-E=PARTIAL, P0-F=NOT PROVEN",
+ "line": "[bootstrap] TARGETED_RESEARCH · P1 TROOP_SELECT · GATE_REFUSED · missing recovery_prior · next ECONOMY_RESEARCH",
+ "learning": "TROOP_SELECT",
+ "learning_missing": [
+  "recovery_prior"
+ ],
+ "learning_questions": [
+  "基础 Recovery：失败后怎么恢复"
+ ],
+ "preloading": "",
+ "developing": [],
+ "awaiting_calibration": [],
+ "last_preload_at": "",
+ "last_confirmed_at": "",
+ "next_capability": "ECONOMY_RESEARCH",
+ "knowledge_records": 1,
+ "knowledge_blocked": [],
+ "coverage": {
+  "unlocked": {
+   "total": 194,
+   "observed": 70,
+   "observed_percent": 36.1,
+   "implemented_percent": 36.1,
+   "tried_percent": 17.5,
+   "candidate": 36,
+   "candidate_percent": 54.6,
+   "live_tried": 2,
+   "live_tried_percent": 1.0,
+   "live_verified": 32,
+   "live_verified_percent": 16.5
+  },
+  "all": {
+   "total": 522,
+   "observed": 70,
+   "observed_percent": 13.4,
+   "implemented_percent": 13.4,
+   "tried_percent": 6.5,
+   "candidate": 36,
+   "candidate_percent": 20.3,
+   "live_tried": 2,
+   "live_tried_percent": 0.4,
+   "live_verified": 32,
+   "live_verified_percent": 6.1
+  },
+  "knowledge": {
+   "records": 1,
+   "sufficient": 0,
+   "confirmed": 0,
+   "observed": 0,
+   "prior_only": 0,
+   "conflicts": 0,
+   "awaiting_calibration": 0,
+   "blocked": 0,
+   "external_share": 0.0
+  },
+  "definitions": {
+   "unlocked": "该能力所在 category 出现过证据（EXISTING 行或有真机尝试）",
+   "candidate_percent": "(lifecycle=CANDIDATE + implementation=EXISTING) / 分母",
+   "live_verified_percent": "lifecycle=LIVE_VERIFIED / 分母",
+   "external_share": "知识来源 rung>5（外部）的记录占比 —— 应当随运行时间下降"
+  }
+ }
+}

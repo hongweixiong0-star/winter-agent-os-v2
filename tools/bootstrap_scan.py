@@ -170,6 +170,15 @@ def main() -> int:
     parser.add_argument("--write", action="store_true", help="write the report under learning/")
     parser.add_argument("--preload-once", action="store_true",
                         help="one real preload pass through the existing queue (the gate decides)")
+    parser.add_argument("--cycle", action="store_true",
+                        help="run one full knowledge-bootstrap loop pass "
+                             "(SCAN -> ... -> SELECT NEXT); dispatches unless --dry-run")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="with --cycle: do everything except send a job")
+    parser.add_argument("--state", action="store_true",
+                        help="print the controller's live state (the watchdog's questions)")
+    parser.add_argument("--coverage", action="store_true",
+                        help="print the five coverages, over the unlocked subset")
     parser.add_argument("--json", action="store_true", help="machine-readable report on stdout")
     args = parser.parse_args()
 
@@ -177,6 +186,49 @@ def main() -> int:
 
     if args.capability:
         return _one_brief(scanner, args.capability)
+
+    if args.state or args.cycle or args.coverage:
+        from winter_agent_v2.capability_bootstrap import KnowledgeBootstrapController
+
+        controller = KnowledgeBootstrapController(ROOT)
+        if args.cycle:
+            report = controller.cycle(dispatch=not args.dry_run)
+            print("KNOWLEDGE BOOTSTRAP CYCLE (one pass of the permanent loop)")
+            print(f"  {report.line}")
+            for key in ("stage", "selected", "tier", "decision", "note",
+                        "missing", "questions", "next_capability", "dispatch"):
+                print(f"  {key:<16}: {report.as_row()[key]}")
+            print()
+        if args.coverage:
+            coverage = controller.coverage(scanner)
+            print("COVERAGE (denominators printed with the numbers)")
+            for scope in ("unlocked", "all"):
+                block = coverage[scope]
+                print(f"  {scope:<9} total={block['total']:<4} "
+                      f"observed={block['observed_percent']}% "
+                      f"candidate={block['candidate_percent']}% "
+                      f"live_tried={block['live_tried']} ({block['live_tried_percent']}%) "
+                      f"LIVE_VERIFIED={block['live_verified']} "
+                      f"({block['live_verified_percent']}%)")
+            print(f"  knowledge {json.dumps(coverage['knowledge'], ensure_ascii=False)}")
+            for key, why in coverage["definitions"].items():
+                print(f"    {key}: {why}")
+            print()
+        if args.state or args.cycle:
+            state = controller.state(scanner=scanner)
+            path = controller.write_state(scanner=scanner)
+            print("CONTROLLER STATE (the watchdog's seven questions)")
+            for key in ("controller", "stage", "decision", "learning", "learning_missing",
+                        "preloading", "developing", "awaiting_calibration", "knowledge_blocked",
+                        "last_preload_at", "last_confirmed_at", "next_capability",
+                        "knowledge_records"):
+                value = state.get(key)
+                if isinstance(value, list):
+                    value = ", ".join(str(v) for v in value) or "-"
+                print(f"  {key:<20}: {value or '-'}")
+            print(f"  written: {path}")
+            print()
+        return 0
 
     if args.write:
         json_path, md_path = bootstrap.write_report(ROOT, scanner, limit=max(args.top, 40))

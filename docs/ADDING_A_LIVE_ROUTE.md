@@ -26,6 +26,22 @@
 > `winter_agent_v2/capability_bootstrap.py`，面板每 10 分钟后台跑一次（低优先级，
 > 有真实 Gap / 开发任务 / 设备租约 / 实时活动时一律让路）。
 > **预载完成 ≠ LIVE_VERIFIED**：上限是 `READY_FOR_LIVE_VERIFY`，下面第 1~6 步一步都不能少。
+>
+> **这是一个常驻循环，不是一次性任务**（操作者 2026-09-18 定规）。跑一轮看它现在在做什么：
+>
+> ```bash
+> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --cycle --dry-run   # 只决策不派单
+> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --state             # 看门狗那七个问题
+> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --coverage          # 五个覆盖率（含分母定义）
+> ```
+>
+> 每个能力开发前先走 **本地知识优先** 的九级顺序（`winter_agent_v2/knowledge_preload.py`）：
+> 1-5 级都在本机（V2 已验证资产 / 内部 Knowledge / Episode 证据 / Legacy 资产 / Failure Pattern），
+> **本地够用就禁止联网**；不够才带着**缺失字段对应的具体问题**去做定向研究。
+> 结论落盘 `knowledge/preload/<CAPABILITY>.json`（每个字段带来源与信任级别
+> `PRIOR → UNVERIFIED → OBSERVED → CONFIRMED`，冲突记 `CONFLICT`），
+> 真机只负责**校准差异**（`PRIOR_VS_LIVE_DIFF`：说明书说是什么、真机实际是什么，只修差异）。
+> 任务结束一律走完成 Hook：更新知识 → 更新视图 → 选下一个，**不停下来等指令**。
 
 ### 0.1 先查本地 V2（≤2 分钟，**默认不查外部**）
 

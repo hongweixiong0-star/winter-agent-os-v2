@@ -605,6 +605,35 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.notes.append(f"reload required: {event.get('reason', '')}")
             continue
 
+        if kind == "evidence_appended":
+            # A real gameplay failure that belongs to a job already in flight.  The
+            # operator's rule is explicit: no second job, append the evidence and raise
+            # the priority -- two agents editing one capability is what this prevents.
+            record = get(key)
+            record.evidence = tuple(str(e) for e in (
+                *(event.get("evidence") or ()), *record.evidence
+            ))
+            record.notes.append(
+                "real failure appended: "
+                f"{event.get('failure_type', '')}/{event.get('skill', '')} "
+                f"-- {str(event.get('reason') or '')[:180]}"
+            )
+            continue
+
+        if kind == "priority_raised":
+            record = get(key)
+            record.notes.append(
+                f"priority raised to {event.get('tier') or 'P0'}: {event.get('reason', '')}"
+            )
+            continue
+
+        if kind == "knowledge_updated":
+            record = get(key)
+            record.notes.append(
+                f"knowledge {event.get('outcome', '')}: {str(event.get('summary') or '')[:180]}"
+            )
+            continue
+
         if kind in ("cancel", "submit_failed"):
             record = get(key) if key else None
             if record is not None and record.state in (NEW, QUEUED, SUBMITTED, WORKING):
@@ -1545,7 +1574,14 @@ class EscalationQueueAdapter:
             now=now, reconcile=True,
         )
 
-    def preload(self, *, now: datetime | None = None) -> RunObservation:
+    def preload(
+        self,
+        *,
+        now: datetime | None = None,
+        plan: Any | None = None,
+        mode: str = "PRELOAD",
+        questions: Sequence[str] = (),
+    ) -> RunObservation:
         """One Capability Bootstrap pass: offer at most one *prepared* capability.
 
         The second growth path.  ``observe_run``/``pump`` consume walls the device
@@ -1587,45 +1623,106 @@ class EscalationQueueAdapter:
             )
             if not gate.allowed:
                 return RunObservation(preload_note=gate.describe)
-            if not candidates:
+            if plan is None and not candidates:
                 return RunObservation(preload_note="no preloadable capability")
 
-            plan = candidates[0]
-            brief_path = bootstrap.write_brief(self.root, plan)
+            # The controller may hand in the capability it already selected (same scan,
+            # same projection) so there is one selection authority; with no plan this
+            # pass selects for itself, which is what the CLI does.
+            chosen = plan if plan is not None else candidates[0]
+            brief_path = bootstrap.write_brief(self.root, chosen)
+            if mode == "TARGETED_RESEARCH":
+                reason = (
+                    f"TARGETED_RESEARCH (preload path): {chosen.capability_id} {chosen.code} "
+                    f"has no implementation and its local knowledge is incomplete. Answer ONLY "
+                    f"these questions and write the answers into "
+                    f"knowledge/preload/{bootstrap._token_key(chosen.code)}.json "
+                    f"(status PRIOR/UNVERIFIED, never CONFIRMED): "
+                    + "; ".join(questions or ("identify the missing fields",))
+                )
+            else:
+                reason = (
+                    f"PRELOAD_BEFORE_ENCOUNTER: {chosen.capability_id} {chosen.code} is not "
+                    f"implemented and nothing has failed here yet. Priority "
+                    f"{bootstrap.PRIORITY_TIER.get(chosen.priority, chosen.priority)}; "
+                    f"knowledge rung {chosen.knowledge_rank} "
+                    f"({chosen.knowledge_source}); plan state {chosen.plan_state}; "
+                    f"brief {brief_path.as_posix()}"
+                )
             candidate = EscalationCandidate(
                 signature=FailureSignature(
-                    capability=plan.code or plan.capability_id,
+                    capability=chosen.code or chosen.capability_id,
                     failure_type=CAPABILITY_MISSING,
-                    skill=plan.skill,
+                    skill=chosen.skill,
                 ),
                 condition=CAPABILITY_MISSING,
-                reason=(
-                    f"PRELOAD_BEFORE_ENCOUNTER: {plan.capability_id} {plan.code} is not "
-                    f"implemented and nothing has failed here yet. Priority "
-                    f"{plan.priority}; knowledge rung {plan.knowledge_rank} "
-                    f"({plan.knowledge_source}); plan state {plan.plan_state}; "
-                    f"brief {brief_path.as_posix()}"
-                ),
-                goal=(plan.goal.split(",")[0].strip() if plan.goal else ""),
+                reason=reason,
+                goal=(chosen.goal.split(",")[0].strip() if chosen.goal else ""),
                 evidence=(brief_path.as_posix(),),
             )
             dispatch = decide(candidate, snapshot, self.policy, now=moment)
             if not dispatch.should_submit:
                 self._record(candidate, dispatch, origin="bootstrap")
                 return RunObservation(
-                    preload_note=f"{plan.code}: {dispatch.action}: {dispatch.reason}"
+                    preload_note=f"{chosen.code}: {dispatch.action}: {dispatch.reason}"
                 )
             job_id = self._submit(
                 candidate, dispatch, origin="bootstrap",
-                extra_notes=bootstrap.work_order_brief(plan),
+                extra_notes=bootstrap.work_order_brief(chosen),
             )
             if not job_id:
                 return RunObservation(
-                    preload_note=f"{plan.code}: queued (gateway unavailable)"
+                    preload_note=f"{chosen.code}: queued (gateway unavailable)"
                 )
-            return RunObservation(preloaded=(plan.code,))
+            return RunObservation(preloaded=(chosen.code,))
         except Exception as exc:  # noqa: BLE001 - a background pass must never raise
             return RunObservation(preload_note=f"preload failed: {type(exc).__name__}: {exc}")
+
+    def _merge_into_preload(self, candidate: EscalationCandidate) -> str:
+        """Fold a real failure into the preload job that already owns its capability.
+
+        The operator's §12: when the runtime hits a capability WorkBuddy is already
+        preloading, do **not** create a second job -- append the episode, screenshot,
+        failure signature and world state to the existing one and raise it to P0.  Two
+        agents editing one capability is a merge conflict by construction, and the
+        preload job is the one with the brief.
+
+        Returns the existing record's key, or ``""`` when nothing matched.
+        """
+        capability = candidate.signature.capability or candidate.signature.skill
+        if not capability:
+            return ""
+        names = {capability, candidate.signature.skill}
+        names.discard("")
+        for record in self.ledger.snapshot().records.values():
+            if record.origin != "bootstrap" or record.state not in (*ACTIVE_STATES, LIVE_VERIFY_PENDING):
+                continue
+            if not names & {record.capability, record.skill}:
+                continue
+            self.ledger.append({
+                "source": "queue",
+                "event": "evidence_appended",
+                "key": record.key,
+                "capability": capability,
+                "failure_type": candidate.signature.failure_type,
+                "skill": candidate.signature.skill,
+                "condition": candidate.condition,
+                "goal": candidate.goal,
+                "reason": candidate.reason,
+                "evidence": list(candidate.evidence),
+            })
+            self.ledger.append({
+                "source": "queue",
+                "event": "priority_raised",
+                "key": record.key,
+                "tier": "P0",
+                "reason": (
+                    "a real gameplay failure hit a capability this preload job already "
+                    "owns; the evidence is appended instead of opening a second job"
+                ),
+            })
+            return record.key
+        return ""
 
     def _device_holder(self) -> str:
         """Who owns the one device right now, if anyone.
@@ -1690,8 +1787,15 @@ class EscalationQueueAdapter:
             for candidate in candidates:
                 # Re-fold each time: a submission inside this loop changes the
                 # concurrency answer for the next candidate.
-                dispatch = decide(candidate, self.ledger.snapshot(), self.policy, now=moment)
                 handled.add(candidate.signature.key)
+                merged = self._merge_into_preload(candidate)
+                if merged:
+                    skipped.append((
+                        candidate.signature.key,
+                        f"MERGED_INTO_PRELOAD_JOB: {merged} (evidence appended, priority P0)",
+                    ))
+                    continue
+                dispatch = decide(candidate, self.ledger.snapshot(), self.policy, now=moment)
                 if not dispatch.should_submit:
                     skipped.append((candidate.signature.key, f"{dispatch.action}: {dispatch.reason}"))
                     self._record(candidate, dispatch)
@@ -2280,6 +2384,33 @@ class EscalationQueueAdapter:
             ))
         except Exception:  # noqa: BLE001 - learning must never break reconciliation
             errors.append(f"{record.key}: could not record model outcome")
+
+        # The bootstrap completion hook (operator §15).  A preloaded capability that
+        # just settled re-enters the loop *here*, whatever the outcome was, so
+        # "完成一个 Capability 后不再等指令" is a code path and not a promise.  It runs
+        # for bootstrap-origin records only: a runtime escalation already has the
+        # runtime as its next step.
+        if record.origin == "bootstrap" and record.capability:
+            try:
+                from .capability_bootstrap import KnowledgeBootstrapController
+
+                summary = KnowledgeBootstrapController(self.root).completion_hook(
+                    capability=record.capability,
+                    outcome=outcome,
+                    evidence=record.evidence,
+                    agent_report=record.agent_report,
+                    now=moment,
+                )
+                self.ledger.append({
+                    "source": "queue",
+                    "event": "knowledge_updated",
+                    "key": record.key,
+                    "capability": record.capability,
+                    "outcome": outcome,
+                    "summary": summary,
+                })
+            except Exception as exc:  # noqa: BLE001 - a hook must not break reconciliation
+                errors.append(f"{record.key}: knowledge hook failed: {type(exc).__name__}: {exc}")
 
         if code_changed:
             request = self.reload_signal.request(

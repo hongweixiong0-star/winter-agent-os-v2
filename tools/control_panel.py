@@ -1244,7 +1244,7 @@ def status_defaults() -> dict[str, str]:
         "wb_job": PENDING, "wb_model": PENDING, "wb_duration": PENDING,
         "wb_job_state": PENDING, "wb_improvement": PENDING, "wb_result": "尚未产生开发任务",
         "wb_gateway": PENDING, "wb_queue_line": PENDING, "wb_gap": PENDING,
-        "wb_pump": PENDING, "lease": PENDING,
+        "wb_pump": PENDING, "lease": PENDING, "learn": PENDING,
         "stats": "本次启动：0 轮 · 0 动作",
     }
 
@@ -1392,11 +1392,16 @@ class QueuePump:
             "passes": 0, "submitted": 0, "released": 0, "reconciled": 0, "errors": 0,
             "last_tick": "", "last_line": "", "last_error": "", "gated": "",
             "preload_ticks": 0, "preloads": 0, "preload_last": "", "preload_note": "",
+            "preload_decision": "", "preload_selected": "", "preload_next": "",
             "preload_every": self.PRELOAD_EVERY if preload_every is None else int(preload_every),
         }
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._adapter: Any = None
+        # The root the adapter was built against, so the controller's knowledge store
+        # and state file land in the same tree -- including in a test that redirects
+        # the ledger path, which is how a test avoids writing production knowledge.
+        self._root_path: Path | None = None
 
     # -- readers (UI thread) -----------------------------------------------
 
@@ -1460,13 +1465,14 @@ class QueuePump:
         return self.state()
 
     def _preload_tick(self) -> None:
-        """The slow Capability Bootstrap pass, on the same thread and adapter.
+        """The slow Knowledge Bootstrap pass, on the same thread and adapter.
 
-        Same adapter on purpose: a preload is one more *producer* for the one queue,
-        not a second queue.  It is counted separately from the consumer's passes so a
-        reader can tell "the consumer ran" from "the preloader ran" -- and the note is
-        persisted even when the gate refuses, because "the mechanism is resting, and
-        here is why" is exactly what the operator asked to be able to check.
+        Runs the whole loop (SCAN -> SELECT -> ... -> SELECT NEXT), not just the
+        dispatch: the controller writes ``learning/knowledge_bootstrap/STATE.json``
+        itself, and this records the one-line answer in the pump's own heartbeat so a
+        reader outside the GUI can see both "the consumer ran" and "the preloader
+        decided this".  A refusal is persisted too -- "the mechanism is resting, and
+        here is why" is the state the operator asked to be able to check.
         """
         try:
             every = int(self._state.get("preload_every") or self.PRELOAD_EVERY)
@@ -1474,19 +1480,54 @@ class QueuePump:
             self._state["preload_ticks"] = ticks
             if every <= 0 or ticks % every:
                 return
+            from winter_agent_v2.capability_bootstrap import KnowledgeBootstrapController
+
             adapter = self._adapter if self._adapter is not None else self._build()
             self._adapter = adapter
-            observation = adapter.preload()
+            controller = KnowledgeBootstrapController(self._root_path, adapter=adapter)
+            report = controller.cycle()
             with self._lock:
-                self._state["preloads"] = int(self._state.get("preloads") or 0) + len(
-                    observation.preloaded
+                # Both halves: the structured line, and the decision's own sentence --
+                # which of the five gates refused, or what is missing, is the difference
+                # between "resting" and "broken".
+                self._state["preload_note"] = (
+                    f"{report.line} -- {report.note}" if report.note else report.line
                 )
-                self._state["preload_note"] = observation.preload_note or observation.line
+                self._state["preload_decision"] = report.decision
+                self._state["preload_selected"] = report.selected
+                self._state["preload_next"] = report.next_capability
+                if report.decision == "PRELOADED":
+                    self._state["preloads"] = int(self._state.get("preloads") or 0) + 1
                 self._state["preload_last"] = datetime.now().strftime("%H:%M:%S")
         except Exception as exc:  # noqa: BLE001 - a background pass is a state, not a crash
             with self._lock:
                 self._state["preload_note"] = f"preload failed: {type(exc).__name__}: {exc}"
                 self._state["preload_last"] = datetime.now().strftime("%H:%M:%S")
+
+    def alive(self) -> bool:
+        """Is the clock actually running?
+
+        A consumer that lives on a thread inside a GUI is exactly the mechanism that
+        stops quietly, and the operator asked to be told rather than to assume.  The
+        question "Controller 是否运行" therefore has a real answer: this, plus the
+        freshness of ``pump.json``.
+        """
+        return self._thread is not None and self._thread.is_alive()
+
+    def revive(self) -> bool:
+        """Restart the thread after it died, and say whether that was needed.
+
+        The window owns the only long-lived process, so the panel's existing watchdog
+        is the right place to notice a dead clock rather than inventing a second
+        supervisor.  Only a thread that has actually stopped is replaced; a live one is
+        left alone.
+        """
+        if self.alive():
+            return False
+        self._stop.clear()
+        self._thread = None
+        self.start()
+        return True
 
     def _persist(self) -> None:
         """Write the tick where a reader outside this process can see it.
@@ -1518,6 +1559,7 @@ class QueuePump:
 
         ledger_path = Path(_ESCALATION_LEDGER_PATH)
         root = ledger_path.parents[1] if ledger_path.parent.name == "learning" else ROOT
+        self._root_path = root
         return EscalationQueueAdapter(root=root, ledger=EscalationLedger(ledger_path))
 
 
@@ -2114,6 +2156,13 @@ class ControlPanel:
         lease_row = ttk.Frame(grid, style="Card.TFrame"); lease_row.grid(row=4, column=0, columnspan=4, sticky="ew", pady=(6, 0))
         ttk.Label(lease_row, text="设备所有权（Single UI Owner）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(lease_row, textvariable=self.values["lease"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
+        # The operator's §十四 row: knowledge preload, as a state rather than a promise.
+        # Every value comes from real artifacts (the controller's STATE.json, the
+        # catalog, the knowledge files, the ledger), so this row cannot say "learning"
+        # while nothing is learning -- which is the failure mode the operator named.
+        learn_row = ttk.Frame(grid, style="Card.TFrame"); learn_row.grid(row=5, column=0, columnspan=4, sticky="ew", pady=(6, 0))
+        ttk.Label(learn_row, text="能力学习 / 预装（Knowledge → Capability Preload）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        ttk.Label(learn_row, textvariable=self.values["learn"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
         queue = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8)); queue.pack(fill="x", pady=(10, 0))
         qhead = ttk.Frame(queue, style="Card.TFrame"); qhead.pack(fill="x")
         ttk.Label(qhead, text="Development Escalation Queue", style="Section.TLabel", background=PANEL).pack(side="left")
@@ -2350,6 +2399,7 @@ class ControlPanel:
         gateway = self.probes.gateway()
         self._narrate_pump()
         self._report_device_owner()
+        self._refresh_learning()
         label, detail = workbuddy_cell(view, gateway)
         self.values["workbuddy"].set(label)
         self.values["wb_state"].set(label + (f"（{detail}）" if detail else ""))
@@ -2400,6 +2450,66 @@ class ControlPanel:
         if hasattr(self, "kpi_source"):
             for key, var in self.kpi_source.items():
                 var.set(kpi.get(key, {}).get("source", PENDING))
+
+    def _refresh_learning(self) -> None:
+        """Report the knowledge-preload controller, from its own heartbeat.
+
+        The operator's §十三 is a list of questions a human should be able to answer
+        without opening a log: is it running, what is it learning, what is missing,
+        what is being preloaded, what waits for the device, what was the last success,
+        what is next.  This reads the answers out of ``STATE.json`` instead of
+        reconstructing them here, so the panel cannot flatter the mechanism.
+        """
+        path = ROOT / "learning/knowledge_bootstrap/STATE.json"
+        try:
+            state = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            self.values["learn"].set(
+                f"{PENDING}（还没有 STATE.json：控制器尚未在任何进程里跑过一轮）")
+            return
+        try:
+            written = datetime.fromisoformat(str(state.get("written_at")))
+            if written.tzinfo is None:
+                written = written.replace(tzinfo=timezone.utc)
+            age = (datetime.now(timezone.utc) - written).total_seconds()
+        except (TypeError, ValueError):
+            age = -1.0
+        beat = f"心跳 {int(age)}s 前" if age >= 0 else "心跳时间不可读"
+        # Three preload intervals: below that a stale file means the window is not
+        # running this code, which is the exact "代码支持自动预装但控制器没运行" case.
+        if age > 3 * QueuePump.PRELOAD_EVERY * QueuePump.INTERVAL:
+            beat = f"⚠ 心跳过期（{int(age / 60)} 分钟）——面板可能未运行新代码"
+
+        coverage = (state.get("coverage") or {}).get("unlocked") or {}
+        knowledge = (state.get("coverage") or {}).get("knowledge") or {}
+        learning = str(state.get("learning") or "-")
+        missing = state.get("learning_missing") or []
+        parts = [
+            f"控制器：运行中 · {beat} · 阶段 {state.get('stage') or '-'} · "
+            f"决策 {state.get('decision') or '-'} · 下一个 {state.get('next_capability') or '-'}",
+            f"正在学习：{learning}"
+            + (f"（缺 {'、'.join(missing)}）" if missing else "")
+            + f" · 正在预装：{state.get('preloading') or '-'}"
+            + f" · 等待真机校准：{len(state.get('awaiting_calibration') or [])}"
+            + f" · 知识阻塞：{len(state.get('knowledge_blocked') or [])}",
+            "Coverage（已解锁 {total}）：LIVE_VERIFIED {live}% ({verified} 项) · "
+            "Candidate {cand}% · LIVE_TRIED {tried}".format(
+                total=coverage.get("total", "-"),
+                live=coverage.get("live_verified_percent", "-"),
+                verified=coverage.get("live_verified", "-"),
+                cand=coverage.get("candidate_percent", "-"),
+                tried=coverage.get("live_tried", "-"),
+            ),
+            "知识：记录 {records} · 够用 {sufficient} · CONFIRMED {confirmed} · "
+            "冲突 {conflicts} · 外部来源占比 {external}%（应随运行时间下降）".format(
+                records=knowledge.get("records", 0),
+                sufficient=knowledge.get("sufficient", 0),
+                confirmed=knowledge.get("confirmed", 0),
+                conflicts=knowledge.get("conflicts", 0),
+                external=knowledge.get("external_share", 0.0),
+            ),
+        ]
+        self.values["learn"].set("\n".join(parts))
 
     def _report_device_owner(self) -> None:
         """§21's device row, read from the lease file rather than inferred.
@@ -2464,6 +2574,13 @@ class ControlPanel:
         if preload_note and preload_note != previous.get("preload_note"):
             previous["preload_note"] = preload_note
             self._append(f"能力预载（后台低优先级）：{preload_note}")
+        # The watchdog half of §十三: "Controller 是否运行" has to have an answer, and a
+        # dead clock has to come back by itself rather than waiting for a human to
+        # notice that nothing has been preloaded for a week.
+        if not self.pump.alive():
+            if self.pump.revive():
+                self._append("能力预载控制器线程已停止，看门狗已重启该线程。")
+                previous.pop("preload_note", None)
 
     def _describe_escalation(self, record: Any) -> str:
         """One honest line about what a finished development job achieved."""

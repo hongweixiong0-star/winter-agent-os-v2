@@ -601,3 +601,71 @@ STOPPED 才停、暂停不停）+ `pump.json` 心跳（线程里跑的东西从�
    它可以把字段填上，但 `exact=False` 时永远不许把 plan 抬到 DRAFT / READY。
 
 **测试**：`tests/test_capability_bootstrap.py`（60 项）+ `tools/check_wiring.py` 9 条 `preload:` 断言。
+
+## 主路线变更：Knowledge Preload → Capability Preload → Live Calibration → LIVE_VERIFIED（2026-09-18）
+
+**操作者定稿**：能力扩展的**主路线**不再是「跑起来撞到不会 → 从零开发」。改为
+**能提前知道的先知道、能提前准备的先准备，真机只负责校准和证明，
+运行时 Gap 降级为补漏与自愈**（应对未知内容 / UI 变化 / 游戏更新 / 预装错误 / 重复真机失败）。
+四条永久原则：`PRELOAD BEFORE ENCOUNTER / CALIBRATE ON REAL DEVICE / LEARN FROM REAL FAILURE /
+VERIFY BEFORE TRUST`。
+
+### 一、知识必须落盘（`winter_agent_v2/knowledge_preload.py` + `knowledge/preload/`）
+
+**「说明书只需要认真读一次」如果只靠提示词就是空话**，所以知识是文件：
+`knowledge/preload/<CAPABILITY>.json`，含操作者点名的全部字段
+（preconditions / navigation / page_semantics / recognition / actions / success_state /
+failure_states / verifier_prior / recovery_prior / resource_rules / risk /
+client_specific_notes / live_calibration_status）+ **每个字段**的来源与信任级别。
+
+- 信任阶梯 `PRIOR < UNVERIFIED < OBSERVED < CONFIRMED`（`CONFLICT` 是未决问题，不是低分）；
+  **记录的强度 = 它最弱那个字段**（`weakest_field_trust()`）。
+- 九级获取顺序（`ACQUISITION_ORDER`）：1-5 级在本机（V2 已验证资产 / 内部 Knowledge /
+  Episode 证据 / Legacy 资产 / Failure Pattern），**本地够用就禁止联网**（§四）；
+  不够才按**缺失字段**生成**具体问题**（"入口在哪里 / 页面如何识别 / 操作顺序 /
+  成功状态 / 恢复方式 / 资源规则"）做定向研究，而不是把整个游戏重查一遍。
+- **去重靠问题**（`needs_research`）：同一 `能力 + 问题 + 版本`已有够高置信度答案就不得重查；
+  只有新版本 / UI 变化 / 真机冲突 / 重复失败 / 关键字段缺失才重查。
+- **真机只校准差异**：`prior_vs_live_diff` 对比先验与真机，`calibrate()` 只覆盖不一致的字段，
+  旧先验写进 notes（`PRIOR_VS_LIVE_DIFF`）；**禁止因为一次失败推翻全部先验**。
+- **`confirm_from_live()` 是唯一升到 CONFIRMED 的入口**，只由 reconciler 在真机 episode +
+  verifier PASS 时调用。离线测试 / Replay / agent 自述都到不了这里。
+
+### 二、常驻循环（`KnowledgeBootstrapController`，同一模块）
+
+`SCAN → SELECT → LOCAL KNOWLEDGE CHECK → TARGETED RESEARCH（仅在缺知识时）
+→ NORMALIZE → PRELOAD → TEST → QUEUE LIVE CALIBRATION → UPDATE KNOWLEDGE → SELECT NEXT`
+
+- **宿主是面板的队列泵**（唯一长驻进程），`QueuePump.PRELOAD_EVERY = 20`（10 分钟一轮）；
+  进度写 `learning/knowledge_bootstrap/STATE.json`，`pump.json` 记 `preload_note`。
+- **看门狗**：`QueuePump.alive()/revive()` + 面板巡检，线程死了自动重启 ——
+  直接回答操作者那句「禁止出现：代码支持自动预装，但实际 Controller 根本没运行」。
+- **完成 Hook**（§十五）：任何 bootstrap job 结束（LIVE_VERIFIED / BLOCKED /
+  KNOWLEDGE_BLOCKED / FAILED / BUDGET_EXHAUSTED）都在 `reconcile` 里回调，
+  更新知识 → 更新视图 → **点名下一个能力**，不停下等指令；记录在台账 `knowledge_updated` 行。
+- **知识阻塞不阻断循环**（§七）：某能力研究已派出且缺口仍在 → 记 `KNOWLEDGE_BLOCKED` 并
+  **跳到下一个**（真机跑 `--cycle` 实测：`skipped 1`，从 TROOP_SELECT 移到 ECONOMY_RESEARCH）。
+- **P0-P5 阶梯**：P0 真实 Gap（由运行时产生，Bootstrap 遇 P0 让路）> P1 已解锁 MISSING/NEVER_TRIED
+  > P2 高频免费 > P3 其它已解锁 > P4 预计即将解锁 > P5 未来。
+  **P4 不按目录顺序猜**（曾把 category A 全降级成"尚未解锁"）：只有「family 未观测但某个
+  goal 已经点名要它」才算 P4，其余才是 P5。
+
+### 三、合流（§12，避免两个 Job 改同一个能力）
+
+真机在跑时撞上一个**正在预载**的能力：**不建第二个 Job** ——
+`EscalationQueueAdapter._merge_into_preload()` 把 episode / screenshot / failure_signature /
+worldstate 追加到已有记录（台账 `evidence_appended` + `priority_raised`），并把优先级提到 P0。
+冲突/优先级靠**能力名**匹配（不是去重键），否则同一个能力会有两个不同签名的 Job。
+
+### 四、KPI 换了口径（§十一）
+
+不再以"写了多少 Skill / 多少 Job / 多少单测"论成败。核心是五个覆盖率，
+**最重要是「当前已解锁能力」的 LIVE_VERIFIED 覆盖率**，且**分母必须写在数字旁边**
+（`coverage()` 的 `definitions` 字段）。实测（2026-09-18 11:24）：已解锁 194 项中
+LIVE_VERIFIED 32（16.5%）、Candidate 54.6%、已观测 36.1%；全表 522 项 LIVE_VERIFIED 6.1%。
+`knowledge.external_share` 是"外部来源占比"，**它应当随运行时间下降**——否则说明知识没有沉淀。
+
+**未完成（明确点名）**：① 真正的**定向外部研究执行者**还没有——控制器会把带问题的工作单
+发进队列，但没人在联网后把答案写回 `knowledge/preload/`（完成 Hook 只做对账与状态迁移）；
+② 取租约的一方仍未写（P0-D/F 仍卡在这里）；③ 面板仍是旧进程，
+`_preload_tick` 要在下次安全边界重启后才在真机 GUI 里跑。

@@ -1,0 +1,57 @@
+{
+ "capability": "TROOP_SELECT",
+ "capability_id": "CAP-G09",
+ "game_version": "",
+ "observed_date": "2026-09-18",
+ "source": "preload plan (V2_EVIDENCE)",
+ "source_type": "LIVE_VERIFIED_ASSET",
+ "source_confidence": 0.5,
+ "status": "UNVERIFIED",
+ "missing_fields": [
+  "recovery_prior"
+ ],
+ "conflicts": [],
+ "live_calibration_status": "PENDING_RESEARCH",
+ "question": "基础 Recovery：失败后怎么恢复",
+ "research_attempts": 1,
+ "created_at": "2026-09-18T03:18:39.095870+00:00",
+ "updated_at": "2026-09-18T03:18:39.095870+00:00",
+ "evidence": [],
+ "notes": [
+  "未注册语义（需要一帧真机页面）：TROOP_PRESET",
+  "no knowledge record yet"
+ ],
+ "field_status": {
+  "preconditions": "UNVERIFIED",
+  "navigation": "UNVERIFIED",
+  "recognition": "UNVERIFIED",
+  "actions": "UNVERIFIED",
+  "success_state": "UNVERIFIED",
+  "verifier_prior": "UNVERIFIED",
+  "recovery_prior": "PRIOR",
+  "risk": "UNVERIFIED"
+ },
+ "field_source": {
+  "preconditions": "V2_EVIDENCE",
+  "navigation": "V2_EVIDENCE",
+  "recognition": "V2_EVIDENCE",
+  "actions": "V2_EVIDENCE",
+  "success_state": "V2_EVIDENCE",
+  "verifier_prior": "V2_EVIDENCE",
+  "recovery_prior": "",
+  "risk": "V2_EVIDENCE"
+ },
+ "acquisition_rung": 1,
+ "preconditions": "从 MARCH 出发",
+ "navigation": "MARCH -> MARCH",
+ "page_semantics": "",
+ "recognition": "TROOP_PRESET",
+ "actions": "APPLY_CONTEXT_TROOP_POLICY",
+ "success_state": "troop_policy_applied",
+ "failure_states": "",
+ "verifier_prior": "troop_policy_applied",
+ "recovery_prior": "",
+ "resource_rules": "",
+ "risk": "T1（总表判定，资源成本 UNKNOWN）",
+ "client_specific_notes": ""
+}

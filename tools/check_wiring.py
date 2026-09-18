@@ -689,8 +689,10 @@ def main() -> int:
     _panel_source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
     _reload_source = (PKG / "runtime_reload.py").read_text(encoding="utf-8")
     _bootstrap_source = (PKG / "capability_bootstrap.py").read_text(encoding="utf-8")
+    _knowledge_source = (PKG / "knowledge_preload.py").read_text(encoding="utf-8")
     from winter_agent_v2 import capability_bootstrap as _bootstrap
     from winter_agent_v2 import escalation_queue as _escalation
+    from winter_agent_v2 import knowledge_preload as _knowledge
 
     check("queue: a no-progress deferral is never filed under the failure type",
           'if failure_type not in fields:' in _queue_source
@@ -767,11 +769,11 @@ def main() -> int:
           and "condition=CAPABILITY_MISSING" in _queue_source
           and 'origin="bootstrap"' in _queue_source)
     check("preload: it is an origin on the one ledger, not a second pipeline",
-          _bootstrap_source.count("EscalationLedger(") == 1
+          _bootstrap_source.count("DEFAULT_LEDGER") >= 1
+          and '"learning/workbuddy_escalations.jsonl"' not in _bootstrap_source
           and _bootstrap_source.count("ledger.append") == 0
           and ".events()" in _bootstrap_source
-          and _queue_source.count("DEFAULT_LEDGER = ") == 1
-          and _queue_source.count("EscalationLedger(self.root / DEFAULT_LEDGER)") == 1)
+          and _queue_source.count("DEFAULT_LEDGER = ") == 1)
     check("preload: no second registry, scheduler or store lives in it",
           not any(
               word in _bootstrap_source
@@ -797,24 +799,81 @@ def main() -> int:
           _bootstrap.KNOWLEDGE_LADDER == (
               "V2_EVIDENCE", "LEGACY_ASSET", "EXTERNAL_MAP",
               "OPEN_SOURCE_UNINDEXED", "GAME_DB_WIKI", "SELF_EXPLORATION")
+          and [tier for tier in (_bootstrap.PRIORITY_TIER.get(name) for name in
+                                 _bootstrap.PRIORITY_LADDER)] == ["P0", "P1", "P2", "P3", "P4", "P5"]
           and _bootstrap.PRIORITY_LADDER == (
               "REAL_GAP", "UNLOCKED_MISSING", "HIGH_FREQ_FREE_VALUE",
-              "OTHER_UNLOCKED", "FUTURE_LOCKED"))
+              "OTHER_UNLOCKED", "NEAR_UNLOCK", "FUTURE_LOCKED"))
     check("preload: a capability already in the pipeline is refused by name",
           "CANDIDATE" in _bootstrap_source
           and 'return "CANDIDATE"' in _bootstrap_source
           and "LIVE_VERIFY_PENDING" in _bootstrap_source
           and "def _in_flight(" in _bootstrap_source)
-    check("preload: the window runs it on a slower clock than the consumer",
+    check("preload: the window runs the loop on a slower clock than the consumer",
           "PRELOAD_EVERY = 20" in _panel_source
           and "def _preload_tick(self)" in _panel_source
-          and "adapter.preload()" in _panel_source
+          and "KnowledgeBootstrapController(" in _panel_source
+          and "controller.cycle()" in _panel_source
           and '"preload_note": ""' in _panel_source)
+    check("preload: the window can tell a dead controller from a quiet one",
+          "def alive(self)" in _panel_source
+          and "def revive(self)" in _panel_source
+          and "if not self.pump.alive():" in _panel_source
+          and "STATE.json" in _panel_source)
     check("preload: it arms itself when the main loop is proven, not before",
           "def arm_state(" in _bootstrap_source
           and "MAIN_LOOP_P0_PASS" in _bootstrap_source
           and "P0_LOOP_STATUS.json" in _bootstrap_source
           and "OPERATOR_OVERRIDE" in _bootstrap_source)
+
+    # -- Knowledge Preload (the persistent half) ----------------------------
+    check("knowledge: the nine-rung acquisition order is the operator's",
+          tuple(_knowledge.ACQUISITION_ORDER) == (
+              "LIVE_VERIFIED_ASSET", "INTERNAL_KNOWLEDGE", "EPISODE_EVIDENCE",
+              "LEGACY_VERIFIED_ASSET", "FAILURE_PATTERN", "EXTERNAL_MAP",
+              "OPEN_SOURCE_PROJECT", "GAME_WIKI", "SELF_EXPLORATION")
+          and len(_knowledge.LOCAL_RUNGS) == 5)
+    check("knowledge: a record stores the operator's fields, not a free-form blob",
+          set(_knowledge.GATE_FIELDS) <= set(_knowledge.KNOWLEDGE_FIELDS)
+          and len(_knowledge.KNOWLEDGE_FIELDS) >= 12
+          and "live_calibration_status" in _knowledge_source
+          and "client_specific_notes" in _knowledge.KNOWLEDGE_FIELDS)
+    check("knowledge: every preload source maps onto a named acquisition rung",
+          set(_bootstrap.SOURCE_TO_RUNG) == set(_bootstrap.KNOWLEDGE_LADDER)
+          and all(
+              _bootstrap.acquisition_rung_for(src) in _knowledge.ACQUISITION_ORDER
+              for src in _bootstrap.KNOWLEDGE_LADDER
+          )
+          and _bootstrap.acquisition_rung_for(_bootstrap.SRC_V2_EVIDENCE) == "LIVE_VERIFIED_ASSET")
+    check("knowledge: a prior can never outrank live evidence",
+          _knowledge.TRUST_RANK["PRIOR"] < _knowledge.TRUST_RANK["UNVERIFIED"]
+          < _knowledge.TRUST_RANK["OBSERVED"] < _knowledge.TRUST_RANK["CONFIRMED"]
+          and "def confirm_from_live(" in _knowledge_source
+          and "def mark_conflict(" in _knowledge_source)
+    check("knowledge: it refuses to re-read a manual it already answered",
+          "def needs_research(" in _knowledge_source
+          and "already answered at" in _knowledge_source
+          and "def local_knowledge_check(" in _knowledge_source
+          and "禁止重新联网研究" in _knowledge_source)
+    check("knowledge: calibration fixes differences instead of discarding the prior",
+          "def prior_vs_live_diff(" in _knowledge_source
+          and "PRIOR_VS_LIVE_DIFF" in _knowledge_source
+          and "def calibrate(" in _knowledge_source)
+    check("knowledge: the loop ends by naming the next capability",
+          "def completion_hook(" in _bootstrap_source
+          and "def _next_after(" in _bootstrap_source
+          and "NEXT_SELECTED" in _bootstrap_source
+          and "knowledge_updated" in _queue_source)
+    check("knowledge: a real failure merges into the preload job instead of a second one",
+          "def _merge_into_preload(" in _queue_source
+          and "MERGED_INTO_PRELOAD_JOB" in _queue_source
+          and "evidence_appended" in _queue_source
+          and "priority_raised" in _queue_source)
+    check("knowledge: coverage is reported over the unlocked subset, with definitions",
+          "def coverage(" in _bootstrap_source
+          and '"unlocked": tally(unlocked)' in _bootstrap_source
+          and '"definitions"' in _bootstrap_source
+          and "external_share" in _bootstrap_source)
 
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():

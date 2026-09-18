@@ -1,0 +1,36 @@
+{
+ "schema_version": "1.0",
+ "generated_by": "winter_agent_v2.knowledge_preload.KnowledgeStore.write_index",
+ "generated_at": "2026-09-18T03:18:39.095870+00:00",
+ "note": "derived from knowledge/preload/*.json -- not a skill registry and not a lifecycle authority; delete any row and it returns from the files",
+ "acquired_vs_external": "the point of this index is that acquisition_rung should drift toward 1-5 over time: external priors are a starting cost, not a permanent one",
+ "summary": {
+  "records": 1,
+  "by_status": {
+   "UNVERIFIED": 1
+  },
+  "by_acquisition_rung": {
+   "1": 1
+  },
+  "sufficient": 0,
+  "with_conflicts": 0,
+  "awaiting_calibration": 0
+ },
+ "records": [
+  {
+   "capability": "TROOP_SELECT",
+   "capability_id": "CAP-G09",
+   "status": "UNVERIFIED",
+   "weakest_field": "UNVERIFIED",
+   "source_type": "LIVE_VERIFIED_ASSET",
+   "acquisition_rung": 1,
+   "sufficient": false,
+   "missing_fields": [
+    "recovery_prior"
+   ],
+   "conflicts": [],
+   "live_calibration_status": "PENDING_RESEARCH",
+   "updated_at": "2026-09-18T03:18:39.095870+00:00"
+  }
+ ]
+}

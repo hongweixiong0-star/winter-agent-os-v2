@@ -43,6 +43,7 @@ The two hard ceilings
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -83,6 +84,7 @@ CLASS_NEVER_TRIED = "NEVER_TRIED"
 CLASS_DEFINED_NO_IMPLEMENTATION = "DEFINED_NO_IMPLEMENTATION"
 CLASS_EXTERNAL_PRIOR_UNIMPLEMENTED = "EXTERNAL_PRIOR_UNIMPLEMENTED"
 CLASS_LEGACY_ASSET_UNWIRED = "LEGACY_ASSET_UNWIRED"
+CLASS_DEGRADED = "DEGRADED"
 
 BOOTSTRAP_CLASSES: tuple[str, ...] = (
     CLASS_MISSING,
@@ -90,6 +92,7 @@ BOOTSTRAP_CLASSES: tuple[str, ...] = (
     CLASS_DEFINED_NO_IMPLEMENTATION,
     CLASS_EXTERNAL_PRIOR_UNIMPLEMENTED,
     CLASS_LEGACY_ASSET_UNWIRED,
+    CLASS_DEGRADED,
 )
 
 CLASS_ZH: dict[str, str] = {
@@ -98,6 +101,7 @@ CLASS_ZH: dict[str, str] = {
     CLASS_DEFINED_NO_IMPLEMENTATION: "有设计草稿但没有实现",
     CLASS_EXTERNAL_PRIOR_UNIMPLEMENTED: "有外部先验但 V2 未实现",
     CLASS_LEGACY_ASSET_UNWIRED: "有 Legacy / 内部资产但未接入",
+    CLASS_DEGRADED: "已实现但真机退化（UI 变化 / 反复失败）—— 属于修复路线，不是预载",
 }
 
 # ----------------------------------------------------------- knowledge ladder
@@ -129,6 +133,25 @@ SOURCE_ZH: dict[str, str] = {
     SRC_SELF_EXPLORATION: "最后才自行探索（真机探针）",
 }
 
+# Two ladders meet here: this module ranks a *preload* source, and
+# ``knowledge_preload`` ranks an *acquisition* rung.  They are the same idea named
+# differently, so the translation is written down once -- without it the knowledge
+# records all filed themselves as rung 10 ("unknown"), which is exactly how a
+# provenance field quietly stops meaning anything.
+SOURCE_TO_RUNG: dict[str, str] = {
+    SRC_V2_EVIDENCE: "LIVE_VERIFIED_ASSET",
+    SRC_LEGACY_ASSET: "LEGACY_VERIFIED_ASSET",
+    SRC_EXTERNAL_MAP: "EXTERNAL_MAP",
+    SRC_OPEN_SOURCE_UNINDEXED: "OPEN_SOURCE_PROJECT",
+    SRC_GAME_DB_WIKI: "GAME_WIKI",
+    SRC_SELF_EXPLORATION: "SELF_EXPLORATION",
+}
+
+
+def acquisition_rung_for(source: str) -> str:
+    """The acquisition rung a preload source corresponds to (pass-through if named)."""
+    return SOURCE_TO_RUNG.get(source, source)
+
 
 def knowledge_rank(source: str) -> int:
     """1-based position in the ladder; unknown sources sort last."""
@@ -147,6 +170,7 @@ PRIO_REAL_GAP = "REAL_GAP"
 PRIO_UNLOCKED_MISSING = "UNLOCKED_MISSING"
 PRIO_HIGH_FREQ_FREE_VALUE = "HIGH_FREQ_FREE_VALUE"
 PRIO_OTHER_UNLOCKED = "OTHER_UNLOCKED"
+PRIO_NEAR_UNLOCK = "NEAR_UNLOCK"
 PRIO_FUTURE_LOCKED = "FUTURE_LOCKED"
 
 PRIORITY_LADDER: tuple[str, ...] = (
@@ -154,23 +178,41 @@ PRIORITY_LADDER: tuple[str, ...] = (
     PRIO_UNLOCKED_MISSING,
     PRIO_HIGH_FREQ_FREE_VALUE,
     PRIO_OTHER_UNLOCKED,
+    PRIO_NEAR_UNLOCK,
     PRIO_FUTURE_LOCKED,
 )
 
+# The operator's P0..P5 numbering, so the GUI, the handoff and a work order all say
+# the same thing about why something was chosen.  One place, one spelling.
+PRIORITY_TIER: dict[str, str] = {
+    PRIO_REAL_GAP: "P0",
+    PRIO_UNLOCKED_MISSING: "P1",
+    PRIO_HIGH_FREQ_FREE_VALUE: "P2",
+    PRIO_OTHER_UNLOCKED: "P3",
+    PRIO_NEAR_UNLOCK: "P4",
+    PRIO_FUTURE_LOCKED: "P5",
+}
+TIER_PRIORITY: dict[str, str] = {tier: name for name, tier in PRIORITY_TIER.items()}
+
+# Weights are spaced by 100+ on purpose: every tie-break bonus below sums to at most
+# 61, so with six rungs the operator's order still cannot be inverted by a cheap
+# prior, and the bonuses only order rows *within* one rung.
 PRIORITY_WEIGHT: dict[str, float] = {
-    PRIO_REAL_GAP: 100.0,
-    PRIO_UNLOCKED_MISSING: 70.0,
-    PRIO_HIGH_FREQ_FREE_VALUE: 50.0,
-    PRIO_OTHER_UNLOCKED: 30.0,
-    PRIO_FUTURE_LOCKED: 10.0,
+    PRIO_REAL_GAP: 1000.0,
+    PRIO_UNLOCKED_MISSING: 700.0,
+    PRIO_HIGH_FREQ_FREE_VALUE: 500.0,
+    PRIO_OTHER_UNLOCKED: 300.0,
+    PRIO_NEAR_UNLOCK: 200.0,
+    PRIO_FUTURE_LOCKED: 100.0,
 }
 
 PRIORITY_ZH: dict[str, str] = {
-    PRIO_REAL_GAP: "真实运行阻塞 Gap",
-    PRIO_UNLOCKED_MISSING: "当前角色已解锁的 MISSING / NEVER_TRIED",
-    PRIO_HIGH_FREQ_FREE_VALUE: "高频日常免费价值能力",
-    PRIO_OTHER_UNLOCKED: "其它已解锁能力",
-    PRIO_FUTURE_LOCKED: "尚未解锁的未来能力",
+    PRIO_REAL_GAP: "P0 真实运行阻塞 Gap",
+    PRIO_UNLOCKED_MISSING: "P1 已解锁的 MISSING / NEVER_TRIED",
+    PRIO_HIGH_FREQ_FREE_VALUE: "P2 高频日常免费价值",
+    PRIO_OTHER_UNLOCKED: "P3 其它已解锁能力",
+    PRIO_NEAR_UNLOCK: "P4 预计即将解锁",
+    PRIO_FUTURE_LOCKED: "P5 未来 / 低价值",
 }
 
 # Risk grades that count as "free value" when claimed by no real-money path.
@@ -677,10 +719,9 @@ class BootstrapScanner:
 
             snapshot = ledger_snapshot
             if snapshot is None:
-                from .escalation_queue import EscalationLedger, fold
+                from .escalation_queue import DEFAULT_LEDGER, EscalationLedger, fold
 
-                ledger_path = base / "learning/workbuddy_escalations.jsonl"
-                snapshot = fold(EscalationLedger(ledger_path).events())
+                snapshot = fold(EscalationLedger(base / DEFAULT_LEDGER).events())
             if policy is None:
                 from .escalation_queue import EscalationPolicy
 
@@ -869,6 +910,15 @@ class BootstrapScanner:
                 )
         if skill and skill in self.drafts:
             return "CANDIDATE", f"a design draft already exists at dataset/candidate/{skill}.json"
+        if str(row.get("lifecycle")) == "DEGRADED":
+            # Implemented, and measurably worse than it was.  Its repair is the runtime
+            # path (a real failure already exists, with an episode behind it), so a
+            # preload would be the second job the operator forbids -- but the refusal
+            # says *why*, so a reader does not have to guess.
+            return "DEGRADED", (
+                "the catalog reports this capability as DEGRADED: it is a repair with real "
+                "failure evidence, not a preload"
+            )
         return "", ""
 
     def _classes(self, row: Mapping[str, Any], skill: str, card: Mapping[str, Any],
@@ -889,6 +939,14 @@ class BootstrapScanner:
             found.append(CLASS_EXTERNAL_PRIOR_UNIMPLEMENTED)
         if not implemented and not skill and self._has_asset(row):
             found.append(CLASS_LEGACY_ASSET_UNWIRED)
+        if str(row.get("lifecycle")) == "DEGRADED":
+            # Named for visibility even though it is refused below (and refused even
+            # when no registry state matches): a capability that broke because the
+            # client changed is a *repair* (route B), and the operator wants it visible
+            # rather than silently missing from the preload list.  A ``blocked_reason``
+            # alone does NOT make a row degraded -- the catalog uses it for notes like
+            # "the role IS observable", which are the opposite of a regression.
+            found.append(CLASS_DEGRADED)
         return tuple(found)
 
     def _has_asset(self, row: Mapping[str, Any]) -> bool:
@@ -925,9 +983,25 @@ class BootstrapScanner:
                 break
         return tuple(found)
 
-    def _priority(self, row: Mapping[str, Any], classes: Sequence[str], unlocked: str) -> str:
+    def _priority(
+        self,
+        row: Mapping[str, Any],
+        classes: Sequence[str],
+        unlocked: str,
+        goal_names: Sequence[str] = (),
+    ) -> str:
+        """The operator's P0..P5 rung for one row.
+
+        "预计即将解锁" (P4) is deliberately **not** guessed from the catalog's tree
+        order.  An earlier version demoted every row that sat behind the first hole in
+        its category, which made all of category A "not yet" -- a claim about role
+        progression that the catalog does not actually support (its ``unlock_status``
+        is UNKNOWN for all 522 rows).  What the project *can* justify is: a capability
+        no goal names, in a family the role has never shown, is future work; one that a
+        goal V2 already runs names is work we will need, so it is P4 rather than P5.
+        """
         if unlocked != "OBSERVED":
-            return PRIO_FUTURE_LOCKED
+            return PRIO_NEAR_UNLOCK if goal_names else PRIO_FUTURE_LOCKED
         risk = str(row.get("risk") or "")
         if not str(row.get("implementation_status")) == "EXISTING":
             return PRIO_UNLOCKED_MISSING
@@ -1120,7 +1194,8 @@ class BootstrapScanner:
             str(row.get("current_role_available")) == "OBSERVED_AVAILABLE"
             or self._sibling_observed(str(row.get("category") or ""))
         ) else "UNKNOWN"
-        priority = self._priority(row, classes, unlocked)
+        goal_names = self._goal_names_for_skill(skill)
+        priority = self._priority(row, classes, unlocked, goal_names)
         facets = self._facets(row, skill, card, draft, prior)
         state, reason = self._in_flight(row, skill)
 
@@ -1157,6 +1232,7 @@ class BootstrapScanner:
         else:
             knowledge_source = SRC_GAME_DB_WIKI if wiki else SRC_SELF_EXPLORATION
 
+        goal_names = self._goal_names_for_skill(skill)
         goal_names = self._goal_names_for_skill(skill)
         # Tier first, then "how cheap is this preload, and how much does it unblock".
         # The tier gap (60 points between the top and bottom rung) is wider than the
@@ -1395,3 +1471,588 @@ def work_order_brief(plan: BootstrapPlan) -> str:
         "and write any new measurement back into knowledge/external/external_capability_map.json.",
     ]
     return "\n".join(lines)
+
+
+# =====================================================================
+# The Knowledge Bootstrap controller
+# =====================================================================
+#
+# The operator's requirement is that preloading is a *permanent, running* mechanism,
+# not a one-off task, and explicitly not something that depends on a prompt saying
+# "keep learning".  So the loop is hosted by the process that is already permanent
+# (the GUI's queue pump), its liveness is a file an outsider can read, and every stage
+# of the loop leaves an artifact:
+#
+#   SCAN -> SELECT -> LOCAL KNOWLEDGE CHECK -> TARGETED RESEARCH (only if needed)
+#        -> NORMALIZE -> PRELOAD -> TEST -> QUEUE LIVE CALIBRATION
+#        -> UPDATE KNOWLEDGE -> SELECT NEXT
+#
+# It is not a second Brain/Scheduler/Registry: selection is the projection in this
+# module, the development queue is the existing escalation ledger, knowledge lives in
+# knowledge/preload/, and the lifecycle is still decided by the reconciler against the
+# production episode stream.
+
+STATE_PATH = "learning/knowledge_bootstrap/STATE.json"
+
+DECISION_PRELOADED = "PRELOADED"
+DECISION_RESEARCH_QUEUED = "RESEARCH_QUEUED"
+DECISION_KNOWLEDGE_BLOCKED = "KNOWLEDGE_BLOCKED"
+DECISION_GATE_REFUSED = "GATE_REFUSED"
+DECISION_NOTHING_TO_DO = "NOTHING_TO_DO"
+DECISION_SKIPPED_IN_FLIGHT = "SKIPPED_IN_FLIGHT"
+
+DECISION_ZH: dict[str, str] = {
+    DECISION_PRELOADED: "已预装（交开发队列）",
+    DECISION_RESEARCH_QUEUED: "已派定向研究",
+    DECISION_KNOWLEDGE_BLOCKED: "知识阻塞（缺字段，先跳过）",
+    DECISION_GATE_REFUSED: "让路（更重要的在跑）",
+    DECISION_NOTHING_TO_DO: "没有可预装的能力",
+    DECISION_SKIPPED_IN_FLIGHT: "已在流程中",
+}
+
+# How a capability's knowledge record reads while it moves through the live half.
+CALIBRATION_QUEUED = "WAITING_FOR_LIVE_CALIBRATION"
+CALIBRATION_FAILED = "CALIBRATION_FAILED"
+CALIBRATION_CONFIRMED = "CONFIRMED"
+# A record whose fields are still incomplete: either a research job is out for it, or
+# the research already happened and did not close the gap (the honest stop).
+PENDING_RESEARCH = "PENDING_RESEARCH"
+KNOWLEDGE_BLOCKED = "KNOWLEDGE_BLOCKED"
+
+
+@dataclass(frozen=True)
+class CycleReport:
+    """One pass of the loop, with the stage it reached and why it stopped there."""
+
+    stage: str = ""
+    selected: str = ""
+    tier: str = ""
+    decision: str = ""
+    note: str = ""
+    missing: tuple[str, ...] = ()
+    questions: tuple[str, ...] = ()
+    next_capability: str = ""
+    dispatch: str = ""
+    skipped: tuple[str, ...] = ()
+
+    @property
+    def line(self) -> str:
+        parts = [f"{self.stage or 'SCAN'}"]
+        if self.selected:
+            parts.append(f"{self.tier} {self.selected}")
+        parts.append(self.decision or "?")
+        if self.missing:
+            parts.append("missing " + ",".join(GATE_ZH.get(m, m) for m in self.missing))
+        if self.skipped:
+            parts.append(f"skipped {len(self.skipped)}")
+        if self.next_capability:
+            parts.append(f"next {self.next_capability}")
+        return "[bootstrap] " + " · ".join(parts)
+
+    def as_row(self) -> dict[str, Any]:
+        return {
+            "stage": self.stage,
+            "selected": self.selected,
+            "tier": self.tier,
+            "decision": self.decision,
+            "note": self.note,
+            "missing": list(self.missing),
+            "questions": list(self.questions),
+            "next_capability": self.next_capability,
+            "dispatch": self.dispatch,
+            "skipped": list(self.skipped),
+        }
+
+
+class KnowledgeBootstrapController:
+    """SCAN -> ... -> SELECT NEXT.  One pass per call; no thread of its own.
+
+    ``dispatch=False`` is the dry run the operator's own scanner needs: it writes the
+    knowledge and the report but sends nothing, so a reader can see the loop's decision
+    without a job leaving the machine.
+    """
+
+    def __init__(
+        self,
+        root: Path | str | None = None,
+        *,
+        adapter: Any | None = None,
+        store: Any | None = None,
+    ) -> None:
+        from .knowledge_preload import KnowledgeStore
+
+        self.root = Path(root) if root else Path(__file__).resolve().parents[1]
+        self.store = store if store is not None else KnowledgeStore(self.root)
+        self._adapter = adapter
+        self._scanner: BootstrapScanner | None = None
+        self._last: CycleReport | None = None
+
+    # -- collaborators -----------------------------------------------------
+
+    @property
+    def adapter(self) -> Any:
+        """The one escalation queue adapter, built lazily so state/coverage need none.
+
+        The ledger path is imported rather than spelled again: two literals for one
+        file is how a second, disagreeing queue starts, and ``check_wiring`` pins this.
+        """
+        if self._adapter is None:
+            from .escalation_queue import DEFAULT_LEDGER, EscalationLedger, EscalationQueueAdapter
+
+            self._adapter = EscalationQueueAdapter(
+                root=self.root,
+                ledger=EscalationLedger(self.root / DEFAULT_LEDGER),
+            )
+        return self._adapter
+
+    def scan(self, *, now: datetime | None = None) -> BootstrapScanner:
+        """Stage 1.  Everything the projection reads, read once."""
+        self._scanner = BootstrapScanner.load(self.root, now=now)
+        return self._scanner
+
+    # -- stage 2: select ---------------------------------------------------
+
+    def select(self, scanner: BootstrapScanner) -> tuple[BootstrapPlan | None, tuple[str, ...]]:
+        """The highest-value preloadable capability, or ``None`` with the reasons.
+
+        Two refusals happen here rather than in the gate, because both are *knowledge*
+        facts rather than scheduling facts: a capability whose knowledge is already
+        confirmed is not a preload, and one already queued for live calibration must
+        not be given a second research or development job (operator §九/§十).
+        """
+        skipped: list[str] = []
+        for plan in scanner.candidates():
+            record = self.store.load(plan.code)
+            if record is not None:
+                if record.status == "CONFIRMED":
+                    skipped.append(f"{plan.code}: knowledge already CONFIRMED")
+                    continue
+                if record.live_calibration_status in (CALIBRATION_QUEUED, "QUEUED"):
+                    skipped.append(f"{plan.code}: already waiting for live calibration")
+                    continue
+                if (
+                    record.live_calibration_status in (PENDING_RESEARCH, KNOWLEDGE_BLOCKED)
+                    and record.research_attempts >= 1
+                ):
+                    # Its question is already out (PENDING) or already came back without
+                    # closing the gap (BLOCKED).  Re-offering it would either spam the
+                    # queue or stall the whole loop on one hard-to-find manual, and §七
+                    # says neither: record the gap, move to the next capability.
+                    skipped.append(
+                        f"{plan.code}: research already out for "
+                        f"{'、'.join(record.missing) or 'its missing fields'}"
+                        f" [{record.live_calibration_status}]"
+                    )
+                    continue
+            return plan, tuple(skipped)
+        return None, tuple(skipped)
+
+    def _next_after(self, scanner: BootstrapScanner, selected: str) -> str:
+        for plan in scanner.candidates():
+            if plan.code == selected:
+                continue
+            record = self.store.load(plan.code)
+            if record is not None and record.live_calibration_status in (
+                CALIBRATION_QUEUED, "QUEUED"
+            ):
+                continue
+            return plan.code
+        return ""
+
+    # -- the loop ----------------------------------------------------------
+
+    def cycle(self, *, now: datetime | None = None, dispatch: bool = True) -> CycleReport:
+        """One full pass.  Never raises: a background loop that dies silently is the
+        exact failure the operator named ("Controller 根本没运行"), so every problem is
+        returned as a decision with a note instead."""
+        from .knowledge_preload import (
+            KnowledgeRecord,
+            from_plan,
+            local_knowledge_check,
+            sufficiency,
+        )
+
+        moment = now or datetime.now(timezone.utc)
+        try:
+            scanner = self.scan(now=moment)
+        except Exception as exc:  # noqa: BLE001
+            report = CycleReport(stage="SCAN", decision="SCAN_FAILED",
+                                 note=f"{type(exc).__name__}: {exc}")
+            self._last = report
+            self.write_state(now=moment)
+            return report
+
+        plan, skipped = self.select(scanner)
+        if plan is None:
+            report = CycleReport(
+                stage="SELECT", decision=DECISION_NOTHING_TO_DO,
+                note=(skipped[-3:] and "; ".join(skipped[-3:])) or "catalog has no actionable row",
+            )
+            self._last = report
+            self.write_state(now=moment, scanner=scanner)
+            return report
+
+        record = self.store.load(plan.code)
+        check = local_knowledge_check(plan, record)
+        tier = PRIORITY_TIER.get(plan.priority, "")
+
+        # Stage 3-5: local knowledge was not enough -> targeted research only.
+        if not check.enough:
+            questions = check.questions()
+            question = " | ".join(questions)
+            fresh = KnowledgeRecord(capability=plan.code, capability_id=plan.capability_id)
+            if record is not None:
+                fresh = record
+            needs, why = self.store.needs_research(
+                plan.code, question=question, source_type=plan.knowledge_source
+            )
+            base = from_plan(
+                plan,
+                source=f"preload plan ({plan.knowledge_source})",
+                source_type=acquisition_rung_for(plan.knowledge_source),
+                source_confidence=0.5,
+                capability_id=plan.capability_id,
+                question=question,
+                now=moment,
+            )
+            base.capability = plan.code
+            base.capability_id = plan.capability_id
+            base.research_attempts = (record.research_attempts if record else 0) + (1 if needs else 0)
+            base.notes = tuple((record.notes if record else ())) + tuple(base.notes) + (why,)
+            base.evidence = tuple(record.evidence) if record else ()
+            enough, missing = sufficiency(base)
+            # A queued research job is *pending*; the blocked state is reserved for
+            # "we already asked and the gap survived", which is what §七 calls
+            # KNOWLEDGE_BLOCKED.  Conflating them made a live research request read as
+            # a dead end.
+            base.live_calibration_status = PENDING_RESEARCH if needs else KNOWLEDGE_BLOCKED
+            self.store.save(base, now=moment)
+
+            decision = DECISION_KNOWLEDGE_BLOCKED
+            note = f"本地知识不足且无法再研究：{why}" if not needs else why
+            dispatched = ""
+            if needs and dispatch:
+                dispatched = self._dispatch(
+                    plan, mode="TARGETED_RESEARCH", questions=questions, now=moment
+                )
+                decision = (
+                    DECISION_RESEARCH_QUEUED if dispatched.startswith("job dispatched")
+                    else DECISION_GATE_REFUSED
+                )
+                note = dispatched
+            elif needs:
+                decision = DECISION_RESEARCH_QUEUED
+                note = f"定向研究待派（dry run）：{question}"
+            self.store.write_index(now=moment)
+            report = CycleReport(
+                stage="TARGETED_RESEARCH", selected=plan.code, tier=tier,
+                decision=decision, note=note, missing=check.missing, questions=questions,
+                next_capability=self._next_after(scanner, plan.code), dispatch=dispatched,
+                skipped=skipped,
+            )
+            self._last = report
+            self.write_state(now=moment, scanner=scanner)
+            return report
+
+        # Stage 6-8: enough to preload.  Store the knowledge *before* asking for a job,
+        # so the evidence a work order names exists when the order is made.
+        stored = from_plan(
+            plan,
+            source=f"preload plan ({plan.knowledge_source})",
+            source_type=acquisition_rung_for(plan.knowledge_source),
+            source_confidence=0.6,
+            capability_id=plan.capability_id,
+            question=" | ".join(check.questions()) or "sufficiency gate: passed from local knowledge",
+            now=moment,
+        )
+        stored.capability = plan.code
+        stored.research_attempts = record.research_attempts if record else 0
+        if record is not None:
+            stored.evidence = record.evidence
+            stored.conflicts = record.conflicts
+            stored.notes = tuple(record.notes) + tuple(stored.notes)
+        enough, missing = sufficiency(stored)
+        ready = plan.plan_state == READY_FOR_LIVE_VERIFY
+        stored.live_calibration_status = (
+            CALIBRATION_QUEUED if ready else "PENDING_DEVELOPMENT"
+        )
+        self.store.save(stored, now=moment)
+
+        dispatched = ""
+        if dispatch:
+            dispatched = self._dispatch(plan, mode="PRELOAD", questions=(), now=moment)
+        if not dispatch:
+            decision = DECISION_PRELOADED
+        elif dispatched.startswith("job dispatched"):
+            decision = DECISION_PRELOADED
+        else:
+            decision = DECISION_GATE_REFUSED
+        self.store.write_index(now=moment)
+
+        # Stage 9-10: update knowledge, then name the next one -- so the state file
+        # answers "下一个是什么" the moment this pass ends, without a second pass.
+        report = CycleReport(
+            stage="PRELOAD", selected=plan.code, tier=tier, decision=decision,
+            note=(dispatched or ("dry run: nothing dispatched" if not dispatch else "")),
+            missing=(),
+            questions=(),
+            next_capability=self._next_after(scanner, plan.code),
+            dispatch=dispatched,
+            skipped=skipped,
+        )
+        self._last = report
+        self.write_state(now=moment, scanner=scanner)
+        return report
+
+    def _dispatch(
+        self,
+        plan: BootstrapPlan,
+        *,
+        mode: str,
+        questions: Sequence[str],
+        now: datetime,
+    ) -> str:
+        """Send one prepared capability through the existing queue, or explain why not.
+
+        The gate lives in the adapter, so this cannot route around it: a real gap, an
+        active job, a device lease, a REALTIME activity or an unproven main loop all
+        refuse here exactly as they do for the runtime's own escalations.
+        """
+        try:
+            observation = self.adapter.preload(now=now, plan=plan, mode=mode, questions=questions)
+        except Exception as exc:  # noqa: BLE001
+            return f"dispatch failed: {type(exc).__name__}: {exc}"
+        if observation.preloaded:
+            return f"job dispatched ({mode})"
+        # The gate's own sentence, not a bare "refused": which of the five reasons
+        # stopped it is the difference between "resting" and "broken".
+        return observation.preload_note or "no dispatch"
+
+    # -- the completion hook (operator §十五) ------------------------------
+
+    def completion_hook(
+        self,
+        *,
+        capability: str,
+        outcome: str,
+        evidence: Sequence[str] = (),
+        agent_report: str = "",
+        now: datetime | None = None,
+    ) -> str:
+        """Every task end re-enters the loop: knowledge, catalog view, queue, next.
+
+        Called by the reconciler for any settled ``origin=bootstrap`` record, whatever
+        the outcome -- LIVE_VERIFIED, CANDIDATE, BLOCKED, KNOWLEDGE_BLOCKED, FAILED,
+        BUDGET_EXHAUSTED.  That is what makes "完成一个 Capability 后不再等指令" true
+        rather than aspirational: the hook always ends by naming the next capability,
+        which the next tick of the panel's pump picks up.
+        """
+        from .knowledge_preload import confirm_from_live
+
+        moment = now or datetime.now(timezone.utc)
+        summary = ""
+        try:
+            record = self.store.load(capability)
+            if record is None:
+                summary = f"{capability}: no knowledge record to update"
+            elif str(outcome).upper() == "LIVE_VERIFIED":
+                confirm_from_live(record, evidence=evidence, now=moment)
+                self.store.save(record, now=moment)
+                summary = f"{capability}: knowledge CONFIRMED from live evidence"
+            elif str(outcome).upper() in ("BLOCKED", "NO_IMPROVEMENT", "FAILED"):
+                record.live_calibration_status = CALIBRATION_FAILED
+                record.notes = record.notes + (
+                    f"calibration {outcome}: {(agent_report or '')[:200]}",
+                    "PRIOR_VS_LIVE_DIFF owed: 记录说明书与真机的差异，只修差异，不推翻全部先验",
+                )
+                self.store.save(record, now=moment)
+                summary = f"{capability}: calibration {outcome}, difference report owed"
+            else:
+                # The job came back without a live proof.  If the knowledge still has
+                # holes, the honest end is KNOWLEDGE_BLOCKED (we asked; the gap
+                # survived) rather than a second research request for the same thing.
+                record.live_calibration_status = (
+                    KNOWLEDGE_BLOCKED if record.missing else CALIBRATION_QUEUED
+                )
+                record.notes = record.notes + (
+                    f"development {outcome}: {(agent_report or '')[:200]}",
+                )
+                self.store.save(record, now=moment)
+                summary = (
+                    f"{capability}: {outcome}; knowledge still missing "
+                    f"{'、'.join(record.missing)}"
+                    if record.missing else
+                    f"{capability}: waiting for live calibration after {outcome}"
+                )
+            self.store.write_index(now=moment)
+            scanner = self.scan(now=moment)
+            report = CycleReport(
+                stage="COMPLETION_HOOK", selected=capability, decision="NEXT_SELECTED",
+                note=summary, next_capability=self._next_after(scanner, capability),
+            )
+            self._last = report
+            self.write_state(now=moment, scanner=scanner, note=summary)
+        except Exception as exc:  # noqa: BLE001 - a hook must never break reconciliation
+            return f"completion hook failed: {type(exc).__name__}: {exc}"
+        return summary
+
+    # -- coverage (operator §十一) -----------------------------------------
+
+    def coverage(self, scanner: BootstrapScanner | None = None) -> dict[str, Any]:
+        """The five coverages, over the capabilities the role can actually use.
+
+        Definitions are printed with the numbers on purpose: "LIVE_VERIFIED coverage"
+        is only meaningful as *a fraction of what*, and a percentage whose denominator
+        is unstated is the kind of number this project has already been burned by.
+
+        Unlocked is derived, not assumed: a capability counts as usable when its own
+        category has shown evidence (an ``EXISTING`` row, or a live attempt) -- the
+        same evidence rule the priority ladder uses, so the two cannot disagree.
+        """
+        engine = scanner or self._scanner or self.scan()
+        from .knowledge_preload import acquisition_rank
+
+        rows = list(engine.catalog)
+        unlocked = [
+            row for row in rows
+            if engine._sibling_observed(str(row.get("category") or ""))
+        ]
+
+        def tally(pool: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+            total = len(pool)
+
+            def count(pred) -> int:
+                return sum(1 for row in pool if pred(row))
+
+            implemented = count(lambda r: str(r.get("implementation_status")) == "EXISTING")
+            tried = count(lambda r: int(r.get("live_attempts") or 0) > 0)
+            observed = count(
+                lambda r: str(r.get("implementation_status")) == "EXISTING"
+                or int(r.get("live_attempts") or 0) > 0
+            )
+            verified = count(lambda r: str(r.get("lifecycle")) == "LIVE_VERIFIED")
+            live_tried = count(lambda r: str(r.get("lifecycle")) == "LIVE_TRIED")
+            candidate = count(lambda r: str(r.get("lifecycle")) == "CANDIDATE")
+
+            def pct(value: int) -> float:
+                return round(value / total * 100, 1) if total else 0.0
+
+            return {
+                "total": total,
+                "observed": observed,
+                "observed_percent": pct(observed),
+                "implemented_percent": pct(implemented),
+                "tried_percent": pct(tried),
+                "candidate": candidate,
+                "candidate_percent": pct(candidate + implemented),
+                "live_tried": live_tried,
+                "live_tried_percent": pct(live_tried),
+                "live_verified": verified,
+                "live_verified_percent": pct(verified),
+            }
+
+        records = self.store.records()
+        knowledge = {
+            "records": len(records),
+            "sufficient": sum(1 for r in records if r.sufficient),
+            "confirmed": sum(1 for r in records if r.status == "CONFIRMED"),
+            "observed": sum(1 for r in records if r.status == "OBSERVED"),
+            "prior_only": sum(1 for r in records if r.status == "PRIOR"),
+            "conflicts": sum(1 for r in records if r.conflicts),
+            "awaiting_calibration": sum(
+                1 for r in records if r.live_calibration_status in (CALIBRATION_QUEUED, "QUEUED")
+            ),
+            "blocked": sum(1 for r in records if r.live_calibration_status == "KNOWLEDGE_BLOCKED"),
+            "external_share": (
+                round(
+                    sum(1 for r in records if acquisition_rank(r.source_type) > 5)
+                    / len(records) * 100, 1
+                ) if records else 0.0
+            ),
+        }
+        return {
+            "unlocked": tally(unlocked),
+            "all": tally(rows),
+            "knowledge": knowledge,
+            "definitions": {
+                "unlocked": "该能力所在 category 出现过证据（EXISTING 行或有真机尝试）",
+                "candidate_percent": "(lifecycle=CANDIDATE + implementation=EXISTING) / 分母",
+                "live_verified_percent": "lifecycle=LIVE_VERIFIED / 分母",
+                "external_share": "知识来源 rung>5（外部）的记录占比 —— 应当随运行时间下降",
+            },
+        }
+
+    # -- state (operator §十三) -------------------------------------------
+
+    def state(
+        self,
+        *,
+        scanner: BootstrapScanner | None = None,
+        note: str = "",
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """The seven questions the operator asked a watchdog to be able to answer."""
+        moment = now or datetime.now(timezone.utc)
+        engine = scanner or self._scanner
+        coverage = self.coverage(engine)
+        records = self.store.records()
+        learning = next(
+            (r for r in records if r.live_calibration_status in (
+                PENDING_RESEARCH, KNOWLEDGE_BLOCKED, "PENDING_DEVELOPMENT")),
+            None,
+        )
+        awaiting = [r for r in records if r.live_calibration_status in (CALIBRATION_QUEUED, "QUEUED")]
+        developing = [r for r in records if r.live_calibration_status == "PENDING_DEVELOPMENT"]
+        last = self._last
+        return {
+            "written_at": moment.isoformat(),
+            "process": os.getpid(),
+            "controller": "RUNNING",
+            "stage": last.stage if last else "IDLE",
+            "decision": last.decision if last else "",
+            "note": note or (last.note if last else ""),
+            "line": last.line if last else "[bootstrap] no pass yet",
+            # 1. what is it learning now
+            "learning": learning.capability if learning else "",
+            "learning_missing": list(learning.missing) if learning else [],
+            # The questions actually asked, not the bookkeeping notes beside them.
+            "learning_questions": (
+                [q for q in str(learning.question).split(" | ") if q] if learning else []
+            ),
+            # 2. what is being preloaded / developed now
+            "preloading": last.selected if last and last.stage == "PRELOAD" else "",
+            "developing": [r.capability for r in developing][:5],
+            # 3. what is waiting for the device
+            "awaiting_calibration": [r.capability for r in awaiting][:8],
+            # 4. last successful preload
+            "last_preload_at": max((r.updated_at for r in records if r.sufficient), default=""),
+            "last_confirmed_at": max(
+                (r.updated_at for r in records if r.status == "CONFIRMED"), default=""
+            ),
+            # 5. next
+            "next_capability": last.next_capability if last else "",
+            "knowledge_records": len(records),
+            "knowledge_blocked": [
+                r.capability for r in records if r.live_calibration_status == "KNOWLEDGE_BLOCKED"
+            ][:8],
+            "coverage": coverage,
+        }
+
+    def write_state(
+        self,
+        *,
+        now: datetime | None = None,
+        scanner: BootstrapScanner | None = None,
+        note: str = "",
+    ) -> Path:
+        """Persist the state where the panel, the handoff and the operator can read it.
+
+        A controller that runs but leaves no heartbeat is indistinguishable from one
+        that died -- the operator's own words: "禁止出现：代码支持自动预装，但实际
+        Controller 根本没运行".  So the heartbeat is the answer to that, in a file.
+        """
+        payload = self.state(scanner=scanner, note=note, now=now)
+        path = self.root / STATE_PATH
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+        return path

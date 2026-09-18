@@ -134,7 +134,11 @@ class TheCeiling(unittest.TestCase):
             "OPEN_SOURCE_UNINDEXED", "GAME_DB_WIKI", "SELF_EXPLORATION"))
         self.assertEqual(cb.PRIORITY_LADDER, (
             "REAL_GAP", "UNLOCKED_MISSING", "HIGH_FREQ_FREE_VALUE",
-            "OTHER_UNLOCKED", "FUTURE_LOCKED"))
+            "OTHER_UNLOCKED", "NEAR_UNLOCK", "FUTURE_LOCKED"))
+        self.assertEqual(
+            [cb.PRIORITY_TIER[name] for name in cb.PRIORITY_LADDER],
+            ["P0", "P1", "P2", "P3", "P4", "P5"],
+        )
 
     def test_the_seven_fields_are_the_operators_seven(self):
         self.assertEqual(cb.FACET_NAMES, (
@@ -609,6 +613,23 @@ class ThePanelClock(unittest.TestCase):
         self.module = control_panel
         self.tmp = Path(tempfile.mkdtemp())
         (self.tmp / "learning").mkdir(parents=True)
+        # A catalog row so the pass reaches the gate rather than stopping at "nothing to
+        # scan": the arm refusal is what this fixture is about.
+        (self.tmp / "knowledge/game").mkdir(parents=True)
+        (self.tmp / "knowledge/game/capability_catalog.json").write_text(json.dumps({
+            "schema_version": "1.0",
+            "capabilities": [{
+                "capability_id": "CAP-Z01", "code": "OPEN_ARENA", "name_cn": "竞技场",
+                "category": "N", "description": "OPEN_ARENA", "unlock_status": "UNKNOWN",
+                "current_role_available": "UNKNOWN", "implementation_status": "MISSING",
+                "lifecycle": "MISSING", "risk": "T1", "requires_march": False,
+                "requires_stamina": False, "resource_cost": "UNKNOWN",
+                "real_money_cost": "NONE_ALLOWED", "preferred_backend": "MAA",
+                "existing_skill": None, "external_reference": "REFERENCE_ONLY",
+                "live_attempts": 0, "live_success": 0, "live_failure": 0,
+                "success_rate": None, "last_live_verified": None, "blocked_reason": None,
+            }],
+        }), encoding="utf-8")
         self.ledger = self.tmp / "learning/workbuddy_escalations.jsonl"
         self.state_file = self.tmp / "learning/pump.json"
 
