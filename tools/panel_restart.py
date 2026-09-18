@@ -180,19 +180,36 @@ def runtime_observation() -> str:
 
 
 def runtime_claim() -> str:
-    """A *positive* claim that a round is running.  Empty means "no evidence of one"."""
+    """A *positive* claim that a round is running.  Empty means "no evidence of one".
+
+    Derived from the enum, not from a remembered list of state names.  The first version
+    hardcoded ``("GOAL_RUNNING", "RECOVERING")`` and therefore reported "no claim" while
+    the device was mid-round in ``AUTO_RUNNING`` -- two of the eight states.  A guard that
+    under-reports is worse than no guard: it is the one that says "safe to stop".
+    """
     observation = runtime_observation()
-    if observation.startswith("snapshot is"):
+    if not observation or observation.startswith("snapshot is"):
         return ""
-    state = observation.split(" · ")[0] if observation else ""
-    if state in ("GOAL_RUNNING", "RECOVERING"):
-        snapshot = {}
-        try:
-            snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return ""
-        if snapshot.get("runtime_thread_alive"):
-            return observation
+    # This tool is deliberately dependency-free (it has to run when the project's own
+    # imports are what is broken), so the package is located at call time.
+    import sys as _sys
+
+    if str(ROOT) not in _sys.path:
+        _sys.path.insert(0, str(ROOT))
+    from winter_agent_v2.runtime_snapshot import AgentState
+
+    # States in which nothing of ours is mid-transaction.  Everything else is a claim.
+    idle = {AgentState.IDLE.value, AgentState.SAFE_STOP.value,
+            AgentState.FATAL_STOPPED.value, AgentState.PAUSED.value}
+    state = observation.split(" · ")[0]
+    if state in idle or state not in {member.value for member in AgentState}:
+        return ""
+    try:
+        snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    if snapshot.get("runtime_thread_alive"):
+        return observation
     return ""
 
 
