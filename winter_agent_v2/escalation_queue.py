@@ -275,6 +275,12 @@ class EscalationPolicy:
     # "15 分钟仍无法解决": a signature whose first sighting is this old and which
     # still has no verified episode.
     stuck_minutes: int = 15
+    # The timebox a job is *told* it has, in the work order itself.  Enforced as
+    # well as stated: a job that outlives it while records are waiting behind it
+    # holds the only concurrency slot, and no amount of pumping can get the queue
+    # past that.  Measured 2026-09-18: job 2934e9cd ran for ~55 minutes against
+    # this box with two records queued behind it.
+    job_timebox_minutes: int = 45
 
 
 @dataclass(frozen=True)
@@ -1644,7 +1650,7 @@ class EscalationQueueAdapter:
                 f"Escalation key: {candidate.signature.key}\n"
                 f"Model rung: {dispatch.model} -- {dispatch.model_reason}"
             ),
-            timebox_minutes=max(self.policy.stuck_minutes, 45),
+            timebox_minutes=self.policy.job_timebox_minutes,
             root=self.root,
         )
         submission = self.bridge.submit(
@@ -1688,17 +1694,70 @@ class EscalationQueueAdapter:
 
     # -- reconciliation ---------------------------------------------------
 
+    def _reclaim_expired_slot(
+        self,
+        record: EscalationRecord,
+        waiting: Sequence[EscalationRecord],
+        moment: datetime,
+        errors: list[str],
+    ) -> str:
+        """Cancel a job that outlived its timebox *while others wait for the slot*.
+
+        Both conditions are required, and each is one half of an operator rule.
+
+        The timebox is what the work order itself told the agent it had ("timebox:
+        45 minutes"), so a job past it is off-contract rather than merely slow.
+
+        The queue must have something waiting behind it.  Without that half this
+        would be a timer that kills a productive agent for being thorough, and it
+        would contradict the standing instruction never to interrupt a valid
+        WorkBuddy write operation.  With it, the only job that loses the slot is
+        the one actually starving the queue -- which is the stall the operator
+        reported: two records sat unfilled behind a single job.
+
+        Cancelling destroys nothing.  ``POST /jobs/{id}/stop`` stops a process; the
+        commits the agent already made are in the working tree and stay there, and
+        the reconciler measures the tree rather than the agent's exit code.
+
+        A cancel that fails keeps the honest state (still WORKING, error recorded)
+        rather than pretending the slot is free.
+        """
+        if not waiting or record.submitted_at is None:
+            return ""
+        age_minutes = (moment - record.submitted_at).total_seconds() / 60.0
+        box = self.policy.job_timebox_minutes
+        if age_minutes < box:
+            return ""
+        try:
+            self.bridge.cancel(record.job_id)
+        except Exception as exc:  # noqa: BLE001 - a failed cancel must not free the slot on paper
+            errors.append(f"{record.key}: cancel({record.job_id}) failed: {exc}")
+            return ""
+        return (
+            f"job exceeded its {box}-minute timebox ({age_minutes:.0f} min) while "
+            f"{len(waiting)} record(s) waited for the single concurrency slot; "
+            f"cancelled to free it"
+        )
+
     def reconcile(self, *, now: datetime | None = None) -> tuple[list[str], list[str]]:
         """Poll every in-flight job and measure what it achieved.
 
         A job the gateway no longer knows about becomes ``FAILED`` rather than
         staying ``WORKING`` forever: a gateway restart must not leave a row that
         permanently occupies the concurrency slot.
+
+        The same slot is why a job past its timebox is cancelled -- but only when
+        records are waiting behind it, so a thorough agent with an empty queue is
+        left alone.  See :meth:`_reclaim_expired_slot`.
         """
         moment = now or datetime.now(timezone.utc)
         snapshot = self.ledger.snapshot()
         settled: list[str] = []
         errors: list[str] = []
+        # Who is waiting for the slot.  Read once, before the loop, because that is
+        # the question the reclaim below answers: a job over its timebox only loses
+        # the slot when somebody is actually behind it.
+        waiting = self.pending(snapshot=snapshot)
 
         for record in snapshot.records.values():
             if record.state not in (SUBMITTED, WORKING) or not record.job_id:
@@ -1709,8 +1768,13 @@ class EscalationQueueAdapter:
                 errors.append(f"{record.key}: status({record.job_id}) failed: {exc}")
                 continue
 
+            reclaimed = ""
+            if not status.terminal:
+                reclaimed = self._reclaim_expired_slot(record, waiting, moment, errors)
+
             live_state = (
-                status.verdict if status.verdict in (WORKING, DONE, FAILED, STOPPED)
+                STOPPED if reclaimed
+                else status.verdict if status.verdict in (WORKING, DONE, FAILED, STOPPED)
                 else (status.gateway_state or "UNKNOWN").upper()
             )
             self.ledger.append({
@@ -1718,9 +1782,9 @@ class EscalationQueueAdapter:
                 "key": record.key,
                 "job_id": record.job_id,
                 "state": live_state,
-                "job_detail": status.detail,
+                "job_detail": reclaimed or status.detail,
             })
-            if not status.terminal:
+            if not (status.terminal or reclaimed):
                 continue
 
             before = RepoRevision(
@@ -1734,13 +1798,15 @@ class EscalationQueueAdapter:
                 capability=record.capability,
                 skill=record.skill,
                 submitted_at=record.submitted_at,
-                job_verdict=status.verdict,
+                job_verdict=STOPPED if reclaimed else status.verdict,
                 before=before,
                 after=after,
                 wiring_problems=wiring,
                 agent_report=status.result,
                 root=self.root,
             )
+            if reclaimed:
+                explanation = f"cancelled: {reclaimed}. " + explanation
             code_changed = after.differs_from(before)
             self.ledger.append({
                 "event": "reconciled",

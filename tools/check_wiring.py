@@ -672,6 +672,12 @@ def main() -> int:
           "self.pump.stop()" in _panel_source)
     check("pump: the operator's stop gates it, a pause does not",
           "self.operator_intent != \"STOPPED\"" in _panel_source)
+    check("slot: the timebox the job is told is the one that is enforced",
+          "timebox_minutes=self.policy.job_timebox_minutes" in _queue_source
+          and "box = self.policy.job_timebox_minutes" in _queue_source)
+    check("slot: an expired job is only cancelled when records wait behind it",
+          "if not waiting or record.submitted_at is None:" in _queue_source
+          and "def _reclaim_expired_slot(" in _queue_source)
 
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():

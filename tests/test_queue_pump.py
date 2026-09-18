@@ -58,13 +58,16 @@ def panel_module():
 class FakeBridge:
     """The bridge's HTTP surface, scripted.  Records what it was asked."""
 
-    def __init__(self, *, available=True, reason="OK", status=None, submitted="job-1"):
+    def __init__(self, *, available=True, reason="OK", status=None, submitted="job-1",
+                 cancel_ok=True):
         self._available = available
         self._reason = reason
         self._status = status
         self._submitted = submitted
+        self._cancel_ok = cancel_ok
         self.submits: list[dict] = []
         self.status_calls: list[str] = []
+        self.cancels: list[str] = []
 
     def is_available(self):
         return Availability(self._available, self._reason, "http://127.0.0.1:8080")
@@ -76,6 +79,12 @@ class FakeBridge:
     def status(self, job_id):
         self.status_calls.append(job_id)
         return self._status
+
+    def cancel(self, job_id):
+        self.cancels.append(job_id)
+        if not self._cancel_ok:
+            raise RuntimeError("stop endpoint refused")
+        return True
 
 
 class Harness:
@@ -128,6 +137,86 @@ class Harness:
 
     def cleanup(self):
         self._tmp.cleanup()
+
+    def running_job(self, key="CAP|UI|SKILL", *, submitted_at):
+        """A record that reached the bridge and whose job is still going."""
+        self.ledger.append({"source": "queue", "event": "escalation_created", "key": key,
+                            "capability": "CAP", "failure_type": "UI", "skill": "SKILL",
+                            "condition": q.UNKNOWN_UI})
+        self.ledger.append({"source": "queue", "event": "submitted", "key": key,
+                            "job_id": "job-1", "recorded_at": submitted_at.isoformat()})
+        self.ledger.append({"source": "queue", "event": "job_state", "key": key,
+                            "state": q.WORKING})
+
+
+class SlotReclaimTest(unittest.TestCase):
+    """The single concurrency slot is the only thing between the queue and the next record."""
+
+    @staticmethod
+    def _working(job_id="job-1"):
+        return JobStatus(job_id=job_id, gateway_state="working", verdict=q.WORKING,
+                         settled=False, detail="still working")
+
+    def test_a_job_past_its_timebox_loses_the_slot_when_records_are_waiting(self):
+        """Without this, the best possible pump still cannot get a record past the slot."""
+        harness = Harness(bridge=FakeBridge(status=self._working()))
+        try:
+            harness.adapter._wiring_problems = lambda: 0
+            harness.running_job(submitted_at=NOW - timedelta(minutes=90))
+            harness.created_while_busy()
+
+            observation = harness.adapter.pump(now=NOW)
+
+            self.assertEqual(harness.bridge.cancels, ["job-1"])
+            slot = harness.ledger.snapshot().get("CAP|UI|SKILL")
+            self.assertIn(slot.state, (q.DONE, q.FAILED))
+            # The point of freeing it: in the same pass the waiting record takes the slot.
+            active = [record.key for record in harness.ledger.snapshot().active_jobs()]
+            self.assertEqual(active, [PENDING_KEY])
+            self.assertEqual(observation.submitted, ("job-1",))
+        finally:
+            harness.cleanup()
+
+    def test_a_thorough_agent_with_nothing_waiting_keeps_the_slot(self):
+        """The other half of the rule: never interrupt a valid write for no reason."""
+        harness = Harness(bridge=FakeBridge(status=self._working()))
+        try:
+            harness.running_job(submitted_at=NOW - timedelta(minutes=90))
+            harness.adapter.pump(now=NOW)
+            self.assertEqual(harness.bridge.cancels, [])
+            self.assertEqual(harness.ledger.snapshot().get("CAP|UI|SKILL").state, q.WORKING)
+        finally:
+            harness.cleanup()
+
+    def test_a_job_inside_its_timebox_keeps_the_slot(self):
+        harness = Harness(bridge=FakeBridge(status=self._working()))
+        try:
+            harness.running_job(submitted_at=NOW - timedelta(minutes=10))
+            harness.created_while_busy()
+            harness.adapter.pump(now=NOW)
+            self.assertEqual(harness.bridge.cancels, [])
+            self.assertEqual(harness.ledger.snapshot().get("CAP|UI|SKILL").state, q.WORKING)
+        finally:
+            harness.cleanup()
+
+    def test_a_refused_cancel_keeps_the_honest_state(self):
+        """A slot is not free because we asked nicely."""
+        harness = Harness(bridge=FakeBridge(status=self._working(), cancel_ok=False))
+        try:
+            harness.running_job(submitted_at=NOW - timedelta(minutes=90))
+            harness.created_while_busy()
+            observation = harness.adapter.pump(now=NOW)
+            self.assertTrue(any("cancel" in error for error in observation.errors))
+            self.assertEqual(harness.ledger.snapshot().get("CAP|UI|SKILL").state, q.WORKING)
+            self.assertTrue(harness.ledger.snapshot().active_jobs())
+        finally:
+            harness.cleanup()
+
+    def test_the_timebox_the_job_is_told_is_the_timebox_that_is_enforced(self):
+        """One number, stated in the work order and used by the reclaim."""
+        source = (ROOT / "winter_agent_v2/escalation_queue.py").read_text(encoding="utf-8")
+        self.assertIn("timebox_minutes=self.policy.job_timebox_minutes", source)
+        self.assertIn("box = self.policy.job_timebox_minutes", source)
 
 
 class PumpIsTheSameConsumerTest(unittest.TestCase):
