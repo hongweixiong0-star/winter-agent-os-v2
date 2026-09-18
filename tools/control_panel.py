@@ -495,6 +495,41 @@ def count_knowledge() -> dict[str, int]:
 # wording: only a genuine unknown may say 未知.
 PENDING = "未读取"
 NO_DATA = "暂无数据"
+# One mark per health word, shared by the top bar and every panel header.  Six words and
+# no more -- a bar with three shades of "fine" is a bar nobody reads.
+DOT_GOOD, DOT_WORK, DOT_IDLE = "● 正常", "● 工作中", "● 等待"
+DOT_WARN, DOT_BAD, DOT_UNKNOWN = "● 降级", "● 异常", "● 未确认"
+
+DOT_TEXT: dict[str, str] = {
+    "good": DOT_GOOD, "work": DOT_WORK, "idle": DOT_IDLE,
+    "warn": DOT_WARN, "bad": DOT_BAD, "unknown": DOT_UNKNOWN,
+}
+
+# label -> the status value that drives it.  Eight cells and no more: the top bar answers
+# "is it OK", and the detail belongs one click down.
+SYSTEM_INDICATORS: tuple[tuple[str, str], ...] = (
+    ("V2", "dot_v2"), ("MAA", "dot_maa"), ("MuMu", "dot_mumu"), ("游戏", "dot_game"),
+    ("AUTO", "dot_auto"), ("WorkBuddy", "dot_wb"), ("预载", "dot_boot"), ("时间", "clock"),
+)
+
+# Twelve flat tabs became unreadable once every subsystem got its own page, so they are
+# grouped under the operator's seven headings.  This is a *label* map, not a restructuring:
+# the frames and their content are untouched, which keeps every existing test and every
+# deep link to a tab working.
+TAB_GROUP: dict[str, str] = {
+    "总览": "总览",
+    "任务": "运行·任务",
+    "策略": "运行·策略",
+    "目标": "运行·目标",
+    "活动": "运行·活动",
+    "自动化覆盖": "能力·覆盖",
+    "能力": "能力",
+    "知识": "知识",
+    "自动开发": "自动开发",
+    "系统": "系统",
+    "日志": "证据·日志",
+    "设置": "系统·设置",
+}
 UNKNOWN_NOW = "未知（识别中）"
 # A stop reason the panel cannot classify while nothing is running.  Distinct from
 # UNKNOWN_NOW because nothing is being recognised at that moment -- the honest
@@ -1252,6 +1287,17 @@ def status_defaults() -> dict[str, str]:
         # first audit pass the window must admit it does not know, not print a placeholder
         # that reads like an observation.
         "role": PENDING, "role_state": "", "truth": "",
+        # The eight top-bar indicators, one word each from one vocabulary
+        # (``state_truth.health_of``).  They start at 未确认 rather than at a plausible
+        # "正常": a bar that is green before anything has been read is lying about the
+        # only thing it exists to say.
+        "dot_v2": DOT_UNKNOWN, "dot_maa": DOT_UNKNOWN, "dot_mumu": DOT_UNKNOWN,
+        "dot_game": DOT_UNKNOWN, "dot_auto": DOT_UNKNOWN, "dot_wb": DOT_UNKNOWN,
+        "dot_boot": DOT_UNKNOWN,
+        # The new panels' own lines.
+        "why_idle": PENDING, "executor_mix": PENDING, "progress": PENDING,
+        "bootstrap": PENDING, "coverage": PENDING, "attention": "暂无需要关注的问题",
+        "watchdog": PENDING,
         "stats": "本次启动：0 轮 · 0 动作",
     }
 
@@ -1745,21 +1791,23 @@ class ControlPanel:
         ttk.Label(title, text="Winter Agent OS V2", style="Title.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(title, text="《无尽冬日》AI 指挥中心", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         status = ttk.Frame(header, style="Card.TFrame"); status.pack(side="right", expand=True, fill="x", padx=(26, 0))
-        # The four frozen layers, in order, and nothing else.  Qwen and Vision used
-        # to sit here as first-class components; they are not layers of this
-        # architecture (Qwen is an optional offline provider, recognition is MAA's
-        # job), so a model or provider name in this row would misstate the design.
-        # A model name appears only as WorkBuddy's second-level detail.
-        for i, (label, key) in enumerate((("V2大脑", "agent"), ("MAA", "maa"), ("MuMu", "device"), ("游戏", "game"),
-                                          ("页面", "page"), ("AUTO", "mode"), ("WorkBuddy", "workbuddy"), ("时间", "clock"))):
-            cell = ttk.Frame(status, style="Card.TFrame"); cell.grid(row=0, column=i, padx=7, sticky="w")
+        # Eight cells, one word each, from one vocabulary (``state_truth.health_of``).
+        # Long sentences used to sit here -- "MAA 正在参与生产" and the like -- which grew
+        # with every capability and could not be scanned.  A model name still appears only
+        # as WorkBuddy's second-level detail: this row is the four frozen layers plus the
+        # three system services, and nothing else.
+        self.indicators: dict[str, tk.Label] = {}
+        for i, (label, key) in enumerate(SYSTEM_INDICATORS):
+            cell = ttk.Frame(status, style="Card.TFrame"); cell.grid(row=0, column=i, padx=6, sticky="w")
             ttk.Label(cell, text=label, style="Muted.TLabel", background=PANEL).pack(anchor="w")
-            ttk.Label(cell, textvariable=self.values[key], background=PANEL).pack(anchor="w")
+            mark = tk.Label(cell, textvariable=self.values[key], background=PANEL, fg=MUTED)
+            mark.pack(anchor="w")
+            self.indicators[key] = mark
         self.tabs = ttk.Notebook(shell); self.tabs.pack(fill="both", expand=True, pady=(10, 0))
         self._overview(); self._goals(); self._strategy(); self._event_goal(); self._capabilities(); self._auto_development(); self._system()
 
     def _tab(self, name: str, scroll: bool = False) -> ttk.Frame:
-        f = ttk.Frame(self.tabs, padding=10); self.tabs.add(f, text=name)
+        f = ttk.Frame(self.tabs, padding=10); self.tabs.add(f, text=TAB_GROUP.get(name, name))
         return self._scroll_area(f) if scroll else f
 
     def _scroll_area(self, parent: ttk.Frame) -> ttk.Frame:
@@ -1883,13 +1931,68 @@ class ControlPanel:
             card = ttk.Frame(cards, style="Card2.TFrame", padding=(14, 8)); card.grid(row=0, column=i, sticky="ew", padx=4); cards.columnconfigure(i, weight=1)
             ttk.Label(card, text=name, style="Muted.TLabel", background=PANEL2).pack(anchor="w")
             self.queues[name] = tk.StringVar(value=PENDING); ttk.Label(card, textvariable=self.queues[name], style="Value.TLabel", background=PANEL2).pack(anchor="w")
-        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        # Rows 4-6: the four questions the operator wants answered without opening a log
+        # -- why nothing is moving, whether production is really using MAA, what the
+        # development platform is doing, and whether coverage is growing.  Every line here
+        # is a `state_truth` value, so the panel cannot hold a second opinion about any of
+        # them, and any line that cannot be confirmed says 未确认 / 未知 rather than a
+        # plausible-looking stale number.
+        facts = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
+        facts.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        facts.columnconfigure(0, weight=1); facts.columnconfigure(1, weight=1)
+        for column, (title, key, source) in enumerate((
+            ("现在为什么不动", "why_idle", "learning/runtime_snapshot.json · 决策原因"),
+            ("执行器（最近 100 步实测）", "executor_mix", "learning/executor_backend.jsonl"),
+            ("自动开发 / 能力学习", "bootstrap",
+             "learning/knowledge_bootstrap/STATE.json · WorkBuddy 台账"),
+            ("能力覆盖", "coverage", "knowledge/game/capability_catalog.json"),
+        )):
+            cell = ttk.Frame(facts, style="Card2.TFrame", padding=(12, 8))
+            cell.grid(row=column // 2, column=column % 2, sticky="nsew", padx=4, pady=4)
+            ttk.Label(cell, text=title, style="Section.TLabel", background=PANEL2).pack(anchor="w")
+            ttk.Label(cell, textvariable=self.values[key], background=PANEL2,
+                      wraplength=560, justify="left").pack(anchor="w", pady=(4, 0))
+            ttk.Label(cell, text=source, style="Muted.TLabel", background=PANEL2,
+                      font=("Microsoft YaHei UI", 7), wraplength=560,
+                      justify="left").pack(anchor="w", pady=(4, 0))
+
+        lower = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10))
+        lower.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        lower.columnconfigure(0, weight=1); lower.columnconfigure(1, weight=1)
+        for column, (title, key, source) in enumerate((
+            ("需要关注", "attention",
+             "state_truth：STATE_CONFLICT / 角色未知 / 队列卡住 / 无目标进展 / MAA 降级"),
+            ("看门狗与版本", "watchdog",
+             "learning/runtime_snapshot.json · config/control_panel_state.json"),
+        )):
+            cell = ttk.Frame(lower, style="Card2.TFrame", padding=(12, 8))
+            cell.grid(row=0, column=column, sticky="nsew", padx=4)
+            ttk.Label(cell, text=title, style="Section.TLabel", background=PANEL2).pack(anchor="w")
+            ttk.Label(cell, textvariable=self.values[key], background=PANEL2,
+                      wraplength=560, justify="left").pack(anchor="w", pady=(4, 0))
+            ttk.Label(cell, text=source, style="Muted.TLabel", background=PANEL2,
+                      font=("Microsoft YaHei UI", 7), wraplength=560,
+                      justify="left").pack(anchor="w", pady=(4, 0))
+
+        # 动作成功 ≠ 目标取得进展.  The operator's own distinction, shown where the eye
+        # lands rather than buried in a per-step log.
+        ttk.Label(tab, textvariable=self.values["progress"], background=PANEL,
+                  wraplength=1150, justify="left").grid(row=6, column=0, columnspan=3,
+                                                        sticky="w", pady=(8, 0))
+
+        bottom = ttk.Frame(tab, style="Card.TFrame", padding=10); bottom.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(10, 0))
         controls = ttk.Frame(bottom, style="Card.TFrame"); controls.pack(side="left")
         self.start_button = ttk.Button(controls, text="开始自动运行", style="Accent.TButton", command=self.start); self.start_button.pack(side="left", padx=(0, 4))
         self.pause_button = ttk.Button(controls, text="暂停", command=self.pause, state="disabled"); self.pause_button.pack(side="left", padx=3)
         self.stop_button = ttk.Button(controls, text="停止", command=self.stop, state="disabled"); self.stop_button.pack(side="left", padx=3)
         ttk.Button(controls, text="刷新状态", command=self.refresh).pack(side="left", padx=3)
         ttk.Button(controls, text="截图", command=self.take_screenshot).pack(side="left", padx=3)
+        # 视觉调试: off by default.  The operator's rule is that the picture stays clean
+        # and ROI / template / target / verifier boxes appear only on request -- a preview
+        # covered in debug furniture is one nobody can read a page from.
+        self.vision_debug = tk.BooleanVar(value=False)
+        ttk.Checkbutton(controls, text="视觉调试", variable=self.vision_debug,
+                        command=self._render_preview).pack(side="left", padx=(8, 3))
         event = ttk.Frame(bottom, style="Card.TFrame"); event.pack(side="left", fill="both", expand=True, padx=(18, 0))
         ttk.Label(event, text="最近事件", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         self.event_text = tk.StringVar(value="控制台已启动，等待真实状态。")
@@ -2581,6 +2684,96 @@ class ControlPanel:
         else:
             stale = len(report.worst())
             self.values["truth"].set(f"一致性 OK · {stale} 项非当前值" if stale else "一致性 OK")
+
+        # The panels that answer "what is it doing, why, and is it growing".
+        self._set_health("dot_auto", report.by_name("auto_state"))
+        self._set_health("dot_boot", report.by_name("bootstrap"))
+        self._set_health("dot_maa", report.by_name("maa_state"))
+        self._set_health("dot_v2", report.by_name("watchdog"))
+        self._set_health("dot_wb", report.by_name("workbuddy_jobs"))
+
+        idle = report.by_name("why_idle")
+        if idle is not None:
+            marker = "⚠ " if idle.value == "UNEXPLAINED_IDLE" else ""
+            self.values["why_idle"].set(f"{marker}{idle.value}")
+        mix = report.by_name("executor_mix")
+        if mix is not None:
+            self.values["executor_mix"].set(f"{mix.value}｜{mix.note}")
+        boot = report.by_name("bootstrap")
+        if boot is not None:
+            self.values["bootstrap"].set(f"{boot.value}\n{boot.note}".strip())
+        cov = report.by_name("coverage")
+        if cov is not None:
+            self.values["coverage"].set(f"{cov.value}\n{cov.note}".strip())
+        watch = report.by_name("watchdog")
+        if watch is not None:
+            self.values["watchdog"].set(f"{watch.value}\n{watch.note}".strip())
+
+        attention = report.needs_attention()
+        if attention:
+            lines = [f"⚠ {a['kind']}：{str(a['detail'])[:110]}" for a in attention[:4]]
+            self.values["attention"].set("\n".join(lines))
+        else:
+            healed = len(report.anomalies) - len(attention)
+            self.values["attention"].set(
+                f"暂无需要关注的问题" + (f"（{healed} 条已自动恢复，见历史）" if healed else "")
+            )
+
+        # MuMu and 游戏 are probed live (adb shell), not audited -- they are the two facts
+        # that cannot come from a file, which is why they live on the probe thread.
+        device = self.probes.device_state()
+        ok = device.get("ok")
+        self.values["dot_mumu"].set(
+            DOT_GOOD if ok is True else (DOT_BAD if ok is False else DOT_UNKNOWN)
+        )
+        self.values["dot_game"].set(
+            DOT_GOOD if ok is True else (DOT_BAD if ok is False else DOT_UNKNOWN)
+        )
+        for key in ("dot_mumu", "dot_game"):
+            label = self.indicators.get(key)
+            if label is not None:
+                label.configure(fg=GOOD if ok is True else (BAD if ok is False else MUTED))
+
+        # 动作成功 ≠ 目标取得进展.  Read from the production stream, not from the
+        # runtime's opinion of itself.
+        self._progress_line()
+
+    def _set_health(self, key: str, value: Any) -> None:
+        """Paint one top-bar cell from a TruthValue, using the shared six words."""
+        label = self.indicators.get(key)
+        if value is None:
+            self.values[key].set(DOT_UNKNOWN)
+            if label is not None:
+                label.configure(fg=MUTED)
+            return
+        from winter_agent_v2.state_truth import health_of
+
+        word, colour = health_of(value)
+        self.values[key].set(DOT_TEXT.get(colour, DOT_UNKNOWN))
+        if label is not None:
+            label.configure(fg={"good": GOOD, "work": GOOD, "idle": WARN,
+                                "warn": WARN, "bad": BAD, "unknown": MUTED}[colour])
+
+    def _progress_line(self) -> str:
+        """Action progress vs goal progress, from the last steps of the real stream."""
+        try:
+            rows = [json.loads(line) for line in
+                    (ROOT / "learning/episodes.jsonl").read_text(
+                        encoding="utf-8", errors="replace").splitlines()[-30:] if line.strip()]
+        except (OSError, json.JSONDecodeError):
+            rows = []
+        if not rows:
+            self.values["progress"].set(PENDING)
+            return ""
+        actions = sum(1 for r in rows if r.get("verifier_ok") is True)
+        progress = sum(1 for r in rows if r.get("goal_progress") is True)
+        unobserved = sum(1 for r in rows if r.get("goal_progress") is None)
+        text = (f"最近 {len(rows)} 步：动作成功 {actions} · 目标进展 {progress}"
+                f" · 未观测 {unobserved}")
+        if actions and not progress:
+            text = "⚠ 无目标进展｜" + text
+        self.values["progress"].set(text)
+        return text
 
     def _refresh_learning(self) -> None:
         """Report the knowledge-preload controller, from its own heartbeat.
@@ -3581,11 +3774,19 @@ class ControlPanel:
         if self.preview_source is None or not hasattr(self, "preview"): return
         width, height = max(260, self.preview.winfo_width() - 8), max(300, self.preview.winfo_height() - 8)
         image = self.preview_source.copy(); mode = self.preview_mode.get()
+        # The debug furniture (border, boxes) is drawn only when the operator asks for it.
+        # It used to appear for any non-raw mode, which meant the one thing the centre
+        # column exists for -- reading the page off the picture -- was obstructed by
+        # default.  The *text* summary stays, because that is information, not clutter.
+        debug = bool(getattr(self, "vision_debug", None) and self.vision_debug.get())
         if mode != "原始画面":
-            ImageDraw.Draw(image).rectangle((3, 3, image.width - 4, image.height - 4), outline=(83, 183, 255), width=5)
+            if debug:
+                ImageDraw.Draw(image).rectangle((3, 3, image.width - 4, image.height - 4), outline=(83, 183, 255), width=5)
             if mode == "OCR": self.preview_meta.set("OCR：当前 World State 未提供区域坐标；未伪造识别框")
             elif mode == "Vision": self.preview_meta.set("Vision：真实识别摘要；当前结果未提供检测框坐标")
             else: self.preview_meta.set(self._recognition())
+        if debug:
+            self.preview_meta.set(f"{self.preview_meta.get()}｜调试：ROI/模板未提供坐标，不伪造框")
         image.thumbnail((width, height), Image.Resampling.LANCZOS)
         canvas = Image.new("RGB", (width, height), "#070b10"); canvas.paste(image, ((width-image.width)//2, (height-image.height)//2))
         self.preview_photo = ImageTk.PhotoImage(canvas); self.preview.configure(image=self.preview_photo, text="")

@@ -259,6 +259,97 @@ class TheRoleScopesEverythingElse(unittest.TestCase):
         self.assertEqual(st._probe_stamp("nonsense"), "")
 
 
+class TheControlCentreIsWired(unittest.TestCase):
+    """The layout rules the operator set, checked as structure rather than as pixels."""
+
+    def setUp(self):
+        from tools import control_panel
+
+        self.panel = control_panel
+
+    def test_the_top_bar_is_eight_cells_of_one_vocabulary(self):
+        keys = [key for _, key in self.panel.SYSTEM_INDICATORS]
+        self.assertEqual(len(keys), 8, keys)
+        self.assertEqual(len(set(keys)), 8, "two cells sharing a value is a copy that drifts")
+        self.assertIn("clock", keys)
+
+    def test_every_indicator_starts_unconfirmed(self):
+        """A bar that is green before anything is read lies about its only job."""
+        defaults = self.panel.status_defaults()
+        for _, key in self.panel.SYSTEM_INDICATORS:
+            if key == "clock":
+                continue
+            self.assertEqual(defaults[key], self.panel.DOT_UNKNOWN, key)
+
+    def test_the_six_words_are_the_whole_palette(self):
+        words = {value.split(" ", 1)[-1] for value in self.panel.DOT_TEXT.values()}
+        self.assertEqual(words, {"正常", "工作中", "等待", "降级", "异常", "未确认"})
+
+    def test_the_health_palette_maps_onto_real_colours(self):
+        listed = {word for word in
+                  (v.split(" ", 1)[-1] for v in self.panel.DOT_TEXT.values())}
+        self.assertTrue(listed)
+
+    def test_every_flat_tab_is_regrouped(self):
+        """Twelve tabs became unreadable; none may be left out of the grouping."""
+        for name in ("任务", "策略", "目标", "活动", "自动化覆盖", "能力", "知识",
+                     "自动开发", "系统", "日志", "设置", "总览"):
+            self.assertIn(name, self.panel.TAB_GROUP, name)
+
+    def test_the_new_panels_have_status_values_and_they_start_empty(self):
+        """A panel with a plausible default is the same defect as a literal role."""
+        defaults = self.panel.status_defaults()
+        for key in ("why_idle", "executor_mix", "progress", "bootstrap", "coverage",
+                    "attention", "watchdog"):
+            self.assertIn(key, defaults, key)
+        self.assertNotIn("xhw", " ".join(str(v) for v in defaults.values()))
+
+    def test_debug_furniture_is_gated_on_a_toggle(self):
+        source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+        self.assertIn("self.vision_debug = tk.BooleanVar(value=False)", source)
+        self.assertIn("if debug:", source)
+
+
+class TheWiringVerifierChecksTheWindowAgainstItsSources(unittest.TestCase):
+    """The panel must be verified against the sources, not against itself."""
+
+    def setUp(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import gui_wiring_verify
+
+        self.verifier = gui_wiring_verify
+
+    def test_it_declares_a_source_for_every_field_it_checks(self):
+        self.assertTrue(self.verifier.WIRING)
+        for field, (state, render) in self.verifier.WIRING.items():
+            self.assertTrue(state, field)
+            self.assertTrue(callable(render), field)
+
+    def test_it_would_catch_a_field_with_no_source(self):
+        rows = self.verifier._source_checks("nothing here")
+        self.assertTrue(rows)
+        self.assertTrue(all(row["verdict"] == "NO_SOURCE" for row in rows))
+
+    def test_it_reports_matching_when_the_panel_is_wired(self):
+        source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+        rows = self.verifier._source_checks(source)
+        self.assertTrue(all(row["verdict"] == "OK" for row in rows))
+
+    def test_it_fails_when_a_rendered_value_diverges_from_its_source(self):
+        """Otherwise the verifier would agree with whatever the panel believed."""
+        stub = self.verifier._stub()
+        self.panel_module_refresh(stub)
+        stub.values["role"].set("xhw")
+        report = stub._report
+        expected = report.by_name("current_role").display
+        self.assertNotEqual(expected, stub.values["role"].get())
+
+    def panel_module_refresh(self, stub):
+        from tools import control_panel
+
+        control_panel.ControlPanel._refresh_truth(stub)
+
+
 class TheWindowCannotInventAState(unittest.TestCase):
     """The invariant that stops this class of defect coming back.
 
@@ -423,6 +514,174 @@ class EpisodesAreScopedToARole(unittest.TestCase):
         report = st.TruthAudit(self.tmp, now=NOW).report()
         self.assertEqual(report.conflicts_for("episode_role_scope"), ())
         self.assertEqual(report.by_name("episode_role_scope").status, st.LIVE_OBSERVED)
+
+
+class TheControlCentreAnswersItsOwnQuestions(unittest.TestCase):
+    """The eight things the operator wants a window to answer in five seconds.
+
+    Each of these is derived from the same reading as everything else, so the window
+    cannot hold a second opinion about any of them.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "page": "MAP", "agent_state": "GOAL_RUNNING",
+            "current_goal": "AUTO_DISCOVERY", "current_skill": "OPEN_MAP",
+            "runtime_thread_alive": True, "scheduler_loop_alive": True,
+            "stop_reason": "reserved_march_for_stamina", "reason": "reserved",
+            "last_action_time": NOW.isoformat(), "watchdog_restart_count": 13,
+        })
+        write(self.tmp, st.PUMP, {"written_at": NOW.isoformat(), "process": 1})
+        write(self.tmp, st.PANEL_STATE, {"operator_intent": "RUNNING"})
+        write(self.tmp, st.EPISODES, [episode(NOW.isoformat())])
+
+    def report(self):
+        return st.TruthAudit(self.tmp, now=NOW).report()
+
+    def _executor(self, backends, **extra):
+        write(self.tmp, st.EXECUTOR_LEDGER, [
+            {"recorded_at": NOW.isoformat(), "used_backend": b, "skill_known": i > 0,
+             "fallback_used": False, "capture_backend": f"{b}_X", **extra}
+            for i, b in enumerate(backends)
+        ])
+
+    def test_maa_is_graded_on_what_actually_ran_not_on_the_config_flag(self):
+        """"不能仅因为MAA进程存在就显示正常."."""
+        write(self.tmp, "config/v2.json", {"executor": {"maa": {"enabled": True}}})
+        self._executor(["MAA"] * 6)
+        value = self.report().by_name("maa_state")
+        self.assertEqual(value.status, st.LIVE_OBSERVED)
+        self.assertIn("真实执行", value.value)
+
+        self._executor(["ADB"] * 6)
+        value = self.report().by_name("maa_state")
+        self.assertIn("全部 ADB", value.value)
+        self.assertNotIn("正常且", value.value)
+
+    def test_a_disabled_maa_is_a_policy_not_a_fault(self):
+        write(self.tmp, "config/v2.json", {"executor": {"maa": {"enabled": False}}})
+        value = self.report().by_name("maa_state")
+        self.assertIn("已关闭", value.value)
+        self.assertNotIn(value.status, (st.CONFLICT,))
+
+    def test_a_fallback_surge_is_named_as_a_degradation(self):
+        '''"MAA明明正常，但生产实际上一直ADB" -- the exact case the operator named.'''
+        write(self.tmp, "config/v2.json", {"executor": {"maa": {"enabled": True}}})
+        self._executor(["MAA", "MAA"] + ["ADB"] * 8)
+        write(self.tmp, st.EXECUTOR_LEDGER, [
+            {"recorded_at": NOW.isoformat(), "used_backend": "MAA", "fallback_used": False},
+            {"recorded_at": NOW.isoformat(), "used_backend": "MAA", "fallback_used": False},
+        ] + [{"recorded_at": NOW.isoformat(), "used_backend": "ADB", "fallback_used": True}
+             for _ in range(8)])
+        value = self.report().by_name("maa_state")
+        self.assertEqual(value.status, st.CONFLICT)
+        self.assertIn("降级", value.value)
+
+    def test_the_executor_mix_says_why_the_rest_went_to_adb(self):
+        write(self.tmp, st.EXECUTOR_LEDGER, [
+            {"recorded_at": NOW.isoformat(), "used_backend": "MAA", "skill_known": True},
+            {"recorded_at": NOW.isoformat(), "used_backend": "ADB", "skill_known": False},
+        ])
+        value = self.report().by_name("executor_mix")
+        self.assertIn("50%", value.value)
+        self.assertIn("技能未迁移 MAA", value.note)
+
+    def test_between_rounds_is_not_an_anomaly(self):
+        """A stopped worker inside the scheduler's own gap is the design working.
+
+        Asserted on the *runtime* finding specifically: an empty fixture also legitimately
+        reports an unread role and a bootstrap that never ran, and those are not what this
+        test is about.
+        """
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": (NOW - timedelta(seconds=300)).isoformat(),
+            "agent_state": "IDLE", "runtime_thread_alive": False,
+            "scheduler_loop_alive": False, "stop_reason": "reserved_march_for_stamina",
+        })
+        report = self.report()
+        self.assertIn("正常", report.by_name("watchdog").value)
+        self.assertIn("轮次之间", report.by_name("watchdog").note)
+        kinds = [a["kind"] for a in report.needs_attention()]
+        self.assertNotIn("RUNTIME_NOT_RUNNING", kinds)
+        self.assertNotIn("UNEXPLAINED_IDLE", kinds)
+
+    def test_silence_beyond_the_round_gap_is_an_anomaly(self):
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": (NOW - timedelta(hours=2)).isoformat(),
+            "agent_state": "IDLE", "runtime_thread_alive": False,
+            "scheduler_loop_alive": False,
+        })
+        report = self.report()
+        self.assertEqual(report.by_name("watchdog").status, st.CONFLICT)
+        self.assertIn("RUNTIME_NOT_RUNNING", [a["kind"] for a in report.needs_attention()])
+
+    def test_a_user_pause_is_an_intent_not_a_fault(self):
+        write(self.tmp, st.PANEL_STATE, {"operator_intent": "PAUSED"})
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "agent_state": "PAUSED",
+            "runtime_thread_alive": False, "scheduler_loop_alive": False,
+        })
+        report = self.report()
+        self.assertIn("操作者意图 PAUSED", report.by_name("watchdog").note)
+        self.assertNotIn("RUNTIME_NOT_RUNNING",
+                         [a["kind"] for a in report.needs_attention()])
+
+    def test_the_window_can_say_why_nothing_is_moving(self):
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "agent_state": "IDLE",
+            "deferred_goals": [{"goal_id": "AVOID_STAMINA_WASTE",
+                                "capability": "SPEND_STAMINA_ON_BEAST"}],
+            "next_action": "stamina_task_slot_preserved",
+        })
+        value = self.report().by_name("why_idle")
+        self.assertIn("DEFER", value.value)
+        self.assertIn("SPEND_STAMINA_ON_BEAST", value.value)
+
+    def test_an_unexplained_standstill_says_so_instead_of_nothing(self):
+        '''"不能让用户看到游戏不动以后还要自己猜."'''
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "agent_state": "IDLE",
+            "last_action_time": (NOW - timedelta(hours=1)).isoformat(),
+        })
+        report = self.report()
+        self.assertEqual(report.by_name("why_idle").value, "UNEXPLAINED_IDLE")
+        self.assertIn("UNEXPLAINED_IDLE", [a["kind"] for a in report.anomalies])
+
+    def test_the_coverage_kpi_carries_its_24h_delta(self):
+        write(self.tmp, "knowledge/game/capability_catalog.json", {"capabilities": [
+            {"lifecycle": "LIVE_VERIFIED", "last_live_verified": NOW.isoformat()},
+            {"lifecycle": "LIVE_VERIFIED", "last_live_verified": (NOW - timedelta(days=5)).isoformat()},
+            {"lifecycle": "MISSING"},
+        ]})
+        value = self.report().by_name("coverage")
+        self.assertIn("LIVE_VERIFIED 2", value.value)
+        self.assertIn("最近24h 新增 1", value.note)
+
+    def test_a_recovered_problem_is_history_not_a_red_light(self):
+        report = self.report()
+        self.assertTrue(all("auto_recovered" in a for a in report.anomalies))
+        self.assertEqual(report.needs_attention(),
+                         tuple(a for a in report.anomalies if not a["auto_recovered"]))
+
+    def test_the_six_words_are_the_only_vocabulary(self):
+        """Every cell must land on one of the operator's six words -- no cell may invent
+        a seventh, which is how a window ends up with three shades of "fine"."""
+        allowed = {"正常", "工作中", "等待", "降级", "未确认", "异常"}
+        produced = {st.health_of(v)[0] for v in self.report().values}
+        self.assertTrue(produced)
+        self.assertTrue(produced <= allowed, produced - allowed)
+        self.assertEqual({st.health_of(v)[1] for v in self.report().values} <=
+                         {"good", "work", "idle", "warn", "unknown", "bad"}, True)
+
+    def test_the_consistency_monitor_compares_field_to_source(self):
+        rows = self.report().consistency
+        self.assertTrue(rows)
+        for row in rows:
+            self.assertIn("field", row)
+            self.assertIn("source", row)
+            self.assertIn("source_value", row)
+            self.assertIn(row["agree"], ("yes", "no"))
 
 
 if __name__ == "__main__":

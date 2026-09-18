@@ -59,6 +59,29 @@ UNKNOWN = "UNKNOWN"
 STALE = "STALE"
 CONFLICT = "CONFLICT"
 
+def health_of(value: TruthValue) -> tuple[str, str]:
+    """One of the operator's six words, plus the colour class it implies.
+
+    The window's top bar must not invent its own vocabulary per cell: the operator asked
+    for exactly 正常 / 工作中 / 等待 / 降级 / 未确认 / 异常, so they are derived here from the
+    provenance status rather than re-guessed at each call site.
+    """
+    text = f"{value.value} {value.note}"
+    if value.status == CONFLICT:
+        return ("异常", "bad")
+    if value.status in (UNKNOWN, ASSUMED):
+        return ("未确认", "unknown")
+    if value.status == STALE:
+        return ("降级", "warn")
+    if "降级" in text or "fallback" in text:
+        return ("降级", "warn")
+    if "等待" in text or "轮次之间" in text or "DEFER" in text:
+        return ("等待", "idle")
+    if any(word in text for word in ("研发中", "运行中", "真实执行", "已提交", "学习中")):
+        return ("工作中", "work")
+    return ("正常", "good")
+
+
 # Worst-last, so a sort or a max() reads as "how much can this be trusted".
 # ``ASSUMED`` sits below ``PERSISTED`` on purpose: an old measurement is a fact about the
 # past, a literal is a claim about nothing.
@@ -224,6 +247,12 @@ class TruthReport:
     role_status: str = UNKNOWN
     head: str = ""
     generated_at: str = ""
+    anomalies: tuple[Mapping[str, Any], ...] = ()
+    consistency: tuple[Mapping[str, str], ...] = ()
+
+    def needs_attention(self) -> tuple[Mapping[str, Any], ...]:
+        """Anomalies that have not healed.  A recovered one is history, not a red light."""
+        return tuple(a for a in self.anomalies if not a.get("auto_recovered"))
 
     def by_name(self, name: str) -> TruthValue | None:
         for value in self.values:
@@ -257,6 +286,8 @@ class TruthReport:
                 {"name": c.name, "readings": [f"{w}={v}" for w, v in c.readings], "note": c.note}
                 for c in self.conflicts
             ],
+            "anomalies": [dict(a) for a in self.anomalies],
+            "consistency": [dict(row) for row in self.consistency],
         }
 
 
@@ -274,6 +305,12 @@ BACKEND_ROUTING = "knowledge/execution/backend_routing.json"
 TOOL_REGISTRY = "knowledge/tooling/tool_registry.json"
 EVENT_STATE = "learning/event_goal_state.json"
 PUMP = "learning/control_panel/pump.json"
+STATE_PATH_BOOTSTRAP = "learning/knowledge_bootstrap/STATE.json"
+PANEL_STATE = "config/control_panel_state.json"
+
+# The scheduler's own gap between cycles.  A stopped worker inside this window is the
+# design working, not a fault: the worker is a fresh process per round.
+ROUND_GAP_SECONDS = 1200.0
 
 
 class TruthAudit:
@@ -285,6 +322,7 @@ class TruthAudit:
         self._snapshot = _read_json(self.root / SNAPSHOT)
         self._episodes = _tail_jsonl(self.root / EPISODES, 3)
         self._all_episodes_cache: tuple[Mapping[str, Any], ...] | None = None
+        self._all_executor_cache: tuple[Mapping[str, Any], ...] | None = None
         self._executor = _tail_jsonl(self.root / EXECUTOR_LEDGER, 2)
         self._pump = _read_json(self.root / PUMP)
         self._conflicts: list[Conflict] = []
@@ -301,6 +339,13 @@ class TruthAudit:
         if self._all_episodes_cache is None:
             self._all_episodes_cache = _tail_jsonl(self.root / EPISODES, 5000)
         return self._all_episodes_cache
+
+    @property
+    def _all_executor(self) -> tuple[Mapping[str, Any], ...]:
+        """The executor ledger, read at most once per audit (1211 rows, ~570 KB)."""
+        if self._all_executor_cache is None:
+            self._all_executor_cache = _tail_jsonl(self.root / EXECUTOR_LEDGER, 5000)
+        return self._all_executor_cache
 
     # -- primitives --------------------------------------------------------
 
@@ -827,6 +872,422 @@ class TruthAudit:
                   f"{verified_with_episode} 项带有真机尝试记录；其余是总表状态，不是本轮证据"),
         )
 
+    # -- the states the control centre needs, derived from the ones above ------
+
+    def maa_state(self) -> TruthValue:
+        """Is MAA *working*, or merely installed?
+
+        The operator's rule: "不能仅因为MAA进程存在就显示正常".  So this is graded on what
+        the executor ledger says actually ran, not on the config flag -- a configured MAA
+        that has never issued an input is not healthy, it is unused.
+        """
+        config = _read_json(self.root / "config/v2.json")
+        enabled = bool(((config.get("executor") or {}).get("maa") or {}).get("enabled"))
+        rows = self._all_executor
+        recent = rows[-100:]
+        maa_rows = [r for r in recent if str(r.get("used_backend") or "") == "MAA"]
+        fallbacks = [r for r in recent if r.get("fallback_used")]
+        last = self._executor[-1] if self._executor else {}
+        last_stamp = str(last.get("recorded_at") or "")
+        age = self._age(last_stamp)
+
+        if not enabled:
+            return TruthValue(
+                name="maa_state", value="已关闭（config executor.maa.enabled=false）",
+                status=CATALOG_DERIVED, source="config/v2.json",
+                note="配置里关掉了 MAA —— 这是策略，不是故障",
+            )
+        if not rows:
+            return TruthValue(
+                name="maa_state", value="未初始化（无执行记录）", status=UNKNOWN,
+                source=EXECUTOR_LEDGER, note="MAA 已启用但从未发过任何输入",
+            )
+        if not maa_rows:
+            return TruthValue(
+                name="maa_state", value=f"最近 {len(recent)} 步全部 ADB",
+                status=STALE if recent else UNKNOWN, source=EXECUTOR_LEDGER,
+                observed_at=last_stamp, age_seconds=age,
+                note="MAA 已启用但最近没有真实执行 —— 只显示「可用」会掩盖这件事",
+            )
+        if fallbacks and len(fallbacks) >= max(3, len(recent) // 4):
+            return TruthValue(
+                name="maa_state",
+                value=f"降级到 ADB（{len(fallbacks)}/{len(recent)} 步走了 fallback）",
+                status=CONFLICT, source=EXECUTOR_LEDGER, observed_at=last_stamp, age_seconds=age,
+                note="MAA 名义可用但大量走 fallback，等于生产在用 ADB",
+            )
+        status = LIVE_OBSERVED if age is not None and age <= LIVE_OBSERVED_SECONDS else STALE
+        return TruthValue(
+            name="maa_state", value=f"正常且最近真实执行（{len(maa_rows)}/{len(recent)} 步）",
+            status=status, source=EXECUTOR_LEDGER, observed_at=last_stamp, age_seconds=age,
+            verification="LEDGER",
+        )
+
+    def executor_mix(self) -> TruthValue:
+        """What production has *actually* been using, and why the rest went to ADB.
+
+        The operator's use case: "快速发现「MAA明明正常，但生产实际上一直ADB」".  The reason
+        comes from the ledger's own fields, so it is a measurement rather than a guess:
+        a skill with no routing entry keeps its historical ADB path, and that is a fact
+        about the migration, not a fault.
+        """
+        recent = self._all_executor[-100:]
+        if not recent:
+            return TruthValue(
+                name="executor_mix", value="", status=UNKNOWN, source=EXECUTOR_LEDGER,
+                note="没有执行记录",
+            )
+        counts: dict[str, int] = {}
+        for row in recent:
+            key = str(row.get("used_backend") or "?")
+            counts[key] = counts.get(key, 0) + 1
+        adb = [r for r in recent if str(r.get("used_backend")) == "ADB"]
+        not_migrated = sum(1 for r in adb if not r.get("skill_known"))
+        fallback = sum(1 for r in adb if r.get("fallback_used"))
+        other = max(0, len(adb) - not_migrated - fallback)
+        stamp = str(recent[-1].get("recorded_at") or "")
+        age = self._age(stamp)
+        share = " · ".join(f"{k} {round(v / len(recent) * 100)}%" for k, v in sorted(counts.items()))
+        reasons = []
+        if not_migrated:
+            reasons.append(f"技能未迁移 MAA {not_migrated} 步")
+        if fallback:
+            reasons.append(f"fallback {fallback} 步")
+        if other:
+            reasons.append(f"显式策略/其它 {other} 步")
+        return TruthValue(
+            name="executor_mix", value=share,
+            status=LIVE_OBSERVED if age is not None and age <= LIVE_OBSERVED_SECONDS else STALE,
+            source=EXECUTOR_LEDGER, observed_at=stamp, age_seconds=age,
+            note=("ADB 原因：" + "、".join(reasons)) if reasons else "全部 MAA",
+        )
+
+    def watchdog(self) -> TruthValue:
+        """Current health, which is not the same number as the historical total.
+
+        The operator's point: a cumulative counter that only ever grows makes the window
+        look permanently broken ("历史累计15会让GUI永久看起来异常").  So health is reported
+        from the live flags and the operator's own intent, and the counters are labelled as
+        cumulative.  The 1h/24h windows are ``UNKNOWN`` rather than inferred, because
+        nothing on disk records *when* a restart happened -- a guessed window would be
+        worse than an honest gap.
+
+        A stopped runtime thread is **not** an anomaly by itself.  The worker is a fresh
+        process per cycle and exits cleanly between rounds; the first version flagged that
+        as "runtime 线程与 scheduler 循环都已停止" while episodes were still being produced,
+        which is exactly how a monitor teaches people to ignore it.  A dead thread only
+        matters when the operator asked for RUNNING *and* the snapshot has gone stale
+        beyond the scheduler's own round gap.
+        """
+        alive = bool(self._snapshot.get("runtime_thread_alive"))
+        scheduler = bool(self._snapshot.get("scheduler_loop_alive"))
+        state = str(self._snapshot.get("agent_state") or "")
+        stop_reason = str(self._snapshot.get("stop_reason") or "")
+        stamp = str(self._snapshot.get("updated_at") or "")
+        age = self._age(stamp)
+        intent = str(_read_json(self.root / PANEL_STATE).get("operator_intent") or "")
+
+        heartbeat = self.panel_heartbeat()
+        healthy = True
+        note = ""
+        if intent and intent != "RUNNING":
+            healthy = True
+            note = f"操作者意图 {intent} —— 停在这里是意图，不是故障"
+        elif heartbeat.status not in (FRESH_RUNTIME, LIVE_OBSERVED):
+            healthy = False
+            note = "面板心跳过期：没有时钟在驱动这一轮"
+        elif state == "FATAL_STOPPED":
+            healthy = False
+            note = f"致命停止：{self._snapshot.get('last_fatal_error') or '-'}"
+        elif alive and scheduler:
+            note = "runtime 线程与 scheduler 循环都在"
+        elif age is not None and age <= ROUND_GAP_SECONDS:
+            note = (f"轮次之间（上一轮 {stop_reason or '已结束'}，"
+                    f"{int(age)}s 前），scheduler 会在下一轮重新拉起")
+        else:
+            healthy = False
+            note = (f"意图 RUNNING 但已经静默 "
+                    f"{'-' if age is None else f'{int(age)}s'}，超过轮次间隔")
+
+        return TruthValue(
+            name="watchdog",
+            value=(f"{'正常' if healthy else '异常'} · 状态 {state or '-'}"
+                   f" · 历史累计重启 {self._snapshot.get('watchdog_restart_count') or 0}"
+                   f" · 异常退出 {self._snapshot.get('unexpected_worker_exits') or 0}"),
+            status=(self._snapshot_stamp()[0] if healthy else CONFLICT), source=SNAPSHOT,
+            observed_at=stamp, age_seconds=age,
+            note=note + "；最近1h/24h 重启：UNKNOWN（磁盘上没有重启时间序列）",
+        )
+
+    def why_idle(self) -> TruthValue:
+        """If nothing is moving, say why -- or say that nobody knows.
+
+        The operator asked for this by name: "不能让用户看到游戏不动以后还要自己猜".
+        The reason is read from the runtime's own last decision, and a named reason is only
+        accepted if the runtime actually recorded one.  Otherwise it is
+        ``UNEXPLAINED_IDLE``, which is a finding, not a blank.
+        """
+        last_action = _moment(str(self._snapshot.get("last_action_time") or ""))
+        idle_seconds = (self.now - last_action).total_seconds() if last_action else None
+        reason = str(self._snapshot.get("reason") or "")
+        next_action = str(self._snapshot.get("next_action") or "")
+        stop_reason = str(self._snapshot.get("stop_reason") or "")
+        deferrals = self._snapshot.get("deferred_goals") or ()
+        state = str(self._snapshot.get("agent_state") or "")
+        moment = str(self._snapshot.get("updated_at") or "")
+
+        if state in ("PAUSED",):
+            why, status = "用户暂停", FRESH_RUNTIME
+        elif state in ("FATAL_STOPPED",):
+            why, status = f"致命停止：{self._snapshot.get('last_fatal_error') or '-'}", CONFLICT
+        elif self._device_is_leased_for_validation():
+            why, status = "Device Lease 被 validation 占用（V2 让路中）", FRESH_RUNTIME
+        elif self._reload_pending():
+            why, status = "正在安全重载（新版本待生效）", FRESH_RUNTIME
+        elif deferrals:
+            caps = ", ".join(str((d or {}).get("capability") or (d or {}).get("goal_id") or "")
+                             for d in deferrals[:3])
+            why, status = f"当前目标已 DEFER（{caps}）", FRESH_RUNTIME
+        elif stop_reason:
+            why, status = f"轮次结束原因：{stop_reason}", FRESH_RUNTIME
+        elif reason:
+            why, status = reason, FRESH_RUNTIME
+        elif idle_seconds is not None and idle_seconds > 900:
+            why, status = "UNEXPLAINED_IDLE", CONFLICT
+        elif idle_seconds is not None:
+            why, status = f"等待下一 Scheduler Tick（已静默 {int(idle_seconds)}s）", FRESH_RUNTIME
+        else:
+            why, status = "runtime 尚未记录任何动作时间", UNKNOWN
+
+        age = self._age(moment)
+        note = f"下一步：{next_action}" if next_action else ""
+        if status == CONFLICT and why == "UNEXPLAINED_IDLE":
+            self._conflicts.append(Conflict(
+                "why_idle", (("last_action", str(self._snapshot.get("last_action_time") or "-")),
+                             ("reason", reason or "(空)")),
+                "超时无动作且 runtime 没有给出原因 —— 需要诊断，不是等待",
+            ))
+        return TruthValue(
+            name="why_idle", value=why, status=status, source=SNAPSHOT,
+            observed_at=moment, age_seconds=age, note=note,
+        )
+
+    def _device_is_leased_for_validation(self) -> bool:
+        payload = _read_json(self.root / DEVICE_LEASE)
+        return bool(payload) and not payload.get("released_at")
+
+    def _reload_pending(self) -> bool:
+        try:
+            from .runtime_reload import ReloadSignal, default_path
+
+            return ReloadSignal(default_path(self.root)).pending() is not None
+        except Exception:  # noqa: BLE001
+            return False
+
+    def workbuddy_job(self) -> TruthValue:
+        """The job that is being worked on right now, with its stage."""
+        try:
+            from .escalation_queue import EscalationLedger, fold
+
+            snapshot = fold(EscalationLedger(self.root / ESCALATIONS).events())
+        except Exception as exc:  # noqa: BLE001
+            return TruthValue(name="workbuddy_job", value="", status=UNKNOWN,
+                              source=ESCALATIONS, note=f"台账不可读：{type(exc).__name__}")
+        records = list(snapshot.records.values())
+        active = [r for r in records
+                  if r.state in ("WORKING", "SUBMITTED", "VERSION_ACTIVATION_PENDING",
+                                 "LIVE_VERIFY_PENDING")]
+        if not records:
+            return TruthValue(
+                name="workbuddy_job", value="", status=UNKNOWN, source=ESCALATIONS,
+                note="台账为空：既没有在飞的任务，也没有任何历史 —— 不得显示成「空闲」",
+            )
+        if not active:
+            return TruthValue(
+                name="workbuddy_job", value="空闲（没有在飞的开发任务）", status=FRESH_RUNTIME,
+                source=ESCALATIONS,
+                observed_at=datetime.fromtimestamp(
+                    (self.root / ESCALATIONS).stat().st_mtime, tz=timezone.utc
+                ).isoformat() if (self.root / ESCALATIONS).exists() else "",
+                note="新能力由 Bootstrap 准备，不依赖失败触发",
+            )
+        record = active[0]
+        stage = {
+            "WORKING": "研发中", "SUBMITTED": "已提交", "VERSION_ACTIVATION_PENDING": "待生效",
+            "LIVE_VERIFY_PENDING": "等真机验证",
+        }.get(record.state, record.state)
+        return TruthValue(
+            name="workbuddy_job",
+            value=f"{record.capability or record.skill} · {stage} · job {record.job_id or '-'}",
+            status=FRESH_RUNTIME, source=ESCALATIONS,
+            episode=record.job_id, role_id=self.role().role_id,
+            note=f"起源 {record.origin or 'failure'}",
+        )
+
+    def bootstrap(self) -> TruthValue:
+        """What the knowledge bootstrap is doing, from its own heartbeat."""
+        payload = _read_json(self.root / STATE_PATH_BOOTSTRAP)
+        if not payload:
+            return TruthValue(
+                name="bootstrap", value="", status=UNKNOWN, source=STATE_PATH_BOOTSTRAP,
+                note="没有控制器状态文件：预载还没有在任何进程里跑过一轮",
+            )
+        stamp = str(payload.get("written_at") or "")
+        status, age = self._stamp(STATE_PATH_BOOTSTRAP, stamp)
+        state = str(payload.get("status") or "")
+        from .capability_bootstrap import BOOTSTRAP_STATE_ZH
+
+        label = BOOTSTRAP_STATE_ZH.get(state, state or "?")
+        if age is not None and age > 3 * 600:
+            status = STALE
+        return TruthValue(
+            name="bootstrap",
+            value=(f"{label} · 学习 {payload.get('learning') or '-'}"
+                   f" · 预装 {payload.get('preloading') or '-'}"
+                   f" · 等待验证 {payload.get('waiting_live_verify_count') or 0}"
+                   f" · 下一个 {payload.get('next_capability') or '-'}"),
+            status=status, source=STATE_PATH_BOOTSTRAP, observed_at=stamp, age_seconds=age,
+            note=str(payload.get("decision") or ""),
+        )
+
+    def coverage(self) -> TruthValue:
+        """The growth KPI, with the 24h delta taken from real per-capability timestamps."""
+        catalog = _read_json(self.root / "knowledge/game/capability_catalog.json")
+        rows = catalog.get("capabilities") or ()
+        if not rows:
+            return TruthValue(name="coverage", value="", status=UNKNOWN,
+                              source="knowledge/game/capability_catalog.json")
+        counts: dict[str, int] = {}
+        recent_verified = 0
+        for row in rows:
+            life = str((row or {}).get("lifecycle") or "?")
+            counts[life] = counts.get(life, 0) + 1
+            stamp = _moment(str((row or {}).get("last_live_verified") or ""))
+            if stamp is not None and (self.now - stamp).total_seconds() <= 24 * 3600:
+                recent_verified += 1
+        total = len(rows)
+        verified = counts.get("LIVE_VERIFIED", 0)
+        value = " · ".join(
+            f"{k} {counts.get(k, 0)}" for k in
+            ("OBSERVED", "CANDIDATE", "LIVE_TRIED", "LIVE_VERIFIED", "STABLE")
+        )
+        return TruthValue(
+            name="coverage", value=value, status=CATALOG_DERIVED,
+            source="knowledge/game/capability_catalog.json",
+            observed_at=str(catalog.get("generated_at_utc") or catalog.get("generated_at") or ""),
+            note=(f"全表 {total} 项中 LIVE_VERIFIED {verified}"
+                  f"（{round(verified / total * 100, 1) if total else 0}%）"
+                  f" · 最近24h 新增 {recent_verified}"),
+        )
+
+    # -- the attention centre -------------------------------------------------
+
+    def anomalies(self) -> tuple[dict[str, Any], ...]:
+        """Everything genuinely worth a human look, and nothing else.
+
+        Built from the same projection as the rest, so a finding here is a fact with a
+        source rather than a heuristic with a mood.  ``auto_recovered`` separates "this
+        happened and healed" from "this is happening", because a list that stays red
+        forever stops being read.
+        """
+        found: list[dict[str, Any]] = []
+
+        def add(kind: str, at: str, detail: str, *, capability: str = "",
+                auto_recovered: bool = False, status: str = "NEEDS_ATTENTION") -> None:
+            found.append({
+                "kind": kind, "at": at, "detail": detail, "capability": capability,
+                "status": status, "auto_recovered": auto_recovered,
+            })
+
+        for conflict in self._conflicts:
+            add("STATE_CONFLICT", self.now.isoformat(), conflict.describe())
+
+        role = self.role()
+        if role.status in (UNKNOWN, STALE):
+            add("ROLE_IDENTITY_UNKNOWN", role.observed_at or self.now.isoformat(),
+                f"角色身份 {STATUS_ZH.get(role.status, role.status)}；"
+                f"role-scoped 结论在此期间不可信",
+                auto_recovered=role.status == STALE)
+
+        watchdog = self.watchdog()
+        if watchdog.status == CONFLICT:
+            add("RUNTIME_NOT_RUNNING", self.now.isoformat(), watchdog.note)
+
+        jobs = self.workbuddy_jobs()
+        if jobs.note and "未被消费" in jobs.note:
+            add("WORKBUDDY_QUEUE_STUCK", jobs.observed_at or self.now.isoformat(), jobs.note)
+
+        idle = self.why_idle()
+        if idle.value == "UNEXPLAINED_IDLE":
+            add("UNEXPLAINED_IDLE", idle.observed_at or self.now.isoformat(), idle.note or
+                "超过静默阈值且 runtime 没有记录原因")
+
+        boot = self.bootstrap()
+        if boot.status == STALE:
+            add("BOOTSTRAP_DEAD", boot.observed_at, "预载控制器心跳过期",
+                auto_recovered=True)
+        elif boot.status == UNKNOWN:
+            add("BOOTSTRAP_NOT_STARTED", self.now.isoformat(), boot.note)
+
+        mix = self.executor_mix()
+        if mix.note.startswith("ADB 原因：fallback"):
+            add("MAA_FALLBACK_SURGE", mix.observed_at, mix.note)
+
+        # The two evidence-integrity findings, read off the production stream itself.
+        recent = self._all_episodes[-40:]
+        streak = 0
+        for row in reversed(recent):
+            if row.get("goal_progress") is False:
+                streak += 1
+            else:
+                break
+        if streak >= 10:
+            add("REPEATED_NO_GOAL_PROGRESS", str(recent[-1].get("recorded_at") or ""),
+                f"连续 {streak} 步 verifier 通过但目标无进展",
+                capability=str(recent[-1].get("skill") or ""))
+
+        for row in recent[-8:]:
+            if row.get("verifier_ok") is True and str(row.get("result")) == "FAILURE":
+                add("VERIFIER_CONFLICT", str(row.get("recorded_at") or ""),
+                    f"verifier PASS 但 result FAILURE（{row.get('skill')}）",
+                    capability=str(row.get("skill") or ""))
+                break
+
+        for row in reversed(self._all_episodes[-5:]):
+            path = str(row.get("after_screenshot") or "")
+            if path and not Path(path).exists():
+                add("EVIDENCE_MISSING", str(row.get("recorded_at") or ""),
+                    f"episode {row.get('episode_id')} 的 after 帧不在磁盘上",
+                    capability=str(row.get("skill") or ""))
+                break
+
+        if self._reload_pending():
+            add("RELOAD_PENDING", self.now.isoformat(), "有重载请求尚未生效")
+
+        return tuple(found)
+
+    def consistency(self) -> tuple[dict[str, str], ...]:
+        """GUI field ↔ production source, compared field by field.
+
+        Every row is ``displayed`` vs the source the window claims to read.  A mismatch is
+        a ``STATE_CONFLICT`` -- never resolved here, because resolving it is exactly how
+        the window and the runtime drifted apart in the first place.
+        """
+        rows: list[dict[str, str]] = []
+        page = self.current_page()
+        goal = self.current_goal()
+        skill = self.current_skill()
+        for name, value in (("current_page", page), ("current_goal", goal),
+                            ("current_skill", skill), ("version_active", self.version_active()),
+                            ("march_capacity", self.march_capacity())):
+            rows.append({
+                "field": name, "source": value.source, "source_value": value.value,
+                "status": value.status,
+                "agree": "yes" if not value.seen or
+                         all(what == value.value for _, what in value.seen) else "no",
+            })
+        return tuple(rows)
+
     # -- the report --------------------------------------------------------
 
     def report(self) -> TruthReport:
@@ -840,11 +1301,16 @@ class TruthAudit:
             self.executor_backend(), self.version_active(), self.verifier(),
             self.workbuddy_jobs(), self.device_lease(), self.capability_lifecycle(),
             self.episode_role_scope(),
+            # The control centre's own questions, derived from the same reading so the
+            # window cannot hold a second opinion about any of them.
+            self.maa_state(), self.executor_mix(), self.watchdog(), self.why_idle(),
+            self.workbuddy_job(), self.bootstrap(), self.coverage(),
         )
         return TruthReport(
             values=values, conflicts=tuple(self._conflicts), role_id=role.role_id,
             role_status=role.status, head=self._head(),
             generated_at=self.now.isoformat(),
+            anomalies=self.anomalies(), consistency=self.consistency(),
         )
 
 
@@ -898,6 +1364,9 @@ def audited_names() -> tuple[str, ...]:
         "feature_unlock", "event_state", "executor_backend", "version_active",
         "verifier", "workbuddy_jobs", "device_lease", "capability_lifecycle",
         "episode_role_scope",
+        # the control centre's own questions
+        "maa_state", "executor_mix", "watchdog", "why_idle", "workbuddy_job",
+        "bootstrap", "coverage",
     )
 
 

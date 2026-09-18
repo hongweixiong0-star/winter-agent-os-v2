@@ -166,17 +166,26 @@ class ControlPanelTests(unittest.TestCase):
             self.assertNotIn(legacy, build)
 
     def test_header_shows_the_frozen_layers_and_no_provider(self):
-        # Operator directive 2026-09-17: the first status row is V2大脑 / MAA /
-        # MuMu / 游戏 / 页面 / AUTO / WorkBuddy / 时间.  Qwen is not a layer (it is an
-        # optional offline provider) and recognition is MAA's job, so neither may
-        # appear as a first-class status again.
+        # Operator directive 2026-09-18: the status row is V2 / MAA / MuMu / 游戏 / AUTO /
+        # WorkBuddy / 预载 / 时间, one word each.  It grew long sentences (页面 和 模式 moved
+        # into the panels that own them) and prose in a top bar cannot be scanned; what
+        # must not change is that Qwen is not a layer (it is an optional offline provider)
+        # and recognition is MAA's job, so neither may appear as a first-class status.
         source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8")
         build = source[source.index("    def _build(self)"):source.index("    def _tab(self")]
-        for label, key in (("V2大脑", "agent"), ("MAA", "maa"), ("MuMu", "device"), ("游戏", "game"),
-                           ("页面", "page"), ("AUTO", "mode"), ("WorkBuddy", "workbuddy"), ("时间", "clock")):
-            self.assertIn(f'("{label}", "{key}")', build)
+        self.assertIn("for i, (label, key) in enumerate(SYSTEM_INDICATORS):", build)
+        for label, key in (("V2", "dot_v2"), ("MAA", "dot_maa"), ("MuMu", "dot_mumu"),
+                           ("游戏", "dot_game"), ("AUTO", "dot_auto"),
+                           ("WorkBuddy", "dot_wb"), ("预载", "dot_boot"), ("时间", "clock")):
+            self.assertIn(f'("{label}", "{key}")', source)
         for gone in ('("Qwen", "qwen")', '("Vision", "vision")'):
             self.assertNotIn(gone, build)
+
+    def test_the_header_cells_are_painted_from_one_vocabulary(self):
+        """One word per cell, from ``state_truth.health_of`` -- never a sentence."""
+        source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(encoding="utf-8")
+        self.assertIn("self._set_health(", source)
+        self.assertIn("DOT_TEXT.get(colour, DOT_UNKNOWN)", source)
 
     def test_the_panel_names_no_model(self):
         # Same boundary the rest of the package holds: a model is WorkBuddy's

@@ -614,6 +614,46 @@ def main() -> int:
               WorldState(page=Page.HOME, confidence=0.98),
           ).ok)
 
+    # SPEND_STAMINA_ON_BEAST (2026-09-18 escalation
+    # SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST).  The pan had
+    # no converging hop; the route now goes mammoth sprite -> beast card 攻击 ->
+    # formation page -> DISPATCH_BEAST.  Pin the same three links -- registered
+    # skill, bound verifier, brain decision -- for both new hops, plus the
+    # capability mapping that makes an episode count for the capability.
+    check("registry: SELECT_BEAST_TARGET_MAMMOTH taps the mammoth sprite",
+          registry.get("SELECT_BEAST_TARGET_MAMMOTH") is not None
+          and registry.get("SELECT_BEAST_TARGET_MAMMOTH").required_page is Page.MAP
+          and registry.get("SELECT_BEAST_TARGET_MAMMOTH").action.target == "TARGET_BEAST_MAMMOTH_5")
+    check("registry: ATTACK_BEAST_CARD taps the beast card 攻击 control",
+          registry.get("ATTACK_BEAST_CARD") is not None
+          and registry.get("ATTACK_BEAST_CARD").required_page is Page.BEAST
+          and registry.get("ATTACK_BEAST_CARD").action.target == "BTN_BEAST_CARD_ATTACK")
+    check("dispatchable: both new skills are bound to verifiers",
+          "SELECT_BEAST_TARGET_MAMMOTH" in runtime.LiveRuntime.VERIFIED_ATOMIC
+          and "ATTACK_BEAST_CARD" in runtime.LiveRuntime.VERIFIED_ATOMIC)
+    _mammoth_brain = RuleBrain()
+    _mammoth_brain.current_goal = "BEAST_HUNT"
+    check("brain: a visible mammoth emits SELECT_BEAST_TARGET_MAMMOTH",
+          _mammoth_brain.decide(
+              WorldState(page=Page.MAP,
+                         beast={"visible_target": "MAMMOTH", "level": 5, "available": True},
+                         confidence=0.99),
+              registry).skill == "SELECT_BEAST_TARGET_MAMMOTH")
+    check("brain: an attack card emits ATTACK_BEAST_CARD",
+          RuleBrain().decide(
+              WorldState(page=Page.BEAST, beast={"attack_card": True}, confidence=0.99),
+              registry).skill == "ATTACK_BEAST_CARD")
+    from winter_agent_v2.escalation_queue import capability_for_skill as _cfs
+    check("capability: both new skills are SPEND_STAMINA_ON_BEAST in the project's table",
+          _cfs("SELECT_BEAST_TARGET_MAMMOTH") == "SPEND_STAMINA_ON_BEAST"
+          and _cfs("ATTACK_BEAST_CARD") == "SPEND_STAMINA_ON_BEAST")
+    # The isolation half: the 攻击 branch must not steal the musk-ox card, the
+    # 前往-only card, or an empty map.
+    check("vision: the musk-ox card is still the musk-ox route",
+          vision.SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json").observe(
+              ROOT / "dataset/raw/stamina_emergency/beast9_round3_target.png"
+          ).beast.get("name") == "麝牛")
+
     # OPEN_MARCH_FORMATION (2026-09-18 escalation
     # OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH).  The same three
     # links as the two blocks above -- registered skill, bound verifier, and a brain
@@ -783,6 +823,7 @@ def main() -> int:
     from winter_agent_v2 import escalation_queue as _escalation
     from winter_agent_v2 import knowledge_preload as _knowledge
     from winter_agent_v2 import state_truth as _truth
+    from tools import control_panel as _panel
 
     check("queue: a no-progress deferral is never filed under the failure type",
           'if failure_type not in fields:' in _queue_source
@@ -1053,6 +1094,67 @@ def main() -> int:
           and "def episode_role_scope(" in _truth_source
           and "全部未按角色限定" in _truth_source
           and "有别的角色的 episode 混在同一份语料里" in _truth_source)
+
+    # -- the control centre: eight indicators, one vocabulary, no second state --
+    check("gui: the top bar is eight cells in one vocabulary, not prose",
+          "SYSTEM_INDICATORS" in _panel_source
+          and _panel_code.count("SYSTEM_INDICATORS") >= 1
+          and 'DOT_TEXT: dict[str, str]' in _panel_source
+          and set(_truth.STATUS_ZH) >= {_truth.LIVE_OBSERVED, _truth.STALE,
+                                        _truth.UNKNOWN, _truth.CONFLICT}
+          and "def health_of(" in _truth_source
+          and "def _set_health(" in _panel_source)
+    check("gui: the health words are the operator's six and no others",
+          {word for word in
+           (v.split(" ", 1)[-1] for v in _panel.DOT_TEXT.values())}
+          <= {"正常", "工作中", "等待", "降级", "异常", "未确认"}
+          and len(_panel.DOT_TEXT) == 6
+          and "def health_of(" in _truth_source
+          and all(
+              _truth.health_of(_truth.TruthValue(name="x", value=text))[0]
+              in {"正常", "工作中", "等待", "降级", "未确认", "异常"}
+              for text in ("", "研发中", "等待下一轮", "fallback 用了", "有问题")
+          ))
+    check("gui: MAA is graded on what ran, never on the config flag alone",
+          "def maa_state(" in _truth_source
+          and "已启用但最近没有真实执行" in _truth_source
+          and "已关闭" in _truth_source
+          and "降级到 ADB" in _truth_source
+          and 'self._set_health("dot_maa", report.by_name("maa_state"))' in _panel_source)
+    check("gui: 'why is nothing moving' is answerable from the window",
+          "def why_idle(" in _truth_source
+          and "UNEXPLAINED_IDLE" in _truth_source
+          and '"why_idle"' in _panel_source
+          and "现在为什么不动" in _panel_source)
+    check("gui: action progress and goal progress are shown apart",
+          "def _progress_line(" in _panel_source
+          and "无目标进展" in _panel_source
+          and "goal_progress" in _panel_source)
+    check("gui: the attention centre exists and heals itself",
+          "def anomalies(" in _truth_source
+          and "auto_recovered" in _truth_source
+          and "def needs_attention(" in _truth_source
+          and '"attention"' in _panel_source
+          and "需要关注" in _panel_source)
+    check("gui: watchdog separates current health from a lifetime counter",
+          "ROUND_GAP_SECONDS" in _truth_source
+          and "轮次之间" in _truth_source
+          and "历史累计重启" in _truth_source
+          and "重启：UNKNOWN" in _truth_source)
+    check("gui: the twelve flat tabs are grouped under the operator's headings",
+          "TAB_GROUP" in _panel_source
+          and "运行·任务" in _panel_source
+          and "能力·覆盖" in _panel_source
+          and "证据·日志" in _panel_source)
+    check("gui: debug furniture is off until asked for",
+          "vision_debug" in _panel_source
+          and "视觉调试" in _panel_source
+          and "if debug:" in _panel_source)
+    check("gui: an independent verifier checks every field against its source",
+          (ROOT / "tools/gui_wiring_verify.py").is_file()
+          and "WIRING" in (ROOT / "tools/gui_wiring_verify.py").read_text(encoding="utf-8")
+          and "the panel and the verifier must read one report"
+          in (ROOT / "tools/gui_wiring_verify.py").read_text(encoding="utf-8"))
     check("knowledge: calibration fixes differences instead of discarding the prior",
           "def prior_vs_live_diff(" in _knowledge_source
           and "PRIOR_VS_LIVE_DIFF" in _knowledge_source
