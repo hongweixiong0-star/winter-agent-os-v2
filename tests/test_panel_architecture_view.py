@@ -557,7 +557,21 @@ class PanelIntegrationTest(unittest.TestCase):
         cls._log_patch = mock.patch.object(
             module, "PANEL_LOG_PATH", Path(cls._log_dir.name) / "panel.log"
         )
+        # The constructor also saves the operator's own state file (it carries their
+        # remembered stop), and the window now owns a queue pump whose ledger is the
+        # development queue.  Both are redirected for the same reason as the log: a
+        # test window must not be able to touch production, and a pump pointed at the
+        # live ledger could submit a real job.
+        cls._state_patch = mock.patch.object(
+            module, "PANEL_STATE_PATH", Path(cls._log_dir.name) / "panel_state.json"
+        )
+        cls._ledger_patch = mock.patch.object(
+            module, "_ESCALATION_LEDGER_PATH",
+            Path(cls._log_dir.name) / "learning/workbuddy_escalations.jsonl",
+        )
         cls._log_patch.start()
+        cls._state_patch.start()
+        cls._ledger_patch.start()
         try:
             cls.root = tk.Tk()
         except Exception as exc:  # noqa: BLE001 - no display
@@ -577,10 +591,18 @@ class PanelIntegrationTest(unittest.TestCase):
                 cls.panel.probes.stop()
             except Exception:  # noqa: BLE001
                 pass
+            try:
+                cls.panel.pump.stop()
+            except Exception:  # noqa: BLE001
+                pass
         if cls.root is not None:
             cls.root.destroy()
         if getattr(cls, "_log_patch", None) is not None:
             cls._log_patch.stop()
+        if getattr(cls, "_state_patch", None) is not None:
+            cls._state_patch.stop()
+        if getattr(cls, "_ledger_patch", None) is not None:
+            cls._ledger_patch.stop()
         if getattr(cls, "_log_dir", None) is not None:
             cls._log_dir.cleanup()
 

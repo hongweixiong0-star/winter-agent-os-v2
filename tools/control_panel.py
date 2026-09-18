@@ -1200,6 +1200,7 @@ def status_defaults() -> dict[str, str]:
         "wb_job": PENDING, "wb_model": PENDING, "wb_duration": PENDING,
         "wb_job_state": PENDING, "wb_improvement": PENDING, "wb_result": "尚未产生开发任务",
         "wb_gateway": PENDING, "wb_queue_line": PENDING, "wb_gap": PENDING,
+        "wb_pump": PENDING,
         "stats": "本次启动：0 轮 · 0 动作",
     }
 
@@ -1315,6 +1316,106 @@ class PanelProbes:
             self._device = state
 
 
+class QueuePump:
+    """The escalation queue's clock.
+
+    ``EscalationQueueAdapter.observe_run`` only fires at the end of an AUTO cycle,
+    and a cycle is minutes long -- measured 2026-09-18, ten minutes while the run
+    ended in an ordinary stop.  So the queue had a consumer but nothing to drive
+    it: a record created near the end of one cycle waited for the next, and if
+    AUTO was stopped or paused it waited forever.  That is the shape the operator
+    reported as "NEW=2, nothing submitted, gateway healthy".
+
+    The panel owns the long-lived process, so the clock lives here.  It ticks on
+    its own daemon thread, never raises, and rebuilds its adapter if one tick
+    fails -- a broken pump is a reported state, not a dead window.
+    """
+
+    INTERVAL = 30.0
+
+    def __init__(self, *, enabled: Any | None = None, interval: float | None = None) -> None:
+        self._enabled = enabled or (lambda: True)
+        self._interval = float(interval or self.INTERVAL)
+        self._lock = threading.Lock()
+        self._state: dict[str, Any] = {
+            "passes": 0, "submitted": 0, "released": 0, "reconciled": 0, "errors": 0,
+            "last_tick": "", "last_line": "", "last_error": "", "gated": "",
+        }
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._adapter: Any = None
+
+    # -- readers (UI thread) -----------------------------------------------
+
+    def state(self) -> dict[str, Any]:
+        with self._lock:
+            return dict(self._state)
+
+    # -- lifecycle ----------------------------------------------------------
+
+    def start(self) -> None:
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(target=self._loop, name="queue-pump", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _loop(self) -> None:
+        # A short first delay: the window opens, the first AUTO run may take ten
+        # minutes, and the records already in the ledger are owed a consumer now.
+        self._stop.wait(5.0)
+        while not self._stop.is_set():
+            self.tick()
+            self._stop.wait(self._interval)
+
+    # -- one pass -----------------------------------------------------------
+
+    def tick(self) -> dict[str, Any]:
+        """One consume pass.  Never raises: the pump must not take the window down."""
+        if not self._enabled():
+            with self._lock:
+                self._state["gated"] = "operator stopped"
+            return self.state()
+        with self._lock:
+            self._state["gated"] = ""
+        try:
+            adapter = self._adapter if self._adapter is not None else self._build()
+            self._adapter = adapter
+            observation = adapter.pump()
+        except Exception as exc:  # noqa: BLE001 - a failed tick is a state, not a crash
+            self._adapter = None
+            with self._lock:
+                self._state["errors"] += 1
+                self._state["last_error"] = f"{type(exc).__name__}: {exc}"
+                self._state["last_tick"] = datetime.now().strftime("%H:%M:%S")
+            return self.state()
+        with self._lock:
+            self._state["passes"] += 1
+            self._state["submitted"] += len(observation.submitted)
+            self._state["released"] += len(observation.released)
+            self._state["reconciled"] += len(observation.reconciled)
+            self._state["errors"] += len(observation.errors)
+            self._state["last_error"] = observation.errors[-1] if observation.errors else ""
+            self._state["last_line"] = observation.line
+            self._state["last_tick"] = datetime.now().strftime("%H:%M:%S")
+        return self.state()
+
+    def _build(self) -> Any:
+        """A real adapter on the real ledger -- the same one ``run_live`` uses.
+
+        The ledger path is read from the module global at build time so a test
+        that redirects it (the same way it redirects ``PANEL_LOG_PATH``) gets a
+        pump that cannot write to production.
+        """
+        from winter_agent_v2.escalation_queue import EscalationLedger, EscalationQueueAdapter
+
+        ledger_path = Path(_ESCALATION_LEDGER_PATH)
+        root = ledger_path.parents[1] if ledger_path.parent.name == "learning" else ROOT
+        return EscalationQueueAdapter(root=root, ledger=EscalationLedger(ledger_path))
+
+
 class ControlPanel:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
@@ -1347,6 +1448,12 @@ class ControlPanel:
         # is read from a file that already exists, so the window still owns no state.
         self.probes = PanelProbes(ROOT, device=self.device)
         self.probes.start()
+        # The queue's clock.  Started with the window, not with AUTO: the operator's
+        # rule is that a running GUI keeps consuming its development backlog even
+        # while the game side is between rounds.
+        self.pump = QueuePump(enabled=self._auto_development_allowed)
+        self.pump.start()
+        self._pump_prev: dict[str, int] = {}
         task_names = ("邮件", "探险", "采集", "建筑", "科技", "训练", "Intel", "联盟", "日常", "野怪", "巨熊")
         saved_tasks = load_task_selection(PANEL_STATE_PATH, task_names)
         self.task_enabled = {n: tk.BooleanVar(value=saved_tasks[n]) for n in task_names}
@@ -1882,6 +1989,12 @@ class ControlPanel:
         result = ttk.Frame(grid, style="Card.TFrame"); result.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(6, 0))
         ttk.Label(result, text="最近结果", style="Muted.TLabel", background=PANEL).pack(anchor="w")
         ttk.Label(result, textvariable=self.values["wb_result"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
+        # The queue's clock, shown because "the consumer is running" is a fact the
+        # operator asked to be able to check rather than assume: a pending row here
+        # means either the window runs no pump or the pump is not reaching the queue.
+        pump_row = ttk.Frame(grid, style="Card.TFrame"); pump_row.grid(row=3, column=0, columnspan=4, sticky="ew", pady=(6, 0))
+        ttk.Label(pump_row, text="队列消费泵（面板常驻）", style="Muted.TLabel", background=PANEL).pack(anchor="w")
+        ttk.Label(pump_row, textvariable=self.values["wb_pump"], background=PANEL, wraplength=1150, justify="left").pack(anchor="w")
         queue = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8)); queue.pack(fill="x", pady=(10, 0))
         qhead = ttk.Frame(queue, style="Card.TFrame"); qhead.pack(fill="x")
         ttk.Label(qhead, text="Development Escalation Queue", style="Section.TLabel", background=PANEL).pack(side="left")
@@ -2116,6 +2229,7 @@ class ControlPanel:
         """
         view = escalation_view()
         gateway = self.probes.gateway()
+        self._narrate_pump()
         label, detail = workbuddy_cell(view, gateway)
         self.values["workbuddy"].set(label)
         self.values["wb_state"].set(label + (f"（{detail}）" if detail else ""))
@@ -2166,6 +2280,46 @@ class ControlPanel:
         if hasattr(self, "kpi_source"):
             for key, var in self.kpi_source.items():
                 var.set(kpi.get(key, {}).get("source", PENDING))
+
+    def _narrate_pump(self) -> None:
+        """Report the queue pump on the UI thread, where the log lives.
+
+        The pump runs off-thread and cannot touch Tk, so it only records into its
+        own state; the narration and the label happen here.  Only ticks that did
+        something are narrated -- a pump printing "nothing to do" every thirty
+        seconds would bury the one line that matters, which is the same mistake
+        the per-step deferral narration made.
+        """
+        state = self.pump.state()
+        previous = self._pump_prev
+        moves: dict[str, int] = {}
+        for key in ("passes", "submitted", "released", "reconciled", "errors"):
+            now = int(state.get(key) or 0)
+            delta = now - int(previous.get(key) or 0)
+            if delta:
+                moves[key] = delta
+            previous[key] = now
+        gated = str(state.get("gated") or "")
+        passes = int(state.get("passes") or 0)
+        if gated:
+            self.values["wb_pump"].set(f"已暂停：{gated}（用户已停止，不自动提交开发任务）")
+        elif not passes:
+            self.values["wb_pump"].set(f"{PENDING}（尚未完成第一次消费；每 30 秒一次）")
+        else:
+            self.values["wb_pump"].set(
+                f"运行中 · 已消费 {passes} 次 · 上次 {state.get('last_tick') or '-'}"
+                f" · 提交 {state.get('submitted') or 0} · 释放 {state.get('released') or 0}"
+                f" · 对账 {state.get('reconciled') or 0}"
+                + (f" · 错误 {state.get('errors')}" if state.get("errors") else "")
+            )
+        if moves.get("submitted"):
+            self._append(f"开发队列：已向 WorkBuddy 提交 {moves['submitted']} 个真实任务。")
+        if moves.get("released"):
+            self._append(f"开发队列：释放 {moves['released']} 条缺口（真机已自行证明，不派开发任务）。")
+        if moves.get("reconciled"):
+            self._append(f"开发队列对账 {moves['reconciled']} 个任务（{state.get('last_line') or ''}）。")
+        if moves.get("errors"):
+            self._append(f"开发队列本轮 {moves['errors']} 个错误：{state.get('last_error') or '见台账'}")
 
     def _describe_escalation(self, record: Any) -> str:
         """One honest line about what a finished development job achieved."""
@@ -2350,6 +2504,17 @@ class ControlPanel:
         else:
             self._append(f"预检·辅助：WorkBuddy Gateway 不可用（{gateway.get('reason')}）"
                          "；自动开发标记为不可用，后台周期重试，不影响 AUTO。")
+
+    def _auto_development_allowed(self) -> bool:
+        """The pump's gate.  The operator's own stop outranks the clock.
+
+        A paused or between-rounds AUTO must *not* stop the pump -- the queue is
+        still owed a consumer, and that is exactly the case the operator reported.
+        An explicit stop is different: their rule is that nothing may restart
+        automatic work after a stop without them, and submitting development jobs
+        is automatic work.
+        """
+        return self.operator_intent != "STOPPED"
 
     def _maybe_autostart(self) -> None:
         """The only auto-start path: intent first, then a real preflight, then AUTO."""
@@ -2968,6 +3133,8 @@ class ControlPanel:
         # The gateway poller is a daemon thread, so the process would exit anyway --
         # stopping it explicitly keeps a closing window from making one last request.
         self.probes.stop()
+        # Same for the pump: a closing window must not leave a thread mid-submit.
+        self.pump.stop()
         self.root.destroy()
 
 

@@ -75,6 +75,13 @@ AUTO_ESCALATION_CONDITIONS: tuple[str, ...] = (
 # live loop and must never summon a development agent -- the operator named them
 # explicitly.  Matching is by exact ``stop_reason``; anything not listed here is
 # only escalated if an actual failed episode backs it.
+# The stop reason the continuous pump hands ``_drain``.  Deliberately a name that
+# is in neither ``NON_ESCALATABLE_STOP_REASONS`` nor ``STOP_REASON_WALLS``: a pump
+# has no run behind it, so it may only settle what is in flight and consume what
+# is already owed.  If it ever matched a wall entry it would manufacture a
+# candidate out of thin air on every tick.
+PUMP_STOP_REASON = "PENDING_CONSUMER_PUMP"
+
 NON_ESCALATABLE_STOP_REASONS = frozenset({
     "mail_all_clear",
     "no_idle_march",
@@ -1352,6 +1359,41 @@ class EscalationQueueAdapter:
         AUTO keeps playing with a development agent unreachable, and the
         escalation simply stays ``QUEUED`` until the gateway is back.
         """
+        return self._drain(
+            stop_reason=stop_reason, failures=failures, deferrals=deferrals,
+            now=now, reconcile=reconcile,
+        )
+
+    def pump(self, *, now: datetime | None = None) -> RunObservation:
+        """One consume pass with no run behind it -- the continuous queue pump.
+
+        ``observe_run`` runs once per AUTO cycle, and a cycle is minutes long
+        (measured 2026-09-18: ten minutes while the run ended in an ordinary
+        stop).  A record created near the end of one cycle therefore waited for
+        the next one, and if AUTO was stopped or paused it waited forever -- the
+        queue had a consumer but no clock.  The panel owns the long-lived
+        process, so it calls this on a timer and "created" finally means "will
+        reach the bridge", independently of what AUTO is doing.
+
+        Deliberately *not* a second queue: same adapter, same ``decide`` throttle,
+        same ledger, same reconcile.  Passing no failures and no stop reason means
+        the only work it can do is the work already owed -- settle in-flight jobs,
+        and consume ``NEW``/``QUEUED`` records.
+        """
+        return self._drain(
+            stop_reason=PUMP_STOP_REASON, failures=(), deferrals=(),
+            now=now, reconcile=True,
+        )
+
+    def _drain(
+        self,
+        *,
+        stop_reason: str,
+        failures: Sequence[Mapping[str, Any]],
+        deferrals: Sequence[Mapping[str, Any]],
+        now: datetime | None,
+        reconcile: bool,
+    ) -> RunObservation:
         moment = now or datetime.now(timezone.utc)
         errors: list[str] = []
         reconciled: list[str] = []

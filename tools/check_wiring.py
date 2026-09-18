@@ -646,6 +646,33 @@ def main() -> int:
           and _march_states["KEEP_MARCHES_PRODUCTIVE"].distance == 4.0
           and _march_states["KEEP_MARCHES_PRODUCTIVE"].status is _GoalStatus.READY)
 
+    # -- the escalation queue's clock ---------------------------------------
+    #
+    # The live defect these exist for (operator P0, 2026-09-18): the consumer was
+    # only ever called from the end of an AUTO cycle, so "created" did not mean
+    # "will reach the bridge".  A queue with a consumer but no clock looks healthy
+    # from every file and still leaves records sitting NEW.  These checks fail if
+    # the pump is removed from the window, if the pump stops being the same
+    # consumer, or if the window stops starting it.
+    _queue_source = (PKG / "escalation_queue.py").read_text(encoding="utf-8")
+    _panel_source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+    from winter_agent_v2 import escalation_queue as _escalation
+
+    check("pump: the adapter exposes one consume pass with no run behind it",
+          hasattr(_escalation.EscalationQueueAdapter, "pump")
+          and "self._drain(" in _queue_source
+          and "stop_reason=PUMP_STOP_REASON" in _queue_source)
+    check("pump: its stop reason is in neither the wall table nor the weather list",
+          _escalation.PUMP_STOP_REASON not in _escalation.NON_ESCALATABLE_STOP_REASONS
+          and _escalation.PUMP_STOP_REASON not in _escalation.STOP_REASON_WALLS)
+    check("pump: the window owns one and starts it with the window",
+          "self.pump = QueuePump(enabled=self._auto_development_allowed)" in _panel_source
+          and "self.pump.start()" in _panel_source)
+    check("pump: closing the window stops it",
+          "self.pump.stop()" in _panel_source)
+    check("pump: the operator's stop gates it, a pause does not",
+          "self.operator_intent != \"STOPPED\"" in _panel_source)
+
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():
         check(label, False, detail)

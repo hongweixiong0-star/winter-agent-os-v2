@@ -310,6 +310,7 @@ class AutostartGateTest(unittest.TestCase):
     store = None
     _state_patch = None
     _log_patch = None
+    _ledger_patch = None
     _tmp = None
 
     @classmethod
@@ -332,12 +333,21 @@ class AutostartGateTest(unittest.TestCase):
                                              Path(cls._tmp.name) / "panel_state.json")
         cls._log_patch = mock.patch.object(module, "PANEL_LOG_PATH",
                                            Path(cls._tmp.name) / "panel.log")
+        # And the escalation ledger, because the window now owns a queue pump that
+        # writes to it.  A test window must not be able to submit a real development
+        # job, which is the sharpest form of the same production-pollution rule.
+        cls._ledger_patch = mock.patch.object(
+            module, "_ESCALATION_LEDGER_PATH",
+            Path(cls._tmp.name) / "learning/workbuddy_escalations.jsonl")
         cls._state_patch.start()
         cls._log_patch.start()
+        cls._ledger_patch.start()
         try:
             cls.root = tk.Tk()
         except Exception as exc:  # noqa: BLE001 - no display
             cls._state_patch.stop()
+            cls._log_patch.stop()
+            cls._ledger_patch.stop()
             cls._tmp.cleanup()
             raise unittest.SkipTest(f"no display: {exc}")
         cls.root.withdraw()
@@ -352,12 +362,18 @@ class AutostartGateTest(unittest.TestCase):
                 cls.panel_obj.probes.stop()
             except Exception:  # noqa: BLE001
                 pass
+            try:
+                cls.panel_obj.pump.stop()
+            except Exception:  # noqa: BLE001
+                pass
         if cls.root is not None:
             cls.root.destroy()
         if cls._state_patch is not None:
             cls._state_patch.stop()
         if cls._log_patch is not None:
             cls._log_patch.stop()
+        if cls._ledger_patch is not None:
+            cls._ledger_patch.stop()
         if cls._tmp is not None:
             cls._tmp.cleanup()
 
