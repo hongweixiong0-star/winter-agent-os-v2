@@ -1,0 +1,24 @@
+{
+ "probe": "SCAN_MAP_FOR_BEAST viewport-pan measurement",
+ "recorded_at": "2026-09-18T00:49:50.055046+00:00",
+ "action": {
+  "kind": "SWIPE",
+  "target": "0.50,0.62,0.50,0.30",
+  "payload": {
+   "duration_ms": 600
+  }
+ },
+ "executed": true,
+ "execution_error": null,
+ "executor_backend": "ADB",
+ "page_before": "MAP",
+ "page_after": "MAP",
+ "before_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\probe\\beast_scan_pan_20260918_004858_before.png",
+ "after_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\probe\\beast_scan_pan_20260918_004858_after.png",
+ "best_shift": {
+  "residual": 23.951,
+  "dy_px": -160,
+  "dx_px": 160
+ },
+ "viewport_moved": true
+}

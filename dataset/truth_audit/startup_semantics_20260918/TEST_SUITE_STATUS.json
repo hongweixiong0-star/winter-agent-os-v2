@@ -1,59 +1,21 @@
 {
-  "record": "TEST_SUITE_STATUS",
-  "as_of": "2026-09-18T01:38:00+08:00",
-  "verdict": "PASS (batched)",
-  "method": "tools/run_tests_batched.py --batches 6 --json learning/tests_batched_r2_20260918.json",
-  "result": {
-    "batches": 6,
-    "batches_reporting_a_summary": 6,
-    "passed": 1231,
-    "failed": 0,
-    "skipped": 7,
-    "error": 0,
-    "exit": 0,
-    "per_batch": {
-      "batch1": "161 passed, 5 skipped",
-      "batch2": "166 passed, 1 skipped",
-      "batch3": "216 passed",
-      "batch4": "216 passed, 1 skipped",
-      "batch5": "283 passed",
-      "batch6": "189 passed"
-    },
-    "per_batch_output": "learning/tests_batched/<batch>.log"
+  "recorded_at": "2026-09-18T09:12:00+08:00",
+  "revision_covered": "the tree as of e2da462..6bec174 (the run began at 08:46 and later commits landed while it ran)",
+  "method": "tools/run_tests_batched.py --batches 6 --timeout 900 (per-batch basetemp, per-batch verdict, no rounding up)",
+  "verdict": "PASS (batched) -- 6/6 batches reported, 1282 passed, 0 failed, 7 skipped, 0 error",
+  "batches": {
+    "batch1": "PASS 184 passed, 28 subtests in 488.72s",
+    "batch2": "PASS 185 passed, 14 subtests in 170.61s",
+    "batch3": "PASS 222 passed, 5 skipped, 16 subtests in 233.73s",
+    "batch4": "PASS 124 passed, 1 skipped, 37 subtests in 179.80s",
+    "batch5": "PASS 261 passed, 43 subtests in 279.60s",
+    "batch6": "PASS 306 passed, 1 skipped in 363.09s"
   },
-  "why_batched_is_the_standard_now": "A single full run cannot finish on this host: it reaches 100% and is then killed before printing a summary, because the host's bulk-delete guard intercepts pytest's own cleanup of accumulated temp garbage (measured twice -- SAFE_DELETE_BULK_GUARD_ERROR exit 0xC0000142, and SAFE_DELETE_BULK_CONFIRM_REQUIRED count=196 threshold=50). Batching with a fresh basetemp per batch removes the garbage pytest would try to delete, and every batch then reports its own summary, which is what makes an aggregate verdict possible at all.",
-  "the_single_run_verdict_for_this_round": "INCONCLUSIVE -- the earlier two runs are kept in this file's history below; neither may be quoted as PASS.",
-
-  "history": [
-    {
-      "command": "python -m pytest tests -q -o tmp_path_retention_policy=all",
-      "duration_seconds": 3082,
-      "reached": "100%",
-      "summary_line": null,
-      "terminator": "[safe-delete][SAFE_DELETE_BULK_GUARD_ERROR] exit 3221225794 (0xC0000142)",
-      "caveat": "output file was truncated mid-run by a concurrent run; only the tail is readable"
-    },
-    {
-      "command": "python -m pytest tests -q -o tmp_path_retention_policy=all",
-      "duration_seconds": 1177,
-      "reached": "100%",
-      "summary_line": null,
-      "terminator": "[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {\"count\":196,\"threshold\":50,\"scope\":\"turn\"}",
-      "caveat": "the guard names its target: pytest's accumulated temp garbage"
-    },
-    {
-      "command": "tools/run_tests_batched.py --batches 6 (first run)",
-      "duration_seconds": 1114,
-      "verdict": "INCOMPLETE",
-      "found": "batch3 FAIL -- 1 failed, 214 passed",
-      "failure": "tests/test_runtime_interpreter.py::PreflightCommandTest::test_preflight_exit_code_follows_the_verdict -> RuntimeError: DEVICE_NOT_CONNECTED",
-      "diagnosis": "made by this round's own change: putting the device in the preflight's core verdict turned that test into one that passes or fails depending on whether MuMu happens to be running",
-      "fix": "a49f8a0 -- stub the device probe in the test, and pin both halves of the contract: a dead device refuses AUTO (exit 1), a refusing gateway does not (exit 0)"
-    }
-  ],
-
-  "conclusion_recorded_by_operator": {
-    "startup_chain": "VERIFIED -- GUI -> Preflight -> AUTO -> Goal -> Skill -> real MAA execution -> Verifier, 15/15 episodes SUCCESS with verifier_ok and MAA_MUMU_EXTRAS capture; not to be re-developed",
-    "full_suite": "PASS as of the batched run above; the two single runs remain INCONCLUSIVE and are kept here so nobody can quote them as a pass"
-  }
+  "caveat": "This verdict does not cover the three commits made while it ran (51d23bc, 526a3cd, 499aa0f). A clean re-run (r4) was started immediately afterwards for exactly that reason; the batched verdict must not be quoted as covering the newest commit until r4 reports.",
+  "focused_gates_for_the_newest_commits": {
+    "tests/test_capability_gate.py": "40 passed",
+    "capability/panel/scheduler group": "92 passed, 3 subtests",
+    "check_wiring": "problems: 0"
+  },
+  "single_full_run_status": "INCONCLUSIVE and unchanged: two attempts on this host reached 100% without printing a summary, the second killed by the host's bulk-delete guard (count=196, threshold=50). Batched runs are the sanctioned method (operator directive 2026-09-18)."
 }

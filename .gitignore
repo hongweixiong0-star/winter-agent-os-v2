@@ -151,6 +151,14 @@ dataset/external/repositories/
 # transition-latency series started from.  A clone without them cannot re-derive
 # either the root cause or the regression.
 !dataset/truth_audit/nav_to_map_20260918/key/**/*.png
+# 2026-09-18, the beast-search round (escalation SPEND_STAMINA_ON_BEAST, second
+# shape: NO_GOAL_PROGRESS).  key/ is published because the round produced a
+# NEGATIVE result that has to survive: the live before/after pairs show the
+# SCAN_MAP_FOR_BEAST gesture really does pan the viewport (ADB, 600 ms and
+# 1500 ms), so "the swipe is broken" is refuted and the remaining defect is the
+# missing way to *reach* a dispatchable target.  The production pair is included
+# so the same reading can be repeated on real episode frames.
+!dataset/truth_audit/beast_scan_pan_20260918/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

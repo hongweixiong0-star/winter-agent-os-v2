@@ -1,0 +1,45 @@
+{
+ "schema_version": "1.0",
+ "set": "beast_scan_pan_20260918",
+ "recorded_at": "2026-09-18T01:02:00+00:00",
+ "capability": "SPEND_STAMINA_ON_BEAST",
+ "goal": "AVOID_STAMINA_WASTE",
+ "skill": "SCAN_MAP_FOR_BEAST",
+ "escalation": "REPEATED_LIVE_FAILURE / NO_GOAL_PROGRESS (SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST)",
+ "verdict": "ROOT_CAUSE_IDENTIFIED__ROUTE_NOT_YET_FIXED",
+ "hypothesis_tested_and_refuted": {
+  "hypothesis": "the SCAN_MAP_FOR_BEAST swipe is a no-op, so the viewport never moves and no off-screen beast can ever come into view",
+  "refuted_by": "three live probe runs with the production Executor on the real client: the before/after frames are different viewports every time (live_probe_side_by_side.png), and the same is true of the production episode frames (prod_run_side_by_side.png)",
+  "false_supporting_measurement": "a global mean-|diff| best-translation search reported (dy=0, dx=0) for the production pair; that model is invalid on the perspective world map, where a pan changes positions non-uniformly, and the two frames plainly show different terrain",
+  "probe_reports": ["probe_adb600.json", "probe_adb1500.json", "probe_first_measurement.json"]
+ },
+ "root_cause": {
+  "one_sentence": "AVOID_STAMINA_WASTE only ever advances by panning the world map onto the one beast the client table lets it dispatch (MUSK_OX_9), its only 'a target is not visible' hop is a fixed bounded 3-pan sweep that stops instead of searching, and the client's own beast-search navigation -- which does fly the camera to a beast -- exists on disk as CANDIDATE templates but is referenced by no skill, verifier, tool or test.",
+  "facts": [
+   "learning/episodes.jsonl: 536 AVOID_STAMINA_WASTE episodes, 336 of them SCAN_MAP_FOR_BEAST; of the 9 that record goal_progress, 9 are false and 0 are true.",
+   "winter_agent_v2/verifier.py:732 verify_beast_scan_observed passes on any frame pair that is still a readable MAP page, so it cannot tell 'panned' from 'found a target'.",
+   "winter_agent_v2/brain.py:53 max_beast_scans = 3 and brain.py:857-860 stop with verified_beast_target_not_visible when the budget is spent.",
+   "knowledge/game/beasts.json: only MUSK_OX_9_LIVE carries dispatchable=true; the other reviewed beasts (ARCTIC_WOLF_6, SNOW_LEOPARD_29, GREAT_HORNED_DEER_22) do not.",
+   "dataset/candidate/beast_search_manifest.json and beast_search_v2_manifest.json hold BTN_SEARCH_BEAST_TAB / BTN_SUBMIT_BEAST_SEARCH / SEARCH_BEAST_LEVEL_5_SELECTED as CANDIDATE; grep over winter_agent_v2/, tools/, tests/ and dataset/candidate/template_manifest.json returns zero references.",
+   "dataset/raw/beast_search_exploration/beast5_found.png (human-reviewed live frame, 2026-09-06) shows the search panel's beast-family tab at level 5 ending on a 等级5 猛犸象 target card -- the mechanism works on this client; it was simply never wired."
+  ]
+ },
+ "live_facts_measured_today": [
+  "client 2026-09-18T00:48Z: page MAP, marches GATHERING+MARCHING (2/3), stamina 457 -- the device was reachable and the map pannable.",
+  "probe backend=adb duration_ms=600 -> executed=true error=null, page MAP->MAP, viewport visibly changed.",
+  "probe backend=adb duration_ms=1500 -> executed=true error=null, page MAP->MAP, viewport visibly changed."
+ ],
+ "not_done": [
+  "no live episode for SPEND_STAMINA_ON_BEAST (SELECT_BEAST_TARGET / BEAST_HUNT / DISPATCH_BEAST) was produced",
+  "the beast-search hop is not wired: no skill, no verifier, no brain route, no live verification",
+  "no lifecycle change: SEARCH_BEAST stays as the episode stream already has it; nothing was promoted"
+ ],
+ "key": [
+  "live_page_before_probe.png",
+  "live_adb600_before.png", "live_adb600_after.png",
+  "live_adb1500_before.png", "live_adb1500_after.png",
+  "live_probe_side_by_side.png",
+  "prod_run_before.png", "prod_run_after.png", "prod_run_side_by_side.png",
+  "probe_adb600.json", "probe_adb1500.json", "probe_first_measurement.json"
+ ]
+}
