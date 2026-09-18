@@ -53,11 +53,34 @@ LIVE_OBSERVED = "LIVE_OBSERVED"        # read off the device, with a frame behin
 FRESH_RUNTIME = "FRESH_RUNTIME"        # the running process wrote it just now
 PERSISTED = "PERSISTED"                # last known value, older than its budget
 REQUESTED = "REQUESTED"                # what we asked for -- not evidence it happened
+EXPECTED = "EXPECTED"                  # a window we expect, with evidence of the window only
 CATALOG_DERIVED = "CATALOG_DERIVED"    # derived from a maintained artifact, not a fresh read
 ASSUMED = "ASSUMED"                    # a literal or a default: must be eliminated
+HISTORY = "HISTORY"                    # known to be *past* -- not "was current once, unknown now"
 UNKNOWN = "UNKNOWN"
 STALE = "STALE"
 CONFLICT = "CONFLICT"
+
+# The operator's eight words, mapped from the precise internal statuses.  One mapping,
+# in one place, so two panels cannot label the same reading differently -- and so the
+# window never has to invent a word (operator §十六, 2026-09-18).
+#
+# ``CONFLICT`` is deliberately outside the eight: it is not a degree of belief about a
+# value, it is the statement that two sources disagree, and it layers on top of whichever
+# status the reading would otherwise have.
+CATEGORY_OF: dict[str, str] = {
+    LIVE_OBSERVED: "LIVE_OBSERVED",
+    FRESH_RUNTIME: "FRESH_LAST_KNOWN",
+    CATALOG_DERIVED: "FRESH_LAST_KNOWN",
+    PERSISTED: "STALE",        # last known, past its freshness budget -- the operator's STALE
+    STALE: "STALE",
+    HISTORY: "HISTORY",
+    REQUESTED: "REQUESTED",
+    EXPECTED: "EXPECTED",
+    ASSUMED: "EXPECTED",
+    UNKNOWN: "UNKNOWN",
+    CONFLICT: "CONFLICT",
+}
 
 def health_of(value: TruthValue) -> tuple[str, str]:
     """One of the operator's six words, plus the colour class it implies.
@@ -89,12 +112,16 @@ STATUS_RANK: dict[str, int] = {
     CONFLICT: -1,      # not a low score -- an unresolved question, like TRUST_RANK[CONFLICT]
     UNKNOWN: 0,
     ASSUMED: 1,
-    REQUESTED: 2,
-    CATALOG_DERIVED: 3,
-    STALE: 4,
-    PERSISTED: 5,
-    FRESH_RUNTIME: 6,
-    LIVE_OBSERVED: 7,
+    EXPECTED: 2,
+    REQUESTED: 3,
+    CATALOG_DERIVED: 4,
+    # Below STALE on purpose: a stale value may still be true, a history record is known
+    # to describe a past that has ended.  Neither may be printed as "current".
+    HISTORY: 5,
+    STALE: 6,
+    PERSISTED: 7,
+    FRESH_RUNTIME: 8,
+    LIVE_OBSERVED: 9,
 }
 
 STATUS_ZH: dict[str, str] = {
@@ -104,6 +131,7 @@ STATUS_ZH: dict[str, str] = {
     REQUESTED: "已请求（未证实）",
     CATALOG_DERIVED: "总表推导（非真机）",
     ASSUMED: "假定值（必须消除）",
+    HISTORY: "历史（已过去）",
     UNKNOWN: "未知",
     STALE: "已过期",
     CONFLICT: "冲突",
@@ -113,6 +141,9 @@ STATUS_ZH: dict[str, str] = {
 FRESH_RUNTIME_SECONDS = 120.0
 LIVE_OBSERVED_SECONDS = 6 * 3600.0
 PERSISTED_SECONDS = 7 * 24 * 3600.0
+# How long an activity record may describe "now".  Its own countdown overrides this: a
+# record with 28 795 s left was already describing a closed window nine days later.
+EVENT_CURRENT_SECONDS = 6 * 3600.0
 
 
 def _moment(value: Any) -> datetime | None:
@@ -191,6 +222,36 @@ class TruthValue:
     # Where the same fact was also seen, so a disagreement is visible instead of resolved
     # by whoever read last.
     seen: tuple[tuple[str, str], ...] = ()
+    # A structured payload for states that are a *list* (events, anomalies).  Kept out of
+    # ``value`` on purpose: a list rendered into one string cannot be re-checked field by
+    # field by the wiring verifier.
+    items: tuple[Mapping[str, Any], ...] = ()
+
+    @property
+    def category(self) -> str:
+        """One of the operator's eight words, from the one mapping in ``CATEGORY_OF``."""
+        return CATEGORY_OF.get(self.status, UNKNOWN)
+
+    @property
+    def current(self) -> bool:
+        """Is this value a claim about *now*?"""
+        return self.status in (LIVE_OBSERVED, FRESH_RUNTIME, CATALOG_DERIVED)
+
+    @property
+    def headline(self) -> str:
+        """What a window may print beside a heading that says "当前…".
+
+        A persisted value is not a current one, and printing one under a *current*
+        heading is exactly how a 46-hour-old role read came to be shown as the logged-in
+        character (operator P0-2, 2026-09-18).  When the value is not current the
+        headline refuses to carry it; ``last_known`` carries it instead, with its age.
+        """
+        return self.value or UNKNOWN if self.current else UNKNOWN
+
+    @property
+    def last_known(self) -> str:
+        """The old value, offered as history -- empty when there is nothing old to offer."""
+        return "" if self.current else (self.value or "")
 
     @property
     def stale(self) -> bool:
@@ -223,6 +284,10 @@ class TruthValue:
             "verification": self.verification,
             "note": self.note,
             "seen_elsewhere": [f"{where}={what}" for where, what in self.seen],
+            "current": self.current,
+            "headline": self.headline,
+            "last_known": self.last_known,
+            "items": [dict(item) for item in self.items],
         }
 
 
@@ -303,6 +368,7 @@ ESCALATIONS = "learning/workbuddy_escalations.jsonl"
 DEVICE_LEASE = "learning/DEVICE_LEASE.json"
 BACKEND_ROUTING = "knowledge/execution/backend_routing.json"
 TOOL_REGISTRY = "knowledge/tooling/tool_registry.json"
+GATEWAY_PROBE = "learning/control_panel/gateway.json"
 EVENT_STATE = "learning/event_goal_state.json"
 PUMP = "learning/control_panel/pump.json"
 STATE_PATH_BOOTSTRAP = "learning/knowledge_bootstrap/STATE.json"
@@ -311,6 +377,8 @@ PANEL_STATE = "config/control_panel_state.json"
 # The scheduler's own gap between cycles.  A stopped worker inside this window is the
 # design working, not a fault: the worker is a fresh process per round.
 ROUND_GAP_SECONDS = 1200.0
+# How recently AUTO must have *produced* something to be called running from work alone.
+AUTO_WORKING_SECONDS = 600.0
 
 
 class TruthAudit:
@@ -519,14 +587,68 @@ class TruthAudit:
         )
 
     def auto_state(self) -> TruthValue:
-        state = str(self._snapshot.get("agent_state") or "")
-        status, age = self._snapshot_stamp()
+        """Is AUTO actually running?  Graded from *work*, not from a flag.
+
+        The operator's P0-4: the top bar said ``AUTO ● 正常`` while the system page said
+        ``Runtime Thread 未运行 / Scheduler Loop 未运行``.  Both were reading a snapshot
+        whose own fields disagree with the architecture: this project's AUTO is a
+        ``run_live.py`` subprocess per round, so the two in-process flags are written
+        False by the panel itself and are structurally incapable of ever saying
+        "running".  A flag that cannot be true is not evidence.
+
+        So the grade comes from what AUTO *produced*: a fresh episode, plus the panel's
+        own heartbeat (the panel is what runs it), plus the operator's recorded intent.
+        ``IDLE`` between rounds with a named ``stop_reason`` is the design working, and
+        is reported as 等待 with that reason -- not as 正常.
+        """
+        intent = str(_read_json(self.root / PANEL_STATE).get("operator_intent") or "")
+        beat = self.panel_heartbeat()
+        snapshot_state = str(self._snapshot.get("agent_state") or "")
+        stop_reason = str(self._snapshot.get("stop_reason") or "")
+        exits = self._snapshot.get("unexpected_worker_exits")
+
+        work_age: float | None = None
+        if self._episodes:
+            stamp = _moment(str(self._episodes[-1].get("recorded_at") or ""))
+            if stamp is not None:
+                work_age = (self.now - stamp).total_seconds()
+
+        def age_text(seconds: float | None) -> str:
+            if seconds is None:
+                return "无记录"
+            if seconds < 90:
+                return f"{int(seconds)} 秒前"
+            if seconds < 5400:
+                return f"{seconds / 60:.0f} 分钟前"
+            return f"{seconds / 3600:.1f} 小时前"
+
+        counter = f"（累计异常退出 {exits}）" if exits else ""
+        if intent == "STOPPED":
+            status = FRESH_RUNTIME if beat.current else PERSISTED
+            value = "已停止（操作者意图）"
+            note = f"操作者停止的优先级最高，任何自动机制都不得重启它。最近动作 {age_text(work_age)}。{counter}"
+        elif work_age is not None and work_age <= AUTO_WORKING_SECONDS:
+            status = LIVE_OBSERVED
+            value = f"运行中 · 最近动作 {age_text(work_age)}"
+            note = f"有真实产出（最新 episode）{counter}"
+        elif beat.current:
+            status = FRESH_RUNTIME
+            value = f"运行中 · 本轮之间（最近动作 {age_text(work_age)}）"
+            note = (f"面板时钟新鲜，运行主体没有产出是轮次间隔"
+                    f"{f'，原因 {stop_reason}' if stop_reason else ''}。{counter}")
+        else:
+            status = STALE
+            value = "未确认"
+            note = ("面板时钟不新鲜，没有任何证据说明 AUTO 在运行"
+                    f"（快照状态 {snapshot_state or '-'}、最近动作 {age_text(work_age)}）。{counter}")
         return TruthValue(
-            name="auto_state", value=f"{state}（{self._snapshot.get('mode') or '-'}）",
-            status=status, source=SNAPSHOT,
-            observed_at=str(self._snapshot.get("updated_at") or ""), age_seconds=age,
-            verification=str(self._snapshot.get("verifier") or ""),
-            note="面板进程是否还在，是另一个问题（见 panel_heartbeat）",
+            name="auto_state", value=value, status=status,
+            source=f"{PANEL_STATE} + {EPISODES} + {PUMP}",
+            observed_at=str(self._episodes[-1].get("recorded_at") or "") if self._episodes else "",
+            age_seconds=work_age,
+            episode=str(self._episodes[-1].get("episode_id") or "") if self._episodes else "",
+            note=note + "；runtime_thread_alive / scheduler_loop_alive 属于**上一代**"
+                        "进程内架构，本轮不是它们的证据来源（见 system 页的说明）",
         )
 
     def panel_heartbeat(self) -> TruthValue:
@@ -665,6 +787,140 @@ class TruthAudit:
             name="event_state",
             value=", ".join(f"{k}={v}" for k, v in list(payload.items())[:4]),
             status=status, source=EVENT_STATE, observed_at=stamp, age_seconds=age,
+        )
+
+    def events(self) -> TruthValue:
+        """Every activity the project knows about, each graded by how it was observed.
+
+        The operator's rule (2026-09-18): **HISTORY must never stand in for a current
+        event.**  Measured before this: the window's 运行活动 showed
+        ``最强王国·击败野兽`` from a record whose own fields said
+        ``数据来源 HISTORY · 最后验证 待验证 · 置信度 0%``, verified 2026-09-09 -- nine days
+        earlier, with the event's own countdown (28795 s) long since elapsed -- and its
+        当前积分 11250 / 目标 80000 / 缺口 68750 line still on screen as today's plan.
+
+        The model is a list, not a single ``current_event``: activities overlap, and a
+        window that can only show one hides the other.  Each row carries the fields the
+        operator listed, and ``planner_usable`` is the gate: only a row that is current
+        (or an EXPLICIT future window) may feed a plan.  Nothing here *reads* the device;
+        a live row appears only when real evidence does, and until then the honest answer
+        is "当前活动尚未实时确认" -- not an old name filling the space.
+
+        Only two readers may consume this: this projection and the window.  Asserted by
+        ``tests/test_state_truth.py`` precisely because the planner *ought* to be a third
+        and must not become one through a history record.
+        """
+        moment = self.now
+        rows: list[dict[str, Any]] = []
+
+        # 1. The live-client record, if it is one.  Its own window decides: a record kept
+        #    past the countdown it recorded describes an activity that has ended, whatever
+        #    its ``source`` says.
+        legacy = _read_json(self.root / EVENT_STATE)
+        if legacy.get("name") or legacy.get("event_id"):
+            row = legacy_event_row(legacy, now=moment, role_id=self.role().role_id)
+            row.pop("raw", None)
+            rows.append(row)
+
+        # 2. The event knowledge base: candidates and priors, never current.  A file in
+        #    ``knowledge/events`` is a description of an event, not an observation of it.
+        for path in sorted((self.root / "knowledge/events").glob("*.json")):
+            if path.name == EVENT_STATE.split("/")[-1] or path.name == "event_registry.json":
+                continue
+            payload = _read_json(path)
+            name = str(payload.get("name") or payload.get("event_name") or "")
+            if not name:
+                continue
+            rows.append({
+                "event_id": str(payload.get("event_id") or path.stem),
+                "event_name": name,
+                "status": HISTORY,
+                "source": f"knowledge/events/{path.name}",
+                "observed_at": str(payload.get("retrieved_at") or payload.get("last_verified") or ""),
+                "age_seconds": None,
+                "freshness": "知识库（不是观测）",
+                "confidence": None,
+                "started_at": str(payload.get("start") or ""),
+                "ends_at": str(payload.get("end") or ""),
+                "progress": {},
+                "claimable": False,
+                "role_id": "",
+                "evidence": (path.as_posix(),),
+                "planner_usable": False,
+                "note": "知识库条目：只能作为先验，不能当作当前活动",
+            })
+
+        active = [r for r in rows if r["status"] in (LIVE_OBSERVED, FRESH_RUNTIME)]
+        claimable = [r for r in rows if r["claimable"]]
+        upcoming = [r for r in rows if r["status"] in (EXPECTED, REQUESTED) and r["ends_at"]]
+        history = [r for r in rows if r["status"] == HISTORY]
+        value = (
+            " · ".join(r["event_name"] for r in active)
+            if active
+            else ("当前活动尚未实时确认" if rows else "")
+        )
+        return TruthValue(
+            name="events", value=value,
+            status=LIVE_OBSERVED if active else (UNKNOWN if not rows else HISTORY),
+            source=EVENT_STATE if rows else "(no event source)",
+            observed_at=max((str(r.get("observed_at") or "") for r in active), default=""),
+            note=(
+                f"当前 {len(active)} · 可领取 {len(claimable)} · 即将开始 {len(upcoming)}"
+                f" · 历史/知识 {len(history)}"
+                + ("" if active else
+                   "；没有实时确认的活动，不得用历史记录填空（操作者 P0-1）")
+            ),
+            items=tuple(rows),
+        )
+
+    def gateway_health(self) -> TruthValue:
+        """Is the WorkBuddy gateway answering?  A separate question from "what is the job doing".
+
+        The operator's P0-3: the top bar said ``WorkBuddy ● 正常`` while the development
+        page said ``GatewayUnavailable /api/v1/jobs/d8ea0e44 timed out after 15s`` and the
+        log kept timing out.  The word "正常" was derived from the *ledger* -- a job whose
+        last known state is WORKING -- and a job's last known state is not evidence that
+        anything is reachable.  Two facts, two cells.
+
+        Read from the panel's own probe record, which is the only artifact that knows the
+        answer; the panel writes it so this projection can grade it rather than guess.
+        """
+        payload = _read_json(self.root / GATEWAY_PROBE)
+        if not payload:
+            return TruthValue(
+                name="gateway_health", value="", status=UNKNOWN, source=GATEWAY_PROBE,
+                note=("面板还没有写过探针结果。**不能**从 Job 状态反推网关健康 —— "
+                      "那正是「Job=WORKING 就显示正常」这个错误的来源"),
+            )
+        available = payload.get("available")
+        stamp = str(payload.get("checked_at_utc") or "")
+        status, age = self._stamp(GATEWAY_PROBE, stamp, live=True)
+        consecutive = int(payload.get("consecutive_failures") or 0)
+        last_ok = str(payload.get("last_ok_at") or "")
+        backoff = payload.get("backoff_seconds")
+        if available is True:
+            value = "正常"
+            if consecutive == 0:
+                # An answer is not proof that work flows: the top bar must not claim more
+                # than the probe measured, and the probe measures reachability.
+                pass
+        elif available is False:
+            value = "异常"
+            status = CONFLICT
+        else:
+            value = UNKNOWN
+        note = str(payload.get("reason") or "")
+        if consecutive >= 2:
+            note += (f"；连续 {consecutive} 次失败"
+                     + (f"，已退避 {backoff} 秒" if backoff else ""))
+        if last_ok:
+            ok_age = self._age(last_ok)
+            note += f"；最近一次成功通信 {'' if ok_age is None else f'{ok_age / 60:.0f} 分钟前'}"
+        else:
+            note += "；没有成功通信记录"
+        return TruthValue(
+            name="gateway_health", value=value, status=status, source=GATEWAY_PROBE,
+            observed_at=stamp, age_seconds=age, note=note,
         )
 
     # -- execution, evidence and version ----------------------------------
@@ -1264,6 +1520,26 @@ class TruthAudit:
         if self._reload_pending():
             add("RELOAD_PENDING", self.now.isoformat(), "有重载请求尚未生效")
 
+        # The validation lease, which the operator saw buried in prose: "lease expired
+        # without being released / process gone or hung".  Two different things were
+        # being printed as one, and the first of them was not a fault at all: a lease
+        # that was *released* still reported the orphan sentence because expiry was
+        # checked before released_at (fixed in device_lease).  What remains here is the
+        # real case -- held, window passed, nobody handed it back.
+        lease_payload = _read_json(self.root / DEVICE_LEASE)
+        if lease_payload and not lease_payload.get("released_at"):
+            expires = _moment(str(lease_payload.get("expires_at") or ""))
+            if expires is not None and expires < self.now:
+                # auto_recovered: the expired lease is already not a holder, so gameplay
+                # has the device back.  Reported so it is traceable, not so it alarms.
+                add("VALIDATION_LEASE_ORPHANED", str(lease_payload.get("acquired_at") or ""),
+                    f"校验租约（{lease_payload.get('owner')} / "
+                    f"{lease_payload.get('capability_id') or '(未命名)'}）在 "
+                    f"{expires.isoformat()} 过期且未被归还；TTL 已自动回收，"
+                    f"当前租约：{self.device_lease().value}",
+                    capability=str(lease_payload.get("capability_id") or ""),
+                    auto_recovered=True, status="AUTO_RECOVERED")
+
         return tuple(found)
 
     def consistency(self) -> tuple[dict[str, str], ...]:
@@ -1297,7 +1573,7 @@ class TruthAudit:
             self.current_page(), self.current_goal(), self.current_skill(),
             self.auto_state(), self.panel_heartbeat(),
             self.march_capacity(), self.resources(), self.queues(),
-            self.feature_unlock(), self.event_state(),
+            self.feature_unlock(), self.event_state(), self.events(), self.gateway_health(),
             self.executor_backend(), self.version_active(), self.verifier(),
             self.workbuddy_jobs(), self.device_lease(), self.capability_lifecycle(),
             self.episode_role_scope(),
@@ -1356,12 +1632,87 @@ def record_role(
     return path
 
 
+def legacy_event_row(
+    legacy: Mapping[str, Any],
+    *,
+    now: datetime | None = None,
+    role_id: str = "",
+) -> dict[str, Any]:
+    """Grade the single ``event_goal_state.json`` record: current, or history?
+
+    Its own countdown decides.  A record that says ``remaining_seconds_at_verification``
+    is an assertion about a window, and once more time has passed than that window held,
+    the record describes an activity that has *ended* -- whatever its ``source`` field
+    claims.  Measured 2026-09-18: ``最强王国·击败野兽`` with 28 795 s left, verified nine
+    days earlier (781 965 s), still on screen as the running activity.
+
+    Extracted from ``TruthAudit.events`` so the window classifies the record the same way
+    the audit does.  One implementation, two callers -- a second copy in the panel is how
+    the window and the audit end up disagreeing about the same file.
+    """
+    moment = now or datetime.now(timezone.utc)
+    verified = _moment(str(legacy.get("verified_at") or ""))
+    age = (moment - verified).total_seconds() if verified else None
+    try:
+        remaining = legacy.get("remaining_seconds_at_verification")
+        remaining = float(remaining) if remaining is not None else None
+    except (TypeError, ValueError):
+        remaining = None
+    window_closed = age is not None and remaining is not None and age > remaining
+    if window_closed:
+        status, why = HISTORY, (
+            f"记录的活动窗口早已结束：记录时剩余 {int(remaining)} 秒，"
+            f"而这条记录已过去 {age / 3600:.0f} 小时"
+        )
+    elif age is not None and age <= EVENT_CURRENT_SECONDS:
+        status, why = LIVE_OBSERVED, "记录的验证时间在本活动的新鲜度预算内"
+    else:
+        status, why = (HISTORY if verified else UNKNOWN), (
+            "验证时间早于新鲜度预算，且无法证明窗口仍开着" if verified else "没有验证时间"
+        )
+    return {
+        "event_id": str(legacy.get("event_id") or ""),
+        "event_name": str(legacy.get("name") or ""),
+        "status": status,
+        "source": f"{EVENT_STATE}（记录时来源 {legacy.get('source') or '?'}）",
+        "observed_at": str(legacy.get("verified_at") or ""),
+        "age_seconds": None if age is None else round(age, 1),
+        "freshness": STATUS_ZH.get(status, status),
+        "confidence": 0.0 if status != LIVE_OBSERVED else 0.99,
+        "started_at": "",
+        "ends_at": "",
+        "remaining_seconds_at_verification": remaining,
+        "progress": {
+            "current": legacy.get("current_points"),
+            "target": legacy.get("target_points"),
+            "missing": legacy.get("points_missing"),
+        },
+        "claimable": bool(
+            legacy.get("minimum_guarantee_complete") is False and status == LIVE_OBSERVED
+        ),
+        "role_id": role_id,
+        "evidence": (),
+        "planner_usable": status in (LIVE_OBSERVED, FRESH_RUNTIME),
+        "note": why,
+        "raw": dict(legacy),
+    }
+
+
+def legacy_event_row_for(root: Path | str, *, now: datetime | None = None) -> dict[str, Any]:
+    """Convenience for the window: classify the saved record, or ``{}`` when there is none."""
+    payload = _read_json(Path(root) / EVENT_STATE)
+    if not (payload.get("name") or payload.get("event_id")):
+        return {}
+    return legacy_event_row(payload, now=now)
+
+
 def audited_names() -> tuple[str, ...]:
     """The state names this projection answers for.  One list, so a test can hold it."""
     return (
         "current_role", "current_page", "current_goal", "current_skill",
         "auto_state", "panel_heartbeat", "march_capacity", "resources", "queues",
-        "feature_unlock", "event_state", "executor_backend", "version_active",
+        "feature_unlock", "event_state", "events", "gateway_health",
+        "executor_backend", "version_active",
         "verifier", "workbuddy_jobs", "device_lease", "capability_lifecycle",
         "episode_role_scope",
         # the control centre's own questions

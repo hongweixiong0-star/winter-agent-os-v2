@@ -164,5 +164,67 @@ class RuntimeYieldsTest(unittest.TestCase):
         self.assertIn("held.owner != OWNER_GAMEPLAY", head)
 
 
+class AReleasedLeaseIsNotAnOrphan(unittest.TestCase):
+    """Operator P0, 2026-09-18: the window printed, verbatim, "lease expired ... without
+    being released (its process is gone or hung)" for a lease that had been released three
+    seconds after it was taken, with its result recorded.  The device was fine; the
+    sentence was the defect, and it was read as a device fault."""
+
+    def _record(self, **overrides):
+        from winter_agent_v2.device_lease import LeaseRecord
+
+        base = dict(
+            owner="DEVELOPMENT_VALIDATION", capability_id="OPEN_MARCH_FORMATION",
+            job_id="06271322", acquired_at=NOW - timedelta(minutes=20),
+            expires_at=NOW - timedelta(minutes=5), released_at=None, result="",
+        )
+        base.update(overrides)
+        return LeaseRecord(**base)
+
+    def test_an_expired_record_that_was_released_is_not_expired(self):
+        record = self._record(released_at=NOW - timedelta(minutes=19), result="NO_WAITING_VERSION")
+        self.assertFalse(record.expired(NOW))
+
+    def test_an_expired_record_that_was_never_released_is_expired(self):
+        self.assertTrue(self._record().expired(NOW))
+
+    def test_the_description_of_a_released_lease_says_released(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            from winter_agent_v2.device_lease import LEASE_FILE, DeviceLease
+
+            record = self._record(released_at=NOW - timedelta(minutes=19), result="NO_WAITING_VERSION")
+            path = root / LEASE_FILE
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(_as_row(record), ensure_ascii=False), encoding="utf-8")
+            text = DeviceLease(root).describe(now=NOW)
+            self.assertIn("released the device", text)
+            self.assertIn("NO_WAITING_VERSION", text)
+            self.assertNotIn("without being released", text)
+
+    def test_the_description_of_a_real_orphan_still_says_so(self):
+        # The honest half must survive the fix: a lease nobody handed back is reported.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            from winter_agent_v2.device_lease import LEASE_FILE, DeviceLease
+
+            path = root / LEASE_FILE
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(_as_row(self._record()), ensure_ascii=False), encoding="utf-8")
+            text = DeviceLease(root).describe(now=NOW)
+            self.assertIn("without being released", text)
+
+
+def _as_row(record) -> dict:
+    return {
+        "owner": record.owner, "trace_id": record.trace_id, "job_id": record.job_id,
+        "capability_id": record.capability_id, "reason": record.reason,
+        "acquired_at": record.acquired_at.isoformat() if record.acquired_at else "",
+        "expires_at": record.expires_at.isoformat() if record.expires_at else "",
+        "released_at": record.released_at.isoformat() if record.released_at else "",
+        "result": record.result, "process": record.process,
+    }
+
+
 if __name__ == "__main__":
     unittest.main()

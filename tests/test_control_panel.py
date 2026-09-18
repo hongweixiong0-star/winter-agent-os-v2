@@ -100,6 +100,35 @@ class OneWindowOwnsTheClock(unittest.TestCase):
         self.assertIn("else:\n            self.pump.start()", source[start:start + 900])
 
 
+class SwitchSemantics(unittest.TestCase):
+    """Operator P1, 2026-09-18: the strategy switches rendered as bare checkbuttons whose
+    indicator read as a ✕ -- a glyph this project reserves for 关闭/取消/失败/拒绝."""
+
+    def test_a_cross_never_means_enabled(self):
+        for enabled in (True, False):
+            label = cp.policy_toggle_label("日常低保", enabled)
+            self.assertNotIn("✕", label)
+            self.assertNotIn("×", label)
+
+    def test_the_label_states_the_state(self):
+        self.assertIn("已启用", cp.policy_toggle_label("日常低保", True))
+        self.assertIn("未启用", cp.policy_toggle_label("日常低保", False))
+
+    def test_a_safety_rule_says_it_cannot_be_edited(self):
+        label = cp.policy_toggle_label("真实支付", True, editable=False)
+        self.assertIn("永久禁止", label)
+        self.assertIn("🔒", label)
+
+    def test_the_strategy_page_uses_it_and_repaints_on_toggle(self):
+        source = (Path(__file__).resolve().parents[1] / "tools/control_panel.py").read_text(
+            encoding="utf-8"
+        )
+        strategy = source[source.index("def _strategy"):source.index("def _toggle_policy")]
+        self.assertIn("policy_toggle_label(", strategy)
+        self.assertIn("self._toggle_policy(", strategy)
+        self.assertNotIn("ttk.Checkbutton(grid, text=name", source)
+
+
 class ControlPanelTests(unittest.TestCase):
     def test_parse_runtime_result_uses_final_json_line(self):
         output = '启动中\n{"steps": [], "stop_reason": "no_idle_march"}\n'

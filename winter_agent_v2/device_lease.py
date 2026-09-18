@@ -57,6 +57,16 @@ class LeaseRecord:
     process: int = 0
 
     def expired(self, now: datetime | None = None) -> bool:
+        """Has this lease's window passed *while it was still held*?
+
+        A released lease is over, not expired.  Measured 2026-09-18: without this the
+        window printed, verbatim, "lease by DEVELOPMENT_VALIDATION expired ... without
+        being released (its process is gone or hung)" for a lease whose ``released_at``
+        and ``result`` were both set -- it had been released three seconds after it was
+        taken.  The device was fine; the sentence was the defect.
+        """
+        if self.released_at is not None:
+            return False
         if self.expires_at is None:
             return False
         return (now or datetime.now(timezone.utc)) >= self.expires_at
@@ -193,6 +203,12 @@ class DeviceLease:
         record = self._read()
         if record is None:
             return "no lease: gameplay owns the device"
+        if record.released_at is not None:
+            # Released is history, and it must be described as history.  Checking expiry
+            # first printed the orphan sentence for a lease that had been handed back.
+            return (f"{record.owner} released the device for {record.capability_id or '(unnamed)'}"
+                    f" (job={record.job_id or '-'}, result={record.result or '-'},"
+                    f" released_at={record.released_at.isoformat()})")
         if record.expired(now):
             return (f"lease by {record.owner} expired at {record.expires_at.isoformat()} "
                     f"without being released (its process is gone or hung)")

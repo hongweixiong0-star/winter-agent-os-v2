@@ -684,5 +684,159 @@ class TheControlCentreAnswersItsOwnQuestions(unittest.TestCase):
             self.assertIn(row["agree"], ("yes", "no"))
 
 
+class WhatIsNotCurrentMayNotBePrintedAsCurrent(unittest.TestCase):
+    """The operator's five inequalities, as tests (2026-09-18 P0 review).
+
+    Each of these failed in production in a way a reader could not see: the window was
+    well-formed and the values were well-formed.  Only the *claim* was wrong.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def report(self):
+        return st.TruthAudit(self.tmp, now=NOW).report()
+
+    # -- P0-2: a 46-hour-old role read is not the logged-in character ----------------
+
+    def test_a_persisted_role_never_heads_a_current_role(self):
+        write(self.tmp, st.ROLE_ARTIFACT, {
+            "role_id": "1171757165", "role_name": "xhw小号", "observed_at":
+            (NOW - timedelta(hours=46)).isoformat(), "verification": "VISION_READ",
+            "evidence": ["frame.png"],
+        })
+        role = self.report().by_name("current_role")
+        self.assertEqual(role.headline, st.UNKNOWN)
+        self.assertEqual(role.category, "STALE")
+        self.assertIn("xhw小号", role.last_known)
+        self.assertFalse(role.current)
+
+    def test_a_fresh_role_read_heads_it_with_the_name(self):
+        write(self.tmp, st.ROLE_ARTIFACT, {
+            "role_id": "1171757165", "role_name": "xhw小号",
+            "observed_at": (NOW - timedelta(seconds=12)).isoformat(),
+            "verification": "VISION_READ", "evidence": ["frame.png"],
+        })
+        role = self.report().by_name("current_role")
+        self.assertEqual(role.headline, "xhw小号（账号 1171757165）")
+        self.assertTrue(role.current)
+        self.assertEqual(role.last_known, "")
+
+    # -- P0-1: HISTORY is not a current event ---------------------------------------
+
+    def test_an_event_whose_own_window_elapsed_is_history(self):
+        # The measured record: 28 795 s left when verified, nine days ago.
+        write(self.tmp, st.EVENT_STATE, {
+            "event_id": "KINGDOM_OF_POWER_CURRENT", "name": "最强王国·击败野兽",
+            "verified_at": (NOW - timedelta(hours=217)).isoformat(),
+            "remaining_seconds_at_verification": 28795,
+            "current_points": 11250, "target_points": 80000, "points_missing": 68750,
+            "source": "LIVE_CLIENT",
+        })
+        events = self.report().by_name("events")
+        self.assertEqual(events.value, "当前活动尚未实时确认")
+        row = next(r for r in events.items if r["event_name"] == "最强王国·击败野兽")
+        self.assertEqual(row["status"], st.HISTORY)
+        self.assertFalse(row["planner_usable"])
+        self.assertEqual(row["confidence"], 0.0)
+        self.assertIn("窗口早已结束", row["note"])
+
+    def test_a_record_inside_its_own_window_is_live_and_usable(self):
+        write(self.tmp, st.EVENT_STATE, {
+            "event_id": "X", "name": "当前活动", "verified_at": (NOW - timedelta(minutes=20)).isoformat(),
+            "remaining_seconds_at_verification": 7200, "source": "LIVE_CLIENT",
+        })
+        row = next(r for r in self.report().by_name("events").items if r["event_id"] == "X")
+        self.assertEqual(row["status"], st.LIVE_OBSERVED)
+        self.assertTrue(row["planner_usable"])
+
+    def test_knowledge_base_entries_are_never_current(self):
+        write(self.tmp, "knowledge/events/bear_hunt.json", {"event_id": "BEAR", "name": "巨熊行动"})
+        events = self.report().by_name("events")
+        row = next(r for r in events.items if r["event_name"] == "巨熊行动")
+        self.assertEqual(row["status"], st.HISTORY)
+        self.assertFalse(row["planner_usable"])
+
+    def test_several_activities_can_be_current_at_once(self):
+        # The model is a list: a window that can only show one hides the other.
+        write(self.tmp, st.EVENT_STATE, {
+            "event_id": "A", "name": "活动甲", "verified_at": (NOW - timedelta(minutes=5)).isoformat(),
+            "remaining_seconds_at_verification": 7200,
+        })
+        write(self.tmp, "knowledge/events/b.json", {"event_id": "B", "name": "活动乙"})
+        events = self.report().by_name("events")
+        self.assertEqual(len([r for r in events.items if r["status"] == st.LIVE_OBSERVED]), 1)
+        self.assertEqual(len([r for r in events.items if r["status"] == st.HISTORY]), 1)
+
+    # -- P0-3: jobs ≠ gateway health ------------------------------------------------
+
+    def test_a_working_job_never_makes_the_gateway_healthy(self):
+        write(self.tmp, st.ESCALATIONS, [
+            {"source": "queue", "event": "escalation_created", "key": "K", "capability": "CAP"},
+            {"source": "queue", "event": "submitted", "key": "K", "job_id": "d8ea0e44"},
+            {"source": "queue", "event": "job_state", "key": "K", "state": "WORKING"},
+        ])
+        report = self.report()
+        self.assertIn("WORKING", report.by_name("workbuddy_jobs").value)
+        gateway = report.by_name("gateway_health")
+        self.assertEqual(gateway.status, st.UNKNOWN)
+        self.assertIn("不能", gateway.note)
+
+    def test_a_timing_out_gateway_is_a_conflict_with_its_backoff(self):
+        write(self.tmp, st.GATEWAY_PROBE, {
+            "available": False, "reason": "GatewayUnavailable", "checked_at_utc": NOW.isoformat(),
+            "consecutive_failures": 3, "backoff_seconds": 120, "last_ok_at": "",
+        })
+        gateway = self.report().by_name("gateway_health")
+        self.assertEqual(gateway.value, "异常")
+        self.assertEqual(gateway.status, st.CONFLICT)
+        self.assertIn("连续 3 次失败", gateway.note)
+        self.assertIn("退避 120 秒", gateway.note)
+
+    # -- P0-4: AUTO is graded on what it produced ------------------------------------
+
+    def test_a_fresh_episode_makes_auto_running(self):
+        write(self.tmp, st.EPISODES, [episode((NOW - timedelta(seconds=40)).isoformat())])
+        auto = self.report().by_name("auto_state")
+        self.assertEqual(auto.status, st.LIVE_OBSERVED)
+        self.assertIn("运行中", auto.value)
+
+    def test_between_rounds_with_a_live_panel_is_waiting_not_broken(self):
+        write(self.tmp, st.PANEL_STATE, {"operator_intent": "RUNNING"})
+        write(self.tmp, st.PUMP, {"process": 1234, "written_at": NOW.isoformat()})
+        write(self.tmp, st.EPISODES, [episode((NOW - timedelta(minutes=22)).isoformat())])
+        auto = self.report().by_name("auto_state")
+        self.assertEqual(auto.status, st.FRESH_RUNTIME)
+        self.assertIn("本轮之间", auto.value)
+        self.assertNotIn("未确认", auto.value)
+
+    def test_no_panel_and_no_work_is_unconfirmed_not_normal(self):
+        write(self.tmp, st.EPISODES, [episode((NOW - timedelta(hours=9)).isoformat())])
+        auto = self.report().by_name("auto_state")
+        self.assertEqual(auto.status, st.STALE)
+        self.assertEqual(auto.value, "未确认")
+
+    def test_the_legacy_in_process_flags_are_not_the_evidence(self):
+        # The snapshot says the thread and scheduler are not running; in this architecture
+        # they are written False by the panel itself and can never be evidence.
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "agent_state": "IDLE", "mode": "AUTO",
+            "runtime_thread_alive": False, "scheduler_loop_alive": False,
+        })
+        write(self.tmp, st.PUMP, {"process": 1234, "written_at": NOW.isoformat()})
+        write(self.tmp, st.EPISODES, [episode((NOW - timedelta(seconds=30)).isoformat())])
+        auto = self.report().by_name("auto_state")
+        self.assertEqual(auto.status, st.LIVE_OBSERVED)
+        self.assertIn("上一代", auto.note)
+
+    # -- the unified vocabulary -----------------------------------------------------
+
+    def test_every_status_maps_into_the_operators_words(self):
+        words = {"LIVE_OBSERVED", "FRESH_LAST_KNOWN", "STALE", "HISTORY",
+                 "EXPECTED", "REQUESTED", "UNKNOWN", "CONFLICT"}
+        for status in st.STATUS_RANK:
+            self.assertIn(st.CATEGORY_OF[status], words, status)
+
+
 if __name__ == "__main__":
     unittest.main()

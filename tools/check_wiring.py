@@ -1156,6 +1156,45 @@ def main() -> int:
           and "PANEL_CLOCK_MAX_AGE_SECONDS" in _panel_source
           and _panel_source.count("observes_only(self)") >= 4
           and "else:\n            self.pump.start()" in _panel_source)
+    check("gui: the window grades the gateway, never the job's last known state",
+          "def gateway_health(" in _truth_source
+          and 'self._set_health("dot_wb", report.by_name("gateway_health"))' in _panel_source
+          and "不能" in _truth_source
+          and "GATEWAY_PROBE_PATH" in _panel_source
+          and '"consecutive_failures"' in _panel_source)
+    check("gui: a timing-out gateway backs off instead of being retried flat out",
+          "GATEWAY_BACKOFF" in _panel_source
+          and "self._gateway_next_at" in _panel_source
+          and "30.0, 60.0, 120.0, 300.0" in _panel_source)
+    check("truth: an activity record is graded by its own window, and history is not current",
+          "def events(" in _truth_source
+          and "def legacy_event_row(" in _truth_source
+          and "planner_usable" in _truth_source
+          and "当前活动尚未实时确认" in _truth_source
+          and "legacy_event_row_for(" in _panel_source
+          and "历史参考（不参与当前 Planner）" in _panel_source)
+    check("truth: the role headline refuses a value that is not current",
+          "def headline(" in _truth_source
+          and "def last_known(" in _truth_source
+          and 'self.values["role"].set(role.headline)' in _panel_source
+          and "Last Known：" in _panel_source)
+    check("truth: AUTO is graded on work, not on the legacy in-process flags",
+          "def auto_state(" in _truth_source
+          and "AUTO_WORKING_SECONDS" in _truth_source
+          and "上一代" in _truth_source
+          and "本轮之间" in _truth_source)
+    check("truth: a released lease is history, not an orphan",
+          "if self.released_at is not None:\n            return False" in
+          (PKG / "device_lease.py").read_text(encoding="utf-8")
+          and "VALIDATION_LEASE_ORPHANED" in _truth_source
+          and "expired_unreleased" not in _truth_source)
+    check("gui: the operator's eight words come from one mapping",
+          "CATEGORY_OF" in _truth_source
+          and set(_truth.STATUS_RANK) <= set(_truth.CATEGORY_OF))
+    check("gui: a switch never renders its state as a cross",
+          "def policy_toggle_label(" in _panel_source
+          and "ttk.Checkbutton(grid, text=name" not in _panel_source
+          and "def _toggle_policy(" in _panel_source)
     check("gui: an independent verifier checks every field against its source",
           (ROOT / "tools/gui_wiring_verify.py").is_file()
           and "WIRING" in (ROOT / "tools/gui_wiring_verify.py").read_text(encoding="utf-8")

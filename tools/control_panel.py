@@ -133,6 +133,11 @@ PANEL_LOG_PATH = LOG_ROOT / "panel.log"
 # know whether the consumer is actually running -- a thread inside a GUI cannot be
 # checked from outside any other way, and "it is started on line N" is not evidence.
 PUMP_STATE_PATH = LOG_ROOT / "pump.json"
+# The gateway probe's last result.  Persisted for the same reason the pump's tick is: a
+# state that lives only in this process's memory cannot be audited from outside, and
+# "the job says WORKING so the gateway must be fine" is exactly the inference that made
+# the top bar say 正常 while the log was full of 15-second timeouts.
+GATEWAY_PROBE_PATH = LOG_ROOT / "gateway.json"
 
 
 def observes_only(panel: Any) -> bool:
@@ -441,6 +446,19 @@ def task_toggle_label(name: str, enabled: bool, available: bool = True) -> str:
     """Unambiguous user-facing task state; never use a cross for enabled."""
     if not available:
         return f"◇ {name} · 待接入"
+    return f"✓ {name} · 已启用" if enabled else f"○ {name} · 未启用"
+
+
+def policy_toggle_label(name: str, enabled: bool, *, editable: bool = True) -> str:
+    """The same vocabulary for the strategy switches (operator P1, 2026-09-18).
+
+    The page rendered each policy as a bare ``Checkbutton``, and the indicator read as a
+    ✕ to the operator -- a glyph reserved for 关闭/取消/失败/拒绝, never for "enabled".
+    The marker is now written into the label, and a rule that cannot be edited says so
+    instead of looking like a switch the operator may operate.
+    """
+    if not editable:
+        return f"🔒 {name} · 永久禁止（安全规则，不可修改）"
     return f"✓ {name} · 已启用" if enabled else f"○ {name} · 未启用"
 
 
@@ -1405,6 +1423,9 @@ class PanelProbes:
         self._device_probe = device
         self._lock = threading.Lock()
         self._gateway: dict[str, Any] = {"available": None, "reason": "", "job": {}, "checked_at": ""}
+        # The gateway back-off ladder's position, and when the next probe may happen.
+        self._gateway_failures = 0
+        self._gateway_next_at: datetime | None = None
         self._device: dict[str, Any] = {"ok": None, "status": None, "error": "", "checked_at": ""}
         self._truth: dict[str, Any] = {"ok": None, "report": None, "checked_at": ""}
         self._watch: str = ""
@@ -1497,9 +1518,19 @@ class PanelProbes:
             self._truth = state
 
     def _poll_gateway(self) -> None:
+        # A gateway that is not answering must not be asked every five seconds.  Measured
+        # 2026-09-18: the log carried a 15-second timeout per poll, back to back, while
+        # the development page showed GatewayUnavailable for /api/v1/jobs/d8ea0e44.  The
+        # probe thread was almost entirely blocked in those timeouts, and the gateway was
+        # being retried as hard as the loop could manage.  Consecutive failures now back
+        # off (30s → 60 → 120 → 300) and one success clears the count.
+        moment = datetime.now(timezone.utc)
+        with self._lock:
+            if self._gateway_next_at is not None and moment < self._gateway_next_at:
+                return
         state: dict[str, Any] = {"available": None, "reason": "", "job": {},
                                  "checked_at": datetime.now().strftime("%H:%M:%S"),
-                                 "checked_at_utc": datetime.now(timezone.utc).isoformat()}
+                                 "checked_at_utc": moment.isoformat()}
         try:
             from winter_agent_v2.workbuddy_bridge import WorkBuddyBridge
 
@@ -1518,8 +1549,48 @@ class PanelProbes:
         except Exception as exc:  # noqa: BLE001 - a poll must never reach the UI as an exception
             state["available"] = False
             state["reason"] = f"{type(exc).__name__}: {exc}"
+        self._record_gateway(state, now=moment)
+
+    # Back-off ladder for a gateway that keeps timing out.  Bounded: the last rung is five
+    # minutes, so a gateway that comes back is noticed without the panel ever giving up.
+    GATEWAY_BACKOFF = (30.0, 60.0, 120.0, 300.0)
+
+    def _record_gateway(self, state: dict[str, Any], *, now: datetime) -> None:
+        """Persist the probe and decide when the next one may happen.
+
+        Persisted because the gateway's health is a *state the operator asked to be able
+        to check*, and because the truth projection may only report what an artifact says:
+        a value living in this process's memory cannot be audited, and "Job=WORKING so the
+        gateway must be fine" is exactly the inference that made the top bar lie.
+        """
         with self._lock:
+            previous = dict(self._gateway)
+            if state.get("available") is True:
+                self._gateway_failures = 0
+                self._gateway_next_at = None
+                state["consecutive_failures"] = 0
+                state["last_ok_at"] = now.isoformat()
+                state["backoff_seconds"] = 0
+            elif state.get("available") is False:
+                self._gateway_failures = int(self._gateway_failures or 0) + 1
+                rung = min(self._gateway_failures, len(self.GATEWAY_BACKOFF)) - 1
+                wait = self.GATEWAY_BACKOFF[max(rung, 0)]
+                self._gateway_next_at = now + timedelta(seconds=wait)
+                state["consecutive_failures"] = self._gateway_failures
+                state["backoff_seconds"] = wait
+                state["last_ok_at"] = str(previous.get("last_ok_at") or "")
+            else:
+                # Unknown is not a failure and not a success: do not move the ladder.
+                state["consecutive_failures"] = int(self._gateway_failures or 0)
+                state["backoff_seconds"] = 0
+                state["last_ok_at"] = str(previous.get("last_ok_at") or "")
             self._gateway = state
+        try:
+            path = Path(GATEWAY_PROBE_PATH)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
+        except Exception:  # noqa: BLE001 - an unwritable probe must not kill the thread
+            pass
 
     def _poll_device(self) -> None:
         """Read the real device state.  Read-only: it never connects or launches anything."""
@@ -2118,9 +2189,21 @@ class ControlPanel:
         ttk.Label(tab, text="自动化策略", style="Title.TLabel").pack(anchor="w", pady=(5, 4))
         ttk.Label(tab, text="这里只控制 Goal Category / Policy；Universal Skill 由唯一 Scheduler 按 Goal 与实时状态调用。", style="Muted.TLabel").pack(anchor="w", pady=(0, 14))
         grid = ttk.Frame(tab, style="Card.TFrame", padding=18); grid.pack(fill="x")
+        ttk.Label(grid, text="以下开关可修改，会写入 config/policy_state.json；"
+                  "只读规则（🔒）不提供控件，因为它们不是设置。",
+                  style="Muted.TLabel", background=PANEL, wraplength=1200, justify="left").grid(
+            row=0, column=0, columnspan=4, sticky="w", pady=(0, 8))
+        self.policy_buttons: dict[str, Any] = {}
         for index, (name, var) in enumerate(self.policy_enabled.items()):
-            ttk.Checkbutton(grid, text=name, variable=var, command=self._save_policy_state).grid(
-                row=index // 4, column=index % 4, sticky="w", padx=18, pady=10)
+            # The label carries the state (✓ 已启用 / ○ 未启用) and is refreshed on toggle:
+            # the indicator alone was read as a ✕, which this project reserves for
+            # 关闭/取消/失败/拒绝.
+            button = ttk.Checkbutton(
+                grid, text=policy_toggle_label(name, bool(var.get())), variable=var,
+                command=lambda n=name: self._toggle_policy(n),
+            )
+            button.grid(row=1 + index // 4, column=index % 4, sticky="w", padx=18, pady=10)
+            self.policy_buttons[name] = button
             grid.columnconfigure(index % 4, weight=1)
         reward = ttk.Frame(tab, style="Card.TFrame", padding=18); reward.pack(fill="x", pady=(12, 0))
         ttk.Label(reward, text="Reward Policy · FREE_CLAIM_FIRST", style="Section.TLabel", background=PANEL).pack(anchor="w")
@@ -2133,6 +2216,21 @@ class ControlPanel:
         for row, (name, value) in enumerate(policies, 1):
             ttk.Label(resource, text=name, style="Muted.TLabel", background=PANEL, width=16).grid(row=row, column=0, sticky="w", pady=5)
             ttk.Label(resource, text=value, background=PANEL, foreground=BAD if name == "真实支付" else TEXT).grid(row=row, column=1, sticky="w", pady=5)
+
+    def _toggle_policy(self, name: str) -> None:
+        """Redraw the switch's own label, then persist -- in that order.
+
+        The label is the state (✓ 已启用 / ○ 未启用); a control that only repaints its
+        indicator is the thing the operator could not read.  The write is the same one the
+        page always did, so this changes what is shown, not what is stored.
+        """
+        button = getattr(self, "policy_buttons", {}).get(name)
+        if button is not None:
+            try:
+                button.configure(text=policy_toggle_label(name, bool(self.policy_enabled[name].get())))
+            except Exception:  # noqa: BLE001 - a label must not break a real write
+                pass
+        self._save_policy_state()
 
     def _save_policy_state(self) -> None:
         path = ROOT / "config/policy_state.json"
@@ -2237,32 +2335,74 @@ class ControlPanel:
             self.coverage_tree.insert("", "end", values=(item.get("skill_id"), item.get("blocked_goals"), item.get("automation_leverage")))
 
     def _refresh_event_goal_display(self) -> None:
-        path = ROOT / "learning/event_goal_state.json"
-        try:
-            item = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        """The activity page: what is live now, and separately what is only history.
+
+        Operator P0-1, 2026-09-18: this page showed 最强王国·击败野兽 as the running
+        activity while its own fields said 数据来源 HISTORY / 最后验证 待验证 / 置信度 0%,
+        verified nine days earlier with its recorded countdown long expired.  A history
+        record now fills the history row only; the current row says it has not been
+        confirmed live, and every number belonging to the old record is prefixed so it
+        cannot be read as today's plan.  The classification is the audit's own
+        (legacy_event_row_for), not a second opinion computed here.
+        """
+        from winter_agent_v2.state_truth import legacy_event_row_for
+
+        row = legacy_event_row_for(ROOT)
+        if not row:
+            for key in self.event_goal_vars:
+                self.event_goal_vars[key].set("暂无数据")
+            if hasattr(self, "queues") and "活动" in self.queues:
+                self.queues["活动"].set("未读到")
             return
-        remaining = int(item.get("remaining_seconds_at_verification", 0))
-        current_record = event_goal_is_current(item)
+
+        raw = row.get("raw") or {}
+        live = bool(row.get("planner_usable"))
+        prefix = "" if live else "历史参考（不参与当前 Planner）："
+        remaining = row.get("remaining_seconds_at_verification")
+
+        def number(key: str, default: str = "暂无数据") -> str:
+            value = raw.get(key)
+            if value is None:
+                return prefix + default
+            try:
+                return prefix + f"{int(value):,}"
+            except (TypeError, ValueError):
+                return prefix + str(value)
+
+        confidence = row.get("confidence")
         values = {
-            "name": item.get("name", "暂无数据"), "current": f"{int(item.get('current_points', 0)):,}",
-            "phase": item.get("event_phase", "待识别"),
-            "source": item.get("data_source", "LIVE_CLIENT" if current_record else "HISTORY · 仅参考"),
-            "last_verified": item.get("last_verified", item.get("updated_at", "待验证")),
-            "confidence": f"{float(item.get('confidence', 0)):.0%}", "tier": item.get("target_tier", "低保目标档"),
-            "target": f"{int(item.get('target_points', 0)):,}", "missing": f"{int(item.get('points_missing', 0)):,}",
-            "remaining": f"{remaining // 3600:02d}:{remaining % 3600 // 60:02d}:{remaining % 60:02d}",
-            "status": ("✓ 今日低保完成" if item.get("minimum_guarantee_complete") else "⚠ 未完成") if current_record else "⚠ 历史记录；今日活动待检查",
-            "plan": item.get("plan", "暂无数据"), "resource": item.get("resource_spent", "暂无数据"),
-            "estimated_cost": item.get("estimated_cost", "待计算"),
-            "estimated_completion": item.get("estimated_completion", "待计算"),
-            "verified": f"积分增加 {int(item.get('verified_points_gain', 0)):,}",
-            "rewards": "全部目标档位已领取" if item.get("all_target_rewards_claimed") else "仍有奖励待领取",
+            # Only a current row may carry a name under this heading.
+            "name": row.get("event_name") if live else "当前活动尚未实时确认",
+            "current": number("current_points"),
+            "phase": (raw.get("event_phase") or "待识别") if live else "—",
+            "source": row.get("source") or "",
+            "last_verified": row.get("observed_at") or "待验证",
+            "confidence": "—" if confidence is None else f"{float(confidence):.0%}",
+            "tier": (raw.get("target_tier") or "低保目标档") if live else "—",
+            "target": number("target_points"),
+            "missing": number("points_missing"),
+            "remaining": ("—" if remaining is None else
+                          f"{int(remaining) // 3600:02d}:{int(remaining) % 3600 // 60:02d}:{int(remaining) % 60:02d}"),
+            "status": (
+                ("✓ 今日低保完成" if raw.get("minimum_guarantee_complete") else "⚠ 未完成")
+                if live else
+                f"⚠ 历史记录；今日活动待检查 —— {row.get('note') or ''}"
+            ),
+            "plan": (raw.get("plan") or "暂无数据") if live else "—（历史计划不参与当前执行）",
+            "resource": number("resource_spent") if raw.get("resource_spent") else "暂无数据",
+            "estimated_cost": (raw.get("estimated_cost") or "待计算") if live else "—",
+            "estimated_completion": (raw.get("estimated_completion") or "待计算") if live else "—",
+            "verified": number("verified_points_gain"),
+            "rewards": ("全部目标档位已领取" if raw.get("all_target_rewards_claimed")
+                        else "仍有奖励待领取") if live else "—（不参与当前执行）",
         }
         for key, value in values.items():
             self.event_goal_vars[key].set(value)
         if hasattr(self, "queues") and "活动" in self.queues:
-            self.queues["活动"].set(("低保完成" if item.get("minimum_guarantee_complete") else f"缺 {int(item.get('points_missing', 0)):,}") if current_record else "今日待检查")
+            self.queues["活动"].set(
+                ("低保完成" if raw.get("minimum_guarantee_complete") else
+                 f"缺 {int(raw.get('points_missing', 0)):,}") if live else "未实时确认"
+            )
 
     def _capabilities(self) -> None:
         tab = self._tab("能力", scroll=True)
@@ -2773,12 +2913,23 @@ class ControlPanel:
 
         role = report.by_name("current_role")
         if role is not None:
-            self.values["role"].set(role.display)
-            bits = [STATUS_ZH_TRUTH.get(role.status, role.status)]
-            if role.age_seconds is not None:
-                bits.append(f"{role.age_seconds / 3600:.1f} 小时前")
-            if role.role_id:
-                bits.append(f"账号 {role.role_id}")
+            # The operator's format (P0-2): a heading that says 当前角色 may only carry a
+            # *current* identity.  A persisted one is 未确认 with its last known value
+            # beneath, never the headline -- that is how a 46-hour-old read came to be
+            # shown as the logged-in character.
+            from winter_agent_v2.state_truth import CATEGORY_OF
+
+            self.values["role"].set(role.headline)
+            bits = [f"身份状态：{CATEGORY_OF.get(role.status, role.status)}"
+                    f"（{STATUS_ZH_TRUTH.get(role.status, role.status)}）"]
+            if role.last_known:
+                when = (f"{role.age_seconds / 3600:.1f} 小时前"
+                        if role.age_seconds is not None else "时间未知")
+                bits.append(f"Last Known：{role.last_known} · {when}")
+            elif role.status == "UNKNOWN":
+                bits.append("没有任何角色观测记录")
+            if role.source:
+                bits.append(f"来源 {role.source}")
             self.values["role_state"].set(" · ".join(bits))
         conflicts = report.conflicts
         if conflicts:
@@ -2792,7 +2943,11 @@ class ControlPanel:
         self._set_health("dot_boot", report.by_name("bootstrap"))
         self._set_health("dot_maa", report.by_name("maa_state"))
         self._set_health("dot_v2", report.by_name("watchdog"))
-        self._set_health("dot_wb", report.by_name("workbuddy_jobs"))
+        # Gateway health, **not** the job's last known state (operator P0-3).  A job that
+        # says WORKING says nothing about whether anything is reachable.
+        self._set_health("dot_wb", report.by_name("gateway_health"))
+        self._workbuddy = report.by_name("workbuddy_job")
+        self._gateway_value = report.by_name("gateway_health")
 
         idle = report.by_name("why_idle")
         if idle is not None:
