@@ -175,3 +175,58 @@ unverified feature.
 The operator's instruction is explicit: use the official HTTP API, not a
 third-party proxy. Nothing in the measured contract needs one, and each hop would
 be another place the credential lives.
+
+## 8. The contract changed: a request marker is now required (re-measured 2026-09-18 20:14)
+
+The contract above was measured against **2.137.1** on 2026-09-17 and it said
+`Authorization: Bearer <password>` was sufficient for `/api/v1/health`. It is not
+any more. Re-measured against the gateway running as **pid 11304**
+(`--serve --port 8080 --session-id winter-agent-v2`):
+
+| request | answer |
+| --- | --- |
+| no extra header | `403 {"error": "Missing required header: x-codebuddy-request"}` |
+| `x-codebuddy-request: 1` (any non-empty value) | `401 AUTH_REQUIRED` — the marker is satisfied |
+| marker + `Authorization: Bearer <settings.json password>` | **`200 {"data":{"status":"ok","pid":11304}}`** |
+| marker + `Authorization: Bearer <CODEBUDDY_GATEWAY_PASSWORD>` | `401 AUTH_REQUIRED` |
+
+Two separate facts, both of which cost a working gateway its life:
+
+1. **The marker.** Its value only has to be non-empty; `1`, `true` and `cli` all
+   behaved identically. `winter_agent_v2/workbuddy_bridge.py` now sends
+   `x-codebuddy-request: 1` on every request (`REQUEST_MARKER_HEADER`).
+2. **The environment credential was stale.** The 43-character
+   `CODEBUDDY_GATEWAY_PASSWORD` in this session's environment is *rejected* (401)
+   while the 24-character password in `settings.json` is *accepted*. §2 of the
+   earlier measurement still holds — "the credential resolution order is
+   environment, then settings, then generated" — but the bridge only falls back to
+   the persisted one **on a 401**. Because the missing marker produced a **403**,
+   the fallback never ran, so a correctly-running gateway looked unreachable.
+
+### Why this looked like a process problem and was not
+
+`gateway.json` recorded `available=false`, so `GatewayService` concluded the
+gateway was wedged and **killed and restarted it four times** (`restart_attempts=4`,
+`consecutive_failures=122`), while `pump.json` accumulated 22 identical errors
+reconciling job `d8ea0e44`. The process had never been at fault.
+
+The lifecycle now separates the two:
+`Measurement.reachable` distinguishes *nothing came back* from *it answered and
+refused us*. Only silence justifies a restart, because restarting a process cannot
+change a request header or a credential; a refusal becomes `REJECTING` with the
+reason named.
+
+### And a lost job is not an unreachable one
+
+`GET /api/v1/jobs/d8ea0e44` answered `404 {"code":"JOB_NOT_FOUND"}`. **Jobs do not
+survive their gateway instance**, so a restart strands the ledger on work that can
+never finish — and because that was raised as the same `GatewayUnavailable` used
+for a dead port, the record stayed `WORKING` and held the single development slot
+(`max_concurrent_jobs = 1`), refusing every escalation behind it with
+`CONCURRENCY_WAIT`. The queue was deadlocked by a ghost.
+
+`status()` now raises `JobLost` (a subclass, so existing handlers keep working), the
+adapter folds it to a terminal `FAILED` with `outcome = JOB_LOST`, and the slot is
+freed for the capability to be re-offered from its budget rather than silently
+duplicated (operator §六).
+

@@ -284,6 +284,33 @@ def alive(pid: int, *, timeout: float = 20.0) -> bool:
     return "python" in process_name(pid, timeout=timeout).lower()
 
 
+def listeners(port: int, *, timeout: float = 20.0) -> list[int]:
+    """Every ``(pid, ...)`` listening on ``port``, so "is there more than one?" is answerable.
+
+    :func:`port_owner` returns the *first* owner, which is the right answer to "who holds
+    this port" and the wrong answer to "is a second gateway running" -- the second one looks
+    exactly like the first from the outside, and that is the failure §五 names.  Measured
+    2026-09-18: the soak's duplicate check needs the count, not the winner.
+    """
+    result = run(["netstat", "-ano"], timeout=timeout)
+    if result.returncode != 0:
+        return []
+    found: list[int] = []
+    for line in (result.stdout or "").splitlines():
+        parts = line.split()
+        if len(parts) < 5 or "LISTEN" not in line.upper():
+            continue
+        if not parts[1].endswith(f":{port}"):
+            continue
+        try:
+            pid = int(parts[-1])
+        except ValueError:
+            continue
+        if pid not in found:
+            found.append(pid)
+    return found
+
+
 def port_owner(port: int, *, timeout: float = 20.0) -> tuple[int, str]:
     """``(pid, process_name)`` listening on ``port``, or ``(0, "")`` when nobody is.
 

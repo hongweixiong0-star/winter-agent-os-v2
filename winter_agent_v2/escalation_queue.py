@@ -48,6 +48,7 @@ What it is careful about
 from __future__ import annotations
 
 from .winproc import hidden_kwargs
+from .workbuddy_bridge import JobLost
 
 import json
 import re
@@ -270,6 +271,12 @@ LIVE_TRIED = "LIVE_TRIED"
 LIVE_VERIFIED = "LIVE_VERIFIED"
 OUTCOME_BLOCKED = "BLOCKED"
 NO_IMPROVEMENT = "NO_IMPROVEMENT"
+# The gateway is up and reports the job does not exist (measured 2026-09-18: HTTP 404
+# ``JOB_NOT_FOUND`` for a job the ledger still had as WORKING).  Kept as an *outcome* rather
+# than as a tenth lifecycle state: the record folds to FAILED, which is terminal and frees
+# the single concurrency slot, while this name preserves the cause -- "the work did not
+# finish" and "the work did not finish because it vanished" lead to different next actions.
+JOB_LOST = "JOB_LOST"
 
 ALL_OUTCOMES: tuple[str, ...] = (
     CODE_CHANGED, TEST_PASS, VERSION_ACTIVATION_PENDING, REPLAY_PASS, LIVE_TRIED,
@@ -593,6 +600,29 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
                 record.state = job_state
             if event.get("repair_used"):
                 record.repairs_used += 1
+            continue
+
+        if kind == "job_lost":
+            # The gateway is up and says this job does not exist (HTTP 404 JOB_NOT_FOUND).
+            # Measured 2026-09-18 20:20: record ``SPEND_STAMINA_ON_BEAST`` held the single
+            # concurrency slot with job d8ea0e44, and the gateway answered JOB_NOT_FOUND --
+            # so every escalation behind it was refused with CONCURRENCY_WAIT by a job that
+            # could never finish.  Jobs do not survive their gateway instance, so a restart
+            # strands the ledger pointing at work that is gone.
+            #
+            # Folded to FAILED (terminal) rather than to a tenth lifecycle state: this is the
+            # same shape as STOPPED above -- a job that will never report again and must not
+            # keep holding the slot -- and a new state would have to be taught to every
+            # consumer (the fold, the panel strips, the truth projection) for no extra
+            # decision.  The *cause* is kept, in the outcome and in the notes, because "the
+            # work did not finish" and "the work did not finish because it vanished" lead to
+            # different next actions: the second one is re-submitted from the budget, not
+            # repaired.
+            record = get(key)
+            record.state = FAILED
+            record.outcome = JOB_LOST
+            record.settled_at = _moment(event.get("recorded_at")) or record.settled_at
+            record.notes.append(f"job lost: {str(event.get('reason') or '')[:200]}")
             continue
 
         if kind == "blocked":
@@ -2366,6 +2396,24 @@ class EscalationQueueAdapter:
                 continue
             try:
                 status = self.bridge.status(record.job_id)
+            except JobLost as exc:
+                # §六, finally with a branch of its own: the gateway is up and says this job
+                # does not exist.  Recording it as "an error" (which is what the generic
+                # handler below did) left the record SUBMITTED/WORKING forever, holding the
+                # one slot, so no other escalation could be dispatched and the pump reported
+                # the same 404 as an error every thirty seconds.  Marked lost so the fold
+                # settles it and the slot is freed; the capability is then re-offered from
+                # the budget rather than silently duplicated.
+                self.ledger.append({
+                    "event": "job_lost",
+                    "key": record.key,
+                    "job_id": record.job_id,
+                    "state": FAILED,
+                    "reason": str(exc)[:300],
+                })
+                settled.append(f"{record.key}: JOB_LOST（网关已确认该 Job 不存在，"
+                               "按已完成结算并释放并发槽，不重复建同能力 Job）")
+                continue
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{record.key}: status({record.job_id}) failed: {exc}")
                 continue

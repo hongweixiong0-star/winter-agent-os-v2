@@ -88,6 +88,29 @@ DEFAULT_BASE_URL = "http://127.0.0.1:8080"
 HEALTH_PATH = "/api/v1/health"
 JOBS_PATH = "/api/v1/jobs"
 
+#: Every request must carry this header, and its value only has to be non-empty.
+#:
+#: Measured 2026-09-18 20:14 against the gateway running as pid 11304
+#: (``--serve --port 8080 --session-id winter-agent-v2``):
+#:
+#:     no header                                 -> 403 {"error": "Missing required header: x-codebuddy-request"}
+#:     any non-empty x-codebuddy-request         -> 401 AUTH_REQUIRED   (the marker is satisfied)
+#:     ... plus Authorization: Bearer <settings> -> 200 {"data":{"status":"ok","pid":11304}}
+#:
+#: The recorded contract in ``WORKBUDDY_GATEWAY_CONTRACT.md`` says a bare
+#: ``Authorization: Bearer`` was enough, and it was, against 2.137.1 on 2026-09-17.  This
+#: build added a request marker, and because 403 is not 401 the bridge's existing
+#: "retry once with the persisted password" fallback never ran -- so a *running* gateway
+#: looked unreachable, the GUI said 异常, and the lifecycle owner kept killing and
+#: restarting a perfectly healthy process for four attempts.  Nothing about that failure
+#: was a process problem; the process was fine and the request was malformed.
+REQUEST_MARKER_HEADER = "x-codebuddy-request"
+REQUEST_MARKER_VALUE = "1"
+
+#: The gateway's own words when the marker is missing, so this can be reported as the
+#: specific misconfiguration it is rather than as "unreachable".
+MISSING_MARKER = "MISSING_REQUEST_MARKER"
+
 # Measured: creating a job returns in ~1 s (the child process starts lazily), but
 # a slow first token on the model side is not the caller's problem here.
 SUBMIT_TIMEOUT_SECONDS = 60.0
@@ -189,6 +212,22 @@ class EscalationRefused(ValueError):
 
 class GatewayUnavailable(RuntimeError):
     """The local gateway did not answer.  Callers should use :func:`is_available`."""
+
+
+class JobLost(GatewayUnavailable):
+    """The gateway is up, and it says this job does not exist.
+
+    Measured 2026-09-18 20:20, gateway pid 11304: ``GET /api/v1/jobs/d8ea0e44`` answered
+    ``HTTP 404 {"code":"JOB_NOT_FOUND"}`` for a job the ledger still recorded as WORKING.
+    Jobs do not survive their gateway, so a restart leaves the ledger pointing at work that
+    can never finish -- and the old code raised the very same ``GatewayUnavailable`` it
+    raises for a dead port, so the two were indistinguishable exactly when the difference
+    mattered most.  A dead port means "ask again later"; a lost job means "this work will
+    never finish, so decide what to do about it and free the slot it is holding".
+
+    A subclass on purpose: every existing ``except GatewayUnavailable`` keeps working, while
+    a caller that wants to act on the distinction can catch this first.
+    """
 
 
 # --------------------------------------------------------------------- redaction
@@ -589,7 +628,7 @@ class WorkBuddyBridge:
         """One HTTP round trip.  Returns ``(status_code, parsed_body)``."""
         url = f"{self.base_url}{path}"
         data = None
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": "application/json", REQUEST_MARKER_HEADER: REQUEST_MARKER_VALUE}
         if payload is not None:
             data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             headers["Content-Type"] = "application/json; charset=utf-8"
@@ -639,6 +678,12 @@ class WorkBuddyBridge:
             return Availability(False, f"UNHEALTHY:{status or 'no status'}", self.base_url, data)
         if code == 401:
             return Availability(False, "AUTH_REJECTED", self.base_url, _error_of(body))
+        if code == 403 and "x-codebuddy-request" in json.dumps(body).lower():
+            # Named separately from a plain HTTP_403: the gateway is alive and telling us
+            # exactly what is missing, and the fix is a header this module now always sends.
+            # A build that asks for something *else* still lands here rather than being
+            # flattened into "unreachable", which is what made a running gateway look dead.
+            return Availability(False, MISSING_MARKER, self.base_url, _error_of(body))
         return Availability(False, f"HTTP_{code}", self.base_url, _error_of(body))
 
     # -- 2. submit --------------------------------------------------------
@@ -717,14 +762,28 @@ class WorkBuddyBridge:
     # -- 3. status --------------------------------------------------------
 
     def status(self, job_id: str) -> JobStatus:
-        """Read one job back.  Raises :class:`GatewayUnavailable` if it cannot."""
+        """Read one job back.
+
+        Raises :class:`JobLost` when the gateway is up and says the job does not exist, and
+        :class:`GatewayUnavailable` when it could not be asked at all.  Those two used to be
+        one exception, which is precisely the conflation the operator's §六 forbids: a lost
+        job must become ``JOB_LOST`` and free its slot, while an unreachable gateway must be
+        retried later.
+        """
         code, body = self._request("GET", f"{JOBS_PATH}/{job_id}")
         data = body.get("data") if isinstance(body.get("data"), Mapping) else {}
         job = data.get("job") if isinstance(data.get("job"), Mapping) else {}
         if not job:
+            error = _error_of(body)
+            error_code = str((error or {}).get("code") or "").upper()
+            if code == 404 or error_code == "JOB_NOT_FOUND":
+                raise JobLost(
+                    f"GET {JOBS_PATH}/{job_id} -> HTTP {code} JOB_NOT_FOUND："
+                    "网关明确表示该 Job 不存在（Job 不跨网关实例存活）"
+                )
             raise GatewayUnavailable(
                 f"GET {JOBS_PATH}/{job_id} -> HTTP {code}: "
-                f"{json.dumps(_error_of(body), ensure_ascii=False)}"
+                f"{json.dumps(error, ensure_ascii=False)}"
             )
         gateway_state = str(job.get("state", ""))
         output = job.get("output") if isinstance(job.get("output"), Mapping) else {}

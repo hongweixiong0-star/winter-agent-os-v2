@@ -75,6 +75,8 @@ RESTARTING = "RESTARTING"
 PORT_CONFLICT = "PORT_CONFLICT"
 #: The port owner is not answering health and is not ours -- same handling, different cause.
 UNREACHABLE = "UNREACHABLE"
+#: The gateway is *answering* and refusing us (401/403): alive, misconfigured, restart-proof.
+REJECTING = "REJECTING"
 #: Cannot start: no password in the environment.  Refusing beats starting a 401 machine.
 NO_CREDENTIAL = "NO_CREDENTIAL"
 #: Not started because the operator said STOP.  The watchdog must not override a human.
@@ -83,7 +85,7 @@ PASSIVE_STOPPED = "PASSIVE_STOPPED"
 UNKNOWN = "UNKNOWN"
 
 STATES = (STARTING, HEALTHY, DEGRADED, OFFLINE, RESTARTING, PORT_CONFLICT, UNREACHABLE,
-          NO_CREDENTIAL, PASSIVE_STOPPED, UNKNOWN)
+          REJECTING, NO_CREDENTIAL, PASSIVE_STOPPED, UNKNOWN)
 
 # --------------------------------------------------------------------- decisions (actions)
 
@@ -339,6 +341,36 @@ def build_plan(root: Path, *, port: int = DEFAULT_PORT, log_path: Path,
 # --------------------------------------------------------------------- the decision
 
 
+#: Reasons that mean the gateway spoke and refused, as opposed to staying silent.
+SILENT_REASONS = frozenset({"", "GATEWAY_UNREACHABLE", "NO_CREDENTIAL"})
+
+
+def _answered(reason: str) -> bool:
+    """Did the bridge get an HTTP answer?  ``False`` = nothing came back over the wire.
+
+    Kept as one predicate because two questions depend on it: whether to *restart* (only
+    silence justifies that) and how to describe the state (a refusal is a request problem,
+    a silence is a process problem).  ``NO_CREDENTIAL`` counts as silence: the bridge refuses
+    to send at all in that case, so no server ever spoke.
+    """
+    return str(reason or "").strip().upper() not in SILENT_REASONS
+
+
+def _rejection(reason: str) -> bool:
+    """Did the gateway answer with a *refusal* rather than not answering at all?
+
+    The distinction is the whole reason these helpers exist: a refusal is a statement about
+    the request, and the process is fine.  ``GATEWAY_UNREACHABLE`` is the bridge's word for
+    "nothing came back", which is the only case a restart can help.
+    """
+    text = str(reason or "").strip().upper()
+    return _answered(text) and (
+        text in ("AUTH_REJECTED", "MISSING_REQUEST_MARKER")
+        or text.startswith("HTTP_4") or text.startswith("HTTP_5")
+        or text.startswith("UNHEALTHY")
+    )
+
+
 @dataclass(frozen=True)
 class Measurement:
     """What was actually observed, as opposed to what the record claims."""
@@ -356,6 +388,13 @@ class Measurement:
     #: an unrelated program, and the gateway that was actually gone would never be
     #: restarted.  ``None`` means the question was not asked (the cheap branch).
     own_pid_is_gateway: bool | None = None
+    #: Did the gateway answer HTTP at all?  ``False`` is "nothing came back" (dead or wedged,
+    #: where a restart is the remedy); ``True`` with ``health`` false is "it answered and
+    #: refused us" (401/403, where a restart is useless and destructive).  Measured
+    #: 2026-09-18: a running gateway asked for a request header this project did not send,
+    #: answered 403, read as unreachable, and was killed and restarted four times -- the
+    #: process was never the problem.
+    reachable: bool | None = None
 
     @property
     def port_taken(self) -> bool:
@@ -428,6 +467,14 @@ def decide(
             # that is simply a slow bind.
             if launched_at and (now - launched_at) < STARTUP_GRACE_SECONDS:
                 return STARTING, ACT_WAIT, f"网关正在启动（已 {(now - launched_at):.0f}s）"
+            if measurement.reachable and _rejection(measurement.health_reason):
+                # It answered, and it told us why it will not serve us.  Killing and
+                # restarting a process that is working perfectly cannot change a request
+                # header or a credential, so the ladder is deliberately not consulted.
+                return REJECTING, ACT_WAIT, (
+                    f"网关在运行并已应答，但拒绝本项目的请求（{measurement.health_reason}）"
+                    "—— 重启不能解决，需要修正请求/凭据；已停止重启以免反复杀死健康进程"
+                )
             # Past the grace window our own process is wedged: replace it.  This is the one
             # case where killing is allowed, because the process is provably ours.
             if now >= next_attempt_at:
@@ -584,6 +631,12 @@ class GatewayService:
             health, reason = self._probe()
         else:
             health, reason = observed
+        # "It answered" is a separate fact from "it said yes".  ``GATEWAY_UNREACHABLE`` and
+        # ``NO_CREDENTIAL`` mean nothing came back over the wire (the second one because the
+        # bridge refused to send anything); every other reason is a server talking.
+        reachable = None if health is None else (
+            True if health is True else _answered(reason)
+        )
         own = int(current.get("pid") or 0)
         own_alive = False
         identity: bool | None = None
@@ -607,7 +660,7 @@ class GatewayService:
                         identity = None
         return Measurement(port_pid=int(pid or 0), port_name=str(name or ""),
                            health=health, health_reason=reason, own_pid_alive=own_alive,
-                           own_pid_is_gateway=identity)
+                           own_pid_is_gateway=identity, reachable=reachable)
 
     def _expected_cli(self, record: Mapping[str, Any]) -> str:
         """The CLI path the recorded launch used -- the needle that proves identity."""
@@ -746,7 +799,7 @@ __all__ = [
     "running_desktop_exe", "default_log_path",
     "ENV_CLI_OVERRIDE", "ENV_LOG_DIR",
     "STARTING", "HEALTHY", "DEGRADED", "OFFLINE", "RESTARTING", "PORT_CONFLICT",
-    "UNREACHABLE", "NO_CREDENTIAL", "PASSIVE_STOPPED", "UNKNOWN", "STATES",
+    "UNREACHABLE", "REJECTING", "NO_CREDENTIAL", "PASSIVE_STOPPED", "UNKNOWN", "STATES",
     "ACT_PASSIVE", "ACT_REUSE", "ACT_WAIT", "ACT_START", "ACT_RESTART",
     "ACT_PORT_CONFLICT", "ACT_NO_CREDENTIAL",
     "DEGRADED_AFTER_FAILURES", "STARTUP_GRACE_SECONDS", "RESTART_BACKOFF",

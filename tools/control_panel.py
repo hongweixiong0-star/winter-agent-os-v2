@@ -6,6 +6,7 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 import tkinter as tk
 import traceback
 import ctypes
@@ -13,7 +14,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tkinter import ttk
-from typing import Any
+from typing import Any, Mapping
 
 from PIL import Image, ImageDraw, ImageTk
 
@@ -1298,6 +1299,188 @@ def gateway_cell(gateway: dict[str, Any], *, now: datetime | None = None,
     return "网关状态待测"
 
 
+#: Set by ``Start-Winter-Agent-V2.cmd`` before it starts the window.  An explicit marker
+#: beats an inference: §三 requires the acceptance to be run by *the production GUI*, and
+#: the window has to be able to say which launch path it came from.
+LAUNCH_PATH_ENV = "WINTER_AGENT_LAUNCH_PATH"
+
+
+def launch_context() -> tuple[str, str]:
+    """``("production" | "development", why)`` -- which launch path this window came from.
+
+    Measured 2026-09-18: a panel started by a development tool's interpreter ran the product
+    correctly but could not be kept alive, because that host reaps its children when the call
+    ends (panels 24936/25408 and every gateway they started, all dead with the call).  §三
+    and §九 are explicit that this is a limitation of the *tooling that builds* the product,
+    not of the product, and that the fix is to move the acceptance into the real launch path
+    rather than to grow detach or WMI workarounds inside the product.
+
+    So the window answers the question honestly, twice over: the marker its launcher set, or
+    -- for a window started by hand -- the fact that it is the production interpreter's
+    sibling (the launcher runs ``pythonw.exe`` beside the proven ``python.exe``).  A window
+    that came from anywhere else says so, and its soak is marked as not being evidence.
+    """
+    marker = str(os.environ.get(LAUNCH_PATH_ENV) or "").strip().lower()
+    if marker == "desktop":
+        return "production", f"{LAUNCH_PATH_ENV}=desktop（正式桌面入口）"
+    try:
+        exe = Path(sys.executable).resolve()
+        production = Path(runtime_python_path()).resolve()
+        if exe.parent == production.parent:
+            return "production", f"运行解释器是生产解释器同目录的 {exe.name}"
+        return "development", f"运行解释器 {exe} 不在生产解释器目录 {production.parent} 内"
+    except Exception as exc:  # noqa: BLE001
+        return "unknown", f"无法判定启动路径：{type(exc).__name__}: {exc}"
+
+
+#: The card is derived from the ledger, the episodes and ``git log``, and the window
+#: refreshes every few seconds -- but the project's rule is that the GUI refresh path does
+#: not run CLIs.  So it is computed at most once a minute, and only when the ledger has
+#: actually changed: the answer moves on the scale of a job, not of a repaint.
+_CLOSURE_CACHE: dict[str, Any] = {"key": None, "at": 0.0, "card": {}}
+CLOSURE_TTL_SECONDS = 60.0
+
+
+def closure_card(root: Path | None = None) -> dict[str, Any]:
+    """The unattended chain, read from the artifacts -- never re-derived here.
+
+    §八 asks the window to show the eight steps with the current ``trace_id`` and the current
+    breakpoint.  All of it already exists: ``tools/unattended_closure.py`` joins the ledger,
+    the episodes and the commits by ``trace_id`` and reports ``failure_step``.  Re-implementing
+    that join in the GUI would be a second answer to one question, and the two would drift.
+
+    The chain chosen is the one that tool would call the newest -- built for every key, kept
+    where a job id exists, sorted by submission time -- so the window and the command line
+    cannot disagree about which chain is current.
+    """
+    now = time.time()
+    try:
+        ledger_path = Path(_ESCALATION_LEDGER_PATH)
+        key = (ledger_path.stat().st_mtime, ledger_path.stat().st_size)
+    except Exception:  # noqa: BLE001
+        key = None
+    cached = _CLOSURE_CACHE
+    if key is not None and cached["key"] == key and (now - float(cached["at"])) < CLOSURE_TTL_SECONDS:
+        return dict(cached["card"])
+
+    try:
+        tools_dir = str(Path(__file__).resolve().parent)
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import unattended_closure as closure
+
+        ledger = closure.rows(closure.LEDGER)
+        episodes = closure.rows(closure.EPISODES)
+        commits = [(line.split(" ", 1)[0], closure.moment(line.split(" ", 1)[1]))
+                   for line in closure.heads()]
+        commits = [(sha, when) for sha, when in commits if when is not None]
+
+        keys: list[str] = []
+        for row in ledger:
+            value = str(row.get("key") or "")
+            if value and value not in keys:
+                keys.append(value)
+        chains = [closure.build(k, ledger, episodes, commits) for k in keys]
+        chains = [chain for chain in chains if chain.job_id]
+        chains.sort(key=lambda chain: (chain.submitted_at is None, chain.submitted_at))
+        if not chains:
+            card: dict[str, Any] = {"ok": False,
+                                    "reason": "台账中没有带 Job 的升级记录，闭环尚未开始"}
+        else:
+            chain = chains[-1]
+            card = {
+                "ok": True,
+                "trace_id": chain.trace_id,
+                "job_id": chain.job_id,
+                "capability": chain.capability,
+                "completed": chain.completed,
+                "total": len(chain.applicable),
+                "verdict": chain.verdict(),
+                "breakpoint": chain.failure_step,
+                "steps": [(step.name, step.done, step.note) for step in chain.steps],
+            }
+    except Exception as exc:  # noqa: BLE001 - a card must never take the window down
+        card = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"}
+
+    _CLOSURE_CACHE.update({"key": key, "at": now, "card": card})
+    return dict(card)
+
+
+#: The eight cells §八 asks for, each mapped onto the chain steps that prove it.  A cell is
+#: 完成 only when *its own* steps are done: "Gateway ✓" because the gateway answered is not
+#: the same claim as "Job ✓", and one green tick for the whole pipeline is exactly the
+#: conflation the operator has been correcting all along.
+LOOP_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Gateway", ("gap_detected",)),
+    ("Queue", ("escalation_created", "queue_deduped")),
+    ("Job", ("job_submitted", "job_working", "code_changed", "tests_passed")),
+    ("Version", ("reload_requested", "reload_settled")),
+    ("真机校准", ("live_verify_episode",)),
+    ("LIVE VERIFIED", ("outcome_live_verified",)),
+    ("生产复用", ("auto_resumed", "post_resume_verified")),
+    ("Next Capability", ()),
+)
+
+
+def render_loop_card(card: Mapping[str, Any] | None) -> str:
+    """The eight cells as one line of ✓ / 等待 / 异常, plus the trace and the breakpoint."""
+    if not card or not card.get("ok"):
+        return f"闭环尚未开始（{str((card or {}).get('reason') or '无记录')}）"
+    done = {name: bool(state) for name, state, _ in card.get("steps") or ()}
+    cells: list[str] = []
+    for label, members in LOOP_CELLS:
+        if not members:
+            # "Next Capability" has no step of its own: it is a statement about what the
+            # bootstrap controller selected next, and it is reported on its own row.  Saying
+            # ✓ here because the other seven are done would be the conflation again.
+            cells.append(f"{label} {'—'}")
+            continue
+        if all(done.get(name) for name in members):
+            cells.append(f"{label} ✓")
+        elif any(done.get(name) for name in members):
+            cells.append(f"{label} 进行中")
+        else:
+            cells.append(f"{label} 等待")
+    trace = f"trace_id {card.get('trace_id')}"
+    if card.get("job_id"):
+        trace += f" · job {card.get('job_id')}"
+    breakpoint = str(card.get("breakpoint") or "")
+    tail = (f"{card.get('completed')}/{card.get('total')} 步 · 断点：{breakpoint}"
+            if breakpoint else f"{card.get('completed')}/{card.get('total')} 步 · 无断点 · PASS")
+    return "   ".join(cells) + f"\n{trace}   {tail}"
+
+
+def render_soak(record: Mapping[str, Any] | None) -> str:
+    """The acceptance soak as one operator-readable line, or an honest "not started"."""
+    if not record:
+        return "尚未开始（GUI 启动后由窗口自行测量，无需任何手工命令）"
+    verdict = (record.get("verdict") or {})
+    overall = str(verdict.get("overall") or "INCOMPLETE")
+    failed = [name for name, item in (verdict.get("conditions") or {}).items()
+              if item.get("ok") is False]
+    unknown = [name for name, item in (verdict.get("conditions") or {}).items()
+               if item.get("ok") is None]
+    zh = {name: label for name, label in (
+        ("gui_alive", "GUI存活"), ("gateway_reachable", "网关可达"),
+        ("single_gateway", "单网关"), ("port_owner_legal", "端口归属"),
+        ("no_restart_loop", "无重启循环"), ("pump_ticking", "泵心跳"),
+        ("auto_gameplay", "AUTO继续"), ("gateway_fault_does_not_block_auto", "故障不阻塞AUTO"),
+        ("no_duplicate_job", "无重复Job"), ("no_extra_spawn_per_refresh", "无额外spawn"),
+        ("no_black_console", "无黑窗"), ("topbar_agrees", "顶部一致"),
+    )}
+    line = (f"{overall} · {record.get('duration_minutes', 0)} 分钟 / "
+            f"{record.get('sample_count', 0)} 样本 · 重启 "
+            f"{record.get('distinct_gateway_pids') and len(record['distinct_gateway_pids']) or 0} 个网关进程"
+            f" · 黑窗 {record.get('black_console_windows', 0)}")
+    if failed:
+        line += f" · 未通过：{'、'.join(zh.get(n, n) for n in failed)}"
+    if unknown:
+        line += f" · 未测量：{'、'.join(zh.get(n, n) for n in unknown)}"
+    if record.get("development_env_limitation"):
+        line += " · DEVELOPMENT_ENV_LIMITATION（非正式启动路径，不构成验收证据）"
+    return line
+
+
 def gateway_reason_cn(reason: str) -> str:
     """The escalation gateway's answer, in Chinese.
 
@@ -1488,6 +1671,11 @@ def status_defaults() -> dict[str, str]:
         "why_idle": PENDING, "executor_mix": PENDING, "progress": PENDING,
         "bootstrap": PENDING, "coverage": PENDING, "attention": "暂无需要关注的问题",
         "watchdog": PENDING,
+        # §八's closed-loop card: the eight cells, the trace and the current breakpoint, all
+        # from ``unattended_closure``.  And §一's acceptance, which the window runs itself so
+        # the operator never has to execute a second command.
+        "loop_card": PENDING, "loop_trace": PENDING, "loop_break": PENDING,
+        "soak": "尚未开始（GUI 启动后由窗口自行测量，无需任何手工命令）",
         "stats": "本次启动：0 轮 · 0 动作",
     }
 
@@ -1527,6 +1715,12 @@ class PanelProbes:
         # loop without a port or a process.
         self._gateway_service = gateway_service
         self._gateway_lifecycle: dict[str, Any] = {}
+        # The GUI's own acceptance soak (§一).  Created lazily, and only when this window is
+        # the *production* launch path: a window started by a development tool must not
+        # produce a soak that looks like evidence (§三/§九).
+        self._soak: Any = None
+        self._soak_context: tuple[str, str] = ("unknown", "")
+        self._soak_error: str = ""
         self._device: dict[str, Any] = {"ok": None, "status": None, "error": "", "checked_at": ""}
         self._truth: dict[str, Any] = {"ok": None, "report": None, "checked_at": ""}
         self._watch: str = ""
@@ -1553,6 +1747,23 @@ class PanelProbes:
         """The last lifecycle record, for the window's WorkBuddy detail cells and for tests."""
         with self._lock:
             return dict(self._gateway_lifecycle)
+
+    def soak(self) -> Any:
+        """The acceptance soak, or ``None`` before the first production sample.
+
+        Read by the UI thread only, like every other probe result: the window never runs the
+        measurement, it displays it.
+        """
+        return self._soak
+
+    def soak_payload(self) -> dict[str, Any]:
+        soak = self._soak
+        if soak is None:
+            return {}
+        try:
+            return soak.payload()
+        except Exception:  # noqa: BLE001
+            return {}
 
     # -- readers (called from the UI thread) -------------------------------
 
@@ -1693,6 +1904,9 @@ class PanelProbes:
         lifecycle = self._ensure_gateway(state, moment)
         state["lifecycle"] = lifecycle
         self._record_gateway(state, now=moment)
+        # §一: the acceptance is measured by the window, on this thread, after the health and
+        # the lifecycle are known -- so the evidence and the display come from one observation.
+        self._drive_soak(state, lifecycle)
 
     def _ensure_gateway(self, state: dict[str, Any], moment: datetime) -> dict[str, Any]:
         """One lifecycle pass.  Never raises: this thread also drives gameplay's probes."""
@@ -1713,6 +1927,155 @@ class PanelProbes:
     # While a launch is in flight the probe runs at its normal cadence instead of climbing
     # the ladder: the point of starting a gateway is to watch it bind.
     GATEWAY_STARTING_INTERVAL = 5.0
+    # One soak sample every N probe passes.  The probe runs at 5s, so this is a ten-second
+    # cadence: fine enough that a restart is visible, coarse enough that the four file reads
+    # behind it never come close to the probe's own cost.
+    SOAK_SAMPLE_EVERY = 2
+
+    def _soak_facts(self, state: dict[str, Any], lifecycle: dict[str, Any]) -> dict[str, Any]:
+        """Everything §一 asks the window to record, read from artifacts that already exist.
+
+        Gathered here rather than inside the soak so the soak stays a pure aggregator and can
+        be tested without a port, a process or a clock -- and so the numbers on the GUI card
+        and the numbers in the evidence file are the same numbers.
+        """
+        port_pids: list[int] = []
+        try:
+            port_pids = winproc.listeners(8080)
+        except Exception:  # noqa: BLE001
+            port_pids = []
+        owner = port_pids[0] if port_pids else 0
+        recorded = int(lifecycle.get("pid") or 0)
+
+        job_id = ""
+        job_state = ""
+        duplicates: list[str] = []
+        try:
+            view = escalation_view(self.root)
+            current = view.get("current") or {}
+            job_id = str(current.get("job_id") or "")
+            job_state = str(current.get("state") or "")
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            snapshot = EscalationLedger(Path(_ESCALATION_LEDGER_PATH)).snapshot()
+            grouped: dict[str, set[str]] = {}
+            for record in snapshot.active_jobs():
+                grouped.setdefault(record.capability or record.key, set()).add(record.job_id)
+            duplicates = [cap for cap, jobs in grouped.items()
+                          if len({j for j in jobs if j}) > 1]
+        except Exception:  # noqa: BLE001
+            pass
+
+        pump_age: float | None = None
+        try:
+            payload = json.loads(Path(PUMP_STATE_PATH).read_text(encoding="utf-8"))
+            stamp = str(payload.get("written_at") or "")
+            if stamp:
+                pump_age = max(0.0, (datetime.now(timezone.utc)
+                                     - datetime.fromisoformat(stamp)).total_seconds())
+        except Exception:  # noqa: BLE001
+            pump_age = None
+
+        auto_running: bool | None = None
+        try:
+            snapshot = json.loads((self.root / "learning/runtime_snapshot.json")
+                                  .read_text(encoding="utf-8"))
+            auto_running = str(snapshot.get("mode") or "").upper() == "AUTO" and bool(
+                snapshot.get("runtime_thread_alive") or snapshot.get("scheduler_loop_alive")
+            )
+        except Exception:  # noqa: BLE001
+            auto_running = None
+
+        truth = self.truth()
+        report = (truth or {}).get("report") or {}
+        topbar = ""
+        try:
+            topbar = str(report["truths"]["gateway_health"].value)
+        except Exception:  # noqa: BLE001
+            topbar = ""
+
+        return {
+            "gui_pid": os.getpid(),
+            "gateway_pid": recorded,
+            # Only claimed when the port itself proves it: a pid that exists but holds no port
+            # is exactly the ambiguity the identity check exists for, and the soak must not
+            # record an identity it did not verify.
+            "gateway_identity": True if (recorded and owner == recorded) else None,
+            "port_8080_owner": owner,
+            "port_8080_name": "",
+            "health": state.get("available"),
+            "lifecycle_state": str(lifecycle.get("state") or ""),
+            "restart_count": int(lifecycle.get("restart_attempts") or 0),
+            "duplicate_gateway_count": max(0, len(port_pids) - 1),
+            "queue_pump_heartbeat": pump_age,
+            "current_job_id": job_id,
+            "job_state": job_state,
+            "auto_running": auto_running,
+            "topbar_word": topbar,
+            "duplicate_job_capabilities": duplicates,
+        }
+
+    def _drive_soak(self, state: dict[str, Any], lifecycle: dict[str, Any]) -> None:
+        """One soak pass, on the probe thread, gated on the *production* launch path.
+
+        §三/§九: a window a development tool started must not produce a soak that reads like
+        acceptance evidence, because that host reaps its children and the window cannot be
+        kept alive -- a limitation of the tooling, recorded as such, never worked around in
+        the product.  The soak is created on the first production pass and then owns its own
+        window; a GUI restart starts a new one, and the old file stays as history.
+        """
+        try:
+            context, why = self._soak_context
+            if context == "unknown":
+                context, why = launch_context()
+                self._soak_context = (context, why)
+            if self._soak is None:
+                if context != "production":
+                    return
+                from winter_agent_v2.gateway_soak import GatewaySoak
+                from winter_agent_v2.gateway_soak import EVIDENCE_RELATIVE
+
+                self._soak = GatewaySoak(
+                    self.root,
+                    facts=lambda: dict(self._soak_facts(self._gateway, self._gateway_lifecycle)),
+                    sample_every=self.SOAK_SAMPLE_EVERY,
+                    evidence_path=self.root / EVIDENCE_RELATIVE,
+                    console_counter=self._console_windows_for_this_window,
+                    launch_context=context,
+                )
+                self._log_soak(f"验收 Soak 已启动（{why}）：窗口 {self._soak.window_seconds:.0f} 秒，"
+                               f"由 GUI 自行测量，无需任何手工命令")
+            soak = self._soak
+            if soak.finished():
+                return
+            facts = self._soak_facts(state, lifecycle)
+            sample = soak.observe(facts)
+            if sample and soak.expired():
+                record = soak.close()
+                verdict = (record.get("verdict") or {}).get("overall")
+                self._log_soak(f"验收 Soak 窗口结束：GATEWAY_SOAK = {verdict}"
+                               f"（{record.get('sample_count')} 样本 / "
+                               f"{record.get('duration_minutes')} 分钟）")
+        except Exception as exc:  # noqa: BLE001 - a measurement must never take the window down
+            self._soak_error = f"{type(exc).__name__}: {exc}"
+
+    def _console_windows_for_this_window(self) -> int | None:
+        """Visible console windows owned by *this* window's process tree (§二 condition 11)."""
+        try:
+            from winter_agent_v2 import console_watch
+
+            return len(console_watch.console_windows_for({os.getpid()}))
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _log_soak(self, message: str) -> None:
+        try:
+            LOG_ROOT.mkdir(parents=True, exist_ok=True)
+            with PANEL_LOG_PATH.open("a", encoding="utf-8") as handle:
+                handle.write(f"{datetime.now().strftime('%H:%M:%S')}  {message}\n")
+        except Exception:  # noqa: BLE001
+            pass
 
     def _record_gateway(self, state: dict[str, Any], *, now: datetime) -> None:
         """Persist the probe and decide when the next one may happen.
@@ -2742,6 +3105,23 @@ class ControlPanel:
         ttk.Label(tab, text="V2 发现能力缺口 → 升级队列（去重 / 并发 1 / 修复预算）→ WorkBuddy 后台开发 → 真机验证。"
                             "模型只是 WorkBuddy 内部的可替换算力，不是 Winter Agent OS 的组件。",
                   style="Muted.TLabel").pack(anchor="w", pady=(0, 10))
+        # §八's closed-loop card, first on the page because it answers "闭环卡在哪一步" --
+        # which is the question the operator had to read logs to answer.  The eight cells are
+        # the eight things the operator listed, and each is graded from its *own* chain steps
+        # by ``unattended_closure`` rather than from a single green tick for the pipeline.
+        loop = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); loop.pack(fill="x", pady=(0, 10))
+        loop_head = ttk.Frame(loop, style="Card.TFrame"); loop_head.pack(fill="x")
+        ttk.Label(loop_head, text="自主开发闭环", style="Section.TLabel", background=PANEL).pack(side="left")
+        ttk.Label(loop_head, text="由 unattended_closure 按 trace_id 联结台账/Episode/提交 得出",
+                  style="Muted.TLabel", background=PANEL).pack(side="right")
+        ttk.Label(loop, textvariable=self.values["loop_card"], background=PANEL,
+                  wraplength=1150, justify="left").pack(anchor="w", pady=(6, 0))
+        for label, key in (("当前 trace", "loop_trace"), ("当前断点", "loop_break"),
+                           ("网关验收 Soak", "soak")):
+            row = ttk.Frame(loop, style="Card.TFrame"); row.pack(fill="x", pady=(4, 0))
+            ttk.Label(row, text=label, style="Muted.TLabel", background=PANEL, width=14).pack(side="left")
+            ttk.Label(row, textvariable=self.values[key], background=PANEL,
+                      wraplength=1000, justify="left").pack(side="left")
         status = ttk.Frame(tab, style="Card.TFrame", padding=(12, 10)); status.pack(fill="x")
         head = ttk.Frame(status, style="Card.TFrame"); head.pack(fill="x")
         ttk.Label(head, text="WorkBuddy 状态", style="Section.TLabel", background=PANEL).pack(side="left")
@@ -3342,6 +3722,25 @@ class ControlPanel:
                 + (f" · 错误 {state.get('errors')}" if state.get("errors") else "")
                 + f" · 预载 {state.get('preloads') or 0}"
             )
+        # §八: the closed-loop card, and §一's acceptance -- both read from artifacts the
+        # running system already writes.  The trace and the breakpoint come from
+        # ``unattended_closure`` so the window cannot disagree with the tool an operator
+        # would otherwise have to run by hand.
+        card = closure_card(ROOT)
+        self.values["loop_card"].set(render_loop_card(card))
+        if card.get("ok"):
+            self.values["loop_trace"].set(
+                f"{card.get('trace_id') or '—'}"
+                + (f" · job {card.get('job_id')}" if card.get("job_id") else "")
+                + (f" · {card.get('capability')}" if card.get("capability") else "")
+            )
+            self.values["loop_break"].set(
+                str(card.get("breakpoint") or "无断点 · 闭环 PASS")
+            )
+        else:
+            self.values["loop_trace"].set("—")
+            self.values["loop_break"].set(f"尚未开始：{card.get('reason')}")
+        self.values["soak"].set(render_soak(self.probes.soak_payload()))
         if moves.get("submitted"):
             self._append(f"开发队列：已向 WorkBuddy 提交 {moves['submitted']} 个真实任务。")
         if moves.get("released"):

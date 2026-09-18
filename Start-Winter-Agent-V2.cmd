@@ -34,4 +34,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem The acceptance soak is measured by the window, so the window has to be able to say which
+rem launch path it came from (P0 2026-09-18 §三).  A GUI started by a development tool cannot
+rem be kept alive -- that host reaps its children when its call ends, measured on panels
+rem 24936/25408 -- so a soak from one is recorded as DEVELOPMENT_ENV_LIMITATION rather than
+rem counted as evidence.  This marker is that declaration; it is inherited by the child.
+set "WINTER_AGENT_LAUNCH_PATH=desktop"
+
 start "Winter Agent OS V2" "%WINTER_PYTHONW%" "E:\无尽冬日智能体\tools\control_panel.py"
