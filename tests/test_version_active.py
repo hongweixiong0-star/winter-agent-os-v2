@@ -217,3 +217,62 @@ def test_the_matching_episode_activates_and_records_the_chain(tmp_path):
     for field in ("key", "job_id", "capability", "before_version", "after_version",
                   "active_version", "activation_episode_id", "activated_at"):
         assert event.get(field), field
+
+
+# --------------------------------------------------------------------- §一 the driver
+
+
+def _adapter_at(tmp_path, rows, *, episodes=None):
+    root = tmp_path
+    (root / "learning").mkdir(parents=True, exist_ok=True)
+    ledger_path = root / "learning/workbuddy_escalations.jsonl"
+    ledger_path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    (root / "learning/episodes.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in (episodes or [])) + "\n", encoding="utf-8")
+    return EscalationQueueAdapter(
+        root=root, ledger=EscalationLedger(ledger_path), bridge=_NoBridge())
+
+
+def _activated_rows():
+    return _rows() + [_activation_event()]
+
+
+def test_an_active_version_is_sent_for_validation_by_the_queue_itself(tmp_path):
+    """§一: no click, no second trigger -- the pump requests the examination."""
+    import datetime as _dt
+    adapter = _adapter_at(tmp_path, _activated_rows())
+    requested = adapter._request_validation(
+        adapter.ledger.snapshot(), _dt.datetime(2026, 9, 18, 10, 20, tzinfo=_dt.timezone.utc))
+    assert len(requested) == 1
+    record = adapter.ledger.snapshot().get(KEY)
+    assert record.state == LIVE_VERIFY_PENDING
+    assert record.outcome == VERSION_ACTIVE
+
+    event = [r for r in adapter.ledger.events()
+             if r.get("event") == "live_verify_pending" and r.get("outcome") == VERSION_ACTIVE][-1]
+    for field in ("key", "job_id", "capability", "skill", "goal",
+                  "before_version", "after_version", "active_version",
+                  "activation_episode_id", "requested_at"):
+        assert event.get(field) is not None, field
+
+
+def test_the_request_is_idempotent(tmp_path):
+    """A second pass must not re-request what is already owed."""
+    import datetime as _dt
+    when = _dt.datetime(2026, 9, 18, 10, 20, tzinfo=_dt.timezone.utc)
+    adapter = _adapter_at(tmp_path, _activated_rows())
+    adapter._request_validation(adapter.ledger.snapshot(), when)
+    before = len(adapter.ledger.events())
+    again = adapter._request_validation(adapter.ledger.snapshot(), when)
+    assert again == []
+    assert len(adapter.ledger.events()) == before
+
+
+def test_a_version_that_is_not_the_one_under_test_is_not_sent(tmp_path):
+    """Asking for validation of the wrong code would credit the right capability."""
+    import datetime as _dt
+    rows = _rows() + [_activation_event(active_version="f" * 40, after_version=AFTER)]
+    adapter = _adapter_at(tmp_path, rows)
+    requested = adapter._request_validation(
+        adapter.ledger.snapshot(), _dt.datetime(2026, 9, 18, 10, 20, tzinfo=_dt.timezone.utc))
+    assert requested == []

@@ -50,6 +50,7 @@ from __future__ import annotations
 from .winproc import hidden_kwargs
 from .workbuddy_bridge import JobLost
 
+import hashlib
 import json
 import re
 import subprocess
@@ -302,6 +303,41 @@ NO_IMPROVEMENT = "NO_IMPROVEMENT"
 # the single concurrency slot, while this name preserves the cause -- "the work did not
 # finish" and "the work did not finish because it vanished" lead to different next actions.
 JOB_LOST = "JOB_LOST"
+
+# ------------------------------------------------------------------- unfinished traces
+
+#: States in which a capability's development trace is still open, even though **no agent is
+#: editing anything**.  Operator §0B, and the distinction is the whole point:
+#:
+#:     one agent slot  !=  one unfinished capability
+#:
+#: VERSION_ACTIVE and LIVE_VERIFY_PENDING must NOT hold the single WorkBuddy slot -- a version
+#: awaiting measurement is not work in progress, and holding the slot for it would stop every
+#: other capability from being developed.  They must still stop a *second job for the same
+#: capability*: the capability's previous loop has not finished, so a new gap for it is more
+#: evidence for that loop, not a reason to open another one.
+UNFINISHED_TRACE_STATES = frozenset({
+    *ACTIVE_STATES, LIVE_VERIFY_PENDING, VERSION_ACTIVE, REJOINED,
+})
+
+#: Outcomes that keep a trace open even though the lifecycle state looks terminal.  A job that
+#: reached LIVE_VERIFIED is waiting to be re-joined into normal play, and one that reached
+#: LIVE_TRIED is waiting to be verified or repaired; both are mid-loop.
+UNFINISHED_TRACE_OUTCOMES = frozenset({LIVE_TRIED, LIVE_VERIFIED})
+
+
+def unfinished_trace(record: "EscalationRecord") -> bool:
+    """Is this capability's development loop still running?
+
+    True for a job in flight, for a version awaiting measurement, for a capability that has
+    been verified but not yet re-joined -- and for one whose lifecycle looks terminal while
+    its outcome says the loop has not closed.  False for a genuinely finished or abandoned
+    trace (DONE, BLOCKED, COOLDOWN, a plain failure), which is what lets a new gap open a new
+    job for the same capability.
+    """
+    if record.state in UNFINISHED_TRACE_STATES:
+        return True
+    return record.state in TERMINAL_STATES and record.outcome in UNFINISHED_TRACE_OUTCOMES
 
 ALL_OUTCOMES: tuple[str, ...] = (
     CODE_CHANGED, TEST_PASS, VERSION_ACTIVATION_PENDING, REPLAY_PASS, LIVE_TRIED,
@@ -856,7 +892,12 @@ def decide(
         (
             other for other in snapshot.records.values()
             if other.key != candidate.signature.key
-            and other.state in (*ACTIVE_STATES, LIVE_VERIFY_PENDING)
+            # §0B: ``unfinished_trace`` rather than a bare state test.  A capability waiting on
+            # a device, or verified but not yet re-joined, is mid-loop even though no agent is
+            # working -- and opening a second job for it would be two jobs on one capability,
+            # which is the rule this whole check exists to enforce.  Meanwhile the *slot* stays
+            # free, so this does not stop a different capability from being developed.
+            and unfinished_trace(other)
             and capability
             and capability in {other.capability, other.skill}
         ),
@@ -1250,27 +1291,50 @@ def _episode_dir(failure: Mapping[str, Any]) -> str:
 
 @dataclass(frozen=True)
 class RepoRevision:
-    """What the working tree looked like at one moment."""
+    """What the working tree looked like at one moment.
+
+    ``digest`` is a content fingerprint of the uncommitted changes, and it exists because a
+    count is not an identity.  Measured reasoning (operator §0A): two different working trees
+    can share a commit, share the *number* of modified files, and contain entirely different
+    code -- so ``head + dirty_count`` answered "same version" about two different trees, and
+    every rung that trusts a version identity (activation, validation binding, production
+    reuse) would have been comparing nothing.
+    """
 
     head: str = ""
     dirty: int = 0
     ok: bool = False
+    #: sha256 over the staged diff, the unstaged diff and the manifest of untracked files.
+    #: Empty for a clean tree, where the commit alone is the identity.
+    digest: str = ""
 
     @property
     def token(self) -> str:
-        """The comparable form of this revision: head plus dirty count.
+        """The comparable form of this revision.
 
-        The dirty count is part of the version on purpose.  A development agent edits
-        this tree without committing, and an uncommitted edit is still a different
-        version of the code -- comparing bare heads would call a working-tree fix a
-        non-change.
+        A clean tree is identified by its **full** commit sha: a prefix is a display
+        convenience and collisions in twelve hex characters are not something a version
+        identity should be built on.  A dirty tree is the commit *plus* the content digest,
+        because the uncommitted edit is part of the version.
+
+        The old form was ``head[:12] + "+" + dirty_count``, which the operator named as a
+        correctness hole: the count says how many files differ, never *how*.
         """
-        return f"{(self.head or '')[:12]}+{self.dirty}" if self.ok else ""
+        if not self.ok:
+            return ""
+        if not self.dirty:
+            return self.head
+        return f"{self.head}+{self.digest[:16]}"
 
     def differs_from(self, other: "RepoRevision") -> bool:
+        """Do these two describe different code?  Asked of the token, not of the parts.
+
+        Comparing ``head`` and ``dirty`` separately is what made a same-head, same-count,
+        different-content pair look unchanged.
+        """
         if not (self.ok and other.ok):
             return False
-        return self.head != other.head or self.dirty != other.dirty
+        return self.token != other.token
 
 
 def repo_revision(root: Path | str, *, timeout: float = 20.0) -> RepoRevision:
@@ -1302,7 +1366,20 @@ def repo_revision(root: Path | str, *, timeout: float = 20.0) -> RepoRevision:
     if not head:
         return RepoRevision(ok=False)
     dirty = len([line for line in status.splitlines() if line.strip()])
-    return RepoRevision(head=head, dirty=dirty, ok=True)
+    digest = ""
+    if dirty:
+        # Only paid when the tree is dirty, which is the case that actually needs an identity.
+        # Hashed in three parts rather than one ``git diff``: staged and unstaged changes are
+        # both part of the version, and an untracked file is a change to the tree even though
+        # no diff mentions it -- a digest over ``git diff`` alone would call a newly added file
+        # "no change", which is the same class of mistake as counting instead of hashing.
+        parts = [
+            run(["diff"]),
+            run(["diff", "--cached"]),
+            run(["ls-files", "--others", "--exclude-standard"]),
+        ]
+        digest = hashlib.sha256("\n\x00\n".join(parts).encode("utf-8", "replace")).hexdigest()
+    return RepoRevision(head=head, dirty=dirty, ok=True, digest=digest)
 
 
 def new_live_episodes(
@@ -2563,6 +2640,13 @@ class EscalationQueueAdapter:
         for key, message in activated:
             settled.append(message)
 
+        # §一: the rung after activation, requested by the queue itself.  Runs on the folded
+        # snapshot, so a record activated by the lines above is picked up on the *next* pass --
+        # one rung per pass, which also keeps the ledger readable as a ladder rather than as a
+        # burst.  The pump's cadence is thirty seconds, so the delay is one tick.
+        for key, message in self._request_validation(snapshot, moment):
+            settled.append(message)
+
         # Records whose job is done and whose version has not been exercised yet.  This
         # is the rung the operator added on 2026-09-18 (VERSION_ACTIVATION_PENDING ->
         # VERSION_ACTIVE -> LIVE_VERIFY_PENDING), re-measured on every pass because the
@@ -2714,6 +2798,60 @@ class EscalationQueueAdapter:
                 f"{record.after_version[:12]} 首次被真实 Episode {episode_id} 加载）"
             )))
         return activated
+
+    def _request_validation(
+        self, snapshot: EscalationSnapshot, moment: datetime,
+    ) -> list[tuple[str, str]]:
+        """Append ``live_verify_pending`` for a version that is active and still owes proof.
+
+        Operator §一: no click, no second trigger.  Once a version is provably loaded, the next
+        thing owed is real-device examination, and the queue says so itself.
+
+        The outcome recorded on this event is ``VERSION_ACTIVE`` -- the rung that has actually
+        been achieved -- which is also what makes the pass idempotent: the activation detector
+        only fires while the outcome is still ``VERSION_ACTIVATION_PENDING``, so a record whose
+        outcome has moved on cannot be activated twice, and this cannot re-request a validation
+        that is already pending.
+
+        The event carries the whole version context (§一's list) so the validation worker can
+        be handed the trace without re-deriving anything: which job, which capability, and
+        which version it is expected to be running.
+        """
+        requested: list[tuple[str, str]] = []
+        for record in list(snapshot.records.values()):
+            if record.state != VERSION_ACTIVE:
+                continue
+            if str(record.outcome) == VERSION_ACTIVE:
+                continue  # already requested; this pass is a no-op for it
+            if not record.after_version:
+                continue
+            if record.active_version and record.active_version != record.after_version:
+                # The version that ran is not the version under test.  Asking for validation
+                # here would examine the wrong code and then credit the right capability.
+                continue
+            self.ledger.append({
+                "event": "live_verify_pending",
+                "key": record.key,
+                "job_id": record.job_id,
+                "capability": record.capability,
+                "skill": record.skill,
+                "failure_type": record.failure_type,
+                "goal": record.goal,
+                "origin": record.origin,
+                "outcome": VERSION_ACTIVE,
+                "before_version": record.before_version,
+                "after_version": record.after_version,
+                "active_version": record.active_version or record.after_version,
+                "activation_episode_id": record.activation_episode_id,
+                "requested_at": moment.isoformat(),
+                "reason": "新版本已被真实运行加载，欠一次真机校准（§一自动请求，无需点击）",
+                "recorded_at": moment.isoformat(),
+            })
+            requested.append((record.key, (
+                f"{record.capability}: 已自动请求真机校准"
+                f"（after_version {record.after_version[:12]}，无人工点击）"
+            )))
+        return requested
 
     def _settle(
         self, *, snapshot, record, outcome, explanation, episodes, before, after, wiring,

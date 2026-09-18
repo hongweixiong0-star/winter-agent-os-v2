@@ -1061,16 +1061,23 @@ class ReconciliationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "learning").mkdir(parents=True)
+            # Rewritten 2026-09-18 evening when the version token became a content identity
+            # (operator §0A).  The fixture used to say ``RepoRevision("a", 0, True)`` with an
+            # episode revision of ``"a+0"`` -- the old ``head[:12] + "+" + count`` form.  A
+            # clean tree's token is now the *full* commit, so the two no longer matched and
+            # this test would have started passing for the wrong reason.  The intent is
+            # unchanged: the episode ran the dispatch tree, so it proves the old code works.
+            dispatch = "a" * 40
             self._episodes(root, [{
                 "skill": "OPEN_INFANTRY_TRAINING", "recorded_at": (NOW + timedelta(minutes=5)).isoformat(),
                 "verifier_ok": True, "result": "SUCCESS",
                 "before_screenshot": "b.png", "after_screenshot": "a.png",
-                "repo_revision": "a+0",
+                "repo_revision": dispatch,
             }])
             outcome, explanation, episodes = q.reconcile_outcome(
                 capability="KEEP_TRAINING", skill="OPEN_INFANTRY_TRAINING",
                 submitted_at=NOW, job_verdict="DONE",
-                before=q.RepoRevision("a", 0, True), after=q.RepoRevision("a", 0, True),
+                before=q.RepoRevision(dispatch, 0, True), after=q.RepoRevision(dispatch, 0, True),
                 wiring_problems=0, root=root,
             )
         self.assertNotEqual(outcome, q.LIVE_VERIFIED)
