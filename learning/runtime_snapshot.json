@@ -2,9 +2,9 @@
   "agent_state": "IDLE",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-18T05:40:41.461235+00:00",
-  "last_action_time": "2026-09-18T05:38:46.108162+00:00",
-  "last_success_time": "2026-09-18T05:39:04.221615+00:00",
+  "last_tick_time": "2026-09-18T07:53:34.836568+00:00",
+  "last_action_time": "2026-09-18T07:51:59.366967+00:00",
+  "last_success_time": "2026-09-18T07:52:12.682852+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
@@ -22,7 +22,7 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_134024_624425\\20260918_134024_624425_step_001_before_20260918T054027465361.png",
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_155319_069283\\20260918_155319_069283_step_001_before_20260918T075321976339.png",
   "march_used": 2,
   "march_max": 3,
   "queues": {
@@ -38,14 +38,14 @@
     {
       "goal_id": "AVOID_STAMINA_WASTE",
       "capability": "SPEND_STAMINA_ON_BEAST",
-      "state": "DEFERRED",
-      "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
-      "source": "NO_GOAL_PROGRESS",
-      "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
-      "streak": 4,
+      "state": "DEVELOPMENT_PENDING",
+      "reason": "a development job owns it (job=d8ea0e44)",
+      "source": "ESCALATION_QUEUE",
+      "failure_signature": "",
+      "streak": 0,
       "until": "",
-      "last_skill": "SCAN_MAP_FOR_BEAST"
+      "last_skill": ""
     }
   ],
-  "updated_at": "2026-09-18T05:40:45.307732+00:00"
+  "updated_at": "2026-09-18T07:53:56.109747+00:00"
 }

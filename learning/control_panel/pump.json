@@ -1,14 +1,14 @@
 {
- "passes": 3,
+ "passes": 2,
  "submitted": 0,
  "released": 0,
  "reconciled": 0,
- "errors": 0,
- "last_tick": "13:41:28",
- "last_line": "[escalation] nothing to do",
- "last_error": "",
+ "errors": 2,
+ "last_tick": "15:54:17",
+ "last_line": "[escalation] errors 1",
+ "last_error": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s",
  "gated": "",
- "preload_ticks": 3,
+ "preload_ticks": 2,
  "preloads": 0,
  "preload_last": "",
  "preload_note": "",
@@ -23,6 +23,6 @@
  "preload_ingest": "",
  "preload_coverage": {},
  "preload_every": 20,
- "written_at": "2026-09-18T05:41:28.682909+00:00",
- "process": 27848
+ "written_at": "2026-09-18T07:54:17.995526+00:00",
+ "process": 26428
 }

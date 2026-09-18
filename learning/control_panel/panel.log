@@ -2139,3 +2139,229 @@
 13:40:45  磁盘保护：已清理 1 张过期或超额运行截图。
 13:40:45  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
 13:40:45  连续运行已启用，10 分钟后进入下一轮。
+13:50:21  能力预载（后台低优先级）：[bootstrap] TARGETED_RESEARCH · P1 TROOP_SELECT · GATE_REFUSED · missing recovery_prior · next ECONOMY_RESEARCH -- NOT_ARMED_MAIN_LOOP_P0: main loop not fully proven yet: P0-A=PARTIAL, P0-B=PROVEN, P0-C=PROVEN, P0-D=NOT PROVEN, P0-E=PARTIAL, P0-F=NOT PROVEN
+13:50:45  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:50:45  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:51:16  ✓ 本轮结束：已为体力任务预留1支行军
+13:51:18  磁盘保护：已清理 1 张过期或超额运行截图。
+13:51:18  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:51:18  连续运行已启用，10 分钟后进入下一轮。
+14:01:18  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+14:01:18  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+14:03:40  ⚠ 本轮结束：RESOURCE SELECTION NOT PROVEN
+14:03:43  磁盘保护：已清理 2 张过期或超额运行截图。
+14:03:43  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+14:03:43  连续运行已启用，30 秒后进入下一轮。
+14:04:09  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: cancel(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44/stop: timed out after 15.0s
+14:04:13  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+14:04:13  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+14:04:54  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:05:39  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:06:24  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:07:10  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:07:55  开发队列：释放 1 条缺口（真机已自行证明，不派开发任务）。
+14:07:55  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:08:40  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:09:01  ✓ 本轮结束：已为体力任务预留1支行军
+14:09:04  磁盘保护：已清理 2 张过期或超额运行截图。
+14:09:04  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+14:09:04  连续运行已启用，10 分钟后进入下一轮。
+14:09:25  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:10:10  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:10:54  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:11:40  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:12:25  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:13:09  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:13:55  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:14:40  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:15:26  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:16:10  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:16:56  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:17:41  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:18:25  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:19:04  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+14:19:04  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+14:19:11  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:19:36  ✓ 本轮结束：已为体力任务预留1支行军
+14:19:38  磁盘保护：已清理 1 张过期或超额运行截图。
+14:19:38  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+14:19:38  连续运行已启用，10 分钟后进入下一轮。
+14:19:56  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:20:41  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:21:25  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:22:11  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:22:56  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:23:40  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:24:26  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:25:11  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:25:57  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:26:41  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:27:25  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:28:11  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:28:56  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:29:38  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+14:29:38  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+14:29:41  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:30:27  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:31:12  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:31:57  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:32:42  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:33:27  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:34:12  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:34:48  ✓ 本轮结束：已为体力任务预留1支行军
+14:34:51  磁盘保护：已清理 2 张过期或超额运行截图。
+14:34:51  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+14:34:51  连续运行已启用，10 分钟后进入下一轮。
+14:34:57  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:35:43  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:36:27  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:37:12  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:37:58  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:38:42  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:39:27  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:40:13  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:40:57  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:41:42  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:42:28  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:43:12  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:43:57  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:44:43  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:44:51  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+14:44:51  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+14:45:22  ✓ 本轮结束：已为体力任务预留1支行军
+14:45:24  磁盘保护：已清理 1 张过期或超额运行截图。
+14:45:24  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+14:45:24  连续运行已启用，10 分钟后进入下一轮。
+14:45:29  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:46:13  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:46:59  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:47:44  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:48:28  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:49:14  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:49:59  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:50:43  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:51:29  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:52:14  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:52:58  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:53:44  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:54:29  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:55:13  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:55:24  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+14:55:24  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+14:55:59  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:56:44  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:57:29  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:58:14  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:58:59  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+14:59:44  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:00:31  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:01:03  ✓ 本轮结束：已为体力任务预留1支行军
+15:01:05  磁盘保护：已清理 2 张过期或超额运行截图。
+15:01:05  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+15:01:05  连续运行已启用，10 分钟后进入下一轮。
+15:01:15  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:02:01  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:02:45  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:03:30  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:04:16  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:05:00  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:05:46  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:06:31  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:07:15  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:08:01  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:08:45  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:09:30  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:10:16  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:11:00  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:11:05  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+15:11:05  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+15:11:37  ✓ 本轮结束：已为体力任务预留1支行军
+15:11:39  磁盘保护：已清理 1 张过期或超额运行截图。
+15:11:39  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+15:11:39  连续运行已启用，10 分钟后进入下一轮。
+15:11:45  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:12:31  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:13:15  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:14:00  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:14:46  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:15:32  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:16:16  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:17:02  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:17:47  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:18:31  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:19:16  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:20:02  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:20:46  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:21:31  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:21:39  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+15:21:39  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+15:22:17  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:23:02  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:23:47  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:24:32  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:25:17  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:26:02  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:26:47  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:26:51  ✓ 本轮结束：已为体力任务预留1支行军
+15:26:54  磁盘保护：已清理 2 张过期或超额运行截图。
+15:26:54  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+15:26:54  连续运行已启用，10 分钟后进入下一轮。
+15:27:32  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:28:16  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:29:02  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:29:47  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:30:33  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:31:18  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:32:04  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:32:48  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:33:32  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:34:18  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:35:03  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:35:47  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:36:33  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:36:54  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+15:36:54  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+15:37:18  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:37:25  ✓ 本轮结束：已为体力任务预留1支行军
+15:37:31  磁盘保护：已清理 1 张过期或超额运行截图。
+15:37:31  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+15:37:31  连续运行已启用，10 分钟后进入下一轮。
+15:38:03  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:38:47  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:39:33  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:40:18  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:41:04  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:41:48  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:42:32  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:43:18  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:44:03  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:44:49  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:45:33  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:46:19  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:47:04  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:47:31  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+15:47:31  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+15:47:48  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:48:35  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:49:20  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:50:04  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:50:49  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:51:34  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:52:19  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:52:39  ✓ 本轮结束：已为体力任务预留1支行军
+15:52:46  磁盘保护：已清理 2 张过期或超额运行截图。
+15:52:46  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+15:52:46  连续运行已启用，10 分钟后进入下一轮。
+15:53:14  控制台已启动。
+15:53:16  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+15:53:17  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+15:53:18  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+15:53:18  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+15:53:18  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+15:53:18  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+15:53:34  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+15:53:50  ✓ 本轮结束：已为体力任务预留1支行军
+15:53:56  磁盘保护：已清理 1 张过期或超额运行截图。
+15:53:56  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+15:53:56  连续运行已启用，10 分钟后进入下一轮。
+15:54:19  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
