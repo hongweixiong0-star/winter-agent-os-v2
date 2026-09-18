@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T02:08:01.752013+00:00",
+  "generated_at": "2026-09-18T02:25:11.923425+00:00",
   "generated_by": "tools/write_p0_loop_evidence.py",
   "principle": "nothing here is typed by hand; every field is read back from the artifacts named beside it",
   "stages": {
@@ -73,7 +73,7 @@
           "job_id": "0440cd38",
           "attempt": null,
           "last_state": "WORKING",
-          "detail": "{\"summary\": \"Fixing NOGOALPROGRESS stamina-waste escalation\"}"
+          "detail": "{\"summary\": \"Debugging NOGOALPROGRESS stamina waste automation escalati…"
         }
       ],
       "why": "the submit hop is real and repeated (three job ids today, each with a job_state row), but no record has been observed going NEW -> SUBMITTED inside a single pump tick yet; the pump has had nothing pending to consume since it started"
@@ -268,21 +268,21 @@
       "job_id": "0440cd38",
       "attempt": null,
       "last_state": "WORKING",
-      "detail": "{\"summary\": \"Fixing NOGOALPROGRESS stamina-waste escalation\"}"
+      "detail": "{\"summary\": \"Debugging NOGOALPROGRESS stamina waste automation escalati…"
     }
   },
   "pump": {
     "state": {
-      "passes": 8,
+      "passes": 42,
       "submitted": 0,
       "released": 0,
       "reconciled": 0,
       "errors": 0,
-      "last_tick": "10:07:58",
+      "last_tick": "10:25:11",
       "last_line": "[escalation] nothing to do",
       "last_error": "",
       "gated": "",
-      "written_at": "2026-09-18T02:07:58.045729+00:00",
+      "written_at": "2026-09-18T02:25:11.299292+00:00",
       "process": 18508
     },
     "source": "learning/control_panel/pump.json (written by the panel every tick)"
@@ -343,10 +343,10 @@
       "09:59:24  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。",
       "10:04:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）"
     ],
-    "deferral_lines_in_the_last_60": 3,
+    "deferral_lines_in_the_last_60": 0,
     "episodes_goal_progress": {
       "None": 1908,
-      "False": 29
+      "False": 32
     }
   },
   "not_done": [
