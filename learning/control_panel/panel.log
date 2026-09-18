@@ -1,0 +1,2141 @@
+00:17:23  控制台已启动。
+00:17:23  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:17:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:17:23  预检·核心：Runtime OK (E:\x\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:17:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+00:17:23  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+00:17:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:17:23  预检未通过（无法执行）；不启动 AUTO。诊断：python tools/preflight.py
+00:17:23  不自动启动：上次由用户暂停，只有点击“开始自动运行”才会恢复。
+00:17:23  不自动启动：上次由用户停止，只有点击“开始自动运行”才会恢复。
+00:17:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:17:23  预检·核心：Runtime OK (E:\x\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:17:23  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。
+00:17:23  manual mode (config auto_execution=false)：等待用户点击“开始自动运行”。
+00:17:50  控制台已启动。
+00:17:51  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:17:51  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:17:51  预检·核心：Runtime OK (E:\x\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:17:51  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+00:17:51  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+00:17:51  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:17:51  预检未通过（无法执行）；不启动 AUTO。诊断：python tools/preflight.py
+00:17:51  不自动启动：上次由用户暂停，只有点击“开始自动运行”才会恢复。
+00:17:51  不自动启动：上次由用户停止，只有点击“开始自动运行”才会恢复。
+00:17:51  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:17:51  预检·核心：Runtime OK (E:\x\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:17:51  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。
+00:17:51  manual mode (config auto_execution=false)：等待用户点击“开始自动运行”。
+00:18:02  控制台已启动。
+00:18:03  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:18:04  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:18:05  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:18:05  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+00:18:05  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:18:05  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:18:19  ⚠ 本轮结束：research queue busy
+00:18:26  磁盘保护：已清理 1 张过期或超额运行截图。
+00:18:26  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:18:26  连续运行已启用，30 秒后进入下一轮。
+00:18:56  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:18:56  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:19:10  ⚠ 本轮结束：research queue busy
+00:19:16  磁盘保护：已清理 1 张过期或超额运行截图。
+00:19:16  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:19:17  连续运行已启用，30 秒后进入下一轮。
+00:19:47  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:19:47  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:20:01  ⚠ 本轮结束：research queue busy
+00:20:07  磁盘保护：已清理 1 张过期或超额运行截图。
+00:20:07  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:20:07  连续运行已启用，30 秒后进入下一轮。
+00:20:37  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:20:37  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:20:52  ⚠ 本轮结束：research queue busy
+00:20:59  磁盘保护：已清理 1 张过期或超额运行截图。
+00:20:59  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:20:59  连续运行已启用，30 秒后进入下一轮。
+00:21:29  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:21:29  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:21:44  ⚠ 本轮结束：research queue busy
+00:21:51  磁盘保护：已清理 1 张过期或超额运行截图。
+00:21:51  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:21:51  连续运行已启用，30 秒后进入下一轮。
+00:22:21  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:22:21  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:22:35  ⚠ 本轮结束：research queue busy
+00:22:41  磁盘保护：已清理 1 张过期或超额运行截图。
+00:22:41  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:22:41  连续运行已启用，30 秒后进入下一轮。
+00:23:11  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:23:11  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:23:26  ⚠ 本轮结束：research queue busy
+00:23:32  磁盘保护：已清理 1 张过期或超额运行截图。
+00:23:33  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:23:33  连续运行已启用，30 秒后进入下一轮。
+00:24:03  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:24:03  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:24:17  ⚠ 本轮结束：research queue busy
+00:24:24  磁盘保护：已清理 1 张过期或超额运行截图。
+00:24:24  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:24:24  连续运行已启用，30 秒后进入下一轮。
+00:24:54  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:24:54  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:25:08  ⚠ 本轮结束：research queue busy
+00:25:15  磁盘保护：已清理 1 张过期或超额运行截图。
+00:25:15  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:25:15  连续运行已启用，30 秒后进入下一轮。
+00:25:45  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:25:45  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:25:50  ⚠ 本轮结束：暂无结构化结果
+00:25:56  磁盘保护：已清理 1 张过期或超额运行截图。
+00:25:57  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:25:57  连续运行已启用，30 秒后进入下一轮。
+00:26:22  控制台已启动。
+00:26:22  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:26:23  控制台已启动。
+00:26:23  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:26:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:26:23  预检·核心：Runtime OK (E:\x\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:26:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+00:26:23  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+00:26:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:26:23  预检未通过（无法执行）；不启动 AUTO。诊断：python tools/preflight.py
+00:26:23  不自动启动：上次由用户暂停，只有点击“开始自动运行”才会恢复。
+00:26:23  不自动启动：上次由用户停止，只有点击“开始自动运行”才会恢复。
+00:26:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:26:23  预检·核心：Runtime OK (E:\x\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:26:23  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。
+00:26:23  manual mode (config auto_execution=false)：等待用户点击“开始自动运行”。
+00:26:27  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:26:27  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:28:19  ⚠ 本轮结束：暂无结构化结果
+00:28:25  磁盘保护：已清理 1 张过期或超额运行截图。
+00:28:25  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:28:25  连续运行已启用，30 秒后进入下一轮。
+00:29:01  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:29:01  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:30:27  ⚠ 本轮结束：暂无结构化结果
+00:30:34  磁盘保护：已清理 1 张过期或超额运行截图。
+00:30:34  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:30:34  连续运行已启用，30 秒后进入下一轮。
+00:31:04  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:31:04  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:32:27  ⚠ 本轮结束：暂无结构化结果
+00:32:33  磁盘保护：已清理 1 张过期或超额运行截图。
+00:32:33  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:32:33  连续运行已启用，30 秒后进入下一轮。
+00:33:03  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:33:03  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:33:52  控制台已启动。
+00:33:52  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:33:52  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:33:52  预检·核心：Runtime OK (E:\x\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:33:52  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+00:33:52  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+00:33:52  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:33:52  预检未通过（无法执行）；不启动 AUTO。诊断：python tools/preflight.py
+00:33:52  不自动启动：上次由用户暂停，只有点击“开始自动运行”才会恢复。
+00:33:52  不自动启动：上次由用户停止，只有点击“开始自动运行”才会恢复。
+00:33:52  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:33:52  预检·核心：Runtime OK (E:\x\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:33:52  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。
+00:33:52  manual mode (config auto_execution=false)：等待用户点击“开始自动运行”。
+00:33:53  控制台已启动。
+00:33:53  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:34:29  ⚠ 本轮结束：暂无结构化结果
+00:34:35  磁盘保护：已清理 1 张过期或超额运行截图。
+00:34:35  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:34:35  连续运行已启用，30 秒后进入下一轮。
+00:35:05  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:35:05  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:36:29  ⚠ 本轮结束：暂无结构化结果
+00:36:35  磁盘保护：已清理 1 张过期或超额运行截图。
+00:36:35  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:36:36  连续运行已启用，30 秒后进入下一轮。
+00:37:06  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:37:06  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:38:26  ⚠ 本轮结束：暂无结构化结果
+00:38:33  磁盘保护：已清理 1 张过期或超额运行截图。
+00:38:33  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:38:33  连续运行已启用，30 秒后进入下一轮。
+00:39:03  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:39:03  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:40:24  ⚠ 本轮结束：暂无结构化结果
+00:40:31  磁盘保护：已清理 1 张过期或超额运行截图。
+00:40:31  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:40:31  连续运行已启用，30 秒后进入下一轮。
+00:41:01  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:41:01  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:42:23  ⚠ 本轮结束：暂无结构化结果
+00:42:29  磁盘保护：已清理 1 张过期或超额运行截图。
+00:42:30  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:42:30  连续运行已启用，30 秒后进入下一轮。
+00:43:00  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:43:00  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:44:23  ⚠ 本轮结束：暂无结构化结果
+00:44:29  磁盘保护：已清理 1 张过期或超额运行截图。
+00:44:29  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:44:29  连续运行已启用，30 秒后进入下一轮。
+00:44:59  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:44:59  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:46:24  ⚠ 本轮结束：暂无结构化结果
+00:46:30  磁盘保护：已清理 1 张过期或超额运行截图。
+00:46:30  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:46:30  连续运行已启用，30 秒后进入下一轮。
+00:47:00  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:47:00  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:48:25  ⚠ 本轮结束：暂无结构化结果
+00:48:32  磁盘保护：已清理 1 张过期或超额运行截图。
+00:48:32  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:48:32  连续运行已启用，30 秒后进入下一轮。
+00:49:02  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:49:02  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:50:24  ⚠ 本轮结束：暂无结构化结果
+00:50:30  磁盘保护：已清理 1 张过期或超额运行截图。
+00:50:30  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:50:30  连续运行已启用，30 秒后进入下一轮。
+00:50:56  控制台已启动。
+00:50:57  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:51:00  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:51:00  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:52:22  ⚠ 本轮结束：暂无结构化结果
+00:52:24  磁盘保护：已清理 1 张过期或超额运行截图。
+00:52:24  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:52:24  连续运行已启用，30 秒后进入下一轮。
+00:52:54  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:52:54  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:53:05  ⚠ 本轮结束：alliance state unknown
+00:53:07  磁盘保护：已清理 1 张过期或超额运行截图。
+00:53:07  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:53:07  连续运行已启用，30 秒后进入下一轮。
+00:53:37  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+00:53:37  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+00:55:13  控制台已启动。
+00:55:14  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:55:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:55:14  预检·核心：Runtime OK (E:\x\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:55:14  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+00:55:14  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+00:55:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:55:14  预检未通过（无法执行）；不启动 AUTO。诊断：python tools/preflight.py
+00:55:14  不自动启动：上次由用户暂停，只有点击“开始自动运行”才会恢复。
+00:55:14  不自动启动：上次由用户停止，只有点击“开始自动运行”才会恢复。
+00:55:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+00:55:14  预检·核心：Runtime OK (E:\x\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+00:55:14  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。
+00:55:14  manual mode (config auto_execution=false)：等待用户点击“开始自动运行”。
+00:56:25  ⚠ 本轮结束：暂无结构化结果
+00:56:31  磁盘保护：已清理 6 张过期或超额运行截图。
+00:56:31  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+00:56:31  连续运行已启用，30 秒后进入下一轮。
+01:02:08  控制台已启动。
+01:02:09  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+01:02:10  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:02:28  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:02:28  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:02:28  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:03:28  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:03:45  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:03:45  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:03:45  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:04:45  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:05:02  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:05:02  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:05:02  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:05:27  控制台已启动。
+01:05:27  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+01:06:02  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:06:20  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:06:20  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:06:20  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:07:20  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:07:37  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:07:37  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:07:37  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:08:37  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:08:54  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:08:54  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:08:54  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:09:54  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:10:11  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:10:11  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:10:11  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:11:11  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:11:29  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:11:29  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:11:29  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:12:29  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:12:46  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:12:46  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:12:46  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:13:46  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:14:03  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:14:03  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:14:03  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:15:03  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:15:21  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:15:21  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:15:21  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:16:21  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:16:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:16:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:16:38  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:17:38  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:17:55  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:17:55  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:17:55  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:18:11  控制台已启动。
+01:18:11  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+01:18:55  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:19:12  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:19:12  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:19:12  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:19:17  控制台已启动。
+01:19:18  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+01:20:12  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:20:30  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:20:30  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:20:30  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:21:30  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:21:47  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:21:47  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:21:47  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:22:47  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:23:04  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:23:04  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:23:04  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:24:04  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:24:21  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:24:21  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:24:21  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:25:21  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:25:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:25:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:25:38  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:26:38  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:26:51  控制台已启动。
+01:26:52  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+01:26:56  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:26:56  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:26:56  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:27:56  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:28:13  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:28:13  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:28:13  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:29:13  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:29:31  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:29:31  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:29:31  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:30:31  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:30:48  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:30:48  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:30:48  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:31:48  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:32:05  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:32:05  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:32:05  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:33:05  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:33:22  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:33:22  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:33:22  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:34:22  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:34:40  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:34:40  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:34:40  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:35:40  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:35:57  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:35:57  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:35:57  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:36:57  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:37:14  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:37:14  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:37:14  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:38:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:38:32  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:38:32  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:38:32  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:39:32  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:39:49  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:39:49  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:39:49  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:40:49  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:41:06  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:41:06  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:41:06  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:42:06  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:42:24  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:42:24  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:42:24  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:43:24  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:43:41  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:43:41  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:43:41  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:44:41  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:44:58  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:44:58  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:44:58  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:45:58  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:46:16  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:46:16  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:46:16  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:47:16  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:47:33  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:47:33  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:47:33  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:48:33  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:48:50  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:48:50  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:48:50  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:49:50  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:50:08  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:50:08  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:50:08  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:51:08  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:51:25  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:51:25  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:51:25  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:52:25  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:52:42  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:52:42  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:52:42  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:53:42  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:53:59  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:54:00  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:54:00  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:55:00  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:55:17  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:55:17  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:55:17  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:56:17  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:56:34  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:56:34  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:56:34  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:57:34  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:57:51  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:57:51  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:57:51  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+01:58:51  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+01:59:09  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+01:59:09  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+01:59:09  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:00:09  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:00:26  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:00:26  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:00:26  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:01:26  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:01:43  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:01:43  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:01:43  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:02:43  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:03:00  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:03:00  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:03:00  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:04:00  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:04:18  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:04:18  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:04:18  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:05:18  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:05:35  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:05:35  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:05:35  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:06:35  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:06:52  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:06:52  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:06:52  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:07:52  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:08:10  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:08:10  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:08:10  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:09:10  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:09:27  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:09:27  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:09:27  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:10:27  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:10:44  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:10:44  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:10:44  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:11:44  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:12:01  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:12:02  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:12:02  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:13:02  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:13:19  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:13:19  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:13:19  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:14:19  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:14:36  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:14:36  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:14:36  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:15:36  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:15:53  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:15:53  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:15:53  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:16:53  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:17:11  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:17:11  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:17:11  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:18:11  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:18:28  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:18:28  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:18:28  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:19:28  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:19:45  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:19:45  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:19:45  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:20:45  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:21:03  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:21:03  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:21:03  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:22:03  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:22:20  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:22:20  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:22:20  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:23:20  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:23:37  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:23:37  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:23:37  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:24:37  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:24:54  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:24:55  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:24:55  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:25:55  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:26:12  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:26:12  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:26:12  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:27:12  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:27:29  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:27:29  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:27:29  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:28:29  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:28:46  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:28:46  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:28:46  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:29:46  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:30:04  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:30:04  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:30:04  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:31:04  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:31:21  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:31:21  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:31:21  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:32:21  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:32:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:32:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:32:38  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:33:38  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:33:56  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:33:56  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:33:56  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:34:56  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:35:13  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:35:13  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:35:13  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:36:13  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:36:30  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:36:30  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:36:30  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:37:30  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:37:48  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:37:48  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:37:48  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:38:48  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:39:05  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:39:05  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:39:05  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:40:05  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:40:22  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:40:22  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:40:22  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:41:22  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:41:40  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:41:40  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:41:40  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:42:40  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:42:57  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:42:57  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:42:57  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:43:57  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:44:14  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:44:14  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:44:14  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:45:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:45:32  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:45:32  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:45:32  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:46:32  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:46:49  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:46:49  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:46:49  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:47:49  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:48:06  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:48:06  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:48:06  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:49:07  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:49:24  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:49:24  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:49:24  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:50:24  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:50:41  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:50:41  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:50:41  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:51:41  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:51:58  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:51:58  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:51:58  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:52:59  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:53:16  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:53:16  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:53:16  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:54:16  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:54:33  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:54:33  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:54:33  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:55:33  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:55:50  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:55:50  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:55:50  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:56:50  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:57:08  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:57:08  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:57:08  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:58:08  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:58:25  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:58:25  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:58:25  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+02:59:25  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+02:59:42  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+02:59:42  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+02:59:42  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:00:42  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:01:00  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:01:00  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:01:00  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:02:00  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:02:17  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:02:17  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:02:17  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:03:17  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:03:34  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:03:34  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:03:34  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:04:34  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:04:51  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:04:52  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:04:52  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:05:52  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:06:09  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:06:09  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:06:09  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:07:09  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:07:26  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:07:26  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:07:26  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:08:26  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:08:44  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:08:44  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:08:44  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:09:44  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:10:01  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:10:01  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:10:01  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:11:01  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:11:18  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:11:18  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:11:18  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:12:18  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:12:35  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:12:35  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:12:35  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:13:35  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:13:53  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:13:53  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:13:53  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:14:53  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:15:10  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:15:10  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:15:10  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:16:10  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:16:27  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:16:27  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:16:27  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:17:27  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:17:45  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:17:45  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:17:45  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:18:45  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:19:02  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:19:02  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:19:02  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:20:02  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:20:19  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:20:19  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:20:19  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:21:19  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:21:36  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:21:36  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:21:36  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:22:36  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:22:54  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:22:54  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:22:54  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:23:54  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:24:11  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:24:11  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:24:11  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:25:11  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:25:28  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:25:28  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:25:28  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:26:28  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:26:46  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:26:46  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:26:46  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:27:46  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:28:03  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:28:03  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:28:03  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:29:03  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:29:20  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:29:20  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:29:20  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:30:20  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:30:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:30:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:30:38  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:31:38  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:31:55  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:31:55  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:31:55  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:32:55  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:33:12  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:33:12  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:33:12  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:34:12  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:34:29  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:34:29  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:34:29  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:35:30  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:35:47  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:35:47  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:35:47  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:36:47  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:37:04  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:37:04  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:37:04  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:38:04  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:38:21  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:38:21  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:38:21  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:39:21  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:39:39  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:39:39  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:39:39  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:40:39  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:40:56  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:40:56  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:40:56  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:41:56  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:42:13  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:42:13  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:42:13  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:43:13  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:43:31  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:43:31  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:43:31  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:44:31  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:44:48  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:44:48  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:44:48  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:45:48  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:46:05  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:46:05  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:46:05  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:47:05  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:47:23  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:47:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:47:23  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:48:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:48:40  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:48:40  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:48:40  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:49:40  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:49:57  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:49:57  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:49:57  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:50:57  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:51:14  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:51:14  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:51:14  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:52:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:52:32  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:52:32  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:52:32  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:53:32  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:53:49  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:53:49  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:53:49  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:54:49  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:55:06  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:55:06  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:55:06  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:56:06  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:56:24  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:56:24  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:56:24  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:57:24  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:57:41  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:57:41  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:57:41  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:58:41  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+03:58:58  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+03:58:58  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+03:58:58  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+03:59:58  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:00:16  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:00:16  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:00:16  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:01:16  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:01:33  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:01:33  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:01:33  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:02:33  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:02:50  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:02:50  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:02:50  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:03:50  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:04:08  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:04:08  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:04:08  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:05:08  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:05:25  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:05:25  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:05:25  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:06:25  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:06:42  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:06:42  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:06:42  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:07:42  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:08:00  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:08:00  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:08:00  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:09:00  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:09:17  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:09:17  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:09:17  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:10:17  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:10:34  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:10:34  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:10:34  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:11:34  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:11:51  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:11:51  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:11:51  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:12:51  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:13:09  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:13:09  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:13:09  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:14:09  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:14:26  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:14:26  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:14:26  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:15:26  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:15:43  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:15:43  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:15:43  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:16:43  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:17:01  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:17:01  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:17:01  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:18:01  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:18:18  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:18:18  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:18:18  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:19:18  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:19:35  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:19:35  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:19:35  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:20:35  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:20:53  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:20:53  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:20:53  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:21:53  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:22:10  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:22:10  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:22:10  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:23:10  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:23:27  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:23:27  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:23:27  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:24:27  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:24:45  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:24:45  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:24:45  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:25:45  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:26:02  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:26:02  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:26:02  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:27:02  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:27:19  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:27:19  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:27:19  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:28:19  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:28:36  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:28:36  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:28:37  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:29:37  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:29:54  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:29:54  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:29:54  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:30:54  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:31:11  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:31:11  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:31:11  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:32:11  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:32:28  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:32:28  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:32:28  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:33:28  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:33:46  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:33:46  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:33:46  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:34:46  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:35:03  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:35:03  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:35:03  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:36:03  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:36:20  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:36:20  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:36:20  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:37:20  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:37:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:37:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:37:38  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:38:38  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:38:55  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:38:55  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:38:55  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:39:55  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:40:12  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:40:12  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:40:12  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:41:12  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:41:30  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:41:30  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:41:30  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:42:30  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:42:47  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:42:47  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:42:47  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:43:47  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:44:04  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:44:04  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:44:04  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:45:04  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:45:22  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:45:22  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:45:22  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:46:22  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:46:39  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:46:39  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:46:39  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:47:39  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:47:56  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:47:56  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:47:56  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:48:56  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:49:13  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:49:13  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:49:13  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:50:13  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:50:31  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:50:31  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:50:31  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:51:31  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:51:48  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:51:48  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:51:48  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:52:48  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:53:05  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:53:05  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:53:05  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:54:05  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:54:23  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:54:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:54:23  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:55:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:55:40  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:55:40  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:55:40  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:56:40  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:56:57  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:56:57  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:56:57  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:57:57  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:58:15  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:58:15  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:58:15  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+04:59:15  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+04:59:32  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+04:59:32  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+04:59:32  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:00:32  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:00:49  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:00:49  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:00:49  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:01:49  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:02:07  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:02:07  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:02:07  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:03:07  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:03:24  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:03:24  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:03:24  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:04:24  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:04:41  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:04:41  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:04:41  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:05:41  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:05:58  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:05:58  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:05:58  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:06:58  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:07:16  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:07:16  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:07:16  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:08:16  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:08:33  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:08:33  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:08:33  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:09:33  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:09:50  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:09:50  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:09:50  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:10:50  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:11:08  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:11:08  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:11:08  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:12:08  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:12:25  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:12:25  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:12:25  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:13:25  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:13:42  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:13:42  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:13:42  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:14:42  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:15:00  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:15:00  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:15:00  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:16:00  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:16:17  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:16:17  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:16:17  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:17:17  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:17:34  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:17:34  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:17:34  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:18:34  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:18:52  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:18:52  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:18:52  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:19:52  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:20:09  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:20:09  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:20:09  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:21:09  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:21:26  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:21:26  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:21:26  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:22:26  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:22:43  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:22:43  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:22:43  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:23:43  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:24:01  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:24:01  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:24:01  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:25:01  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:25:18  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:25:18  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:25:18  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:26:18  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:26:35  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:26:35  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:26:35  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:27:35  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:27:52  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:27:52  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:27:53  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:28:53  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:29:10  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:29:10  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:29:10  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:30:10  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:30:27  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:30:27  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:30:27  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:31:27  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:31:44  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:31:44  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:31:44  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:32:44  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:33:02  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:33:02  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:33:02  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:34:02  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:34:19  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:34:19  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:34:19  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:35:19  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:35:36  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:35:36  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:35:36  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:36:36  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:36:54  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:36:54  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:36:54  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:37:54  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:38:11  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:38:11  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:38:11  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:39:11  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:39:28  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:39:28  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:39:28  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:40:28  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:40:46  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:40:46  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:40:46  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:41:46  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:42:03  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:42:03  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:42:03  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:43:03  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:43:20  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:43:20  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:43:20  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:44:20  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:44:37  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:44:37  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:44:37  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:45:37  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:45:55  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:45:55  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:45:55  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:46:55  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:47:12  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:47:12  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:47:12  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:48:12  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:48:29  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:48:29  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:48:29  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:49:29  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:49:47  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:49:47  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:49:47  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:50:47  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:51:04  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:51:04  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:51:04  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:52:04  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:52:21  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:52:21  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:52:21  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:53:21  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:53:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:53:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:53:38  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:54:38  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:54:56  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:54:56  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:54:56  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:55:56  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:56:13  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:56:13  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:56:13  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:57:13  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:57:30  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:57:30  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:57:30  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:58:30  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+05:58:48  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+05:58:48  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+05:58:48  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+05:59:48  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:00:05  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:00:05  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:00:05  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:01:05  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:01:22  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:01:22  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:01:22  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:02:22  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:02:40  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:02:40  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:02:40  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:03:40  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:03:57  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:03:57  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:03:57  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:04:57  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:05:14  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:05:14  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:05:14  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:06:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:06:31  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:06:31  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:06:31  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:07:31  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:07:49  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:07:49  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:07:49  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:08:49  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:09:06  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:09:06  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:09:06  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:10:06  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:10:23  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:10:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:10:23  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:11:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:11:41  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:11:41  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:11:41  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:12:41  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:12:58  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:12:58  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:12:58  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:13:58  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:14:15  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:14:15  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:14:15  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:15:15  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:15:32  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:15:32  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:15:32  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:16:32  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:16:50  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:16:50  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:16:50  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:17:50  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:18:07  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:18:07  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:18:07  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:19:07  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:19:24  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:19:24  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:19:24  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:20:24  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:20:42  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:20:42  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:20:42  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:21:42  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:21:59  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:21:59  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:21:59  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:22:59  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:23:16  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:23:16  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:23:16  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:24:16  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:24:33  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:24:33  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:24:33  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:25:33  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:25:51  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:25:51  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:25:51  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:26:51  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:27:08  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:27:08  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:27:08  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:28:08  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:28:25  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:28:25  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:28:25  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:29:25  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:29:43  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:29:43  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:29:43  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:30:43  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:31:00  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:31:00  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:31:00  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:32:00  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:32:17  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:32:17  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:32:17  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:33:17  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:33:34  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:33:34  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:33:34  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:34:34  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:34:52  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:34:52  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:34:52  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:35:52  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:36:09  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:36:09  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:36:09  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:37:09  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:37:26  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:37:26  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:37:26  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:38:26  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:38:44  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:38:44  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:38:44  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:39:44  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:40:01  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:40:01  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:40:01  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:41:01  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:41:18  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:41:18  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:41:18  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:42:18  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:42:36  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:42:36  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:42:36  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:43:36  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:43:53  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:43:53  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:43:53  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:44:53  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:45:10  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:45:10  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:45:10  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:46:10  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:46:28  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:46:28  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:46:28  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:47:28  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:47:45  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:47:45  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:47:45  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:48:45  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:49:02  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:49:02  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:49:02  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:50:02  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:50:20  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:50:20  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:50:20  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:51:20  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:51:37  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:51:37  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:51:37  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:52:37  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:52:54  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:52:54  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:52:54  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:53:54  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:54:11  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:54:11  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:54:11  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:55:11  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:55:29  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:55:29  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:55:29  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:56:29  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:56:46  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:56:46  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:56:46  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:57:46  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:58:03  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:58:03  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:58:03  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+06:59:03  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+06:59:21  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+06:59:21  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+06:59:21  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:00:21  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:00:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:00:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:00:38  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:01:38  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:01:55  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:01:55  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:01:55  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:02:55  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:03:13  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:03:13  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:03:13  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:04:13  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:04:30  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:04:30  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:04:30  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:05:30  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:05:47  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:05:47  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:05:47  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:06:47  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:07:05  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:07:05  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:07:05  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:08:05  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:08:22  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:08:22  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:08:22  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:09:22  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:09:39  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:09:39  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:09:39  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:10:39  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:10:57  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:10:57  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:10:57  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:11:57  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:12:14  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:12:14  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:12:14  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:13:14  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:13:31  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu FAIL (127.0.0.1:7555 [720, 1280] 前台 None)
+07:13:31  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:13:31  预检未通过：核心环境不可用（device）；不启动 AUTO，60 秒后重试。
+07:14:31  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:14:32  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+07:14:32  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:14:32  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:14:32  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:15:07  ⚠ 本轮结束：页面未识别
+07:15:11  磁盘保护：已清理 3 张过期或超额运行截图。
+07:15:11  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:15:11  连续运行已启用，30 秒后进入下一轮。
+07:15:41  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:15:41  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:16:26  ⚠ 本轮结束：页面未识别
+07:16:30  磁盘保护：已清理 4 张过期或超额运行截图。
+07:16:30  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:16:30  连续运行已启用，30 秒后进入下一轮。
+07:17:00  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:17:00  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:18:08  ⚠ 本轮结束：DAILY TAB NOT SELECTED
+07:18:12  磁盘保护：已清理 4 张过期或超额运行截图。
+07:18:12  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:18:12  连续运行已启用，30 秒后进入下一轮。
+07:18:42  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:18:42  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:19:56  ⚠ 本轮结束：OPEN MAP NOT PROVEN
+07:20:03  磁盘保护：已清理 5 张过期或超额运行截图。
+07:20:03  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:20:03  连续运行已启用，30 秒后进入下一轮。
+07:20:33  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:20:33  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:21:24  ⚠ 本轮结束：POPUP CLOSE NOT PROVEN
+07:21:26  磁盘保护：已清理 2 张过期或超额运行截图。
+07:21:26  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:21:26  连续运行已启用，30 秒后进入下一轮。
+07:21:56  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:21:56  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:22:58  ⚠ 本轮结束：页面未识别
+07:23:01  磁盘保护：已清理 3 张过期或超额运行截图。
+07:23:01  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:23:01  连续运行已启用，30 秒后进入下一轮。
+07:23:31  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:23:31  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:23:37  ⚠ 本轮结束：暂无结构化结果
+07:23:39  磁盘保护：已清理 1 张过期或超额运行截图。
+07:23:39  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:23:39  连续运行已启用，30 秒后进入下一轮。
+07:24:09  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:24:09  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:25:31  ⚠ 本轮结束：页面未识别
+07:25:38  磁盘保护：已清理 6 张过期或超额运行截图。
+07:25:38  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:25:38  连续运行已启用，30 秒后进入下一轮。
+07:26:08  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:26:08  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:27:32  ⚠ 本轮结束：页面未识别
+07:27:37  磁盘保护：已清理 5 张过期或超额运行截图。
+07:27:37  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:27:37  连续运行已启用，30 秒后进入下一轮。
+07:28:07  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:28:07  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:28:18  ⚠ 本轮结束：SEMANTIC TARGET NOT VERIFIED
+07:28:19  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:28:19  连续运行已启用，30 秒后进入下一轮。
+07:28:49  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:28:49  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:29:37  ⚠ 本轮结束：SEMANTIC TARGET NOT VERIFIED
+07:29:39  磁盘保护：已清理 2 张过期或超额运行截图。
+07:29:39  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:29:39  连续运行已启用，30 秒后进入下一轮。
+07:30:09  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:30:09  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:31:53  ⚠ 本轮结束：BEAST SCAN NOT PROVEN
+07:32:02  磁盘保护：已清理 4 张过期或超额运行截图。
+07:32:02  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:32:02  连续运行已启用，30 秒后进入下一轮。
+07:32:32  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:32:32  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:33:23  ⚠ 本轮结束：BEAST SCAN NOT PROVEN
+07:33:30  磁盘保护：已清理 2 张过期或超额运行截图。
+07:33:30  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:33:30  连续运行已启用，30 秒后进入下一轮。
+07:34:00  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:34:00  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:35:55  ⚠ 本轮结束：verified beast target not visible
+07:36:01  磁盘保护：已清理 1 张过期或超额运行截图。
+07:36:01  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:36:01  连续运行已启用，30 秒后进入下一轮。
+07:36:31  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:36:31  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:38:10  ⚠ 本轮结束：verified beast target not visible
+07:38:17  磁盘保护：已清理 1 张过期或超额运行截图。
+07:38:17  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:38:17  连续运行已启用，30 秒后进入下一轮。
+07:38:47  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:38:47  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:40:10  ⚠ 本轮结束：verified beast target not visible
+07:40:17  磁盘保护：已清理 1 张过期或超额运行截图。
+07:40:17  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:40:17  连续运行已启用，30 秒后进入下一轮。
+07:40:47  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:40:47  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:42:39  ⚠ 本轮结束：BEAST SCAN NOT PROVEN
+07:42:42  磁盘保护：已清理 3 张过期或超额运行截图。
+07:42:42  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:42:42  连续运行已启用，30 秒后进入下一轮。
+07:43:12  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:43:12  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:45:01  ⚠ 本轮结束：verified beast target not visible
+07:45:03  磁盘保护：已清理 1 张过期或超额运行截图。
+07:45:03  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:45:03  连续运行已启用，30 秒后进入下一轮。
+07:45:33  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:45:33  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:47:38  ⚠ 本轮结束：verified beast target not visible
+07:49:11  控制台已启动。
+07:49:13  磁盘保护：已清理 2 张过期或超额运行截图。
+07:49:13  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:49:15  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+07:49:15  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+07:49:16  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+07:49:16  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:49:16  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:50:49  ⚠ 本轮结束：verified beast target not visible
+07:50:55  磁盘保护：已清理 1 张过期或超额运行截图。
+07:50:55  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:50:55  连续运行已启用，30 秒后进入下一轮。
+07:51:25  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:51:25  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:52:49  ⚠ 本轮结束：verified beast target not visible
+07:52:56  磁盘保护：已清理 1 张过期或超额运行截图。
+07:52:56  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:52:56  连续运行已启用，30 秒后进入下一轮。
+07:53:26  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:53:26  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:54:53  ⚠ 本轮结束：verified beast target not visible
+07:54:59  磁盘保护：已清理 1 张过期或超额运行截图。
+07:54:59  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:54:59  连续运行已启用，30 秒后进入下一轮。
+07:55:35  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:55:35  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:56:59  ⚠ 本轮结束：verified beast target not visible
+07:57:06  磁盘保护：已清理 1 张过期或超额运行截图。
+07:57:06  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:57:06  连续运行已启用，30 秒后进入下一轮。
+07:57:36  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:57:36  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+07:59:01  ⚠ 本轮结束：verified beast target not visible
+07:59:07  磁盘保护：已清理 1 张过期或超额运行截图。
+07:59:08  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+07:59:08  连续运行已启用，30 秒后进入下一轮。
+07:59:38  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+07:59:38  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:01:01  ⚠ 本轮结束：verified beast target not visible
+08:01:07  磁盘保护：已清理 1 张过期或超额运行截图。
+08:01:07  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:01:07  连续运行已启用，30 秒后进入下一轮。
+08:01:37  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:01:37  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:03:04  ⚠ 本轮结束：verified beast target not visible
+08:03:11  磁盘保护：已清理 1 张过期或超额运行截图。
+08:03:11  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:03:11  连续运行已启用，30 秒后进入下一轮。
+08:03:41  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:03:41  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:05:17  ⚠ 本轮结束：verified beast target not visible
+08:05:19  磁盘保护：已清理 1 张过期或超额运行截图。
+08:05:19  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:05:19  连续运行已启用，30 秒后进入下一轮。
+08:05:49  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:05:49  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:07:39  ⚠ 本轮结束：verified beast target not visible
+08:07:41  磁盘保护：已清理 1 张过期或超额运行截图。
+08:07:41  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:07:41  连续运行已启用，30 秒后进入下一轮。
+08:08:11  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:08:11  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:09:57  ⚠ 本轮结束：verified beast target not visible
+08:09:59  磁盘保护：已清理 1 张过期或超额运行截图。
+08:09:59  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:09:59  连续运行已启用，30 秒后进入下一轮。
+08:10:29  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:10:29  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:12:14  ⚠ 本轮结束：verified beast target not visible
+08:12:16  磁盘保护：已清理 1 张过期或超额运行截图。
+08:12:16  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:12:16  连续运行已启用，30 秒后进入下一轮。
+08:12:26  控制台已启动。
+08:12:27  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:12:46  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:12:46  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:14:33  ⚠ 本轮结束：verified beast target not visible
+08:14:35  磁盘保护：已清理 1 张过期或超额运行截图。
+08:14:35  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:14:35  连续运行已启用，30 秒后进入下一轮。
+08:15:05  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:15:05  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:16:51  ⚠ 本轮结束：verified beast target not visible
+08:16:53  磁盘保护：已清理 1 张过期或超额运行截图。
+08:16:53  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:16:53  连续运行已启用，30 秒后进入下一轮。
+08:17:23  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:17:23  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:19:10  ⚠ 本轮结束：verified beast target not visible
+08:19:11  磁盘保护：已清理 1 张过期或超额运行截图。
+08:19:12  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:19:12  连续运行已启用，30 秒后进入下一轮。
+08:19:42  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:19:42  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:21:18  ⚠ 本轮结束：verified beast target not visible
+08:21:24  磁盘保护：已清理 1 张过期或超额运行截图。
+08:21:25  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:21:25  连续运行已启用，30 秒后进入下一轮。
+08:21:55  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:21:55  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:23:37  ⚠ 本轮结束：verified beast target not visible
+08:23:38  磁盘保护：已清理 1 张过期或超额运行截图。
+08:23:39  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:23:39  连续运行已启用，30 秒后进入下一轮。
+08:24:09  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:24:09  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:25:49  ⚠ 本轮结束：verified beast target not visible
+08:25:51  磁盘保护：已清理 1 张过期或超额运行截图。
+08:25:51  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:25:51  连续运行已启用，30 秒后进入下一轮。
+08:26:21  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:26:21  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:28:10  ⚠ 本轮结束：verified beast target not visible
+08:28:13  磁盘保护：已清理 1 张过期或超额运行截图。
+08:28:13  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:28:13  连续运行已启用，30 秒后进入下一轮。
+08:28:43  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:28:43  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:30:30  ⚠ 本轮结束：verified beast target not visible
+08:30:31  磁盘保护：已清理 1 张过期或超额运行截图。
+08:30:31  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:30:31  连续运行已启用，30 秒后进入下一轮。
+08:31:01  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:31:01  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:31:36  ⚠ 本轮结束：暂无结构化结果
+08:31:39  磁盘保护：已清理 2 张过期或超额运行截图。
+08:31:39  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:31:39  连续运行已启用，30 秒后进入下一轮。
+08:31:42  控制台已启动。
+08:31:42  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:32:09  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:32:09  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:33:55  ⚠ 本轮结束：verified beast target not visible
+08:33:57  磁盘保护：已清理 1 张过期或超额运行截图。
+08:33:57  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:33:57  连续运行已启用，30 秒后进入下一轮。
+08:34:27  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:34:27  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:36:06  ⚠ 本轮结束：verified beast target not visible
+08:36:08  磁盘保护：已清理 1 张过期或超额运行截图。
+08:36:08  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:36:08  连续运行已启用，30 秒后进入下一轮。
+08:36:38  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:36:38  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:36:46  控制台已启动。
+08:36:46  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:38:20  ⚠ 本轮结束：verified beast target not visible
+08:38:22  磁盘保护：已清理 1 张过期或超额运行截图。
+08:38:22  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:38:22  连续运行已启用，30 秒后进入下一轮。
+08:38:52  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:38:52  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:43:30  控制台已启动。
+08:43:30  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:45:08  ✓ 本轮结束：已为体力任务预留1支行军
+08:45:11  磁盘保护：已清理 2 张过期或超额运行截图。
+08:45:12  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:45:12  连续运行已启用，10 分钟后进入下一轮。
+08:55:12  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+08:55:12  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+08:57:09  ✓ 本轮结束：已为体力任务预留1支行军
+08:57:21  磁盘保护：已清理 9 张过期或超额运行截图。
+08:57:21  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+08:57:21  连续运行已启用，10 分钟后进入下一轮。
+09:04:49  控制台已启动。
+09:04:50  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:06:20  控制台已启动。
+09:06:21  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:07:21  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:07:21  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:11:12  ⚠ 本轮结束：verified beast target not visible
+09:11:15  磁盘保护：已清理 2 张过期或超额运行截图。
+09:11:15  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:11:15  连续运行已启用，30 秒后进入下一轮。
+09:11:45  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:11:45  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:13:00  控制台已启动。
+09:13:00  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:18:48  ✓ 本轮结束：已为体力任务预留1支行军
+09:18:51  磁盘保护：已清理 2 张过期或超额运行截图。
+09:18:51  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:18:51  连续运行已启用，10 分钟后进入下一轮。
+09:19:14  控制台已启动。
+09:19:14  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:19:49  控制台已启动。
+09:19:49  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:20:19  控制台已启动。
+09:20:19  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:28:51  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:28:51  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:29:12  ✓ 本轮结束：已为体力任务预留1支行军
+09:29:14  磁盘保护：已清理 1 张过期或超额运行截图。
+09:29:14  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:29:14  连续运行已启用，10 分钟后进入下一轮。
+09:36:05  控制台已启动。
+09:36:05  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:39:14  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:39:14  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:43:38  ⚠ 本轮结束：verified beast target not visible
+09:43:41  磁盘保护：已清理 1 张过期或超额运行截图。
+09:43:41  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:43:41  连续运行已启用，30 秒后进入下一轮。
+09:44:11  延后启动：job 2934e9cd is still active and code changed on disk (33s ago); waiting so the next cycle does not import a half-written tree
+09:44:11  job 2934e9cd is still active and code changed on disk (33s ago); waiting so the next cycle does not import a half-written tree
+09:44:16  延后启动：job 2934e9cd is still active and code changed on disk (38s ago); waiting so the next cycle does not import a half-written tree
+09:44:16  job 2934e9cd is still active and code changed on disk (38s ago); waiting so the next cycle does not import a half-written tree
+09:44:21  延后启动：job 2934e9cd is still active and code changed on disk (43s ago); waiting so the next cycle does not import a half-written tree
+09:44:21  job 2934e9cd is still active and code changed on disk (43s ago); waiting so the next cycle does not import a half-written tree
+09:44:26  延后启动：job 2934e9cd is still active and code changed on disk (48s ago); waiting so the next cycle does not import a half-written tree
+09:44:26  job 2934e9cd is still active and code changed on disk (48s ago); waiting so the next cycle does not import a half-written tree
+09:44:31  延后启动：job 2934e9cd is still active and code changed on disk (53s ago); waiting so the next cycle does not import a half-written tree
+09:44:31  job 2934e9cd is still active and code changed on disk (53s ago); waiting so the next cycle does not import a half-written tree
+09:44:36  延后启动：job 2934e9cd is still active and code changed on disk (58s ago); waiting so the next cycle does not import a half-written tree
+09:44:36  job 2934e9cd is still active and code changed on disk (58s ago); waiting so the next cycle does not import a half-written tree
+09:44:41  延后启动：job 2934e9cd is still active and code changed on disk (63s ago); waiting so the next cycle does not import a half-written tree
+09:44:41  job 2934e9cd is still active and code changed on disk (63s ago); waiting so the next cycle does not import a half-written tree
+09:44:46  延后启动：job 2934e9cd is still active and code changed on disk (68s ago); waiting so the next cycle does not import a half-written tree
+09:44:46  job 2934e9cd is still active and code changed on disk (68s ago); waiting so the next cycle does not import a half-written tree
+09:44:51  延后启动：job 2934e9cd is still active and code changed on disk (73s ago); waiting so the next cycle does not import a half-written tree
+09:44:51  job 2934e9cd is still active and code changed on disk (73s ago); waiting so the next cycle does not import a half-written tree
+09:44:56  延后启动：job 2934e9cd is still active and code changed on disk (78s ago); waiting so the next cycle does not import a half-written tree
+09:44:56  job 2934e9cd is still active and code changed on disk (78s ago); waiting so the next cycle does not import a half-written tree
+09:45:01  延后启动：job 2934e9cd is still active and code changed on disk (83s ago); waiting so the next cycle does not import a half-written tree
+09:45:01  job 2934e9cd is still active and code changed on disk (83s ago); waiting so the next cycle does not import a half-written tree
+09:45:06  延后启动：job 2934e9cd is still active and code changed on disk (88s ago); waiting so the next cycle does not import a half-written tree
+09:45:06  job 2934e9cd is still active and code changed on disk (88s ago); waiting so the next cycle does not import a half-written tree
+09:45:11  延后启动：job 2934e9cd is still active and code changed on disk (93s ago); waiting so the next cycle does not import a half-written tree
+09:45:11  job 2934e9cd is still active and code changed on disk (93s ago); waiting so the next cycle does not import a half-written tree
+09:45:16  延后启动：job 2934e9cd is still active and code changed on disk (98s ago); waiting so the next cycle does not import a half-written tree
+09:45:16  job 2934e9cd is still active and code changed on disk (98s ago); waiting so the next cycle does not import a half-written tree
+09:45:21  延后启动：job 2934e9cd is still active and code changed on disk (103s ago); waiting so the next cycle does not import a half-written tree
+09:45:21  job 2934e9cd is still active and code changed on disk (103s ago); waiting so the next cycle does not import a half-written tree
+09:45:26  延后启动：job 2934e9cd is still active and code changed on disk (108s ago); waiting so the next cycle does not import a half-written tree
+09:45:26  job 2934e9cd is still active and code changed on disk (108s ago); waiting so the next cycle does not import a half-written tree
+09:45:31  延后启动：job 2934e9cd is still active and code changed on disk (113s ago); waiting so the next cycle does not import a half-written tree
+09:45:31  job 2934e9cd is still active and code changed on disk (113s ago); waiting so the next cycle does not import a half-written tree
+09:45:36  延后启动：job 2934e9cd is still active and code changed on disk (118s ago); waiting so the next cycle does not import a half-written tree
+09:45:36  job 2934e9cd is still active and code changed on disk (118s ago); waiting so the next cycle does not import a half-written tree
+09:45:41  延后启动：job 2934e9cd is still active and code changed on disk (123s ago); waiting so the next cycle does not import a half-written tree
+09:45:41  job 2934e9cd is still active and code changed on disk (123s ago); waiting so the next cycle does not import a half-written tree
+09:45:46  延后启动：job 2934e9cd is still active and code changed on disk (128s ago); waiting so the next cycle does not import a half-written tree
+09:45:46  job 2934e9cd is still active and code changed on disk (128s ago); waiting so the next cycle does not import a half-written tree
+09:45:51  延后启动：job 2934e9cd is still active and code changed on disk (133s ago); waiting so the next cycle does not import a half-written tree
+09:45:51  job 2934e9cd is still active and code changed on disk (133s ago); waiting so the next cycle does not import a half-written tree
+09:45:56  延后启动：job 2934e9cd is still active and code changed on disk (138s ago); waiting so the next cycle does not import a half-written tree
+09:45:56  job 2934e9cd is still active and code changed on disk (138s ago); waiting so the next cycle does not import a half-written tree
+09:46:01  延后启动：job 2934e9cd is still active and code changed on disk (143s ago); waiting so the next cycle does not import a half-written tree
+09:46:01  job 2934e9cd is still active and code changed on disk (143s ago); waiting so the next cycle does not import a half-written tree
+09:46:06  延后启动：job 2934e9cd is still active and code changed on disk (148s ago); waiting so the next cycle does not import a half-written tree
+09:46:06  job 2934e9cd is still active and code changed on disk (148s ago); waiting so the next cycle does not import a half-written tree
+09:46:11  延后启动：job 2934e9cd is still active and code changed on disk (153s ago); waiting so the next cycle does not import a half-written tree
+09:46:11  job 2934e9cd is still active and code changed on disk (153s ago); waiting so the next cycle does not import a half-written tree
+09:46:16  延后启动：job 2934e9cd is still active and code changed on disk (158s ago); waiting so the next cycle does not import a half-written tree
+09:46:16  job 2934e9cd is still active and code changed on disk (158s ago); waiting so the next cycle does not import a half-written tree
+09:46:21  延后启动：job 2934e9cd is still active and code changed on disk (163s ago); waiting so the next cycle does not import a half-written tree
+09:46:21  job 2934e9cd is still active and code changed on disk (163s ago); waiting so the next cycle does not import a half-written tree
+09:46:26  延后启动：job 2934e9cd is still active and code changed on disk (168s ago); waiting so the next cycle does not import a half-written tree
+09:46:26  job 2934e9cd is still active and code changed on disk (168s ago); waiting so the next cycle does not import a half-written tree
+09:46:31  延后启动：job 2934e9cd is still active and code changed on disk (173s ago); waiting so the next cycle does not import a half-written tree
+09:46:31  job 2934e9cd is still active and code changed on disk (173s ago); waiting so the next cycle does not import a half-written tree
+09:46:36  延后启动：job 2934e9cd is still active and code changed on disk (178s ago); waiting so the next cycle does not import a half-written tree
+09:46:36  job 2934e9cd is still active and code changed on disk (178s ago); waiting so the next cycle does not import a half-written tree
+09:46:41  延后启动：job 2934e9cd is still active and code changed on disk (183s ago); waiting so the next cycle does not import a half-written tree
+09:46:41  job 2934e9cd is still active and code changed on disk (183s ago); waiting so the next cycle does not import a half-written tree
+09:46:46  延后启动：job 2934e9cd is still active and code changed on disk (188s ago); waiting so the next cycle does not import a half-written tree
+09:46:46  job 2934e9cd is still active and code changed on disk (188s ago); waiting so the next cycle does not import a half-written tree
+09:46:51  延后启动：job 2934e9cd is still active and code changed on disk (193s ago); waiting so the next cycle does not import a half-written tree
+09:46:51  job 2934e9cd is still active and code changed on disk (193s ago); waiting so the next cycle does not import a half-written tree
+09:46:56  延后启动：job 2934e9cd is still active and code changed on disk (198s ago); waiting so the next cycle does not import a half-written tree
+09:46:56  job 2934e9cd is still active and code changed on disk (198s ago); waiting so the next cycle does not import a half-written tree
+09:47:01  延后启动：job 2934e9cd is still active and code changed on disk (203s ago); waiting so the next cycle does not import a half-written tree
+09:47:01  job 2934e9cd is still active and code changed on disk (203s ago); waiting so the next cycle does not import a half-written tree
+09:47:06  延后启动：job 2934e9cd is still active and code changed on disk (208s ago); waiting so the next cycle does not import a half-written tree
+09:47:06  job 2934e9cd is still active and code changed on disk (208s ago); waiting so the next cycle does not import a half-written tree
+09:47:11  延后启动：job 2934e9cd is still active and code changed on disk (213s ago); waiting so the next cycle does not import a half-written tree
+09:47:11  job 2934e9cd is still active and code changed on disk (213s ago); waiting so the next cycle does not import a half-written tree
+09:47:16  延后启动：job 2934e9cd is still active and code changed on disk (218s ago); waiting so the next cycle does not import a half-written tree
+09:47:16  job 2934e9cd is still active and code changed on disk (218s ago); waiting so the next cycle does not import a half-written tree
+09:47:21  延后启动：job 2934e9cd is still active and code changed on disk (223s ago); waiting so the next cycle does not import a half-written tree
+09:47:21  job 2934e9cd is still active and code changed on disk (223s ago); waiting so the next cycle does not import a half-written tree
+09:47:26  延后启动：job 2934e9cd is still active and code changed on disk (228s ago); waiting so the next cycle does not import a half-written tree
+09:47:26  job 2934e9cd is still active and code changed on disk (228s ago); waiting so the next cycle does not import a half-written tree
+09:47:31  延后启动：job 2934e9cd is still active and code changed on disk (233s ago); waiting so the next cycle does not import a half-written tree
+09:47:31  job 2934e9cd is still active and code changed on disk (233s ago); waiting so the next cycle does not import a half-written tree
+09:47:36  延后启动：job 2934e9cd is still active and code changed on disk (238s ago); waiting so the next cycle does not import a half-written tree
+09:47:36  job 2934e9cd is still active and code changed on disk (238s ago); waiting so the next cycle does not import a half-written tree
+09:47:41  延后启动：job 2934e9cd is still active and code changed on disk (243s ago); waiting so the next cycle does not import a half-written tree
+09:47:41  job 2934e9cd is still active and code changed on disk (243s ago); waiting so the next cycle does not import a half-written tree
+09:47:46  延后启动：job 2934e9cd is still active and code changed on disk (248s ago); waiting so the next cycle does not import a half-written tree
+09:47:46  job 2934e9cd is still active and code changed on disk (248s ago); waiting so the next cycle does not import a half-written tree
+09:47:51  延后启动：job 2934e9cd is still active and code changed on disk (253s ago); waiting so the next cycle does not import a half-written tree
+09:47:51  job 2934e9cd is still active and code changed on disk (253s ago); waiting so the next cycle does not import a half-written tree
+09:47:56  延后启动：job 2934e9cd is still active and code changed on disk (258s ago); waiting so the next cycle does not import a half-written tree
+09:47:56  job 2934e9cd is still active and code changed on disk (258s ago); waiting so the next cycle does not import a half-written tree
+09:48:01  延后启动：job 2934e9cd is still active and code changed on disk (263s ago); waiting so the next cycle does not import a half-written tree
+09:48:01  job 2934e9cd is still active and code changed on disk (263s ago); waiting so the next cycle does not import a half-written tree
+09:48:06  延后启动：job 2934e9cd is still active and code changed on disk (268s ago); waiting so the next cycle does not import a half-written tree
+09:48:06  job 2934e9cd is still active and code changed on disk (268s ago); waiting so the next cycle does not import a half-written tree
+09:48:11  延后启动：job 2934e9cd is still active and code changed on disk (274s ago); waiting so the next cycle does not import a half-written tree
+09:48:11  job 2934e9cd is still active and code changed on disk (274s ago); waiting so the next cycle does not import a half-written tree
+09:48:16  延后启动：job 2934e9cd is still active and code changed on disk (279s ago); waiting so the next cycle does not import a half-written tree
+09:48:16  job 2934e9cd is still active and code changed on disk (279s ago); waiting so the next cycle does not import a half-written tree
+09:48:21  延后启动：job 2934e9cd is still active and code changed on disk (284s ago); waiting so the next cycle does not import a half-written tree
+09:48:21  job 2934e9cd is still active and code changed on disk (284s ago); waiting so the next cycle does not import a half-written tree
+09:48:26  延后启动：job 2934e9cd is still active and code changed on disk (289s ago); waiting so the next cycle does not import a half-written tree
+09:48:26  job 2934e9cd is still active and code changed on disk (289s ago); waiting so the next cycle does not import a half-written tree
+09:48:31  延后启动：job 2934e9cd is still active and code changed on disk (294s ago); waiting so the next cycle does not import a half-written tree
+09:48:31  job 2934e9cd is still active and code changed on disk (294s ago); waiting so the next cycle does not import a half-written tree
+09:48:36  延后启动：job 2934e9cd is still active and code changed on disk (299s ago); waiting so the next cycle does not import a half-written tree
+09:48:36  job 2934e9cd is still active and code changed on disk (299s ago); waiting so the next cycle does not import a half-written tree
+09:48:41  延后启动：job 2934e9cd is still active and code changed on disk (304s ago); waiting so the next cycle does not import a half-written tree
+09:48:41  job 2934e9cd is still active and code changed on disk (304s ago); waiting so the next cycle does not import a half-written tree
+09:48:46  延后启动：job 2934e9cd is still active and code changed on disk (309s ago); waiting so the next cycle does not import a half-written tree
+09:48:46  job 2934e9cd is still active and code changed on disk (309s ago); waiting so the next cycle does not import a half-written tree
+09:48:51  延后启动：job 2934e9cd is still active and code changed on disk (314s ago); waiting so the next cycle does not import a half-written tree
+09:48:51  job 2934e9cd is still active and code changed on disk (314s ago); waiting so the next cycle does not import a half-written tree
+09:48:56  延后启动：job 2934e9cd is still active and code changed on disk (319s ago); waiting so the next cycle does not import a half-written tree
+09:48:56  job 2934e9cd is still active and code changed on disk (319s ago); waiting so the next cycle does not import a half-written tree
+09:49:01  延后启动：job 2934e9cd is still active and code changed on disk (324s ago); waiting so the next cycle does not import a half-written tree
+09:49:01  job 2934e9cd is still active and code changed on disk (324s ago); waiting so the next cycle does not import a half-written tree
+09:49:06  延后启动：job 2934e9cd is still active and code changed on disk (329s ago); waiting so the next cycle does not import a half-written tree
+09:49:06  job 2934e9cd is still active and code changed on disk (329s ago); waiting so the next cycle does not import a half-written tree
+09:49:11  延后启动：job 2934e9cd is still active and code changed on disk (334s ago); waiting so the next cycle does not import a half-written tree
+09:49:12  job 2934e9cd is still active and code changed on disk (334s ago); waiting so the next cycle does not import a half-written tree
+09:49:17  延后启动：job 2934e9cd is still active and code changed on disk (339s ago); waiting so the next cycle does not import a half-written tree
+09:49:17  job 2934e9cd is still active and code changed on disk (339s ago); waiting so the next cycle does not import a half-written tree
+09:49:22  延后启动：job 2934e9cd is still active and code changed on disk (344s ago); waiting so the next cycle does not import a half-written tree
+09:49:22  job 2934e9cd is still active and code changed on disk (344s ago); waiting so the next cycle does not import a half-written tree
+09:49:27  延后启动：job 2934e9cd is still active and code changed on disk (349s ago); waiting so the next cycle does not import a half-written tree
+09:49:27  job 2934e9cd is still active and code changed on disk (349s ago); waiting so the next cycle does not import a half-written tree
+09:49:32  延后启动：job 2934e9cd is still active and code changed on disk (354s ago); waiting so the next cycle does not import a half-written tree
+09:49:32  job 2934e9cd is still active and code changed on disk (354s ago); waiting so the next cycle does not import a half-written tree
+09:49:37  延后启动：job 2934e9cd is still active and code changed on disk (359s ago); waiting so the next cycle does not import a half-written tree
+09:49:37  job 2934e9cd is still active and code changed on disk (359s ago); waiting so the next cycle does not import a half-written tree
+09:49:42  延后启动：job 2934e9cd is still active and code changed on disk (364s ago); waiting so the next cycle does not import a half-written tree
+09:49:42  job 2934e9cd is still active and code changed on disk (364s ago); waiting so the next cycle does not import a half-written tree
+09:49:47  延后启动：job 2934e9cd is still active and code changed on disk (369s ago); waiting so the next cycle does not import a half-written tree
+09:49:47  job 2934e9cd is still active and code changed on disk (369s ago); waiting so the next cycle does not import a half-written tree
+09:49:52  延后启动：job 2934e9cd is still active and code changed on disk (374s ago); waiting so the next cycle does not import a half-written tree
+09:49:52  job 2934e9cd is still active and code changed on disk (374s ago); waiting so the next cycle does not import a half-written tree
+09:49:57  延后启动：job 2934e9cd is still active and code changed on disk (379s ago); waiting so the next cycle does not import a half-written tree
+09:49:57  job 2934e9cd is still active and code changed on disk (379s ago); waiting so the next cycle does not import a half-written tree
+09:50:02  延后启动：job 2934e9cd is still active and code changed on disk (384s ago); waiting so the next cycle does not import a half-written tree
+09:50:02  job 2934e9cd is still active and code changed on disk (384s ago); waiting so the next cycle does not import a half-written tree
+09:50:07  延后启动：job 2934e9cd is still active and code changed on disk (389s ago); waiting so the next cycle does not import a half-written tree
+09:50:07  job 2934e9cd is still active and code changed on disk (389s ago); waiting so the next cycle does not import a half-written tree
+09:50:12  延后启动：job 2934e9cd is still active and code changed on disk (394s ago); waiting so the next cycle does not import a half-written tree
+09:50:12  job 2934e9cd is still active and code changed on disk (394s ago); waiting so the next cycle does not import a half-written tree
+09:50:18  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:50:18  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:52:24  ⚠ 本轮结束：verified beast target not visible
+09:52:26  磁盘保护：已清理 1 张过期或超额运行截图。
+09:52:26  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:52:26  连续运行已启用，30 秒后进入下一轮。
+09:52:46  控制台已启动。
+09:52:47  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:52:48  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+09:52:49  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+09:52:49  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+09:52:49  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:52:49  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:54:19  ⚠ 本轮结束：verified beast target not visible
+09:54:21  磁盘保护：已清理 1 张过期或超额运行截图。
+09:54:21  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:54:21  连续运行已启用，30 秒后进入下一轮。
+09:54:51  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:54:51  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:56:25  ⚠ 本轮结束：verified beast target not visible
+09:56:27  磁盘保护：已清理 1 张过期或超额运行截图。
+09:56:27  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:56:27  连续运行已启用，30 秒后进入下一轮。
+09:57:35  控制台已启动。
+09:57:36  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:57:37  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+09:57:38  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+09:57:38  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+09:57:38  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:57:38  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+09:59:20  控制台已启动。
+09:59:22  磁盘保护：已清理 2 张过期或超额运行截图。
+09:59:22  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+09:59:24  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+09:59:24  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+09:59:24  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。
+09:59:24  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+09:59:24  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:04:05  ✓ 本轮结束：已为体力任务预留1支行军
+10:04:08  磁盘保护：已清理 2 张过期或超额运行截图。
+10:04:08  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:04:08  连续运行已启用，10 分钟后进入下一轮。
+10:04:20  控制台已启动。
+10:04:21  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:04:22  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+10:04:23  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+10:04:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+10:04:23  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:04:23  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:04:37  ✓ 本轮结束：已为体力任务预留1支行军
+10:04:39  磁盘保护：已清理 1 张过期或超额运行截图。
+10:04:39  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:04:39  连续运行已启用，10 分钟后进入下一轮。
+10:14:39  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:14:39  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:14:57  ✓ 本轮结束：已为体力任务预留1支行军
+10:15:01  磁盘保护：已清理 3 张过期或超额运行截图。
+10:15:01  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:15:01  连续运行已启用，10 分钟后进入下一轮。
+10:25:01  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:25:01  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:28:20  ⚠ 本轮结束：verified beast target not visible
+10:28:22  磁盘保护：已清理 1 张过期或超额运行截图。
+10:28:22  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:28:22  连续运行已启用，30 秒后进入下一轮。
+10:28:52  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:28:52  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:33:31  ✓ 本轮结束：已为体力任务预留1支行军
+10:33:33  磁盘保护：已清理 1 张过期或超额运行截图。
+10:33:33  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:33:33  连续运行已启用，10 分钟后进入下一轮。
+10:43:33  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:43:33  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:44:33  ✓ 本轮结束：已为体力任务预留1支行军
+10:44:35  磁盘保护：已清理 1 张过期或超额运行截图。
+10:44:35  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:44:35  连续运行已启用，10 分钟后进入下一轮。
+10:49:36  开发队列：已向 WorkBuddy 提交 1 个真实任务。
+10:49:36  开发队列对账 1 个任务（[escalation] reconciled 1, submitted 1, reload requested (0440cd38)）。
+10:54:36  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:54:36  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:54:40  ⚠ 本轮结束：device leased for development
+10:54:41  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:54:41  连续运行已启用，30 秒后进入下一轮。
+10:55:11  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:55:11  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+10:56:05  ⚠ 本轮结束：OPEN MAP NOT PROVEN
+10:56:08  磁盘保护：已清理 2 张过期或超额运行截图。
+10:56:08  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+10:56:08  连续运行已启用，30 秒后进入下一轮。
+10:56:38  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+10:56:38  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+11:00:13  ⚠ 本轮结束：verified beast target not visible
+11:00:15  磁盘保护：已清理 1 张过期或超额运行截图。
+11:00:15  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+11:00:15  连续运行已启用，30 秒后进入下一轮。
+11:00:45  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+11:00:45  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+11:06:13  ✓ 本轮结束：已为体力任务预留1支行军
+11:06:16  磁盘保护：已清理 2 张过期或超额运行截图。
+11:06:16  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+11:06:16  连续运行已启用，10 分钟后进入下一轮。
+11:16:16  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+11:16:16  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+11:17:37  ✓ 本轮结束：已为体力任务预留1支行军
+11:17:39  磁盘保护：已清理 1 张过期或超额运行截图。
+11:17:39  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+11:17:39  连续运行已启用，10 分钟后进入下一轮。
+11:27:39  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+11:27:39  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+11:31:58  ⚠ 本轮结束：verified beast target not visible
+11:32:00  磁盘保护：已清理 1 张过期或超额运行截图。
+11:32:00  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+11:32:00  连续运行已启用，30 秒后进入下一轮。
+11:32:30  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+11:32:30  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+11:35:34  ✓ 本轮结束：已为体力任务预留1支行军
+11:35:36  磁盘保护：已清理 2 张过期或超额运行截图。
+11:35:36  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+11:35:36  连续运行已启用，10 分钟后进入下一轮。
+11:45:36  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+11:45:36  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+11:46:41  ✓ 本轮结束：已为体力任务预留1支行军
+11:46:43  磁盘保护：已清理 1 张过期或超额运行截图。
+11:46:43  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+11:46:43  连续运行已启用，10 分钟后进入下一轮。
+11:49:21  开发队列对账 1 个任务（[escalation] reconciled 1, reload requested (57848179)）。
+11:56:44  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+11:56:44  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:02:04  ⚠ 本轮结束：goal page mismatch
+12:02:09  磁盘保护：已清理 3 张过期或超额运行截图。
+12:02:09  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:02:09  连续运行已启用，30 秒后进入下一轮。
+12:02:39  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:02:39  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:02:56  ⚠ 本轮结束：goal page mismatch
+12:02:58  磁盘保护：已清理 1 张过期或超额运行截图。
+12:02:58  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:02:59  连续运行已启用，30 秒后进入下一轮。
+12:03:29  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:03:29  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:03:44  ⚠ 本轮结束：goal page mismatch
+12:03:46  磁盘保护：已清理 1 张过期或超额运行截图。
+12:03:46  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:03:46  连续运行已启用，30 秒后进入下一轮。
+12:04:16  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:04:16  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:04:32  ⚠ 本轮结束：goal page mismatch
+12:04:34  磁盘保护：已清理 1 张过期或超额运行截图。
+12:04:34  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:04:34  连续运行已启用，30 秒后进入下一轮。
+12:05:04  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:05:04  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:05:20  ⚠ 本轮结束：goal page mismatch
+12:05:22  磁盘保护：已清理 1 张过期或超额运行截图。
+12:05:22  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:05:22  连续运行已启用，30 秒后进入下一轮。
+12:05:52  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:05:52  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:06:09  ⚠ 本轮结束：goal page mismatch
+12:06:11  磁盘保护：已清理 1 张过期或超额运行截图。
+12:06:11  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:06:11  连续运行已启用，30 秒后进入下一轮。
+12:06:41  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:06:41  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:06:58  ⚠ 本轮结束：goal page mismatch
+12:07:00  磁盘保护：已清理 1 张过期或超额运行截图。
+12:07:00  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:07:00  连续运行已启用，30 秒后进入下一轮。
+12:07:30  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:07:30  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:10:35  ⚠ 本轮结束：verified beast target not visible
+12:10:37  磁盘保护：已清理 1 张过期或超额运行截图。
+12:10:37  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:10:37  连续运行已启用，30 秒后进入下一轮。
+12:11:07  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:11:07  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:12:58  ✓ 本轮结束：已为体力任务预留1支行军
+12:13:04  磁盘保护：已清理 1 张过期或超额运行截图。
+12:13:04  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:13:04  连续运行已启用，10 分钟后进入下一轮。
+12:23:04  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:23:04  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:25:08  ✓ 本轮结束：已为体力任务预留1支行军
+12:25:14  磁盘保护：已清理 1 张过期或超额运行截图。
+12:25:14  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:25:14  连续运行已启用，10 分钟后进入下一轮。
+12:35:04  控制台已启动。
+12:35:05  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:35:06  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+12:35:07  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+12:35:07  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+12:35:07  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:35:07  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:36:22  控制台已启动。
+12:36:23  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:36:24  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+12:36:25  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+12:36:25  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+12:36:25  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:36:25  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:39:20  ✓ 本轮结束：已为体力任务预留1支行军
+12:39:23  磁盘保护：已清理 2 张过期或超额运行截图。
+12:39:23  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:39:23  连续运行已启用，10 分钟后进入下一轮。
+12:43:40  开发队列：已向 WorkBuddy 提交 1 个真实任务。
+12:43:40  开发队列对账 1 个任务（[escalation] reconciled 1, submitted 1, reload requested (22d9e69d)）。
+12:46:14  能力预载（后台低优先级）：[bootstrap] TARGETED_RESEARCH · P1 TROOP_SELECT · GATE_REFUSED · missing recovery_prior · next ECONOMY_RESEARCH -- NOT_ARMED_MAIN_LOOP_P0: main loop not fully proven yet: P0-A=PARTIAL, P0-B=PROVEN, P0-C=PROVEN, P0-D=NOT PROVEN, P0-E=PARTIAL, P0-F=NOT PROVEN
+12:49:24  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:49:24  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:51:12  ⚠ 本轮结束：verified beast target not visible
+12:51:14  磁盘保护：已清理 1 张过期或超额运行截图。
+12:51:14  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:51:14  连续运行已启用，30 秒后进入下一轮。
+12:51:44  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+12:51:44  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+12:53:08  ✓ 本轮结束：没有空闲行军，已安全等待
+12:53:10  磁盘保护：已清理 1 张过期或超额运行截图。
+12:53:10  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+12:53:10  连续运行已启用，10 分钟后进入下一轮。
+12:59:27  开发队列本轮 1 个错误：OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH: status(06271322) failed: http://127.0.0.1:8080/api/v1/jobs/06271322: timed out after 15.0s
+13:03:10  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:03:10  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:03:46  ⚠ 本轮结束：device leased for development
+13:03:48  磁盘保护：已清理 1 张过期或超额运行截图。
+13:03:48  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:03:48  连续运行已启用，30 秒后进入下一轮。
+13:04:18  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:04:18  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:05:11  ⚠ 本轮结束：SEMANTIC TARGET NOT VERIFIED
+13:05:14  磁盘保护：已清理 2 张过期或超额运行截图。
+13:05:14  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:05:14  连续运行已启用，30 秒后进入下一轮。
+13:05:44  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:05:44  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:06:06  ⚠ 本轮结束：SEMANTIC TARGET NOT VERIFIED
+13:06:07  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:06:07  连续运行已启用，30 秒后进入下一轮。
+13:06:37  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:06:37  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:07:18  开发队列：释放 1 条缺口（真机已自行证明，不派开发任务）。
+13:07:58  开发队列对账 1 个任务（[escalation] reconciled 1, reload requested (06271322)）。
+13:09:34  ✓ 本轮结束：已为体力任务预留1支行军
+13:09:37  磁盘保护：已清理 1 张过期或超额运行截图。
+13:09:37  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:09:37  连续运行已启用，10 分钟后进入下一轮。
+13:19:38  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:19:38  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:20:02  ✓ 本轮结束：已为体力任务预留1支行军
+13:20:04  磁盘保护：已清理 1 张过期或超额运行截图。
+13:20:04  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:20:04  连续运行已启用，10 分钟后进入下一轮。
+13:30:04  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:30:04  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:36:00  ⚠ 本轮结束：verified beast target not visible
+13:36:03  磁盘保护：已清理 2 张过期或超额运行截图。
+13:36:03  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:36:03  连续运行已启用，30 秒后进入下一轮。
+13:36:33  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:36:33  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:39:03  开发队列本轮 1 个错误：SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+13:39:20  ✓ 本轮结束：已为体力任务预留1支行军
+13:39:23  磁盘保护：已清理 2 张过期或超额运行截图。
+13:39:23  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:39:23  连续运行已启用，10 分钟后进入下一轮。
+13:39:42  控制台已启动。
+13:39:43  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:39:44  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+13:39:45  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+13:39:45  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+13:39:45  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:39:45  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:40:20  控制台已启动。
+13:40:22  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:40:23  启动预检：真实 preflight（MuMu / MAA / RapidOCR / Runtime / WorkBuddy Gateway）
+13:40:24  预检·核心：Runtime OK (E:\dongri-mumu-bot\.venv\Scripts\python.exe) · MuMu OK (127.0.0.1:7555 [720, 1280] 前台 com.gof.china)
+13:40:24  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）
+13:40:24  运行环境预检通过：E:\dongri-mumu-bot\.venv\Scripts\python.exe
+13:40:24  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。
+13:40:43  ✓ 本轮结束：已为体力任务预留1支行军
+13:40:45  磁盘保护：已清理 1 张过期或超额运行截图。
+13:40:45  已从统一 Runtime Snapshot 刷新；面板只读现有状态文件，不自行识别。
+13:40:45  连续运行已启用，10 分钟后进入下一轮。

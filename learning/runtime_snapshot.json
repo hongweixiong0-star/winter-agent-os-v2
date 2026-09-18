@@ -1,20 +1,20 @@
 {
-  "agent_state": "DEGRADED",
+  "agent_state": "IDLE",
   "runtime_thread_alive": false,
   "scheduler_loop_alive": false,
-  "last_tick_time": "2026-09-17T16:25:08.108306+00:00",
-  "last_action_time": "2026-09-17T16:05:08.509855+00:00",
-  "last_success_time": null,
+  "last_tick_time": "2026-09-18T05:40:41.461235+00:00",
+  "last_action_time": "2026-09-18T05:38:46.108162+00:00",
+  "last_success_time": "2026-09-18T05:39:04.221615+00:00",
   "last_fatal_error": null,
   "watchdog_restart_count": 13,
   "unexpected_worker_exits": 15,
-  "page": "RESEARCH",
-  "current_goal": "AUTO_DISCOVERY",
+  "page": "MAP",
+  "current_goal": "KEEP_MARCHES_PRODUCTIVE",
   "current_skill": "SAFE_STOP",
-  "reason": "research_queue_busy",
+  "reason": "reserved_march_for_stamina",
   "preconditions": [],
   "verifier": null,
-  "next_action": "switch_task",
+  "next_action": "stamina_task_slot_preserved",
   "risk": "UNKNOWN",
   "confidence": 1.0,
   "device": "UNKNOWN",
@@ -22,21 +22,30 @@
   "mode": "AUTO",
   "qwen": "ON_DEMAND",
   "vision": "READY",
-  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_002454_677622\\20260918_002454_677622_step_001_before_20260917T162456718233.png",
-  "march_used": null,
-  "march_max": null,
+  "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_134024_624425\\20260918_134024_624425_step_001_before_20260918T054027465361.png",
+  "march_used": 2,
+  "march_max": 3,
   "queues": {
     "building": {},
-    "research": {
-      "timer": "4d21:54:39",
-      "status": "IN_PROGRESS",
-      "queue_available": false
-    },
+    "research": {},
     "training": {},
     "intel": {},
     "alliance": {},
     "events": {}
   },
-  "stop_reason": "research_queue_busy",
-  "updated_at": "2026-09-17T16:25:15.188212+00:00"
+  "stop_reason": "reserved_march_for_stamina",
+  "deferred_goals": [
+    {
+      "goal_id": "AVOID_STAMINA_WASTE",
+      "capability": "SPEND_STAMINA_ON_BEAST",
+      "state": "DEFERRED",
+      "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
+      "source": "NO_GOAL_PROGRESS",
+      "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+      "streak": 4,
+      "until": "",
+      "last_skill": "SCAN_MAP_FOR_BEAST"
+    }
+  ],
+  "updated_at": "2026-09-18T05:40:45.307732+00:00"
 }
