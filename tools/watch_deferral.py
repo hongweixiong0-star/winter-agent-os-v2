@@ -98,6 +98,13 @@ while time.time() < deadline:
         f"deferral_seen={saw_deferral}",
         flush=True,
     )
+    if snap.get("deferred_goals"):
+        for item in snap["deferred_goals"]:
+            print(
+                f"            snapshot deferral: {item.get('goal_id')} -> {item.get('state')} "
+                f"on {item.get('capability') or '(unnamed)'}: {str(item.get('reason'))[:110]}",
+                flush=True,
+            )
     if saw_deferral:
         break
     time.sleep(15)
