@@ -312,6 +312,27 @@ class GateRuleTests(unittest.TestCase):
             "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
         )
 
+    def test_a_sequence_goal_is_named_by_the_step_it_never_reached(self):
+        """The frontier, not the first step every cycle happens to pass.
+
+        Measured 2026-09-18: ``KEEP_MARCHES_PRODUCTIVE``'s no-progress deferral went
+        out as ``NAVIGATE_TO_MAP`` -- composition index 0, reached on every cycle --
+        while the route's last verified step was ``SUBMIT_RESOURCE_SEARCH`` and it had
+        never reached ``OPEN_MARCH_FORMATION``.  The escalation was therefore handed to
+        a development agent against a capability that is already ``LIVE_VERIFIED``,
+        with no live symptom to reproduce.
+        """
+        gate = CapabilityGate(
+            compositions={"SEQ": GoalComposition("SEQ", "SEQUENCE", ("NAV", "OPEN", "DISPATCH"))},
+            streaks={"SEQ": (3, NOW - timedelta(minutes=1), "OPEN")},
+            attempted={"SEQ": frozenset({"NAV", "OPEN"})},
+            reached={"SEQ": frozenset({"NAV", "OPEN"})},
+        )
+        found = gate.blocks(goal("SEQ"), now=NOW)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.capability, "DISPATCH")
+        self.assertEqual(found.failure_signature, "DISPATCH|NO_GOAL_PROGRESS|OPEN")
+
     def test_a_no_progress_signature_keeps_its_three_positional_fields(self):
         """An unresolvable capability leaves the field empty; it never collapses.
 

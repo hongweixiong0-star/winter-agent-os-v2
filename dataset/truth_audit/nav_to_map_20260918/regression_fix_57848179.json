@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0",
+  "job_id": "57848179",
+  "escalation_key": "NAVIGATE_TO_MAP|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH",
+  "capability": "NAVIGATE_TO_MAP",
+  "skill": "OPEN_MAP",
+  "condition": "REPEATED_LIVE_FAILURE",
+  "goal": "KEEP_MARCHES_PRODUCTIVE",
+  "model": "deepseek-v4.1-flash",
+  "recorded_at": "2026-09-18T02:55:34.610745+00:00",
+  "device": {
+    "provider": "mumu_adb",
+    "serial": "127.0.0.1:7555",
+    "resolution": [720, 1280],
+    "package": "com.gof.china"
+  },
+  "root_cause_one_sentence": "capability_gate._route_capability returned the FIRST capability of the goal's SEQUENCE composition that the route had already reached -- NAVIGATE_TO_MAP, composition index 0, reached on every cycle -- instead of the first one it had never reached, so every KEEP_MARCHES_PRODUCTIVE no-progress wall was filed against a navigation capability that is already LIVE_VERIFIED and the development agent was handed a wall with no live symptom to reproduce.",
+  "measured_before_the_fix": {
+    "deferral_row": {
+      "goal_id": "KEEP_MARCHES_PRODUCTIVE",
+      "capability": "NAVIGATE_TO_MAP",
+      "state": "DEFERRED",
+      "source": "NO_GOAL_PROGRESS",
+      "failure_signature": "NAVIGATE_TO_MAP|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH",
+      "streak": 3,
+      "last_skill": "SUBMIT_RESOURCE_SEARCH"
+    },
+    "composition": {
+      "kind": "SEQUENCE",
+      "capabilities": [
+        "NAVIGATE_TO_MAP",
+        "OPEN_RESOURCE_SEARCH",
+        "SELECT_RESOURCE_TYPE",
+        "FIND_RESOURCE_NODE",
+        "OPEN_MARCH_FORMATION",
+        "DISPATCH_GATHER_MARCH",
+        "VERIFY_GATHERING"
+      ]
+    },
+    "reached_recomputed_from_the_episode_stream": [
+      "FIND_RESOURCE_NODE",
+      "NAVIGATE_TO_MAP",
+      "OPEN_RESOURCE_SEARCH",
+      "SCAN_MAP_FOR_BEAST",
+      "SELECT_RESOURCE_TYPE"
+    ],
+    "why_that_is_wrong": "the last verified step of the stalled route was SUBMIT_RESOURCE_SEARCH (FIND_RESOURCE_NODE); the route had never reached OPEN_MARCH_FORMATION, DISPATCH_GATHER_MARCH or VERIFY_GATHERING.  Naming NAVIGATE_TO_MAP sends the next development agent to a capability whose live episodes are all verifier_ok, which is exactly the shape of an escalation that cannot be acted on.",
+    "escalation_ledger_row": {
+      "recorded_at": "2026-09-18T02:44:33.664303+00:00",
+      "dispatch": "CONCURRENCY_WAIT",
+      "dispatch_reason": "max_concurrent_jobs=1 is already used by 0440cd38; two agents must not edit this repository at once",
+      "note": "this is the escalation's OWN failure (it never reached the bridge and sat pending 5.0 min until the consumer re-offered it) and it is a separate fact from the mis-attributed capability above; it self-resolved when 0440cd38 was cancelled on its 45-minute timebox."
+    }
+  },
+  "the_fix": {
+    "winter_agent_v2/capability_gate.py::_route_capability": "for a SEQUENCE composition it now returns the FRONTIER -- the first capability in composition order that the route has not reached; an ANY_OF composition keeps the old first-reached behaviour, because any reached alternative is genuinely a path the goal is driven along.",
+    "winter_agent_v2/capability_gate.py::_no_progress_deferral": "unchanged: it already carried the capability on the Deferral row and keeps the three positional fields <capability>|<failure_type>|<skill>.",
+    "tests/test_capability_gate.py": "test_a_sequence_goal_is_named_by_the_step_it_never_reached pins the frontier rule with the measured shape."
+  },
+  "recomputed_after_the_fix": {
+    "KEEP_MARCHES_PRODUCTIVE": "OPEN_MARCH_FORMATION",
+    "AVOID_STAMINA_WASTE": "SPEND_STAMINA_ON_BEAST",
+    "note": "AVOID_STAMINA_WASTE is ANY_OF and keeps the capability the earlier escalation already used, so the change is confined to the SEQUENCE case it was measured on."
+  },
+  "corroboration_from_the_coverage_table": {
+    "source": "docs/CAPABILITY_COVERAGE.md, regenerated at 2026-09-18T03:0x UTC",
+    "rows": {
+      "NAVIGATE_TO_MAP": "STABLE, OPEN_MAP, 101 attempts / 92 success",
+      "OPEN_RESOURCE_SEARCH": "DEGRADED, SEARCH_RESOURCE, 104 / 70",
+      "SELECT_RESOURCE_TYPE": "DEGRADED, SELECT_RESOURCE, 69 / 24",
+      "FIND_RESOURCE_NODE": "DEGRADED, SUBMIT_RESOURCE_SEARCH, 78 / 48",
+      "OPEN_MARCH_FORMATION": "DEGRADED, START_GATHER, 107 / 47",
+      "DISPATCH_GATHER_MARCH": "DEGRADED, DISPATCH_MARCH, 81 / 44",
+      "VERIFY_GATHERING": "BLOCKED, no implementation"
+    },
+    "why_it_matters": "the capability the old rule named is the only STABLE one in the goal; every step past it is DEGRADED.  The mis-attribution therefore pointed the development agent at the one link that was not broken, which is independent confirmation of the root cause and makes OPEN_MARCH_FORMATION a defensible next target."
+  },
+  "live_verification": {
+    "what": "NAVIGATE_TO_MAP (skill OPEN_MAP) dispatched by the production runtime and judged by its bound verifier",
+    "command": "tools/run_live.py --goal INTEL --stop-after OPEN_MAP --max-actions 1 --capture-dir dataset/raw/control_panel/nav_to_map_20260918 --no-escalate",
+    "device_lease": "a DEVELOPMENT_VALIDATION lease (capability_id=NAVIGATE_TO_MAP, job_id=57848179, trace_id=nav_to_map_20260918) was held while the client was walked back to HOME, then released for the run, so the single UI owner was the validator and not a competing gameplay worker",
+    "episode_id": "nav_to_map_20260918",
+    "skill": "OPEN_MAP",
+    "goal_id": "INTEL",
+    "decision_reason": "intel_goal_requires_map",
+    "recorded_at": "2026-09-18T02:55:34.610745+00:00",
+    "result": "SUCCESS",
+    "verifier_ok": true,
+    "verifier_evidence": {
+      "before_home": true,
+      "after_map": true,
+      "after_confidence": 0.99,
+      "march_used": 0,
+      "march_max": null,
+      "resource_search_open": false
+    },
+    "stop_reason": "TARGET_SKILL_VERIFIED",
+    "page_before": {"page": "HOME", "confidence": 0.98},
+    "page_after": {"page": "MAP", "confidence": 0.99},
+    "before_screenshot": "dataset/raw/control_panel/nav_to_map_20260918/nav_to_map_20260918_step_001_before_20260918T025509572873.png",
+    "after_screenshot": "dataset/raw/control_panel/nav_to_map_20260918/nav_to_map_20260918_step_001_after_20260918T025521936980.png",
+    "archived_here": [
+      "key/live_20260918_job57848179_before_HOME.png",
+      "key/live_20260918_job57848179_after_MAP.png"
+    ],
+    "executor_backend": "ADB",
+    "capture_backend": "MAA_MUMU_EXTRAS",
+    "recognition_backend": "V2",
+    "action_backend": "ADB",
+    "mode": "PRODUCTION"
+  },
+  "dispatch_proof": {
+    "what": "that the run really executed the patched verifier and not merely a bound-but-unreachable one",
+    "artifact": "out_nav_live1.txt (the run's verbatim stdout, kept machine-local)",
+    "why_it_discriminates": "the evidence dict of the old verifier had exactly three keys -- before_home, after_map, map_controls.  after_confidence is produced only by the patched verify_open_map, and map_controls is absent, so step 1 was judged by the new code.  The step's execution block records executed=true, dry_run=false, action=TAP_SEMANTIC/PAGE_MAP, backend=ADB.",
+    "wiring": "tools/check_wiring.py pins the same three links (registered skill, bound verifier, a RuleBrain decision that emits it) and reports problems: 0."
+  },
+  "unproven": [
+    "The next wall behind this one is now named OPEN_MARCH_FORMATION for KEEP_MARCHES_PRODUCTIVE, but that name has NOT been driven to a live fix: no development job has yet been dispatched against it and no live episode proves the grab-march step is where the goal stops advancing.  What is proven is only that the escalated name was wrong.",
+    "The KEEP_MARCHES_PRODUCTIVE streak itself is still unexplained: three production episodes passed their verifier and advanced no part of the goal (goal_progress false, stamina 457 unchanged in the beast case).  This job did not measure why the gather route fails to move the goal; it measured only which capability the deferral should have named.",
+    "The escalation's dispatch failure (max_concurrent_jobs=1 held by 0440cd38 for its whole 45-minute timebox) is not fixed by this change -- it self-resolved when that job was cancelled.  A single slot means a queued escalation waits for the running job's full timebox; whether that wait should be shortened was not decided here.",
+    "The 常规活动 / 护送货车 page still has no template in the page model and still reads Page.UNKNOWN, as recorded in the sibling report.json.  It did not appear on this run."
+  ]
+}

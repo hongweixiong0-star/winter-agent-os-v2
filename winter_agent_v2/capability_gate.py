@@ -517,8 +517,11 @@ class CapabilityGate:
     def _route_capability(self, goal_id: str, declared_skills: Iterable[str] = ()) -> str:
         """The capability name a deferral should be handed off under.
 
-        First the composition entry the goal's own attempted skills resolve to.
-        Then the capability the goal's *declared* skills resolve to: a route can be
+        For a ``SEQUENCE`` goal, the first composition entry the route has *not*
+        reached -- the frontier, which is where the route actually stops.  For an
+        ``ANY_OF`` goal, the first reached alternative, because any of them is a
+        path the goal is genuinely driven along.  Then the capability the goal's
+        *declared* skills resolve to: a route can be
         attempted entirely through steps the capability table does not name (measured
         2026-09-18: ``AVOID_STAMINA_WASTE``'s stalled route ran ``SCAN_MAP_FOR_BEAST``,
         a navigation step that resolves to itself), and the goal still says which
@@ -534,9 +537,24 @@ class CapabilityGate:
         if composition is None:
             return ""
         reached = self.reached.get(goal_id, frozenset())
-        for capability in composition.capabilities:
-            if capability in reached:
-                return capability
+        if composition.composition == "SEQUENCE":
+            # The wall of a required-everything route is its *frontier*: the first
+            # capability the route has never reached.  Naming the first *reached* one
+            # instead measured 2026-09-18 as ``NAVIGATE_TO_MAP`` for a
+            # ``KEEP_MARCHES_PRODUCTIVE`` route that had reached it and stopped at
+            # ``SUBMIT_RESOURCE_SEARCH`` -- index 0 is reached on every cycle, so
+            # every no-progress wall in that goal was filed against a capability that
+            # is already ``LIVE_VERIFIED``, and the development agent was handed a
+            # navigation wall with no live symptom to fix.
+            for capability in composition.capabilities:
+                if capability not in reached:
+                    return capability
+        else:
+            # ANY_OF: "the path this goal is actually driven along" is any reached
+            # alternative; there is no ordered frontier to be stuck behind.
+            for capability in composition.capabilities:
+                if capability in reached:
+                    return capability
         for skill in declared_skills:
             routed = self._capability_of_skill(str(skill))
             if routed in composition.capabilities:
