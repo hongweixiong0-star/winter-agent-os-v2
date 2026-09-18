@@ -48,3 +48,41 @@ MaaFramework **一直安装在项目环境里并能驱动 MuMu**，但开发阶�
 - `knowledge/tooling/tool_registry.json` — 机器可读注册表（含 benchmark 与 last_checked）
 - `knowledge/execution/backend_routing.json` — 已做出的后端选型决策与证据
 - `skills/tool-discovery` — 30 分钟 Tool Waste Watchdog、Tool Selection Gate
+
+## 2026-09-18 现状实测：技术债清单（不启动全量迁移）
+
+用户指令：**禁止开启「全量 MAA 迁移工程」**，但把当前未迁移的技能记录为技术债。
+下表的每个数字都来自 `learning/executor_backend.jsonl` 的真实行（00:30Z 之后 23 行），
+不是配置声明。
+
+| skill | executor | ledger capture | recognition | 备注 |
+|---|---|---|---|---|
+| `SCAN_MAP_FOR_BEAST` | ADB | ADB_EXEC_OUT | **NONE** | 11 步。盲扫（无识别），验证器只判地图页对；最大技术债 |
+| `OPEN_MAP` | ADB | ADB_EXEC_OUT | V2 | 1 步 |
+| `SUBMIT_RESOURCE_SEARCH` | ADB | ADB_EXEC_OUT | V2 | 2 步 |
+| `DISPATCH_MARCH` | ADB | ADB_EXEC_OUT | V2 | 2 步 |
+| `OPEN_HOME` | **MAA** | MAA_MUMU_EXTRAS | MAA | 1 步 |
+| `SEARCH_RESOURCE` | **MAA** | MAA_MUMU_EXTRAS | V2（混合） | 2 步 |
+| `SELECT_RESOURCE` | **MAA** | MAA_MUMU_EXTRAS | V2（混合） | 2 步 |
+| `START_GATHER` | **MAA** | MAA_MUMU_EXTRAS | MAA | 2 步 |
+
+**两个必须分清、不要混为一谈的字段**（混了会得出错误结论）：
+
+- **episode 的 `capture_backend`** 回答「这两帧是谁采的」——当前生产是
+  `MAA_MUMU_EXTRAS`（观测设备是 MAA 适配器）。
+- **ledger 的 `capture_backend`** 回答「这次动作走的是哪条执行通道」——未迁移的技能是
+  `ADB_EXEC_OUT`。
+
+所以用户指令里写的「`SCAN_MAP_FOR_BEAST` capture_backend = ADB_EXEC_OUT」在新日志里
+**已经只对一半**：该技能的 *executor* 仍是 ADB（技术债成立），但*观测*已是 MAA。
+**ADB（技能尚未迁移）** 与 **ADB 降级（请求 MAA 却失败）** 是两件事，GUI 必须继续分开显示
+（前者是待迁移，后者是缺陷）。
+
+**债务处理方式（本卡规则）**：以后开发/修复任何能力时，截图 / 页面识别 / 模板 · ROI ·
+颜色 · 特征 / 点击 / 滑动 / 返回 / 等待 / Retry / UI Recovery **优先用 MAA**；
+文字数字走 RapidOCR + 专用 ROI。**不做事后批量重写**。
+
+**已知风险（`SCAN_MAP_FOR_BEAST`）**：`recognition = NONE` 意味着这条扫描链**没有任何
+识别环节**，它无法判断视野里有没有目标——与 2026-09-18 的
+`SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST` 升级（job `2934e9cd`）
+指向的根因一致。
