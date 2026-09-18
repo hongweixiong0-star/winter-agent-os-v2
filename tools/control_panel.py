@@ -29,6 +29,9 @@ from winter_agent_v2.escalation_queue import (
     AUTO_ESCALATION_CONDITIONS,
     DEFAULT_LEDGER,
     EscalationLedger,
+    # §7: the one answer to "which trace is current", shared by the development page and the
+    # closed-loop card so the two cannot name different capabilities side by side.
+    current_development_trace,
     # Needed by the closed-loop card, which reads the record's own lifecycle state so §十一's
     # "Version must read the real ledger" is satisfied.  Its absence was invisible for a
     # while: the call sat inside a broad ``except`` that turned a NameError into an empty
@@ -1228,6 +1231,12 @@ def escalation_view(root: Path | None = None) -> dict[str, Any]:
         return {"total": 0, "records": (), "current": None, "counts": {}, "conditions": Counter(),
                 "pending_verify": (), "blocked": (), "verified": (), "max_concurrent": 1, "readable": False}
     records = _records_sorted(snapshot)
+    # §7: one selector, shared with the closed-loop card.  This used to be ``active[0]`` with a
+    # separate fallback to the first awaiting record, while the card chose its own -- and the
+    # two named different capabilities side by side, both calling themselves current.
+    from winter_agent_v2.escalation_queue import current_development_trace
+
+    current_record = current_development_trace(snapshot)
     active = [r for r in records if r.state in (NEW, QUEUED, SUBMITTED, WORKING)]
     # A version that exists and has not been examined yet.  It is neither active (no
     # agent is working, so it does not hold the agent slot) nor finished, and leaving it
@@ -1240,7 +1249,7 @@ def escalation_view(root: Path | None = None) -> dict[str, Any]:
         for condition in [record.condition] if record.condition else []:
             conditions[condition] += 1
     return {
-        "total": len(records), "records": tuple(records), "current": active[0] if active else None,
+        "total": len(records), "records": tuple(records), "current": current_record,
         "active": tuple(active), "counts": snapshot.count_by_state(), "conditions": conditions,
         "awaiting_verification": tuple(awaiting),
         "pending_verify": tuple(pending_verify), "blocked": tuple(blocked),
@@ -1434,14 +1443,23 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
             value = str(row.get("key") or "")
             if value and value not in keys:
                 keys.append(value)
-        chains = [closure.build(k, ledger, episodes, commits) for k in keys]
+
+        # §7: the trace this card shows is the one the *panel* shows -- chosen by the one
+        # selector both of them now share, not by "newest with a job id".  When nothing is open,
+        # the newest chain is still built so the page has history to show, but it is labelled as
+        # such rather than presented as the present.
+        current = current_development_trace(fold(ledger))
+        current_key = str(current.key) if current is not None else ""
+        ordered = ([current_key] if current_key in keys else []) + [k for k in keys if k != current_key]
+        chains = [closure.build(k, ledger, episodes, commits) for k in ordered]
         chains = [chain for chain in chains if chain.job_id]
-        chains.sort(key=lambda chain: (chain.submitted_at is None, chain.submitted_at))
+        chains.sort(key=lambda chain: (chain.trace_id != current_key,
+                                       chain.submitted_at is None, chain.submitted_at))
         if not chains:
             card: dict[str, Any] = {"ok": False,
                                     "reason": "台账中没有带 Job 的升级记录，闭环尚未开始"}
         else:
-            chain = chains[-1]
+            chain = chains[0]
             # The record's own lifecycle state, so §十一's "Version must read the real
             # ledger" is satisfied: VERSION_ACTIVATION_PENDING and VERSION_ACTIVE are states
             # in the ledger, and the card shows which one it is rather than inferring a
@@ -1509,6 +1527,11 @@ def closure_card(root: Path | None = None) -> dict[str, Any]:
                 "live_try_episode_id": live_try_episode_id,
                 "live_verify_episode_id": live_verify_episode_id,
                 "production_reuse_episode_id": reuse_episode_id,
+                # §7: whether this chain is the *current* trace or merely the most recent one.
+                # With nothing open the selector returns None, and the page may still show
+                # history -- but it must say that is what it is, or a finished trace reads as
+                # the present, which is the defect the operator named.
+                "is_current": bool(current_key),
             }
     except Exception as exc:  # noqa: BLE001 - a card must never take the window down
         card = {"ok": False, "reason": f"{type(exc).__name__}: {exc}"}
@@ -1590,6 +1613,10 @@ def render_loop_card(card: Mapping[str, Any] | None) -> str:
     breakpoint = str(card.get("breakpoint") or "")
     tail = (f"{card.get('completed')}/{card.get('total')} 步 · 断点：{breakpoint}"
             if breakpoint else f"{card.get('completed')}/{card.get('total')} 步 · 无断点 · PASS")
+    if not card.get("is_current"):
+        traceline = (f"当前无未完成 trace（以下为最近一次历史，不是当前工作）：\n{trace}"
+                     f"{version_note}   {tail}")
+        return "   ".join(cells) + f"\n{traceline}"
     return "   ".join(cells) + f"\n{trace}{version_note}   {tail}"
 
 

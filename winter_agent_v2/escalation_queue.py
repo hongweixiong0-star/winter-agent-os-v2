@@ -1743,6 +1743,52 @@ VALIDATION_CONTEXT_MISMATCH = "VALIDATION_CONTEXT_MISMATCH"
 VALIDATION_VERSION_MISMATCH = "VALIDATION_VERSION_MISMATCH"
 
 
+#: The order in which an open trace counts as *the* current one.  Operator §7, and it is a
+#: ranking rather than a predicate because "which capability is the system working on" has one
+#: answer and several candidates.
+#:
+#: Read from the top: a capability an agent is editing right now outranks one waiting for its
+#: examination, which outranks one whose version has loaded but has not been sent, which
+#: outranks one that has re-joined and awaits proof of reuse, which outranks a record that has
+#: only just been created.  A finished trace is in no bucket at all, so a historical DONE,
+#: FAILED or JOB_LOST can never displace an open one.
+TRACE_PRIORITY: tuple[tuple[str, ...], ...] = (
+    (WORKING, SUBMITTED),
+    (LIVE_VERIFY_PENDING,),
+    (VERSION_ACTIVE,),
+    (REJOINED,),
+    (NEW, QUEUED),
+)
+
+
+def current_development_trace(snapshot: "EscalationSnapshot") -> "EscalationRecord | None":
+    """The one trace the system is working on, or ``None`` when nothing is open.
+
+    Operator §7's fix for a measured defect: the window had two selectors.  The development
+    page took the first active-or-awaiting record; the closed-loop card took whichever chain
+    ``unattended_closure`` called newest.  Measured 2026-09-18 23:14, they named different
+    capabilities side by side -- ``OPEN_MARCH_FORMATION``/``06271322`` in one region and
+    ``SPEND_STAMINA_ON_BEAST``/``5b525aa4`` in the other -- and both said "current".  One
+    question, two answers, is a conflict by construction rather than by accident.
+
+    Ties inside a rank go to the most recent activity, using the newest timestamp the fold
+    recorded.  ``None`` is a real answer: with nothing open there is no current trace, and a
+    reader must not be handed a finished one dressed as the present.
+    """
+    ranked: list[tuple[int, float, "EscalationRecord"]] = []
+    for record in snapshot.records.values():
+        for rank, states in enumerate(TRACE_PRIORITY):
+            if record.state in states:
+                stamps = [m for m in (record.last_seen, record.submitted_at, record.first_seen)
+                          if m is not None]
+                ranked.append((rank, max(stamps).timestamp() if stamps else 0.0, record))
+                break
+    if not ranked:
+        return None
+    ranked.sort(key=lambda item: (item[0], -item[1]))
+    return ranked[0][2]
+
+
 def _is_true(value: Any) -> bool:
     """Is this a truthy flag, whether it arrived as a bool or as its JSON spelling?"""
     if value is True:
