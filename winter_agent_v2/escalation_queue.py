@@ -47,6 +47,8 @@ What it is careful about
 
 from __future__ import annotations
 
+from .winproc import hidden_kwargs
+
 import json
 import re
 import subprocess
@@ -1186,7 +1188,7 @@ def repo_revision(root: Path | str, *, timeout: float = 20.0) -> RepoRevision:
                 encoding="utf-8",
                 errors="replace",
                 timeout=timeout,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                **hidden_kwargs(),
             )
         except (OSError, subprocess.TimeoutExpired):
             return ""
@@ -2662,7 +2664,7 @@ class EscalationQueueAdapter:
                 encoding="utf-8",
                 errors="replace",
                 timeout=120,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                **hidden_kwargs(),
             )
         except (OSError, subprocess.TimeoutExpired):
             return None

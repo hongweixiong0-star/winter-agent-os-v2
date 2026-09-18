@@ -49,6 +49,8 @@ comes from probing a *child* process.
 
 from __future__ import annotations
 
+from .winproc import hidden_kwargs
+
 import json
 import os
 import subprocess
@@ -254,7 +256,7 @@ def probe_interpreter(python_exe: Path, modules: Sequence[str]) -> dict[str, str
             encoding="utf-8",
             errors="replace",
             timeout=PROBE_TIMEOUT_SECONDS,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            **hidden_kwargs(),
         )
     except subprocess.TimeoutExpired:
         return {name: "PROBE_TIMEOUT" for name in modules}

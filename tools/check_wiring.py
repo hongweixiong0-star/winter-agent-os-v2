@@ -247,6 +247,111 @@ def _module_scope_names(tree: ast.Module) -> set[str]:
     return names
 
 
+def unhidden_process_calls(pkg: Path | None = None,
+                           extra_roots: "tuple[Path, ...]" = ()) -> list[tuple[str, str]]:
+    """Every background process started without the one runner's hidden-window flags.
+
+    Operator P0, 2026-09-18: the panel flashed a black console window every few seconds.
+    The cause was one call -- ``state_truth._head()`` running ``git rev-parse`` per refresh
+    with no creation flags -- while *every other* call site in the package was already
+    hidden.  That is the shape of this whole defect class: fixing most call sites is a
+    state, not a rule, and the next refresh path added re-opens it.
+
+    So the rule is mechanical: ``subprocess.run/Popen/call/check_output`` and
+    ``os.system/os.popen`` must either pass ``creationflags`` / ``startupinfo`` directly,
+    or splat ``**hidden_kwargs()`` from ``winproc`` -- or live in a file that is on
+    ``HUMAN_TERMINAL_TOOLS`` below, whose reason is written out rather than assumed.
+
+    Deliberately checks the package *and* the tools the GUI and AUTO execute, so a new
+    diagnostic that shells out from a scheduled path is caught at the gate rather than by
+    the operator watching windows appear.
+    """
+    roots = [pkg or PKG, ROOT / "tools", *extra_roots]
+    strict = {
+        (PKG / "winproc.py").resolve(): "this is the runner",
+    }
+    skip_files = {p.resolve() for p in strict}
+    # ``HumanTerminalTools``: one-shot diagnostics an operator runs by hand in a terminal,
+    # where a console is the point.  Every (path, reason) pair is explicit, so adding
+    # another one is a decision rather than a silent exemption.
+    for name, reason in HUMAN_TERMINAL_TOOLS:
+        path = (ROOT / "tools" / name).resolve()
+        if path.exists():
+            strict[path] = reason
+            skip_files.add(path)
+    found: list[tuple[str, str]] = []
+    watched = {"subprocess.run", "subprocess.Popen", "subprocess.call",
+               "subprocess.check_output", "os.system", "os.popen"}
+    for root in roots:
+        for path in sorted(root.rglob("*.py")):
+            resolved = path.resolve()
+            if resolved in skip_files or "__pycache__" in path.parts:
+                continue
+            # A tree copied into the repo by an analyzer's own test is not production code.
+            if any(part.startswith("_pt") for part in path.parts):
+                continue
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+            except (OSError, SyntaxError):
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                if not isinstance(func, ast.Attribute) or not isinstance(func.value, ast.Name):
+                    continue
+                name = f"{func.value.id}.{func.attr}"
+                if name not in watched:
+                    continue
+                keywords = {keyword.arg for keyword in node.keywords}
+                splat = ast.dump(node)
+                hidden = ("creationflags" in keywords or "startupinfo" in keywords
+                          or None in keywords or "hidden_kwargs" in splat)
+                shelled = any(
+                    keyword.arg == "shell"
+                    and isinstance(keyword.value, ast.Constant)
+                    and keyword.value.value is True
+                    for keyword in node.keywords
+                )
+                # A path outside the repo (a test's temp root) must still be *labelled*,
+                # not raise: a guard that crashes cannot be trusted, and the crash would
+                # hide the finding rather than report it.
+                try:
+                    rel = path.relative_to(ROOT).as_posix()
+                except ValueError:
+                    rel = path.as_posix()
+                if not hidden:
+                    found.append((f"unhidden-process:{rel}:{node.lineno}",
+                                  f"{name} without creationflags/hidden_kwargs()"))
+                elif shelled:
+                    found.append((f"shell-process:{rel}:{node.lineno}",
+                                  f"{name}(shell=True) -- use winproc.run_shell and hide it"))
+    return found
+
+
+# One-shot tools a human runs from a terminal.  Named with their reason so the exemption
+# is auditable, and so a *new* tool does not inherit it by accident.
+HUMAN_TERMINAL_TOOLS: tuple[tuple[str, str], ...] = (
+    ("cq_0ba_check.py", "one-shot probe bound from a terminal"),
+    ("cq_0ba_live_probe.py", "one-shot probe bound from a terminal"),
+    ("cq_recon.py", "one-shot reconnaissance from a terminal"),
+    ("escape_to_known_page.py", "interactive device helper"),
+    ("git_sync.py", "operator-run git/CI tool; runs in a terminal by definition"),
+    ("probe_maa.py", "one-shot MAA probe"),
+    ("probe_maa_api.py", "one-shot MAA probe"),
+    ("probe_maa_api2.py", "one-shot MAA probe"),
+    ("run_intel_loop.py", "interactive loop driven by hand"),
+    ("run_intel_pins.py", "interactive loop driven by hand"),
+    ("run_recall_e2e.py", "interactive end-to-end script"),
+    ("run_tests_batched.py", "operator-run test runner"),
+    ("scan_public_repo.py", "operator-run pre-push gate"),
+    ("simulate_new_account.py", "interactive account simulation"),
+    ("unattended_closure.py", "operator-run closure ladder"),
+    ("update_workbuddy_handoff.py", "operator-run handoff generator"),
+    ("wait_for_known_page.py", "interactive device helper"),
+)
+
+
 def dangling_module_calls(pkg: Path | None = None) -> list[tuple[str, str]]:
     """Every bare `foo(...)` that resolves to no function, import, or builtin.
 
@@ -1196,6 +1301,20 @@ def main() -> int:
           "def policy_toggle_label(" in _panel_source
           and "ttk.Checkbutton(grid, text=name" not in _panel_source
           and "def _toggle_policy(" in _panel_source)
+    check("gui: every background process goes through one hidden-window runner",
+          (PKG / "winproc.py").is_file()
+          and "def hidden_kwargs(" in (PKG / "winproc.py").read_text(encoding="utf-8")
+          and "STARTF_USESHOWWINDOW" in (PKG / "winproc.py").read_text(encoding="utf-8")
+          and "def run_shell(" in (PKG / "winproc.py").read_text(encoding="utf-8")
+          and not unhidden_process_calls())
+    check("gui: the top bar grades the gateway, and the job is only its last known state",
+          "def workbuddy_header(" in _panel_source
+          and 'self.values["workbuddy"].set(workbuddy_header(gateway))' in _panel_source
+          and "下一次探测" in _panel_source
+          and "最后成功" in _panel_source)
+    check("truth: a hidden subprocess cannot raise on this locale's console output",
+          "OEM_ENCODING = \"oem\"" in (PKG / "winproc.py").read_text(encoding="utf-8")
+          and 'errors": "replace"' in (PKG / "winproc.py").read_text(encoding="utf-8"))
     check("gui: an independent verifier checks every field against its source",
           (ROOT / "tools/gui_wiring_verify.py").is_file()
           and "WIRING" in (ROOT / "tools/gui_wiring_verify.py").read_text(encoding="utf-8")
@@ -1262,6 +1381,12 @@ def main() -> int:
     for label, detail in dangling_self_calls():
         check(label, False, detail)
     check("no dangling self-call sites", not dangling_self_calls())
+
+    print("\n-- background processes started without the hidden-window runner --")
+    for label, detail in unhidden_process_calls():
+        print("    ", label, "|", detail)
+    check("no unhidden or shell background process in the GUI/AUTO path",
+          not unhidden_process_calls())
 
     print("\n-- dangling module-level call sites --")
     for label, detail in dangling_module_calls():

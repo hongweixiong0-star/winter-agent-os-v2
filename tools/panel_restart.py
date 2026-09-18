@@ -82,14 +82,11 @@ def alive(pid: int) -> bool:
     """
     if pid <= 0:
         return False
-    try:
-        done = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-            capture_output=True, text=True, errors="replace", timeout=20,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return False
-    return "python" in (done.stdout or "").lower()
+    # Through the one runner: a bare console call from a pythonw parent flashes a window,
+    # and this one is called from the panel's own startup path (the one-clock check).
+    from winter_agent_v2 import winproc
+
+    return winproc.alive(pid)
 
 
 def pump_process() -> tuple[int, float]:
@@ -138,13 +135,12 @@ def current_worker(pid: int | None = None) -> list[str]:
         " Where-Object { $_.Name -notmatch 'powershell|pwsh' -and $_.CommandLine -like '*run_live*py*' } |"
         " ForEach-Object { \"$($_.ProcessId)|$($_.ParentProcessId)|$($_.CommandLine)\" }"
     )
-    try:
-        done = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-            capture_output=True, text=True, errors="replace", timeout=40,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return []
+    from winter_agent_v2 import winproc
+
+    done = winproc.run(
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+        timeout=40,
+    )
     rows = [line for line in (done.stdout or "").splitlines() if line.strip()]
     if pid is None:
         return rows
@@ -256,12 +252,9 @@ def cmd_stop(force: bool = False) -> int:
     for pid in pids:
         _emit(f"stopping panel tree at pid {pid}"
               + (" (forced during a run)" if (workers or claim) else ""))
-        try:
-            done = subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"],
-                                  capture_output=True, text=True, errors="replace", timeout=60)
-        except (OSError, subprocess.SubprocessError) as exc:
-            _emit(f"taskkill failed for {pid}: {type(exc).__name__}: {exc}")
-            continue
+        from winter_agent_v2 import winproc
+
+        done = winproc.run(["taskkill", "/PID", str(pid), "/T", "/F"], timeout=60)
         _emit((done.stdout or "").strip() or (done.stderr or "").strip())
     time.sleep(2)
     left = current_worker()
@@ -287,11 +280,11 @@ def cmd_start(verify_seconds: float = 6.0) -> int:
     log = open(PEEK_LOG, "a", encoding="utf-8")
     _emit(f"starting {VENV_PYTHONW.name} {PANEL_SCRIPT.name}"
           f" (gateway credential: {'from the user environment' if password else 'ABSENT'})")
-    flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-    process = subprocess.Popen(
-        [str(VENV_PYTHONW), str(PANEL_SCRIPT)], cwd=str(ROOT), env=env,
-        stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-        creationflags=flags,
+    from winter_agent_v2 import winproc
+
+    log.close()
+    process = winproc.spawn_detached(
+        [str(VENV_PYTHONW), str(PANEL_SCRIPT)], cwd=str(ROOT), env=env, log_path=PEEK_LOG,
     )
     PID_PATH.parent.mkdir(parents=True, exist_ok=True)
     PID_PATH.write_text(str(process.pid), encoding="utf-8")

@@ -390,6 +390,10 @@ class TruthAudit:
         self._snapshot = _read_json(self.root / SNAPSHOT)
         self._episodes = _tail_jsonl(self.root / EPISODES, 3)
         self._all_episodes_cache: tuple[Mapping[str, Any], ...] | None = None
+        # ``git rev-parse`` is answered once per audit: the commit cannot change under a
+        # running process, and a fresh subprocess per window refresh is what flashed a
+        # console window every few seconds (operator P0, 2026-09-18).
+        self._head_cache: str | None = None
         self._all_executor_cache: tuple[Mapping[str, Any], ...] | None = None
         self._executor = _tail_jsonl(self.root / EXECUTOR_LEDGER, 2)
         self._pump = _read_json(self.root / PUMP)
@@ -446,14 +450,22 @@ class TruthAudit:
         return self._stamp(SNAPSHOT, str(self._snapshot.get("updated_at") or ""))
 
     def _head(self) -> str:
-        try:
-            out = subprocess.run(
-                ["git", "rev-parse", "HEAD"], cwd=str(self.root),
-                capture_output=True, text=True, timeout=15,
-            )
-            return (out.stdout or "").strip()
-        except (OSError, subprocess.SubprocessError):
-            return ""
+        """The commit the tree is on, read once per audit and never through a console window.
+
+        Two defects measured here on 2026-09-18.  The first: this ran ``git rev-parse`` on
+        every call with no creation flags, and ``report()`` calls it on every window
+        refresh -- so the panel flashed a black console window every few seconds, which is
+        the operator's P0.  The second: a fresh ``git`` process per refresh is work the
+        answer cannot change under, since a running process is on the commit it loaded.
+        Both are fixed by reading it once per audit, through ``winproc``.
+        """
+        if self._head_cache is not None:
+            return self._head_cache
+        from . import winproc
+
+        result = winproc.run(["git", "rev-parse", "HEAD"], cwd=self.root, timeout=15.0)
+        self._head_cache = (result.stdout or "").strip()
+        return self._head_cache
 
     # -- the role, which everything else must be scoped by ----------------
 

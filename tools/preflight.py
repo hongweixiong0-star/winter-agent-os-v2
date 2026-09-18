@@ -36,6 +36,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2 import runtime_env  # noqa: E402
+from winter_agent_v2 import winproc  # noqa: E402
 
 LEDGER = ROOT / "learning/executor_backend.jsonl"
 CONFIG = ROOT / "config/v2.json"
@@ -116,8 +117,13 @@ def device_report() -> dict[str, object]:
         from winter_agent_v2.device import ADBDevice
 
         device = ADBDevice(adb, serial, production=True)
-        subprocess.run([str(adb), "connect", serial], capture_output=True,
-                       text=True, timeout=10, check=False)
+        # Hidden on purpose: the panel runs this file at startup from a process that owns
+        # no console, and a console child of a console-less parent gets a *new* one
+        # allocated -- which is a black window the operator sees (P0, 2026-09-18).
+        connect = subprocess.run([str(adb), "connect", serial], capture_output=True,
+                                 text=True, timeout=10, check=False,
+                                 **winproc.hidden_kwargs())
+        del connect
         device.resolve_connection()
         status = device.status()
     except Exception as exc:  # noqa: BLE001 - a dead emulator is an answer

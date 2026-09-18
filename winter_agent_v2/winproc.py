@@ -1,0 +1,238 @@
+"""One runner for every background process, so no command can flash a console window.
+
+Why this module exists
+----------------------
+Measured 2026-09-18: the control panel flashed a black console window every few seconds
+while it ran.  The source was not ADB, which already passed ``CREATE_NO_WINDOW``
+everywhere -- it was ``state_truth._head()``, which ran ``git rev-parse HEAD`` on **every
+refresh** with no creation flags at all.  One un-hidden call in a period path is enough:
+the window appears for a fraction of a second, the operator sees "something keeps
+opening", and no amount of fixing *most* call sites helps.
+
+So the rule is not "remember the flags".  The rule is: **a background process is started
+here, and nowhere else.**  ``tools/check_wiring.py`` enforces it with an AST check over
+the package and ``tools/``: a new ``subprocess.*`` or ``os.system`` call without the
+wrapper fails the wiring gate, which is how this class of defect stays fixed.
+
+Two facts this module has to get right on Windows
+-------------------------------------------------
+1. **Hidden** -- ``CREATE_NO_WINDOW`` plus ``STARTF_USESHOWWINDOW``/``SW_HIDE``.  The
+   second pair matters when the parent *does* own a console (a developer running the
+   panel from a terminal); ``CREATE_NO_WINDOW`` alone is the common half-fix.
+2. **Decodable** -- console tools (``netstat``, ``tasklist``, ``adb``, ``git``) print in
+   the OEM codepage, while this environment sets a UTF-8 default for Python's own I/O.
+   Measured: ``subprocess.run(["netstat","-ano"], text=True)`` raised
+   ``UnicodeDecodeError: 'utf-8' codec can't decode byte 0xbb`` in a Chinese Windows
+   locale.  Every call here therefore pins ``encoding`` and ``errors="replace"``: a
+   diagnostic that raises while measuring a fault is worse than one that mangles a glyph.
+"""
+
+from __future__ import annotations
+
+import os
+import subprocess
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+# Development escape hatch.  The operator's rule: production never shows a console, and a
+# developer who wants to watch one sets this before starting the panel rather than the
+# code deciding per call site.
+SHOW_CONSOLES_ENV = "V2_SHOW_BACKGROUND_CONSOLES"
+
+# Console tools on Windows speak the OEM codepage.  ``oem`` is a real codec name on
+# Windows and a no-op elsewhere, which keeps this module importable on any platform.
+OEM_ENCODING = "oem"
+
+
+def show_consoles() -> bool:
+    """Is the operator asking to *see* background consoles?  Default: no."""
+    raw = str(os.environ.get(SHOW_CONSOLES_ENV, "")).strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def default_encoding() -> str:
+    return OEM_ENCODING if os.name == "nt" else "utf-8"
+
+
+def hidden_kwargs() -> dict[str, Any]:
+    """The flags that stop a console window appearing for a child process.
+
+    Returns ``{}`` off Windows, and ``{}`` as well when the operator has explicitly asked
+    to watch consoles -- the point is a single decision, not a silent difference between
+    platforms.
+    """
+    if os.name != "nt" or show_consoles():
+        return {}
+    startup = subprocess.STARTUPINFO()
+    startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startup.wShowWindow = subprocess.SW_HIDE
+    return {
+        "creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000),
+        "startupinfo": startup,
+    }
+
+
+def run(
+    argv: Sequence[str],
+    *,
+    cwd: Path | str | None = None,
+    timeout: float = 20.0,
+    capture: bool = True,
+    check: bool = False,
+    encoding: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> subprocess.CompletedProcess:
+    """Run one command to completion, hidden, and never inherit the parent's console.
+
+    ``shell`` is not a parameter on purpose: every call site here passes an argument
+    array, and a keyword that only exists to be misused is a liability.  Callers that
+    genuinely need shell semantics must say so in a comment and use ``shell_command()``.
+    """
+    kwargs: dict[str, Any] = {
+        "cwd": str(cwd) if cwd else None,
+        "timeout": timeout,
+        "check": check,
+        "shell": False,
+        "encoding": encoding or default_encoding(),
+        # A measurement that raises on a stray byte is a measurement that fails exactly
+        # when something is wrong, which is when it is needed.
+        "errors": "replace",
+        "text": True,
+        **hidden_kwargs(),
+    }
+    if env is not None:
+        kwargs["env"] = dict(env)
+    if capture:
+        kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    else:
+        # Never inherit: an inherited handle is what lets a child's output reach a console
+        # the operator did not ask for.
+        kwargs.update(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return subprocess.run(list(argv), **kwargs)
+
+
+def run_shell(command: str, *, cwd: Path | str | None = None, timeout: float = 20.0,
+              capture: bool = True) -> subprocess.CompletedProcess:
+    """``run`` for the rare command that needs shell semantics -- still hidden.
+
+    Exists so "I need a pipe or a builtin" does not become a reason to call
+    ``subprocess.run`` directly and lose the flags.
+    """
+    kwargs: dict[str, Any] = {
+        "cwd": str(cwd) if cwd else None,
+        "timeout": timeout,
+        "shell": True,
+        "encoding": default_encoding(),
+        "errors": "replace",
+        "text": True,
+        **hidden_kwargs(),
+    }
+    kwargs.update(
+        stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
+        stderr=subprocess.PIPE if capture else subprocess.DEVNULL,
+    )
+    return subprocess.run(command, **kwargs)
+
+
+def spawn_detached(
+    argv: Sequence[str],
+    *,
+    log_path: Path | str,
+    cwd: Path | str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> subprocess.Popen:
+    """Start a long-lived background service: hidden, its own group, output to a log.
+
+    Deliberately *not* tied to the parent's lifetime and *not* given the parent's
+    console: the gateway is a service the operator may keep running after the window
+    closes, and a GUI that kills it on exit would be the GUI inventing a lifecycle the
+    operator never asked for.  The pid is the caller's to persist.
+    """
+    log = Path(log_path)
+    log.parent.mkdir(parents=True, exist_ok=True)
+    handle = open(log, "ab")
+    kwargs: dict[str, Any] = {
+        "cwd": str(cwd) if cwd else None,
+        "stdin": subprocess.DEVNULL,
+        "stdout": handle,
+        "stderr": subprocess.STDOUT,
+        "shell": False,
+        "close_fds": True,
+    }
+    if env is not None:
+        kwargs["env"] = dict(env)
+    if os.name == "nt":
+        kwargs.update(hidden_kwargs())
+        # A new process group so a Ctrl+C aimed at the panel's console does not reach it.
+        kwargs["creationflags"] = kwargs.get("creationflags", 0) | getattr(
+            subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+        )
+    else:
+        kwargs["start_new_session"] = True
+    try:
+        return subprocess.Popen(list(argv), **kwargs)
+    except Exception:
+        handle.close()
+        raise
+
+
+def kill_tree(pid: int, *, timeout: float = 20.0) -> bool:
+    """End a process and its children, hidden.  False when it was already gone."""
+    if pid <= 0:
+        return False
+    if os.name != "nt":
+        try:
+            os.kill(pid, 15)
+            return True
+        except OSError:
+            return False
+    result = run(["taskkill", "/PID", str(pid), "/T", "/F"], timeout=timeout)
+    return result.returncode == 0
+
+
+def alive(pid: int, *, timeout: float = 20.0) -> bool:
+    """Is this pid a live python process?  Asked by number, never by pattern.
+
+    A pattern over the whole process table matched the agent host process on 2026-09-18
+    and killed it, so this stays a single-pid query.
+    """
+    if pid <= 0:
+        return False
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+    result = run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], timeout=timeout)
+    return "python" in (result.stdout or "").lower()
+
+
+def port_owner(port: int, *, timeout: float = 20.0) -> tuple[int, str]:
+    """``(pid, process_name)`` listening on ``port``, or ``(0, "")`` when nobody is.
+
+    The operator asked for this explicitly (P0 §五): one gateway, one instance, one
+    owner of 8080.  Nothing in this project starts the service -- ``codebuddy --serve``
+    is started by hand -- so the honest answer to "is there a second one?" is a
+    measurement rather than an assumption.
+    """
+    result = run(["netstat", "-ano"], timeout=timeout)
+    if result.returncode != 0:
+        return 0, ""
+    for line in (result.stdout or "").splitlines():
+        parts = line.split()
+        if len(parts) < 5 or "LISTEN" not in line.upper():
+            continue
+        if not parts[1].endswith(f":{port}"):
+            continue
+        try:
+            pid = int(parts[-1])
+        except ValueError:
+            continue
+        listing = run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], timeout=timeout)
+        name = ""
+        if listing.returncode == 0 and listing.stdout.strip():
+            first = listing.stdout.strip().splitlines()[0]
+            name = first.split(",")[0].strip('"')
+        return pid, name
+    return 0, ""

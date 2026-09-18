@@ -9,7 +9,14 @@ from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
 
-NO_WINDOW_FLAGS = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+# One runner owns how a background process is started (see winproc).  This module used to
+# define its own flag constant, which is how 'most call sites are hidden' becomes a state
+# rather than a rule.
+from .winproc import hidden_kwargs as _hidden_kwargs
+
+
+def NO_WINDOW_FLAGS_kwargs() -> dict:
+    return _hidden_kwargs()
 
 
 @dataclass(frozen=True)
@@ -34,7 +41,7 @@ class ADBDevice:
             capture_output=True,
             timeout=timeout,
             check=False,
-            creationflags=NO_WINDOW_FLAGS,
+            **_hidden_kwargs(),
         )
         if result.returncode != 0:
             error = result.stderr.decode("utf-8", errors="replace").strip()
@@ -61,7 +68,7 @@ class ADBDevice:
             return self.serial
         for candidate in self._probe_candidates():
             subprocess.run([str(self.adb_path), "connect", candidate], capture_output=True,
-                           timeout=10, check=False, creationflags=NO_WINDOW_FLAGS)
+                           timeout=10, check=False, **_hidden_kwargs())
             online = self._online_devices()
             if self.serial in online:
                 return self.serial
@@ -74,7 +81,7 @@ class ADBDevice:
 
     def _online_devices(self) -> list[str]:
         result = subprocess.run([str(self.adb_path), "devices"], capture_output=True,
-                                timeout=20, check=False, creationflags=NO_WINDOW_FLAGS)
+                                timeout=20, check=False, **_hidden_kwargs())
         if result.returncode:
             raise RuntimeError("ADB_DISCOVERY_FAILED")
         return [parts[0] for line in result.stdout.decode("utf-8", errors="replace").splitlines()

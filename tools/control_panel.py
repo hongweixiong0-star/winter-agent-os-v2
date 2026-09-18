@@ -22,6 +22,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2 import runtime_env
+from winter_agent_v2 import winproc
 from winter_agent_v2.device import ADBDevice
 from winter_agent_v2.escalation_queue import (
     AUTO_ESCALATION_CONDITIONS,
@@ -267,13 +268,25 @@ def _acquire_single_instance() -> bool:
 
 
 def _background_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
-    """Run a console utility without leaking a black Windows console window."""
-    return subprocess.run(command, creationflags=NO_WINDOW_FLAGS, **kwargs)
+    """Run a console utility hidden, with a decodable default encoding.
+
+    The flags come from winproc rather than a local constant: one place owns how a
+    background process is started, and tools/check_wiring.py enforces it (operator P0,
+    2026-09-18).  encoding/errors default here because this environment sets a
+    UTF-8 default for Python's own I/O while console tools print the OEM codepage --
+    measured: netstat raised UnicodeDecodeError on byte 0xbb, i.e. the diagnostic
+    failed exactly when it was needed.
+    """
+    kwargs.setdefault("encoding", winproc.default_encoding())
+    kwargs.setdefault("errors", "replace")
+    return subprocess.run(command, **winproc.hidden_kwargs(), **kwargs)
 
 
 def _background_popen(command: list[str], **kwargs: Any) -> subprocess.Popen[str]:
     """Launch a runtime child fully backgrounded."""
-    return subprocess.Popen(command, creationflags=NO_WINDOW_FLAGS, **kwargs)
+    kwargs.setdefault("encoding", winproc.default_encoding())
+    kwargs.setdefault("errors", "replace")
+    return subprocess.Popen(command, **winproc.hidden_kwargs(), **kwargs)
 
 
 # Environment failures the worker raises on purpose when the emulator, the ADB
@@ -1195,21 +1208,65 @@ GATEWAY_REASON_ZH = {
 GATEWAY_STALE_SECONDS = 20.0
 
 
-def gateway_cell(gateway: dict[str, Any], *, now: datetime | None = None) -> str:
-    """The gateway line, including how old the reading is.
+def workbuddy_header(gateway: dict[str, Any], *, now: datetime | None = None) -> str:
+    """The header word for WorkBuddy: the **gateway's** health, never the job's state.
 
-    "网关正常" from a four-minute-old poll is a claim about the past, and a disconnect
-    has to show up when it happens -- so a reading older than three poll intervals says
-    so instead of presenting itself as current.
+    Operator P0-3, 2026-09-18: the cell said ``● 正常`` while the development page said
+    ``GatewayUnavailable /api/v1/jobs/... timed out after 15s``.  A job whose last known
+    state is WORKING is a fact about the past that the *gateway* would be the thing to
+    update -- so it cannot be evidence that anything is reachable.  Two facts, two cells.
+    """
+    age = age_seconds(str(gateway.get("checked_at_utc") or ""), now)
+    if age is not None and age > GATEWAY_STALE_SECONDS:
+        return "● 未确认"
+    if gateway.get("available") is True:
+        return "● 正常"
+    if gateway.get("available") is False:
+        return "● 异常"
+    return "● 未确认"
+
+
+def gateway_cell(gateway: dict[str, Any], *, now: datetime | None = None,
+                 job_label: str = "", auto_line: str = "") -> str:
+    """The gateway line: what it is, since when, and what that does *not* mean.
+
+    "网关正常" from a four-minute-old poll is a claim about the past, and a disconnect has
+    to show up when it happens -- so a reading older than three poll intervals says so
+    instead of presenting itself as current.
+
+    When it is not answering, the operator asked for the whole picture in one place
+    (P0 §十一): the cause, the last time it did answer, the job's **last known** state (not
+    a re-reading -- the gateway is the thing that would report it), that AUTO is
+    unaffected, and when the next attempt is due.  Every clause comes from a measurement;
+    none of them is inferred from the other.
     """
     checked = str(gateway.get("checked_at") or "")
     age = age_seconds(str(gateway.get("checked_at_utc") or ""), now)
     if age is not None and age > GATEWAY_STALE_SECONDS:
         return f"网关状态待测（最近检查 {checked or '—'}，{_human_age(age)}）"
-    if gateway.get("available") is False:
-        return f"网关不可用 · {gateway_reason_cn(gateway.get('reason'))}"
     if gateway.get("available") is True:
         return f"网关正常 · 检查于 {checked or '—'}"
+    if gateway.get("available") is None and not checked:
+        # Never probed: there is no cause to name and no last success to age.  Saying
+        # "last success: none" about a probe that never ran is noise dressed as knowledge.
+        return "网关状态待测"
+    if gateway.get("available") is not True:
+        parts = [f"网关{'不可用' if gateway.get('available') is False else '状态待测'}"
+                 f" · {gateway_reason_cn(gateway.get('reason'))}"]
+        failures = int(gateway.get("consecutive_failures") or 0)
+        backoff = float(gateway.get("backoff_seconds") or 0)
+        if failures:
+            parts.append(f"连续 {failures} 次失败")
+        if backoff:
+            parts.append(f"下一次探测 {int(backoff)} 秒后")
+        last_ok = str(gateway.get("last_ok_at") or "")
+        ok_age = age_seconds(last_ok, now)
+        parts.append(f"最后成功 {_human_age(ok_age) if ok_age is not None else '无记录'}")
+        if job_label:
+            parts.append(f"当前 Job（上次已知）{job_label}")
+        if auto_line:
+            parts.append(f"AUTO {auto_line}")
+        return " · ".join(parts)
     return "网关状态待测"
 
 
@@ -2847,9 +2904,15 @@ class ControlPanel:
         self._refresh_truth()
         self._maybe_validate()
         label, detail = workbuddy_cell(view, gateway)
-        self.values["workbuddy"].set(label)
+        # The header grades the gateway; the job's last known state is detail (P0-3).  This
+        # cell read the *ledger* and said 正常 while the gateway was timing out.
+        self.values["workbuddy"].set(workbuddy_header(gateway))
         self.values["wb_state"].set(label + (f"（{detail}）" if detail else ""))
-        self.values["wb_gateway"].set(gateway_cell(gateway))
+        auto_value = getattr(self, "_auto_value", None)
+        self.values["wb_gateway"].set(gateway_cell(
+            gateway, job_label=label,
+            auto_line=(auto_value.value if auto_value is not None else ""),
+        ))
         current = view.get("current")
         settled = view.get("pending_verify") or ()
         if current is None and settled:
@@ -2957,6 +3020,8 @@ class ControlPanel:
         self._set_health("dot_wb", report.by_name("gateway_health"))
         self._workbuddy = report.by_name("workbuddy_job")
         self._gateway_value = report.by_name("gateway_health")
+        # The gateway detail line cites AUTO's real state rather than asserting it is fine.
+        self._auto_value = report.by_name("auto_state")
 
         idle = report.by_name("why_idle")
         if idle is not None:
