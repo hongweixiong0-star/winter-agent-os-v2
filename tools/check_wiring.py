@@ -1152,10 +1152,10 @@ def main() -> int:
           and "if debug:" in _panel_source)
     check("gui: one window owns the clock; a second one opens read-only",
           "def panel_clock_owner(" in _panel_source
+          and "def observes_only(" in _panel_source
           and "PANEL_CLOCK_MAX_AGE_SECONDS" in _panel_source
-          and "_other_instance" in _panel_source
-          and "else:\n            self.pump.start()" in _panel_source
-          and _panel_source.count("if self._other_instance:") >= 4)
+          and _panel_source.count("observes_only(self)") >= 4
+          and "else:\n            self.pump.start()" in _panel_source)
     check("gui: an independent verifier checks every field against its source",
           (ROOT / "tools/gui_wiring_verify.py").is_file()
           and "WIRING" in (ROOT / "tools/gui_wiring_verify.py").read_text(encoding="utf-8")

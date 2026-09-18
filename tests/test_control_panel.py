@@ -65,13 +65,23 @@ class OneWindowOwnsTheClock(unittest.TestCase):
 
     def test_the_losing_window_does_not_consume_the_queue(self):
         stub = SimpleNamespace(_other_instance=4242, operator_intent="RUNNING")
+        self.assertTrue(cp.observes_only(stub))
         self.assertFalse(cp.ControlPanel._auto_development_allowed(stub))
 
     def test_the_owning_window_still_consumes_unless_the_operator_stopped(self):
         running = SimpleNamespace(_other_instance=0, operator_intent="RUNNING")
         stopped = SimpleNamespace(_other_instance=0, operator_intent="STOPPED")
+        self.assertFalse(cp.observes_only(running))
         self.assertTrue(cp.ControlPanel._auto_development_allowed(running))
         self.assertFalse(cp.ControlPanel._auto_development_allowed(stopped))
+
+    def test_a_gate_answers_for_an_object_that_has_never_heard_of_it(self):
+        """An existing stub (``SimpleNamespace(operator_intent=...)``) crashed the first
+        version of this gate.  A guard that raises on an unexpected object is worse than
+        one that assumes ownership: assuming ownership is what the window does anyway."""
+        bare = SimpleNamespace(operator_intent="RUNNING")
+        self.assertFalse(cp.observes_only(bare))
+        self.assertTrue(cp.ControlPanel._auto_development_allowed(bare))
 
     def test_three_gates_consult_it_and_the_window_says_so(self):
         """Source-level, because each gate is one early return in a long method."""
@@ -82,7 +92,7 @@ class OneWindowOwnsTheClock(unittest.TestCase):
                      "def _maybe_autostart", "def _narrate_pump"):
             body = source[source.index(gate):]
             body = body[:body.index("\n    def ", 1)] if "\n    def " in body else body
-            self.assertIn("_other_instance", body, gate)
+            self.assertIn("observes_only(self)", body, gate)
         self.assertIn("panel_clock_owner()", source)
         self.assertIn("只读", source)
         # The pump is started only by the window that owns the clock.

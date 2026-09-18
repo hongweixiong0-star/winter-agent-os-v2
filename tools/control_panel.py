@@ -135,6 +135,19 @@ PANEL_LOG_PATH = LOG_ROOT / "panel.log"
 PUMP_STATE_PATH = LOG_ROOT / "pump.json"
 
 
+def observes_only(panel: Any) -> bool:
+    """Is another window ticking the clock, making this one read-only?
+
+    A module-level predicate rather than a method, because a gate must be answerable
+    for *any* object: the first version read ``self._other_instance`` and then a
+    property of the same name, and both crashed on an existing test's minimal stub
+    (``SimpleNamespace(operator_intent="STOPPED")``).  A gate that raises on an
+    unexpected object is worse than one that answers "assume I am the owner" -- being
+    the owner is what this window would do anyway, and the answers are cheap.
+    """
+    return bool(getattr(panel, "_other_instance", 0))
+
+
 def panel_pid_path() -> Path:
     """Where the panel records its own pid, derived from the log path.
 
@@ -2968,7 +2981,7 @@ class ControlPanel:
             previous[key] = now
         gated = str(state.get("gated") or "")
         passes = int(state.get("passes") or 0)
-        if self._other_instance:
+        if observes_only(self):
             # The cell a reader looks at to ask "is the queue being consumed".  It must
             # not say "运行中" in a window that is not the one consuming it.
             self.values["wb_pump"].set(
@@ -3205,13 +3218,13 @@ class ControlPanel:
 
         A second window is refused outright: one device, one queue, one clock.
         """
-        if self._other_instance:
+        if observes_only(self):
             return False
         return self.operator_intent != "STOPPED"
 
     def _maybe_autostart(self) -> None:
         """The only auto-start path: intent first, then a real preflight, then AUTO."""
-        if self._other_instance:
+        if observes_only(self):
             # Two AUTO trees on one device.  The owner keeps running the system; this
             # window only observes it.
             self._append(
@@ -3319,7 +3332,7 @@ class ControlPanel:
         already held, and only between AUTO rounds.  ``_run_validation_worker`` always
         releases in a ``finally``, so a crash cannot freeze gameplay.
         """
-        if self._other_instance:
+        if observes_only(self):
             # The clock's owner drives calibrations; a second window driving its own
             # would be the second device owner the lease exists to prevent.
             return
