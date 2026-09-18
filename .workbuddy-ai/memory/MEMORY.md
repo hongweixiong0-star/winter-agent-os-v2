@@ -377,3 +377,30 @@ live_verify_episode / reload_id。**并发成功与历史成功都不算学会�
 **静默缺陷清单（都吃过一次）**：`RuntimeSnapshotStore.update` 会**静默丢弃未声明字段**；
 `new_live_episodes` 会把 job 还在 WORKING 时跑的旧代码 episode 算成学习证据；
 不透明 id（job_id）不能当时间排序用。
+
+---
+
+### 「已创建」不等于「会到达」：升级队列必须有消费者（2026-09-18 P0 实测）
+
+**症状**：`DISPATCH_GATHER_MARCH / UNKNOWN_UI` 记录创建后 54 分钟仍是 `NEW`，Job ID 未提交，
+网关正常。队列 `NEW=2`。
+
+**根因**：那条记录**只有一行台账**（`escalation_created`），行内写着
+`dispatch=CONCURRENCY_WAIT … already used by a7ce58f0`——当时正确，之后**再没有任何东西重新看过它**，
+因为候选只从「产生它的那一轮」派生。⇒ **`NEW` ＝「被看到过一次」，不是「会到达 bridge」。**
+
+**永久规则**：
+1. **记录必须有消费者**：每轮把 `NEW`（已创建未派单）与 `QUEUED`（已决定、网关不可达）按**最旧优先**
+   重新交给**同一个节流**（去重/并发上限/单签名预算/冷却）。消费者不得越过当初拦住它的规则。
+2. **消费者要判断，不只是派单**：能力在记录创建后**已被真机证明**（verifier 通过的 episode、
+   带 `recorded_at` 与截图）⇒ 记录直接结算为 `DONE / LIVE_VERIFIED / released_by=self_proven`，
+   写明 episode 与 revision；`live_improvement=false`、`repair_used=false`（**没有 job 就不许领功、不许花预算**）。
+   否则一个真的 backlog 与一个幽灵 backlog 无法区分。
+3. **`STOPPED` 也是终态**：网关把 "stopped" 映射为终态，而 fold 只认 `DONE/FAILED`
+   ⇒ 被停掉的 job 永远停在 `WORKING` 并占住唯一并发槽，**同一类停滞的另一个入口**。
+4. **只写不 fold 的字段等于没写**（`task_type` 栽过一次，`dispatch_reason` 又栽一次）。
+5. **GUI 每个状态一个词**：`NEW=待提交`、`QUEUED=排队`、`SUBMITTED=已提交`、`WORKING=开发中`。
+   把「已创建未派单」显示成「排队」是在宣称有 job 在等——**没发出去的东西不许说成排队中**。
+6. **先测量再派单**：用户的前提「消费链没运行」对了一半——链确实缺（已修），但那两条记录
+   **不是真实缺口**（`DISPATCH_MARCH` 创建后真机通过 4 次）。派开发任务去做已经能做的事＝**制造工作**。
+   任何「缺失能力」在派单前都要用 `new_live_episodes(...)` 问一次「创建之后它到底成功过没有」。
