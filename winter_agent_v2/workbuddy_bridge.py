@@ -563,6 +563,31 @@ class JobStatus:
     def terminal(self) -> bool:
         return self.verdict in TERMINAL_VERDICTS or self.settled
 
+    @property
+    def progress_at(self) -> int | None:
+        """When the gateway last saw this job's session *change*, in epoch milliseconds.
+
+        The gateway publishes ``updatedAt`` for exactly this and nothing in the project read it,
+        which is how a wedged job passed for a working one: measured 2026-09-19, a job sat at
+        ``state=working / tempo=active / alive=True`` for 66 minutes while its own ``updatedAt``
+        had not moved since 6 seconds after it started.  ``alive`` answers "is there a process";
+        this answers "is anything happening", and only the second one can tell a thorough agent
+        from a stuck one.
+
+        Falls back to ``started_at`` -- a job that never updated has at least existed since then,
+        and returning ``None`` would let a caller treat "no clock" as "no information" and skip
+        the check entirely.
+        """
+        for key in ("updatedAt", "updated_at"):
+            value = self.raw.get(key)
+            if value is None:
+                continue
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                continue
+        return self.started_at
+
     def describe(self) -> str:
         lines = [f"job        : {self.job_id}",
                  f"verdict    : {self.verdict} (gateway state={self.gateway_state}, settled={self.settled})",

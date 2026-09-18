@@ -389,6 +389,18 @@ class EscalationPolicy:
     # past that.  Measured 2026-09-18: job 2934e9cd ran for ~55 minutes against
     # this box with two records queued behind it.
     job_timebox_minutes: int = 45
+    # How long a job's own progress clock may stand still before it counts as wedged rather
+    # than thorough.  The timebox above cannot answer that on its own: it is a timer, and the
+    # operator's rule is that a timer must not kill an agent for being thorough, which is why
+    # the timebox only ever reclaims when something is *waiting behind* the job.
+    # Measured 2026-09-19, the case that half misses: job c743127e sat at
+    # ``state=working / tempo=active / alive=True`` for 66 minutes with an **empty** queue, its
+    # gateway ``updatedAt`` frozen 6 seconds after it started and its detail reading "No active
+    # coding session content provided".  Nothing was waiting, so the timebox never fired, and
+    # the single concurrency slot stayed held -- the whole loop stalled behind a job that was
+    # doing nothing.  ``alive`` cannot tell those apart; a moving ``updatedAt`` can: a thorough
+    # agent's clock advances with every tool call it makes.
+    job_progress_stall_minutes: int = 20
 
 
 @dataclass(frozen=True)
@@ -575,6 +587,21 @@ def _from_millis(value: Any) -> datetime | None:
     if millis <= 0:
         return None
     return datetime.fromtimestamp(millis / 1000.0, timezone.utc)
+
+
+def _progress_stall_minutes(status: Any | None, moment: datetime) -> float | None:
+    """How long a job's own progress clock has stood still, or ``None`` if unreadable.
+
+    ``None`` means *cannot judge*, and the caller has to treat it as "do not reclaim": an
+    unreadable clock is not evidence that nothing is happening, and guessing in that direction
+    would interrupt a valid write operation -- the one thing the timebox rule exists to prevent.
+    """
+    if status is None:
+        return None
+    progress = _from_millis(getattr(status, "progress_at", None))
+    if progress is None:
+        return None
+    return max(0.0, (moment - progress).total_seconds() / 60.0)
 
 
 def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
@@ -2812,44 +2839,63 @@ class EscalationQueueAdapter:
         waiting: Sequence[EscalationRecord],
         moment: datetime,
         errors: list[str],
+        status: Any | None = None,
     ) -> str:
-        """Cancel a job that outlived its timebox *while others wait for the slot*.
+        """Cancel a job that outlived its timebox, for either of two independent reasons.
 
-        Both conditions are required, and each is one half of an operator rule.
+        The timebox is what the work order itself told the agent it had ("timebox: 45 minutes"),
+        so a job past it is off-contract rather than merely slow.  Past that point there are two
+        situations that justify taking the slot back, and they are different facts:
 
-        The timebox is what the work order itself told the agent it had ("timebox:
-        45 minutes"), so a job past it is off-contract rather than merely slow.
+        * **Somebody is waiting behind it.**  This is the original rule.  Without this half a
+          timer would kill a productive agent for being thorough, contradicting the standing
+          instruction never to interrupt a valid WorkBuddy write operation.  The job that loses
+          the slot is the one actually starving the queue.
 
-        The queue must have something waiting behind it.  Without that half this
-        would be a timer that kills a productive agent for being thorough, and it
-        would contradict the standing instruction never to interrupt a valid
-        WorkBuddy write operation.  With it, the only job that loses the slot is
-        the one actually starving the queue -- which is the stall the operator
-        reported: two records sat unfilled behind a single job.
+        * **Its own progress clock has stopped.**  This half exists because the first one cannot
+          fire when the queue is empty, and a wedged job with an empty queue is not "a thorough
+          agent left alone" -- it is a dead process holding the only slot while looking healthy.
+          Measured 2026-09-19: job ``c743127e`` reported ``state=working / tempo=active /
+          alive=True`` for 66 minutes with an empty queue, while the gateway's own ``updatedAt``
+          had not moved since 6 seconds after it started.  ``alive`` answers "is there a process",
+          so it cannot tell those apart; a moving progress clock can, because a thorough agent's
+          clock advances with every tool call.  Requiring the timebox *as well* keeps this from
+          being a hair-trigger, and the two signals are independent evidence.
 
-        Cancelling destroys nothing.  ``POST /jobs/{id}/stop`` stops a process; the
-        commits the agent already made are in the working tree and stay there, and
-        the reconciler measures the tree rather than the agent's exit code.
+        Cancelling destroys nothing.  ``POST /jobs/{id}/stop`` stops a process; the commits the
+        agent already made are in the working tree and stay there, and the reconciler measures the
+        tree rather than the agent's exit code.
 
-        A cancel that fails keeps the honest state (still WORKING, error recorded)
-        rather than pretending the slot is free.
+        A cancel that fails keeps the honest state (still WORKING, error recorded) rather than
+        pretending the slot is free.
         """
-        if not waiting or record.submitted_at is None:
+        if record.submitted_at is None:
             return ""
         age_minutes = (moment - record.submitted_at).total_seconds() / 60.0
         box = self.policy.job_timebox_minutes
         if age_minutes < box:
             return ""
+
+        if waiting:
+            why = (
+                f"job exceeded its {box}-minute timebox ({age_minutes:.0f} min) while "
+                f"{len(waiting)} record(s) waited for the single concurrency slot"
+            )
+        else:
+            stalled = _progress_stall_minutes(status, moment)
+            if stalled is None or stalled < self.policy.job_progress_stall_minutes:
+                return ""
+            why = (
+                f"job exceeded its {box}-minute timebox ({age_minutes:.0f} min) and its own "
+                f"progress clock has been frozen for {stalled:.0f} min (gateway updatedAt; "
+                f"the queue is empty, so 'alive' was the only thing still claiming it worked)"
+            )
         try:
             self.bridge.cancel(record.job_id)
         except Exception as exc:  # noqa: BLE001 - a failed cancel must not free the slot on paper
             errors.append(f"{record.key}: cancel({record.job_id}) failed: {exc}")
             return ""
-        return (
-            f"job exceeded its {box}-minute timebox ({age_minutes:.0f} min) while "
-            f"{len(waiting)} record(s) waited for the single concurrency slot; "
-            f"cancelled to free it"
-        )
+        return f"{why}; cancelled to free it"
 
     def reconcile(self, *, now: datetime | None = None) -> tuple[list[str], list[str]]:
         """Poll every in-flight job and measure what it achieved.
@@ -2900,7 +2946,9 @@ class EscalationQueueAdapter:
 
             reclaimed = ""
             if not status.terminal:
-                reclaimed = self._reclaim_expired_slot(record, waiting, moment, errors)
+                reclaimed = self._reclaim_expired_slot(
+                    record, waiting, moment, errors, status
+                )
 
             live_state = (
                 STOPPED if reclaimed
