@@ -189,6 +189,8 @@ def main() -> int:
                 deferrals=result.deferrals,
             )
             print(observation.line)
+            for key in observation.released:
+                print(f"[escalation]   released {key}: the device proved it without a job")
             for key, why in observation.skipped:
                 print(f"[escalation]   skipped {key}: {why}")
             for error in observation.errors:

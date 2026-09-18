@@ -829,6 +829,39 @@ class PendingConsumerTest(unittest.TestCase):
                                "two agents must not edit this repository at once",
         })
 
+    def test_a_record_the_device_already_proved_is_released_not_dispatched(self):
+        """Measured 2026-09-18 on both records the operator reported stuck.
+
+        DISPATCH_MARCH had four verifier-passing episodes after its record was created --
+        two of them on the current tree, minutes earlier -- so "the dispatch button cannot
+        be found" was no longer true.  Dispatching a development agent at that point would
+        be manufacturing work, and the record would otherwise age into a backlog that is
+        not one.
+        """
+        harness = AdapterHarness()
+        try:
+            self._created_while_busy(harness)
+            created = harness.ledger.snapshot().get(PENDING_KEY).first_seen
+            episodes = Path(harness.root) / "learning/episodes.jsonl"
+            episodes.write_text(json.dumps({
+                "skill": "DISPATCH_MARCH",
+                "recorded_at": (created + timedelta(minutes=5)).isoformat(),
+                "verifier_ok": True, "result": "SUCCESS",
+                "before_screenshot": "b.png", "after_screenshot": "a.png",
+                "episode_id": "20260918_090000_000000", "repo_revision": "abc+0",
+            }), encoding="utf-8")
+
+            observation = harness.adapter.observe_run(stop_reason="mail_all_clear", now=NOW)
+            record = harness.ledger.snapshot().get(PENDING_KEY)
+            self.assertEqual(observation.submitted, ())
+            self.assertEqual(observation.released, (PENDING_KEY,))
+            self.assertEqual(record.state, q.DONE)
+            self.assertEqual(record.outcome, q.LIVE_VERIFIED)
+            self.assertFalse(record.repairs_used, "releasing must not spend a repair shot")
+            self.assertIn("released 1", observation.line)
+        finally:
+            harness.cleanup()
+
     def test_a_record_created_while_the_slot_was_busy_is_submitted_later(self):
         harness = AdapterHarness()
         try:

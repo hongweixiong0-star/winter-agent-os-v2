@@ -1278,6 +1278,9 @@ class RunObservation:
     reconciled: tuple[str, ...] = ()
     submitted: tuple[str, ...] = ()
     skipped: tuple[tuple[str, str], ...] = ()
+    # Records settled because the device proved the capability itself, so no job was
+    # needed.  Reported separately from ``reconciled`` because no job was involved.
+    released: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
     reload_requested_for: str = ""
 
@@ -1288,6 +1291,8 @@ class RunObservation:
             parts.append(f"reconciled {len(self.reconciled)}")
         if self.submitted:
             parts.append(f"submitted {len(self.submitted)}")
+        if self.released:
+            parts.append(f"released {len(self.released)} (already proven on the device)")
         if self.skipped:
             parts.append(f"skipped {len(self.skipped)}")
         if self.errors:
@@ -1352,6 +1357,7 @@ class EscalationQueueAdapter:
         reconciled: list[str] = []
         submitted: list[str] = []
         skipped: list[tuple[str, str]] = []
+        released: list[str] = []
         handled: set[str] = set()
 
         if reconcile:
@@ -1402,6 +1408,20 @@ class EscalationQueueAdapter:
                 if record.key in handled:
                     continue
                 handled.add(record.key)
+                proven = self._proven_since(record)
+                if proven:
+                    # The device already climbed this wall.  Measured 2026-09-18 on the two
+                    # records the operator reported stuck: DISPATCH_MARCH had four
+                    # verifier-passing episodes after its record was created (two of them
+                    # on the current tree, minutes earlier) and the money-offer skill two.
+                    # Dispatching a development agent to fix "the dispatch button cannot be
+                    # found" while the button has been found four times would be
+                    # manufacturing work, which the operator forbids -- so the record is
+                    # released, with the episodes named, and the decision is visible
+                    # instead of the record silently ageing.
+                    self._release(record, proven)
+                    released.append(record.key)
+                    continue
                 candidate = self._candidate_from_record(record)
                 dispatch = decide(candidate, self.ledger.snapshot(), self.policy, now=moment)
                 if not dispatch.should_submit:
@@ -1420,9 +1440,58 @@ class EscalationQueueAdapter:
             reconciled=tuple(reconciled),
             submitted=tuple(submitted),
             skipped=tuple(skipped),
+            released=tuple(released),
             errors=tuple(errors),
             reload_requested_for=pending.job_id if pending else "",
         )
+
+    def _proven_since(self, record: EscalationRecord) -> tuple[dict[str, Any], ...]:
+        """Production episodes that prove this record's capability since it was created.
+
+        The same bar reconciliation uses to grant LIVE_VERIFIED, asked of a record that
+        never reached a job: "is there a verifier-passing production episode of this skill
+        after this moment".  Without it a record whose wall the device climbed itself
+        stayed NEW forever, which reads as a backlog that is not one.
+        """
+        if record.first_seen is None:
+            return ()
+        return new_live_episodes(
+            record.capability or record.skill,
+            skill=record.skill,
+            since=record.first_seen,
+            root=self.root,
+        )
+
+    def _release(self, record: EscalationRecord, episodes: tuple[dict[str, Any], ...]) -> None:
+        """Settle a record the device proved itself, naming the episodes."""
+        latest = episodes[-1]
+        try:
+            self.ledger.append({
+                "source": "queue",
+                "event": "reconciled",
+                "key": record.key,
+                "job_id": "",
+                # DONE is what makes the fold settle it; the outcome says what the
+                # *capability* is, not what a job achieved.
+                "job_state": DONE,
+                "outcome": LIVE_VERIFIED,
+                "released_by": "self_proven",
+                "explanation": (
+                    f"released without a job: {len(episodes)} verifier-passing production "
+                    f"episode(s) of {record.skill} were recorded after this escalation was "
+                    f"created, so the device proved the capability itself (latest "
+                    f"{latest.get('recorded_at')}, revision {latest.get('repo_revision') or 'unknown'})"
+                ),
+                "verified_episodes": len(episodes),
+                "live_verify_episode": str(latest.get("episode_id") or ""),
+                "live_verify_revision": str(latest.get("repo_revision") or ""),
+                # No job ran, so nothing here may claim a job's credit or spend its budget.
+                "code_changed": False,
+                "live_improvement": False,
+                "repair_used": False,
+            })
+        except Exception:  # noqa: BLE001 - audit must not break the hook
+            pass
 
     # -- ledger helpers ---------------------------------------------------
 
