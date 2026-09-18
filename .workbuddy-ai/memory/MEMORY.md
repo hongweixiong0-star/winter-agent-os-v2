@@ -509,3 +509,95 @@ STOPPED 才停、暂停不停）+ `pump.json` 心跳（线程里跑的东西从�
 `LIVE_VERIFY_PENDING` 记录去申请租约**。这是同一条 trace 上的下一环，也是目前没有 live lease
 可展示的原因。此外仍未做：统一 `trace_id` 落字段、`无人值守闭环` GUI 状态、
 §2 的失败分类落成代码（环境失败 → DEFER 不升级，目前靠 `NON_ESCALATABLE_STOP_REASONS` 兜住一部分）。
+
+
+---
+
+---
+
+### 10:2x 一条失败类型被当成 capability 派了单（job 0440cd38 带回的修复）
+
+**症状**：台账里出现 `NO_GOAL_PROGRESS|NO_GOAL_PROGRESS|` —— 一个**失败类型**被当成 capability，
+真的派出了一个开发 job（就是本轮的 0440cd38）。同一条墙在 00:45 已经以
+`SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST` 登记过 ⇒ 去重键被绕过。
+
+**根因**：`capability_gate._no_progress_deferral` 拼签名时把空字段过滤掉了（`if part`），
+于是 `"|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST"` 塌成两段，`escalation_queue` 再按下标取值
+⇒ `parts[0]` 正好是失败类型。而 capability 为什么会是空：`AVOID_STAMINA_WASTE` 这条停滞路线
+**只跑 `SCAN_MAP_FOR_BEAST`**（导航步，`capability_for_skill` 解成它自己），
+与 composition 的三个 capability 不相交。
+
+**修**：`_route_capability` 增加第二跳 —— 用 goal **自己声明的** skills 过
+`capability_skill_map.json`（`BEAST_HUNT → SPEND_STAMINA_ON_BEAST`，与 00:45 那条正确签名一致）；
+签名恒为三段 `capability|failure_type|skill`，空就是空；`candidates_from_run` 改为
+**按失败类型锚定**解析（不再丢空字段），且 capability 为空时**不建单** —— 编造名字正是这次的错误。
+
+**教训（可复用）**：**「位置即语义」的字符串，禁止先过滤空字段再按下标解析。**
+被丢弃的空位会把后面的字段整体左移，于是「没有值」变成「有一个错的值」。
+
+**真机证据**（`dataset/truth_audit/no_goal_progress_20260918/`，`report.json` + `key/` 4 帧）：
+真机 `run_live.py --goal BEAST_HUNT` 打出
+`[schedule] deferred AVOID_STAMINA_WASTE -> DEFERRED on SPEND_STAMINA_ON_BEAST`；
+3 条 `SCAN_MAP_FOR_BEAST` episode `verifier_ok=True / goal_progress=False`，体力恒为 457。
+
+**发现但本轮没改（明确记下）**：episode 的 goal 归属取自 `best_goal`（当前可选中的最高优先级 goal），
+而不是**这条路线真正服务的 goal**（`runtime.py:912`）。所以目标 goal 已被 defer 时，
+野兽路线的 episode 会记到 `KEEP_MARCHES_PRODUCTIVE` 名下并写 `goal_progress=False` ——
+一个它根本推进不了的 goal 因此在攒假的「无进展」streak，迟早被错误地 defer。
+改它会动到全项目覆盖率与所有 streak 数字，本轮只报告不擅动。
+
+## Capability Bootstrap / Preload：第二条能力增长路径（2026-09-18 操作者定规 + 实现）
+
+**操作者定规**：不要等 V2 撞到每一个不会的功能才开发 —— 持续扫描现有 capability_catalog，
+把 MISSING / NEVER_TRIED / DEFINED 但无实现 / 有 External Prior 但未实现 / 有 Legacy·内部资产但未接入
+自动变成 Bootstrap 候选，提前备课。于是形成两条增长路径：
+**PRELOAD BEFORE ENCOUNTER**（预载）+ **LEARN FROM REAL FAILURE**（既有的失败驱动）。
+
+**两条硬边界（写进代码，不靠自觉）**
+
+1. **Bootstrap 完成 ≠ LIVE_VERIFIED。** 上限是 `READY_FOR_LIVE_VERIFY`
+   （`BOOTSTRAP_MAX_LIFECYCLE` / `FORBIDDEN_LIFECYCLES` / `lifecycle_allowed()`，被 check_wiring 钉住）。
+   真机验证仍走统一 Development Validation：CANDIDATE → LIVE_VERIFY_PENDING → 设备租约 →
+   新版本生效 → V2 统一 Executor（MAA first）→ 真机 → Verifier + Evidence → LIVE_VERIFIED → 正式能力池。
+2. **不建第二套 Registry / 第二套开发系统。** 它是**投影 + 简报生成器**：
+   读 `knowledge/game/capability_catalog.json`（扫描输入）、`skill_factory.PRIORS` /
+   `dataset/candidate/*.json`（既有候选家）、`capability_gate.capability_states`（在飞状态）、
+   `knowledge/external/external_capability_map.json`。**只写一件事**：经
+   `EscalationQueueAdapter.preload()` 往**同一个台账**追加一条 `origin="bootstrap"` 的记录，
+   由同一个 `decide()` 限流、同一个 bridge 派发。`PRELOAD` 是**来源**，不是第二条流水线。
+
+**结构**：`winter_agent_v2/capability_bootstrap.py`（扫描 / 分类 / 排序 / 七字段简报 / 闸门 / 两份 ladder）
+
+- 五个分类：`MISSING` / `NEVER_TRIED` / `DEFINED_NO_IMPLEMENTATION` /
+  `EXTERNAL_PRIOR_UNIMPLEMENTED` / `LEGACY_ASSET_UNWIRED`
+- 知识来源阶梯（顺序即优先级）：`V2_EVIDENCE → LEGACY_ASSET → EXTERNAL_MAP →
+  OPEN_SOURCE_UNINDEXED → GAME_DB_WIKI → SELF_EXPLORATION`（最后才是自行探索）
+- 开发优先级阶梯（tier 间距 60 分 > 所有加分之和，所以并列只影响**同一档内**的顺序）：
+  `REAL_GAP(100) > UNLOCKED_MISSING(70) > HIGH_FREQ_FREE_VALUE(50) > OTHER_UNLOCKED(30) > FUTURE_LOCKED(10)`
+- "已解锁"**只按证据**判定：同一 category 里有 `EXISTING` 行或 `live_attempts>0` 才算观察到；
+  否则诚实写 UNKNOWN → 落到 FUTURE_LOCKED。**不放宽成"Wiki 说开放了就开放了"。**
+- 闸门（`preload_gate`，纯函数，五个具名拒绝，顺序有意义）：
+  `NOT_ARMED_MAIN_LOOP_P0` → `REAL_GAP_WAITING` → `AGENT_SLOT_BUSY` → `DEVICE_LEASED` →
+  `REALTIME_ACTIVITY` → `NOTHING_TO_DO`
+- **自动启用**：读主闭环自己的阶梯 `dataset/truth_audit/p0_loop_20260918/P0_LOOP_STATUS.json`，
+  六个 stage 全部 `PASS` 才 `MAIN_LOOP_P0_PASS`。`config/bootstrap_arm.json` 是**显式**人工开关，
+  记录 `armed_by`/`reason`，永不静默。当前实测未启用（P0-A/E=PARTIAL，P0-D/F=NOT PROVEN）——
+  这是操作者要的顺序，不是故障。
+- 工具：`tools/bootstrap_scan.py --status | --top N [--briefs] | --capability CODE | --write | --preload-once`
+- 面板：`QueuePump.PRELOAD_EVERY = 20`（30 秒 × 20 = **10 分钟**，比消费者稀一个数量级），
+  `_preload_tick()` 写在 `learning/control_panel/pump.json` 的 `preload_note` 里 ——
+  **"机制在休息，原因是 X" 必须是可查状态，不能是"什么都没发生"**。
+
+**两条可复用教训（本轮真踩到）**
+
+1. **"设计完整"本身就是候选** —— 所以「七字段齐 + verifier 绑定 + 语义已注册」的能力
+   一定已经在 `dataset/candidate/` 里有草稿 ⇒ 它会走 `_in_flight` 的 `CANDIDATE` 分支被拒。
+   想让 READY_FOR_LIVE_VERIFY 可达，Recovery 必须来自**外部卡片**而不是本地草稿。
+   这不是绕路：一个已经写完的设计**就是**流水线里的候选，重发简报属于制造工作。
+2. **"信袋里的词"不是"有资产"** —— 用整套 corpus 做 token 包含判定（`{READ,BUILDING,LEVEL}`
+   散落在不同文件名里）几乎永远命中，`LEGACY_ASSET_UNWIRED` 会退化成噪声（实测 116 → 收紧到 20 行）。
+   正确判据是**所有 token 必须出现在同一个文件名里**（`_contained`，按最稀 token 开桶查）。
+   同理，相近技能的草稿（`CLAIM_REWARD` ↔ `CLAIM_FREE_REWARD`）只能当**假设**：
+   它可以把字段填上，但 `exact=False` 时永远不许把 plan 抬到 DRAFT / READY。
+
+**测试**：`tests/test_capability_bootstrap.py`（60 项）+ `tools/check_wiring.py` 9 条 `preload:` 断言。

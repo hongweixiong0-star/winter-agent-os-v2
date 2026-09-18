@@ -688,6 +688,8 @@ def main() -> int:
     _queue_source = (PKG / "escalation_queue.py").read_text(encoding="utf-8")
     _panel_source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
     _reload_source = (PKG / "runtime_reload.py").read_text(encoding="utf-8")
+    _bootstrap_source = (PKG / "capability_bootstrap.py").read_text(encoding="utf-8")
+    from winter_agent_v2 import capability_bootstrap as _bootstrap
     from winter_agent_v2 import escalation_queue as _escalation
 
     check("queue: a no-progress deferral is never filed under the failure type",
@@ -754,6 +756,65 @@ def main() -> int:
     check("reload: the settle window follows the newest write, not the marker",
           "newest_write_at" in _reload_source and "def newest_write(" in _reload_source
           and "newest_write_at=newest_write(ROOT)" in _panel_source)
+
+    # -- Capability Bootstrap / Preload -------------------------------------
+    # The operator's two hard constraints on this mechanism are "不得建立第二套
+    # Skill Registry 或第二套开发系统" and "Bootstrap 完成 ≠ LIVE_VERIFIED".  Both
+    # are checkable, which is the only reason they are worth writing down.
+    check("preload: it prepares a capability and hands it to the one queue",
+          hasattr(_escalation.EscalationQueueAdapter, "preload")
+          and "def preload(" in _queue_source
+          and "condition=CAPABILITY_MISSING" in _queue_source
+          and 'origin="bootstrap"' in _queue_source)
+    check("preload: it is an origin on the one ledger, not a second pipeline",
+          _bootstrap_source.count("EscalationLedger(") == 1
+          and _bootstrap_source.count("ledger.append") == 0
+          and ".events()" in _bootstrap_source
+          and _queue_source.count("DEFAULT_LEDGER = ") == 1
+          and _queue_source.count("EscalationLedger(self.root / DEFAULT_LEDGER)") == 1)
+    check("preload: no second registry, scheduler or store lives in it",
+          not any(
+              word in _bootstrap_source
+              for word in ("class BootstrapRegistry", "class BootstrapScheduler",
+                           "class BootstrapLedger", "class BootstrapStore")
+          )
+          and "v2_registry" in _bootstrap_source
+          and "capability_catalog.json" in _bootstrap_source
+          and "capability_states" in _bootstrap_source)
+    check("preload: a bootstrap can never promote a capability by itself",
+          _bootstrap.BOOTSTRAP_MAX_LIFECYCLE == "READY_FOR_LIVE_VERIFY"
+          and "LIVE_VERIFIED" in _bootstrap.FORBIDDEN_LIFECYCLES
+          and "def lifecycle_allowed(" in _bootstrap_source
+          and _bootstrap.lifecycle_allowed("CANDIDATE")
+          and not _bootstrap.lifecycle_allowed("LIVE_VERIFIED"))
+    check("preload: it yields to every rung the operator ranked above it",
+          _bootstrap.GATE_NOT_ARMED in _bootstrap_source
+          and _bootstrap.GATE_REAL_GAP_WAITING in _bootstrap_source
+          and _bootstrap.GATE_AGENT_SLOT_BUSY in _bootstrap_source
+          and _bootstrap.GATE_DEVICE_LEASED in _bootstrap_source
+          and _bootstrap.GATE_REALTIME_ACTIVITY in _bootstrap_source)
+    check("preload: the knowledge ladder is the operator's, in his order",
+          _bootstrap.KNOWLEDGE_LADDER == (
+              "V2_EVIDENCE", "LEGACY_ASSET", "EXTERNAL_MAP",
+              "OPEN_SOURCE_UNINDEXED", "GAME_DB_WIKI", "SELF_EXPLORATION")
+          and _bootstrap.PRIORITY_LADDER == (
+              "REAL_GAP", "UNLOCKED_MISSING", "HIGH_FREQ_FREE_VALUE",
+              "OTHER_UNLOCKED", "FUTURE_LOCKED"))
+    check("preload: a capability already in the pipeline is refused by name",
+          "CANDIDATE" in _bootstrap_source
+          and 'return "CANDIDATE"' in _bootstrap_source
+          and "LIVE_VERIFY_PENDING" in _bootstrap_source
+          and "def _in_flight(" in _bootstrap_source)
+    check("preload: the window runs it on a slower clock than the consumer",
+          "PRELOAD_EVERY = 20" in _panel_source
+          and "def _preload_tick(self)" in _panel_source
+          and "adapter.preload()" in _panel_source
+          and '"preload_note": ""' in _panel_source)
+    check("preload: it arms itself when the main loop is proven, not before",
+          "def arm_state(" in _bootstrap_source
+          and "MAIN_LOOP_P0_PASS" in _bootstrap_source
+          and "P0_LOOP_STATUS.json" in _bootstrap_source
+          and "OPERATOR_OVERRIDE" in _bootstrap_source)
 
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():

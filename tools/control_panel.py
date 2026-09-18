@@ -1376,14 +1376,23 @@ class QueuePump:
     """
 
     INTERVAL = 30.0
+    # The Capability Bootstrap / Preload pass, in ticks.  Twenty ticks of thirty
+    # seconds is a ten-minute cadence: one scan is ~0.5 s and it is a *background*
+    # job by the operator's own rule, so it must be an order of magnitude rarer than
+    # the queue consumer it shares this thread with.  It is also refused outright
+    # while anything more important is owed -- see capability_bootstrap.preload_gate.
+    PRELOAD_EVERY = 20
 
-    def __init__(self, *, enabled: Any | None = None, interval: float | None = None) -> None:
+    def __init__(self, *, enabled: Any | None = None, interval: float | None = None,
+                 preload_every: int | None = None) -> None:
         self._enabled = enabled or (lambda: True)
         self._interval = float(interval or self.INTERVAL)
         self._lock = threading.Lock()
         self._state: dict[str, Any] = {
             "passes": 0, "submitted": 0, "released": 0, "reconciled": 0, "errors": 0,
             "last_tick": "", "last_line": "", "last_error": "", "gated": "",
+            "preload_ticks": 0, "preloads": 0, "preload_last": "", "preload_note": "",
+            "preload_every": self.PRELOAD_EVERY if preload_every is None else int(preload_every),
         }
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -1446,8 +1455,38 @@ class QueuePump:
             self._state["last_error"] = observation.errors[-1] if observation.errors else ""
             self._state["last_line"] = observation.line
             self._state["last_tick"] = datetime.now().strftime("%H:%M:%S")
+        self._preload_tick()
         self._persist()
         return self.state()
+
+    def _preload_tick(self) -> None:
+        """The slow Capability Bootstrap pass, on the same thread and adapter.
+
+        Same adapter on purpose: a preload is one more *producer* for the one queue,
+        not a second queue.  It is counted separately from the consumer's passes so a
+        reader can tell "the consumer ran" from "the preloader ran" -- and the note is
+        persisted even when the gate refuses, because "the mechanism is resting, and
+        here is why" is exactly what the operator asked to be able to check.
+        """
+        try:
+            every = int(self._state.get("preload_every") or self.PRELOAD_EVERY)
+            ticks = int(self._state.get("preload_ticks") or 0) + 1
+            self._state["preload_ticks"] = ticks
+            if every <= 0 or ticks % every:
+                return
+            adapter = self._adapter if self._adapter is not None else self._build()
+            self._adapter = adapter
+            observation = adapter.preload()
+            with self._lock:
+                self._state["preloads"] = int(self._state.get("preloads") or 0) + len(
+                    observation.preloaded
+                )
+                self._state["preload_note"] = observation.preload_note or observation.line
+                self._state["preload_last"] = datetime.now().strftime("%H:%M:%S")
+        except Exception as exc:  # noqa: BLE001 - a background pass is a state, not a crash
+            with self._lock:
+                self._state["preload_note"] = f"preload failed: {type(exc).__name__}: {exc}"
+                self._state["preload_last"] = datetime.now().strftime("%H:%M:%S")
 
     def _persist(self) -> None:
         """Write the tick where a reader outside this process can see it.
@@ -1519,7 +1558,9 @@ class ControlPanel:
         # while the game side is between rounds.
         self.pump = QueuePump(enabled=self._auto_development_allowed)
         self.pump.start()
-        self._pump_prev: dict[str, int] = {}
+        # Counters, plus the last preload note so a repeating "resting" answer is
+        # narrated once rather than every ten minutes.
+        self._pump_prev: dict[str, Any] = {}
         try:
             pid_path = panel_pid_path()
             pid_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2406,6 +2447,7 @@ class ControlPanel:
                 f" · 提交 {state.get('submitted') or 0} · 释放 {state.get('released') or 0}"
                 f" · 对账 {state.get('reconciled') or 0}"
                 + (f" · 错误 {state.get('errors')}" if state.get("errors") else "")
+                + f" · 预载 {state.get('preloads') or 0}"
             )
         if moves.get("submitted"):
             self._append(f"开发队列：已向 WorkBuddy 提交 {moves['submitted']} 个真实任务。")
@@ -2415,6 +2457,13 @@ class ControlPanel:
             self._append(f"开发队列对账 {moves['reconciled']} 个任务（{state.get('last_line') or ''}）。")
         if moves.get("errors"):
             self._append(f"开发队列本轮 {moves['errors']} 个错误：{state.get('last_error') or '见台账'}")
+        # The preload pass is narrated only when its answer *changes*: 'resting,
+        # because the main loop is not proven yet' would otherwise print every ten
+        # minutes forever, which is the same mistake as the per-step deferral line.
+        preload_note = str(state.get("preload_note") or "")
+        if preload_note and preload_note != previous.get("preload_note"):
+            previous["preload_note"] = preload_note
+            self._append(f"能力预载（后台低优先级）：{preload_note}")
 
     def _describe_escalation(self, record: Any) -> str:
         """One honest line about what a finished development job achieved."""

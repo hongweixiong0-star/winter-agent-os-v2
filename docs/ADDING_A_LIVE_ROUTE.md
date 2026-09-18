@@ -12,6 +12,21 @@
 > 2026-09-17 操作者定规。两条禁令：
 > **禁止已经有成熟本地实现还跑去 GitHub 重新研究；禁止外部已有成熟实现却自己摸 UI 两小时。**
 
+> **2026-09-18：这一步已经有机器化入口。** 不要手工从 522 行的
+> `knowledge/game/capability_catalog.json` 里挑：
+>
+> ```bash
+> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --status
+> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --capability OPEN_ARENA
+> ```
+>
+> 它会**预载**（Preload Before Encounter）：按操作者的优先级阶梯排序、按知识来源阶梯
+> （V2 证据 → Legacy 资产 → 外部索引 → 未索引开源 → 游戏库/Wiki → 自行探索）填七个字段、
+> 标出缺哪一帧、并把已在流程中的能力**按名字拒绝**。机制在
+> `winter_agent_v2/capability_bootstrap.py`，面板每 10 分钟后台跑一次（低优先级，
+> 有真实 Gap / 开发任务 / 设备租约 / 实时活动时一律让路）。
+> **预载完成 ≠ LIVE_VERIFIED**：上限是 `READY_FOR_LIVE_VERIFY`，下面第 1~6 步一步都不能少。
+
 ### 0.1 先查本地 V2（≤2 分钟，**默认不查外部**）
 
 按顺序查五件事 —— 下面第 0.2 节的四条是其中四件，另加一条 legacy 证据：

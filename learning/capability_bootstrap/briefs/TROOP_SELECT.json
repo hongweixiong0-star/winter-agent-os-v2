@@ -1,0 +1,107 @@
+{
+ "capability_id": "CAP-G09",
+ "code": "TROOP_SELECT",
+ "goal": "PARTICIPATE_BEAR",
+ "skill": "SELECT_TROOP_PRESET",
+ "classes": [
+  "MISSING"
+ ],
+ "priority": "UNLOCKED_MISSING",
+ "score": 119.0,
+ "plan_state": "NEEDS_LIVE_FRAME",
+ "knowledge_source": "V2_EVIDENCE",
+ "knowledge_rank": 1,
+ "unlocked": "OBSERVED",
+ "risk": "T1",
+ "existing_skill": "",
+ "has_verifier": false,
+ "missing_semantics": [
+  "TROOP_PRESET"
+ ],
+ "in_flight": "",
+ "in_flight_reason": "",
+ "unknown_fields": [
+  "Recovery"
+ ],
+ "facets": [
+  {
+   "field": "Preconditions",
+   "value": "从 MARCH 出发",
+   "source": "V2_EVIDENCE",
+   "confidence": 0.5
+  },
+  {
+   "field": "Navigation",
+   "value": "MARCH -> MARCH",
+   "source": "V2_EVIDENCE",
+   "confidence": 0.55
+  },
+  {
+   "field": "Recognition",
+   "value": "TROOP_PRESET",
+   "source": "V2_EVIDENCE",
+   "confidence": 0.3
+  },
+  {
+   "field": "Action",
+   "value": "APPLY_CONTEXT_TROOP_POLICY",
+   "source": "V2_EVIDENCE",
+   "confidence": 0.55
+  },
+  {
+   "field": "Verifier",
+   "value": "troop_policy_applied",
+   "source": "V2_EVIDENCE",
+   "confidence": 0.4
+  },
+  {
+   "field": "Recovery",
+   "value": "UNKNOWN",
+   "source": "",
+   "confidence": 0.0
+  },
+  {
+   "field": "Risk",
+   "value": "T1（总表判定，资源成本 UNKNOWN）",
+   "source": "V2_EVIDENCE",
+   "confidence": 0.7
+  }
+ ],
+ "reuse": {
+  "skill_registered": false,
+  "verifier_bound": false,
+  "design_draft": false,
+  "episodes": 0,
+  "local_path_exists": false,
+  "verdict": "NO_LOCAL_PATH_ESCALATE"
+ },
+ "external": {},
+ "maa": {
+  "declared_backend": "MAA",
+  "covering_tools": [
+   "MAA_FRAMEWORK",
+   "OCR_RAPID"
+  ],
+  "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+  "verdict": "USE_MAA_PLUS_V2_VISION"
+ },
+ "targeted_test": {
+  "name": "DESIGN_COMPLETE",
+  "verdict": "NOT_PROVEN",
+  "detail": "缺字段 ['Recovery']；未注册语义 ['TROOP_PRESET']；verifier 未绑定",
+  "live_test_deferred_to": "run_live.py --goal PARTICIPATE_BEAR"
+ },
+ "notes": [
+  "字段来自相近技能 SELECT_TROOP_PRESET 的草稿（不是本能力的实现）——必须真机校准后才算设计",
+  "未注册语义 ['TROOP_PRESET'] —— 需要一帧真机页面才能设计（只读探针）"
+ ],
+ "generated_by": "winter_agent_v2.capability_bootstrap",
+ "generated_at": "2026-09-18T02:34:42.663301+00:00",
+ "max_lifecycle": "READY_FOR_LIVE_VERIFY",
+ "must_not_claim": [
+  "LIVE_TRIED",
+  "LIVE_VERIFIED",
+  "STABLE"
+ ],
+ "next_flow": "CANDIDATE -> LIVE_VERIFY_PENDING -> DEVELOPMENT_VALIDATION_DEVICE_LEASE -> new version active -> V2 unified executor (MAA first) -> real device -> verifier + evidence -> LIVE_VERIFIED -> gameplay pool"
+}

@@ -395,6 +395,12 @@ class EscalationRecord:
     skill: str = ""
     condition: str = ""
     goal: str = ""
+    # What produced this record: ``queue`` for a wall AUTO actually hit, ``bootstrap``
+    # for a capability preloaded before any encounter.  Folded like ``task_type`` -- the
+    # panel and the reconciler need to tell "we were blocked here" from "we prepared
+    # this in advance", and an unwritten field reads as empty, which is how the first
+    # version of ``task_type`` silently recorded blanks.
+    origin: str = ""
     state: str = NEW
     attempts: int = 0
     repairs_used: int = 0
@@ -503,6 +509,7 @@ def fold(events: Iterable[Mapping[str, Any]]) -> "EscalationSnapshot":
             record.skill = str(event.get("skill", record.skill))
             record.condition = str(event.get("condition", record.condition))
             record.goal = str(event.get("goal", record.goal))
+            record.origin = str(event.get("origin", record.origin))
             record.dispatch_reason = str(event.get("dispatch_reason", record.dispatch_reason))
             record.first_seen = record.first_seen or _moment(event.get("recorded_at"))
             record.last_seen = _moment(event.get("recorded_at")) or record.last_seen
@@ -1433,6 +1440,12 @@ class RunObservation:
     released: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
     reload_requested_for: str = ""
+    # A preload pass reports through the same observation shape: the same adapter,
+    # the same throttle, the same ledger.  ``preload_note`` carries the gate's own
+    # sentence when nothing was dispatched, so "the mechanism is resting" is a
+    # readable state rather than an absence of evidence.
+    preloaded: tuple[str, ...] = ()
+    preload_note: str = ""
 
     @property
     def line(self) -> str:
@@ -1449,6 +1462,10 @@ class RunObservation:
             parts.append(f"errors {len(self.errors)}")
         if self.reload_requested_for:
             parts.append(f"reload requested ({self.reload_requested_for})")
+        if self.preloaded:
+            parts.append(f"preloaded {len(self.preloaded)}")
+        if self.preload_note:
+            parts.append(f"preload: {self.preload_note}")
         return "[escalation] " + (", ".join(parts) if parts else "nothing to do")
 
 
@@ -1527,6 +1544,113 @@ class EscalationQueueAdapter:
             stop_reason=PUMP_STOP_REASON, failures=(), deferrals=(),
             now=now, reconcile=True,
         )
+
+    def preload(self, *, now: datetime | None = None) -> RunObservation:
+        """One Capability Bootstrap pass: offer at most one *prepared* capability.
+
+        The second growth path.  ``observe_run``/``pump`` consume walls the device
+        already hit; this consumes the capability catalog and prepares a brief for
+        something nobody has hit yet, so a capability can be learned *before* the
+        encounter instead of after it.
+
+        Deliberately not a second pipeline: the candidate goes through the same
+        ``decide()`` throttle, the same one-slot budget, the same ledger and the same
+        bridge, and its record is marked ``origin=bootstrap`` so a reader can always
+        tell "we were blocked here" from "we prepared this in advance".
+
+        It is also deliberately *last*: :func:`capability_bootstrap.preload_gate`
+        refuses while a real gap is owed, while an agent holds the single slot, while
+        a development validation owns the device, while V2 is in a REALTIME activity,
+        and while the main autonomous-development loop has not been proven once.
+        Returns an observation either way -- "resting, because X" is the state the
+        operator asked to be able to see.
+        """
+        from . import capability_bootstrap as bootstrap
+
+        moment = now or datetime.now(timezone.utc)
+        try:
+            snapshot = self.ledger.snapshot()
+            armed, arm_reason, arm_detail = bootstrap.arm_state(self.root)
+            scanner = bootstrap.BootstrapScanner.load(
+                self.root, ledger_snapshot=snapshot, policy=self.policy, now=moment
+            )
+            candidates = scanner.candidates()
+            gate = bootstrap.preload_gate(
+                armed=armed,
+                arm_reason=arm_reason,
+                arm_detail=arm_detail,
+                active_jobs=len(snapshot.active_jobs()),
+                pending_records=len(self.pending(snapshot=snapshot)),
+                lease_holder=self._device_holder(),
+                runtime=self._runtime_view(),
+                actionable=len(candidates),
+            )
+            if not gate.allowed:
+                return RunObservation(preload_note=gate.describe)
+            if not candidates:
+                return RunObservation(preload_note="no preloadable capability")
+
+            plan = candidates[0]
+            brief_path = bootstrap.write_brief(self.root, plan)
+            candidate = EscalationCandidate(
+                signature=FailureSignature(
+                    capability=plan.code or plan.capability_id,
+                    failure_type=CAPABILITY_MISSING,
+                    skill=plan.skill,
+                ),
+                condition=CAPABILITY_MISSING,
+                reason=(
+                    f"PRELOAD_BEFORE_ENCOUNTER: {plan.capability_id} {plan.code} is not "
+                    f"implemented and nothing has failed here yet. Priority "
+                    f"{plan.priority}; knowledge rung {plan.knowledge_rank} "
+                    f"({plan.knowledge_source}); plan state {plan.plan_state}; "
+                    f"brief {brief_path.as_posix()}"
+                ),
+                goal=(plan.goal.split(",")[0].strip() if plan.goal else ""),
+                evidence=(brief_path.as_posix(),),
+            )
+            dispatch = decide(candidate, snapshot, self.policy, now=moment)
+            if not dispatch.should_submit:
+                self._record(candidate, dispatch, origin="bootstrap")
+                return RunObservation(
+                    preload_note=f"{plan.code}: {dispatch.action}: {dispatch.reason}"
+                )
+            job_id = self._submit(
+                candidate, dispatch, origin="bootstrap",
+                extra_notes=bootstrap.work_order_brief(plan),
+            )
+            if not job_id:
+                return RunObservation(
+                    preload_note=f"{plan.code}: queued (gateway unavailable)"
+                )
+            return RunObservation(preloaded=(plan.code,))
+        except Exception as exc:  # noqa: BLE001 - a background pass must never raise
+            return RunObservation(preload_note=f"preload failed: {type(exc).__name__}: {exc}")
+
+    def _device_holder(self) -> str:
+        """Who owns the one device right now, if anyone.
+
+        Read through the lease module rather than a second bookkeeping file: the
+        operator's Single Device / Single UI Owner rule already has exactly one lock.
+        The owner name is what the gate reports; an expired lease is not a holder.
+        """
+        try:
+            from .device_lease import DeviceLease
+
+            record = DeviceLease(self.root).holder()
+            return str(getattr(record, "owner", "") or "") if record is not None else ""
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _runtime_view(self) -> dict[str, Any]:
+        """The runtime's own snapshot, for the gate's REALTIME check."""
+        try:
+            payload = json.loads(
+                (Path(self.root) / "learning/runtime_snapshot.json").read_text(encoding="utf-8")
+            )
+            return payload if isinstance(payload, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
 
     def _drain(
         self,
@@ -1746,7 +1870,7 @@ class EscalationQueueAdapter:
             evidence=record.evidence,
         )
 
-    def _record(self, candidate: EscalationCandidate, dispatch: Dispatch) -> None:
+    def _record(self, candidate: EscalationCandidate, dispatch: Dispatch, *, origin: str = "queue") -> None:
         """One row the first time a key is seen, even when nothing is dispatched.
 
         Without this the ledger would only contain escalations that happened, and
@@ -1759,6 +1883,7 @@ class EscalationQueueAdapter:
             self.ledger.append({
                 "source": "queue",
                 "event": "escalation_created",
+                "origin": origin,
                 "key": candidate.signature.key,
                 "capability": candidate.signature.capability,
                 "failure_type": candidate.signature.failure_type,
@@ -1778,6 +1903,8 @@ class EscalationQueueAdapter:
         dispatch: Dispatch,
         *,
         pending_since: datetime | None = None,
+        origin: str = "queue",
+        extra_notes: str = "",
     ) -> str:
         """Send one candidate.  ``pending_since`` records how long it waited for a slot.
 
@@ -1787,7 +1914,7 @@ class EscalationQueueAdapter:
         """
         availability = self.bridge.is_available()
         revision = repo_revision(self.root)
-        self._record(candidate, dispatch)
+        self._record(candidate, dispatch, origin=origin)
 
         if not availability:
             # One queued row per transition, not one per cycle: the loop retries
@@ -1814,6 +1941,7 @@ class EscalationQueueAdapter:
             notes=(
                 f"Escalation key: {candidate.signature.key}\n"
                 f"Model rung: {dispatch.model} -- {dispatch.model_reason}"
+                + (f"\n\n{extra_notes}" if extra_notes else "")
             ),
             timebox_minutes=self.policy.job_timebox_minutes,
             root=self.root,

@@ -1,0 +1,4111 @@
+{
+ "schema_version": "1.0",
+ "generated_by": "winter_agent_v2.capability_bootstrap",
+ "generated_at": "2026-09-18T02:55:04.653190+00:00",
+ "policy": {
+  "max_lifecycle": "READY_FOR_LIVE_VERIFY",
+  "never_from_a_bootstrap": [
+   "LIVE_TRIED",
+   "LIVE_VERIFIED",
+   "STABLE"
+  ],
+  "knowledge_ladder": [
+   "V2_EVIDENCE",
+   "LEGACY_ASSET",
+   "EXTERNAL_MAP",
+   "OPEN_SOURCE_UNINDEXED",
+   "GAME_DB_WIKI",
+   "SELF_EXPLORATION"
+  ],
+  "priority_ladder": [
+   "REAL_GAP",
+   "UNLOCKED_MISSING",
+   "HIGH_FREQ_FREE_VALUE",
+   "OTHER_UNLOCKED",
+   "FUTURE_LOCKED"
+  ],
+  "classes": [
+   "MISSING",
+   "NEVER_TRIED",
+   "DEFINED_NO_IMPLEMENTATION",
+   "EXTERNAL_PRIOR_UNIMPLEMENTED",
+   "LEGACY_ASSET_UNWIRED"
+  ],
+  "fields": [
+   "Preconditions",
+   "Navigation",
+   "Recognition",
+   "Action",
+   "Verifier",
+   "Recovery",
+   "Risk"
+  ]
+ },
+ "summary": {
+  "catalog_rows": 522,
+  "actionable": 452,
+  "in_flight": 70,
+  "by_priority": {
+   "UNLOCKED_MISSING": 124,
+   "HIGH_FREQ_FREE_VALUE": 52,
+   "OTHER_UNLOCKED": 18,
+   "FUTURE_LOCKED": 328
+  },
+  "by_plan_state": {
+   "NEEDS_LIVE_FRAME": 452,
+   "IN_FLIGHT": 70
+  },
+  "by_class": {
+   "MISSING": 439,
+   "NEVER_TRIED": 36,
+   "EXTERNAL_PRIOR_UNIMPLEMENTED": 38,
+   "LEGACY_ASSET_UNWIRED": 20,
+   "DEFINED_NO_IMPLEMENTATION": 16
+  },
+  "by_knowledge_source": {
+   "GAME_DB_WIKI": 76,
+   "SELF_EXPLORATION": 328,
+   "V2_EVIDENCE": 78,
+   "EXTERNAL_MAP": 35,
+   "LEGACY_ASSET": 5
+  }
+ },
+ "candidates": [
+  {
+   "capability_id": "CAP-G09",
+   "code": "TROOP_SELECT",
+   "goal": "PARTICIPATE_BEAR",
+   "skill": "SELECT_TROOP_PRESET",
+   "classes": [
+    "DEFINED_NO_IMPLEMENTATION"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 119.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "V2_EVIDENCE",
+   "knowledge_rank": 1,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [
+    "TROOP_PRESET"
+   ],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "从 MARCH 出发",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.5
+    },
+    {
+     "field": "Navigation",
+     "value": "MARCH -> MARCH",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.55
+    },
+    {
+     "field": "Recognition",
+     "value": "TROOP_PRESET",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.3
+    },
+    {
+     "field": "Action",
+     "value": "APPLY_CONTEXT_TROOP_POLICY",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.55
+    },
+    {
+     "field": "Verifier",
+     "value": "troop_policy_applied",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.4
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Recovery']；未注册语义 ['TROOP_PRESET']；verifier 未绑定",
+    "live_test_deferred_to": "run_live.py --goal PARTICIPATE_BEAR"
+   },
+   "notes": [
+    "字段来自相近技能 SELECT_TROOP_PRESET 的草稿（不是本能力的实现）——必须真机校准后才算设计",
+    "未注册语义 ['TROOP_PRESET'] —— 需要一帧真机页面才能设计（只读探针）"
+   ]
+  },
+  {
+   "capability_id": "CAP-E07",
+   "code": "ECONOMY_RESEARCH",
+   "goal": "",
+   "skill": "ECONOMY_RESEARCH",
+   "classes": [
+    "MISSING",
+    "LEGACY_ASSET_UNWIRED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 110.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "LEGACY_ASSET",
+   "knowledge_rank": 2,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "dataset/truth_audit 与 dataset/candidate 中有同名资产，可先量再设计",
+     "source": "LEGACY_ASSET",
+     "confidence": 0.2
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-E08",
+   "code": "GROWTH_RESEARCH",
+   "goal": "",
+   "skill": "GROWTH_RESEARCH",
+   "classes": [
+    "MISSING",
+    "LEGACY_ASSET_UNWIRED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 110.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "LEGACY_ASSET",
+   "knowledge_rank": 2,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "dataset/truth_audit 与 dataset/candidate 中有同名资产，可先量再设计",
+     "source": "LEGACY_ASSET",
+     "confidence": 0.2
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-E09",
+   "code": "BATTLE_RESEARCH",
+   "goal": "",
+   "skill": "BATTLE_RESEARCH",
+   "classes": [
+    "MISSING",
+    "LEGACY_ASSET_UNWIRED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 110.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "LEGACY_ASSET",
+   "knowledge_rank": 2,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "dataset/truth_audit 与 dataset/candidate 中有同名资产，可先量再设计",
+     "source": "LEGACY_ASSET",
+     "confidence": 0.2
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-B09",
+   "code": "CLAIM_VIP_DAILY",
+   "goal": "",
+   "skill": "CLAIM_VIP_DAILY",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "tapInside(VIP_MENU_BUTTON (430,48)-(530,85)) -> verify with TemplatesEnum.VIP_MENU; pressBack() to leave",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "template VIP_MENU to confirm the panel; OcrSettingsData SINGLE_LINE + charWhitelist('0123456789d') over VIP_EXPIRATION_TIME (273,1170)-(461,1213) accepted by GameTimeUtils.isAcceptedFormat",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "tapInside(DAILY_CHEST_REWARDS (540,813)-(624,835), attempts=3, 300ms) then tapInside(VIP_POINT_REWARDS (602,263)-(650,293), attempts=3, 300ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "NONE for the claims — the taps are blind fixed-coordinate, repeated 3x. Only the menu opening is verified (template).",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "if the menu template is not found -> log + reschedule; no retry of the panel itself",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "VIP_FREE_CLAIM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/VipRoutine.java"
+    ],
+    "current_gap": "V2 has no VIP entry. The external flow says: the button is on the HOME screen at (430,48)-(530,85) and the panel is confirmed by a template — V2 can probe exactly that point instead of searching blind. V2 must add the verifier their code lacks."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-B10",
+   "code": "VIP_FREE_CHEST",
+   "goal": "",
+   "skill": "VIP_FREE_CHEST",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "tapInside(VIP_MENU_BUTTON (430,48)-(530,85)) -> verify with TemplatesEnum.VIP_MENU; pressBack() to leave",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "template VIP_MENU to confirm the panel; OcrSettingsData SINGLE_LINE + charWhitelist('0123456789d') over VIP_EXPIRATION_TIME (273,1170)-(461,1213) accepted by GameTimeUtils.isAcceptedFormat",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "tapInside(DAILY_CHEST_REWARDS (540,813)-(624,835), attempts=3, 300ms) then tapInside(VIP_POINT_REWARDS (602,263)-(650,293), attempts=3, 300ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "NONE for the claims — the taps are blind fixed-coordinate, repeated 3x. Only the menu opening is verified (template).",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "if the menu template is not found -> log + reschedule; no retry of the panel itself",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "VIP_FREE_CLAIM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/VipRoutine.java"
+    ],
+    "current_gap": "V2 has no VIP entry. The external flow says: the button is on the HOME screen at (430,48)-(530,85) and the panel is confirmed by a template — V2 can probe exactly that point instead of searching blind. V2 must add the verifier their code lacks."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-B12",
+   "code": "CLAIM_ONLINE_REWARD",
+   "goal": "",
+   "skill": "CLAIM_ONLINE_REWARD",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "on the daily tab (see above)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "DAILY_MISSION_CLAIMALL_BUTTON; else DAILY_MISSION_CLAIM_BUTTON, with a DISABLED variant discriminator: if DAILY_MISSION_CLAIM_BUTTON_DISABLED is found within 20px (Manhattan) of the claim button, treat the claim as not available",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "tapInside(claimAllResult) or tapNear(claimPoint) then dismissRewardPopupsFlow() = tapInside((10,100)-(600,120), count=3, 150ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "no-progress detection: after tapping, re-search; if the button is still at the same point (<=20px) twice, stop and report 'no visual progress'",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "bounded loop (20), same-target check, then dismiss and return false so the scheduler can reschedule",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "DAILY_REWARD_CLAIM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/DailyMissionRoutine.java"
+    ],
+    "current_gap": "V2 cannot yet tap a claimable activity chest. The external pattern says: register the enabled and disabled appearances and treat 'disabled at the same point' as not claimable — the same trick V2 used for the selected/unselected tab pill."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-B15",
+   "code": "CLAIM_IDLE_REWARD",
+   "goal": "",
+   "skill": "CLAIM_IDLE_REWARD",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "on the daily tab (see above)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "DAILY_MISSION_CLAIMALL_BUTTON; else DAILY_MISSION_CLAIM_BUTTON, with a DISABLED variant discriminator: if DAILY_MISSION_CLAIM_BUTTON_DISABLED is found within 20px (Manhattan) of the claim button, treat the claim as not available",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "tapInside(claimAllResult) or tapNear(claimPoint) then dismissRewardPopupsFlow() = tapInside((10,100)-(600,120), count=3, 150ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "no-progress detection: after tapping, re-search; if the button is still at the same point (<=20px) twice, stop and report 'no visual progress'",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "bounded loop (20), same-target check, then dismiss and return false so the scheduler can reschedule",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "DAILY_REWARD_CLAIM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/DailyMissionRoutine.java"
+    ],
+    "current_gap": "V2 cannot yet tap a claimable activity chest. The external pattern says: register the enabled and disabled appearances and treat 'disabled at the same point' as not claimable — the same trick V2 used for the selected/unselected tab pill."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-B18",
+   "code": "CLAIM_EVENT_REWARD",
+   "goal": "",
+   "skill": "CLAIM_EVENT_REWARD",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "on the daily tab (see above)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "DAILY_MISSION_CLAIMALL_BUTTON; else DAILY_MISSION_CLAIM_BUTTON, with a DISABLED variant discriminator: if DAILY_MISSION_CLAIM_BUTTON_DISABLED is found within 20px (Manhattan) of the claim button, treat the claim as not available",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "tapInside(claimAllResult) or tapNear(claimPoint) then dismissRewardPopupsFlow() = tapInside((10,100)-(600,120), count=3, 150ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "no-progress detection: after tapping, re-search; if the button is still at the same point (<=20px) twice, stop and report 'no visual progress'",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "bounded loop (20), same-target check, then dismiss and return false so the scheduler can reschedule",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "DAILY_REWARD_CLAIM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/DailyMissionRoutine.java"
+    ],
+    "current_gap": "V2 cannot yet tap a claimable activity chest. The external pattern says: register the enabled and disabled appearances and treat 'disabled at the same point' as not claimable — the same trick V2 used for the selected/unselected tab pill."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-B20",
+   "code": "FREE_SHOP_ITEM",
+   "goal": "",
+   "skill": "FREE_SHOP_ITEM",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "open shop -> swipe with calibrated geometry -> confirm the tab by OCR",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "ShopTab + OCR header read (attempts=2, retry 300ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "swipe, then select the item",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "the tab header is re-read after the swipe; without a confirmed header the navigation is not accepted",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "bounded swipes (10)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "SHOP_FREE_ITEM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/automation/src/main/java/dev/frostguard/engine/helper/ShopNavigator.java",
+     "modules/automation/src/main/java/dev/frostguard/engine/nav/ShopTab.java",
+     "modules/automation/src/main/java/dev/frostguard/engine/helper/ShopSwipeCalibration.java",
+     "modules/api/.../configs/AllianceShopItemEnum.java"
+    ],
+    "current_gap": "V2 has no shop navigation at all; this is the pattern to reuse when FREE_SHOP_ITEM is implemented."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-I08",
+   "code": "SEARCH_POLAR_TERROR",
+   "goal": "",
+   "skill": "SEARCH_POLAR_TERROR",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "combat panel",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "PolarSpecialRewardsScanner (scans for special drops)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "hunt within the mode's rules",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "mode + scanner state",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "stamina policy decides whether to top up or stop — i.e. 'no stamina' is a policy, not an error",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "POLAR_TERROR",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarTerrorHuntingRoutine.java",
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarStaminaTopUpPolicy.java",
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarSpecialRewardsScanner.java",
+     "modules/api/.../configs/PolarTerrorMode.java"
+    ],
+    "current_gap": "V2's stamina rules live in config (`reserve_for_stamina`) and in the brain; the external split into a named policy is a cleaner shape if V2 ever grows stamina-spending goals."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-I12",
+   "code": "CLAIM_BEAST_REWARD",
+   "goal": "",
+   "skill": "CLAIM_BEAST_REWARD",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "on the daily tab (see above)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "DAILY_MISSION_CLAIMALL_BUTTON; else DAILY_MISSION_CLAIM_BUTTON, with a DISABLED variant discriminator: if DAILY_MISSION_CLAIM_BUTTON_DISABLED is found within 20px (Manhattan) of the claim button, treat the claim as not available",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "tapInside(claimAllResult) or tapNear(claimPoint) then dismissRewardPopupsFlow() = tapInside((10,100)-(600,120), count=3, 150ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "no-progress detection: after tapping, re-search; if the button is still at the same point (<=20px) twice, stop and report 'no visual progress'",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "bounded loop (20), same-target check, then dismiss and return false so the scheduler can reschedule",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "DAILY_REWARD_CLAIM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/DailyMissionRoutine.java"
+    ],
+    "current_gap": "V2 cannot yet tap a claimable activity chest. The external pattern says: register the enabled and disabled appearances and treat 'disabled at the same point' as not claimable — the same trick V2 used for the selected/unselected tab pill."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-S04",
+   "code": "ALLIANCE_TECH",
+   "goal": "",
+   "skill": "ALLIANCE_TECH",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED",
+    "LEGACY_ASSET_UNWIRED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "alliance panel",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "AllianceRankingCaptureSupport (a capture layer for ranking screens)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "help / donate / claim",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "ranking capture implies frame evidence",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "helper-level",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "ALLIANCE_HELP_TECH_GIFT_CHEST",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/automation/src/main/java/dev/frostguard/engine/helper/AllianceHelper.java",
+     "modules/automation/src/main/java/dev/frostguard/engine/helper/AllianceChampionshipHelper.java",
+     "modules/automation/.../ranking/capture/AllianceRankingCaptureSupport.java",
+     "modules/api/.../configs/AllianceShopItemEnum.java"
+    ],
+    "current_gap": "V2's ALLIANCE_HELP has no verifier (the RR-003 class) and is therefore never dispatched."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-S12",
+   "code": "AUTO_JOIN_RALLY",
+   "goal": "",
+   "skill": "AUTO_JOIN_RALLY",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "RallyFlagCoordinates — rally flags are located in the world map field",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "flag coordinates (dedicated class + unit test)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "open the flag, join",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "its own preemption rule implies a state check before interrupting",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "preemption + bounded attempts",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "RALLY_JOIN",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/ManualRallyJoinRoutine.java",
+     "modules/automation/src/main/java/dev/frostguard/engine/nav/RallyFlagCoordinates.java",
+     "modules/automation/src/main/java/dev/frostguard/engine/schedule/preempt/ManualRallyJoinPreemptionRule.java"
+    ],
+    "current_gap": "V2's JOIN_RALLY/START_RALLY have no verifiers, so they are never dispatched (the RR-003 class)."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-Y07",
+   "code": "CLAIM_CRAZY_JOE_REWARD",
+   "goal": "",
+   "skill": "CLAIM_CRAZY_JOE_REWARD",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 104.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "on the daily tab (see above)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "DAILY_MISSION_CLAIMALL_BUTTON; else DAILY_MISSION_CLAIM_BUTTON, with a DISABLED variant discriminator: if DAILY_MISSION_CLAIM_BUTTON_DISABLED is found within 20px (Manhattan) of the claim button, treat the claim as not available",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "tapInside(claimAllResult) or tapNear(claimPoint) then dismissRewardPopupsFlow() = tapInside((10,100)-(600,120), count=3, 150ms)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "no-progress detection: after tapping, re-search; if the button is still at the same point (<=20px) twice, stop and report 'no visual progress'",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "bounded loop (20), same-target check, then dismiss and return false so the scheduler can reschedule",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "DAILY_REWARD_CLAIM",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/dailies/DailyMissionRoutine.java"
+    ],
+    "current_gap": "V2 cannot yet tap a claimable activity chest. The external pattern says: register the enabled and disabled appearances and treat 'disabled at the same point' as not claimable — the same trick V2 used for the selected/unselected tab pill."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-I09",
+   "code": "START_POLAR_TERROR_RALLY",
+   "goal": "",
+   "skill": "START_POLAR_TERROR_RALLY",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 96.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T2",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "combat panel",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "PolarSpecialRewardsScanner (scans for special drops)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "hunt within the mode's rules",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "mode + scanner state",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "stamina policy decides whether to top up or stop — i.e. 'no stamina' is a policy, not an error",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T2（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "POLAR_TERROR",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarTerrorHuntingRoutine.java",
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarStaminaTopUpPolicy.java",
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/PolarSpecialRewardsScanner.java",
+     "modules/api/.../configs/PolarTerrorMode.java"
+    ],
+    "current_gap": "V2's stamina rules live in config (`reserve_for_stamina`) and in the brain; the external split into a named policy is a cleaner shape if V2 ever grows stamina-spending goals."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-I10",
+   "code": "JOIN_POLAR_TERROR_RALLY",
+   "goal": "",
+   "skill": "JOIN_POLAR_TERROR_RALLY",
+   "classes": [
+    "EXTERNAL_PRIOR_UNIMPLEMENTED",
+    "LEGACY_ASSET_UNWIRED"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 96.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "EXTERNAL_MAP",
+   "knowledge_rank": 3,
+   "unlocked": "OBSERVED",
+   "risk": "T2",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "RallyFlagCoordinates — rally flags are located in the world map field",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Recognition",
+     "value": "flag coordinates (dedicated class + unit test)",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.4
+    },
+    {
+     "field": "Action",
+     "value": "open the flag, join",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.45
+    },
+    {
+     "field": "Verifier",
+     "value": "its own preemption rule implies a state check before interrupting",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.25
+    },
+    {
+     "field": "Recovery",
+     "value": "preemption + bounded attempts",
+     "source": "EXTERNAL_MAP",
+     "confidence": 0.35
+    },
+    {
+     "field": "Risk",
+     "value": "T2（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE + EXTERNAL_MAP（沿用等级 ADAPT_PATTERN，许可证 AGPL-3.0-only）",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {
+    "capability": "RALLY_JOIN",
+    "repo": "wosbot",
+    "reuse_level": "ADAPT_PATTERN",
+    "license": "AGPL-3.0-only",
+    "source_files": [
+     "modules/tasks/src/main/java/dev/frostguard/tasks/combat/ManualRallyJoinRoutine.java",
+     "modules/automation/src/main/java/dev/frostguard/engine/nav/RallyFlagCoordinates.java",
+     "modules/automation/src/main/java/dev/frostguard/engine/schedule/preempt/ManualRallyJoinPreemptionRule.java"
+    ],
+    "current_gap": "V2's JOIN_RALLY/START_RALLY have no verifiers, so they are never dispatched (the RR-003 class)."
+   },
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": []
+  },
+  {
+   "capability_id": "CAP-A01",
+   "code": "LAUNCH_GAME",
+   "goal": "",
+   "skill": "LAUNCH_GAME",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/alliance.json, knowledge/game/bear.json, knowledge/game/beasts.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-D20",
+   "code": "FIRE_CRYSTAL_BUILDING",
+   "goal": "",
+   "skill": "FIRE_CRYSTAL_BUILDING",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/fire_crystal.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-D22",
+   "code": "CRYSTAL_LAB",
+   "goal": "",
+   "skill": "CRYSTAL_LAB",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/fire_crystal.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-E02",
+   "code": "READ_RESEARCH_TREE",
+   "goal": "",
+   "skill": "READ_RESEARCH_TREE",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/research.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-E03",
+   "code": "FIND_AVAILABLE_RESEARCH",
+   "goal": "",
+   "skill": "FIND_AVAILABLE_RESEARCH",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/research.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-E05",
+   "code": "CLAIM_RESEARCH_COMPLETE",
+   "goal": "",
+   "skill": "CLAIM_RESEARCH_COMPLETE",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/research.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-E06",
+   "code": "USE_RESEARCH_SPEEDUP",
+   "goal": "",
+   "skill": "USE_RESEARCH_SPEEDUP",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/research.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-E11",
+   "code": "FIRE_CRYSTAL_RESEARCH",
+   "goal": "",
+   "skill": "FIRE_CRYSTAL_RESEARCH",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/research.json, knowledge/game/fire_crystal.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-E12",
+   "code": "HELIOS_T11_RESEARCH",
+   "goal": "",
+   "skill": "HELIOS_T11_RESEARCH",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/research.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-E13",
+   "code": "EXALTED_T12_RESEARCH",
+   "goal": "",
+   "skill": "EXALTED_T12_RESEARCH",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/research.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-H17",
+   "code": "GATHER_EVENT_AWARE",
+   "goal": "",
+   "skill": "GATHER_EVENT_AWARE",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/events/event_registry.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-J03",
+   "code": "CLASSIFY_INTEL",
+   "goal": "",
+   "skill": "CLASSIFY_INTEL",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T0",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T0（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/intel.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-J07",
+   "code": "INTEL_REFRESH_STATE",
+   "goal": "",
+   "skill": "INTEL_REFRESH_STATE",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/intel.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-J08",
+   "code": "INTEL_NOT_REFRESHED",
+   "goal": "",
+   "skill": "INTEL_NOT_REFRESHED",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/intel.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-J10",
+   "code": "INTEL_COMPLETE_ALL",
+   "goal": "",
+   "skill": "INTEL_COMPLETE_ALL",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/intel.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-K10",
+   "code": "HERO_GEAR_EQUIP",
+   "goal": "",
+   "skill": "HERO_GEAR_EQUIP",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/chief_gear.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-K11",
+   "code": "HERO_GEAR_UPGRADE",
+   "goal": "",
+   "skill": "HERO_GEAR_UPGRADE",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/chief_gear.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-K12",
+   "code": "HERO_GEAR_FORGE",
+   "goal": "",
+   "skill": "HERO_GEAR_FORGE",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/chief_gear.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-K13",
+   "code": "HERO_EXCLUSIVE_GEAR_WIDGET",
+   "goal": "",
+   "skill": "HERO_EXCLUSIVE_GEAR_WIDGET",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/chief_gear.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-M04",
+   "code": "SELECT_EXPLORATION_STAGE",
+   "goal": "",
+   "skill": "SELECT_EXPLORATION_STAGE",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/exploration.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-M05",
+   "code": "AUTO_FORMATION_EXPLORATION",
+   "goal": "",
+   "skill": "AUTO_FORMATION_EXPLORATION",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/exploration.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-M06",
+   "code": "START_EXPLORATION",
+   "goal": "",
+   "skill": "START_EXPLORATION",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/exploration.json（第 5 级）；读不到再上真机探针"
+   ]
+  },
+  {
+   "capability_id": "CAP-M07",
+   "code": "VERIFY_EXPLORATION_WIN",
+   "goal": "",
+   "skill": "VERIFY_EXPLORATION_WIN",
+   "classes": [
+    "MISSING"
+   ],
+   "priority": "UNLOCKED_MISSING",
+   "score": 92.0,
+   "plan_state": "NEEDS_LIVE_FRAME",
+   "knowledge_source": "GAME_DB_WIKI",
+   "knowledge_rank": 5,
+   "unlocked": "OBSERVED",
+   "risk": "T1",
+   "existing_skill": "",
+   "has_verifier": false,
+   "missing_semantics": [],
+   "in_flight": "",
+   "in_flight_reason": "",
+   "unknown_fields": [
+    "Preconditions",
+    "Navigation",
+    "Recognition",
+    "Action",
+    "Verifier",
+    "Recovery"
+   ],
+   "facets": [
+    {
+     "field": "Preconditions",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Navigation",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recognition",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Action",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Verifier",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Recovery",
+     "value": "UNKNOWN",
+     "source": "",
+     "confidence": 0.0
+    },
+    {
+     "field": "Risk",
+     "value": "T1（总表判定，资源成本 UNKNOWN）",
+     "source": "V2_EVIDENCE",
+     "confidence": 0.7
+    }
+   ],
+   "reuse": {
+    "skill_registered": false,
+    "verifier_bound": false,
+    "design_draft": false,
+    "episodes": 0,
+    "local_path_exists": false,
+    "verdict": "NO_LOCAL_PATH_ESCALATE"
+   },
+   "external": {},
+   "maa": {
+    "declared_backend": "MAA",
+    "covering_tools": [
+     "MAA_FRAMEWORK",
+     "OCR_RAPID"
+    ],
+    "custom_code_needed": "模板 / 页面模型 / 锚点 / Verifier 及其证据 —— MAA 只提供引擎，不提供《无尽冬日》的游戏知识（§2b）",
+    "verdict": "USE_MAA_PLUS_V2_VISION"
+   },
+   "targeted_test": {
+    "name": "DESIGN_COMPLETE",
+    "verdict": "NOT_PROVEN",
+    "detail": "缺字段 ['Preconditions', 'Navigation', 'Recognition', 'Action', 'Verifier', 'Recovery']；未注册语义 -；verifier 未绑定",
+    "live_test_deferred_to": "先取得一帧真机页面（只读探针），再设计缺失的语义"
+   },
+   "notes": [
+    "先读项目内知识：knowledge/game/exploration.json（第 5 级）；读不到再上真机探针"
+   ]
+  }
+ ]
+}

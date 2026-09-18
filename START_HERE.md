@@ -208,6 +208,11 @@ LIVE CLIENT > PRODUCTION EVIDENCE > VERIFIER RESULT > CURRENT CODE
    `knowledge/external/external_capability_map.json`，并按里面记的 `source_files` 直接读源码。
    **两条禁令：已经有成熟本地实现还跑去 GitHub 重新研究；外部已有成熟实现却自己摸 UI 两小时。**
    外部实现**只是 prior**：`External → Adapt → Current Client Probe → Live Verify`。
+   选哪个 Capability 不用手工挑：`python tools/bootstrap_scan.py --status` 会扫描
+   `knowledge/game/capability_catalog.json`（522 行），按操作者的优先级阶梯排好序，给出七字段简报，
+   并把已在流程中的（WORKING / DEVELOPMENT_PENDING / CANDIDATE / LIVE_VERIFY_PENDING / LIVE_VERIFIED）
+   逐条按名字拒绝。机制说明见 `winter_agent_v2/capability_bootstrap.py`；
+   **预载的最高状态是 `READY_FOR_LIVE_VERIFY`，永远不是 LIVE_VERIFIED。**
 3. **禁止重新设计架构。** 见 `00_MASTER_RULES.md` §2。
 4. **禁止重复已经 Live Verified 的工作。** 见 `02_CURRENT_PROGRESS.md` 的「已 Live 且应守住」表。
 5. 进入循环：
