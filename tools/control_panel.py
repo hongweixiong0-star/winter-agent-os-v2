@@ -1786,6 +1786,10 @@ def status_defaults() -> dict[str, str]:
         # the operator never has to execute a second command.
         "loop_card": PENDING, "loop_trace": PENDING, "loop_break": PENDING,
         "soak": "尚未开始（GUI 启动后由窗口自行测量，无需任何手工命令）",
+        # §7: the control plane's own two versions.  Shown side by side because the measured
+        # symptom was a window that could not tell that the code under it had changed -- and a
+        # single cell saying "已同步" would have hidden which of the two it compared.
+        "control_plane": PENDING, "control_plane_loaded": PENDING, "control_plane_disk": PENDING,
         "stats": "本次启动：0 轮 · 0 动作",
     }
 
@@ -2517,6 +2521,21 @@ class ControlPanel:
         # Reads the device and the WorkBuddy jobs API off the UI thread; every value below
         # is read from a file that already exists, so the window still owns no state.
         self.probes = PanelProbes(ROOT, device=self.device)
+        # The control plane's own reload state (§3-§5).  ``_reload_started`` guards against a
+        # spawn loop when a restart fails; ``_reload_waiting`` holds the reason a reload is
+        # owed but not yet allowed, so the window can say what it is waiting for.
+        self._reload_started = False
+        self._reload_waiting = ""
+        # §7: capture the version this window is loading, here, so the top bar can compare it
+        # with the disk later.  Without a frozen "current", a stale window has nothing to compare
+        # against and cannot honestly say whether it is stale -- the measured failure was exactly
+        # that silence.
+        try:
+            from winter_agent_v2.version_identity import freeze_process_revision
+
+            freeze_process_revision(ROOT)
+        except Exception:  # noqa: BLE001 - a missing version is reported, not fatal
+            pass
         self.probes.start()
         # The queue's clock.  Started with the window, not with AUTO: the operator's
         # rule is that a running GUI keeps consuming its development backlog even
@@ -3858,6 +3877,10 @@ class ControlPanel:
             self.values["loop_trace"].set("—")
             self.values["loop_break"].set(f"尚未开始：{card.get('reason')}")
         self.values["soak"].set(render_soak(self.probes.soak_payload()))
+        # §1-§5: is this window itself stale?  Checked here, on the same refresh that recomputes
+        # the gateway cell -- because the measured symptom was exactly this cell showing 异常
+        # from code that had already been fixed on disk.
+        self._check_control_plane_reload()
         if moves.get("submitted"):
             self._append(f"开发队列：已向 WorkBuddy 提交 {moves['submitted']} 个真实任务。")
         if moves.get("released"):
@@ -4177,6 +4200,99 @@ class ControlPanel:
                                   verifier=None, next_action="启动唯一 Scheduler")
         self._append("自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。")
         threading.Thread(target=self._run_unified_worker, daemon=True).start()
+
+    def _check_control_plane_reload(self) -> None:
+        """Is this window running code that is no longer on disk?
+
+        Measured 2026-09-18: the gateway fix was committed, and the window went on showing
+        "WorkBuddy 异常" at the top.  Nothing was wrong with the fix -- the process had imported
+        the old modules at start-up and no code path ever told it the files under it had
+        changed.  A worker reload would not have helped: the stale code was in the window.
+
+        Two facts are printed, in the operator's words: the version this process *loaded*, and
+        the version on disk now.  When they differ and a control-plane file is among the
+        changes, the marker is written and the window says 待重载 rather than pretending.
+
+        The restart itself waits for a safe point (:func:`safe_to_reload`): an atomic gameplay
+        step in flight, a device lease, or an operator STOP/PAUSE each refuse it.  A process
+        cannot replace itself through its own imports, so the restart is delegated to the
+        project's existing launcher -- there is no second reload mechanism here.
+        """
+        try:
+            from winter_agent_v2.control_plane_reload import (
+                changed_paths_since, control_plane_signal, needs_reload, reload_reason,
+                safe_to_reload,
+            )
+            from winter_agent_v2.version_identity import canonical_revision, process_revision
+        except Exception as exc:  # noqa: BLE001 - a probe must never take the window down
+            self.values["control_plane"].set(f"{PENDING}（{type(exc).__name__}）")
+            return
+
+        loaded = process_revision()
+        loaded_token = loaded.token if loaded is not None else ""
+        current = canonical_revision(ROOT, timeout=15.0)
+        changed = changed_paths_since(ROOT, loaded.head if loaded is not None else "")
+        reason = reload_reason(loaded_token, current.token, changed)
+        stale = needs_reload(loaded_token, current.token, changed)
+
+        self.values["control_plane_loaded"].set(loaded_token[:12] or "未记录")
+        self.values["control_plane_disk"].set(current.token[:12] or "读不到")
+        if not stale:
+            self.values["control_plane"].set("已同步（无需重载）")
+            return
+        self.values["control_plane"].set(f"待重载 -- {reason}")
+        try:
+            control_plane_signal(ROOT).request(
+                job_id="", reason=reason, evidence=tuple(changed[:12]),
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
+        ok, why = safe_to_reload(
+            atomic_step_running=self.process is not None and self.process.poll() is None,
+            lease_holder=self._lease_holder_label(),
+            operator_intent=self.operator_intent,
+            panel_owned=not observes_only(self),
+        )
+        if not ok:
+            # Reported, not silent: "why nothing happened" is the question the operator has
+            # had to read logs to answer, and the answer here is a real state.
+            self._reload_waiting = why
+            return
+        self._reload_waiting = ""
+        self._start_control_plane_reload(reason)
+
+    def _lease_holder_label(self) -> str:
+        """Who holds the device right now, as the lease file reports it (never inferred)."""
+        try:
+            from winter_agent_v2.device_lease import DeviceLease
+
+            return str(DeviceLease(ROOT).holder() or "")
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _start_control_plane_reload(self, reason: str) -> None:
+        """Hand the restart to the project's own launcher, hidden, once.
+
+        Delegated rather than done here because a process cannot re-import itself into a new
+        version: ``panel_restart.py`` already owns stop-at-a-safe-point plus start, and it
+        records the new pid the same way every other window start does.  Guarded by a flag so a
+        failed restart cannot turn into a spawn loop -- the next window makes the same decision
+        from the same evidence.
+        """
+        if self._reload_started:
+            return
+        self._reload_started = True
+        try:
+            import subprocess  # noqa: F401 - only for the constants below
+
+            command = [runtime_python_path(), str(ROOT / "tools/panel_restart.py"), "--restart"]
+            winproc.spawn_detached(command, log_path=LOG_ROOT / "panel_reload.log", cwd=ROOT)
+            self._append(f"控制面重载：已按安全点重启窗口（{reason}）。"
+                         "AUTO intent、队列泵与网关都会随之恢复，现有 Job 不动。")
+        except Exception as exc:  # noqa: BLE001
+            self._reload_started = False
+            self._append(f"控制面重载失败：{type(exc).__name__}: {exc}")
 
     def _maybe_validate(self) -> None:
         """Drive a bounded calibration run for a version that is waiting to be examined.
