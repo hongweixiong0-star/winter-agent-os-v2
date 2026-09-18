@@ -339,3 +339,41 @@
 2. **解析要求「整行是 JSON」= 恒失败**：MuMu 连接行**紧贴**结果 JSON 同一行、无换行
    ⇒ `parse_runtime_result` 每轮返回 `{}`，所有 `stop_reason` 决策链/摘要/升级载荷
    沦为死代码，界面只说「暂无结构化结果」。**遇到「暂无结构化结果」先怀疑解析，别怀疑大脑。**
+
+---
+
+### 调度不变量：会的自己做，不会的交给开发，学会以后自动交还（2026-09-18 实测）
+
+用户把它定为**永久不变量**，适用于所有 Goal。实现方式＝四块最小接线，**不新增第二套
+Scheduler / Registry / WorldState / 触发系统**，也不提高 repair budget 掩盖失败。
+
+**核心分离：`Action Progress` ≠ `Goal Progress`。**
+`GoalState.distance`（每个 Goal 自己「还差多少」）在 `goal_library` 一处定义，
+每条 episode 记 `goal_progress`。`None` ＝ 该 Goal 在这两帧上不可观测，**不是**停滞。
+反面教材（实测）：58 条 `SCAN_MAP_FOR_BEAST` 全部 `verifier_ok=True`、体力 457 二十分钟
+不动——「滑动落地了」被当成「Goal 在推进」。
+
+**`winter_agent_v2/capability_gate.py` 是投影，不存任何东西。**
+输入＝既有升级台账（能力态：`DEVELOPMENT_PENDING` / `COOLDOWN` / `BLOCKED` /
+`LIVE_VERIFIED`）＋ episode 流（同一 Goal 连续**多少轮**没有推进）。
+规则顺序：① 正在被开发的同一失败路径（经 `capability_skill_map.json` 把该 Goal 真正用过的
+skill 映射回能力）；② 组合语义——`SEQUENCE` 任一不可用即退让，`ANY_OF` 必须**全部**不可用；
+③ 连续无进展（按**轮次**计，不按 episode 计；一轮里多步算一次尝试，且**没有尝试过该 Goal
+的轮次不清零**——否则退让会与重选交替出现）。
+
+**重新进入条件（禁止 30 秒软循环，也禁止永久饿死）**：`DEVELOPMENT_PENDING` 持有到任务
+结论变化；`COOLDOWN` 到队列自己的期限；预算耗尽每 3 小时探一次；停滞路每 30 分钟探一次；
+reload 待办时全部持有。探针窗口**以最后一次真实尝试为基准**；从未尝试过的路径不失效。
+
+**退让必须外泄**，否则队列不知道它发生过（退让的 Goal 不产生失败步骤）：运行时把它写进
+snapshot、打印出来、并作为候选交给**既有**升级管线，复用 `REPEATED_LIVE_FAILURE`
+条件与既有节流（去重 / 并发上限 / 单签名预算 / 冷却）。
+
+**归因（RR-004）**：只有「跑着**与派单时不同的树**」的 verifier 通过 episode 才算证明
+某个开发任务学会了能力。episode 现在带 `repo_revision`（每轮一个进程，读一次），
+对账行带 capability / failure_signature / job_id / before_version / after_version /
+live_verify_episode / reload_id。**并发成功与历史成功都不算学会。**
+
+**静默缺陷清单（都吃过一次）**：`RuntimeSnapshotStore.update` 会**静默丢弃未声明字段**；
+`new_live_episodes` 会把 job 还在 WORKING 时跑的旧代码 episode 算成学习证据；
+不透明 id（job_id）不能当时间排序用。
