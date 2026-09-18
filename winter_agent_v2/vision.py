@@ -109,7 +109,7 @@ class SemanticROIVision:
         # dataset/truth_audit/resource_cells_20260914_120027):
         #
         #   * the strip holds SEVEN tabs, in this fixed client order:
-        #     beast, giant beast, sawmill, MEAT, WOOD, COAL, IRON
+        #     SNOW_MONSTER, BEAST, GIANT_BEAST, MEAT, WOOD, COAL, IRON
         #   * tab pitch ............ 157 px  (0.21806 of the width)
         #   * selected-cell width ... 145 px  (0.20139 of the width)
         #   * the strip scrolls horizontally, and the scroll offset CHANGES
@@ -129,10 +129,54 @@ class SemanticROIVision:
         # read from the cell contents, then every other cell follows from the
         # pitch.  ``tools/extract_resource_tab_cells.py`` regenerates the
         # cell templates from live captures.
+        #
+        # ------------------------------------------------------------------
+        # CORRECTED 2026-09-18 from the live client: the first THREE names were
+        # wrong, the last four were right.
+        #
+        # Measured by scrolling the strip and reading every label with RapidOCR
+        # (dataset/truth_audit/beast_search_wiring_20260918/, frames
+        # ``scroll0``/``scroll1``): at offset 200 the labels sit at x_norm
+        # 0.063 野兽 / 0.281 冰原巨兽 / 0.501 生肉 / 0.718 木材 / 0.938 煤矿, and
+        # after two right-swipes a tab the old list did not have at all appears
+        # to their left -- 失控的雪怪 at x_norm 0.123, i.e. the strip has a
+        # monster tab at index 0.  Cross-checked against the reviewed cell
+        # templates, which pin the offset to 200 and put MEAT/WOOD/COAL/IRON on
+        # their own cells at indices 3/4/5/6.
+        #
+        # So the old list was the real one with its first three entries replaced
+        # by (BEAST, GIANT_BEAST, SAWMILL): index 0 named BEAST but is really
+        # 失控的雪怪, index 1 named GIANT_BEAST but is really 野兽, index 2 named
+        # SAWMILL but is really 冰原巨兽.  The consequence was not cosmetic.
+        # ``resource_cell_center_norm`` is index-based, so asking for BEAST
+        # resolved to index 0 -- one whole pitch (157 px) to the LEFT of the real
+        # beast tab, off the screen, and it therefore returned ``None`` on every
+        # frame.  The client's own beast search -- whose tab is drawn on every
+        # open panel -- could never be tapped by SELECT_RESOURCE, which is why
+        # ``SPEND_STAMINA_ON_BEAST`` had no converging way to reach a beast:
+        # ``SCAN_MAP_FOR_BEAST`` only ever panned the map.  See
+        # knowledge/failure_patterns/vision/BOUNDED_SCAN_THAT_NEVER_CONVERGES.md.
+        #
+        # WARNING, measured the same day: the front three names are NOT stable.
+        # RapidOCR over the archived frames reads 失控的雪怪 / 野兽 / 冰原巨兽 at
+        # indices 0/1/2 on the 2026-09-15 client, but 野兽 / 冰原巨兽 / 大型锯木厂 on
+        # the 2026-09-14 one -- the client swapped them.  So this list is correct
+        # for the 2026-09-18 client only and will drift again; the four GATHERABLE
+        # entries at indices 3..6 are the part that has held.  The durable fix,
+        # not implemented here, is to read the anchored tab's own printed label
+        # with RapidOCR (as this comment's evidence did) instead of trusting any
+        # list.  Do not re-freeze these three names as a fact about the game.
+        #
+        # The list keeps SEVEN entries and MEAT/WOOD/COAL/IRON keep indices
+        # 3/4/5/6, so every nominal position and every reviewed cell template is
+        # unchanged: the offset the classifier reads, and the coordinates it taps
+        # for the four gatherable tabs, are bit-for-bit what they were.  Only
+        # BEAST and GIANT_BEAST change address, from off-screen to their real
+        # cells.
         # ------------------------------------------------------------------
         self.resource_tab_band = (0.672, 0.789)          # y_norm of the tab cells
         self.resource_tab_order = (
-            "BEAST", "GIANT_BEAST", "SAWMILL", "MEAT", "WOOD", "COAL", "IRON",
+            "SNOW_MONSTER", "BEAST", "GIANT_BEAST", "MEAT", "WOOD", "COAL", "IRON",
         )
         self.resource_tab_pitch = 157.0 / 720.0
         self.resource_tab_cell = 145.0 / 720.0
@@ -377,13 +421,28 @@ class SemanticROIVision:
         return centre / 720.0, (self.resource_tab_band[0] + self.resource_tab_band[1]) / 2
 
     def resource_tab_swipe_for(self, resource: str) -> float | None:
-        """Horizontal swipe (in px, signed) that brings ``resource`` fully into view."""
+        """Horizontal swipe (in px, signed) that brings ``resource`` fully into view.
+
+        The sign is a *drag delta*: the caller swipes from x to x+delta, so a
+        positive delta drags rightward, which slides the content rightward and
+        therefore reveals a tab clipped on the LEFT edge; a negative delta reveals
+        one clipped on the right.  Measured live 2026-09-18 on this client: two
+        swipes of ``(200,946) -> (620,946)`` (delta +420) moved the strip so that
+        the left-clipped 失控的雪怪 tab came fully into view and 野兽 moved from
+        x=45 to x=246 (frames ``scroll0``/``scroll1`` of
+        dataset/truth_audit/beast_search_wiring_20260918/).  Before that
+        measurement this branch returned the same negative sign as the right-clip
+        branch, i.e. a tab clipped on the left was scrolled further off the screen.
+        The branch had never fired in production (no ``scroll_resource_strip_to``
+        step in learning/episodes.jsonl), which is why nothing caught it: the four
+        gatherable tabs only ever clip on the right.
+        """
         if self.resource_tab_offset is None or resource not in self.resource_tab_order:
             return None
         left = self.resource_tab_first_left * 720.0 + self.resource_tab_order.index(resource) * self.resource_tab_pitch * 720.0 + self.resource_tab_offset
         cell_px = self.resource_tab_cell * 720.0
         if left < 4:
-            return -(4 - left)
+            return 4 - left
         if left + cell_px > 716:
             return 716 - (left + cell_px)
         return 0.0

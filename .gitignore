@@ -159,6 +159,24 @@ dataset/external/repositories/
 # missing way to *reach* a dispatchable target.  The production pair is included
 # so the same reading can be repeated on real episode frames.
 !dataset/truth_audit/beast_scan_pan_20260918/key/**/*.png
+# 2026-09-18, the same escalation's third shape (the cause of the stall).  These
+# eight frames carry the measurement the vision fix rests on, so they cannot stay
+# machine-local: measure_now.png and measure_now_tabband.png are the open search
+# panel and the tab band the strip was read from, and RapidOCR puts 野兽 at
+# x=45.2 / 冰原巨兽 at 202.2 / 生肉 at 360.8 / 木材 at 517.4 / 煤矿 at 675.5 -- a
+# 157 px pitch with the 野兽 tab CLIPPED at the left edge.  scroll0/scroll1 are the
+# same strip either side of one bounded drag (which moved 野兽 from x=45 to x=246
+# and is what refutes the inverted left-clip sign), probe_b_search_open.png is a
+# second offset (47 px) so the read is not one lucky frame, and go_..._382_844.png
+# is the client's own beast flight (等级4洞斑鬣狗 at 攻击 for 10 stamina) that shows
+# a huntable beast IS reachable once the tab can be named.  A clone without them
+# cannot re-measure the pitch or re-derive the index that was wrong.
+!dataset/truth_audit/beast_search_wiring_20260918/key/**/*.png
+# The two live runtime pairs behind deferral:AVOID_STAMINA_WASTE:6 -- the steps
+# that passed their own verifiers while the goal did not move.  Four frames, and
+# this escalation's whole premise is that "every step passed and nothing advanced"
+# must be checkable by a later session.
+!dataset/truth_audit/no_goal_progress_20260918/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

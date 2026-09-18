@@ -53,7 +53,7 @@
       "composition": "ANY_OF",
       "runtime_goal": true,
       "capabilities": [
-        {"capability": "SPEND_STAMINA_ON_BEAST", "alternatives": ["SELECT_BEAST_TARGET", "BEAST_HUNT", "DISPATCH_BEAST"]},
+        {"capability": "SPEND_STAMINA_ON_BEAST", "alternatives": ["SELECT_BEAST_TARGET", "BEAST_HUNT", "DISPATCH_BEAST"], "evidence": "dataset/truth_audit/beast_search_wiring_20260918/key/"},
         {"capability": "SPEND_STAMINA_ON_INTEL", "alternatives": ["OPEN_INTEL_BEAST_TARGET", "INTEL_BEAST_START_MARCH", "DISPATCH_INTEL_BEAST"]},
         {"capability": "SPEND_STAMINA_ON_RALLY", "alternatives": ["JOIN_RALLY"]}
       ]

@@ -1,0 +1,139 @@
+{
+ "schema_version": "1.0",
+ "set": "beast_search_wiring_20260918",
+ "recorded_at": "2026-09-18T04:17:54.682058+00:00",
+ "capability": "SPEND_STAMINA_ON_BEAST",
+ "goal": "AVOID_STAMINA_WASTE",
+ "skill": "SCAN_MAP_FOR_BEAST",
+ "escalation": "REPEATED_LIVE_FAILURE / NO_GOAL_PROGRESS (SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST)",
+ "verdict": "ROOT_CAUSE_FIXED_ON_THE_VISION_SIDE__ROUTE_STILL_NOT_DISPATCHING",
+ "root_cause": {
+  "one_sentence": "AVOID_STAMINA_WASTE can only advance by reaching a beast, its only such hop (SCAN_MAP_FOR_BEAST) is a viewport sweep with no convergence criterion, and the client's own way to reach a beast -- the 野兽 tab of the world-map search panel -- was made untappable by a frozen resource_tab_order whose first three names have drifted with the client, so resource_cell_center_norm('BEAST') resolved one whole tab-pitch (157 px) to the left of the real tab and returned None on every frame.",
+  "facts": [
+   "learning/episodes.jsonl: 336 AVOID_STAMINA_WASTE episodes ran SCAN_MAP_FOR_BEAST; every recorded goal_progress is false.",
+   "winter_agent_v2/verifier.py:732 verify_beast_scan_observed passes on any readable MAP->MAP pair, so it cannot tell 'panned' from 'found'.",
+   "winter_agent_v2/brain.py:857 max_beast_scans = 3, then SAFE_STOP verified_beast_target_not_visible.",
+   "winter_agent_v2/vision.py resource_tab_order was (BEAST, GIANT_BEAST, SAWMILL, MEAT, WOOD, COAL, IRON); the live client draws 失控的雪怪 / 野兽 / 冰原巨兽 at indices 0/1/2 and MEAT/WOOD/COAL/IRON at 3/4/5/6.",
+   "resource_cell_center_norm is index-based, so BEAST resolved to index 0 -- one pitch left of the real 野兽 tab, off the screen, hence None.",
+   "The client's own search does fly the camera onto a huntable beast: go_20260918_014947_001_after_382_844.png shows 等级4洞斑鬣狗 with an 攻击 control costing 10 stamina, reached from the 前往 control of a beast card."
+  ]
+ },
+ "live_measurement": {
+  "date": "2026-09-18",
+  "device": "MuMu 720x1280, foreground com.gof.china, stamina 577, marches 1/3",
+  "method": "RapidOCR over the tab band y=860..1010, label centre in px, pitch measured between adjacent labels",
+  "strip_unscrolled": [
+   {
+    "x": 45.2,
+    "label": "野兽"
+   },
+   {
+    "x": 202.2,
+    "label": "冰原巨兽"
+   },
+   {
+    "x": 360.8,
+    "label": "生肉"
+   },
+   {
+    "x": 517.4,
+    "label": "木材"
+   },
+   {
+    "x": 675.5,
+    "label": "煤矿"
+   }
+  ],
+  "strip_after_scrolling_left": [
+   {
+    "x": 88.8,
+    "label": "失控的雪怪"
+   },
+   {
+    "x": 245.8,
+    "label": "野兽"
+   },
+   {
+    "x": 402.4,
+    "label": "冰原巨兽"
+   },
+   {
+    "x": 561.0,
+    "label": "生肉"
+   }
+  ],
+  "pitch_px": 157.0,
+  "offset_pinned_by_reviewed_cells_px": 200.0,
+  "corrected_index1_nominal_left_px": -27.0,
+  "measured_beast_label_left_px": -27.3,
+  "note": "the corrected index 1 lands on the real 野兽 tab to within 0.3 px; the old index 0 nominal centre was -111.5 px, off the screen",
+  "archived_frame_cross_check": {
+   "gather_live_20260914_115120 (2026-09-14 client)": [
+    "idx0 野兽",
+    "idx1 冰原巨兽",
+    "idx2 大型锯木厂",
+    "idx3 生肉"
+   ],
+   "live_fail_233727 / 233739 / 160609 (2026-09-15 client)": [
+    "idx0 失控的雪怪",
+    "idx1 野兽",
+    "idx2 冰原巨兽",
+    "idx3 生肉"
+   ],
+   "conclusion": "the first three tab names DRIFT; only MEAT/WOOD/COAL/IRON at indices 3..6 are stable, which is what the reviewed cell templates pin the offset with"
+  }
+ },
+ "change": {
+  "file": "winter_agent_v2/vision.py",
+  "what": "resource_tab_order's first three entries corrected from (BEAST, GIANT_BEAST, SAWMILL) to (SNOW_MONSTER, BEAST, GIANT_BEAST).  The list still holds seven entries, so MEAT/WOOD/COAL/IRON keep indices 3/4/5/6 and every nominal position and reviewed cell template is unchanged.",
+  "effect": "resource_cell_center_norm('BEAST') and resource_tab_swipe_for('BEAST') now address the real 野兽 tab; before they addressed index 0, a different target.",
+  "test": "tests/test_resource_tab_anchor.py: the four archived volatile-anchor cases now assert geometry (the strip is located, and no gatherable identity is invented) instead of a drifting name."
+ },
+ "post_change_measurement": {
+  "measure_now.png": {
+   "offset_px": 200.0,
+   "selected": "RESOURCE_WOOD_SELECTED",
+   "beast_center_norm": null,
+   "giant_beast_center_norm": [
+    0.28125,
+    0.7305
+   ]
+  },
+  "scroll0.png": {
+   "offset_px": 200.0,
+   "selected": "RESOURCE_WOOD_SELECTED",
+   "beast_center_norm": null,
+   "giant_beast_center_norm": [
+    0.28125,
+    0.7305
+   ]
+  },
+  "scroll1.png": {
+   "offset_px": null,
+   "selected": null,
+   "beast_center_norm": null,
+   "giant_beast_center_norm": null
+  },
+  "probe_b_search_open.png": {
+   "offset_px": 47.0,
+   "selected": "RESOURCE_WOOD_SELECTED",
+   "beast_center_norm": null,
+   "giant_beast_center_norm": null
+  }
+ },
+ "not_done": [
+  "No live episode in which SPEND_STAMINA_ON_BEAST spends stamina.  The route does not yet open the search, select 野兽 and submit it, and there is no recognition for a normal (non-musk-ox) beast target card.",
+  "The durable fix for the front three tabs is to identify the anchored tab from the label the client prints (RapidOCR) rather than from any frozen list.  That is designed here but NOT implemented.",
+  "The corrected names are correct for the 2026-09-18 client only; they will drift again."
+ ],
+ "key": [
+  "measure_now.png",
+  "measure_now_tabband.png",
+  "scroll0.png",
+  "scroll1.png",
+  "probe_b_search_open.png",
+  "baseline_20260918_014520_000_before.png",
+  "tapox_20260918_014906_001_after_60_655.png",
+  "go_20260918_014947_001_after_382_844.png"
+ ]
+}

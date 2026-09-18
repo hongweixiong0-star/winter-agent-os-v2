@@ -54,7 +54,11 @@ from winter_agent_v2.vision import (
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "dataset/candidate/template_manifest.json"
 
-# (label, frame, expected selected resource or None)
+# Sentinel for "the anchored tab is one whose NAME this client does not keep
+# stable, so only the geometry may be asserted".  See the 2026-09-18 note in CASES.
+VOLATILE_TAB = "<volatile>"
+
+# (label, frame, expected selected resource or None)  (**) see VOLATILE_TAB
 CASES = [
     # HOME / MAP: no resource panel open at all -> must not name a resource.
     ("home", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_001_home.png", None),
@@ -70,17 +74,36 @@ CASES = [
     # the classifier says.  Both are non-gatherable: the invariant that matters is
     # that a GATHERABLE identity is never invented, not that a non-gatherable tab is
     # never named.
-    ("beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_003_search_panel.png", "BEAST"),
-    ("giant_beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_004_tab_tap_MEAT.png", "GIANT_BEAST"),
+    # CHANGED 2026-09-18 (SPEND_STAMINA_ON_BEAST escalation).  These three used to
+    # assert the frozen names BEAST / GIANT_BEAST / SAWMILL, because the strip
+    # order was read as a property of the game.  It is not: the first three tabs
+    # DRIFT with the client's content, and the frames are their own best witness.
+    # RapidOCR on each frame's own tab band reads
+    #
+    #   09-14 session (this frame)  : idx0 野兽  idx1 冰原巨兽  idx2 大型锯木厂  idx3 生肉
+    #   09-15 + 09-18 client        : idx0 失控的雪怪  idx1 野兽  idx2 冰原巨兽  idx3 生肉
+    #
+    # so index 0 was 野兽 when this frame was captured and is 失控的雪怪 today.  Any
+    # frozen list is therefore wrong for one of the two client states, and asserting
+    # one is how the strip order came to be trusted as a fact.  What is stable --
+    # on every session measured -- is the TAIL: MEAT/WOOD/COAL/IRON sit at indices
+    # 3/4/5/6, which is exactly what the reviewed cell templates pin the offset to.
+    # So these cases keep the part that is knowledge (the resolved offset, recorded
+    # below and re-derived independently by the reviewed templates) and drop the
+    # part that is not (the name of a volatile tab).  The invariant that actually
+    # protects production is asserted instead in
+    # ``test_a_volatile_anchor_never_invents_a_gatherable_identity``.
+    # Evidence: dataset/truth_audit/beast_search_wiring_20260918/.
+    ("beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_003_search_panel.png", VOLATILE_TAB),
+    ("giant_beast", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_004_tab_tap_MEAT.png", VOLATILE_TAB),
     # CHANGED 2026-09-16 (WB-R19-SELECT-RESOURCE-ANCHOR).  This frame was refused
     # like the two above, and refusing it is what left `resource_tab_offset` at
     # None so the executor could neither tap nor scroll -- it stalled the whole
     # gather chain.  The offset is now resolved from the known strip order and
     # judged by the four reviewed templates, and on this frame exactly one
-    # combination survives (support=1, margin=9.12, offset=400.0), which also
-    # agrees with this case's own label.  The two frames above still resolve to
-    # nothing, so this is a partial capability gain rather than a blanket loosening.
-    ("sawmill", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_005_tab_tap_WOOD.png", "SAWMILL"),
+    # combination survives (support=1, margin=9.12, offset=400.0).  Its anchor is
+    # again a volatile tab (see above), so the name is not asserted.
+    ("sawmill", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_005_tab_tap_WOOD.png", VOLATILE_TAB),
     # MEAT selected, and the strip sits 400 px right of the nominal offset.
     ("meat", "dataset/truth_audit/gather_live_20260914_115120/20260914_115120_step_006_tab_tap_COAL.png", "MEAT"),
     # WOOD selected but the cell is clipped by the right edge: refuse rather than guess.
@@ -93,11 +116,18 @@ CASES = [
     # The production failures this gate change exists for.  The chain reached
     # SELECT_RESOURCE on each of these and stopped, because the geometry was right
     # and the crop scored 6.49 against a 6.0 ceiling.  The bracket is on tab index 1
-    # at x=172, which predicts 生肉 at x=486, and 生肉 is visibly there.
-    ("live_fail_233727", "dataset/truth_audit/resource_strip_20260916/live_fail_233727__live_runtime_step_003_before_20260915T233727132656.png", "GIANT_BEAST"),
-    ("live_fail_233739", "dataset/truth_audit/resource_strip_20260916/live_fail_233739__live_runtime_step_001_before_20260915T233739598714.png", "GIANT_BEAST"),
-    ("live_fail_160609", "dataset/truth_audit/resource_strip_20260916/live_fail_160609__live_runtime_step_003_before_20260915T160609443785.png", "SAWMILL"),
+    # at x=172, which predicts 生肉 at x=486, and 生肉 is visibly there.  Both
+    # anchors are in the volatile front (see above), so only the geometry [offset]
+    # is asserted; these frames' own printed labels are 野兽 / 冰原巨兽 at idx1 / idx2.
+    ("live_fail_233727", "dataset/truth_audit/resource_strip_20260916/live_fail_233727__live_runtime_step_003_before_20260915T233727132656.png", VOLATILE_TAB),
+    ("live_fail_233739", "dataset/truth_audit/resource_strip_20260916/live_fail_233739__live_runtime_step_001_before_20260915T233739598714.png", VOLATILE_TAB),
+    ("live_fail_160609", "dataset/truth_audit/resource_strip_20260916/live_fail_160609__live_runtime_step_003_before_20260915T160609443785.png", VOLATILE_TAB),
 ]
+
+
+# ``selected_resource`` returns None for these four exactly when the anchored cell
+# is not one of them; naming a volatile tab is not knowledge.
+GATHERABLE = ("MEAT", "WOOD", "COAL", "IRON")
 
 
 @pytest.fixture(scope="module")
@@ -111,8 +141,45 @@ def test_selected_resource_on_live_frames(vision: SemanticWorldVision, label: st
     if not path.is_file():
         pytest.skip(f"live evidence missing: {relative}")
     match = vision.semantic.selected_resource(path)
+    if expected is VOLATILE_TAB:
+        # Geometry is knowledge; the name of a drifting tab is not.  What must
+        # hold is that the strip was located (so the executor can tap or scroll)
+        # and that a volatile anchor was never reported as one of the four
+        # gatherable resources -- inventing one would send a gathering march at
+        # the wrong node.
+        assert vision.semantic.resource_tab_offset is not None, (
+            f"{label}: the strip must still be located on a volatile-anchor frame"
+        )
+        got = match.semantic[len("RESOURCE_"):-len("_SELECTED")] if match else None
+        assert got not in GATHERABLE, f"{label}: volatile anchor reported as {got}"
+        return
     got = match.semantic[len("RESOURCE_"):-len("_SELECTED")] if match else None
     assert got == expected, f"{label}: expected {expected}, classifier said {got}"
+
+
+def test_a_volatile_anchor_never_invents_a_gatherable_identity(vision: SemanticWorldVision) -> None:
+    """The invariant the SPEND_STAMINA_ON_BEAST escalation turned on.
+
+    ``resource_tab_order`` names the first three tabs, and those names changed
+    between the 2026-09-14 and 2026-09-15 clients (measured: the frames' own OCR
+    reads 野兽/冰原巨兽/大型锯木厂 there and 失控的雪怪/野兽/冰原巨兽 today).  A frozen
+    list therefore cannot be trusted for the front of the strip -- and because
+    ``resource_cell_center_norm`` is index-based, trusting it is what placed the
+    client's own 野兽 tab one pitch off the screen so that no route could ever tap
+    it.  The four GATHERABLE tabs are the stable part: their reviewed cell
+    templates decide both their identity and the offset.  So on every archived
+    frame that has a resource panel open, naming a gatherable resource must be
+    backed by its template, never by an index.
+    """
+    for label, relative, expected in CASES:
+        path = ROOT / relative
+        if not path.is_file() or expected is None or expected is VOLATILE_TAB:
+            continue
+        match = vision.semantic.selected_resource(path)
+        assert match is not None, f"{label}: gatherable frame must resolve"
+        got = match.semantic[len("RESOURCE_"):-len("_SELECTED")]
+        assert got in GATHERABLE, f"{label}: only a reviewed template may name {got}"
+        assert got == expected
 
 
 def test_tap_target_follows_the_observed_offset(vision: SemanticWorldVision) -> None:
@@ -201,6 +268,51 @@ def test_a_resolved_offset_makes_every_target_reachable(vision: SemanticWorldVis
         centre = vision.semantic.resource_cell_center_norm(target)
         swipe = vision.semantic.resource_tab_swipe_for(target)
         assert centre is not None or swipe is not None, f"{target} unreachable"
+
+
+def test_the_beast_tab_is_reachable_and_the_swipe_sign_follows_the_clipped_edge(
+    vision: SemanticWorldVision,
+) -> None:
+    """The SPEND_STAMINA_ON_BEAST escalation, pinned.
+
+    ``AVOID_STAMINA_WASTE`` can only advance by reaching a beast, and the client's
+    own way to do that is the search panel's 野兽 tab.  Two defects kept it out of
+    reach, both measured live on 2026-09-18
+    (dataset/truth_audit/beast_search_wiring_20260918/):
+
+    * the tab strip's first three names had drifted, so ``BEAST`` resolved to strip
+      index 0 -- one 157 px pitch left of the real 野兽 tab and off the screen;
+    * the left-clip branch of ``resource_tab_swipe_for`` returned the *right*-clip
+      sign, so even a correctly addressed left-clipped tab would have been scrolled
+      further off the screen.  The branch had never fired in production, because
+      the four gatherable tabs only ever clip on the right.
+
+    A tab that is clipped on the left must be dragged rightward (positive delta);
+    one clipped on the right must be dragged leftward (negative delta).  Either the
+    cell already has a centre or it must have a swipe -- both None means the
+    executor can neither tap nor scroll, which is the stall this escalation is.
+    """
+    frame = ROOT / "dataset/truth_audit/beast_search_wiring_20260918/key/measure_now.png"
+    if not frame.is_file():
+        pytest.skip(f"live evidence missing: {frame}")
+    assert vision.semantic.selected_resource(frame) is not None
+    for target in ("BEAST", "GIANT_BEAST", "MEAT", "WOOD", "COAL", "IRON"):
+        centre = vision.semantic.resource_cell_center_norm(target)
+        swipe = vision.semantic.resource_tab_swipe_for(target)
+        assert centre is not None or swipe is not None, f"{target} unreachable"
+        if centre is not None or swipe == 0.0:
+            continue
+        index = vision.semantic.resource_tab_order.index(target)
+        left = (
+            vision.semantic.resource_tab_first_left * 720.0
+            + index * vision.semantic.resource_tab_pitch * 720.0
+            + vision.semantic.resource_tab_offset
+        )
+        cell_px = vision.semantic.resource_tab_cell * 720.0
+        if left < 4:
+            assert swipe > 0, f"{target} clips on the left, so the drag must be rightward"
+        elif left + cell_px > 716:
+            assert swipe < 0, f"{target} clips on the right, so the drag must be leftward"
 
 
 # ---------------------------------------------------------------------------

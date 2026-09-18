@@ -1,0 +1,116 @@
+{
+  "capability": "NO_GOAL_PROGRESS",
+  "goal": "AVOID_STAMINA_WASTE",
+  "recorded_at": "2026-09-18T02:10:20.932455+00:00",
+  "verdict": "FIXED_LIVE",
+  "root_cause_one_sentence": "The gate's no-progress deferral built its failure signature by dropping empty fields, so when _route_capability could not name a capability for AVOID_STAMINA_WASTE (its stalled route was SCAN_MAP_FOR_BEAST alone, a navigation step the capability table does not name) the signature collapsed from three fields to two and the escalation queue read the *failure type* NO_GOAL_PROGRESS as the capability, filing the wall under the key NO_GOAL_PROGRESS|NO_GOAL_PROGRESS| instead of the SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST it already had on record -- a second escalation for the same wall and a name no goal composition can ever route back to.",
+
+  "measured_before_the_fix": {
+    "deferral_row": {
+      "goal_id": "AVOID_STAMINA_WASTE",
+      "capability": "",
+      "state": "DEFERRED",
+      "source": "NO_GOAL_PROGRESS",
+      "failure_signature": "NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+      "streak": 3,
+      "last_skill": "SCAN_MAP_FOR_BEAST"
+    },
+    "escalation_created": {
+      "key": "NO_GOAL_PROGRESS|NO_GOAL_PROGRESS|",
+      "capability": "NO_GOAL_PROGRESS",
+      "failure_type": "NO_GOAL_PROGRESS",
+      "skill": "",
+      "goal": "AVOID_STAMINA_WASTE",
+      "job_id": "0440cd38",
+      "recorded_at": "2026-09-18T02:04:05.111861+00:00",
+      "source": "learning/workbuddy_escalations.jsonl"
+    },
+    "earlier_correct_key_for_the_same_wall": {
+      "key": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+      "recorded_at": "2026-09-18T00:45:07.907110+00:00",
+      "note": "the same wall was already on record under a real capability name, so the empty field produced a duplicate rather than a new finding"
+    },
+    "why_the_capability_was_empty": "reached[AVOID_STAMINA_WASTE] = {BACK, SCAN_MAP_FOR_BEAST}; neither is in the goal's declared composition {SPEND_STAMINA_ON_BEAST, SPEND_STAMINA_ON_INTEL, SPEND_STAMINA_ON_RALLY}, and capability_for_skill('SCAN_MAP_FOR_BEAST') resolves to itself (unknown skill)."
+  },
+
+  "the_fix": {
+    "capability_gate._route_capability": "adds a second, narrower lookup: the capability the goal's own declared skills resolve to, through capability_skill_map.json (the project's existing table). BEAST_HUNT -> SPEND_STAMINA_ON_BEAST. The signature is now always the three positional fields <capability>|<failure_type>|<skill>, with an empty capability left empty rather than removed.",
+    "capability_gate._no_progress_deferral": "carries that capability on the Deferral row itself, so the runtime snapshot is self-describing.",
+    "escalation_queue.candidates_from_run": "parses the signature positionally, anchored on the failure type instead of by filtering empty fields, and refuses to file a no-progress deferral whose capability field is empty -- inventing a name is the defect, so the honest answer is to hand nothing over."
+  },
+
+  "live_evidence": {
+    "device": "MuMu Player 12, com.gof.china, 720x1280, ADB 127.0.0.1:7555",
+    "entry": "tools/run_live.py --goal BEAST_HUNT --max-actions 3 --no-escalate",
+    "capture_backend": "ADB_EXEC_OUT (MAA MuMu Extras was not used on this run; recorded as-is rather than assumed)",
+    "run_started_at": "2026-09-18T02:09:00+00:00",
+    "deferral_emitted_live": {
+      "goal_id": "AVOID_STAMINA_WASTE",
+      "capability": "SPEND_STAMINA_ON_BEAST",
+      "state": "DEFERRED",
+      "source": "NO_GOAL_PROGRESS",
+      "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+      "streak": 3,
+      "last_skill": "SCAN_MAP_FOR_BEAST"
+    },
+    "log_line": "[schedule] deferred AVOID_STAMINA_WASTE -> DEFERRED on SPEND_STAMINA_ON_BEAST: 3 consecutive production episodes passed their verifier and advanced no part of this goal after 3 episode(s) without progress",
+    "episodes": [
+      {
+        "episode_id": "runtime_auto",
+        "skill": "SCAN_MAP_FOR_BEAST",
+        "goal_id_on_the_episode": "KEEP_MARCHES_PRODUCTIVE",
+        "result": "SUCCESS",
+        "verifier_ok": true,
+        "goal_progress": false,
+        "recorded_at": "2026-09-18T02:09:33.302611+00:00",
+        "before_screenshot": "dataset/raw/control_panel/runtime_auto/runtime_auto_step_001_before_20260918T020907579172.png",
+        "after_screenshot": "dataset/raw/control_panel/runtime_auto/runtime_auto_step_001_after_20260918T020920705393.png"
+      },
+      {
+        "episode_id": "runtime_auto",
+        "skill": "SCAN_MAP_FOR_BEAST",
+        "goal_id_on_the_episode": "KEEP_MARCHES_PRODUCTIVE",
+        "result": "SUCCESS",
+        "verifier_ok": true,
+        "goal_progress": false,
+        "recorded_at": "2026-09-18T02:09:55.676793+00:00",
+        "before_screenshot": "dataset/raw/control_panel/runtime_auto/runtime_auto_step_002_before_20260918T020933329240.png",
+        "after_screenshot": "dataset/raw/control_panel/runtime_auto/runtime_auto_step_002_after_20260918T020945372938.png"
+      },
+      {
+        "episode_id": "runtime_auto",
+        "skill": "SCAN_MAP_FOR_BEAST",
+        "goal_id_on_the_episode": "KEEP_MARCHES_PRODUCTIVE",
+        "result": "SUCCESS",
+        "verifier_ok": true,
+        "goal_progress": false,
+        "recorded_at": "2026-09-18T02:10:20.932455+00:00",
+        "before_screenshot": "dataset/raw/control_panel/runtime_auto/runtime_auto_step_003_before_20260918T020955702695.png",
+        "after_screenshot": "dataset/raw/control_panel/runtime_auto/runtime_auto_step_003_after_refresh_1_20260918T021010809473.png"
+      }
+    ],
+    "stamina_reading": {
+      "value": 457,
+      "source": "MAP_HUD",
+      "note": "unchanged across the run, which is the measurement NO_GOAL_PROGRESS is made of: three verified steps, no goal movement"
+    },
+    "key_frames": [
+      "key/runtime_auto_step_001_before_20260918T020907579172.png",
+      "key/runtime_auto_step_001_after_20260918T020920705393.png",
+      "key/runtime_auto_step_003_before_20260918T020955702695.png",
+      "key/runtime_auto_step_003_after_refresh_1_20260918T021010809473.png"
+    ]
+  },
+
+  "dispatch_path": {
+    "verifier_binding": "NO_GOAL_PROGRESS is not a skill, so it is not in LiveRuntime.VERIFIED_ATOMIC and cannot be. Its verifier is the goal-progress meter: GoalState.distance per goal (winter_agent_v2/goal_library.py) compared across a step by progress_moved(), recorded on every episode as goal_progress (winter_agent_v2/runtime.py:921). The documented adapter that turns that measurement into a NO_GOAL_PROGRESS verdict is CapabilityGate (winter_agent_v2/capability_gate.py), consulted by LiveRuntime._selectable on the single scheduler's input path (winter_agent_v2/runtime.py:344).",
+    "reachable_end_to_end": "LiveRuntime.run -> _selectable -> CapabilityGate.blocks -> Deferral -> runtime snapshot deferred_goals (winter_agent_v2/runtime.py:588) -> LiveRun.deferrals -> EscalationQueueAdapter.observe_run(deferrals=...) -> candidates_from_run -> EscalationCandidate -> decide -> job.",
+    "wiring_gate": "tools/check_wiring.py pins four links for this: the gate is consulted when a goal is selected, the stall names SPEND_STAMINA_ON_BEAST, the signature is always three positional fields, and the queue never files a deferral under the failure type."
+  },
+
+  "unsolved_and_named": {
+    "episode_goal_attribution": "In this run the three episodes carry goal_id=KEEP_MARCHES_PRODUCTIVE while the route the brain actually drove was the beast route for the already-deferred AVOID_STAMINA_WASTE, because runtime.py:912 takes the goal from best_goal (the highest-priority *selectable* goal) rather than from the goal the delegated route serves. The consequence is real and unfixed: a verified swipe that cannot advance KEEP_MARCHES_PRODUCTIVE is recorded as goal_progress=False for that goal, so the march goal can accumulate a false no-progress streak from work that never attempted it. It is the same family as this root cause -- the meter attached to the wrong goal -- but changing episode attribution moves every coverage and deferral streak number in the project, so it is reported rather than changed here.",
+    "no_live_recovery_of_the_beast_route": "This change does not make the beast route reach a beast. It makes the wall be named correctly, so the development pipeline can be pointed at SPEND_STAMINA_ON_BEAST. Whether a fix to that capability is possible on this account is still unproven.",
+    "run_with_escalation_disabled": "The live run was taken with --no-escalate on purpose: this project's own queue cancels a job past its timebox when another record is waiting for the only slot (commit 21486ce), and the job that produced this report was at 43 of its 45 minutes. The candidate key was therefore checked against the real ledger offline (SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST, condition REPEATED_LIVE_FAILURE) rather than by letting the queue dispatch a duplicate from inside the run."
+  }
+}
