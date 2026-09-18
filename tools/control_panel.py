@@ -1858,6 +1858,9 @@ def status_defaults() -> dict[str, str]:
         # the operator never has to execute a second command.
         "loop_card": PENDING, "loop_trace": PENDING, "loop_break": PENDING,
         "soak": "尚未开始（GUI 启动后由窗口自行测量，无需任何手工命令）",
+        # §9: contradictions in what the page is about to display.  Starts as 未检查 rather
+        # than as "一致": a page that has not compared anything must not claim consistency.
+        "consistency": "未检查（等待首次刷新）",
         # §7: the control plane's own two versions.  Shown side by side because the measured
         # symptom was a window that could not tell that the code under it had changed -- and a
         # single cell saying "已同步" would have hidden which of the two it compared.
@@ -3349,7 +3352,7 @@ class ControlPanel:
         ttk.Label(loop, textvariable=self.values["loop_card"], background=PANEL,
                   wraplength=1150, justify="left").pack(anchor="w", pady=(6, 0))
         for label, key in (("当前 trace", "loop_trace"), ("当前断点", "loop_break"),
-                           ("网关验收 Soak", "soak")):
+                           ("网关验收 Soak", "soak"), ("一致性", "consistency")):
             row = ttk.Frame(loop, style="Card.TFrame"); row.pack(fill="x", pady=(4, 0))
             ttk.Label(row, text=label, style="Muted.TLabel", background=PANEL, width=14).pack(side="left")
             ttk.Label(row, textvariable=self.values[key], background=PANEL,
@@ -3990,6 +3993,28 @@ class ControlPanel:
             self.values["loop_break"].set(f"尚未开始：{card.get('reason')}")
         self.values["soak"].set(render_soak(self.probes.soak_payload(),
                                             getattr(self.probes, "_soak_error", "")))
+        # §9: the contradictions in what this page is *about to display*, found before a reader
+        # has to notice them.  Every value comes from a selector or an artifact that already
+        # exists -- including the one trace selector, because comparing two independently chosen
+        # "current" traces is what produced the conflict this catches.
+        try:
+            from winter_agent_v2.consistency import render_conflicts, state_conflicts
+
+            development = view.get("current")
+            findings = state_conflicts({
+                "closure_trace_id": card.get("trace_id") if card.get("ok") else "",
+                "development_trace_id": str(getattr(development, "key", "") or ""),
+                "verified_episode_id": card.get("live_verify_episode_id") or "",
+                "reuse_episode_id": card.get("production_reuse_episode_id") or "",
+                "job_state": str(getattr(development, "state", "") or ""),
+                "displayed_phase": str(self.values["wb_job_state"].get() or ""),
+                "lease_released_at": str(getattr(self, "_lease_released_at", "") or ""),
+                "lease_current_holder": self._lease_holder_label(),
+                "lease_displayed_holder": str(self.values["lease"].get() or ""),
+            })
+            self.values["consistency"].set(render_conflicts(findings))
+        except Exception as exc:  # noqa: BLE001 - a check must never take the page down
+            self.values["consistency"].set(f"{PENDING}（检查失败 {type(exc).__name__}）")
         # §1-§5: is this window itself stale?  Checked here, on the same refresh that recomputes
         # the gateway cell -- because the measured symptom was exactly this cell showing 异常
         # from code that had already been fixed on disk.
