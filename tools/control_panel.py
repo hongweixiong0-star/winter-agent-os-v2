@@ -55,6 +55,45 @@ from winter_agent_v2.runtime_snapshot import (
 CONFIG_PATH = ROOT / "config/v2.json"
 PANEL_STATE_PATH = ROOT / "config/control_panel_state.json"
 RUNTIME_PATH = ROOT / "tools/run_live.py"
+#: The mode a calibration cycle reports, so an examination can never be mistaken for
+#: production play when its episode is read back (operator's §8 rule).  Kept next to
+#: ``RUNTIME_PATH`` because it is part of the same command-line contract.
+VALIDATION_MODE = "DEVELOPMENT_VALIDATION"
+
+
+def validation_command(record: Mapping[str, Any], *, capture_dir: str, serial: str) -> list[str]:
+    """The unified executor's command line for one Development Validation cycle.
+
+    Built here, as a pure function, for two reasons: the five validation fields have to be
+    impossible to omit -- an examination whose episode cannot be attributed is worse than no
+    examination -- and the one way to be sure they are always present is to have a single place
+    that writes them, with a test that asserts it.
+
+    Same executor as AUTO.  There is deliberately no second runner: the operator's rule is that
+    a calibration goes through ``run_live`` -> V2 -> Executor -> MAA/ADB -> Verifier -> Episode
+    exactly like any other cycle, differing only in what it is told it is doing.
+
+    ``--no-escalate`` is passed because failing this examination must not open a second
+    WorkBuddy job: the queue and the reconciler own that decision, and a test process that
+    filed an escalation for failing its own exam would be a loop.
+    """
+    return [
+        runtime_python_path(), str(RUNTIME_PATH),
+        "--execution-mode", VALIDATION_MODE,
+        # The trace.  Present even when empty, so the absence is visible in the command
+        # rather than implied by a missing flag.
+        "--trace-id", str(record.get("key") or ""),
+        "--job-id", str(record.get("job_id") or ""),
+        "--capability", str(record.get("capability") or ""),
+        # What this cycle must be running for its evidence to be creditable.  run_live refuses
+        # before the first device action when it does not match (operator §3).
+        "--expected-after-version", str(record.get("after_version") or ""),
+        "--goal", str(record.get("goal") or ""),
+        "--max-actions", str(VALIDATION_MAX_ACTIONS),
+        "--capture-dir", str(capture_dir),
+        "--serial", serial,
+        "--no-escalate",
+    ]
 # A calibration is an examination, not a gaming session: bounded so the device goes back
 # to normal play quickly (the operator's §6: 真机负责校准，而不是从零学整个游戏).
 VALIDATION_MAX_ACTIONS = 12
@@ -4177,19 +4216,45 @@ class ControlPanel:
         threading.Thread(target=self._run_validation_worker,
                          args=(goal, holder.trace_id or ""), daemon=True).start()
 
-    def _pending_validation_goal(self, key: str) -> str:
-        """The goal the pending version was produced for, read from the one ledger."""
+    def _pending_validation_record(self, key: str) -> dict[str, Any]:
+        """The record a validation cycle is about to examine, by trace where one is known.
+
+        Operator §2/§3: the cycle needs more than a goal.  It has to say which trace, which job
+        and which capability it is examining, and *which version it must be running* for its
+        evidence to count -- and only the ledger knows those.
+
+        ``key`` is authoritative: when a trace is named, only that trace may be validated.
+        Falling back to "the first LIVE_VERIFY_PENDING" is only for the case where no trace was
+        named at all, and the caller is told that is what happened by the returned record
+        carrying the key it actually resolved to.
+        """
         try:
             from winter_agent_v2.escalation_queue import EscalationLedger, fold
 
             snapshot = fold(EscalationLedger(Path(_ESCALATION_LEDGER_PATH)).events())
         except Exception:  # noqa: BLE001
-            return ""
+            return {}
         record = snapshot.get(key) if key else None
-        if record is None:
+        if record is None and not key:
             waiting = [r for r in snapshot.records.values() if r.state == "LIVE_VERIFY_PENDING"]
             record = waiting[0] if waiting else None
-        return str(getattr(record, "goal", "") or "")
+        if record is None:
+            return {}
+        return {
+            "key": str(record.key or ""),
+            "job_id": str(record.job_id or ""),
+            "capability": str(record.capability or ""),
+            "goal": str(record.goal or ""),
+            # The version this cycle must be running.  Empty means the record has no measured
+            # after_version yet, and the gate in run_live deliberately does nothing when it is
+            # empty -- so a missing version cannot silently pass as a match.
+            "after_version": str(record.after_version or ""),
+            "state": str(record.state or ""),
+        }
+
+    def _pending_validation_goal(self, key: str) -> str:
+        """The goal the pending version was produced for, read from the one ledger."""
+        return str(self._pending_validation_record(key).get("goal") or "")
 
     def _release_validation_lease(self, result: str, reason: str) -> None:
         try:
@@ -4215,10 +4280,22 @@ class ControlPanel:
             self._ensure_device()
             LOG_ROOT.mkdir(parents=True, exist_ok=True)
             stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            command = [runtime_python_path(), str(RUNTIME_PATH), "--goal", goal,
-                       "--max-actions", str(VALIDATION_MAX_ACTIONS),
-                       "--capture-dir", str(CAPTURE_ROOT / "validation" / stamp),
-                       "--serial", self.device.serial]
+            # Operator §2: the whole validation context goes on the command line, read from the
+            # record rather than only its goal.  Without these five fields the episode produced
+            # here could not be attributed to a trace or a version, so nothing downstream could
+            # honestly credit it -- the examination would run and prove nothing.
+            record = self._pending_validation_record(key)
+            if not record:
+                self.events.put(("note",
+                                 f"真机校准：台账里找不到 {key or 'unknown'} 的记录，"
+                                 "不启动验证进程（不猜、不碰设备）。"))
+                result = "VALIDATION_CONTEXT_MISSING"
+                return
+            command = validation_command(
+                record,
+                capture_dir=str(CAPTURE_ROOT / "validation" / stamp),
+                serial=self.device.serial,
+            )
             process = _background_popen(command, cwd=str(ROOT), stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, text=True,
                                         encoding="utf-8", errors="replace")
