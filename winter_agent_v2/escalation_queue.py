@@ -82,6 +82,12 @@ AUTO_ESCALATION_CONDITIONS: tuple[str, ...] = (
 # candidate out of thin air on every tick.
 PUMP_STOP_REASON = "PENDING_CONSUMER_PUMP"
 
+# How stale the panel's heartbeat may be before this process stops treating it as a
+# live consumer of the device.  Three pump intervals (30 s each): below that a stale
+# file means the window is gone, and asking for the device would make V2 stand down
+# with nobody to drive the validation.
+PANEL_HEARTBEAT_MAX_AGE_SECONDS = 90.0
+
 # Failure types whose proof is the measurement that was missing, not the step's own
 # verifier.  ``NO_GOAL_PROGRESS`` is by definition "the step worked and the goal did
 # not move", so a verifier-passing episode in which the goal still does not move is
@@ -1475,6 +1481,9 @@ class RunObservation:
     # readable state rather than an absence of evidence.
     preloaded: tuple[str, ...] = ()
     preload_note: str = ""
+    # A version that just became the thing to examine, so the operator can see the
+    # device hand-off happening rather than infer it from a yielded runtime.
+    lease_requested_for: str = ""
 
     @property
     def line(self) -> str:
@@ -1495,6 +1504,8 @@ class RunObservation:
             parts.append(f"preloaded {len(self.preloaded)}")
         if self.preload_note:
             parts.append(f"preload: {self.preload_note}")
+        if self.lease_requested_for:
+            parts.append(f"validation lease requested ({self.lease_requested_for})")
         return "[escalation] " + (", ".join(parts) if parts else "nothing to do")
 
 
@@ -1724,6 +1735,141 @@ class EscalationQueueAdapter:
             return record.key
         return ""
 
+    def validation_lease_consumer(self) -> str:
+        """Is anyone actually able to *drive* a validation right now?
+
+        The lease is only requested when the panel owns the clock, because requesting it
+        makes V2 yield at the next atomic boundary -- and a device that yields while
+        nobody drives it is worse than a version that waits.  The panel therefore has to
+        prove it is alive first: its pump heartbeat is the evidence, not its existence.
+        """
+        try:
+            payload = json.loads(
+                (Path(self.root) / "learning/control_panel/pump.json").read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            return ""
+        stamp = _moment(payload.get("written_at"))
+        if stamp is None:
+            return ""
+        age = (datetime.now(timezone.utc) - stamp).total_seconds()
+        if age > PANEL_HEARTBEAT_MAX_AGE_SECONDS:
+            return ""
+        return f"panel pid {payload.get('process') or '?'} (heartbeat {int(age)}s ago)"
+
+    def validation_lease_target(self) -> "EscalationRecord | None":
+        """The oldest record whose version exists and has not been exercised yet.
+
+        Oldest first on purpose: the version has been waiting the longest, and a queue
+        that always validated the newest would starve the one behind it.
+        """
+        waiting = [
+            record for record in self.ledger.snapshot().records.values()
+            if record.state == LIVE_VERIFY_PENDING
+        ]
+        waiting.sort(key=lambda record: (record.settled_at is None, record.settled_at))
+        return waiting[0] if waiting else None
+
+    def service_validation_lease(self, *, now: datetime | None = None) -> str:
+        """Ask for the device for a version that is waiting to be examined.
+
+        This is the link that was missing: ``LIVE_VERIFY_PENDING`` existed, the lease
+        protocol existed, and nothing ever *requested* the device for it -- so the
+        operator's chain (new version -> live episode -> verifier -> LIVE_VERIFIED) had
+        no one to take the first step.
+
+        The request is deliberate rather than forceful: :meth:`DeviceLease.request`
+        records the ask and takes the device only if it is free, and the runtime already
+        yields at its atomic boundary when another owner holds it.  A refusal is the
+        safe-point wait the operator describes, and it is recorded as such.
+        """
+        from .device_lease import OWNER_DEVELOPMENT_VALIDATION, DeviceLease
+
+        moment = now or datetime.now(timezone.utc)
+        lease = DeviceLease(self.root)
+        target = self.validation_lease_target()
+        if target is None:
+            # Nothing is waiting.  If a validation still holds the device, give it back
+            # rather than leaving gameplay frozen for a version nobody has to examine.
+            holder = lease.holder(now=moment)
+            if holder is not None and holder.owner == OWNER_DEVELOPMENT_VALIDATION:
+                lease.release(result="NO_WAITING_VERSION",
+                              reason="no LIVE_VERIFY_PENDING record left to examine", now=moment)
+                self.ledger.append({
+                    "source": "queue", "event": "validation_lease_released",
+                    "key": target.key if target else "",
+                    "reason": "no version is waiting for its examination",
+                })
+            return ""
+        holder = lease.holder(now=moment)
+        if holder is not None and holder.owner == OWNER_DEVELOPMENT_VALIDATION:
+            return ""  # already ours; the runtime is standing down for it
+        consumer = self.validation_lease_consumer()
+        if not consumer:
+            existing = self.ledger.snapshot().get(target.key)
+            if existing is None or not any(
+                "validation lease deferred" in note for note in existing.notes
+            ):
+                self.ledger.append({
+                    "source": "queue", "event": "validation_lease_deferred",
+                    "key": target.key,
+                    "reason": (
+                        "no live consumer for the device (no fresh panel heartbeat): asking now "
+                        "would make V2 stand down with nobody to drive the validation"
+                    ),
+                })
+            return ""
+        record, reason = lease.request(
+            capability_id=target.capability or target.skill,
+            job_id=target.job_id,
+            trace_id=target.key,
+            reason=(
+                f"examine the version job {target.job_id or '-'} produced for "
+                f"{target.capability or target.skill}"
+            ),
+            now=moment,
+        )
+        self.ledger.append({
+            "source": "queue", "event": "validation_lease_requested",
+            "key": target.key,
+            "job_id": target.job_id,
+            "capability": target.capability,
+            "goal": target.goal,
+            "acquired": record is not None,
+            "reason": reason,
+            "consumer": consumer,
+        })
+        return target.key
+
+    def release_validation_lease(self, *, result: str, reason: str = "",
+                                 expect_key: str = "", now: datetime | None = None) -> bool:
+        """Give the device back after an examination, whatever it concluded.
+
+        §15: PASS / FAIL / BLOCKED all release.  Called from the settle path and from the
+        panel's worker ``finally``, so a validation that dies still returns the device.
+        ``expect_key`` refuses to release a lease that belongs to a *different* record --
+        otherwise the first record to settle would hand back another one's device.
+        """
+        from .device_lease import OWNER_DEVELOPMENT_VALIDATION, DeviceLease
+
+        moment = now or datetime.now(timezone.utc)
+        lease = DeviceLease(self.root)
+        holder = lease.holder(now=moment)
+        if holder is None or holder.owner != OWNER_DEVELOPMENT_VALIDATION:
+            return False
+        if expect_key and holder.trace_id and holder.trace_id != expect_key:
+            return False
+        released = lease.release(result=result, reason=reason, now=moment)
+        if released:
+            self.ledger.append({
+                "source": "queue", "event": "validation_lease_released",
+                "key": holder.trace_id or "",
+                "job_id": holder.job_id,
+                "result": result,
+                "reason": reason,
+            })
+        return released
+
     def _device_holder(self) -> str:
         """Who owns the one device right now, if anyone.
 
@@ -1849,6 +1995,14 @@ class EscalationQueueAdapter:
             errors.append(f"dispatch failed: {type(exc).__name__}: {exc}")
 
         pending = self.reload_signal.pending()
+        # After settling, ask for the device for whichever version is now waiting to be
+        # examined -- or hand it back when nothing is.  Both entry points come through
+        # here, so the AUTO hook and the panel's clock service it identically.
+        lease_note = ""
+        try:
+            lease_note = self.service_validation_lease(now=moment)
+        except Exception as exc:  # noqa: BLE001 - the lease must never break the loop
+            errors.append(f"validation lease: {type(exc).__name__}: {exc}")
         return RunObservation(
             reconciled=tuple(reconciled),
             submitted=tuple(submitted),
@@ -1856,6 +2010,7 @@ class EscalationQueueAdapter:
             released=tuple(released),
             errors=tuple(errors),
             reload_requested_for=pending.job_id if pending else "",
+            lease_requested_for=lease_note,
         )
 
     def _flat_episode_note(self, record: EscalationRecord, before: RepoRevision) -> str:
@@ -2384,6 +2539,21 @@ class EscalationQueueAdapter:
             ))
         except Exception:  # noqa: BLE001 - learning must never break reconciliation
             errors.append(f"{record.key}: could not record model outcome")
+
+        # A version that has just been examined gives the device back -- PASS, FAIL or
+        # BLOCKED alike, because a lease held past its examination is gameplay frozen
+        # for no reason.  Placed before the knowledge hook so the device is free even if
+        # the hook (which scans the catalog) takes a moment.
+        if record.state == LIVE_VERIFY_PENDING:
+            try:
+                self.release_validation_lease(
+                    result=outcome,
+                    reason=f"{record.capability or record.skill or record.key}: {outcome}",
+                    expect_key=record.key,
+                    now=moment,
+                )
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{record.key}: lease release failed: {type(exc).__name__}: {exc}")
 
         # The bootstrap completion hook (operator §15).  A preloaded capability that
         # just settled re-enters the loop *here*, whatever the outcome was, so

@@ -669,3 +669,36 @@ LIVE_VERIFIED 32（16.5%）、Candidate 54.6%、已观测 36.1%；全表 522 项
 发进队列，但没人在联网后把答案写回 `knowledge/preload/`（完成 Hook 只做对账与状态迁移）；
 ② 取租约的一方仍未写（P0-D/F 仍卡在这里）；③ 面板仍是旧进程，
 `_preload_tick` 要在下次安全边界重启后才在真机 GUI 里跑。
+
+## P0-D 的那一环：谁替 `LIVE_VERIFY_PENDING` 去要设备（2026-09-18 补齐）
+
+**症状**：`LIVE_VERIFY_PENDING` 状态有了、租约协议有了、运行时让路守卫也有了，
+**但没有任何东西去申请设备** —— 操作者那条链
+（新版本 → 真机 episode → verifier → LIVE_VERIFIED）**没有人迈出第一步**。
+
+**修**（两条，缺一不可）：
+
+1. **要设备的一方**：`EscalationQueueAdapter.service_validation_lease()`（在 `_drain` 里调用，
+   所以 AUTO hook 与面板时钟两条入口都会服务它）。
+   取**最老**的 `LIVE_VERIFY_PENDING` 记录 → `DeviceLease.request(capability_id, job_id,
+   trace_id=记录 key)`。`request()` 是"请求 + 空闲则直接取得"，所以它是**申请**而不是抢：
+   游戏端持有就让路（运行时在原子边界自会 yield），拒绝也如实写 `validation_lease_requested`
+   （`acquired=false` + 原因）。台账事件：`validation_lease_requested` / `_released` / `_deferred`。
+2. **驱动它的一方**：面板 `_maybe_validate()` + `_run_validation_worker(goal, key)` ——
+   当租约已被 `DEVELOPMENT_VALIDATION` 持有、且 **AUTO 没有在跑一轮** 时，
+   用**同一个统一执行器** `run_live.py --goal <记录自己的 goal> --max-actions 12`
+   （`VALIDATION_MAX_ACTIONS=12`，校准是"考试"不是"挂机"），
+   `finally` 里**无条件释放**（PASS / FAIL / 崩溃都归还）。
+
+**关键安全性质（必须保住）**：**没人能驱动时绝不申请**。
+判据是**面板心跳**（`learning/control_panel/pump.json` 的新鲜度，>90 秒即视为无消费者）——
+因为一旦取得租约，V2 就会在下一个原子边界让路，
+**"让了路却没人开"比"多等一轮"糟得多**。实测：心跳新鲜 → 取得设备（trace=记录 key）；
+心跳过期 → 不申请，写 `validation_lease_deferred`。
+另外 `release_validation_lease(expect_key=...)` 拒绝释放**别人记录**的租约（否则谁先结束谁误还设备）。
+
+**测试**：`tests/test_knowledge_preload.py::ValidationLease` 6 项 +
+`tools/check_wiring.py` 4 条 `lease:` 断言。
+
+**仍然未完成**：真正的**定向外部研究执行者**（工作单能派出，没人把答案写回
+`knowledge/preload/`）；面板仍是旧进程（要重启才加载新的 `_maybe_validate`）。

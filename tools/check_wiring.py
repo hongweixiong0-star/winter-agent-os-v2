@@ -883,6 +883,28 @@ def main() -> int:
           and '"definitions"' in _bootstrap_source
           and "external_share" in _bootstrap_source)
 
+    # -- the device hand-off for a version waiting to be examined -----------
+    check("lease: the queue asks for the device for a version waiting to be examined",
+          "def validation_lease_target(" in _queue_source
+          and "def service_validation_lease(" in _queue_source
+          and 'event": "validation_lease_requested"' in _queue_source.replace("'", '"'))
+    check("lease: it refuses to ask when nobody could drive the validation",
+          "def validation_lease_consumer(" in _queue_source
+          and "PANEL_HEARTBEAT_MAX_AGE_SECONDS" in _queue_source
+          and 'validation_lease_deferred' in _queue_source
+          and "would make V2 stand down with nobody to drive" in _queue_source)
+    check("lease: the device always goes back, and only for its own record",
+          "def release_validation_lease(" in _queue_source
+          and "expect_key" in _queue_source
+          and "if record.state == LIVE_VERIFY_PENDING:" in _queue_source
+          and "expect_key=record.key" in _queue_source)
+    check("lease: the window is the consumer that drives it, and bounded",
+          "VALIDATION_MAX_ACTIONS" in _panel_source
+          and "def _maybe_validate(self)" in _panel_source
+          and "def _run_validation_worker(self" in _panel_source
+          and '"--goal", goal' in _panel_source
+          and "self._release_validation_lease(result," in _panel_source)
+
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():
         check(label, False, detail)

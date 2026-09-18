@@ -558,5 +558,116 @@ class FakeBridge:
         return True
 
 
+class ValidationLease(unittest.TestCase):
+    """The device hand-off for a version waiting to be examined (the P0-D link).
+
+    Before this, ``LIVE_VERIFY_PENDING`` existed and the lease protocol existed, and
+    nothing ever *asked* for the device -- so the operator's chain (new version -> live
+    episode -> verifier -> LIVE_VERIFIED) had no one to take the first step.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        (self.tmp / "learning/control_panel").mkdir(parents=True)
+        self.ledger = self.tmp / q.DEFAULT_LEDGER
+        self.ledger.parent.mkdir(parents=True, exist_ok=True)
+        self.bridge = FakeBridge()
+        self.heartbeat(NOW)
+
+    def heartbeat(self, when):
+        (self.tmp / "learning/control_panel/pump.json").write_text(
+            json.dumps({"written_at": when.isoformat(), "process": 4242}), encoding="utf-8")
+
+    def _adapter(self):
+        return q.EscalationQueueAdapter(
+            root=self.tmp, ledger=q.EscalationLedger(self.ledger), bridge=self.bridge)
+
+    def _seed_waiting_version(self):
+        ledger = q.EscalationLedger(self.ledger)
+        ledger.append({
+            "source": "queue", "event": "escalation_created", "origin": "bootstrap",
+            "key": "OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA", "capability": "OPEN_ARENA",
+            "failure_type": "CAPABILITY_MISSING", "skill": "OPEN_ARENA",
+            "condition": "CAPABILITY_MISSING", "goal": "USE_FREE_ARENA_ATTEMPTS",
+            "job_id": "job-7", "recorded_at": NOW.isoformat(),
+        })
+        ledger.append({
+            "source": "queue", "event": "live_verify_pending",
+            "key": "OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA",
+            "outcome": "VERSION_ACTIVATION_PENDING", "version_since": NOW.isoformat(),
+        })
+
+    def _holder(self):
+        from winter_agent_v2.device_lease import DeviceLease
+
+        return DeviceLease(self.tmp).holder(now=NOW)
+
+    def test_it_asks_for_the_device_for_a_version_waiting_to_be_examined(self):
+        self._seed_waiting_version()
+        observation = self._adapter().pump(now=NOW)
+        self.assertEqual(observation.lease_requested_for, "OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA")
+        holder = self._holder()
+        self.assertIsNotNone(holder, "the queue must actually take the device")
+        self.assertEqual(holder.owner, "DEVELOPMENT_VALIDATION")
+        self.assertEqual(holder.trace_id, "OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA")
+        kinds = [e.get("event") for e in q.EscalationLedger(self.ledger).events()]
+        self.assertIn("validation_lease_requested", kinds)
+
+    def test_it_never_asks_when_nobody_could_drive_the_validation(self):
+        """A device that stands down with nobody to drive it is worse than a wait."""
+        self.heartbeat(datetime(2026, 9, 18, 1, 0, 0, tzinfo=timezone.utc))
+        self._seed_waiting_version()
+        observation = self._adapter().pump(now=NOW)
+        self.assertEqual(observation.lease_requested_for, "")
+        self.assertIsNone(self._holder())
+        events = q.EscalationLedger(self.ledger).events()
+        deferred = [e for e in events if e.get("event") == "validation_lease_deferred"]
+        self.assertTrue(deferred)
+        self.assertIn("nobody to drive", deferred[0]["reason"])
+
+    def test_the_device_goes_back_when_the_examination_finishes(self):
+        self._seed_waiting_version()
+        adapter = self._adapter()
+        adapter.pump(now=NOW)
+        self.assertIsNotNone(self._holder())
+        released = adapter.release_validation_lease(
+            result="LIVE_VERIFIED", reason="examined", expect_key="OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA",
+            now=NOW)
+        self.assertTrue(released)
+        self.assertIsNone(self._holder())
+
+    def test_it_will_not_release_another_records_device(self):
+        self._seed_waiting_version()
+        adapter = self._adapter()
+        adapter.pump(now=NOW)
+        released = adapter.release_validation_lease(
+            result="LIVE_VERIFIED", reason="wrong record", expect_key="SOME_OTHER_KEY", now=NOW)
+        self.assertFalse(released)
+        self.assertIsNotNone(self._holder(), "another record's lease must survive")
+
+    def test_nothing_waiting_hands_the_device_straight_back(self):
+        self._seed_waiting_version()
+        adapter = self._adapter()
+        adapter.pump(now=NOW)
+        self.assertIsNotNone(self._holder())
+        # The record leaves LIVE_VERIFY_PENDING (settled), so the next pass must not keep
+        # the device frozen for a version nobody has to examine any more.
+        q.EscalationLedger(self.ledger).append({
+            "source": "queue", "event": "reconciled",
+            "key": "OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA",
+            "outcome": "LIVE_VERIFIED", "job_state": "DONE", "recorded_at": NOW.isoformat(),
+        })
+        adapter.pump(now=NOW)
+        self.assertIsNone(self._holder())
+
+    def test_the_runtime_is_told_who_owns_the_device_by_the_lease_file(self):
+        """No second channel: the runtime reads the same lock everyone else does."""
+        self._seed_waiting_version()
+        self._adapter().pump(now=NOW)
+        payload = json.loads((self.tmp / "learning/DEVICE_LEASE.json").read_text(encoding="utf-8"))
+        self.assertEqual(payload["owner"], "DEVELOPMENT_VALIDATION")
+        self.assertEqual(payload["trace_id"], "OPEN_ARENA|CAPABILITY_MISSING|OPEN_ARENA")
+
+
 if __name__ == "__main__":
     unittest.main()

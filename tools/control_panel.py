@@ -48,6 +48,9 @@ from winter_agent_v2.runtime_snapshot import (
 CONFIG_PATH = ROOT / "config/v2.json"
 PANEL_STATE_PATH = ROOT / "config/control_panel_state.json"
 RUNTIME_PATH = ROOT / "tools/run_live.py"
+# A calibration is an examination, not a gaming session: bounded so the device goes back
+# to normal play quickly (the operator's §6: 真机负责校准，而不是从零学整个游戏).
+VALIDATION_MAX_ACTIONS = 12
 
 # Raised when the panel is asked to start work on an interpreter that cannot run
 # the production loop.  It is classified as an environment failure (see
@@ -1603,6 +1606,9 @@ class ControlPanel:
         # Counters, plus the last preload note so a repeating "resting" answer is
         # narrated once rather than every ten minutes.
         self._pump_prev: dict[str, Any] = {}
+        # One bounded calibration run at a time: the device belongs to whoever holds the
+        # lease, and two validation runs would be two owners.
+        self.validating = False
         try:
             pid_path = panel_pid_path()
             pid_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2400,6 +2406,7 @@ class ControlPanel:
         self._narrate_pump()
         self._report_device_owner()
         self._refresh_learning()
+        self._maybe_validate()
         label, detail = workbuddy_cell(view, gateway)
         self.values["workbuddy"].set(label)
         self.values["wb_state"].set(label + (f"（{detail}）" if detail else ""))
@@ -2865,6 +2872,104 @@ class ControlPanel:
                                   verifier=None, next_action="启动唯一 Scheduler")
         self._append("自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。")
         threading.Thread(target=self._run_unified_worker, daemon=True).start()
+
+    def _maybe_validate(self) -> None:
+        """Drive a bounded calibration run for a version that is waiting to be examined.
+
+        This is the other half of the device hand-off: the queue *asks* for the device
+        for a ``LIVE_VERIFY_PENDING`` record (and refuses to ask when no panel heartbeat
+        is fresh), and this method is the consumer that then actually drives it.  Without
+        this half the request would make V2 stand down for nobody.
+
+        It never takes the device by force: it acts only while a validation lease is
+        already held, and only between AUTO rounds.  ``_run_validation_worker`` always
+        releases in a ``finally``, so a crash cannot freeze gameplay.
+        """
+        if self.validating or self.process is not None or self.starting:
+            return
+        if self.paused or self.stop_requested or self.operator_intent != "RUNNING":
+            return
+        try:
+            from winter_agent_v2.device_lease import OWNER_DEVELOPMENT_VALIDATION, DeviceLease
+
+            holder = DeviceLease(ROOT).holder()
+        except Exception:  # noqa: BLE001 - a status read must not break the window
+            return
+        if holder is None or holder.owner != OWNER_DEVELOPMENT_VALIDATION:
+            return
+        goal = self._pending_validation_goal(holder.trace_id)
+        if not goal:
+            # Nothing to aim a run at: hand the device straight back rather than leave
+            # gameplay frozen waiting for a validation that cannot be pointed anywhere.
+            self._release_validation_lease("NO_GOAL", "the pending record names no goal")
+            return
+        self.validating = True
+        threading.Thread(target=self._run_validation_worker,
+                         args=(goal, holder.trace_id or ""), daemon=True).start()
+
+    def _pending_validation_goal(self, key: str) -> str:
+        """The goal the pending version was produced for, read from the one ledger."""
+        try:
+            from winter_agent_v2.escalation_queue import EscalationLedger, fold
+
+            snapshot = fold(EscalationLedger(Path(_ESCALATION_LEDGER_PATH)).events())
+        except Exception:  # noqa: BLE001
+            return ""
+        record = snapshot.get(key) if key else None
+        if record is None:
+            waiting = [r for r in snapshot.records.values() if r.state == "LIVE_VERIFY_PENDING"]
+            record = waiting[0] if waiting else None
+        return str(getattr(record, "goal", "") or "")
+
+    def _release_validation_lease(self, result: str, reason: str) -> None:
+        try:
+            from winter_agent_v2.escalation_queue import EscalationLedger, EscalationQueueAdapter
+
+            EscalationQueueAdapter(
+                root=ROOT, ledger=EscalationLedger(Path(_ESCALATION_LEDGER_PATH))
+            ).release_validation_lease(result=result, reason=reason)
+        except Exception as exc:  # noqa: BLE001 - the device must be returned, not reported
+            self.events.put(("note", f"真机校准：释放租约失败（{type(exc).__name__}），TTL 到期后自动归还。"))
+
+    def _run_validation_worker(self, goal: str, key: str) -> None:
+        """One bounded run of the unified executor, aimed at the pending capability.
+
+        Bounded (``VALIDATION_MAX_ACTIONS``) on purpose: a calibration is an examination,
+        not a gaming session, and a long one would hold the device the operator wants
+        returned to normal play.  Same executor as AUTO -- there is no second one.
+        """
+        result = "VALIDATION_FAILED"
+        try:
+            self.active_panel_task = "VALIDATION"
+            self.events.put(("note", f"真机校准：已取得设备（{key or 'unknown'}），开始有界验证运行 --goal {goal}。"))
+            self._ensure_device()
+            LOG_ROOT.mkdir(parents=True, exist_ok=True)
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            command = [runtime_python_path(), str(RUNTIME_PATH), "--goal", goal,
+                       "--max-actions", str(VALIDATION_MAX_ACTIONS),
+                       "--capture-dir", str(CAPTURE_ROOT / "validation" / stamp),
+                       "--serial", self.device.serial]
+            process = _background_popen(command, cwd=str(ROOT), stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, text=True,
+                                        encoding="utf-8", errors="replace")
+            output, _ = process.communicate()
+            (LOG_ROOT / "validation.log").write_text(output or "", encoding="utf-8")
+            result = f"EXIT_{process.returncode}"
+            parsed = parse_runtime_result(output or "")
+            self.events.put(("note", f"真机校准：验证运行结束（{result}），"
+                                     f"停止原因 {parsed.get('stop_reason') or '未知'}。"))
+        except BaseException as exc:  # noqa: BLE001 - a dead validation is a reported state
+            result = f"WORKER_FAILURE_{type(exc).__name__}"
+            try:
+                write_worker_crash_report(where="validation_worker", exc=exc,
+                                          snapshot=self.runtime_store.read())
+            except Exception:  # noqa: BLE001
+                pass
+            self.events.put(("note", f"真机校准：验证运行失败（{type(exc).__name__}: {exc}）。"))
+        finally:
+            self.validating = False
+            # §15: the device goes back whatever the outcome was.
+            self._release_validation_lease(result, f"validation run for {key or goal} finished")
 
     def _run_unified_worker(self) -> None:
         """Lifecycle adapter only; it never selects a Goal or Skill."""
