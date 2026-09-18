@@ -30,6 +30,29 @@ def check(label: str, condition: bool, detail: str = "") -> None:
         problems.append(label)
 
 
+def code_only(source: str) -> str:
+    """Source with comments removed.
+
+    A check that forbids a literal must read *code*, not prose: the panel now carries a
+    comment that quotes ``text="xhw"`` to explain why it was removed, and a comment that
+    can trip a check is a check that will be quietly worked around.
+    """
+    kept: list[str] = []
+    for line in source.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        quote_seen = False
+        cut = len(line)
+        for index, char in enumerate(line):
+            if char in "\"'":
+                quote_seen = not quote_seen
+            elif char == "#" and not quote_seen and index and line[index - 1] in " \t":
+                cut = index
+                break
+        kept.append(line[:cut].rstrip())
+    return "\n".join(kept)
+
+
 # ---------------------------------------------------------------------------
 # Static "does this call site resolve to a definition anymore" analysis.
 #
@@ -677,6 +700,39 @@ def main() -> int:
           and _march_states["KEEP_MARCHES_PRODUCTIVE"].distance == 4.0
           and _march_states["KEEP_MARCHES_PRODUCTIVE"].status is _GoalStatus.READY)
 
+    # Measured 2026-09-18: OPEN_MARCH_FORMATION was escalated as the wall of
+    # KEEP_MARCHES_PRODUCTIVE because the two steps that open the formation page and
+    # dispatch it run on pages where no goal is discoverable, so they were recorded
+    # under the synthetic AUTO_DISCOVERY placeholder -- a name that owns no meter.
+    # The goal therefore never showed progress, its frontier never advanced, and the
+    # capability the no-progress rule named as "never reached" was the one that works
+    # (16/16 live attempts that day).  What has to hold is the executable fact: a step
+    # on a page that discovers no goal carries the goal the run committed to, while
+    # the named task mode and a truly goal-less run keep the labels they always had.
+    import tempfile as _tempfile
+
+    with _tempfile.TemporaryDirectory() as _scratch:
+        _label_probe = runtime.LiveRuntime(
+            device=object(), vision=object(), semantic_vision=object(),
+            capture_dir=Path(_scratch),
+        )
+        _label_probe._committed_goal = "KEEP_MARCHES_PRODUCTIVE"
+        check("runtime: a page that discovers no goal is labelled with the committed goal",
+              _label_probe._step_goal(None) == "KEEP_MARCHES_PRODUCTIVE")
+        _label_probe.brain.current_goal = "TRAIN"
+        check("runtime: the named task mode still outranks the commitment",
+              _label_probe._step_goal(None) == "TRAIN")
+        _label_probe.brain.current_goal = None
+        _label_probe._committed_goal = ""
+        check("runtime: a run that never committed to a goal still says AUTO_DISCOVERY",
+              _label_probe._step_goal(None) == "AUTO_DISCOVERY")
+        # Every site that names the goal must go through the one derivation: a
+        # leftover inline fallback would keep labelling some steps AUTO_DISCOVERY.
+        _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
+        check("runtime: all four goal-naming sites use the one derivation",
+              _runtime_source.count("self._step_goal(best_goal)") == 4
+              and '(self.brain.current_goal or "AUTO_DISCOVERY")' not in _runtime_source)
+
     # -- the escalation queue's clock ---------------------------------------
     #
     # The live defect these exist for (operator P0, 2026-09-18): the consumer was
@@ -690,9 +746,11 @@ def main() -> int:
     _reload_source = (PKG / "runtime_reload.py").read_text(encoding="utf-8")
     _bootstrap_source = (PKG / "capability_bootstrap.py").read_text(encoding="utf-8")
     _knowledge_source = (PKG / "knowledge_preload.py").read_text(encoding="utf-8")
+    _truth_source = (PKG / "state_truth.py").read_text(encoding="utf-8")
     from winter_agent_v2 import capability_bootstrap as _bootstrap
     from winter_agent_v2 import escalation_queue as _escalation
     from winter_agent_v2 import knowledge_preload as _knowledge
+    from winter_agent_v2 import state_truth as _truth
 
     check("queue: a no-progress deferral is never filed under the failure type",
           'if failure_type not in fields:' in _queue_source
@@ -892,6 +950,57 @@ def main() -> int:
           "BOOTSTRAP_STATE_ZH" in _panel_source
           and '"preload_status"' in _panel_source
           and '"preload_ingest"' in _panel_source)
+
+    # -- truth sources: a displayed state must name its source, or say it does not know --
+    # The operator found the window printing 当前角色 xhw from a string literal while the
+    # client was a different role, next to a literal claiming the device was online.  A
+    # literal cannot be distinguished from a measurement, so these checks fail if a state
+    # cell goes back to being one, or if the audit stops covering the key states.
+    check("truth: every key state the operator listed has an auditor",
+          set(_truth.audited_names()) >= {
+              "current_role", "current_page", "current_goal", "current_skill",
+              "auto_state", "march_capacity", "resources", "queues", "feature_unlock",
+              "event_state", "executor_backend", "version_active", "verifier",
+              "workbuddy_jobs", "device_lease", "capability_lifecycle"}
+          and "def report(" in _truth_source)
+    check("truth: the ladder is the operator's, and a literal sits below a stale value",
+          _truth.STATUS_RANK[_truth.LIVE_OBSERVED] > _truth.STATUS_RANK[_truth.FRESH_RUNTIME]
+          > _truth.STATUS_RANK[_truth.PERSISTED] > _truth.STATUS_RANK[_truth.REQUESTED]
+          and _truth.STATUS_RANK[_truth.ASSUMED] < _truth.STATUS_RANK[_truth.PERSISTED]
+          and _truth.STATUS_RANK[_truth.UNKNOWN] < _truth.STATUS_RANK[_truth.ASSUMED])
+    check("truth: a cached value may not impersonate a current one",
+          "def display(" in _truth_source
+          and 'f"{UNKNOWN}（{STATUS_ZH.get(self.status, self.status)}）"' in _truth_source
+          and "STALE" in _truth_source
+          and "def stale(" in _truth_source)
+    check("truth: two sources disagreeing is a finding, not a tie-break",
+          "class Conflict" in _truth_source
+          and "STATE_CONFLICT" in _truth.Conflict("x", (("a", "1"),)).describe()
+          and "self._conflicts.append(" in _truth_source)
+    check("truth: the role scopes the states that belong to an account",
+          "def role(" in _truth_source
+          and "未按当前角色确认" in _truth_source
+          and "role_id=role.role_id" in _truth_source)
+    check("truth: it owns no state -- it reads the artifacts that already exist",
+          not any(
+              word in _truth_source
+              for word in ("def save(", "def write_index(", "class TruthStore",
+                           "class WorldState", ".write_text(")
+          )
+          and _truth_source.count("_read_json(") >= 5)
+    _panel_code = code_only(_panel_source)
+    check("truth: the window reads the audit instead of printing a constant",
+          'text="xhw"' not in _panel_code
+          and "● 在线" not in _panel_code
+          and 'self.values["role"]' in _panel_code
+          and "def _poll_truth(self)" in _panel_code
+          and "self._poll_truth()" in _panel_code
+          and "def _refresh_truth(self)" in _panel_code)
+    check("truth: the audit does not run on the UI thread",
+          "_poll_truth" in _panel_source
+          and _panel_source.index("def _poll_truth(self)")
+          < _panel_source.index("def _refresh_truth(self)")
+          and "TruthAudit(" in _panel_source)
     check("knowledge: calibration fixes differences instead of discarding the prior",
           "def prior_vs_live_diff(" in _knowledge_source
           and "PRIOR_VS_LIVE_DIFF" in _knowledge_source

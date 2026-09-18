@@ -1,0 +1,14 @@
+{
+ "role_id": "1171757165",
+ "role_name": "xhw小号",
+ "alliance_tag": "zoe",
+ "kingdom": "4298",
+ "power_text": "54.2万",
+ "confidence": 0.8536205887794495,
+ "observed_at": "2026-09-16T10:44:08.934554+00:00",
+ "evidence": [
+  "dataset/truth_audit/role_identity_20260916/profile_panel_live_20260916T184004.png"
+ ],
+ "verification": "VISION_READ_REPLAY",
+ "written_by": "state_truth.record_role"
+}

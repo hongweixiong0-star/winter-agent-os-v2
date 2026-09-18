@@ -1248,6 +1248,10 @@ def status_defaults() -> dict[str, str]:
         "wb_job_state": PENDING, "wb_improvement": PENDING, "wb_result": "尚未产生开发任务",
         "wb_gateway": PENDING, "wb_queue_line": PENDING, "wb_gap": PENDING,
         "wb_pump": PENDING, "lease": PENDING, "learn": PENDING,
+        # The truth-source row.  Deliberately *not* a plausible-looking default: before the
+        # first audit pass the window must admit it does not know, not print a placeholder
+        # that reads like an observation.
+        "role": PENDING, "role_state": "", "truth": "",
         "stats": "本次启动：0 轮 · 0 动作",
     }
 
@@ -1274,6 +1278,7 @@ class PanelProbes:
         self._lock = threading.Lock()
         self._gateway: dict[str, Any] = {"available": None, "reason": "", "job": {}, "checked_at": ""}
         self._device: dict[str, Any] = {"ok": None, "status": None, "error": "", "checked_at": ""}
+        self._truth: dict[str, Any] = {"ok": None, "report": None, "checked_at": ""}
         self._watch: str = ""
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -1298,6 +1303,16 @@ class PanelProbes:
         with self._lock:
             return str(self._device.get("error") or "")
 
+    def truth(self) -> dict[str, Any]:
+        """The last truth-source audit, or an empty record before the first pass.
+
+        Read by the UI thread only, so the panel never runs ``git`` or walks the episode
+        stream inside a Tk callback -- the same reason the gateway and device probes live
+        on this thread.
+        """
+        with self._lock:
+            return dict(self._truth)
+
     def watch(self, job_id: str) -> None:
         with self._lock:
             self._watch = job_id or ""
@@ -1317,9 +1332,38 @@ class PanelProbes:
         while not self._stop.is_set():
             self._poll_gateway()
             self._poll_device()
+            self._poll_truth()
             self._stop.wait(self.GATEWAY_INTERVAL)
 
-    # -- the two probes ----------------------------------------------------
+    # -- the probes --------------------------------------------------------
+
+    def _poll_truth(self) -> None:
+        """Every state the window claims to know -- with its source, or saying it does not.
+
+        The panel used to print ``当前角色 xhw`` from a string literal.  Nothing here is a
+        literal: this asks the one projection that reads the artifacts, so the window and
+        the audit cannot disagree.  A failure is a *state* ("audit unavailable") rather
+        than an exception, for the same reason as the other two probes.
+        """
+        try:
+            from winter_agent_v2.state_truth import TruthAudit
+
+            report = TruthAudit(self.root).report()
+            state = {
+                "ok": True,
+                "report": report,
+                "checked_at": datetime.now().strftime("%H:%M:%S"),
+                "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+            }
+        except Exception as exc:  # noqa: BLE001
+            state = {
+                "ok": False, "report": None,
+                "reason": f"{type(exc).__name__}: {exc}",
+                "checked_at": datetime.now().strftime("%H:%M:%S"),
+                "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+            }
+        with self._lock:
+            self._truth = state
 
     def _poll_gateway(self) -> None:
         state: dict[str, Any] = {"available": None, "reason": "", "job": {},
@@ -1748,8 +1792,19 @@ class ControlPanel:
         center = ttk.Frame(tab, style="Card.TFrame", padding=10); center.grid(row=0, column=1, sticky="nsew")
         right = ttk.Frame(tab, style="Card.TFrame", padding=14, width=270); right.grid(row=0, column=2, sticky="nsew", padx=(8, 0)); right.grid_propagate(False)
         ttk.Label(left, text="当前角色", style="Section.TLabel", background=PANEL).pack(anchor="w")
-        ttk.Label(left, text="xhw", style="Value.TLabel", background=PANEL).pack(anchor="w", pady=(10, 0))
-        ttk.Label(left, text="● 在线", foreground=GOOD, background=PANEL).pack(anchor="w")
+        # Two literals used to live here: ``text="xhw"`` and ``text="● 在线"``.  The first
+        # printed a role nobody had observed, and the second claimed the device was online
+        # unconditionally.  Both now read the one truth projection, so this cell cannot
+        # disagree with the rest of the system -- and when the role has not been read off
+        # the *current* client it says so instead of printing a confident old name.
+        ttk.Label(left, textvariable=self.values["role"], style="Value.TLabel",
+                  background=PANEL, wraplength=195, justify="left").pack(anchor="w", pady=(10, 0))
+        ttk.Label(left, textvariable=self.values["role_state"], background=PANEL,
+                  wraplength=195, justify="left").pack(anchor="w")
+        ttk.Label(left, textvariable=self.values["truth"], background=PANEL, foreground=BAD,
+                  wraplength=195, justify="left").pack(anchor="w")
+        ttk.Label(left, textvariable=self.values["device"], background=PANEL,
+                  wraplength=195, justify="left").pack(anchor="w")
         ttk.Label(left, textvariable=self.values["march"], style="Muted.TLabel", background=PANEL).pack(anchor="w", pady=(3, 16))
         ttk.Separator(left).pack(fill="x", pady=(0, 12)); ttk.Label(left, text="今日 Goal 摘要", style="Section.TLabel", background=PANEL).pack(anchor="w", pady=(0, 8))
         self.today: dict[str, tk.StringVar] = {}
@@ -2428,6 +2483,7 @@ class ControlPanel:
         self._narrate_pump()
         self._report_device_owner()
         self._refresh_learning()
+        self._refresh_truth()
         self._maybe_validate()
         label, detail = workbuddy_cell(view, gateway)
         self.values["workbuddy"].set(label)
@@ -2479,6 +2535,45 @@ class ControlPanel:
         if hasattr(self, "kpi_source"):
             for key, var in self.kpi_source.items():
                 var.set(kpi.get(key, {}).get("source", PENDING))
+
+    def _refresh_truth(self) -> None:
+        """The role cell and the conflict banner, from the audit -- never from a literal.
+
+        The operator's rule is that a displayed state must be able to name its source, or
+        say it does not know.  So this prints the role *with its status* (``上次已知`` /
+        ``未知``), and prints a ``STATE_CONFLICT`` line the moment two artifacts disagree,
+        rather than letting the window pick whichever it read last.
+        """
+        try:
+            probe = self.probes.truth()
+        except Exception:  # noqa: BLE001 - a panel must not die for a missing probe
+            probe = {"ok": False, "report": None}
+        from winter_agent_v2.state_truth import STATUS_ZH as STATUS_ZH_TRUTH
+
+        report = probe.get("report")
+        if report is None:
+            self.values["role"].set(f"{PENDING}（尚未审计）")
+            self.values["role_state"].set(
+                "角色未知" if not self.probes.truth().get("reason") else "审计不可用"
+            )
+            self.values["truth"].set("")
+            return
+
+        role = report.by_name("current_role")
+        if role is not None:
+            self.values["role"].set(role.display)
+            bits = [STATUS_ZH_TRUTH.get(role.status, role.status)]
+            if role.age_seconds is not None:
+                bits.append(f"{role.age_seconds / 3600:.1f} 小时前")
+            if role.role_id:
+                bits.append(f"账号 {role.role_id}")
+            self.values["role_state"].set(" · ".join(bits))
+        conflicts = report.conflicts
+        if conflicts:
+            self.values["truth"].set(f"⚠ {conflicts[0].describe()[:150]}")
+        else:
+            stale = len(report.worst())
+            self.values["truth"].set(f"一致性 OK · {stale} 项非当前值" if stale else "一致性 OK")
 
     def _refresh_learning(self) -> None:
         """Report the knowledge-preload controller, from its own heartbeat.

@@ -1,0 +1,344 @@
+"""Truth Source Audit: a displayed state must name its source, or say it does not know.
+
+What these tests defend
+-----------------------
+The operator found the window printing ``当前角色 xhw`` while the client was logged in as
+something else.  The value was not a stale cache: it was a **string literal** in the panel
+(``text="xhw"``), next to another literal (``text="● 在线"``) that claimed the device was
+online no matter what.  A constant is worse than a blank, because a blank cannot be
+mistaken for a measurement.
+
+So the rules under test are the operator's ladder:
+
+    LIVE OBSERVED > fresh verified runtime state > persisted last-known > requested
+
+with a cached value allowed to help recovery but never allowed to impersonate a current
+one, and with a disagreement recorded as ``STATE_CONFLICT`` instead of silently resolved.
+
+The last class here is the one that matters most: it reads the *panel source* and fails if
+a state cell is written as a literal again.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from winter_agent_v2 import state_truth as st  # noqa: E402
+
+NOW = datetime(2026, 9, 18, 5, 0, 0, tzinfo=timezone.utc)
+PANEL = ROOT / "tools/control_panel.py"
+
+
+def write(root: Path, relative: str, payload) -> None:
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(payload, (list, tuple)):
+        path.write_text(
+            "\n".join(json.dumps(row, ensure_ascii=False) for row in payload) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+
+def episode(stamp: str, *, page: str = "MAP", goal: str = "AUTO_DISCOVERY",
+            skill: str = "OPEN_MAP", verifier: bool = True, revision: str = "abc1234",
+            resources=None) -> dict:
+    return {
+        "episode_id": stamp.replace("-", "").replace(":", ""),
+        "recorded_at": stamp, "repo_revision": revision, "verifier_ok": verifier,
+        "skill": skill, "goal_id": goal, "result": "SUCCESS",
+        "state_after": {"page": page, "resources": resources or {}},
+    }
+
+
+class EveryStateNamesItsSource(unittest.TestCase):
+    """No value may be returned without provenance -- that is the whole mechanism."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        write(self.tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "page": "MAP", "agent_state": "GOAL_RUNNING",
+            "current_goal": "AUTO_DISCOVERY", "current_skill": "OPEN_MAP",
+            "march_used": 1, "march_max": 3, "queues": {},
+        })
+        write(self.tmp, st.EPISODES, [episode(NOW.isoformat())])
+
+    def report(self):
+        return st.TruthAudit(self.tmp, now=NOW).report()
+
+    def test_the_audit_answers_for_every_key_state_the_operator_listed(self):
+        names = {v.name for v in self.report().values}
+        for required in (
+            "current_role", "current_page", "current_goal", "current_skill",
+            "auto_state", "march_capacity", "resources", "queues", "feature_unlock",
+            "event_state", "executor_backend", "version_active", "verifier",
+            "workbuddy_jobs", "device_lease", "capability_lifecycle",
+        ):
+            self.assertIn(required, names, required)
+        self.assertEqual(tuple(sorted(names)), tuple(sorted(st.audited_names())))
+
+    def test_nothing_is_ever_returned_as_assumed(self):
+        """A literal or a default is a defect, not a state."""
+        for value in self.report().values:
+            self.assertNotEqual(value.status, st.ASSUMED, value.name)
+
+    def test_every_value_carries_a_source(self):
+        for value in self.report().values:
+            self.assertTrue(value.source, f"{value.name} has no source")
+            if value.status in (st.FRESH_RUNTIME, st.LIVE_OBSERVED):
+                self.assertTrue(value.observed_at, f"{value.name} claims freshness with no stamp")
+
+    def test_a_missing_artifact_reads_unknown_rather_than_confident(self):
+        bare = Path(tempfile.mkdtemp())
+        report = st.TruthAudit(bare, now=NOW).report()
+        for value in report.values:
+            self.assertNotIn(value.status, (st.FRESH_RUNTIME, st.LIVE_OBSERVED), value.name)
+
+    def test_an_empty_queue_reads_as_not_read_not_as_none(self):
+        value = self.report().by_name("queues")
+        self.assertEqual(value.status, st.UNKNOWN)
+        self.assertIn("没读到", value.note)
+
+
+class FreshnessIsNotWishful(unittest.TestCase):
+    """An old observation must lose its confidence, not keep its value."""
+
+    def test_a_fresh_snapshot_is_fresh_and_an_old_one_is_stale(self):
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.SNAPSHOT, {"updated_at": NOW.isoformat(), "page": "MAP"})
+        fresh = st.TruthAudit(tmp, now=NOW).report().by_name("current_page")
+        self.assertEqual(fresh.status, st.FRESH_RUNTIME)
+
+        old = NOW - timedelta(days=30)
+        write(tmp, st.SNAPSHOT, {"updated_at": old.isoformat(), "page": "MAP"})
+        stale = st.TruthAudit(tmp, now=NOW).report().by_name("current_page")
+        self.assertEqual(stale.status, st.STALE)
+        self.assertIn("已过期", stale.display)
+        self.assertIn(stale, st.TruthAudit(tmp, now=NOW).report().worst())
+
+    def test_a_live_episode_keeps_a_longer_budget_than_a_runtime_republish(self):
+        """Six hours behind a real frame is still an observation; two minutes of a
+        runtime snapshot that stopped is not."""
+        tmp = Path(tempfile.mkdtemp())
+        when = NOW - timedelta(hours=2)
+        write(tmp, st.EPISODES, [episode(when.isoformat())])
+        value = st.TruthAudit(tmp, now=NOW).report().by_name("verifier")
+        self.assertEqual(value.status, st.LIVE_OBSERVED)
+        self.assertEqual(value.verification, "PASS")
+
+
+class DisagreementIsRecordedNotResolved(unittest.TestCase):
+    """Two sources answering differently is a finding, not a tie-break problem."""
+
+    def test_a_page_disagreement_becomes_a_state_conflict(self):
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.SNAPSHOT, {"updated_at": NOW.isoformat(), "page": "HOME"})
+        write(tmp, st.EPISODES, [episode(NOW.isoformat(), page="MAP")])
+        report = st.TruthAudit(tmp, now=NOW).report()
+        conflicts = report.conflicts_for("current_page")
+        self.assertTrue(conflicts)
+        self.assertIn("STATE_CONFLICT current_page", conflicts[0].describe())
+        readings = dict(conflicts[0].readings)
+        self.assertIn("HOME", readings.values())
+        self.assertIn("MAP", readings.values())
+
+    def test_agreement_is_not_a_conflict(self):
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.SNAPSHOT, {"updated_at": NOW.isoformat(), "page": "MAP"})
+        write(tmp, st.EPISODES, [episode(NOW.isoformat(), page="MAP")])
+        self.assertEqual(st.TruthAudit(tmp, now=NOW).report().conflicts_for("current_page"), ())
+
+    def test_a_running_old_tree_is_reported_as_a_version_conflict(self):
+        """A live episode from the previous revision must never be credited forward."""
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.EPISODES, [episode(NOW.isoformat(), revision="deadbee+3")])
+
+        class Pinned(st.TruthAudit):
+            def _head(self_inner):
+                return "a1b2c3d4e5f6"
+
+        report = Pinned(tmp, now=NOW).report()
+        value = report.by_name("version_active")
+        self.assertEqual(value.status, st.CONFLICT)
+        self.assertIn("新版本的 episode 尚未产生", report.conflicts_for("version_active")[0].note)
+
+    def test_an_impossible_march_reading_is_a_conflict_not_a_value(self):
+        """Found live: the snapshot said ``march_used=21`` against ``march_max=3`` and the
+        window drew it without complaint."""
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "march_used": 21, "march_max": 3,
+        })
+        report = st.TruthAudit(tmp, now=NOW).report()
+        value = report.by_name("march_capacity")
+        self.assertEqual(value.status, st.CONFLICT)
+        self.assertIn("超过容量", value.note)
+        self.assertIn("STATE_CONFLICT march_capacity", report.conflicts_for("march_capacity")[0].describe())
+
+    def test_a_plausible_march_reading_is_not_a_conflict(self):
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.SNAPSHOT, {
+            "updated_at": NOW.isoformat(), "march_used": 1, "march_max": 3,
+        })
+        report = st.TruthAudit(tmp, now=NOW).report()
+        self.assertEqual(report.by_name("march_capacity").status, st.FRESH_RUNTIME)
+        self.assertEqual(report.conflicts_for("march_capacity"), ())
+
+    def test_a_goal_disagreement_is_recorded_with_both_readings(self):
+        """The window reads the snapshot; the host reads episodes.  When they disagree the
+        reader must see both, not whichever file was read last."""
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.SNAPSHOT, {"updated_at": NOW.isoformat(), "current_goal": "AVOID_STAMINA_WASTE"})
+        write(tmp, st.EPISODES, [episode(NOW.isoformat(), goal="BEAST_HUNT")])
+        conflicts = st.TruthAudit(tmp, now=NOW).report().conflicts_for("current_goal")
+        self.assertTrue(conflicts)
+        readings = dict(conflicts[0].readings)
+        self.assertEqual(readings[st.SNAPSHOT], "AVOID_STAMINA_WASTE")
+        self.assertIn("BEAST_HUNT", readings.values())
+
+
+class TheRoleScopesEverythingElse(unittest.TestCase):
+    """The operator's case: a value belonging to one account shown under another."""
+
+    def test_with_no_observation_the_role_is_unknown_and_says_so(self):
+        tmp = Path(tempfile.mkdtemp())
+        role = st.TruthAudit(tmp, now=NOW).report().by_name("current_role")
+        self.assertEqual(role.status, st.UNKNOWN)
+        self.assertEqual(role.value, "")
+        self.assertIn("没有任何角色观测记录", role.note)
+        self.assertIn("不得用配置名或默认值代替", role.note)
+
+    def test_the_archived_probe_is_a_persisted_observation_not_a_current_fact(self):
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, f"{st.ROLE_PROBE_DIR}/probe.json", {
+            "stamp": "20260916_184004",
+            "candidate_identity_tokens": [
+                {"text": "领主档案"}, {"text": "[zoe]xhw小号"}, {"text": "账号：1171757165"},
+            ],
+        })
+        role = st.TruthAudit(tmp, now=NOW).report().by_name("current_role")
+        self.assertEqual(role.role_id, "1171757165")
+        self.assertIn("xhw小号", role.value)
+        self.assertEqual(role.status, st.PERSISTED)
+        self.assertEqual(role.observed_at, "2026-09-16T18:40:04+00:00")
+        self.assertIn("不是当前真机确认值", role.note)
+
+    def test_a_stale_role_makes_the_march_capacity_report_itself_unscoped(self):
+        """March slots are a property of the account -- the corpus has 6 and 2 for two."""
+        tmp = Path(tempfile.mkdtemp())
+        write(tmp, st.SNAPSHOT, {"updated_at": NOW.isoformat(), "march_used": 1, "march_max": 3})
+        write(tmp, f"{st.ROLE_PROBE_DIR}/probe.json", {
+            "stamp": "20260916_184004",
+            "candidate_identity_tokens": [{"text": "账号：1171757165"}],
+        })
+        value = st.TruthAudit(tmp, now=NOW).report().by_name("march_capacity")
+        self.assertIn("未按当前角色确认", value.note)
+        self.assertEqual(value.role_id, "1171757165")
+
+    def test_the_probe_stamp_survives_its_underscore(self):
+        """An all-digits test over ``20260916_184004`` silently produced no date at all."""
+        self.assertEqual(st._probe_stamp("20260916_184004"), "2026-09-16T18:40:04+00:00")
+        self.assertEqual(st._probe_stamp(""), "")
+        self.assertEqual(st._probe_stamp("nonsense"), "")
+
+
+class TheWindowCannotInventAState(unittest.TestCase):
+    """The invariant that stops this class of defect coming back.
+
+    Read from the panel *source*, because the failure was a literal in the source -- no
+    amount of runtime checking would have caught it, since a literal is perfectly
+    well-formed at runtime.  Comments are stripped first: a comment that quotes the old
+    literal (to explain why it was removed) is not the defect.
+    """
+
+    def setUp(self):
+        self.source = code_only(PANEL.read_text(encoding="utf-8"))
+
+    def test_no_state_cell_is_written_as_a_literal(self):
+        """Every bare ``text="..."`` must be a fixed label, never a value.
+
+        A literal is allowed for chrome (``"当前角色"``, ``"总览"``).  It is not allowed to
+        equal a value the audit actually produces -- that would be a hardcoded fact.
+        """
+        audit = st.TruthAudit(ROOT).report()
+        live_values = {value.value for value in audit.values if value.value}
+        live_values.add(audit.role_id)
+        live_values.add(audit.head)
+        # The role's *name* alone is the exact shape the defect had ("xhw" inside
+        # "xhw小号（账号 …）"), so the bare name counts as a displayed value too.
+        for value in audit.values:
+            if value.value and "（" in value.value:
+                live_values.add(value.value.split("（", 1)[0].strip())
+        literals = set(re.findall(r'text="([^"{][^"]*)"', self.source))
+        offenders = sorted(literal for literal in literals
+                           if literal in live_values and len(literal) > 2)
+        self.assertEqual(offenders, [], f"a displayed value is hardcoded in the panel: {offenders}")
+
+    def test_the_role_cell_reads_the_audit_instead_of_a_constant(self):
+        self.assertNotIn('text="xhw"', self.source)
+        self.assertIn('self.values["role"]', self.source)
+        self.assertIn('self.values["role_state"]', self.source)
+
+    def test_the_online_claim_is_no_longer_unconditional(self):
+        """``text="● 在线"`` asserted a device state nobody had probed."""
+        self.assertNotIn('text="● 在线"', self.source)
+        self.assertNotIn("● 在线", self.source)
+        self.assertIn('self.values["device"]', self.source)
+
+    def test_a_comment_that_quotes_the_old_literal_would_not_hide_the_defect(self):
+        """Guards the guard: the stripper must actually remove comments."""
+        self.assertNotIn("#", code_only("x = 1  # text=\"xhw\"\n"))
+        self.assertNotIn("text=\"xhw\"", code_only("    # text=\"xhw\"\n"))
+        self.assertIn("keep = 1", code_only("keep = 1\n"))
+
+    def test_the_panel_does_not_run_the_audit_on_the_ui_thread(self):
+        """It walks four megabytes of episodes; a Tk callback must not do that."""
+        self.assertIn("def _poll_truth(self)", self.source)
+        self.assertIn("self._poll_truth()", self.source)
+
+    def test_the_defaults_do_not_look_like_observations(self):
+        """A default that reads like a value is the same mistake in a different place."""
+        from tools.control_panel import status_defaults
+
+        defaults = status_defaults()
+        for key in ("role", "role_state", "truth"):
+            self.assertIn(key, defaults)
+        self.assertNotIn("xhw", " ".join(str(v) for v in defaults.values()))
+
+
+def code_only(source: str) -> str:
+    """Source with full-line comments and trailing ``#`` comments removed.
+
+    The invariant tests above exist because a *literal* was doing the damage.  A comment
+    quoting that literal is documentation, not the defect, so it must not be able to trip
+    (or, worse, hide) the check.
+    """
+    kept: list[str] = []
+    for line in source.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        quote_seen = False
+        cut = len(line)
+        for index, char in enumerate(line):
+            if char in "\"'":
+                quote_seen = not quote_seen
+            elif char == "#" and not quote_seen and index and line[index - 1] in " \t":
+                cut = index
+                break
+        kept.append(line[:cut].rstrip())
+    return "\n".join(kept)
+
+
+if __name__ == "__main__":
+    unittest.main()
