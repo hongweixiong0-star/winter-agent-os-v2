@@ -177,6 +177,14 @@ dataset/external/repositories/
 # this escalation's whole premise is that "every step passed and nothing advanced"
 # must be checkable by a later session.
 !dataset/truth_audit/no_goal_progress_20260918/**/*.png
+# The frames that decide deferral:KEEP_MARCHES_PRODUCTIVE:3.  The escalation named
+# OPEN_MARCH_FORMATION as the wall; these frames say the opposite -- the detail page
+# with 采集 live before the tap, and the formation page the tap produced, which
+# verify_march_page_open accepted (march_page: true).  The third frame is the
+# negative control: the step that actually failed (DISPATCH_MARCH,
+# DISPATCH_NOT_PROVEN).  Without them a later reader cannot tell the step that works
+# from the step that does not, which is the entire finding.
+!dataset/truth_audit/march_formation_20260918/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

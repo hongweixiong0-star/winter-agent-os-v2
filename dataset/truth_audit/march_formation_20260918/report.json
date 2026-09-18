@@ -1,0 +1,57 @@
+{
+  "set": "march_formation_20260918",
+  "goal": "KEEP_MARCHES_PRODUCTIVE",
+  "capability": "OPEN_MARCH_FORMATION",
+  "canonical_skill": "START_GATHER",
+  "captured_from": "dataset/raw/control_panel/march_formation_20260918/",
+  "how": "tools/run_live.py --goal GATHER_RESOURCE --stop-after DISPATCH_MARCH --max-actions 8 --no-escalate on MuMu 127.0.0.1:7555 (720x1280)",
+  "measured": {
+    "OPEN_MARCH_FORMATION_dispatch": "The runtime selected START_GATHER on a RESOURCE_DETAIL page with resource_available=true, dispatched TAP_SEMANTIC/BTN_GATHER through MAA, and the bound verifier verify_march_page_open returned ok=true with evidence {available_resource: true, march_page: true}, moving RESOURCE_DETAIL -> MARCH."
+  },
+  "unproven": {
+    "goal_attribution_fix": "This run was launched in named-task mode (--goal GATHER_RESOURCE), so every step carried that goal from brain.current_goal and the run-scoped commitment was never the deciding term. The commitment path is proven by unit test and by check_wiring, not by this live episode.",
+    "DOWNSTREAM_DISPATCH": "The next step, DISPATCH_MARCH, was not proven (stop_reason=DISPATCH_NOT_PROVEN, state after the tap was HOME). That is the step that actually spends stamina, and it -- not OPEN_MARCH_FORMATION -- is the remaining wall of KEEP_MARCHES_PRODUCTIVE."
+  },
+  "episodes": {
+    "start_gather": {
+      "episode_id": "march_formation_20260918",
+      "goal_id": "GATHER_RESOURCE",
+      "step_id": 6,
+      "skill": "START_GATHER",
+      "result": "SUCCESS",
+      "failure_type": null,
+      "verifier_ok": true,
+      "recorded_at": "2026-09-18T05:06:31.889294+00:00",
+      "before_screenshot": "dataset\\raw\\control_panel\\march_formation_20260918\\march_formation_20260918_step_006_before_20260918T050616782404.png",
+      "after_screenshot": "dataset\\raw\\control_panel\\march_formation_20260918\\march_formation_20260918_step_006_after_20260918T050629462644.png",
+      "repo_revision": "43c9ae6116cb+47",
+      "executor_backend": "MAA",
+      "capture_backend": "MAA_MUMU_EXTRAS",
+      "recognition_backend": "MAA",
+      "action_backend": "MAA",
+      "executor_latency_ms": 50.81,
+      "mode": "PRODUCTION",
+      "goal_progress": null
+    },
+    "dispatch_march": {
+      "episode_id": "march_formation_20260918",
+      "goal_id": "GATHER_RESOURCE",
+      "step_id": 7,
+      "skill": "DISPATCH_MARCH",
+      "result": "FAILURE",
+      "failure_type": "DISPATCH_NOT_PROVEN",
+      "verifier_ok": false,
+      "recorded_at": "2026-09-18T05:07:20.949295+00:00",
+      "before_screenshot": "dataset\\raw\\control_panel\\march_formation_20260918\\march_formation_20260918_step_007_before_20260918T050631918504.png",
+      "after_screenshot": "dataset\\raw\\control_panel\\march_formation_20260918\\march_formation_20260918_step_007_after_refresh_2_20260918T050708269584.png",
+      "repo_revision": "43c9ae6116cb+47",
+      "executor_backend": "ADB",
+      "capture_backend": "MAA_MUMU_EXTRAS",
+      "recognition_backend": "V2",
+      "action_backend": "ADB",
+      "executor_latency_ms": 46.53,
+      "mode": "PRODUCTION",
+      "goal_progress": null
+    }
+  }
+}
