@@ -30,7 +30,12 @@ from winter_agent_v2.escalation_queue import (
 )
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
 from winter_agent_v2.retention import prune_runtime_screenshots
-from winter_agent_v2.runtime_reload import REQUEST_KIND, ReloadSignal, default_path as reload_path
+from winter_agent_v2.runtime_reload import (
+    REQUEST_KIND,
+    ReloadSignal,
+    default_path as reload_path,
+    newest_write,
+)
 from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.runtime_snapshot import (
     UNCLASSIFIED_EVENT,
@@ -60,18 +65,23 @@ _ESCALATION_LEDGER_PATH = ROOT / DEFAULT_LEDGER
 def reload_deferral() -> tuple[ReloadSignal, object]:
     """Should this start be postponed because a development agent just wrote code?
 
-    Returns the signal so the caller can clear it once the wait is over.  Reads
-    the escalation ledger for in-flight jobs, because a marker whose job is still
-    working must keep the runtime off the tree for longer than a plain settle
-    window -- but never longer than the signal's own ceiling, so a hung agent
-    cannot stall AUTO.
+    Returns the signal so the caller can clear it once the wait is over.  Reads the
+    escalation ledger for in-flight jobs only to *report* them: an active job must
+    not hold AUTO off (the operator's §七/§十三), and the wait is the short settle
+    window measured from the newest write to the tree.  A fresh write is a real
+    hazard for a fresh import; a job that is merely still running is not.
     """
     signal = ReloadSignal(reload_path(ROOT))
     try:
         active = len(EscalationLedger(_ESCALATION_LEDGER_PATH).snapshot().active_jobs())
     except Exception:  # noqa: BLE001 - an unreadable ledger must not block a start
         active = 0
-    return signal, signal.evaluate(active_jobs=active)
+    return signal, signal.evaluate(
+        active_jobs=active,
+        # Freshness comes from the tree, not the marker: the wait is for a write
+        # that just happened, and an active job is reported rather than waited for.
+        newest_write_at=newest_write(ROOT),
+    )
 
 
 _INTERPRETER_LOCK = threading.Lock()

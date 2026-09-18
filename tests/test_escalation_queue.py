@@ -1294,14 +1294,36 @@ class ReloadSignalTest(unittest.TestCase):
             self.assertTrue(deferral.defer)
             self.assertIn("settle", deferral.reason)
 
-    def test_an_active_job_keeps_deferring_past_the_settle_window(self):
+    def test_a_recent_write_keeps_deferring_past_the_marker_age(self):
+        """The wait follows the tree, not the marker.
+
+        Measured 2026-09-18: the panel logged the identical deferral every five
+        seconds from a marker that was already 103 seconds old, because the thing
+        that was still happening was the agent writing, not the marker ageing.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             signal = reload_mod.ReloadSignal(reload_mod.default_path(tmp))
             signal.request("job-1", "code changed")
-            deferral = signal.evaluate(active_jobs=1, now=datetime.now(timezone.utc)
-                                       + timedelta(seconds=reload_mod.SETTLE_SECONDS + 5))
+            now = datetime.now(timezone.utc) + timedelta(seconds=reload_mod.SETTLE_SECONDS + 5)
+            deferral = signal.evaluate(now=now, newest_write_at=now - timedelta(seconds=2))
             self.assertTrue(deferral.defer)
-            self.assertIn("still active", deferral.reason)
+            self.assertIn("written 2s ago", deferral.reason)
+
+    def test_an_active_job_alone_never_holds_auto_off(self):
+        """The operator's §七: 禁止等待 Job 完成才继续 AUTO.
+
+        Waiting on "a job is active" was the first version of this policy, and it
+        held the game off for up to ``max_defer_seconds`` whenever an agent was
+        working.  The job is still reported -- the operator asked to see it -- but
+        it is not a reason to stop playing.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            signal = reload_mod.ReloadSignal(reload_mod.default_path(tmp))
+            signal.request("job-1", "code changed")
+            now = datetime.now(timezone.utc) + timedelta(seconds=reload_mod.SETTLE_SECONDS + 5)
+            deferral = signal.evaluate(active_jobs=1, now=now, newest_write_at=now - timedelta(minutes=10))
+            self.assertFalse(deferral.defer, "an active job must not stall AUTO")
+            self.assertIn("not held for it", deferral.reason)
 
     def test_the_ceiling_stops_deferring_so_a_hung_agent_cannot_stall_auto(self):
         with tempfile.TemporaryDirectory() as tmp:

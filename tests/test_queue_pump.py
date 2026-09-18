@@ -149,6 +149,104 @@ class Harness:
                             "state": q.WORKING})
 
 
+class ProofBarTest(unittest.TestCase):
+    """A proof has to show the wall is gone, not the observation that defines it.
+
+    Measured 2026-09-18 01:43: job 2934e9cd was granted ``LIVE_VERIFIED`` on six
+    SCAN_MAP_FOR_BEAST episodes with ``verifier_ok=True`` and ``goal_progress=False``
+    on all six -- the capability's wall is literally "the goal does not move", so the
+    reconciler was citing the failure as its own fix.  The job's own report said the
+    opposite ("criterion 2 ... does not hold"), and a second job was dispatched for
+    the same signature four seconds later, which is the system disagreeing with
+    itself.
+    """
+
+    @staticmethod
+    def _episode(progress, *, revision="bbb+0"):
+        return {
+            "skill": "SCAN_MAP_FOR_BEAST", "recorded_at": NOW.isoformat(),
+            "verifier_ok": True, "result": "SUCCESS", "goal_progress": progress,
+            "before_screenshot": "b.png", "after_screenshot": "a.png",
+            "episode_id": "20260918_013000_000000", "repo_revision": revision,
+        }
+
+    def _measure(self, rows, *, failure_type):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "learning").mkdir(parents=True)
+            (root / "learning/episodes.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in rows), encoding="utf-8")
+            outcome, explanation, episodes = q.reconcile_outcome(
+                capability="SPEND_STAMINA_ON_BEAST", skill="SCAN_MAP_FOR_BEAST",
+                submitted_at=NOW - timedelta(minutes=5), job_verdict=q.DONE,
+                before=q.RepoRevision(head="aaa", dirty=0, ok=True),
+                after=q.RepoRevision(head="bbb", dirty=0, ok=True),
+                wiring_problems=0, agent_report="I changed the beast route",
+                root=root, failure_type=failure_type,
+            )
+        return outcome, explanation, episodes
+
+    def test_a_flat_episode_cannot_prove_a_no_goal_progress_fix(self):
+        outcome, _, episodes = self._measure([self._episode(False)],
+                                             failure_type="NO_GOAL_PROGRESS")
+        self.assertNotEqual(outcome, q.LIVE_VERIFIED)
+        self.assertEqual(episodes, ())
+
+    def test_a_moving_episode_does_prove_it(self):
+        outcome, _, episodes = self._measure([self._episode(True)],
+                                             failure_type="NO_GOAL_PROGRESS")
+        self.assertEqual(outcome, q.LIVE_VERIFIED)
+        self.assertEqual(len(episodes), 1)
+
+    def test_an_unmeasured_episode_is_not_a_move_either(self):
+        """``None`` means the goal was not observable, which is not progress."""
+        outcome, _, _ = self._measure([self._episode(None)],
+                                      failure_type="NO_GOAL_PROGRESS")
+        self.assertNotEqual(outcome, q.LIVE_VERIFIED)
+
+    def test_other_signatures_still_prove_by_their_own_verifier(self):
+        """Only the signature whose definition is the missing measurement demands it."""
+        outcome, _, episodes = self._measure([self._episode(False)],
+                                             failure_type="SEMANTIC_TARGET_NOT_VERIFIED")
+        self.assertEqual(outcome, q.LIVE_VERIFIED)
+        self.assertEqual(len(episodes), 1)
+
+    def test_the_ledger_says_why_the_episodes_were_rejected(self):
+        """Otherwise TEST_PASS next to six episodes reads as "nearly there"."""
+        harness = Harness()
+        try:
+            (Path(harness.root) / "learning/episodes.jsonl").write_text(
+                json.dumps(dict(self._episode(False),
+                                recorded_at=(NOW - timedelta(minutes=1)).isoformat())),
+                encoding="utf-8")
+            record = q.EscalationRecord(
+                key="SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+                capability="SPEND_STAMINA_ON_BEAST", failure_type="NO_GOAL_PROGRESS",
+                skill="SCAN_MAP_FOR_BEAST", submitted_at=NOW - timedelta(minutes=5),
+            )
+            note = harness.adapter._flat_episode_note(
+                record, q.RepoRevision(head="aaa", dirty=0, ok=True))
+            self.assertIn("1 verifier-passing production episode(s)", note)
+            self.assertIn("goal actually moving", note)
+            self.assertIn("LIVE_VERIFIED is not granted", note)
+        finally:
+            harness.cleanup()
+
+    def test_the_release_path_uses_the_same_bar_as_reconciliation(self):
+        """Releasing a record is the same claim, so it cannot have a lower bar."""
+        harness = Harness()
+        try:
+            harness.created_while_busy()
+            created = harness.ledger.snapshot().get(PENDING_KEY).first_seen
+            (Path(harness.root) / "learning/episodes.jsonl").write_text(json.dumps(
+                dict(self._episode(False), recorded_at=(created + timedelta(minutes=5)).isoformat())
+            ), encoding="utf-8")
+            observation = harness.adapter.pump(now=NOW)
+            self.assertEqual(observation.released, (), "a flat episode must not release a record")
+        finally:
+            harness.cleanup()
+
+
 class SlotReclaimTest(unittest.TestCase):
     """The single concurrency slot is the only thing between the queue and the next record."""
 

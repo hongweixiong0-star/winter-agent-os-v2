@@ -82,6 +82,13 @@ AUTO_ESCALATION_CONDITIONS: tuple[str, ...] = (
 # candidate out of thin air on every tick.
 PUMP_STOP_REASON = "PENDING_CONSUMER_PUMP"
 
+# Failure types whose proof is the measurement that was missing, not the step's own
+# verifier.  ``NO_GOAL_PROGRESS`` is by definition "the step worked and the goal did
+# not move", so a verifier-passing episode in which the goal still does not move is
+# the same observation again -- not a fix for it.  Measured 2026-09-18 01:43: the
+# reconciler granted LIVE_VERIFIED on six such episodes.
+PROOF_IS_GOAL_PROGRESS = frozenset({"NO_GOAL_PROGRESS"})
+
 NON_ESCALATABLE_STOP_REASONS = frozenset({
     "mail_all_clear",
     "no_idle_march",
@@ -1055,6 +1062,7 @@ def new_live_episodes(
     root: Path | str | None = None,
     episodes_path: Path | str | None = None,
     version_changed_from: str = "",
+    require_goal_progress: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     """Production episodes proving the capability after ``since``.
 
@@ -1070,6 +1078,14 @@ def new_live_episodes(
     reconciliation counted three episodes recorded while the job was still WORKING,
     i.e. against the code it was about to replace.  An episode with no recorded
     ``repo_revision`` cannot show a version change and therefore cannot prove one.
+
+    ``require_goal_progress`` is the third half, and it exists because the first two
+    were not enough.  Measured 2026-09-18 01:43: the reconciler granted LIVE_VERIFIED
+    to job 2934e9cd on six SCAN_MAP_FOR_BEAST episodes that had ``verifier_ok=True``
+    and ``goal_progress=False`` on all six -- i.e. on exactly the observation that
+    *defines* the failure.  The job's own report said the opposite ("criterion 2 ...
+    does not hold").  A proof has to show the wall is gone; when the wall is "the
+    goal does not move", the proof is a measured move.
     """
     base = Path(root) if root else Path(__file__).resolve().parents[1]
     path = Path(episodes_path) if episodes_path else base / "learning/episodes.jsonl"
@@ -1098,6 +1114,8 @@ def new_live_episodes(
             if capability_for_skill(str(row.get("skill") or ""), root=base) != capability:
                 continue
         if not (row.get("before_screenshot") and row.get("after_screenshot")):
+            continue
+        if require_goal_progress and row.get("goal_progress") is not True:
             continue
         if version_changed_from:
             revision = str(row.get("repo_revision") or "")
@@ -1156,6 +1174,7 @@ def reconcile_outcome(
     agent_report: str = "",
     root: Path | str | None = None,
     episodes_path: Path | str | None = None,
+    failure_type: str = "",
 ) -> tuple[str, str, tuple[dict[str, Any], ...]]:
     """Decide what the job actually achieved, from local measurements only.
 
@@ -1181,7 +1200,8 @@ def reconcile_outcome(
     """
     episodes = new_live_episodes(capability, skill=skill, since=submitted_at,
                                 root=root, episodes_path=episodes_path,
-                                version_changed_from=before.token)
+                                version_changed_from=before.token,
+                                require_goal_progress=str(failure_type).upper() in PROOF_IS_GOAL_PROGRESS)
     if episodes:
         latest = episodes[-1]
         return (
@@ -1493,6 +1513,30 @@ class EscalationQueueAdapter:
             reload_requested_for=pending.job_id if pending else "",
         )
 
+    def _flat_episode_note(self, record: EscalationRecord, before: RepoRevision) -> str:
+        """Why verifier-passing episodes were rejected for a "no progress" signature.
+
+        Without this the ledger says ``TEST_PASS`` next to six episodes and reads as
+        "nearly there", when the six are the failure being measured again.  Named
+        explicitly because that exact confusion produced a wrong ``LIVE_VERIFIED`` on
+        2026-09-18 and the operator should never have to guess what the bar was.
+        """
+        if str(record.failure_type).upper() not in PROOF_IS_GOAL_PROGRESS:
+            return ""
+        flat = new_live_episodes(
+            record.capability or record.skill, skill=record.skill,
+            since=record.submitted_at, root=self.root,
+            version_changed_from=before.token,
+        )
+        if not flat:
+            return ""
+        return (
+            f" NOTE: {len(flat)} verifier-passing production episode(s) exist on a tree "
+            f"that differs from dispatch time, but this signature is "
+            f"{record.failure_type} -- its proof is the goal actually moving, and none of "
+            f"them shows that -- so they do not count and LIVE_VERIFIED is not granted."
+        )
+
     def _proven_since(self, record: EscalationRecord) -> tuple[dict[str, Any], ...]:
         """Production episodes that prove this record's capability since it was created.
 
@@ -1508,6 +1552,10 @@ class EscalationQueueAdapter:
             skill=record.skill,
             since=record.first_seen,
             root=self.root,
+            # The same bar reconciliation uses, including the progress requirement:
+            # releasing a record is the same claim as verifying it, so it cannot be
+            # granted on evidence that would fail the other path.
+            require_goal_progress=str(record.failure_type).upper() in PROOF_IS_GOAL_PROGRESS,
         )
 
     def _release(self, record: EscalationRecord, episodes: tuple[dict[str, Any], ...]) -> None:
@@ -1804,9 +1852,12 @@ class EscalationQueueAdapter:
                 wiring_problems=wiring,
                 agent_report=status.result,
                 root=self.root,
+                failure_type=record.failure_type,
             )
             if reclaimed:
                 explanation = f"cancelled: {reclaimed}. " + explanation
+            if outcome != LIVE_VERIFIED:
+                explanation += self._flat_episode_note(record, before)
             code_changed = after.differs_from(before)
             self.ledger.append({
                 "event": "reconciled",

@@ -131,12 +131,29 @@ class ReloadSignal:
         now: datetime | None = None,
         settle_seconds: float = SETTLE_SECONDS,
         max_defer_seconds: float = MAX_DEFER_SECONDS,
+        newest_write_at: datetime | None = None,
     ) -> Deferral:
         """Should the next cycle wait?  Pure, so the policy is testable.
 
-        Defers only for a marker that is fresh, or one whose job is still active.
-        Once it is older than ``max_defer_seconds`` it stops deferring *and the
-        caller clears it* -- the ceiling is what keeps this from becoming a stall.
+        It defers for a *write*, and only for seconds.  Two rules, both learned the
+        hard way.
+
+        The wait is measured from the newest write to the tree, not from the marker.
+        The marker records one instant; a job that keeps editing for the next hour
+        would otherwise keep the wait alive on a stale timestamp -- measured
+        2026-09-18, the panel logged the identical deferral every five seconds from
+        a marker that was already 103 seconds old and could not get older in a way
+        that mattered.
+
+        An active job is *reported* and never waited for.  Waiting on "a job is
+        active" was the first version of this, and it held AUTO off for up to
+        ``max_defer_seconds`` whenever a development agent was working -- which is
+        the operator's explicit prohibition ("禁止：等待 Job 完成才继续 AUTO",
+        "WorkBuddy 开发不得阻塞 AUTO").  The hazard it guarded is a torn read during
+        a write: a seconds-scale risk, contained when it happens (the worker exits
+        before acting, and the next cycle runs) and covered where it is dangerous by
+        ``run_live.py``'s VERIFIER_MAPPING_CORRUPT guard.  A stalled game is not a
+        price worth paying for a rare crashed cycle.
         """
         request = self.pending()
         if request is None:
@@ -144,6 +161,7 @@ class ReloadSignal:
 
         moment = now or datetime.now(timezone.utc)
         age = request.age_seconds(moment)
+        active = f"job {request.job_id} is still working" if active_jobs > 0 else ""
 
         if age >= max_defer_seconds:
             return Deferral(
@@ -152,20 +170,21 @@ class ReloadSignal:
                 f">= {max_defer_seconds:.0f}s ceiling; ignoring it so a hung "
                 f"development agent cannot stall AUTO",
             )
-        if active_jobs > 0:
+        write_age = None if newest_write_at is None else (moment - newest_write_at).total_seconds()
+        if write_age is None:
+            write_age = age
+        if write_age < settle_seconds:
             return Deferral(
                 True,
-                f"job {request.job_id} is still active and code changed on disk "
-                f"({age:.0f}s ago); waiting so the next cycle does not import a "
-                f"half-written tree",
+                f"the tree was written {write_age:.0f}s ago"
+                + (f" ({active})" if active else "")
+                + f"; waiting {settle_seconds - write_age:.0f}s for the write to settle",
             )
-        if age < settle_seconds:
-            return Deferral(
-                True,
-                f"code changed {age:.0f}s ago by job {request.job_id}; waiting "
-                f"{settle_seconds - age:.0f}s for the write to settle",
-            )
-        return Deferral(False, f"reload marker from job {request.job_id} is settled")
+        return Deferral(
+            False,
+            f"reload marker from job {request.job_id} is settled"
+            + (f" ({active}, but AUTO is not held for it)" if active else ""),
+        )
 
     # -- clear ------------------------------------------------------------
 
@@ -187,6 +206,41 @@ class ReloadSignal:
 
 def default_path(root: Path | str) -> Path:
     return Path(root) / "learning/RUNTIME_RELOAD_REQUIRED.json"
+
+
+# Where a development agent can write code or a table.  Deliberately excludes
+# ``learning/`` and ``dataset/``: an evidence frame landing must never postpone a run,
+# and those directories change constantly.
+WRITE_PATTERNS: tuple[str, ...] = (
+    "winter_agent_v2/*.py",
+    "tools/*.py",
+    "config/*.json",
+    "knowledge/**/*.json",
+)
+
+
+def newest_write(
+    root: Path | str,
+    patterns: tuple[str, ...] = WRITE_PATTERNS,
+) -> datetime | None:
+    """The most recent mtime among the files a development agent can change.
+
+    Bounded and cheap (a few hundred stats), and it answers the question the settle
+    window actually needs: "did a write just happen", rather than "is the marker
+    recent".  Returns ``None`` when nothing matched, which the caller reads as
+    "fall back to the marker's own age" instead of "no write ever".
+    """
+    base = Path(root)
+    newest = 0.0
+    for pattern in patterns:
+        for path in base.glob(pattern):
+            try:
+                newest = max(newest, path.stat().st_mtime)
+            except OSError:
+                continue
+    if not newest:
+        return None
+    return datetime.fromtimestamp(newest, timezone.utc)
 
 
 def cutoff_for(now: datetime, seconds: float = MAX_DEFER_SECONDS) -> datetime:

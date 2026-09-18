@@ -656,6 +656,7 @@ def main() -> int:
     # consumer, or if the window stops starting it.
     _queue_source = (PKG / "escalation_queue.py").read_text(encoding="utf-8")
     _panel_source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+    _reload_source = (PKG / "runtime_reload.py").read_text(encoding="utf-8")
     from winter_agent_v2 import escalation_queue as _escalation
 
     check("pump: the adapter exposes one consume pass with no run behind it",
@@ -678,6 +679,20 @@ def main() -> int:
     check("slot: an expired job is only cancelled when records wait behind it",
           "if not waiting or record.submitted_at is None:" in _queue_source
           and "def _reclaim_expired_slot(" in _queue_source)
+    check("proof: a no-progress signature needs a measured move, not a green step",
+          "PROOF_IS_GOAL_PROGRESS = frozenset({\"NO_GOAL_PROGRESS\"})" in _queue_source
+          and "require_goal_progress and row.get(\"goal_progress\") is not True"
+              in _queue_source
+          and "require_goal_progress=str(failure_type).upper() in PROOF_IS_GOAL_PROGRESS"
+              in _queue_source)
+    check("proof: the release path uses the same bar as reconciliation",
+          _queue_source.count("in PROOF_IS_GOAL_PROGRESS") >= 3)
+    check("reload: an active job never holds AUTO off",
+          "if active_jobs > 0:" not in _reload_source
+          and "not held for it" in _reload_source)
+    check("reload: the settle window follows the newest write, not the marker",
+          "newest_write_at" in _reload_source and "def newest_write(" in _reload_source
+          and "newest_write_at=newest_write(ROOT)" in _panel_source)
 
     print("\n-- dangling self-call sites (the 0aw class) --")
     for label, detail in dangling_self_calls():
