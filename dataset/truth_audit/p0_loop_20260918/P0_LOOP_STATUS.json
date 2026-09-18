@@ -1,0 +1,345 @@
+{
+  "generated_at": "2026-09-18T02:05:39.641793+00:00",
+  "generated_by": "tools/write_p0_loop_evidence.py",
+  "principle": "nothing here is typed by hand; every field is read back from the artifacts named beside it",
+  "stages": {
+    "P0-A gap -> escalation -> submit -> real job id -> WORKING": {
+      "verdict": "PARTIAL",
+      "measured": [
+        {
+          "job_id": "8fd1dfbf",
+          "attempt": null,
+          "last_state": "DONE",
+          "detail": "result: I have enough to report. I could not execute anything in this session, so here is the honest outcome.",
+          "outcome": "NO_IMPROVEMENT",
+          "code_changed": null,
+          "verified_episodes": null,
+          "live_improvement": false,
+          "corrected": true,
+          "explanation": "corrected by the operator: the tree diff was the harness's own concurrent edit of winter_agent_v2/escalation_queue.py, not the agent's; the agent reported 'No code was changed'"
+        },
+        {
+          "job_id": "f465a6c9",
+          "attempt": null,
+          "last_state": "DONE",
+          "detail": "result: **(1) Status: PARTIAL** — the missing search half of the capability was implemented, live-verified and pushed; the actual stamina spend (dispatch) remains unproven on the current role, for a n",
+          "outcome": "TEST_PASS",
+          "code_changed": true,
+          "verified_episodes": 0,
+          "live_improvement": false,
+          "corrected": false,
+          "explanation": "tree changed (HEAD 55cde8cb->bfbeaa1d, dirty 4->11) with the agent corroborating a change, and check_wiring reports problems: 0. NOT a verified capability: no new production episode with a passing verifier exists."
+        },
+        {
+          "job_id": "859e3787",
+          "attempt": null,
+          "last_state": "DONE",
+          "detail": "result: Done. Report follows.",
+          "outcome": "LIVE_VERIFIED",
+          "code_changed": true,
+          "verified_episodes": 76,
+          "live_improvement": true,
+          "corrected": false,
+          "explanation": "76 production episode(s) with verifier_ok after the job (latest 2026-09-17T16:28:05.201411+00:00), evidence 20260918_002627_226905_step_004_before_20260917T162741856209.png"
+        },
+        {
+          "job_id": "a7ce58f0",
+          "attempt": null,
+          "last_state": "DONE",
+          "detail": "result: Now add the NAVIGATE_TO_MAP wiring checks.",
+          "outcome": "LIVE_VERIFIED",
+          "code_changed": true,
+          "verified_episodes": 3,
+          "live_improvement": true,
+          "corrected": false,
+          "explanation": "3 production episode(s) with verifier_ok after the job (latest 2026-09-17T23:46:25.264629+00:00), evidence live_runtime_step_001_before_20260917T234556258521.png"
+        },
+        {
+          "job_id": "2934e9cd",
+          "attempt": null,
+          "last_state": "DONE",
+          "detail": "result: **Status: PARTIAL** — root cause found and evidenced, acceptance criteria 1/3/4/5 hold, **criterion 2 (live episode for SPEND_STAMINA_ON_BEAST) does not**.",
+          "outcome": "LIVE_VERIFIED",
+          "code_changed": true,
+          "verified_episodes": 6,
+          "live_improvement": true,
+          "corrected": false,
+          "explanation": "6 production episode(s) with verifier_ok on a tree that differs from dispatch time (latest 2026-09-18T01:43:15.843006+00:00, revision 336437fee15c+22 vs e2da4626123e+27), evidence 20260918_093915_038012_step_007_before_20260918T014240030195.png"
+        },
+        {
+          "job_id": "0440cd38",
+          "attempt": null,
+          "last_state": "WORKING",
+          "detail": "I'll start by reading the project rules and understanding the current s…"
+        }
+      ],
+      "why": "the submit hop is real and repeated (three job ids today, each with a job_state row), but no record has been observed going NEW -> SUBMITTED inside a single pump tick yet; the pump has had nothing pending to consume since it started"
+    },
+    "P0-B while A is deferred, V2 completes another goal": {
+      "verdict": "PROVEN",
+      "why": "2026-09-18 00:39Z: three consecutive AVOID_STAMINA_WASTE runs with goal_progress=False, then a run with no beast step at all that ran the gather chain and dispatched marches under KEEP_MARCHES_PRODUCTIVE"
+    },
+    "P0-C WorkBuddy reads evidence, modifies, tests pass": {
+      "verdict": "PROVEN",
+      "measured": {
+        "8bd7aea0": null,
+        "2da2cb8b": null,
+        "e73e8c57": null,
+        "290d17f9": null,
+        "8167c13d": null,
+        "a50a7218": null,
+        "3cfcf424": null,
+        "2629e0e6": null,
+        "45c3fd86": null,
+        "3796efe3": null,
+        "8fd1dfbf": "NO_IMPROVEMENT",
+        "cf27fd6f": null,
+        "969be08e": null,
+        "e3083862": null,
+        "ae82a88f": null,
+        "f465a6c9": "TEST_PASS",
+        "859e3787": "LIVE_VERIFIED",
+        "a7ce58f0": "LIVE_VERIFIED",
+        "2934e9cd": "LIVE_VERIFIED",
+        "f31ce2de": "TEST_PASS",
+        "0440cd38": null
+      },
+      "why": "job 2934e9cd returned code_changed=true with wiring_problems=0 and named its own root cause; its LIVE_VERIFIED was retracted (see below) and corrected to TEST_PASS"
+    },
+    "P0-D new version -> live episode -> verifier pass -> LIVE_VERIFIED": {
+      "verdict": "NOT PROVEN",
+      "why": "the one claim was wrong: all six episodes cited by the reconciler had goal_progress=False for a NO_GOAL_PROGRESS signature. PROOF_IS_GOAL_PROGRESS now refuses that, which means the capability is correctly still unverified. No honest LIVE_VERIFIED has been recorded for it."
+    },
+    "P0-E RUNTIME_RELOAD_REQUIRED -> safe reload -> AUTO resumes": {
+      "verdict": "PARTIAL",
+      "why": "the marker was written by the reconciler and consumed by the panel; the panel was restarted at a safe point with tools/panel_restart.py and AUTO resumed on its own. What is NOT proven is the operator's full sequence (save state, stop worker, preflight, re-observe, rebuild WorldState) as one path -- the reload here is 'the next cycle imports fresh code', which is what the project's design says it is."
+    },
+    "P0-F capability rejoins the scheduler and V2 uses it successfully": {
+      "verdict": "NOT PROVEN",
+      "why": "follows from P0-D. The capability is RUNNABLE (settled TEST_PASS without live verification), so the scheduler may try it, but no successful in-game execution of the repaired path has been observed."
+    }
+  },
+  "queue": {
+    "counts": {
+      "COOLDOWN": 1,
+      "DONE": 5,
+      "WORKING": 1
+    },
+    "active_jobs": [
+      "NO_GOAL_PROGRESS|NO_GOAL_PROGRESS|"
+    ],
+    "source": "learning/workbuddy_escalations.jsonl folded by escalation_queue.fold"
+  },
+  "jobs": {
+    "8bd7aea0": {
+      "job_id": "8bd7aea0",
+      "attempt": null
+    },
+    "2da2cb8b": {
+      "job_id": "2da2cb8b",
+      "attempt": null
+    },
+    "e73e8c57": {
+      "job_id": "e73e8c57",
+      "attempt": null
+    },
+    "290d17f9": {
+      "job_id": "290d17f9",
+      "attempt": null
+    },
+    "8167c13d": {
+      "job_id": "8167c13d",
+      "attempt": null
+    },
+    "a50a7218": {
+      "job_id": "a50a7218",
+      "attempt": null
+    },
+    "3cfcf424": {
+      "job_id": "3cfcf424",
+      "attempt": null
+    },
+    "2629e0e6": {
+      "job_id": "2629e0e6",
+      "attempt": null
+    },
+    "45c3fd86": {
+      "job_id": "45c3fd86",
+      "attempt": null
+    },
+    "3796efe3": {
+      "job_id": "3796efe3",
+      "attempt": null
+    },
+    "8fd1dfbf": {
+      "job_id": "8fd1dfbf",
+      "attempt": null,
+      "last_state": "DONE",
+      "detail": "result: I have enough to report. I could not execute anything in this session, so here is the honest outcome.",
+      "outcome": "NO_IMPROVEMENT",
+      "code_changed": null,
+      "verified_episodes": null,
+      "live_improvement": false,
+      "corrected": true,
+      "explanation": "corrected by the operator: the tree diff was the harness's own concurrent edit of winter_agent_v2/escalation_queue.py, not the agent's; the agent reported 'No code was changed'"
+    },
+    "cf27fd6f": {
+      "job_id": "cf27fd6f",
+      "attempt": null
+    },
+    "969be08e": {
+      "job_id": "969be08e",
+      "attempt": null
+    },
+    "e3083862": {
+      "job_id": "e3083862",
+      "attempt": null
+    },
+    "ae82a88f": {
+      "job_id": "ae82a88f",
+      "attempt": null
+    },
+    "f465a6c9": {
+      "job_id": "f465a6c9",
+      "attempt": null,
+      "last_state": "DONE",
+      "detail": "result: **(1) Status: PARTIAL** — the missing search half of the capability was implemented, live-verified and pushed; the actual stamina spend (dispatch) remains unproven on the current role, for a n",
+      "outcome": "TEST_PASS",
+      "code_changed": true,
+      "verified_episodes": 0,
+      "live_improvement": false,
+      "corrected": false,
+      "explanation": "tree changed (HEAD 55cde8cb->bfbeaa1d, dirty 4->11) with the agent corroborating a change, and check_wiring reports problems: 0. NOT a verified capability: no new production episode with a passing verifier exists."
+    },
+    "859e3787": {
+      "job_id": "859e3787",
+      "attempt": null,
+      "last_state": "DONE",
+      "detail": "result: Done. Report follows.",
+      "outcome": "LIVE_VERIFIED",
+      "code_changed": true,
+      "verified_episodes": 76,
+      "live_improvement": true,
+      "corrected": false,
+      "explanation": "76 production episode(s) with verifier_ok after the job (latest 2026-09-17T16:28:05.201411+00:00), evidence 20260918_002627_226905_step_004_before_20260917T162741856209.png"
+    },
+    "a7ce58f0": {
+      "job_id": "a7ce58f0",
+      "attempt": null,
+      "last_state": "DONE",
+      "detail": "result: Now add the NAVIGATE_TO_MAP wiring checks.",
+      "outcome": "LIVE_VERIFIED",
+      "code_changed": true,
+      "verified_episodes": 3,
+      "live_improvement": true,
+      "corrected": false,
+      "explanation": "3 production episode(s) with verifier_ok after the job (latest 2026-09-17T23:46:25.264629+00:00), evidence live_runtime_step_001_before_20260917T234556258521.png"
+    },
+    "2934e9cd": {
+      "job_id": "2934e9cd",
+      "attempt": null,
+      "last_state": "DONE",
+      "detail": "result: **Status: PARTIAL** — root cause found and evidenced, acceptance criteria 1/3/4/5 hold, **criterion 2 (live episode for SPEND_STAMINA_ON_BEAST) does not**.",
+      "outcome": "LIVE_VERIFIED",
+      "code_changed": true,
+      "verified_episodes": 6,
+      "live_improvement": true,
+      "corrected": false,
+      "explanation": "6 production episode(s) with verifier_ok on a tree that differs from dispatch time (latest 2026-09-18T01:43:15.843006+00:00, revision 336437fee15c+22 vs e2da4626123e+27), evidence 20260918_093915_038012_step_007_before_20260918T014240030195.png"
+    },
+    "f31ce2de": {
+      "job_id": "f31ce2de",
+      "attempt": null,
+      "outcome": "TEST_PASS",
+      "code_changed": null,
+      "verified_episodes": null,
+      "live_improvement": false,
+      "corrected": true,
+      "explanation": "corrected by the operator: LIVE_VERIFIED does not survive the progress bar: all 6 verifier-passing episodes after dispatch had goal_progress=False, and this signature is defined by the goal NOT moving, so they are the failure rather than its fix. The job's own report agrees ('criterion 2 does not hold'). Corrected after PROOF_IS_GOAL_PROGRESS was added (commit 8071b00); the code change itself is r"
+    },
+    "0440cd38": {
+      "job_id": "0440cd38",
+      "attempt": null,
+      "last_state": "WORKING",
+      "detail": "I'll start by reading the project rules and understanding the current s…"
+    }
+  },
+  "pump": {
+    "state": {
+      "passes": 3,
+      "submitted": 0,
+      "released": 0,
+      "reconciled": 0,
+      "errors": 0,
+      "last_tick": "10:05:25",
+      "last_line": "[escalation] nothing to do",
+      "last_error": "",
+      "gated": "",
+      "written_at": "2026-09-18T02:05:25.919172+00:00",
+      "process": 18508
+    },
+    "source": "learning/control_panel/pump.json (written by the panel every tick)"
+  },
+  "defects_fixed_this_round": [
+    {
+      "defect": "the queue had a consumer but no clock",
+      "evidence": "observe_run was only called at the end of an AUTO cycle, which is ten minutes long when the run ends in an ordinary stop; records sat NEW in between",
+      "fix": "EscalationQueueAdapter.pump() + panel-hosted QueuePump + pump.json heartbeat",
+      "commit": "336437f"
+    },
+    {
+      "defect": "a job past its timebox held the only concurrency slot forever",
+      "evidence": "job 2934e9cd was 54.7 minutes into a 45-minute timebox with records waiting behind it",
+      "fix": "EscalationPolicy.job_timebox_minutes, reclaimed only when pending() is non-empty",
+      "commit": "21486ce"
+    },
+    {
+      "defect": "LIVE_VERIFIED was granted on the failure itself",
+      "evidence": "all 6 cited episodes had goal_progress=False for a NO_GOAL_PROGRESS signature",
+      "fix": "PROOF_IS_GOAL_PROGRESS + require_goal_progress, on both the verify and the release path",
+      "commit": "8071b00"
+    },
+    {
+      "defect": "AUTO waited for an active WorkBuddy job",
+      "evidence": "'延后启动：job ... is still active and code changed on disk' every 5s for minutes",
+      "fix": "an active job is reported, never waited for; the settle window follows newest_write()",
+      "commit": "8071b00"
+    },
+    {
+      "defect": "a stale credential was read as an unavailable gateway",
+      "evidence": "shell env 43 chars -> 401, user env 24 chars -> 200, same machine, same moment",
+      "fix": "gateway_password falls back to the persisted user environment; _request retries once on 401",
+      "commit": "5ba83b3"
+    }
+  ],
+  "operational_incidents_this_round": [
+    {
+      "incident": "a process filter killed the development host",
+      "detail": "taskkill over processes matching 'control_panel|run_live' also matched the WorkBuddy desktop app, its agent node processes and the shell running the command, because the workspace path and tools/control_panel.py appear in their command lines too",
+      "mechanism_added": "tools/panel_restart.py stops and starts by pid, refuses mid-run, and verifies that a started panel survived"
+    },
+    {
+      "incident": "two Edits issued in one message clobbered each other",
+      "detail": "the observe_run -> _drain refactor and _auto_development_allowed() were both reported successful and both silently lost; the tests found them, not the tool",
+      "rule": "one Edit per file per message"
+    }
+  ],
+  "live_state": {
+    "gateway_preflight_lines": [
+      "09:59:24  预检·辅助：WorkBuddy Gateway 不可用（AUTH_REJECTED）；自动开发标记为不可用，后台周期重试，不影响 AUTO。",
+      "10:04:23  预检·辅助：WorkBuddy Gateway OK（http://127.0.0.1:8080）"
+    ],
+    "deferral_lines_in_the_last_60": 3,
+    "episodes_goal_progress": {
+      "None": 1908,
+      "False": 29
+    }
+  },
+  "not_done": [
+    "device lease (Single Device / Single UI Owner) -- not implemented",
+    "LIVE_VERIFY_PENDING as a state -- not implemented",
+    "a single trace_id field on every queue row -- the join still goes through the key plus job id",
+    "the GUI '无人值守闭环' state -- not implemented",
+    "the model-strategy table still counts the retracted LIVE_VERIFIED as a live improvement, because it was written at reconcile time and corrections append to the escalation ledger only"
+  ]
+}

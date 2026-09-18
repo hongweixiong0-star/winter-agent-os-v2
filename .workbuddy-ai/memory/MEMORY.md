@@ -404,3 +404,46 @@ live_verify_episode / reload_id。**并发成功与历史成功都不算学会�
 6. **先测量再派单**：用户的前提「消费链没运行」对了一半——链确实缺（已修），但那两条记录
    **不是真实缺口**（`DISPATCH_MARCH` 创建后真机通过 4 次）。派开发任务去做已经能做的事＝**制造工作**。
    任何「缺失能力」在派单前都要用 `new_live_episodes(...)` 问一次「创建之后它到底成功过没有」。
+
+
+---
+
+### 10:05 P0 闭环审计：四处真断点，其中一处是「用失败当修复证据」（336437f…5ba83b3）
+
+**队列有消费者但没有时钟。** `observe_run` 只挂 AUTO 轮次尾部；轮次是分钟级
+（空闲时 10 分钟），AUTO 停/暂停时永不执行 ⇒ `NEW` = 「被看到过一次」。
+修：`EscalationQueueAdapter.pump()`（与 `observe_run` 共用 `_drain`）+
+`control_panel.QueuePump`（面板常驻守护线程，**随窗口而非随 AUTO 启动**，
+STOPPED 才停、暂停不停）+ `pump.json` 心跳（线程里跑的东西从进程外看不见）。
+
+**真正严重的那个：`LIVE_VERIFIED` 被授予了「失败本身」。** job 2934e9cd 以
+「6 条 verifier_ok + 树有变化」被判 live improvement，而那 6 条的 `goal_progress`
+**全是 False**，签名恰恰是 `NO_GOAL_PROGRESS`。新增 `PROOF_IS_GOAL_PROGRESS`：
+**证明必须是缺失的那次测量本身**（`require_goal_progress` 只认 `is True`，`None` 是未观测）；
+释放路径同一把尺；台账用文字写明为何拒绝。已 `--correct` 撤回为 `TEST_PASS`。
+**遗留**：模型战绩里那条 `live_improvement=true` 未回改（写入时判定），live 列偏高。
+
+**超时 job 永久占住唯一并发槽**：`max_concurrent_jobs=1` 且从不取消。
+时间盒此前只是提示词里的一句话；现为 `EscalationPolicy.job_timebox_minutes` 单一来源。
+**只在 `pending()` 非空时回收**——否则就是按点杀掉认真干活的 agent。
+
+**AUTO 在等 WorkBuddy（用户明令禁止）**：`evaluate` 因 `active_jobs > 0` 最多延后 900 秒。
+现：活动 job **只报告不等待**；结算窗口由 `newest_write(ROOT)`（真实写入 mtime）度量，
+上界 20 秒且永不为一个 job 等待。
+
+**凭据「存在但是错的」被读成「网关不可用」**：同一时刻 shell 43 字符→401、
+用户环境 24 字符→200。`gateway_password()` 回退 `persisted_password()`（HKCU\Environment，
+仍是环境变量）；`_request` **只在 401** 用持久化值重试一次并采纳。
+
+**操作铁律（本轮用事故换来的）**
+- **绝不用模式匹配进程表来杀进程**：`control_panel|run_live` 会匹配到 WorkBuddy 桌面端、
+  它的 node、以及我自己所在的 shell（它们命令行里也有工作区路径与 `control_panel.py`）。
+  用 `tools/panel_restart.py`（面板自写 pid；venv `pythonw` 是 stub，真正在跑的是子进程；
+  有轮次在跑就拒绝停止；启动后核实存活）。
+- **同一文件一轮只发一个 Edit**：并发两个 Edit 会互相覆盖，且**报成功**。
+  `observe_run → _drain + pump`、`_auto_development_allowed()` 都曾被静默覆盖，靠测试才发现。
+- **长驻 GUI 必须以长驻任务形态启动**：工具调用结束时整棵进程树被回收，
+  `DETACHED_PROCESS` 也不行（实测：+19s 写了一次心跳，+25s 就没了，无崩溃无日志）。
+
+**未完成**：设备租约（Single Device / Single UI Owner）、`LIVE_VERIFY_PENDING`、
+统一 trace_id 落字段、`无人值守闭环` GUI 状态；P0-D/E/F 未证且不得伪造。
