@@ -445,12 +445,128 @@ def arm_state(
         override = json.loads((base / DEFAULT_ARM_PATH).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         override = {}
+
+    # ---- P0 ACCEPTANCE SEED (operator §二/§七) -------------------------------------------
+    # The cold-start deadlock, stated exactly: the preloader may not dispatch until the main
+    # loop is proven, and the main loop cannot be proven until something travels it.  With
+    # nothing open -- measured 2026-09-19: current_development_trace() = None and every record
+    # terminal (COOLDOWN 2, DONE 9, FAILED 3) -- the loop has no input, so it can never be
+    # proven, so the first trace is never dispatched.  Waiting for a random runtime gap turns
+    # the acceptance into a coincidence.
+    #
+    # This is a one-shot exception for that, not a relaxation of the rule.  It is checked
+    # *after* the real ladder (a proven loop still wins) and *before* the human override (it is
+    # a product mechanism, not an operator decision).  It closes permanently the moment a real
+    # production reuse exists -- see `acceptance_seed_allowed`.
+    seed_ok, seed_detail = acceptance_seed_allowed(base)
+    if seed_ok:
+        return True, SEED_ARMED, seed_detail
+
     if isinstance(override, dict) and override.get("armed"):
         who = str(override.get("armed_by") or "operator")
         why = str(override.get("reason") or "")
         return True, "OPERATOR_OVERRIDE", f"armed by {who}: {why}"
 
     return False, GATE_NOT_ARMED, detail
+
+
+#: The gate reason when the one-shot acceptance seed is what armed the preloader.
+SEED_ARMED = "P0_ACCEPTANCE_SEED"
+#: Written once a real production reuse has been observed.  Its existence closes the seed for
+#: good: an exception that stays open becomes the rule.
+PROVEN_ONCE_PATH = "learning/knowledge_bootstrap/MAIN_LOOP_PROVEN_ONCE.json"
+
+
+def acceptance_seed_allowed(root: Path | str | None = None) -> tuple[bool, str]:
+    """May the one-shot acceptance seed arm the preloader right now?
+
+    Every condition is read from an artifact rather than passed in, so the answer can be
+    reproduced by a reader who was not present -- and so a caller cannot *assert* the conditions
+    in order to get the answer it wants.
+
+    Two of the operator's thirteen conditions are deliberately **not** checked here and are
+    named so they are not mistaken for enforced ones: the risk tier (T0/T1) and the exclusion of
+    the permanent prohibitions are properties of the *candidate*, and are enforced at selection.
+    This function answers "is the system in a state where a seed is allowed at all"; the selector
+    answers "is this particular capability a lawful one".  Putting the candidate rules here would
+    make them look checked while nothing had looked at a candidate yet.
+    """
+    base = Path(root) if root else Path(__file__).resolve().parents[1]
+    proven = base / PROVEN_ONCE_PATH
+
+    try:
+        from .escalation_queue import EscalationLedger, current_development_trace
+        from .escalation_queue import DEFAULT_LEDGER
+
+        ledger = EscalationLedger(base / DEFAULT_LEDGER)
+        rows = ledger.events()
+        snapshot = ledger.snapshot()
+    except Exception as exc:  # noqa: BLE001 - unreadable state cannot authorise anything
+        return False, f"无法读取台账：{type(exc).__name__}: {exc}"
+
+    # §七: proven once, closed forever.  Checked first, and the marker is written the moment the
+    # evidence appears rather than on the next start, so the seed cannot survive its own success.
+    if any(str(row.get("event")) == "production_reuse" for row in rows):
+        try:
+            proven.parent.mkdir(parents=True, exist_ok=True)
+            proven.write_text(json.dumps({
+                "at": datetime.now(timezone.utc).isoformat(),
+                "reason": "a real production_reuse exists; P0_ACCEPTANCE_SEED is closed permanently",
+            }, ensure_ascii=False, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+        return False, "已出现过真实 production_reuse：P0_ACCEPTANCE_SEED 永久关闭"
+    if proven.exists():
+        return False, f"{PROVEN_ONCE_PATH} 存在：本次冷启动豁免已经用过"
+
+    # §二 conditions 2-4, 13: nothing open, nothing in flight, and no second seed trace.
+    current = current_development_trace(snapshot)
+    if current is not None:
+        return False, f"已有未完成 trace（{current.key}），不需要种子"
+    for state_name in ("WORKING", "SUBMITTED", "NEW", "QUEUED"):
+        holders = [r for r in snapshot.records.values() if r.state == state_name]
+        if holders:
+            return False, f"台账里已有 {state_name} 记录（{holders[0].key}），不需要种子"
+    if any(str(r.origin or "") == "bootstrap_seed" for r in snapshot.records.values()):
+        return False, "台账里已有 bootstrap_seed 记录：同时只允许一个"
+
+    # §二 condition 5: no examination holding the device.
+    try:
+        from .device_lease import DeviceLease
+
+        holder = str(DeviceLease(base).holder() or "")
+        if holder:
+            return False, f"设备租约由 {holder} 持有"
+    except Exception:  # noqa: BLE001
+        return False, "无法读取设备租约"
+
+    # §二 conditions 6-7: the operator asked for work, and a production window is running it.
+    try:
+        intent = str(json.loads((base / "config/control_panel_state.json")
+                                .read_text(encoding="utf-8")).get("operator_intent") or "")
+    except Exception:  # noqa: BLE001
+        return False, "无法读取操作员意图"
+    if intent.upper() != "RUNNING":
+        return False, f"操作员当前为 {intent or '未知'}，种子只在 RUNNING 下生效"
+    pump = base / "learning/control_panel/pump.json"
+    try:
+        age = datetime.now(timezone.utc).timestamp() - pump.stat().st_mtime
+    except OSError:
+        return False, "没有面板心跳：正式 GUI 未运行"
+    if age > 90.0:
+        return False, f"面板心跳已过期 {age:.0f}s：正式 GUI 不在运行"
+
+    # §二 condition 9: a healthy gateway, or the first trace would only discover that.
+    try:
+        gateway = json.loads((base / "learning/control_panel/gateway.json")
+                             .read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return False, "读不到网关探针结果"
+    if gateway.get("available") is not True:
+        return False, f"网关不是 HEALTHY（{gateway.get('reason') or 'unknown'}）"
+
+    return True, ("冷启动种子条件全部成立：无未完成 trace、无在飞 Job、无租约、"
+                  "操作员 RUNNING、生产 GUI 存活、网关 HEALTHY")
 
 
 def preload_gate(
