@@ -680,6 +680,18 @@ class RuleBrain:
             # (knowledge/skills/RESEARCH_RESEARCH.md line 38) and re-measured
             # 2026-09-17; what it never had was a decision here, so the goal could
             # only ever stop with research_entry_not_verified.
+            #
+            # Measured live 2026-09-19, and this is why the hop below exists: the research goal was
+            # selected while the client stood on the ALLIANCE panel, this route has no branch for a
+            # page it does not own, and the page-driven alliance branch then ran
+            # OPEN_ALLIANCE_GIFTS under a *research* goal -- twelve times, each run closing the
+            # reward popup and ending, so the research page was never once read.  The four panel
+            # routines got this hop when they were wired; these two routes were missed.
+            if world.page not in {Page.HOME, Page.MAP, Page.RESEARCH, Page.POPUP}:
+                leave = self._leave_foreign_page_once(world, owner="RESEARCH")
+                if leave is not None:
+                    return leave
+                return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_research_route")
             # A run that has already read this page and left it must not walk the
             # route again: the Back below lands on HOME, which is exactly the page
             # this branch would start from, so without this the loop would be
@@ -713,6 +725,15 @@ class RuleBrain:
         if self.current_goal == "TRAIN":
             # Same re-route guard as the research goal above: after the Back the
             # client is on HOME, which is where this branch starts.
+            #
+            # And the same foreign-page hop, for the same measured reason: the sweep selects these
+            # goals from wherever the client happens to be, and a route that only knows HOME is a
+            # route that does nothing whenever the previous goal left the client on a panel.
+            if world.page not in {Page.HOME, Page.MAP, Page.TRAINING, Page.POPUP}:
+                leave = self._leave_foreign_page_once(world, owner="TRAIN")
+                if leave is not None:
+                    return leave
+                return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_training_route")
             if self.terminal_page_left:
                 return Decision("SAFE_STOP", "training_page_already_read_not_actionable", 1.0, "switch_task")
             if world.page is Page.HOME and world.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED":

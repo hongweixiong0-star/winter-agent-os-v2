@@ -157,18 +157,23 @@ def _badge_present(reading: Mapping[str, Any]) -> bool:
 #:
 #: Measured 2026-09-19 with a flat 20: the stamina goal priced at 2450 and gathering at 70, so
 #: ``best()`` chose them on every run and no panel was ever swept -- the ticket existed and was
-#: never selected.  The ceiling is the whole design: 150 outranks routine gathering (70) so a
-#: genuinely overdue panel *does* get looked at, and it cannot outrank a real claim (a claimable
-#: routine is 250, intel rewards 500, the stamina goal 2450), so the sweep never competes with
-#: work that pays.  With four routines and per-domain TTLs, one sweep round makes them all fresh
-#: and their value drops back to the base, which is what stops this from opening every panel
-#: every run (operator §二).
+#: never selected.
+#:
+#: The age term is an **asymptote**, not a capped ramp, and that is the whole point.  A capped
+#: ramp puts every overdue ticket at the same ceiling, they tie, and ``best()`` returns the first
+#: of the tie -- so one ticket is re-selected forever: measured live, ``KEEP_RESEARCH_PRODUCTIVE``
+#: was chosen twelve runs in a row to close the same reward popup, never once reaching its own
+#: page.  ``ratio / (1 + ratio)`` is strictly increasing in the overdue ratio, so no two tickets
+#: with different history are ever equal and the loop rotates to the one that has waited longest.
+#: The ceiling stays under a real claim (a claimable routine is 250, intel rewards 500, the
+#: stamina goal 2450) so the sweep never competes with work that pays.
 SWEEP_BASE_VALUE = 80.0
-SWEEP_AGE_BONUS = 70.0
+SWEEP_AGE_BONUS = 100.0
 
 
 def _sweep_value(overdue_ratio: float) -> float:
-    return SWEEP_BASE_VALUE + SWEEP_AGE_BONUS * min(1.0, max(0.0, float(overdue_ratio or 0.0)))
+    ratio = max(0.0, float(overdue_ratio or 0.0))
+    return SWEEP_BASE_VALUE + SWEEP_AGE_BONUS * (ratio / (1.0 + ratio))
 
 
 #: Domains whose goal only exists **if a reading exists**, and which therefore had no way to be
