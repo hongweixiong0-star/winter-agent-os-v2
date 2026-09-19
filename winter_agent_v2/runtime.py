@@ -746,12 +746,23 @@ class LiveRuntime:
                 # does nothing, which is how four panel routines stayed invisible while their
                 # capabilities worked.  Each entry maps to a route ``RuleBrain`` already has,
                 # including the MAP -> panel hop that makes an unread routine observable.
-                self.brain.current_goal = {
+                route = {
                     "CLEAR_INTEL": "INTEL", "AVOID_STAMINA_WASTE": "BEAST_HUNT",
                     "KEEP_TRAINING_PRODUCTIVE": "TRAIN", "KEEP_RESEARCH_PRODUCTIVE": "RESEARCH",
                     "MAIL_ROUTINE": "MAIL", "DAILY_ACTIVITY_TARGET": "DAILY",
                     "ALLIANCE_ROUTINE": "ALLIANCE", "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
                 }.get(best_goal.goal_id)
+                if best_goal.goal_id == "AVOID_STAMINA_WASTE":
+                    # The goal declares three ways to spend stamina and the beast one is the
+                    # blocked one, so routing it to BEAST_HUNT would send the run down the path
+                    # that cannot run: five pans, no target, stop -- and the operator's standing
+                    # requirement is that stamina stays under 30.  The intel missions spend the
+                    # same stamina through a route that is LIVE_VERIFIED, measured live at 10-15
+                    # per mission, so the goal rides that one while the beast path is off.
+                    beast = (gate.capabilities.get("SPEND_STAMINA_ON_BEAST") or (None,))[0]
+                    if beast in {"BLOCKED", "COOLDOWN", "DEFERRED", "DEVELOPMENT_PENDING"}:
+                        route = "INTEL"
+                self.brain.current_goal = route
             if before.page in {Page.MAINTENANCE, Page.LOADING}:
                 # Environmental states resolve on the game's own schedule. The
                 # worker must hold, not exit: an exit here was counted as an

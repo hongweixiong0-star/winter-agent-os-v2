@@ -58,6 +58,10 @@ BLOCKED = "BLOCKED"
 LIVE_VERIFIED = "LIVE_VERIFIED"
 
 DEFERRING_STATES = frozenset({DEVELOPMENT_PENDING, DEFERRED, COOLDOWN, BLOCKED})
+#: States in which a path cannot run at all, as opposed to waiting for a job to finish.
+#: Used for the ANY_OF exemption in ``_capability_deferral``: a goal with another runnable path
+#: may proceed when this one is blocked or cooling down, but not while a job is inside it.
+PATH_CANNOT_RUN = frozenset({COOLDOWN, BLOCKED})
 
 SOURCE_QUEUE = "ESCALATION_QUEUE"
 SOURCE_NO_PROGRESS = "NO_GOAL_PROGRESS"
@@ -458,12 +462,24 @@ class CapabilityGate:
 
         # 1. The path this goal is actually being driven along, matched through the
         #    project's own skill -> capability table.
+        #
+        #    Except for ANY_OF when the reached path is BLOCKED or on COOLDOWN: a path that
+        #    cannot run is not a goal that cannot run.  The operator's map declares three ways to
+        #    satisfy AVOID_STAMINA_WASTE (beast / intel / rally) and only the beast one carries a
+        #    block; returning here hid the two runnable paths and kept the goal off the board
+        #    entirely -- measured 2026-09-19 with stamina at 457 and the requirement being "keep
+        #    it under 30".  DEVELOPMENT_PENDING is deliberately not exempted: a job is inside that
+        #    code right now, and the existing rule that such a path waits (rather than measuring
+        #    the tree it is about to replace) is worth more than the parallelism it would buy.
         reached = self.reached.get(goal_id, frozenset())
+        exempt = composition.composition == "ANY_OF"
         for capability in composition.capabilities:
             if capability not in reached:
                 continue
             found = entry(capability)
             if found is not None:
+                if exempt and found.state in PATH_CANNOT_RUN:
+                    break
                 return found
 
         # 2. Otherwise the whole goal: any path for SEQUENCE, all paths for ANY_OF.
