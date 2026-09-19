@@ -41,6 +41,7 @@ class Executor:
         error: str | None = None,
         latency_ms: float | None = None,
         recognition_backend: str = "",
+        tap_point: tuple[int, int] | None = None,
     ) -> ExecutionResult:
         capture = getattr(self.device, "capture_backend", "ADB_EXEC_OUT")
         return ExecutionResult(
@@ -49,6 +50,10 @@ class Executor:
             capture_backend=capture if executed else "",
             recognition_backend=recognition_backend if executed else "",
             latency_ms=latency_ms,
+            # Forwarded, not just accepted.  The first version of this added the parameter and then
+            # dropped it here, so every tap recorded None while the device was tapped correctly --
+            # the test caught it, which is the whole reason the field is not trusted on inspection.
+            tap_point=tap_point,
         )
 
     def execute(self, action: Action, skill_id: str | None = None) -> ExecutionResult:
@@ -79,13 +84,17 @@ class Executor:
                 return self._result(False, action, "DEVICE_BUSY")
             width, height = status.resolution
             started = time.perf_counter()
-            self.device.tap(round(x_norm * width), round(y_norm * height))
+            # Keep the pixel, do not just send it: this is the one place that knows where the tap
+            # actually went, and without it an episode can say "the target did not open" but never
+            # "and it landed here".
+            tap_x, tap_y = round(x_norm * width), round(y_norm * height)
+            self.device.tap(tap_x, tap_y)
             latency_ms = (time.perf_counter() - started) * 1000.0
             # The target came from this executor's ``target_resolver``, which on
             # the ADB path is the V2 semantic vision.  Stated explicitly so the
             # episode does not have to infer who did the recognition.
             return self._result(True, action, latency_ms=round(latency_ms, 2),
-                                recognition_backend="V2")
+                                recognition_backend="V2", tap_point=(tap_x, tap_y))
         if action.kind == "PRESS_BACK":
             if self.device is None:
                 return self._result(False, action, "DEVICE_ADAPTER_NOT_CONNECTED")

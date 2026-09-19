@@ -403,6 +403,8 @@ class ExecutorRouter:
             executed=result.executed, dry_run=result.dry_run, action=result.action,
             error=result.error, backend=backend, capture_backend=capture,
             recognition_backend=recognition, latency_ms=result.latency_ms,
+        
+            tap_point=result.tap_point,
         )
         self.ledger.append({
             "recorded_at": datetime.now(timezone.utc).isoformat(),

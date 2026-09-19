@@ -220,6 +220,12 @@ class ExecutionResult:
     capture_backend: str = ""
     recognition_backend: str = ""
     latency_ms: float | None = None
+    # Where a TAP_SEMANTIC actually landed, in device pixels.  Added 2026-09-20 after a tap resolved
+    # a target, verified as "did not open it", and the question "so where did it land?" turned out to
+    # be unanswerable from the episode: the resolved point was computed and then discarded.  For a
+    # project whose rule is that a claim must be provable from its artifacts, a tap that did nothing
+    # has to carry where it went.  None for actions that have no point (BACK, OBSERVE, refusals).
+    tap_point: tuple[int, int] | None = None
 
 
 @dataclass(frozen=True)
