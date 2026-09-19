@@ -679,6 +679,74 @@ def looks_like_a_dropped_digit(previous: int | None, current: int | None) -> boo
     return len(after) < len(before) and before.startswith(after) and before != after
 
 
+# The band the beast and its label occupy on the world map.  Measured 2026-09-19 on the frames in
+# dataset/raw/live_runtime/stamina_verify{,_2}: the animal is drawn mid-left and its name label sat
+# at (0.269, 0.655) on one frame and (0.189, 0.645) on another, so this is a *search band* and not
+# a point.  It is deliberately generous; the name whitelist is what makes the read precise.
+BEAST_LABEL_BAND = {"x_norm": 0.05, "y_norm": 0.45, "w_norm": 0.45, "h_norm": 0.35}
+
+
+def named_beast_label(
+    tokens: tuple[OCRToken, ...],
+    known_names: Iterable[str],
+    *,
+    min_confidence: float = 0.8,
+) -> str | None:
+    """The client's own name for a beast on the map, or None.
+
+    Measured 2026-09-19: the name is printed beside the animal and reads cleanly -- ``霜鳞避役`` at
+    0.89 and ``猛犸象`` at 0.88 -- while the templates meant to find the animal by its sprite matched
+    nothing on any of 23 frames, because they search a patch of bare snow (see the issue ledger).
+    Reading the client's own word is cheaper and more robust than one large animated sprite per
+    species, and it is species-agnostic: the same read works for a beast nobody has templated.
+
+    ``known_names`` is the whitelist, and it is the whole reason this is safe: the same band also
+    carries alliance flags, 未驻防 markers and building names (联盟畜牧场, 联盟木材场, 铁厂, 开), so an
+    unfiltered read would call a sawmill a beast.  Nothing is invented here -- a label no known name
+    matches answers None rather than being guessed at, because the answer decides whether a march
+    is dispatched.
+
+    The caller restricts the read by passing ``BEAST_LABEL_BAND`` as the ROI to the recogniser, so
+    these tokens are already only that band's.
+    """
+    names = tuple(str(name) for name in known_names if str(name))
+    if not names:
+        return None
+    best: tuple[float, str] | None = None
+    for token in tokens:
+        if token.confidence < min_confidence or not token.box:
+            continue
+        text = str(token.text or "").strip()
+        if not text:
+            continue
+        matched = next((name for name in names if name in text or text in name), None)
+        if matched is None:
+            continue
+        if best is None or token.confidence > best[0]:
+            best = (token.confidence, matched)
+    return best[1] if best is not None else None
+
+
+def level_beside_label(
+    tokens: tuple[OCRToken, ...], *, min_confidence: float = 0.8
+) -> int | None:
+    """The level badge printed beside the beast's name, or None when the frame is ambiguous.
+
+    Measured on the same frames: ``20`` at full confidence beside ``霜鳞避役``, and ``25``/``28``/
+    ``27`` beside other animals.  The badge is a bare number in the same band, so the read is "the
+    only bare number in the band".  Two different candidates means the frame does not say, and a
+    guess there would dispatch a march against an unknown level, so it answers None.
+    """
+    candidates: set[int] = set()
+    for token in tokens:
+        if token.confidence < min_confidence or not token.box:
+            continue
+        text = str(token.text or "").strip()
+        if text.isdigit() and 1 <= len(text) <= 2:
+            candidates.add(int(text))
+    return candidates.pop() if len(candidates) == 1 else None
+
+
 def read_hud_stamina(
     tokens: tuple[OCRToken, ...],
     width: int,
