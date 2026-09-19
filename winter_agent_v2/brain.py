@@ -529,6 +529,16 @@ class RuleBrain:
                 # is not intel work, so leave it.
                 return Decision("BACK", "leave_exploration_for_intel_goal", world.confidence, "home_restored")
             if world.page not in {Page.MAP, Page.INTEL, Page.BEAST, Page.MARCH, Page.EXPLORATION}:
+                # Measured live 2026-09-19, and it is why the stamina requirement stayed unmet:
+                # the sweep left the client on the ALLIANCE panel, the previous goal handed over,
+                # and this route answered goal_page_mismatch without taking a single step.  Since
+                # AVOID_STAMINA_WASTE now rides this route (the beast path is blocked and the intel
+                # missions are the verified spend), this branch stood directly between the operator
+                # and "keep stamina under 30".  Same measured hop as the panel and terminal routes:
+                # one Back to HOME, which is this route's own entry point.
+                leave = self._leave_foreign_page_once(world, owner="INTEL")
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_intel_route")
             if world.page is Page.MAP and world.resource_search_open:
                 return Decision("BACK", "close_resource_search_for_intel_goal", world.confidence, "resource_search_closed")
@@ -691,7 +701,7 @@ class RuleBrain:
                 leave = self._leave_foreign_page_once(world, owner="RESEARCH")
                 if leave is not None:
                     return leave
-                return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_research_route")
+                return Decision("SAFE_STOP", "research_entry_not_verified", 1.0, "bootstrap_to_research_route")
             # A run that has already read this page and left it must not walk the
             # route again: the Back below lands on HOME, which is exactly the page
             # this branch would start from, so without this the loop would be
@@ -733,7 +743,7 @@ class RuleBrain:
                 leave = self._leave_foreign_page_once(world, owner="TRAIN")
                 if leave is not None:
                     return leave
-                return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_training_route")
+                return Decision("SAFE_STOP", "training_entry_not_verified", 1.0, "bootstrap_to_training_route")
             if self.terminal_page_left:
                 return Decision("SAFE_STOP", "training_page_already_read_not_actionable", 1.0, "switch_task")
             if world.page is Page.HOME and world.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED":

@@ -72,19 +72,35 @@ class RouteGoalFromMapTest(unittest.TestCase):
 
 
 class UnrelatedPageStillStopsTest(unittest.TestCase):
-    """The hop must not become a licence to act on any page."""
+    """The hop must not become a licence to act on any page.
 
-    def test_train_on_an_unrelated_page_still_stops_named(self):
-        for page in (Page.MAIL, Page.INTEL, Page.DAILY, Page.EXPLORATION):
-            decision = decide("TRAIN", WorldState(page=page, confidence=0.99))
-            self.assertEqual(decision.skill, "SAFE_STOP", page)
-            self.assertEqual(decision.reason, "training_entry_not_verified", page)
+    Updated 2026-09-19 with the live evidence that changed the first step.  These used to assert a
+    straight SAFE_STOP, and that is what the research goal did on the ALLIANCE page -- except the
+    page-driven branch then ran ``OPEN_ALLIANCE_GIFTS`` *under a research goal*, twelve runs in a
+    row, without the research page ever being read.  So the first step is now one Back off the
+    foreign page, and the goal still stops instead of doing that page's work.  The intent of the
+    guard is unchanged; only its first step moved, and both are asserted.
+    """
 
-    def test_research_on_an_unrelated_page_still_stops_named(self):
+    def test_train_on_an_unrelated_page_leaves_it_once_then_stops_named(self):
         for page in (Page.MAIL, Page.INTEL, Page.DAILY, Page.EXPLORATION):
-            decision = decide("RESEARCH", WorldState(page=page, confidence=0.99))
-            self.assertEqual(decision.skill, "SAFE_STOP", page)
-            self.assertEqual(decision.reason, "research_entry_not_verified", page)
+            brain = RuleBrain(current_goal="TRAIN")
+            first = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+            self.assertEqual(first.skill, "BACK", page)
+            self.assertIn("panel_it_does_not_own", first.reason, page)
+            second = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+            self.assertEqual(second.skill, "SAFE_STOP", page)
+            self.assertEqual(second.reason, "training_entry_not_verified", page)
+
+    def test_research_on_an_unrelated_page_leaves_it_once_then_stops_named(self):
+        for page in (Page.MAIL, Page.INTEL, Page.DAILY, Page.EXPLORATION):
+            brain = RuleBrain(current_goal="RESEARCH")
+            first = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+            self.assertEqual(first.skill, "BACK", page)
+            self.assertIn("panel_it_does_not_own", first.reason, page)
+            second = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+            self.assertEqual(second.skill, "SAFE_STOP", page)
+            self.assertEqual(second.reason, "research_entry_not_verified", page)
 
 
 class HomeBehaviourUnchangedTest(unittest.TestCase):
