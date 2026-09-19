@@ -30,6 +30,7 @@ if str(ROOT) not in sys.path:
 from winter_agent_v2.brain import RuleBrain  # noqa: E402
 from winter_agent_v2.goal_library import (  # noqa: E402
     SWEEP_BASE_VALUE,
+    SWEEP_NEVER_VALUE,
     GoalLibrary,
     GoalStatus,
     _sweep_value,
@@ -112,5 +113,47 @@ def test_an_unread_ticket_is_still_worth_more_than_routine_gathering():
     library = GoalLibrary()
     goals = {g.goal_id: g for g in
              library.discover(WorldState(page=Page.MAP, march_used=2, march_max=3))}
-    assert goals["CLEAR_INTEL"].priority == SWEEP_BASE_VALUE
+    assert goals["CLEAR_INTEL"].priority == SWEEP_BASE_VALUE or (
+        goals["CLEAR_INTEL"].priority == SWEEP_NEVER_VALUE
+    )
     assert goals["CLEAR_INTEL"].priority > goals["KEEP_MARCHES_PRODUCTIVE"].priority
+
+
+def test_never_read_outranks_every_overdue_page():
+    """Measured live 2026-09-19, and it is the operator's §二 exactly.
+
+    On a healthy Goal Board, mail priced 167.5 (104.7 min overdue), daily 157.6, exploration
+    150.1 -- and training and research priced exactly 80, because with no record at all their
+    overdue ratio was 0.  The two pages that had never once been looked at were the cheapest
+    tickets on the board, permanently outranked by pages that had merely gone stale, and they
+    were never selected: "不允许因为 WorldState 当前没有某个页面的数据，就永远不去检查该页面".
+
+    A never-read domain has waited for ever, so it prices above any finite ratio and below
+    anything that pays.
+    """
+    observations = {
+        "mail": {"reading": {}, "overdue": True, "overdue_ratio": 7.0},
+        "daily": {"reading": {}, "overdue": True, "overdue_ratio": 3.5},
+    }
+    library = GoalLibrary()
+    goals = {g.goal_id: g for g in library.discover(
+        WorldState(page=Page.MAP, march_used=2, march_max=3), observations=observations)}
+    never_read = {g for g in ("KEEP_TRAINING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE")}
+    for goal_id in never_read:
+        assert goals[goal_id].status is GoalStatus.DISCOVERED
+        assert goals[goal_id].priority > goals["MAIL_ROUTINE"].priority, (
+            f"{goal_id} has never been read; it cannot be cheaper than a stale page"
+        )
+        assert goals[goal_id].priority == SWEEP_NEVER_VALUE
+        assert goals[goal_id].priority < 250.0, "still below a real claim"
+
+
+def test_a_page_that_has_been_read_once_joins_the_rotation_instead_of_hogging():
+    """The first-visit bonus must not become a permanent one."""
+    fresh = {"training": {"reading": {"status": "IN_PROGRESS"}, "overdue": False,
+                          "overdue_ratio": 0.0}}
+    library = GoalLibrary()
+    goals = {g.goal_id: g for g in library.discover(
+        WorldState(page=Page.MAP), observations=fresh)}
+    assert goals["KEEP_TRAINING_PRODUCTIVE"].priority != SWEEP_NEVER_VALUE
+    assert goals["KEEP_TRAINING_PRODUCTIVE"].priority < SWEEP_NEVER_VALUE

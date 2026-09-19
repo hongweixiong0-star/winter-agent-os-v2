@@ -169,6 +169,19 @@ def _badge_present(reading: Mapping[str, Any]) -> bool:
 #: stamina goal 2450) so the sweep never competes with work that pays.
 SWEEP_BASE_VALUE = 80.0
 SWEEP_AGE_BONUS = 100.0
+#: What a domain that has **never** been read is worth, and why it is not the base value.
+#:
+#: Measured live 2026-09-19 on a healthy Goal Board: mail priced 167.5 (104.7 min overdue),
+#: daily 157.6, exploration 150.1 -- and training and research sat at exactly 80, because with no
+#: record at all their overdue ratio was 0.  So the two pages that had *never once been looked at*
+#: were the cheapest tickets on the board, permanently outranked by pages that had merely gone
+#: stale, and they were never selected.  That is the operator's §二 stated exactly: "不允许因为
+#: WorldState 当前没有某个页面的数据，就永远不去检查该页面."
+#:
+#: Never-read means waited-for-ever, so it prices above any finite ratio's value (which
+#: asymptotes to 180 from below) and still below anything that pays (a claimable routine is 250,
+#: intel rewards 500).  Base value stays for the fresh-but-empty case, which is a real zero.
+SWEEP_NEVER_VALUE = 180.0
 
 
 def _sweep_value(overdue_ratio: float) -> float:
@@ -294,7 +307,11 @@ def _append_panel_routine(
             return
         goals.append(GoalState(
             routine.goal_id, GoalStatus.DISCOVERED,
-            development_value=_sweep_value(record.get("overdue_ratio", 0.0)),
+            # Never read prices as "waited for ever"; read-and-stale prices by how stale.
+            development_value=(
+                SWEEP_NEVER_VALUE if not record
+                else _sweep_value(record.get("overdue_ratio", 0.0))
+            ),
             available_skills=(routine.entry_skill,),
             evidence=provenance,
             distance=1.0,
