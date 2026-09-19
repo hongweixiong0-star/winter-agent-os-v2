@@ -322,6 +322,12 @@ class LiveRuntime:
 
         A claimable panel has no countdown at all; that is not "unknown", it is
         "available now", and the claim clears it.  So this only ever records.
+
+        The refused-claim cooldown travels on the same wiring and for the same
+        reason: it too is learned from the panel and has to survive the runs in
+        between, and it is the only thing that stops a panel whose 领取 control is
+        drawn but inert from being re-tapped once per cycle forever (see
+        ``DEFAULT_CLAIM_COOLDOWN_SECONDS``).
         """
         if self.stamina_supply is None:
             return
@@ -329,6 +335,7 @@ class LiveRuntime:
         if isinstance(countdown, int):
             self.stamina_supply.record(countdown)
         self.brain.next_supply_at = self.stamina_supply.next_supply_at()
+        self.brain.free_stamina_claim_cooling = self.stamina_supply.claim_cooling_down()
 
     def _policy_allows(self, goal_id: str) -> bool:
         category = {
@@ -494,6 +501,14 @@ class LiveRuntime:
                     observation_store.record(routine.field, reading)
                 except Exception:  # noqa: BLE001 - observing must never fail a run
                     pass
+        # The HUD gauge is read on many frames but is a *domain* like the others: the stamina goal
+        # exists only while it is readable, so the last reading has to outlive the frame that
+        # produced it or the goal disappears from the board whenever the gauge is off screen.
+        if world.stamina:
+            try:
+                observation_store.record("stamina", world.stamina)
+            except Exception:  # noqa: BLE001
+                pass
 
     def _record_goals(self, world: WorldState):
         """Discover this frame's goals, persist the board, and hand them back.
@@ -1050,6 +1065,23 @@ class LiveRuntime:
                 # the escalation read as "V2 saw something it could not read"
                 # with nothing to look at.
                 after_path = refresh_path
+            if (
+                not verification.ok
+                and decision.skill == "CLAIM_FREE_STAMINA"
+                and verification.reason == "FREE_STAMINA_CLAIM_NOT_PROVEN"
+                and self.stamina_supply is not None
+            ):
+                # A negative result, and the only place it can be observed: the tap
+                # was sent and the panel came back identical.  Measured live
+                # 2026-09-19T05:17Z with a bounded probe (``tools/probe_power_route.py
+                # --tap 581,383 --leave``): the 领取 control is still drawn and still
+                # matches its template at distance 0, the tap changes nothing, and one
+                # Back lands on MAP.  The run ends here (a failed verifier always does),
+                # so the memory has to outlive this interpreter or the next cycle
+                # re-decides the same dead tap -- which is what the whole agent did for
+                # eight consecutive runs across four goals.
+                self.stamina_supply.record_claim_refused()
+                self.brain.free_stamina_claim_cooling = True
             step_goal = self._step_goal(best_goal)
             self._record_episode(
                 decision=tick.decision, before=before, execution=tick.execution,

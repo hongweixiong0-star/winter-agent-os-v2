@@ -46,6 +46,11 @@ DEFAULT_TTL_SECONDS: dict[str, int] = {
     "research": 30 * 60,
     "building": 30 * 60,
     "intel": 20 * 60,
+    # The HUD gauge, short because it moves: measured 2026-09-19 it fell 10-15 per intel mission
+    # and regenerated about 1 per minute, so a ten-minute-old reading can be ~10 out.  It is only
+    # used when the current frame cannot read the gauge at all, and the goal carries `reused` so
+    # the difference is visible -- a stale number must never be presented as a fresh one.
+    "stamina": 10 * 60,
 }
 FALLBACK_TTL_SECONDS = 30 * 60
 

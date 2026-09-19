@@ -379,12 +379,32 @@ class GoalLibrary:
                 evidence={"status": intel_status},
                 distance=0.0 if complete else 1.0,
             ))
-        stamina = _optional_int(world.stamina.get("current") if world.stamina else world.intel.get("stamina"))
+        # Stamina is a HUD reading, not a page, so it is absent from every frame that is not the
+        # map or the intel board -- and the goal simply vanished with it.  Measured live
+        # 2026-09-19 on a healthy run: `snapshot.stamina = None` and the Goal Board carried no
+        # AVOID_STAMINA_WASTE row at all, so the operator's "stamina above 30 means keep spending
+        # until it is below 30" could not be scheduled: the scheduler had nothing to prioritise.
+        #
+        # The last still-fresh reading is used instead, exactly as the routines use theirs, and the
+        # value is labelled `reused` so a reader can tell a reading taken now from one taken a few
+        # minutes ago.  A *stale* reading is not reused: claiming stamina from an old frame would
+        # be the same mistake in the other direction, and the goal can be emitted again as soon as
+        # any frame carries the gauge.
+        stamina = _optional_int((world.stamina or {}).get("current"))
+        stamina_from_store = False
+        if stamina is None:
+            stored_stamina = (observations or {}).get("stamina") or {}
+            if not stored_stamina.get("overdue", True):
+                stamina = _optional_int((stored_stamina.get("reading") or {}).get("current"))
+                stamina_from_store = stamina is not None
+        if stamina is None:
+            stamina = _optional_int(world.intel.get("stamina"))
         if stamina is not None:
             goals.append(GoalState(
                 "AVOID_STAMINA_WASTE", GoalStatus.READY if stamina > 30 else GoalStatus.COMPLETE,
                 completion=1.0 if stamina <= 30 else 0.0, reward_value=100, daily_loss=max(0, stamina - 30) * 5,
-                available_skills=("INTEL_CLAIM_REWARDS", "BEAST_HUNT"), evidence={"current": stamina, "threshold": 30},
+                available_skills=("INTEL_CLAIM_REWARDS", "BEAST_HUNT"),
+                evidence={"current": stamina, "threshold": 30, "reused": stamina_from_store},
                 # Stamina still above the floor is exactly the work left to do, and
                 # it is what makes a beast kill progress while a map pan does not.
                 distance=float(max(0, stamina - 30)),
