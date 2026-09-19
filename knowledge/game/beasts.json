@@ -150,7 +150,9 @@
    "last_verified": null,
    "confidence": 0.5,
    "status": "UNVERIFIED",
-   "notes": "Name and level read off the client on 2026-09-19: the label 霜鳞避役 at 0.89 confidence and the badge 20 at 1.00 beside it, on stamina_verify2_step_001_before_20260919T144336706139.png (kept in dataset/raw/live_runtime/stamina_verify2).  Everything else is UNKNOWN on purpose -- recommended power and the stamina cost decide whether a march is dispatched, and neither has been observed, so neither is guessed.  Registering the name is what lets the label read name this animal at all; it does not make it dispatchable, which additionally needs a visible_target token and a verifier that accepts the species."
+   "notes": "Name and level read off the client on 2026-09-19: the label 霜鳞避役 at 0.89 confidence and the badge 20 at 1.00 beside it, on stamina_verify2_step_001_before_20260919T144336706139.png (kept in dataset/raw/live_runtime/stamina_verify2).  Everything else is UNKNOWN on purpose -- recommended power and the stamina cost decide whether a march is dispatched, and neither has been observed, so neither is guessed.  Registering the name is what lets the label read name this animal at all; it does not make it dispatchable, which additionally needs a visible_target token and a verifier that accepts the species.  dispatchable is stated as false rather than left to be inferred: nothing about this species has been verified beyond its name and level, and an explicit false is what keeps a future wiring of the label read from spending stamina on an unmeasured target.",
+   "species": "FROST_SCALED_RUNNER",
+   "dispatchable": false
   }
  ]
 }
