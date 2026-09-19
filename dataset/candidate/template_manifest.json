@@ -1,5 +1,5 @@
 {
-  "count": 400,
+  "count": 403,
   "generated_at": "2026-09-17T03:21:58.339975+00:00",
   "records": [
     {
@@ -6989,201 +6989,265 @@
       "width": 86
     },
     {
-      "semantic": "BTN_OPEN_DAILY",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_entry_20260916\\btn_open_daily__live_20260916_home.png",
-      "roi_norm": {
-        "x_norm": 0.016667,
-        "y_norm": 0.801562,
-        "w_norm": 0.052778,
-        "h_norm": 0.045312
-      },
-      "source": "live_20260916T131040Z/live_runtime_step_002_before",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
+      "height": 58,
+      "note": "left 2/3 of the city daily-entry icon (scroll + quill), badge excluded so one record covers the claimable and claimed states; old 2026-09-08 record kept for the frames it still covers",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T131040296670.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.045312,
+        "w_norm": 0.052778,
+        "x_norm": 0.016667,
+        "y_norm": 0.801562
+      },
+      "semantic": "BTN_OPEN_DAILY",
+      "source": "live_20260916T131040Z/live_runtime_step_002_before",
       "status": "CANDIDATE",
       "template_id": "btn_open_daily_current_20260916",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T131040296670.png",
-      "width": 38,
-      "height": 58,
-      "note": "left 2/3 of the city daily-entry icon (scroll + quill), badge excluded so one record covers the claimable and claimed states; old 2026-09-08 record kept for the frames it still covers"
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_entry_20260916\\btn_open_daily__live_20260916_home.png",
+      "width": 38
     },
     {
-      "semantic": "BTN_DAILY_TAB_TASKS",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_tab_20260916\\btn_daily_tab_tasks__live_20260916.png",
-      "roi_norm": {
-        "x_norm": 0.668056,
-        "y_norm": 0.852344,
-        "w_norm": 0.2625,
-        "h_norm": 0.064062
-      },
-      "source": "daily_tasks_tab_20260916/01_before_20260916_134609.png",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
+      "height": 82,
+      "note": "the 每日任务 tab drawn UNSELECTED (dark blue pill) -- this is the tap target of SELECT_DAILY_TAB, taken while the panel sat on 章节任务",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\daily_tasks_tab_20260916\\01_before_20260916_134609.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.064062,
+        "w_norm": 0.2625,
+        "x_norm": 0.668056,
+        "y_norm": 0.852344
+      },
+      "semantic": "BTN_DAILY_TAB_TASKS",
+      "source": "daily_tasks_tab_20260916/01_before_20260916_134609.png",
       "status": "CANDIDATE",
       "template_id": "btn_daily_tab_tasks_unselected_20260916",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\daily_tasks_tab_20260916\\01_before_20260916_134609.png",
-      "width": 189,
-      "height": 82,
-      "note": "the 每日任务 tab drawn UNSELECTED (dark blue pill) -- this is the tap target of SELECT_DAILY_TAB, taken while the panel sat on 章节任务"
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_tab_20260916\\btn_daily_tab_tasks__live_20260916.png",
+      "width": 189
     },
     {
-      "semantic": "TAB_DAILY_TASKS_SELECTED",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_tab_20260916\\tab_daily_tasks_selected__live_20260916.png",
-      "roi_norm": {
-        "x_norm": 0.668056,
-        "y_norm": 0.852344,
-        "w_norm": 0.2625,
-        "h_norm": 0.064062
-      },
-      "source": "daily_tasks_tab_20260916/02_after_tap_20260916_134609.png",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
+      "height": 82,
+      "note": "the same tab drawn SELECTED (light pill, dark label) -- the drawn state the verifier reads, one tap after the frame above",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\daily_tasks_tab_20260916\\02_after_tap_20260916_134609.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.064062,
+        "w_norm": 0.2625,
+        "x_norm": 0.668056,
+        "y_norm": 0.852344
+      },
+      "semantic": "TAB_DAILY_TASKS_SELECTED",
+      "source": "daily_tasks_tab_20260916/02_after_tap_20260916_134609.png",
       "status": "CANDIDATE",
       "template_id": "tab_daily_tasks_selected_20260916",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\daily_tasks_tab_20260916\\02_after_tap_20260916_134609.png",
-      "width": 189,
-      "height": 82,
-      "note": "the same tab drawn SELECTED (light pill, dark label) -- the drawn state the verifier reads, one tap after the frame above"
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\daily_tab_20260916\\tab_daily_tasks_selected__live_20260916.png",
+      "width": 189
     },
     {
-      "semantic": "POPUP_POWER_OVERVIEW",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\popup_power_overview__live_20260917_titlebar.png",
-      "roi_norm": {
-        "x_norm": 0.027778,
-        "y_norm": 0.095312,
-        "w_norm": 0.944444,
-        "h_norm": 0.059375
-      },
-      "source": "power_route_20260917",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "popup_power_overview__live_20260917_titlebar",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_01_after_tap_115_72.png",
-      "width": 680,
+      "evidence": "power_route_20260917/build_route_..._01_after_tap_115_72.png",
       "height": 76,
       "note": "title bar strip of the 加成总览 panel (title + close button).  The body is deliberately excluded: it lists 部队实力/建筑实力/... with the account's numbers, which is the defect the power entry had.",
-      "evidence": "power_route_20260917/build_route_..._01_after_tap_115_72.png"
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_01_after_tap_115_72.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.059375,
+        "w_norm": 0.944444,
+        "x_norm": 0.027778,
+        "y_norm": 0.095312
+      },
+      "semantic": "POPUP_POWER_OVERVIEW",
+      "source": "power_route_20260917",
+      "status": "CANDIDATE",
+      "template_id": "popup_power_overview__live_20260917_titlebar",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\popup_power_overview__live_20260917_titlebar.png",
+      "width": 680
     },
     {
-      "semantic": "BTN_OPEN_POWER_DETAILS",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\btn_open_power_details__live_20260917.png",
-      "roi_norm": {
-        "x_norm": 0.377778,
-        "y_norm": 0.496875,
-        "w_norm": 0.244444,
-        "h_norm": 0.038281
-      },
-      "source": "power_route_20260917",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "btn_open_power_details__live_20260917",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_01_after_tap_115_72.png",
-      "width": 176,
+      "evidence": "power_route_20260917/build_route_..._01_after_tap_115_72.png",
       "height": 49,
       "note": "the blue 实力详情 button at the bottom of the 加成总览 panel (OCR: 277..443 x 641..680)",
-      "evidence": "power_route_20260917/build_route_..._01_after_tap_115_72.png"
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_01_after_tap_115_72.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.038281,
+        "w_norm": 0.244444,
+        "x_norm": 0.377778,
+        "y_norm": 0.496875
+      },
+      "semantic": "BTN_OPEN_POWER_DETAILS",
+      "source": "power_route_20260917",
+      "status": "CANDIDATE",
+      "template_id": "btn_open_power_details__live_20260917",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\btn_open_power_details__live_20260917.png",
+      "width": 176
     },
     {
-      "semantic": "POPUP_POWER_DETAILS",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\popup_power_details__live_20260917_titlebar.png",
-      "roi_norm": {
-        "x_norm": 0.027778,
-        "y_norm": 0.192188,
-        "w_norm": 0.944444,
-        "h_norm": 0.059375
-      },
-      "source": "power_route_20260917",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "popup_power_details__live_20260917_titlebar",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_02_after_tap_360_660.png",
-      "width": 680,
+      "evidence": "power_route_20260917/build_route_..._02_after_tap_360_660.png",
       "height": 76,
       "note": "title bar strip of the 实力详情 panel (title + close button).  The body holds the per-category numbers and must not be in the crop.",
-      "evidence": "power_route_20260917/build_route_..._02_after_tap_360_660.png"
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_02_after_tap_360_660.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.059375,
+        "w_norm": 0.944444,
+        "x_norm": 0.027778,
+        "y_norm": 0.192188
+      },
+      "semantic": "POPUP_POWER_DETAILS",
+      "source": "power_route_20260917",
+      "status": "CANDIDATE",
+      "template_id": "popup_power_details__live_20260917_titlebar",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\popup_power_details__live_20260917_titlebar.png",
+      "width": 680
     },
     {
-      "semantic": "BTN_POWER_TROOP_IMPROVE",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\btn_power_troop_improve__live_20260917_five_rows.png",
-      "roi_norm": {
-        "x_norm": 0.781944,
-        "y_norm": 0.488281,
-        "w_norm": 0.118056,
-        "h_norm": 0.044531
-      },
-      "source": "power_route_20260917",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "btn_power_troop_improve__live_20260917_five_rows",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_02_after_tap_360_660.png",
-      "width": 85,
+      "evidence": "power_route_20260917/build_route_..._02_after_tap_360_660.png",
       "height": 57,
       "note": "部队实力's 提升 button (OCR: 569..642 x 631..676).  Registered alongside the 2026-09-08 record rather than replacing it, because the row's y depends on how many categories the account has unlocked -- seven rows on 2026-09-08 (y 538..608) and five today (y 631..676).  The gate below reports which record wins on today's frame; that ROI is also the tap target.",
-      "evidence": "power_route_20260917/build_route_..._02_after_tap_360_660.png"
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\build_route_20260916_233614_02_after_tap_360_660.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.044531,
+        "w_norm": 0.118056,
+        "x_norm": 0.781944,
+        "y_norm": 0.488281
+      },
+      "semantic": "BTN_POWER_TROOP_IMPROVE",
+      "source": "power_route_20260917",
+      "status": "CANDIDATE",
+      "template_id": "btn_power_troop_improve__live_20260917_five_rows",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\btn_power_troop_improve__live_20260917_five_rows.png",
+      "width": 85
     },
     {
-      "semantic": "BTN_OPEN_TRAINING_FROM_CAMP",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\btn_open_training_from_camp__live_20260917_camp_focus.png",
-      "roi_norm": {
-        "x_norm": 0.522222,
-        "y_norm": 0.550781,
-        "w_norm": 0.416667,
-        "h_norm": 0.234375
-      },
-      "source": "power_route_20260917",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "btn_open_training_from_camp__live_20260917_camp_focus",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\power_route_hop3_20260916_233330_01_after_tap_605_653.png",
-      "width": 300,
+      "evidence": "power_route_20260917/power_route_hop3_..._01_after_tap_605_653.png",
       "height": 300,
       "note": "the 训练 button of the focused-camp radial menu, framed so the crop is centred on the button (tap centre (526,855)) while including enough of the fixed ring around it to survive the client's ANIMATED overlay: the button carries a pulsing highlight ring and a tutorial pointing-hand, so a crop of the button alone swung between phash d=12 and d=22 across one run (2026-09-17 07:41Z) and made NAVIGATE_INFANTRY_CAMP burn its full refresh budget (~21 s) to verify -- by which time the overlay had faded and the loop had to re-walk the whole route.  This crop measures 0..8 on all seven frames of that run while plain HOME is 16, the training page 36 and the building panel 26.  The 详情 button is the most stable part of the ring (d=0..2) but it cannot be used as the tap target, and the executor only supports TAP_SEMANTIC -- no coordinate action -- so the tap point has to come from a crop centred on 训练.",
-      "evidence": "power_route_20260917/power_route_hop3_..._01_after_tap_605_653.png"
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\power_route_hop3_20260916_233330_01_after_tap_605_653.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.234375,
+        "w_norm": 0.416667,
+        "x_norm": 0.522222,
+        "y_norm": 0.550781
+      },
+      "semantic": "BTN_OPEN_TRAINING_FROM_CAMP",
+      "source": "power_route_20260917",
+      "status": "CANDIDATE",
+      "template_id": "btn_open_training_from_camp__live_20260917_camp_focus",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\power_route_20260917\\btn_open_training_from_camp__live_20260917_camp_focus.png",
+      "width": 300
     },
     {
-      "semantic": "BTN_POWER_RESEARCH_IMPROVE",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\research_route_20260917\\btn_power_research_improve__live_20260917.png",
-      "roi_norm": {
-        "x_norm": 0.781944,
-        "y_norm": 0.730469,
-        "w_norm": 0.118056,
-        "h_norm": 0.044531
-      },
-      "source": "research_route_20260917",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "btn_power_research_improve__live_20260917",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\research_route_20260917_031529_02_after_tap_360_660.png",
-      "width": 85,
+      "evidence": "power_route_20260917/research_route_..._02_after_tap_360_660.png",
       "height": 57,
       "note": "科技实力's row 提升 button (OCR-measured at 569..643 x 941..986; the crop's centre is 605,963, inside the button).  Value-independent: the row's numbers sit at x <= 366, left of this crop.  Like the 部队实力 record, the row's y depends on how many categories the account has unlocked, and 科技实力 is the LAST row, so a new category above it shifts this button down.",
-      "evidence": "power_route_20260917/research_route_..._02_after_tap_360_660.png"
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\research_route_20260917_031529_02_after_tap_360_660.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.044531,
+        "w_norm": 0.118056,
+        "x_norm": 0.781944,
+        "y_norm": 0.730469
+      },
+      "semantic": "BTN_POWER_RESEARCH_IMPROVE",
+      "source": "research_route_20260917",
+      "status": "CANDIDATE",
+      "template_id": "btn_power_research_improve__live_20260917",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\research_route_20260917\\btn_power_research_improve__live_20260917.png",
+      "width": 85
     },
     {
-      "semantic": "BTN_OPEN_RESEARCH",
-      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\research_route_20260917\\btn_open_research__live_20260917_lab_focus.png",
-      "roi_norm": {
-        "x_norm": 0.427778,
-        "y_norm": 0.553125,
-        "w_norm": 0.472222,
-        "h_norm": 0.265625
-      },
-      "source": "research_route_20260917",
-      "provenance": "LIVE_CLIENT",
       "confidence": 0.99,
-      "status": "CANDIDATE",
-      "template_id": "btn_open_research__live_20260917_lab_focus",
-      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\research_route_20260917_031529_03_after_tap_606_963.png",
-      "width": 340,
+      "evidence": "power_route_20260917/research_route_..._03_after_tap_606_963.png",
       "height": 340,
       "note": "the 研究 button of the focused 科研所 radial menu.  Framed as a 340x340 block CENTRED on the button (478,878) for two reasons: the executor taps the winning record's ROI centre and supports only TAP_SEMANTIC, so the crop has to be centred on the control; and the button carries the same animated tutorial hand the training camp's does, so a tight crop is unstable.  The old records' ROI centre (536,840) is ~65 px right of the control.  Measured on three walks: positives 0/8/8, and the nearest negative (the research page itself, which is where this navigates to) 28.",
-      "evidence": "power_route_20260917/research_route_..._03_after_tap_606_963.png"
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_route_20260917\\research_route_20260917_031529_03_after_tap_606_963.png",
+      "provenance": "LIVE_CLIENT",
+      "roi_norm": {
+        "h_norm": 0.265625,
+        "w_norm": 0.472222,
+        "x_norm": 0.427778,
+        "y_norm": 0.553125
+      },
+      "semantic": "BTN_OPEN_RESEARCH",
+      "source": "research_route_20260917",
+      "status": "CANDIDATE",
+      "template_id": "btn_open_research__live_20260917_lab_focus",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\research_route_20260917\\btn_open_research__live_20260917_lab_focus.png",
+      "width": 340
+    },
+    {
+      "confidence": 0.99,
+      "height": 175,
+      "note": "level-5 猛犸象 sprite on the live world map, 2026-09-18 escalation frame",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\esc_beast_current.png",
+      "parent_sha256": "2cdca49973b3a5fae1c3fe026b2897baac6655f740ae31003c2d653705d40af0",
+      "roi_norm": {
+        "h_norm": 0.13671875,
+        "w_norm": 0.3333333333333333,
+        "x_norm": 0.05555555555555555,
+        "y_norm": 0.140625
+      },
+      "semantic": "TARGET_BEAST_MAMMOTH_5",
+      "source": "LIVE_CLIENT",
+      "status": "CANDIDATE",
+      "template_id": "target_beast_mammoth_5__esc_beast_current__0",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\beast_card_route\\target_beast_mammoth_5__esc_beast_current__0.png",
+      "width": 240
+    },
+    {
+      "confidence": 0.99,
+      "height": 112,
+      "note": "攻击 (10 stamina) control of the world-map beast card, 2026-09-18 probe frame",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\truth_audit\\map_beast_search_20260918\\key\\go_20260918_014947_001_after_382_844.png",
+      "parent_sha256": "400715a864213e8f6dee26f70b3d18f52c1c1d6c5f243d1fbbfee7227ad39ee3",
+      "roi_norm": {
+        "h_norm": 0.0875,
+        "w_norm": 0.3638888888888889,
+        "x_norm": 0.3194444444444444,
+        "y_norm": 0.81875
+      },
+      "semantic": "BTN_BEAST_CARD_ATTACK",
+      "source": "LIVE_CLIENT",
+      "status": "CANDIDATE",
+      "template_id": "btn_beast_card_attack__go_after__0",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\beast_card_route\\btn_beast_card_attack__go_after__0.png",
+      "width": 262
+    },
+    {
+      "confidence": 0.99,
+      "height": 96,
+      "matcher": "ccoeff",
+      "matcher_note": "Search-based: the control moves with the bottom-anchored HUD stack, so the registration ROI cannot double as the search window. Threshold unchanged.",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/live_runtime/spend_handover/spend_handover_step_006_before_20260919T153324863150.png",
+      "parent_sha256": "d00e97eb1182e63830c22481d869b92d318523015e368d639a42fa3e0e2ac75e",
+      "roi_norm": {
+        "h_norm": 0.0531,
+        "w_norm": 0.0958,
+        "x_norm": 0.8736,
+        "y_norm": 0.7203
+      },
+      "search_band": {
+        "h_norm": 0.55,
+        "w_norm": 0.28,
+        "x_norm": 0.72,
+        "y_norm": 0.3
+      },
+      "semantic": "BTN_OPEN_INTEL_WILD_HUD",
+      "source": "LIVE_CLIENT",
+      "status": "CANDIDATE",
+      "template_id": "btn_open_intel_wild_hud__plate_tight__0",
+      "template_path": "E:/无尽冬日智能体/dataset/candidate/intel_wild_entry_v2/btn_open_intel_wild_hud__plate_tight__0.png",
+      "width": 86
     }
   ],
   "schema_version": "1.0",
