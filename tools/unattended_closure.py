@@ -32,13 +32,18 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from winter_agent_v2 import winproc  # noqa: E402
+
 LEDGER = ROOT / "learning/workbuddy_escalations.jsonl"
 EPISODES = ROOT / "learning/episodes.jsonl"
 RELOAD_MARKER = ROOT / "learning/RUNTIME_RELOAD_REQUIRED.json"
@@ -128,9 +133,26 @@ class Chain:
 
 
 def heads() -> list[str]:
+    """The last 40 commits as ``"<sha> <cI>"`` lines, or ``()`` when git cannot run.
+
+    Through the one runner rather than a bare ``subprocess.run``.  This module is not only
+    an operator's terminal tool: ``control_panel`` imports it and calls this on the refresh
+    path that draws the closure card, and the panel runs under a console-less ``pythonw``.
+    A console tool spawned from there without the hidden-window flags makes Windows attach
+    a console to the Git-for-Windows shim, and that launch fails outright -- measured
+    2026-09-19, the operator saw a modal ``[出现错误 2147942632 (0x800700e8)
+    (启动"git log "--format=%h %cI" -40"时)]``, and 0x800700E8 is Win32 error 232
+    ``ERROR_NO_DATA``, "the pipe is being closed".
+
+    The ``OSError`` is absorbed rather than raised -- a guard that crashes cannot be
+    trusted, and a card that raises takes the whole refresh with it -- so the flags are the
+    only thing standing between a failure and silence: without them ``heads()`` returns
+    ``()``, and ``build`` then reports "no commit landed after the submission" over a
+    submission the operator did in fact commit.  ``winproc.run`` is what every other call
+    site in the panel's reach already uses; there is no second runner.
+    """
     try:
-        done = subprocess.run(["git", "log", "--format=%h %cI", "-40"], cwd=str(ROOT),
-                              capture_output=True, text=True, timeout=20, check=False)
+        done = winproc.run(["git", "log", "--format=%h %cI", "-40"], cwd=ROOT, timeout=20)
     except OSError:
         return []
     return [line for line in (done.stdout or "").splitlines() if line.strip()]

@@ -1,0 +1,37 @@
+fix(closure): the panel's git call must run hidden, and the exemption that hid it
+
+The operator pasted a modal Windows box raised from the panel:
+
+  [出现错误 2147942632 (0x800700e8) (启动"git log "--format=%h %cI" -40"时)]
+
+0x800700E8 is Win32 error 232, ERROR_NO_DATA.  That argv appears in exactly one code
+path: `tools/unattended_closure.heads()`, which `tools/control_panel.py` calls on the
+refresh path that draws the closure card.  The window title in the screenshot is the
+Git-for-Windows shim directory, i.e. Windows attached a console to the shim and the
+launch failed outright.  The panel runs under a console-less pythonw, and `heads()` was
+the one call site in the panel's reach that passed neither `creationflags` nor
+`startupinfo`.
+
+The failure is silent by design: `heads()` absorbs the OSError, because a card that
+raises takes the whole refresh with it.  So `heads()` returned `()`, and `build()` then
+reports "no commit landed after the submission" over a submission the operator did
+commit.  The hidden-window flags are the only thing between the call and that silence.
+
+`heads()` now goes through `winproc.run`, which every other call site in the panel's
+reach already uses; there is no second runner.  `subprocess` is no longer imported.
+
+Why `check_wiring` reported `problems: 0` over this: `unattended_closure.py` sat on
+`HUMAN_TERMINAL_TOOLS` as an "operator-run closure ladder".  The exemption rests on the
+premise that an operator runs the tool by hand in a terminal -- and that premise is what
+makes an unhidden console acceptable.  But `control_panel` imports the module and calls
+`heads()` from the refresh path, so the premise was false and the rule went blind
+exactly where it was needed.  The entry is removed, and `reached_tools()` now checks the
+premise instead of assuming it: an exempted tool that other code imports is reported as
+a problem.  Proved to bite -- a temporary file containing the old bare `subprocess.run`
+is flagged by the hidden-process rule, which is also the direct evidence that the
+exemption is what had been hiding this call site.
+
+`tests/test_closure_git_runs_hidden.py` pins the call site, the removed exemption, the
+new rule's ability to fail, and the absorbed-OSError behaviour that makes the flags
+load-bearing.  Reverting both halves of the fix turns 5 of its 8 tests red; the suite is
+green with it.  check_wiring problems: 0.

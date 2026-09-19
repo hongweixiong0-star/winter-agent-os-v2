@@ -273,7 +273,14 @@ def unhidden_process_calls(pkg: Path | None = None,
     skip_files = {p.resolve() for p in strict}
     # ``HumanTerminalTools``: one-shot diagnostics an operator runs by hand in a terminal,
     # where a console is the point.  Every (path, reason) pair is explicit, so adding
-    # another one is a decision rather than a silent exemption.
+    # another one is a decision rather than a silent exemption -- and the reason has to be
+    # *true*: measured 2026-09-19, ``unattended_closure.py`` sat here as an "operator-run
+    # closure ladder" while ``control_panel`` imported it and called ``heads()`` on the
+    # refresh path, so the guard reported ``problems: 0`` over the one call site that was
+    # raising a modal ERROR_NO_DATA (232) dialog from the console-less panel and silently
+    # returning no commits.  It is not on this list any more: a tool the GUI imports is
+    # production code, whatever an operator can also do with it by hand.  ``reached_tools``
+    # below keeps that from being re-decided by accident.
     for name, reason in HUMAN_TERMINAL_TOOLS:
         path = (ROOT / "tools" / name).resolve()
         if path.exists():
@@ -346,10 +353,61 @@ HUMAN_TERMINAL_TOOLS: tuple[tuple[str, str], ...] = (
     ("run_tests_batched.py", "operator-run test runner"),
     ("scan_public_repo.py", "operator-run pre-push gate"),
     ("simulate_new_account.py", "interactive account simulation"),
-    ("unattended_closure.py", "operator-run closure ladder"),
     ("update_workbuddy_handoff.py", "operator-run handoff generator"),
     ("wait_for_known_page.py", "interactive device helper"),
 )
+
+
+def reached_tools(pkg: Path | None = None) -> list[tuple[str, str]]:
+    """Every ``HUMAN_TERMINAL_TOOLS`` entry that other code imports.
+
+    The exemption above rests on one premise -- "an operator runs this by hand in a
+    terminal" -- and that premise is what makes an unhidden console acceptable for it.  The
+    premise therefore has to be *checked*, because its failure is silent in both
+    directions: an exempted tool that the window calls is production code drawing a
+    terminal's privileges, and the guard keeps reporting zero problems while the panel
+    raises dialog boxes at the operator.
+
+    Measured 2026-09-19: ``unattended_closure.py`` was exempt on exactly that premise while
+    ``tools/control_panel.py`` did ``import unattended_closure as closure`` and called
+    ``closure.heads()`` from its refresh path.  That entry is removed rather than
+    re-explained; this check is what stops the next one from being fiction.
+    """
+    stems = {Path(name).stem: name for name, _reason in HUMAN_TERMINAL_TOOLS}
+    if not stems:
+        return []
+    exempt = {(ROOT / "tools" / name).resolve() for name, _reason in HUMAN_TERMINAL_TOOLS}
+    found: list[tuple[str, str]] = []
+    for root in (pkg or PKG, ROOT / "tools"):
+        for path in sorted(root.rglob("*.py")):
+            if path.resolve() in exempt or "__pycache__" in path.parts:
+                continue
+            # A tree copied into the repo by an analyzer's own test is not production code.
+            if any(part.startswith("_pt") for part in path.parts):
+                continue
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+            except (OSError, SyntaxError):
+                continue
+            for node in ast.walk(tree):
+                imported: list[str] = []
+                if isinstance(node, ast.Import):
+                    imported = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    imported = [alias.name for alias in node.names]
+                for name in imported:
+                    leaf = name.rsplit(".", 1)[-1]
+                    if leaf not in stems:
+                        continue
+                    try:
+                        rel = path.relative_to(ROOT).as_posix()
+                    except ValueError:
+                        rel = path.as_posix()
+                    found.append((
+                        f"exempted-tool-imported:{rel}:{node.lineno}",
+                        f"imports {stems[leaf]}, exempted as a human terminal tool -- "
+                        f"a tool the GUI or AUTO executes is not one"))
+    return found
 
 
 def dangling_module_calls(pkg: Path | None = None) -> list[tuple[str, str]]:
@@ -1435,6 +1493,11 @@ def main() -> int:
         print("    ", label, "|", detail)
     check("no unhidden or shell background process in the GUI/AUTO path",
           not unhidden_process_calls())
+
+    for label, detail in reached_tools():
+        print("    ", label, "|", detail)
+    check("no human-terminal exemption is imported by the code",
+          not reached_tools())
 
     print("\n-- dangling module-level call sites --")
     for label, detail in dangling_module_calls():
