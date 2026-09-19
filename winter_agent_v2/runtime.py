@@ -538,6 +538,54 @@ class LiveRuntime:
         except Exception:  # noqa: BLE001 - a broken store means "nothing is fresh", never a crash
             return {}
 
+    def _stored_stamina_value(self) -> int | None:
+        """The stamina this project last believed, from its own observation store."""
+        from . import observation_store
+
+        try:
+            domains = (observation_store.load() or {}).get("domains") or {}
+            reading = (domains.get("stamina") or {}).get("reading") or {}
+            value = reading.get("current")
+            return int(value) if isinstance(value, (int, float)) else None
+        except Exception:  # noqa: BLE001 - a broken store must not stop a run
+            return None
+
+    def _reject_a_dropped_digit(self, world: WorldState) -> WorldState:
+        """Refuse a HUD stamina reading that is the leading digits of the last one.
+
+        The recogniser stops early on the small HUD number -- the frame said 527 and it returned
+        52 -- and a dropped digit reads as "nearly empty" while stamina is plentiful, which is
+        the direction that silently stops ``AVOID_STAMINA_WASTE`` from spending.  The rule and
+        its deliberate narrowness live in :func:`winter_agent_v2.ocr.looks_like_a_dropped_digit`;
+        this is where it is applied, and it is applied to the world the brain and the verifiers
+        read, not only to the copy that gets stored -- a correction that stopped at the ledger
+        would leave the run itself acting on the bad number.
+
+        The value is replaced, not cleared: keeping the last good reading is strictly more
+        informative than "unknown", and the frame still carries ``dropped_digit_suspected`` so
+        the substitution is visible in the evidence rather than looking like a measurement.
+        """
+        from .ocr import looks_like_a_dropped_digit
+
+        stamina = world.stamina or {}
+        current = stamina.get("current")
+        if not isinstance(current, int):
+            return world
+        if current == self._last_stamina_read:
+            return world
+        if looks_like_a_dropped_digit(self._last_stamina_read, current):
+            self._narrate_once(
+                f"stamina {self._last_stamina_read} -> {current} looks like a dropped digit "
+                f"(not a collapse); keeping {self._last_stamina_read} and flagging the frame"
+            )
+            return replace(world, stamina={
+                **stamina,
+                "current": self._last_stamina_read,
+                "dropped_digit_suspected": current,
+            })
+        self._last_stamina_read = current
+        return world
+
     def _record_observations(self, world: WorldState, frame: Path | str | None = None) -> None:
         """Write down what this frame actually read, so the next run need not re-open it.
 
@@ -729,6 +777,10 @@ class LiveRuntime:
         # skill that is not ready, or a candidate pool that is spent), which says nothing about
         # the next cycle.  Without it, yielding would re-pick the same goal forever.
         self._yielded_goals: set[str] = set()
+        # The last stamina the run believes, seeded from the store so a misread in *this* run
+        # can still be judged against what the previous run read.  See
+        # ``_reject_a_dropped_digit``.
+        self._last_stamina_read: int | None = self._stored_stamina_value()
         # Run-scoped: set once a step verifies that a fight has just been
         # dispatched, cleared as soon as a known page is observed again, so it
         # cannot outlive the fight it was armed for.
@@ -788,6 +840,7 @@ class LiveRuntime:
                           march_used=before.march_used, march_max=before.march_max,
                           queues={"building": before.building, "research": before.research, "training": before.training,
                                   "intel": before.intel, "alliance": before.alliance, "events": before.events})
+            before = self._reject_a_dropped_digit(before)
             goals = self._record_goals(before, frame=before_path)
             self._remember_goal_meters(goals)
             best_goal = self.goal_library.best(self._selectable(goals, deferrals))
@@ -912,6 +965,7 @@ class LiveRuntime:
                             recovery_path = self._capture_path(index, "after", suffix="battle_wait")
                             self.device.screenshot(recovery_path)
                             before = self.vision.observe(recovery_path)
+                            before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
                                 recovered = True
@@ -926,6 +980,7 @@ class LiveRuntime:
                             )
                             self.device.screenshot(recovery_path)
                             before = self.vision.observe(recovery_path)
+                            before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
                                 recovered = True
@@ -1135,6 +1190,7 @@ class LiveRuntime:
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
                 after_path = recovery_path
+            after = self._reject_a_dropped_digit(after)
             goals_after = self._record_goals(after, frame=after_path)
             verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
             for refresh in range(1, self.observation_retries + 1):
@@ -1150,6 +1206,7 @@ class LiveRuntime:
                 after = self.vision.observe(refresh_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
+                after = self._reject_a_dropped_digit(after)
                 goals_after = self._record_goals(after, frame=refresh_path)
                 verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
                 # The episode must point at the frame its recorded ``after``

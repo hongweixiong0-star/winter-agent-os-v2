@@ -646,6 +646,39 @@ def read_next_supply_seconds(tokens: tuple[OCRToken, ...]) -> int | None:
     return None
 
 
+def looks_like_a_dropped_digit(previous: int | None, current: int | None) -> bool:
+    """Is ``current`` the leading digits of ``previous``?
+
+    That is the exact signature the HUD recogniser produced on 2026-09-19: the frame said 527
+    and it returned 52, having stopped after the second digit (raw tokens and the frames are in
+    ``dataset/truth_audit/stamina_hud_roi_20260919``).  Widening the ROI fixed the two frames
+    that were measured, but the failure is a property of the recogniser on a small number, so it
+    can come back on a frame nobody has looked at yet.
+
+    Why this is worth a guard rather than a comment: a dropped digit makes a plentiful stamina
+    look nearly empty, and ``AVOID_STAMINA_WASTE`` reads this number to decide whether anything
+    is left to *spend*.  A false low reading therefore stops the spending the goal exists to
+    cause, silently.
+
+    The rule is deliberately narrow, and the narrowness is the point:
+
+    * it only fires when the new value is a strict leading-digit prefix of the old one, which
+      means the apparent change is at least a factor of ten.  Stamina moves in tens per mission
+      and in hundreds for a free gift, so a genuine single-frame collapse of that size is not a
+      thing this account does;
+    * it cannot fire on a *rise* (a free claim goes 382 -> 502, which is no prefix of 382), so
+      the guard can never suppress a real gain;
+    * it does **not** catch the other misread seen the same day, where the last digit is
+      recognised as the wrong digit (527 -> 502).  That one differs by 25, which is
+      indistinguishable from a real change on one frame, and pretending otherwise would be a
+      guard that fires on healthy data.  It stays open, named in the issue ledger.
+    """
+    if previous is None or current is None:
+        return False
+    before, after = str(int(previous)), str(int(current))
+    return len(after) < len(before) and before.startswith(after) and before != after
+
+
 def read_hud_stamina(
     tokens: tuple[OCRToken, ...],
     width: int,
