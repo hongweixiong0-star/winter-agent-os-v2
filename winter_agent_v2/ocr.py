@@ -747,6 +747,44 @@ def level_beside_label(
     return candidates.pop() if len(candidates) == 1 else None
 
 
+def beast_from_its_label(image_path, ocr) -> dict:
+    """The beast the client's own label names, when the table permits dispatching it.
+
+    Measured 2026-09-19: the two sprite templates that were meant to find a beast on the map match
+    nothing on 23 live frames, because they search a patch of bare snow, while the client prints the
+    animal's name beside it (猛犸象 at 0.88, 霜鳞避役 at 0.89) with a level badge at full confidence.
+
+    Published only when the beast table says the target may be dispatched.  An unmeasured species,
+    or a badge that disagrees with the row's level, yields ``{}`` exactly as before -- so this
+    cannot spend stamina on a target nobody has measured.  Nothing here is invented: an unknown
+    label answers ``{}`` rather than being guessed at, because the answer decides whether a march
+    is dispatched.
+    """
+    try:
+        from .beast_targets import is_dispatchable, lookup_by_name, load
+
+        targets = load()
+        if not targets:
+            return {}
+        names = {target.name for target in targets if target.name}
+        tokens = ocr.recognize(image_path, BEAST_LABEL_BAND).tokens
+        name = named_beast_label(tokens, names)
+        if name is None:
+            return {}
+        row = lookup_by_name(name, level_beside_label(tokens), targets)
+        if row is None:
+            return {}
+        beast = {
+            "visible_target": row.species,
+            "level": row.level,
+            "available": True,
+            "source": "BEAST_LABEL",
+        }
+    except Exception:  # noqa: BLE001 - recognition must never take the frame with it
+        return {}
+    return beast if is_dispatchable(beast, targets) else {}
+
+
 def read_hud_stamina(
     tokens: tuple[OCRToken, ...],
     width: int,
@@ -1246,6 +1284,9 @@ class HybridVision:
                     march_used=march_used,
                     march_max=march_max,
                     stamina=stamina,
+                    # Only when the template path found nothing: that path is LIVE_VERIFIED and
+                    # its values are not re-decided here.
+                    beast=dict(primary.beast) or beast_from_its_label(image_path, self.ocr),
                 )
             if (
                 primary.page is Page.EXPLORATION
