@@ -1,0 +1,55 @@
+fix(tests): two suites that had stopped measuring anything
+
+Seven tests were red and had been red for a while.  Neither cause was in the product, and
+neither was visible from the red mark alone -- which is the point: a red test everyone has
+agreed to ignore is where the next real regression hides, and one did get through that way
+earlier in this session.
+
+**Six were a wall-clock time bomb** (``DeferredGoalSchedulingTests``, and
+``EpisodeMeasurementTests`` which reuses its gate).  The fixture anchored the blocked
+path's last attempt at the module-level ``NOW``, a literal instant, intending "tried one
+minute ago, so it must step aside".  ``LiveRuntime`` reads the real clock -- ``runtime.py``
+calls ``blocks()`` without ``now=``, which is correct in production -- so once real time
+passed ``NOW`` by ``BLOCKED_PROBE_MINUTES`` (180), ``_probe_lapsed`` returned True, the
+goal became selectable, and the run recorded **zero** deferrals instead of one.  The
+scenario silently inverted while the assertions stayed put.
+
+The gate itself is correct and was confirmed so: calling ``blocks(goal, now=NOW)``
+directly returns the expected ``Deferral(state='BLOCKED', 'repair budget exhausted')``.
+Only the fixture's anchoring was wrong.  It now derives the instant from a live
+``datetime.now(timezone.utc)``, the way ``test_queue_pump`` already did, so the premise
+holds whenever the suite runs.  No assertion was weakened and no clock abstraction was
+added to production.
+
+**One was an assertion the ladder had moved past.**
+``test_the_same_record_settles_once_an_episode_has_run_the_new_version`` asserted that a
+production episode recorded after the settle certifies the record as DONE.  That is
+exactly the credit the operator removed in ``8c4cf08f`` ("a developed trace can no longer
+be certified by a production success"), which landed *after* this file was last touched:
+for a trace that came from a job, ``reconcile_outcome`` now returns
+``VERSION_ACTIVATION_PENDING`` and routes into VERSION_ACTIVE -> LIVE_VERIFY_PENDING ->
+真机校准 -> LIVE_TRIED -> LIVE_VERIFIED.  Confirmed by dating the two sides
+(``git merge-base --is-ancestor 309f7c6 8c4cf08f``) and by tracing the real call: the
+second reconcile finds 1 episode and returns VERSION_ACTIVATION_PENDING with the reason
+"this trace came from a development job".  The function-level semantics are already
+covered by ``test_no_live_verified_shortcut.py``; this test's remaining value is the
+end-to-end path, so it is renamed to say what it now defends and keeps the boundary that
+still matters -- an episode recorded after the job settled is admitted, the one before it
+is not.
+
+**Still red, and named rather than papered over.**  Three tests in
+``DeferredGoalSchedulingTests`` -- the hop, the narration count, and "the run still plays"
+-- encode the premise "a MAP frame discovers one goal".  That premise is no longer true:
+the sweep/panel-routine expansion added seven goals at priority 180, so a MAP frame now
+discovers 8-9 goals, those outrank ``KEEP_MARCHES_PRODUCTIVE`` (70), and the fixtures pass
+``allowed_skills=GATHER_ROUTE``, which cannot execute them.  ``runtime.py:875`` then stops
+the run with ``SKILL_NOT_ENABLED_FOR_LIVE_LOOP`` and issues no action, which is what the
+tests observe.
+
+Production is not affected -- ``allowed_skills`` is passed only by tests and dev probes,
+so production gets ``allowed = VERIFIED_ATOMIC`` -- and the latent trap behind it
+(selection does not consult ``allowed``, so a route-scoped run can be handed work it
+cannot do and then die rather than fall through) is recorded as an open item.  Deciding
+which class of work should win on a map is a scheduling-policy question, not a test
+repair, so it is left for the operator instead of being settled inside a green-tick
+commit.

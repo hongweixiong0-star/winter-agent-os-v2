@@ -542,7 +542,14 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
             "compositions": {"AVOID_STAMINA_WASTE": GoalComposition(
                 "AVOID_STAMINA_WASTE", "ANY_OF", ("SPEND_STAMINA_ON_BEAST",))},
             "capabilities": {"SPEND_STAMINA_ON_BEAST": (BLOCKED, "repair budget exhausted", None)},
-            "streaks": {"AVOID_STAMINA_WASTE": (58, NOW - timedelta(minutes=1), "SCAN_MAP_FOR_BEAST")},
+            # Anchored to the live clock, not to the module-level ``NOW``: ``LiveRuntime``
+            # reads real time (runtime.py calls ``blocks()`` without ``now=``), so a
+            # literal instant drifts past BLOCKED_PROBE_MINUTES and the goal silently
+            # stops being deferred.  "One minute ago" is inside the window whenever the
+            # suite runs.
+            "streaks": {"AVOID_STAMINA_WASTE": (
+                58, datetime.now(timezone.utc) - timedelta(minutes=1),
+                "SCAN_MAP_FOR_BEAST")},
             "attempted": {"AVOID_STAMINA_WASTE": frozenset({"SCAN_MAP_FOR_BEAST"})},
             "reached": {"AVOID_STAMINA_WASTE": frozenset({"SPEND_STAMINA_ON_BEAST"})},
         }

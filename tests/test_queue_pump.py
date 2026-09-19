@@ -311,7 +311,24 @@ class VersionActivationTest(unittest.TestCase):
         finally:
             harness.cleanup()
 
-    def test_the_same_record_settles_once_an_episode_has_run_the_new_version(self):
+    def test_a_developed_trace_waits_for_validation_instead_of_settling(self):
+        """The shortcut this test used to encode was closed by the operator.
+
+        Renamed from ``..._settles_once_an_episode_has_run_the_new_version``.  The old name
+        asserted that a production episode recorded after the settle *settles* the record, and
+        that is precisely the credit the operator removed in ``8c4cf08f`` ("a developed trace can
+        no longer be certified by a production success"): the episode proves the capability works
+        on the tree it ran, not on the version the job produced, and it would exist even if the
+        agent had done nothing.  That commit landed *after* this file was last touched, so the
+        code began returning ``VERSION_ACTIVATION_PENDING`` here while the assertion kept saying
+        ``DONE`` -- and it has been red ever since.  A red test everyone has agreed to ignore is
+        where the next real regression hides, which is how the last one got through.
+
+        The boundary this test is actually for is kept, and it is the one the sibling below
+        measures from the other side: an episode recorded *after* the job settled is admitted and
+        returned as evidence, while the same episode recorded *before* it is not.  What changed is
+        only where the record lands -- into the activation ladder, not at a verdict.
+        """
         harness = self._harness()
         try:
             harness.adapter.reconcile(now=datetime.now(timezone.utc))
@@ -323,8 +340,13 @@ class VersionActivationTest(unittest.TestCase):
             harness.adapter.reconcile(now=datetime.now(timezone.utc))
 
             record = harness.ledger.snapshot().get("CAP|UI|SKILL")
-            self.assertEqual(record.state, q.DONE)
-            self.assertEqual(record.outcome, q.LIVE_VERIFIED)
+            # Routed into the ladder, not certified: VERSION_ACTIVE -> LIVE_VERIFY_PENDING ->
+            # Development Validation -> LIVE_TRIED -> LIVE_VERIFIED.
+            self.assertEqual(record.outcome, q.VERSION_ACTIVATION_PENDING)
+            self.assertEqual(record.state, q.LIVE_VERIFY_PENDING)
+            self.assertNotEqual(record.state, q.DONE)
+            # Waiting for a validation cycle is not a failure, so it may not spend a repair shot.
+            self.assertEqual(record.repairs_used, 0)
         finally:
             harness.cleanup()
 
