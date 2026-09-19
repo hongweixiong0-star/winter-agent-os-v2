@@ -482,7 +482,7 @@ class LiveRuntime:
         except Exception:  # noqa: BLE001 - a broken store means "nothing is fresh", never a crash
             return {}
 
-    def _record_observations(self, world: WorldState) -> None:
+    def _record_observations(self, world: WorldState, frame: Path | str | None = None) -> None:
         """Write down what this frame actually read, so the next run need not re-open it.
 
         Only the panel domains are recorded, and an empty reading is recorded too on purpose:
@@ -490,6 +490,11 @@ class LiveRuntime:
         never-visited and gets opened again on the very next run.  A frame that did not touch
         a panel must not overwrite that panel's record, which is why this writes only the
         domains this WorldState carries.
+
+        ``frame`` is passed to the store so every reading keeps a pointer to the picture it came
+        from.  It matters most for the readings that outlive their frame: the stamina goal reads
+        the store when the HUD gauge is off screen, so a wrong number there is not merely a stale
+        cell on a board -- it decides whether the goal believes there is anything left to spend.
         """
         from . import observation_store
         from .goal_library import PANEL_ROUTINES, SWEEP_ROUTINES
@@ -498,7 +503,7 @@ class LiveRuntime:
             reading = getattr(world, routine.field, None)
             if reading:
                 try:
-                    observation_store.record(routine.field, reading)
+                    observation_store.record(routine.field, reading, frame=frame)
                 except Exception:  # noqa: BLE001 - observing must never fail a run
                     pass
         # The HUD gauge is read on many frames but is a *domain* like the others: the stamina goal
@@ -506,11 +511,11 @@ class LiveRuntime:
         # produced it or the goal disappears from the board whenever the gauge is off screen.
         if world.stamina:
             try:
-                observation_store.record("stamina", world.stamina)
+                observation_store.record("stamina", world.stamina, frame=frame)
             except Exception:  # noqa: BLE001
                 pass
 
-    def _record_goals(self, world: WorldState):
+    def _record_goals(self, world: WorldState, frame: Path | str | None = None):
         """Discover this frame's goals, persist the board, and hand them back.
 
         Returning them is what makes goal progress measurable: the caller compares
@@ -521,7 +526,7 @@ class LiveRuntime:
         hand IS the observation, so a second call site that discovered again from the same
         world would only be a second chance for the two answers to disagree.
         """
-        self._record_observations(world)
+        self._record_observations(world, frame=frame)
         goals = self.goal_library.discover(world, observations=self._observations_for_engine())
         if self.goal_store is None:
             return goals
@@ -722,7 +727,7 @@ class LiveRuntime:
                           march_used=before.march_used, march_max=before.march_max,
                           queues={"building": before.building, "research": before.research, "training": before.training,
                                   "intel": before.intel, "alliance": before.alliance, "events": before.events})
-            goals = self._record_goals(before)
+            goals = self._record_goals(before, frame=before_path)
             self._remember_goal_meters(goals)
             best_goal = self.goal_library.best(self._selectable(goals, deferrals))
             if best_goal is not None:
@@ -846,7 +851,7 @@ class LiveRuntime:
                             recovery_path = self._capture_path(index, "after", suffix="battle_wait")
                             self.device.screenshot(recovery_path)
                             before = self.vision.observe(recovery_path)
-                            self._record_goals(before)
+                            self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
                                 recovered = True
                                 break
@@ -860,7 +865,7 @@ class LiveRuntime:
                             )
                             self.device.screenshot(recovery_path)
                             before = self.vision.observe(recovery_path)
-                            self._record_goals(before)
+                            self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
                                 recovered = True
                                 break
@@ -1051,7 +1056,7 @@ class LiveRuntime:
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
                 after_path = recovery_path
-            goals_after = self._record_goals(after)
+            goals_after = self._record_goals(after, frame=after_path)
             verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
             for refresh in range(1, self.observation_retries + 1):
                 # A known page can still be an intermediate animation/frame.
@@ -1066,7 +1071,7 @@ class LiveRuntime:
                 after = self.vision.observe(refresh_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
-                goals_after = self._record_goals(after)
+                goals_after = self._record_goals(after, frame=refresh_path)
                 verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
                 # The episode must point at the frame its recorded ``after``
                 # state was actually read from.  ``after_path`` used to stay on

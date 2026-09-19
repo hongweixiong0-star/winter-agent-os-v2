@@ -170,12 +170,23 @@ def record(
     *,
     now: datetime | None = None,
     path: Path | str | None = None,
+    frame: Path | str | None = None,
 ) -> None:
     """Write one domain's reading.  Never raises: an observation must not fail a run.
 
     An empty reading is still recorded, and that is deliberate: "we looked and the panel said
     nothing" is information -- without it the domain looks never-visited and gets opened again
     on the very next run.
+
+    ``frame`` is the picture the reading was taken from, and it is the difference between a
+    measurement and a claim.  Measured 2026-09-19: the store held ``stamina.current = 0`` for a
+    window in which no frame was saved and no episode was recorded, because the run that read it
+    observed a frame and then stopped without executing a step -- so there was nothing to
+    cross-check the reading against, and "stamina is zero" could be neither confirmed nor
+    refused from the artifacts.  A reading that cannot be traced to a picture cannot be audited,
+    and ``AVOID_STAMINA_WASTE`` reads this number to decide whether there is anything left to
+    spend.  Record the frame whenever the caller has one; absent means "the caller had none",
+    not "there was none".
     """
     source = Path(path) if path is not None else STATE_PATH
     moment = now or datetime.now(timezone.utc)
@@ -187,10 +198,13 @@ def record(
         payload = {}
     domains = payload.get("domains")
     domains = dict(domains) if isinstance(domains, Mapping) else {}
-    domains[str(domain)] = {
+    entry: dict[str, Any] = {
         "checked_at": moment.isoformat(),
         "reading": dict(reading or {}),
     }
+    if frame is not None:
+        entry["frame"] = str(frame)
+    domains[str(domain)] = entry
     try:
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_text(

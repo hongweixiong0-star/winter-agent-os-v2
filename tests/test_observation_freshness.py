@@ -213,3 +213,63 @@ def test_an_overdue_reading_is_not_reused_as_state():
     assert goal.evidence["overdue"] is True
     assert goal.evidence["reused"] is False
     assert goal.evidence["reading"] == {"status": "CLAIMED"}, "kept as evidence, not as state"
+
+
+def test_a_reading_keeps_the_frame_it_was_taken_from():
+    """A reading that cannot be traced to a picture cannot be audited.
+
+    Measured 2026-09-19: the store held ``stamina.current = 0`` for a window in which no frame
+    had been saved and no episode had been recorded, because the run that read it observed a
+    frame and then stopped without executing a step.  So "stamina is zero" could be neither
+    confirmed nor refused from the artifacts -- and ``AVOID_STAMINA_WASTE`` reads that number to
+    decide whether anything is left to spend, which makes an unauditable reading here a way for
+    the goal to look satisfied while nothing has been spent.
+    """
+    import json
+    from tempfile import TemporaryDirectory
+
+    from winter_agent_v2 import observation_store
+
+    with TemporaryDirectory() as temp:
+        path = Path(temp) / "observation_state.json"
+        frame = Path(temp) / "step_001_before.png"
+        observation_store.record("stamina", {"current": 0, "max": 200}, path=path, frame=frame)
+
+        entry = json.loads(path.read_text(encoding="utf-8"))["domains"]["stamina"]
+        assert entry["frame"] == str(frame), "the reading must name its own evidence"
+        assert entry["reading"]["current"] == 0
+
+        # A caller with no frame records no pointer rather than inventing one.
+        observation_store.record("mail", {"status": "CLAIMED"}, path=path)
+        entry = json.loads(path.read_text(encoding="utf-8"))["domains"]["mail"]
+        assert "frame" not in entry, "absent means the caller had none, not that one was made up"
+
+
+def test_a_reading_without_a_frame_gains_no_invented_provenance():
+    """``checked_at`` is when the reading was written; ``frame`` is what it was read from.
+
+    If the two were ever derived from each other, a re-stamped stale reading would look as fresh
+    as a real one -- which is the failure the pointer exists to make visible.
+    """
+    import json
+    from tempfile import TemporaryDirectory
+
+    from winter_agent_v2 import observation_store
+
+    with TemporaryDirectory() as temp:
+        path = Path(temp) / "observation_state.json"
+        observation_store.record("intel", {"pins": 5}, path=path)
+        entry = json.loads(path.read_text(encoding="utf-8"))["domains"]["intel"]
+        assert set(entry) == {"checked_at", "reading"}, f"got {sorted(entry)}"
+
+
+def test_the_runtime_threads_the_frame_into_every_observation_write():
+    """A pointer that is never filled is the same as not having one."""
+    import re
+
+    source = (Path(__file__).resolve().parents[1] / "winter_agent_v2/runtime.py").read_text(
+        encoding="utf-8")
+    calls = re.findall(r"self\._record_goals\((before|after)([^)]*)\)", source)
+    assert len(calls) >= 5, f"the call sites moved; this guard needs updating (found {len(calls)})"
+    missing = [f"_record_goals({world}{rest})" for world, rest in calls if "frame=" not in rest]
+    assert not missing, f"observation writes with no frame pointer: {missing}"

@@ -1,0 +1,36 @@
+fix(evidence): a reading must name the frame it was taken from
+
+Every observation the runtime writes now carries the picture it was read from, and a test
+fails if a new call site forgets it.
+
+Measured 2026-09-19, and the reason this is not cosmetic.  The store held
+
+    stamina: {current: 0, max: 200, source: STAMINA_PANEL}   checked_at 13:47:50Z
+
+while, in the two hours before it, nothing spent any stamina at all -- 11 `OPEN_INTEL` and
+zero beast dispatches, zero intel missions -- and the last frame anyone can actually read
+(19:42 local, `..._step_003_before_...png`) says **547/200**.  There was no frame for that
+timestamp: the run observed a frame, wrote its observations, and stopped without executing a
+step, so no episode and no picture were kept.  "Stamina is zero" could therefore be neither
+confirmed nor refused from the artifacts, and I am not willing to call the operator's
+acceptance condition met on a number I cannot show a picture for.
+
+It matters beyond bookkeeping: `AVOID_STAMINA_WASTE` reads this store when the HUD gauge is
+off screen, and the goal exists to get the number *down*.  A reading that says 0 while the
+real value is 547 makes the goal look satisfied and stops the spending -- a false completion
+produced by an unauditable cell, which is the exact failure mode this project forbids.
+
+`observation_store.record()` gains ``frame=`` and stores it; `_record_observations` and
+`_record_goals` thread it through, and all five call sites pass the frame variable already in
+scope there (``before_path`` / ``recovery_path`` / ``after_path`` / ``refresh_path``).  A
+caller with no frame records no pointer rather than inventing one, and the pointer is never
+derived from the clock -- ``checked_at`` says when the reading was written, ``frame`` says
+what it was read from, and conflating them is what let a stale value look fresh.
+
+Tests: the pointer round-trips; an absent frame leaves no invented provenance; the runtime
+threads a frame into every observation write (proved to bite -- removing one ``frame=`` turns
+it red); and a caller cannot add a field the reading did not have.
+
+Not fixed here, named instead: *why* the panel read 0/200 is still unknown, and with the
+frame gone it cannot be recovered after the fact.  The next such reading will carry its
+picture, and then the vision layer can be measured against it instead of guessed at.
