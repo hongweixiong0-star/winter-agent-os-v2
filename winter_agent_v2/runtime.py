@@ -687,9 +687,16 @@ class LiveRuntime:
                     self._printed_deferrals.add(item.describe())
                     print(f"[schedule] deferred {item.describe()}", flush=True)
             if self.brain.current_goal is None and best_goal is not None:
+                # The one place a goal id becomes a brain route.  A goal that is missing here
+                # is not "handled elsewhere" -- it is scheduled, given no route, and quietly
+                # does nothing, which is how four panel routines stayed invisible while their
+                # capabilities worked.  Each entry maps to a route ``RuleBrain`` already has,
+                # including the MAP -> panel hop that makes an unread routine observable.
                 self.brain.current_goal = {
                     "CLEAR_INTEL": "INTEL", "AVOID_STAMINA_WASTE": "BEAST_HUNT",
                     "KEEP_TRAINING_PRODUCTIVE": "TRAIN", "KEEP_RESEARCH_PRODUCTIVE": "RESEARCH",
+                    "MAIL_ROUTINE": "MAIL", "DAILY_ACTIVITY_TARGET": "DAILY",
+                    "ALLIANCE_ROUTINE": "ALLIANCE", "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
                 }.get(best_goal.goal_id)
             if before.page in {Page.MAINTENANCE, Page.LOADING}:
                 # Environmental states resolve on the game's own schedule. The

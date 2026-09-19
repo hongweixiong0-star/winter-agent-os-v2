@@ -71,6 +71,139 @@ def deadline_pressure(seconds: int | None) -> float:
     return 100.0
 
 
+@dataclass(frozen=True)
+class PanelRoutine:
+    """A daily panel whose own reading decides whether there is work on it.
+
+    These four goals were defined in ``goal_capability_map.json`` and **impossible to emit**:
+    ``discover()`` had no branch for them, so the scheduler never chose to open the panel and
+    the Goal Board showed them as 未读取 for ever.  Meanwhile the whole capability already
+    existed -- vision reads ``Page.MAIL`` / ``Page.DAILY`` / ``Page.ALLIANCE`` /
+    ``Page.EXPLORATION`` into these very fields, the brain has a page route and a MAP->panel
+    route for each, and every skill involved is registered with a bound verifier.  What was
+    missing was the entry point, not the ability.
+
+    ``work`` and ``done`` are the page's own ``status`` words, copied from what vision writes,
+    never invented.  A reading this table does not recognise is reported UNKNOWN, which is a
+    capability gap -- distinct from having no reading at all (operator §6).
+    """
+
+    goal_id: str
+    field: str
+    work: tuple[str, ...]
+    done: tuple[str, ...]
+    work_skills: tuple[str, ...]
+    entry_skill: str
+    #: Small on purpose.  An unread routine must be *schedulable* (so it gets looked at) but
+    #: must never outrank real work: measured 2615 for the stamina goal and 70 for gathering,
+    #: against this 20.  So it is picked when nothing better is owed -- which is exactly the
+    #: bounded observation sweep the operator asked for, expressed as priority rather than as
+    #: a second scheduler.
+    discovery_value: float = 20.0
+
+
+PANEL_ROUTINES: tuple[PanelRoutine, ...] = (
+    PanelRoutine(
+        "MAIL_ROUTINE", "mail",
+        work=("CLAIMABLE", "UNREAD", "HAS_BADGE"),
+        done=("CLAIMED", "ALL_CLEAR", "NOT_AVAILABLE"),
+        work_skills=("MAIL_CLAIM_REWARDS", "SELECT_MAIL_ALLIANCE_TAB",
+                     "SELECT_MAIL_SYSTEM_TAB", "SELECT_MAIL_REPORT_TAB"),
+        entry_skill="OPEN_MAIL",
+    ),
+    PanelRoutine(
+        "DAILY_ACTIVITY_TARGET", "daily",
+        work=("CLAIMABLE", "AVAILABLE"),
+        done=("CLAIMED", "NOT_AVAILABLE"),
+        # DAILY_HERO_RECRUIT is registered but has no live-loop verifier bound, and a skill
+        # without one dies with SKILL_NOT_ENABLED_FOR_LIVE_LOOP -- so it is deliberately not
+        # offered here until its verifier exists.
+        work_skills=("DAILY_CLAIM_REWARDS",),
+        entry_skill="OPEN_DAILY",
+    ),
+    PanelRoutine(
+        "ALLIANCE_ROUTINE", "alliance",
+        work=("CLAIMABLE", "AVAILABLE"),
+        done=("CLAIMED", "CONTRIBUTED", "NOT_AVAILABLE"),
+        work_skills=("ALLIANCE_GIFTS", "ALLIANCE_ALLY_GIFT_CLAIM"),
+        entry_skill="OPEN_ALLIANCE",
+    ),
+    PanelRoutine(
+        "CLAIM_EXPLORATION_IDLE", "exploration",
+        work=("CLAIMABLE",),
+        done=("CLAIMED", "NOT_READY", "NOT_AVAILABLE"),
+        work_skills=("EXPLORATION_IDLE_CLAIM",),
+        entry_skill="OPEN_EXPLORATION",
+    ),
+)
+
+
+def _badge_present(reading: Mapping[str, Any]) -> bool:
+    """Whether the panel's reading shows an unclaimed badge on any tab."""
+    badges = reading.get("tab_badges")
+    if not isinstance(badges, Mapping):
+        return False
+    return any(bool(value) for value in badges.values())
+
+
+def _append_panel_routine(
+    goals: list[GoalState],
+    routine: PanelRoutine,
+    reading: Mapping[str, Any] | None,
+) -> None:
+    """Emit one panel routine from its reading, or as an observation when there is none.
+
+    Four honest outcomes, and the fourth is the one that was missing:
+      READY      the page says there is something to claim
+      COMPLETE   the page says there is not
+      UNKNOWN    the page was read and said something this table does not know
+                 (OBSERVED_UNKNOWN -- a capability gap, not a routine to schedule)
+      DISCOVERED never read (NOT_OBSERVED_YET): the goal exists and is schedulable *as the
+                 act of going to look*, which is what stops "no observation" from meaning
+                 "this goal does not exist"
+    """
+    reading = reading or {}
+    status = str(reading.get("status") or "").strip().upper()
+    badge = _badge_present(reading)
+
+    # "Not looked" is an *empty* reading, not a missing status word: the mail panel reports
+    # unclaimed tabs as badges and often prints no status at all, and calling that "never
+    # looked" would send the loop to re-open a page it has just read.  An empty mapping is the
+    # WorldState default, so this is the boundary the reading itself draws.
+    if not reading:
+        goals.append(GoalState(
+            routine.goal_id, GoalStatus.DISCOVERED,
+            development_value=routine.discovery_value,
+            available_skills=(routine.entry_skill,),
+            evidence={"observed": False, "reading": {}},
+            distance=1.0,
+        ))
+        return
+    if status in routine.done and not badge:
+        goals.append(GoalState(
+            routine.goal_id, GoalStatus.COMPLETE, completion=1.0,
+            available_skills=routine.work_skills,
+            evidence={"observed": True, "status": status}, distance=0.0,
+        ))
+        return
+    if status in routine.work or badge:
+        goals.append(GoalState(
+            routine.goal_id, GoalStatus.READY,
+            reward_value=250.0, daily_loss=250.0,
+            available_skills=routine.work_skills,
+            evidence={"observed": True, "status": status, "badge": badge}, distance=1.0,
+        ))
+        return
+    # Read, and it said something this table does not know -- or nothing at all.  Either way the
+    # page was seen and the routine cannot be decided from it: OBSERVED_UNKNOWN, which is a
+    # capability gap rather than a visit to schedule.
+    goals.append(GoalState(
+        routine.goal_id, GoalStatus.UNKNOWN,
+        evidence={"observed": True, "status": status, "reading": dict(reading)},
+        distance=1.0,
+    ))
+
+
 class GoalLibrary:
     """Turns observed state into goals. It is knowledge, not another scheduler."""
 
@@ -101,6 +234,10 @@ class GoalLibrary:
         self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training, ("TRAIN_TROOPS",), 90)
         self._append_queue_goal(goals, "KEEP_RESEARCH_PRODUCTIVE", world.research, ("RESEARCH",), 80)
         self._append_queue_goal(goals, "KEEP_BUILDING_PRODUCTIVE", world.building, ("BUILDING_UPGRADE",), 80)
+        # The panel routines.  Their readings decide READY vs COMPLETE, and having no reading
+        # at all is a state of its own (DISCOVERED) rather than a reason to stay invisible.
+        for routine in PANEL_ROUTINES:
+            _append_panel_routine(goals, routine, getattr(world, routine.field, None))
         # GATHER, as the operator's goal list names it, in the runtime form the
         # project's own table already describes (KEEP_MARCHES_PRODUCTIVE).
         #

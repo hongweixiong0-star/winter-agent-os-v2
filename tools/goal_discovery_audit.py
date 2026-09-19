@@ -147,8 +147,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  observed right now : {report['currently_observed_count']}")
     print()
     print("  -- discoverable, with the probe that proves it --")
+    probe_labels = {label for label, _ in PROBES}
     for name in sorted(discoverable):
-        print(f"     {name:34s} {', '.join(discoverable[name])}")
+        probes = discoverable[name]
+        if set(probes) == probe_labels:
+            # An observation goal: emitted with no reading at all, which is the point --
+            # it is how "never looked" stays schedulable instead of invisible.
+            print(f"     {name:34s} (every probe: emitted as an observation goal)")
+        else:
+            print(f"     {name:34s} {', '.join(probes)}")
     print()
     print(f"  -- GOAL_DISCOVERY_MISSING ({len(missing)}) --")
     for name in missing:

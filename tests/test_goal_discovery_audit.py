@@ -40,12 +40,8 @@ import goal_discovery_audit as audit  # noqa: E402
 #: time on purpose: when this list changes, someone decided it should, and the reason belongs
 #: next to the name.
 KNOWN_MISSING = {
-    # A periodic panel routine: the page is cheap to open and its state is claimable-or-not.
-    "MAIL_ROUTINE": "no rule reads world.mail",
-    "DAILY_ACTIVITY_TARGET": "no rule reads world.daily",
-    "ALLIANCE_ROUTINE": "no rule reads world.alliance",
-    "CLAIM_EXPLORATION_IDLE": "no rule reads world.exploration",
-    # Attempt-limited activities: the state that matters is a counter, not a queue.
+    # Attempt-limited activities: the state that matters is a counter, not a queue, and
+    # nothing reads the counter yet.
     "USE_FREE_ARENA_ATTEMPTS": "no rule reads world.attempts",
     "LABYRINTH_DAILY": "no rule reads world.attempts",
     # Event-gated, so the entry is a producer rather than a reading.

@@ -970,6 +970,28 @@ def main() -> int:
           "if stalled is None or stalled < self.policy.job_progress_stall_minutes:" in _queue_source
           and "class JobStatus" in _bridge_source
           and "def progress_at(" in _bridge_source)
+    # A goal that is scheduled but has no route does nothing, quietly -- which is how four panel
+    # routines stayed invisible while every capability they needed already worked.  The mapping
+    # lives in runtime.py and is the only place a goal id becomes a brain route, so a new
+    # schedulable goal has to appear in it.
+    _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
+    _goal_routes = {
+        "CLEAR_INTEL": "INTEL",
+        "AVOID_STAMINA_WASTE": "BEAST_HUNT",
+        "KEEP_TRAINING_PRODUCTIVE": "TRAIN",
+        "KEEP_RESEARCH_PRODUCTIVE": "RESEARCH",
+        "MAIL_ROUTINE": "MAIL",
+        "DAILY_ACTIVITY_TARGET": "DAILY",
+        "ALLIANCE_ROUTINE": "ALLIANCE",
+        "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
+    }
+    missing_route = [
+        goal for goal, route in _goal_routes.items()
+        if f'"{goal}": "{route}"' not in _runtime_source
+    ]
+    check("goals: every schedulable goal id has a brain route in the one mapping table",
+          not missing_route,
+          detail=f"no route for {missing_route}")
     check("order: a changed tree waits for its own activation before any verification",
           "VERSION_ACTIVATION_PENDING" in _queue_source
           and "LIVE_VERIFY_PENDING = \"LIVE_VERIFY_PENDING\"" in _queue_source
