@@ -568,6 +568,15 @@ class RuleBrain:
             if world.page is Page.HOME:
                 return Decision("OPEN_MAP", "beast_goal_requires_map", world.confidence, "map_opened")
             if world.page not in {Page.MAP, Page.BEAST, Page.MARCH}:
+                # The same measured hop the intel-like route above already has, and for the same
+                # reason: a run that ends standing on a panel it does not own parks the client
+                # there, and the next run then answers goal_page_mismatch without taking a single
+                # step.  My spend handover makes that certain rather than occasional -- it moves the
+                # run onto the intel page, and when the board has no untried pin the run ends
+                # standing on it, so without this every following run stops on step 1 forever.
+                leave = self._leave_foreign_page_once(world, owner="BEAST")
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_beast_route")
             if world.page is Page.MAP and world.resource_search_open:
                 return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")
