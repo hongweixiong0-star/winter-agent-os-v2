@@ -460,14 +460,52 @@ class LiveRuntime:
             return best_goal.goal_id
         return self.brain.current_goal or self._committed_goal or "AUTO_DISCOVERY"
 
+    def _fresh_observations(self) -> dict:
+        """Stored readings that are still usable, for the goal engine to reuse.
+
+        Operator §五: "已获得且未过期的观察结果可以复用".  The TTL lives in ``observation_store``
+        because that is also where the readings do; this only asks it what is still current.
+        """
+        from . import observation_store
+
+        try:
+            return dict(observation_store.as_discovery_input(observation_store.load()))
+        except Exception:  # noqa: BLE001 - a broken store means "nothing is fresh", never a crash
+            return {}
+
+    def _record_observations(self, world: WorldState) -> None:
+        """Write down what this frame actually read, so the next run need not re-open it.
+
+        Only the panel domains are recorded, and an empty reading is recorded too on purpose:
+        "we looked and it said nothing" is information, and without it the domain looks
+        never-visited and gets opened again on the very next run.  A frame that did not touch
+        a panel must not overwrite that panel's record, which is why this writes only the
+        domains this WorldState carries.
+        """
+        from . import observation_store
+        from .goal_library import PANEL_ROUTINES
+
+        for routine in PANEL_ROUTINES:
+            reading = getattr(world, routine.field, None)
+            if reading:
+                try:
+                    observation_store.record(routine.field, reading)
+                except Exception:  # noqa: BLE001 - observing must never fail a run
+                    pass
+
     def _record_goals(self, world: WorldState):
         """Discover this frame's goals, persist the board, and hand them back.
 
         Returning them is what makes goal progress measurable: the caller compares
         the goals read before a step with the goals read after it, which is the only
         way to tell "the action worked" from "the goal advanced".
+
+        This is also the one place observation is both consumed and recorded -- the frame in
+        hand IS the observation, so a second call site that discovered again from the same
+        world would only be a second chance for the two answers to disagree.
         """
-        goals = self.goal_library.discover(world)
+        self._record_observations(world)
+        goals = self.goal_library.discover(world, observations=self._fresh_observations())
         if self.goal_store is None:
             return goals
         try:
@@ -667,8 +705,7 @@ class LiveRuntime:
                           march_used=before.march_used, march_max=before.march_max,
                           queues={"building": before.building, "research": before.research, "training": before.training,
                                   "intel": before.intel, "alliance": before.alliance, "events": before.events})
-            self._record_goals(before)
-            goals = self.goal_library.discover(before)
+            goals = self._record_goals(before)
             self._remember_goal_meters(goals)
             best_goal = self.goal_library.best(self._selectable(goals, deferrals))
             if best_goal is not None:

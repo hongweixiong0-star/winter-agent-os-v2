@@ -150,32 +150,56 @@ def _append_panel_routine(
     goals: list[GoalState],
     routine: PanelRoutine,
     reading: Mapping[str, Any] | None,
+    observation: Mapping[str, Any] | None = None,
 ) -> None:
     """Emit one panel routine from its reading, or as an observation when there is none.
+
+    ``observation`` is the last reading that is still fresh (operator §五): a panel read five
+    minutes ago can be acted on without opening it again, which is what stops the sweep from
+    being "every page, every run".  It is only consulted when the live reading is empty -- a
+    reading taken now always wins over one taken earlier.
 
     Four honest outcomes, and the fourth is the one that was missing:
       READY      the page says there is something to claim
       COMPLETE   the page says there is not
       UNKNOWN    the page was read and said something this table does not know
                  (OBSERVED_UNKNOWN -- a capability gap, not a routine to schedule)
-      DISCOVERED never read (NOT_OBSERVED_YET): the goal exists and is schedulable *as the
-                 act of going to look*, which is what stops "no observation" from meaning
-                 "this goal does not exist"
+      DISCOVERED never read, or read too long ago to trust (NOT_OBSERVED_YET): the goal exists
+                 and is schedulable *as the act of going to look*, which is what stops "no
+                 observation" from meaning "this goal does not exist"
     """
-    reading = reading or {}
-    status = str(reading.get("status") or "").strip().upper()
-    badge = _badge_present(reading)
+    live = reading or {}
+    # Presence, not truthiness: a *stored empty* reading means "we looked and it said nothing",
+    # which is knowledge, and differs from having no stored reading at all.
+    looked_recently = observation is not None
+    reused = not live and looked_recently
+    effective = live or (observation or {})
+    status = str(effective.get("status") or "").strip().upper()
+    badge = _badge_present(effective)
+    provenance = {
+        "observed": bool(effective) or looked_recently,
+        "reused": reused,
+        "reading": dict(effective),
+    }
 
     # "Not looked" is an *empty* reading, not a missing status word: the mail panel reports
     # unclaimed tabs as badges and often prints no status at all, and calling that "never
     # looked" would send the loop to re-open a page it has just read.  An empty mapping is the
     # WorldState default, so this is the boundary the reading itself draws.
-    if not reading:
+    if not effective:
+        if looked_recently:
+            # Read, and it said nothing usable.  That is OBSERVED_UNKNOWN, not a reason to go
+            # straight back -- re-opening a panel that has just reported nothing is the loop
+            # the operator named, and a second look at the same page cannot resolve it.
+            goals.append(GoalState(
+                routine.goal_id, GoalStatus.UNKNOWN, evidence=provenance, distance=1.0,
+            ))
+            return
         goals.append(GoalState(
             routine.goal_id, GoalStatus.DISCOVERED,
             development_value=routine.discovery_value,
             available_skills=(routine.entry_skill,),
-            evidence={"observed": False, "reading": {}},
+            evidence=provenance,
             distance=1.0,
         ))
         return
@@ -183,7 +207,7 @@ def _append_panel_routine(
         goals.append(GoalState(
             routine.goal_id, GoalStatus.COMPLETE, completion=1.0,
             available_skills=routine.work_skills,
-            evidence={"observed": True, "status": status}, distance=0.0,
+            evidence=provenance, distance=0.0,
         ))
         return
     if status in routine.work or badge:
@@ -191,7 +215,7 @@ def _append_panel_routine(
             routine.goal_id, GoalStatus.READY,
             reward_value=250.0, daily_loss=250.0,
             available_skills=routine.work_skills,
-            evidence={"observed": True, "status": status, "badge": badge}, distance=1.0,
+            evidence={**provenance, "status": status, "badge": badge}, distance=1.0,
         ))
         return
     # Read, and it said something this table does not know -- or nothing at all.  Either way the
@@ -199,7 +223,7 @@ def _append_panel_routine(
     # capability gap rather than a visit to schedule.
     goals.append(GoalState(
         routine.goal_id, GoalStatus.UNKNOWN,
-        evidence={"observed": True, "status": status, "reading": dict(reading)},
+        evidence=provenance,
         distance=1.0,
     ))
 
@@ -207,7 +231,19 @@ def _append_panel_routine(
 class GoalLibrary:
     """Turns observed state into goals. It is knowledge, not another scheduler."""
 
-    def discover(self, world: WorldState) -> tuple[GoalState, ...]:
+    def discover(
+        self,
+        world: WorldState,
+        *,
+        observations: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> tuple[GoalState, ...]:
+        """Every goal the engine can see from this world, plus what is still worth looking at.
+
+        ``observations`` is optional and holds only *fresh* stored readings, keyed by the
+        WorldState field they belong to.  Passing nothing means "no reading outlives this
+        frame", which is the behaviour before the store existed -- so a caller that does not
+        have one is not silently treated as having looked recently.
+        """
         goals: list[GoalState] = []
         intel_status = str(world.intel.get("status", "UNKNOWN"))
         if intel_status != "UNKNOWN":
@@ -237,7 +273,11 @@ class GoalLibrary:
         # The panel routines.  Their readings decide READY vs COMPLETE, and having no reading
         # at all is a state of its own (DISCOVERED) rather than a reason to stay invisible.
         for routine in PANEL_ROUTINES:
-            _append_panel_routine(goals, routine, getattr(world, routine.field, None))
+            _append_panel_routine(
+                goals, routine,
+                getattr(world, routine.field, None),
+                (observations or {}).get(routine.field),
+            )
         # GATHER, as the operator's goal list names it, in the runtime form the
         # project's own table already describes (KEEP_MARCHES_PRODUCTIVE).
         #
