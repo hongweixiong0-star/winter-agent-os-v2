@@ -79,6 +79,10 @@ class RuleBrain:
         # afterwards, so leaving is verifiable rather than hopeful.  The flag is
         # what stops a Back that did not move the client from being repeated.
         self.terminal_page_left = False
+        # Set once a run has backed out of a panel another goal owned, so a
+        # Back that did not move the client is not repeated (see
+        # ``_leave_foreign_page_once``).
+        self.foreign_page_left = False
         # Consecutive Stage A re-observations in this run.  Measured 2026-09-17:
         # the highlighted-camp state is NOT a transient animation -- seven waits in a
         # row all reported ``menu_drawn: false`` and ended with MAX_ACTIONS_REACHED,
@@ -163,6 +167,34 @@ class RuleBrain:
         return Decision(
             "BACK",
             "daily_panel_not_actionable_leaving_the_page",
+            world.confidence,
+            "home_opened",
+        )
+
+    def _leave_foreign_page_once(self, world: WorldState, *, owner: str) -> Decision | None:
+        """One Back off a panel this goal does not own, so the next run can hop home.
+
+        Measured live 2026-09-19, the first time the sweep was ever selected: one run opened the
+        mail panel, read it, and recorded a reading; the next run selected ``DAILY_ACTIVITY_TARGET``
+        -- and stopped with ``goal_page_mismatch``, because the client was still standing on MAIL
+        and the daily route had no branch for a page that is neither HOME nor MAP nor its own.
+
+        That is the difference between "one panel got looked at" and a sweep that walks all of
+        them: consecutive routines meet each other on the previous panel, and refusing to move is
+        the one answer that cannot work.  Every panel's own exit is a single Back to HOME (the
+        same transition ``_leave_daily_panel_once`` and ``_leave_terminal_page_once`` were
+        measured on), and ``verify_safe_back`` accepts it because ``before`` is neither MAP nor
+        POPUP and ``after`` is a different known page.
+
+        Returns ``None`` once the flag is set, so a Back that did not actually move the client
+        cannot be repeated; the caller then falls through to its honest SAFE_STOP.
+        """
+        if self.foreign_page_left:
+            return None
+        self.foreign_page_left = True
+        return Decision(
+            "BACK",
+            f"{owner.lower()}_goal_leaves_a_panel_it_does_not_own",
             world.confidence,
             "home_opened",
         )
@@ -412,6 +444,9 @@ class RuleBrain:
                     return Decision("BACK", "close_resource_search_for_mail_goal", world.confidence, "resource_search_closed")
                 return Decision("OPEN_HOME", "mail_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.MAIL:
+                leave = self._leave_foreign_page_once(world, owner="MAIL")
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_mail_route")
         if self.current_goal == "INTEL":
             if world.page is Page.HOME:
@@ -529,6 +564,9 @@ class RuleBrain:
             if world.page is Page.MAP:
                 return Decision("OPEN_HOME", "exploration_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.EXPLORATION:
+                leave = self._leave_foreign_page_once(world, owner="EXPLORATION")
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_exploration_route")
         if self.current_goal == "DAILY":
             if world.page is Page.HOME:
@@ -543,6 +581,9 @@ class RuleBrain:
                     return Decision("SAFE_STOP", "daily_panel_already_read_not_actionable", 1.0, "switch_task")
                 return Decision("OPEN_HOME", "daily_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.DAILY:
+                leave = self._leave_foreign_page_once(world, owner="DAILY")
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_daily_route")
             select_tab = self._select_daily_tab_once(world)
             if select_tab is not None:
@@ -558,6 +599,9 @@ class RuleBrain:
             if world.page is Page.MAP:
                 return Decision("OPEN_HOME", "alliance_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.ALLIANCE:
+                leave = self._leave_foreign_page_once(world, owner="ALLIANCE")
+                if leave is not None:
+                    return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_alliance_route")
             if world.alliance.get("section") == "HOME":
                 return Decision("OPEN_ALLIANCE_GIFTS", "alliance_gifts_badge_visible", world.confidence, "alliance_gifts_open")

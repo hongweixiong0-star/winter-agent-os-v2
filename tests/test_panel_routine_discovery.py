@@ -25,6 +25,7 @@ What these tests defend, in the operator's terms:
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 import pytest
@@ -38,6 +39,7 @@ from winter_agent_v2.goal_library import (  # noqa: E402
     GoalLibrary,
     GoalStatus,
 )
+from winter_agent_v2.brain import RuleBrain  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
@@ -145,3 +147,55 @@ def test_no_routine_offers_a_skill_without_a_live_loop_verifier():
     forbidden = {"DAILY_HERO_RECRUIT", "ALLIANCE_TECH_CONTRIBUTE"}
     offered = {s for routine in PANEL_ROUTINES for s in routine.work_skills}
     assert not (offered & forbidden), f"unverified skills offered: {sorted(offered & forbidden)}"
+
+
+class ConsecutiveSweepsMustHopBetweenPanels(unittest.TestCase):
+    """Live 2026-09-19: the first sweep worked and the second could not move.
+
+    One run opened the mail panel, read it and recorded a reading; the next run selected
+    ``DAILY_ACTIVITY_TARGET`` and stopped with ``goal_page_mismatch``, because the client was
+    still standing on MAIL and the daily route had no branch for a page that is neither HOME nor
+    MAP nor its own.  Refusing to move is the one answer that cannot work for a sweep: consecutive
+    routines meet each other on the previous panel.
+    """
+
+    FOREIGN = {
+        "DAILY": Page.MAIL,
+        "MAIL": Page.DAILY,
+        "ALLIANCE": Page.EXPLORATION,
+        "EXPLORATION": Page.ALLIANCE,
+    }
+
+    def test_a_goal_on_another_panels_page_backs_out_instead_of_stopping(self):
+        registry = v2_registry()
+        for goal, page in self.FOREIGN.items():
+            brain = RuleBrain(current_goal=goal)
+            first = brain.decide(WorldState(page=page, confidence=0.99), registry)
+            self.assertEqual(first.skill, "BACK", f"{goal} on {page.value} must leave the page")
+            self.assertIn("panel_it_does_not_own", first.reason, first.reason)
+            self.assertEqual(first.expected_result, "home_opened")
+
+    def test_the_hop_happens_once_so_a_back_that_did_not_move_cannot_loop(self):
+        registry = v2_registry()
+        for goal, page in self.FOREIGN.items():
+            brain = RuleBrain(current_goal=goal)
+            brain.decide(WorldState(page=page, confidence=0.99), registry)
+            second = brain.decide(WorldState(page=page, confidence=0.99), registry)
+            self.assertEqual(second.skill, "SAFE_STOP", f"{goal} must not Back twice")
+            self.assertEqual(second.reason, "goal_page_mismatch")
+
+    def test_the_hop_uses_a_skill_that_can_actually_run(self):
+        """A hop through an unregistered or unverified skill would die on live dispatch."""
+        registry = v2_registry()
+        self.assertIsNotNone(registry.get("BACK"))
+        self.assertIn("BACK", LiveRuntime.VERIFIED_ATOMIC)
+
+    def test_a_goal_on_its_own_page_still_does_its_work(self):
+        """The hop must not shadow the real routes: HOME still opens the panel it owns."""
+        registry = v2_registry()
+        for goal, open_skill in (("DAILY", "OPEN_DAILY"), ("MAIL", "OPEN_MAIL"),
+                                 ("ALLIANCE", "OPEN_ALLIANCE"),
+                                 ("EXPLORATION", "OPEN_EXPLORATION")):
+            decision = RuleBrain(current_goal=goal).decide(
+                WorldState(page=Page.HOME, confidence=0.99), registry)
+            self.assertEqual(decision.skill, open_skill, f"{goal} from HOME")
