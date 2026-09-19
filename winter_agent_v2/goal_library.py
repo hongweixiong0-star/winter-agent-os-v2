@@ -113,8 +113,15 @@ PANEL_ROUTINES: tuple[PanelRoutine, ...] = (
     ),
     PanelRoutine(
         "DAILY_ACTIVITY_TARGET", "daily",
-        work=("CLAIMABLE", "AVAILABLE"),
-        done=("CLAIMED", "NOT_AVAILABLE"),
+        # ``AVAILABLE`` is deliberately NOT work here.  Two live readings two minutes apart
+        # settled it (2026-09-19): ``status=CLAIMABLE, claimable_count=1`` when there was a
+        # reward, then ``status=AVAILABLE, claimable_count=0`` after claiming.  AVAILABLE means
+        # "the page was read and the task list exists", not "something is claimable", so treating
+        # it as work made the goal READY forever and re-opened the panel on every run -- the
+        # repeated no-progress selection the operator names in §六.  The numeric count below is
+        # the real signal, and it is checked first.
+        work=("CLAIMABLE",),
+        done=("AVAILABLE", "CLAIMED", "NOT_AVAILABLE"),
         # DAILY_HERO_RECRUIT is registered but has no live-loop verifier bound, and a skill
         # without one dies with SKILL_NOT_ENABLED_FOR_LIVE_LOOP -- so it is deliberately not
         # offered here until its verifier exists.
@@ -253,6 +260,12 @@ def _append_panel_routine(
     effective = live or (stored if fresh else {}) or {}
     status = str(effective.get("status") or "").strip().upper()
     badge = _badge_present(effective)
+    # Numeric evidence of something actually waiting, checked before any status word.  A status
+    # word says what kind of page this is; a count says whether anything is on it.  Measured
+    # 2026-09-19: ``status=AVAILABLE, claimable_count=0`` is an empty panel, and reading it as
+    # work re-opened the panel every run until the count was consulted.
+    counts = [effective.get("claimable_count"), effective.get("badge_count")]
+    waiting = badge or any(isinstance(c, int) and c > 0 for c in counts)
     provenance = {
         "observed": bool(effective) or (fresh and stored is not None),
         "reused": reused,
@@ -282,14 +295,22 @@ def _append_panel_routine(
             distance=1.0,
         ))
         return
-    if status in routine.done and not badge:
+    if waiting:
+        goals.append(GoalState(
+            routine.goal_id, GoalStatus.READY,
+            reward_value=250.0, daily_loss=250.0,
+            available_skills=routine.work_skills,
+            evidence={**provenance, "status": status, "badge": badge}, distance=1.0,
+        ))
+        return
+    if status in routine.done:
         goals.append(GoalState(
             routine.goal_id, GoalStatus.COMPLETE, completion=1.0,
             available_skills=routine.work_skills,
             evidence=provenance, distance=0.0,
         ))
         return
-    if status in routine.work or badge:
+    if status in routine.work:
         goals.append(GoalState(
             routine.goal_id, GoalStatus.READY,
             reward_value=250.0, daily_loss=250.0,

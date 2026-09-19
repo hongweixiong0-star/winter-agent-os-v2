@@ -261,3 +261,48 @@ class DomainsThatOnlyExistedWhenRead(unittest.TestCase):
         self.assertIsNone(registry.get("OPEN_BUILDING"), "if this registers, add the sweep")
         self.assertNotIn("KEEP_BUILDING_PRODUCTIVE",
                          {r.goal_id for r in SWEEP_ROUTINES})
+
+
+class AStatusWordIsNotACount(unittest.TestCase):
+    """Live 2026-09-19, two daily readings two minutes apart, and the bug they named.
+
+       13:01:03  {status: CLAIMABLE, claimable_count: 1}  -> a reward was claimed
+       13:03:22  {status: AVAILABLE, claimable_count: 0}  -> nothing left
+
+    ``AVAILABLE`` was in the daily routine's `work` tuple, so the second reading made the goal
+    READY (250) again, the next run opened the panel again, found nothing, and stopped -- the
+    repeated no-progress selection the operator names in §六.  A status word says what kind of
+    page this is; a count says whether anything is on it.  These tests keep the count first.
+    """
+
+    @staticmethod
+    def _goal(goal_id, field, reading):
+        """``emitted()`` in this file takes no observations, so build the record directly."""
+        observations = {field: {"reading": reading, "overdue": False, "overdue_ratio": 0.2}}
+        goals = {g.goal_id: g for g in
+                 GoalLibrary().discover(WorldState(page=Page.MAP), observations=observations)}
+        return goals[goal_id]
+
+    def _daily(self, reading):
+        return self._goal("DAILY_ACTIVITY_TARGET", "daily", reading)
+
+    def test_a_count_says_there_is_work(self):
+        goal = self._daily({"tab": "TASKS", "activity": 235, "status": "CLAIMABLE",
+                            "claimable_count": 1})
+        self.assertIs(goal.status, GoalStatus.READY)
+        self.assertEqual(goal.available_skills, ("DAILY_CLAIM_REWARDS",))
+
+    def test_the_same_word_with_nothing_left_is_complete(self):
+        goal = self._daily({"tab": "TASKS", "activity": 290, "status": "AVAILABLE",
+                            "claimable_count": 0})
+        self.assertIs(goal.status, GoalStatus.COMPLETE)
+        self.assertEqual(goal.priority, float("-inf"),
+                         "a finished panel must not be selected again")
+
+    def test_a_count_alone_is_enough_even_with_an_unknown_status(self):
+        goal = self._daily({"status": "SOMETHING_NEW", "claimable_count": 2})
+        self.assertIs(goal.status, GoalStatus.READY, "the count outranks the status word")
+
+    def test_a_badge_count_is_read_the_same_way(self):
+        goal = self._goal("MAIL_ROUTINE", "mail", {"status": "UNREAD", "badge_count": 3})
+        self.assertIs(goal.status, GoalStatus.READY)
