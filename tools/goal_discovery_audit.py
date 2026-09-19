@@ -39,6 +39,7 @@ from winter_agent_v2.models import Page, WorldState  # noqa: E402
 
 GOAL_MAP = ROOT / "knowledge/goals/goal_capability_map.json"
 GOAL_STATE = ROOT / "learning/goal_state.json"
+CATALOG = ROOT / "knowledge/game/capability_catalog.json"
 
 
 def defined_goals() -> dict[str, list[str]]:
@@ -97,6 +98,61 @@ def discoverable_goals() -> dict[str, list[str]]:
     return out
 
 
+def unmatched_capability_tokens() -> dict[str, list[str]]:
+    """Goal-map tokens the catalog does not carry **under that name**.  Deliberately not called
+    "missing": measured 2026-09-19, the three vocabularies are unreconciled rather than absent.
+
+      OPEN_ARENA_PAGE / OPEN_BUILDING_PAGE / CLAIM_DAILY_REWARD  -- synonyms of catalog codes
+        (OPEN_ARENA, OPEN_BUILDING, CLAIM_REWARD) that the map spells differently
+      OPEN_MAIL_PAGE / CLAIM_MAIL_ATTACHMENTS / NAVIGATE_TO_MAP  -- no catalog counterpart at
+        all, while ``OPEN_MAIL`` and ``MAIL_CLAIM_REWARDS`` are registered skills that ran live
+        today -- so the catalog simply does not carry those rows
+
+    An earlier version of this function reported these as capabilities the catalog "lacks" and a
+    reader would have concluded three goals were undevelopable.  That would have been a fabricated
+    gap about working software.  What is true is narrower and still worth acting on: goal map
+    tokens, catalog codes and skill ids are three vocabularies that have never been reconciled,
+    so "is this capability covered" cannot be answered by looking at any one of them.
+    """
+    try:
+        rows = json.loads(CATALOG.read_text(encoding="utf-8")).get("capabilities") or []
+    except (OSError, json.JSONDecodeError):
+        return {}
+    known = {str(r.get("code") or "") for r in rows}
+    out: dict[str, list[str]] = {}
+    for name, caps in defined_goals().items():
+        missing = [c for c in caps if c not in known]
+        if missing:
+            out[name] = missing
+    return out
+
+
+def catalog_overclaims() -> list[dict[str, str]]:
+    """Rows that claim an implementation the skill registry does not have.
+
+    A real inconsistency, and unlike the vocabulary mismatch above it is checkable both ways:
+    the catalog says the capability exists, and the only table of executable skills says there is
+    no such skill.  ``lifecycle`` is what the planner reads, so an overstated row can make a
+    capability look covered when nothing can run it.
+    """
+    try:
+        import winter_agent_v2.skills as skills_module
+
+        rows = json.loads(CATALOG.read_text(encoding="utf-8")).get("capabilities") or []
+        registry = skills_module.v2_registry()
+    except Exception:  # noqa: BLE001 - an unreadable registry is not a finding
+        return []
+    out: list[dict[str, str]] = []
+    for row in rows:
+        if str(row.get("implementation_status")) != "EXISTING":
+            continue
+        claimed = str(row.get("existing_skill") or "")
+        if claimed and registry.get(claimed) is None:
+            out.append({"code": str(row.get("code") or ""), "existing_skill": claimed,
+                        "lifecycle": str(row.get("lifecycle") or "")})
+    return out
+
+
 def observed_goals() -> list[str]:
     try:
         payload = json.loads(GOAL_STATE.read_text(encoding="utf-8"))
@@ -121,7 +177,13 @@ def main(argv: list[str] | None = None) -> int:
         covered.add("CLAIM_FREE_REWARDS")
     missing = sorted(name for name in defined if name not in covered)
 
+    unmatched = unmatched_capability_tokens()
+    overstated = catalog_overclaims()
+
     report = {
+        "unmatched_capability_tokens": unmatched,
+        "unmatched_count": sum(len(v) for v in unmatched.values()),
+        "catalog_overclaims": overstated,
         "defined_count": len(defined),
         "discoverable_count": len(discoverable),
         "currently_observed_count": len(observed),
@@ -165,6 +227,17 @@ def main(argv: list[str] | None = None) -> int:
     print("  -- observed right now --")
     for name in observed:
         print(f"     {name}")
+    print()
+    total = sum(len(v) for v in unmatched.values())
+    print(f"  -- vocabulary the map uses that the catalog does not carry by that name ({total}) --")
+    print("     (unreconciled names, NOT proven absence -- see the docstring)")
+    for name in sorted(unmatched):
+        print(f"     {name:34s} {', '.join(unmatched[name])}")
+    print()
+    print(f"  -- catalog rows claiming EXISTING with no such skill in the registry ({len(overstated)}) --")
+    for row in overstated:
+        print(f"     {row['code']:26s} says existing_skill={row['existing_skill']!r}, "
+              f"lifecycle={row['lifecycle']}")
     return 0
 
 

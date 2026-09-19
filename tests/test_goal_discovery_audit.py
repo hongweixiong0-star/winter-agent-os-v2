@@ -33,6 +33,8 @@ if str(ROOT) not in sys.path:
 sys.path.insert(0, str(ROOT / "tools"))
 
 import goal_discovery_audit as audit  # noqa: E402
+from winter_agent_v2.skills import v2_registry as _v2_registry  # noqa: E402
+from winter_agent_v2.skills import v2_registry as _v2_registry  # noqa: E402
 
 #: Goals that are defined in the capability map and that the engine has **no branch** for.
 #: Every one of these needs a discovery entry of its own kind -- a WorldState discover rule, a
@@ -120,3 +122,71 @@ def test_the_audit_writes_nothing():
         source,
     )
     assert writing is None, f"the audit must stay read-only, found {writing.group(0)!r}"
+
+
+def test_the_audit_does_not_call_working_capabilities_missing():
+    """My first version of this axis would have reported three goals as undevelopable.
+
+    It compared the goal map's tokens to the catalog's codes and called the difference "the
+    catalog lacks these".  Measured: ``OPEN_MAIL_PAGE`` is unmatched **by name** while
+    ``OPEN_MAIL`` is a registered skill that ran live today, and ``OPEN_ARENA_PAGE`` /
+    ``OPEN_BUILDING_PAGE`` / ``CLAIM_DAILY_REWARD`` are spelling variants of catalog codes that
+    do exist.  Three vocabularies -- goal-map tokens, catalog codes, skill ids -- have never been
+    reconciled, and that is a real finding; "these capabilities are missing" would have been a
+    fabricated gap about working software.
+    """
+    unmatched = audit.unmatched_capability_tokens()
+    tokens = [token for row in unmatched.values() for token in row]
+    assert "OPEN_MAIL_PAGE" in tokens, "the naming mismatch is the thing being reported"
+    assert _v2_registry().get("OPEN_MAIL") is not None, (
+        "the token is unmatched while the skill exists -- which is why it must not be called missing"
+    )
+    assert not hasattr(audit, "uncatalogued_capabilities"), (
+        "the name is the finding: unmatched, not absent"
+    )
+
+
+def test_a_catalog_row_is_not_overstated_when_its_skill_exists():
+    """OPEN_BUILDING names BUILDING_UPGRADE; my first reading compared the wrong strings.
+
+    The catalog's ``code`` is the capability token and ``existing_skill`` is what implements it.
+    Checking the code against the registry (rather than ``existing_skill``) made a correct row
+    look like an overclaim.
+    """
+    overstated = {row["code"] for row in audit.catalog_overclaims()}
+    assert "OPEN_BUILDING" not in overstated
+    assert _v2_registry().get("BUILDING_UPGRADE") is not None
+
+
+def test_the_audit_does_not_call_working_capabilities_missing():
+    """My first version of this axis would have reported three goals as undevelopable.
+
+    It compared the goal map's tokens to the catalog's codes and called the difference "the
+    catalog lacks these".  Measured: ``OPEN_MAIL_PAGE`` is unmatched **by name** while
+    ``OPEN_MAIL`` is a registered skill that ran live today, and ``OPEN_ARENA_PAGE`` /
+    ``OPEN_BUILDING_PAGE`` / ``CLAIM_DAILY_REWARD`` are spelling variants of catalog codes that
+    do exist.  Three vocabularies -- goal-map tokens, catalog codes, skill ids -- have never been
+    reconciled, and that is a real finding; "these capabilities are missing" would have been a
+    fabricated gap about working software.
+    """
+    unmatched = audit.unmatched_capability_tokens()
+    tokens = [token for row in unmatched.values() for token in row]
+    assert "OPEN_MAIL_PAGE" in tokens, "the naming mismatch is the thing being reported"
+    assert _v2_registry().get("OPEN_MAIL") is not None, (
+        "the token is unmatched while the skill exists -- which is why it must not be called missing"
+    )
+    assert not hasattr(audit, "uncatalogued_capabilities"), (
+        "the name is the finding: unmatched, not absent"
+    )
+
+
+def test_a_catalog_row_is_not_overstated_when_its_skill_exists():
+    """OPEN_BUILDING names BUILDING_UPGRADE; my first reading compared the wrong strings.
+
+    The catalog's ``code`` is the capability token and ``existing_skill`` is what implements it.
+    Checking the code against the registry (rather than ``existing_skill``) made a correct row
+    look like an overclaim.
+    """
+    overstated = {row["code"] for row in audit.catalog_overclaims()}
+    assert "OPEN_BUILDING" not in overstated
+    assert _v2_registry().get("BUILDING_UPGRADE") is not None
