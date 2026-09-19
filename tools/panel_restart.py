@@ -34,6 +34,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable, Mapping
 
 ROOT = Path(__file__).resolve().parents[1]
 #: The one place the operator's intent is persisted.  Read (never written) by the gateway
@@ -62,18 +63,40 @@ def _emit(message: str) -> None:
     print(message, flush=True)
 
 
-def user_env(name: str) -> str:
-    """The user's persisted environment variable, then the process's own."""
+def _persisted_env(name: str) -> str:
+    """The same variable as Windows keeps it for the user, for when the process has none."""
     try:
         import winreg
 
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
             value, _ = winreg.QueryValueEx(key, name)
-            if value:
-                return str(value)
+            return str(value) if value else ""
     except Exception:  # noqa: BLE001 - missing key, missing module, locked hive
-        pass
-    return os.environ.get(name, "")
+        return ""
+
+
+def user_env(name: str, *, environ: Mapping[str, str] | None = None,
+             persisted: Callable[[str], str] | None = None) -> str:
+    """The credential to hand the child: **the process's own first, the persisted copy second.**
+
+    This used to be the other way round, and that ordering actively broke the launch it exists to
+    perform.  Measured 2026-09-19: this shell's ``CODEBUDDY_GATEWAY_PASSWORD`` answered 200 while
+    ``HKCU\\Environment`` held an older value that answered 401, so ``--start`` *overwrote* the
+    credential the child had inherited with the stale one and the panel came up with
+    ``AUTH_REJECTED`` -- a healthy gateway reading as broken, which is the most expensive kind of
+    false alarm in this project.
+
+    ``workbuddy_bridge.gateway_password()`` reads the process first and the registry only as a
+    fallback, so the launcher now matches the thing that consumes the value.  Doing nothing would
+    already be better than preferring a snapshot; the registry is still consulted, but only when
+    the process has nothing, which is what the injection was for in the first place.
+    """
+    env = os.environ if environ is None else environ
+    inherited = str(env.get(name) or "").strip()
+    if inherited:
+        return inherited
+    lookup = persisted or _persisted_env
+    return str(lookup(name) or "").strip()
 
 
 def read_pid() -> int | None:
