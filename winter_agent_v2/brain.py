@@ -32,6 +32,10 @@ class RuleBrain:
         # because the map gauge never shows it, so the check runs once per run.
         self.claim_free_stamina = bool(claim_free_stamina)
         self.stamina_panel_checked = False
+        # How many times this run has tapped the free stamina gift.  One, because a
+        # second sighting of the same unclaimed panel proves the tap does not work
+        # (see the GET_MORE_STAMINA branch).
+        self.stamina_claim_attempts = 0
         # A separate flag for the camp panel's affordability gate.  It must not
         # reuse ``stamina_panel_checked``: that flag gates the map's
         # free-stamina check, and the gate below deliberately *routes towards*
@@ -394,8 +398,25 @@ class RuleBrain:
             # Only the free control is ever confirmed.  The panel also sells
             # stamina for diamonds; when there is no free gift the panel is
             # simply closed, which is why this branch precedes CLOSE_POPUP.
-            if world.stamina.get("free_claim_available") is True:
+            #
+            # Bounded to one attempt per run.  Measured live 2026-09-19: the client sat on this
+            # popup with ``free_claim_available: true`` while the loop chose CLAIM_FREE_STAMINA
+            # every ~45 seconds, four times and across three different goals, and the popup never
+            # changed -- the claim's own episode carried no verification, so nothing was proved.
+            # A second sighting of the same unclaimed panel is evidence that tapping it does not
+            # work, and because this branch precedes every goal route it was also starving those
+            # goals of their turn.  Leaving is the honest answer: one attempt, then the panel is
+            # closed and the goal's own route runs.
+            if world.stamina.get("free_claim_available") is True and self.stamina_claim_attempts < 1:
+                self.stamina_claim_attempts += 1
                 return Decision("CLAIM_FREE_STAMINA", "free_stamina_gift_claimable", world.confidence, "free_stamina_claimed")
+            if world.stamina.get("free_claim_available") is True:
+                return Decision(
+                    "BACK",
+                    "stamina_panel_still_unclaimed_after_the_claim_attempt",
+                    world.confidence,
+                    "map_restored",
+                )
             return Decision("BACK", "stamina_panel_without_a_free_gift", world.confidence, "map_restored")
         # The recall confirmation must be answered before the generic
         # blocking-popup rule, otherwise a deliberately opened recall dialog
