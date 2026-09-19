@@ -319,5 +319,5 @@ Machine-detected issues (recomputed every run):
 
 | # | 问题 | 状态 | 说明 |
 |---|---|---|---|
-| 39 | **HUD 体力读数修复：真机已验证** | ✅ **已真机验证** | 复跑一轮（修订号 ，确认跑的是新代码）：5 步全部 ，before/after 一致，无  标记 ⇒ 加宽 ROI 在真实帧上生效，丢位不再出现；守卫未触发（无丢位不该动）—— 行为正确。**P0 仍未达成**：该轮 stop_reason=，5 次扫图、**消耗 0**。⇒ 瓶颈已从视觉层转到路线层：AVOID_STAMINA_WASTE 依旧走 BEAST_HUNT（#35），地图有 7/24 级野兽却匹配不到（#29）。 |
+| 39 | **HUD 体力读数修复：真机已验证** | ✅ **已真机验证** | 复跑一轮（修订号 `c415cce4eadd`，确认跑的就是新代码）：5 步全部 `527 (MAP_HUD)`，before/after 一致，无 `dropped_digit_suspected` 标记 ⇒ 加宽 ROI 在真实帧上生效，丢位不再出现；守卫**未触发**（无丢位就不该动）—— 行为正确。**P0 仍未达成**：该轮 stop_reason=`verified_beast_target_not_visible`，5 次扫图、**消耗 0**。⇒ 瓶颈已从视觉层转到路线层：`AVOID_STAMINA_WASTE` 依旧走 `BEAST_HUNT`（#35 闸门状态 vs 真实可行性脱节），地图上有 7 级/24 级野兽却匹配不到（#29 单模板）。 |
 
