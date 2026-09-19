@@ -14,7 +14,7 @@ from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved
-from .capability_gate import CapabilityGate, Deferral
+from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
@@ -382,6 +382,16 @@ class LiveRuntime:
         only when its category is enabled *and* nothing has decided its path must step
         aside; the reasons are collected rather than logged away, because "why is AUTO
         not doing this" has to be answerable from the artifacts afterwards.
+
+        Execution limits are **not** applied here, and that is deliberate rather than an
+        omission.  The obvious test -- "does the run allow one of ``goal.available_skills``" --
+        is unsound, and measuring it is how I found out: ``AVOID_STAMINA_WASTE`` declares
+        ``(BEAST_HUNT, INTEL_CLAIM_REWARDS)``, but the skill it actually runs on its route is
+        ``SCAN_MAP_FOR_BEAST``, which is in ``GATHER_ROUTE`` while the two it declares are not.
+        Filtering here therefore refused a goal that runs perfectly well.  Those fields name the
+        goal's *entry* capability, not the skills the route will use, and a gate built on them
+        is worse than no gate.  The limit is applied after the decision instead, where the skill
+        is a fact -- see ``_yield_to_next_goal``.
         """
         out = []
         for goal in goals:
@@ -392,8 +402,54 @@ class LiveRuntime:
                 if all(item.goal_id != blocked.goal_id for item in deferrals):
                     deferrals.append(blocked)
                 continue
+            if goal.goal_id in self._yielded_goals:
+                # Already offered this run and already found unusable; the line was written the
+                # first time, so this pass stays quiet rather than repeating it.
+                continue
             out.append(goal)
         return out
+
+    def _narrate_once(self, line: str) -> None:
+        """Print one scheduling fact per distinct reason, not once per step.
+
+        A twelve-step run printed the identical deferral line twelve times (measured
+        2026-09-18), which buries the signal it exists to provide.  Same rule here, and the
+        same set, because these lines belong in one stream.
+        """
+        if line in self._printed_deferrals:
+            return
+        self._printed_deferrals.add(line)
+        print(f"[schedule] {line}", flush=True)
+
+    def _yield_to_next_goal(self, goal, deferrals: list[Deferral], decision, why: str) -> bool:
+        """Hold one goal back for the rest of this run so the next one can be tried.
+
+        Returns True only when a *new* goal was held back -- i.e. when the caller may go round
+        again.  False means there is nothing new to hold back, and the caller keeps the
+        behaviour it had, because a run must not spin on the same refusal.
+
+        This is the operator's Rule A applied where it actually bites in production: the
+        decision is only known after the brain has answered, so the run finds out here that the
+        chosen goal cannot be carried out.  Ending the cycle at that point makes one
+        unexecutable task stop every other task, which is the failure the rule names
+        ("不能选中任务后才发现无法执行并停止整轮 AUTO").  Yielding instead lets the next
+        selectable task have the cycle.
+
+        Clearing ``brain.current_goal`` is the load-bearing part: the route is a run-scoped
+        commitment derived from the goal that was picked, and leaving it set would make the next
+        pass re-derive the same decision from the goal that was just refused.
+        """
+        if goal is None:
+            return False
+        if goal.goal_id in self._yielded_goals:
+            return False
+        self._yielded_goals.add(goal.goal_id)
+        self._narrate_once(
+            f"yield {goal.goal_id} -> {DEFERRED} on {getattr(decision, 'skill', '')}: {why}"
+        )
+        self.brain.current_goal = None
+        self._committed_goal = ""
+        return True
 
     def _deferral_replan(self, world: WorldState, deferrals: list[Deferral], best_goal) -> Decision | None:
         """One hop toward the page where more goals are observable.
@@ -668,6 +724,11 @@ class LiveRuntime:
         self._resource_switches = 0
         self._stamina_refusals = 0
         self._unknown_page_backs = 0
+        # Goals this run has already offered and found it could not execute.  Run-scoped on
+        # purpose: the reason is "this cycle cannot run it" (a skill this run may not use, a
+        # skill that is not ready, or a candidate pool that is spent), which says nothing about
+        # the next cycle.  Without it, yielding would re-pick the same goal forever.
+        self._yielded_goals: set[str] = set()
         # Run-scoped: set once a step verifies that a fight has just been
         # dispatched, cleared as soon as a known page is observed again, so it
         # cannot outlive the fight it was armed for.
@@ -878,6 +939,24 @@ class LiveRuntime:
                               last_fatal_error=decision.reason if is_fatal_stop(decision.reason) else None)
                 return finish(decision.reason)
             if decision.skill not in allowed or decision.skill not in self.VERIFIED_ATOMIC:
+                # Rule A: a task this run cannot carry out yields to the next one.  Only when
+                # there is no goal to hold back -- a named run's own route, or a goal already
+                # tried this run -- does an unusable skill end the cycle, which is the honest
+                # answer there because nothing else in this run was going to change it.
+                #
+                # ``index < max_actions`` is load-bearing: yielding costs one iteration, so a run
+                # with no iteration left to re-select in would spend its whole budget and issue
+                # nothing.  Measured 2026-09-19 on a one-action run: the yield was taken, the loop
+                # ended, and the run finished with zero steps -- strictly worse than the stop it
+                # replaced.  With budget left, yielding is the improvement it is meant to be.
+                if index < max_actions and self._yield_to_next_goal(
+                    best_goal,
+                    deferrals,
+                    decision,
+                    f"{decision.skill} may not run in this run (reason: {decision.reason}); "
+                    f"this task yields to the next selectable one",
+                ):
+                    continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 return finish("SKILL_NOT_ENABLED_FOR_LIVE_LOOP")
 

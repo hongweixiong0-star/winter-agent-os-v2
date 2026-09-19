@@ -65,6 +65,11 @@ PATH_CANNOT_RUN = frozenset({COOLDOWN, BLOCKED})
 
 SOURCE_QUEUE = "ESCALATION_QUEUE"
 SOURCE_NO_PROGRESS = "NO_GOAL_PROGRESS"
+#: "This run may not execute this goal" is deliberately NOT a Deferral source.  A Deferral in
+#: ``run.deferrals`` means "the deferral gate refused this path", and that list is read as such
+#: by the escalation hook, the deferred-goal board and four tests -- so a run-level execution
+#: limit filed there would put non-gaps on the board the operator reads as gaps.  Yields are
+#: narrated into the run log instead (see ``LiveRuntime._narrate_once``).
 
 # How long a deferral holds before one probe run is permitted again.  Both exist so
 # that "deferred" cannot become "abandoned": a path the development agent has given
