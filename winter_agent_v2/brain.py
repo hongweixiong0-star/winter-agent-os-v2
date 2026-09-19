@@ -63,6 +63,14 @@ class RuleBrain:
         # to be wrong.  The stop itself is no longer treated as a capability wall, so
         # exhausting this budget defers one attempt instead of blocking the goal.
         self.beast_scans_used = 0
+        # Once per run: has the spend goal already handed over to the intel flow because
+        # the beast route found nothing?  See the give-up branch in the BEAST_HUNT route.
+        self.spend_route_switched = False
+        # Which goal put this run on its route.  The route name alone cannot say: a
+        # `--goal BEAST_HUNT` run and the spend goal riding the same route are
+        # indistinguishable from inside the brain, and only one of them may hand over to
+        # the intel flow.  Set by the runtime when it derives the route from a goal.
+        self.goal_id = ""
         self.max_beast_scans = 5
         # Same reasoning for the tabbed 任务 panel that ``OPEN_DAILY`` opens.
         # Measured live 2026-09-16: the panel lands on its 章节任务 tab and the
@@ -1045,6 +1053,18 @@ class RuleBrain:
                 if self.beast_scans_used < self.max_beast_scans:
                     self.beast_scans_used += 1
                     return Decision("SCAN_MAP_FOR_BEAST", "verified_beast_target_not_visible_scanning_map", world.confidence, "beast_target_resent")
+                if self.goal_id == "AVOID_STAMINA_WASTE" and not self.spend_route_switched:
+                    # The scan budget is spent and no dispatchable target appeared, so this route
+                    # cannot spend on this map at all -- measured: five runs, 0 stamina, and the
+                    # templates match nothing on 23 frames because they search bare snow.  The
+                    # operator's rule for exactly this case is to use another verified task that
+                    # costs stamina, and intel is the one this goal already knows how to ride
+                    # (SPEND_STAMINA shares the intel flow; the beast way is the only one that was
+                    # ever going to be scanned for).  Bounded: once per run, and only after the
+                    # beast route has had its whole budget.
+                    self.spend_route_switched = True
+                    self.current_goal = "SPEND_STAMINA"
+                    return Decision("OPEN_INTEL", "spend_goal_switches_to_intel_no_beast_in_view", world.confidence, "intel_page_open")
                 return Decision("SAFE_STOP", "verified_beast_target_not_visible", 1.0, "refresh_or_switch_task")
             if self.current_goal == "HOME":
                 return Decision("OPEN_HOME", "current_goal_home", world.confidence, "home_opened")

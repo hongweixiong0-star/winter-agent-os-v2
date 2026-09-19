@@ -885,6 +885,10 @@ class LiveRuntime:
                         # raises the number it exists to lower).  See `RuleBrain._intel_like`.
                         route = "SPEND_STAMINA"
                 self.brain.current_goal = route
+                # The route name does not say which goal chose it, and one decision
+                # downstream needs exactly that: only the spend goal may hand over to the
+                # intel flow when no beast is in view.
+                self.brain.goal_id = best_goal.goal_id
             if before.page in {Page.MAINTENANCE, Page.LOADING}:
                 # Environmental states resolve on the game's own schedule. The
                 # worker must hold, not exit: an exit here was counted as an
