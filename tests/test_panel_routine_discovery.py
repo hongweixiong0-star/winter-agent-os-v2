@@ -36,6 +36,7 @@ if str(ROOT) not in sys.path:
 
 from winter_agent_v2.goal_library import (  # noqa: E402
     PANEL_ROUTINES,
+    SWEEP_ROUTINES,
     GoalLibrary,
     GoalStatus,
 )
@@ -199,3 +200,64 @@ class ConsecutiveSweepsMustHopBetweenPanels(unittest.TestCase):
             decision = RuleBrain(current_goal=goal).decide(
                 WorldState(page=Page.HOME, confidence=0.99), registry)
             self.assertEqual(decision.skill, open_skill, f"{goal} from HOME")
+
+
+class DomainsThatOnlyExistedWhenRead(unittest.TestCase):
+    """The same gap as the panels, one step further out.
+
+    ``CLEAR_INTEL`` is emitted only when ``world.intel["status"] != "UNKNOWN"``, and the queue
+    goals return early on an empty reading -- both honest about what they know and useless as
+    discovery entries, because nothing ever read those pages, so the condition was never true and
+    the goal never existed.  Operator §九 names intel, training and research as the priority.
+
+    ``KEEP_BUILDING_PRODUCTIVE`` is deliberately absent from SWEEP_ROUTINES: ``OPEN_BUILDING`` is
+    not a registered skill and ``RuleBrain`` has no BUILD route, so a ticket for it would point at
+    nothing.  That is asserted here so the gap stays visible instead of looking covered.
+    """
+
+    SWEPT = ("CLEAR_INTEL", "KEEP_TRAINING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE")
+
+    def _bare(self):
+        return emitted(WorldState(page=Page.MAP, march_used=2, march_max=3))
+
+    def test_an_unread_domain_still_produces_its_goal(self):
+        goals = self._bare()
+        for goal_id in self.SWEPT:
+            self.assertIn(goal_id, goals, f"{goal_id} must exist before it is ever read")
+            self.assertIs(goals[goal_id].status, GoalStatus.DISCOVERED)
+
+    def test_each_ticket_offers_the_skill_that_opens_its_page(self):
+        goals = self._bare()
+        for routine in SWEEP_ROUTINES:
+            self.assertEqual(goals[routine.goal_id].available_skills, (routine.entry_skill,))
+
+    def test_a_ticket_outranks_routine_work_but_not_real_work(self):
+        goals = self._bare()
+        for goal_id in self.SWEPT:
+            self.assertGreater(goals[goal_id].priority, goals["KEEP_MARCHES_PRODUCTIVE"].priority)
+            self.assertLess(goals[goal_id].priority, 250.0)
+
+    def test_the_entry_skills_can_actually_run(self):
+        """A ticket whose skill is unregistered or unverified is a ticket to a dead end."""
+        registry = v2_registry()
+        for routine in SWEEP_ROUTINES:
+            self.assertIsNotNone(registry.get(routine.entry_skill), routine.entry_skill)
+            self.assertIn(routine.entry_skill, LiveRuntime.VERIFIED_ATOMIC, routine.entry_skill)
+
+    def test_a_reading_keeps_the_original_branch(self):
+        """The ticket only fills the no-reading hole; with intel state the real rule decides."""
+        live = emitted(WorldState(page=Page.MAP, intel={"status": "AVAILABLE"}))["CLEAR_INTEL"]
+        assert live.status is GoalStatus.READY
+        # The real intel branch's skills, not the single entry skill a ticket carries: three of
+        # them, measured from the branch rather than assumed (an earlier version of this test
+        # asserted two and was simply wrong about the route).
+        assert live.available_skills == (
+            "INTEL_CLAIM_REWARDS", "SELECT_INTEL_BEAST_MISSION", "SELECT_INTEL_RESCUE_SURVIVORS")
+        busy = emitted(WorldState(page=Page.MAP, research={"queue_available": False}))
+        assert busy["KEEP_RESEARCH_PRODUCTIVE"].status is GoalStatus.COMPLETE
+
+    def test_building_stays_out_because_it_has_no_route_or_skill(self):
+        registry = v2_registry()
+        self.assertIsNone(registry.get("OPEN_BUILDING"), "if this registers, add the sweep")
+        self.assertNotIn("KEEP_BUILDING_PRODUCTIVE",
+                         {r.goal_id for r in SWEEP_ROUTINES})

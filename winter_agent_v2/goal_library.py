@@ -164,6 +164,62 @@ def _sweep_value(overdue_ratio: float) -> float:
     return SWEEP_BASE_VALUE + SWEEP_AGE_BONUS * min(1.0, max(0.0, float(overdue_ratio or 0.0)))
 
 
+#: Domains whose goal only exists **if a reading exists**, and which therefore had no way to be
+#: looked at.  This is the same gap the panel routines had, one step further out:
+#:
+#: * ``CLEAR_INTEL`` is emitted when ``world.intel["status"] != "UNKNOWN"`` -- and nothing ever
+#:   read the intel page, so the condition was never true and the goal never existed.
+#: * the queue goals return early when their reading is empty (``_append_queue_goal``).
+#:
+#: Both are honest about what they know and useless as discovery entries.  A reading of "" means
+#: *not looked at*, not *nothing to do*, so these get a sweep ticket exactly like the panels --
+#: same store, same TTL reuse, same bounded age-scaled value, and their own entry skill (each of
+#: which is registered and verifier-bound, which is what makes the ticket runnable).
+#:
+#: ``KEEP_BUILDING_PRODUCTIVE`` is deliberately **not** here: ``OPEN_BUILDING`` is not registered
+#: and ``RuleBrain`` has no BUILD route, so a ticket for it would be a ticket to nowhere.  It
+#: needs a skill and a route first, and that is a different piece of work from this one.
+SWEEP_ROUTINES: tuple[PanelRoutine, ...] = (
+    PanelRoutine(
+        "CLEAR_INTEL", "intel",
+        work=("AVAILABLE", "CLAIMABLE"), done=("NOT_AVAILABLE", "EXPIRED", "CLAIMED"),
+        work_skills=("INTEL_CLAIM_REWARDS", "SELECT_INTEL_BEAST_MISSION"),
+        entry_skill="OPEN_INTEL",
+    ),
+    PanelRoutine(
+        "KEEP_TRAINING_PRODUCTIVE", "training",
+        work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
+        work_skills=("TRAIN_TROOPS",),
+        # The power-overview hop is the measured way in; OPEN_TRAINING is not a registered skill.
+        entry_skill="OPEN_POWER_OVERVIEW",
+    ),
+    PanelRoutine(
+        "KEEP_RESEARCH_PRODUCTIVE", "research",
+        work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
+        work_skills=("RESEARCH",),
+        entry_skill="OPEN_RESEARCH",
+    ),
+)
+
+
+def _append_sweep_when_unobserved(
+    goals: list[GoalState],
+    routine: PanelRoutine,
+    reading: Mapping[str, Any] | None,
+    observation: Mapping[str, Any] | None = None,
+) -> bool:
+    """Emit a sweep ticket for one of :data:`SWEEP_ROUTINES`, but only when it is unobserved.
+
+    Returns whether it emitted, so the caller can keep its own reading-based branch untouched:
+    with a reading in hand those goals already work, and this only fills the hole where there is
+    no reading to decide from.
+    """
+    if reading:
+        return False
+    _append_panel_routine(goals, routine, None, observation)
+    return True
+
+
 def _append_panel_routine(
     goals: list[GoalState],
     routine: PanelRoutine,
@@ -293,6 +349,15 @@ class GoalLibrary:
         self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training, ("TRAIN_TROOPS",), 90)
         self._append_queue_goal(goals, "KEEP_RESEARCH_PRODUCTIVE", world.research, ("RESEARCH",), 80)
         self._append_queue_goal(goals, "KEEP_BUILDING_PRODUCTIVE", world.building, ("BUILDING_UPGRADE",), 80)
+        # Domains whose goal is emitted only from a reading (see SWEEP_ROUTINES).  With a
+        # reading the branches above already work; this fills the case where there is none, so
+        # "we have never looked at the intel page" stops meaning "there is no intel work".
+        for sweep in SWEEP_ROUTINES:
+            _append_sweep_when_unobserved(
+                goals, sweep,
+                getattr(world, sweep.field, None),
+                (observations or {}).get(sweep.field),
+            )
         # The panel routines.  Their readings decide READY vs COMPLETE, and having no reading
         # at all is a state of its own (DISCOVERED) rather than a reason to stay invisible.
         for routine in PANEL_ROUTINES:

@@ -88,7 +88,9 @@ def test_the_discoverable_set_proves_itself_with_a_probe():
     """A goal counts as discoverable only because a probe produced it."""
     discoverable = audit.discoverable_goals()
     assert "CLEAR_INTEL" in discoverable, "the intel branch exists and its probe must find it"
-    assert discoverable["CLEAR_INTEL"] == ["intel.status"]
+    # The intel probe proves the *reading-based* branch; the goal is also emitted with no reading
+    # at all now, as a sweep ticket, which is why it appears under the other probes too.
+    assert "intel.status" in discoverable["CLEAR_INTEL"]
     for goal_id, probes in discoverable.items():
         assert probes, f"{goal_id} is claimed discoverable with no probe behind it"
 

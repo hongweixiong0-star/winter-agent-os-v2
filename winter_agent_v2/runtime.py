@@ -485,9 +485,9 @@ class LiveRuntime:
         domains this WorldState carries.
         """
         from . import observation_store
-        from .goal_library import PANEL_ROUTINES
+        from .goal_library import PANEL_ROUTINES, SWEEP_ROUTINES
 
-        for routine in PANEL_ROUTINES:
+        for routine in (*PANEL_ROUTINES, *SWEEP_ROUTINES):
             reading = getattr(world, routine.field, None)
             if reading:
                 try:
