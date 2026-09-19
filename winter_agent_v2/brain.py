@@ -114,6 +114,15 @@ class RuleBrain:
         # this exists to *stop* paying a detour on every cycle, so a missing
         # value has to fall back to the old once-per-run behaviour.
         self.next_supply_at = None
+        # Set by the runtime from the recorded outcome of the last free-gift
+        # claim: True means tapping the panel's 领取 control has already been
+        # measured not to change anything, so the claim must not be re-decided
+        # from the frame alone.  Measured live 2026-09-19T05:17Z -- the control
+        # is still drawn and still matches its template at distance 0, so the
+        # *frame* says "claimable" while the client refuses the tap; eight
+        # consecutive runs (four different goals) died on that same tap because
+        # nothing in the brain could learn it from a picture.
+        self.free_stamina_claim_cooling = False
 
     def _supply_may_be_due(self) -> bool:
         """Whether opening the stamina panel could plausibly find a free gift.
@@ -129,7 +138,14 @@ class RuleBrain:
         Unknown is always due.  This is an optimisation, and an unknown clock
         must not be able to skip the gift -- that would trade a handful of saved
         actions for silently losing 150 stamina every 7 hours.
+
+        A recorded refusal is the one thing that *does* skip the detour: opening
+        the panel again would only re-tap a control the client has already been
+        measured to ignore, and the retry is bounded by the cooldown rather than
+        abandoned (see ``free_stamina_claim_cooling``).
         """
+        if self.free_stamina_claim_cooling:
+            return False
         if self.next_supply_at is None:
             return True
         now = datetime.now(timezone.utc)
@@ -356,6 +372,21 @@ class RuleBrain:
                 return Decision("DISMISS_EXPLORATION_GENERIC_REWARD", "exploration_goal_generic_reward_feedback", world.confidence, "exploration_claimed")
             if self.current_goal == "ALLIANCE":
                 return Decision("DISMISS_ALLIANCE_GENERIC_REWARD", "alliance_goal_generic_reward_feedback", world.confidence, "alliance_gifts_restored")
+            if self.current_goal in {"TRAIN", "RESEARCH"}:
+                # Measured live 2026-09-19, the first time the training sweep was selected: the
+                # run stopped with ``generic_reward_without_goal_context`` while its goal was
+                # KEEP_TRAINING_PRODUCTIVE.  The cases above carry one dismiss skill per domain
+                # and none exists for training or research, so the two goals the sweep had just
+                # wired could not get past a reward popup at all.  ``CLOSE_POPUP`` is registered
+                # and verifier-bound, and closing the popup is exactly what those goals need
+                # next, so it is used rather than inventing per-domain skills that nothing would
+                # verify.
+                return Decision(
+                    "CLOSE_POPUP",
+                    f"{self.current_goal.lower()}_goal_generic_reward_dismissed",
+                    world.confidence,
+                    "underlying_page_restored",
+                )
             return Decision("SAFE_STOP", "generic_reward_without_goal_context", 1.0, "no_action")
         if world.page is Page.POPUP and world.popup == "INTEL_REWARD" and self.current_goal == "MAIL":
             return Decision("DISMISS_MAIL_GENERIC_REWARD", "mail_goal_generic_reward_feedback", world.confidence, "mail_page_restored")
@@ -407,16 +438,32 @@ class RuleBrain:
             # work, and because this branch precedes every goal route it was also starving those
             # goals of their turn.  Leaving is the honest answer: one attempt, then the panel is
             # closed and the goal's own route runs.
-            if world.stamina.get("free_claim_available") is True and self.stamina_claim_attempts < 1:
+            #
+            # The per-run counter is necessary but NOT sufficient, and the residual livelock was
+            # measured after it landed: a step whose verifier fails ends the run (``runtime.py``,
+            # ``if not verification.ok: return finish(...)``), so a run that starts on this panel
+            # observes it exactly ONCE -- the counter is 0, the claim is re-decided, and the
+            # counter never reaches the second sighting that would leave.  Every cycle is a fresh
+            # interpreter, so the count resets.  The cross-run half is ``free_stamina_claim_cooling``:
+            # the refused tap is remembered on disk and the branch leaves until the retry is due.
+            if (
+                world.stamina.get("free_claim_available") is True
+                and not self.free_stamina_claim_cooling
+                and self.stamina_claim_attempts < 1
+            ):
                 self.stamina_claim_attempts += 1
                 return Decision("CLAIM_FREE_STAMINA", "free_stamina_gift_claimable", world.confidence, "free_stamina_claimed")
             if world.stamina.get("free_claim_available") is True:
-                return Decision(
-                    "BACK",
-                    "stamina_panel_still_unclaimed_after_the_claim_attempt",
-                    world.confidence,
-                    "map_restored",
+                # Two different reasons, because they are two different facts: the panel was
+                # already tapped this run and did not change, versus the same tap was refused
+                # on an earlier run and has not been retried yet.  Merging them would hide
+                # which one the runtime is actually in.
+                reason = (
+                    "stamina_panel_claim_refused_waiting_for_the_next_supply"
+                    if self.free_stamina_claim_cooling
+                    else "stamina_panel_still_unclaimed_after_the_claim_attempt"
                 )
+                return Decision("BACK", reason, world.confidence, "map_restored")
             return Decision("BACK", "stamina_panel_without_a_free_gift", world.confidence, "map_restored")
         # The recall confirmation must be answered before the generic
         # blocking-popup rule, otherwise a deliberately opened recall dialog
