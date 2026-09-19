@@ -380,7 +380,17 @@ class OCRPageClassifier:
 # x 0.046-0.089, y 0.080-0.091 inside the gauge pill that hangs under the
 # avatar in the top-left HUD corner.  The ROI adds a small margin so a longer
 # read ("200/200") still fits inside it.
-HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.058, "h_norm": 0.019}
+# Widened on 2026-09-19 from w_norm 0.058, which was measured too tight for the recogniser:
+# the detector under-segments a small number and can stop after the second digit, so a
+# three-digit value came back as its first two digits.  Measured on four live frames kept in
+# ``dataset/truth_audit/stamina_hud_roi_20260919`` (the HUD itself says 527 -- the 7 ends at
+# frame x 63, *inside* the old right edge at x 70, so this is a detector failure and not a
+# clipped glyph): at 0.058 two frames read 52 for 527, at 0.075 both read 527 while the
+# already-correct frame still reads 382.  The number is not clipped at 0.075 either -- the
+# green pill runs to about x 88 -- so the extra width is margin for the detector, not content.
+# It matters because AVOID_STAMINA_WASTE spends or stops spending on this number, and a
+# dropped digit reads as "nearly empty" when stamina is in fact plentiful.
+HUD_STAMINA_ROI = {"x_norm": 0.040, "y_norm": 0.0755, "w_norm": 0.075, "h_norm": 0.019}
 
 # The march counter ("5/6") beside the 行军 label.  Measured live: px
 # 200-244 x 228-255 on 720x1280.  It is read from its own ROI rather than from
