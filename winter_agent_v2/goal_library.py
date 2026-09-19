@@ -146,58 +146,81 @@ def _badge_present(reading: Mapping[str, Any]) -> bool:
     return any(bool(value) for value in badges.values())
 
 
+#: A due routine's discovery value, and how much age can add to it.
+#:
+#: Measured 2026-09-19 with a flat 20: the stamina goal priced at 2450 and gathering at 70, so
+#: ``best()`` chose them on every run and no panel was ever swept -- the ticket existed and was
+#: never selected.  The ceiling is the whole design: 150 outranks routine gathering (70) so a
+#: genuinely overdue panel *does* get looked at, and it cannot outrank a real claim (a claimable
+#: routine is 250, intel rewards 500, the stamina goal 2450), so the sweep never competes with
+#: work that pays.  With four routines and per-domain TTLs, one sweep round makes them all fresh
+#: and their value drops back to the base, which is what stops this from opening every panel
+#: every run (operator §二).
+SWEEP_BASE_VALUE = 80.0
+SWEEP_AGE_BONUS = 70.0
+
+
+def _sweep_value(overdue_ratio: float) -> float:
+    return SWEEP_BASE_VALUE + SWEEP_AGE_BONUS * min(1.0, max(0.0, float(overdue_ratio or 0.0)))
+
+
 def _append_panel_routine(
     goals: list[GoalState],
     routine: PanelRoutine,
     reading: Mapping[str, Any] | None,
     observation: Mapping[str, Any] | None = None,
 ) -> None:
-    """Emit one panel routine from its reading, or as an observation when there is none.
+    """Emit one panel routine from its reading, or as a visit when it is due.
 
-    ``observation`` is the last reading that is still fresh (operator §五): a panel read five
-    minutes ago can be acted on without opening it again, which is what stops the sweep from
-    being "every page, every run".  It is only consulted when the live reading is empty -- a
-    reading taken now always wins over one taken earlier.
+    ``observation`` is the store's record for this domain -- its reading, how old it is, and
+    whether that age is past the TTL.  A live reading always wins.  A fresh stored reading is
+    reused (operator §五 "已获得且未过期的观察结果可以复用").  An overdue one is not: it becomes a
+    visit again, and the visit is priced by how overdue it is (see ``SWEEP_BASE_VALUE``).
 
-    Four honest outcomes, and the fourth is the one that was missing:
+    Four honest outcomes, and the distinctions are the point:
       READY      the page says there is something to claim
       COMPLETE   the page says there is not
-      UNKNOWN    the page was read and said something this table does not know
-                 (OBSERVED_UNKNOWN -- a capability gap, not a routine to schedule)
-      DISCOVERED never read, or read too long ago to trust (NOT_OBSERVED_YET): the goal exists
-                 and is schedulable *as the act of going to look*, which is what stops "no
-                 observation" from meaning "this goal does not exist"
+      UNKNOWN    read, and it said nothing this table can decide from -> OBSERVED_UNKNOWN, a
+                 capability gap.  Re-opening a panel that has just reported nothing cannot
+                 resolve it, so this is deliberately *not* a visit ticket.
+      DISCOVERED never read, or read too long ago to trust -> NOT_OBSERVED_YET: schedulable as
+                 the act of going to look, which is what stops "no observation" from meaning
+                 "this goal does not exist"
     """
     live = reading or {}
-    # Presence, not truthiness: a *stored empty* reading means "we looked and it said nothing",
-    # which is knowledge, and differs from having no stored reading at all.
-    looked_recently = observation is not None
-    reused = not live and looked_recently
-    effective = live or (observation or {})
+    record = observation or {}
+    stored = record.get("reading")
+    stored = dict(stored) if isinstance(stored, Mapping) else None
+    # A record exists but its age is past the TTL: known once, not known now.
+    fresh = bool(record) and not record.get("overdue", False)
+    reused = not live and fresh and stored is not None
+    effective = live or (stored if fresh else {}) or {}
     status = str(effective.get("status") or "").strip().upper()
     badge = _badge_present(effective)
     provenance = {
-        "observed": bool(effective) or looked_recently,
+        "observed": bool(effective) or (fresh and stored is not None),
         "reused": reused,
-        "reading": dict(effective),
+        # What we saw, even when it is too old to decide with: an overdue reading is not state,
+        # but it is evidence, and hiding it would make "this said CLAIMED two hours ago" vanish
+        # exactly when someone is asking why the panel was opened again.
+        "reading": dict(live or stored or {}),
+        "age_minutes": record.get("age_minutes"),
+        "overdue": bool(record.get("overdue", False)),
     }
 
     # "Not looked" is an *empty* reading, not a missing status word: the mail panel reports
     # unclaimed tabs as badges and often prints no status at all, and calling that "never
-    # looked" would send the loop to re-open a page it has just read.  An empty mapping is the
-    # WorldState default, so this is the boundary the reading itself draws.
+    # looked" would send the loop to re-open a page it has just read.
     if not effective:
-        if looked_recently:
-            # Read, and it said nothing usable.  That is OBSERVED_UNKNOWN, not a reason to go
-            # straight back -- re-opening a panel that has just reported nothing is the loop
-            # the operator named, and a second look at the same page cannot resolve it.
+        if fresh:
+            # Read recently, and it said nothing usable -> OBSERVED_UNKNOWN, not a visit.
             goals.append(GoalState(
                 routine.goal_id, GoalStatus.UNKNOWN, evidence=provenance, distance=1.0,
             ))
             return
         goals.append(GoalState(
             routine.goal_id, GoalStatus.DISCOVERED,
-            development_value=routine.discovery_value,
+            development_value=_sweep_value(record.get("overdue_ratio", 0.0)),
             available_skills=(routine.entry_skill,),
             evidence=provenance,
             distance=1.0,

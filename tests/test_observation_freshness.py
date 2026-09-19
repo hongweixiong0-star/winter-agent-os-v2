@@ -22,6 +22,8 @@ import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Mapping
+from typing import Mapping
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -36,7 +38,15 @@ MAIL = next(r for r in PANEL_ROUTINES if r.goal_id == "MAIL_ROUTINE")
 
 
 def goals(world: WorldState, observations=None):
-    return {g.goal_id: g for g in GoalLibrary().discover(world, observations=observations)}
+    """``observations`` accepts a bare reading for brevity and wraps it as a fresh record."""
+    shaped = None
+    if observations is not None:
+        shaped = {
+            domain: (value if isinstance(value, Mapping) and "reading" in value
+                     else {"reading": value, "overdue": False, "overdue_ratio": 0.0})
+            for domain, value in observations.items()
+        }
+    return {g.goal_id: g for g in GoalLibrary().discover(world, observations=shaped)}
 
 
 def test_a_fresh_reading_is_reused_without_reopening_the_panel():
@@ -121,3 +131,85 @@ def test_a_broken_store_means_nothing_is_fresh(tmp_path: Path):
     # ... and recording over a corrupt file repairs it rather than raising.
     store.record("mail", {"status": "CLAIMED"}, now=NOW, path=path)
     assert json.loads(path.read_text(encoding="utf-8"))["domains"]["mail"]["reading"] == {"status": "CLAIMED"}
+
+
+def test_a_due_routine_outranks_routine_work_but_never_a_real_claim():
+    """The acceptance invariant, measured against the live priorities.
+
+    Before this, every routine was worth a flat 20 against 2450 for the stamina goal and 70 for
+    gathering, so ``best()`` chose them on every run and no panel was ever swept: the state
+    existed and nothing selected it.  A due routine must win against ordinary routine work --
+    otherwise the sweep simply never happens -- and must lose against anything that actually
+    pays, or the sweep would eat the work it exists to find.
+    """
+    world = WorldState(page=Page.MAP, march_used=2, march_max=3)
+    overdue = goals(world, {"mail": {"reading": {}, "overdue": True, "overdue_ratio": 2.0}})
+    sweep = overdue["MAIL_ROUTINE"]
+    assert sweep.status is GoalStatus.DISCOVERED
+    assert sweep.priority > overdue["KEEP_MARCHES_PRODUCTIVE"].priority, (
+        "an overdue panel must be looked at instead of another routine round"
+    )
+    claimable = goals(world, {"daily": {"status": "CLAIMABLE"}})["DAILY_ACTIVITY_TARGET"]
+    assert claimable.priority > sweep.priority, (
+        "a panel with something to claim must outrank a panel that merely needs looking at"
+    )
+    assert sweep.priority < 250.0, "the sweep ceiling must stay under a real claim"
+
+
+def test_never_checked_is_due_immediately():
+    """The first sweep has to happen: a never-read panel outranks routine work from the start."""
+    world = WorldState(page=Page.MAP, march_used=2, march_max=3)
+    gs = goals(world, {})
+    assert gs["MAIL_ROUTINE"].status is GoalStatus.DISCOVERED
+    assert gs["MAIL_ROUTINE"].priority > gs["KEEP_MARCHES_PRODUCTIVE"].priority
+
+
+def test_an_overdue_reading_is_not_reused_as_state():
+    """§五: an expired result must be re-observed, so it may not decide the goal's state."""
+    stale = {"mail": {"reading": {"status": "CLAIMED"}, "overdue": True, "overdue_ratio": 3.0}}
+    goal = goals(WorldState(page=Page.MAP), stale)["MAIL_ROUTINE"]
+    assert goal.status is GoalStatus.DISCOVERED, "a stale reading must not read as COMPLETE"
+    assert goal.evidence["overdue"] is True
+    assert goal.evidence["reused"] is False
+    assert goal.evidence["reading"] == {"status": "CLAIMED"}, "kept as evidence, not as state"
+
+
+def test_a_due_routine_outranks_routine_work_but_never_a_real_claim():
+    """The acceptance invariant, measured against the live priorities.
+
+    Before this, every routine was worth a flat 20 against 2450 for the stamina goal and 70 for
+    gathering, so ``best()`` chose them on every run and no panel was ever swept: the state
+    existed and nothing selected it.  A due routine must win against ordinary routine work --
+    otherwise the sweep simply never happens -- and must lose against anything that actually
+    pays, or the sweep would eat the work it exists to find.
+    """
+    world = WorldState(page=Page.MAP, march_used=2, march_max=3)
+    overdue = goals(world, {"mail": {"reading": {}, "overdue": True, "overdue_ratio": 2.0}})
+    sweep = overdue["MAIL_ROUTINE"]
+    assert sweep.status is GoalStatus.DISCOVERED
+    assert sweep.priority > overdue["KEEP_MARCHES_PRODUCTIVE"].priority, (
+        "an overdue panel must be looked at instead of another routine round"
+    )
+    claimable = goals(world, {"daily": {"status": "CLAIMABLE"}})["DAILY_ACTIVITY_TARGET"]
+    assert claimable.priority > sweep.priority, (
+        "a panel with something to claim must outrank a panel that merely needs looking at"
+    )
+    assert sweep.priority < 250.0, "the sweep ceiling must stay under a real claim"
+
+
+def test_never_checked_is_due_immediately():
+    """The first sweep has to happen: a never-read panel outranks routine work from the start."""
+    world = WorldState(page=Page.MAP, march_used=2, march_max=3)
+    gs = goals(world, {})
+    assert gs["MAIL_ROUTINE"].status is GoalStatus.DISCOVERED
+    assert gs["MAIL_ROUTINE"].priority > gs["KEEP_MARCHES_PRODUCTIVE"].priority
+
+
+def test_an_overdue_reading_is_not_reused_as_state():
+    """§五: an expired result must be re-observed, so it may not decide the goal's state."""
+    stale = {"mail": {"reading": {"status": "CLAIMED"}, "overdue": True, "overdue_ratio": 3.0}}
+    goal = goals(WorldState(page=Page.MAP), stale)["MAIL_ROUTINE"]
+    assert goal.status is GoalStatus.DISCOVERED, "a stale reading must not read as COMPLETE"
+    assert goal.evidence["overdue"] is True
+    assert goal.evidence["reused"] is False
+    assert goal.evidence["reading"] == {"status": "CLAIMED"}, "kept as evidence, not as state"

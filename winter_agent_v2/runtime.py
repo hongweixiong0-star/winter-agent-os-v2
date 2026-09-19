@@ -460,16 +460,18 @@ class LiveRuntime:
             return best_goal.goal_id
         return self.brain.current_goal or self._committed_goal or "AUTO_DISCOVERY"
 
-    def _fresh_observations(self) -> dict:
-        """Stored readings that are still usable, for the goal engine to reuse.
+    def _observations_for_engine(self) -> dict:
+        """The store's records, shaped for the goal engine.
 
-        Operator §五: "已获得且未过期的观察结果可以复用".  The TTL lives in ``observation_store``
-        because that is also where the readings do; this only asks it what is still current.
+        Not filtered to fresh ones here: the engine needs to know *how overdue* a domain is to
+        price a visit (``observation_store.as_observation_input``).  Measured 2026-09-19 -- with
+        only "fresh readings" passed in, a due routine was worth a flat 20 against 2450 for the
+        stamina goal and 70 for gathering, so nothing was ever swept.
         """
         from . import observation_store
 
         try:
-            return dict(observation_store.as_discovery_input(observation_store.load()))
+            return dict(observation_store.as_observation_input(observation_store.load()))
         except Exception:  # noqa: BLE001 - a broken store means "nothing is fresh", never a crash
             return {}
 
@@ -505,7 +507,7 @@ class LiveRuntime:
         world would only be a second chance for the two answers to disagree.
         """
         self._record_observations(world)
-        goals = self.goal_library.discover(world, observations=self._fresh_observations())
+        goals = self.goal_library.discover(world, observations=self._observations_for_engine())
         if self.goal_store is None:
             return goals
         try:

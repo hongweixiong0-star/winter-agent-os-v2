@@ -128,6 +128,37 @@ def as_discovery_input(
     return out
 
 
+def as_observation_input(
+    observations: Mapping[str, Observation] | None,
+    now: datetime | None = None,
+) -> dict[str, dict[str, Any]]:
+    """The richer form the engine needs to decide *whether* to go and look.
+
+    ``as_discovery_input`` answers "what do we already know"; this also answers "how long since
+    we last knew it", and the second question is what makes a sweep actually happen.  Measured
+    2026-09-19 with the static values: the stamina goal priced at 2450 and gathering at 70, both
+    above every routine's discovery value, so ``best()`` chose them on every run and **no panel
+    was ever swept** -- the state existed and was never selected.
+
+    So an overdue routine gets a bounded, age-scaled value: enough to outrank ordinary routine
+    work once it is genuinely due, never enough to outrank a real claim (a claimable routine is
+    worth 250, intel rewards 500, the stamina goal 2450).  The bound is what keeps this a
+    bounded sweep rather than a reason to open every panel every run.
+    """
+    moment = now or datetime.now(timezone.utc)
+    out: dict[str, dict[str, Any]] = {}
+    for domain, observation in (observations or {}).items():
+        age_minutes = observation.age_seconds(moment) / 60.0
+        ttl_minutes = max(1.0, ttl_seconds(domain) / 60.0)
+        out[str(domain)] = {
+            "reading": dict(observation.reading),
+            "age_minutes": round(age_minutes, 1),
+            "overdue": age_minutes > ttl_minutes,
+            "overdue_ratio": round(max(0.0, age_minutes / ttl_minutes), 3),
+        }
+    return out
+
+
 def record(
     domain: str,
     reading: Mapping[str, Any] | None,
