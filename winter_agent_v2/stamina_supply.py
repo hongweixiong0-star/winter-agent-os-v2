@@ -50,6 +50,21 @@ from pathlib import Path
 
 DEFAULT_PATH = Path("learning/stamina_supply.json")
 
+#: How long a claim that did not prove suppresses the next attempt.
+#:
+#: Measured live 2026-09-19T05:17Z (bounded probe, ``popup OPEN_MAP_BACK``): the
+#: 丰盛的招待 领取 control is still drawn and still matches its template at
+#: distance 0, but a tap on its centre changes nothing -- the panel returns to
+#: the same state, so ``FREE_STAMINA_CLAIM_NOT_PROVEN`` is the honest reading and
+#: eight consecutive runs proved it is not transient.  Without a bound the brain
+#: re-decides the claim from the frame alone on every cycle and the whole agent
+#: wedges on the panel (four goals in a row, 2026-09-19T05:07Z..05:15Z).
+#:
+#: 30 minutes is a *bounded retry*, not a surrender: the gift is still attempted,
+#: just not once per run.  The supply cadence is hours (see the module docstring),
+#: so this cannot plausibly skip a fresh gift.
+DEFAULT_CLAIM_COOLDOWN_SECONDS = 1800.0
+
 
 class StaminaSupplyStore:
     """Persist the instant the free gift becomes claimable.
@@ -82,6 +97,36 @@ class StaminaSupplyStore:
         self._write({"next_supply_at": instant.isoformat(), "recorded_at": now.isoformat()})
         return instant
 
+    def claim_refused_at(self) -> datetime | None:
+        """When the free gift was last tapped and the claim did not prove."""
+        return self._moment("claim_refused_at")
+
+    def record_claim_refused(self, *, at: datetime | None = None) -> datetime:
+        """Remember that tapping the free control did not change the panel.
+
+        This is a *negative* result recorded from production evidence, so it is
+        written where the positive countdown lives: the panel is the only place
+        either is observable, and the runs in between must not re-learn it by
+        tapping the same dead control (see ``DEFAULT_CLAIM_COOLDOWN_SECONDS``).
+        """
+        now = at or datetime.now(timezone.utc)
+        self._write({"claim_refused_at": now.isoformat(), "recorded_at": now.isoformat()})
+        return now
+
+    def claim_cooling_down(
+        self, *, at: datetime | None = None, cooldown_seconds: float = DEFAULT_CLAIM_COOLDOWN_SECONDS
+    ) -> bool:
+        """True while a refused claim should not be retried yet.
+
+        Absent is False: an unknown refusal must never suppress a claim that has
+        not actually been attempted.  Only a recorded refusal can hold it back.
+        """
+        refused = self.claim_refused_at()
+        if refused is None:
+            return False
+        now = at or datetime.now(timezone.utc)
+        return now - refused < timedelta(seconds=max(0.0, float(cooldown_seconds)))
+
     def is_due(self, *, at: datetime | None = None) -> bool:
         """True only when the supply instant is known *and* has passed.
 
@@ -91,6 +136,18 @@ class StaminaSupplyStore:
         now = at or datetime.now(timezone.utc)
         instant = self.next_supply_at()
         return instant is not None and now >= instant
+
+    def _moment(self, key: str) -> datetime | None:
+        raw = self._read().get(key)
+        if not isinstance(raw, str):
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw)
+        except ValueError:
+            return None
+        # A naive timestamp cannot be compared against "now"; treat it as absent
+        # rather than guessing a timezone.
+        return parsed if parsed.tzinfo is not None else None
 
     def _read(self) -> dict:
         try:
@@ -102,7 +159,13 @@ class StaminaSupplyStore:
     def _write(self, payload: dict) -> None:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+            # Merge rather than replace: the supply instant and the refusal are
+            # two independent facts about the same panel and each is learned on a
+            # different visit, so a plain overwrite would silently drop whichever
+            # one this call did not carry.
+            merged = self._read()
+            merged.update(payload)
+            self.path.write_text(json.dumps(merged, ensure_ascii=False, indent=1), encoding="utf-8")
         except OSError:
             # Losing this optimisation must never lose a run.
             pass

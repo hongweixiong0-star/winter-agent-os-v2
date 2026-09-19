@@ -761,7 +761,10 @@ class LiveRuntime:
                     # per mission, so the goal rides that one while the beast path is off.
                     beast = (gate.capabilities.get("SPEND_STAMINA_ON_BEAST") or (None,))[0]
                     if beast in {"BLOCKED", "COOLDOWN", "DEFERRED", "DEVELOPMENT_PENDING"}:
-                        route = "INTEL"
+                        # Its own route name, not "INTEL": the two share the intel flow but are
+                        # different goals, and the spend goal must not claim free stamina (which
+                        # raises the number it exists to lower).  See `RuleBrain._intel_like`.
+                        route = "SPEND_STAMINA"
                 self.brain.current_goal = route
             if before.page in {Page.MAINTENANCE, Page.LOADING}:
                 # Environmental states resolve on the game's own schedule. The

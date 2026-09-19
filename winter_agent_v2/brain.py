@@ -300,6 +300,20 @@ class RuleBrain:
             "daily_tab_selected",
         )
 
+    @property
+    def _intel_like(self) -> bool:
+        """Whether this run is working the intel missions.
+
+        Two goals share one route on purpose: CLEAR_INTEL clears the board and
+        AVOID_STAMINA_WASTE rides the same flow because the intel beast missions are the
+        *verified* way to spend stamina (the world-beast path is blocked and the map carries no
+        species the table knows).  They are not the same goal, though, and the difference is
+        real: one of them must not claim free stamina, because for that goal a rising number is
+        the wrong direction.  This property is what lets the shared route tell them apart
+        without duplicating it.
+        """
+        return self.current_goal in {"INTEL", "SPEND_STAMINA"}
+
     def reserved_slots(self, world: WorldState) -> int:
         """How many march slots the policy keeps free, given the OBSERVED capacity.
 
@@ -366,7 +380,7 @@ class RuleBrain:
                 return Decision("DISMISS_MAIL_GENERIC_REWARD", "mail_goal_generic_reward_feedback", world.confidence, "mail_page_restored")
             if self.current_goal == "DAILY":
                 return Decision("DISMISS_DAILY_GENERIC_REWARD", "daily_goal_generic_reward_feedback", world.confidence, "daily_reward_advanced")
-            if self.current_goal == "INTEL":
+            if self._intel_like:
                 return Decision("DISMISS_INTEL_GENERIC_REWARD", "intel_goal_generic_reward_feedback", world.confidence, "intel_page_restored")
             if self.current_goal == "EXPLORATION":
                 return Decision("DISMISS_EXPLORATION_GENERIC_REWARD", "exploration_goal_generic_reward_feedback", world.confidence, "exploration_claimed")
@@ -516,7 +530,7 @@ class RuleBrain:
                 if leave is not None:
                     return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_mail_route")
-        if self.current_goal == "INTEL":
+        if self._intel_like:
             if world.page is Page.HOME:
                 return Decision("OPEN_MAP", "intel_goal_requires_map", world.confidence, "map_opened")
             if (
@@ -551,7 +565,7 @@ class RuleBrain:
                 return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")
         if (
             world.page is Page.EXPLORATION
-            and self.current_goal == "INTEL"
+            and self._intel_like
             and world.exploration.get("stamina_cost_displayed") is not None
         ):
             # Live 2026-09-14: the Hero Journey camp panel classifies as the
@@ -888,7 +902,7 @@ class RuleBrain:
                 # not spent here: the tap only opens the formation page, and
                 # DISPATCH_BEAST plus its verifier decide and prove the spend.
                 return Decision("ATTACK_BEAST_CARD", "beast_card_attack_control_visible", world.confidence, "beast_march_page_open")
-            if self.current_goal == "INTEL" and not world.beast:
+            if self._intel_like and not world.beast:
                 # A Hero Journey camp target card: same layout as the beast
                 # target card (the 出征 button drives the page) but without the
                 # beast mission fields, which is how the two are told apart.
@@ -980,6 +994,13 @@ class RuleBrain:
             # the panel is opened.  Once per run, so it cannot become a loop.
             if (
                 self.claim_free_stamina
+                # Not while the goal *is* to spend stamina.  Measured live 2026-09-19: the spend
+                # goal's runs were consumed by OPEN_STAMINA_SOURCES -> CLAIM_FREE_STAMINA, which
+                # raises stamina -- the opposite of the goal -- so the meter went the wrong way,
+                # the no-progress rule deferred the goal for 30 minutes, and it came back and did
+                # the same thing.  Claiming free stamina is good value and stays for every other
+                # goal; it is only contradictory for the one that exists to get the number down.
+                and self.current_goal != "SPEND_STAMINA"
                 and not self.stamina_panel_checked
                 and not world.resource_search_open
                 and self._supply_may_be_due()
@@ -997,7 +1018,7 @@ class RuleBrain:
                 # whether to look.
                 self.stamina_panel_checked = True
                 return Decision("OPEN_STAMINA_SOURCES", "free_stamina_gift_not_yet_checked_this_run", world.confidence, "stamina_sources_open")
-            if self.current_goal == "INTEL":
+            if self._intel_like:
                 return Decision("OPEN_INTEL", "intel_goal_from_world_map", world.confidence, "intel_page_open")
             if self.current_goal == "BEAST_HUNT":
                 if world.idle_marches is not None and world.idle_marches <= 0:
@@ -1081,7 +1102,7 @@ class RuleBrain:
             ):
                 return Decision("SAFE_STOP", "reserved_march_for_stamina", 1.0, "stamina_task_slot_preserved")
             return Decision("SEARCH_RESOURCE", "idle_march_available", world.confidence, "resource_search_open")
-        if world.page is Page.MARCH and self.current_goal == "INTEL" and not world.beast:
+        if world.page is Page.MARCH and self._intel_like and not world.beast:
             # The Hero Journey squad-setup page (小队设置): no beast fields, and
             # without this explicit branch the decision fell to the registry
             # fallback, which could pick the *gathering* dispatch skill whose

@@ -1,0 +1,38 @@
+fix(stamina): the spend goal stops claiming free stamina, and stops re-tapping a dead control
+
+Two live measurements, one goal whose meter has to go *down*.
+
+**The spend goal was feeding itself.**  `AVOID_STAMINA_WASTE` declares three ways to spend
+stamina and only the beast one carries a block, so the runtime rides the intel flow by
+setting `current_goal = "INTEL"`.  But the intel route claims the free stamina gift, which
+*raises* the number the spend goal exists to lower: measured 2026-09-19, the spend goal's
+runs were consumed by `OPEN_STAMINA_SOURCES -> CLAIM_FREE_STAMINA`, the no-progress rule
+then deferred the goal for 30 minutes, and it came back and did the same thing.  Stamina
+sat at 547 throughout.
+
+The two goals now have separate route names.  `RuleBrain._intel_like` is the one place that
+decides they share the intel flow, and the five `current_goal == "INTEL"` sites that
+genuinely mean "working the intel missions" go through it -- including the Hero-Journey
+camp card and the squad-setup page, which are the same pages for both goals.  The
+free-stamina claim keeps its place for every other goal and is refused only for the one
+where a rising number is the wrong direction.
+
+**The free control can be dead while still looking live.**  Bounded live probe
+2026-09-19T05:17Z (`popup OPEN_MAP_BACK`): 丰盛的招待's 领取 control is still drawn and still
+matches its template at distance 0, but a tap on its centre changes nothing -- the panel
+returns to the same state, so `FREE_STAMINA_CLAIM_NOT_PROVEN` is the honest reading.  Eight
+consecutive runs proved it was not transient, and the brain re-decided the claim from the
+frame alone every cycle, wedging four goals in a row (05:07Z..05:15Z).
+
+`StaminaSupplyStore` now records the refusal where the positive countdown already lives --
+the panel is the only place either is observable -- and `claim_cooling_down()` holds the
+next attempt for 30 minutes.  A bounded retry, not a surrender: the gift is still attempted,
+just not once per cycle, and the supply cadence is hours so a fresh gift cannot plausibly be
+skipped.  Absent means False, so an unknown refusal never suppresses a claim that was never
+attempted.  `_write` merges rather than replaces, because the supply instant and the refusal
+are independent facts learned on different visits and an overwrite silently dropped one.
+
+**Not yet live-verified.**  The route split passes its offline tests and `check_wiring`, but
+the goal it serves is still unmet: stamina has not come down under the acceptance line.  The
+next measurement is the one that counts -- whether `AVOID_STAMINA_WASTE` now rides
+`SPEND_STAMINA` without claiming free stamina and whether the number falls.
