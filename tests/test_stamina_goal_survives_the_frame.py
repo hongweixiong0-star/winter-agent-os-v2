@@ -73,9 +73,17 @@ def test_a_live_reading_wins_and_is_not_labelled_reused():
 
 
 def test_spending_stamina_outranks_browsing_panels():
-    """§一: stamina work must not be crowded out by routine sweeps."""
+    """§一: stamina work must not be crowded out by routine sweeps.
+
+    The world carries march data as well as stamina, because a goal that is not emitted cannot be
+    compared: the first version of this test compared against ``KEEP_MARCHES_PRODUCTIVE`` in a
+    world with no march reading, and it raised rather than asserting -- which is how it shipped red
+    for one commit.
+    """
     goals = {g.goal_id: g for g in GoalLibrary().discover(
-        WorldState(page=Page.HOME), stored(547, overdue=False))}
+        WorldState(page=Page.HOME, march_used=2, march_max=3),
+        observations=stored(547, overdue=False))}
+    assert "KEEP_MARCHES_PRODUCTIVE" in goals, "the comparison needs both goals to exist"
     assert goals["AVOID_STAMINA_WASTE"].priority > goals["MAIL_ROUTINE"].priority
     assert goals["AVOID_STAMINA_WASTE"].priority > goals["KEEP_MARCHES_PRODUCTIVE"].priority
 
