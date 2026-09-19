@@ -1,9 +1,156 @@
 {
-  "schema_version":"1.1","gate":"REVIEWED","entity_class":"NORMAL_BEAST","records":[
-    {"id":"GREAT_HORNED_DEER_22","name":"大角鹿","aliases":["Great Horned Deer","普通野兽"],"category":"world_pve","level":22,"entry":"INTEL/BEAST_MISSION/VIEW_TARGET","page":"BEAST","action":"ATTACK","recommended_power":5107044,"displayed_stamina_cost":10,"actual_stamina_cost":7,"actual_cost_note":"live hero/account modifiers reduced displayed cost","verification":"victory_assured + queue 1/6→2/6 RETURNING→1/6 + Intel CLAIMABLE + reward","source":["LIVE_CLIENT","official_google_play_beast_guide","github_aminul_wos"],"retrieved_at":"2026-09-03","last_verified":"2026-09-03","confidence":0.99,"status":"VERIFIED","notes":"Normal Beast; kept distinct from Giant Beast/Polar Terror and Bear."},
-    {"id":"MUSK_OX_9_LIVE","name":"麝牛","species":"MUSK_OX","dispatchable":true,"category":"world_pve","level":9,"entry":"CURRENT_MAP_VISIBLE_TARGET","recommended_power":9000,"displayed_stamina_cost":10,"victory_assessment":"本次出征胜券在握","live_runs":3,"verification":"target dialog + green victory assessment + dispatch 5/6→6/6 + natural return 6/6→5/6; native V2 runtime dispatch and post-action verifier PASS","source":["LIVE_CLIENT"],"last_verified":"2026-09-06","confidence":0.99,"status":"VERIFIED","notes":"Displayed cost observed; numeric stamina balance was not visible."},
-    {"id":"ARCTIC_WOLF_6_LIVE","name":"北极狼","category":"world_pve","level":6,"entry":"CURRENT_MAP_VISIBLE_TARGET","recommended_power":2400,"displayed_stamina_cost":10,"victory_assessment":"本次出征胜券在握","live_runs":1,"verification":"target dialog + green victory assessment + dispatch 5/6→6/6 + natural return 6/6→5/6","source":["LIVE_CLIENT"],"last_verified":"2026-09-06","confidence":0.94,"status":"REVIEWED","notes":"Displayed cost observed; numeric stamina balance was not visible."},
-    {"id":"SNOW_LEOPARD_29_LIVE","name":"雪豹","category":"world_pve","level":29,"entry":"CURRENT_MAP_VISIBLE_TARGET","recommended_power":78153250,"displayed_stamina_cost":10,"victory_assessment":"本次出征胜算较低","action_result":"BLOCKED_BEFORE_DISPATCH","source":["LIVE_CLIENT"],"last_verified":"2026-09-06","confidence":0.99,"status":"REVIEWED","notes":"The Agent rejected the red low-win-probability state and spent no stamina."},
-    {"id":"BEAST_GENERIC","name":"野兽","aliases":["普通野怪","Beast"],"category":"world_pve","entry":"MAP/search or Intel","page":"BEAST","action":"ATTACK","cost":"Chief Stamina; live modifiers may reduce displayed cost","verification":"target + march + return + battle/mission result","source":["official_google_play","taptap_beginner","github_aminul_wos","LIVE_CLIENT"],"confidence":0.95,"status":"CONFIRMED","notes":"不得与冰原巨兽或巨熊行动合并。"}
-  ]
+ "schema_version": "1.1",
+ "gate": "REVIEWED",
+ "entity_class": "NORMAL_BEAST",
+ "records": [
+  {
+   "id": "GREAT_HORNED_DEER_22",
+   "name": "大角鹿",
+   "aliases": [
+    "Great Horned Deer",
+    "普通野兽"
+   ],
+   "category": "world_pve",
+   "level": 22,
+   "entry": "INTEL/BEAST_MISSION/VIEW_TARGET",
+   "page": "BEAST",
+   "action": "ATTACK",
+   "recommended_power": 5107044,
+   "displayed_stamina_cost": 10,
+   "actual_stamina_cost": 7,
+   "actual_cost_note": "live hero/account modifiers reduced displayed cost",
+   "verification": "victory_assured + queue 1/6→2/6 RETURNING→1/6 + Intel CLAIMABLE + reward",
+   "source": [
+    "LIVE_CLIENT",
+    "official_google_play_beast_guide",
+    "github_aminul_wos"
+   ],
+   "retrieved_at": "2026-09-03",
+   "last_verified": "2026-09-03",
+   "confidence": 0.99,
+   "status": "VERIFIED",
+   "notes": "Normal Beast; kept distinct from Giant Beast/Polar Terror and Bear."
+  },
+  {
+   "id": "MUSK_OX_9_LIVE",
+   "name": "麝牛",
+   "species": "MUSK_OX",
+   "dispatchable": true,
+   "category": "world_pve",
+   "level": 9,
+   "entry": "CURRENT_MAP_VISIBLE_TARGET",
+   "recommended_power": 9000,
+   "displayed_stamina_cost": 10,
+   "victory_assessment": "本次出征胜券在握",
+   "live_runs": 3,
+   "verification": "target dialog + green victory assessment + dispatch 5/6→6/6 + natural return 6/6→5/6; native V2 runtime dispatch and post-action verifier PASS",
+   "source": [
+    "LIVE_CLIENT"
+   ],
+   "last_verified": "2026-09-06",
+   "confidence": 0.99,
+   "status": "VERIFIED",
+   "notes": "Displayed cost observed; numeric stamina balance was not visible."
+  },
+  {
+   "id": "MAMMOTH_5_LIVE",
+   "name": "猛犸象",
+   "species": "MAMMOTH",
+   "dispatchable": true,
+   "category": "world_pve",
+   "level": 5,
+   "entry": "CURRENT_MAP_VISIBLE_TARGET",
+   "displayed_stamina_cost": 10,
+   "source": [
+    "LIVE_CLIENT"
+   ],
+   "retrieved_at": "2026-09-18",
+   "last_verified": "2026-09-18",
+   "confidence": 0.9,
+   "status": "CANDIDATE",
+   "notes": "Sprite measured live on the 2026-09-18 escalation frame (dataset/candidate/beast_card_route/); level from the map badge. dispatchable is explicit so the route may attempt it in DEVELOPMENT_VALIDATION; the per-episode verifier and the victory strip still gate every spend."
+  },
+  {
+   "id": "ARCTIC_WOLF_6_LIVE",
+   "name": "北极狼",
+   "category": "world_pve",
+   "level": 6,
+   "entry": "CURRENT_MAP_VISIBLE_TARGET",
+   "recommended_power": 2400,
+   "displayed_stamina_cost": 10,
+   "victory_assessment": "本次出征胜券在握",
+   "live_runs": 1,
+   "verification": "target dialog + green victory assessment + dispatch 5/6→6/6 + natural return 6/6→5/6",
+   "source": [
+    "LIVE_CLIENT"
+   ],
+   "last_verified": "2026-09-06",
+   "confidence": 0.94,
+   "status": "REVIEWED",
+   "notes": "Displayed cost observed; numeric stamina balance was not visible."
+  },
+  {
+   "id": "SNOW_LEOPARD_29_LIVE",
+   "name": "雪豹",
+   "category": "world_pve",
+   "level": 29,
+   "entry": "CURRENT_MAP_VISIBLE_TARGET",
+   "recommended_power": 78153250,
+   "displayed_stamina_cost": 10,
+   "victory_assessment": "本次出征胜算较低",
+   "action_result": "BLOCKED_BEFORE_DISPATCH",
+   "source": [
+    "LIVE_CLIENT"
+   ],
+   "last_verified": "2026-09-06",
+   "confidence": 0.99,
+   "status": "REVIEWED",
+   "notes": "The Agent rejected the red low-win-probability state and spent no stamina."
+  },
+  {
+   "id": "BEAST_GENERIC",
+   "name": "野兽",
+   "aliases": [
+    "普通野怪",
+    "Beast"
+   ],
+   "category": "world_pve",
+   "entry": "MAP/search or Intel",
+   "page": "BEAST",
+   "action": "ATTACK",
+   "cost": "Chief Stamina; live modifiers may reduce displayed cost",
+   "verification": "target + march + return + battle/mission result",
+   "source": [
+    "official_google_play",
+    "taptap_beginner",
+    "github_aminul_wos",
+    "LIVE_CLIENT"
+   ],
+   "confidence": 0.95,
+   "status": "CONFIRMED",
+   "notes": "不得与冰原巨兽或巨熊行动合并。"
+  },
+  {
+   "id": "FROST_SCALED_RUNNER_20",
+   "name": "霜鳞避役",
+   "aliases": [],
+   "category": "world_pve",
+   "level": 20,
+   "entry": "UNKNOWN",
+   "page": "MAP",
+   "action": "UNKNOWN",
+   "recommended_power": null,
+   "displayed_stamina_cost": null,
+   "actual_stamina_cost": null,
+   "verification": "UNKNOWN",
+   "source": [
+    "LIVE_CLIENT"
+   ],
+   "retrieved_at": "2026-09-19",
+   "last_verified": null,
+   "confidence": 0.5,
+   "status": "UNVERIFIED",
+   "notes": "Name and level read off the client on 2026-09-19: the label 霜鳞避役 at 0.89 confidence and the badge 20 at 1.00 beside it, on stamina_verify2_step_001_before_20260919T144336706139.png (kept in dataset/raw/live_runtime/stamina_verify2).  Everything else is UNKNOWN on purpose -- recommended power and the stamina cost decide whether a march is dispatched, and neither has been observed, so neither is guessed.  Registering the name is what lets the label read name this animal at all; it does not make it dispatchable, which additionally needs a visible_target token and a verifier that accepts the species."
+  }
+ ]
 }

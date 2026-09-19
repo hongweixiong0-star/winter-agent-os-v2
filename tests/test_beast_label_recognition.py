@@ -39,11 +39,16 @@ FRAMES = ROOT / "dataset/raw/live_runtime"
 #: frame -> the name the client printed on it (read by eye); the table knows this one.
 REGISTERED = {
     "stamina_verify2/stamina_verify2_step_003_after_20260919T144435621168.png": "猛犸象",
+    # Registered on 2026-09-19 from this very frame.  Before that row existed the label read
+    # returned None for it, which was correct; this entry is the proof the whitelist path works
+    # end to end rather than merely refusing.
+    "stamina_verify2/stamina_verify2_step_001_before_20260919T144336706139.png": "霜鳞避役",
 }
 
-#: Readable on the frame, absent from ``beasts.json`` -- so the read must still answer None.
-#: Registering it is a separate job: the row's level and cost have to be measured first.
-READABLE_BUT_UNREGISTERED = {
+#: A frame whose printed name is readable.  The refusal test below removes that name from the
+#: whitelist rather than relying on a species nobody has registered yet, so the safety property
+#: stays pinned whatever the table happens to contain.
+READABLE_FRAME = {
     "stamina_verify2/stamina_verify2_step_001_before_20260919T144336706139.png": "霜鳞避役",
 }
 
@@ -86,28 +91,30 @@ class BeastLabelRecognitionTests(unittest.TestCase):
                     f"{relative}: the client prints {expected}",
                 )
 
-    def test_the_name_reads_even_when_the_table_does_not_know_it(self):
+    def test_a_readable_name_is_still_refused_when_the_table_does_not_know_it(self):
         """Two different failures, and both matter.
 
-        If this starts returning the name, the whitelist has been weakened.  If the name stops
-        being readable at all, the read has regressed.  Meanwhile the species stays undispatched
-        until it is registered, and this test is what stops that gap from looking like a detection.
+        If the name is returned while it is absent from the whitelist, the whitelist has been
+        weakened, and whatever the band happens to contain could be dispatched as a beast.  If the
+        name stops being readable at all, the read has regressed.  The refusal is asserted against
+        a whitelist with that one name removed, so it keeps meaning the same thing no matter which
+        species the table carries.
         """
-        for relative, printed in READABLE_BUT_UNREGISTERED.items():
+        for relative, printed in READABLE_FRAME.items():
             with self.subTest(frame=relative):
                 tokens = self._tokens(relative)
-                self.assertIsNone(
-                    named_beast_label(tokens, self.names),
-                    f"{relative}: {printed} is not in beasts.json, so it may not be returned",
-                )
                 self.assertTrue(
                     any(printed in str(t.text or "") for t in tokens),
                     f"{relative}: the name {printed} was expected to be readable on this frame",
                 )
+                self.assertIsNone(
+                    named_beast_label(tokens, set(self.names) - {printed}),
+                    f"{relative}: {printed} must not be returned when no row carries it",
+                )
 
     def test_a_level_badge_is_read_or_refused(self):
         """Either a number, or None when the band holds several -- never a guess."""
-        for relative in (*REGISTERED, *READABLE_BUT_UNREGISTERED):
+        for relative in (*REGISTERED, *READABLE_FRAME):
             with self.subTest(frame=relative):
                 level = level_beside_label(self._tokens(relative))
                 self.assertTrue(level is None or isinstance(level, int))
