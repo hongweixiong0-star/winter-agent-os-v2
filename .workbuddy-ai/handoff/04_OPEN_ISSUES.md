@@ -301,6 +301,10 @@ Machine-detected issues (recomputed every run):
 | 32 | **体力读数 `0/200` 无帧可佐证（假完成风险）** | 🟠 **已加防护，根因待查** | 观测存储记 `stamina {current:0, max:200, source:STAMINA_PANEL} checked_at 13:47:50Z`，但：① 全仓该时刻**没有任何帧**，② 该时刻**没有任何 episode**，③ 前两小时**没有任何耗体力动作**（11 次 `OPEN_INTEL`、**0 次**野兽/情报派出），④ 唯一能读的最近一帧（19:42 本地）写的是 **547/200**。⇒ **不能据此判定"体力已降到 30 以下"**，操作者的验收条件**未达成**。更危险的是：`AVOID_STAMINA_WASTE` 在 HUD 关闭时会**读这个存储**，而该 goal 存在的意义就是把数字压下去 ⇒ 一个假的 0 会让 goal **看起来已满足并停止消耗**，正是本项目最禁止的假完成。**成因**：该次运行观测了帧、写了观测、但**没执行任何动作就停下**（`SAFE_STOP`），因此既没 episode 也没存图 —— 于是这个读数**永远无法被审计**。**已修（`f2837e5`）**：`observation_store.record()` 增加 `frame=`，`_record_observations`/`_record_goals` 全程下传，5 个调用点都带上就地已有的帧变量；带守卫测试（去掉任一 `frame=` 即变红）。**仍未修**：那一次为什么读到 `0/200` 仍然未知，且帧已丢，无法事后追查；下次同类读数会自带证据。 |
 | 33 | **`.git/index.lock` 反复成为陈旧残留，卡死所有提交** | ⚠️ 观察中（运维） | 本会话两次遇到：0 字节、mtime 分别早 2h45m 与 24min，`tasklist` 确认**无任何 `git.exe` 进程**后删除即恢复。它让 `git commit`/`git add` 直接失败（`Unable to create index.lock`）。当前处置是"先确认无 git 进程、再删"，**但这依赖人判断**；若无人值守时命中，会静默卡住所有同步。建议后续在同步路径里加一条"陈旧锁检测"（有 PID 语义才删），而不是靠操作者记得。 |
 
+### 2026-09-19 深夜新增（真机一轮的实测）
 
-
-
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 34 | **HUD 体力表 OCR 丢位，报出"假低体力"** | 🔴 **阻塞 P0（有帧为证）** | 真机单轮实测：帧 `dataset/raw/live_runtime/stamina_verify/stamina_verify_step_004_after_20260919T143454154158.png` 顶部 HUD 实际写 **527**，而 `world.stamina.current` 报 **52**；同轮 step 3 报 502。三步连续读同一块表给出 502/52/52，`source=MAP_HUD`，而动作是 **SWIPE**（不可能消耗体力）、前后 `marches` 由 1 变 0 ⇒ **不是真消耗，是读数错**。这就是此前 `0/200`（#32）那类"假低体力"的来源。**危险**：`AVOID_STAMINA_WASTE` 正是读这个数决定是否还要消耗 ⇒ 假低值会让 goal 看起来已满足、停止消耗，即假完成。**修法方向**：多帧一致性 + 数字位校验（长度/形状）而不是单帧 OCR；`MAP_HUD` 与 `STAMINA_PANEL` 交叉验证。 |
+| 35 | **体力路线拆分在真机未生效** | 🟠 已量清 | 提交 `c48448d` 把 AVOID_STAMINA_WASTE 在打野受阻时改走 `SPEND_STAMINA`（情报），**但该轮实际走的是 `BEAST_HUNT`**：覆盖条件要求 `SPEND_STAMINA_ON_BEAST` 处于 `{BLOCKED,COOLDOWN,DEFERRED,DEVELOPMENT_PENDING}`，而本轮它不在其中 ⇒ 保留打野路线 ⇒ 3 次 `SCAN_MAP_FOR_BEAST` 全部扫空。同时免费体力**照领**（382→502），因为 `current_goal != "SPEND_STAMINA"`，守卫不触发。⇒ 结果：**体力 382→502/527，本轮消耗 0**。需要重新审视"受阻判定"的依据（gate 状态已不是 BLOCKED，但打野事实上找不到目标 —— 即 gate 状态与真实可行性脱节）。 |
+| 36 | **`control_panel.py:_run_worker`(4676) 是无调用者的死链** | ⚠️ 假接入类 | 整条 mail→daily→alliance→exploration→intel→beast→gather 链**没有任何生产调用者**，仅 `tests/test_runtime_interpreter.py:183` 断言其文本；AUTO 实际跑 `_run_unified_worker`。属于操作者"防假接入"检查第 2 条命中项。 |
