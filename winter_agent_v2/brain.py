@@ -999,6 +999,44 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "alliance_help_auto_active", 1.0, "switch_task")
             if world.alliance.get("status") in {"NOT_AVAILABLE", "CONTRIBUTED", "CLAIMED"}:
                 return Decision("SAFE_STOP", "alliance_action_not_needed", 1.0, "switch_task")
+            # A goal that does not own this panel leaves it; it does not end the run.
+            #
+            # The goal-driven branch above (``current_goal == "ALLIANCE"``) answers section HOME
+            # by opening the gifts panel.  This page-driven branch had no exit at all, so any
+            # *other* goal standing on the alliance panel fell straight through to the stop
+            # below -- and ``SAFE_STOP`` is not "skip this observation" here: the runtime records
+            # it as DEGRADED and returns from the run.  One screen nobody could act on therefore
+            # ended an entire cycle, and since nothing moved the client off the panel, the next
+            # cycle opened on the same screen and did it again.
+            #
+            # States that reach this line, counted over the whole episode history: section HOME
+            # 56 times, GIFTS with an unreadable status 14, TECHNOLOGY with no status field 6,
+            # HELP 2, HOME with no status 1.  The live instance: goal AUTO_DISCOVERY, page
+            # ALLIANCE, ``{"section": "HOME"}``, one step, stop_reason alliance_state_unknown --
+            # on a frame that plainly showed 联盟科技 carrying a 25 badge and 联盟互助 a 6.
+            #
+            # The leave is the project's own bounded one: ``_leave_foreign_page_once`` Backs out
+            # exactly once per run and is bound to ``verify_safe_back``, the same hop the panel
+            # routines and the research route use when they meet a panel they do not own.
+            # (Adding the gifts hop here instead was already measured and rejected: doing that
+            # under a research goal ran OPEN_ALLIANCE_GIFTS twelve times and the research page
+            # was never once read -- see the research route's own note.)
+            #
+            # Scoped to a NAMED goal, which is ``_leave_or_stop``'s own rule: "leave a leaf page
+            # once if a NAMED goal is stuck on it, else stop by name".  With no goal, the
+            # scheduler is probing and a Back would look like work and displace an observation
+            # that has real work waiting -- tests/test_multitask_scheduler.py pins exactly that,
+            # and it is why the answer below is still a plain stop for that case.
+            #
+            # This brings the alliance panel into the shape the daily panel already has, and the
+            # comparison is the argument: the daily branch got its Back on 2026-09-16 for the same
+            # measured reason, "an unknown or empty panel ... stranded the client for every
+            # following run".  The alliance panel kept the old answer only because nobody had
+            # counted what it cost; the count is above.
+            if self.current_goal is not None and self.current_goal != "ALLIANCE":
+                leave = self._leave_foreign_page_once(world, owner="ALLIANCE")
+                if leave is not None:
+                    return leave
             return Decision("SAFE_STOP", "alliance_state_unknown", 1.0, "refresh_state")
         if world.page is Page.MAIL:
             badges = world.mail.get("tab_badges", {})

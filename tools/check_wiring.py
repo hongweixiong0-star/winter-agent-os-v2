@@ -637,6 +637,32 @@ def main() -> int:
               any(isinstance(c, frozenset) and "GENERIC_REWARD" in c for c in source)
               or any(c == "GENERIC_REWARD" for c in source))
 
+    # A goal that does not own the alliance panel must leave it, not end the run.
+    # Measured live 2026-09-21: goal AUTO_DISCOVERY, page ALLIANCE, {"section": "HOME"},
+    # ONE step, stop_reason alliance_state_unknown -- on a frame that plainly showed
+    # 联盟科技 with a 25 badge and 联盟互助 with a 6.  ``SAFE_STOP`` is not "skip this
+    # observation" in the runtime: it records DEGRADED and returns from the run, and
+    # nothing moved the client off the panel, so the next cycle opened on the same screen.
+    # section HOME reached that line 56 times over the history, GIFTS/UNKNOWN 14,
+    # TECHNOLOGY with no status field 6.
+    alliance_home = WorldState(page=Page.ALLIANCE, alliance={"section": "HOME"}, confidence=0.98)
+    foreign = RuleBrain(current_goal="AUTO_DISCOVERY")
+    check("brain: a goal that does not own the alliance panel leaves it",
+          foreign.decide(alliance_home, registry).skill == "BACK")
+    check("brain: ...and leaves it only once -- the second answer is the honest stop",
+          foreign.decide(alliance_home, registry).skill == "SAFE_STOP")
+    # Scoped to a named goal: with no goal the scheduler is probing, and a Back there
+    # would look like work and displace an observation that has real work waiting.
+    check("brain: with no goal the alliance panel is still a plain stop",
+          RuleBrain().decide(alliance_home, registry).skill == "SAFE_STOP")
+    check("brain: the goal that owns the panel still opens its gifts hop",
+          RuleBrain(current_goal="ALLIANCE").decide(alliance_home, registry).skill
+          == "OPEN_ALLIANCE_GIFTS")
+    check("brain: an unreadable status on the owned panel is still reported, not papered over",
+          RuleBrain(current_goal="ALLIANCE").decide(
+              WorldState(page=Page.ALLIANCE, alliance={"section": "GIFTS", "status": "UNKNOWN"},
+                         confidence=0.98), registry).skill == "SAFE_STOP")
+
     full = WorldState(page=Page.MAP, march_used=6, march_max=6,
                       marches=(MarchState.GATHERING,), confidence=0.99)
     check("brain: full queue freezes gathering when recall is off",
