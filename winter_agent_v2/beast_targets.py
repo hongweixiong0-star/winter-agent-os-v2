@@ -213,20 +213,44 @@ def lookup(
     return None
 
 
+def lookup_species(
+    species: object,
+    targets: Sequence[BeastTarget] | None = None,
+) -> BeastTarget | None:
+    """Any row for one species, whatever level it was measured at.
+
+    The client draws the same animal at several levels -- measured 2026-09-20: 霜鳞避役 carried
+    badge 19 on the live map frame while the table's only row for it is level 20 -- so resolving an
+    identity by (species, level) makes a species invisible the moment it appears at a level nobody
+    has written down.  The level is data about the animal; it is not a gate on acting on it.
+    """
+    if not isinstance(species, str) or not species.strip():
+        return None
+    wanted = species.strip().upper()
+    for target in targets if targets is not None else load():
+        if target.species.upper() == wanted:
+            return target
+    return None
+
+
 def refused_by_evidence(
     beast: Mapping[str, Any] | None,
     targets: Sequence[BeastTarget] | None = None,
 ) -> bool:
-    """Has the client already been seen refusing this exact target?
+    """Has the client already been seen refusing this kind of target?
 
-    True only for a *measured* refusal (see :attr:`BeastTarget.refused`).  An
-    unregistered species or an unmeasured one answers False -- "nobody has said no"
-    is not the same as "someone said no", and conflating them is what made the route
-    unable to consider any beast the table did not already bless.
+    True only for a *measured* refusal (see :attr:`BeastTarget.refused`), resolved by the exact
+    (species, level) pair and then by species alone -- the leopard's refusal is a fact about the
+    animal, so it survives that animal turning up at another level.  An unregistered species or an
+    unmeasured one answers False: "nobody has said no" is not the same as "someone said no", and
+    conflating them is what made the route unable to consider any beast the table did not already
+    bless.
     """
     if not isinstance(beast, Mapping):
         return False
     target = lookup(beast.get("visible_target"), beast.get("level"), targets)
+    if target is None:
+        target = lookup_species(beast.get("visible_target"), targets)
     return bool(target is not None and target.refused)
 
 
@@ -236,18 +260,18 @@ def may_evaluate(
 ) -> bool:
     """May the route TAP this beast, to open its card and read the client's verdict?
 
-    Identity is the whole requirement: the beast map fragment must name a target the
-    table knows, because the tap coordinate comes from that identity being read off
-    the frame in the first place.  No spend is authorised here and none happens --
-    opening a card costs nothing -- which is why an *unmeasured* species passes and
-    why this is deliberately weaker than :func:`is_dispatchable`.
+    Identity is the whole requirement: the beast map fragment must name a species the table knows,
+    because the tap coordinate comes from that identity being read off the frame in the first place.
+    No spend is authorised here and none happens -- opening a card costs nothing -- which is why an
+    *unmeasured* species, or a known species at a level nobody wrote down, passes and why this is
+    deliberately weaker than :func:`is_dispatchable`.
 
-    The one thing that still refuses is a target the client has already been seen
-    turning down, so the level-29 leopard is not re-tapped on every pass.
+    The one thing that still refuses is a target the client has already been seen turning down, so
+    the level-29 leopard is not re-tapped on every pass.
     """
     if not isinstance(beast, Mapping):
         return False
-    if lookup(beast.get("visible_target"), beast.get("level"), targets) is None:
+    if lookup_species(beast.get("visible_target"), targets) is None:
         return False
     return not refused_by_evidence(beast, targets)
 
@@ -275,7 +299,15 @@ def is_dispatchable(
     if not isinstance(beast, Mapping):
         return False
     target = lookup(beast.get("visible_target"), beast.get("level"), targets)
-    if target is None or target.refused:
+    if target is None:
+        # A species this table knows, at a level it has no row for.  The row's own standing does
+        # not transfer -- only the client's verdict on the frame can authorise this one.
+        species_row = lookup_species(beast.get("visible_target"), targets)
+        if species_row is None or species_row.refused:
+            return False
+        printed = beast.get("victory_assessment")
+        return isinstance(printed, str) and printed.strip() == GREEN_ASSESSMENT
+    if target.refused:
         return False
     printed = beast.get("victory_assessment")
     if isinstance(printed, str) and printed.strip():

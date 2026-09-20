@@ -46,7 +46,7 @@ from winter_agent_v2.beast_targets import (  # noqa: E402
     may_evaluate,
     refused_by_evidence,
 )
-from winter_agent_v2.ocr import beast_from_its_label  # noqa: E402
+from winter_agent_v2.ocr import beast_from_its_label, level_beside_label  # noqa: E402
 
 # A 720x1280 frame, the client's own size.  Real boxes measured on
 # dataset/raw/live_runtime/stamina_verify2/stamina_verify2_step_001_before_20260919T144336706139.png:
@@ -101,9 +101,24 @@ class TheMapBeastIsAlsoReadByItsLabelTests(unittest.TestCase):
                 found = beast_from_its_label("unused.png", _StubOCR(tokens))
                 self.assertEqual((found.get("visible_target"), found.get("level")), (species, level))
 
-    def test_a_level_that_disagrees_with_the_badge_is_refused(self):
-        """麝牛 is dispatchable at 9 and only at 9; a map showing another level is not that target."""
-        self.assertEqual(beast_from_its_label("unused.png", _StubOCR(["麝牛", "3"])), {})
+    def test_a_level_that_disagrees_with_the_badge_is_published_but_not_spendable(self):
+        """The level is data about the animal, not a gate on acting on it.
+
+        This used to assert ``{}``: the identity was keyed by (species, level), so a badge that
+        disagreed with the row resolved to nothing.  Measured live 2026-09-20 -- the row is
+        FROST_SCALED_RUNNER_20 while the animal on the 23:26 map frame carried 19 -- a perfectly
+        read name produced no target at all, and the beast the pan had just brought into view was
+        invisible a third time.  So the disagreement is now *recorded* (``level_matches_table``)
+        and the beast is tappable; whether it is worth spending on is the client's verdict, read
+        later on the card, which is the same answer for every species.
+        """
+        found = beast_from_its_label("unused.png", _StubOCR(["麝牛", "3"]))
+        self.assertEqual(found.get("visible_target"), "MUSK_OX")
+        self.assertEqual(found.get("level"), 3, "the badge is reported as read")
+        self.assertEqual(found.get("table_level"), 9, "and the row's own level is kept beside it")
+        self.assertFalse(found.get("level_matches_table"))
+        self.assertTrue(may_evaluate(found), "a readable identity is tappable")
+        self.assertFalse(is_dispatchable(found), "and not spendable without the client's verdict")
 
     def test_an_unmeasured_species_is_now_considered(self):
         """The 2026-09-20 change, and the frame that produced it.
@@ -149,8 +164,26 @@ class TheMapBeastIsAlsoReadByItsLabelTests(unittest.TestCase):
         found = beast_from_its_label("unused.png", _StubOCR([label, _Token("20")]), frame_size=FRAME_SIZE)
         self.assertIn("tap_norm", found)
         x_norm, y_norm = found["tap_norm"]
-        self.assertAlmostEqual(x_norm, (36 + 180.5) / 720, places=3)
-        self.assertAlmostEqual(y_norm, (576 + 262.5) / 1280, places=3)
+        # The band origin is added back as a *fraction* (the band is expressed in normalised
+        # coordinates and the box is in crop pixels), so this tracks BEAST_LABEL_BAND exactly --
+        # written against the constant rather than a literal, because the failure this catches is
+        # "the band moved and the mapping did not".
+        self.assertAlmostEqual(x_norm, 0.0 + 180.5 / 720, places=3)
+        self.assertAlmostEqual(y_norm, 0.12 + 262.5 / 1280, places=3)
+
+    def test_the_level_badge_is_found_beside_the_name_not_by_counting_the_band(self):
+        """Widening the band made "the only bare number" useless; "the nearest one" is what it meant.
+
+        Measurements this threshold comes from, name centre to badge centre: 89 px
+        (霜鳞避役/20 on the 2026-09-19 frame) and 198 px (霜鳞避役/19 on the 23:26 map frame),
+        while the next-nearest bare number on the first of those sat 850 px away.
+        """
+        name = _Token("霜鳞避役", ((150, 255), (210, 255), (210, 270), (150, 270)))
+        near = _Token("19", ((240, 350), (260, 350), (260, 364), (240, 364)))
+        far = _Token("34", ((540, 620), (560, 620), (560, 634), (540, 634)))
+        self.assertEqual(level_beside_label((name, near, far), name), 19)
+        # ...and nothing within reach answers None rather than taking the far one.
+        self.assertIsNone(level_beside_label((name, far), name))
 
     def test_without_a_frame_size_there_is_no_tap_point_rather_than_a_guess(self):
         """An ROI-scoped box cannot be mapped without the frame size; absent beats invented."""

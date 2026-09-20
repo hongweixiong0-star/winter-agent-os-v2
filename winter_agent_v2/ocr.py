@@ -683,7 +683,24 @@ def looks_like_a_dropped_digit(previous: int | None, current: int | None) -> boo
 # dataset/raw/live_runtime/stamina_verify{,_2}: the animal is drawn mid-left and its name label sat
 # at (0.269, 0.655) on one frame and (0.189, 0.645) on another, so this is a *search band* and not
 # a point.  It is deliberately generous; the name whitelist is what makes the read precise.
-BEAST_LABEL_BAND = {"x_norm": 0.05, "y_norm": 0.45, "w_norm": 0.45, "h_norm": 0.35}
+#
+# WIDENED 2026-09-20, from a measurement that showed the old band was the binding constraint.
+# Over 40 live MAP frames, OCR of the whole frame found a registered beast name on 2 of them --
+# and BOTH were outside the old x 0.05-0.50 / y 0.45-0.80 box:
+#
+#   runtime_auto/20260920_232511_351867/…_step_003_before  霜鳞避役 at (0.516, 0.283), conf 0.91
+#   runtime_auto/20260920_232511_351867/…_step_002_after   冰霜古猿 at (0.724, 0.243), conf 0.98
+#   (plus the 2026-09-19 frame at (0.269, 0.655) that the old band did contain)
+#
+# Those two frames are from THE live stamina round that had just switched to BEAST_HUNT: the pan
+# brought a named beast into view and the route panned past it, because the band only ever covered
+# the left half of the screen.  The label is drawn wherever the animal stands, so the band has to
+# be the play area.  Measured chrome to exclude: the top HUD ends at y 0.13 (the 24公里 pill sits at
+# 0.118) and the bottom coordinate bar starts at y 0.836, so y 0.12-0.80 leaves both out while
+# containing every label seen.  Widening does not weaken the read: the guard is the name whitelist
+# (building names, alliance flags and 未驻防 all appear in this area and none of them match a
+# registered beast name), which is what named_beast_label applies.
+BEAST_LABEL_BAND = {"x_norm": 0.0, "y_norm": 0.12, "w_norm": 1.0, "h_norm": 0.68}
 
 
 def named_beast_label(
@@ -691,6 +708,7 @@ def named_beast_label(
     known_names: Iterable[str],
     *,
     min_confidence: float = 0.8,
+    fuzzy_min_confidence: float = 0.75,
 ) -> str | None:
     """The client's own name for a beast on the map, or None.
 
@@ -712,39 +730,116 @@ def named_beast_label(
     names = tuple(str(name) for name in known_names if str(name))
     if not names:
         return None
-    best: tuple[float, str] | None = None
+    found = _beast_name_match(tokens, names, min_confidence=min_confidence,
+                              fuzzy_min_confidence=fuzzy_min_confidence)
+    return found[0] if found is not None else None
+
+
+def _beast_name_match(
+    tokens: tuple[OCRToken, ...],
+    names: tuple[str, ...],
+    *,
+    min_confidence: float = 0.8,
+    fuzzy_min_confidence: float = 0.75,
+) -> tuple[str, OCRToken] | None:
+    """The registered name a token carries, and the token itself.
+
+    Returns the token as well as the name because three later reads need its box: the level badge
+    is found *beside* it, the tap point is its centre, and the confidence that must travel with the
+    evidence is its own.  Re-deriving the match for each of those (which is what the first version
+    did) silently failed wherever the match was a fuzzy one, and reported a confidence of 0.0 for a
+    read that had in fact matched.
+    """
+    best: tuple[float, str, OCRToken] | None = None
     for token in tokens:
-        if token.confidence < min_confidence or not token.box:
+        if not token.box:
             continue
         text = str(token.text or "").strip()
         if not text:
             continue
-        matched = next((name for name in names if name in text or text in name), None)
-        if matched is None:
+        if token.confidence >= min_confidence:
+            matched = next((name for name in names if name in text or text in name), None)
+            if matched is not None:
+                if best is None or token.confidence > best[0]:
+                    best = (token.confidence, matched, token)
+                continue
+        # One misread glyph, and only one, and only when the answer is unambiguous.
+        #
+        # Added 2026-09-20 from a measured read: on the live stamina round's third frame the client's
+        # 霜鳞避役 came back as 霜解避役 at 0.78 -- one character wrong, below the 0.80 floor, and
+        # not a substring of the registered name either, so both gates refused it and the beast the
+        # pan had just brought into view was invisible again.  That is the third defect in this one
+        # read (the band clipped it, the level key rejected it, the glyph ended it), and of the three
+        # this is the one worth fixing in the reader rather than around it: a four-glyph string that
+        # differs from exactly one registered beast name by exactly one glyph is strong evidence,
+        # and "exactly one" is what stops near-misses being a free pass for any of them.  Two
+        # candidates within one glyph of the token answer None.
+        #
+        # The lower floor is scoped to this path on purpose: a misread glyph is what lowers the
+        # engine's own confidence, so applying the exact-match floor here would re-refuse the very
+        # case the path exists for.  0.75 is the measured value rounded down (0.78 observed).
+        if token.confidence < fuzzy_min_confidence:
             continue
-        if best is None or token.confidence > best[0]:
-            best = (token.confidence, matched)
-    return best[1] if best is not None else None
+        near = [name for name in names if _one_glyph_apart(text, name)]
+        if len(near) == 1 and (best is None or token.confidence > best[0]):
+            best = (token.confidence, near[0], token)
+    return (best[1], best[2]) if best is not None else None
+
+
+def _one_glyph_apart(text: str, name: str) -> bool:
+    """Same length, differing in exactly one character."""
+    if len(text) != len(name) or text == name:
+        return False
+    return sum(1 for a, b in zip(text, name) if a != b) == 1
 
 
 def level_beside_label(
-    tokens: tuple[OCRToken, ...], *, min_confidence: float = 0.8
+    tokens: tuple[OCRToken, ...],
+    name_token: OCRToken | None = None,
+    *,
+    min_confidence: float = 0.8,
+    max_distance_px: float = 260.0,
 ) -> int | None:
     """The level badge printed beside the beast's name, or None when the frame is ambiguous.
 
-    Measured on the same frames: ``20`` at full confidence beside ``霜鳞避役``, and ``25``/``28``/
-    ``27`` beside other animals.  The badge is a bare number in the same band, so the read is "the
-    only bare number in the band".  Two different candidates means the frame does not say, and a
-    guess there would dispatch a march against an unknown level, so it answers None.
+    Measured: ``20`` at full confidence beside ``霜鳞避役``, and ``25``/``28``/``27`` beside other
+    animals.
+
+    REVISED 2026-09-20.  This used to be "the only bare number in the band", which only worked while
+    the band was small enough to hold one number -- and the band was small enough to hold one number
+    because it was clipping whole beasts (see BEAST_LABEL_BAND).  Widening it would have made this
+    answer None on every frame, so "beside" is now implemented as what it always meant: the bare
+    number **nearest the name token**, and only if it is reachable at all.
+
+    Measured on the three live frames where a name was read, name centre to badge centre:
+    89 px (霜鳞避役/20), 198 px (霜鳞避役/19), and the next-nearest bare number on the first of
+    those frames sat 850 px away -- so a 260 px radius separates the badge from the page furniture
+    with a wide margin either side.  With no name token the old single-candidate rule is kept, so
+    callers that cannot name the token still get an honest answer rather than a guess.
     """
-    candidates: set[int] = set()
+    numbers: list[tuple[float, float, int]] = []
     for token in tokens:
         if token.confidence < min_confidence or not token.box:
             continue
         text = str(token.text or "").strip()
-        if text.isdigit() and 1 <= len(text) <= 2:
-            candidates.add(int(text))
-    return candidates.pop() if len(candidates) == 1 else None
+        if not (text.isdigit() and 1 <= len(text) <= 2):
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        numbers.append(((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0, int(text)))
+    if name_token is None or not name_token.box:
+        candidates = {value for _, _, value in numbers}
+        return candidates.pop() if len(candidates) == 1 else None
+    anchor_x = (min(p[0] for p in name_token.box) + max(p[0] for p in name_token.box)) / 2.0
+    anchor_y = (min(p[1] for p in name_token.box) + max(p[1] for p in name_token.box)) / 2.0
+    best: tuple[float, int] | None = None
+    for x, y, value in numbers:
+        distance = ((x - anchor_x) ** 2 + (y - anchor_y) ** 2) ** 0.5
+        if distance > max_distance_px:
+            continue
+        if best is None or distance < best[0]:
+            best = (distance, value)
+    return best[1] if best is not None else None
 
 
 def beast_from_its_label(image_path, ocr, frame_size: tuple[int, int] | None = None) -> dict:
@@ -780,21 +875,32 @@ def beast_from_its_label(image_path, ocr, frame_size: tuple[int, int] | None = N
             return {}
         names = {target.name for target in targets if target.name}
         tokens = ocr.recognize(image_path, BEAST_LABEL_BAND).tokens
-        name = named_beast_label(tokens, names)
-        if name is None:
+        found = _beast_name_match(tokens, tuple(sorted(names)))
+        if found is None:
             return {}
-        level = level_beside_label(tokens)
-        row = lookup_by_name(name, level, targets)
+        name, name_token = found
+        # Resolved by NAME, not by (name, level).  The old exact pair meant a beast whose badge
+        # disagreed with the row's level resolved to nothing -- measured live 2026-09-20: the row
+        # is FROST_SCALED_RUNNER_20 while the animal on the 23:26 map frame carried 19, so a
+        # perfectly read name produced no target at all.  The level is data about the animal, not a
+        # gate on acting on it: whether the fight is winnable is the client's own verdict later.
+        row = lookup_by_name(name, None, targets)
         if row is None:
             return {}
+        badge = level_beside_label(tokens, name_token)
         beast = {
             "visible_target": row.species,
-            "level": row.level,
+            "level": badge if badge is not None else row.level,
             "available": True,
             "source": "BEAST_LABEL",
-            "label_confidence": _label_confidence(tokens, name),
+            # The matched token's own confidence, so the evidence carries the number the engine
+            # actually reported rather than a second read that may not reproduce it.
+            "label_confidence": round(float(name_token.confidence), 4),
+            "label_text": str(name_token.text or "").strip(),
+            "table_level": row.level,
+            "level_matches_table": badge is None or badge == row.level,
         }
-        tap = _label_tap_norm(tokens, name, frame_size)
+        tap = _label_tap_norm(name_token, frame_size)
         if tap is not None:
             beast["tap_norm"] = tap
         if row.refused:
@@ -808,19 +914,21 @@ def beast_from_its_label(image_path, ocr, frame_size: tuple[int, int] | None = N
     return beast
 
 
-def _label_confidence(tokens: tuple[OCRToken, ...], name: str, *, min_confidence: float = 0.8) -> float:
-    """The confidence of the read that produced ``name``, so the evidence travels with it."""
-    best = 0.0
+def _name_token(tokens: tuple[OCRToken, ...], name: str, *, min_confidence: float = 0.8) -> OCRToken | None:
+    """The token the name was read from, so its box can anchor the level read and the tap."""
+    best: OCRToken | None = None
     for token in tokens:
         text = str(token.text or "").strip()
-        if token.confidence >= min_confidence and (name in text or text in name):
-            best = max(best, float(token.confidence))
-    return round(best, 4)
+        if token.confidence < min_confidence or not token.box or not text:
+            continue
+        if name in text or text in name:
+            if best is None or token.confidence > best.confidence:
+                best = token
+    return best
 
 
 def _label_tap_norm(
-    tokens: tuple[OCRToken, ...],
-    name: str,
+    name_token: OCRToken,
     frame_size: tuple[int, int] | None,
 ) -> tuple[float, float] | None:
     """Centre of the name label's box in frame-normalised coordinates, or ``None``.
@@ -830,25 +938,18 @@ def _label_tap_norm(
     answer; a coordinate invented from a hardcoded fraction is what the executor would
     then tap.
     """
-    if not frame_size:
+    if not frame_size or not name_token.box:
         return None
     width, height = (int(frame_size[0]), int(frame_size[1]))
     if width <= 0 or height <= 0:
         return None
-    for token in tokens:
-        text = str(token.text or "").strip()
-        if not text or not token.box:
-            continue
-        if not (name in text or text in name):
-            continue
-        xs = [float(point[0]) for point in token.box]
-        ys = [float(point[1]) for point in token.box]
-        x_norm = BEAST_LABEL_BAND["x_norm"] + ((min(xs) + max(xs)) / 2.0) / width
-        y_norm = BEAST_LABEL_BAND["y_norm"] + ((min(ys) + max(ys)) / 2.0) / height
-        if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
-            return None
-        return (round(x_norm, 4), round(y_norm, 4))
-    return None
+    xs = [float(point[0]) for point in name_token.box]
+    ys = [float(point[1]) for point in name_token.box]
+    x_norm = BEAST_LABEL_BAND["x_norm"] + ((min(xs) + max(xs)) / 2.0) / width
+    y_norm = BEAST_LABEL_BAND["y_norm"] + ((min(ys) + max(ys)) / 2.0) / height
+    if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+        return None
+    return (round(x_norm, 4), round(y_norm, 4))
 
 
 def read_hud_stamina(

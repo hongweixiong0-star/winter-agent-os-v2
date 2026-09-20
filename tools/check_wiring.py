@@ -938,6 +938,44 @@ def main() -> int:
           'if semantic == "BEAST_ON_MAP":' in (PKG / "runtime.py").read_text(encoding="utf-8"))
     check("capability: the labelled hop is SPEND_STAMINA_ON_BEAST in the project's table",
           _cfs("SELECT_BEAST_TARGET_LABELLED") == "SPEND_STAMINA_ON_BEAST")
+    # The second half of the same pass: the band and the level key were each rejecting a beast the
+    # pan had already brought into view.  Measured over 40 live MAP frames, a registered name was
+    # read on 2 -- and both were outside the old x 0.05-0.50 / y 0.45-0.80 box, while the third
+    # measurement (the beast at 霜鳞避役/19 on the 23:26 map frame) showed a badge that disagreed
+    # with the only row for its species.  Pin the geometry and the key, not just the hop.
+    _band = ocr.BEAST_LABEL_BAND
+    check("vision: the beast label band covers where the client draws animals",
+          all(
+              _band["x_norm"] <= x <= _band["x_norm"] + _band["w_norm"]
+              and _band["y_norm"] <= y <= _band["y_norm"] + _band["h_norm"]
+              for x, y in ((0.269, 0.655), (0.516, 0.283), (0.724, 0.243))
+          ),
+          f"band={_band}; the three measured label positions must all be inside it")
+    check("vision: a one-glyph misread of a registered name is still that name",
+          ocr.named_beast_label(
+              (ocr.OCRToken(text="霜解避役", confidence=0.78, box=((0, 0), (60, 0), (60, 16), (0, 16))),),
+              ("霜鳞避役", "猛犸象"),
+          ) == "霜鳞避役")
+    check("vision: a name two glyphs off is not",
+          ocr.named_beast_label(
+              (ocr.OCRToken(text="霜解难役", confidence=0.95, box=((0, 0), (60, 0), (60, 16), (0, 16))),),
+              ("霜鳞避役",),
+          ) is None)
+    check("vision: an ambiguous near-miss is refused rather than picked",
+          ocr.named_beast_label(
+              (ocr.OCRToken(text="霜解避役", confidence=0.95, box=((0, 0), (60, 0), (60, 16), (0, 16))),),
+              ("霜鳞避役", "霜解避役"),
+          ) in (None, "霜解避役"),
+          "an exact match wins; what must never happen is a coin flip between two names")
+    check("safety: a known species at an unlisted level is tappable but not spendable",
+          beast_targets.may_evaluate(
+              {"visible_target": "FROST_SCALED_RUNNER", "level": 19, "available": True})
+          and not beast_targets.is_dispatchable(
+              {"visible_target": "FROST_SCALED_RUNNER", "level": 19, "available": True}))
+    check("safety: the client's verdict still authorises it at that unlisted level",
+          beast_targets.is_dispatchable(
+              {"visible_target": "FROST_SCALED_RUNNER", "level": 19,
+               "victory_assessment": beast_targets.GREEN_ASSESSMENT}))
 
     # OPEN_MARCH_FORMATION (2026-09-18 escalation
     # OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH).  The same three

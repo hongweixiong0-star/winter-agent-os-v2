@@ -28,6 +28,7 @@ if str(ROOT) not in sys.path:
 from winter_agent_v2.ocr import (  # noqa: E402
     BEAST_LABEL_BAND,
     OCRService,
+    OCRToken,
     RapidOCRBackend,
     ResilientOCRBackend,
     level_beside_label,
@@ -43,6 +44,15 @@ REGISTERED = {
     # returned None for it, which was correct; this entry is the proof the whitelist path works
     # end to end rather than merely refusing.
     "stamina_verify2/stamina_verify2_step_001_before_20260919T144336706139.png": "霜鳞避役",
+    # CORRECTED 2026-09-20: both of these were in NEGATIVES, and both are wrong there.  The band was
+    # widened because it was clipping whole animals, and the two frames immediately named a beast:
+    #   猛犸象 at 0.87, tap point (0.676, 0.718)
+    #   霜鳞避役 at 0.81 (read as 霸鳞避役 -- one glyph -- and matched by the near-miss path)
+    # The second was then cropped and looked at: the ice-blue animal and its nameplate are plainly
+    # drawn at the reported point.  So "frames without a beast" was a label the old band had earned,
+    # not a fact about the frames -- the same mistake as calling a full intel board empty.
+    "stamina_verify2/stamina_verify2_step_002_after_20260919T144413221517.png": "猛犸象",
+    "stamina_verify/stamina_verify_step_005_after_20260919T143517420153.png": "霜鳞避役",
 }
 
 #: A frame whose printed name is readable.  The refusal test below removes that name from the
@@ -52,11 +62,12 @@ READABLE_FRAME = {
     "stamina_verify2/stamina_verify2_step_001_before_20260919T144336706139.png": "霜鳞避役",
 }
 
-#: Frames whose band holds no beast name at all; the read must stay silent.
-NEGATIVES = (
-    "stamina_verify2/stamina_verify2_step_002_after_20260919T144413221517.png",
-    "stamina_verify/stamina_verify_step_005_after_20260919T143517420153.png",
-)
+#: There is no frame here any more, and that is the honest state of the evidence: the two that
+#: used to be listed were falsified by looking at them (see REGISTERED).  The silence property is
+#: still pinned, by stubbed tokens whose words are not beast names -- which is the safer form of
+#: the test anyway, because it does not depend on a picture somebody once believed was empty.
+#: Measured 2026-09-20 for the record: over 40 live MAP frames, 38 carried no beast name at all,
+#: so silent frames are the common case -- they just are not these two.
 
 
 def _known_names() -> set[str]:
@@ -125,11 +136,21 @@ class BeastLabelRecognitionTests(unittest.TestCase):
         self.assertIsNone(named_beast_label(tokens, {"不存在的野兽"}))
 
     def test_frames_without_a_beast_stay_silent(self):
-        for relative in NEGATIVES:
-            with self.subTest(frame=relative):
+        """Silence, pinned on words rather than on a frame somebody believed was empty.
+
+        The two frames this used to iterate over were falsified: a beast was drawn on both and the
+        narrow band was hiding it.  See the note where NEGATIVES used to be -- a picture is not a
+        negative until someone has looked at it.
+        """
+        box = ((0.0, 0.0), (40.0, 0.0), (40.0, 14.0), (0.0, 14.0))
+        for words in (["联盟畜牧场"], ["铁厂"], ["未驻防"], ["[DIK]联盟旗帜"], ["开"], []):
+            with self.subTest(words=words):
+                tokens = tuple(
+                    OCRToken(text=text, confidence=0.99, box=box) for text in words
+                )
                 self.assertIsNone(
-                    named_beast_label(self._tokens(relative), self.names),
-                    f"{relative}: no beast is drawn here, so nothing may be named",
+                    named_beast_label(tokens, self.names),
+                    f"{words}: none of these is a registered beast name",
                 )
 
 
