@@ -1,104 +1,2091 @@
 {
-  "schema_version":"1.0","gate":"CANDIDATE","records":[
-    {"id":"PAGE_HOME","type":"PAGE","cn":"主城","en_aliases":["Home","City"],"ocr":["主城"],"icon_semantic":"navigation.city","pages":["HOME"],"target_state":"HOME","actions":["OPEN"]},
-    {"id":"PAGE_MAP","type":"PAGE","cn":"世界地图","en_aliases":["World","Map","Wilderness"],"ocr":["世界","地图"],"icon_semantic":"navigation.map","pages":["MAP"],"target_state":"MAP","actions":["OPEN_MAP"]},
-    {"id":"PAGE_ALLIANCE","type":"PAGE","cn":"联盟","en_aliases":["Alliance"],"ocr":["联盟","Alliance"],"icon_semantic":"alliance.emblem","pages":["ALLIANCE"],"target_state":"ALLIANCE","actions":["OPEN"]},
-    {"id":"PAGE_RESEARCH","type":"PAGE","cn":"科技","en_aliases":["Research","Technology"],"ocr":["科技","研究"],"icon_semantic":"research.flask","pages":["RESEARCH"],"target_state":"RESEARCH","actions":["OPEN"]},
-    {"id":"PAGE_TRAINING","type":"PAGE","cn":"训练","en_aliases":["Train","Training"],"ocr":["训练"],"icon_semantic":"troop.training","pages":["TRAINING"],"target_state":"TRAINING","actions":["OPEN"]},
-    {"id":"PAGE_REGULAR_EVENT","type":"PAGE","cn":"常规活动","en_aliases":["Regular Events"],"ocr":["常规活动","最强王国"],"icon_semantic":"event.regular","pages":["EVENT"],"target_state":"EVENT","actions":["READ_EVENT_LIST","READ_EVENT_PROGRESS"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-09"},
-    {"id":"EVENT_PERSONAL_POINTS","type":"COUNTER","cn":"个人活动积分","en_aliases":["My Points"],"ocr":["我的积分"],"icon_semantic":"event.personal_points","pages":["EVENT"],"target_state":"EVENT_PROGRESS_KNOWN","actions":["READ"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-09"},
-    {"id":"EVENT_STAGE_TIMER","type":"TIMER","cn":"活动阶段倒计时","en_aliases":["Stage Timer"],"ocr":["击败野兽"],"icon_semantic":"event.stage_timer","pages":["EVENT"],"target_state":"EVENT_DEADLINE_KNOWN","actions":["READ"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-09"},
-    {"id":"PAGE_HERO","type":"PAGE","cn":"英雄","en_aliases":["Hero","Heroes"],"ocr":["英雄"],"icon_semantic":"hero.portrait","pages":["HERO"],"target_state":"HERO","actions":["OPEN"]},
-    {"id":"PAGE_MAIL","type":"PAGE","cn":"邮件","en_aliases":["Mail"],"ocr":["邮件"],"icon_semantic":"mail.en","pages":["MAIL"],"target_state":"MAIL","actions":["OPEN"]},
-    {"id":"PAGE_INTEL","type":"PAGE","cn":"情报","en_aliases":["Intel"],"ocr":["情报","Intel"],"icon_semantic":"intel.radar","pages":["INTEL"],"target_state":"INTEL","actions":["OPEN"]},
-    {"id":"PAGE_EVENT","type":"PAGE","cn":"活动","en_aliases":["Event","Events"],"ocr":["活动"],"icon_semantic":"event.calendar","pages":["EVENT"],"target_state":"EVENT","actions":["OPEN"]},
-    {"id":"PAGE_BEAR","type":"PAGE","cn":"巨熊行动","en_aliases":["Bear Hunt","Bear Trap"],"ocr":["巨熊行动","Bear Hunt"],"icon_semantic":"bear.head","pages":["BEAR"],"target_state":"BEAR","actions":["OPEN"]},
-    {"id":"PAGE_GIANT_BEAST","type":"PAGE","cn":"冰原巨兽","en_aliases":["Giant Beast"],"ocr":["冰原巨兽","巨兽"],"icon_semantic":"giant_beast.head","pages":["GIANT_BEAST"],"target_state":"GIANT_BEAST","actions":["OPEN"]},
-
-    {"id":"BTN_OPEN_RESOURCE_SEARCH","type":"BUTTON","cn":"打开资源搜索","en_aliases":["Open Resource Search"],"ocr":[],"icon_semantic":"navigation.magnifier","pages":["MAP"],"target_state":"SEARCH_PANEL","actions":["TAP"]},
-    {"id":"BTN_RESOURCE_SEARCH_SUBMIT","type":"BUTTON","cn":"搜索","en_aliases":["Search"],"ocr":["搜索","Search"],"icon_semantic":"action.search_submit","pages":["MAP"],"target_state":"RESOURCE_LOCATED","actions":["TAP"]},
-    {"id":"BTN_BACK","type":"BUTTON","cn":"返回","en_aliases":["Back"],"ocr":[],"icon_semantic":"navigation.back_arrow","pages":["*"],"target_state":"PREVIOUS_PAGE","actions":["TAP"]},
-    {"id":"BTN_CLOSE","type":"BUTTON","cn":"关闭","en_aliases":["Close"],"ocr":[],"icon_semantic":"navigation.close_x","pages":["POPUP"],"target_state":"POPUP_CLOSED","actions":["TAP"]},
-    {"id":"BTN_UPGRADE","type":"BUTTON","cn":"升级","en_aliases":["Upgrade"],"ocr":["升级","Upgrade"],"icon_semantic":"action.upgrade","pages":["BUILDING"],"target_state":"UPGRADE_DIALOG","actions":["TAP"]},
-    {"id":"BTN_RESEARCH","type":"BUTTON","cn":"研究","en_aliases":["Research"],"ocr":["研究","Research"],"icon_semantic":"action.research","pages":["RESEARCH"],"target_state":"RESEARCH_STARTED","actions":["TAP"]},
-    {"id":"BTN_TRAIN","type":"BUTTON","cn":"训练","en_aliases":["Train"],"ocr":["训练","Train"],"icon_semantic":"action.train","pages":["TRAINING"],"target_state":"TRAINING_STARTED","actions":["TAP"]},
-    {"id":"BTN_DISPATCH","type":"BUTTON","cn":"出征","cn_aliases":["派遣"],"en_aliases":["Deploy","Dispatch","March"],"ocr":["出征","派遣","Deploy","Dispatch","March"],"icon_semantic":"action.dispatch","pages":["MARCH"],"target_state":"MARCHING","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-02T22:39:33+08:00"},
-    {"id":"BTN_MARCH","type":"BUTTON","cn":"行军","en_aliases":["March"],"ocr":["行军","March"],"icon_semantic":"action.march","pages":["MARCH"],"target_state":"MARCHING","actions":["TAP"]},
-    {"id":"BTN_CLAIM","type":"BUTTON","cn":"领取","en_aliases":["Claim","Collect"],"ocr":["领取","Claim","Collect"],"icon_semantic":"action.claim","pages":["*"],"target_state":"CLAIMED","actions":["TAP"]},
-    {"id":"BTN_HELP","type":"BUTTON","cn":"帮助","en_aliases":["Help"],"ocr":["帮助","Help"],"icon_semantic":"alliance.help","pages":["ALLIANCE"],"target_state":"HELP_SENT","actions":["TAP"]},
-    {"id":"BTN_JOIN","type":"BUTTON","cn":"加入","en_aliases":["Join"],"ocr":["加入","Join"],"icon_semantic":"action.join","pages":["ALLIANCE","MARCH"],"target_state":"JOINED","actions":["TAP"]},
-    {"id":"BTN_RALLY","type":"BUTTON","cn":"集结","en_aliases":["Rally"],"ocr":["集结","Rally"],"icon_semantic":"action.rally","pages":["RESOURCE_DETAIL","BEAR","GIANT_BEAST"],"target_state":"RALLY_SETUP","actions":["TAP"]},
-    {"id":"BTN_ATTACK","type":"BUTTON","cn":"攻击","en_aliases":["Attack"],"ocr":["攻击","Attack"],"icon_semantic":"action.attack","pages":["BEAST","MAP"],"target_state":"MARCH_SETUP","actions":["TAP"]},
-    {"id":"BTN_GATHER","type":"BUTTON","cn":"采集","en_aliases":["Gather"],"ocr":["采集","Gather"],"icon_semantic":"action.gather","pages":["RESOURCE_DETAIL"],"target_state":"MARCH_SETUP","actions":["TAP"]},
-    {"id":"BTN_SPEEDUP","type":"BUTTON","cn":"加速","en_aliases":["Speed Up"],"ocr":["加速","Speed Up"],"icon_semantic":"action.speedup","pages":["BUILDING","RESEARCH","TRAINING","MARCH"],"target_state":"SPEEDUP_DIALOG","actions":["TAP"]},
-    {"id":"BTN_CONFIRM","type":"BUTTON","cn":"确认","en_aliases":["Confirm","OK"],"ocr":["确认","确定","Confirm","OK"],"icon_semantic":"action.confirm","pages":["POPUP"],"target_state":"CONFIRMED","actions":["TAP"]},
-    {"id":"BTN_CANCEL","type":"BUTTON","cn":"取消","en_aliases":["Cancel"],"ocr":["取消","Cancel"],"icon_semantic":"action.cancel","pages":["POPUP"],"target_state":"CANCELLED","actions":["TAP"]},
-
-    {"id":"STATUS_IDLE","type":"STATUS","cn":"空闲","en_aliases":["Idle"],"ocr":["空闲","Idle"],"icon_semantic":"status.idle","pages":["MARCH_QUEUE"],"target_state":"IDLE","actions":[]},
-    {"id":"STATUS_MARCHING","type":"STATUS","cn":"行军中","en_aliases":["Marching"],"ocr":["行军中","Marching"],"icon_semantic":"status.marching","pages":["MARCH_QUEUE"],"target_state":"MARCHING","actions":[]},
-    {"id":"STATUS_GATHERING","type":"STATUS","cn":"采集中","en_aliases":["Gathering"],"ocr":["采集中","Gathering"],"icon_semantic":"status.gathering","pages":["MARCH_QUEUE"],"target_state":"GATHERING","actions":[]},
-    {"id":"STATUS_RETURNING","type":"STATUS","cn":"返回中","en_aliases":["Returning"],"ocr":["返回中","Returning"],"icon_semantic":"status.returning","pages":["MARCH_QUEUE"],"target_state":"RETURNING","actions":[]},
-    {"id":"STATUS_COMPLETE","type":"STATUS","cn":"完成","en_aliases":["Complete","Completed"],"ocr":["完成","已完成","Complete"],"icon_semantic":"status.complete","pages":["*"],"target_state":"COMPLETED","actions":[]},
-    {"id":"STATUS_CLAIMABLE","type":"STATUS","cn":"可领取","en_aliases":["Claimable"],"ocr":["可领取"],"icon_semantic":"status.claimable","pages":["*"],"target_state":"CLAIMABLE","actions":["CLAIM"]},
-    {"id":"STATUS_NOT_AVAILABLE","type":"STATUS","cn":"不可用","en_aliases":["Not Available","Unavailable"],"ocr":["不可用","未开放","Not Available"],"icon_semantic":"status.unavailable","pages":["*"],"target_state":"NOT_AVAILABLE","actions":["SWITCH_TASK"]},
-    {"id":"STATUS_COOLDOWN","type":"STATUS","cn":"冷却","en_aliases":["Cooldown"],"ocr":["冷却","Cooldown"],"icon_semantic":"status.cooldown","pages":["*"],"target_state":"COOLDOWN","actions":["WAIT_OR_SWITCH_TASK"]},
-    {"id":"STATUS_INSUFFICIENT_RESOURCES","type":"STATUS","cn":"资源不足","en_aliases":["Insufficient Resources"],"ocr":["资源不足","Insufficient"],"icon_semantic":"status.insufficient_resource","pages":["*"],"target_state":"BLOCKED","actions":["SWITCH_TASK"]},
-    {"id":"STATUS_QUEUE_FULL","type":"STATUS","cn":"队列已满","en_aliases":["Queue Full"],"ocr":["队列已满","Queue Full"],"icon_semantic":"status.queue_full","pages":["BUILDING","RESEARCH","TRAINING","MARCH"],"target_state":"BLOCKED","actions":["SWITCH_TASK"]},
-
-    {"id":"RED_DOT_MAIL","type":"RED_DOT","cn":"邮件红点","en_aliases":["Mail badge"],"ocr":[],"icon_semantic":"red_dot.mail","pages":["HOME"],"target_state":"MAIL_HAS_NOTICE","actions":["OPEN_MAIL"]},
-    {"id":"RED_DOT_ALLIANCE","type":"RED_DOT","cn":"联盟红点","en_aliases":["Alliance badge"],"ocr":[],"icon_semantic":"red_dot.alliance","pages":["HOME"],"target_state":"ALLIANCE_HAS_NOTICE","actions":["OPEN_ALLIANCE"]},
-    {"id":"RED_DOT_TASK","type":"RED_DOT","cn":"任务红点","en_aliases":["Task badge"],"ocr":[],"icon_semantic":"red_dot.task","pages":["HOME"],"target_state":"TASK_HAS_NOTICE","actions":["OPEN_TASK"]},
-    {"id":"RED_DOT_REWARD","type":"RED_DOT","cn":"奖励红点","en_aliases":["Reward badge"],"ocr":[],"icon_semantic":"red_dot.reward","pages":["*"],"target_state":"REWARD_HAS_NOTICE","actions":["INSPECT"]},
-    {"id":"RED_DOT_EVENT","type":"RED_DOT","cn":"活动红点","en_aliases":["Event badge"],"ocr":[],"icon_semantic":"red_dot.event","pages":["HOME"],"target_state":"EVENT_HAS_NOTICE","actions":["OPEN_EVENT"]},
-    {"id":"RED_DOT_HERO","type":"RED_DOT","cn":"英雄红点","en_aliases":["Hero badge"],"ocr":[],"icon_semantic":"red_dot.hero","pages":["HOME"],"target_state":"HERO_HAS_NOTICE","actions":["OPEN_HERO"]},
-    {"id":"RED_DOT_BUILDING","type":"RED_DOT","cn":"建筑红点","en_aliases":["Building badge"],"ocr":[],"icon_semantic":"red_dot.building","pages":["HOME"],"target_state":"BUILDING_HAS_NOTICE","actions":["INSPECT"]},
-    {"id":"RED_DOT_RESEARCH","type":"RED_DOT","cn":"科技红点","en_aliases":["Research badge"],"ocr":[],"icon_semantic":"red_dot.research","pages":["HOME"],"target_state":"RESEARCH_HAS_NOTICE","actions":["OPEN_RESEARCH"]},
-    {"id":"BTN_OPEN_HOME","type":"NAVIGATION","cn":"城镇","en_aliases":["City","Home"],"ocr":["城镇","City"],"icon_semantic":"navigation.home","pages":["MAP"],"target_state":"HOME","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-03"},
-    {"id":"PAGE_ALLIANCE_TECH","type":"PAGE","cn":"联盟科技","en_aliases":["Alliance Technology"],"ocr":["联盟科技","发展","领地","战斗"],"icon_semantic":"alliance.technology","pages":["ALLIANCE"],"target_state":"ALLIANCE_TECHNOLOGY","actions":["OPEN"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"PAGE_ALLIANCE_HELP","type":"PAGE","cn":"联盟互助","en_aliases":["Alliance Help"],"ocr":["联盟互助","自动帮助"],"icon_semantic":"alliance.help","pages":["ALLIANCE"],"target_state":"ALLIANCE_HELP","actions":["OPEN"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"STATUS_ALLIANCE_AUTO_HELP_ACTIVE","type":"STATUS","cn":"联盟自动帮助已开启","en_aliases":["Alliance Auto Help Active"],"ocr":["联盟自动帮助","今日自动帮助"],"icon_semantic":"alliance.auto_help","pages":["ALLIANCE"],"target_state":"NOT_AVAILABLE","actions":["SWITCH_TASK"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT","type":"BUTTON","cn":"联盟科技肉类捐献","en_aliases":["Alliance Tech Meat Contribution"],"ocr":["捐献","10,000"],"icon_semantic":"alliance.contribute_meat","pages":["ALLIANCE"],"target_state":"CONTRIBUTED","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT","type":"STATUS","cn":"联盟科技捐献成功","en_aliases":["Alliance Tech Contribution Success"],"ocr":["240","24/25"],"icon_semantic":"alliance.contribution_result","pages":["ALLIANCE"],"target_state":"CONTRIBUTED","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"BTN_START_TRAINING","type":"BUTTON","cn":"训练","en_aliases":["Start Training"],"ocr":["训练","10:03:12"],"icon_semantic":"troop.start_training","pages":["TRAINING"],"target_state":"TRAINING_STARTED","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"STATUS_TRAINING_IN_PROGRESS","type":"STATUS","cn":"训练中","en_aliases":["Training In Progress"],"ocr":["训练中","正在训练806位王牌盾兵"],"icon_semantic":"troop.training_timer","pages":["TRAINING"],"target_state":"IN_PROGRESS","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"BTN_DAILY_CLAIM_ALL","type":"BUTTON","cn":"一键领取","en_aliases":["Claim All"],"ocr":["一键领取"],"icon_semantic":"daily.claim_all","pages":["DAILY"],"target_state":"DAILY_REWARD","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"STATUS_DAILY_MULTI_CLAIMED","type":"STATUS","cn":"日常多任务领取完成","en_aliases":["Daily Multi-claim Complete"],"ocr":["活跃度","65"],"icon_semantic":"daily.activity_reward","pages":["DAILY","POPUP"],"target_state":"COMPLETED","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"STATUS_DAILY_ALLIANCE_CLAIMABLE","type":"STATUS","cn":"联盟捐献日常可领取","en_aliases":["Alliance Contribution Daily Claimable"],"ocr":["完成联盟捐献5次","5/5","领取"],"icon_semantic":"daily.alliance_contribution_claimable","pages":["DAILY"],"target_state":"CLAIMABLE","actions":["CLAIM"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"STATUS_DAILY_ALLIANCE_TIER_ADVANCED","type":"STATUS","cn":"联盟捐献日常进阶","en_aliases":["Alliance Contribution Daily Tier Advanced"],"ocr":["完成联盟捐献20次","5/20"],"icon_semantic":"daily.alliance_contribution_tier","pages":["DAILY"],"target_state":"AVAILABLE","actions":["PLAN"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-04"},
-    {"id":"PAGE_ALLIANCE_GIFTS","type":"PAGE","cn":"联盟宝箱","en_aliases":["Alliance Gifts","Alliance Chest"],"ocr":["联盟宝箱","战利品宝箱","盟友赠礼"],"icon_semantic":"alliance.gifts_page","pages":["ALLIANCE"],"target_state":"ALLIANCE_GIFTS","actions":["OPEN"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"BTN_ALLIANCE_GIFTS_CLAIM_ALL","type":"BUTTON","cn":"联盟宝箱一键领取","en_aliases":["Claim All Alliance Gifts"],"ocr":["一键领取"],"icon_semantic":"alliance.gifts_claim_all","pages":["ALLIANCE"],"target_state":"ALLIANCE_GIFT_REWARD","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"STATUS_ALLIANCE_GIFTS_CLAIMED","type":"STATUS","cn":"联盟宝箱已领取","en_aliases":["Alliance Gifts Claimed"],"ocr":["已领取","每日战利品宝箱上限"],"icon_semantic":"alliance.gifts_claimed","pages":["ALLIANCE"],"target_state":"CLAIMED","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"STATUS_ALLIANCE_GIFTS_RESET_INTERRUPTION","type":"STATUS","cn":"联盟宝箱领取跨日中断","en_aliases":["Alliance Gift Reset Interruption"],"ocr":["每日战利品宝箱上限：0/500"],"icon_semantic":"alliance.gifts_daily_reset","pages":["ALLIANCE","UNKNOWN"],"target_state":"RESET_DURING_ACTION","actions":["REOPEN_PAGE","RETRY_ONCE"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"TAB_ALLIANCE_ALLY_GIFTS","type":"TAB","cn":"盟友赠礼","en_aliases":["Ally Gifts"],"ocr":["盟友赠礼"],"icon_semantic":"alliance.ally_gifts_tab","pages":["ALLIANCE"],"target_state":"ALLY_GIFT","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"BTN_ALLY_GIFT_CLAIM","type":"BUTTON","cn":"领取盟友赠礼","en_aliases":["Claim Ally Gift"],"ocr":["领取"],"icon_semantic":"alliance.ally_gift_claim","pages":["ALLIANCE"],"target_state":"ALLY_GIFT_CLAIMED","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"STATUS_ALLY_GIFT_INLINE_REWARD","type":"STATUS","cn":"盟友赠礼行内奖励","en_aliases":["Ally Gift Inline Reward"],"ocr":["已领取","30","120"],"icon_semantic":"alliance.ally_gift_reward","pages":["ALLIANCE"],"target_state":"CLAIMED","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"COUNTER_ALLY_GIFT_BADGE","type":"COUNTER","cn":"盟友赠礼红点计数","en_aliases":["Ally Gift Badge Count"],"ocr":["0","1","5","6","7"],"icon_semantic":"alliance.ally_gift_badge","pages":["ALLIANCE"],"target_state":"CLAIMABLE_COUNT","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"POPUP_EXIT_CONFIRM","type":"POPUP","cn":"确认退出游戏","en_aliases":["Exit Confirmation"],"ocr":["确认","确认退出游戏吗？","取消"],"icon_semantic":"popup.exit_confirm","pages":["POPUP"],"target_state":"EXIT_CONFIRM","actions":["CLOSE","CANCEL"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"BTN_MAIL_CLAIM_ALL","type":"BUTTON","cn":"一键已读并领取","en_aliases":["Read and Claim All"],"ocr":["一键已读&领取"],"icon_semantic":"mail.claim_all","pages":["MAIL"],"target_state":"MAIL_REWARD_OR_READ","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"STATUS_MAIL_TAB_BADGES","type":"COUNTER","cn":"邮件分类未读计数","en_aliases":["Mail Tab Badges"],"ocr":["战争","联盟","系统","报告"],"icon_semantic":"mail.tab_badges","pages":["MAIL"],"target_state":"CLAIMABLE","actions":["CLAIM_PER_TAB"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"STATUS_MAIL_ALL_CLEAR","type":"STATUS","cn":"邮件分类已清零","en_aliases":["All Mail Tabs Clear"],"ocr":["战争","联盟","系统","报告"],"icon_semantic":"mail.all_clear","pages":["MAIL"],"target_state":"CLAIMED","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"POPUP_MAIL_REWARD","type":"POPUP","cn":"邮件获得奖励","en_aliases":["Mail Reward"],"ocr":["获得奖励"],"icon_semantic":"mail.reward","pages":["POPUP"],"target_state":"CLAIMED","actions":["VERIFY","DISMISS"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"PAGE_EXPLORATION","type":"PAGE","cn":"探险","en_aliases":["Exploration"],"ocr":["探险","排行榜"],"icon_semantic":"exploration.page","pages":["EXPLORATION"],"target_state":"EXPLORATION","actions":["OPEN"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"BTN_EXPLORATION_IDLE_CLAIM","type":"BUTTON","cn":"领取挂机收益","en_aliases":["Claim Idle Income"],"ocr":["领取","挂机收益","挂机时间"],"icon_semantic":"exploration.idle_claim","pages":["EXPLORATION"],"target_state":"EXPLORATION_REWARD","actions":["TAP","CONFIRM_CLAIM"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"STATUS_EXPLORATION_IDLE_CLAIMED","type":"STATUS","cn":"挂机收益已领取","en_aliases":["Idle Income Claimed"],"ocr":["领取"],"icon_semantic":"exploration.idle_claim_disabled","pages":["EXPLORATION"],"target_state":"CLAIMED","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"POPUP_EXPLORATION_REWARD","type":"POPUP","cn":"探险挂机奖励","en_aliases":["Exploration Idle Reward"],"ocr":["获得奖励"],"icon_semantic":"exploration.reward","pages":["POPUP"],"target_state":"CLAIMED","actions":["VERIFY","DISMISS"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-05"},
-    {"id":"POPUP_INTEL_HERO_JOURNEY_TITLE","type":"POPUP","cn":"英雄之旅情报","en_aliases":["Hero Journey Intel"],"ocr":["英雄之旅","等级10"],"icon_semantic":"intel.hero_journey","pages":["POPUP"],"target_state":"HERO_JOURNEY","actions":["INSPECT","BACK"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-06"},
-    {"id":"POPUP_INTEL_MASTER_BOUNTY_TITLE","type":"POPUP","cn":"大师悬赏情报","en_aliases":["Master Bounty Intel"],"ocr":["大师悬赏","20号"],"icon_semantic":"intel.master_bounty","pages":["POPUP"],"target_state":"MASTER_BOUNTY","actions":["INSPECT","BACK"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-06"},
-    {"id":"DIALOG_INTEL_MASTER_BOUNTY_HIGH_POWER","type":"DIALOG","cn":"大师悬赏高战力目标","en_aliases":["Master Bounty High Power"],"ocr":["推荐实力189,295,920","出征","10"],"icon_semantic":"intel.master_bounty_target","pages":["BEAST"],"target_state":"BLOCKED","actions":["BACK","SWITCH_TASK"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-06"},
-    {"id":"DIALOG_INTEL_HERO_JOURNEY_EXPLORE","type":"DIALOG","cn":"英雄之旅探险","en_aliases":["Hero Journey Explore"],"ocr":["英雄之旅","探险","10"],"icon_semantic":"intel.hero_journey_explore","pages":["EXPLORATION"],"target_state":"AVAILABLE","actions":["PLAN","BACK"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-06"},
-    {"id":"STATUS_INTEL_HERO_JOURNEY_FAILED","type":"STATUS","cn":"英雄之旅失败","en_aliases":["Hero Journey Failed"],"ocr":["失败"],"icon_semantic":"intel.hero_journey_failed","pages":["MAP"],"target_state":"BLOCKED","actions":["REFRESH_STATE","SWITCH_TASK"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-06"},
-    {"id":"TARGET_INTEL_FIREBEAST_MISSION","type":"CARD","cn":"炽红巨兽情报图标","en_aliases":["Firebeast Intel Pin"],"ocr":[],"icon_semantic":"intel.firebeast","pages":["INTEL"],"target_state":"FIREBEAST_AVAILABLE","actions":["SELECT"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"POPUP_INTEL_FIREBEAST_TITLE","type":"POPUP","cn":"狩猎炽红巨兽情报","en_aliases":["Hunt Firebeast Intel"],"ocr":["狩猎炽红巨兽","等级10"],"icon_semantic":"intel.firebeast_dialog","pages":["POPUP"],"target_state":"FIREBEAST","actions":["OPEN_TARGET"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"DIALOG_INTEL_FIREBEAST_TARGET","type":"DIALOG","cn":"炽红巨兽目标","en_aliases":["Firebeast Target"],"ocr":["炽红巨兽","等级20","推荐实力1,467,020","10"],"icon_semantic":"intel.firebeast_target","pages":["BEAST"],"target_state":"AVAILABLE","actions":["MARCH"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"TARGET_INTEL_RESCUE_SURVIVORS","type":"CARD","cn":"营救幸存者情报图标","en_aliases":["Rescue Survivors Intel Pin"],"ocr":[],"icon_semantic":"intel.rescue_survivors","pages":["INTEL"],"target_state":"RESCUE_AVAILABLE","actions":["SELECT"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"BTN_INTEL_RESCUE_SURVIVORS","type":"BUTTON","cn":"营救幸存者","en_aliases":["Rescue Survivors"],"ocr":["营救","12"],"icon_semantic":"intel.rescue_survivors_action","pages":["MAP"],"target_state":"IN_PROGRESS","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"BTN_OPEN_MAIL","type":"BUTTON","cn":"打开邮件","en_aliases":["Open Mail"],"ocr":[],"icon_semantic":"mail.home_entry","pages":["HOME"],"target_state":"MAIL","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"BTN_MAIL_TAB_ALLIANCE","type":"TAB","cn":"联盟邮件","en_aliases":["Alliance Mail"],"ocr":["联盟"],"icon_semantic":"mail.tab_alliance","pages":["MAIL"],"target_state":"ALLIANCE_TAB","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"BTN_MAIL_TAB_SYSTEM","type":"TAB","cn":"系统邮件","en_aliases":["System Mail"],"ocr":["系统"],"icon_semantic":"mail.tab_system","pages":["MAIL"],"target_state":"SYSTEM_TAB","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"BTN_MAIL_TAB_REPORT","type":"TAB","cn":"报告邮件","en_aliases":["Report Mail"],"ocr":["报告"],"icon_semantic":"mail.tab_report","pages":["MAIL"],"target_state":"REPORT_TAB","actions":["TAP"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"TAB_MAIL_ALLIANCE_ACTIVE","type":"STATUS","cn":"联盟邮件当前页","en_aliases":["Alliance Mail Active"],"ocr":["联盟"],"icon_semantic":"mail.tab_alliance_active","pages":["MAIL"],"target_state":"ACTIVE","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"TAB_MAIL_SYSTEM_ACTIVE","type":"STATUS","cn":"系统邮件当前页","en_aliases":["System Mail Active"],"ocr":["系统"],"icon_semantic":"mail.tab_system_active","pages":["MAIL"],"target_state":"ACTIVE","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"},
-    {"id":"TAB_MAIL_REPORT_ACTIVE","type":"STATUS","cn":"报告邮件当前页","en_aliases":["Report Mail Active"],"ocr":["报告"],"icon_semantic":"mail.tab_report_active","pages":["MAIL"],"target_state":"ACTIVE","actions":["VERIFY"],"status":"VERIFIED","source":"LIVE_CLIENT","last_verified":"2026-09-07"}
+  "schema_version": "1.0",
+  "gate": "CANDIDATE",
+  "records": [
+    {
+      "id": "BTN_ALLIANCE_GIFTS_CLAIM_ALL",
+      "type": "BUTTON",
+      "cn": "联盟宝箱一键领取",
+      "en_aliases": [
+        "Claim All Alliance Gifts"
+      ],
+      "ocr": [
+        "一键领取"
+      ],
+      "icon_semantic": "alliance.gifts_claim_all",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "ALLIANCE_GIFT_REWARD",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
+      "type": "BUTTON",
+      "cn": "联盟科技肉类捐献",
+      "en_aliases": [
+        "Alliance Tech Meat Contribution"
+      ],
+      "ocr": [
+        "捐献",
+        "10,000"
+      ],
+      "icon_semantic": "alliance.contribute_meat",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "CONTRIBUTED",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "BTN_ALLY_GIFT_CLAIM",
+      "type": "BUTTON",
+      "cn": "领取盟友赠礼",
+      "en_aliases": [
+        "Claim Ally Gift"
+      ],
+      "ocr": [
+        "领取"
+      ],
+      "icon_semantic": "alliance.ally_gift_claim",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "ALLY_GIFT_CLAIMED",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "BTN_ATTACK",
+      "type": "BUTTON",
+      "cn": "攻击",
+      "en_aliases": [
+        "Attack"
+      ],
+      "ocr": [
+        "攻击",
+        "Attack"
+      ],
+      "icon_semantic": "action.attack",
+      "pages": [
+        "BEAST",
+        "MAP"
+      ],
+      "target_state": "MARCH_SETUP",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_BACK",
+      "type": "BUTTON",
+      "cn": "返回",
+      "en_aliases": [
+        "Back"
+      ],
+      "ocr": [],
+      "icon_semantic": "navigation.back_arrow",
+      "pages": [
+        "*"
+      ],
+      "target_state": "PREVIOUS_PAGE",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_CANCEL",
+      "type": "BUTTON",
+      "cn": "取消",
+      "en_aliases": [
+        "Cancel"
+      ],
+      "ocr": [
+        "取消",
+        "Cancel"
+      ],
+      "icon_semantic": "action.cancel",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "CANCELLED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_CLAIM",
+      "type": "BUTTON",
+      "cn": "领取",
+      "en_aliases": [
+        "Claim",
+        "Collect"
+      ],
+      "ocr": [
+        "领取",
+        "Claim",
+        "Collect"
+      ],
+      "icon_semantic": "action.claim",
+      "pages": [
+        "*"
+      ],
+      "target_state": "CLAIMED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_CLOSE",
+      "type": "BUTTON",
+      "cn": "关闭",
+      "en_aliases": [
+        "Close"
+      ],
+      "ocr": [],
+      "icon_semantic": "navigation.close_x",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "POPUP_CLOSED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_CONFIRM",
+      "type": "BUTTON",
+      "cn": "确认",
+      "en_aliases": [
+        "Confirm",
+        "OK"
+      ],
+      "ocr": [
+        "确认",
+        "确定",
+        "Confirm",
+        "OK"
+      ],
+      "icon_semantic": "action.confirm",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "CONFIRMED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_DAILY_CLAIM_ALL",
+      "type": "BUTTON",
+      "cn": "一键领取",
+      "en_aliases": [
+        "Claim All"
+      ],
+      "ocr": [
+        "一键领取"
+      ],
+      "icon_semantic": "daily.claim_all",
+      "pages": [
+        "DAILY"
+      ],
+      "target_state": "DAILY_REWARD",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "BTN_DISPATCH",
+      "type": "BUTTON",
+      "cn": "出征",
+      "cn_aliases": [
+        "派遣"
+      ],
+      "en_aliases": [
+        "Deploy",
+        "Dispatch",
+        "March"
+      ],
+      "ocr": [
+        "出征",
+        "派遣",
+        "Deploy",
+        "Dispatch",
+        "March"
+      ],
+      "icon_semantic": "action.dispatch",
+      "pages": [
+        "MARCH"
+      ],
+      "target_state": "MARCHING",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-02T22:39:33+08:00"
+    },
+    {
+      "id": "BTN_EXPLORATION_IDLE_CLAIM",
+      "type": "BUTTON",
+      "cn": "领取挂机收益",
+      "en_aliases": [
+        "Claim Idle Income"
+      ],
+      "ocr": [
+        "领取",
+        "挂机收益",
+        "挂机时间"
+      ],
+      "icon_semantic": "exploration.idle_claim",
+      "pages": [
+        "EXPLORATION"
+      ],
+      "target_state": "EXPLORATION_REWARD",
+      "actions": [
+        "TAP",
+        "CONFIRM_CLAIM"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "BTN_GATHER",
+      "type": "BUTTON",
+      "cn": "采集",
+      "en_aliases": [
+        "Gather"
+      ],
+      "ocr": [
+        "采集",
+        "Gather"
+      ],
+      "icon_semantic": "action.gather",
+      "pages": [
+        "RESOURCE_DETAIL"
+      ],
+      "target_state": "MARCH_SETUP",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_HELP",
+      "type": "BUTTON",
+      "cn": "帮助",
+      "en_aliases": [
+        "Help"
+      ],
+      "ocr": [
+        "帮助",
+        "Help"
+      ],
+      "icon_semantic": "alliance.help",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "HELP_SENT",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_INTEL_RESCUE_SURVIVORS",
+      "type": "BUTTON",
+      "cn": "营救幸存者",
+      "en_aliases": [
+        "Rescue Survivors"
+      ],
+      "ocr": [
+        "营救",
+        "12"
+      ],
+      "icon_semantic": "intel.rescue_survivors_action",
+      "pages": [
+        "MAP"
+      ],
+      "target_state": "IN_PROGRESS",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "BTN_JOIN",
+      "type": "BUTTON",
+      "cn": "加入",
+      "en_aliases": [
+        "Join"
+      ],
+      "ocr": [
+        "加入",
+        "Join"
+      ],
+      "icon_semantic": "action.join",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "target_state": "JOINED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_MAIL_CLAIM_ALL",
+      "type": "BUTTON",
+      "cn": "一键已读并领取",
+      "en_aliases": [
+        "Read and Claim All"
+      ],
+      "ocr": [
+        "一键已读&领取"
+      ],
+      "icon_semantic": "mail.claim_all",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "MAIL_REWARD_OR_READ",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "BTN_MAIL_TAB_ALLIANCE",
+      "type": "TAB",
+      "cn": "联盟邮件",
+      "en_aliases": [
+        "Alliance Mail"
+      ],
+      "ocr": [
+        "联盟"
+      ],
+      "icon_semantic": "mail.tab_alliance",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "ALLIANCE_TAB",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "BTN_MAIL_TAB_REPORT",
+      "type": "TAB",
+      "cn": "报告邮件",
+      "en_aliases": [
+        "Report Mail"
+      ],
+      "ocr": [
+        "报告"
+      ],
+      "icon_semantic": "mail.tab_report",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "REPORT_TAB",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "BTN_MAIL_TAB_SYSTEM",
+      "type": "TAB",
+      "cn": "系统邮件",
+      "en_aliases": [
+        "System Mail"
+      ],
+      "ocr": [
+        "系统"
+      ],
+      "icon_semantic": "mail.tab_system",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "SYSTEM_TAB",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "BTN_MARCH",
+      "type": "BUTTON",
+      "cn": "行军",
+      "en_aliases": [
+        "March"
+      ],
+      "ocr": [
+        "行军",
+        "March"
+      ],
+      "icon_semantic": "action.march",
+      "pages": [
+        "MARCH"
+      ],
+      "target_state": "MARCHING",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_OPEN_HOME",
+      "type": "NAVIGATION",
+      "cn": "城镇",
+      "en_aliases": [
+        "City",
+        "Home"
+      ],
+      "ocr": [
+        "城镇",
+        "City"
+      ],
+      "icon_semantic": "navigation.home",
+      "pages": [
+        "MAP"
+      ],
+      "target_state": "HOME",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-03"
+    },
+    {
+      "id": "BTN_OPEN_MAIL",
+      "type": "BUTTON",
+      "cn": "打开邮件",
+      "en_aliases": [
+        "Open Mail"
+      ],
+      "ocr": [],
+      "icon_semantic": "mail.home_entry",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "MAIL",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "BTN_OPEN_RESOURCE_SEARCH",
+      "type": "BUTTON",
+      "cn": "打开资源搜索",
+      "en_aliases": [
+        "Open Resource Search"
+      ],
+      "ocr": [],
+      "icon_semantic": "navigation.magnifier",
+      "pages": [
+        "MAP"
+      ],
+      "target_state": "SEARCH_PANEL",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_RALLY",
+      "type": "BUTTON",
+      "cn": "集结",
+      "en_aliases": [
+        "Rally"
+      ],
+      "ocr": [
+        "集结",
+        "Rally"
+      ],
+      "icon_semantic": "action.rally",
+      "pages": [
+        "RESOURCE_DETAIL",
+        "BEAR",
+        "GIANT_BEAST"
+      ],
+      "target_state": "RALLY_SETUP",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_RESEARCH",
+      "type": "BUTTON",
+      "cn": "研究",
+      "en_aliases": [
+        "Research"
+      ],
+      "ocr": [
+        "研究",
+        "Research"
+      ],
+      "icon_semantic": "action.research",
+      "pages": [
+        "RESEARCH"
+      ],
+      "target_state": "RESEARCH_STARTED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_RESOURCE_SEARCH_SUBMIT",
+      "type": "BUTTON",
+      "cn": "搜索",
+      "en_aliases": [
+        "Search"
+      ],
+      "ocr": [
+        "搜索",
+        "Search"
+      ],
+      "icon_semantic": "action.search_submit",
+      "pages": [
+        "MAP"
+      ],
+      "target_state": "RESOURCE_LOCATED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_SPEEDUP",
+      "type": "BUTTON",
+      "cn": "加速",
+      "en_aliases": [
+        "Speed Up"
+      ],
+      "ocr": [
+        "加速",
+        "Speed Up"
+      ],
+      "icon_semantic": "action.speedup",
+      "pages": [
+        "BUILDING",
+        "RESEARCH",
+        "TRAINING",
+        "MARCH"
+      ],
+      "target_state": "SPEEDUP_DIALOG",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_START_TRAINING",
+      "type": "BUTTON",
+      "cn": "训练",
+      "en_aliases": [
+        "Start Training"
+      ],
+      "ocr": [
+        "训练",
+        "10:03:12"
+      ],
+      "icon_semantic": "troop.start_training",
+      "pages": [
+        "TRAINING"
+      ],
+      "target_state": "TRAINING_STARTED",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "BTN_TRAIN",
+      "type": "BUTTON",
+      "cn": "训练",
+      "en_aliases": [
+        "Train"
+      ],
+      "ocr": [
+        "训练",
+        "Train"
+      ],
+      "icon_semantic": "action.train",
+      "pages": [
+        "TRAINING"
+      ],
+      "target_state": "TRAINING_STARTED",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "BTN_UPGRADE",
+      "type": "BUTTON",
+      "cn": "升级",
+      "en_aliases": [
+        "Upgrade"
+      ],
+      "ocr": [
+        "升级",
+        "Upgrade"
+      ],
+      "icon_semantic": "action.upgrade",
+      "pages": [
+        "BUILDING"
+      ],
+      "target_state": "UPGRADE_DIALOG",
+      "actions": [
+        "TAP"
+      ]
+    },
+    {
+      "id": "COUNTER_ALLY_GIFT_BADGE",
+      "type": "COUNTER",
+      "cn": "盟友赠礼红点计数",
+      "en_aliases": [
+        "Ally Gift Badge Count"
+      ],
+      "ocr": [
+        "0",
+        "1",
+        "5",
+        "6",
+        "7"
+      ],
+      "icon_semantic": "alliance.ally_gift_badge",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "CLAIMABLE_COUNT",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "DIALOG_INTEL_FIREBEAST_TARGET",
+      "type": "DIALOG",
+      "cn": "炽红巨兽目标",
+      "en_aliases": [
+        "Firebeast Target"
+      ],
+      "ocr": [
+        "炽红巨兽",
+        "等级20",
+        "推荐实力1,467,020",
+        "10"
+      ],
+      "icon_semantic": "intel.firebeast_target",
+      "pages": [
+        "BEAST"
+      ],
+      "target_state": "AVAILABLE",
+      "actions": [
+        "MARCH"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "DIALOG_INTEL_HERO_JOURNEY_EXPLORE",
+      "type": "DIALOG",
+      "cn": "英雄之旅探险",
+      "en_aliases": [
+        "Hero Journey Explore"
+      ],
+      "ocr": [
+        "英雄之旅",
+        "探险",
+        "10"
+      ],
+      "icon_semantic": "intel.hero_journey_explore",
+      "pages": [
+        "EXPLORATION"
+      ],
+      "target_state": "AVAILABLE",
+      "actions": [
+        "PLAN",
+        "BACK"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-06"
+    },
+    {
+      "id": "DIALOG_INTEL_MASTER_BOUNTY_HIGH_POWER",
+      "type": "DIALOG",
+      "cn": "大师悬赏高战力目标",
+      "en_aliases": [
+        "Master Bounty High Power"
+      ],
+      "ocr": [
+        "推荐实力189,295,920",
+        "出征",
+        "10"
+      ],
+      "icon_semantic": "intel.master_bounty_target",
+      "pages": [
+        "BEAST"
+      ],
+      "target_state": "BLOCKED",
+      "actions": [
+        "BACK",
+        "SWITCH_TASK"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-06"
+    },
+    {
+      "id": "EVENT_PERSONAL_POINTS",
+      "type": "COUNTER",
+      "cn": "个人活动积分",
+      "en_aliases": [
+        "My Points"
+      ],
+      "ocr": [
+        "我的积分"
+      ],
+      "icon_semantic": "event.personal_points",
+      "pages": [
+        "EVENT"
+      ],
+      "target_state": "EVENT_PROGRESS_KNOWN",
+      "actions": [
+        "READ"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-09"
+    },
+    {
+      "id": "EVENT_STAGE_TIMER",
+      "type": "TIMER",
+      "cn": "活动阶段倒计时",
+      "en_aliases": [
+        "Stage Timer"
+      ],
+      "ocr": [
+        "击败野兽"
+      ],
+      "icon_semantic": "event.stage_timer",
+      "pages": [
+        "EVENT"
+      ],
+      "target_state": "EVENT_DEADLINE_KNOWN",
+      "actions": [
+        "READ"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-09"
+    },
+    {
+      "id": "PAGE_ALLIANCE",
+      "type": "PAGE",
+      "cn": "联盟",
+      "en_aliases": [
+        "Alliance"
+      ],
+      "ocr": [
+        "联盟",
+        "Alliance"
+      ],
+      "icon_semantic": "alliance.emblem",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "ALLIANCE",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_ALLIANCE_GIFTS",
+      "type": "PAGE",
+      "cn": "联盟宝箱",
+      "en_aliases": [
+        "Alliance Gifts",
+        "Alliance Chest"
+      ],
+      "ocr": [
+        "联盟宝箱",
+        "战利品宝箱",
+        "盟友赠礼"
+      ],
+      "icon_semantic": "alliance.gifts_page",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "ALLIANCE_GIFTS",
+      "actions": [
+        "OPEN"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "PAGE_ALLIANCE_HELP",
+      "type": "PAGE",
+      "cn": "联盟互助",
+      "en_aliases": [
+        "Alliance Help"
+      ],
+      "ocr": [
+        "联盟互助",
+        "自动帮助"
+      ],
+      "icon_semantic": "alliance.help",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "ALLIANCE_HELP",
+      "actions": [
+        "OPEN"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "PAGE_ALLIANCE_TECH",
+      "type": "PAGE",
+      "cn": "联盟科技",
+      "en_aliases": [
+        "Alliance Technology"
+      ],
+      "ocr": [
+        "联盟科技",
+        "发展",
+        "领地",
+        "战斗"
+      ],
+      "icon_semantic": "alliance.technology",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "ALLIANCE_TECHNOLOGY",
+      "actions": [
+        "OPEN"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "PAGE_BEAR",
+      "type": "PAGE",
+      "cn": "巨熊行动",
+      "en_aliases": [
+        "Bear Hunt",
+        "Bear Trap"
+      ],
+      "ocr": [
+        "巨熊行动",
+        "Bear Hunt"
+      ],
+      "icon_semantic": "bear.head",
+      "pages": [
+        "BEAR"
+      ],
+      "target_state": "BEAR",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_EVENT",
+      "type": "PAGE",
+      "cn": "活动",
+      "en_aliases": [
+        "Event",
+        "Events"
+      ],
+      "ocr": [
+        "活动"
+      ],
+      "icon_semantic": "event.calendar",
+      "pages": [
+        "EVENT"
+      ],
+      "target_state": "EVENT",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_EXPLORATION",
+      "type": "PAGE",
+      "cn": "探险",
+      "en_aliases": [
+        "Exploration"
+      ],
+      "ocr": [
+        "探险",
+        "排行榜"
+      ],
+      "icon_semantic": "exploration.page",
+      "pages": [
+        "EXPLORATION"
+      ],
+      "target_state": "EXPLORATION",
+      "actions": [
+        "OPEN"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "PAGE_GIANT_BEAST",
+      "type": "PAGE",
+      "cn": "冰原巨兽",
+      "en_aliases": [
+        "Giant Beast"
+      ],
+      "ocr": [
+        "冰原巨兽",
+        "巨兽"
+      ],
+      "icon_semantic": "giant_beast.head",
+      "pages": [
+        "GIANT_BEAST"
+      ],
+      "target_state": "GIANT_BEAST",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_HERO",
+      "type": "PAGE",
+      "cn": "英雄",
+      "en_aliases": [
+        "Hero",
+        "Heroes"
+      ],
+      "ocr": [
+        "英雄"
+      ],
+      "icon_semantic": "hero.portrait",
+      "pages": [
+        "HERO"
+      ],
+      "target_state": "HERO",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_HOME",
+      "type": "PAGE",
+      "cn": "主城",
+      "en_aliases": [
+        "Home",
+        "City"
+      ],
+      "ocr": [
+        "主城"
+      ],
+      "icon_semantic": "navigation.city",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "HOME",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_INTEL",
+      "type": "PAGE",
+      "cn": "情报",
+      "en_aliases": [
+        "Intel"
+      ],
+      "ocr": [
+        "情报",
+        "Intel"
+      ],
+      "icon_semantic": "intel.radar",
+      "pages": [
+        "INTEL"
+      ],
+      "target_state": "INTEL",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_MAIL",
+      "type": "PAGE",
+      "cn": "邮件",
+      "en_aliases": [
+        "Mail"
+      ],
+      "ocr": [
+        "邮件"
+      ],
+      "icon_semantic": "mail.en",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "MAIL",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_MAP",
+      "type": "PAGE",
+      "cn": "世界地图",
+      "en_aliases": [
+        "World",
+        "Map",
+        "Wilderness"
+      ],
+      "ocr": [
+        "世界",
+        "地图"
+      ],
+      "icon_semantic": "navigation.map",
+      "pages": [
+        "MAP"
+      ],
+      "target_state": "MAP",
+      "actions": [
+        "OPEN_MAP"
+      ]
+    },
+    {
+      "id": "PAGE_REGULAR_EVENT",
+      "type": "PAGE",
+      "cn": "常规活动",
+      "en_aliases": [
+        "Regular Events"
+      ],
+      "ocr": [
+        "常规活动",
+        "最强王国"
+      ],
+      "icon_semantic": "event.regular",
+      "pages": [
+        "EVENT"
+      ],
+      "target_state": "EVENT",
+      "actions": [
+        "READ_EVENT_LIST",
+        "READ_EVENT_PROGRESS"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-09"
+    },
+    {
+      "id": "PAGE_RESEARCH",
+      "type": "PAGE",
+      "cn": "科技",
+      "en_aliases": [
+        "Research",
+        "Technology"
+      ],
+      "ocr": [
+        "科技",
+        "研究"
+      ],
+      "icon_semantic": "research.flask",
+      "pages": [
+        "RESEARCH"
+      ],
+      "target_state": "RESEARCH",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "PAGE_TRAINING",
+      "type": "PAGE",
+      "cn": "训练",
+      "en_aliases": [
+        "Train",
+        "Training"
+      ],
+      "ocr": [
+        "训练"
+      ],
+      "icon_semantic": "troop.training",
+      "pages": [
+        "TRAINING"
+      ],
+      "target_state": "TRAINING",
+      "actions": [
+        "OPEN"
+      ]
+    },
+    {
+      "id": "POPUP_EXIT_CONFIRM",
+      "type": "POPUP",
+      "cn": "确认退出游戏",
+      "en_aliases": [
+        "Exit Confirmation"
+      ],
+      "ocr": [
+        "确认",
+        "确认退出游戏吗？",
+        "取消"
+      ],
+      "icon_semantic": "popup.exit_confirm",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "EXIT_CONFIRM",
+      "actions": [
+        "CLOSE",
+        "CANCEL"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "POPUP_EXPLORATION_REWARD",
+      "type": "POPUP",
+      "cn": "探险挂机奖励",
+      "en_aliases": [
+        "Exploration Idle Reward"
+      ],
+      "ocr": [
+        "获得奖励"
+      ],
+      "icon_semantic": "exploration.reward",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "CLAIMED",
+      "actions": [
+        "VERIFY",
+        "DISMISS"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "POPUP_INTEL_FIREBEAST_TITLE",
+      "type": "POPUP",
+      "cn": "狩猎炽红巨兽情报",
+      "en_aliases": [
+        "Hunt Firebeast Intel"
+      ],
+      "ocr": [
+        "狩猎炽红巨兽",
+        "等级10"
+      ],
+      "icon_semantic": "intel.firebeast_dialog",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "FIREBEAST",
+      "actions": [
+        "OPEN_TARGET"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "POPUP_INTEL_HERO_JOURNEY_TITLE",
+      "type": "POPUP",
+      "cn": "英雄之旅情报",
+      "en_aliases": [
+        "Hero Journey Intel"
+      ],
+      "ocr": [
+        "英雄之旅",
+        "等级10"
+      ],
+      "icon_semantic": "intel.hero_journey",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "HERO_JOURNEY",
+      "actions": [
+        "INSPECT",
+        "BACK"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-06"
+    },
+    {
+      "id": "POPUP_INTEL_MASTER_BOUNTY_TITLE",
+      "type": "POPUP",
+      "cn": "大师悬赏情报",
+      "en_aliases": [
+        "Master Bounty Intel"
+      ],
+      "ocr": [
+        "大师悬赏",
+        "20号"
+      ],
+      "icon_semantic": "intel.master_bounty",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "MASTER_BOUNTY",
+      "actions": [
+        "INSPECT",
+        "BACK"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-06"
+    },
+    {
+      "id": "POPUP_MAIL_REWARD",
+      "type": "POPUP",
+      "cn": "邮件获得奖励",
+      "en_aliases": [
+        "Mail Reward"
+      ],
+      "ocr": [
+        "获得奖励"
+      ],
+      "icon_semantic": "mail.reward",
+      "pages": [
+        "POPUP"
+      ],
+      "target_state": "CLAIMED",
+      "actions": [
+        "VERIFY",
+        "DISMISS"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "RED_DOT_ALLIANCE",
+      "type": "RED_DOT",
+      "cn": "联盟红点",
+      "en_aliases": [
+        "Alliance badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.alliance",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "ALLIANCE_HAS_NOTICE",
+      "actions": [
+        "OPEN_ALLIANCE"
+      ]
+    },
+    {
+      "id": "RED_DOT_BUILDING",
+      "type": "RED_DOT",
+      "cn": "建筑红点",
+      "en_aliases": [
+        "Building badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.building",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "BUILDING_HAS_NOTICE",
+      "actions": [
+        "INSPECT"
+      ]
+    },
+    {
+      "id": "RED_DOT_EVENT",
+      "type": "RED_DOT",
+      "cn": "活动红点",
+      "en_aliases": [
+        "Event badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.event",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "EVENT_HAS_NOTICE",
+      "actions": [
+        "OPEN_EVENT"
+      ]
+    },
+    {
+      "id": "RED_DOT_HERO",
+      "type": "RED_DOT",
+      "cn": "英雄红点",
+      "en_aliases": [
+        "Hero badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.hero",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "HERO_HAS_NOTICE",
+      "actions": [
+        "OPEN_HERO"
+      ]
+    },
+    {
+      "id": "RED_DOT_MAIL",
+      "type": "RED_DOT",
+      "cn": "邮件红点",
+      "en_aliases": [
+        "Mail badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.mail",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "MAIL_HAS_NOTICE",
+      "actions": [
+        "OPEN_MAIL"
+      ]
+    },
+    {
+      "id": "RED_DOT_RESEARCH",
+      "type": "RED_DOT",
+      "cn": "科技红点",
+      "en_aliases": [
+        "Research badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.research",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "RESEARCH_HAS_NOTICE",
+      "actions": [
+        "OPEN_RESEARCH"
+      ]
+    },
+    {
+      "id": "RED_DOT_REWARD",
+      "type": "RED_DOT",
+      "cn": "奖励红点",
+      "en_aliases": [
+        "Reward badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.reward",
+      "pages": [
+        "*"
+      ],
+      "target_state": "REWARD_HAS_NOTICE",
+      "actions": [
+        "INSPECT"
+      ]
+    },
+    {
+      "id": "RED_DOT_TASK",
+      "type": "RED_DOT",
+      "cn": "任务红点",
+      "en_aliases": [
+        "Task badge"
+      ],
+      "ocr": [],
+      "icon_semantic": "red_dot.task",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "TASK_HAS_NOTICE",
+      "actions": [
+        "OPEN_TASK"
+      ]
+    },
+    {
+      "id": "STATUS_ALLIANCE_AUTO_HELP_ACTIVE",
+      "type": "STATUS",
+      "cn": "联盟自动帮助已开启",
+      "en_aliases": [
+        "Alliance Auto Help Active"
+      ],
+      "ocr": [
+        "联盟自动帮助",
+        "今日自动帮助"
+      ],
+      "icon_semantic": "alliance.auto_help",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "NOT_AVAILABLE",
+      "actions": [
+        "SWITCH_TASK"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "STATUS_ALLIANCE_GIFTS_CLAIMED",
+      "type": "STATUS",
+      "cn": "联盟宝箱已领取",
+      "en_aliases": [
+        "Alliance Gifts Claimed"
+      ],
+      "ocr": [
+        "已领取",
+        "每日战利品宝箱上限"
+      ],
+      "icon_semantic": "alliance.gifts_claimed",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "CLAIMED",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "STATUS_ALLIANCE_GIFTS_RESET_INTERRUPTION",
+      "type": "STATUS",
+      "cn": "联盟宝箱领取跨日中断",
+      "en_aliases": [
+        "Alliance Gift Reset Interruption"
+      ],
+      "ocr": [
+        "每日战利品宝箱上限：0/500"
+      ],
+      "icon_semantic": "alliance.gifts_daily_reset",
+      "pages": [
+        "ALLIANCE",
+        "UNKNOWN"
+      ],
+      "target_state": "RESET_DURING_ACTION",
+      "actions": [
+        "REOPEN_PAGE",
+        "RETRY_ONCE"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT",
+      "type": "STATUS",
+      "cn": "联盟科技捐献成功",
+      "en_aliases": [
+        "Alliance Tech Contribution Success"
+      ],
+      "ocr": [
+        "240",
+        "24/25"
+      ],
+      "icon_semantic": "alliance.contribution_result",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "CONTRIBUTED",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "STATUS_ALLY_GIFT_INLINE_REWARD",
+      "type": "STATUS",
+      "cn": "盟友赠礼行内奖励",
+      "en_aliases": [
+        "Ally Gift Inline Reward"
+      ],
+      "ocr": [
+        "已领取",
+        "30",
+        "120"
+      ],
+      "icon_semantic": "alliance.ally_gift_reward",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "CLAIMED",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "STATUS_CLAIMABLE",
+      "type": "STATUS",
+      "cn": "可领取",
+      "en_aliases": [
+        "Claimable"
+      ],
+      "ocr": [
+        "可领取"
+      ],
+      "icon_semantic": "status.claimable",
+      "pages": [
+        "*"
+      ],
+      "target_state": "CLAIMABLE",
+      "actions": [
+        "CLAIM"
+      ]
+    },
+    {
+      "id": "STATUS_COMPLETE",
+      "type": "STATUS",
+      "cn": "完成",
+      "en_aliases": [
+        "Complete",
+        "Completed"
+      ],
+      "ocr": [
+        "完成",
+        "已完成",
+        "Complete"
+      ],
+      "icon_semantic": "status.complete",
+      "pages": [
+        "*"
+      ],
+      "target_state": "COMPLETED",
+      "actions": []
+    },
+    {
+      "id": "STATUS_COOLDOWN",
+      "type": "STATUS",
+      "cn": "冷却",
+      "en_aliases": [
+        "Cooldown"
+      ],
+      "ocr": [
+        "冷却",
+        "Cooldown"
+      ],
+      "icon_semantic": "status.cooldown",
+      "pages": [
+        "*"
+      ],
+      "target_state": "COOLDOWN",
+      "actions": [
+        "WAIT_OR_SWITCH_TASK"
+      ]
+    },
+    {
+      "id": "STATUS_DAILY_ALLIANCE_CLAIMABLE",
+      "type": "STATUS",
+      "cn": "联盟捐献日常可领取",
+      "en_aliases": [
+        "Alliance Contribution Daily Claimable"
+      ],
+      "ocr": [
+        "完成联盟捐献5次",
+        "5/5",
+        "领取"
+      ],
+      "icon_semantic": "daily.alliance_contribution_claimable",
+      "pages": [
+        "DAILY"
+      ],
+      "target_state": "CLAIMABLE",
+      "actions": [
+        "CLAIM"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "STATUS_DAILY_ALLIANCE_TIER_ADVANCED",
+      "type": "STATUS",
+      "cn": "联盟捐献日常进阶",
+      "en_aliases": [
+        "Alliance Contribution Daily Tier Advanced"
+      ],
+      "ocr": [
+        "完成联盟捐献20次",
+        "5/20"
+      ],
+      "icon_semantic": "daily.alliance_contribution_tier",
+      "pages": [
+        "DAILY"
+      ],
+      "target_state": "AVAILABLE",
+      "actions": [
+        "PLAN"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "STATUS_DAILY_MULTI_CLAIMED",
+      "type": "STATUS",
+      "cn": "日常多任务领取完成",
+      "en_aliases": [
+        "Daily Multi-claim Complete"
+      ],
+      "ocr": [
+        "活跃度",
+        "65"
+      ],
+      "icon_semantic": "daily.activity_reward",
+      "pages": [
+        "DAILY",
+        "POPUP"
+      ],
+      "target_state": "COMPLETED",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "STATUS_EXPLORATION_IDLE_CLAIMED",
+      "type": "STATUS",
+      "cn": "挂机收益已领取",
+      "en_aliases": [
+        "Idle Income Claimed"
+      ],
+      "ocr": [
+        "领取"
+      ],
+      "icon_semantic": "exploration.idle_claim_disabled",
+      "pages": [
+        "EXPLORATION"
+      ],
+      "target_state": "CLAIMED",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "STATUS_GATHERING",
+      "type": "STATUS",
+      "cn": "采集中",
+      "en_aliases": [
+        "Gathering"
+      ],
+      "ocr": [
+        "采集中",
+        "Gathering"
+      ],
+      "icon_semantic": "status.gathering",
+      "pages": [
+        "MARCH_QUEUE"
+      ],
+      "target_state": "GATHERING",
+      "actions": []
+    },
+    {
+      "id": "STATUS_IDLE",
+      "type": "STATUS",
+      "cn": "空闲",
+      "en_aliases": [
+        "Idle"
+      ],
+      "ocr": [
+        "空闲",
+        "Idle"
+      ],
+      "icon_semantic": "status.idle",
+      "pages": [
+        "MARCH_QUEUE"
+      ],
+      "target_state": "IDLE",
+      "actions": []
+    },
+    {
+      "id": "STATUS_INSUFFICIENT_RESOURCES",
+      "type": "STATUS",
+      "cn": "资源不足",
+      "en_aliases": [
+        "Insufficient Resources"
+      ],
+      "ocr": [
+        "资源不足",
+        "Insufficient"
+      ],
+      "icon_semantic": "status.insufficient_resource",
+      "pages": [
+        "*"
+      ],
+      "target_state": "BLOCKED",
+      "actions": [
+        "SWITCH_TASK"
+      ]
+    },
+    {
+      "id": "STATUS_INTEL_HERO_JOURNEY_FAILED",
+      "type": "STATUS",
+      "cn": "英雄之旅失败",
+      "en_aliases": [
+        "Hero Journey Failed"
+      ],
+      "ocr": [
+        "失败"
+      ],
+      "icon_semantic": "intel.hero_journey_failed",
+      "pages": [
+        "MAP"
+      ],
+      "target_state": "BLOCKED",
+      "actions": [
+        "REFRESH_STATE",
+        "SWITCH_TASK"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-06"
+    },
+    {
+      "id": "STATUS_MAIL_ALL_CLEAR",
+      "type": "STATUS",
+      "cn": "邮件分类已清零",
+      "en_aliases": [
+        "All Mail Tabs Clear"
+      ],
+      "ocr": [
+        "战争",
+        "联盟",
+        "系统",
+        "报告"
+      ],
+      "icon_semantic": "mail.all_clear",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "CLAIMED",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "STATUS_MAIL_TAB_BADGES",
+      "type": "COUNTER",
+      "cn": "邮件分类未读计数",
+      "en_aliases": [
+        "Mail Tab Badges"
+      ],
+      "ocr": [
+        "战争",
+        "联盟",
+        "系统",
+        "报告"
+      ],
+      "icon_semantic": "mail.tab_badges",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "CLAIMABLE",
+      "actions": [
+        "CLAIM_PER_TAB"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "STATUS_MARCHING",
+      "type": "STATUS",
+      "cn": "行军中",
+      "en_aliases": [
+        "Marching"
+      ],
+      "ocr": [
+        "行军中",
+        "Marching"
+      ],
+      "icon_semantic": "status.marching",
+      "pages": [
+        "MARCH_QUEUE"
+      ],
+      "target_state": "MARCHING",
+      "actions": []
+    },
+    {
+      "id": "STATUS_NOT_AVAILABLE",
+      "type": "STATUS",
+      "cn": "不可用",
+      "en_aliases": [
+        "Not Available",
+        "Unavailable"
+      ],
+      "ocr": [
+        "不可用",
+        "未开放",
+        "Not Available"
+      ],
+      "icon_semantic": "status.unavailable",
+      "pages": [
+        "*"
+      ],
+      "target_state": "NOT_AVAILABLE",
+      "actions": [
+        "SWITCH_TASK"
+      ]
+    },
+    {
+      "id": "STATUS_QUEUE_FULL",
+      "type": "STATUS",
+      "cn": "队列已满",
+      "en_aliases": [
+        "Queue Full"
+      ],
+      "ocr": [
+        "队列已满",
+        "Queue Full"
+      ],
+      "icon_semantic": "status.queue_full",
+      "pages": [
+        "BUILDING",
+        "RESEARCH",
+        "TRAINING",
+        "MARCH"
+      ],
+      "target_state": "BLOCKED",
+      "actions": [
+        "SWITCH_TASK"
+      ]
+    },
+    {
+      "id": "STATUS_RETURNING",
+      "type": "STATUS",
+      "cn": "返回中",
+      "en_aliases": [
+        "Returning"
+      ],
+      "ocr": [
+        "返回中",
+        "Returning"
+      ],
+      "icon_semantic": "status.returning",
+      "pages": [
+        "MARCH_QUEUE"
+      ],
+      "target_state": "RETURNING",
+      "actions": []
+    },
+    {
+      "id": "STATUS_TRAINING_IN_PROGRESS",
+      "type": "STATUS",
+      "cn": "训练中",
+      "en_aliases": [
+        "Training In Progress"
+      ],
+      "ocr": [
+        "训练中",
+        "正在训练806位王牌盾兵"
+      ],
+      "icon_semantic": "troop.training_timer",
+      "pages": [
+        "TRAINING"
+      ],
+      "target_state": "IN_PROGRESS",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-04"
+    },
+    {
+      "id": "TAB_ALLIANCE_ALLY_GIFTS",
+      "type": "TAB",
+      "cn": "盟友赠礼",
+      "en_aliases": [
+        "Ally Gifts"
+      ],
+      "ocr": [
+        "盟友赠礼"
+      ],
+      "icon_semantic": "alliance.ally_gifts_tab",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "target_state": "ALLY_GIFT",
+      "actions": [
+        "TAP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-05"
+    },
+    {
+      "id": "TAB_MAIL_ALLIANCE_ACTIVE",
+      "type": "STATUS",
+      "cn": "联盟邮件当前页",
+      "en_aliases": [
+        "Alliance Mail Active"
+      ],
+      "ocr": [
+        "联盟"
+      ],
+      "icon_semantic": "mail.tab_alliance_active",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "ACTIVE",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "TAB_MAIL_REPORT_ACTIVE",
+      "type": "STATUS",
+      "cn": "报告邮件当前页",
+      "en_aliases": [
+        "Report Mail Active"
+      ],
+      "ocr": [
+        "报告"
+      ],
+      "icon_semantic": "mail.tab_report_active",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "ACTIVE",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "TAB_MAIL_SYSTEM_ACTIVE",
+      "type": "STATUS",
+      "cn": "系统邮件当前页",
+      "en_aliases": [
+        "System Mail Active"
+      ],
+      "ocr": [
+        "系统"
+      ],
+      "icon_semantic": "mail.tab_system_active",
+      "pages": [
+        "MAIL"
+      ],
+      "target_state": "ACTIVE",
+      "actions": [
+        "VERIFY"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "TARGET_INFANTRY_CAMP_SELECTED",
+      "type": "STATUS",
+      "cn": "盾兵营（被选中：金色光环）",
+      "en_aliases": [
+        "infantry camp selected",
+        "gold selection ring"
+      ],
+      "ocr": [],
+      "icon_semantic": "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
+      "pages": [
+        "HOME"
+      ],
+      "target_state": "SELECTED_BUILDING_CLICKABLE",
+      "actions": [
+        "SELECT_INFANTRY_CAMP"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-21",
+      "notes": "This is the capability's ONLY identity, and it is a recognition-only semantic: the goal-driven training route reads it to name stage A (highlighted, no radial menu yet) and nothing taps it directly any more.  Whether a tap can act on the camp is decided by a DIFFERENT quantity -- the gold selection ring's size, read off the same frame by winter_agent_v2/camp_ring.py, which taps the ring's centre when a ring is present and answers None otherwise.  Measured on the pair a human verified by hand (dataset/truth_audit/training_camp_highlight_ambiguity_20260917/): the frame whose tap opened the menu carries a 205x112 ring; the frame whose tap jumped to the world map carries a 7x15 fleck of gold -- a badge edge, not a ring.  Two orders of magnitude, and it is the ring that separates the two states, not the template distance (0.0 against 8.0, the latter sitting exactly on the production gate, which is why the older note concluded the signal could not tell them apart).  Over 46 live stage A frames from five sessions the ring measures x 305-319, y 577-597 (sd 4.3/4.0) while this template's own centre is (346, 682) on every one of them -- 103 px away, 37 px below the ring's lower edge, on bare ground, where a tap is a map tap.  Full evidence: dataset/truth_audit/training_stage_a_20260921/README.md."
+    },
+    {
+      "id": "TARGET_INTEL_FIREBEAST_MISSION",
+      "type": "CARD",
+      "cn": "炽红巨兽情报图标",
+      "en_aliases": [
+        "Firebeast Intel Pin"
+      ],
+      "ocr": [],
+      "icon_semantic": "intel.firebeast",
+      "pages": [
+        "INTEL"
+      ],
+      "target_state": "FIREBEAST_AVAILABLE",
+      "actions": [
+        "SELECT"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    },
+    {
+      "id": "TARGET_INTEL_RESCUE_SURVIVORS",
+      "type": "CARD",
+      "cn": "营救幸存者情报图标",
+      "en_aliases": [
+        "Rescue Survivors Intel Pin"
+      ],
+      "ocr": [],
+      "icon_semantic": "intel.rescue_survivors",
+      "pages": [
+        "INTEL"
+      ],
+      "target_state": "RESCUE_AVAILABLE",
+      "actions": [
+        "SELECT"
+      ],
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "last_verified": "2026-09-07"
+    }
   ],
-  "notes":"OCR strings are candidates until observed in current CN/EN clients. Icon semantics are labels, not production templates."
+  "notes": "OCR strings are candidates until observed in current CN/EN clients. Icon semantics are labels, not production templates."
 }

@@ -12,8 +12,8 @@
   },
   "counts": {
     "template_backed_semantics": 230,
-    "template_backed_with_a_schedulable_skill": 56,
-    "template_backed_recognition_only": 171,
+    "template_backed_with_a_schedulable_skill": 55,
+    "template_backed_recognition_only": 172,
     "candidates_without_visual_evidence": 39
   },
   "entries": [
@@ -9036,24 +9036,15 @@
       "pages_declared": "UNKNOWN",
       "best_distance": "UNKNOWN",
       "gate": "UNKNOWN",
-      "used_by_skills": [
-        "SELECT_INFANTRY_CAMP"
-      ],
-      "schedulable_skills": [
-        "SELECT_INFANTRY_CAMP"
-      ],
-      "verifiers": [
-        "verify_infantry_camp_selected"
-      ],
-      "risk": [
-        "LOW"
-      ],
-      "page": [
-        "HOME"
-      ],
+      "used_by_skills": [],
+      "schedulable_skills": [],
+      "verifiers": [],
+      "risk": "UNKNOWN",
+      "page": "UNKNOWN",
       "role": "UNKNOWN",
       "belongs_to": "UNKNOWN",
-      "unknown_reason": "所属对象是逐帧上下文（哪张任务卡/哪支队伍），不是元素自身属性；由 WorldState 提供"
+      "unknown_reason": "所属对象是逐帧上下文（哪张任务卡/哪支队伍），不是元素自身属性；由 WorldState 提供",
+      "unknown_reason_zh": "没有任何技能点名这个语义 ⇒ 它是识别专用（页面身份/状态标记），或尚未接入"
     },
     {
       "semantic": "TARGET_INTEL_BEAST_MISSION",
@@ -9387,168 +9378,17 @@
   ],
   "candidates_without_visual_evidence": [
     {
-      "candidate_id": "PAGE_HOME",
+      "candidate_id": "BTN_ATTACK",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "主城",
+      "cn": "攻击",
       "text_aliases": [
-        "主城"
+        "攻击",
+        "Attack"
       ],
       "declared_pages": [
-        "HOME"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "主城"
-      ]
-    },
-    {
-      "candidate_id": "PAGE_TRAINING",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "训练",
-      "text_aliases": [
-        "训练"
-      ],
-      "declared_pages": [
-        "TRAINING"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "训练"
-      ]
-    },
-    {
-      "candidate_id": "PAGE_REGULAR_EVENT",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "常规活动",
-      "text_aliases": [
-        "常规活动",
-        "最强王国"
-      ],
-      "declared_pages": [
-        "EVENT"
-      ],
-      "client_evidence": [
         "BEAST",
-        "EVENT",
-        "EXPLORATION",
-        "HOME",
-        "MAP",
-        "RESOURCE_DETAIL"
-      ],
-      "client_text_seen": {
-        "常规活动": {
-          "BEAST": 20,
-          "EVENT": 1,
-          "EXPLORATION": 20,
-          "HOME": 19,
-          "MAP": 20,
-          "RESOURCE_DETAIL": 20
-        }
-      },
-      "status": "VERIFIED",
-      "source": "LIVE_CLIENT",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": "UNKNOWN"
-    },
-    {
-      "candidate_id": "EVENT_PERSONAL_POINTS",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "个人活动积分",
-      "text_aliases": [
-        "我的积分"
-      ],
-      "declared_pages": [
-        "EVENT"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "VERIFIED",
-      "source": "LIVE_CLIENT",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "我的积分"
-      ]
-    },
-    {
-      "candidate_id": "EVENT_STAGE_TIMER",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "活动阶段倒计时",
-      "text_aliases": [
-        "击败野兽"
-      ],
-      "declared_pages": [
-        "EVENT"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "VERIFIED",
-      "source": "LIVE_CLIENT",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "击败野兽"
-      ]
-    },
-    {
-      "candidate_id": "PAGE_HERO",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "英雄",
-      "text_aliases": [
-        "英雄"
-      ],
-      "declared_pages": [
-        "HERO"
-      ],
-      "client_evidence": [
-        "BEAST",
-        "EVENT",
-        "EXPLORATION",
-        "HOME",
         "MAP"
       ],
-      "client_text_seen": {
-        "英雄": {
-          "BEAST": 20,
-          "EVENT": 1,
-          "EXPLORATION": 20,
-          "HOME": 20,
-          "MAP": 5
-        }
-      },
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": "UNKNOWN"
-    },
-    {
-      "candidate_id": "PAGE_EVENT",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "活动",
-      "text_aliases": [
-        "活动"
-      ],
-      "declared_pages": [
-        "EVENT"
-      ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
       "status": "CANDIDATE",
@@ -9557,62 +9397,9 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": [
-        "活动"
+        "攻击",
+        "Attack"
       ]
-    },
-    {
-      "candidate_id": "PAGE_BEAR",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "巨熊行动",
-      "text_aliases": [
-        "巨熊行动",
-        "Bear Hunt"
-      ],
-      "declared_pages": [
-        "BEAR"
-      ],
-      "client_evidence": [
-        "MAIL"
-      ],
-      "client_text_seen": {
-        "巨熊行动": {
-          "MAIL": 15
-        }
-      },
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": "UNKNOWN"
-    },
-    {
-      "candidate_id": "PAGE_GIANT_BEAST",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "冰原巨兽",
-      "text_aliases": [
-        "冰原巨兽",
-        "巨兽"
-      ],
-      "declared_pages": [
-        "GIANT_BEAST"
-      ],
-      "client_evidence": [
-        "MAP",
-        "RESOURCE_DETAIL"
-      ],
-      "client_text_seen": {
-        "冰原巨兽": {
-          "MAP": 9,
-          "RESOURCE_DETAIL": 4
-        }
-      },
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": "UNKNOWN"
     },
     {
       "candidate_id": "BTN_BACK",
@@ -9630,86 +9417,6 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": []
-    },
-    {
-      "candidate_id": "BTN_RESEARCH",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "研究",
-      "text_aliases": [
-        "研究",
-        "Research"
-      ],
-      "declared_pages": [
-        "RESEARCH"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "研究",
-        "Research"
-      ]
-    },
-    {
-      "candidate_id": "BTN_TRAIN",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "训练",
-      "text_aliases": [
-        "训练",
-        "Train"
-      ],
-      "declared_pages": [
-        "TRAINING"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "训练",
-        "Train"
-      ]
-    },
-    {
-      "candidate_id": "BTN_MARCH",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "行军",
-      "text_aliases": [
-        "行军",
-        "March"
-      ],
-      "declared_pages": [
-        "MARCH"
-      ],
-      "client_evidence": [
-        "BEAST",
-        "EVENT",
-        "EXPLORATION",
-        "MAP",
-        "RESOURCE_DETAIL"
-      ],
-      "client_text_seen": {
-        "行军": {
-          "BEAST": 3,
-          "EVENT": 1,
-          "EXPLORATION": 7,
-          "MAP": 19,
-          "RESOURCE_DETAIL": 12
-        }
-      },
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": "UNKNOWN"
     },
     {
       "candidate_id": "BTN_CLAIM",
@@ -9741,6 +9448,33 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": "UNKNOWN"
+    },
+    {
+      "candidate_id": "BTN_CONFIRM",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "确认",
+      "text_aliases": [
+        "确认",
+        "确定",
+        "Confirm",
+        "OK"
+      ],
+      "declared_pages": [
+        "POPUP"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "确认",
+        "确定",
+        "Confirm",
+        "OK"
+      ]
     },
     {
       "candidate_id": "BTN_HELP",
@@ -9790,6 +9524,40 @@
       ]
     },
     {
+      "candidate_id": "BTN_MARCH",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "行军",
+      "text_aliases": [
+        "行军",
+        "March"
+      ],
+      "declared_pages": [
+        "MARCH"
+      ],
+      "client_evidence": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "client_text_seen": {
+        "行军": {
+          "BEAST": 3,
+          "EVENT": 1,
+          "EXPLORATION": 7,
+          "MAP": 19,
+          "RESOURCE_DETAIL": 12
+        }
+      },
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": "UNKNOWN"
+    },
+    {
       "candidate_id": "BTN_RALLY",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
       "cn": "集结",
@@ -9815,16 +9583,15 @@
       ]
     },
     {
-      "candidate_id": "BTN_ATTACK",
+      "candidate_id": "BTN_RESEARCH",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "攻击",
+      "cn": "研究",
       "text_aliases": [
-        "攻击",
-        "Attack"
+        "研究",
+        "Research"
       ],
       "declared_pages": [
-        "BEAST",
-        "MAP"
+        "RESEARCH"
       ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
@@ -9834,8 +9601,8 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": [
-        "攻击",
-        "Attack"
+        "研究",
+        "Research"
       ]
     },
     {
@@ -9868,17 +9635,15 @@
       "blocked_evidence": "UNKNOWN"
     },
     {
-      "candidate_id": "BTN_CONFIRM",
+      "candidate_id": "BTN_TRAIN",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "确认",
+      "cn": "训练",
       "text_aliases": [
-        "确认",
-        "确定",
-        "Confirm",
-        "OK"
+        "训练",
+        "Train"
       ],
       "declared_pages": [
-        "POPUP"
+        "TRAINING"
       ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
@@ -9888,22 +9653,116 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": [
-        "确认",
-        "确定",
-        "Confirm",
-        "OK"
+        "训练",
+        "Train"
       ]
     },
     {
-      "candidate_id": "STATUS_IDLE",
+      "candidate_id": "COUNTER_ALLY_GIFT_BADGE",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "空闲",
+      "cn": "盟友赠礼红点计数",
       "text_aliases": [
-        "空闲",
-        "Idle"
+        "0",
+        "1",
+        "5",
+        "6",
+        "7"
       ],
       "declared_pages": [
-        "MARCH_QUEUE"
+        "ALLIANCE"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "0",
+        "1",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "candidate_id": "EVENT_PERSONAL_POINTS",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "个人活动积分",
+      "text_aliases": [
+        "我的积分"
+      ],
+      "declared_pages": [
+        "EVENT"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "我的积分"
+      ]
+    },
+    {
+      "candidate_id": "EVENT_STAGE_TIMER",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "活动阶段倒计时",
+      "text_aliases": [
+        "击败野兽"
+      ],
+      "declared_pages": [
+        "EVENT"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "击败野兽"
+      ]
+    },
+    {
+      "candidate_id": "PAGE_BEAR",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "巨熊行动",
+      "text_aliases": [
+        "巨熊行动",
+        "Bear Hunt"
+      ],
+      "declared_pages": [
+        "BEAR"
+      ],
+      "client_evidence": [
+        "MAIL"
+      ],
+      "client_text_seen": {
+        "巨熊行动": {
+          "MAIL": 15
+        }
+      },
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": "UNKNOWN"
+    },
+    {
+      "candidate_id": "PAGE_EVENT",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "活动",
+      "text_aliases": [
+        "活动"
+      ],
+      "declared_pages": [
+        "EVENT"
       ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
@@ -9913,158 +9772,77 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": [
-        "空闲",
-        "Idle"
+        "活动"
       ]
     },
     {
-      "candidate_id": "STATUS_COMPLETE",
+      "candidate_id": "PAGE_GIANT_BEAST",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "完成",
+      "cn": "冰原巨兽",
       "text_aliases": [
-        "完成",
-        "已完成",
-        "Complete"
+        "冰原巨兽",
+        "巨兽"
       ],
       "declared_pages": [
-        "*"
+        "GIANT_BEAST"
       ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
+      "client_evidence": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "client_text_seen": {
+        "冰原巨兽": {
+          "MAP": 9,
+          "RESOURCE_DETAIL": 4
+        }
+      },
       "status": "CANDIDATE",
       "source": "UNKNOWN",
       "clickable_area": "UNKNOWN",
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "完成",
-        "已完成",
-        "Complete"
-      ]
+      "blocked_evidence": "UNKNOWN"
     },
     {
-      "candidate_id": "STATUS_CLAIMABLE",
+      "candidate_id": "PAGE_HERO",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "可领取",
+      "cn": "英雄",
       "text_aliases": [
-        "可领取"
+        "英雄"
       ],
       "declared_pages": [
-        "*"
+        "HERO"
       ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
+      "client_evidence": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP"
+      ],
+      "client_text_seen": {
+        "英雄": {
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 20,
+          "MAP": 5
+        }
+      },
       "status": "CANDIDATE",
       "source": "UNKNOWN",
       "clickable_area": "UNKNOWN",
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "可领取"
-      ]
+      "blocked_evidence": "UNKNOWN"
     },
     {
-      "candidate_id": "STATUS_NOT_AVAILABLE",
+      "candidate_id": "PAGE_HOME",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "不可用",
+      "cn": "主城",
       "text_aliases": [
-        "不可用",
-        "未开放",
-        "Not Available"
+        "主城"
       ],
-      "declared_pages": [
-        "*"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "不可用",
-        "未开放",
-        "Not Available"
-      ]
-    },
-    {
-      "candidate_id": "STATUS_COOLDOWN",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "冷却",
-      "text_aliases": [
-        "冷却",
-        "Cooldown"
-      ],
-      "declared_pages": [
-        "*"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "冷却",
-        "Cooldown"
-      ]
-    },
-    {
-      "candidate_id": "STATUS_INSUFFICIENT_RESOURCES",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "资源不足",
-      "text_aliases": [
-        "资源不足",
-        "Insufficient"
-      ],
-      "declared_pages": [
-        "*"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "资源不足",
-        "Insufficient"
-      ]
-    },
-    {
-      "candidate_id": "STATUS_QUEUE_FULL",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "队列已满",
-      "text_aliases": [
-        "队列已满",
-        "Queue Full"
-      ],
-      "declared_pages": [
-        "BUILDING",
-        "RESEARCH",
-        "TRAINING",
-        "MARCH"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": [
-        "队列已满",
-        "Queue Full"
-      ]
-    },
-    {
-      "candidate_id": "RED_DOT_MAIL",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "邮件红点",
-      "text_aliases": [],
       "declared_pages": [
         "HOME"
       ],
@@ -10075,7 +9853,66 @@
       "clickable_area": "UNKNOWN",
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": []
+      "blocked_evidence": [
+        "主城"
+      ]
+    },
+    {
+      "candidate_id": "PAGE_REGULAR_EVENT",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "常规活动",
+      "text_aliases": [
+        "常规活动",
+        "最强王国"
+      ],
+      "declared_pages": [
+        "EVENT"
+      ],
+      "client_evidence": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "client_text_seen": {
+        "常规活动": {
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 19,
+          "MAP": 20,
+          "RESOURCE_DETAIL": 20
+        }
+      },
+      "status": "VERIFIED",
+      "source": "LIVE_CLIENT",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": "UNKNOWN"
+    },
+    {
+      "candidate_id": "PAGE_TRAINING",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "训练",
+      "text_aliases": [
+        "训练"
+      ],
+      "declared_pages": [
+        "TRAINING"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "训练"
+      ]
     },
     {
       "candidate_id": "RED_DOT_ALLIANCE",
@@ -10095,29 +9932,12 @@
       "blocked_evidence": []
     },
     {
-      "candidate_id": "RED_DOT_TASK",
+      "candidate_id": "RED_DOT_BUILDING",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "任务红点",
+      "cn": "建筑红点",
       "text_aliases": [],
       "declared_pages": [
         "HOME"
-      ],
-      "client_evidence": [],
-      "client_text_seen": "UNKNOWN",
-      "status": "CANDIDATE",
-      "source": "UNKNOWN",
-      "clickable_area": "UNKNOWN",
-      "verifier": "UNKNOWN",
-      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
-      "blocked_evidence": []
-    },
-    {
-      "candidate_id": "RED_DOT_REWARD",
-      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "奖励红点",
-      "text_aliases": [],
-      "declared_pages": [
-        "*"
       ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
@@ -10163,9 +9983,9 @@
       "blocked_evidence": []
     },
     {
-      "candidate_id": "RED_DOT_BUILDING",
+      "candidate_id": "RED_DOT_MAIL",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "建筑红点",
+      "cn": "邮件红点",
       "text_aliases": [],
       "declared_pages": [
         "HOME"
@@ -10197,16 +10017,49 @@
       "blocked_evidence": []
     },
     {
-      "candidate_id": "STATUS_DAILY_MULTI_CLAIMED",
+      "candidate_id": "RED_DOT_REWARD",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "日常多任务领取完成",
+      "cn": "奖励红点",
+      "text_aliases": [],
+      "declared_pages": [
+        "*"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": []
+    },
+    {
+      "candidate_id": "RED_DOT_TASK",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "任务红点",
+      "text_aliases": [],
+      "declared_pages": [
+        "HOME"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": []
+    },
+    {
+      "candidate_id": "STATUS_ALLIANCE_GIFTS_RESET_INTERRUPTION",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "联盟宝箱领取跨日中断",
       "text_aliases": [
-        "活跃度",
-        "65"
+        "每日战利品宝箱上限：0/500"
       ],
       "declared_pages": [
-        "DAILY",
-        "POPUP"
+        "ALLIANCE",
+        "UNKNOWN"
       ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
@@ -10216,8 +10069,76 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": [
-        "活跃度",
-        "65"
+        "每日战利品宝箱上限：0/500"
+      ]
+    },
+    {
+      "candidate_id": "STATUS_CLAIMABLE",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "可领取",
+      "text_aliases": [
+        "可领取"
+      ],
+      "declared_pages": [
+        "*"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "可领取"
+      ]
+    },
+    {
+      "candidate_id": "STATUS_COMPLETE",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "完成",
+      "text_aliases": [
+        "完成",
+        "已完成",
+        "Complete"
+      ],
+      "declared_pages": [
+        "*"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "完成",
+        "已完成",
+        "Complete"
+      ]
+    },
+    {
+      "candidate_id": "STATUS_COOLDOWN",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "冷却",
+      "text_aliases": [
+        "冷却",
+        "Cooldown"
+      ],
+      "declared_pages": [
+        "*"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "冷却",
+        "Cooldown"
       ]
     },
     {
@@ -10244,15 +10165,16 @@
       ]
     },
     {
-      "candidate_id": "STATUS_ALLIANCE_GIFTS_RESET_INTERRUPTION",
+      "candidate_id": "STATUS_DAILY_MULTI_CLAIMED",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "联盟宝箱领取跨日中断",
+      "cn": "日常多任务领取完成",
       "text_aliases": [
-        "每日战利品宝箱上限：0/500"
+        "活跃度",
+        "65"
       ],
       "declared_pages": [
-        "ALLIANCE",
-        "UNKNOWN"
+        "DAILY",
+        "POPUP"
       ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
@@ -10262,36 +10184,105 @@
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": [
-        "每日战利品宝箱上限：0/500"
+        "活跃度",
+        "65"
       ]
     },
     {
-      "candidate_id": "COUNTER_ALLY_GIFT_BADGE",
+      "candidate_id": "STATUS_IDLE",
       "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
-      "cn": "盟友赠礼红点计数",
+      "cn": "空闲",
       "text_aliases": [
-        "0",
-        "1",
-        "5",
-        "6",
-        "7"
+        "空闲",
+        "Idle"
       ],
       "declared_pages": [
-        "ALLIANCE"
+        "MARCH_QUEUE"
       ],
       "client_evidence": [],
       "client_text_seen": "UNKNOWN",
-      "status": "VERIFIED",
-      "source": "LIVE_CLIENT",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
       "clickable_area": "UNKNOWN",
       "verifier": "UNKNOWN",
       "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
       "blocked_evidence": [
-        "0",
-        "1",
-        "5",
-        "6",
-        "7"
+        "空闲",
+        "Idle"
+      ]
+    },
+    {
+      "candidate_id": "STATUS_INSUFFICIENT_RESOURCES",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "资源不足",
+      "text_aliases": [
+        "资源不足",
+        "Insufficient"
+      ],
+      "declared_pages": [
+        "*"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "资源不足",
+        "Insufficient"
+      ]
+    },
+    {
+      "candidate_id": "STATUS_NOT_AVAILABLE",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "不可用",
+      "text_aliases": [
+        "不可用",
+        "未开放",
+        "Not Available"
+      ],
+      "declared_pages": [
+        "*"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "不可用",
+        "未开放",
+        "Not Available"
+      ]
+    },
+    {
+      "candidate_id": "STATUS_QUEUE_FULL",
+      "kind": "CANDIDATE_NO_VISUAL_EVIDENCE",
+      "cn": "队列已满",
+      "text_aliases": [
+        "队列已满",
+        "Queue Full"
+      ],
+      "declared_pages": [
+        "BUILDING",
+        "RESEARCH",
+        "TRAINING",
+        "MARCH"
+      ],
+      "client_evidence": [],
+      "client_text_seen": "UNKNOWN",
+      "status": "CANDIDATE",
+      "source": "UNKNOWN",
+      "clickable_area": "UNKNOWN",
+      "verifier": "UNKNOWN",
+      "requires": "真机模板注册（≥3 独立正样本 + 反例 + 实测闸门）",
+      "blocked_evidence": [
+        "队列已满",
+        "Queue Full"
       ]
     }
   ],
