@@ -100,6 +100,80 @@
   `BTN_OPEN_TRAINING_FROM_CAMP` 旧阈值 17 是给旧裁剪调的（正样本 12–16、负样本 ≥20）；
   新裁剪正样本 0–8，但**普通城市帧是 16 —— 落在 17 之内** ⇒ 会报 `menu_open` 并把点击送进城市。
   收窄到 12。**收紧也有正当情形**：跨号帧靠它自己的旧记录仍命中（d=0），故不丢召回。
+- **`state_before` 是 runtime 的「信念」，不是像素（2026-09-20，我自己读错过一次）。**
+  19 条连续失败的 episode 里 `state_before` 都写着 `page=POPUP, popup=INTEL_REWARD`，
+  我据此断定「调度器用别的域的关闭技能去关弹窗」—— **错的**。打开 PNG 看到的是一张**干净的邮件收件箱**
+  （标题「邮件」、战争/联盟/系统/报告/收藏、可领取奖励列表），屏幕上一个弹窗都没有；真因是视觉层**误报**（下一条）。
+  ⇒ **诊断任何 UI 缺陷，先打开那一帧看**。把「世界状态是错的」读成「动作是错的」，会让人去修一个没坏的东西
+  （本轮已有另一个 Job 据此启动）。
+- **`POPUP_INTEL_REWARD_TITLE` 的阈值 22 把邮件收件箱吃了进来（2026-09-20，同类型第 6 次）。**
+  同一帧重跑生产分类器：`PAGE_MAIL d=0.0`、`TAB_MAIL_SYSTEM_ACTIVE d=0.0`、`BTN_MAIL_TAB_ALLIANCE d=0.0`、
+  `BTN_MAIL_CLAIM_ALL d=4.0`、`STATUS_MAIL_TAB_BADGES d=4.0`、`BTN_MAIL_TAB_REPORT d=6.0`，
+  而 `POPUP_INTEL_REWARD_TITLE d=20.0 thr=22.0` ⇒ **六个强邮件信号输给一个踩在 91% 阈值上的弹窗信号**，
+  帧被判成 `POPUP/INTEL_REWARD`。缺陷行 `vision.py:1144-1147`，它在 `PAGE_MAIL` 分支（`:1630-1639`）**之前**求值，
+  负向对照只挡地图页（`BTN_RESOURCE_SEARCH_*`）；阈值在 `vision.py:265`。该模板 ROI（x .30 w .40 y .215）
+  **横跨邮件列表行**，行内容逐封邮件变化 ⇒ 又是「裁剪框盖住了会变的内容」。
+  **为什么一直没抓到：`tools/probe_reward_popup_gate.py:45` 的 `SIGNALS` 把这个语义排除了** ——
+  「零误报」的结论从未覆盖真正在触发的那个分支 ⇒ **探针的信号清单本身要有覆盖断言**，
+  否则它证明的只是「我没测的那部分没问题」（同「测试从未走到那个守卫」）。
+  代价：`DISMISS_INTEL_REWARD`（09:51–12:04，35 次）与 `DISMISS_MAIL_GENERIC_REWARD`（04:24–04:37，29 次）
+  是**同一个 bug 的两个技能名**，约 70 次失败、约 2 小时白跑。
+- **占空比信号不能用固定节拍采样（2026-09-20，Soak 自检误报）。**
+  `auto_gameplay` 读的是**每轮全新进程**的线程标志（`control_panel.py:2194-2202`：
+  `mode=="AUTO" and (runtime_thread_alive or scheduler_loop_alive)`），一轮里只有约 4 s 为真（~10% duty），
+  而采样节拍 ~12.5 s ⇒ **拍频锁相**：40 个样本全 False，而同一窗口的证据流里有 **13 条已完成的轮次**。
+  ⇒ 采样前先算「信号占空比 × 采样周期」；正解是改用**单调计数**（完成轮数）作为更强证据，
+  **不是**放宽判据（旧信号可以在零轮次时为真，计数器不会）。
+
+### 架构：正式 AUTO 的阶段链（2026-09-20 体检）
+- **正式 AUTO 的"一轮"不是一次 Goal 选择，而是 `tools/control_panel.py:4644` 起的阶段链**：
+  `邮件 → 日常 → 联盟 → 探险 → Intel → 野怪 → 采集`，每个阶段一个 `run_live.py --goal <STAGE>` 子进程。
+  ⇒ 面板层选"任务族"，`GoalLibrary`/`RuleBrain` 在 run 内选具体 Goal。**两层不是重复实现。**
+- **阶段只在「被认可的成功 stop_reason」上交棒**（`:4713` 起的 `stop_reason == "mail_all_clear"` 等）。
+  ⇒ **一个失败阶段永久占位，后面所有阶段（含真正消耗体力的 Intel / 野怪）永远轮不到。**
+  2026-09-20 01:00–04:37 就是这样烧掉约 2 小时。**诊断"任务长期饥饿 / 体力不消耗"先看这里**，
+  不要先去怀疑调度器或 Goal 定义。
+- 旧链 `_run_worker`（`:4726`）**无任何生产调用者**，是不可达的重复实现，与现役链**不混用**；
+  唯一引用是 `tests/test_runtime_interpreter.py:183` 断言其源码文本。
+- **打野只扫不派**：`SCAN_MAP_FOR_BEAST` 396 成 / `BEAST_HUNT` 0 成；**免费体力领不到**：
+  `CLAIM_FREE_STAMINA` 10 成 / 235 败。体力积压是**四道阻断叠加**，不是"忘了消耗"。
+
+### 控制面重载与奖励弹窗（2026-09-20 实测定案）
+- **`panel_restart.py:290` 的 `taskkill /PID <panel> /T /F` 会杀掉重启助手自己。** `/T` 跟随**父进程关系**，
+  而助手是**面板自己派生的**子进程 ⇒ 它在 tree kill 中自杀，`cmd_start()`（`:391`）**永不执行**，
+  面板**停掉后不会回来**。`_ensure_gateway_after_stop` 的 docstring 早已写明这个机制（2026-09-18 实测），
+  **只给网关处理了**。两次实测同形（pid 2272 / 19612），其中 19612 是**操作员从桌面入口**启动的
+  ⇒ **不是开发宿主限制，是产品缺陷**（我先前那次归因已撤回）。
+  `0792cb8` 已**停用**自动重载（改提示人工重启）；**真正的修法是让接替者由不在待关闭进程树内的机制驱动**
+  （WMI `Win32_Process.Create` / 计划任务），或"先起新面板→按 pid 不带 `/T` 停旧面板→单独处置其 worker"。
+- **在加载了 `0792cb8` 之前启动的面板仍在运行期间，不要提交 `tools/control_panel.py`**，否则它会再次自杀。
+- **五个 `DISMISS_*_GENERIC_REWARD` 的动作目标其实是同一个**（`POPUP_GENERIC_REWARD_HEADER`，`skills.py:169-174`）
+  ⇒ `brain.py:397` 的 `TRAIN`/`RESEARCH` 白名单**在机械上没有保护任何东西**，它只限制这一个行为何时被允许。
+  ⇒ **"关掉一个自称「点击任意位置退出」的弹窗"不是猜测**，别再用"不许猜"当理由把弹窗留在屏幕上。
+- **执行器能传坐标**：`Action("SWIPE", "0.50,0.62,0.50,0.30", …)`（`skills.py:426`）在生产跑通 396 次。
+  ⇒ "执行器只支持 `TAP_SEMANTIC`、无绝对坐标" **对点击成立，对坐标输入不成立**；缺的只是**一个 tap 到固定点的动作种类**。
+- 弹窗类模板**卡在阈值上**是常态，不要只看"是否命中"：`POPUP_GENERIC_REWARD_HEADER` 在本日那张弹窗上
+  **恰好 = 16 = 它的门**；`BTN_CLOSE` 在同一帧 **28 ≫ 6**（ROI 落在右上空白处）⇒ `CLOSE_POPUP` 在那里必然失败。
+  **量原始距离**（`max_distance=999` + `find`）是唯一能分辨"差一点"与"对着空地"的办法。
+
+### 测试与验证
+- **咬合验证必须改「调用点」，不能只改被调的纯函数（2026-09-20，我差点交付 green-but-useless 测试）。**
+  给"零进度 deferral 的原因措辞"写测试时，第一版只直接调 `_no_progress_reason()`；
+  把**网关里的调用点**改回旧措辞后，**10 个测试全绿**——测试从未覆盖生产路径。
+  改成走 `CapabilityGate._no_progress_deferral()`（生产真正用的方法）后，同样改回调用点 ⇒
+  **2 failed / 12 passed**，报错原文即缺陷本身。⇒ 「证明测试会咬人」时，
+  **要恢复的是生产代码里被替换掉的那一行**；只测 helper 的测试无法发现"生产已经不再调用它"。
+- **干净 worktree 才是回归基线；脏工作树不是（2026-09-20）。**
+  同一个 `tests/test_live_runtime.py`：干净 HEAD worktree 上 **8 passed**，live tree 上 **2 failed**。
+  差异来自**未提交的 `knowledge/goals/*.json`、`knowledge/game/capability_catalog.json`、
+  `config/policy_state.json`**（runtime/goal 会读它们），与代码无关。
+  ⇒ **工作树脏时，runtime / goal 类测试不能当回归信号**；判定"这是不是我的回归"用
+  `git worktree add --detach <tmp> HEAD` 的干净树做 A/B。注意 worktree **不含被 gitignore 的
+  `dataset/`**，只适合跑不依赖 dataset 的测试；全量基线必须在干净 live tree 上取。
+- **一个 worker 的 diff 不能当已验证的交付（2026-09-20）。** 一个 worker 被 429 打断时留下了
+  未提交、未跑过任何测试的 `runtime.py` + `capability_gate.py` 改动。接管后逐个核对：
+  调用点收敛性、8 个行为用例、A/B 排回归、补测试并证明其咬合——结论是改动正确，
+  **但"diff 看起来对"和"已验证"之间的距离，正是这类事故会吞掉的距离**。
 
 ### OCR
 - **小 ROI 上的数字会被 OCR 拆成重叠碎片；正解是碎片拼接，不是放大裁剪。**
@@ -780,4 +854,131 @@ LIVE_OBSERVED > FRESH_RUNTIME > PERSISTED > REQUESTED ＞ ASSUMED（字面量或
 设备由 AUTO 与另一位 beast 探针开发者占用，按 Single UI Owner 不抢）；
 ② **角色切换后的 State 隔离尚不存在** —— 没有任何状态带 role 命名空间。
 
+### 教训：签名键不是身份，能力才是（`a950936`）
 
+**§九「一个能力不许两个 Job」原来只由键相等保证，而键是不稳定的。**
+`capability_for_skill()` 按文件顺序返回第一个匹配，而 `capability_skill_map.json`
+里 **89 个技能有 22 个同时命名两个能力** —— 所以「给某个较早条目补一个 alternative」
+就会**静默重键**该技能的全部未来升级。实测：`SCAN_MAP_FOR_BEAST` 被加进
+`SPEND_STAMINA_ON_BEAST` 的 alternatives 后，从解析成自己变成解析成该能力，
+而真实台账里该能力已有一个 WORKING job（`d8ea0e44`）；键相等把这判成**新问题**。
+
+- 闸门放在 `decide()`：同能力在**另一个键**下处于 ACTIVE / LIVE_VERIFY_PENDING →
+  `DEDUP_SKIP` 并**点名**持有它的 job。这是 drain / pump / preload 唯一共同路径。
+- `_merge_into_active_job`：合并对象 = **任何**拥有该能力的活动 job（原来只认 bootstrap 来源），
+  记 `from_key`/`into_key`；`priority_raised` 仍只给 bootstrap。
+- 反模式：**测试钉住「某技能不在映射里」这个偶然**，还声称在测 episode 流的闸门。
+  要钉解析就明确钉解析；要测闸门就**经由解析器取键**。
+
+### 一个设备一个主人，也要一个时钟一个窗口（`4a55c1b`）
+
+**同一分钟内量到两个面板**：`pump.json` 16:34:52 由 pid 26428 写、16:35:19 起了控制台、
+16:36:22 由 pid 16508 写。两个 `QueuePump`、两个会自启的 AUTO。
+`panel.pid` 是**后写者赢的单槽**，没有所有权记录 —— Single UI Owner 只管了设备，**窗口层没有对应物**。
+
+- `panel_clock_owner()` 从**唯一已有心跳**（pump.json）读 `(pid, age)`。
+  **不新建账本文件**：pump 每 tick 写自己的 pid，新鲜的文件**就是**所有权证据。
+- pid 缺失 / 时间戳不可解析 → `(0, inf)`：不让调用方对**自己没有的主人**报「刚刚」。
+- 输的窗口**照常打开**（操作者要看得到），但**不起泵**，于是不写心跳，
+  不会被任何读 pump.json 的东西（含队列的租约消费者）误认成主人。
+  三个闸门查它：`_auto_development_allowed` / `_maybe_validate` / `_maybe_autostart`。
+- **教训（又一次由我提供）**：我上一轮报「新 GUI 上线 pid 26428」，而 26428 **早已不存在**，
+  三方一致指向 16508。**结论对在代码、错在进程号** —— 报告里引用 pid 前必须现场核实，
+  不能沿用一次读到的值。
+
+### 五处「窗口声称得比它知道的多」（`79b2dce`，全部格式正确、只有断言是错的）
+
+操作者 GUI 工单第一轮。**共同形状**：窗口渲染正常、数值正常，**只有「这是当前值」这句是假的**。
+
+- **不是当前值就拒绝当当前值印**：`TruthValue.headline` / `last_known`。
+  `role` 46 小时前的读取 → headline `UNKNOWN` + `Last Known: xhw小号（账号 …）`。
+- **活动的当前性由记录自己的倒计时决定**：`events()` 是**列表**（active/claimable/upcoming/history），
+  每行带 status/source/observed_at/age/confidence/window/progress/claimable/role/evidence
+  与显式 `planner_usable`。实测那条记着 28795 秒、已过 781965 秒 ⇒ **活动早结束**，
+  无论它的 `source` 写着什么。没有当前行 → 「当前活动尚未实时确认」。
+  **反模式**：把 `learning/event_goal_state.json` 直接当当前活动显示（面板原来就这么干）。
+  ⚠ **实时发现还没写**：模型与闸门有了，没人把截图变成 live 行，所以当前活动会一直「尚未确认」。
+- **Job 状态不是网关健康**：`gateway_health()` 独立状态，读面板**落盘**的探针；
+  顶部那格只评网关。加熔断：连续失败 30/60/120/300 秒退避，成功清零，**unknown 不动阶梯**。
+- **上一代 flag 不能当证据**：AUTO 是每轮一个 `run_live.py` 子进程，
+  `runtime_thread_alive` / `scheduler_loop_alive` 是**面板自己写 False** 的，
+  永远不可能为真。`auto_state()` 按**产出**（新 episode）+ 面板心跳 + 操作者意图评。
+- **`expired()` 不看 `released_at` ⇒ 已正常归还 3 秒的租约被判成孤儿**
+  （窗口原文：“lease expired … without being released (its process is gone or hung)”）。
+  已归还 ≠ 过期：`describe()` 必须说归还与结果。
+- **闸门不能因意外对象而崩**：`self._other_instance` 让既有测试的命名空间桩抛 AttributeError。
+  改模块级 `observes_only(panel)`（getattr，安全答案＝假设我是主人）。
+
+### 后台进程只有一个启动口（`fb629a9`）—— 黑窗与「异常」的真因
+
+**黑窗根因不是 ADB**（它每个调用点都传了 flags）。真凶：① `state_truth._head()` **每次刷新**
+跑 `git rev-parse` 且**完全没有 creationflags**；② `panel_restart` 的 `tasklist`/shell 探针没有 flags，
+而面板**启动路径**会调它。③ **无控制台的父进程**启动控制台子进程时 Windows 会**新分配**控制台
+（`preflight.py` 的 `adb connect` 就是这样闪的）。
+
+- `winter_agent_v2/winproc.py` = **唯一启动后台进程的地方**。
+  `CREATE_NO_WINDOW` **＋** `STARTF_USESHOWWINDOW`/`SW_HIDE`（后半对才有控制台的父进程有效）；
+  `shell=False`；输出 PIPE/DEVNULL **绝不继承**；`spawn_detached`（独立进程组＋日志＋PID）；
+  `kill_tree`/`alive`/`port_owner`。`V2_SHOW_BACKGROUND_CONSOLES=1` 才看控制台。
+- **编码必须固定**：本环境给 Python 设了 UTF-8 默认，控制台工具却按 OEM 输出 ——
+  `netstat -ano` 抛 `UnicodeDecodeError: 0xbb`，**诊断恰好在出问题时失败**。
+  统一 `encoding` + `errors="replace"`。
+- **守卫**：`check_wiring` AST 扫包与 `tools/`；不带 flags 的 `subprocess.*`/`os.system` 直接红。
+  一次性人工工具走**带理由的白名单**（23 个，逐名）。
+- **网关「异常」是推的，服务真的下线**：8080 拒绝连接、无监听者、无 owner pid；
+  **全项目没有任何代码启动它**，所以「probe 失败就再启一个」这条链在代码里不存在。
+  **不要给 GUI 加启动器**（面板偷偷拉起 agent host 后果更大）；加**测量**（`port_owner`）与
+  诚实状态格：原因/连续失败/下次探测/最后成功/**Job last known**/AUTO 真实状态。
+  **反模式**：顶部 `workbuddy` 格读**任务台账** ⇒ 网关超时时它显示「正常」。
+- **仪器先证伪再使用**：`tools/console_window_watch.py` 第一版把操作者自己的终端报成缺陷；
+  正对照用 150ms 采样**什么都没抓到**，改 10ms 才抓到 `PseudoConsoleWindow`
+  —— 那次窗口只亮 **10~20ms**。**没有正对照的「0 次」什么都证明不了。**
+- **改完必须跑一下工具本身**：`panel_restart.py` 接 winproc 后 `--status` 直接
+  `ModuleNotFoundError`（从 `tools/` 运行的脚本顶层没插 ROOT）。
+
+
+
+## 2026-09-18 — 网关（WorkBuddy Gateway）生命周期铁律
+
+事实源：`winter_agent_v2/gateway_service.py` + `tools/live_gateway_acceptance.py` 的真实轨迹。
+
+- **网关由系统自己启动**。全项目曾没有任何地方启动 `codebuddy --serve`，开发环因此整条停摆
+  （实测 pump.json errors 17 / WinError 10061）。现由面板探针线程每轮驱动
+  `GatewayService.ensure()`；GUI 启动 = 系统启动。禁止要求操作员手动跑 `codebuddy --serve`。
+- **CLI 位置**：`%WORKBUDDY_APP_PATH%` 的 `app.asar` 换成 `app.asar.unpacked`，再拼
+  `cli/bin/codebuddy`，用 `%CODEBUDDY_NODE_BIN%` 的 node 跑。`which codebuddy` 不存在。
+- **启动命令固定为** `--serve --port 8080 --session-id winter-agent-v2`。不传 `--model`
+  （会覆盖每个 escalation 自己的模型选择），永不使用 `--auth none`。
+- **口令只在环境变量**（`CODEBUDDY_GATEWAY_PASSWORD`）。CLI 会把生效口令打到 stdout，
+  所以**网关日志绝不能落在仓库树内**：现在写 `%LOCALAPPDATA%\WinterAgentV2\gateway.log`
+  （`WINTER_AGENT_GATEWAY_LOG_DIR` 可覆盖）。曾计划写 `learning/control_panel/gateway.log`，
+  那距 `git add` 提交一个活口令只差一步。
+- **进程存活判定不能用进程名**。`winproc.alive()` 曾只认 "python"，而网关是 `node.exe`：
+  持有 8080 且 health 200 的进程被判为死，这正是产生第二个网关的输入。用
+  `winproc.pid_exists()`（名字无关）判断后台服务；`alive()` 只用于面板自身解释器。
+- **只允许一个网关**：未知进程占 8080 → `PORT_CONFLICT`，只报告不强杀；自己启动的 pid 在
+  90s 启动宽限期内未监听 → 等待而不是再起一个；连续失败 3 次才算状态改变（退避 30/60/120/300，
+  一次超时不重启）；用户 STOP 优先于看门狗（不启动、也不杀健康的网关）。
+- **网关重启不得创造 Job**：重启后从 `learning/workbuddy_escalations.jsonl` 折叠而非重提。
+  验收已证明台账行数在整轮启动/杀/恢复过程中不变。
+
+## 奖励弹窗的落点：正确结论（2026-09-20 更正，勿再引用旧说法）
+
+- **`#64` 里"横幅 `POPUP_GENERIC_REWARD_HEADER` 点了无效"是错的**。帧证：`key/03_*`（13:10:26 的 after）
+  显示点完横幅后「获得奖励」**已经关掉**，露出的是**第二个**弹窗「探照灯升级」。横幅**不是**死按钮。
+- **真主因是"识别与瞄准用了不同信号"**：`vision.py` 判这张弹窗用 `match(横幅) or match(页脚)`，
+  而五个 `DISMISS_*_GENERIC_REWARD` 的动作目标**只有横幅**。横幅在六张真机弹窗帧上是
+  **14 / 16 / 18 / 20 / 26（门 16）—— 骑着容差跑**；页脚是 **0~2（门 8）**。
+  ⇒ 页脚认出弹窗 ⇒ 选中解除 ⇒ 解析横幅失败 ⇒ `SEMANTIC_TARGET_NOT_VERIFIED` **一次点击都没发出**。
+  全史旧目标 51 次失败里 **45 次**属于这一类（39 MAIL + 4 INTEL + 2 DAILY）。
+- 已改成点页脚（`SHARED_REWARD_EXIT`），并新增 goal 中立技能 `DISMISS_SHARED_REWARD`
+  （绑 `verify_popup_closed`、进 `VERIFIED_ATOMIC`）。真机：同一 5 轮 65 张 before 帧里
+  奖励弹窗 **7 张**，新目标解除 **7 次全过（7/7）**，两个数对得上。
+- **仍未修**：#65「关掉一个奖励弹窗会露出第二个识别不出的弹窗（探照灯升级，横幅 26 / 页脚 22），
+  导致 after=UNKNOWN、per-domain verifier 落空、整轮结束」——这是 13:10:26 失败的真因；
+  #66 横幅解析成功也不保证关得掉；#67 在非弹窗页面上跑弹窗技能；
+  #68 `intel_pin_centers` 只认紫/蓝/橙，情报帧上返回 4 而板上有 9（灰/绿 pin 全漏）。
+- **通用教训**：凡"某控件无效 / 点了没用"的说法，**必须先看那一次的 after 帧**再引用；
+  handoff 里的因果句与它的测量数字要分开对待——数字可信，因果常错。
+  另：`.probe_*` 探针要在**同一批帧**上同时给出"原始距离"和"生产判定"，
+  否则分辨不出"差一点"和"对着空地"（#51/#52 的方法，本日再次靠它纠错）。
