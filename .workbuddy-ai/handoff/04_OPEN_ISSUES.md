@@ -515,3 +515,13 @@ stamina: 585}`（13:04）与 `{status: CLAIMABLE, claimable_count: 1, untried_pi
 同一窗口 episode 里新目标解除动作 **7 次全过（7/7）** ⇒ **这 5 轮里每一张奖励弹窗都被新落点解析、点击并通过验证**，
 且与群体计数对得上。⇒ #64 的"落点"这一半可以算**真机验证通过**；
 "关掉之后底下露出什么"那一半是 #65，仍开着。#65 目前只有 1 个实例（跨两轮），不够注册模板的 3 个正样本门槛。
+
+**全量套件结论（2026-09-20 21:48，`tools/run_tests_batched.py --batches 8 --timeout 900`）**：
+`batches 8 | 1977 passed, 9 failed, 7 skipped, 0 error`，`no verdict: none`；
+`VERDICT: INCOMPLETE` 是运行器的字面意思（batches 1/4/7 有红），**不是"没有结论"**。
+**红的 9 条与 #63 重建的基线逐条相同**（camp_panel_stamina ×2、evidence_integrity ×1、
+live_runtime ×1、capability_gate ×3、march_formation_attribution ×2）⇒ **本次改动没有引入新失败**；
+通过数 1973 → **1977**（+4 = 新加/改写的测试）。两处口径说明：① batch1 跑的时候本轮的测试文件
+还在改，故其结论不足以代表最终内容；最终内容单独跑过 `24 passed / 27 subtests`。
+② 运行期间面板 AUTO 在跑，`test_live_runtime.py` / `test_camp_panel_stamina.py` 会读
+`knowledge/**` 与 `config/policy_state.json`，#63 已记它们的失败集合随工作树数据变化。
