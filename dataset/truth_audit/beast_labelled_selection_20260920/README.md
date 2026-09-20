@@ -181,3 +181,45 @@ print(hv.observe(F).beast)
 存档三帧仍然全部读出（`01` lvl20 / `03` lvl19 模糊命中 / `05` lvl20）。
 ⇒ 识别这一层**在当下的真机帧上确实工作**，而另外 22 帧的沉默是**因为帧上本来就没有兽名**
 （整帧 OCR 也找不到任何兽样词，已核实），不是漏读。
+
+## 十、⚠ 重大更正：`霜鳞避役` 是**集结目标（冰原巨兽）**，不是普通野兽
+
+**真机 1 次尝试**（`learning/episodes.jsonl`，2026-09-20T16:10:04Z，rev `82cdf49`）：
+
+```
+skill   SELECT_BEAST_TARGET_LABELLED   goal AVOID_STAMINA_WASTE
+action  TAP_SEMANTIC BEAST_ON_MAP
+before  MAP  beast={visible_target:FROST_SCALED_RUNNER, level:20, source:BEAST_LABEL,
+                    label_text:霜鳞避役, tap_norm:[0.5181,0.7778]}
+after   MAP  beast={label_text:等级7霜鳞避役, level:40, tap_norm:[0.5021,0.3946]}
+result  FAILURE / BEAST_TARGET_SELECTION_NOT_PROVEN
+```
+
+把 after 帧（`key/07_*`）打开看，卡面上写的是：
+
+> **等级7 霜鳞避役** · 可能掉落（紫色道具1 / 钻石30 / 金属块25 / 5分钟加速5）·
+> **推荐实力 683,100,000** · **[集结] 25**
+
+⇒ **这只兽的卡面给的是「集结」（rally）、代价 25 肉、推荐实力 6.83 亿 —— 它是冰原巨兽一类，
+不是普通野兽。** 普通野兽的卡面给的是「攻击」、代价 10 体力。
+
+**所以这次真机尝试的结论要分两半说，一半成一半败：**
+
+| 结论 | 依据 |
+|---|---|
+| ✅ **标签读数在真机上有效**：`霜鳞避役` conf 0.875、落点 (0.5181, 0.7778)（= 像素 (373, 995)） | before 帧的 `beast` 与 `tap_norm`，与该帧整帧 OCR 的位置一致 |
+| ✅ **点击真的发出去了，而且卡面真的开了** | after 帧上卡面已开（内容如上），而 before 帧上并没有卡 |
+| ❌ **目标类别错了**：开出来的是 rally 卡，普通打野链（`ATTACK_BEAST_CARD` 要 `BTN_BEAST_CARD_ATTACK`）**消费不了它** | after 的 `attack_card` 不存在 ⇒ 验证器判 `BEAST_TARGET_SELECTION_NOT_PROVEN` |
+
+**⇒ 验证器这个 ERROR 是「判对了」**，不是 bug：它拒绝了把一个 rally 目标当成普通打野目标。
+**但也因此暴露：地图上"站着并印了名字"的兽可能是集结目标，光靠名字无法区分是哪一类。**
+
+**为什么这很重要**：操作者的路书里 `INTEL → 冰原巨兽集结 → 世界地图打野` 是三条不同的路。
+本次这一跳把路线引到了**第二条**（集结），而 `START_RALLY`/`JOIN_RALLY` 至今
+**没有 `VERIFIED_ATOMIC` 条目 ⇒ 永不被调度**（见 04_OPEN_ISSUES 的 `SPEND_STAMINA_ON_BEAST` 一节）。
+⇒ 要花掉体力（而不是肉），这一跳必须**只接普通野兽**，而区分办法只有两个：
+① 卡面自己画的控件（`攻击` vs `集结`）；② **操作者指的那条路：用搜索面板的 `野兽` 页签按等级搜**
+（`beast5_found.png` 里那条人肉验证过的路，以及项目失败模式文件规则 3）。
+
+**这一条在本次没有修**：它需要新的识别（卡面控件区分）或新的搜索接线，两者都不该在没有真机
+校准确认的情况下凭猜实现。记录在此，连同上面那次真机尝试的全部读数。

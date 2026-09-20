@@ -712,3 +712,25 @@ CapabilityGate.load('.').blocks(...)
   且要等 `SPEND_STAMINA_ON_BEAST` 的门禁被释放之后才可能发生。
 - "点 nameplate 能开卡"这一条**本目录没有帧**，只有真机会说话。
 - 因此本 issue 的状态是 **CANDIDATE，不是 LIVE_VERIFIED**。
+
+**⚠ 重大更正（2026-09-20T16:10:04Z 真机 1 次尝试，rev `82cdf49`）**：`霜鳞避役` 的卡面是
+**`等级7 霜鳞避役` · 推荐实力 683,100,000 · `[集结]` 25** ⇒ **它是集结目标（冰原巨兽一类），不是普通野兽**。
+那次尝试的读数：
+
+```
+before  MAP  beast={label_text:霜鳞避役, level:20, source:BEAST_LABEL, tap_norm:[0.5181,0.7778]}
+action  TAP_SEMANTIC BEAST_ON_MAP
+after   MAP  beast={label_text:等级7霜鳞避役, tap_norm:[0.5021,0.3946]}     ← 卡面已开
+result  FAILURE / BEAST_TARGET_SELECTION_NOT_PROVEN
+```
+
+⇒ **一半成、一半败**：① 标签读数在真机上有效（conf 0.875，落点与整帧 OCR 位置一致）；
+② **点击真的发出且卡面真的开了**（这是这一跳的 LIVE 证据）；③ **但目标类别错了** ——
+开出来的是 rally 卡，普通打野链（要 `BTN_BEAST_CARD_ATTACK`）消费不了它，
+所以**验证器那个 ERROR 是判对了**。
+
+**新增未修缺口**：
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 72 | **地图上"站着且印名字"的兽可能是集结目标，名字无法区分类别** | 🔴 **未修（有帧）** | 需要按**卡面自己画的控件**（`攻击` vs `集结`）分类，或改走操作者指的那条路：**搜索面板的 `野兽` 页签按等级搜**（`dataset/raw/beast_search_exploration/beast5_found.png` 人肉验证过；项目失败模式文件 `BOUNDED_SCAN_THAT_NEVER_CONVERGES.md` 规则 3 也写了"客户端自带的导航优先"）。两条都不该无真机校准就凭猜实现。**同时**：`START_RALLY`/`JOIN_RALLY` 仍无 `VERIFIED_ATOMIC` 条目 ⇒ 即使认出来是集结目标也无处派发。 |
