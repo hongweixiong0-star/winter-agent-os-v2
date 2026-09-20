@@ -4479,27 +4479,48 @@ class ControlPanel:
             return ""
 
     def _start_control_plane_reload(self, reason: str) -> None:
-        """Hand the restart to the project's own launcher, hidden, once.
+        """Report that the control plane changed, and wait for a human to restart it.
 
-        Delegated rather than done here because a process cannot re-import itself into a new
-        version: ``panel_restart.py`` already owns stop-at-a-safe-point plus start, and it
-        records the new pid the same way every other window start does.  Guarded by a flag so a
-        failed restart cannot turn into a spawn loop -- the next window makes the same decision
-        from the same evidence.
+        It used to hand the restart to ``panel_restart.py --restart``, on the reasoning that a
+        process cannot re-import itself into a new version.  That reasoning is still sound; the
+        delegation is what does not survive, and the helper's own tree kill is why (see below).
+        So until a replacement is driven from outside the doomed process tree, the honest
+        behaviour is to say so and keep running: a control-plane edit must not be able to close a
+        live panel and leave nothing behind.
+
+        Guarded by a flag so the notice is reported once rather than every refresh.
         """
         if self._reload_started:
             return
         self._reload_started = True
-        try:
-            import subprocess  # noqa: F401 - only for the constants below
-
-            command = [runtime_python_path(), str(ROOT / "tools/panel_restart.py"), "--restart"]
-            winproc.spawn_detached(command, log_path=LOG_ROOT / "panel_reload.log", cwd=ROOT)
-            self._append(f"控制面重载：已按安全点重启窗口（{reason}）。"
-                         "AUTO intent、队列泵与网关都会随之恢复，现有 Job 不动。")
-        except Exception as exc:  # noqa: BLE001
-            self._reload_started = False
-            self._append(f"控制面重载失败：{type(exc).__name__}: {exc}")
+        # The delegated restart is disabled until it is proven to survive, because it does not
+        # survive today and it takes the panel down permanently.
+        #
+        # ``panel_restart.py --restart`` is ``cmd_stop()`` then ``cmd_start()``, and ``cmd_stop``
+        # ends in ``taskkill /PID <panel> /T /F`` (panel_restart.py:290).  ``/T`` follows
+        # *parentage*, and this helper is spawned BY the panel (below, previously
+        # ``winproc.spawn_detached``), so the helper is inside the tree it is killing: it kills
+        # itself before ``cmd_start`` is ever reached.  The project already knows this shape --
+        # ``_ensure_gateway_after_stop``'s docstring says "taskkill /PID <panel> /T follows
+        # parentage, and DETACHED_PROCESS does not change parentage", measured 2026-09-18 -- and
+        # it fixed it for the gateway, whose resurrection is called from inside the helper after
+        # the kill.  That call is unreachable for the same reason.
+        #
+        # Measured 2026-09-20, twice, and the log states it: panel_reload.log for the 18:18 run
+        # reads "stopping panel tree at pid 19612" and then ends.  The next line the helper would
+        # print is "workers left after the kill: N" (panel_restart.py:294) and the line after that
+        # is cmd_start().  Neither appears, for either attempt (pid 2272 and pid 19612), and the
+        # 12:37 one was launched by the operator's own desktop entry -- so this is not the
+        # development host reaping children, which is what I wrongly concluded earlier.
+        #
+        # Until a replacement is driven by something outside the doomed tree, a control-plane edit
+        # must not be allowed to close a running panel.  The operator's rule for this round is
+        # explicit: "禁止让未经验证的重载流程再次自动关闭正在运行的正式面板 … 可以暂时改为
+        # 提示待重载，并在安全点等待人工重启".  STOP / PAUSE, the device lease and the production
+        # isolation checks are untouched; only the self-kill is.
+        self._append(f"控制面已变更（{reason}）。**自动重载暂时停用**："
+                     "重启助手会被它自己的 taskkill /T 杀掉，窗口不会回来。"
+                     "请在安全点手动重启（Start-Winter-Agent-V2.cmd），AUTO 意图与队列会随新窗口恢复。")
 
     def _maybe_validate(self) -> None:
         """Drive a bounded calibration run for a version that is waiting to be examined.
