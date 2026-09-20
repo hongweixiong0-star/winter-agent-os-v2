@@ -33,7 +33,8 @@ GOOD = {
 }
 
 
-def _soak(tmp_path, *, window=900.0, contexts=None, consoles=None, launch_context="production"):
+def _soak(tmp_path, *, window=900.0, contexts=None, consoles=None, rounds=None,
+          launch_context="production"):
     """A soak fed from a scripted list of fact dicts, with no port, process or clock."""
     state = {"i": 0}
 
@@ -50,6 +51,13 @@ def _soak(tmp_path, *, window=900.0, contexts=None, consoles=None, launch_contex
         def counter():  # noqa: F811 - the seam is optional
             return seq_c.pop(0) if len(seq_c) > 1 else (seq_c[0] if seq_c else 0)
 
+    rounds_counter = None
+    if rounds is not None:
+        seq_r = list(rounds)
+
+        def rounds_counter():  # noqa: F811 - the seam is optional
+            return seq_r.pop(0) if len(seq_r) > 1 else (seq_r[0] if seq_r else 0)
+
     return gs.GatewaySoak(
         tmp_path,
         facts=facts,
@@ -57,6 +65,7 @@ def _soak(tmp_path, *, window=900.0, contexts=None, consoles=None, launch_contex
         sample_every=1,
         evidence_path=tmp_path / gs.EVIDENCE_RELATIVE,
         console_counter=counter,
+        rounds_completed=rounds_counter,
         launch_context=launch_context,
         clock=lambda: 1000.0,
     )
@@ -106,6 +115,49 @@ def test_auto_measured_and_not_running_is_a_failure(tmp_path):
     assert verdict["overall"] == gs.FAIL
 
 
+# ------------------------------------------------------- the duty-cycled AUTO flag
+
+
+def test_rounds_completing_inside_the_window_prove_auto_was_playing(tmp_path):
+    """The false negative of 2026-09-20: 40 samples all read ``auto_running`` False while 13
+    rounds completed in the same window.  A count that only moves when a round finished is
+    the stronger source, so it answers on its own.
+    """
+    soak = _soak(tmp_path, consoles=[0], rounds=[0, 0, 1, 2, 3])
+    for _ in range(5):
+        soak.observe(dict(GOOD, auto_running=False))
+    verdict = soak.verdict()
+    assert verdict["conditions"]["auto_gameplay"]["ok"] is True
+    assert "3 轮" in verdict["conditions"]["auto_gameplay"]["reason"]
+
+
+def test_a_round_counter_that_never_advances_is_still_a_failure(tmp_path):
+    """The guard: a readable counter that does not move is a measurement that nothing ran.
+    Adding a second source must not widen the condition into "some number was readable".
+    """
+    soak = _soak(tmp_path, consoles=[0], rounds=[7])
+    for _ in range(4):
+        soak.observe(dict(GOOD, auto_running=False))
+    verdict = soak.verdict()
+    assert verdict["conditions"]["auto_gameplay"]["ok"] is False
+    assert verdict["overall"] == gs.FAIL
+    assert "没有前进" in verdict["conditions"]["auto_gameplay"]["reason"]
+
+
+def test_without_a_round_counter_the_grading_is_exactly_as_before(tmp_path):
+    """The second source is additive: a window with no counter grades off the flag alone."""
+    measured = _soak(tmp_path, consoles=[0])
+    for _ in range(3):
+        measured.observe(dict(GOOD, auto_running=False))
+    assert measured.verdict()["conditions"]["auto_gameplay"]["ok"] is False
+    assert all(s["auto_rounds"] is None for s in measured.samples)
+
+    unmeasured = _soak(tmp_path, consoles=[0])
+    for _ in range(3):
+        unmeasured.observe(dict(GOOD, auto_running=None))
+    assert unmeasured.verdict()["conditions"]["auto_gameplay"]["ok"] is None
+
+
 # --------------------------------------------------------------------- a good window
 
 
@@ -122,7 +174,8 @@ def test_the_sample_records_every_field_the_operator_listed(tmp_path):
     sample = soak.samples[0]
     for key in ("gui_pid", "gateway_pid", "gateway_identity", "port_8080_owner", "health",
                 "restart_count", "duplicate_gateway_count", "queue_pump_heartbeat",
-                "current_job_id", "job_state", "auto_running", "black_console_count"):
+                "current_job_id", "job_state", "auto_running", "auto_rounds",
+                "black_console_count"):
         assert key in sample, key
 
 

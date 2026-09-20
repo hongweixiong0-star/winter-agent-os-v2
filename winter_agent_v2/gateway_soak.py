@@ -96,6 +96,7 @@ class GatewaySoak:
         sample_every: int = 2,
         evidence_path: Path | None = None,
         console_counter: Callable[[], int] | None = None,
+        rounds_completed: Callable[[], int | None] | None = None,
         launch_context: str = "unknown",
         clock: Callable[[], float] | None = None,
         wall: Callable[[], datetime] | None = None,
@@ -108,6 +109,7 @@ class GatewaySoak:
             self.root / EVIDENCE_RELATIVE
         )
         self._console_counter = console_counter
+        self._rounds_completed = rounds_completed
         self.launch_context = launch_context
         self._clock = clock or time.monotonic
         self._wall = wall or _now
@@ -177,6 +179,13 @@ class GatewaySoak:
             "current_job_id": str(facts.get("current_job_id") or ""),
             "job_state": str(facts.get("job_state") or ""),
             "auto_running": facts.get("auto_running"),
+            # The second source for the same condition.  ``auto_running`` is an
+            # instantaneous flag read from a snapshot, and an AUTO round is a fresh
+            # process, so the flag is true only while a round is mid-flight -- measured
+            # ~10% duty against a ~12.5s sample cadence.  A count of *completed* rounds
+            # cannot be missed that way: it only ever moves when a round actually ran to
+            # its end.
+            "auto_rounds": self._read_rounds(),
             "topbar_word": str(facts.get("topbar_word") or ""),
         }
         if extra:
@@ -208,6 +217,20 @@ class GatewaySoak:
         self.samples.append(sample)
         self._write()
         return sample
+
+    def _read_rounds(self) -> int | None:
+        """Completed AUTO rounds so far, or ``None`` when nothing can count them.
+
+        Never raises: ``observe`` promises the probe thread that it cannot be taken down by
+        a counter, and an unreadable counter has to stay distinguishable from a counter that
+        read zero -- zero is a measurement, ``None`` is not.
+        """
+        if self._rounds_completed is None:
+            return None
+        try:
+            return int(self._rounds_completed())
+        except Exception:  # noqa: BLE001
+            return None
 
     # -- grading -----------------------------------------------------------
 
@@ -244,16 +267,37 @@ class GatewaySoak:
         auto_seen = [s.get("auto_running") for s in samples]
         auto_true = any(v is True for v in auto_seen)
         auto_measured = any(v is not None for v in auto_seen)
+        round_counts = [s.get("auto_rounds") for s in samples if isinstance(s.get("auto_rounds"), int)]
+        rounds_advanced = bool(round_counts) and (max(round_counts) - min(round_counts) >= 1)
         # Three answers, not two.  AUTO observed running is True; AUTO *measured* and not
         # running is False (the operator asked for "AUTO继续Gameplay" and it is not
         # continuing); and nothing able to measure it at all is None -- unproven.  Grading
         # the third case as False would call a soak failed for a reason it never tested, and
         # grading it as True is the rounding-up this whole file exists to prevent.
-        auto_verdict: bool | None = True if auto_true else (False if auto_measured else None)
-        put("auto_gameplay", auto_verdict,
-            "窗口内观察到 AUTO 运行" if auto_true else
-            ("窗口内测到 AUTO 未在运行（AUTO 状态可读但为停止）" if auto_measured
-             else "窗口内读不到 AUTO 状态（未测量：无设备/游戏未就绪时这是未证明，不是通过）"))
+        #
+        # A round count is a second, strictly stronger source for the same condition.  The
+        # instantaneous flag can be true with no round having finished, and -- because it is
+        # only true while a round is in flight -- it is false for ~90% of a window in which
+        # AUTO is plainly playing.  A count that only advances when a round completed cannot
+        # be fooled either way, so it answers True on its own.  It never lowers the bar: two
+        # readable counts that do not differ are a *measurement* that nothing completed, and
+        # that grades False, not None.
+        if len(round_counts) >= 2:
+            auto_measured = True
+        auto_verdict: bool | None = True if (auto_true or rounds_advanced) else (
+            False if auto_measured else None)
+        if auto_true:
+            auto_reason = "窗口内观察到 AUTO 运行"
+        elif rounds_advanced:
+            auto_reason = (f"窗口内 AUTO 实际完成 {max(round_counts) - min(round_counts)} 轮"
+                           f"（证据流计数 {min(round_counts)} → {max(round_counts)}）")
+        elif auto_measured:
+            span = f"{round_counts[0]} → {round_counts[-1]}" if round_counts else "无轮次计数可读"
+            auto_reason = ("窗口内既未观察到 AUTO 运行，证据流中的 AUTO 轮次计数也没有前进"
+                           f"（{span}）")
+        else:
+            auto_reason = "窗口内读不到 AUTO 状态（未测量：无设备/游戏未就绪时这是未证明，不是通过）"
+        put("auto_gameplay", auto_verdict, auto_reason)
         unhealthy = [s for s in samples if s.get("health") is False]
         pump_during_fault = sum(1 for s in unhealthy if isinstance(s.get("queue_pump_heartbeat"), (int, float))
                                 and float(s["queue_pump_heartbeat"]) <= PUMP_FRESH_SECONDS)

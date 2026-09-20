@@ -2201,6 +2201,14 @@ class PanelProbes:
         except Exception:  # noqa: BLE001
             auto_running = None
 
+        # The stronger half of the same measurement: how many rounds this process has
+        # actually finished.  Read defensively for the same reason ``auto_running`` is --
+        # a fact that cannot be read is unproven, not zero.
+        try:
+            auto_rounds: int | None = int(auto_rounds_completed())
+        except Exception:  # noqa: BLE001
+            auto_rounds = None
+
         truth = self.truth()
         report = (truth or {}).get("report") or {}
         topbar = ""
@@ -2226,6 +2234,7 @@ class PanelProbes:
             "current_job_id": job_id,
             "job_state": job_state,
             "auto_running": auto_running,
+            "auto_rounds": auto_rounds,
             "topbar_word": topbar,
             "duplicate_job_capabilities": duplicates,
         }
@@ -2263,6 +2272,7 @@ class PanelProbes:
                     sample_every=self.SOAK_SAMPLE_EVERY,
                     evidence_path=self.root / EVIDENCE_RELATIVE,
                     console_counter=self._console_windows_for_this_window,
+                    rounds_completed=auto_rounds_completed,
                     launch_context=context,
                 )
                 self._log_soak_once(f"验收 Soak 已启动（{why}）：窗口 {self._soak.window_seconds:.0f} 秒，"
@@ -2614,6 +2624,38 @@ class QueuePump:
         root = ledger_path.parents[1] if ledger_path.parent.name == "learning" else ROOT
         self._root_path = root
         return EscalationQueueAdapter(root=root, ledger=EscalationLedger(ledger_path))
+
+
+# How many AUTO rounds *this* panel process has run to completion, counted once per chain
+# stage subprocess that finished.  Why it exists: ``auto_running`` in
+# ``learning/runtime_snapshot.json`` is an instantaneous flag, and every AUTO round is a
+# fresh process, so the flag is true only for the few seconds a round is in flight --
+# measured 2026-09-20, a 15-minute window sampled 40 times read it False all 40 times while
+# 13 rounds actually completed in it, and the soak concluded AUTO had stopped.  A counter
+# that only moves when a round finished cannot be missed that way.
+#
+# Deliberately a module-level int under a lock rather than per-panel state: the only reader
+# is the acceptance soak, which reads a *difference* across a window, so it needs a value
+# that survives and never resets.  It is not persisted either -- a restarted process starts
+# a new window, and a count that survived one would claim rounds this process never ran.
+_AUTO_ROUNDS_LOCK = threading.Lock()
+_AUTO_ROUNDS_COMPLETED = 0
+
+
+def _note_auto_round_completed() -> None:
+    """Record one finished AUTO round.  Never raises; a counter is not worth a worker."""
+    global _AUTO_ROUNDS_COMPLETED
+    try:
+        with _AUTO_ROUNDS_LOCK:
+            _AUTO_ROUNDS_COMPLETED += 1
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def auto_rounds_completed() -> int:
+    """Completed AUTO rounds since this process started.  The soak's second evidence source."""
+    with _AUTO_ROUNDS_LOCK:
+        return _AUTO_ROUNDS_COMPLETED
 
 
 class ControlPanel:
@@ -4615,6 +4657,7 @@ class ControlPanel:
             self.process = _background_popen(command, cwd=str(ROOT), stdout=subprocess.PIPE,
                                              stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
             output, _ = self.process.communicate(); code = self.process.returncode
+            _note_auto_round_completed()
             (LOG_ROOT / "latest.log").write_text(output, encoding="utf-8")
             self.events.put(("complete", (code, parse_runtime_result(output), output)))
         except BaseException as exc:
@@ -4709,6 +4752,7 @@ class ControlPanel:
                 cmd.extend(["--stop-after", stop_after])
             self.process = _background_popen(cmd + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
             output, _ = self.process.communicate(); code = self.process.returncode
+            _note_auto_round_completed()
             first_payload = parse_runtime_result(output)
             if is_mail and first_payload.get("stop_reason") == "mail_all_clear" and self.enabled_task_snapshot.get("日常", False) and not self.stop_requested:
                 self.active_panel_task = "日常"
@@ -4721,6 +4765,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_mail and first_payload.get("stop_reason") == "mail_all_clear" and not self.enabled_task_snapshot.get("日常", False) and self.enabled_task_snapshot.get("联盟", False) and not self.stop_requested:
@@ -4734,6 +4779,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_mail and first_payload.get("stop_reason") == "mail_all_clear" and self.enabled_task_snapshot.get("探险", False) and not self.stop_requested:
@@ -4747,6 +4793,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_daily and first_payload.get("stop_reason") in {"daily_state_unknown_or_not_actionable", "daily_no_claimable_rewards"} and self.enabled_task_snapshot.get("联盟", False) and not self.stop_requested:
@@ -4760,6 +4807,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_daily and first_payload.get("stop_reason") in {"daily_state_unknown_or_not_actionable", "daily_no_claimable_rewards"} and self.enabled_task_snapshot.get("探险", False) and not self.stop_requested:
@@ -4773,6 +4821,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_alliance and first_payload.get("stop_reason") == "alliance_action_not_needed" and self.enabled_task_snapshot.get("训练", False) and not self.stop_requested:
@@ -4786,6 +4835,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_alliance and first_payload.get("stop_reason") == "alliance_action_not_needed" and self.enabled_task_snapshot.get("探险", False) and not self.stop_requested:
@@ -4799,6 +4849,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_training and first_payload.get("stop_reason") in {"training_queue_busy", "TARGET_SKILL_VERIFIED", "MAX_ACTIONS_REACHED"} and self.enabled_task_snapshot.get("探险", False) and not self.stop_requested:
@@ -4812,6 +4863,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_exploration and first_payload.get("stop_reason") == "exploration_income_not_ready" and self.enabled_task_snapshot.get("Intel", False) and not self.stop_requested:
@@ -4825,6 +4877,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_mail and first_payload.get("stop_reason") == "mail_all_clear" and self.enabled_task_snapshot.get("Intel", False) and not self.stop_requested:
@@ -4838,6 +4891,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if is_exploration and first_payload.get("stop_reason") == "exploration_income_not_ready" and self.enabled_task_snapshot.get("Intel", False) and not self.stop_requested:
@@ -4851,6 +4905,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if (
@@ -4868,6 +4923,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
             if (
@@ -4884,6 +4940,7 @@ class ControlPanel:
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
                 fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
             (LOG_ROOT / "latest.log").write_text(output, encoding="utf-8")
             self.events.put(("complete", (code, parse_runtime_result(output), output)))
