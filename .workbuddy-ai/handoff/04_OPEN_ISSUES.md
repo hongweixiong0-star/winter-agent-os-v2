@@ -826,3 +826,18 @@ result  FAILURE / BEAST_TARGET_SELECTION_NOT_PROVEN
 |---|---|---|---|
 | 80 | **`ALLIANCE`/`ALLIANCE_ROUTINE` 之外，联盟页的状态读不出** | 🟠 **已定性** | 历史分布：`section=GIFTS status=CLAIMABLE` 57 次、**`section=HOME status=UNKNOWN` 56 次**、`GIFTS/UNKNOWN` 14、`TECHNOLOGY status=None` 6。brain 的 GIFTS 分支要求 `status=="CLAIMABLE"`、TECHNOLOGY 要求 `=="AVAILABLE"` ⇒ **字段缺失时全部失效**。而联盟首页真机上明明画着 **`联盟科技` 带 25 角标、`联盟互助` 带 6 角标、`联盟商店` 红点**（帧 `runtime_auto/20260921_002526_807831/…_step_003_before`）。⇒ 需要把首页角标读进 `world.alliance`。**未修**（本轮先修了它导致的整轮停机，见下）。 |
 | 81 | **`ALLIANCE_TECH_CONTRIBUTE` / `ALLIANCE_HELP` 无 verifier ⇒ 永不调度** | 🔴 **未修** | 两者都是 `SkillState.CANDIDATE` 且不在 `VERIFIED_ATOMIC`。模板**存在且能匹配**（`BTN_ALLIANCE_TECH` d=0 @ (533,936)、`BTN_ALLIANCE_HELP` d=2 @ (189,1071)）。⇒ 补 verifier 即可（各自证明"捐献计数增加"/"帮助计数减少"），但需要真机读数支撑。 |
+
+**全量套件结论（2026-09-21 01:16，`tools/run_tests_batched.py --batches 8 --timeout 900`）**：
+`batches 8 | 2023 passed, 8 failed, 7 skipped, 0 error`，`no verdict: none`；
+`VERDICT: INCOMPLETE -- failed: ['batch2','batch5','batch8']` 是运行器的字面意思（不是每批都绿），
+**不是"没有结论"**。
+
+**8 条红的逐条都在 #63 基线集合内**：`camp_panel_stamina` ×2、`capability_gate` ×3、
+`evidence_integrity` ×1、`march_formation_attribution` ×2。
+基线是 9 条（另含 `live_runtime` ×1），本轮少的那条是 **#31 已记录的顺序相关不稳定项**。
+⇒ **本轮（联盟页让位 `ecb0014` + 训练 Stage A `6dbc609`）没有引入任何新失败**；
+通过数 **1977 → 2023（+46）**，失败数 **9 → 8**。
+
+两点口径说明（与 #63 相同）：① 运行期间面板 AUTO 在跑，`test_live_runtime.py` /
+`test_camp_panel_stamina.py` 会读 `knowledge/**` 与 `config/policy_state.json`，
+它们的失败集合随工作树数据变化；② `test_march_formation_attribution.py` 的两条也是既有基线。
