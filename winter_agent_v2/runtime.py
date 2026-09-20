@@ -1181,6 +1181,30 @@ class LiveRuntime:
                 )
                 steps.append(LiveStep(index, tick.decision, tick.execution, before, None, None))
                 reason = tick.execution.error if tick.execution else "NO_EXECUTION"
+                # A step that issued no action has not failed the run -- it has failed to find
+                # work for the goal that was picked, and this branch is already exactly that
+                # class (``not tick.execution.executed``).  Ending the cycle here lets one
+                # unexecutable task stop every other task, which is the operator's "不能选中任务后
+                # 才发现无法执行并停止整轮 AUTO".
+                #
+                # Measured live 2026-09-20 18:02-18:14, ten rounds: five of them performed exactly
+                # one action and failed it, CLOSE_POPUP failed three rounds in a row, and not one
+                # DISPATCH/MARCH episode appeared anywhere in the window -- because each of those
+                # rounds ended right here.
+                #
+                # Rule A already exists for this and is applied at the pre-decision site above
+                # (``index < max_actions``).  This is the same holding-back applied where the
+                # answer only becomes known after the brain has answered.  ``_yield_to_next_goal``
+                # holds a goal back for the rest of the run and returns True only for a goal it has
+                # not already held back, so this cannot spin on the same refusal; a fatal stop, an
+                # exhausted budget or a goal already yielded all fall through to the ending below.
+                if (
+                    index < max_actions
+                    and not is_fatal_stop(reason)
+                    and self._yield_to_next_goal(best_goal, deferrals, tick.decision, reason)
+                ):
+                    self._runtime(agent_state=AgentState.DEGRADED.value, stop_reason=reason)
+                    continue
                 self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(reason) else AgentState.DEGRADED.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=reason,
                               last_fatal_error=reason if is_fatal_stop(reason) else None)
