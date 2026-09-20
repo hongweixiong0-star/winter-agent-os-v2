@@ -584,6 +584,45 @@ def main() -> int:
     check("dispatchable.DISMISS_SHARED_REWARD",
           runtime.LiveRuntime.VERIFIED_ATOMIC.get("DISMISS_SHARED_REWARD")
           is verifier.verify_popup_closed)
+
+    # A skill the loop may select must name a target the vision can actually resolve.
+    # The registry and the template manifest are two files edited by two different
+    # sessions, so "the skill exists" and "the button exists" can drift apart silently:
+    # the step is selected, the executor cannot resolve the target, and the episode comes
+    # back SEMANTIC_TARGET_NOT_VERIFIED with no hint that a template is what is missing.
+    # Audited 2026-09-20 (the operator's generic-semantics pass): exactly one schedulable
+    # skill was in that state -- RESEARCH -> BTN_START_RESEARCH -- and the reason is not a
+    # missing crop.  The 科技研究 route lands on the TECH TREE
+    # (dataset/truth_audit/ui_semantics_corpus/RESEARCH__01__live_runtime_step_001_after_*.png):
+    # the page shows tabs 发展/经济/战斗 and research nodes with 1/3 badges, and no 研究
+    # button at all -- that control only exists after a node is selected, and the route has
+    # no node-selection step.  Recorded as issue #71; the check is here so the next one is
+    # visible instead of being discovered from a live failure.
+    _manifest_paths = json.loads(
+        (ROOT / "dataset/candidate/template_manifest.json").read_text(encoding="utf-8"))
+    _manifest_semantics = {row["semantic"] for row in _manifest_paths["records"]}
+    # Targets resolved from the frame by arithmetic rather than by a template -- the five
+    # branches in LiveRuntime's ``resolve`` plus the one reviewed normalized fallback.
+    _derived_targets = {"RESOURCE_DYNAMIC", "HUD_STAMINA_GAUGE", "MARCH_ROW_1",
+                        "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM"}
+    _unresolvable = []
+    for _skill in registry.all():
+        if _skill.action.kind != "TAP_SEMANTIC":
+            continue
+        if _skill.id not in runtime.LiveRuntime.VERIFIED_ATOMIC:
+            continue
+        target = _skill.action.target
+        if target in _manifest_semantics or target in _derived_targets:
+            continue
+        _unresolvable.append(f"{_skill.id}->{target}")
+    # Known, recorded exception -- issue #71.  The set is pinned EXACTLY rather than
+    # filtered, so this check stays useful in both directions: a new offender turns it red,
+    # and if RESEARCH is repaired the stale entry turns it red until somebody removes it.
+    # An allow-list that silently absorbed anything would be worse than no check.
+    _known_unresolvable = {"RESEARCH->BTN_START_RESEARCH"}
+    check("skills: the only unresolvable scheduler target is the recorded one (#71)",
+          set(_unresolvable) == _known_unresolvable,
+          f"unresolvable={sorted(_unresolvable)} known={sorted(_known_unresolvable)}")
     # Every one of those dismisses is only usable if its verifier accepts the
     # shared label as the popup before-state -- that is the whole reason the label
     # can be goal-neutral.

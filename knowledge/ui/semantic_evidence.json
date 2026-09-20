@@ -1,0 +1,2891 @@
+{
+  "schema_version": "1.0",
+  "purpose": "从真机帧 OCR 出的通用 UI 文字证据；词典候选的校准结果与客户端的盲区",
+  "corpus": "dataset\\truth_audit\\ui_semantics_corpus",
+  "frames_scanned": 244,
+  "method": "tools/ui_semantic_evidence.py（整帧 OCR，页面标签来自 learning/episodes.jsonl 的 state.page）",
+  "confirmed": [
+    {
+      "id": "PAGE_ALLIANCE",
+      "cn": "联盟",
+      "wanted": [
+        "联盟",
+        "Alliance"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAIL",
+        "MAP"
+      ],
+      "strings_seen": {
+        "联盟": {
+          "ALLIANCE": 1,
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 19,
+          "MAIL": 20,
+          "MAP": 5
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "PAGE_REGULAR_EVENT",
+      "cn": "常规活动",
+      "wanted": [
+        "常规活动",
+        "最强王国"
+      ],
+      "pages_seen": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "strings_seen": {
+        "常规活动": {
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 19,
+          "MAP": 20,
+          "RESOURCE_DETAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "EVENT"
+      ]
+    },
+    {
+      "id": "PAGE_HERO",
+      "cn": "英雄",
+      "wanted": [
+        "英雄"
+      ],
+      "pages_seen": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP"
+      ],
+      "strings_seen": {
+        "英雄": {
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 20,
+          "MAP": 5
+        }
+      },
+      "dictionary_pages": [
+        "HERO"
+      ]
+    },
+    {
+      "id": "PAGE_MAIL",
+      "cn": "邮件",
+      "wanted": [
+        "邮件"
+      ],
+      "pages_seen": [
+        "MAIL"
+      ],
+      "strings_seen": {
+        "邮件": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "PAGE_INTEL",
+      "cn": "情报",
+      "wanted": [
+        "情报",
+        "Intel"
+      ],
+      "pages_seen": [
+        "INTEL"
+      ],
+      "strings_seen": {
+        "情报": {
+          "INTEL": 20
+        }
+      },
+      "dictionary_pages": [
+        "INTEL"
+      ]
+    },
+    {
+      "id": "PAGE_BEAR",
+      "cn": "巨熊行动",
+      "wanted": [
+        "巨熊行动",
+        "Bear Hunt"
+      ],
+      "pages_seen": [
+        "MAIL"
+      ],
+      "strings_seen": {
+        "巨熊行动": {
+          "MAIL": 15
+        }
+      },
+      "dictionary_pages": [
+        "BEAR"
+      ]
+    },
+    {
+      "id": "PAGE_GIANT_BEAST",
+      "cn": "冰原巨兽",
+      "wanted": [
+        "冰原巨兽",
+        "巨兽"
+      ],
+      "pages_seen": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "strings_seen": {
+        "冰原巨兽": {
+          "MAP": 9,
+          "RESOURCE_DETAIL": 4
+        }
+      },
+      "dictionary_pages": [
+        "GIANT_BEAST"
+      ]
+    },
+    {
+      "id": "BTN_RESOURCE_SEARCH_SUBMIT",
+      "cn": "搜索",
+      "wanted": [
+        "搜索",
+        "Search"
+      ],
+      "pages_seen": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "strings_seen": {
+        "搜索": {
+          "MAP": 15,
+          "RESOURCE_DETAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAP"
+      ]
+    },
+    {
+      "id": "BTN_DISPATCH",
+      "cn": "出征",
+      "wanted": [
+        "出征",
+        "派遣",
+        "Deploy",
+        "Dispatch",
+        "March",
+        "派遣"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "MARCH"
+      ],
+      "strings_seen": {
+        "出征": {
+          "ALLIANCE": 2,
+          "BEAST": 19,
+          "MARCH": 26
+        }
+      },
+      "dictionary_pages": [
+        "MARCH"
+      ]
+    },
+    {
+      "id": "BTN_MARCH",
+      "cn": "行军",
+      "wanted": [
+        "行军",
+        "March"
+      ],
+      "pages_seen": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "strings_seen": {
+        "行军": {
+          "BEAST": 3,
+          "EVENT": 1,
+          "EXPLORATION": 7,
+          "MAP": 19,
+          "RESOURCE_DETAIL": 12
+        }
+      },
+      "dictionary_pages": [
+        "MARCH"
+      ]
+    },
+    {
+      "id": "BTN_CLAIM",
+      "cn": "领取",
+      "wanted": [
+        "领取",
+        "Claim",
+        "Collect"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "DAILY",
+        "RESEARCH"
+      ],
+      "strings_seen": {
+        "领取": {
+          "ALLIANCE": 55,
+          "DAILY": 15,
+          "RESEARCH": 4
+        }
+      },
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "BTN_GATHER",
+      "cn": "采集",
+      "wanted": [
+        "采集",
+        "Gather"
+      ],
+      "pages_seen": [
+        "RESOURCE_DETAIL"
+      ],
+      "strings_seen": {
+        "采集": {
+          "RESOURCE_DETAIL": 17
+        }
+      },
+      "dictionary_pages": [
+        "RESOURCE_DETAIL"
+      ]
+    },
+    {
+      "id": "BTN_SPEEDUP",
+      "cn": "加速",
+      "wanted": [
+        "加速",
+        "Speed Up"
+      ],
+      "pages_seen": [
+        "TRAINING"
+      ],
+      "strings_seen": {
+        "加速": {
+          "TRAINING": 1
+        }
+      },
+      "dictionary_pages": [
+        "BUILDING",
+        "RESEARCH",
+        "TRAINING",
+        "MARCH"
+      ]
+    },
+    {
+      "id": "STATUS_GATHERING",
+      "cn": "采集中",
+      "wanted": [
+        "采集中",
+        "Gathering"
+      ],
+      "pages_seen": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "strings_seen": {
+        "采集中": {
+          "BEAST": 8,
+          "EVENT": 5,
+          "EXPLORATION": 16,
+          "MAP": 16,
+          "RESOURCE_DETAIL": 25
+        }
+      },
+      "dictionary_pages": [
+        "MARCH_QUEUE"
+      ]
+    },
+    {
+      "id": "STATUS_RETURNING",
+      "cn": "返回中",
+      "wanted": [
+        "返回中",
+        "Returning"
+      ],
+      "pages_seen": [
+        "BEAST"
+      ],
+      "strings_seen": {
+        "返回中": {
+          "BEAST": 1
+        }
+      },
+      "dictionary_pages": [
+        "MARCH_QUEUE"
+      ]
+    },
+    {
+      "id": "BTN_OPEN_HOME",
+      "cn": "城镇",
+      "wanted": [
+        "城镇",
+        "City"
+      ],
+      "pages_seen": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "MAP"
+      ],
+      "strings_seen": {
+        "城镇": {
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "MAP": 5
+        }
+      },
+      "dictionary_pages": [
+        "MAP"
+      ]
+    },
+    {
+      "id": "PAGE_ALLIANCE_TECH",
+      "cn": "联盟科技",
+      "wanted": [
+        "联盟科技",
+        "发展",
+        "领地",
+        "战斗"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "RESEARCH"
+      ],
+      "strings_seen": {
+        "联盟科技": {
+          "ALLIANCE": 1
+        },
+        "发展": {
+          "RESEARCH": 17
+        },
+        "战斗": {
+          "RESEARCH": 17
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "PAGE_ALLIANCE_HELP",
+      "cn": "联盟互助",
+      "wanted": [
+        "联盟互助",
+        "自动帮助"
+      ],
+      "pages_seen": [
+        "ALLIANCE"
+      ],
+      "strings_seen": {
+        "联盟互助": {
+          "ALLIANCE": 1
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "STATUS_TRAINING_IN_PROGRESS",
+      "cn": "训练中",
+      "wanted": [
+        "训练中",
+        "正在训练806位王牌盾兵"
+      ],
+      "pages_seen": [
+        "TRAINING"
+      ],
+      "strings_seen": {
+        "训练中": {
+          "TRAINING": 4
+        }
+      },
+      "dictionary_pages": [
+        "TRAINING"
+      ]
+    },
+    {
+      "id": "BTN_DAILY_CLAIM_ALL",
+      "cn": "一键领取",
+      "wanted": [
+        "一键领取"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "DAILY",
+        "INTEL"
+      ],
+      "strings_seen": {
+        "一键领取": {
+          "ALLIANCE": 18,
+          "DAILY": 5,
+          "INTEL": 5
+        }
+      },
+      "dictionary_pages": [
+        "DAILY"
+      ]
+    },
+    {
+      "id": "STATUS_DAILY_ALLIANCE_CLAIMABLE",
+      "cn": "联盟捐献日常可领取",
+      "wanted": [
+        "完成联盟捐献5次",
+        "5/5",
+        "领取"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "DAILY",
+        "RESEARCH"
+      ],
+      "strings_seen": {
+        "领取": {
+          "ALLIANCE": 55,
+          "DAILY": 15,
+          "RESEARCH": 4
+        }
+      },
+      "dictionary_pages": [
+        "DAILY"
+      ]
+    },
+    {
+      "id": "PAGE_ALLIANCE_GIFTS",
+      "cn": "联盟宝箱",
+      "wanted": [
+        "联盟宝箱",
+        "战利品宝箱",
+        "盟友赠礼"
+      ],
+      "pages_seen": [
+        "ALLIANCE"
+      ],
+      "strings_seen": {
+        "联盟宝箱": {
+          "ALLIANCE": 19
+        },
+        "战利品宝箱": {
+          "ALLIANCE": 18
+        },
+        "盟友赠礼": {
+          "ALLIANCE": 18
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "BTN_ALLIANCE_GIFTS_CLAIM_ALL",
+      "cn": "联盟宝箱一键领取",
+      "wanted": [
+        "一键领取"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "DAILY",
+        "INTEL"
+      ],
+      "strings_seen": {
+        "一键领取": {
+          "ALLIANCE": 18,
+          "DAILY": 5,
+          "INTEL": 5
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "STATUS_ALLIANCE_GIFTS_CLAIMED",
+      "cn": "联盟宝箱已领取",
+      "wanted": [
+        "已领取",
+        "每日战利品宝箱上限"
+      ],
+      "pages_seen": [
+        "ALLIANCE"
+      ],
+      "strings_seen": {
+        "已领取": {
+          "ALLIANCE": 13
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "TAB_ALLIANCE_ALLY_GIFTS",
+      "cn": "盟友赠礼",
+      "wanted": [
+        "盟友赠礼"
+      ],
+      "pages_seen": [
+        "ALLIANCE"
+      ],
+      "strings_seen": {
+        "盟友赠礼": {
+          "ALLIANCE": 18
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "BTN_ALLY_GIFT_CLAIM",
+      "cn": "领取盟友赠礼",
+      "wanted": [
+        "领取"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "DAILY",
+        "RESEARCH"
+      ],
+      "strings_seen": {
+        "领取": {
+          "ALLIANCE": 55,
+          "DAILY": 15,
+          "RESEARCH": 4
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "STATUS_ALLY_GIFT_INLINE_REWARD",
+      "cn": "盟友赠礼行内奖励",
+      "wanted": [
+        "已领取",
+        "30",
+        "120"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "DAILY",
+        "HOME",
+        "POPUP",
+        "RESEARCH"
+      ],
+      "strings_seen": {
+        "已领取": {
+          "ALLIANCE": 13
+        },
+        "30": {
+          "ALLIANCE": 53,
+          "BEAST": 2,
+          "DAILY": 3,
+          "HOME": 1,
+          "POPUP": 1
+        },
+        "120": {
+          "DAILY": 11,
+          "RESEARCH": 2
+        }
+      },
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "BTN_MAIL_CLAIM_ALL",
+      "cn": "一键已读并领取",
+      "wanted": [
+        "一键已读&领取"
+      ],
+      "pages_seen": [
+        "MAIL"
+      ],
+      "strings_seen": {
+        "一键已读&领取": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "STATUS_MAIL_TAB_BADGES",
+      "cn": "邮件分类未读计数",
+      "wanted": [
+        "战争",
+        "联盟",
+        "系统",
+        "报告"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAIL",
+        "MAP"
+      ],
+      "strings_seen": {
+        "战争": {
+          "MAIL": 20
+        },
+        "联盟": {
+          "ALLIANCE": 1,
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 19,
+          "MAIL": 20,
+          "MAP": 5
+        },
+        "系统": {
+          "MAIL": 20
+        },
+        "报告": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "STATUS_MAIL_ALL_CLEAR",
+      "cn": "邮件分类已清零",
+      "wanted": [
+        "战争",
+        "联盟",
+        "系统",
+        "报告"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAIL",
+        "MAP"
+      ],
+      "strings_seen": {
+        "战争": {
+          "MAIL": 20
+        },
+        "联盟": {
+          "ALLIANCE": 1,
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 19,
+          "MAIL": 20,
+          "MAP": 5
+        },
+        "系统": {
+          "MAIL": 20
+        },
+        "报告": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "POPUP_MAIL_REWARD",
+      "cn": "邮件获得奖励",
+      "wanted": [
+        "获得奖励"
+      ],
+      "pages_seen": [
+        "POPUP"
+      ],
+      "strings_seen": {
+        "获得奖励": {
+          "POPUP": 4
+        }
+      },
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "PAGE_EXPLORATION",
+      "cn": "探险",
+      "wanted": [
+        "探险",
+        "排行榜"
+      ],
+      "pages_seen": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP"
+      ],
+      "strings_seen": {
+        "探险": {
+          "BEAST": 21,
+          "EVENT": 1,
+          "EXPLORATION": 40,
+          "HOME": 20,
+          "MAP": 5
+        }
+      },
+      "dictionary_pages": [
+        "EXPLORATION"
+      ]
+    },
+    {
+      "id": "BTN_EXPLORATION_IDLE_CLAIM",
+      "cn": "领取挂机收益",
+      "wanted": [
+        "领取",
+        "挂机收益",
+        "挂机时间"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "DAILY",
+        "RESEARCH"
+      ],
+      "strings_seen": {
+        "领取": {
+          "ALLIANCE": 55,
+          "DAILY": 15,
+          "RESEARCH": 4
+        }
+      },
+      "dictionary_pages": [
+        "EXPLORATION"
+      ]
+    },
+    {
+      "id": "STATUS_EXPLORATION_IDLE_CLAIMED",
+      "cn": "挂机收益已领取",
+      "wanted": [
+        "领取"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "DAILY",
+        "RESEARCH"
+      ],
+      "strings_seen": {
+        "领取": {
+          "ALLIANCE": 55,
+          "DAILY": 15,
+          "RESEARCH": 4
+        }
+      },
+      "dictionary_pages": [
+        "EXPLORATION"
+      ]
+    },
+    {
+      "id": "POPUP_EXPLORATION_REWARD",
+      "cn": "探险挂机奖励",
+      "wanted": [
+        "获得奖励"
+      ],
+      "pages_seen": [
+        "POPUP"
+      ],
+      "strings_seen": {
+        "获得奖励": {
+          "POPUP": 4
+        }
+      },
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "POPUP_INTEL_HERO_JOURNEY_TITLE",
+      "cn": "英雄之旅情报",
+      "wanted": [
+        "英雄之旅",
+        "等级10"
+      ],
+      "pages_seen": [
+        "EXPLORATION"
+      ],
+      "strings_seen": {
+        "英雄之旅": {
+          "EXPLORATION": 20
+        }
+      },
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "DIALOG_INTEL_MASTER_BOUNTY_HIGH_POWER",
+      "cn": "大师悬赏高战力目标",
+      "wanted": [
+        "推荐实力189,295,920",
+        "出征",
+        "10"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "DAILY",
+        "EXPLORATION",
+        "HOME",
+        "INTEL",
+        "MARCH",
+        "POPUP"
+      ],
+      "strings_seen": {
+        "出征": {
+          "ALLIANCE": 2,
+          "BEAST": 19,
+          "MARCH": 26
+        },
+        "10": {
+          "ALLIANCE": 3,
+          "BEAST": 20,
+          "DAILY": 12,
+          "EXPLORATION": 20,
+          "HOME": 7,
+          "INTEL": 4,
+          "MARCH": 6,
+          "POPUP": 2
+        }
+      },
+      "dictionary_pages": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "DIALOG_INTEL_HERO_JOURNEY_EXPLORE",
+      "cn": "英雄之旅探险",
+      "wanted": [
+        "英雄之旅",
+        "探险",
+        "10"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "DAILY",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "INTEL",
+        "MAP",
+        "MARCH",
+        "POPUP"
+      ],
+      "strings_seen": {
+        "英雄之旅": {
+          "EXPLORATION": 20
+        },
+        "探险": {
+          "BEAST": 21,
+          "EVENT": 1,
+          "EXPLORATION": 40,
+          "HOME": 20,
+          "MAP": 5
+        },
+        "10": {
+          "ALLIANCE": 3,
+          "BEAST": 20,
+          "DAILY": 12,
+          "EXPLORATION": 20,
+          "HOME": 7,
+          "INTEL": 4,
+          "MARCH": 6,
+          "POPUP": 2
+        }
+      },
+      "dictionary_pages": [
+        "EXPLORATION"
+      ]
+    },
+    {
+      "id": "DIALOG_INTEL_FIREBEAST_TARGET",
+      "cn": "炽红巨兽目标",
+      "wanted": [
+        "炽红巨兽",
+        "等级20",
+        "推荐实力1,467,020",
+        "10"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "DAILY",
+        "EXPLORATION",
+        "HOME",
+        "INTEL",
+        "MARCH",
+        "POPUP"
+      ],
+      "strings_seen": {
+        "10": {
+          "ALLIANCE": 3,
+          "BEAST": 20,
+          "DAILY": 12,
+          "EXPLORATION": 20,
+          "HOME": 7,
+          "INTEL": 4,
+          "MARCH": 6,
+          "POPUP": 2
+        }
+      },
+      "dictionary_pages": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "BTN_MAIL_TAB_ALLIANCE",
+      "cn": "联盟邮件",
+      "wanted": [
+        "联盟"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAIL",
+        "MAP"
+      ],
+      "strings_seen": {
+        "联盟": {
+          "ALLIANCE": 1,
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 19,
+          "MAIL": 20,
+          "MAP": 5
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "BTN_MAIL_TAB_SYSTEM",
+      "cn": "系统邮件",
+      "wanted": [
+        "系统"
+      ],
+      "pages_seen": [
+        "MAIL"
+      ],
+      "strings_seen": {
+        "系统": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "BTN_MAIL_TAB_REPORT",
+      "cn": "报告邮件",
+      "wanted": [
+        "报告"
+      ],
+      "pages_seen": [
+        "MAIL"
+      ],
+      "strings_seen": {
+        "报告": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "TAB_MAIL_ALLIANCE_ACTIVE",
+      "cn": "联盟邮件当前页",
+      "wanted": [
+        "联盟"
+      ],
+      "pages_seen": [
+        "ALLIANCE",
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAIL",
+        "MAP"
+      ],
+      "strings_seen": {
+        "联盟": {
+          "ALLIANCE": 1,
+          "BEAST": 20,
+          "EVENT": 1,
+          "EXPLORATION": 20,
+          "HOME": 19,
+          "MAIL": 20,
+          "MAP": 5
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "TAB_MAIL_SYSTEM_ACTIVE",
+      "cn": "系统邮件当前页",
+      "wanted": [
+        "系统"
+      ],
+      "pages_seen": [
+        "MAIL"
+      ],
+      "strings_seen": {
+        "系统": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    },
+    {
+      "id": "TAB_MAIL_REPORT_ACTIVE",
+      "cn": "报告邮件当前页",
+      "wanted": [
+        "报告"
+      ],
+      "pages_seen": [
+        "MAIL"
+      ],
+      "strings_seen": {
+        "报告": {
+          "MAIL": 20
+        }
+      },
+      "dictionary_pages": [
+        "MAIL"
+      ]
+    }
+  ],
+  "unconfirmed": [
+    {
+      "id": "PAGE_HOME",
+      "cn": "主城",
+      "wanted": [
+        "主城"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "PAGE_MAP",
+      "cn": "世界地图",
+      "wanted": [
+        "世界",
+        "地图"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "MAP"
+      ]
+    },
+    {
+      "id": "PAGE_RESEARCH",
+      "cn": "科技",
+      "wanted": [
+        "科技",
+        "研究"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "RESEARCH"
+      ]
+    },
+    {
+      "id": "PAGE_TRAINING",
+      "cn": "训练",
+      "wanted": [
+        "训练"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "TRAINING"
+      ]
+    },
+    {
+      "id": "EVENT_PERSONAL_POINTS",
+      "cn": "个人活动积分",
+      "wanted": [
+        "我的积分"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "EVENT"
+      ]
+    },
+    {
+      "id": "EVENT_STAGE_TIMER",
+      "cn": "活动阶段倒计时",
+      "wanted": [
+        "击败野兽"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "EVENT"
+      ]
+    },
+    {
+      "id": "PAGE_EVENT",
+      "cn": "活动",
+      "wanted": [
+        "活动"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "EVENT"
+      ]
+    },
+    {
+      "id": "BTN_OPEN_RESOURCE_SEARCH",
+      "cn": "打开资源搜索",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "MAP"
+      ]
+    },
+    {
+      "id": "BTN_BACK",
+      "cn": "返回",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "BTN_CLOSE",
+      "cn": "关闭",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "BTN_UPGRADE",
+      "cn": "升级",
+      "wanted": [
+        "升级",
+        "Upgrade"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "BUILDING"
+      ]
+    },
+    {
+      "id": "BTN_RESEARCH",
+      "cn": "研究",
+      "wanted": [
+        "研究",
+        "Research"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "RESEARCH"
+      ]
+    },
+    {
+      "id": "BTN_TRAIN",
+      "cn": "训练",
+      "wanted": [
+        "训练",
+        "Train"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "TRAINING"
+      ]
+    },
+    {
+      "id": "BTN_HELP",
+      "cn": "帮助",
+      "wanted": [
+        "帮助",
+        "Help"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "BTN_JOIN",
+      "cn": "加入",
+      "wanted": [
+        "加入",
+        "Join"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "ALLIANCE",
+        "MARCH"
+      ]
+    },
+    {
+      "id": "BTN_RALLY",
+      "cn": "集结",
+      "wanted": [
+        "集结",
+        "Rally"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "RESOURCE_DETAIL",
+        "BEAR",
+        "GIANT_BEAST"
+      ]
+    },
+    {
+      "id": "BTN_ATTACK",
+      "cn": "攻击",
+      "wanted": [
+        "攻击",
+        "Attack"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "BEAST",
+        "MAP"
+      ]
+    },
+    {
+      "id": "BTN_CONFIRM",
+      "cn": "确认",
+      "wanted": [
+        "确认",
+        "确定",
+        "Confirm",
+        "OK"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "BTN_CANCEL",
+      "cn": "取消",
+      "wanted": [
+        "取消",
+        "Cancel"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "STATUS_IDLE",
+      "cn": "空闲",
+      "wanted": [
+        "空闲",
+        "Idle"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "MARCH_QUEUE"
+      ]
+    },
+    {
+      "id": "STATUS_MARCHING",
+      "cn": "行军中",
+      "wanted": [
+        "行军中",
+        "Marching"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "MARCH_QUEUE"
+      ]
+    },
+    {
+      "id": "STATUS_COMPLETE",
+      "cn": "完成",
+      "wanted": [
+        "完成",
+        "已完成",
+        "Complete"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "STATUS_CLAIMABLE",
+      "cn": "可领取",
+      "wanted": [
+        "可领取"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "STATUS_NOT_AVAILABLE",
+      "cn": "不可用",
+      "wanted": [
+        "不可用",
+        "未开放",
+        "Not Available"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "STATUS_COOLDOWN",
+      "cn": "冷却",
+      "wanted": [
+        "冷却",
+        "Cooldown"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "STATUS_INSUFFICIENT_RESOURCES",
+      "cn": "资源不足",
+      "wanted": [
+        "资源不足",
+        "Insufficient"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "STATUS_QUEUE_FULL",
+      "cn": "队列已满",
+      "wanted": [
+        "队列已满",
+        "Queue Full"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "BUILDING",
+        "RESEARCH",
+        "TRAINING",
+        "MARCH"
+      ]
+    },
+    {
+      "id": "RED_DOT_MAIL",
+      "cn": "邮件红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "RED_DOT_ALLIANCE",
+      "cn": "联盟红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "RED_DOT_TASK",
+      "cn": "任务红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "RED_DOT_REWARD",
+      "cn": "奖励红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "*"
+      ]
+    },
+    {
+      "id": "RED_DOT_EVENT",
+      "cn": "活动红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "RED_DOT_HERO",
+      "cn": "英雄红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "RED_DOT_BUILDING",
+      "cn": "建筑红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "RED_DOT_RESEARCH",
+      "cn": "科技红点",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    },
+    {
+      "id": "STATUS_ALLIANCE_AUTO_HELP_ACTIVE",
+      "cn": "联盟自动帮助已开启",
+      "wanted": [
+        "联盟自动帮助",
+        "今日自动帮助"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
+      "cn": "联盟科技肉类捐献",
+      "wanted": [
+        "捐献",
+        "10,000"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT",
+      "cn": "联盟科技捐献成功",
+      "wanted": [
+        "240",
+        "24/25"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "BTN_START_TRAINING",
+      "cn": "训练",
+      "wanted": [
+        "训练",
+        "10:03:12"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "TRAINING"
+      ]
+    },
+    {
+      "id": "STATUS_DAILY_MULTI_CLAIMED",
+      "cn": "日常多任务领取完成",
+      "wanted": [
+        "活跃度",
+        "65"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "DAILY",
+        "POPUP"
+      ]
+    },
+    {
+      "id": "STATUS_DAILY_ALLIANCE_TIER_ADVANCED",
+      "cn": "联盟捐献日常进阶",
+      "wanted": [
+        "完成联盟捐献20次",
+        "5/20"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "DAILY"
+      ]
+    },
+    {
+      "id": "STATUS_ALLIANCE_GIFTS_RESET_INTERRUPTION",
+      "cn": "联盟宝箱领取跨日中断",
+      "wanted": [
+        "每日战利品宝箱上限：0/500"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "ALLIANCE",
+        "UNKNOWN"
+      ]
+    },
+    {
+      "id": "COUNTER_ALLY_GIFT_BADGE",
+      "cn": "盟友赠礼红点计数",
+      "wanted": [
+        "0",
+        "1",
+        "5",
+        "6",
+        "7"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "ALLIANCE"
+      ]
+    },
+    {
+      "id": "POPUP_EXIT_CONFIRM",
+      "cn": "确认退出游戏",
+      "wanted": [
+        "确认",
+        "确认退出游戏吗？",
+        "取消"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "POPUP_INTEL_MASTER_BOUNTY_TITLE",
+      "cn": "大师悬赏情报",
+      "wanted": [
+        "大师悬赏",
+        "20号"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "STATUS_INTEL_HERO_JOURNEY_FAILED",
+      "cn": "英雄之旅失败",
+      "wanted": [
+        "失败"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "MAP"
+      ]
+    },
+    {
+      "id": "TARGET_INTEL_FIREBEAST_MISSION",
+      "cn": "炽红巨兽情报图标",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "INTEL"
+      ]
+    },
+    {
+      "id": "POPUP_INTEL_FIREBEAST_TITLE",
+      "cn": "狩猎炽红巨兽情报",
+      "wanted": [
+        "狩猎炽红巨兽",
+        "等级10"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "POPUP"
+      ]
+    },
+    {
+      "id": "TARGET_INTEL_RESCUE_SURVIVORS",
+      "cn": "营救幸存者情报图标",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "INTEL"
+      ]
+    },
+    {
+      "id": "BTN_INTEL_RESCUE_SURVIVORS",
+      "cn": "营救幸存者",
+      "wanted": [
+        "营救",
+        "12"
+      ],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "MAP"
+      ]
+    },
+    {
+      "id": "BTN_OPEN_MAIL",
+      "cn": "打开邮件",
+      "wanted": [],
+      "pages_seen": [],
+      "strings_seen": {},
+      "dictionary_pages": [
+        "HOME"
+      ]
+    }
+  ],
+  "strings_unnamed_by_the_dictionary": [
+    {
+      "text": "超值活动",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 100
+    },
+    {
+      "text": "统帅9",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 75
+    },
+    {
+      "text": "+66",
+      "pages": [
+        "ALLIANCE",
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP"
+      ],
+      "frames": 57
+    },
+    {
+      "text": "100",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "HOME",
+        "MAP",
+        "POPUP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 48
+    },
+    {
+      "text": "登录好礼",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 71
+    },
+    {
+      "text": "商店",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP"
+      ],
+      "frames": 65
+    },
+    {
+      "text": "背包",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "HOME",
+        "MAP"
+      ],
+      "frames": 65
+    },
+    {
+      "text": "1.8亿",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "HOME",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 56
+    },
+    {
+      "text": "未驻防",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 48
+    },
+    {
+      "text": "27.9℃",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "HOME",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 20
+    },
+    {
+      "text": "奖励",
+      "pages": [
+        "BEAST",
+        "DAILY",
+        "EXPLORATION",
+        "POPUP"
+      ],
+      "frames": 61
+    },
+    {
+      "text": "前往",
+      "pages": [
+        "ALLIANCE",
+        "DAILY",
+        "POPUP",
+        "RESEARCH"
+      ],
+      "frames": 55
+    },
+    {
+      "text": "200",
+      "pages": [
+        "DAILY",
+        "EVENT",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 49
+    },
+    {
+      "text": "漫游剧场",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 39
+    },
+    {
+      "text": "-7.9c",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 36
+    },
+    {
+      "text": "00",
+      "pages": [
+        "HOME",
+        "MAP",
+        "MARCH",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 35
+    },
+    {
+      "text": "40",
+      "pages": [
+        "BEAST",
+        "DAILY",
+        "HOME",
+        "INTEL"
+      ],
+      "frames": 28
+    },
+    {
+      "text": "1.9亿",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 19
+    },
+    {
+      "text": "除雪小分队",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 16
+    },
+    {
+      "text": "26",
+      "pages": [
+        "ALLIANCE",
+        "BEAST",
+        "EXPLORATION",
+        "HOME"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "00:00:15",
+      "pages": [
+        "BEAST",
+        "MAP",
+        "MARCH",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "13.1万",
+      "pages": [
+        "EVENT",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 33
+    },
+    {
+      "text": "70,206,322",
+      "pages": [
+        "EVENT",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 32
+    },
+    {
+      "text": "13.2万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "HOME"
+      ],
+      "frames": 25
+    },
+    {
+      "text": "2/6",
+      "pages": [
+        "EXPLORATION",
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 16
+    },
+    {
+      "text": "20",
+      "pages": [
+        "DAILY",
+        "EXPLORATION",
+        "INTEL"
+      ],
+      "frames": 15
+    },
+    {
+      "text": "冰霜古猿",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 14
+    },
+    {
+      "text": "生肉",
+      "pages": [
+        "MAP",
+        "MARCH",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 13
+    },
+    {
+      "text": "13.8万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "HOME"
+      ],
+      "frames": 11
+    },
+    {
+      "text": "80",
+      "pages": [
+        "ALLIANCE",
+        "DAILY",
+        "RESEARCH"
+      ],
+      "frames": 10
+    },
+    {
+      "text": "联盟旗帜",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 9
+    },
+    {
+      "text": "[DIW]联盟旗帜",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "MAP"
+      ],
+      "frames": 8
+    },
+    {
+      "text": "27.9c",
+      "pages": [
+        "BEAST",
+        "EVENT",
+        "EXPLORATION"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "32",
+      "pages": [
+        "BEAST",
+        "HOME",
+        "RESEARCH"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "16",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "RESEARCH"
+      ],
+      "frames": 4
+    },
+    {
+      "text": "00:00:",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "00:02:16",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "MAP"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "除雪",
+      "pages": [
+        "BEAST",
+        "EXPLORATION",
+        "MAP"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "76级",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 52
+    },
+    {
+      "text": "仅搜索资源为满的资源点",
+      "pages": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 35
+    },
+    {
+      "text": "满级",
+      "pages": [
+        "INTEL",
+        "RESEARCH"
+      ],
+      "frames": 31
+    },
+    {
+      "text": "16万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 28
+    },
+    {
+      "text": "4,000",
+      "pages": [
+        "DAILY",
+        "POPUP"
+      ],
+      "frames": 28
+    },
+    {
+      "text": "7日签到",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 25
+    },
+    {
+      "text": "36万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 22
+    },
+    {
+      "text": "800",
+      "pages": [
+        "DAILY",
+        "TRAINING"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "全部撤回",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "士兵比例：",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "平均配置",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "战争增益",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "暂无战争增益",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "比例分配",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "王牌盾兵",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 21
+    },
+    {
+      "text": "50",
+      "pages": [
+        "POPUP",
+        "RESEARCH"
+      ],
+      "frames": 20
+    },
+    {
+      "text": "生存者试炼",
+      "pages": [
+        "HOME",
+        "RESEARCH"
+      ],
+      "frames": 18
+    },
+    {
+      "text": "王牌射手",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 17
+    },
+    {
+      "text": "王牌矛兵",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 17
+    },
+    {
+      "text": "24万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 16
+    },
+    {
+      "text": "1%",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 15
+    },
+    {
+      "text": "1级",
+      "pages": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 15
+    },
+    {
+      "text": "7级",
+      "pages": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 15
+    },
+    {
+      "text": "285",
+      "pages": [
+        "BEAST",
+        "INTEL"
+      ],
+      "frames": 14
+    },
+    {
+      "text": "3:2万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 14
+    },
+    {
+      "text": "统帅4",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 13
+    },
+    {
+      "text": "统帅2",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 12
+    },
+    {
+      "text": "7:2万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 11
+    },
+    {
+      "text": "大型锯木厂",
+      "pages": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 11
+    },
+    {
+      "text": "(545,380)",
+      "pages": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 9
+    },
+    {
+      "text": "3,500",
+      "pages": [
+        "RESEARCH",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 9
+    },
+    {
+      "text": "32,797",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 9
+    },
+    {
+      "text": "77级",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 9
+    },
+    {
+      "text": "首充",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 9
+    },
+    {
+      "text": "1,949",
+      "pages": [
+        "HOME",
+        "RESEARCH"
+      ],
+      "frames": 8
+    },
+    {
+      "text": "17公里",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 8
+    },
+    {
+      "text": "4:8万",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 8
+    },
+    {
+      "text": "70,368,950",
+      "pages": [
+        "EXPLORATION",
+        "HOME"
+      ],
+      "frames": 8
+    },
+    {
+      "text": "失效",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 8
+    },
+    {
+      "text": "+++++",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "-7.9°",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "117,670/117,670",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "21%",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "24,711",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "33",
+      "pages": [
+        "BEAST",
+        "HOME"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "35%",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "41,185",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "44%",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "51,774",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "本次出征胜券在握",
+      "pages": [
+        "ALLIANCE",
+        "MARCH"
+      ],
+      "frames": 7
+    },
+    {
+      "text": "14",
+      "pages": [
+        "EXPLORATION",
+        "HOME"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "21",
+      "pages": [
+        "ALLIANCE",
+        "EXPLORATION"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "22",
+      "pages": [
+        "EVENT",
+        "MAP"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "295",
+      "pages": [
+        "BEAST",
+        "INTEL"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "542,443",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "杰西",
+      "pages": [
+        "MARCH",
+        "RESEARCH"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "百战盾兵",
+      "pages": [
+        "MARCH",
+        "TRAINING"
+      ],
+      "frames": 6
+    },
+    {
+      "text": "000",
+      "pages": [
+        "EXPLORATION",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "165",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "25",
+      "pages": [
+        "DAILY",
+        "RESEARCH"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "3/6",
+      "pages": [
+        "EXPLORATION",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "491",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "55",
+      "pages": [
+        "ALLIANCE",
+        "HOME"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "8级",
+      "pages": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "[ioi]联盟旗帜",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "霜鳞避役",
+      "pages": [
+        "BEAST",
+        "MAP"
+      ],
+      "frames": 5
+    },
+    {
+      "text": "305",
+      "pages": [
+        "BEAST",
+        "INTEL"
+      ],
+      "frames": 4
+    },
+    {
+      "text": "77",
+      "pages": [
+        "ALLIANCE",
+        "BEAST"
+      ],
+      "frames": 4
+    },
+    {
+      "text": "[DIW联盟旗帜",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 4
+    },
+    {
+      "text": "-35.7℃",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "-7.9",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "13公里",
+      "pages": [
+        "BEAST",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "252.6万",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "35",
+      "pages": [
+        "BEAST",
+        "HOME"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "532,389",
+      "pages": [
+        "HOME",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "[oi]联盟旗帜",
+      "pages": [
+        "BEAST",
+        "EVENT"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "[ol]联盟旗帜",
+      "pages": [
+        "EVENT",
+        "EXPLORATION"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "系统消息：孤影随行退出了联盟",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 3
+    },
+    {
+      "text": "(580,460)",
+      "pages": [
+        "EVENT",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "-7.9.",
+      "pages": [
+        "EXPLORATION",
+        "MAP"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "00:00:01",
+      "pages": [
+        "EXPLORATION",
+        "MAP"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "00:01:45",
+      "pages": [
+        "BEAST",
+        "MAP"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "00:01:58",
+      "pages": [
+        "MAP",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "00:02:05",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "00:02:10",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "05:12:5",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "05:56:",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "06:08:",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "4/6",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "Q#4298（580,480)",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "[DIW薛爱·宁姚",
+      "pages": [
+        "EVENT",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "小分队",
+      "pages": [
+        "EXPLORATION",
+        "RESOURCE_DETAIL"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "小米：哪里有熊",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "日上星君：巨兽",
+      "pages": [
+        "BEAST",
+        "EXPLORATION"
+      ],
+      "frames": 2
+    },
+    {
+      "text": "登录好",
+      "pages": [
+        "BEAST",
+        "HOME"
+      ],
+      "frames": 2
+    }
+  ]
+}

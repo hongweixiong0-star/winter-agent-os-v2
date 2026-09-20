@@ -217,3 +217,24 @@
 不是"少算了几个"，而是**在真机上把一个满板读成空板，并差一步就把整条情报路线判成完成**。
 `tests/test_intel_pin_board.py::ColourCoverageTests::test_the_live_frame_that_read_as_empty_is_not_empty`
 把这一帧钉住了（该帧已发布，测试在任何机器上都跑，不 skip）。
+
+### 七之三、真机复验（欠的那一条已经补上）
+
+#68 的修复 22:20 落盘，AUTO 每轮是**独立子进程**，所以下一轮自动带上新代码。
+22:41:39 那一轮走到情报页，生产记录：
+
+```
+2026-09-20T14:41:48Z  DISMISS_INTEL_GENERIC_REWARD
+  after.intel = {"status": "AVAILABLE", "refresh": "01:18:22", "available_count": 3, "pins": 3, "list_read": true}
+```
+
+对**同一帧**（`key/07_live_after_fix_pins3_20260920T144139.png`）跑新旧两套判据：
+
+| 判据 | 结果 |
+|---|---|
+| 旧的（紫/蓝/橙） | **0 个 pin** ⇒ 若仍在跑旧代码，这一帧就是 `NOT_AVAILABLE` ⇒ `CLEAR_INTEL = COMPLETE` |
+| 新的（五色 + 两个界） | **3 个 pin**：`(210,614)` `(312,803)` GREEN + `(348,765)` GREY |
+| 生产记录 | **`pins: 3`** ⇒ 正在跑的就是新检测器 |
+
+⇒ 真机闭环完成：**修好前**（14:03:18Z）满板读成 0；**修好后**（14:41:48Z）同一种板读成 3，
+且三个都是旧掩码看不见的颜色。这不是"少算几个"，是把「今天情报做完了」这句话收回去了。
