@@ -90,6 +90,27 @@ if is_mail and first_payload.get("stop_reason") == "mail_all_clear" and ...
 
 一个阶段只要不产出被认可的成功 `stop_reason`，**链就永远停在它上面**，后续阶段（Intel、野怪——真正消耗体力的两个）**永远轮不到**。2026-09-20 01:00–04:37 就是这样烧掉约 2 小时的：`DISMISS_INTEL_REWARD` 连败 30 次、`DISMISS_MAIL_GENERIC_REWARD` 连败 29 次，链始终在第一阶段。
 
+> ### ⚠ 更正（2026-09-20 18:15）——上面 §2.1 的措辞与 §2.3 的归因**都是错的**
+>
+> 本节原先说"正式 AUTO 是阶段链、每个阶段一个 run_live 子进程"，并把"任务饥饿"归因于阶段交棒闸门。
+> **错。** 那段阶梯代码在 `tools/control_panel.py::_run_worker`（`:4726` 起）里，而**它没有任何生产调用者**：
+> 真正被线程启动的是 `_run_unified_worker`（`:4409` → `:4644`），它只发**一条**命令
+> `run_live.py --max-actions 24 --capture-dir runtime_auto/<stamp>`（无 `--goal`、无 `--stop-after`），
+> Goal 由**运行时内的 Scheduler** 选。也就是说：**面板层没有第二次 Goal 选择，阶梯是死代码。**
+>
+> **用产物独立确认（不是读代码推断）**：`dataset/raw/control_panel/` 下
+> `runtime_auto` 有 **2217** 个子目录、最新 mtime 就是当下；而阶梯各阶段自己的目录
+> `runtime_mail` 最后写入 **2026-09-18 07:29**、`runtime_training` **2026-09-18 13:36**、
+> `runtime` **空**，并且**根本不存在 `runtime_intel` / `runtime_beast` 目录**
+> ⇒ 阶梯的 Intel / 野怪 阶段**从未产出过一张截图**。
+>
+> 因此 §2.3 的"阶段交棒导致饥饿"与工单 **T3** 的表述作废。**运行时现场证据**（面板正在跑，25 分钟窗口、10 轮）：
+> 10 轮里有 **5 轮只做一个动作且失败**（`CLOSE_POPUP:FAILURE` 连续 3 轮、`DISMISS_MAIL_GENERIC_REWARD:FAILURE`、
+> `DISMISS_DAILY_GENERIC_REWARD:FAILURE`）；**窗口内没有任何 DISPATCH/MARCH 类 episode**（即情报/打野/采集
+> 一次都没派出）；但**同一轮内重复是可行的**（`10:07:56` 那轮 `DISMISS_DAILY_GENERIC_REWARD:SUCCESS` 出现了**两次**）。
+> ⇒ 真实问题不是"阶梯不交棒"，而是**运行时在失败上原地打转、且从未走到需要重复的派兵类 Goal**。
+
+
 ---
 
 ## 3. 逐任务能力矩阵（§三，派生自生产证据流 2026-09-12 → 09-20）
