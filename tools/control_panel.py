@@ -5110,13 +5110,37 @@ class ControlPanel:
                                   runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=summary["reason"],
                                   last_fatal_error=summary["reason"] if fatal else None)
         if self.continuous.get() and not fatal and not self.stop_requested and not self.paused:
+            # Four different things used to collapse into one 30-second wait:
+            #
+            #   A  this ``run_live.py`` subprocess ended
+            #   B  one repeatable goal finished its current pass
+            #   C  this character has no executable work left
+            #   D  the whole AUTO work cycle is done
+            #
+            # The panel only ever knew A, and waited as if A were D.  Measured live 2026-09-20
+            # 18:02-18:14 (ten rounds): five of them performed exactly one action and failed it,
+            # CLOSE_POPUP failed three rounds in a row, no DISPATCH/MARCH episode appeared at all,
+            # and every single round was followed by the full wait.
+            #
+            # A round that spent its action budget on real actions has, by definition, more of this
+            # cycle to do, so it continues at once.  A round that failed to resolve a target is the
+            # "this goal cannot act right now" case: yielding to another goal immediately is what
+            # the operator asked for, and it is bounded -- the no-progress deferral now counts those
+            # episodes and stands the goal down after three, so this cannot spin here.
+            #
+            # Everything else keeps the existing breather, which is the loop protection: this must
+            # not become a tight restart loop on an environmental failure.
+            no_progress_stall = summary["reason"] == "SEMANTIC_TARGET_NOT_VERIFIED"
+            spent_its_budget = summary["reason"] == "MAX_ACTIONS_REACHED" and summary["executed"] > 0
             full_queue = summary["reason"] in {"no_idle_march", "reserved_march_for_stamina"}
-            delay_ms = 600000 if full_queue else 30000
-            delay_text = "10 分钟" if full_queue else "30 秒"
-            self.values["mode"].set("等待")
+            immediate = no_progress_stall or spent_its_budget
+            delay_ms = 0 if immediate else (600000 if full_queue else 30000)
+            delay_text = "立即" if immediate else ("10 分钟" if full_queue else "30 秒")
+            self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
-            self._append(f"连续运行已启用，{delay_text}后进入下一轮。")
+            self._append(f"连续运行已启用，{delay_text}后进入下一轮。"
+                         + ("（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
 
     def _enforce_retention(self) -> None:
         policy = self.config.get("retention", {})
