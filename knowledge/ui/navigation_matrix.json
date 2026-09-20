@@ -1,0 +1,2182 @@
+{
+  "gate": "DERIVED",
+  "generated_by": "tools/ui_navigation_matrix.py",
+  "contract_file": "skill_factory.py",
+  "counts": {
+    "skills": 96,
+    "schedulable": 80,
+    "navigation_like_entries": 40,
+    "schedulable_navigation_entries": 38,
+    "distinct_targets": 72,
+    "semantics_with_templates": 230,
+    "semantics_with_templates_and_no_skill": 171
+  },
+  "operator_functions": [
+    {
+      "function": "城镇/野外快捷面板",
+      "registered_entry_skills": [
+        "NAVIGATE_INFANTRY_CAMP",
+        "NAVIGATE_RESEARCH_LAB",
+        "OPEN_POWER_DETAILS",
+        "OPEN_POWER_OVERVIEW"
+      ],
+      "schedulable_entry_skills": [
+        "NAVIGATE_INFANTRY_CAMP",
+        "NAVIGATE_RESEARCH_LAB",
+        "OPEN_POWER_DETAILS",
+        "OPEN_POWER_OVERVIEW"
+      ],
+      "path_count": 4,
+      "semantics_with_templates": 7,
+      "semantics_with_templates_and_no_skill": [
+        "BTN_OPEN_POWER_OVERVIEW",
+        "POPUP_POWER_DETAILS",
+        "POPUP_POWER_OVERVIEW"
+      ]
+    },
+    {
+      "function": "兵营/盾兵-矛兵-射手",
+      "registered_entry_skills": [
+        "OPEN_INFANTRY_TRAINING",
+        "SELECT_INFANTRY_CAMP",
+        "TRAIN_TROOPS"
+      ],
+      "schedulable_entry_skills": [
+        "OPEN_INFANTRY_TRAINING",
+        "SELECT_INFANTRY_CAMP",
+        "TRAIN_TROOPS"
+      ],
+      "path_count": 3,
+      "semantics_with_templates": 20,
+      "semantics_with_templates_and_no_skill": [
+        "BTN_OPEN_TRAINING",
+        "BTN_TRAINING_ACCELERATE",
+        "BTN_TRAINING_MENU_LABEL",
+        "BTN_TRAINING_SPEEDUP",
+        "BTN_TROOP_PLUS_FIRST",
+        "BUILDING_INFANTRY_CAMP",
+        "HIGH_RISK_GEM_FINISH_TRAINING",
+        "PAGE_TRAINING_INFANTRY",
+        "PAGE_TRAINING_LANCER",
+        "PAGE_TRAINING_MARKSMAN",
+        "STATUS_TRAINING_IN_PROGRESS",
+        "TAB_TRAINING_INFANTRY",
+        "TAB_TRAINING_LANCER",
+        "TAB_TRAINING_MARKSMAN",
+        "TRAINING_BATCH_806",
+        "TRAINING_BUILDING_QUEUE_TIMER",
+        "TRAINING_QUEUE_TIMER"
+      ]
+    },
+    {
+      "function": "科技研究",
+      "registered_entry_skills": [
+        "NAVIGATE_RESEARCH_LAB",
+        "OPEN_RESEARCH"
+      ],
+      "schedulable_entry_skills": [
+        "NAVIGATE_RESEARCH_LAB",
+        "OPEN_RESEARCH"
+      ],
+      "path_count": 2,
+      "semantics_with_templates": 11,
+      "semantics_with_templates_and_no_skill": [
+        "BUILDING_RESEARCH_CENTER",
+        "HIGH_RISK_GEM_FINISH_RESEARCH",
+        "PAGE_RESEARCH",
+        "RESEARCH_BUILDING_QUEUE_TIMER",
+        "RESEARCH_QUEUE_TIMER",
+        "RESEARCH_TAB_BATTLE",
+        "RESEARCH_TAB_ECONOMY",
+        "RESEARCH_TAB_GROWTH",
+        "STATUS_RESEARCH_IN_PROGRESS"
+      ]
+    },
+    {
+      "function": "联盟捐献",
+      "registered_entry_skills": [
+        "ALLIANCE_TECH_CONTRIBUTE"
+      ],
+      "schedulable_entry_skills": [],
+      "path_count": 0,
+      "semantics_with_templates": 13,
+      "semantics_with_templates_and_no_skill": [
+        "ALLIANCE_TECH_ATTEMPTS_23_OF_25",
+        "ALLIANCE_TECH_ATTEMPTS_24_OF_25",
+        "ALLIANCE_TECH_ATTEMPTS_25_OF_25",
+        "ALLIANCE_TECH_RECOMMENDED",
+        "BTN_ALLIANCE_TECH",
+        "DAILY_ALLIANCE_CONTRIBUTE_3_OF_5",
+        "DAILY_ALLIANCE_CONTRIBUTE_5_OF_20",
+        "DIALOG_ALLIANCE_TECH",
+        "PAGE_ALLIANCE_TECH",
+        "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT",
+        "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT_CRITICAL",
+        "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT_NORMAL"
+      ]
+    },
+    {
+      "function": "情报/灯塔",
+      "registered_entry_skills": [
+        "DISMISS_ALLIANCE_GENERIC_REWARD",
+        "DISMISS_DAILY_GENERIC_REWARD",
+        "DISMISS_EXPLORATION_GENERIC_REWARD",
+        "DISMISS_INTEL_GENERIC_REWARD",
+        "DISMISS_INTEL_REWARD",
+        "DISMISS_MAIL_GENERIC_REWARD",
+        "DISMISS_SHARED_REWARD",
+        "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "INTEL_CLAIM_REWARDS",
+        "OPEN_INTEL",
+        "OPEN_INTEL_BEAST_TARGET",
+        "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
+        "READ_INTEL_LIST",
+        "SELECT_INTEL_BEAST_MISSION",
+        "SELECT_INTEL_FIREBEAST_MISSION",
+        "SELECT_INTEL_PIN",
+        "SELECT_INTEL_RESCUE_SURVIVORS"
+      ],
+      "schedulable_entry_skills": [
+        "DISMISS_ALLIANCE_GENERIC_REWARD",
+        "DISMISS_DAILY_GENERIC_REWARD",
+        "DISMISS_EXPLORATION_GENERIC_REWARD",
+        "DISMISS_INTEL_GENERIC_REWARD",
+        "DISMISS_INTEL_REWARD",
+        "DISMISS_MAIL_GENERIC_REWARD",
+        "DISMISS_SHARED_REWARD",
+        "EXECUTE_INTEL_RESCUE_SURVIVORS",
+        "INTEL_CLAIM_REWARDS",
+        "OPEN_INTEL",
+        "OPEN_INTEL_BEAST_TARGET",
+        "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
+        "READ_INTEL_LIST",
+        "SELECT_INTEL_BEAST_MISSION",
+        "SELECT_INTEL_FIREBEAST_MISSION",
+        "SELECT_INTEL_PIN",
+        "SELECT_INTEL_RESCUE_SURVIVORS"
+      ],
+      "path_count": 18,
+      "semantics_with_templates": 31,
+      "semantics_with_templates_and_no_skill": [
+        "DIALOG_INTEL_BEAST",
+        "DIALOG_INTEL_FIREBEAST_TARGET",
+        "DIALOG_INTEL_HERO_JOURNEY_EXPLORE",
+        "DIALOG_INTEL_MASTER_BOUNTY_HIGH_POWER",
+        "DIALOG_INTEL_RESCUE_SURVIVORS_TARGET",
+        "INTEL_BEAST_REWARD_ITEMS",
+        "INTEL_REFRESH_TIMER",
+        "INTEL_REWARD_ITEMS",
+        "PAGE_INTEL",
+        "POPUP_INTEL_FIREBEAST_TITLE",
+        "POPUP_INTEL_HERO_JOURNEY_TITLE",
+        "POPUP_INTEL_MASTER_BOUNTY_TITLE",
+        "POPUP_INTEL_RESCUE_SURVIVORS_TITLE",
+        "POPUP_INTEL_REWARD",
+        "POPUP_INTEL_REWARD_TITLE",
+        "STATUS_INTEL_AVAILABLE",
+        "STATUS_INTEL_BEAST_CLAIMABLE",
+        "STATUS_INTEL_BEAST_MARCHING",
+        "STATUS_INTEL_CLAIMABLE",
+        "STATUS_INTEL_HERO_JOURNEY_FAILED",
+        "STATUS_INTEL_RESCUE_SURVIVORS_ACTIVE",
+        "TARGET_INTEL_BEAST_MISSION_BLUE",
+        "TARGET_LIGHTHOUSE_BUILDING"
+      ]
+    },
+    {
+      "function": "地图搜索栏",
+      "registered_entry_skills": [
+        "RELAX_RESOURCE_LEVEL",
+        "SEARCH_RESOURCE",
+        "SELECT_RESOURCE",
+        "SUBMIT_RESOURCE_SEARCH"
+      ],
+      "schedulable_entry_skills": [
+        "RELAX_RESOURCE_LEVEL",
+        "SEARCH_RESOURCE",
+        "SELECT_RESOURCE",
+        "SUBMIT_RESOURCE_SEARCH"
+      ],
+      "path_count": 4,
+      "semantics_with_templates": 6,
+      "semantics_with_templates_and_no_skill": [
+        "RESOURCE_TAB_COAL_SELECTED",
+        "RESOURCE_TAB_IRON_SELECTED",
+        "RESOURCE_TAB_MEAT_SELECTED",
+        "RESOURCE_TAB_WOOD_SELECTED"
+      ]
+    },
+    {
+      "function": "巨兽/自动加入",
+      "registered_entry_skills": [],
+      "schedulable_entry_skills": [],
+      "path_count": 0,
+      "semantics_with_templates": 0,
+      "semantics_with_templates_and_no_skill": []
+    },
+    {
+      "function": "采集点/资源详情",
+      "registered_entry_skills": [
+        "START_GATHER",
+        "VERIFY_GATHERING"
+      ],
+      "schedulable_entry_skills": [
+        "START_GATHER"
+      ],
+      "path_count": 1,
+      "semantics_with_templates": 9,
+      "semantics_with_templates_and_no_skill": [
+        "RESOURCE_BEAST",
+        "RESOURCE_COAL_SELECTED",
+        "RESOURCE_DETAIL_DIALOG",
+        "RESOURCE_IRON_SELECTED",
+        "RESOURCE_MEAT_SELECTED",
+        "RESOURCE_WOOD",
+        "RESOURCE_WOOD_SELECTED"
+      ]
+    },
+    {
+      "function": "回城/返回",
+      "registered_entry_skills": [
+        "OPEN_HOME",
+        "RECALL_MARCH"
+      ],
+      "schedulable_entry_skills": [
+        "OPEN_HOME",
+        "RECALL_MARCH"
+      ],
+      "path_count": 2,
+      "semantics_with_templates": 7,
+      "semantics_with_templates_and_no_skill": [
+        "BTN_RECALL",
+        "BTN_RECALL_LOWEST_VALUE_GATHERING",
+        "POPUP_TITLE_RECALL",
+        "STATUS_BEAST_RETURNING",
+        "STATUS_RETURNING"
+      ]
+    },
+    {
+      "function": "邮件",
+      "registered_entry_skills": [
+        "DISMISS_MAIL_REWARD",
+        "MAIL_CLAIM_REWARDS",
+        "OPEN_MAIL",
+        "SELECT_MAIL_ALLIANCE_TAB",
+        "SELECT_MAIL_REPORT_TAB",
+        "SELECT_MAIL_SYSTEM_TAB"
+      ],
+      "schedulable_entry_skills": [
+        "DISMISS_MAIL_REWARD",
+        "MAIL_CLAIM_REWARDS",
+        "OPEN_MAIL",
+        "SELECT_MAIL_ALLIANCE_TAB",
+        "SELECT_MAIL_REPORT_TAB",
+        "SELECT_MAIL_SYSTEM_TAB"
+      ],
+      "path_count": 6,
+      "semantics_with_templates": 13,
+      "semantics_with_templates_and_no_skill": [
+        "MAIL_REWARD_FIRE_CRYSTAL_5",
+        "PAGE_MAIL",
+        "STATUS_MAIL_ALL_CLEAR",
+        "STATUS_MAIL_TAB_BADGES",
+        "TAB_MAIL_ALLIANCE_ACTIVE",
+        "TAB_MAIL_REPORT_ACTIVE",
+        "TAB_MAIL_SYSTEM_ACTIVE"
+      ]
+    },
+    {
+      "function": "活动/限时提醒",
+      "registered_entry_skills": [
+        "DAILY_CLAIM_REWARDS",
+        "DAILY_HERO_RECRUIT",
+        "DISMISS_DAILY_REWARD",
+        "OPEN_DAILY",
+        "SELECT_DAILY_TAB"
+      ],
+      "schedulable_entry_skills": [
+        "DAILY_CLAIM_REWARDS",
+        "DISMISS_DAILY_REWARD",
+        "OPEN_DAILY",
+        "SELECT_DAILY_TAB"
+      ],
+      "path_count": 4,
+      "semantics_with_templates": 23,
+      "semantics_with_templates_and_no_skill": [
+        "ALLIANCE_GIFTS_DAILY_COUNTER",
+        "DAILY_ACTIVITY_270",
+        "DAILY_ACTIVITY_280",
+        "DAILY_ACTIVITY_65",
+        "DAILY_ACTIVITY_70",
+        "DAILY_ACTIVITY_70_CURRENT",
+        "DAILY_ALLIANCE_CONTRIBUTE_3_OF_5",
+        "DAILY_ALLIANCE_CONTRIBUTE_5_OF_20",
+        "DAILY_ALLIANCE_REWARD_ITEMS",
+        "DAILY_MULTI_REWARD_ITEMS",
+        "DAILY_REWARD_ITEMS",
+        "PAGE_DAILY",
+        "POPUP_DAILY_REWARD",
+        "STATUS_DAILY_ALLIANCE_CLAIMABLE",
+        "STATUS_DAILY_MULTI_CLAIMABLE",
+        "STATUS_DAILY_TASK_AVAILABLE",
+        "STATUS_DAILY_TASK_CLAIMABLE",
+        "TAB_DAILY_TASKS_SELECTED"
+      ]
+    },
+    {
+      "function": "体力HUD",
+      "registered_entry_skills": [
+        "CLAIM_FREE_STAMINA",
+        "OPEN_STAMINA_SOURCES"
+      ],
+      "schedulable_entry_skills": [
+        "CLAIM_FREE_STAMINA",
+        "OPEN_STAMINA_SOURCES"
+      ],
+      "path_count": 2,
+      "semantics_with_templates": 3,
+      "semantics_with_templates_and_no_skill": [
+        "BTN_PAID_STAMINA_PURCHASE",
+        "POPUP_TITLE_GET_MORE_STAMINA"
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "skill": "ALLIANCE_ALLY_GIFT_CLAIM",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLY_GIFT_CLAIM",
+      "target": "BTN_ALLY_GIFT_CLAIM",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_ally_gift_claim",
+      "visual_evidence": 5,
+      "navigation_like": false
+    },
+    {
+      "skill": "ALLIANCE_GIFTS",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLIANCE_GIFTS_CLAIM_ALL",
+      "target": "BTN_ALLIANCE_GIFTS_CLAIM_ALL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_alliance_gifts_claimed",
+      "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "ALLIANCE_HELP",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLIANCE_HELP_ALL",
+      "target": "BTN_ALLIANCE_HELP_ALL",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "ALLIANCE_TECH_CONTRIBUTE",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
+      "target": "BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "ATTACK_BEAST_CARD",
+      "source_page": "BEAST",
+      "action": "TAP_SEMANTIC:BTN_BEAST_CARD_ATTACK",
+      "target": "BTN_BEAST_CARD_ATTACK",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_card_march_open",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "BACK",
+      "source_page": "UNKNOWN",
+      "action": "PRESS_BACK",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_safe_back",
+      "visual_evidence": 0,
+      "navigation_like": true
+    },
+    {
+      "skill": "BEAST_HUNT",
+      "source_page": "BEAST",
+      "action": "TAP_SEMANTIC:BTN_BEAST_START_MARCH",
+      "target": "BTN_BEAST_START_MARCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_march_open",
+      "visual_evidence": 4,
+      "navigation_like": false
+    },
+    {
+      "skill": "BUILDING_UPGRADE",
+      "source_page": "BUILDING",
+      "action": "TAP_SEMANTIC:BTN_BUILD_UPGRADE",
+      "target": "BTN_BUILD_UPGRADE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "CANCEL_DUPLICATE_TARGET",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DUPLICATE_TARGET_CANCEL",
+      "target": "BTN_DUPLICATE_TARGET_CANCEL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_duplicate_target_cancelled",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "CHECK_MARCH",
+      "source_page": "MAP",
+      "action": "OBSERVE:MARCH_QUEUE",
+      "target": "MARCH_QUEUE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_march_count_readable",
+      "visual_evidence": 19,
+      "navigation_like": false
+    },
+    {
+      "skill": "CLAIM_FREE_STAMINA",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_CLAIM_FREE_STAMINA",
+      "target": "BTN_CLAIM_FREE_STAMINA",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_free_stamina_claimed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "CLAIM_OFFLINE_REWARDS",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_CLAIM_OFFLINE_REWARDS",
+      "target": "BTN_CLAIM_OFFLINE_REWARDS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_offline_rewards_claimed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "CLAIM_REWARD",
+      "source_page": "UNKNOWN",
+      "action": "CLAIM_REWARD",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "CLOSE_POPUP",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_CLOSE",
+      "target": "BTN_CLOSE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_popup_closed",
+      "visual_evidence": 3,
+      "navigation_like": false
+    },
+    {
+      "skill": "CONFIRM_EXPLORATION_IDLE_CLAIM",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_EXPLORATION_IDLE_CONFIRM",
+      "target": "BTN_EXPLORATION_IDLE_CONFIRM",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_exploration_claim_confirmed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DAILY_CLAIM_REWARDS",
+      "source_page": "DAILY",
+      "action": "TAP_SEMANTIC:BTN_DAILY_CLAIM_ALL",
+      "target": "BTN_DAILY_CLAIM_ALL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_daily_claim_feedback",
+      "visual_evidence": 3,
+      "navigation_like": false
+    },
+    {
+      "skill": "DAILY_HERO_RECRUIT",
+      "source_page": "DAILY",
+      "action": "TAP_SEMANTIC:BTN_DAILY_GO_HERO_RECRUIT",
+      "target": "BTN_DAILY_GO_HERO_RECRUIT",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_ALLIANCE_GENERIC_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DISMISS_INTEL_REWARD",
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_alliance_reward_dismissed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_BATTLEFIELD_REVIVAL",
+      "source_page": "POPUP",
+      "action": "PRESS_BACK",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_popup_closed",
+      "visual_evidence": 0,
+      "navigation_like": true
+    },
+    {
+      "skill": "DISMISS_BATTLE_VICTORY",
+      "source_page": "POPUP",
+      "action": "PRESS_BACK",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_popup_closed",
+      "visual_evidence": 0,
+      "navigation_like": true
+    },
+    {
+      "skill": "DISMISS_DAILY_GENERIC_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DISMISS_INTEL_REWARD",
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_daily_reward_advanced",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_DAILY_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:POPUP_DAILY_REWARD_CURRENT",
+      "target": "POPUP_DAILY_REWARD_CURRENT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_daily_reward_advanced",
+      "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_EXPLORATION_GENERIC_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DISMISS_INTEL_REWARD",
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_exploration_reward_dismissed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_EXPLORATION_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:POPUP_EXPLORATION_REWARD",
+      "target": "POPUP_EXPLORATION_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_exploration_reward_dismissed",
+      "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_INTEL_GENERIC_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DISMISS_INTEL_REWARD",
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_reward_dismissed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_INTEL_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DISMISS_INTEL_REWARD",
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_reward_dismissed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_MAIL_GENERIC_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DISMISS_INTEL_REWARD",
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_mail_reward_dismissed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_MAIL_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:POPUP_MAIL_REWARD",
+      "target": "POPUP_MAIL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_mail_reward_dismissed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISMISS_REAL_MONEY_OFFER",
+      "source_page": "POPUP",
+      "action": "PRESS_BACK",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_popup_closed",
+      "visual_evidence": 0,
+      "navigation_like": true
+    },
+    {
+      "skill": "DISMISS_SHARED_REWARD",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_DISMISS_INTEL_REWARD",
+      "target": "BTN_DISMISS_INTEL_REWARD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_popup_closed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISPATCH_BEAST",
+      "source_page": "MARCH",
+      "action": "TAP_SEMANTIC:BTN_BEAST_DISPATCH_MUSK_OX_9",
+      "target": "BTN_BEAST_DISPATCH_MUSK_OX_9",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_dispatch",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISPATCH_INTEL_BEAST",
+      "source_page": "MARCH",
+      "action": "TAP_SEMANTIC:BTN_BEAST_DISPATCH",
+      "target": "BTN_BEAST_DISPATCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_beast_dispatch",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "DISPATCH_MARCH",
+      "source_page": "MARCH",
+      "action": "TAP_SEMANTIC:BTN_DISPATCH",
+      "target": "BTN_DISPATCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_wood_dispatch_from_march",
+      "visual_evidence": 7,
+      "navigation_like": false
+    },
+    {
+      "skill": "EXECUTE_INTEL_RESCUE_SURVIVORS",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BTN_INTEL_RESCUE_SURVIVORS",
+      "target": "BTN_INTEL_RESCUE_SURVIVORS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_rescue_started",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "EXPLORATION_IDLE_CLAIM",
+      "source_page": "EXPLORATION",
+      "action": "TAP_SEMANTIC:BTN_EXPLORATION_IDLE_CLAIM",
+      "target": "BTN_EXPLORATION_IDLE_CLAIM",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_exploration_claim_feedback",
+      "visual_evidence": 3,
+      "navigation_like": false
+    },
+    {
+      "skill": "GATHER_RESOURCE",
+      "source_page": "HOME",
+      "action": "RUN_WORKFLOW:GATHER_RESOURCE",
+      "target": "GATHER_RESOURCE",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": "RUN_WORKFLOW",
+      "navigation_like": false
+    },
+    {
+      "skill": "INTEL_BEAST_START_MARCH",
+      "source_page": "BEAST",
+      "action": "TAP_SEMANTIC:BTN_BEAST_START_MARCH",
+      "target": "BTN_BEAST_START_MARCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_beast_march_open",
+      "visual_evidence": 4,
+      "navigation_like": false
+    },
+    {
+      "skill": "INTEL_CLAIM_REWARDS",
+      "source_page": "INTEL",
+      "action": "TAP_SEMANTIC:BTN_INTEL_CLAIM_ALL",
+      "target": "BTN_INTEL_CLAIM_ALL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_claim_feedback",
+      "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "INTEL_HERO_DISPATCH",
+      "source_page": "MARCH",
+      "action": "TAP_SEMANTIC:BTN_HERO_FIGHT",
+      "target": "BTN_HERO_FIGHT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_hero_dispatched",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "INTEL_HERO_START_MARCH",
+      "source_page": "EXPLORATION",
+      "action": "TAP_SEMANTIC:BTN_HERO_CAMP_FIGHT",
+      "target": "BTN_HERO_CAMP_FIGHT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_hero_march_open",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "JOIN_RALLY",
+      "source_page": "UNKNOWN",
+      "action": "JOIN_RALLY",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "MAIL_CLAIM_REWARDS",
+      "source_page": "MAIL",
+      "action": "TAP_SEMANTIC:BTN_MAIL_CLAIM_ALL",
+      "target": "BTN_MAIL_CLAIM_ALL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_mail_read_or_claim",
+      "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "NAVIGATE_INFANTRY_CAMP",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_POWER_TROOP_IMPROVE",
+      "target": "BTN_POWER_TROOP_IMPROVE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_infantry_camp_highlighted",
+      "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "NAVIGATE_RESEARCH_LAB",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_POWER_RESEARCH_IMPROVE",
+      "target": "BTN_POWER_RESEARCH_IMPROVE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_research_lab_focused",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "NAVIGATE_TO",
+      "source_page": "UNKNOWN",
+      "action": "NAVIGATE_TO",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_ALLIANCE",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_OPEN_ALLIANCE",
+      "target": "BTN_OPEN_ALLIANCE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_open_alliance",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_ALLIANCE_GIFTS",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_OPEN_ALLIANCE_GIFTS",
+      "target": "BTN_OPEN_ALLIANCE_GIFTS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_open_alliance_gifts",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_DAILY",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_OPEN_DAILY",
+      "target": "BTN_OPEN_DAILY",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_open_daily",
+      "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_EXPLORATION",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_OPEN_EXPLORATION",
+      "target": "BTN_OPEN_EXPLORATION",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_open_exploration",
+      "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_HOME",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BTN_OPEN_HOME",
+      "target": "BTN_OPEN_HOME",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_open_home",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_INFANTRY_TRAINING",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_OPEN_TRAINING_FROM_CAMP",
+      "target": "BTN_OPEN_TRAINING_FROM_CAMP",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_training_page_open",
+      "visual_evidence": 3,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_INTEL",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BTN_OPEN_INTEL_WILD_HUD",
+      "target": "BTN_OPEN_INTEL_WILD_HUD",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_open_intel",
+      "visual_evidence": 4,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_INTEL_BEAST_TARGET",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_INTEL_VIEW_TARGET",
+      "target": "BTN_INTEL_VIEW_TARGET",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_target_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_INTEL_HERO_JOURNEY_TARGET",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_INTEL_VIEW_TARGET",
+      "target": "BTN_INTEL_VIEW_TARGET",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_hero_target_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_INTEL_VIEW_TARGET",
+      "target": "BTN_INTEL_VIEW_TARGET",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_rescue_target_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_MAIL",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_OPEN_MAIL",
+      "target": "BTN_OPEN_MAIL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_open_mail",
+      "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_MAP",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:PAGE_MAP",
+      "target": "PAGE_MAP",
+      "destination_page": "MAP",
+      "schedulable": true,
+      "verifier": "verify_open_map",
+      "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_POWER_DETAILS",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_OPEN_POWER_DETAILS",
+      "target": "BTN_OPEN_POWER_DETAILS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_power_details_open",
+      "visual_evidence": 2,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_POWER_OVERVIEW",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_OPEN_POWER_OVERVIEW_ICON",
+      "target": "BTN_OPEN_POWER_OVERVIEW_ICON",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_power_overview_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_RESEARCH",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:BTN_OPEN_RESEARCH",
+      "target": "BTN_OPEN_RESEARCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_research_page_open",
+      "visual_evidence": 3,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_STAMINA_SOURCES",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:HUD_STAMINA_GAUGE",
+      "target": "HUD_STAMINA_GAUGE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_stamina_sources_open",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "READ_COUNTER",
+      "source_page": "UNKNOWN",
+      "action": "READ_COUNTER",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "READ_INTEL_LIST",
+      "source_page": "INTEL",
+      "action": "OBSERVE:INTEL_LIST",
+      "target": "INTEL_LIST",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_list_read",
+      "visual_evidence": "OBSERVE",
+      "navigation_like": false
+    },
+    {
+      "skill": "READ_TIMER",
+      "source_page": "UNKNOWN",
+      "action": "READ_TIMER",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "RECALL_MARCH",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_CONFIRM_RECALL",
+      "target": "BTN_CONFIRM_RECALL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_march_recalled",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "RECONNECT_SESSION",
+      "source_page": "POPUP",
+      "action": "TAP_SEMANTIC:BTN_RECONNECT_SESSION",
+      "target": "BTN_RECONNECT_SESSION",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_popup_closed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "RECOVER_HOME",
+      "source_page": "UNKNOWN",
+      "action": "RECOVER_HOME",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "REINFORCE_TARGET",
+      "source_page": "UNKNOWN",
+      "action": "REINFORCE_TARGET",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "RELAX_RESOURCE_LEVEL",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:RESOURCE_LEVEL_MINUS",
+      "target": "RESOURCE_LEVEL_MINUS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_resource_level_relaxed",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "RESEARCH",
+      "source_page": "RESEARCH",
+      "action": "TAP_SEMANTIC:BTN_START_RESEARCH",
+      "target": "BTN_START_RESEARCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "SCAN_MAP_FOR_BEAST",
+      "source_page": "MAP",
+      "action": "SWIPE:0.50,0.62,0.50,0.30",
+      "target": "0.50,0.62,0.50,0.30",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_scan_observed",
+      "visual_evidence": "SWIPE",
+      "navigation_like": false
+    },
+    {
+      "skill": "SEARCH_RESOURCE",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BTN_OPEN_RESOURCE_SEARCH",
+      "target": "BTN_OPEN_RESOURCE_SEARCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_resource_search_open",
+      "visual_evidence": 4,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_BEAST_TARGET",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:TARGET_BEAST_MUSK_OX_9",
+      "target": "TARGET_BEAST_MUSK_OX_9",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_target_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_BEAST_TARGET_LABELLED",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BEAST_ON_MAP",
+      "target": "BEAST_ON_MAP",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_card_opened",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_BEAST_TARGET_MAMMOTH",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:TARGET_BEAST_MAMMOTH_5",
+      "target": "TARGET_BEAST_MAMMOTH_5",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_mammoth_target_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_DAILY_TAB",
+      "source_page": "DAILY",
+      "action": "TAP_SEMANTIC:BTN_DAILY_TAB_TASKS",
+      "target": "BTN_DAILY_TAB_TASKS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_daily_tab_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_INFANTRY_CAMP",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:TARGET_INFANTRY_CAMP_HIGHLIGHTED",
+      "target": "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_infantry_camp_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_INTEL_BEAST_MISSION",
+      "source_page": "INTEL",
+      "action": "TAP_SEMANTIC:TARGET_INTEL_BEAST_MISSION",
+      "target": "TARGET_INTEL_BEAST_MISSION",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_mission_selected",
+      "visual_evidence": 10,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_INTEL_FIREBEAST_MISSION",
+      "source_page": "INTEL",
+      "action": "TAP_SEMANTIC:TARGET_INTEL_FIREBEAST_MISSION",
+      "target": "TARGET_INTEL_FIREBEAST_MISSION",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_mission_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_INTEL_PIN",
+      "source_page": "INTEL",
+      "action": "TAP_SEMANTIC:INTEL_PIN",
+      "target": "INTEL_PIN",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_pin_opened",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_INTEL_RESCUE_SURVIVORS",
+      "source_page": "INTEL",
+      "action": "TAP_SEMANTIC:TARGET_INTEL_RESCUE_SURVIVORS",
+      "target": "TARGET_INTEL_RESCUE_SURVIVORS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_intel_rescue_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_MAIL_ALLIANCE_TAB",
+      "source_page": "MAIL",
+      "action": "TAP_SEMANTIC:BTN_MAIL_TAB_ALLIANCE",
+      "target": "BTN_MAIL_TAB_ALLIANCE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_mail_alliance_tab_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_MAIL_REPORT_TAB",
+      "source_page": "MAIL",
+      "action": "TAP_SEMANTIC:BTN_MAIL_TAB_REPORT",
+      "target": "BTN_MAIL_TAB_REPORT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_mail_report_tab_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_MAIL_SYSTEM_TAB",
+      "source_page": "MAIL",
+      "action": "TAP_SEMANTIC:BTN_MAIL_TAB_SYSTEM",
+      "target": "BTN_MAIL_TAB_SYSTEM",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_mail_system_tab_selected",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_MARCH_TO_RECALL",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:MARCH_ROW_1",
+      "target": "MARCH_ROW_1",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_march_recall_dialog_open",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_RESOURCE",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:RESOURCE_DYNAMIC",
+      "target": "RESOURCE_DYNAMIC",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_resource_selected",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "SELECT_REWARD_OPTION",
+      "source_page": "UNKNOWN",
+      "action": "SELECT_REWARD_OPTION",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": true
+    },
+    {
+      "skill": "SEND_MARCH",
+      "source_page": "UNKNOWN",
+      "action": "SEND_MARCH",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "START_GATHER",
+      "source_page": "RESOURCE_DETAIL",
+      "action": "TAP_SEMANTIC:BTN_GATHER",
+      "target": "BTN_GATHER",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_march_page_open",
+      "visual_evidence": 4,
+      "navigation_like": false
+    },
+    {
+      "skill": "START_RALLY",
+      "source_page": "UNKNOWN",
+      "action": "START_RALLY",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "SUBMIT_RESOURCE_SEARCH",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BTN_RESOURCE_SEARCH_SUBMIT",
+      "target": "BTN_RESOURCE_SEARCH_SUBMIT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_resource_found",
+      "visual_evidence": 6,
+      "navigation_like": true
+    },
+    {
+      "skill": "TRAIN_TROOPS",
+      "source_page": "TRAINING",
+      "action": "TAP_SEMANTIC:BTN_START_TRAINING",
+      "target": "BTN_START_TRAINING",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "USE_ACTIVITY_ATTEMPT",
+      "source_page": "UNKNOWN",
+      "action": "USE_ACTIVITY_ATTEMPT",
+      "target": "UNKNOWN",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 0,
+      "navigation_like": false
+    },
+    {
+      "skill": "VERIFY_GATHERING",
+      "source_page": "RESOURCE_DETAIL",
+      "action": "OBSERVE:STATUS_GATHERING",
+      "target": "STATUS_GATHERING",
+      "destination_page": "UNKNOWN",
+      "schedulable": false,
+      "verifier": "UNKNOWN",
+      "visual_evidence": 2,
+      "navigation_like": false
+    },
+    {
+      "skill": "WAIT",
+      "source_page": "UNKNOWN",
+      "action": "OBSERVE:ENVIRONMENTAL_WAIT",
+      "target": "ENVIRONMENTAL_WAIT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_environmental_wait",
+      "visual_evidence": "OBSERVE",
+      "navigation_like": false
+    },
+    {
+      "skill": "WAIT_FOR_CAMP_MENU",
+      "source_page": "HOME",
+      "action": "OBSERVE:CAMP_MENU_PENDING",
+      "target": "CAMP_MENU_PENDING",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_camp_menu_reobserved",
+      "visual_evidence": "OBSERVE",
+      "navigation_like": false
+    }
+  ],
+  "goals": [
+    {
+      "goal": "ALLIANCE_ROUTINE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "ALLIANCE_TIMED_EVENTS",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "AVOID_STAMINA_WASTE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "CLAIM_EXPLORATION_IDLE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "CLAIM_FREE_REWARDS",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "CLEAR_INTEL",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "DAILY_ACTIVITY_TARGET",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "EVENT_MINIMUM_GUARANTEE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "KEEP_BUILDING_PRODUCTIVE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "KEEP_MARCHES_PRODUCTIVE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "KEEP_RESEARCH_PRODUCTIVE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "KEEP_TRAINING_PRODUCTIVE",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "LABYRINTH_DAILY",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "PARTICIPATE_BEAR",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    },
+    {
+      "goal": "USE_FREE_ARENA_ATTEMPTS",
+      "declared_skills": [],
+      "navigation_paths": [],
+      "schedulable_path_count": 0
+    }
+  ],
+  "semantics_without_any_skill": [
+    {
+      "semantic": "ALLIANCE_GIFTS_DAILY_COUNTER",
+      "templates": 4
+    },
+    {
+      "semantic": "ALLIANCE_GIFT_REWARD_ITEMS_DAY2",
+      "templates": 1
+    },
+    {
+      "semantic": "ALLIANCE_GIFT_REWARD_ITEMS_MULTI",
+      "templates": 1
+    },
+    {
+      "semantic": "ALLIANCE_PERSONAL_CONTRIBUTION_49320",
+      "templates": 1
+    },
+    {
+      "semantic": "ALLIANCE_PERSONAL_CONTRIBUTION_49680",
+      "templates": 1
+    },
+    {
+      "semantic": "ALLIANCE_PERSONAL_CONTRIBUTION_50040",
+      "templates": 1
+    },
+    {
+      "semantic": "ALLIANCE_TECH_ATTEMPTS_23_OF_25",
+      "templates": 1
+    },
+    {
+      "semantic": "ALLIANCE_TECH_ATTEMPTS_24_OF_25",
+      "templates": 2
+    },
+    {
+      "semantic": "ALLIANCE_TECH_ATTEMPTS_25_OF_25",
+      "templates": 1
+    },
+    {
+      "semantic": "ALLIANCE_TECH_RECOMMENDED",
+      "templates": 2
+    },
+    {
+      "semantic": "BTN_ALLIANCE_GIFTS",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_ALLIANCE_HELP",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_ALLIANCE_HELP_BUILDING",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_ALLIANCE_TECH",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_CANCEL",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_CLOSE_BATTLE_VICTORY",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_DETAILS",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_DUPLICATE_TARGET_CONFIRM",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_FREE_RECRUIT",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_MARCH_EXPAND",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_OPEN_POWER_OVERVIEW",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_OPEN_TRAINING",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_PAID_STAMINA_PURCHASE",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_RECALL",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_RECALL_LOWEST_VALUE_GATHERING",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_REMOVE_ALL",
+      "templates": 2
+    },
+    {
+      "semantic": "BTN_RESEARCH_ACCELERATE",
+      "templates": 2
+    },
+    {
+      "semantic": "BTN_SIDE_EXPAND",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_TRAINING_ACCELERATE",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_TRAINING_MENU_LABEL",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_TRAINING_SPEEDUP",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_TROOP_PLUS_FIRST",
+      "templates": 2
+    },
+    {
+      "semantic": "BTN_UPGRADE",
+      "templates": 1
+    },
+    {
+      "semantic": "BUILDING_INFANTRY_CAMP",
+      "templates": 1
+    },
+    {
+      "semantic": "BUILDING_QUEUE_TIMER",
+      "templates": 1
+    },
+    {
+      "semantic": "BUILDING_RESEARCH_CENTER",
+      "templates": 1
+    },
+    {
+      "semantic": "BUILDING_STOREHOUSE",
+      "templates": 1
+    },
+    {
+      "semantic": "BUILDING_UPGRADE_DIALOG",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_ACTIVITY_270",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_ACTIVITY_280",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_ACTIVITY_65",
+      "templates": 3
+    },
+    {
+      "semantic": "DAILY_ACTIVITY_70",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_ACTIVITY_70_CURRENT",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_ALLIANCE_CONTRIBUTE_3_OF_5",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_ALLIANCE_CONTRIBUTE_5_OF_20",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_ALLIANCE_REWARD_ITEMS",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_MULTI_REWARD_ITEMS",
+      "templates": 1
+    },
+    {
+      "semantic": "DAILY_REWARD_ITEMS",
+      "templates": 1
+    },
+    {
+      "semantic": "DIALOG_ALLIANCE_TECH",
+      "templates": 2
+    },
+    {
+      "semantic": "DIALOG_BEAST_MUSK_OX_9",
+      "templates": 2
+    },
+    {
+      "semantic": "DIALOG_BEAST_TARGET",
+      "templates": 1
+    },
+    {
+      "semantic": "DIALOG_INTEL_BEAST",
+      "templates": 1
+    },
+    {
+      "semantic": "DIALOG_INTEL_FIREBEAST_TARGET",
+      "templates": 1
+    },
+    {
+      "semantic": "DIALOG_INTEL_HERO_JOURNEY_EXPLORE",
+      "templates": 1
+    },
+    {
+      "semantic": "DIALOG_INTEL_MASTER_BOUNTY_HIGH_POWER",
+      "templates": 1
+    },
+    {
+      "semantic": "DIALOG_INTEL_RESCUE_SURVIVORS_TARGET",
+      "templates": 1
+    },
+    {
+      "semantic": "EXPLORATION_REWARD_ITEMS",
+      "templates": 1
+    },
+    {
+      "semantic": "HERO_RECRUIT_REWARD_ITEMS",
+      "templates": 1
+    },
+    {
+      "semantic": "HIGH_RISK_GEM_FINISH",
+      "templates": 1
+    },
+    {
+      "semantic": "HIGH_RISK_GEM_FINISH_RESEARCH",
+      "templates": 1
+    },
+    {
+      "semantic": "HIGH_RISK_GEM_FINISH_TRAINING",
+      "templates": 1
+    },
+    {
+      "semantic": "HIGH_RISK_PURCHASE",
+      "templates": 1
+    },
+    {
+      "semantic": "HIGH_RISK_REAL_MONEY_OFFER",
+      "templates": 1
+    },
+    {
+      "semantic": "INTEL_BEAST_REWARD_ITEMS",
+      "templates": 1
+    },
+    {
+      "semantic": "INTEL_REFRESH_TIMER",
+      "templates": 2
+    },
+    {
+      "semantic": "INTEL_REWARD_ITEMS",
+      "templates": 1
+    },
+    {
+      "semantic": "MAIL_REWARD_FIRE_CRYSTAL_5",
+      "templates": 1
+    },
+    {
+      "semantic": "MARCH_COUNT_1_OF_6",
+      "templates": 5
+    },
+    {
+      "semantic": "MARCH_COUNT_2_OF_6",
+      "templates": 4
+    },
+    {
+      "semantic": "PAGE_ALLIANCE",
+      "templates": 2
+    },
+    {
+      "semantic": "PAGE_ALLIANCE_GIFTS",
+      "templates": 7
+    },
+    {
+      "semantic": "PAGE_ALLIANCE_HELP",
+      "templates": 1
+    },
+    {
+      "semantic": "PAGE_ALLIANCE_TECH",
+      "templates": 4
+    },
+    {
+      "semantic": "PAGE_BEAST_MARCH",
+      "templates": 1
+    },
+    {
+      "semantic": "PAGE_DAILY",
+      "templates": 8
+    },
+    {
+      "semantic": "PAGE_EXPLORATION",
+      "templates": 5
+    },
+    {
+      "semantic": "PAGE_HERO_RECRUIT",
+      "templates": 1
+    },
+    {
+      "semantic": "PAGE_INTEL",
+      "templates": 4
+    },
+    {
+      "semantic": "PAGE_MAIL",
+      "templates": 3
+    },
+    {
+      "semantic": "PAGE_MARCH_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "PAGE_RESEARCH",
+      "templates": 2
+    },
+    {
+      "semantic": "PAGE_TRAINING_INFANTRY",
+      "templates": 3
+    },
+    {
+      "semantic": "PAGE_TRAINING_LANCER",
+      "templates": 1
+    },
+    {
+      "semantic": "PAGE_TRAINING_MARKSMAN",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_ALLIANCE_GIFT_REWARD",
+      "templates": 2
+    },
+    {
+      "semantic": "POPUP_BATTLEFIELD_REVIVAL",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_BATTLE_VICTORY_BANNER",
+      "templates": 2
+    },
+    {
+      "semantic": "POPUP_DAILY_REWARD",
+      "templates": 3
+    },
+    {
+      "semantic": "POPUP_DUPLICATE_TARGET_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_EXIT_CONFIRM",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_EXPLORATION_IDLE_DIALOG",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_GENERIC_REWARD_HEADER",
+      "templates": 2
+    },
+    {
+      "semantic": "POPUP_HERO_BATTLE_VICTORY",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_HERO_RECRUIT_REWARD",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_INTEL_FIREBEAST_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_INTEL_HERO_JOURNEY_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_INTEL_MASTER_BOUNTY_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_INTEL_RESCUE_SURVIVORS_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_INTEL_REWARD",
+      "templates": 2
+    },
+    {
+      "semantic": "POPUP_INTEL_REWARD_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_LOADING_BAR_CAP",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_MAINTENANCE_TITLE",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_POWER_DETAILS",
+      "templates": 2
+    },
+    {
+      "semantic": "POPUP_POWER_OVERVIEW",
+      "templates": 2
+    },
+    {
+      "semantic": "POPUP_SESSION_DISCONNECTED",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_TITLE_GET_MORE_STAMINA",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_TITLE_RECALL",
+      "templates": 1
+    },
+    {
+      "semantic": "POPUP_WELCOME_BACK_OFFLINE",
+      "templates": 1
+    },
+    {
+      "semantic": "REAL_MONEY_PRICE_BUTTON",
+      "templates": 1
+    },
+    {
+      "semantic": "RED_DOT_ALLIANCE_GIFTS_18",
+      "templates": 1
+    },
+    {
+      "semantic": "RESEARCH_BUILDING_QUEUE_TIMER",
+      "templates": 1
+    },
+    {
+      "semantic": "RESEARCH_QUEUE_TIMER",
+      "templates": 2
+    },
+    {
+      "semantic": "RESEARCH_TAB_BATTLE",
+      "templates": 2
+    },
+    {
+      "semantic": "RESEARCH_TAB_ECONOMY",
+      "templates": 2
+    },
+    {
+      "semantic": "RESEARCH_TAB_GROWTH",
+      "templates": 2
+    },
+    {
+      "semantic": "RESOURCE_BEAST",
+      "templates": 1
+    },
+    {
+      "semantic": "RESOURCE_COAL_SELECTED",
+      "templates": 2
+    },
+    {
+      "semantic": "RESOURCE_DETAIL_DIALOG",
+      "templates": 5
+    },
+    {
+      "semantic": "RESOURCE_IRON_SELECTED",
+      "templates": 3
+    },
+    {
+      "semantic": "RESOURCE_LUMBER",
+      "templates": 1
+    },
+    {
+      "semantic": "RESOURCE_MEAT_SELECTED",
+      "templates": 2
+    },
+    {
+      "semantic": "RESOURCE_TAB_COAL_SELECTED",
+      "templates": 1
+    },
+    {
+      "semantic": "RESOURCE_TAB_IRON_SELECTED",
+      "templates": 1
+    },
+    {
+      "semantic": "RESOURCE_TAB_MEAT_SELECTED",
+      "templates": 1
+    },
+    {
+      "semantic": "RESOURCE_TAB_WOOD_SELECTED",
+      "templates": 1
+    },
+    {
+      "semantic": "RESOURCE_WOOD",
+      "templates": 2
+    },
+    {
+      "semantic": "RESOURCE_WOOD_SELECTED",
+      "templates": 2
+    },
+    {
+      "semantic": "STATUS_ALLIANCE_AUTO_HELP_ACTIVE",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_ALLIANCE_GIFTS_CLAIMED",
+      "templates": 2
+    },
+    {
+      "semantic": "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT_CRITICAL",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT_NORMAL",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_ALLY_GIFTS_CLAIMED",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_ALLY_GIFT_FIRST_CLAIMED",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_ALLY_GIFT_INLINE_REWARD",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_BEAST_LOW_WIN_PROBABILITY",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_BEAST_MARCH_OUTBOUND_MUSK_OX_9",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_BEAST_RETURNING",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_DAILY_ALLIANCE_CLAIMABLE",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_DAILY_MULTI_CLAIMABLE",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_DAILY_TASK_AVAILABLE",
+      "templates": 2
+    },
+    {
+      "semantic": "STATUS_DAILY_TASK_CLAIMABLE",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_EXPLORATION_IDLE_CLAIMED",
+      "templates": 3
+    },
+    {
+      "semantic": "STATUS_INTEL_AVAILABLE",
+      "templates": 2
+    },
+    {
+      "semantic": "STATUS_INTEL_BEAST_CLAIMABLE",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_INTEL_BEAST_MARCHING",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_INTEL_CLAIMABLE",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_INTEL_HERO_JOURNEY_FAILED",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_INTEL_RESCUE_SURVIVORS_ACTIVE",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_MAIL_ALL_CLEAR",
+      "templates": 2
+    },
+    {
+      "semantic": "STATUS_MAIL_TAB_BADGES",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_MARCHING",
+      "templates": 6
+    },
+    {
+      "semantic": "STATUS_RESEARCH_IN_PROGRESS",
+      "templates": 2
+    },
+    {
+      "semantic": "STATUS_RETURNING",
+      "templates": 5
+    },
+    {
+      "semantic": "STATUS_TRAINING_IN_PROGRESS",
+      "templates": 4
+    },
+    {
+      "semantic": "STATUS_VICTORY_ASSURED",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_VICTORY_ASSURED_MUSK_OX_9",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_ALLIANCE_ALLY_GIFTS",
+      "templates": 2
+    },
+    {
+      "semantic": "TAB_ALLIANCE_VICTORY_GIFTS",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_DAILY_TASKS_SELECTED",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_MAIL_ALLIANCE_ACTIVE",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_MAIL_REPORT_ACTIVE",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_MAIL_SYSTEM_ACTIVE",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_TRAINING_INFANTRY",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_TRAINING_LANCER",
+      "templates": 1
+    },
+    {
+      "semantic": "TAB_TRAINING_MARKSMAN",
+      "templates": 1
+    },
+    {
+      "semantic": "TARGET_INTEL_BEAST_MISSION_BLUE",
+      "templates": 3
+    },
+    {
+      "semantic": "TARGET_LIGHTHOUSE_BUILDING",
+      "templates": 1
+    },
+    {
+      "semantic": "TRAINING_BATCH_806",
+      "templates": 1
+    },
+    {
+      "semantic": "TRAINING_BUILDING_QUEUE_TIMER",
+      "templates": 1
+    },
+    {
+      "semantic": "TRAINING_QUEUE_TIMER",
+      "templates": 4
+    }
+  ]
+}

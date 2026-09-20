@@ -1690,6 +1690,46 @@ def main() -> int:
             check(label, False, detail)
         check(f"no dangling calls in {extra.name}/", not (self_hits or mod_hits))
 
+    print("\n-- the derived navigation matrix --")
+    # `knowledge/ui/navigation_matrix.json` is a projection of the registry, so the way it rots is
+    # by going stale or by the operator-function queries silently matching nothing after a rename.
+    # Both are checked here rather than trusted: a stale projection is worse than no projection,
+    # because a reader takes it for the current state of the tree.
+    try:
+        import importlib.util as _ilu
+
+        _spec = _ilu.spec_from_file_location("ui_navigation_matrix", ROOT / "tools" / "ui_navigation_matrix.py")
+        _mod = _ilu.module_from_spec(_spec)
+        assert _spec and _spec.loader
+        _spec.loader.exec_module(_mod)
+        _fresh = _mod.build()
+        _committed_path = ROOT / "knowledge" / "ui" / "navigation_matrix.json"
+        _committed = json.loads(_committed_path.read_text(encoding="utf-8"))
+        check("ui: the committed navigation matrix matches a fresh projection of the registry",
+              _committed["counts"] == _fresh["counts"],
+              f"committed={_committed['counts']} fresh={_fresh['counts']} -- rerun "
+              f"tools/ui_navigation_matrix.py")
+        _skills = [e["skill"] for e in _fresh["entries"]]
+        check("ui: every registered skill appears in the matrix exactly once",
+              len(_skills) == len(set(_skills)) and len(_skills) == len(registry.all()),
+              f"{len(_skills)} rows for {len(registry.all())} skills")
+        # The functions the operator named whose paths DO exist must keep resolving.  A rename that
+        # quietly drops one to zero would otherwise read as "nothing was ever there".
+        _covered = {"情报/灯塔", "兵营/盾兵-矛兵-射手", "邮件", "城镇/野外快捷面板", "体力HUD"}
+        _zeroed = [
+            f["function"] for f in _fresh["operator_functions"]
+            if f["function"] in _covered and f["path_count"] == 0
+        ]
+        check("ui: the operator functions that had paths still have them",
+              not _zeroed, f"went to zero: {_zeroed}")
+        # And the ones known to be absent stay visible as absent rather than being quietly dropped.
+        _absent = {f["function"] for f in _fresh["operator_functions"] if f["path_count"] == 0}
+        check("ui: the functions with no path are still reported, not silently omitted",
+              "巨兽/自动加入" in {f["function"] for f in _fresh["operator_functions"]},
+              f"absent today: {sorted(_absent)}")
+    except Exception as exc:  # noqa: BLE001 - a broken generator must be reported, not swallowed
+        check("ui: the navigation matrix generator runs", False, f"{type(exc).__name__}: {exc}")
+
     print(f"\nproblems: {len(problems)}")
     for name in problems:
         print("  -", name)
