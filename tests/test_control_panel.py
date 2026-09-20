@@ -249,11 +249,21 @@ class ControlPanelTests(unittest.TestCase):
         brain = RuleBrain(current_goal="MAIL")
         resource = WorldState(page=Page.RESOURCE_DETAIL, resource_available=True, confidence=0.99)
         march = WorldState(page=Page.MARCH, resource_target="WOOD", confidence=0.99)
-        self.assertEqual(brain.decide(resource, v2_registry()).skill, "SAFE_STOP")
+        # A resource panel is not this goal's panel, and since 2026-09-19 the brain takes one
+        # Back off it (``_leave_foreign_page_once``) instead of stopping on the spot: measured
+        # live, a run had stopped with ``goal_page_mismatch`` while the client was still
+        # standing on this goal's own panel, so the next run could not hop home.  What this
+        # test has always guarded is unchanged -- the goal must not start gathering -- and the
+        # assertion is now stricter, because it pins the reason as well as the skill.
+        leave = brain.decide(resource, v2_registry())
+        self.assertEqual(leave.skill, "BACK")
+        self.assertEqual(leave.reason, "mail_goal_leaves_a_panel_it_does_not_own")
         self.assertEqual(brain.decide(march, v2_registry()).skill, "SAFE_STOP")
         self.assertEqual(brain.decide(WorldState(page=Page.MAP, confidence=0.99), v2_registry()).skill, "OPEN_HOME")
         search = WorldState(page=Page.MAP, resource_search_open=True, confidence=0.99)
         self.assertEqual(brain.decide(search, v2_registry()).skill, "BACK")
+        # The Back is taken once per run, so the honest stop still follows rather than a loop.
+        self.assertEqual(brain.decide(resource, v2_registry()).skill, "SAFE_STOP")
 
     def test_single_unknown_active_mail_category_selects_badged_tab_first(self):
         state = WorldState(page=Page.MAIL, mail={"status":"CLAIMABLE", "active_tab":None, "tab_badges":{"ALLIANCE":24}}, confidence=0.99)
@@ -268,6 +278,11 @@ class ControlPanelTests(unittest.TestCase):
     def test_intel_goal_never_inherits_gather_actions(self):
         brain = RuleBrain(current_goal="INTEL")
         resource = WorldState(page=Page.RESOURCE_DETAIL, resource_available=True, confidence=0.99)
+        # Same one-shot leave as the mail goal: a resource panel is not this goal's panel, so
+        # the brain backs off it once and then stops honestly (see the sibling test above).
+        leave = brain.decide(resource, v2_registry())
+        self.assertEqual(leave.skill, "BACK")
+        self.assertEqual(leave.reason, "intel_goal_leaves_a_panel_it_does_not_own")
         self.assertEqual(brain.decide(resource, v2_registry()).skill, "SAFE_STOP")
 
     def test_intel_goal_leaves_completed_exploration_page(self):

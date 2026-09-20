@@ -1,0 +1,22 @@
+test(brain): the two gather-inheritance tests asserted a stop the brain no longer takes
+
+RuleBrain now takes one Back off a panel a goal does not own -- ``_leave_foreign_page_once``,
+brain.py:202-228, added 2026-09-19 after a live run stopped with ``goal_page_mismatch`` while the
+client was still standing on the goal's own panel, so the next run could not hop home.  Two tests
+still asserted SAFE_STOP for a RESOURCE_DETAIL world, so they had been red on main.
+
+Verified stale rather than a regression: a clean worktree at 45e7cb8 reproduced both failures with
+no working-tree changes, and the measured decisions are BACK with reason
+``mail_goal_leaves_a_panel_it_does_not_own`` / ``intel_goal_leaves_a_panel_it_does_not_own``, then
+SAFE_STOP on the next call, while MARCH still stops with ``goal_page_mismatch``.  What the two tests
+have always guarded is unchanged -- a mail or intel goal must not start gathering -- and the
+assertion is now stricter, because it pins the reason as well as the skill and records that the Back
+is one-shot so the honest stop still follows rather than becoming a loop.
+
+tests/test_control_panel.py: 47 passed (was 2 failed, 45 passed).
+
+Also corrects the project's dismissal list.  The documented pre-existing set is nine failures, but a
+clean HEAD run shows at least eleven, and a third test of the same shape --
+tests/test_reward_popup_source.py::...::test_without_goal_context_it_stops_rather_than_guessing,
+which now sees CLOSE_POPUP where it expects SAFE_STOP -- fails there too.  So "this failure is
+unrelated" cannot be taken from that list; it has to be re-derived from a HEAD-only run.
