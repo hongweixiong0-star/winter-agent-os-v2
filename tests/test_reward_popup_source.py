@@ -300,14 +300,38 @@ class TheBrainChoosesTheDismissFromGoalContextTests(unittest.TestCase):
     def test_without_goal_context_it_stops_rather_than_guessing(self):
         """Documented, not hidden: this is the pre-existing shape.
 
-        Every goal that can produce this dialog is named above; a goal that
-        cannot (TRAIN, GATHER, ...) refuses to guess which page it should return
-        to.  It already behaved this way for the 64 frames that read
-        GENERIC_REWARD before this change.
+        Every goal that can produce this dialog is named above.  Two of them --
+        TRAIN and RESEARCH -- have no per-domain dismiss skill, and since
+        2026-09-19 (``brain.py``'s TRAIN/RESEARCH branch, added after the first
+        live run of the training sweep stopped with
+        ``generic_reward_without_goal_context`` and could not get past a reward
+        popup at all) the brain closes the popup itself with ``CLOSE_POPUP`` --
+        registered, VERIFIED, low risk and verifier-bound through
+        ``verify_popup_closed``.  Closing a blocking popup is goal-neutral, so
+        this is not a guess about which page to return to.  Measured: skill
+        CLOSE_POPUP, reason ``train_goal_generic_reward_dismissed`` /
+        ``research_goal_generic_reward_dismissed``, expected
+        ``underlying_page_restored``.
+
+        Honest note, deliberately not fixed here: the goal that live run
+        actually carried was KEEP_TRAINING_PRODUCTIVE, and that goal still stops
+        today -- the branch covers only the two literal names.
+
+        Every other goal without goal context still stops, so what this test has
+        always guarded is unchanged.  The assertion is stricter than it was,
+        because it pins the reason as well as the skill.
         """
-        decision = _decide(self._reward(), "TRAIN")
-        self.assertEqual(decision.skill, "SAFE_STOP")
-        self.assertEqual(decision.reason, "generic_reward_without_goal_context")
+        for goal, reason in (("TRAIN", "train_goal_generic_reward_dismissed"),
+                             ("RESEARCH", "research_goal_generic_reward_dismissed")):
+            with self.subTest(goal=goal):
+                decision = _decide(self._reward(), goal)
+                self.assertEqual(decision.skill, "CLOSE_POPUP")
+                self.assertEqual(decision.reason, reason)
+        for goal in ("KEEP_TRAINING_PRODUCTIVE", "GATHER", "MARCH"):
+            with self.subTest(goal=goal):
+                decision = _decide(self._reward(), goal)
+                self.assertEqual(decision.skill, "SAFE_STOP")
+                self.assertEqual(decision.reason, "generic_reward_without_goal_context")
 
 
 class TheDismissVerifiersAlreadyAcceptTheSharedLabelTests(unittest.TestCase):
