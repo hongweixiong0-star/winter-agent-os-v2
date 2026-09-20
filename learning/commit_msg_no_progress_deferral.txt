@@ -1,0 +1,40 @@
+fix(runtime): a goal that cannot make progress must feed the deferral that exists
+
+The no-progress deferral could never fire for the case it is most needed in.  When the executor
+cannot resolve a semantic target, runtime.py records the step and returns, and it recorded no
+goal_progress -- which defaults to None.  _streak_and_last reads an all-None group as "not measured"
+and stops counting, so the streak stayed 0 against a threshold of 3.  Measured 2026-09-20: one goal
+produced 30 consecutive episodes, then 29 more after the route changed, none of which issued an
+action (executor_backend and after_screenshot both empty), re-occupying every round for about two
+hours while nothing else in the queue ran.  goal_progress is now False when there was a goal and the
+goal did not advance; a run with no goal keeps None, because there is no goal to hold accountable.
+
+The deferral's reason was also false in the ledger.  It claimed unconditionally that the counted
+episodes "passed their verifier" -- true of the case it was written for (2026-09-18: 58 beast scans
+that landed and moved nothing) and false for this one, where no verifier judged anything because no
+action was ever issued.  _streak_and_last now returns what the episodes actually did, as counts of
+(no action, rejected by its verifier, passed its verifier).  _streak_record reads a hand-built or
+older three-field record as evidence it simply does not have, and the reason then names no cause at
+all rather than one the episodes contradict.  There is exactly one caller of _streak_and_last and
+both readers go through _streak_record, so the widened record is contained.
+
+Proven, and not yet proven, stated plainly:
+
+- The gate half is covered by tests/test_no_progress_deferral.py (14 tests) and its bite is shown:
+  restoring the old unconditional reason at the call site turns two of them red with
+  "'issued no action at all' not found in '3 consecutive production episodes passed their verifier
+  and advanced no part of this goal'".  All-None progress still yields streak 0, so the older
+  "everything counts as a streak" bug is not resurrected, and a two-episode streak still defers
+  nothing.  An earlier draft of that file only called _no_progress_reason directly and stayed green
+  with the call site reverted -- a green-but-useless test, caught by the bite proof and rewritten to
+  go through CapabilityGate._no_progress_deferral, which is the path production uses.
+- The runtime half has no dedicated unit test.  It rests on the one-line change, on check_wiring
+  (0 problems), and on an A/B showing it turns no green test red: tests/test_live_runtime.py is
+  2 failed / 6 passed both with this change and with it stashed, and those two failures come from
+  the uncommitted knowledge/policy JSON in the working tree, not from this code.
+- NOT live-verified.  The GUI panel is not running, so a real stalled run has not been observed to
+  defer.  Do not read this commit as "the stall is fixed in production".
+
+The runtime and gate change was written by a worker that was killed by a 429 quota error before it
+could run a single test or commit.  The tests, the bite proof and the checks above were done after
+it stopped, and its diff was verified rather than taken on trust.

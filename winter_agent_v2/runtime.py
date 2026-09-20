@@ -1164,6 +1164,19 @@ class LiveRuntime:
                     after=None, verification=None, started_at=started_at,
                     step_id=index,
                     goal_id=self._step_goal(best_goal),
+                    # Nothing ran, so there is no after-frame for ``progress_moved``
+                    # to measure and no verifier verdict either -- but the goal
+                    # still did not advance, and this field is what feeds
+                    # ``_streak_and_last`` in the capability gate.  Leaving it
+                    # ``None`` reads there as "not measured", which stops the
+                    # streak instead of counting it, so the no-progress deferral
+                    # could never fire for this case.  Measured 2026-09-20: a goal
+                    # that could not resolve its tap target produced 30 and then
+                    # 29 consecutive episodes that all recorded ``None`` against a
+                    # threshold of 3, and re-occupied every round for ~2 hours.
+                    # A run with no goal at all keeps ``None``: there is no goal
+                    # here to hold accountable for the round.
+                    goal_progress=False if best_goal is not None else None,
                     before_screenshot=before_path,
                 )
                 steps.append(LiveStep(index, tick.decision, tick.execution, before, None, None))

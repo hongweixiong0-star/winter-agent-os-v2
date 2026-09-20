@@ -277,7 +277,7 @@ def _streak_and_last(
     goal_id: str,
     *,
     since: datetime | None,
-) -> tuple[int, datetime | None, str]:
+) -> tuple[int, datetime | None, str, tuple[int, int, int] | None]:
     """Consecutive runs that attempted ``goal_id`` and advanced no part of it.
 
     Walks backwards over runs and *skips* the ones that never attempted this goal.
@@ -294,10 +294,21 @@ def _streak_and_last(
     ``since`` is the restart boundary: the moment a development job touching this
     goal's capabilities settled.  The code changed at that moment, so a streak that
     described the old code says nothing about the new one.
+
+    The fourth field says *what those episodes actually did*, as counts of
+    ``(no action, rejected by its verifier, passed its verifier)`` over the counted
+    runs.  A goal can fail to advance for more than one reason and the deferral's
+    reason has to name the right one: ``verifier_ok`` is ``True`` only when an action
+    was issued and judged, ``None`` when nothing was issued at all (measured
+    2026-09-20: 30 and then 29 consecutive episodes of one goal that never resolved
+    its tap target).
     """
     streak = 0
     last: datetime | None = None
     last_skill = ""
+    no_action = 0
+    rejected = 0
+    verified = 0
     for group in reversed(grouped):
         mine = [row for row in group if str(row.get("goal_id") or "") == goal_id]
         if not mine:
@@ -315,7 +326,65 @@ def _streak_and_last(
         if all(value is None for value in measured):
             break
         streak += 1
-    return streak, last, last_skill
+        verdicts = [row.get("verifier_ok") for row in mine]
+        if any(value is True for value in verdicts):
+            verified += 1
+        elif any(value is not None for value in verdicts):
+            rejected += 1
+        else:
+            no_action += 1
+    return streak, last, last_skill, (no_action, rejected, verified)
+
+
+def _streak_record(value: Sequence[Any]) -> tuple[int, datetime | None, str, tuple[int, int, int] | None]:
+    """Read one entry of ``CapabilityGate.streaks``.
+
+    A hand-built gate may still carry the older three-field record, which says
+    nothing about what the episodes did; that is answered with ``None`` rather than
+    guessed at, because a reason the episodes contradict is worse than one that
+    says less.
+    """
+    streak = int(value[0]) if len(value) > 0 else 0
+    last = value[1] if len(value) > 1 else None
+    skill = str(value[2] or "") if len(value) > 2 else ""
+    evidence = tuple(value[3]) if len(value) > 3 and value[3] is not None else None
+    return streak, last, skill, evidence
+
+
+def _no_progress_reason(streak: int, evidence: tuple[int, int, int] | None) -> str:
+    """Why these episodes are a streak, in words the episodes themselves support.
+
+    This sentence used to claim unconditionally that the episodes "passed their
+    verifier", which is true only of the case it was written for (2026-09-18: 58
+    beast scans that landed and moved nothing).  A goal also fails to advance when
+    the executor never issued an action, and then no verifier judged anything, so
+    the claim was false in the ledger.  The cause is therefore read off the
+    episodes, and an unmeasured cause is left unnamed.
+    """
+    if evidence is None:
+        return f"{streak} consecutive production episodes advanced no part of this goal"
+    no_action, rejected, verified = evidence
+    if verified == streak:
+        return (
+            f"{streak} consecutive production episodes passed their verifier and "
+            f"advanced no part of this goal"
+        )
+    if no_action == streak:
+        return (
+            f"{streak} consecutive production episodes issued no action at all -- "
+            f"the tap target never resolved, so no verifier judged them -- and "
+            f"advanced no part of this goal"
+        )
+    if rejected == streak:
+        return (
+            f"{streak} consecutive production episodes issued an action that its "
+            f"verifier rejected and advanced no part of this goal"
+        )
+    return (
+        f"{streak} consecutive production episodes advanced no part of this goal "
+        f"({verified} passed their verifier, {rejected} were rejected by it, "
+        f"{no_action} issued no action)"
+    )
 
 
 class CapabilityGate:
@@ -326,7 +395,7 @@ class CapabilityGate:
         *,
         compositions: Mapping[str, GoalComposition] | None = None,
         capabilities: Mapping[str, tuple[str, str, datetime | None]] | None = None,
-        streaks: Mapping[str, tuple[int, datetime | None, str]] | None = None,
+        streaks: Mapping[str, Sequence[Any]] | None = None,
         attempted: Mapping[str, frozenset[str]] | None = None,
         reached: Mapping[str, frozenset[str]] | None = None,
         reload_pending: bool = False,
@@ -502,14 +571,14 @@ class CapabilityGate:
         the development level and there is nothing to probe for.  Only a goal that the
         device has actually tried, longer ago than the window, is offered one more run.
         """
-        _streak, last, _skill = self.streaks.get(goal_id, (0, None, ""))
+        _streak, last, _skill, _evidence = _streak_record(self.streaks.get(goal_id, ()))
         if last is None:
             return False
         return (now - last).total_seconds() / 60.0 >= window_minutes
 
     def _no_progress_deferral(self, goal: GoalState, now: datetime) -> Deferral | None:
         goal_id = goal.goal_id
-        streak, last, last_skill = self.streaks.get(goal_id, (0, None, ""))
+        streak, last, last_skill, evidence = _streak_record(self.streaks.get(goal_id, ()))
         if streak < self.no_progress_threshold:
             return None
         capability = self._route_capability(goal_id, goal.available_skills)
@@ -517,10 +586,7 @@ class CapabilityGate:
             goal_id=goal_id,
             state=DEFERRED,
             capability=capability,
-            reason=(
-                f"{streak} consecutive production episodes passed their verifier and "
-                f"advanced no part of this goal"
-            ),
+            reason=_no_progress_reason(streak, evidence),
             source=SOURCE_NO_PROGRESS,
             # The signature is positional: ``<capability>|<failure_type>|<skill>``,
             # with the capability field allowed to be empty.  Filtering the empty
