@@ -28,6 +28,9 @@ frames (65 GENERIC_REWARD / 18 INTEL_REWARD / 12 EXPLORATION_REWARD /
     POPUP_DAILY_REWARD_CURRENT           8/8    0/12     0/65   0/18
     POPUP_EXPLORATION_REWARD             7/8   12/12     1/65   0/18
 
+(The ``POPUP_INTEL_REWARD_TITLE`` row is historical: that signal is no longer
+consulted at all, see "The same class, one signal later" below.)
+
 Only the footer is present on essentially every one of them (102/103 at
 distance <= 2).  Neither the banner nor any grid template identifies a source --
 the same dialog is simply drawn for all of them, which is why
@@ -38,12 +41,46 @@ the *before* state ... any reward popup counts as the feedback" and why
 So ``vision.py`` now reports the goal-neutral label from the source-independent
 signals and lets the brain choose the dismiss from goal context, which is what
 every ``*_reward_dismissed`` verifier was already written to accept.
+
+The same class, one signal later (2026-09-20)
+--------------------------------------------
+The grid template was removed, but the branch that had consulted it was also
+consulting a second content crop -- ``POPUP_INTEL_REWARD_TITLE``, ROI
+x 0.30 y 0.215 w 0.40 h 0.085, the peach title band of the same dialog -- and
+that one carried its own tolerance of 22 in ``semantic_max_distance``.  On the
+mail inbox the band lands across the mail list, and the rows there are the same
+peach colour, so the crop answered "there is a peach band here" and the frame
+became ``POPUP / INTEL_REWARD``.  The executor then asked for
+``POPUP_GENERIC_REWARD_HEADER``, which is not on the frame, returned
+``SEMANTIC_TARGET_NOT_VERIFIED`` without tapping, the verifier never ran, and
+the panel re-armed 30 s later: ~20 identical rounds under ``AUTO`` and, under
+the other skill name, the whole of ``DISMISS_INTEL_REWARD``'s 35 all-time
+failures.
+
+Measured over all 6747 corpus frames (``tools/probe_reward_popup_gate.py``):
+
+    POPUP_INTEL_REWARD_TITLE (gate 22)
+      217 frames carrying the shared dialog   min 0   p50 18  max 26
+      304 frames carrying the mail inbox      min 20  p50 30  (70 at d=20)
+
+The populations overlap on 20..26, so no tolerance separates them: 22 excluded
+the mail page only by luck, and a gate of 19 would already have cost 85 of the
+217 real dialogs.  The separator is the page identity, which matches the mail
+frame at distance 0, and the whole-dialog ``POPUP_INTEL_REWARD``, which is the
+only content signal that separates *at its gate* (61 frames at <=8, every one of
+them also carrying the dialog chrome, and 0 mail frames at <=8 at all).  The
+title crop is therefore no longer consulted anywhere, and the branch is now the
+fallback for a dialog whose chrome is degraded rather than a second way to name
+Intel.
 """
 
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
+
+from PIL import Image
 
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.image_hash import hamming, phash
@@ -62,12 +99,23 @@ INTEL_POPUP_RUN1 = KEY / "02_intel_reward_popup_run1.png"
 INTEL_POPUP_RUN2 = KEY / "03_intel_reward_popup_run2.png"
 POPUPS = (DAILY_POPUP, INTEL_POPUP_RUN1, INTEL_POPUP_RUN2)
 
+# The mail inbox the AUTO loop burned ~20 rounds on (2026-09-20): title 邮件,
+# 系统 tab selected, a list of claimable rewards, and 一键已读&领取 along the
+# bottom.  There is no dialog on it at all.
+MAIL_INBOX = (
+    ROOT / "dataset" / "raw" / "control_panel" / "runtime_auto"
+    / "20260920_123335_422288"
+    / "20260920_123335_422288_step_001_before_20260920T043338114548.png"
+)
+
 # The footer that is drawn on every one of them.  Its manifest name mentions
 # Intel because it was registered from an Intel frame; the measurement above is
 # what shows the name is a misnomer.
 FOOTER = "BTN_DISMISS_INTEL_REWARD"
 BANNER = "POPUP_GENERIC_REWARD_HEADER"
 GRID = "POPUP_DAILY_REWARD_CURRENT"
+TITLE = "POPUP_INTEL_REWARD_TITLE"
+WHOLE_DIALOG = "POPUP_INTEL_REWARD"
 
 FOOTER_BOX = (214, 1135, 510, 1175)
 BANNER_BOX = (180, 215, 545, 310)
@@ -75,6 +123,37 @@ BANNER_BOX = (180, 215, 545, 310)
 
 def _vision() -> SemanticWorldVision:
     return SemanticWorldVision(MANIFEST)
+
+
+def _records(semantic: str) -> list[dict]:
+    payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    return [row for row in payload["records"] if row.get("semantic") == semantic]
+
+
+def _raw_distance(frame: Path, semantic: str) -> int:
+    """The distance ``find`` would compute for ``semantic``, gate or no gate.
+
+    ``find`` returns None above the tolerance, which is exactly the value under
+    test when a gate is removed; measuring the distance itself keeps the pinned
+    evidence independent of whatever tolerance is declared.
+    """
+    best = None
+    with Image.open(frame) as opened:
+        image = opened.convert("RGB")
+        width, height = image.size
+        for row in _records(semantic):
+            roi = row["roi_norm"]
+            box = (
+                round(roi["x_norm"] * width),
+                round(roi["y_norm"] * height),
+                round((roi["x_norm"] + roi["w_norm"]) * width),
+                round((roi["y_norm"] + roi["h_norm"]) * height),
+            )
+            with Image.open(row["template_path"]) as template:
+                distance = hamming(phash(image.crop(box)), phash(template.convert("RGB")))
+            best = distance if best is None else min(best, distance)
+    assert best is not None, f"{semantic} has no phash record in the manifest"
+    return best
 
 
 def _decide(world: WorldState, goal: str):
@@ -139,6 +218,62 @@ class TheSharedDialogIsLabelledByItsSignalsNotItsContentsTests(unittest.TestCase
         )
         self.assertLessEqual(footer, 6, "the 点击任意位置退出 bar is identical")
         self.assertLessEqual(banner, 8, "the 获得奖励 banner is the same artwork")
+
+
+class TheMailInboxIsNotARewardDialogTests(unittest.TestCase):
+    """Labelled negative: an ordinary mail inbox, with no dialog on it.
+
+    The label is the evidence, not the file name -- the screenshot shows 邮件,
+    the 战争/联盟/系统/报告/收藏 tabs with 系统 selected, a list of claimable
+    rewards and 删除所有已读 / 一键已读&领取 along the bottom.  The runtime
+    nonetheless recorded ``page=POPUP popup=INTEL_REWARD`` on it for ~20 rounds
+    of the 2026-09-20 AUTO loop, because the Intel reward *title* crop covers
+    the mail list and its rows are the same peach colour.  This frame is one of
+    70 corpus mail frames the old tolerance accepted, so it is a population, not
+    one unlucky screenshot.
+    """
+
+    def test_the_frame_classifies_as_the_mail_page(self):
+        state = _vision().observe(MAIL_INBOX)
+        self.assertIs(state.page, Page.MAIL)
+        self.assertIsNone(state.popup)
+
+    def test_the_mail_identity_is_an_exact_signal_on_that_frame(self):
+        match = _vision().semantic.find(MAIL_INBOX, "PAGE_MAIL")
+        self.assertIsNotNone(match)
+        self.assertEqual(match.distance, 0)
+
+    def test_the_content_title_crop_is_what_used_to_decide_it(self):
+        """Pin the defect, independent of any tolerance.
+
+        The crop still measures inside its old 22 on this frame -- the peach
+        band is genuinely there -- which is why no tolerance could have fixed
+        it: the same range also holds 178 of the 217 real dialogs.
+        """
+        distance = _raw_distance(MAIL_INBOX, TITLE)
+        self.assertLessEqual(distance, 22, "the crop still matches the mail list")
+        self.assertGreater(
+            distance, 8,
+            "and it matches it too loosely to be a dialog identity: it is well "
+            "outside the default tolerance every other semantic uses",
+        )
+
+    def test_the_surviving_signal_rejects_the_frame(self):
+        """The branch that remains asks about the whole dialog, not the band."""
+        distance = _raw_distance(MAIL_INBOX, WHOLE_DIALOG)
+        self.assertGreater(distance, 8, "not a reward dialog at all")
+
+    def test_the_content_crop_no_longer_has_a_tolerance_of_its_own(self):
+        """A tolerance of 22 on a content crop is the trap itself."""
+        self.assertNotIn(TITLE, _vision().semantic.semantic_max_distance)
+
+    def test_the_brain_is_never_asked_to_dismiss_a_popup_here(self):
+        """The consequence the loop was made of: a dismiss was dispatched."""
+        state = _vision().observe(MAIL_INBOX)
+        for goal in ("MAIL", "INTEL", "DAILY"):
+            with self.subTest(goal=goal):
+                decision = _decide(state, goal)
+                self.assertNotIn("DISMISS", decision.skill)
 
 
 class TheBrainChoosesTheDismissFromGoalContextTests(unittest.TestCase):

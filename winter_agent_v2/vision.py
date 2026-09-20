@@ -262,7 +262,14 @@ class SemanticROIVision:
             # The HUD button is stable; its animated blue fill changes the
             # perceptual hash while its location and navigation meaning do not.
             "BTN_OPEN_INTEL_WILD_HUD": 24,
-            "POPUP_INTEL_REWARD_TITLE": 22,
+            # ``POPUP_INTEL_REWARD_TITLE`` used to carry a 22 here.  It is a
+            # content crop that answers "is there a peach band at x 0.30
+            # y 0.215", not "did Intel produce this dialog": the mail inbox
+            # measures d=20 against it and 70 corpus mail frames sat at exactly
+            # 20, so the entry bought the 2026-09-20 AUTO loop on the mail page
+            # nothing but a false popup.  The branch that consulted it no
+            # longer does (see the reward-dialog branches), so the tolerance
+            # has no consumer and is not re-stated here.
             # Positive live reward headers stay within distance 10. Alliance
             # technology pages reached 24, so keep a strict separation.
             "POPUP_GENERIC_REWARD_HEADER": 16,
@@ -1141,7 +1148,45 @@ class SemanticWorldVision:
         # title used by Intel. Prefer the more specific full reward template.
         if match("POPUP_EXPLORATION_REWARD"):
             return WorldState(page=Page.POPUP, popup="EXPLORATION_REWARD", exploration={"claim_feedback": True}, confidence=0.99)
-        if (match("POPUP_INTEL_REWARD_TITLE") or match("POPUP_INTEL_REWARD")) and not (
+        # Only the whole-dialog template may still declare a popup here.
+        # ``POPUP_INTEL_REWARD_TITLE`` was the second signal this branch used
+        # and it is a *content* crop: its ROI (x 0.30 y 0.215 w 0.40 h 0.085)
+        # is the peach title band, so it answers "is there a peach band here"
+        # rather than "did Intel produce this dialog".  That is the same trap
+        # as ``POPUP_DAILY_REWARD_CURRENT`` above, and the failure it caused is
+        # the same shape: on the 2026-09-20 AUTO loop the mail inbox classified
+        # as POPUP / INTEL_REWARD for ~20 consecutive rounds, every dismiss
+        # returned SEMANTIC_TARGET_NOT_VERIFIED without tapping, and the panel
+        # re-armed 30 s later.  The frame is
+        # dataset/raw/control_panel/runtime_auto/20260920_123335_422288/
+        # 20260920_123335_422288_step_001_before_20260920T043338114548.png:
+        # six reviewed mail signals matched it, three of them at distance 0
+        # (PAGE_MAIL, TAB_MAIL_SYSTEM_ACTIVE, BTN_MAIL_TAB_ALLIANCE), and the
+        # title crop still won with d=20 against its own tolerance of 22.
+        #
+        # Measured with tools/probe_reward_popup_gate.py over all 6747 corpus
+        # frames (dataset/raw + dataset/truth_audit + dataset/verified).  The
+        # populations are labelled by the dialog chrome (footer at d<=2) and by
+        # PAGE_MAIL at d==0:
+        #
+        #                                   reward dialogs   mail inboxes
+        #                                     (217)            (304)
+        #   POPUP_INTEL_REWARD_TITLE, 22    min 0  p50 18    min 20 p50 30
+        #                                   max 26           70 frames at d=20
+        #   POPUP_INTEL_REWARD, 8           min 0  p50 16    min 26
+        #                                   61 frames at<=8  0 frames at <=8
+        #
+        # The title populations OVERLAP on 20..26, so no threshold separates
+        # them: 22 excludes the mail page only by luck, and lowering the gate
+        # to 19 would already cost 85 of the 217 real dialogs.  The whole-dialog
+        # template does separate, and every one of its 61 matches also carries
+        # the chrome, so the source-independent branch above already returns
+        # GENERIC_REWARD for them; this branch is the fallback for a reward
+        # dialog whose chrome is degraded beyond its gate, never a second way
+        # to name Intel.  The content crop is therefore no longer consulted --
+        # the same reasoning that removed the grid template, applied to the
+        # signal that was still unmeasured.
+        if match("POPUP_INTEL_REWARD") and not (
             match("BTN_RESOURCE_SEARCH_SUBMIT") or match("BTN_OPEN_RESOURCE_SEARCH")
         ):
             return WorldState(page=Page.POPUP, popup="INTEL_REWARD", intel={"claim_feedback": True}, confidence=0.99)

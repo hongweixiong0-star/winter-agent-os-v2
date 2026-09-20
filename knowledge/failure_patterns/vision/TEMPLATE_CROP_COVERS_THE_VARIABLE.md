@@ -98,3 +98,79 @@
 落地在 `winter_agent_v2/ocr.py::_read_intel_dialog_title`；表 `INTEL_DIALOG_TITLES`
 只收**真见过**的标题，认不出的标题**什么都不改**（改错比不改更糟：会把大脑送去一条
 verifier 必然失败的路线）。测试 `tests/test_intel_dialog_typing.py`（19 项，含 5 帧真机 replay）。
+
+---
+
+# 第九次（2026-09-20，`POPUP_INTEL_REWARD_TITLE` 把邮件收件箱当成奖励弹窗）
+
+**不是裁错了框，而是给一个"内容模板"配了 22 的宽容度，然后没人量过它。**
+
+## 现象
+
+AUTO 连续 ~20 轮卡在同一帧，每轮的世界状态都是
+`page=POPUP popup=INTEL_REWARD`，然后执行 `TAP_SEMANTIC POPUP_GENERIC_REWARD_HEADER`——
+这个目标**不在画面上**，执行器返回 `SEMANTIC_TARGET_NOT_VERIFIED` 且**一次都没点**，
+verifier 根本没机会跑，30 秒后面板重新武装。同一个 bug 在另一个技能名下就是
+`DISMISS_INTEL_REWARD` 历史 35 次失败的全部来源（约 70 次失败、两个技能名、一个缺陷）。
+
+真机帧：
+`dataset/raw/control_panel/runtime_auto/20260920_123335_422288/20260920_123335_422288_step_001_before_20260920T043338114548.png`
+
+画面上**没有任何弹窗**：标题「邮件」、战争/联盟/系统/报告/收藏 五个页签（系统选中）、
+一列带可领取奖励图标的邮件、底部「删除所有已读 / 一键已读&领取」。
+
+## 距离（本次实测，`tools/probe_reward_popup_gate.py`）
+
+| 语义 | 该帧距离 | 阈值 | 结论 |
+| --- | --- | --- | --- |
+| `PAGE_MAIL` | **0** | 8 | 页面身份，精确命中 |
+| `TAB_MAIL_SYSTEM_ACTIVE` | **0** | 8 | 精确命中 |
+| `BTN_MAIL_TAB_ALLIANCE` | **0** | 8 | 精确命中 |
+| `POPUP_INTEL_REWARD_TITLE` | **20** | **22** | ← 95% 用满，胜出 |
+| `POPUP_GENERIC_REWARD_HEADER` | 24 | 16 | 未命中 |
+| `POPUP_INTEL_REWARD`（整框） | 32 | 8 | 未命中 |
+| `BTN_DISMISS_INTEL_REWARD`（页脚） | 36 | 8 | 未命中 |
+
+`POPUP_INTEL_REWARD_TITLE` 的 ROI 是 **x 0.30 y 0.215 w 0.40 h 0.085**，也就是弹窗那条
+**桃色标题带**。落到邮件页上，它横跨的是**邮件列表行**——而邮件列表行是同样的桃色。
+
+## 种群，不是一帧
+
+全语料 6747 帧（`dataset/raw` + `dataset/truth_audit` + `dataset/verified`）：
+
+```
+POPUP_INTEL_REWARD_TITLE（阈值 22）
+  217 帧带共享奖励弹窗（页脚 d<=2）   min 0   p50 18  max 26
+  304 帧是邮件收件箱（PAGE_MAIL d==0） min 20  p50 30  其中 70 帧正好 d=20
+```
+
+**两个种群在 20..26 上重叠**——所以**任何阈值都分不开它们**：
+22 只是运气好把邮件页挡在外面，而门限降到 19 就要丢掉 217 帧真实弹窗里的 85 帧。
+这就是"20 vs 22 是运气"的量化含义。真正分开的是**页面身份**（该帧 d=0）。
+
+## 为什么一直没被发现
+
+`tools/probe_reward_popup_gate.py` 的 `SIGNALS` 只列了**源无关的两个信号**
+（页脚 + 横幅）。**真正在触发的那个信号不在名单里**，所以上一次"零误报"的结论
+在它自己的测量范围内是真的，只是范围不含犯人。
+
+**教训：探针的量程必须覆盖"所有会被咨询的信号"，而不是"我以为正确的那些"。**
+本工具现在把奖励弹窗分支咨询的**每一个**信号（含预期的"陷阱"信号）都列出来并分别报告，
+并且同时打印**原始距离**：命中距离 / 阈值接近 1（本例 20/22 = 91%）
+就是"阈值在干活、裁剪没有判别力"的告警。
+
+## 修法
+
+**不是调阈值**（上面已证不可能），也不是只把邮件页加进负对照（那只是给一个更广的
+误报面打补丁：同一分支在语料上还误报了 95 帧非邮件页面，例如
+`dataset/truth_audit/fight_why_20260914/13_camp.png`——英雄之旅对话框，同样被判成
+`POPUP/INTEL_REWARD`）。修法是**内容模板不得单独宣布弹窗**：
+`POPUP_INTEL_REWARD_TITLE` 不再被任何分支咨询，其 22 的宽容度一并删除；
+保留了唯一被测出可分性的 **整框** `POPUP_INTEL_REWARD`（61 帧命中，全部同时带页脚/横幅，
+304 帧邮件一帧都不命中），作为"链条降级到阈值以外"时的兜底。
+
+落地：`winter_agent_v2/vision.py`（奖励弹窗分支）、
+`tools/probe_reward_popup_gate.py`（量程补齐）、
+`tests/test_reward_popup_source.py::TheMailInboxIsNotARewardDialogTests`（用该真机帧作
+带标注的**负例**，并钉住 20 这个原始距离，使"把 22 加回来"必然变红）。
+
