@@ -1,79 +1,111 @@
-# 「点击任意位置退出」奖励弹窗：落点证据（2026-09-20）
+# 「获得奖励」弹窗：落点与信号证据，含对 #64 的更正（2026-09-20）
 
-对应 `04_OPEN_ISSUES.md` **#64**。本目录只回答一个问题：
-**这张弹窗到底该点哪儿**——以及为什么先前点的地方点了等于没点。
+对应 `04_OPEN_ISSUES.md` **#64**。本目录回答三个问题：
+**这张弹窗靠什么被认出来、先前为什么点不中、以及点击之后还会遇到什么。**
+
+> **更正声明**：#64 正文与补充里写的"`POPUP_GENERIC_REWARD_HEADER`（横幅）点了无效 / 点它并不能退出"
+> —— **被本目录的第一手帧推翻**。横幅**不是**无效按钮：2026-09-20 13:09:49 那一步它**确实关掉了**
+> 「获得奖励」（证据帧 `03_`）。真正的主因是**两个信号之间的距离差**，见第二节。
+> 这个更正必须与代码里的注释、测试 docstring 一起改，否则记录里会留下一个我自己已经证伪的说法。
 
 ## 一、证据帧
 
 | 文件 | 来源 | 说明 |
 |---|---|---|
-| `key/01_shared_reward_popup_step_001_before_20260920T124146.png` | `dataset/raw/control_panel/runtime_auto/20260920_204143_843357/…_step_001_before_20260920T124146365715.png` | 患者帧（720x1280）。弹窗：横幅「获得奖励」+ 三格奖励 + 页脚「点击任意位置退出」。**复制到本目录**是为了让测试不依赖会被 retention 清理的运行帧（#46）；放进 `key/` 并按 `.gitignore` 白名单发布，理由同 `march_formation_20260918`。 |
+| `key/01_shared_reward_popup_step_001_before_20260920T124146.png` | `runtime_auto/20260920_204143_843357/…_step_001_before_…png` | 患者帧（720x1280）：横幅「获得奖励」+ 三格奖励 + 页脚「点击任意位置退出」。20:41 那一轮 `current_goal=AUTO_DISCOVERY` 停在 `generic_reward_without_goal_context` 就是它。 |
+| `key/02_banner_18_footer_2_tap_could_not_resolve_20260919T052809.png` | `runtime_auto/20260919_132726_620764/…_step_004_before_…png` | 历史失败帧：横幅 **18**（门 16，NO MATCH）、页脚 **2**（门 8，MATCH）。这一步的 `failure_type = SEMANTIC_TARGET_NOT_VERIFIED`。 |
+| `key/03_second_dialog_searchlight_upgrade_20260920T131016.png` | `runtime_auto/20260920_210417_958773/…_step_021_after_refresh_2_…png` | 13:10:26 失败步的 after 帧：点完横幅后**「获得奖励」已经不在了**，出现的是**第二个**弹窗「探照灯升级」（页脚写「点击任意位置**继续**」）。横幅 26 / 页脚 22，两者都在门外 ⇒ `observe` 报 `UNKNOWN`。 |
+| `key/04_banner_was_tapped_popup_still_there_20260920T125159.png` | `runtime_auto/20260920_205148_722868/…_step_001_after_refresh_2_…png` | 12:52:01 那一步的 after 帧：横幅那一刻**解析成功**（before 帧 16 = 门）并且真的点了，**+8s 后弹窗仍在**（用户界面还在页脚「点击任意位置退出」）。 |
+| `key/05_footer_target_after_intel_page_restored_20260920T131303.png` | `runtime_auto/20260920_211101_334048/…_step_009_after_…png` | 新目标的真机结果：`DISMISS_INTEL_GENERIC_REWARD` 改点页脚后，after = **INTEL**（conf 0.98），verifier **OK**。 |
 
-## 二、在这张帧上量的原始距离（`SemanticROIVision`，闸门无关）
+放进 `key/` 并按 `.gitignore` 白名单发布，理由同 `march_formation_20260918`：这些数字读者要能自己复算，
+而它们来自会被 retention 清理的运行目录。**复制到本目录也是为了不让测试依赖运行帧**（#46）。
 
-用项目自身的 `image_hash.phash/hamming`，ROI 取自 `dataset/candidate/template_manifest.json`：
+## 二、主因：识别用的是"横幅 **或** 页脚"，点击用的**只有横幅**
 
-| 语义 | 原始距离 | 自身闸门 | 判定 | ROI（归一化） | 中心（设备像素） |
-|---|---:|---:|---|---|---|
-| `POPUP_GENERIC_REWARD_HEADER`（横幅/标题） | 16 | 16 | **恰好卡门** | x .14 y .21 w .72 h .09 | (360, 326) |
-| `BTN_DISMISS_INTEL_REWARD`（页脚退出带） | **2** | 8 | PASS | x .36 y .90 w .28 h .07 | **(360, 1197)** |
-| `BTN_CLOSE`（= `CLOSE_POPUP` 的目标） | 28 | 8 | **NO MATCH** | x .807 y .079 w .09 h .073 | (613, 148) |
-| `POPUP_INTEL_REWARD` | 28 | 8 | NO MATCH | x .085 y .205 w .83 h .41 | — |
-| `POPUP_DAILY_REWARD_CURRENT` | 24 | 8 | NO MATCH | x .08 y .20 w .84 h .40 | — |
-| `POPUP_EXPLORATION_REWARD` | 28 | 8 | NO MATCH | x .08 y .20 w .84 h .40 | — |
+`vision.py` 判这张弹窗的代码是 `if match("POPUP_GENERIC_REWARD_HEADER") or match("BTN_DISMISS_INTEL_REWARD")`
+—— 两个信号**任一**命中就报 `POPUP/GENERIC_REWARD`，然后由 goal 上下文挑解除技能。
+而五个 `DISMISS_*_GENERIC_REWARD` 的动作目标**只有横幅**。
 
-两个可直接读出的结论：
+两个信号在这张弹窗上的稳定度差一个量级（`dataset/candidate/template_manifest.json` 的 ROI × 项目自身 `phash/hamming`）：
 
-1. **横幅「恰好卡门」**（16 对 16）。按项目已立的判据（#54：跨帧距离应落在阈值空档内，而不是擦边），
-   卡门说明**是容差在干活、不是裁剪在干活**。它作为**识别**信号仍可用（`vision.py` 用它 + 页脚报
-   `GENERIC_REWARD`），但它**不是可点的表面**——它就是弹窗的标题，点它没有任何效果。
-2. **`CLOSE_POPUP` 在这张弹窗上必然失败**（28 ≫ 6，且它的 ROI 在右上空白）。#64 之前给
-   `TRAIN`/`RESEARCH` 用 `CLOSE_POPUP` 兜底，等于发一个永远解析不出目标的点击。
+| 帧 | 横幅（门 16） | 页脚（门 8） | `observe()` |
+|---|---:|---:|---|
+| 01（20:41 患者） | 16 | **2** | POPUP/GENERIC_REWARD |
+| 02（2026-09-19 失败步） | 18 ✗ | **2** | POPUP/GENERIC_REWARD |
+| 03（13:10 after） | 26 ✗ | 22 ✗ | **UNKNOWN**（第二个弹窗） |
+| 04-a（12:52 before） | 16 | **2** | POPUP/GENERIC_REWARD |
+| 04-b（12:52 after） | 20 ✗ | **2** | POPUP/GENERIC_REWARD |
+| 05-a（13:13 before） | 14 | **0** | POPUP/GENERIC_REWARD |
 
-## 三、真机 episode 证明"点了等于没点"
+⇒ **横幅 14/16/18/20 骑着它自己的容差跑**（按 #54 的判据，跨帧距离应当落在阈值空档内而不是擦边）；
+**页脚 0~2，离门 8 有 4 倍余量**。于是出现一个纯粹由接线造成的失效：
 
-`learning/episodes.jsonl`，2026-09-20 那一轮（21:04 本地 / 13:04Z 起）：
+> 页脚命中 ⇒ 弹窗被认出来 ⇒ 大脑选中解除技能 ⇒ 执行器去解析**横幅** ⇒ 横幅在门外 ⇒
+> `SEMANTIC_TARGET_NOT_VERIFIED` ⇒ **一次点击都没发出去**。
+
+`learning/episodes.jsonl` 全史统计，按**动作目标**分组（`DISMISS_*_GENERIC_REWARD` 全部）：
+
+| 目标 | SUCCESS | FAILURE | 失败中 `SEMANTIC_TARGET_NOT_VERIFIED` |
+|---|---:|---:|---:|
+| `POPUP_GENERIC_REWARD_HEADER`（旧） | 68 | 51 | **45**（39 MAIL + 4 INTEL + 2 DAILY） |
+| `BTN_DISMISS_INTEL_REWARD`（新） | **7** | **0** | 0 |
+
+⇒ 旧目标 51 次失败里 **45 次是"点都没点出去"**，不是"点了没用"。这正是 #64 归因错的地方。
+
+## 三、点击之后还会遇到什么（**未修**）
+
+13:10:26 那一步的画面按顺序是：
 
 ```
-step 21  DISMISS_INTEL_GENERIC_REWARD  reason=intel_goal_generic_reward_feedback
-  execution.action.target = POPUP_GENERIC_REWARD_HEADER     ← 横幅
-  execution.tap_point     = [360, 326]                      ← 与上表横幅中心一致
-  execution.backend       = ADB                             ← 真的发出去了
-  after.page              = UNKNOWN
-  verification            = FAILURE  INTEL_REWARD_DISMISS_NOT_PROVEN
-stop_reason = INTEL_REWARD_DISMISS_NOT_PROVEN
+13:09:48  INTEL_CLAIM_REWARDS        → after = POPUP/GENERIC_REWARD（「获得奖励」）
+13:09:49  DISMISS_INTEL_GENERIC_REWARD  tap [360,326]（横幅）
+13:10:03  after_refresh_1
+13:10:16  after_refresh_2  → 见 key/03_：「获得奖励」已关，屏幕上是「探照灯升级」 ⇒ observe = UNKNOWN
+          verifier INTEL_REWARD_DISMISS_NOT_PROVEN  ⇒ 整轮结束
 ```
 
-⇒ 目标**解析成功**、点击**真的发射**（所以不是 `SEMANTIC_TARGET_NOT_VERIFIED`），
-但**点的是标题**，弹窗没关。这解释了 20:38–20:53 那 5 轮"只做一个动作然后失败"全部是
-`DISMISS_*_GENERIC_REWARD:FAILURE`。
+⇒ **第一个弹窗确实被关掉了**，但**底下冒出第二个弹窗**，而它**识别不出**（横幅 26 / 页脚 22，双双在门外）。
+「探照灯升级」的页脚是「点击任意位置**继续**」，与「获得奖励」的「点击任意位置**退出**」不是同一段字，
+所以现有页脚模板在它身上不命中（22 > 8）。**这是另一个缺陷，本次没有修**，
+下一次同类失败（"点完一个弹窗又露出一个不认识的页面"）仍然会让整轮结束。
 
-同一轮的 deferrals 显示这条失效**不只挡一个目标**，它把四个目标一起拖成 `NO_GOAL_PROGRESS`：
+另外 `04-b` 显示：横幅**解析成功**的那一次（12:52:01，before 帧 16 = 门），
+点击发出后 **+8 秒弹窗仍在**。也就是说"横幅点得中"也**不保证关得掉**。
+⇒ 换到页脚不只是换了一个更稳的落点，也是把落点换成弹窗**自己声明的退出面**。
 
-```
-CLEAR_INTEL            READ_INTEL_LIST     … | DISMISS_INTEL_GENERIC_REWARD      streak 5
-MAIL_ROUTINE           OPEN_MAIL_PAGE      … | DISMISS_MAIL_GENERIC_REWARD       streak 3
-DAILY_ACTIVITY_TARGET  READ_DAILY_PROGRESS … | DISMISS_DAILY_GENERIC_REWARD      streak 3
-ALLIANCE_ROUTINE       OPEN_ALLIANCE_PAGE  … | DISMISS_ALLIANCE_GENERIC_REWARD   streak 5
-```
+## 四、本次已改 / 未改
 
-## 四、修法
+**已改（真机已试）**：
 
-1. **改"点哪儿"**：五个 `DISMISS_*_GENERIC_REWARD` 与新增的 goal 中立技能
-   `DISMISS_SHARED_REWARD` 全部改点页脚退出带（`SHARED_REWARD_EXIT = BTN_DISMISS_INTEL_REWARD`）。
+1. 五个 `DISMISS_*_GENERIC_REWARD` 与新增的 goal 中立技能 `DISMISS_SHARED_REWARD`
+   一律改点页脚退出带（`SHARED_REWARD_EXIT = BTN_DISMISS_INTEL_REWARD`，中心 (360,1197)）。
    执行器对 `TAP_SEMANTIC` 走 `SemanticWorldVision.find(...).center_norm`（`runtime.py:1098`），
-   所以落点由技能点名的记录决定 ⇒ 新落点 **(360, 1197)**，正是弹窗自称的退出方式。
-2. **改决策兜底**：`brain.py` 里"goal 说不清页面的情况"由 `SAFE_STOP` 改为
-   `DISMISS_SHARED_REWARD`。理由：关掉一个**自称**「点击任意位置退出」的弹窗不是猜，
-   是它自己声明的退出方式。
-3. 守卫同步：`tools/check_wiring.py` 三条 + `tests/test_reward_popup_source.py` +
-   `tests/test_generic_reward_covers_the_new_goals.py`。
+   所以落点由技能点名的记录决定。
+2. `brain.py`：goal 说不清页面的情况由 `SAFE_STOP` 改为 `DISMISS_SHARED_REWARD`
+   （关掉一个自称「点击任意位置退出」的弹窗不是猜）。
+3. 守卫与测试同步（`tools/check_wiring.py` 三条 + 两个测试文件）。
 
-**未做（不许当已完成）**：本目录不含任何"关掉之后客户端确实回到原页面"的帧——那需要真机复验。
-本目录只证明**落点该在哪、以及旧落点为什么无效**。
+**真机证据（当前这一轮，`20260920_211101_334048`）**：
+
+```
+13:13:12  DISMISS_INTEL_GENERIC_REWARD  target BTN_DISMISS_INTEL_REWARD  SUCCESS  after INTEL 0.98
+13:14:34  DISMISS_INTEL_GENERIC_REWARD  target BTN_DISMISS_INTEL_REWARD  SUCCESS  after INTEL 0.98
+13:16:04  DISMISS_INTEL_GENERIC_REWARD  target BTN_DISMISS_INTEL_REWARD  SUCCESS  after INTEL 0.98
+```
+
+**未改、也不许当成已完成**：
+
+- **第二个弹窗「探照灯升级」**（第三节）。没有任何它被关掉的帧。
+- **`SEMANTIC_TARGET_NOT_VERIFIED` 的另一条来源**：`20260920_120744_012719` 那一步选了解除技能，
+  但 before 帧是**邮件收件箱**（横幅 24 / 页脚 36，两个信号都门外 ⇒ `observe` 本不该报弹窗）。
+  那是第 5 次出现的"在非弹窗页面上跑弹窗技能"，本次未查。
+- 新目标样本只有 **7 次**，且集中在最近几分钟 ⇒ 上表是**方向性证据，不是证明**。
+- 旧目标 68 成功也不是零，两者还隔着时间窗 ⇒ **不构成受控对比**。
 
 复现命令：
 
 ```bash
 "E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_popup_landing.py
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_target_vs_recognition.py
 ```

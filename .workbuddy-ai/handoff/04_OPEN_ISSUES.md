@@ -419,3 +419,72 @@ Machine-detected issues (recomputed every run):
    抓帧的现成来源：`dataset/raw/control_panel/runtime_auto/<最新轮次>/*_step_*_before_*.png`。
 6. 仍未验证、不要当成已完成：`337bdc4` 的失败让位（尚无 `yield` 行）、普通野怪出征（0 次）、
    所有角色/巡视/事件驱动的下一轮（工作周期机制尚不存在）。
+
+### #64 实施结果与**归因更正**（2026-09-20 21:25，真机）
+
+**已实施**（commit `e8efa2d`）：
+
+1. 五个 `DISMISS_*_GENERIC_REWARD` 与新增的 **goal 中立**技能 `DISMISS_SHARED_REWARD`
+   一律改点**页脚退出带** `BTN_DISMISS_INTEL_REWARD`（`roi_norm` x .36 y .90 w .28 h .07，
+   落点 **(360,1197)**）。执行器对 `TAP_SEMANTIC` 走 `SemanticWorldVision.find(...).center_norm`
+   （`runtime.py:1098`），所以**技能点名哪条记录，落点就是哪儿**。
+2. `brain.py` 里"goal 说不清页面"的兜底由 `SAFE_STOP` 改为该技能，绑 `verify_popup_closed` 并已进
+   `VERIFIED_ATOMIC`（没有条目 = 永不被调度）。理由是弹窗自己声明「点击任意位置退出」。
+   `TRAIN`/`RESEARCH` 原先走的 `CLOSE_POPUP` 也一并换掉——它的目标 `BTN_CLOSE` 在这张弹窗上
+   实测 **28 / 门 6**（ROI 在右上空白），本来就是打不中的桥。
+3. 两处守卫同提交改完：`tools/check_wiring.py` 三条新检查 + 两个测试文件，`problems: 0`。
+
+**真机已试**（当前轮 `20260920_211101_334048`，跑的就是新代码；该轮 21:11:01 启动，
+源码 21:07:42 已落盘，每轮都是新子进程 ⇒ 天然带上工作树）：
+
+```
+13:13:12  DISMISS_INTEL_GENERIC_REWARD  target BTN_DISMISS_INTEL_REWARD  SUCCESS  after=INTEL 0.98
+13:14:34  DISMISS_INTEL_GENERIC_REWARD  target BTN_DISMISS_INTEL_REWARD  SUCCESS  after=INTEL 0.98
+13:16:04  DISMISS_INTEL_GENERIC_REWARD  target BTN_DISMISS_INTEL_REWARD  SUCCESS  after=INTEL 0.98
+```
+
+**⚠ 但 #64 原文与补充的归因是错的，此处更正。** 两处都写"`POPUP_GENERIC_REWARD_HEADER`（横幅）
+点了无效 / 点它并不能退出"。**第一手帧推翻它**：13:10:26 那一步的 after 帧
+（`dataset/truth_audit/reward_popup_exit_20260920/key/03_second_dialog_searchlight_upgrade_20260920T131016.png`）
+上，**「获得奖励」已经没有了**，屏幕上是**第二个**弹窗「探照灯升级」。横幅**不是**死按钮。
+
+**真正的主因**（`dataset/truth_audit/reward_popup_exit_20260920/README.md` 第二节）：
+`vision.py` 认这张弹窗用的是 **`match(横幅) or match(页脚)`**，而五个解除技能的**动作目标只有横幅**。
+两个信号的稳定度差一个量级——六张真机弹窗帧上：
+
+| 语义 | 原始距离（样本） | 自身门 |
+|---|---|---|
+| 横幅 `POPUP_GENERIC_REWARD_HEADER` | 14 / 16 / 16 / 18 / 20 / 26 | 16 |
+| 页脚 `BTN_DISMISS_INTEL_REWARD` | 0 / 2 / 2 / 2 / 2 | 8 |
+
+⇒ 失效链条是纯粹的接线错误：
+
+> 页脚命中 ⇒ 弹窗被认出来 ⇒ 大脑选中解除技能 ⇒ 执行器去解析**横幅** ⇒ 横幅在门外 ⇒
+> `SEMANTIC_TARGET_NOT_VERIFIED` ⇒ **一次点击都没发出去**。
+
+`learning/episodes.jsonl` 全史，按**动作目标**分组（`DISMISS_*_GENERIC_REWARD` 全部）：
+
+| 目标 | SUCCESS | FAILURE | 失败中 `SEMANTIC_TARGET_NOT_VERIFIED` |
+|---|---:|---:|---:|
+| `POPUP_GENERIC_REWARD_HEADER`（旧） | 68 | 51 | **45**（39 MAIL + 4 INTEL + 2 DAILY） |
+| `BTN_DISMISS_INTEL_REWARD`（新） | **7** | **0** | 0 |
+
+⇒ 旧目标 51 次失败里 **45 次是"点都没点出去"**，不是"点了没用"。**修法方向对，理由换了**：
+不是"横幅是死按钮"，而是**瞄准的信号必须与识别用的信号一致**，且要挑那个有余量的。
+
+⚠ **这不是受控对比**：新目标只有 7 次且集中在最近几分钟；旧目标也成功过 68 次。
+⇒ 只能当**方向性证据**，不能当"已修好 #64"的证明。
+
+### 2026-09-20 21:25 新发现（同一批帧）
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 65 | **关掉一个奖励弹窗会露出第二个弹窗，而它识别不出 ⇒ 整轮结束** | 🔴 **未修（有帧）** | 13:09:48 `INTEL_CLAIM_REWARDS` → 「获得奖励」；13:09:49 点横幅（`tap [360,326]`）→ 13:10:16 after 帧上是**「探照灯升级」**（页脚写「点击任意位置**继续**」，与「退出」不是同一段字）。该帧 **横幅 26 / 页脚 22**，双双在门外 ⇒ `observe` 报 `UNKNOWN`（conf 0.0）⇒ `verify_intel_reward_dismissed` 要的 `after.page==INTEL` 落空 ⇒ 整轮 `INTEL_REWARD_DISMISS_NOT_PROVEN`。**这才是 13:10:26 失败的真因。** 修法方向：给它**自己的身份**（新增识别记录），**不得**放宽现有两个信号的容差。 |
+| 66 | **横幅即使解析成功也不保证关得掉** | 🟠 **观察中（样本 1）** | 12:52:01 那一步：before 帧横幅 **16 = 门**（解析成功、点击真的发出），**+8s 后弹窗仍在**（`key/04_banner_was_tapped_popup_still_there_20260920T125159.png`，页脚「点击任意位置退出」清晰可见）。⇒ 换到页脚不只是换更稳的落点，也是换到弹窗**自己声明的退出面**。 |
+| 67 | **在非弹窗页面上跑弹窗技能** | 🟠 **观察中** | `runtime_auto/20260920_120744_012719/…_step_001_before_…` 那一步选中了解除技能，但该帧是**邮件收件箱**（横幅 24 / 页脚 36，两个信号都在门外）。⇒ `observe` 本不该报 `POPUP/GENERIC_REWARD`，选中解除本身可疑。与 #24/#25/#28/#29 的"裁剪覆盖了会变的内容"是**不同**一类（这次是"技能在该页面上本不该被选中"）。未查。 |
+
+**#64 仍未做（不许当成已完成）**：① 原始第 5 条的两个读数（**情报剩余数 / 体力**）仍未取到 ——
+本轮 episode 里 `intel {status: AVAILABLE, available_count: 2, detected_pins: 2, untried_pins: 2,
+stamina: 585}`（13:04）与 `{status: CLAIMABLE, claimable_count: 1, untried_pins: 1, stamina: 565}`（13:09）
+是**运行读数**，按第 5 条的口径**不算**（要停在页面上抓帧后用 `Read` 直接看图）；
+② `337bdc4` 的失败让位仍无 `yield` 行；③ 普通野怪出征 0 次。

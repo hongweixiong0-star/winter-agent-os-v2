@@ -14,15 +14,32 @@ from .models import Action, LatencyClass, Page, SkillState, WorldState
 # the dialog's *declared exit*, not an Intel control, which is why it is the
 # target of every dismiss that has no page of its own.
 #
-# Why no dismiss taps POPUP_GENERIC_REWARD_HEADER any more: that crop is the
-# dialog's 获得奖励 TITLE band, so tapping it does nothing.  Measured live
-# 2026-09-20 (open issue #64) -- five of six AUTO rounds inside twenty minutes
-# each selected a domain dismiss, tapped the banner and then failed its verifier,
-# while the frame carried 点击任意位置退出 along the footer.  On the incident
-# frame (dataset/raw/control_panel/runtime_auto/20260920_204143_843357/) the
-# banner measures phash 16 against a tolerance of 16 -- exactly *at* its gate,
-# which is the tell that the tolerance and not the crop is doing the work --
-# while the footer measures 2 against 8.
+# Why no dismiss taps POPUP_GENERIC_REWARD_HEADER any more.  vision.py recognises
+# this dialog by ``banner OR footer``, so the footer alone is enough to report
+# POPUP/GENERIC_REWARD -- but the dismisses asked the executor for the BANNER, and
+# the banner rides its own tolerance.  Measured over six live dialog frames the
+# banner scores 14 / 16 / 18 / 20 / 26 against a tolerance of 16, while the footer
+# scores 0-2 against 8:
+#
+#   frame                                    banner(16)   footer(8)   observe()
+#   runtime_auto/20260919_132726_620764/…4       18 ✗        2 ✓      POPUP/GENERIC_REWARD
+#   runtime_auto/20260920_204143_843357/…1       16 ✓        2 ✓      POPUP/GENERIC_REWARD
+#   runtime_auto/20260920_205148_722868/…1       16 ✓        2 ✓      POPUP/GENERIC_REWARD
+#   runtime_auto/20260920_211101_334048/…9       14 ✓        0 ✓      POPUP/GENERIC_REWARD
+#
+# So the dialog was recognised, the brain picked a dismiss, and the executor could
+# not aim it: 45 of the 51 all-time failures of the old target are
+# SEMANTIC_TARGET_NOT_VERIFIED -- no tap was ever issued.  The fix is to aim at the
+# signal that actually matched.  Frames and the full table:
+# dataset/truth_audit/reward_popup_exit_20260920/README.md.
+#
+# Note for a later reader: this is NOT the claim that the banner is an inert
+# control.  It is not -- on 2026-09-20T13:09:49Z a banner tap did close the dialog
+# (the after frame shows the next dialog, not this one).  What it does not do is
+# resolve reliably, and even when it resolves it does not always dismiss (the
+# 12:52:01 step resolved it at 16, tapped, and the dialog was still on screen 8 s
+# later).  An earlier version of this comment said "tapping it does nothing"; the
+# frames say otherwise, and that sentence has been corrected rather than left.
 SHARED_REWARD_EXIT = "BTN_DISMISS_INTEL_REWARD"
 
 # The verifier the goal-neutral close is bound to.  It is deliberately the

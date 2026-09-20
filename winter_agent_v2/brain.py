@@ -415,8 +415,9 @@ class RuleBrain:
             # says 点击任意位置退出, so its exit is declared by the client rather
             # than inferred by us, and closing a blocker is not a guess about
             # which page to return to.  Measured live 2026-09-20 (open issue #64):
-            # five of six AUTO rounds inside twenty minutes ended on this dialog,
-            # and each one ended the run instead of clearing it.
+            # five of the six AUTO rounds in one twenty-minute window were a single
+            # action on this dialog followed by a failure, and none of the five got
+            # past it -- so the next round met the same blocker.
             return Decision(
                 "DISMISS_SHARED_REWARD",
                 "shared_reward_popup_dismissed_by_its_declared_exit",

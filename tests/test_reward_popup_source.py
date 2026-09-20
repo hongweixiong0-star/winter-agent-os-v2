@@ -340,12 +340,17 @@ class TheBrainChoosesTheDismissFromGoalContextTests(unittest.TestCase):
     def test_the_dismiss_taps_the_exit_the_dialog_declares(self):
         """The footer band, never the title band.
 
-        These skills used to tap ``POPUP_GENERIC_REWARD_HEADER``, the dialog's
-        获得奖励 *title* band, which is a no-op -- which is why the live rounds
-        whose goal did have a domain dismiss were recorded as verifier FAILUREs
-        rather than as taps that never landed.  Measured on the incident frame
-        (dataset/raw/control_panel/runtime_auto/20260920_204143_843357/): the
-        title measures 16 against its tolerance of 16 and the footer 2 against 8.
+        ``vision.py`` recognises this dialog by ``banner OR footer``, so the
+        footer alone reports ``POPUP/GENERIC_REWARD`` -- but every dismiss asked
+        the executor for the banner, and the banner rides its own tolerance (14,
+        16, 18, 20, 26 across six live dialog frames, against 16) while the footer
+        scores 0-2 against 8.  The consequence is in the live log: 45 of the 51
+        all-time failures of the old target are ``SEMANTIC_TARGET_NOT_VERIFIED``,
+        i.e. the dialog was recognised and no tap could be aimed at it.
+
+        This is *not* the claim that the banner is inert.  On
+        2026-09-20T13:09:49Z a banner tap did close the dialog.  The fix is to aim
+        at the signal that actually matched.
         """
         registry = v2_registry()
         for name in ("DISMISS_SHARED_REWARD", "DISMISS_MAIL_GENERIC_REWARD",
@@ -369,9 +374,10 @@ class TheBrainChoosesTheDismissFromGoalContextTests(unittest.TestCase):
         ``runtime.py`` resolves a ``TAP_SEMANTIC`` through
         ``SemanticWorldVision.find(...).center_norm``, so which record a skill
         names *is* the coordinate that reaches the device -- there is no second
-        chance for the executor to aim better.  Naming the title band resolved to
-        (360, 326), and the live episode of 2026-09-20T13:09:49Z records exactly
-        that tap with ``after.page UNKNOWN`` and ``INTEL_REWARD_DISMISS_NOT_PROVEN``.
+        chance for the executor to aim better.  Naming the title band resolves to
+        (360, 326); naming the exit band resolves to (360, 1197).  Both are on the
+        frame, which is why the difference between them is a *choice about which
+        signal to trust*, not a difference in whether the click lands.
         """
         vision = _vision()
         exit_match = vision.semantic.find(EXIT_FRAME, FOOTER)
@@ -386,6 +392,37 @@ class TheBrainChoosesTheDismissFromGoalContextTests(unittest.TestCase):
             centre_y - title_match.center_norm[1], 0.6,
             "the two bands are at opposite ends of the dialog, not one nudge apart",
         )
+
+    def test_the_footer_is_the_signal_that_survives_where_the_banner_does_not(self):
+        """Why the exit band is the one to aim at: it is the one that matched.
+
+        The measured failure class is not "the tap did nothing", it is "no tap
+        could be aimed": the banner sits *at* its own tolerance on live frames, so
+        the footer reported the dialog and the banner could not be found.  On the
+        frame of one such step the two signals disagree by an order of magnitude.
+        """
+        vision = _vision()
+        # dataset/raw/control_panel/runtime_auto/20260919_132726_620764/…_step_004_before_…
+        # archived as key/02_.
+        failure_frame = (
+            ROOT / "dataset" / "truth_audit" / "reward_popup_exit_20260920" / "key"
+            / "02_banner_18_footer_2_tap_could_not_resolve_20260919T052809.png"
+        )
+        banner = _raw_distance(failure_frame, BANNER)
+        footer = _raw_distance(failure_frame, FOOTER)
+        # The gate-independent numbers, then the production verdicts: the banner
+        # cannot be found, the footer can -- which is the whole defect, because the
+        # dismissal was asking for the banner.
+        self.assertGreater(banner, footer)
+        self.assertIsNone(vision.semantic.find(failure_frame, BANNER),
+                          "the banner is outside its gate on this frame")
+        self.assertIsNotNone(vision.semantic.find(failure_frame, FOOTER),
+                             "the footer is the signal that matched")
+        # ...and the dialog was nonetheless recognised, which is the defect: the
+        # dismissal was selected on a signal it could not tap.
+        state = vision.observe(failure_frame)
+        self.assertIs(state.page, Page.POPUP)
+        self.assertEqual(state.popup, "GENERIC_REWARD")
 
 
 class TheDismissVerifiersAlreadyAcceptTheSharedLabelTests(unittest.TestCase):

@@ -563,12 +563,16 @@ def main() -> int:
     check("brain: reward popup without goal context is closed by the dialog's own exit",
           neutral.skill == "DISMISS_SHARED_REWARD"
           and neutral.reason == "shared_reward_popup_dismissed_by_its_declared_exit")
-    # ...and the surface they tap is the footer exit band, not the title band.  The
-    # title (POPUP_GENERIC_REWARD_HEADER) measures phash 16 against a tolerance of
-    # 16 on the incident frame -- exactly *at* its gate, which is the tell that the
-    # tolerance rather than the crop is doing the work -- and tapping it is a no-op,
-    # while the footer measures 2 against 8 on the same frame.  The five live
-    # FAILUREs of 2026-09-20 were made of that no-op.
+    # ...and the surface they tap is the footer exit band, not the title band.
+    # vision.py recognises the dialog by ``banner OR footer``, so the footer alone
+    # is enough to report POPUP/GENERIC_REWARD -- but the dismisses asked for the
+    # banner, and the banner rides its own tolerance (14, 16, 18, 20, 26 across six
+    # live dialog frames, against 16) while the footer scores 0-2 against 8.  In the
+    # live log 45 of the 51 all-time failures of the old target are
+    # SEMANTIC_TARGET_NOT_VERIFIED: recognised, and no tap could be aimed at it.
+    # This is not the claim that the banner is inert -- a banner tap did close the
+    # dialog at 2026-09-20T13:09:49Z -- only that it is the signal that keeps
+    # falling outside its gate while the footer never does.
     dismiss_skills = ("DISMISS_MAIL_GENERIC_REWARD", "DISMISS_DAILY_GENERIC_REWARD",
                       "DISMISS_INTEL_GENERIC_REWARD",
                       "DISMISS_EXPLORATION_GENERIC_REWARD",
