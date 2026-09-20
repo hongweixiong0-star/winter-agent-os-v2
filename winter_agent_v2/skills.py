@@ -197,7 +197,11 @@ def p0_registry() -> SkillRegistry:
         Skill("OPEN_POWER_OVERVIEW", "Open the current-client power overview from Home", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_POWER_OVERVIEW_ICON"), state=SkillState.CANDIDATE),
         Skill("OPEN_POWER_DETAILS", "Open power-category details", Page.POPUP, Action("TAP_SEMANTIC", "BTN_OPEN_POWER_DETAILS"), state=SkillState.CANDIDATE),
         Skill("NAVIGATE_INFANTRY_CAMP", "Use Troop Power improvement to highlight the infantry camp", Page.POPUP, Action("TAP_SEMANTIC", "BTN_POWER_TROOP_IMPROVE"), state=SkillState.CANDIDATE),
-        Skill("SELECT_INFANTRY_CAMP", "Select the highlighted infantry camp", Page.HOME, Action("TAP_SEMANTIC", "TARGET_INFANTRY_CAMP_HIGHLIGHTED"), state=SkillState.CANDIDATE),
+        # The stage A hop: the camp is highlighted and no radial menu is drawn yet.  Its
+        # target is the ring's centre, read off the current frame, not the template's own
+        # centre -- measured on all 46 live stage A frames, the template centre sits 103 px
+        # below the ring, on bare ground, and a tap there is a map tap (see camp_ring.py).
+        Skill("SELECT_INFANTRY_CAMP", "Select the highlighted infantry camp", Page.HOME, Action("TAP_SEMANTIC", "TRAINING_CAMP_IN_RING"), state=SkillState.CANDIDATE),
         Skill("OPEN_INFANTRY_TRAINING", "Open training from the selected infantry camp", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_TRAINING_FROM_CAMP"), state=SkillState.CANDIDATE),
         # The 科技研究 route, the same shape as the training one.  The route itself was
         # verified on 2026-09-04 (knowledge/skills/RESEARCH_RESEARCH.md line 38) but

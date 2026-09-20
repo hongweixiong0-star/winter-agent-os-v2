@@ -25,23 +25,28 @@ class TrainingVerifierTests(unittest.TestCase):
         self.assertTrue(verify_infantry_camp_highlighted(details, highlighted).ok)
         self.assertTrue(verify_infantry_camp_selected(highlighted, selected).ok)
         self.assertTrue(verify_training_page_open(selected, training).ok)
-        # Step 4 is WAIT_FOR_CAMP_MENU, not SELECT_INFANTRY_CAMP.
+        # Step 4 is SELECT_INFANTRY_CAMP again, and it is a different tap than the one that
+        # gave it up.
         #
-        # It used to be SELECT_INFANTRY_CAMP, and on this 2026-09-08 frame that
-        # tap really did open the radial menu.  On 2026-09-17 the same reading --
-        # `navigation == "INFANTRY_CAMP_HIGHLIGHTED"` -- was produced by a frame
-        # where tapping the camp jumped to the world map instead
-        # (dataset/raw/control_panel/runtime_training/20260917_train_stageAB/,
-        # copied to dataset/truth_audit/training_camp_highlight_ambiguity_20260917/).
-        # The signal cannot tell the two states apart -- see the test below, which
-        # measures how little separates them -- so it is not evidence that a tap
-        # is safe, and the route waits instead of guessing.
-        expected = ("OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP", "WAIT_FOR_CAMP_MENU", "OPEN_INFANTRY_TRAINING", "TRAIN_TROOPS")
+        # It was SELECT_INFANTRY_CAMP, aimed at the template's own centre.  On 2026-09-17 that
+        # same reading -- `navigation == "INFANTRY_CAMP_HIGHLIGHTED"` -- was produced by a frame
+        # whose tap jumped to the world map, so the hop was replaced with a wait, on the grounds
+        # that the signal cannot tell the two states apart.
+        #
+        # Measured 2026-09-21 on the two frames a human verified by hand
+        # (dataset/truth_audit/training_camp_highlight_ambiguity_20260917/): the frame whose tap
+        # opened the menu carries a 205x112 selection ring, and the frame whose tap jumped to the
+        # map carries a 7x15 fleck of gold -- an officer badge's edge, not a ring.  The template
+        # distance really does not separate them (0.0 against 8.0, i.e. the failing frame sits ON
+        # the gate); the ring size separates them by two orders of magnitude.  So the tap is back,
+        # aimed at the ring's centre read out of the current frame, and it happens only when a
+        # ring is actually there -- on the 2026-09-17 frame it is refused and the route waits.
+        expected = ("OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP", "SELECT_INFANTRY_CAMP", "OPEN_INFANTRY_TRAINING", "TRAIN_TROOPS")
         states = (home, overview, details, highlighted, selected, training)
         self.assertEqual(tuple(RuleBrain(current_goal="TRAIN").decide(s, v2_registry()).skill for s in states), expected)
 
     def test_the_camp_highlight_signal_cannot_tell_the_two_states_apart(self) -> None:
-        """Why step 4 waits: the only "highlighted" signal is nearly blind here.
+        """The template distance cannot tell the two states apart -- and that is why the ring is used.
 
         Two real frames both report ``navigation == "INFANTRY_CAMP_HIGHLIGHTED"``
         while tapping the camp has two different outcomes -- menu versus world
@@ -51,9 +56,16 @@ class TrainingVerifierTests(unittest.TestCase):
         the two states by a few distance levels, and the 2026-09-17 frame sits
         exactly ON the production ``max_distance``.
 
-        If someone tightens the crop (the real fix), this test fails and forces
-        the chain above to be revisited -- which is the point: the two are one
-        decision, not two.
+        Still true, and still worth pinning: this is a fact about the template, and the
+        assertions below are about the template.
+
+        What 2026-09-21 added is the answer to the question this docstring used to leave open
+        ("if someone tightens the crop -- the real fix -- this test fails").  The fix was not a
+        tighter crop: it is that the two frames differ in a *different* quantity entirely.  The
+        menu frame carries a 205x112 gold selection ring; the map frame carries a 7x15 fleck
+        (an officer badge's edge).  ``camp_ring.py`` measures that ring, so the route can now
+        tell the two apart and taps only where a ring is actually drawn -- see
+        tests/test_training_stage_a_tap.py, which pins one frame each way.
         """
         with_ring = (ROOT / "dataset/truth_audit/training_camp_highlight_ambiguity_20260917"
                      / "camp_with_gold_ring__click_opens_menu__20260908.png")

@@ -606,7 +606,7 @@ def main() -> int:
     # branches in LiveRuntime's ``resolve`` plus the one reviewed normalized fallback.
     _derived_targets = {"RESOURCE_DYNAMIC", "HUD_STAMINA_GAUGE", "MARCH_ROW_1",
                         "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM",
-                        "BEAST_ON_MAP"}
+                        "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING"}
     _unresolvable = []
     for _skill in registry.all():
         if _skill.action.kind != "TAP_SEMANTIC":
@@ -732,6 +732,61 @@ def main() -> int:
                               confidence=0.99)
     check("brain: TRAIN on the focused camp opens the training page",
           train.decide(focused_camp, registry).skill == "OPEN_INFANTRY_TRAINING")
+    # Stage A: the camp highlighted with no radial menu drawn.  The route used to only wait
+    # here -- 45 of this goal's 127 steps -- because the single 2026-09-17 attempt landed on
+    # the world map.  That was a coordinate error, not the finger: measured over 46 live stage A
+    # frames, the template's own centre is (346, 682) on every one of them while the ring sits
+    # at (313, 585), i.e. 88 px below the ring's own lower edge, on bare ground.
+    from winter_agent_v2 import camp_ring as _camp_ring
+    from winter_agent_v2 import verifier as _verifier_module
+    _stage_a_frame = (ROOT / "dataset" / "truth_audit" / "training_stage_a_20260921" / "key"
+                      / "01_stage_a_ring_and_finger_20260921T163802.png")
+    _template_window = {"x_norm": 0.185, "y_norm": 0.39, "w_norm": 0.59, "h_norm": 0.285}
+    _ring = _camp_ring.ring_centre_norm(_stage_a_frame, _template_window)
+    check("vision: the selection ring is read from the frame, not from the template's centre",
+          _ring is not None and 250 <= _ring[0] * 720 <= 380 and 520 <= _ring[1] * 1280 <= 660,
+          f"ring={_ring}")
+    check("vision: a window with no ring answers None, not a fallback point",
+          _camp_ring.ring_centre_norm(_stage_a_frame,
+                                      {"x_norm": 0.02, "y_norm": 0.45,
+                                       "w_norm": 0.06, "h_norm": 0.06}) is None)
+    # The pair a human verified by hand.  Both carry the same semantic; one tap opened the
+    # menu, the other jumped to the map.  Their template distances are 0.0 and 8.0 -- the
+    # second sits ON the gate -- which is why the recorded conclusion was that the signal
+    # cannot separate them.  The ring does: 205x112 against a 7x15 fleck.
+    _ambiguity = ROOT / "dataset" / "truth_audit" / "training_camp_highlight_ambiguity_20260917"
+    _opens = _ambiguity / "camp_with_gold_ring__click_opens_menu__20260908.png"
+    _jumps = _ambiguity / "camp_with_officer_badge__click_jumps_to_map__20260917.png"
+    _ambiguity_vision = vision.SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+    _opens_match = _ambiguity_vision.semantic.find(_opens, "TARGET_INFANTRY_CAMP_HIGHLIGHTED")
+    _jumps_match = _ambiguity_vision.semantic.find(_jumps, "TARGET_INFANTRY_CAMP_HIGHLIGHTED")
+    check("vision: the frame whose tap opened the menu yields a ring point",
+          _opens_match is not None
+          and _camp_ring.ring_centre_norm(_opens, _opens_match.roi) is not None)
+    check("vision: the frame whose tap jumped to the map yields none, so the route waits",
+          _jumps_match is not None
+          and _camp_ring.ring_centre_norm(_jumps, _jumps_match.roi) is None)
+    _stage_a_state = WorldState(page=Page.HOME,
+                                training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",
+                                          "queue_available": True,
+                                          "camp_tap_norm": (0.435, 0.4565)},
+                                confidence=0.99)
+    _stage_a_brain = RuleBrain(current_goal="TRAIN")
+    check("brain: stage A taps the point measured on this frame",
+          _stage_a_brain.decide(_stage_a_state, registry).skill == "SELECT_INFANTRY_CAMP")
+    check("brain: ...once only, then it waits -- the state was measured persistent",
+          _stage_a_brain.decide(_stage_a_state, registry).skill == "WAIT_FOR_CAMP_MENU")
+    check("brain: stage A without a measured point does not tap somewhere else",
+          RuleBrain(current_goal="TRAIN").decide(
+              WorldState(page=Page.HOME,
+                         training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",
+                                   "queue_available": True},
+                         confidence=0.99),
+              registry).skill == "WAIT_FOR_CAMP_MENU")
+    check("dispatchable.SELECT_INFANTRY_CAMP targets the ring and keeps the menu verifier",
+          registry.get("SELECT_INFANTRY_CAMP").action.target == "TRAINING_CAMP_IN_RING"
+          and runtime.LiveRuntime.VERIFIED_ATOMIC.get("SELECT_INFANTRY_CAMP")
+          is _verifier_module.verify_infantry_camp_selected)
     busy_queue = WorldState(page=Page.TRAINING,
                             training={"troop_type": "INFANTRY", "status": "IN_PROGRESS",
                                       "queue_available": False},

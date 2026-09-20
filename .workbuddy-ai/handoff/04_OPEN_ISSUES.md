@@ -769,3 +769,60 @@ result  FAILURE / BEAST_TARGET_SELECTION_NOT_PROVEN
 | 77 | **底部导航六个入口全部真机可见，但只有 3 个有模板、2 个有技能** | 🟠 **已定性** | 帧：`runtime_auto/20260921_000413_168533/…_step_004_after`（`探险/英雄/背包/商店/联盟/野外`）。`OPEN_EXPLORATION`/`OPEN_ALLIANCE`/`OPEN_MAP` 可用；**背包/商店/英雄无入口技能**（用户列为"应有"，未验证）。 |
 | 78 | **右侧活动/邮件快捷入口真机可见且密集** | 🟠 **仅记录** | 同帧右侧有 `生存者试炼 / 常规活动 / 明月的盛典 / 超值活动 / 漫游剧场 / 首充 / 玉镶礼包 / 7日签到` 八个入口 + 右下 `邮件/设置`。项目只覆盖 `OPEN_MAIL` 与 `OPEN_DAILY`；其余**零语义**。用户列的"限时任务主界面提醒入口"同理：帧上有 `通关探险第80关 (0/1)` 任务卡，**零语义**。 |
 | 79 | **`巨兽/自动加入` 完全未记录** | 🔴 **未修** | 用户列出的"巨兽搜索栏存在自动加入按钮"在 manifest 与词典里**命中 0**（`GIANT_BEAST|RALLY|AUTO_JOIN|JOIN_` 全无）。`knowledge/ui/pages.json` 有 `GIANT_BEAST` 页但没有任何模板/技能。 |
+
+## 2026-09-21 训练 Stage A（#74 结案，并解开 09-17 以来的悬案）
+
+### #74 已修：不是手指遮挡，是落点在环外的空地上
+
+`KEEP_TRAINING_PRODUCTIVE` 全史 127 步里 **45 步（35%）在 `WAIT_FOR_CAMP_MENU`**，
+真正到训练页 4 次。代码给的"不点"理由是**教学手指压着兵营、点了跳地图**（依据 09-17 唯一一次尝试）。
+
+**46 帧真机 stage A 语料（5 个独立时段）实测**：
+
+| 量 | 范围 | 说明 |
+|---|---|---|
+| **模板落点** | **(346, 682)** | **46/46 帧完全相同** |
+| 金环中心 | x 305–319, y 577–597（sd 4.3/4.0） | 极稳 |
+| 环内白色兵营图标 | x 333–352, y 541–552 | **教学手指的指尖正指着它** |
+
+⇒ 环的 y 范围约 520–645，**落点 y=682 低于环下沿 37 px** ⇒ 落在**建筑之间的空地** ⇒ 客户端当**地图点击**。
+⇒ **手指从未覆盖那个点**（它覆盖的是环，而环本身就是要交互的选中标记）。
+
+### ⭐ 判别器：环的尺寸（项目找了 4 天的东西）
+
+`tests/test_training_verifier.py::test_the_camp_highlight_signal_cannot_tell_the_two_states_apart`
+的依据是这对人工验证帧：
+
+| 帧 | 人工点击 | 模板距离 | **金环 bbox** |
+|---|---|---|---|
+| `camp_with_gold_ring__click_opens_menu__20260908` | ✅ 开菜单 | 0.0 | **205 × 112** |
+| `camp_with_officer_badge__click_jumps_to_map__20260917` | ❌ 跳地图 | **8.0（正好压在门上）** | **7 × 15**（徽章边缘碎片） |
+
+⇒ 旧结论"信号区分不了两态"**量错了东西**：它量的是**模板距离**（分不开），
+而**环的尺寸**把两态分开**两个数量级**。09-17 那帧**根本没有环**。
+
+### 落地
+
+`winter_agent_v2/camp_ring.py`（新）：在**匹配到的模板自己的 ROI** 内检测金环
+（ROI 由调用方给 ⇒ **无写死坐标**；第一版全帧找金色时返回了右侧活动栏的金色装饰，故必须加窗）；
+**最小尺寸判据**（真环 0.28×0.088 vs 碎片 0.0097×0.012）；读不出 ⇒ **None，不兜底** ⇒ 路线等待。
+
+接入：`vision.py` 写 `training["camp_tap_norm"]` → `runtime.py` 派生解析器 `TRAINING_CAMP_IN_RING`
+（带 HOME 页守卫防陈旧坐标）→ `skills.py` 把 `SELECT_INFANTRY_CAMP` 的目标改为它（**识别与点击分离**）
+→ `brain.py` stage A **先点一次**（一次性标志）再走原有 2 次等待与让位。verifier 不变
+（`verify_infantry_camp_selected` 要求 `menu_open`）。
+
+**离线验证**：46 帧 **46/46** 零退化；**开菜单帧给出落点 (317,583)**、
+**跳地图帧被拒（None）**；决策序列 `SELECT_INFANTRY_CAMP → WAIT → WAIT → SAFE_STOP` 有界；
+无 `camp_tap_norm` 时**不点**。守卫新增 6 条，`problems: 0`；训练相关 28 条测试全过。
+
+### ⚠ 未验证
+
+**点环心是否真开菜单，真机未验证。** 现有：① 点环外空地实测跳地图（09-17）；
+② 09-08 的人工记录**不能当对照** —— 该帧几何与 09-17 **相同**（tap 到环心 102 vs 103 px），
+它"成功"很可能是按顺序推断而非实测。真正差别是**环存在与否**。⇒ 状态 **CANDIDATE**。
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 80 | **`ALLIANCE`/`ALLIANCE_ROUTINE` 之外，联盟页的状态读不出** | 🟠 **已定性** | 历史分布：`section=GIFTS status=CLAIMABLE` 57 次、**`section=HOME status=UNKNOWN` 56 次**、`GIFTS/UNKNOWN` 14、`TECHNOLOGY status=None` 6。brain 的 GIFTS 分支要求 `status=="CLAIMABLE"`、TECHNOLOGY 要求 `=="AVAILABLE"` ⇒ **字段缺失时全部失效**。而联盟首页真机上明明画着 **`联盟科技` 带 25 角标、`联盟互助` 带 6 角标、`联盟商店` 红点**（帧 `runtime_auto/20260921_002526_807831/…_step_003_before`）。⇒ 需要把首页角标读进 `world.alliance`。**未修**（本轮先修了它导致的整轮停机，见下）。 |
+| 81 | **`ALLIANCE_TECH_CONTRIBUTE` / `ALLIANCE_HELP` 无 verifier ⇒ 永不调度** | 🔴 **未修** | 两者都是 `SkillState.CANDIDATE` 且不在 `VERIFIED_ATOMIC`。模板**存在且能匹配**（`BTN_ALLIANCE_TECH` d=0 @ (533,936)、`BTN_ALLIANCE_HELP` d=2 @ (189,1071)）。⇒ 补 verifier 即可（各自证明"捐献计数增加"/"帮助计数减少"），但需要真机读数支撑。 |

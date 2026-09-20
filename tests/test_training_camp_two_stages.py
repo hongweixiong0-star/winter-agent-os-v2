@@ -66,8 +66,13 @@ class StageRoutingTest(unittest.TestCase):
         self.assertEqual(decision.skill, "OPEN_INFANTRY_TRAINING")
 
     def test_stage_a_skill_sends_no_input(self):
-        # The whole point: OBSERVE means the executor touches nothing, so the tap
-        # that threw the client to the map cannot happen in Stage A.
+        # WAIT_FOR_CAMP_MENU is still an observation and still touches nothing.  What changed
+        # on 2026-09-21 is what happens *before* the wait: stage A now makes one tap at the
+        # selection ring's measured centre (SELECT_INFANTRY_CAMP), because the reason for never
+        # tapping -- a tutorial finger covering the camp -- was falsified, and because the frame
+        # whose tap jumped to the map turned out to carry no ring at all (a 7x15 fleck of gold
+        # against a real ring's 205x112), so the two states are separable after all.  The wait
+        # itself is unchanged, and it is still what happens when no ring can be read.
         skill = next(s for s in v2_registry().all() if s.id == "WAIT_FOR_CAMP_MENU")
         self.assertEqual(skill.action.kind, "OBSERVE")
         self.assertEqual(skill.required_page, Page.HOME)
@@ -78,9 +83,13 @@ class StageRoutingTest(unittest.TestCase):
     def test_vision_reports_the_menu_before_the_highlight(self):
         # Order is the whole discrimination: if the highlight branch came first it
         # would shadow a drawn menu and Stage A would win forever.
+        #
+        # Anchored on the call rather than on `if match(...)`, because the highlight branch now
+        # binds its match to a name before reading the ring out of the frame.  The property
+        # being pinned is the order, not the syntax of the line.
         source = (ROOT / "winter_agent_v2/vision.py").read_text(encoding="utf-8")
         menu = source.index('if match("BTN_TRAINING_MENU_LABEL") or match("BTN_OPEN_TRAINING_FROM_CAMP")')
-        highlight = source.index('if match("TARGET_INFANTRY_CAMP_HIGHLIGHTED")')
+        highlight = source.index('match("TARGET_INFANTRY_CAMP_HIGHLIGHTED")')
         self.assertLess(menu, highlight)
 
 

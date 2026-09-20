@@ -1,0 +1,207 @@
+"""Stage A of the training route is tapped at the ring, not at the template's centre.
+
+The route reaches the infantry camp in two stages: A is the camp highlighted with no radial
+menu drawn, B is the menu.  A is where it has been stuck -- 45 of KEEP_TRAINING_PRODUCTIVE's
+127 steps sit in WAIT_FOR_CAMP_MENU and the training page is reached four times -- and the
+recorded reason for not tapping was a tutorial finger over the camp, from ONE 2026-09-17
+attempt whose after frame shows the world map.
+
+That reason is falsified, and the frames here are the falsification:
+
+  01_  the live stage A frame.  Ring, finger, no menu.
+  02_  the same frame with the template's own centre marked: it lands on bare ground between
+       the buildings, 103 px below the ring's centre and 88 px below the ring's lower edge.
+  03_  a second, independent session in the same state.
+  04_  the 2026-09-17 after frame -- the world map, which is what a tap on that bare ground
+       produces.  The MAP trip was a coordinate error, not an occlusion.
+  05_  the finger present AND the radial menu open, which is what makes 01_'s finger a guide
+       rather than a cover.
+
+What is asserted below is the measured offset and the bounded decision sequence; what is NOT
+asserted anywhere is that tapping the ring opens the menu, because that has not happened on
+a device yet.  The hop is CANDIDATE.
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from winter_agent_v2.brain import RuleBrain  # noqa: E402
+from winter_agent_v2.camp_ring import ring_centre_norm  # noqa: E402
+from winter_agent_v2.models import Page, WorldState  # noqa: E402
+from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
+from winter_agent_v2.skills import v2_registry  # noqa: E402
+from winter_agent_v2.verifier import verify_infantry_camp_selected  # noqa: E402
+from winter_agent_v2.vision import SemanticWorldVision  # noqa: E402
+
+MANIFEST = ROOT / "dataset" / "candidate" / "template_manifest.json"
+EVIDENCE = ROOT / "dataset" / "truth_audit" / "training_stage_a_20260921" / "key"
+STAGE_A = EVIDENCE / "01_stage_a_ring_and_finger_20260921T163802.png"
+STAGE_A_SECOND = EVIDENCE / "03_stage_a_second_session_20260920T160508.png"
+MENU_OPEN = EVIDENCE / "05_finger_present_and_menu_open_20260920T013343.png"
+TAPPED_MAP = EVIDENCE / "04_the_20260917_tap_landed_on_the_map.png"
+
+TEMPLATE = "TARGET_INFANTRY_CAMP_HIGHLIGHTED"
+#: The pair a human verified by hand, named for what a tap did on each.  The route's old
+#: reading -- "the highlight signal cannot tell these two apart" -- is true of the template
+#: distance (0.0 against 8.0, i.e. the failing frame sits ON the gate) and false of the ring:
+#: the frame that opens the menu carries a 205x112 ring and the one that jumps to the map
+#: carries a 7x15 fleck.
+AMBIGUITY = ROOT / "dataset" / "truth_audit" / "training_camp_highlight_ambiguity_20260917"
+CLICK_OPENS_MENU = AMBIGUITY / "camp_with_gold_ring__click_opens_menu__20260908.png"
+CLICK_JUMPS_TO_MAP = AMBIGUITY / "camp_with_officer_badge__click_jumps_to_map__20260917.png"
+#: Where the ring is drawn on the archived frames, in pixels of a 720x1280 frame.  Not a
+#: target -- a bound, wide enough to hold all 46 measured frames (x 305-319, y 577-597).
+RING_BOX = (250, 520, 380, 660)
+
+
+def _vision() -> SemanticWorldVision:
+    return SemanticWorldVision(MANIFEST)
+
+
+class TheRingIsWhereTheFrameSaysItIsTests(unittest.TestCase):
+    def test_the_ring_is_measured_inside_the_template_window(self):
+        vision = _vision()
+        for frame in (STAGE_A, STAGE_A_SECOND):
+            with self.subTest(frame=frame.name):
+                match = vision.semantic.find(frame, TEMPLATE)
+                self.assertIsNotNone(match, "this frame is stage A; the template must match")
+                point = ring_centre_norm(frame, match.roi)
+                self.assertIsNotNone(point, "the ring is drawn on this frame and must be read")
+                x, y = point[0] * 720, point[1] * 1280
+                left, top, right, bottom = RING_BOX
+                self.assertTrue(left <= x <= right and top <= y <= bottom,
+                                f"ring centre ({x:.0f},{y:.0f}) is outside the measured box {RING_BOX}")
+
+    def test_the_templates_own_centre_is_not_the_ring(self):
+        """The whole point: the template resolves to a point on bare ground."""
+        vision = _vision()
+        match = vision.semantic.find(STAGE_A, TEMPLATE)
+        self.assertIsNotNone(match)
+        ring = ring_centre_norm(STAGE_A, match.roi)
+        self.assertIsNotNone(ring)
+        tx, ty = match.center_norm[0] * 720, match.center_norm[1] * 1280
+        rx, ry = ring[0] * 720, ring[1] * 1280
+        self.assertGreater(((tx - rx) ** 2 + (ty - ry) ** 2) ** 0.5, 80,
+                           "if these two agreed, there would be nothing to fix")
+        self.assertGreater(ty - ry, 60, "the template's centre sits below the ring, not beside it")
+
+    def test_the_pair_a_human_verified_is_separated_by_the_ring(self):
+        """The discriminator the project had been missing since 2026-09-17.
+
+        Two frames carry the same semantic and were tapped by hand to different ends.  Their
+        template distances are 0.0 and 8.0 -- the second sits exactly on the production gate,
+        which is why the recorded conclusion was that the signal cannot tell them apart.  It
+        was measuring the wrong quantity: what the failing frame carries is a 7x15 fleck of
+        gold (an officer badge's edge), and the surviving one a 205x112 ring.
+        """
+        vision = _vision()
+        opens = vision.semantic.find(CLICK_OPENS_MENU, TEMPLATE)
+        self.assertIsNotNone(opens)
+        point = ring_centre_norm(CLICK_OPENS_MENU, opens.roi)
+        self.assertIsNotNone(point, "this is the frame whose tap opened the menu; it has a ring")
+
+        jumps = vision.semantic.find(CLICK_JUMPS_TO_MAP, TEMPLATE)
+        self.assertIsNotNone(jumps, "the failing frame still matches the template -- that is the trap")
+        self.assertIsNone(
+            ring_centre_norm(CLICK_JUMPS_TO_MAP, jumps.roi),
+            "this frame's tap jumped to the MAP, so it must carry no selection ring and the "
+            "route must wait rather than tap",
+        )
+
+    def test_a_window_with_no_ring_answers_none_rather_than_guessing(self):
+        """No ring read means no point.  A fallback to the template's centre is the bug.
+
+        Note what this detector is NOT: it is not a whole-frame gold finder, and it is never
+        asked to be one -- it is only ever called with the ``roi_norm`` of a matched
+        ``TARGET_INFANTRY_CAMP_HIGHLIGHTED``, so the premise "this frame is stage A" is the
+        template's job.  An unwindowed version of this mask did exactly that and came back
+        with the right-hand activity rail, which is why the window is the caller's.
+        """
+        for roi in (None, {}, "not a dict",
+                    {"x_norm": 0.0, "y_norm": 0.0, "w_norm": 0.0, "h_norm": 0.1},
+                    {"x_norm": 0.0, "y_norm": 0.0, "h_norm": 0.1},
+                    {"x_norm": 0.02, "y_norm": 0.45, "w_norm": 0.06, "h_norm": 0.06}):
+            with self.subTest(roi=roi):
+                self.assertIsNone(ring_centre_norm(STAGE_A, roi))
+
+
+class TheReportedStateCarriesTheMeasuredPointTests(unittest.TestCase):
+    def test_the_vision_layer_publishes_it(self):
+        state = _vision().observe(STAGE_A)
+        self.assertEqual(state.page, Page.HOME)
+        self.assertEqual(state.training.get("navigation"), "INFANTRY_CAMP_HIGHLIGHTED")
+        point = state.training.get("camp_tap_norm")
+        self.assertIsInstance(point, (tuple, list), "the tap point must travel with the state")
+        x, y = point[0] * 720, point[1] * 1280
+        left, top, right, bottom = RING_BOX
+        self.assertTrue(left <= x <= right and top <= y <= bottom)
+
+    def test_the_menu_state_is_not_reported_as_stage_a(self):
+        """05_ is stage B, and nothing about it may look like the highlighted-only state."""
+        state = _vision().observe(MENU_OPEN)
+        self.assertTrue(state.training.get("menu_open"),
+                        "the menu is drawn on this frame; that is what makes the finger a guide")
+        self.assertNotEqual(state.training.get("navigation"), "INFANTRY_CAMP_HIGHLIGHTED")
+
+
+class TheDecisionIsBoundedTests(unittest.TestCase):
+    def _stage_a_state(self) -> WorldState:
+        return WorldState(page=Page.HOME,
+                          training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",
+                                    "queue_available": True,
+                                    "camp_tap_norm": (0.435, 0.4565)},
+                          confidence=0.99)
+
+    def test_it_taps_once_then_waits_then_gives_the_run_back(self):
+        brain = RuleBrain(current_goal="TRAIN")
+        state = self._stage_a_state()
+        first = brain.decide(state, v2_registry())
+        self.assertEqual(first.skill, "SELECT_INFANTRY_CAMP")
+        self.assertEqual(first.expected_result, "camp_menu_open")
+        # Bounded: exactly one tap.  The state was measured persistent, so repeating the same
+        # tap would spend the run on a screen that did not respond.
+        for _ in range(brain.MAX_CAMP_MENU_WAITS):
+            self.assertEqual(brain.decide(state, v2_registry()).skill, "WAIT_FOR_CAMP_MENU")
+        last = brain.decide(state, v2_registry())
+        self.assertEqual(last.skill, "SAFE_STOP")
+        self.assertEqual(last.reason, "camp_menu_never_drawn")
+
+    def test_without_a_measured_point_it_never_taps(self):
+        """A ring that could not be read is not an invitation to tap somewhere else."""
+        brain = RuleBrain(current_goal="TRAIN")
+        state = WorldState(page=Page.HOME,
+                           training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",
+                                     "queue_available": True},
+                           confidence=0.99)
+        self.assertEqual(brain.decide(state, v2_registry()).skill, "WAIT_FOR_CAMP_MENU")
+
+    def test_the_hop_is_registered_and_bound_to_the_menu_verifier(self):
+        registry = v2_registry()
+        skill = registry.get("SELECT_INFANTRY_CAMP")
+        self.assertIsNotNone(skill, "a skill nothing registers is a skill nothing schedules")
+        self.assertEqual(skill.action.target, "TRAINING_CAMP_IN_RING")
+        self.assertIs(LiveRuntime.VERIFIED_ATOMIC["SELECT_INFANTRY_CAMP"],
+                      verify_infantry_camp_selected)
+
+    def test_the_executor_refuses_a_point_read_on_another_page(self):
+        """The fragment belongs to the HOME frame it came from; a stale one must not be used."""
+        source = (ROOT / "winter_agent_v2" / "runtime.py").read_text(encoding="utf-8")
+        pattern = (r'if semantic == "TRAINING_CAMP_IN_RING":.*?'
+                   r'if before\.page is not Page\.HOME:\s+return None')
+        # Compiled, not asserted with a flags argument: assertRegex's third parameter is the
+        # failure message, so passing re.DOTALL there silently does nothing and the pattern
+        # then has to match inside a single line.
+        self.assertRegex(source, re.compile(pattern, re.DOTALL))
+        self.assertEqual(len(re.findall(r'if semantic == "TRAINING_CAMP_IN_RING":', source)), 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

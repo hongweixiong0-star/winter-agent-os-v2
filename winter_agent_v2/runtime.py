@@ -1065,6 +1065,32 @@ class LiveRuntime:
                     if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
                         return None
                     return (x_norm, y_norm)
+                if semantic == "TRAINING_CAMP_IN_RING":
+                    # The selected camp's own centre, read off the frame by camp_ring.py.
+                    #
+                    # The template this replaces resolved to (346, 682) on all 46 live stage A
+                    # frames -- 103 px below the selection ring, on bare ground between the
+                    # buildings.  Tapping there is a map tap, which is what took the client to
+                    # the MAP on the one attempt that ever tried it.  The ring's centre is a
+                    # measurement of the same frame rather than a correction applied to a
+                    # remembered point, so it follows the camera instead of assuming it.
+                    #
+                    # The page check is what keeps a stale point from being reused, exactly as
+                    # for the beast above: the fragment belongs to the HOME frame it was read
+                    # from.  ``None`` -- wrong page, no ring, or no frame size -- ends the loop
+                    # honestly rather than tapping a point nobody measured.
+                    if before.page is not Page.HOME:
+                        return None
+                    point = before.training.get("camp_tap_norm")
+                    if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                        return None
+                    try:
+                        x_norm, y_norm = float(point[0]), float(point[1])
+                    except (TypeError, ValueError):
+                        return None
+                    if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                        return None
+                    return (x_norm, y_norm)
                 if semantic == "HUD_STAMINA_GAUGE":
                     # The gauge is drawn at a measured spot on every map frame.
                     # The page check is what keeps a popup or a loading screen

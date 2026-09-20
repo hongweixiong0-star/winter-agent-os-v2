@@ -207,6 +207,13 @@ dataset/external/repositories/
 # flag.  Published because the guard tests assert against it and because the label
 # geometry the tap point comes from is only checkable by looking at it.
 !dataset/truth_audit/beast_labelled_selection_20260920/key/**/*.png
+# Stage A of the training route: the camp highlighted with no radial menu.  The route has
+# spent 45 of KEEP_TRAINING_PRODUCTIVE's 127 steps waiting in this state and the reason it
+# never tapped was falsified by these frames -- the template's own centre is 103 px below
+# the ring, on bare ground, and 04_ is the 2026-09-17 attempt that landed on the world map
+# because of it.  Published because the guards assert against them and because the offset
+# is only checkable by looking at the picture.
+!dataset/truth_audit/training_stage_a_20260921/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

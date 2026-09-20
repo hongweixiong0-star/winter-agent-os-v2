@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PIL import Image, ImageStat
 
+from .camp_ring import ring_centre_norm
 from .image_hash import dhash, hamming, phash
 from .models import MarchState, Page, WorldState
 
@@ -1449,8 +1450,28 @@ class SemanticWorldVision:
             )
         if match("BTN_TRAINING_MENU_LABEL") or match("BTN_OPEN_TRAINING_FROM_CAMP"):
             return WorldState(page=Page.HOME, training={"building":"INFANTRY_CAMP", "status":"IDLE", "queue_available":True, "menu_open":True}, confidence=0.99)
-        if match("TARGET_INFANTRY_CAMP_HIGHLIGHTED"):
-            return WorldState(page=Page.HOME, training={"navigation":"INFANTRY_CAMP_HIGHLIGHTED", "queue_available":True}, confidence=0.99)
+        highlight = match("TARGET_INFANTRY_CAMP_HIGHLIGHTED")
+        if highlight:
+            # Stage A of the training route: the camp is selected and its radial menu is not
+            # drawn yet.  The template says which state this is -- d <= 2 on all 46 live stage A
+            # frames -- but its own centre is NOT where the building can be tapped: measured on
+            # the same 46 frames, that centre sits at (346, 682) on every one of them, which is
+            # 103 px below the selection ring and 88 px below the ring's own lower edge, i.e. on
+            # bare ground between the buildings.  A tap there is a map tap, and that is what the
+            # single 2026-09-17 attempt recorded before the route learned to stop tapping; the
+            # reason written down at the time (a tutorial finger covering the camp) is falsified
+            # by the frames -- the finger is present and the menu is open in the same state
+            # elsewhere, and it never covered that point.
+            #
+            # The ring is the client's own statement about which building is selected, so its
+            # centre is read out of the frame (see camp_ring.py) rather than remembered.  When
+            # it cannot be read the key stays absent and the executor refuses to tap, which is
+            # the honest outcome: no coordinate is invented to fill the gap.
+            training = {"navigation": "INFANTRY_CAMP_HIGHLIGHTED", "queue_available": True}
+            ring = ring_centre_norm(image_path, highlight.roi)
+            if ring is not None:
+                training["camp_tap_norm"] = ring
+            return WorldState(page=Page.HOME, training=training, confidence=0.99)
         if match("BUILDING_QUEUE_TIMER"):
             # The template proves a construction timer is drawn, and nothing more.  The
             # queued building and its levels were constants here as well (STOREHOUSE

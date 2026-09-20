@@ -9,7 +9,7 @@
     "schedulable_navigation_entries": 38,
     "distinct_targets": 72,
     "semantics_with_templates": 230,
-    "semantics_with_templates_and_no_skill": 171
+    "semantics_with_templates_and_no_skill": 172
   },
   "operator_functions": [
     {
@@ -63,6 +63,7 @@
         "TAB_TRAINING_INFANTRY",
         "TAB_TRAINING_LANCER",
         "TAB_TRAINING_MARKSMAN",
+        "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
         "TRAINING_BATCH_806",
         "TRAINING_BUILDING_QUEUE_TIMER",
         "TRAINING_QUEUE_TIMER"
@@ -1183,12 +1184,12 @@
     {
       "skill": "SELECT_INFANTRY_CAMP",
       "source_page": "HOME",
-      "action": "TAP_SEMANTIC:TARGET_INFANTRY_CAMP_HIGHLIGHTED",
-      "target": "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
+      "action": "TAP_SEMANTIC:TRAINING_CAMP_IN_RING",
+      "target": "TRAINING_CAMP_IN_RING",
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_infantry_camp_selected",
-      "visual_evidence": 1,
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": true
     },
     {
@@ -2156,6 +2157,10 @@
     },
     {
       "semantic": "TAB_TRAINING_MARKSMAN",
+      "templates": 1
+    },
+    {
+      "semantic": "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
       "templates": 1
     },
     {
