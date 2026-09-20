@@ -3651,9 +3651,26 @@ class EscalationQueueAdapter:
         """
         import sys as _sys
 
+        # The production interpreter, not whichever one is hosting the caller.  Measured 2026-09-20:
+        # this gate is driven by the panel's pump, and the panel is a long-lived window -- when it was
+        # started by the development host its own ``sys.executable`` was that host's runtime, which has
+        # no numpy/cv2.  Deciding whether the product's wiring is sound with the tool the product does
+        # not run on is the same class of mistake as running AUTO on it, and the project already owns
+        # the answer: ``runtime_env`` resolves and *proves* the interpreter, from any host.
+        from .runtime_env import resolve as _resolve_runtime
+
+        try:
+            report = _resolve_runtime()
+        except Exception:  # noqa: BLE001 - a gate that cannot resolve reports "could not run"
+            return None
+        if not report.ok:
+            # Honest: ``None`` already means "could not be run".  It is not a pass, and it is not a
+            # failure of the wiring -- it is the absence of a tool allowed to judge it.
+            return None
+
         try:
             result = subprocess.run(
-                [_sys.executable, "tools/check_wiring.py"],
+                [str(report.python_exe), "tools/check_wiring.py"],
                 cwd=str(self.root),
                 capture_output=True,
                 text=True,

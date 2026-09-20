@@ -4020,6 +4020,13 @@ class ControlPanel:
         try:
             from winter_agent_v2.consistency import render_conflicts, state_conflicts
 
+            # The development view, folded from the escalation ledger by the one helper that owns
+            # that answer -- the same call two sibling refreshes already make.  It was missing here,
+            # so ``view`` resolved to nothing and the NameError was swallowed by the broad except
+            # below: the consistency card failed on every refresh and said nothing about it, which
+            # is the exact shape of silence this panel exists to prevent.
+            view = escalation_view()
+
             development = view.get("current")
             findings = state_conflicts({
                 "closure_trace_id": card.get("trace_id") if card.get("ok") else "",
