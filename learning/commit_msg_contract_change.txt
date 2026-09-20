@@ -1,0 +1,76 @@
+fix(gateway): the contract changed, and a lost job is not an unreachable one
+
+The operator reported WorkBuddy = 异常 with 0x800700E8 against a desktop lock path.  Audited:
+the lock does not exist (0 *.lock files under CodeBuddyExtension, nothing deleted), the
+desktop is a single instance (13 processes, one main pid 20948) and is running, there was no
+second gateway -- and 8080 was held by a *working* gateway (pid 11304,
+`codebuddy --serve --port 8080 --session-id winter-agent-v2`) that this project could not
+talk to.  Two measured defects, neither a process problem.
+
+1. The HTTP contract changed.  Re-measured against pid 11304:
+
+     no extra header                            -> 403 Missing required header: x-codebuddy-request
+     x-codebuddy-request: 1 (any non-empty)      -> 401 AUTH_REQUIRED  (marker satisfied)
+     marker + Bearer <settings.json password>    -> 200 {"data":{"status":"ok","pid":11304}}
+     marker + Bearer <CODEBUDDY_GATEWAY_PASSWORD>-> 401 AUTH_REQUIRED
+
+   The recorded contract (2.137.1, 2026-09-17) says a bare Authorization: Bearer sufficed,
+   and it did then.  This build added a request marker whose value need only be non-empty.
+   The bridge now sends `x-codebuddy-request: 1` on every request.
+
+   The environment credential is also stale: 43 chars, rejected, while the 24-char
+   settings.json password is accepted.  §2 of the old measurement -- environment, then
+   settings, then generated -- still holds, but the bridge's fallback only runs **on a 401**.
+   The missing marker produced a **403**, so the fallback never ran.
+
+   So a healthy gateway looked unreachable, the GUI said 异常, and the lifecycle owner killed
+   and restarted it four times (restart_attempts=4, consecutive_failures=122) while the pump
+   accrued 22 identical reconcile errors.  `Measurement.reachable` now separates "nothing
+   came back" from "it answered and refused us": only silence justifies a restart, because
+   restarting a process cannot change a header or a credential.  A refusal becomes REJECTING
+   with its reason named.
+
+2. A lost job is not an unreachable one.  `GET /api/v1/jobs/d8ea0e44` answered
+   404 JOB_NOT_FOUND.  Jobs do not survive their gateway instance, so the ledger pointed at
+   work that could never finish -- and because that was raised as the same
+   GatewayUnavailable used for a dead port, the record stayed WORKING and held the single
+   development slot (`max_concurrent_jobs = 1`), refusing every escalation behind it with
+   CONCURRENCY_WAIT.  The queue was deadlocked by a ghost, which is the failure the fold's
+   own comment already records for a cancelled job.
+
+   `status()` now raises `JobLost` (a subclass, so every existing handler keeps working),
+   the adapter folds it to a terminal FAILED with `outcome = JOB_LOST`, freeing the slot so
+   the capability is re-offered from its budget rather than silently duplicated (§六).
+
+Verified live, through the panel's own QueuePump:
+
+  health                     False HTTP_403  ->  True OK (0.02s)
+  one real consume pass      errors 22       ->  errors 0, "[escalation] nothing to do"
+  job_lost rows              0               ->  1, with the gateway's own reason
+  active jobs                SPEND_STAMINA_ON_BEAST held the slot  ->  SLOT FREED
+  new Job created            no (the ledger grew by exactly one row, 628 -> 629)
+
+Also in this change:
+
+* §一/§二 GatewaySoakAcceptance (`winter_agent_v2/gateway_soak.py`): the window measures its
+  own fifteen minutes from its probe thread and writes
+  `evidence/gui_workbuddy_loop/latest.json` with the twelve conditions the operator listed.
+  Unmeasured is its own answer -- a condition nobody could read is INCOMPLETE, never PASS.
+  It runs only from the production launch path (§三/§九): `Start-Winter-Agent-V2.cmd` now
+  sets WINTER_AGENT_LAUNCH_PATH=desktop, and a window started any other way records
+  DEVELOPMENT_ENV_LIMITATION instead of producing something that reads like evidence.
+* §八 the closed-loop card, first on the 自动开发 page: the eight cells, the current trace_id
+  and the current breakpoint, all from `tools/unattended_closure.py` -- the existing chain
+  operator, not a second answer to the same question.  It is cached for 60s because the
+  window refreshes every few seconds and the project's rule is that a refresh path does not
+  run CLIs.
+* `winproc.listeners()` (all pids on a port, not just the winner) so "is there a second
+  gateway" is answerable; `console_watch` moved into the package so the soak and the
+  existing watcher share one EnumWindows implementation.
+* The launcher marker, and the runbook entry in
+  knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md §8.
+
+NOT proven, and not claimed: the fifteen-minute window itself.  Every process started from a
+development-tool call is reaped when the call ends (panels 24936/25408 and every gateway
+they spawned), which §九 records as a tooling limitation rather than a product defect -- so
+the soak has to be run by the operator's own launch, and the card will report it.

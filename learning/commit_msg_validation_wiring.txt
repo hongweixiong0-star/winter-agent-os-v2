@@ -1,0 +1,46 @@
+fix(validation): the GUI now passes the context it was already able to build
+
+Operator correction, and it was right: there is no §1 to write.  Verified rather than assumed
+-- `service_validation_lease` is defined once in `escalation_queue.py` and called from
+`_drain`, `validation_lease_target` and `validation_lease_consumer` exist, and
+`ControlPanel._maybe_validate` already consumes a DEVELOPMENT_VALIDATION holder.  No second
+lease requester and no Validation Coordinator were added.
+
+The real break was one line of wiring: `_run_validation_worker` still built its command with
+only `--goal/--max-actions/--capture-dir/--serial`, so the five fields added in 2e2ae72 never
+reached the runner.  An examination whose episode cannot be attributed to a trace or a version
+runs and proves nothing -- which is why §2 and §3, both landed, were inert.
+
+  `_pending_validation_record(key)` reads the whole record the cycle is about to examine:
+  key, job_id, capability, goal and after_version.  `key` is authoritative -- when a trace is
+  named, only that trace may be validated, and the fallback to "the first LIVE_VERIFY_PENDING"
+  happens only when no trace was named at all.  `_pending_validation_goal` now delegates to it
+  rather than doing its own fold, so there is one reader of the ledger here and not two.
+
+  `validation_command(record, capture_dir, serial)` is a new pure function and the single
+  place that writes the command.  Having one writer is what makes it possible to assert that
+  none of the five fields can be omitted.
+
+  `_run_validation_worker` uses it, and a record that cannot be resolved now stops the run with
+  VALIDATION_CONTEXT_MISSING instead of guessing -- the early return still runs the existing
+  `finally`, so the lease is released either way (§12).
+
+Two things carried over from the operator's notes: `--no-escalate` is passed, because failing
+the examination must not open a second WorkBuddy job (the queue and reconciler own that
+decision, and a test process filing an escalation for failing its own exam would be a loop);
+and the expected version is sent as an empty string rather than omitted when the record has no
+measured after_version, so the absence is visible in the command instead of implied -- and
+cannot silently pass run_live's gate.
+
+Tests (5 new): all five fields present and correct; the run still goes through the one
+executor, still bounded; `--no-escalate` present; a missing version sent as empty with the
+trace still named; and structurally, that the old hand-built command is gone, that the worker
+reads the whole record, and that an unresolvable record stops rather than guessing.
+
+279 tests green across the affected modules; check_wiring problems: 0.
+
+Still not done: §4-§9 (the live_tried / live_verified / rejoined / production_reuse drivers),
+the §4 audit of the old LIVE_VERIFIED shortcut in `reconcile_outcome`/`new_live_episodes`, the
+§9/§10 split of REJOINED from production_reuse in the fold, and the §11 bootstrap completion
+hook move.  No capability has travelled the chain, so there is still no
+production_reuse_episode_id.

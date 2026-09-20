@@ -1,0 +1,43 @@
+fix(bootstrap): a job that stopped editing is not a capability that was learned
+
+Operator §一/§二, the highest-priority item.  `_settle` called
+`KnowledgeBootstrapController.completion_hook(...)` on **every** outcome, including
+`CODE_CHANGED`.  So "the agent stopped editing" was indistinguishable from "the capability was
+learned", and the preloader advanced to the next capability before anything had been loaded,
+examined, or used in ordinary play.
+
+Settling may still conclude that the *work* is over -- it records the outcome, the code change
+and the reload signal, and it now writes an intermediate `development_completed` event carrying
+the note that says what it does not mean: 未加载 / 未真机验证 / 未在普通 Gameplay 复用.  It no
+longer touches the controller at all.
+
+The hook now runs from `detect_production_reuse`, and only after a real production-reuse episode
+has been appended -- the first moment anything knows the capability works in ordinary play on the
+version the job produced.  Everything below it (CODE_CHANGED, TEST_PASS, VERSION_ACTIVATION_PENDING,
+VERSION_ACTIVE, LIVE_TRIED, LIVE_VERIFIED) describes the process, not the outcome.
+
+Idempotent by **evidence**, not by a flag: `_complete_bootstrap` looks for a `knowledge_updated`
+row for the same key and reuse episode and does nothing if it finds one.  A flag in memory would
+be lost on the restart this design exists to survive.
+
+Tests (5): settling no longer mentions the controller and does record the intermediate state;
+the hook is called from the production-reuse path and there is exactly one call form in the file;
+a pre-seeded completion makes a second call a no-op; a non-bootstrap trace never completes the
+bootstrap; and settling a bootstrap record still produces its intermediate outcome.
+
+Two of those tests were wrong twice before they were right -- the first sliced to a method
+defined *earlier* in the file (empty slice), the second sliced between two methods when the one
+it wanted came second.  Both would have passed while asserting nothing.  The third form -- slice
+from a `def` to the next `def` -- does not depend on how the file grew, which is the property
+that was missing.
+
+213 tests green across the affected modules; check_wiring problems: 0.
+
+Not done from this工单, and not claimed: §三 (a waiting or failed capability must release the
+bootstrap rather than hold it), §四 (the device row still shows a released lease as the current
+holder), §五 (bootstrap freshness still reads 运行中 beside an old heartbeat), §六 (soak
+end-to-end), and above all §七 -- there is still no `production_reuse_episode_id` anywhere,
+because the chain has nothing to run on: `current_development_trace()` returns None and every
+record on the ledger is terminal.  A closed loop cannot be demonstrated without an open trace,
+and an open trace cannot be manufactured without inventing evidence, which is the one thing this
+whole工单 forbids.

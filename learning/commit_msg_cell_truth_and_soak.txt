@@ -1,0 +1,50 @@
+fix(panel): the closed loop may not tick a cell nothing has proved, and a soak may not go quiet
+
+Operator §6 and §8, from a screenshot where the development page showed a state that cannot
+exist: **"LIVE VERIFIED 等待" beside "生产复用 ✓"** -- reuse credited before verification.
+
+**§8 -- the eight cells now read real events.** The 真机校准 / LIVE VERIFIED / 生产复用 cells
+were graded on `unattended_closure`'s `live_verify_episode` / `auto_resumed` /
+`post_resume_verified` steps.  Those describe the *reload* mechanism, and `auto_resumed` says a
+session resumed after a reload -- which has nothing to do with a capability being used by
+ordinary play.  So a capability that had never been examined showed a green reuse tick.
+
+`closure_card` now carries `activation_episode_id`, `live_try_episode_id`,
+`live_verify_episode_id` and `production_reuse_episode_id` from the folded record, and the three
+evidence cells are graded on those ids and nothing else:
+
+    Version           VERSION_ACTIVE (the ledger state, already fixed earlier)
+    真机校准           live_try_episode_id or live_verify_episode_id
+    LIVE VERIFIED     live_verify_episode_id
+    生产复用           production_reuse_episode_id
+
+Live now: `生产复用 等待`, because that id is empty -- which is the truth.
+
+**§6 -- a soak that declines says so.** `_drive_soak` returned silently when the launch context
+was not production, so the window showed "尚未开始（GUI 启动后由窗口自行测量，无需任何手工命令）"
+-- a sentence that *promises* a measurement while the code had already decided not to take one.
+The refusal is now recorded in `_soak_error` and displayed:
+
+    尚未触发（GUI 启动后由窗口自行测量；若长时间如此即为异常，而非等待）
+    启动失败：<真实原因>（不是「尚未开始」——窗口已尝试并给出了原因）
+    运行中 FAIL · 0.0/15 分钟 / 1 样本 · 重启 1 个网关进程 · 黑窗 0 · 未通过：端口归属
+
+i.e. the six states the operator asked for: 尚未触发 / 运行中 n/15min / PASS / FAIL / INCOMPLETE /
+启动失败:<reason>.
+
+**What the audit of §6 actually found, and did not find.** `launch_context()` returns
+`production` for a window on the production interpreter, and `_drive_soak` creates the soak
+correctly when called. The evidence file exists with `launch_context: production`. But it holds
+**`sample_count: 1`** -- one sample per window -- and the window running at the moment of the
+screenshot has no "验收 Soak 已启动" line in `panel.log` at all. So the soak did *not* run in
+that window, and the reason was invisible by construction: that was the silent `return`. It is
+no longer silent, which is the fix; whether the cause is the launch context or a later
+exception will now be readable on the page instead of inferred from timestamps.
+
+102 tests green across the affected modules; check_wiring problems: 0.
+
+Not done from this工单: §7's single `current_development_trace()` selector (the closed-loop card
+and the WorkBuddy panel still choose their current trace independently -- and the screenshot
+shows them disagreeing: `5b525aa4` vs `06271322`), §9's explicit STATE_CONFLICT findings, §10's
+bootstrap heartbeat TTL wording, and §5's lease history split.  Those are the next four, in that
+order; §7 first, because until one selector exists the other three have nothing to compare.

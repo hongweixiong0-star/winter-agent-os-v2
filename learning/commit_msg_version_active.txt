@@ -1,0 +1,65 @@
+feat(version): VERSION_ACTIVE is a state in the ledger, proved by an episode that ran it
+
+The operator's single main breakpoint: VERSION_ACTIVATION_PENDING could not reliably reach
+LIVE_VERIFY_PENDING because VERSION_ACTIVE did not exist.  It does now, as a real lifecycle
+state in the existing ledger/fold -- not a field the window infers, because every rung above
+it is gated on "the version under test is the version that ran", and a value computed for
+display could never gate anything.
+
+§二: the one lawful evidence is
+    job settled  +  after_version known  +  a real episode  +
+    episode.repo_revision == after_version
+Forbidden, and each is a fact about the tree rather than about what ran: files changed, the
+agent said DONE, the tests passed.  Every cycle is a fresh process importing the package from
+disk, so an episode whose repo_revision equals after_version is the machine saying "this is
+what ran"; git HEAD only says what is on the disk.
+
+§三: the version_active event carries key (the trace id), job_id, capability, skill,
+failure_type, goal, origin, before_version, after_version, active_version,
+activation_episode_id and activated_at.  The fold moves the record to VERSION_ACTIVE and keeps
+before_version/after_version (folded from the reconciled row, where they were previously
+written but never read back), so the comparison is possible at all.
+
+§四: recovery is automatic.  The activation pass is re-derived from the ledger and the episode
+stream on every consume pass, so a GUI or QueuePump restart re-finds a pending activation
+instead of asking anyone to re-trigger the development job.
+
+§一: VERSION_ACTIVE and REJOINED are in ALL_STATES but in neither ACTIVE_STATES nor
+TERMINAL_STATES -- a version awaiting measurement is not work in progress, and it must not
+hold the single development slot, while there is still something to measure.
+
+§八/§九: a `rejoined` event folds to REJOINED and carries production_reuse_episode_id, so
+DONE is earned by a *production* episode rather than by the examination passing.
+
+§十一: the closed-loop card now reads the record's own lifecycle state and the recorded
+versions, and refuses to infer the version rung from git HEAD:
+
+  record_state = COOLDOWN / outcome = CODE_CHANGED
+  版本 67c9c0d5 → 67c9c0d5（尚未被真实 Episode 加载）
+  Gateway ✓  Queue 进行中  Job 进行中  Version 等待  真机校准 等待  LIVE VERIFIED 等待
+  生产复用 进行中  Next Capability —      8/12 步 · 断点：code_changed
+
+Three defects the live runs found and the tests had agreed with:
+
+* `Chain.verdict`, `.completed`, `.failure_step` and `.applicable` are properties, not
+  methods.  Calling ``chain.verdict()`` raised "'str' object is not callable"; the card is
+  wrapped in a broad except so the window survived and the failure surfaced as a reason
+  string.
+* `fold` was never imported into control_panel.  The NameError was swallowed by that same
+  broad except and showed up as an *empty version cell*, which reads exactly like "there is
+  no version yet" -- the one wrong answer nobody would question.  The import is fixed and the
+  except now records the failure instead of hiding it.
+* a jsonl seed written without a trailing newline lets the next append concatenate onto the
+  unterminated last line, so the ledger silently loses its newest rows: the record read back
+  as DONE and the activation looked like it had never been written.
+
+Live: one real consume pass over the production ledger -- errors 0, "[escalation] nothing to
+do", ledger 656 -> 656 rows (the activation pass is a no-op when nothing is pending, and adds
+no rows of its own).
+
+Not done, and not claimed: §五 (VERSION_ACTIVE -> LIVE_VERIFY_PENDING -> Development
+Validation Lease without a click), §六 (validation episode bound to after_version with
+VALIDATION_VERSION_MISMATCH), §七 (LIVE_TRIED / LIVE_VERIFIED gates) and §八-§九's
+production-reuse detection.  The states and the fold now exist to carry them; the drivers that
+append the events do not, and no capability has travelled the chain, so there is still no
+production_reuse_episode_id and GUI <-> WorkBuddy Loop remains INCOMPLETE.

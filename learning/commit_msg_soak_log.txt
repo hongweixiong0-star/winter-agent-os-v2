@@ -1,0 +1,32 @@
+fix(gui): a soak decision must reach the log, not only the screen
+
+The soak declined to start in a live window and the reason existed only in that process's
+memory.  The page could show it -- the previous change made it say 「启动失败：<真实原因>」 instead
+of a silent 尚未开始 -- but a reader of the log could not, and the running window could not be
+interrogated from outside.  Measured consequence: two rounds of investigation, one of which
+concluded the reason was the launch context after testing `launch_context()` in isolation and
+getting `production`, and a direct reproduction under a production `pythonw` that also answered
+`soak_created: true, soak_error: ""`.  Both were correct and neither was the answer, because the
+decision belonged to a process nobody could ask.
+
+`_drive_soak` now logs every decision it takes -- created, declined (with the reason), failed --
+through `_log_soak_once`, which writes the first occurrence and re-writes only when the decision
+changes.  The driver runs on every probe pass, so an unconditional write would repeat the same
+line every ten seconds and bury it; that is the failure mode the pump's own narration already
+solved the same way.
+
+Verified by running it: a window now puts 验收 Soak 已启动 in the log, and a production
+`pythonw` window did the same at 00:37:46 -- so the soak is running in production, and the next
+non-start will say why where it can be read.
+
+75 tests green across the affected modules; check_wiring problems: 0.
+
+Still open, and measured rather than assumed:
+
+* **The milestone is still zero** -- `version_active`, `live_verified` and `production_reuse`
+  events are all 0 in the ledger.  The chain has never executed once, and the measured reason is
+  that it has nothing to run on: `current_development_trace()` returns None and the ledger holds
+  only terminal records (COOLDOWN 2, DONE 9, FAILED 3).  A closed loop cannot be proven with no
+  open trace, so producing a new real gap is the next step, not more GUI work.
+* §10 (bootstrap heartbeat TTL wording) and §5 (historical lease release vs current holder) are
+  still unwritten; both are now *detectable* by the consistency check added earlier.

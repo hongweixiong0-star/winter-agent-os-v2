@@ -1,0 +1,18 @@
+test(evidence): record the suite verdict next to the frames it was measured on
+
+The escalation asks for a green suite and a check_wiring of problems 0 as acceptance
+evidence.  Both were produced, but the verdict lived only in out_*.txt, which is
+scratch and gitignored -- so a later session reading this evidence set could see the
+root cause and the frames but not whether the tree was verified at all.
+
+This adds the set's TEST_SUITE_STATUS.json in the shape the startup_semantics set
+already established, and it states the caveat rather than rounding it up: HEAD was
+d6e51cf when the run started, a second escalation job was editing the same tree while
+it ran, so the run covers d6e51cf plus that job's uncommitted edits and is not a
+statement about d6e51cf in isolation.
+
+Numbers are the run's own, not a summary of summaries: 1475 passed, 7 skipped, 138
+subtests, 1408.97s, exit 0, junit tests=1620 failures=0 errors=0.
+
+A green suite is not a live capability, and the file says so: criterion 2 of the
+escalation is still unmet and finding.json's not_done names what is missing.

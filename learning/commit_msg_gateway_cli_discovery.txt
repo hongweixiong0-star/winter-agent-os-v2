@@ -1,0 +1,62 @@
+fix(gateway): the CLI is found without the desktop's environment, and a pid is not an identity
+
+The operator reported "WorkBuddy = 异常" with 0x800700E8 against a desktop lock path.
+Audited rather than assumed, and the display was telling the truth about a real break --
+but not the one the lock suggested.  Measured 19:40 local:
+
+  gateway.json  available=false  reason=GATEWAY_UNREACHABLE
+  lifecycle     state=OFFLINE action=RESTART restart_attempts=0 spawned=false
+                consecutive_failures=20
+                detail="启动被拒绝：找不到 codebuddy CLI：WORKBUDDY_APP_PATH 未指向可用的应用目录"
+
+port_owner(8080) returned (0, ''), so there was no gateway at all -- and the panel was
+refusing to start one, twenty probes running.  WORKBUDDY_APP_PATH is set for the desktop's
+*children*; this panel had been launched by another agent's interpreter, so it never had it.
+Meanwhile a working command line was already written in the panel's own record and the
+binary was on disk the whole time.  That is §5 of the工单 exactly: starting the gateway must
+not depend on the desktop having started normally.
+
+So discover_cli is now a chain, and it reports which link answered:
+  1. WINTER_AGENT_CODEBUDDY_CLI      -- an operator can always say
+  2. WORKBUDDY_APP_PATH              -- best when the desktop launched us
+  3. the remembered launch argv      -- what worked before is evidence
+  4. the running desktop's own image path (ask the OS, not the environment)
+and build_plan takes remembered_argv.  Verified on the real machine, in a launcher with the
+variable removed:
+
+  lifecycle.action=RESTART  spawned=True  pid=13764
+  cli_source="上一次成功启动时记录的路径（环境变量缺失，但这条命令跑通过）"
+
+previously spawned=false with a refusal.  The gateway's own log confirms it then bound 8080
+(banner at 19:52:49).
+
+Second defect, found while auditing: a pid is not an identity.  The recorded gateway pid
+15140 was alive at 19:40 -- as the sheetagent MCP server.  pid_exists said yes, so
+ours_running was true and a gateway that was actually gone would never have been restarted.
+winproc.command_line / pid_runs now answer "is this pid still running the CLI we launched".
+They go through the external shell's CIM query because wmic is absent on this machine
+(measured FileNotFoundError); the call costs 0.35s, so it is asked only on the ambiguous
+branch (a recorded pid with nobody listening).  With no remembered command line there is no
+needle, and an unverifiable identity stays None -- conservative, because assuming "not ours"
+would start a second gateway beside a live one.
+
+Also corrected: _candidate_from_root now accepts the install root, its resources directory,
+or the unpacked directory.  It previously expected the unpacked directory while the desktop
+derivation passed the install root, so that link silently never matched -- a refusal message
+claiming nothing was on disk while the binary was there.
+
+The 0x800700E8 itself: that code is HRESULT_FROM_WIN32(232) = ERROR_NO_DATA, a pipe closing
+mid-operation in genie-trash -- a desktop-side transient during lock cleanup.  No lock file
+exists: *.lock under CodeBuddyExtension is 0 files, and nothing was deleted to make that
+true, so §2/§3 had nothing to act on.  The desktop is a single instance (13 processes, one
+main pid 20948) and is running; workbuddy-desktop-ai.info.logged-out is present, so the AI
+desktop is logged out -- recorded as DESKTOP_DEGRADED, which by §8 must not block AUTO.
+
+103 tests green across the affected modules; check_wiring problems: 0.
+
+NOT proven, and not claimed: the 15-minute unattended run.  Every process launched from a
+tool call today died with the call -- panels 24936/25408, gateways 5184/9576/11960/13764/
+15140/15552/4088 -- so no panel could be kept alive long enough from inside this session to
+observe 15 minutes, a duplicate-gateway check, and a reconciled job.  The component-level
+acceptance (live_gateway_acceptance.py, real CLI / real port / real health) passed earlier;
+the end-to-end one needs a GUI the operator starts and leaves running.

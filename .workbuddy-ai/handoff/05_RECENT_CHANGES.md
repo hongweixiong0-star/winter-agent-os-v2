@@ -6,40 +6,40 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `1e89502 2026-09-18T13:37:48+08:00 fix(restart): a guard that under-reports is the one that says 'safe to stop'`
-- `8dfc610 2026-09-18T13:29:42+08:00 test(evidence): OPEN_MARCH_FORMATION is not the wall its deferral named`
-- `cc17a1f 2026-09-18T13:14:01+08:00 feat(truth): an episode now says which account it was taken under`
-- `dc34933 2026-09-18T13:11:39+08:00 test(evidence): record the suite verdict next to the frames it was measured on`
-- `43c9ae6 2026-09-18T12:59:46+08:00 docs(handoff): the truth-source audit, and the role chain closed end to end`
-- `bb09a0a 2026-09-18T12:58:48+08:00 feat(truth): a displayed state names its source, or says it does not know`
-- `c300f89 2026-09-18T12:47:23+08:00 docs(handoff): the preload clock is running in production; arming still waits on P0-D`
-- `d6e51cf 2026-09-18T12:46:19+08:00 fix(vision): the beast tab sits at index 1, and a clipped tab needs a positive drag`
-- `80f6e58 2026-09-18T12:37:04+08:00 fix(restart): a stale snapshot is not a claim, so it must not refuse a safe reload`
-- `872608e 2026-09-18T12:07:07+08:00 feat(preload): the answer comes back, and the loop can say what it is doing`
-- `a4e6c40 2026-09-18T11:56:35+08:00 docs(handoff): mark the lease requester done and say what still needs the panel restart`
-- `c9562de 2026-09-18T11:56:20+08:00 docs(handoff): the device hand-off is closed end to end`
+- `a882c5c 2026-09-20T20:58:48+08:00 docs(issues): #64 is deeper than refusal -- the dismissal is attempted and fails`
+- `352a87c 2026-09-20T20:53:01+08:00 docs(issues): the tap-anywhere popup blocker, with the agreed fix and its measurements`
+- `0792cb8 2026-09-20T20:13:46+08:00 fix(panel): stop the unverified self-reload from closing a live panel`
+- `337bdc4 2026-09-20T18:26:59+08:00 fix(runtime): a step that issued no action must yield the goal, not end the run`
+- `fd3f153 2026-09-20T18:18:45+08:00 fix(panel): a finished subprocess is not a finished work cycle`
+- `88e4a6d 2026-09-20T18:15:08+08:00 docs: correct my own call-chain claim -- the stage ladder is dead code, confirmed by artifacts`
+- `fbb786e 2026-09-20T18:05:23+08:00 docs: 9ee62cc independently verified over 6747 frames, no regression found`
+- `197f979 2026-09-20T14:18:11+08:00 docs(issues): rebuild the test baseline, and correct a wrong known-failure list`
+- `d145242 2026-09-20T13:39:10+08:00 docs: production health check of the AUTO chain, with every claim tied to evidence`
+- `0cb30cc 2026-09-20T13:33:37+08:00 fix(runtime): a goal that cannot make progress must feed the deferral that exists`
+- `7b712d8 2026-09-20T13:27:49+08:00 test(brain): the reward-popup test asserted a stop the brain no longer takes`
+- `9ee62cc 2026-09-20T13:22:32+08:00 fix(vision): the mail inbox is not a reward dialog, and a content crop may not say it is`
 
-Uncommitted changes: 64
-- `M .workbuddy/memory/2026-09-18.md`
+Uncommitted changes: 149
+- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/MEMORY.md`
+- ` M .workbuddy/memory/2026-09-18.md`
+- ` M .workbuddy/memory/2026-09-20.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
-- ` M dataset/candidate/template_manifest.json`
-- ` M knowledge/game/beasts.json`
-- ` M knowledge/preload/INDEX.json`
-- ` M knowledge/preload/TROOP_SELECT.json`
-- ` M learning/candidate_attempt_pool.json`
-- ` M learning/control_panel/latest.log`
-- ` M learning/episodes.jsonl`
-- ` M learning/executor_backend.jsonl`
-- ` M learning/goal_state.json`
-- ` M learning/knowledge_bootstrap/STATE.json`
-- ` M learning/resource_rotation.json`
-- ` M learning/runtime_snapshot.json`
-- ` M learning/stamina_supply.json`
-- ` M learning/truth_source_audit/STATE_TRUTH.json`
-- ` M learning/workbuddy_escalations.jsonl`
-- ` M learning/workbuddy_model_stats.jsonl`
-- ` M winter_agent_v2/brain.py`
+- ` M docs/CAPABILITY_COVERAGE.md`
+- ` M docs/CURRENT_TRUTH.md`
+- ` M docs/LEGACY_AUDIT.md`
+- ` M evidence/INDEX.json`
+- ` M knowledge/game/capability_catalog.json`
+- ` M knowledge/goals/capability_skill_map.json`
+- ` M knowledge/goals/goal_capability_map.json`
 <!-- /AUTO:recent_commits -->
 
 ---

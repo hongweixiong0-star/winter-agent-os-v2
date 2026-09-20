@@ -1,0 +1,67 @@
+fix(version): a version is its content, and a waiting capability is not an idle slot
+
+Operator §0, the two correctness holes that would have made every rung above them compare
+nothing while looking like a pass.
+
+§0A -- the version token was `head[:12] + "+" + dirty_count`.  Two different working trees can
+share a commit, share the *number* of changed files, and contain entirely different code, so
+the token answered "same version" about two different trees -- and activation, validation
+binding and production reuse all compare versions.  Now:
+
+  clean tree  -> the full commit sha (a 12-hex prefix is a display convenience, not an identity)
+  dirty tree  -> the full sha + sha256(staged diff, unstaged diff, untracked manifest)
+
+The digest covers three parts rather than one `git diff` because staged and unstaged changes
+are both part of the version and an untracked file is a change to the tree that no diff
+mentions.  `differs_from` now asks the token instead of the parts, which is what made a
+same-head same-count different-content pair look unchanged.
+
+§0B -- one agent slot is not one unfinished capability.  `VERSION_ACTIVE`, `LIVE_VERIFY_PENDING`
+and `REJOINED` are in neither ACTIVE_STATES nor TERMINAL_STATES: the first would let a
+capability that is merely waiting for a device hold the single WorkBuddy slot and stop every
+other capability from being developed, and the second would let a new gap for the same
+capability open a second job.  `unfinished_trace()` is the second question, asked by the
+throttle's sibling check:
+
+  one agent slot          -> free for capability B while A waits
+  one unfinished capability -> still exactly one job for A
+
+It also treats a terminal lifecycle state with an open *outcome* as unfinished, which is what
+`LIVE_VERIFIED` (waiting to be re-joined) and `LIVE_TRIED` (waiting for proof or repair) are.
+
+§一 -- the driver from VERSION_ACTIVE to LIVE_VERIFY_PENDING, with no click: after activation
+the queue appends `live_verify_pending` carrying the whole version context (key/trace, job,
+capability, skill, goal, before/after/active version, activation episode, requested_at).  The
+outcome on that event is VERSION_ACTIVE -- the rung actually achieved -- which is also what
+makes the pass idempotent: the activation detector only fires while the outcome is still
+VERSION_ACTIVATION_PENDING, so nothing is activated or requested twice.  A record whose
+active_version differs from after_version is deliberately *not* sent: examining the wrong code
+and then crediting the right capability is the failure §四 exists to prevent.
+
+Tests (operator §16, items 1, 9, 10 and the driver):
+  same HEAD + same dirty count + different diff -> different token
+  a waiting capability blocks a second job for itself
+  a different capability may still use the agent slot
+  the slot is free while a version awaits its examination
+  VERSION_ACTIVE is sent for validation by the queue itself, once, with the full context
+  a version that is not the one under test is not sent
+
+One existing fixture was rewritten: `test_a_concurrent_success_on_the_old_tree_is_not_the_jobs_
+proof` built `RepoRevision("a", 0, True)` against an episode revision of `"a+0"` -- the old
+token form.  A clean tree's token is now the full commit, so the two stopped matching and the
+test began passing for the wrong reason.  The assertion's meaning is unchanged; only the
+fixture's spelling moved.
+
+Live: one real consume pass over the production ledger -- errors 0, "[escalation] nothing to
+do", 656 -> 656 rows, no active jobs.  The new driver writes nothing when nothing is pending.
+
+396 tests green across the affected modules; check_wiring problems: 0.
+
+Not done, and not claimed: §二 (automatic Development Validation Lease acquisition), §三
+(passing trace/version context into the run_live.py worker and recording execution_mode /
+expected_after_version on the episode), §四 (the VALIDATION_VERSION_MISMATCH gate), §五
+(LIVE_TRIED), §六 (the LIVE_VERIFIED gate), §七 (the failure path), §八 (REJOINED), §九 (the
+production-reuse detector) and §十二 (the bootstrap completion hook).  The states, the fold and
+the first two drivers now exist to carry them; the drivers that append live_tried /
+live_verified / joined / production_reuse do not, so no capability has travelled the chain and
+there is still no production_reuse_episode_id.

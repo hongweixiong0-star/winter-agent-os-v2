@@ -1,0 +1,73 @@
+fix(version): the fingerprint follows content, and a process reports the code it loaded
+
+Operator §A and §B, the two root facts the whole LIVE_VERIFIED chain rests on.  Both were
+holes through which a wrong version could have been credited while every check "passed".
+
+§A -- a path is not content.  The digest covered staged diff + unstaged diff + an untracked
+*manifest*, and the manifest listed paths without their bytes, so editing the contents of an
+untracked file produced the same version -- and an untracked file is exactly how a
+development agent delivers a new template or knowledge file.
+
+New `winter_agent_v2/version_identity.py`, stdlib-only by design (it has to run before the
+runtime is imported):
+
+  clean tree -> the full commit sha
+  dirty tree -> the full sha + sha256 over sorted (status, path, content-hash) for every
+                version-*relevant* dirty path; a directory is expanded file by file, a
+                deletion contributes a DELETE marker, and an untracked file contributes its
+                bytes
+
+The path policy is explicit and both-sided, because the two failure modes are opposite:
+
+  include  winter_agent_v2/ · config/ · knowledge/ · dataset/candidate/ · tools/run_live.py ·
+           tools/preflight.py
+  exclude  learning/ · evidence/ · dataset/raw/ · dataset/truth_audit/ · docs/ · .git/ ·
+           .workbuddy · out_* · __pycache__ · *.pyc
+
+Hashing everything dirty would drift the version every time an episode or a screenshot was
+written, so a version could never be observed twice and "the same version ran" would be
+unfalsifiable.  tools/ is whitelisted by file rather than by directory for the same reason:
+the GUI is not part of what a live cycle loads.
+
+A defect the new test caught: git collapses an untracked *directory* into one entry, so a
+fresh `dataset/candidate/` arrives as `?? dataset/` -- and asking `is_version_relevant` about
+`dataset/` answers no, meaning the relevant files inside it were never looked at.  Untracked
+entries are now expanded, with a prune so the walk never descends into `learning/`,
+`evidence/` or `dataset/raw/`.
+
+`escalation_queue.repo_revision` now delegates to that one implementation rather than keeping
+a second copy that could drift.
+
+§B -- the disk is not what is running.  `tools/run_live.py` imports fifteen `winter_agent_v2`
+modules at module scope and read the revision inside `main()` (line 129), so its "revision"
+described the disk *after* those imports.  A job finishing mid-cycle would have had its new
+revision credited to an episode produced by the old code.  The file now freezes
+`PROCESS_CODE_REVISION` immediately after `sys.path` is set and *before* the runtime imports;
+the episode's value comes from that freeze, and the now-misleading `repo_revision` import is
+gone so a live read is not available to be written onto an episode again.  Freezing is
+idempotent, so no later code path can move the goalposts mid-process.  The existing
+VERIFIER_MAPPING_CORRUPT guard -- "the source tree was rewritten while it was loaded" -- is
+untouched and still covers the import window.
+
+The episode keeps the single `repo_revision` field rather than gaining a `process_code_revision`
+twin: it now *is* the frozen value, and two fields holding one fact is the duplication the
+project's own rules forbid.  Flagged here so it can be overruled deliberately.
+
+Tests, including both requested counterexamples:
+  same HEAD + same dirty count + same untracked filename + different content -> different token
+  run products (episodes, screenshots, panel logs, evidence) -> token unchanged
+  deletion of a version-relevant file -> different token
+  code edited after the freeze -> the process still reports what it loaded
+  structural: the freeze precedes the first runtime import, and no `tree_revision(ROOT)` remains
+
+Live measurement on the real tree: 0.17s, 17 version-relevant dirty paths, exclusions verified
+individually.
+
+406 tests green across the affected modules; check_wiring problems: 0.
+
+Not done, and not claimed: §C's remaining drivers -- the automatic Development Validation
+Lease, passing trace/job/capability/expected_after_version into run_live, the
+execution_mode/process_code_revision fields on the episode, the VALIDATION_VERSION_MISMATCH
+gate, live_tried, live_verified, the failure path, rejoined, the production-reuse detector and
+the bootstrap completion hook.  Version Activation is IMPLEMENTED but E2E UNPROVEN: no
+capability has an activation_episode_id, so there is still no production_reuse_episode_id.

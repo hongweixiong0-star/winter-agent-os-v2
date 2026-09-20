@@ -1,0 +1,54 @@
+feat(validation): the gates are now reachable -- a real chain from rejoin to production reuse
+
+Until this landed the settlement gates were tested and unreachable: nothing called
+`validation_settlement`, nothing appended `live_tried` or `live_verified`, and the
+production-reuse detector had no record in the state it looks for.  A gate nothing invokes is
+not a guard, it is a comment.
+
+`EscalationQueueAdapter.settle_validations(moment)` runs on the consume pass, after the request
+phase so each pass advances one rung, and drives three things from the ledger rather than from
+a worker's exit code -- which also makes it restart-proof: a window that died mid-examination
+re-derives the same answer from the same rows.
+
+  1. a record waiting on its examination gets `live_tried`, `live_verified`, or a refusal named
+     after what was actually wrong;
+  2. a verified record whose device is confirmed returned gets `rejoined` -- carrying no
+     `production_reuse_episode_id`, because re-joining is not reuse;
+  3. a re-joined record whose capability was used by *ordinary play* gets `production_reuse`
+     and reaches DONE.
+
+`detect_production_reuse` requires a PRODUCTION-mode episode on the produced version with a
+passing verifier and, where the defect demands it, goal progress -- and, added because a test
+caught its absence, **recorded after the rejoin**.  Without that last condition a production
+episode from while the capability was still being examined counted as proof that it was back in
+normal use, which is the thing being proved.
+
+§9's correction also applied to the fold: `rejoined` used to write
+`production_reuse_episode_id`, and now writes `rejoined_at` instead.  `production_reuse` is the
+only event that may fill that field, and it is the only one that reaches DONE.  That split is
+what stops "the exam passed" from reading as "the capability works in play".
+
+`_is_true` accepts a bool or its JSON spelling: these rows are read back from a file that older
+producers may have written, and a check that insisted on one spelling would silently stop
+finding reuse rather than failing loudly.
+
+Tests (11 new, plus one corrected): a passing examination reaches LIVE_VERIFIED; rejoin happens
+after verification and only when the device is verifiably back (a held lease refuses it, with a
+reason); rejoin carries no reuse id; a failed attempt is LIVE_TRIED only; a version mismatch
+routes back to the activation rung rather than spending the repair budget; an ordinary
+production episode after the rejoin ends the chain at DONE; a validation episode can never be
+the reuse even after repeated passes; a production episode on the wrong version is not reuse;
+goal progress is required where the defect demands it; settlement is idempotent; and
+structurally, that the consume pass calls it after the request phase.
+
+One older test was corrected rather than deleted: `test_a_rejoined_event_records_the_production_
+reuse_episode` asserted the semantics §9 later reversed.  It now asserts the split.
+
+302 tests green across the affected modules; check_wiring problems: 0.  Live consume pass on the
+production ledger: 0.38s, errors 0, 656 -> 656 rows -- the whole-stream episode read the detector
+needs is affordable at the pump's cadence, and nothing is written when nothing is pending.
+
+Still not done: §11 (the bootstrap completion hook still fires at job settle rather than after
+production reuse).  And the E2E has not run: no capability has an activation_episode_id, so
+`production_reuse_episode_id` is still empty and the loop stays INCOMPLETE.  What changed is that
+the chain no longer has a missing link -- it has an empty one.

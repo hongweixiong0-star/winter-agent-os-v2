@@ -1,0 +1,42 @@
+fix(queue): a developed trace can no longer be certified by a production success
+
+Operator §4's audit target, and it was the *first* branch of `reconcile_outcome`: if any
+production episode with `verifier_ok` existed on a tree differing from dispatch time, the
+outcome was LIVE_VERIFIED.  For a trace that came from a WorkBuddy job that is false credit
+twice over, and it bypassed the entire ladder the operator requires:
+
+  VERSION_ACTIVE -> LIVE_VERIFY_PENDING -> Development Validation -> LIVE_TRIED -> LIVE_VERIFIED
+
+* the episode proves the capability works on the tree it ran, not on the version the job
+  produced -- and `version_changed_from` admits *any* differing tree, including a third one, so
+  "the new version ran" is not established by it;
+* the same episode would exist if the agent had done nothing, so nothing about it is evidence
+  that the job taught V2 anything.
+
+`reconcile_outcome` gains `from_development_job`.  For a developed trace the branch now returns
+`VERSION_ACTIVATION_PENDING` -- the rung that routes into the activation/validation ladder --
+with an explanation naming why, so the record moves forward instead of ending at a verdict.  The
+old production-proof branch is kept intact for the case it was written for: a capability with no
+job at all, where the runtime proving it to itself *is* the proof.
+
+The adapter sets the flag at both reconcile call sites from the record's own job id.
+
+Tests (operator's counterexample 4): a production success on a developed trace yields
+VERSION_ACTIVATION_PENDING and not LIVE_VERIFIED, with the reason stated; the same episode still
+certifies a capability that has no job; and both call sites carry the flag.
+
+A residual gap, named rather than papered over: the keyword defaults to ``False`` -- the
+permissive branch -- because this pure function also answers "did the runtime prove a capability
+with no job", where the production-proof logic is correct and must be allowed through.  So the
+guard is enforced by the two adapter call sites, and a *future* caller that forgets the keyword
+would get the shortcut.  Flipping the default to ``True`` is the safer shape and is deliberately
+not done in the same change: it alters the meaning of the no-job case, and the existing reconcile
+tests encode that meaning -- changing both at once, at the end of a session, is how a rule gets
+broken in the name of enforcing it.  Recorded here so it is a decision and not an oversight.
+
+263 tests green across the affected modules; check_wiring problems: 0.
+
+Still not done: the §5-§8 settlement drivers (live_tried / live_verified / rejoined /
+production_reuse), the §9/§10 split of REJOINED from production_reuse in the fold, and the §11
+bootstrap completion hook move.  So `production_reuse_episode_id` is still empty and the loop
+stays INCOMPLETE -- but the path that could have made it *look* complete is now closed.

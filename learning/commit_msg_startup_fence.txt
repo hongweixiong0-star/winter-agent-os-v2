@@ -1,0 +1,34 @@
+feat(version): refuse a cycle whose tree moved between the freeze and the first device action
+
+Operator, 2026-09-18: R1 is the version-relevant tree frozen before the runtime imports; R2 is
+it re-measured after the imports and the verifier-mapping assertion.  Only R1 == R2 may reach
+real-device execution.
+
+Between the two lies the whole runtime import block, and in that window another agent may
+commit, a reload may swap files, or a checkout may run -- leaving the process executing a
+mixture whose episodes belong to *no* version.  Refusing costs one cycle and leaves nothing
+half-done, because no device action has happened yet.  Not refusing would write episodes that
+every reader downstream -- activation, validation binding, production reuse -- would attribute
+to whichever version it assumed, which is the false credit this chain exists to prevent.
+
+The comparison lives in `version_identity.startup_fence(root) -> (ok, frozen, current)` rather
+than inline in the entry point, so it can be exercised without running a live cycle: freezing
+on a real throw-away repository, editing it, and asserting the fence fails.  Both sides are
+returned so the refusal can report what changed to what.
+
+`tools/run_live.py` returns 3 with STARTUP_VERSION_CHANGED in that case, after the frozen
+revision is chosen and before `LiveRuntime` is constructed -- the first thing that can touch
+the device.  A structural test asserts that ordering, because the ordering is the guarantee.
+
+The fence deliberately ignores run products: an episode or screenshot appearing during startup
+must not abort a live cycle, or the fence would fire constantly.  That is the same policy
+boundary as the fingerprint itself.
+
+20 tests green across the version-identity suites; check_wiring problems: 0.
+
+Still not done, and this is the honest state: the Validation Lease acquisition, passing
+trace/job/capability/expected_after_version into run_live, the episode's execution_mode and
+validation-context fields, the VALIDATION_VERSION_MISMATCH gate, live_tried, live_verified,
+rejoined, the production-reuse detector and the bootstrap completion hook.  No capability has
+an activation_episode_id, so there is still no production_reuse_episode_id and the loop stays
+INCOMPLETE.

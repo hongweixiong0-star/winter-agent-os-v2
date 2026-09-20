@@ -6,12 +6,12 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x134 all-time; recent=6 (last 2d), last seen 2026-09-18T05:06:04.658133+00:00 — SELECT_RESOURCE(44), SEARCH_RESOURCE(32), OPEN_MAIL(13)
-- **BEAST_SCAN_NOT_PROVEN** x5 all-time; recent=5 (last 2d), last seen 2026-09-17T23:42:38.305798+00:00 — SCAN_MAP_FOR_BEAST(5)
-- **INTEL_BEAST_TARGET_NOT_PROVEN** x8 all-time; recent=3 (last 2d), last seen 2026-09-17T04:38:27.078429+00:00 — OPEN_INTEL_BEAST_TARGET(8)
-- **OPEN_MAP_NOT_PROVEN** x6 all-time; recent=3 (last 2d), last seen 2026-09-18T02:56:04.526909+00:00 — OPEN_MAP(6)
-- **DAILY_REWARD_ADVANCE_NOT_PROVEN** x5 all-time; recent=2 (last 2d), last seen 2026-09-17T00:26:34.147170+00:00 — DISMISS_DAILY_REWARD(5)
-- **SAFE_BACK_NOT_PROVEN** x3 all-time; recent=2 (last 2d), last seen 2026-09-17T08:01:06.434755+00:00 — BACK(3)
+- **FREE_STAMINA_CLAIM_NOT_PROVEN** x236 all-time; recent=153 (last 2d), last seen 2026-09-20T10:18:03.144489+00:00 — CLAIM_FREE_STAMINA(236)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x224 all-time; recent=90 (last 2d), last seen 2026-09-20T13:00:04.155708+00:00 — SELECT_RESOURCE(44), DISMISS_MAIL_GENERIC_REWARD(39), DISMISS_INTEL_REWARD(35)
+- **ALLIANCE_GIFTS_CLAIM_NOT_PROVEN** x11 all-time; recent=11 (last 2d), last seen 2026-09-19T09:09:43.182090+00:00 — ALLIANCE_GIFTS(11)
+- **INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN** x12 all-time; recent=10 (last 2d), last seen 2026-09-19T12:31:43.758085+00:00 — NAVIGATE_INFANTRY_CAMP(12)
+- **SAFE_BACK_NOT_PROVEN** x13 all-time; recent=9 (last 2d), last seen 2026-09-20T10:16:19.235731+00:00 — BACK(13)
+- **EXPLORATION_IDLE_DIALOG_NOT_PROVEN** x8 all-time; recent=7 (last 2d), last seen 2026-09-19T11:24:22.269603+00:00 — EXPLORATION_IDLE_CLAIM(8)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
@@ -22,7 +22,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 76 uncommitted file(s): ['M .workbuddy-ai/memory/MEMORY.md', ' M .workbuddy/memory/2026-09-18.md', ' M config/control_panel_state.json', ' M config/policy_state.json', ' M dataset/candidate/template_manifest.json']
+- 149 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -389,3 +389,33 @@ Machine-detected issues (recomputed every run):
 **点它并不能退出这个"点任意位置退出"的弹窗**。
 ⇒ 结论修正/加强：**修法不能只改决策兜底，必须同时改"点哪儿"**（页脚退出带 y≈0.90，或等价的一次中性点击）。
 只改 `brain.py:412` 的兜底 = 让一个已经证明无效的点击多发生几次。
+
+**#64 续办入口（2026-09-20 21:02，交接给下一个会话）**
+
+**现状**：面板在跑（操作员从桌面重启的），AUTO 在跑；**它现在被奖励弹窗反复打断**
+（最近 20 分钟 6 轮中 5 轮是"单个动作失败"，全是 `DISMISS_*_GENERIC_REWARD:FAILURE`）。
+`CLEAR_INTEL` 已 `DEFERRED`(streak 4)，体力 Goal 未完成。
+
+**下一步按这个顺序做**：
+1. **先改"点哪儿"**，再改决策兜底（顺序反了会白做一次真机）：给那张「获得奖励/点击任意位置退出」
+   的弹窗一个**真正有效**的落点——页脚退出带 `y≈0.90`（已实测 `BTN_DISMISS_INTEL_REWARD` 在
+   `20260920_204143_843357/…_step_001_before_…png` 上以 **d=2** 命中该带；其 `roi_norm` 为
+   `x .36 y .90 w .28 h .07`）。**不要**继续用 `POPUP_GENERIC_REWARD_HEADER`（横幅，点了无效）；
+   **不要**用 `CLOSE_POPUP`/`BTN_CLOSE`（该帧 **d=28 ≫ 门 6**，ROI 在右上空白）。
+2. 新增**goal 中立**的关闭技能并**绑 verifier 且进 `VERIFIED_ATOMIC`**（否则永不被调度），
+   再把 `brain.py:412` 的 `SAFE_STOP` 兜底指到它。
+3. 同步改两处守卫（**必须与 1、2 一起提交**，否则 `check_wiring` 会红）：
+   `check_wiring` 的 `OK brain: reward popup without goal context stops rather than guessing`
+   与 `tests/test_reward_popup_source.py::…::test_without_goal_context_it_stops_rather_than_guessing`。
+   理由：关掉一个自称"点任意位置退出"的弹窗**不是猜**，是它自己声明的退出方式。
+4. 在**本机**验证落点的方法（不需要占设备）：取该帧路径，
+   `SemanticWorldVision(template_manifest.json, max_distance=999)` 然后 `semantic.find(frame, name)`，
+   读**原始距离**再和 `semantic_max_distance` 的门比 —— 这是分辨"差一点"和"对着空地"的唯一办法
+   （#51/#52 的方法；今天它已经纠正过我两次）。
+5. **情报剩余数 / 体力读数仍未取到**（回答验收表 §一 必须补）：
+   在**客户端停在情报页**时抓一帧、在**停在 MAP**时抓一帧 HUD，然后用 `Read` 直接看图读数。
+   **不得**用 `OPEN_INTEL` 次数、`SCAN_MAP_FOR_BEAST` 次数、Skill PASS 次数或进程重启次数替代；
+   **不得**用观察存储里的旧读数（当前那个 `8` 取自 `%TEMP%` 临时帧、4 小时前，已污染）。
+   抓帧的现成来源：`dataset/raw/control_panel/runtime_auto/<最新轮次>/*_step_*_before_*.png`。
+6. 仍未验证、不要当成已完成：`337bdc4` 的失败让位（尚无 `yield` 行）、普通野怪出征（0 次）、
+   所有角色/巡视/事件驱动的下一轮（工作周期机制尚不存在）。

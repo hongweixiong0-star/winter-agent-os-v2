@@ -1,0 +1,42 @@
+fix(panel): the window crashed on its first refresh, and then restarted itself forever
+
+Two defects of mine, both found by finally *running* the window instead of importing it.
+`check_wiring` was green, the whole affected suite was green, and the panel died within five
+seconds of opening -- which the operator experienced, correctly, as "点击桌面GUI无法启动".
+
+**1. A shadowed local name.** `_check_control_plane_reload`'s companion block was written with
+`state = str(card.get("record_state") or "")`, and it sits inside `_narrate_pump`, whose
+`state` is the pump's snapshot dict. Every later `state.get(...)` in that function became
+`AttributeError: 'str' object has no attribute 'get'` -- on the refresh path, so the window died
+moments after opening. Renamed to `record_state`.
+
+**2. A self-restart loop.** `config/control_panel_state.json` lives under the version-relevant
+`config/` prefix, and the panel *writes* it on start-up to persist the operator's intent. So the
+fingerprint changed the instant the window opened: the window compared its frozen version with
+the disk, found them different, concluded a control-plane file had changed, and restarted
+itself -- writing the file again and restarting again. Observed live:
+
+    22:59:47 控制面重载：已按安全点重启窗口（CONTROL_PLANE_RELOAD_REQUIRED：
+             本进程加载的 0610b63af902 已被 0610b63af902 取代，涉及控制面 tools/control_panel.py）
+
+Identical commit on both sides, which is what made it obvious. `EXCLUDED_FILES` now names the
+files that live under an included prefix but are written by the running system rather than by a
+developer -- listed individually, because `config/` also holds real configuration that must stay
+in the fingerprint. A file the system writes about its own state is not a change to the
+system's code.
+
+Verified by running it: the window now survives 40 seconds with no crash, no self-restart and
+no traceback, starts the gateway itself (port 8080 -> node pid 12952), and its own log shows the
+control-plane check declining to fire. 87 tests green across the affected modules; check_wiring
+problems: 0.
+
+What this changes about how I work on this project: an import check and a green suite say
+nothing about a Tk application's first refresh. `_narrate_pump` is only reachable through
+`ControlPanel.__init__ -> refresh`, which no test drives, so the one thing that mattered was the
+one thing nothing exercised. The next guard belongs there -- a stub-driven `refresh()` -- and
+until it exists, a UI-path change is not done until the window has been started and watched.
+
+Also: this means the earlier attribution of the 16 failed launches to "the development host
+reaps detached children" was at best half right. The panel was crashing. The host limitation is
+real and separately measured, but it was covering for a bug, which is exactly what a
+convenient explanation does.

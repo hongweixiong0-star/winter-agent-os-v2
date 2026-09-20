@@ -1,0 +1,38 @@
+feat(gui): name the four ways a page can contradict itself, instead of resolving them quietly
+
+Operator §9.  The rule is not "these are unlikely" -- three of the four were measured on
+2026-09-18 in a single screenshot -- but that a page holding two contradictory facts has already
+failed, and the failure is *silent*: a reader believes whichever one they saw first.  So the
+mechanism is a named finding, never a tie-break.
+
+`winter_agent_v2/consistency.py` holds the four rules as one pure function, so each is tested by
+handing it the two contradictory values rather than by reproducing the situation:
+
+    REUSE_WITHOUT_VERIFICATION       生产复用 recorded with no LIVE VERIFIED episode
+    TRACE_DISAGREEMENT               two regions name different current traces
+    LOST_JOB_SHOWN_AS_VERIFYING      JOB_LOST displayed as 验证中
+    RELEASED_LEASE_SHOWN_AS_HOLDER   a released lease shown as the current owner
+
+Every finding carries both values and one sentence saying which of them is not to be trusted yet
+-- "do not quietly choose an answer" made mechanical.  The legitimate case stays quiet, so the
+check does not become noise: reuse *after* verification, a held lease displayed as held, and a
+lost job displayed as lost all report nothing.
+
+It is a checker, not a store: every value comes from a selector or an artifact that already
+exists, including `current_development_trace` -- because comparing two independently chosen
+"current" traces is what produced the disagreement it now catches.  §7 had to land first for
+this to be possible at all; before it there was no single trace to compare against.
+
+The development page gains a 一致性 cell, wired beside the soak line.  It starts as
+**未检查（等待首次刷新）** rather than as "一致", for the same reason the top bar starts at
+未确认: a page that has not compared anything must not claim consistency.  A failing check
+reports itself ("检查失败 <type>") rather than going blank.
+
+Verified live: each rule fires on its contradictory pair and stays silent on the legitimate one.
+178 tests green across the affected modules; check_wiring problems: 0; and the window was started
+and watched for 30 seconds with no crash -- with the checker running on its refresh path.
+
+Still open from this工单: §10's bootstrap heartbeat TTL wording (运行中 beside a 891s-old
+heartbeat) and §5's split of historical lease releases from the current holder in the device row.
+Both are now *detectable* by the check added here, which is a smaller fix than the row rewording
+they also need.

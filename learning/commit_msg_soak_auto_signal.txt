@@ -1,0 +1,26 @@
+docs(handoff): the soak cannot see AUTO running, and the reason is its sampling
+
+AUTO reaches AUTO_RUNNING with both threads alive -- independently observed twice in 45 seconds by
+polling the snapshot every 2 s, at 12:28:20 and 12:29:01.  But the soak's own 24 samples over 4.91
+minutes recorded auto_running False on every single one, so its auto_gameplay condition failed with
+"窗口内测到 AUTO 未在运行（AUTO 状态可读但为停止）".
+
+That sentence is wrong, and the arithmetic says why.  Each round is a fresh process, and the thread
+flags are true only while the machine is mid-round -- measured at roughly 4 seconds inside a 30-40 s
+round, so about a tenth of the time.  The soak samples from the probe thread on a fixed cadence of
+roughly 12 seconds.  Its aggregation is already lenient (any sample true wins), but a tenth-of-the-time
+signal sampled a twelfth as often is a coin toss that it never lands, and the two periodicities can sit
+near a ratio that keeps the sample in the same phase of the round.
+
+So the check is unreliable by construction rather than merely unlucky, and it is the one condition
+still failing.  I have NOT changed it: what "AUTO continued gameplay" should mean is an acceptance
+criterion, and quietly widening a condition that is failing is exactly what this project forbids.  The
+honest fix is for the operator to decide, and the shape of it is to judge continuity across the window
+-- rounds that actually happened -- instead of sampling a per-round thread flag and hoping to catch it.
+
+The rest of the soak's conditions are healthy on the same 24 samples: gui_alive, gateway_reachable
+(24/24 = 100%), single_gateway, port_owner_legal, no_restart_loop, no_duplicate_job,
+no_extra_spawn_per_refresh, no_black_console all pass.  pump_ticking fails on one stale heartbeat out
+of 24, which is the same "sampled between rounds" shape.
+
+Recorded, not fixed: the acceptance condition needs a decision, not a patch.

@@ -1,0 +1,38 @@
+fix(order): a no-progress wall is named by the step the route never reached
+
+The escalation NAVIGATE_TO_MAP|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH was filed
+against a capability that is already LIVE_VERIFIED and STABLE (OPEN_MAP, 101
+attempts / 92 success), while every step past it on the same goal is DEGRADED.
+It could not be acted on, because there was no live symptom behind it.
+
+Root cause: capability_gate._route_capability walked the goal's SEQUENCE
+composition and returned the first capability that was already in `reached`.
+For KEEP_MARCHES_PRODUCTIVE that is composition index 0, NAVIGATE_TO_MAP,
+reached on every cycle by OPEN_HOME/OPEN_MAP -- so a route that had stopped at
+SUBMIT_RESOURCE_SEARCH (FIND_RESOURCE_NODE) and never reached OPEN_MARCH_FORMATION
+was still handed over as a navigation wall.
+
+The frontier is now the name for a SEQUENCE goal: the first capability the route
+has not reached.  ANY_OF goals keep the first-reached behaviour, because any
+reached alternative is genuinely a path the goal is driven along -- that is why
+AVOID_STAMINA_WASTE still resolves to SPEND_STAMINA_ON_BEAST.
+
+Measured on the real episode stream (last 400 rows, 2026-09-18):
+  reached KEEP_MARCHES_PRODUCTIVE = {FIND_RESOURCE_NODE, NAVIGATE_TO_MAP,
+    OPEN_RESOURCE_SEARCH, SCAN_MAP_FOR_BEAST, SELECT_RESOURCE_TYPE}
+  before: NAVIGATE_TO_MAP   after: OPEN_MARCH_FORMATION
+
+Live verification (production runtime, bound verifier, real client):
+  tools/run_live.py --goal INTEL --stop-after OPEN_MAP --max-actions 1
+  episode nav_to_map_20260918, skill OPEN_MAP, HOME 0.98 -> MAP 0.99,
+  verifier ok=true reason=OK after_confidence=0.99, stop_reason
+  TARGET_SKILL_VERIFIED, capture_backend MAA_MUMU_EXTRAS.
+  The evidence dict carries after_confidence, which only the patched
+  verify_open_map produces, so the dispatched verifier was this code.
+  Evidence: dataset/truth_audit/nav_to_map_20260918/regression_fix_57848179.json
+  and dataset/truth_audit/nav_to_map_20260918/key/live_20260918_job57848179_*.png
+
+Unproven and named rather than hidden: the next wall (OPEN_MARCH_FORMATION) has
+NOT been live-fixed; the KEEP_MARCHES_PRODUCTIVE no-progress streak itself is
+still unexplained; the escalation's own dispatch failure (the single concurrency
+slot held by 0440cd38 for its whole timebox) is not addressed by this change.

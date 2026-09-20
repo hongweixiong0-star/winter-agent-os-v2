@@ -1,0 +1,55 @@
+feat(validation): decide what one examination proved, and refuse the four ways it proves nothing
+
+Operator §5-§7, as one pure function plus the fold events that carry its answer.  The shape is
+the point: six outcomes, four of which are refusals, each with its own name, because an
+examination whose episode matches on four of five axes is not "mostly verified" -- it is
+unusable, and collapsing the cases is how a launch, a screenshot, a SAFE_STOP or a navigation
+succeed quietly becomes proof.
+
+  LIVE_VERIFIED                matched on every axis *and* the capability was proved
+  LIVE_TRIED                   the capability really ran; success unknown
+  VALIDATION_VERSION_MISMATCH  a real attempt, on the wrong code
+  VALIDATION_CONTEXT_MISMATCH  an episode that is not this trace's at all
+  VALIDATION_NO_PROOF          nothing ran the target
+
+`validation_settlement(...)` applies the axes together: mode must be DEVELOPMENT_VALIDATION (a
+production episode answers a different question and may never stand in -- operator §8), trace
+must match (named trace or nothing: the "first LIVE_VERIFY_PENDING" mistake, one layer down),
+job and capability must match, and the version must match on *both* sides -- the episode's
+`repo_revision` and the version the cycle claimed to expect, because a claim that disagrees with
+what ran is not trustworthy either.  LIVE_VERIFIED then additionally requires the verifier to
+have passed, the evidence frames to exist, and -- for a defect whose proof *is* goal progress --
+actual goal progress, so action success without movement cannot be a verified goal capability.
+
+Fold events, and the state each leaves the record in:
+
+  validation_result  the examination's answer when it is not a pass.  A VERSION_MISMATCH is
+                     routed *back* to VERSION_ACTIVATION_PENDING: it is a failed measurement,
+                     not a failed capability, and parking it as a failure would spend the repair
+                     budget on a code problem that does not exist.  A NO_PROOF attempt records
+                     the episode it saw, so "we tried and nothing ran" leaves a trace.
+  live_tried         outcome LIVE_TRIED plus the attempting episode id -- so a failed reach
+                     still says on the row that the device was really touched.
+  live_verified      outcome LIVE_VERIFIED plus the passing episode id and verified_at, and the
+                     state deliberately stays LIVE_VERIFY_PENDING: a verified capability has not
+                     re-joined normal play, and REJOINED (appended once the device is actually
+                     given back) is the state that says it is back in the production pool.
+                     Neither is terminal while production reuse is unproven, which keeps the
+                     capability in UNFINISHED_TRACE_STATES and stops a second job for it.
+
+Tests (12, covering the operator's counterexamples 5-8): a launch/SAFE_STOP is not a try; a
+production episode cannot stand in; an episode from another trace, or with the wrong job or
+capability, is refused; the wrong version -- on either side -- is a mismatch and never a pass;
+navigating without executing the target skill is not a try; the target ran but the verifier
+failed is LIVE_TRIED only; missing evidence frames are not a verification; action success
+without goal progress is not a verified goal capability while the same episode *does* verify a
+defect that has no goal to move; a fully matching examination verifies; and the last matching
+episode is the one credited.
+
+291 tests green across the affected modules; check_wiring problems: 0.
+
+Not done: the driver that *calls* `validation_settlement` after a worker finishes (reading the
+new episodes from the store and appending these events), the §8 REJOINED append after the lease
+is returned, the §9/§10 production-reuse detector, and the §11 bootstrap completion hook move.
+So the gates now exist and are tested, and nothing yet invokes them in production -- which means
+`production_reuse_episode_id` is still empty and the loop stays INCOMPLETE.

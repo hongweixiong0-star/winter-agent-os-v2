@@ -1,0 +1,40 @@
+fix(vision): the beast tab sits at index 1, and a clipped tab needs a positive drag
+
+Live measurement 2026-09-18, MuMu 720x1280, search panel open on device: the
+strip reads 失控的雪怪 / 野兽 / 冰原巨兽 / MEAT / WOOD / COAL / IRON at a 157 px
+pitch, so the beast tab is strip index 1 and not index 0.  resource_tab_order
+claimed index 0 was BEAST and index 2 a sawmill.  resource_cell_center_norm is
+index based, so asking for BEAST resolved to a cell one whole pitch to the left
+of the real tab, off screen, and it returned None on every frame.  The client
+search for beasts -- whose tab is drawn on every open panel -- was therefore
+untappable, and the only remaining beast hop, SCAN_MAP_FOR_BEAST, is a bounded
+3 pan sweep with no convergence criterion.  The route ran, every step passed its
+own verifier, and the goal never moved: SPEND_STAMINA_ON_BEAST six times with no
+part advancing.
+
+The first three names are volatile.  The 2026-09-14 client read 野兽 / 冰原巨兽 /
+大型锯木厂; the 2026-09-15 and 2026-09-18 clients read 失控的雪怪 / 野兽 /
+冰原巨兽.  The four gatherables keep their nominal positions either way, so
+MEAT / WOOD / COAL / IRON and every reviewed cell template are untouched.  The
+durable fix -- read the anchored tab's printed label with RapidOCR instead of
+naming the front three by hand -- is NOT implemented, and is written down as not
+implemented rather than left implied.
+
+Found in passing: resource_tab_swipe_for returned the right clip sign for a left
+clipped tab, so a tab off screen to the left would have been dragged further
+off.  That branch had never fired in production, which is why no run caught it.
+Measured: dragging (200,946)->(620,946) moves 野兽 from x=45 to x=246.
+
+Tests: tests/test_resource_tab_anchor.py now pins the geometry (every target
+either has a centre or a swipe, and left clip implies a positive delta) and
+refuses to let an index name a gatherable resource.  23 passed.
+tools/check_wiring.py reports problems: 0.
+
+Evidence: dataset/truth_audit/beast_search_wiring_20260918/key/ (8 frames plus
+finding.json with the one sentence cause and the live numbers), referenced from
+knowledge/goals/goal_capability_map.json and docs/CAPABILITY_COVERAGE.md.
+
+Still unproven, and named here so it is not hidden: no live episode spends
+stamina on a beast.  The route does not yet open the search, select the beast
+tab, or recognise a normal beast target card, so criterion 2 of the escalation
+does not hold.

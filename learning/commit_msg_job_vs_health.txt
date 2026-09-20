@@ -1,0 +1,46 @@
+fix(panel): a lost job is not an unreachable gateway -- the top bar was reading the wrong answer
+
+Operator's screenshot: the window opened (the earlier crash is fixed) and the top bar still said
+WorkBuddy 异常.  `gateway.json` held the reason:
+
+    available: False
+    reason: "JobLost: GET /api/v1/jobs/06271322 -> HTTP 404 JOB_NOT_FOUND：网关明确表示该 Job 不存在"
+    consecutive_failures: 51
+
+A **job-status** answer had been written into the **health** record.  `_poll_gateway` ran
+`bridge.is_available()` and `bridge.status(job)` inside one `try`, so `status()` raising
+`JobLost` fell into the shared handler, which sets `available = False`.  One conflation, three
+symptoms:
+
+* the top bar said 异常 about a gateway that was answering (`health` measured `True/OK` from the
+  same machine, same moment);
+* the lifecycle owner read "unreachable", took its restart ladder and **restarted a healthy
+  gateway repeatedly** -- 51 consecutive failures, with the gateway pid changing underneath;
+* the probe then entered its 300-second backoff, so `gateway.json` stopped being rewritten and
+  the window reported 网关状态待测（最近检查 3 分钟前）-- which is the "3 minutes" in the
+  screenshot, and it was a *symptom of the backoff*, not of a dead probe thread.
+
+The fix is the operator's own P0-3 rule, applied to the code that reads the job: the two
+questions get a `try` each.  Health failures set `available`/`reason`; the job's answer sets
+`state["job"]` and nothing else.  `JobLost` is now caught by name -- imported rather than
+matched with a bare `except Exception` -- and recorded as `JOB_LOST` in the job's own state, so
+a lost job stays visible without being mistaken for a connection problem.
+
+Verified by running it, not by importing it:
+
+    +5s  available=False reason='GATEWAY_UNREACHABLE'   ← the right *kind* of reason now
+    +25s available=True  reason='OK'  job='done'        ← health and job, both correct
+    probe ages 2-12s, i.e. it keeps writing; no backoff
+
+`JobLost` was referenced but never imported at module level -- a `NameError` waiting for the
+first lost job.  Caught by compiling and importing rather than by the suite, which does not
+drive `_poll_gateway`.
+
+check_wiring problems: 0.
+
+Still true, and worth repeating because it is what let this hide: no test drives the window's
+own refresh path.  Driven by a stub, `_poll_gateway` would have shown a `JobLost` reason in the
+health record the moment the two calls were merged.  That guard is now the top of my list.
+
+The window the operator has open (pid 9808) still carries the old code.  It has the self-reload
+feature, so it will show 待重载 and restart itself at a safe point -- or it can be restarted.

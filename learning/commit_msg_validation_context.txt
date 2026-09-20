@@ -1,0 +1,60 @@
+feat(validation): pass the validation context explicitly, and refuse the wrong version first
+
+Operator §2 and §3, done together because a half-migrated episode schema is worse than none:
+a provenance field that is set in memory but not serialised would satisfy every in-process
+check and lose the fact on disk, which is exactly where the readers look.
+
+§2 -- the context travels as explicit CLI arguments, never as environment variables:
+
+    --execution-mode PRODUCTION | DEVELOPMENT_VALIDATION
+    --trace-id  --job-id  --capability  --expected-after-version
+
+An environment variable is inherited by whatever the process spawns and silently lost by
+whatever forgets to pass it; this context decides whether an episode may be credited to a
+version, so it must be impossible to half-carry.  It reaches LiveRuntime and is stamped on
+every episode:
+
+    execution_mode  trace_id  job_id  capability  expected_after_version
+
+alongside the fields already there (repo_revision -- the frozen process revision -- skill,
+episode_id, verifier_ok, goal_progress, before/after evidence).  `execution_mode` defaults to
+**PRODUCTION**, because that is what an AUTO cycle is and a default of "" would have made
+every existing producer silently ambiguous.  The operator's §8 rule is that a validation
+episode may never be read as production reuse, and the only place that distinction can live is
+the row -- so the round-trip through EpisodeStore is what the test asserts, not the in-memory
+dataclass.
+
+§3 -- the version gate, placed before `LiveRuntime` is constructed, which is the first thing
+that can touch the device:
+
+    if args.expected_after_version and args.expected_after_version != code_revision:
+        print("VALIDATION_VERSION_MISMATCH: trace_id=… job_id=… capability=…
+               expected_version=… actual_version=…")
+        return 4
+
+A validation cycle exists to answer one question -- does this version make the capability
+work.  If it is not running that version, every action it takes proves something about the
+wrong code, and the only safe amount of device activity is none.  Checked *afterwards*, the
+options would be to discard a real episode or to credit it to the wrong version, and the game
+has already been clicked either way.  Nothing has happened at this point, so refusing costs
+one cycle and leaves no half-done work.
+
+`code_revision` is the frozen process revision (§B), not a fresh git read: a run that asked
+"what is on the disk" here would answer a different question from "what did I load".
+
+Tests (operator's counterexamples 4-9):
+  a plain episode is PRODUCTION and carries no validation context
+  a validation episode keeps trace/job/capability/expected version *on disk*
+  the gate precedes LiveRuntime and returns rather than continuing
+  an empty expected version short-circuits, so production cycles never trip it
+  the context travels as arguments, reaches the runtime, and no env var is involved
+  run_live writes neither live_tried nor live_verified -- the queue owns those rungs, so a
+  cycle that never reached the device cannot have credited anything
+
+274 tests green across the affected modules; check_wiring problems: 0.
+
+Not done: §1 (automatic DEVELOPMENT_VALIDATION_DEVICE_LEASE acquisition from
+LIVE_VERIFY_PENDING) and §4-§9 (the live_tried / live_verified / rejoined / production_reuse
+drivers and the bootstrap completion hook).  So the chain has its context and its gate, and no
+capability has travelled it: activation_episode_id, validation_episode_id and
+production_reuse_episode_id are all still empty, and the loop stays INCOMPLETE.

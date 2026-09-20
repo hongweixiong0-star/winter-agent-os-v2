@@ -1,0 +1,47 @@
+feat(bootstrap): a one-shot acceptance seed, and the mechanism that closes it
+
+Operator §二/§七.  The cold-start deadlock, stated exactly: the preloader may not dispatch until
+the main loop is proven, and the main loop cannot be proven until something travels it.  Measured
+2026-09-19: `current_development_trace()` = None with every record terminal (COOLDOWN 2, DONE 9,
+FAILED 3), and `version_active` / `live_verified` / `production_reuse` all at zero.  With no
+input the loop cannot be proven, so the first trace is never dispatched -- and waiting for a
+random runtime gap turns the acceptance into a coincidence.
+
+`acceptance_seed_allowed(root)` is the exception, and it is deliberately narrow:
+
+* checked **after** the real P0 ladder, so a proven loop still wins;
+* checked **before** the operator override, because it is a product mechanism rather than an
+  operator decision -- nobody edits `config/bootstrap_arm.json`, and nobody hand-writes a gap;
+* every condition is read from an artifact, so a reader who was not present can reproduce the
+  answer, and a caller cannot *assert* the conditions to get the answer it wants:
+  no production reuse yet, no unfinished trace, no WORKING/SUBMITTED/NEW/QUEUED record, no
+  second `bootstrap_seed`, no device lease, operator RUNNING, a live production window
+  (pump heartbeat fresh), gateway HEALTHY;
+* and it **closes itself**: the moment a real `production_reuse` row exists the marker
+  `learning/knowledge_bootstrap/MAIN_LOOP_PROVEN_ONCE.json` is written and the seed stops
+  arming -- permanently, and by evidence rather than by a flag that a restart would lose.  An
+  exception that survives its own success is a rule.
+
+Two of the operator's thirteen conditions are named as **not** checked here, so they are not
+mistaken for enforced ones: the risk tier (T0/T1) and the permanent prohibitions are properties
+of the *candidate*, enforced at selection.  This answers "may a seed happen at all"; the selector
+answers "is this capability a lawful one".  Checking candidate rules here would make them look
+enforced while nothing had looked at a candidate.
+
+Verified against the live system, and the answer is a specific blocker rather than a deadlock:
+
+    acceptance_seed_allowed -> False
+    面板心跳已过期 427s：正式 GUI 不在运行
+
+which is condition 7.  So the seed is not blocked by the loop's own gate any more; it is blocked
+because no production window is currently running.  Double-clicking the GUI is what changes it.
+
+§六 was already fixed in 8319edd (`_settle` no longer calls `completion_hook`; the hook runs only
+after a real `production_reuse`, idempotently by evidence).  Confirmed still true by
+`tests/test_bootstrap_completion_timing.py`.
+
+307 tests green across the affected modules; check_wiring problems: 0.
+
+Not claimed: no capability has been selected or dispatched, so `production_reuse_episode_id` is
+still empty and the loop stays INCOMPLETE.  The seed makes the first trace *possible*; producing
+it needs a running production window, which is the next action rather than more code.

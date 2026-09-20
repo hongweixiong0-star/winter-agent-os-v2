@@ -1,0 +1,29 @@
+fix(restart): stopping the window must not take the gateway down with it
+
+Found by doing it.  Restarting the stale window stopped the window correctly and then left the
+machine with **no gateway at all** (`port 8080` empty), because `panel_restart.py:264` stops the
+window with `taskkill /PID <panel> /T /F` -- and a tree kill follows *parentage*, which
+`DETACHED_PROCESS` does not change.
+
+That contradicts §24 directly: the gateway is a **service**, started detached precisely so it
+outlives the window, and a window restart must not become a gateway outage.  In the ordinary
+case the next window starts one and nobody notices; when the new window fails to come up (which
+is exactly what happened here) the outage is permanent and the top bar would read WorkBuddy 异常
+for a reason that has nothing to do with the gateway.
+
+`_ensure_gateway_after_stop()` re-checks the gateway after the stop, through the **one**
+lifecycle owner rather than spawning here -- two places that can start a gateway is how two
+gateways happen, and `GatewayService` already knows how to reuse a healthy one, refuse a port
+conflict and respect an operator STOP, none of which this launcher should decide for itself.
+
+It reads the operator's intent from `config/control_panel_state.json` rather than importing
+`tools/control_panel.py`, which would pull in Tk and PIL for one string in a process that runs
+before the window exists.  An unreadable state file reads as STOPPED: the safe answer to "we do
+not know what the operator asked for" is the passive one, since guessing wrong here starts a
+developer nobody asked for.
+
+check_wiring problems: 0; `_operator_intent()` verified against the real state file (RUNNING).
+
+What this does not fix: the development host still reclaims a detached child when the calling
+turn ends, so a window started from here still dies.  That is the DEVELOPMENT_ENV_LIMITATION
+recorded earlier, not a product defect -- the window has to be started from a long-lived shell.

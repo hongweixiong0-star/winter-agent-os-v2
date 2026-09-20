@@ -1,0 +1,50 @@
+feat(gui): one selector for "which trace is current", so two regions cannot disagree
+
+Operator §7, from a measured conflict.  The window had two selectors:
+
+    development page   active[0] (or the first awaiting record)
+    closed-loop card   whichever chain unattended_closure called newest
+
+and on 2026-09-18 23:14 they named different capabilities side by side --
+`OPEN_MARCH_FORMATION`/`06271322` in one region and `SPEND_STAMINA_ON_BEAST`/`5b525aa4` in the
+other -- with both saying "current".  One question with two answers is a conflict by
+construction, not by accident.
+
+`escalation_queue.current_development_trace(snapshot)` is now that one answer, and both regions
+call it.  The ranking is the operator's, in the operator's order:
+
+    WORKING / SUBMITTED   an agent is editing right now
+    LIVE_VERIFY_PENDING   waiting for its examination
+    VERSION_ACTIVE        loaded, not yet sent for examination
+    REJOINED              back in the pool, awaiting proof of reuse
+    NEW / QUEUED          created, not dispatched
+
+Ties inside a rank go to the most recent activity.  A finished trace is in **no** bucket, so a
+DONE, FAILED or JOB_LOST can never displace an open one however recent it is -- which is the rule
+the operator stated outright.  And `None` is a real answer: with nothing open there is no current
+trace, and the page must not hand a reader a finished trace dressed as the present.
+
+The card now says which it is showing:
+
+    Gateway 等待   Queue 进行中   Job ✓   Version 等待   真机校准 等待   LIVE VERIFIED 等待
+    生产复用 等待   Next Capability —
+    当前无未完成 trace（以下为最近一次历史，不是当前工作）：
+    trace_id SPEND_STAMINA_ON_BEAST|VERIFIED_BEAST_TARGET_NOT_VISIBLE|SELECT_BEAST_TARGET
+
+Verified live against the project ledger: selector, `escalation_view()["current"]` and the card
+all return nothing-current, and the card states it in words.  Before the change the page showed
+a historical chain (COOLDOWN) with no marker at all.
+
+Tests (7): nothing open means no current trace; an agent editing outranks everything; the full
+ladder as one invariant -- adding a *lower*-ranked open trace never displaces a higher-ranked
+one; a finished trace never displaces an open one however much fresher; ties go to the most
+recent; and structurally, that both independent selectors are gone and the history marker
+exists, because a second selector is how the two regions disagreed in the first place.
+
+189 tests green across the affected modules; check_wiring problems: 0; and the window was
+started and watched for 30 seconds with no crash and no traceback -- the check that the last
+three defects in this area each needed and none of them had.
+
+Not done from this工单: §9's explicit STATE_CONFLICT findings (now possible, since there is a
+single trace to compare against), §10's bootstrap heartbeat TTL wording, and §5's split of
+historical lease releases from the current holder.

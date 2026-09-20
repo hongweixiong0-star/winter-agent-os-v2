@@ -1,0 +1,69 @@
+feat(reload): the window notices when the code under it has been replaced
+
+Measured 2026-09-18: the gateway fix was committed and the running window went on showing
+"WorkBuddy 异常".  Nothing was wrong with the fix -- the process had imported the old
+`gateway_service` / `workbuddy_bridge` / `control_panel` at start-up, and no code path ever told
+it the files had changed.  A worker reload would not have helped either: the stale code was in
+the *window*.
+
+`winter_agent_v2/control_plane_reload.py` reuses the project's existing `ReloadSignal` -- same
+class, same file format, same pending/clear semantics -- with a distinct kind and path, because
+the two requests have different subjects:
+
+  RUNTIME_RELOAD_REQUIRED          the next run_live must import the new tree
+  CONTROL_PLANE_RELOAD_REQUIRED    this process must be replaced
+
+Sharing the machinery is the point (the operator forbade a second reload system); separating
+the paths is what lets either be pending without consuming the other.
+
+Three questions are answered separately, because conflating them is how a reload becomes either
+a no-op or a nuisance:
+
+  needs_reload     version moved AND a *control-plane* file is among the changes
+  safe_to_reload   an atomic step in flight, a held device lease, or an operator STOP/PAUSE
+  reload_reason    what the operator reads
+
+A non-control-plane change (a knowledge file, a template) changes the next cycle, not this
+window -- telling the operator to restart for one would train them to ignore the notice.  A
+window that never captured its own version does not claim to be stale; it says it cannot tell.
+
+The window:
+* freezes its own version in `__init__`, without which it has nothing to compare against;
+* checks on the *same refresh* that recomputes the gateway cell -- the measured symptom was
+  that cell, and a separate slow timer would leave the window confidently wrong for a period;
+* prints 当前控制面版本 / 磁盘最新版本 and 待重载 -- CONTROL_PLANE_RELOAD_REQUIRED when they
+  differ, so which of the two it compared is never hidden;
+* defers the restart at any of the four refusals and records the reason, because "why nothing
+  happened" is the question the operator has had to read logs to answer;
+* delegates the restart to `tools/panel_restart.py --restart` -- a process cannot re-import
+  itself into a new version, and that launcher already owns stop-at-a-safe-point plus start and
+  records the new pid the same way every other window start does.  Guarded by a flag so a
+  failing restart cannot become a spawn loop.
+
+After the new window starts, nothing special is needed for §5: the AUTO intent is persisted in
+`config/control_panel_state.json`, the QueuePump is started with the window, the gateway is
+reused (or restarted by the lifecycle owner) and the ledger is folded as usual -- the existing
+start-up path already does all four.  An operator STOP is persisted the same way, which is why
+the refusal is checked against it rather than against an in-memory flag.
+
+Tests (17): a control-plane change demands a reload and a knowledge change does not; equal
+versions demand nothing; a window with no recorded version makes no claim; every named file in
+`CONTROL_PLANE_PATHS` is recognised; separators and `./` are handled; a safe point allows the
+reload while STOP/PAUSE, an atomic step in flight, a held lease and a read-only second window
+each refuse with their own reason; the marker is its own file and its own kind while still being
+a `ReloadSignal`; the reason names both versions and the files; and structurally, that the check
+sits after the soak/gateway refresh, that the window freezes its own version, and that the
+restart goes through `panel_restart.py`.
+
+Live check on the real tree: a window that loaded the current commit reports no reason (no false
+alarm), and one that loaded `HEAD~1` reports needs_reload with
+"CONTROL_PLANE_RELOAD_REQUIRED：本进程加载的 2e2ae7215292 已被 2dea433fb84e 取代，涉及控制面
+tools/control_panel.py" -- the measured symptom, detected.
+
+296 tests green across the affected modules; check_wiring problems: 0.
+
+Not done: §8's end-to-end acceptance (change the gateway probe code, do not restart by hand,
+watch the safe reload bring a new window up).  That needs a GUI the operator started and left
+running -- every process launched from a development-tool call here is reaped with the call --
+so what is proven is the detection, the refusals and the wiring, not a live reload cycle.  The
+§4-§9 validation drivers also remain undone, so there is still no production_reuse_episode_id.
