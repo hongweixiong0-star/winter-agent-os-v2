@@ -195,3 +195,25 @@
 
 ⚠ **`intel_board_corpus/` 那 435 帧只在本机**（未白名单发布；本目录合计 388 MB，其中语料占绝大部分）。
 上面的数字都能用同三个探针在任意情报帧上重算，但**要重算群体数字就得自己再收帧**。
+
+### 七之二、真机现场抓到的「假空板」（同一次会话，2026-09-20T14:03:18Z）
+
+修完检测器之后，回查 `learning/episodes.jsonl` 才发现**这个缺陷当天已经真的发生过一次**：
+
+```
+2026-09-20T14:03:18Z  OPEN_INTEL  result=SUCCESS
+  after.intel = {"status": "NOT_AVAILABLE", "available_count": 0, "list_read": true}
+```
+
+`NOT_AVAILABLE` 在 `goal_library` 里就是 `CLEAR_INTEL = COMPLETE` —— **代理会认定今天的情报做完了**。
+而该帧（已归档为 `key/06_live_frame_read_as_zero_pins_20260920T140309.png`）上：
+
+| 判据 | 结果 |
+|---|---|
+| **旧的**三色掩码（紫/蓝/橙） | **0 个 pin** ← 与生产记录一致 |
+| **新的**五色掩码 | **5 个 pin**：`(320,276)` `(541,399)` `(210,614)` `(312,803)` GREEN + `(348,765)` GREY |
+
+⇒ **板上 5 个任务，全部是绿或灰，所以旧掩码一个都看不见。** 这是 #68 的完整闭环：
+不是"少算了几个"，而是**在真机上把一个满板读成空板，并差一步就把整条情报路线判成完成**。
+`tests/test_intel_pin_board.py::ColourCoverageTests::test_the_live_frame_that_read_as_empty_is_not_empty`
+把这一帧钉住了（该帧已发布，测试在任何机器上都跑，不 skip）。

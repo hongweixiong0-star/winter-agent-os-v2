@@ -565,3 +565,18 @@ live_runtime ×1、capability_gate ×3、march_formation_attribution ×2）⇒ *
 |---|---|---|---|
 | 69 | **操作者的体力顺序在代码里写了两遍，其中一遍没有任何调用者** | 🟠 **已定性，未修** | `knowledge/strategy/operations_priority.json` 的 `rules.stamina.order = [INTEL, GIANT_BEAST, BEAST_HUNT]`（threshold 30）在代码里被实现**两次**：① `operations_policy.choose_stamina_goal()` —— **grep 全仓无生产调用者**，只有 `tests/test_operations_policy.py`；② `runtime.py:876` 的内联 route 映射（`AVOID_STAMINA_WASTE → BEAST_HUNT`，gate 报 `SPEND_STAMINA_ON_BEAST ∈ {BLOCKED,COOLDOWN,DEFERRED,DEVELOPMENT_PENDING}` 时改走 `SPEND_STAMINA`）。**生效的是 ②**；`scheduler.py:90` 的 `operational_priority` 给三个耗体力 goal 加权也是真接线的。⇒ **不构成第二套调度**（① 从不执行），但**改一处不会改另一处**，属真接入缺口。同文件里 `choose_troop_rotation` / `choose_shield` / `choose_healing` / `reward_candidates` 同样无调用者。 |
 | 70 | **体力路线的实测成本表与性价比结论** | 🟢 **已落盘** | 见 `knowledge/strategy/stamina_routes.json`（`knowledge/game/_index.json` 已登记）。要点：**采集实测 0 体力（54/54）**；情报三路 10/10/12；**世界地图打野显示 10、实际 7 —— 是所有路里最便宜的**；每次成功的体力 = 消耗 ÷ 真机成功率 ⇒ 打野 **11.3**（88.9%/54 次）< 英雄之旅 **14.7**（68%/25 次）< 营救幸存者 **22.5**（53.3%/15 次）。**但冰原巨兽未实现（`START_RALLY`/`JOIN_RALLY` 未进 `VERIFIED_ATOMIC`，永不调度），打野被识别层卡死（#41/#46）** ⇒ 「做完情报再用剩余体力去打野」今天**落不了地**，先修打野识别才是唯一路径。**未算奖励量级**，所以"性价比"目前只按体力算，别当已证。 |
+
+**#68 闭环：真机已经发生过一次「假空板」（同一会话回查发现）**。`learning/episodes.jsonl` 里：
+
+```
+2026-09-20T14:03:18Z  OPEN_INTEL  SUCCESS
+  after.intel = {"status": "NOT_AVAILABLE", "available_count": 0, "list_read": true}
+```
+
+`NOT_AVAILABLE` ⇒ `goal_library` 判 `CLEAR_INTEL = COMPLETE`。该帧（已归档
+`key/06_live_frame_read_as_zero_pins_20260920T140309.png`，已白名单发布）上
+**旧判据 0 个 pin / 新判据 5 个 pin（4 绿 + 1 灰）** —— 满板被读成空板，5 个任务全是旧掩码看不见的颜色。
+⇒ 这不是"少算几个"，是**差一步就把情报路线判成完成**。守卫：
+`tests/test_intel_pin_board.py::ColourCoverageTests::test_the_live_frame_that_read_as_empty_is_not_empty`。
+**仍未做**：这一帧是修好之后**回查**出来的，不是修好之后**真机复跑**验证的；
+下一轮 AUTO 走到情报页时会用新检测器读数，届时 `intel.pins` 应显著大于历史同板读数。

@@ -53,6 +53,10 @@ COLOUR_BOARD = (
     ROOT / "dataset" / "truth_audit" / "reward_popup_exit_20260920" / "readings"
     / "intel_page_20260920T131907.png"
 )
+ZERO_PINS_BOARD = (
+    ROOT / "dataset" / "truth_audit" / "reward_popup_exit_20260920" / "key"
+    / "06_live_frame_read_as_zero_pins_20260920T140309.png"
+)
 
 
 def _first_existing(paths):
@@ -153,6 +157,27 @@ class ColourCoverageTests(unittest.TestCase):
                          "the header band was admitted as a pin")
         self.assertFalse([p for p in pins if p.x > 690],
                          "a right-edge blob was admitted as a pin")
+
+    def test_the_live_frame_that_read_as_empty_is_not_empty(self):
+        """The frame production read as ``available_count=0`` on 2026-09-20T14:03:18Z.
+
+        Recorded live as ``intel = {"status": "NOT_AVAILABLE", "available_count": 0}``
+        -- and NOT_AVAILABLE is what ``goal_library`` turns into CLEAR_INTEL =
+        COMPLETE, i.e. the agent concluding Intel was finished for the day.  The board
+        carried five missions, and the old mask list saw none of them because all five
+        are green or grey: re-run against this frame the old gate returns 0, the
+        detector returns 5.  That is the whole defect in one frame, and it is
+        published so this guard runs on any machine rather than skipping.
+        """
+        pins = intel_pin_centers(ZERO_PINS_BOARD)
+        self.assertGreaterEqual(
+            len(pins), 5,
+            f"the live zero-pin frame reads {len(pins)} pin(s) again",
+        )
+        self.assertTrue(
+            {p.color for p in pins} <= {"GREEN", "GREY"},
+            "every pin on this frame is green or grey -- that is why it read as empty",
+        )
 
     def test_the_neutral_floor_sits_below_every_real_pin_and_above_the_chrome(self):
         """BOARD_TOP is measured, and it is scoped to the neutral class on purpose.
