@@ -1,0 +1,1604 @@
+[
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260917_195139_153400\\20260917_195139_153400_step_001_after_20260917T115145706888.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260917_214235_331398\\20260917_214235_331398_step_001_after_20260917T134248620883.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260918_072849_646585\\20260918_072849_646585_step_001_before_20260917T232851561769.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_130014_500155\\20260919_130014_500155_step_003_after_20260919T050113033850.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_130014_500155\\20260919_130014_500155_step_004_after_20260919T050117666192.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_130014_500155\\20260919_130014_500155_step_004_before_20260919T050114596041.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_130014_500155\\20260919_130014_500155_step_005_before_20260919T050118972058.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_132726_620764\\20260919_132726_620764_step_003_after_20260919T052808378131.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_132726_620764\\20260919_132726_620764_step_004_before_20260919T052809742548.png",
+  "title": 14.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_132859_785018\\20260919_132859_785018_step_001_before_20260919T052902709555.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_133536_287463\\20260919_133536_287463_step_001_before_20260919T053539263752.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_133620_437772\\20260919_133620_437772_step_001_before_20260919T053623347895.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_145735_630745\\20260919_145735_630745_step_003_after_20260919T065815324588.png",
+  "title": 14.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_145735_630745\\20260919_145735_630745_step_004_before_20260919T065816622996.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_145735_630745\\20260919_145735_630745_step_011_after_20260919T070001312756.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_145735_630745\\20260919_145735_630745_step_012_before_20260919T070002981982.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_145735_630745\\20260919_145735_630745_step_018_after_20260919T070138929788.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_145735_630745\\20260919_145735_630745_step_019_before_20260919T070140671402.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_150357_942512\\20260919_150357_942512_step_003_after_20260919T070520075348.png",
+  "title": 14.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_150357_942512\\20260919_150357_942512_step_004_before_20260919T070522068843.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_150853_481527\\20260919_150853_481527_step_003_after_20260919T070941152765.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_150853_481527\\20260919_150853_481527_step_003_after_refresh_1_20260919T070943917916.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_150853_481527\\20260919_150853_481527_step_003_after_refresh_2_20260919T070946530651.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_151032_991815\\20260919_151032_991815_step_001_before_20260919T071035925981.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154159_527398\\20260919_154159_527398_step_003_after_20260919T074246099512.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154159_527398\\20260919_154159_527398_step_003_after_refresh_1_20260919T074248899311.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154330_214815\\20260919_154330_214815_step_001_before_20260919T074333199999.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154411_160200\\20260919_154411_160200_step_001_before_20260919T074414150869.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154457_690806\\20260919_154457_690806_step_001_before_20260919T074500630089.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154538_774714\\20260919_154538_774714_step_001_before_20260919T074541712812.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154619_652073\\20260919_154619_652073_step_001_before_20260919T074622640169.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154704_149881\\20260919_154704_149881_step_001_before_20260919T074707148749.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154745_260860\\20260919_154745_260860_step_001_before_20260919T074748195077.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154829_307658\\20260919_154829_307658_step_001_before_20260919T074832241420.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154911_562348\\20260919_154911_562348_step_001_before_20260919T074914521675.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_154953_578535\\20260919_154953_578535_step_001_before_20260919T074956499723.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_155036_618010\\20260919_155036_618010_step_001_before_20260919T075039590434.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_155123_008702\\20260919_155123_008702_step_001_before_20260919T075125953610.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171501_633313\\20260919_171501_633313_step_006_after_20260919T091634788270.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171501_633313\\20260919_171501_633313_step_007_before_20260919T091636010866.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171716_320262\\20260919_171716_320262_step_001_before_20260919T091719471713.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171925_932242\\20260919_171925_932242_step_002_after_20260919T091950861791.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171925_932242\\20260919_171925_932242_step_003_before_20260919T091952419657.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171925_932242\\20260919_171925_932242_step_011_after_20260919T092125833908.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171925_932242\\20260919_171925_932242_step_012_before_20260919T092127406853.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171925_932242\\20260919_171925_932242_step_017_after_20260919T092230828735.png",
+  "title": 8.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171925_932242\\20260919_171925_932242_step_018_before_20260919T092232001683.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_171925_932242\\20260919_171925_932242_step_024_after_20260919T092340328843.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_172418_389433\\20260919_172418_389433_step_001_before_20260919T092421608940.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_172418_389433\\20260919_172418_389433_step_009_after_20260919T092551267743.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_172418_389433\\20260919_172418_389433_step_010_before_20260919T092552401747.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_172418_389433\\20260919_172418_389433_step_016_after_20260919T092702862121.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_172418_389433\\20260919_172418_389433_step_017_before_20260919T092703990863.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_173606_054590\\20260919_173606_054590_step_002_after_20260919T093638487897.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_173606_054590\\20260919_173606_054590_step_003_before_20260919T093639946294.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260919_173717_701354\\20260919_173717_701354_step_001_before_20260919T093720684130.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093501_951619\\20260920_093501_951619_step_001_after_20260920T013516768024.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093501_951619\\20260920_093501_951619_step_001_after_refresh_1_20260920T013520653419.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093501_951619\\20260920_093501_951619_step_001_after_refresh_2_20260920T013523386645.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093557_805245\\20260920_093557_805245_step_001_before_20260920T013600934589.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093635_919598\\20260920_093635_919598_step_001_before_20260920T013639051185.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093714_120076\\20260920_093714_120076_step_001_before_20260920T013717251892.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093752_570243\\20260920_093752_570243_step_001_before_20260920T013755807588.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093831_522314\\20260920_093831_522314_step_001_before_20260920T013834708343.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093909_983381\\20260920_093909_983381_step_001_before_20260920T013913214531.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_093948_341459\\20260920_093948_341459_step_001_before_20260920T013951451891.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094026_854322\\20260920_094026_854322_step_001_before_20260920T014030018991.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094104_973504\\20260920_094104_973504_step_001_before_20260920T014108073543.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094143_023301\\20260920_094143_023301_step_001_before_20260920T014146172045.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094221_697525\\20260920_094221_697525_step_001_before_20260920T014224871197.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094300_113591\\20260920_094300_113591_step_001_before_20260920T014303194657.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094338_272264\\20260920_094338_272264_step_001_before_20260920T014341476526.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094416_288654\\20260920_094416_288654_step_001_before_20260920T014419416580.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094454_593226\\20260920_094454_593226_step_001_before_20260920T014457780825.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094533_093059\\20260920_094533_093059_step_001_before_20260920T014536316366.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094611_842982\\20260920_094611_842982_step_001_before_20260920T014615035377.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094651_380461\\20260920_094651_380461_step_001_before_20260920T014654739481.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094731_764125\\20260920_094731_764125_step_001_before_20260920T014734846663.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094811_930285\\20260920_094811_930285_step_001_before_20260920T014815040404.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094852_399497\\20260920_094852_399497_step_001_before_20260920T014918010704.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_094955_919779\\20260920_094955_919779_step_001_before_20260920T014959104444.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095036_342169\\20260920_095036_342169_step_001_before_20260920T015039955441.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095118_599626\\20260920_095118_599626_step_001_before_20260920T015122321254.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095201_126425\\20260920_095201_126425_step_001_before_20260920T015204627442.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095242_910291\\20260920_095242_910291_step_001_before_20260920T015246418768.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095324_400765\\20260920_095324_400765_step_001_before_20260920T015327844516.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095405_945189\\20260920_095405_945189_step_001_before_20260920T015409260598.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095803_651822\\20260920_095803_651822_step_001_before_20260920T015807188265.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_095929_203559\\20260920_095929_203559_step_001_before_20260920T015932388583.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_100007_642095\\20260920_100007_642095_step_001_before_20260920T020010841115.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_120622_758671\\20260920_120622_758671_step_003_after_20260920T040704390887.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_120622_758671\\20260920_120622_758671_step_003_after_refresh_1_20260920T040707615955.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_120622_758671\\20260920_120622_758671_step_003_after_refresh_2_20260920T040710244232.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_120744_012719\\20260920_120744_012719_step_001_before_20260920T040746518387.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_120821_187745\\20260920_120821_187745_step_001_before_20260920T040823679833.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_120858_802364\\20260920_120858_802364_step_001_before_20260920T040901163942.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_120935_815934\\20260920_120935_815934_step_001_before_20260920T040938223346.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121012_941843\\20260920_121012_941843_step_001_before_20260920T041015299935.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121049_918690\\20260920_121049_918690_step_001_before_20260920T041052331726.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121127_265864\\20260920_121127_265864_step_001_before_20260920T041129652505.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121204_287305\\20260920_121204_287305_step_001_before_20260920T041206906139.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121244_238691\\20260920_121244_238691_step_001_before_20260920T041246974189.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121324_079361\\20260920_121324_079361_step_001_before_20260920T041326711682.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121404_063608\\20260920_121404_063608_step_001_before_20260920T041406526869.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_121443_315267\\20260920_121443_315267_step_001_before_20260920T041445885711.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122429_099287\\20260920_122429_099287_step_001_before_20260920T042431512308.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122506_174852\\20260920_122506_174852_step_001_before_20260920T042508454207.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122543_166490\\20260920_122543_166490_step_001_before_20260920T042545652168.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122620_590516\\20260920_122620_590516_step_001_before_20260920T042623214356.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122658_970441\\20260920_122658_970441_step_001_before_20260920T042701670158.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122738_682173\\20260920_122738_682173_step_001_before_20260920T042741142482.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122817_748372\\20260920_122817_748372_step_001_before_20260920T042820298839.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122856_908156\\20260920_122856_908156_step_001_before_20260920T042859388246.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_122936_121482\\20260920_122936_121482_step_001_before_20260920T042938618328.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123015_509741\\20260920_123015_509741_step_001_before_20260920T043017998236.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123055_076269\\20260920_123055_076269_step_001_before_20260920T043057568235.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123135_235372\\20260920_123135_235372_step_001_before_20260920T043137781243.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123215_083136\\20260920_123215_083136_step_001_before_20260920T043217613777.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123255_011174\\20260920_123255_011174_step_001_before_20260920T043257725271.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123335_422288\\20260920_123335_422288_step_001_before_20260920T043338114548.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123450_382777\\20260920_123450_382777_step_001_before_20260920T043452872886.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123529_919557\\20260920_123529_919557_step_001_before_20260920T043532643166.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123610_124352\\20260920_123610_124352_step_001_before_20260920T043612713079.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123650_630659\\20260920_123650_630659_step_001_before_20260920T043653346209.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\20260920_123730_966450\\20260920_123730_966450_step_001_before_20260920T043733494079.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\camp_stamina_gate_20260915b\\camp_stamina_gate_20260915b_step_010_before_20260915T034440197647.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_005_before_20260914T141558805541.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_loop_20260914_101400_c02\\intel_loop_20260914_101400_c02_step_004_before_20260914T101710532965.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_01\\intel_pins_20260914_094520_pin_01_step_002_after_20260914T094746325166.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_01\\intel_pins_20260914_094520_pin_01_step_003_before_20260914T094747693673.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_07\\intel_pins_20260914_101641_nav_07_step_002_after_20260914T102331693700.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_07\\intel_pins_20260914_101641_nav_07_step_003_before_20260914T102333249144.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_09\\intel_pins_20260914_101641_nav_09_step_002_after_20260914T102704658478.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_09\\intel_pins_20260914_101641_nav_09_step_003_before_20260914T102706012358.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_13\\intel_pins_20260914_101641_nav_13_step_002_after_20260914T103353026259.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_13\\intel_pins_20260914_101641_nav_13_step_003_before_20260914T103354404092.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_14\\intel_pins_20260914_101641_nav_14_step_002_after_20260914T103606537251.png",
+  "title": 10.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_nav_14\\intel_pins_20260914_101641_nav_14_step_003_before_20260914T103607773932.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_07\\intel_pins_20260914_101641_pin_07_step_005_after_20260914T102501044973.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_10\\intel_pins_20260914_101641_pin_10_step_005_after_20260914T103005534850.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_10\\intel_pins_20260914_101641_pin_10_step_006_before_20260914T103006826175.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_11\\intel_pins_20260914_101641_pin_11_step_005_after_20260914T103139128020.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_101641_pin_11\\intel_pins_20260914_101641_pin_11_step_006_before_20260914T103140392214.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_nav_01\\intel_pins_20260914_171640_nav_01_step_003_before_20260914T171836569388.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_nav_05\\intel_pins_20260914_171640_nav_05_step_004_before_20260914T172508150048.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_pin_05\\intel_pins_20260914_171640_pin_05_step_007_before_20260914T172655413652.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_nav_01\\intel_pins_20260914_223903_nav_01_step_003_after_20260914T224028238432.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_nav_01\\intel_pins_20260914_223903_nav_01_step_004_before_20260914T224029180484.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_pin_01\\intel_pins_20260914_223903_pin_01_step_007_before_20260914T224216566997.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_pin_03\\intel_pins_20260914_223903_pin_03_step_005_after_20260914T224502586340.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_223903_pin_03\\intel_pins_20260914_223903_pin_03_step_006_before_20260914T224503520200.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_011_after_20260915T001311468385.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_nav_01\\intel_pins_20260915_000822_nav_01_step_012_before_20260915T001312410640.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_000822_pin_00\\intel_pins_20260915_000822_pin_00_step_012_after_20260915T001037801549.png",
+  "title": 14.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_022310_pin_00\\intel_pins_20260915_022310_pin_00_step_002_after_20260915T022716233880.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_022310_pin_00\\intel_pins_20260915_022310_pin_00_step_003_before_20260915T022717434394.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_003_after_20260915T092921861422.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_004_after_20260915T093215771420.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_004_before_20260915T092922804650.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_005_before_20260915T092800936714.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_005_before_20260915T093216646781.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_010_after_20260915T093030041241.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_02\\intel_pins_20260915_092119_nav_02_step_011_before_20260915T093031188860.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_03\\intel_pins_20260915_092119_nav_03_step_003_after_20260915T093731966812.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_nav_03\\intel_pins_20260915_092119_nav_03_step_004_before_20260915T093733137689.png",
+  "title": 14.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_pin_00\\intel_pins_20260915_092119_pin_00_step_011_after_20260915T092323047740.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_pin_00\\intel_pins_20260915_092119_pin_00_step_012_before_20260915T092323853631.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_pin_01\\intel_pins_20260915_092119_pin_01_step_011_before_20260915T092613213945.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_pin_02\\intel_pins_20260915_092119_pin_02_step_010_after_20260915T093610474865.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_092119_pin_02\\intel_pins_20260915_092119_pin_02_step_011_before_20260915T093611419661.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_20260908_daily_after.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_20260908_daily_reward.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_20260909_training_navigation_full_v1\\step_004_after.png",
+  "title": 21.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_alliance_chest_red_dot_detail.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_alliance_gifts_batch_claim_result.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_alliance_gifts_claim_result.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_alliance_mobilization_supply_result.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_alliance_victory_gifts_mass_result.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_alliance_victory_new_claim_result.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_cycle2_daily_reward.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_daily_claim_result.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_daily_multiclaim_result.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_daily_multiclaim_verified.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_daily_red_dot_claim_result.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_daily_red_dot_claim_verified.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_claim_v4\\step_001_after.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_claim_v4\\step_001_after_refresh_1.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_claim_v4\\step_001_after_refresh_2.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_claim_v5\\step_001_before.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_dynamic_target_v1\\step_002_after.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_dynamic_target_v1\\step_002_after_refresh_1.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_dynamic_target_v1\\step_002_after_refresh_2.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_exploration_dynamic_target_v2\\step_001_before.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_mail_generic_reward_v2\\step_001_before.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_mail_generic_reward_v2\\step_002_after.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_mail_generic_reward_v2\\step_005_after.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_mail_generic_reward_v3\\step_001_before.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_mail_generic_reward_v3\\step_003_after.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_deploy_mail_generic_reward_v3\\step_004_before.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_exploration_claim_verified.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_free_gift_claim_20260915b\\live_free_gift_claim_20260915b_step_003_after_20260915T040325276920.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_free_gift_claim_20260915b\\live_free_gift_claim_20260915b_step_004_before_20260915T040326291701.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_after_reward_variant_fix\\step_001_before.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_after_reward_variant_fix_retry\\step_001_before.png",
+  "title": 14.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_automatic_return_claim_round2\\step_001_after.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_automatic_return_claim_round2\\step_002_after.png",
+  "title": 12.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_automatic_return_claim_round2\\step_002_before.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_automatic_return_claim_round2\\step_003_after.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_automatic_return_claim_round3_retry\\step_002_after.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_automatic_return_claim_round3_retry\\step_002_after_refresh_1.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_automatic_return_claim_round3_retry\\step_002_after_refresh_2.png",
+  "title": 0.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_claim_runtime\\step_001_after.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_round4_claim_clean\\step_002_after.png",
+  "title": 12.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_beast10_round4_claim_clean\\step_003_before.png",
+  "title": 14.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_blazing_behemoth_claim_20260907\\step_002_after.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_blazing_behemoth_claim_20260907\\step_003_before.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw2_claim_20260907\\step_002_after.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw2_claim_20260907\\step_003_before.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw3_claim_20260907\\step_002_after.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw3_claim_20260907\\step_003_before.png",
+  "title": 10.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw4_claim_20260907\\step_002_after.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw4_claim_20260907\\step_003_before.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw_claim_20260907\\step_002_after.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_claw_claim_20260907\\step_003_before.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_color_chain_round7\\step_002_after.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_firebeast2_claim_20260907\\step_002_after.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_firebeast2_claim_20260907\\step_003_before.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_orange_claim_purple_dispatch_round6_retry\\step_002_after.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_rescue_survivors_claim_20260907\\step_002_after.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_rescue_survivors_claim_20260907\\step_003_before.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_intel_runtime_v2\\step_001_after.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_alliance_claim_result.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_alliance_claim_result_20260907.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_claim_result.png",
+  "title": 16.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_dynamic_badge_fix_20260909_v2\\step_004_after_refresh_1.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_incremental_cleared.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_report_claim_result_20260907.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_system_claim_result_2.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_mail_system_claim_result_20260907.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_001_after_20260916T020417584963.png",
+  "title": 20.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_001_after_refresh_1_20260916T020419948996.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_001_after_refresh_2_20260915T151646084904.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_001_after_refresh_2_20260916T020422255254.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T020427229427.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_002_after_20260917T044419875673.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_002_after_20260917T044630926866.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_003_after_20260916T163338641490.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_003_after_refresh_2_20260916T163351435962.png",
+  "title": 14.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260914T131419612734.png",
+  "title": 22.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260917T044420623459.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_004_after_20260916T122232156076.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T163352297476.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_004_before_20260916T235317670802.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_005_before_20260916T122233108905.png",
+  "title": 12.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_006_after_20260917T002605455536.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\live_runtime_step_007_before_20260917T002606263189.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\raw\\live_runtime\\migrate_check\\migrate_check_step_001_before_20260920T020404087629.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": true
+ },
+ {
+  "frame": "dataset\\truth_audit\\_hud_now.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\_march_area_now.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\nav_to_map_20260918\\home_reset_20260917_232829_05.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\nav_to_map_20260918\\v2_job57848179_prep_01_toggled.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\power_route_20260917\\build_live_20260917_114955_01_after_tap_280_640.png",
+  "title": 20.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\power_route_20260917\\dismiss_mail_reward_20260917_044652_00_before.png",
+  "title": 18.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\power_route_20260917\\key\\13_intel_reward_popup_run2.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\power_route_20260917\\nav_map_tap1_20260917_232526_99_after_back.png",
+  "title": 18.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\reward_popup_source_20260917\\key\\01_daily_reward_popup_163338.png",
+  "title": 22.0,
+  "chrome": false,
+  "mail_page": false
+ },
+ {
+  "frame": "dataset\\truth_audit\\reward_popup_source_20260917\\key\\03_intel_reward_popup_run2.png",
+  "title": 16.0,
+  "chrome": true,
+  "mail_page": false
+ }
+]
