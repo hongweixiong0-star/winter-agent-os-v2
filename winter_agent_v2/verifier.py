@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .models import MarchState, Page, VerificationResult, WorldState
-from .beast_targets import is_dispatchable, lookup_by_name
+from .beast_targets import is_dispatchable, lookup_by_name, refused_by_evidence
 
 
 def verify_event_points_increased(before: WorldState, after: WorldState) -> VerificationResult:
@@ -775,6 +775,37 @@ def verify_beast_card_march_open(before: WorldState, after: WorldState) -> Verif
     return VerificationResult(ok, "OK" if ok else "BEAST_MARCH_NOT_PROVEN", {"before_card":before_ok,"victory_assured":after_ok})
 
 
+def verify_beast_card_opened(before: WorldState, after: WorldState) -> VerificationResult:
+    # The species-agnostic selection hop added 2026-09-20: the route taps the beast the
+    # client's own label named, and this proves the *target* -- the card for that animal
+    # opened -- rather than that a tap happened.
+    #
+    # The identity is bound on the before half, because that is the frame the label was
+    # read on: 霜鳞避役 at 0.89 beside its badge, resolved to a table row, with the tap
+    # point taken from that label's own box.  The after half asserts the card state vision
+    # actually measured.  The card does not print a species the vision layer can claim --
+    # it is recognised by its 攻击 control, which is generic -- so nothing here pretends to
+    # re-read the identity after the tap, and the spend is not authorised here either:
+    # opening a card costs no stamina.
+    #
+    # `refused` is what keeps the level-29 leopard out: its printed red assessment is a
+    # measured refusal, so it is not a target this hop may claim.
+    identity = before.beast.get("visible_target"), before.beast.get("level")
+    before_ok = (
+        before.page is Page.MAP
+        and isinstance(identity[0], str)
+        and isinstance(identity[1], int)
+        and before.beast.get("source") == "BEAST_LABEL"
+        and not refused_by_evidence(before.beast)
+    )
+    after_ok = after.page is Page.BEAST and after.beast.get("attack_card") is True
+    ok = before_ok and after_ok
+    return VerificationResult(
+        ok, "OK" if ok else "BEAST_TARGET_SELECTION_NOT_PROVEN",
+        {"before_identity": identity, "before_labelled": before_ok, "after_card": after_ok},
+    )
+
+
 def verify_beast_march_open(before: WorldState, after: WorldState) -> VerificationResult:
     # The identity is bound on the BEAST side, where the client prints
     # 等级9 麝牛 on the target card.  The formation page prints only
@@ -789,10 +820,21 @@ def verify_beast_march_open(before: WorldState, after: WorldState) -> Verificati
 
 
 def verify_beast_dispatch(before: WorldState, after: WorldState) -> VerificationResult:
-    # CAP-Z01: the MARCH page prints 目标：<name> and no level, so the row is
-    # resolved by name and must be one the table allows.
+    # CAP-Z01: the MARCH page prints 目标：<name> and no level, so the row is resolved by
+    # name.  What the row must supply is "the client has not already refused this one" --
+    # not a per-species pre-approval.  Measured 2026-09-20: the old `target.dispatchable`
+    # requirement meant a correctly read 霜鳞避役/20 could never be recorded as a dispatch
+    # even after the client printed 本次出征胜券在握 on its formation page, because the row
+    # was registered as UNVERIFIED.  The operator's rule is "as long as we can beat it, we
+    # may hit it", and the client's own victory strip is the evidence for "we can beat it";
+    # that strip is what `victory_assured` is, so it stays required here unchanged.
     target = lookup_by_name(before.beast.get("name"))
-    before_ok = before.page is Page.MARCH and target is not None and target.dispatchable and before.beast.get("victory_assured") is True
+    before_ok = (
+        before.page is Page.MARCH
+        and target is not None
+        and not target.refused
+        and before.beast.get("victory_assured") is True
+    )
     active = after.page is Page.MAP and any(state in {MarchState.MARCHING, MarchState.RETURNING} for state in after.marches)
     queue_visible = after.march_used is not None and after.march_used >= 1
     ok = before_ok and active and queue_visible

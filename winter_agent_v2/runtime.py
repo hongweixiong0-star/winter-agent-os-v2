@@ -19,7 +19,7 @@ from .device_lease import OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
-from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
+from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
@@ -134,6 +134,10 @@ class LiveRuntime:
         "DISPATCH_MARCH": verify_wood_dispatch_from_march,
         "SELECT_BEAST_TARGET": verify_beast_target_selected,
         "SELECT_BEAST_TARGET_MAMMOTH": verify_beast_mammoth_target_selected,
+        # The species-agnostic twin.  A skill with no entry here is never dispatched,
+        # and this one has to be dispatchable or the labelled-beast hop is dead code
+        # (the failure mode #45 already recorded).
+        "SELECT_BEAST_TARGET_LABELLED": verify_beast_card_opened,
         "SCAN_MAP_FOR_BEAST": verify_beast_scan_observed,
         "ATTACK_BEAST_CARD": verify_beast_card_march_open,
         "BEAST_HUNT": verify_beast_march_open,
@@ -1036,6 +1040,31 @@ class LiveRuntime:
                     # cell is off-screen: the loop scrolls the strip instead of
                     # guessing a coordinate.
                     return self._semantic.resource_cell_center_norm(planned_resource)
+                if semantic == "BEAST_ON_MAP":
+                    # The beast the client's own label named, tapped where this frame
+                    # measured that label (see ocr.beast_from_its_label).  It cannot be a
+                    # template: the whole point is that the target need not be a species
+                    # anyone has cut a sprite for, and a hardcoded coordinate would be a
+                    # guess about where the animal happens to stand.
+                    #
+                    # The page check is what keeps a stale point from being reused: the
+                    # fragment is only meaningful on the MAP frame it was read from, so a
+                    # tap_norm left over from an earlier observation cannot land on
+                    # whatever page the run has since reached.  ``None`` means the label
+                    # carried no box (or no frame size was available) and the loop ends
+                    # honestly rather than tapping an invented point.
+                    if before.page is not Page.MAP:
+                        return None
+                    point = before.beast.get("tap_norm")
+                    if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                        return None
+                    try:
+                        x_norm, y_norm = float(point[0]), float(point[1])
+                    except (TypeError, ValueError):
+                        return None
+                    if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                        return None
+                    return (x_norm, y_norm)
                 if semantic == "HUD_STAMINA_GAUGE":
                     # The gauge is drawn at a measured spot on every map frame.
                     # The page check is what keeps a popup or a loading screen

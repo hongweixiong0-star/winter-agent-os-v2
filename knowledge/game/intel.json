@@ -149,5 +149,24 @@
       "last_verified": "2026-09-06",
       "notes": "Power is far below the current client recommendation. No dispatch was made."
     }
-  ]
+  ],
+  "round_state": {
+    "observed_at": "2026-09-20T14:48:53Z",
+    "state": "ROUND_CLEARED_AWAITING_REFRESH",
+    "meaning": "本轮的板子已经打不动了 —— 不是「今天的情报做完了」。agent 必须在下一次刷新后重新检查，不得把这个状态读成 CLEAR_INTEL=COMPLETE 并永久收工。",
+    "evidence": [
+      "learning/episodes.jsonl 2026-09-20T14:45:47Z..14:48:53Z: OPEN_INTEL -> CLAIMABLE(1) -> INTEL_CLAIM_REWARDS -> DISMISS_INTEL_GENERIC_REWARD -> SELECT_INTEL_PIN -> BACK，before.intel = {status: AVAILABLE, pins: 1, untried_pins: 1, stamina: 367, refresh: 01:11:31}",
+      "2026-09-20T14:47:45Z SELECT_INTEL_PIN 的 after 是 BLOCKED / mission_type MASTER_BOUNTY / mission_level 20 —— 板上最后一个 pin 开出的是账号打不过的大师悬赏（见 INTEL_MASTER_BOUNTY_20，recommended_power 189295920 对本角色约 1.6M）。",
+      "2026-09-20T14:48:53Z BACK 之后 goal_progress 一直是 false，CLEAR_INTEL 因此被判 NO_GOAL_PROGRESS/DEFERRED —— 即「每步都过自己的 verifier 但目标零推进」，这正是操作者看到的「对已清空列表的无意义重复操作」。"
+    ],
+    "next_refresh": {
+      "countdown_read_live": "01:11:31",
+      "read_at": "2026-09-20T14:48:53Z",
+      "due_at_approx": "2026-09-20T16:00:00Z",
+      "due_at_local_approx": "2026-09-21 00:00 GMT+8",
+      "note": "倒计时是运行读数，外推只是近似；下一轮必须在情报页重新读一次倒计时，不要拿这个值当排期。"
+    },
+    "how_the_loop_must_handle_it": "现有机制已经是对的，不要改成「永久完成」：capability_gate 把 CLEAR_INTEL 判成 DEFERRED（NO_GOAL_PROGRESS，源 READ_INTEL_LIST），而 DEFERRED 走 no_progress_probe_minutes=30 的探测窗，窗口一过自动放行重新观察（实测：模拟时间前进 5 分钟即返回 None=可调度）。所以「等待刷新」是自动的，唯一要防的是把它写死成 COMPLETE。",
+    "untried_pins_is_not_beatability": "注意 untried_pins=1 的含义是「本轮还没点过」，不是「打得过」。那个 pin 本轮点过之后仍留在板上（pin 在任务被消耗后不会消失，见 runtime.py 的 INTEL_PIN 解析器注释），所以它会被反复算作「还有情报」，但开出的是 BLOCKED 任务。这正是本轮 goal_progress 恒为 false 的机制来源。"
+  }
 }

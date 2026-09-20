@@ -201,6 +201,12 @@ dataset/external/repositories/
 # from is trimmed by the panel's retention, so without these a later session
 # cannot re-check the readings at all.
 !dataset/truth_audit/reward_popup_exit_20260920/readings/**/*.png
+# The frame the species-agnostic beast hop was built from: the client prints the
+# animal's own name (霜鳞避役 at 0.89) beside its level badge, the table resolves
+# it, and the route still recorded nothing because of a per-species pre-approval
+# flag.  Published because the guard tests assert against it and because the label
+# geometry the tap point comes from is only checkable by looking at it.
+!dataset/truth_audit/beast_labelled_selection_20260920/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

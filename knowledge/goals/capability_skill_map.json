@@ -3,13 +3,13 @@
   "model": "Goal -> Canonical Capability -> Registered Skill -> Production Evidence",
   "summary": {
     "total": 16,
-    "fully_live_verified": 2,
+    "fully_live_verified": 1,
     "partial": 9,
     "never_tried": 0,
     "blocked": 3,
-    "degraded": 2,
+    "degraded": 3,
     "missing": 0,
-    "fully_live_verified_percent": 12.5,
+    "fully_live_verified_percent": 6.2,
     "never_tried_percent": 0.0,
     "automation_coverage_mean": 0.5713,
     "live_coverage_mean": 0.5765
@@ -29,9 +29,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 135,
-          "successes": 115,
-          "failures": 20,
+          "attempts": 168,
+          "successes": 147,
+          "failures": 21,
           "evidence": ""
         },
         {
@@ -73,9 +73,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 146,
-          "successes": 125,
-          "failures": 21,
+          "attempts": 168,
+          "successes": 146,
+          "failures": 22,
           "evidence": ""
         },
         {
@@ -86,8 +86,8 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 65,
-          "successes": 62,
+          "attempts": 79,
+          "successes": 76,
           "failures": 3,
           "evidence": ""
         },
@@ -97,23 +97,23 @@
             "DISMISS_INTEL_REWARD",
             "DISMISS_INTEL_GENERIC_REWARD"
           ],
-          "status": "STABLE",
+          "status": "DEGRADED",
           "implemented_by": "DISMISS_INTEL_REWARD",
           "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 64,
-          "successes": 59,
-          "failures": 5,
+          "attempts": 111,
+          "successes": 71,
+          "failures": 40,
           "evidence": ""
         }
       ],
       "design_requirements_total": 6,
       "implemented_capabilities": 6,
       "live_verified_capabilities": 5,
-      "stable_capabilities": 5,
+      "stable_capabilities": 4,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 0.8333,
-      "stable_coverage": 0.8333,
+      "stable_coverage": 0.6667,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -127,16 +127,21 @@
           "capability": "SPEND_STAMINA_ON_BEAST",
           "alternatives": [
             "SELECT_BEAST_TARGET",
+            "SELECT_BEAST_TARGET_MAMMOTH",
+            "ATTACK_BEAST_CARD",
+            "SCAN_MAP_FOR_BEAST",
             "BEAST_HUNT",
-            "DISPATCH_BEAST"
+            "DISPATCH_BEAST",
+            "SELECT_BEAST_TARGET_LABELLED"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "SELECT_BEAST_TARGET",
-          "live_verified_by": "BEAST_HUNT",
-          "attempts": 5,
-          "successes": 2,
-          "failures": 3,
-          "evidence": "dataset/truth_audit/beast_search_wiring_20260918/key/"
+          "live_verified_by": "SCAN_MAP_FOR_BEAST",
+          "attempts": 411,
+          "successes": 403,
+          "failures": 8,
+          "evidence": "dataset/truth_audit/beast_search_wiring_20260918/key/",
+          "notes": "2026-09-20: SELECT_BEAST_TARGET_LABELLED registered.  The existing hops each tap one species' sprite, so the route could only act on a beast somebody had pre-approved; the measured failure was a live frame whose 霜鳞避役/20 read perfectly (label 0.89, badge 1.00, row registered) and still produced nothing, after which the route panned.  The new hop taps whatever the client's own label names, at the point that label's box measures, and the spend stays gated on the client's printed 胜券在握."
         },
         {
           "capability": "SPEND_STAMINA_ON_INTEL",
@@ -148,8 +153,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 137,
-          "successes": 122,
+          "attempts": 155,
+          "successes": 140,
           "failures": 15,
           "evidence": ""
         },
@@ -170,11 +175,11 @@
       "design_requirements_total": 3,
       "implemented_capabilities": 2,
       "live_verified_capabilities": 2,
-      "stable_capabilities": 1,
+      "stable_capabilities": 2,
       "design_coverage": 1.0,
       "implementation_coverage": 0.6667,
       "live_coverage": 0.6667,
-      "stable_coverage": 0.3333,
+      "stable_coverage": 0.6667,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "SPEND_STAMINA_ON_RALLY"
@@ -195,9 +200,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 122,
-          "successes": 111,
-          "failures": 11,
+          "attempts": 197,
+          "successes": 185,
+          "failures": 12,
           "evidence": "dataset/truth_audit/nav_to_map_20260918/key/"
         },
         {
@@ -208,8 +213,8 @@
           "status": "DEGRADED",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 116,
-          "successes": 82,
+          "attempts": 151,
+          "successes": 117,
           "failures": 34,
           "evidence": ""
         },
@@ -221,9 +226,9 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_RESOURCE",
           "live_verified_by": "SELECT_RESOURCE",
-          "attempts": 78,
-          "successes": 33,
-          "failures": 45,
+          "attempts": 110,
+          "successes": 64,
+          "failures": 46,
           "evidence": ""
         },
         {
@@ -234,9 +239,9 @@
           "status": "DEGRADED",
           "implemented_by": "SUBMIT_RESOURCE_SEARCH",
           "live_verified_by": "SUBMIT_RESOURCE_SEARCH",
-          "attempts": 89,
-          "successes": 59,
-          "failures": 30,
+          "attempts": 124,
+          "successes": 91,
+          "failures": 33,
           "evidence": ""
         },
         {
@@ -247,8 +252,8 @@
           "status": "DEGRADED",
           "implemented_by": "START_GATHER",
           "live_verified_by": "START_GATHER",
-          "attempts": 117,
-          "successes": 57,
+          "attempts": 149,
+          "successes": 89,
           "failures": 60,
           "evidence": "dataset/truth_audit/march_formation_20260918/key/"
         },
@@ -260,8 +265,8 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 91,
-          "successes": 53,
+          "attempts": 123,
+          "successes": 85,
           "failures": 38,
           "evidence": ""
         },
@@ -349,11 +354,11 @@
           "alternatives": [
             "OPEN_RESEARCH"
           ],
-          "status": "LIVE_VERIFIED",
+          "status": "STABLE",
           "implemented_by": "OPEN_RESEARCH",
           "live_verified_by": "OPEN_RESEARCH",
-          "attempts": 4,
-          "successes": 4,
+          "attempts": 8,
+          "successes": 8,
           "failures": 0,
           "evidence": ""
         },
@@ -374,11 +379,11 @@
       "design_requirements_total": 2,
       "implemented_capabilities": 1,
       "live_verified_capabilities": 1,
-      "stable_capabilities": 0,
+      "stable_capabilities": 1,
       "design_coverage": 1.0,
       "implementation_coverage": 0.5,
       "live_coverage": 0.5,
-      "stable_coverage": 0.0,
+      "stable_coverage": 0.5,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "START_RESEARCH"
@@ -403,9 +408,9 @@
           "status": "STABLE",
           "implemented_by": "OPEN_POWER_OVERVIEW",
           "live_verified_by": "OPEN_POWER_OVERVIEW",
-          "attempts": 57,
-          "successes": 49,
-          "failures": 8,
+          "attempts": 106,
+          "successes": 87,
+          "failures": 19,
           "evidence": ""
         },
         {
@@ -448,9 +453,9 @@
           "status": "DEGRADED",
           "implemented_by": "OPEN_MAIL",
           "live_verified_by": "OPEN_MAIL",
-          "attempts": 49,
-          "successes": 34,
-          "failures": 15,
+          "attempts": 64,
+          "successes": 47,
+          "failures": 17,
           "evidence": ""
         },
         {
@@ -463,8 +468,8 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_MAIL_ALLIANCE_TAB",
           "live_verified_by": "SELECT_MAIL_ALLIANCE_TAB",
-          "attempts": 16,
-          "successes": 11,
+          "attempts": 17,
+          "successes": 12,
           "failures": 5,
           "evidence": ""
         },
@@ -476,8 +481,8 @@
           "status": "DEGRADED",
           "implemented_by": "MAIL_CLAIM_REWARDS",
           "live_verified_by": "MAIL_CLAIM_REWARDS",
-          "attempts": 29,
-          "successes": 19,
+          "attempts": 38,
+          "successes": 28,
           "failures": 10,
           "evidence": ""
         },
@@ -490,9 +495,9 @@
           "status": "DEGRADED",
           "implemented_by": "DISMISS_MAIL_REWARD",
           "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
-          "attempts": 9,
-          "successes": 7,
-          "failures": 2,
+          "attempts": 54,
+          "successes": 11,
+          "failures": 43,
           "evidence": ""
         }
       ],
@@ -521,8 +526,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_DAILY",
           "live_verified_by": "OPEN_DAILY",
-          "attempts": 12,
-          "successes": 10,
+          "attempts": 25,
+          "successes": 23,
           "failures": 2,
           "evidence": ""
         },
@@ -547,8 +552,8 @@
           "status": "STABLE",
           "implemented_by": "DAILY_CLAIM_REWARDS",
           "live_verified_by": "DAILY_CLAIM_REWARDS",
-          "attempts": 5,
-          "successes": 5,
+          "attempts": 8,
+          "successes": 8,
           "failures": 0,
           "evidence": ""
         },
@@ -561,9 +566,9 @@
           "status": "DEGRADED",
           "implemented_by": "DISMISS_DAILY_REWARD",
           "live_verified_by": "DISMISS_DAILY_REWARD",
-          "attempts": 9,
-          "successes": 4,
-          "failures": 5,
+          "attempts": 16,
+          "successes": 8,
+          "failures": 8,
           "evidence": ""
         }
       ],
@@ -584,7 +589,7 @@
       "goal": "CLAIM_FREE_REWARDS",
       "category": "日常低保",
       "composition": "ANY_OF",
-      "status": "FULLY_LIVE_VERIFIED",
+      "status": "DEGRADED",
       "capabilities": [
         {
           "capability": "CLAIM_FREE_REWARD",
@@ -598,12 +603,12 @@
             "DAILY_CLAIM_REWARDS",
             "INTEL_CLAIM_REWARDS"
           ],
-          "status": "STABLE",
+          "status": "DEGRADED",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 132,
-          "successes": 114,
-          "failures": 18,
+          "attempts": 177,
+          "successes": 141,
+          "failures": 36,
           "evidence": ""
         },
         {
@@ -614,23 +619,23 @@
             "DISMISS_DAILY_GENERIC_REWARD",
             "DISMISS_EXPLORATION_GENERIC_REWARD"
           ],
-          "status": "STABLE",
+          "status": "DEGRADED",
           "implemented_by": "DISMISS_ALLIANCE_GENERIC_REWARD",
-          "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
-          "attempts": 12,
-          "successes": 11,
-          "failures": 1,
+          "live_verified_by": "DISMISS_ALLIANCE_GENERIC_REWARD",
+          "attempts": 66,
+          "successes": 21,
+          "failures": 45,
           "evidence": ""
         }
       ],
       "design_requirements_total": 2,
       "implemented_capabilities": 2,
       "live_verified_capabilities": 2,
-      "stable_capabilities": 2,
+      "stable_capabilities": 0,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 1.0,
-      "stable_coverage": 1.0,
+      "stable_coverage": 0.0,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -648,8 +653,8 @@
           "status": "STABLE",
           "implemented_by": "OPEN_EXPLORATION",
           "live_verified_by": "OPEN_EXPLORATION",
-          "attempts": 12,
-          "successes": 11,
+          "attempts": 18,
+          "successes": 17,
           "failures": 1,
           "evidence": ""
         },
@@ -662,9 +667,9 @@
           "status": "DEGRADED",
           "implemented_by": "EXPLORATION_IDLE_CLAIM",
           "live_verified_by": "EXPLORATION_IDLE_CLAIM",
-          "attempts": 7,
+          "attempts": 14,
           "successes": 2,
-          "failures": 5,
+          "failures": 12,
           "evidence": ""
         },
         {
@@ -704,11 +709,11 @@
           "alternatives": [
             "OPEN_ALLIANCE"
           ],
-          "status": "LIVE_VERIFIED",
+          "status": "STABLE",
           "implemented_by": "OPEN_ALLIANCE",
           "live_verified_by": "OPEN_ALLIANCE",
-          "attempts": 1,
-          "successes": 1,
+          "attempts": 11,
+          "successes": 11,
           "failures": 0,
           "evidence": ""
         },
@@ -745,12 +750,12 @@
             "OPEN_ALLIANCE_GIFTS",
             "ALLIANCE_ALLY_GIFT_CLAIM"
           ],
-          "status": "STABLE",
+          "status": "DEGRADED",
           "implemented_by": "ALLIANCE_GIFTS",
           "live_verified_by": "ALLIANCE_GIFTS",
-          "attempts": 28,
-          "successes": 26,
-          "failures": 2,
+          "attempts": 50,
+          "successes": 37,
+          "failures": 13,
           "evidence": ""
         }
       ],
@@ -1005,8 +1010,8 @@
           "status": "DEGRADED",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 91,
-          "successes": 53,
+          "attempts": 123,
+          "successes": 85,
           "failures": 38,
           "evidence": ""
         }

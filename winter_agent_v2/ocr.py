@@ -747,21 +747,33 @@ def level_beside_label(
     return candidates.pop() if len(candidates) == 1 else None
 
 
-def beast_from_its_label(image_path, ocr) -> dict:
-    """The beast the client's own label names, when the table permits dispatching it.
+def beast_from_its_label(image_path, ocr, frame_size: tuple[int, int] | None = None) -> dict:
+    """The beast the client's own label names, plus where to tap it.
 
     Measured 2026-09-19: the two sprite templates that were meant to find a beast on the map match
     nothing on 23 live frames, because they search a patch of bare snow, while the client prints the
     animal's name beside it (猛犸象 at 0.88, 霜鳞避役 at 0.89) with a level badge at full confidence.
 
-    Published only when the beast table says the target may be dispatched.  An unmeasured species,
-    or a badge that disagrees with the row's level, yields ``{}`` exactly as before -- so this
-    cannot spend stamina on a target nobody has measured.  Nothing here is invented: an unknown
-    label answers ``{}`` rather than being guessed at, because the answer decides whether a march
-    is dispatched.
+    REVISED 2026-09-20.  This used to publish only when the beast table said the target could be
+    dispatched, which is a per-species pre-approval; it now publishes whenever the identity could be
+    *read*, and carries the tap point with it.  The two are different questions and the old code
+    answered the wrong one -- the measured consequence was that a live frame whose 霜鳞避役/20 read
+    perfectly (name at 0.89, badge at 1.00, row registered) produced ``{}``, so the route recorded
+    nothing and went back to panning the map.  The spend is still not authorised here: it is decided
+    on the card by the client's own printed assessment, which is what ``is_dispatchable`` now reads.
+    What this function may authorise is a tap, and a tap costs no stamina.
+
+    ``tap_norm`` is the centre of the name label's own box, mapped back into frame coordinates.
+    Measured on that same frame: the label 霜鳞避役 sits at x 157-204, y 838 in a 720x1280 frame,
+    i.e. (0.268, 0.655), and the animal's body occupies x 90-330 / y 760-900 at that column -- the
+    client draws the nameplate on top of the animal, so its centre is on the beast and tapping it
+    selects that beast.  It is a reading from the same frame, not a calibrated constant.
+
+    ``frame_size`` is required for that mapping because ROI-scoped token boxes are crop-relative;
+    without it the identity is still returned and ``tap_norm`` is omitted rather than guessed.
     """
     try:
-        from .beast_targets import is_dispatchable, lookup_by_name, load
+        from .beast_targets import lookup_by_name, load, may_evaluate
 
         targets = load()
         if not targets:
@@ -771,7 +783,8 @@ def beast_from_its_label(image_path, ocr) -> dict:
         name = named_beast_label(tokens, names)
         if name is None:
             return {}
-        row = lookup_by_name(name, level_beside_label(tokens), targets)
+        level = level_beside_label(tokens)
+        row = lookup_by_name(name, level, targets)
         if row is None:
             return {}
         beast = {
@@ -779,10 +792,63 @@ def beast_from_its_label(image_path, ocr) -> dict:
             "level": row.level,
             "available": True,
             "source": "BEAST_LABEL",
+            "label_confidence": _label_confidence(tokens, name),
         }
+        tap = _label_tap_norm(tokens, name, frame_size)
+        if tap is not None:
+            beast["tap_norm"] = tap
+        if row.refused:
+            # The client has already been seen turning this one down; say so rather
+            # than emitting a target the route may not tap.
+            beast["refused_by_evidence"] = True
+        if not may_evaluate(beast, targets):
+            return {}
     except Exception:  # noqa: BLE001 - recognition must never take the frame with it
         return {}
-    return beast if is_dispatchable(beast, targets) else {}
+    return beast
+
+
+def _label_confidence(tokens: tuple[OCRToken, ...], name: str, *, min_confidence: float = 0.8) -> float:
+    """The confidence of the read that produced ``name``, so the evidence travels with it."""
+    best = 0.0
+    for token in tokens:
+        text = str(token.text or "").strip()
+        if token.confidence >= min_confidence and (name in text or text in name):
+            best = max(best, float(token.confidence))
+    return round(best, 4)
+
+
+def _label_tap_norm(
+    tokens: tuple[OCRToken, ...],
+    name: str,
+    frame_size: tuple[int, int] | None,
+) -> tuple[float, float] | None:
+    """Centre of the name label's box in frame-normalised coordinates, or ``None``.
+
+    ROI-scoped boxes are relative to the crop, so the band's own origin is added back and
+    the sum is divided by the frame size.  ``None`` (no size, or no box) is the honest
+    answer; a coordinate invented from a hardcoded fraction is what the executor would
+    then tap.
+    """
+    if not frame_size:
+        return None
+    width, height = (int(frame_size[0]), int(frame_size[1]))
+    if width <= 0 or height <= 0:
+        return None
+    for token in tokens:
+        text = str(token.text or "").strip()
+        if not text or not token.box:
+            continue
+        if not (name in text or text in name):
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        x_norm = BEAST_LABEL_BAND["x_norm"] + ((min(xs) + max(xs)) / 2.0) / width
+        y_norm = BEAST_LABEL_BAND["y_norm"] + ((min(ys) + max(ys)) / 2.0) / height
+        if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+            return None
+        return (round(x_norm, 4), round(y_norm, 4))
+    return None
 
 
 def read_hud_stamina(
@@ -1285,8 +1351,11 @@ class HybridVision:
                     march_max=march_max,
                     stamina=stamina,
                     # Only when the template path found nothing: that path is LIVE_VERIFIED and
-                    # its values are not re-decided here.
-                    beast=dict(primary.beast) or beast_from_its_label(image_path, self.ocr),
+                    # its values are not re-decided here.  The frame size goes along because the
+                    # label read carries a tap point with it, and an ROI-scoped token box can
+                    # only be mapped back to the frame with it.
+                    beast=dict(primary.beast)
+                    or beast_from_its_label(image_path, self.ocr, frame_size=(frame_width, frame_height)),
                 )
             if (
                 primary.page is Page.EXPLORATION

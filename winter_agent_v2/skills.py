@@ -526,6 +526,30 @@ def v2_registry() -> SkillRegistry:
             risk="MEDIUM_STAMINA_SPEND",
             state=SkillState.CANDIDATE,
         ),
+        # 2026-09-20, SPEND_STAMINA_ON_BEAST: SELECT_BEAST_TARGET and its mammoth
+        # twin each tap one species' sprite template, so the route could only ever
+        # act on a beast somebody had already cut a template for.  Measured on a
+        # live frame: the client prints the animal's own name beside it
+        # (霜鳞避役 at 0.89) with its level badge (20 at 1.00), the table resolves
+        # that to a row, and the route still recorded nothing -- because the row
+        # was registered as UNVERIFIED.  This skill is the species-agnostic
+        # version: it taps whatever beast the client's label named, at the
+        # coordinate that label's own box measures on the current frame
+        # (BEAST_ON_MAP is resolved from WorldState, not from a template), and
+        # verify_beast_card_opened proves the card for *that* animal opened.
+        #
+        # No stamina moves here -- opening a card is free -- and the spend stays
+        # gated on the client's own 胜券在握 strip further down the chain, so
+        # this skill cannot spend on a beast the account cannot beat.
+        Skill(
+            "SELECT_BEAST_TARGET_LABELLED",
+            "Select the beast the client's own map label names, whatever species it is",
+            Page.MAP,
+            Action("TAP_SEMANTIC", "BEAST_ON_MAP"),
+            timeout=15.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
     ])
     skills.extend([
         Skill(

@@ -637,3 +637,78 @@ live_runtime ×1、capability_gate ×3、march_formation_attribution ×2）⇒ *
 而**操作者明确要求本次开发不得阻塞正式 AUTO**，同一个盒子上跑一小时 CPU 重活与实机循环争资源 ⇒ **主动停掉**。
 台账里这一列已经**按名字留着**而不是合并进 OCR 那一列，说明它是"没测"不是"没这回事"。
 要补它：把语料缩到每页 10 帧、或只扫被技能点名的 71 个语义（约 2.5 倍加速），在一个 AUTO 空闲的时段跑。
+
+## P0 2026-09-20（操作者）：情报已清完 → 转入剩余体力消耗
+
+### 阻塞点的真实结构（都不是"路线没写"）
+
+用项目自己的 API 读当前判定（不是读日志猜）：
+
+```
+CapabilityGate.load('.').blocks(...)
+  CLEAR_INTEL         -> DEFERRED / READ_INTEL_LIST   "3 consecutive episodes passed their verifier
+                                                        and advanced no part of this goal"
+  AVOID_STAMINA_WASTE -> DEVELOPMENT_PENDING / SPEND_STAMINA_ON_BEAST   job=17f1c743
+```
+
+**阻塞 1（P0 真凶）**：作业 `17f1c743`（`SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SELECT_INTEL_PIN`，
+14:39:05Z 提交）挂着 `WORKING`，但 `detail = {"summary": "Idle background coding session with no task"}`
+——**15 分钟里什么都没做**，而它：
+- 把 `SPEND_STAMINA_ON_BEAST` 钉在 `DEVELOPMENT_PENDING` ⇒ `AVOID_STAMINA_WASTE` **永不入调度**；
+- 占住唯一并发槽 ⇒ 面板日志里**另外 5 个升级全部 `CONCURRENCY_WAIT`**。
+
+实测它的进度钟：`b.status('17f1c743').progress_at` ⇒ **已冻结 34.6 分钟**（阈值 20）。
+⇒ 项目自带的规则（`escalation_queue._cancel_over_timebox`：超 45 分钟 **且** 进度钟冻结）会在
+**15:24:05Z** 自动取消它并释放槽位，**不需要手工改状态**。⏳ 待观察确认。
+
+**阻塞 2**：情报这一轮的真相比"已清完"更精确 —— 板上还剩 **1 个 pin**，而它开出的是
+`BLOCKED / MASTER_BOUNTY / level 20`（`INTEL_MASTER_BOUNTY_20`，recommended_power 189,295,920
+对本角色 ~1.6M）。`untried_pins: 1` 的含义是"本轮还没点过"，**不是"打得过"**；pin 在任务被消耗后
+**不会消失**，所以它会被反复算作"还有情报"，而 `goal_progress` 恒为 false。
+⇒ 已写入 `knowledge/game/intel.json` 的 `round_state`（`ROUND_CLEARED_AWAITING_REFRESH`，
+含下次刷新 ~2026-09-21 00:00 GMT+8）。**有界性已实测**：该推迟走 `no_progress_probe_minutes=30`
+的探测窗，模拟时间前进 5 分钟即返回可调度 ⇒ **不是永久标完成**，无需改代码。
+
+**阻塞 3（本次修掉的）**：`SCAN_MAP_FOR_BEAST` 是一个没有收敛条件的视野平移（全史 420 次，
+`goal_progress` 恒 false），而真正能到目标的两种手段**都是逐物种的**：两个精灵模板
+（麝牛9 / 猛犸象5）。项目自己的失败模式文件 `BOUNDED_SCAN_THAT_NEVER_CONVERGES.md` 早已写明
+规则 3：「客户端已经提供的导航（搜索/前往）优先于自家手势摸索」，并记着"野兽搜索这条 hop 没有接线"。
+
+### 患者帧（`dataset/truth_audit/beast_labelled_selection_20260920/`）
+
+`stamina_verify2_step_001_before_20260919T144336706139.png` 上，**客户端在地图上的野兽旁边
+印着名字**：`named_beast_label → 霜鳞避役`（conf 0.89）、`level_beside_label → 20`（conf 1.00）、
+`lookup_by_name → FROST_SCALED_RUNNER_20` 命中 —— **然后 `is_dispatchable → False`**
+（该行 `dispatchable: false` / `UNVERIFIED`，上一版作者刻意留的硬闸，理由是"未测量的物种不能花体力"）。
+
+⇒ **识别链从头到尾没问题，卡的是一道手写的逐物种预批准开关。** 这正是操作者说的
+"不要只针对某个物种，要通用，只要打得过就可以打"。
+
+### 实施（commit 见下）
+
+1. `beast_targets.py`：判定从**逐物种预批准**换成**客户端自己的判定**，同一个模块回答两个问题——
+   `may_evaluate`（能不能点，开卡不花体力，身份够了就行）与
+   `is_dispatchable`（能不能花体力：要帧上有客户端印的 `本次出征胜券在握`，或该行本就预批准）。
+   **实测拒绝**（雪豹29 的红判定 + `BLOCKED_BEFORE_DISPATCH`）成为唯一无需帧即可拒绝的东西，
+   ⇒ 比改前**更严**（连点都不点）。
+2. `ocr.beast_from_its_label`：改为在**可评估**时发布身份，并带上**实测落点** `tap_norm`
+   （名字标签框中心映射回整帧；该帧 = (193,838) = (0.2687,0.6551)，标签画在兽体上）。
+   没有帧尺寸时**不给坐标**，而不是编一个。
+3. `skills.py` + `runtime.py`：新增 `SELECT_BEAST_TARGET_LABELLED`（`TAP_SEMANTIC: BEAST_ON_MAP`，
+   动态解析，带页面守卫防陈旧坐标），绑 `verify_beast_card_opened` 并进 `VERIFIED_ATOMIC`；
+   技能→能力映射登记进 `knowledge/goals/capability_skill_map.json`。
+4. `verifier.py`：新增 `verify_beast_card_opened`（证明**目标**卡开了，而非动作发生）；
+   `verify_beast_dispatch` 的 `target.dispatchable` 改为 `not target.refused`（客户端绿条仍是硬要求）。
+5. `brain.py`：BEAST_HUNT 在盲扫**之前**接上该跳，并重置平移预算。
+6. 守卫：`check_wiring` 新增 8 条（注册/绑定/路由/预算/三条安全线/musk-ox 不回归/执行器解析）。
+   ⚠ 第一次跑时报出 3 条 MISS —— 其中一条是**我自己加的 #71 检查**把新动态目标认了出来
+   （已把 `BEAST_ON_MAP` 加进派生解析器清单），另两条是真缺口（能力映射、拼写）。
+   ⇒ `problems: 0`。
+
+### ⚠ 尚未验证（不许当已完成）
+
+- 上面全部是**离线在真机帧上**跑出来的。**真机出征 0 次**：链路的后半段
+  （点标签 → 开卡 → 攻击 → 阵型页 → 出征 → verifier）**必须等 AUTO 下一轮走到地图页**，
+  且要等 `SPEND_STAMINA_ON_BEAST` 的门禁被释放之后才可能发生。
+- "点 nameplate 能开卡"这一条**本目录没有帧**，只有真机会说话。
+- 因此本 issue 的状态是 **CANDIDATE，不是 LIVE_VERIFIED**。

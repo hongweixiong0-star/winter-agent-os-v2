@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from .models import Decision, MarchState, Page, WorldState
-from .beast_targets import is_dispatchable
+from .beast_targets import is_dispatchable, may_evaluate
 from .skills import SkillRegistry
 
 
@@ -1073,6 +1073,21 @@ class RuleBrain:
                     if world.beast.get("visible_target") == "MAMMOTH":
                         return Decision("SELECT_BEAST_TARGET_MAMMOTH", "verified_visible_mammoth_target", world.confidence, "beast_target_dialog_open")
                     return Decision("SELECT_BEAST_TARGET", "verified_visible_low_level_beast", world.confidence, "beast_target_dialog_open")
+                if may_evaluate(world.beast):
+                    # Added 2026-09-20.  Measured on a live frame: the client printed
+                    # 霜鳞避役 beside its 20 badge, the label read at 0.89, the table
+                    # resolved it to a row -- and the route recorded nothing, because
+                    # the only beast it could act on was one somebody had pre-approved
+                    # or cut a sprite for.  The species-specific taps above need one
+                    # template per animal; this one needs none, so a species nobody has
+                    # measured is *considered* instead of being invisible.
+                    #
+                    # Nothing is spent here.  The tap opens the card, and the spend is
+                    # decided further down by the client's own 胜券在握 strip -- which
+                    # is also why an unsafe target is not a risk of this branch: it is
+                    # exactly how the level-29 leopard gets read and refused.
+                    self.beast_scans_used = 0
+                    return Decision("SELECT_BEAST_TARGET_LABELLED", "beast_labelled_on_the_map_reading_the_clients_own_verdict", world.confidence, "beast_target_dialog_open")
                 if self.beast_scans_used < self.max_beast_scans:
                     self.beast_scans_used += 1
                     return Decision("SCAN_MAP_FOR_BEAST", "verified_beast_target_not_visible_scanning_map", world.confidence, "beast_target_resent")

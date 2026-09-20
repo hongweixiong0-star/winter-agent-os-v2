@@ -449,6 +449,7 @@ def main() -> int:
     import dataclasses
 
     from winter_agent_v2 import models, ocr, runtime, skills, verifier, vision
+    from winter_agent_v2 import beast_targets
     from winter_agent_v2.brain import RuleBrain
     from winter_agent_v2.models import MarchState, Page, WorldState
 
@@ -604,7 +605,8 @@ def main() -> int:
     # Targets resolved from the frame by arithmetic rather than by a template -- the five
     # branches in LiveRuntime's ``resolve`` plus the one reviewed normalized fallback.
     _derived_targets = {"RESOURCE_DYNAMIC", "HUD_STAMINA_GAUGE", "MARCH_ROW_1",
-                        "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM"}
+                        "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM",
+                        "BEAST_ON_MAP"}
     _unresolvable = []
     for _skill in registry.all():
         if _skill.action.kind != "TAP_SEMANTIC":
@@ -884,6 +886,58 @@ def main() -> int:
           vision.SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json").observe(
               ROOT / "dataset/raw/stamina_emergency/beast9_round3_target.png"
           ).beast.get("name") == "麝牛")
+
+    # SPEND_STAMINA_ON_BEAST, second pass (2026-09-20 operator P0: "intel is finished, spend the
+    # stamina that is left").  The hops above each tap ONE species' sprite, so the route could only
+    # act on a beast somebody had pre-approved or cut a template for -- and the measured cost was a
+    # live frame whose 霜鳞避役/20 read perfectly (label 0.89, badge 1.00, row registered) and still
+    # produced nothing, after which the route went back to panning.  The new hop taps whatever the
+    # client's own label names, at the point that label's box measures.  Same three links as above.
+    check("registry: SELECT_BEAST_TARGET_LABELLED taps the beast the client labelled",
+          registry.get("SELECT_BEAST_TARGET_LABELLED") is not None
+          and registry.get("SELECT_BEAST_TARGET_LABELLED").required_page is Page.MAP
+          and registry.get("SELECT_BEAST_TARGET_LABELLED").action.kind == "TAP_SEMANTIC"
+          and registry.get("SELECT_BEAST_TARGET_LABELLED").action.target == "BEAST_ON_MAP")
+    check("dispatchable: the labelled hop is bound to verify_beast_card_opened",
+          runtime.LiveRuntime.VERIFIED_ATOMIC.get("SELECT_BEAST_TARGET_LABELLED")
+          is verifier.verify_beast_card_opened)
+    _labelled_brain = RuleBrain()
+    _labelled_brain.current_goal = "BEAST_HUNT"
+    check("brain: a beast the client labelled is tapped instead of panning for it",
+          _labelled_brain.decide(
+              WorldState(page=Page.MAP,
+                         beast={"visible_target": "FROST_SCALED_RUNNER", "level": 20,
+                                "available": True, "source": "BEAST_LABEL",
+                                "tap_norm": (0.2687, 0.6551)},
+                         confidence=0.99),
+              registry).skill == "SELECT_BEAST_TARGET_LABELLED")
+    check("brain: the same branch resets the pan budget, so a labelled target is progress",
+          _labelled_brain.beast_scans_used == 0)
+    # The safety half.  Identity alone must never authorise a spend, and a target the client has
+    # already refused must not even be tapped -- otherwise the generalisation would have traded one
+    # silent failure (a full map read as empty) for another (stamina spent on an unwinnable fight).
+    check("safety: an unmeasured species is tappable but not spendable",
+          beast_targets.may_evaluate(
+              {"visible_target": "FROST_SCALED_RUNNER", "level": 20, "available": True})
+          and not beast_targets.is_dispatchable(
+              {"visible_target": "FROST_SCALED_RUNNER", "level": 20, "available": True}))
+    check("safety: the client's own 胜券在握 is what authorises the spend",
+          beast_targets.is_dispatchable(
+              {"visible_target": "FROST_SCALED_RUNNER", "level": 20,
+               "victory_assessment": beast_targets.GREEN_ASSESSMENT}))
+    check("safety: a target the client already refused is neither tapped nor spendable",
+          not beast_targets.may_evaluate(
+              {"visible_target": "SNOW_LEOPARD", "level": 29, "available": True})
+          and not beast_targets.is_dispatchable(
+              {"visible_target": "SNOW_LEOPARD", "level": 29,
+               "victory_assessment": beast_targets.GREEN_ASSESSMENT}))
+    check("safety: the pre-cleared musk ox keeps spending without a verdict on the frame",
+          beast_targets.is_dispatchable(
+              {"visible_target": "MUSK_OX", "level": 9, "available": True}))
+    check("runtime: the executor resolves BEAST_ON_MAP only on the frame it was measured on",
+          'if semantic == "BEAST_ON_MAP":' in (PKG / "runtime.py").read_text(encoding="utf-8"))
+    check("capability: the labelled hop is SPEND_STAMINA_ON_BEAST in the project's table",
+          _cfs("SELECT_BEAST_TARGET_LABELLED") == "SPEND_STAMINA_ON_BEAST")
 
     # OPEN_MARCH_FORMATION (2026-09-18 escalation
     # OPEN_MARCH_FORMATION|NO_GOAL_PROGRESS|SUBMIT_RESOURCE_SEARCH).  The same three
