@@ -553,8 +553,33 @@ def main() -> int:
                           ("ALLIANCE", "DISMISS_ALLIANCE_GENERIC_REWARD")):
         check(f"brain: reward popup during {goal} -> {dismiss}",
               RuleBrain(current_goal=goal).decide(reward_popup, registry).skill == dismiss)
-    check("brain: reward popup without goal context stops rather than guessing",
-          decide(reward_popup).reason == "generic_reward_without_goal_context")
+    # A goal that cannot name the page under the dialog must still not stop on it.
+    # The client declares the exit on the dialog itself (点击任意位置退出), so
+    # clearing a blocker is not a guess about which page to return to -- this used
+    # to be SAFE_STOP.  Measured live 2026-09-20 (open issue #64): five of six AUTO
+    # rounds inside twenty minutes ended on this dialog, and each one ended the run
+    # instead of clearing it, so the next round met the same dialog again.
+    neutral = decide(reward_popup)
+    check("brain: reward popup without goal context is closed by the dialog's own exit",
+          neutral.skill == "DISMISS_SHARED_REWARD"
+          and neutral.reason == "shared_reward_popup_dismissed_by_its_declared_exit")
+    # ...and the surface they tap is the footer exit band, not the title band.  The
+    # title (POPUP_GENERIC_REWARD_HEADER) measures phash 16 against a tolerance of
+    # 16 on the incident frame -- exactly *at* its gate, which is the tell that the
+    # tolerance rather than the crop is doing the work -- and tapping it is a no-op,
+    # while the footer measures 2 against 8 on the same frame.  The five live
+    # FAILUREs of 2026-09-20 were made of that no-op.
+    dismiss_skills = ("DISMISS_MAIL_GENERIC_REWARD", "DISMISS_DAILY_GENERIC_REWARD",
+                      "DISMISS_INTEL_GENERIC_REWARD",
+                      "DISMISS_EXPLORATION_GENERIC_REWARD",
+                      "DISMISS_ALLIANCE_GENERIC_REWARD", "DISMISS_SHARED_REWARD")
+    check("skills: every generic-reward dismiss taps the dialog's declared exit",
+          all(registry.get(name) is not None
+              and registry.get(name).action.target == skills.SHARED_REWARD_EXIT
+              for name in dismiss_skills))
+    check("dispatchable.DISMISS_SHARED_REWARD",
+          runtime.LiveRuntime.VERIFIED_ATOMIC.get("DISMISS_SHARED_REWARD")
+          is verifier.verify_popup_closed)
     # Every one of those dismisses is only usable if its verifier accepts the
     # shared label as the popup before-state -- that is the whole reason the label
     # can be goal-neutral.

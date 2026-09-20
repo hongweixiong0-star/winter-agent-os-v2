@@ -102,6 +102,13 @@ class LiveRuntime:
         # anything (live Alliance home carried a 99+ unclaimed-gift badge).
         "ALLIANCE_GIFTS": verify_alliance_gifts_claimed,
         "DISMISS_ALLIANCE_GENERIC_REWARD": verify_alliance_reward_dismissed,
+        # The goal-neutral close of the same dialog, for goals that cannot name
+        # the page it covers.  It reuses verify_popup_closed deliberately: the
+        # proof that has to hold is "the dialog is gone", not "a particular page
+        # came back", because the dialog covers whichever page was underneath.
+        # Without this entry the skill would never be dispatched, which is the
+        # failure mode #45 already recorded for another capability.
+        "DISMISS_SHARED_REWARD": verify_popup_closed,
         "OPEN_MAP": verify_open_map,
         "OPEN_HOME": verify_open_home,
         "OPEN_INTEL": verify_open_intel,

@@ -395,21 +395,34 @@ class RuleBrain:
             if self.current_goal == "ALLIANCE":
                 return Decision("DISMISS_ALLIANCE_GENERIC_REWARD", "alliance_goal_generic_reward_feedback", world.confidence, "alliance_gifts_restored")
             if self.current_goal in {"TRAIN", "RESEARCH"}:
-                # Measured live 2026-09-19, the first time the training sweep was selected: the
-                # run stopped with ``generic_reward_without_goal_context`` while its goal was
-                # KEEP_TRAINING_PRODUCTIVE.  The cases above carry one dismiss skill per domain
-                # and none exists for training or research, so the two goals the sweep had just
-                # wired could not get past a reward popup at all.  ``CLOSE_POPUP`` is registered
-                # and verifier-bound, and closing the popup is exactly what those goals need
-                # next, so it is used rather than inventing per-domain skills that nothing would
-                # verify.
+                # The training sweep meets this dialog on its way to the power
+                # panel.  It used to be closed with CLOSE_POPUP because that was
+                # the only verifier-bound close at the time, but CLOSE_POPUP taps
+                # BTN_CLOSE, which measures phash 28 against a tolerance of 6 on
+                # the dialog (its ROI is the top-right corner, empty here), so it
+                # could never have cleared it.  Same for every other goal that
+                # cannot name the page under the dialog, which is why they all
+                # share the one dismiss now.
                 return Decision(
-                    "CLOSE_POPUP",
+                    "DISMISS_SHARED_REWARD",
                     f"{self.current_goal.lower()}_goal_generic_reward_dismissed",
                     world.confidence,
                     "underlying_page_restored",
                 )
-            return Decision("SAFE_STOP", "generic_reward_without_goal_context", 1.0, "no_action")
+            # Any remaining goal -- AUTO_DISCOVERY meets this dialog constantly --
+            # gets the dialog's own exit, and this used to be SAFE_STOP.  Stopping
+            # was wrong for a reason the client states on the dialog itself: it
+            # says 点击任意位置退出, so its exit is declared by the client rather
+            # than inferred by us, and closing a blocker is not a guess about
+            # which page to return to.  Measured live 2026-09-20 (open issue #64):
+            # five of six AUTO rounds inside twenty minutes ended on this dialog,
+            # and each one ended the run instead of clearing it.
+            return Decision(
+                "DISMISS_SHARED_REWARD",
+                "shared_reward_popup_dismissed_by_its_declared_exit",
+                world.confidence,
+                "underlying_page_restored",
+            )
         if world.page is Page.POPUP and world.popup == "INTEL_REWARD" and self.current_goal == "MAIL":
             return Decision("DISMISS_MAIL_GENERIC_REWARD", "mail_goal_generic_reward_feedback", world.confidence, "mail_page_restored")
         if world.page is Page.POPUP and world.popup == "INTEL_REWARD":

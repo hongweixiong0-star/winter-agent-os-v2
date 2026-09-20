@@ -4,6 +4,34 @@ from dataclasses import dataclass
 
 from .models import Action, LatencyClass, Page, SkillState, WorldState
 
+# The client draws ONE 获得奖励 dialog for every reward source and its artwork
+# does not name the source, so the only region of it that is both
+# source-independent and tappable is the 「点击任意位置退出」 footer.  The
+# manifest record is named after Intel because it was cut from an Intel frame,
+# but that name is a misnomer: measured over 103 labelled production frames it
+# matches 102 of them at distance <= 2 whatever produced the dialog (see
+# tests/test_reward_popup_source.py and tools/probe_reward_popup_gate.py).  It is
+# the dialog's *declared exit*, not an Intel control, which is why it is the
+# target of every dismiss that has no page of its own.
+#
+# Why no dismiss taps POPUP_GENERIC_REWARD_HEADER any more: that crop is the
+# dialog's 获得奖励 TITLE band, so tapping it does nothing.  Measured live
+# 2026-09-20 (open issue #64) -- five of six AUTO rounds inside twenty minutes
+# each selected a domain dismiss, tapped the banner and then failed its verifier,
+# while the frame carried 点击任意位置退出 along the footer.  On the incident
+# frame (dataset/raw/control_panel/runtime_auto/20260920_204143_843357/) the
+# banner measures phash 16 against a tolerance of 16 -- exactly *at* its gate,
+# which is the tell that the tolerance and not the crop is doing the work --
+# while the footer measures 2 against 8.
+SHARED_REWARD_EXIT = "BTN_DISMISS_INTEL_REWARD"
+
+# The verifier the goal-neutral close is bound to.  It is deliberately the
+# shape-blind one: before is a popup, after is not a popup.  A per-domain
+# verifier would demand the domain's page back, and the dialog can sit over any
+# page, so binding one would reject a dismissal that worked -- the 2026-09-16
+# failure this dialog already produced once.
+SHARED_REWARD_VERIFIER = "POPUP_CLOSED"
+
 
 @dataclass(frozen=True)
 class Skill:
@@ -166,12 +194,39 @@ def p0_registry() -> SkillRegistry:
         Skill("SELECT_MAIL_SYSTEM_TAB", "Open the System mail category", Page.MAIL, Action("TAP_SEMANTIC", "BTN_MAIL_TAB_SYSTEM"), state=SkillState.VERIFIED),
         Skill("SELECT_MAIL_REPORT_TAB", "Open the Report mail category", Page.MAIL, Action("TAP_SEMANTIC", "BTN_MAIL_TAB_REPORT"), state=SkillState.VERIFIED),
         Skill("DISMISS_MAIL_REWARD", "Dismiss the verified Mail reward overlay", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_MAIL_REWARD"), state=SkillState.VERIFIED),
-        Skill("DISMISS_MAIL_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Mail goal", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_GENERIC_REWARD_HEADER"), state=SkillState.CANDIDATE),
-        Skill("DISMISS_DAILY_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Daily goal", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_GENERIC_REWARD_HEADER"), state=SkillState.CANDIDATE),
-        Skill("DISMISS_INTEL_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Intel goal", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_GENERIC_REWARD_HEADER"), state=SkillState.CANDIDATE),
-        Skill("DISMISS_EXPLORATION_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Exploration goal", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_GENERIC_REWARD_HEADER"), state=SkillState.CANDIDATE),
+        # The five domain dismisses all tap the dialog's own declared exit rather
+        # than its title band.  Their verifiers are what make them per-domain:
+        # each demands its own page back afterwards, so the goal still has to be
+        # right.  The tap target is shared because the dialog only has one
+        # dismissible surface -- see SHARED_REWARD_EXIT above.
+        Skill("DISMISS_MAIL_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Mail goal", Page.POPUP, Action("TAP_SEMANTIC", SHARED_REWARD_EXIT), state=SkillState.CANDIDATE),
+        Skill("DISMISS_DAILY_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Daily goal", Page.POPUP, Action("TAP_SEMANTIC", SHARED_REWARD_EXIT), state=SkillState.CANDIDATE),
+        Skill("DISMISS_INTEL_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Intel goal", Page.POPUP, Action("TAP_SEMANTIC", SHARED_REWARD_EXIT), state=SkillState.CANDIDATE),
+        Skill("DISMISS_EXPLORATION_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Exploration goal", Page.POPUP, Action("TAP_SEMANTIC", SHARED_REWARD_EXIT), state=SkillState.CANDIDATE),
         Skill("OPEN_ALLIANCE_GIFTS", "Open Alliance Gifts from the current Alliance home", Page.ALLIANCE, Action("TAP_SEMANTIC", "BTN_OPEN_ALLIANCE_GIFTS"), state=SkillState.CANDIDATE),
-        Skill("DISMISS_ALLIANCE_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Alliance goal", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_GENERIC_REWARD_HEADER"), state=SkillState.CANDIDATE),
+        Skill("DISMISS_ALLIANCE_GENERIC_REWARD", "Dismiss a generic reward overlay attributed to the active Alliance goal", Page.POPUP, Action("TAP_SEMANTIC", SHARED_REWARD_EXIT), state=SkillState.CANDIDATE),
+        # The goal-neutral close, for every goal that cannot name the page the
+        # dialog covers.  It exists because a goal-neutral dismissal is not a
+        # guess: the dialog says 点击任意位置退出 on itself, so its exit is
+        # something the client declares rather than something we infer.  Before
+        # it existed, such a goal stopped the run (SAFE_STOP) and the dialog
+        # survived into the next round; measured live 2026-09-20, that was five
+        # of six AUTO rounds in twenty minutes.
+        Skill(
+            "DISMISS_SHARED_REWARD",
+            "Dismiss the client's shared 获得奖励 dialog by the exit it declares",
+            Page.POPUP,
+            Action("TAP_SEMANTIC", SHARED_REWARD_EXIT),
+            state=SkillState.CANDIDATE,
+            risk="LOW",
+            semantic_goal="Clear a reward dialog that blocks the goal's next step, without claiming anything",
+            verifier=SHARED_REWARD_VERIFIER,
+            recovery=("REFRESH_STATE", "BACK"),
+            semantic_requirements=("popup_present_before", "the dialog declares its own exit"),
+            vision_evidence=("shared_reward_exit_band",),
+            unknown_policy="Unknown dialog blocks nothing here: the exit band is present on 102 of 103 labelled reward dialogs, and a frame without it fails the verifier instead of tapping blind",
+            ui_change_tolerance=("number", "reward_contents", "source_domain", "position", "resolution"),
+        ),
     ])
 
 

@@ -86,7 +86,11 @@ from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.image_hash import hamming, phash
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.skills import v2_registry
-from winter_agent_v2.verifier import verify_daily_reward_advanced, verify_intel_reward_dismissed
+from winter_agent_v2.verifier import (
+    verify_daily_reward_advanced,
+    verify_intel_reward_dismissed,
+    verify_popup_closed,
+)
 from winter_agent_v2.vision import SemanticWorldVision
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,6 +121,14 @@ GRID = "POPUP_DAILY_REWARD_CURRENT"
 TITLE = "POPUP_INTEL_REWARD_TITLE"
 WHOLE_DIALOG = "POPUP_INTEL_REWARD"
 
+# The frame the 2026-09-20 outage happened on, archived as evidence rather than
+# read from the live capture directory the panel's retention trims (issue #46:
+# a test that reads those frames changes its own verdict depending on when it
+# runs).  See dataset/truth_audit/reward_popup_exit_20260920/README.md.
+EXIT_FRAME = (
+    ROOT / "dataset" / "truth_audit" / "reward_popup_exit_20260920" / "key"
+    / "01_shared_reward_popup_step_001_before_20260920T124146.png"
+)
 FOOTER_BOX = (214, 1135, 510, 1175)
 BANNER_BOX = (180, 215, 545, 310)
 
@@ -297,41 +309,83 @@ class TheBrainChoosesTheDismissFromGoalContextTests(unittest.TestCase):
             with self.subTest(goal=goal):
                 self.assertEqual(_decide(self._reward(), goal).skill, skill)
 
-    def test_without_goal_context_it_stops_rather_than_guessing(self):
-        """Documented, not hidden: this is the pre-existing shape.
+    def test_without_goal_context_it_closes_the_dialog_by_its_own_exit(self):
+        """Documented, not hidden: this is the goal-neutral close.
 
-        Every goal that can produce this dialog is named above.  Two of them --
-        TRAIN and RESEARCH -- have no per-domain dismiss skill, and since
-        2026-09-19 (``brain.py``'s TRAIN/RESEARCH branch, added after the first
-        live run of the training sweep stopped with
-        ``generic_reward_without_goal_context`` and could not get past a reward
-        popup at all) the brain closes the popup itself with ``CLOSE_POPUP`` --
-        registered, VERIFIED, low risk and verifier-bound through
-        ``verify_popup_closed``.  Closing a blocking popup is goal-neutral, so
-        this is not a guess about which page to return to.  Measured: skill
-        CLOSE_POPUP, reason ``train_goal_generic_reward_dismissed`` /
-        ``research_goal_generic_reward_dismissed``, expected
-        ``underlying_page_restored``.
+        Every goal that can produce this dialog is named above.  A goal that
+        cannot name the page under it -- TRAIN, RESEARCH, KEEP_TRAINING_PRODUCTIVE,
+        GATHER, MARCH, and AUTO_DISCOVERY, which meets the dialog constantly --
+        used to stop the run (``SAFE_STOP``), and stopping was wrong for a reason
+        the client states on the dialog itself: it says 点击任意位置退出, so the
+        exit is declared by the client rather than inferred by us, and clearing a
+        blocker is not a guess about which page to return to.
 
-        Honest note, deliberately not fixed here: the goal that live run
-        actually carried was KEEP_TRAINING_PRODUCTIVE, and that goal still stops
-        today -- the branch covers only the two literal names.
+        Measured live 2026-09-20 (open issue #64): five of six AUTO rounds inside
+        twenty minutes ended on this dialog, four of them from goals with no
+        domain dismiss, and each one ended the run instead of clearing it -- so
+        the next round met the same dialog again.
 
-        Every other goal without goal context still stops, so what this test has
-        always guarded is unchanged.  The assertion is stricter than it was,
-        because it pins the reason as well as the skill.
+        TRAIN and RESEARCH used to reach ``CLOSE_POPUP`` instead, chosen when no
+        skill existed whose target was on this dialog at all.  See
+        ``test_the_dismiss_taps_the_exit_the_dialog_declares`` for why that tap
+        could never have worked.
         """
-        for goal, reason in (("TRAIN", "train_goal_generic_reward_dismissed"),
-                             ("RESEARCH", "research_goal_generic_reward_dismissed")):
+        for goal in ("TRAIN", "RESEARCH", "KEEP_TRAINING_PRODUCTIVE", "GATHER",
+                     "MARCH", "AUTO_DISCOVERY", "SOMETHING_ELSE"):
             with self.subTest(goal=goal):
                 decision = _decide(self._reward(), goal)
-                self.assertEqual(decision.skill, "CLOSE_POPUP")
-                self.assertEqual(decision.reason, reason)
-        for goal in ("KEEP_TRAINING_PRODUCTIVE", "GATHER", "MARCH"):
-            with self.subTest(goal=goal):
-                decision = _decide(self._reward(), goal)
-                self.assertEqual(decision.skill, "SAFE_STOP")
-                self.assertEqual(decision.reason, "generic_reward_without_goal_context")
+                self.assertEqual(decision.skill, "DISMISS_SHARED_REWARD")
+                self.assertEqual(decision.expected_result, "underlying_page_restored")
+
+    def test_the_dismiss_taps_the_exit_the_dialog_declares(self):
+        """The footer band, never the title band.
+
+        These skills used to tap ``POPUP_GENERIC_REWARD_HEADER``, the dialog's
+        获得奖励 *title* band, which is a no-op -- which is why the live rounds
+        whose goal did have a domain dismiss were recorded as verifier FAILUREs
+        rather than as taps that never landed.  Measured on the incident frame
+        (dataset/raw/control_panel/runtime_auto/20260920_204143_843357/): the
+        title measures 16 against its tolerance of 16 and the footer 2 against 8.
+        """
+        registry = v2_registry()
+        for name in ("DISMISS_SHARED_REWARD", "DISMISS_MAIL_GENERIC_REWARD",
+                     "DISMISS_DAILY_GENERIC_REWARD", "DISMISS_INTEL_GENERIC_REWARD",
+                     "DISMISS_EXPLORATION_GENERIC_REWARD",
+                     "DISMISS_ALLIANCE_GENERIC_REWARD"):
+            with self.subTest(skill=name):
+                self.assertEqual(registry.get(name).action.target, FOOTER)
+
+    def test_the_goal_neutral_close_can_actually_be_dispatched(self):
+        """A skill with no VERIFIED_ATOMIC entry is a skill nothing schedules."""
+        from winter_agent_v2.runtime import LiveRuntime
+
+        self.assertIs(
+            LiveRuntime.VERIFIED_ATOMIC["DISMISS_SHARED_REWARD"], verify_popup_closed
+        )
+
+    def test_the_dismiss_lands_on_the_exit_band_not_the_title(self):
+        """The landing point itself, on the frame the outage happened on.
+
+        ``runtime.py`` resolves a ``TAP_SEMANTIC`` through
+        ``SemanticWorldVision.find(...).center_norm``, so which record a skill
+        names *is* the coordinate that reaches the device -- there is no second
+        chance for the executor to aim better.  Naming the title band resolved to
+        (360, 326), and the live episode of 2026-09-20T13:09:49Z records exactly
+        that tap with ``after.page UNKNOWN`` and ``INTEL_REWARD_DISMISS_NOT_PROVEN``.
+        """
+        vision = _vision()
+        exit_match = vision.semantic.find(EXIT_FRAME, FOOTER)
+        self.assertIsNotNone(exit_match, "the exit the client declares must resolve")
+        centre_x, centre_y = exit_match.center_norm
+        self.assertAlmostEqual(centre_x, 0.50, places=2)
+        self.assertGreater(centre_y, 0.9, "点击任意位置退出 is along the footer")
+        title_match = vision.semantic.find(EXIT_FRAME, BANNER)
+        self.assertIsNotNone(title_match)
+        self.assertLess(title_match.center_norm[1], 0.3, "获得奖励 is at the top")
+        self.assertGreater(
+            centre_y - title_match.center_norm[1], 0.6,
+            "the two bands are at opposite ends of the dialog, not one nudge apart",
+        )
 
 
 class TheDismissVerifiersAlreadyAcceptTheSharedLabelTests(unittest.TestCase):
