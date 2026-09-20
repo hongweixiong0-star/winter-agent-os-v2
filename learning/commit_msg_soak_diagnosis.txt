@@ -1,0 +1,28 @@
+docs(handoff): the soak refusal was correct, and two real defects found while checking
+
+The soak does not choose an interpreter: _drive_soak builds GatewaySoak in-process and gateway_soak
+spawns nothing at all, while the sentence in the operator's screenshot comes from launch_context(),
+which prints the window's own sys.executable.  Verified three ways -- a window on the venv's python
+classifies production, the desktop marker classifies production, any other interpreter produces
+exactly that sentence -- and the panel log carries four soak-started lines today from windows on the
+production interpreter.  So the refusal was correct behaviour and the isolated launch path must stay.
+
+Two real defects did come out of the check.
+
+escalation_queue ran check_wiring with sys.executable, and because the panel's pump drives it, a
+development-launched window judged the product's wiring with the interpreter the product does not run
+on.  It now resolves through runtime_env, and reports "could not run" rather than answering with the
+wrong tool.  Honest note: that changed no outcome today, since the tool is dependency-free -- a
+hazard removed, not the reported symptom cured.
+
+The NameError had no traceback anywhere in the artifacts, so rather than guess I asked a static
+analyser for undefined names, and it named control_panel.py:4023, where _narrate_pump read a name it
+never bound.  Two sibling refreshes fold the development view first; this one had lost that line, and
+the block's broad except swallowed the error -- so the consistency card failed on every refresh and
+said nothing, which is the silence this panel exists to prevent.  A test now checks that the watched
+refresh methods use only names they bind or import, and it was proved to bite: removing that one line
+turns two of its tests red.
+
+Also recorded, and deliberately not concluded: the control-plane reload marker is write-only, with no
+clear() for it, unlike runtime_reload's marker.  The reload decision itself is derived from git, so
+whether a stale marker can re-trigger a reload is unproven and is left as an observation.
