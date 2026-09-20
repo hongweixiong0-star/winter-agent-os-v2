@@ -46,7 +46,9 @@
     "goals/capability_skill_map.json": "Capability → Skill（36KB）",
     "skills/universal_skill_library_v2.json": "通用技能库与各自 verifier",
     "skills/*.json": "单个技能的机制定义",
-    "skills/*_RESEARCH.md": "该技能的研究来源记录"
+    "skills/*_RESEARCH.md": "该技能的研究来源记录",
+    "ui/generic_semantics.json": "通用 UI 语义台账（**派生**，非手写）：230 个模板语义 + 39 个无视觉证据的候选，每条带 模板证据/可点区域/OCR 页面/技能/verifier/风险；缺的字段一律 UNKNOWN。生成器 tools/ui_semantic_ledger.py",
+    "ui/semantic_evidence.json": "96 条语义词典候选在 244 帧真机语料上的 OCR 取证结果 + 客户端出现但词典没命名的 133 个跨页字符串。生成器 tools/ui_semantic_evidence.py"
   },
   "page_entry_index": {
     "HOME": "主城，回城锚点",

@@ -77,6 +77,15 @@ def main() -> int:
         bound = [s for s in skills if s.id in LiveRuntime.VERIFIED_ATOMIC]
         verifiers = sorted({LiveRuntime.VERIFIED_ATOMIC[s.id].__name__ for s in bound})
         reuse_row = reuse_by_semantic.get(semantic, {})
+        # Two independent answers to "where does this live", because they measure different
+        # things and neither is complete on its own:
+        #   pages_by_ocr        -- pages where the element's own TEXT was read on the client
+        #                          (knowledge/ui/semantic_evidence.json)
+        #   pages_by_template   -- pages where the element's TEMPLATE matched
+        #                          (out_semantic_reuse.json)
+        # A template-backed semantic with no OCR string keeps UNKNOWN for the first, and a
+        # semantic the template sweep has not reached yet keeps UNKNOWN for the second.
+        by_ocr = evidence_by_id.get(semantic, {}).get("pages_seen", UNKNOWN)
         entry = {
             "semantic": semantic,
             # what it is
@@ -90,7 +99,8 @@ def main() -> int:
             },
             "clickable_area": records[0].get("roi_norm", UNKNOWN),
             # where it lives
-            "pages_measured": reuse_row.get("by_page", UNKNOWN),
+            "pages_by_ocr": by_ocr,
+            "pages_by_template": reuse_row.get("by_page", UNKNOWN),
             "pages_declared": dict_by_id.get(semantic, {}).get("pages", UNKNOWN),
             "best_distance": reuse_row.get("best_distance", UNKNOWN),
             "gate": reuse_row.get("gate", UNKNOWN),
