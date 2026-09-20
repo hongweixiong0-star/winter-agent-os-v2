@@ -772,11 +772,20 @@ def main() -> int:
                                           "camp_tap_norm": (0.435, 0.4565)},
                                 confidence=0.99)
     _stage_a_brain = RuleBrain(current_goal="TRAIN")
-    check("brain: stage A taps the point measured on this frame",
-          _stage_a_brain.decide(_stage_a_state, registry).skill == "SELECT_INFANTRY_CAMP")
-    check("brain: ...once only, then it waits -- the state was measured persistent",
+    # The tap was built, wired, and then TRIED ON THE DEVICE.  Live 2026-09-20T18:43:51Z:
+    # the ring's measured centre (0.441, 0.4551) = (317, 583), action_backend ADB, outcome
+    # FAILURE / INFANTRY_CAMP_MENU_NOT_PROVEN with after.training EMPTY -- the ring was gone and
+    # no menu appeared.  Four live taps, four failures (three at the template's own centre on
+    # bare ground, one inside the ring).  So aiming was not the problem, the tap is withdrawn,
+    # and these two checks now pin the withdrawal rather than the experiment.
+    check("brain: stage A waits -- the ring tap was tried live and did not open the menu",
           _stage_a_brain.decide(_stage_a_state, registry).skill == "WAIT_FOR_CAMP_MENU")
-    check("brain: stage A without a measured point does not tap somewhere else",
+    check("brain: ...and does not substitute another action",
+          _stage_a_brain.decide(_stage_a_state, registry).skill == "WAIT_FOR_CAMP_MENU")
+    check("brain: nothing in the brain taps the highlighted camp while its meaning is unknown",
+          'return Decision("SELECT_INFANTRY_CAMP"' not in
+          (PKG / "brain.py").read_text(encoding="utf-8"))
+    check("brain: stage A without a measured point behaves the same -- it waits",
           RuleBrain(current_goal="TRAIN").decide(
               WorldState(page=Page.HOME,
                          training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",

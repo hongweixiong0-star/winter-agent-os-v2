@@ -103,11 +103,6 @@ class RuleBrain:
         # Two waits is the whole budget: measured, the state does not converge, so the
         # third Stage A observation is a blocker rather than another wait.
         self.MAX_CAMP_MENU_WAITS = 2
-        # Whether stage A has already been tapped this run.  One attempt, because the point is
-        # a measurement of the frame and a second identical tap after a re-observation that
-        # shows the same screen would be spending actions on a state that did not respond --
-        # the same reason the wait is bounded.
-        self._camp_selected = False
         # The panel opens on its 章节任务 tab, and the daily skills were calibrated on the
         # 每日任务 tab, so one tap is needed to read the content they act on.  One-shot:
         # if the tap does not take, repeating it would spend an action per step forever,
@@ -797,33 +792,38 @@ class RuleBrain:
             if self.terminal_page_left:
                 return Decision("SAFE_STOP", "training_page_already_read_not_actionable", 1.0, "switch_task")
             if world.page is Page.HOME and world.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED":
-                # Stage A (#28, and corrected 2026-09-21).  The camp is highlighted and the
-                # radial menu has not been drawn yet.  The reason recorded here for not
-                # tapping was a tutorial finger over the camp, on the strength of ONE attempt
-                # on 2026-09-17 that took the client to the MAP (frame
-                # step_004_after_refresh_2 in
-                # dataset/raw/control_panel/runtime_training/20260917_train_homefix/).
+                # Stage A (#28, and this is the third position the route has taken on it).
                 #
-                # That reason does not hold up.  Measured over 46 live stage A frames from
-                # five separate sessions: the tap point the template resolved to was
-                # (346, 682) on all 46, while the selection ring sits at (313, 585) -- 103 px
-                # higher, and 88 px above the ring's own lower edge.  The tap was landing on
-                # bare ground between the buildings, which the client reads as a map tap.  The
-                # finger was never over that point (it is over the ring, and the frames show
-                # it as a guide: the 2026-09-20T01:33 frame has the finger AND the open menu).
-                # So the MAP trip was a coordinate error, not an occlusion.
+                # The camp is highlighted and the radial menu has not been drawn.  It waited,
+                # because one 2026-09-17 attempt from here ended on the world map.  Then, on
+                # 2026-09-21, the reason given for that ("a tutorial finger covers the camp")
+                # was falsified and the tap point was shown to be 103 px off -- on bare ground,
+                # 37 px below the ring -- so the tap was restored, aimed at the ring's centre
+                # measured from the current frame.
                 #
-                # The hop below taps the ring's centre, which is measured from the frame
-                # rather than remembered; ``camp_tap_norm`` is absent when the ring cannot be
-                # read and the executor then refuses, so nothing is guessed.
+                # THE TAP HAS NOW BEEN TRIED, AND IT FAILED.  Live 2026-09-20T18:43:51Z:
+                # SELECT_INFANTRY_CAMP carried training["camp_tap_norm"] = (0.441, 0.4551), i.e.
+                # (317, 583) -- inside the ring -- action_backend was ADB so the tap really went
+                # out, and the outcome was FAILURE / INFANTRY_CAMP_MENU_NOT_PROVEN with
+                # after.training EMPTY: neither a menu nor the highlight.  The ring was simply
+                # gone, which is what the client does when a tap lands on nothing.
                 #
-                # Still bounded, and now for a measured reason: this state was observed to be
-                # persistent (seven consecutive Stage A re-observations on 2026-09-17 18:00
-                # GMT+8, each menu_drawn=false), and 45 of this goal's 127 steps have already
-                # been spent waiting in it.  One tap, then the waits, then the honest blocker.
-                if not self._camp_selected and world.training.get("camp_tap_norm") is not None:
-                    self._camp_selected = True
-                    return Decision("SELECT_INFANTRY_CAMP", "camp_ring_tapped_at_the_point_measured_on_this_frame", world.confidence, "camp_menu_open")
+                # Four live taps now, four failures: three at the template's own centre
+                # (346, 682, on bare ground; one of them ending on the map) and one inside the
+                # ring.  Aiming is therefore not the problem, and the honest reading is that this
+                # state is not understood.  The hypothesis worth testing next is that the gold
+                # ellipse does not mean "this camp is selected" at all: it is an ellipse drawn
+                # over a large multi-part building, carrying a 2 badge, with a tutorial hand
+                # pointing at that badge -- which is what a guided step looks like, not a
+                # selection.  If that is right, then verify_infantry_camp_highlighted accepting
+                # this frame is a FALSE ARRIVAL and the training route's first half has been
+                # reporting success it never had.
+                #
+                # So the wait is restored, and no further tap will be added here until the state
+                # itself is identified.  camp_ring.py and training["camp_tap_norm"] are kept on
+                # purpose: the ring measurement is sound (46/46 frames, sd 4 px, and it is what
+                # made the experiment possible) and it is the input any future attempt needs.
+                # What the ring points AT is the open question, and issue #82 is where it lives.
                 self._camp_menu_waits += 1
                 if self._camp_menu_waits > self.MAX_CAMP_MENU_WAITS:
                     return Decision("SAFE_STOP", "camp_menu_never_drawn", 1.0, "switch_task")

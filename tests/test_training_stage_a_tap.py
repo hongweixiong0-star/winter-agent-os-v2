@@ -160,19 +160,36 @@ class TheDecisionIsBoundedTests(unittest.TestCase):
                                     "camp_tap_norm": (0.435, 0.4565)},
                           confidence=0.99)
 
-    def test_it_taps_once_then_waits_then_gives_the_run_back(self):
+    def test_it_waits_because_the_tap_was_tried_live_and_failed(self):
+        """The experiment ran, and it did not work: stage A waits again.
+
+        Live 2026-09-20T18:43:51Z, one round after the tap was wired: SELECT_INFANTRY_CAMP
+        carried training["camp_tap_norm"] = (0.441, 0.4551), i.e. (317, 583) -- inside the ring
+        -- action_backend was ADB, so the tap really went out, and the outcome was FAILURE /
+        INFANTRY_CAMP_MENU_NOT_PROVEN with after.training EMPTY: neither the menu nor the
+        highlight, just the ring gone, which is what the client does when a tap lands on nothing.
+
+        Four live taps now, four failures -- three at the template's own centre (346, 682, on
+        bare ground; one of them ending on the world map) and one inside the ring.  Aiming is
+        not the problem, so the tap is withdrawn and no further one will be added until the
+        state itself is identified.  What the frame still provides -- the ring, and the measured
+        point on it -- is pinned by the tests above, because that measurement is sound and is the
+        input any future attempt needs.
+        """
         brain = RuleBrain(current_goal="TRAIN")
         state = self._stage_a_state()
-        first = brain.decide(state, v2_registry())
-        self.assertEqual(first.skill, "SELECT_INFANTRY_CAMP")
-        self.assertEqual(first.expected_result, "camp_menu_open")
-        # Bounded: exactly one tap.  The state was measured persistent, so repeating the same
-        # tap would spend the run on a screen that did not respond.
         for _ in range(brain.MAX_CAMP_MENU_WAITS):
             self.assertEqual(brain.decide(state, v2_registry()).skill, "WAIT_FOR_CAMP_MENU")
         last = brain.decide(state, v2_registry())
         self.assertEqual(last.skill, "SAFE_STOP")
         self.assertEqual(last.reason, "camp_menu_never_drawn")
+
+    def test_nothing_taps_the_highlighted_camp(self):
+        """Nothing may send input from this state while its meaning is unknown."""
+        source = (ROOT / "winter_agent_v2" / "brain.py").read_text(encoding="utf-8")
+        self.assertNotIn('return Decision("SELECT_INFANTRY_CAMP"', source,
+                         "the tap was tried live and failed; it must not come back without a "
+                         "new measurement (issue #82)")
 
     def test_without_a_measured_point_it_never_taps(self):
         """A ring that could not be read is not an invitation to tap somewhere else."""

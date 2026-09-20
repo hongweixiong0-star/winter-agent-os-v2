@@ -25,23 +25,27 @@ class TrainingVerifierTests(unittest.TestCase):
         self.assertTrue(verify_infantry_camp_highlighted(details, highlighted).ok)
         self.assertTrue(verify_infantry_camp_selected(highlighted, selected).ok)
         self.assertTrue(verify_training_page_open(selected, training).ok)
-        # Step 4 is SELECT_INFANTRY_CAMP again, and it is a different tap than the one that
-        # gave it up.
+        # Step 4 is WAIT_FOR_CAMP_MENU, and this is a measured retreat rather than the old
+        # position it held before 2026-09-21.
         #
-        # It was SELECT_INFANTRY_CAMP, aimed at the template's own centre.  On 2026-09-17 that
-        # same reading -- `navigation == "INFANTRY_CAMP_HIGHLIGHTED"` -- was produced by a frame
-        # whose tap jumped to the world map, so the hop was replaced with a wait, on the grounds
-        # that the signal cannot tell the two states apart.
+        # It was SELECT_INFANTRY_CAMP, aimed at the template's own centre -- tried live and
+        # failed three times at (346, 682), one of them ending on the world map.  On 2026-09-21
+        # the reason given for never tapping (a tutorial finger over the camp) was falsified and
+        # the point was shown to be 103 px off, on bare ground 37 px below the ring, so the tap
+        # was restored aimed at the ring's centre read from the frame.
         #
-        # Measured 2026-09-21 on the two frames a human verified by hand
-        # (dataset/truth_audit/training_camp_highlight_ambiguity_20260917/): the frame whose tap
-        # opened the menu carries a 205x112 selection ring, and the frame whose tap jumped to the
-        # map carries a 7x15 fleck of gold -- an officer badge's edge, not a ring.  The template
-        # distance really does not separate them (0.0 against 8.0, i.e. the failing frame sits ON
-        # the gate); the ring size separates them by two orders of magnitude.  So the tap is back,
-        # aimed at the ring's centre read out of the current frame, and it happens only when a
-        # ring is actually there -- on the 2026-09-17 frame it is refused and the route waits.
-        expected = ("OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP", "SELECT_INFANTRY_CAMP", "OPEN_INFANTRY_TRAINING", "TRAIN_TROOPS")
+        # THEN IT WAS TRIED ON THE DEVICE, and it failed.  Live 2026-09-20T18:43:51Z:
+        # action_backend ADB, the tap went out at (317, 583) -- inside the ring -- and the
+        # outcome was FAILURE / INFANTRY_CAMP_MENU_NOT_PROVEN with after.training EMPTY: no
+        # menu, and the ring gone as well, which is what the client does when a tap lands on
+        # nothing.  Four live taps, four failures, one of them inside the ring.
+        #
+        # So aiming was not the problem, the tap is withdrawn, and what this state IS stays
+        # open (issue #82).  The hypothesis worth testing next is that the gold ellipse means
+        # "guided step", not "this camp is selected" -- in which case accepting it in
+        # verify_infantry_camp_highlighted would be a FALSE ARRIVAL, and the training route's
+        # first half has been reporting a success it never had.
+        expected = ("OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP", "WAIT_FOR_CAMP_MENU", "OPEN_INFANTRY_TRAINING", "TRAIN_TROOPS")
         states = (home, overview, details, highlighted, selected, training)
         self.assertEqual(tuple(RuleBrain(current_goal="TRAIN").decide(s, v2_registry()).skill for s in states), expected)
 
