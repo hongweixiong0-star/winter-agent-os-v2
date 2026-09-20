@@ -956,6 +956,15 @@ def main() -> int:
               (ocr.OCRToken(text="霜解避役", confidence=0.78, box=((0, 0), (60, 0), (60, 16), (0, 16))),),
               ("霜鳞避役", "猛犸象"),
           ) == "霜鳞避役")
+    check("vision: a beast card's title is not mistaken for the map's nameplate",
+          ocr.named_beast_label(
+              (
+                  ocr.OCRToken(text="等级7霜鳞避役", confidence=1.0, box=((300, 340), (420, 340), (420, 364), (300, 364))),
+                  ocr.OCRToken(text="霜鳞避役", confidence=0.88, box=((340, 830), (410, 830), (410, 854), (340, 854))),
+              ),
+              ("霜鳞避役",),
+          ) == "霜鳞避役",
+          "the card title carries a digit and the map nameplate does not")
     check("vision: a name two glyphs off is not",
           ocr.named_beast_label(
               (ocr.OCRToken(text="霜解难役", confidence=0.95, box=((0, 0), (60, 0), (60, 16), (0, 16))),),

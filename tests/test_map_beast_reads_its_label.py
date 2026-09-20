@@ -192,6 +192,25 @@ class TheMapBeastIsAlsoReadByItsLabelTests(unittest.TestCase):
         self.assertEqual(found.get("visible_target"), "FROST_SCALED_RUNNER",
                          "the identity is still published -- only the coordinate is withheld")
 
+    def test_a_beast_card_title_is_not_the_map_nameplate(self):
+        """The card drawn over the map is not a label on an animal.
+
+        Measured immediately after the band was widened: a beast card (集结 control, 推荐实力
+        683,100,000) contributes its title 等级7霜鳞避役 at confidence 1.00, which outranks the map
+        label underneath at 0.88 -- so without a discriminator the route would have taken the card's
+        title bar as the identity and its position as the tap point.  A *map* nameplate never carries
+        a digit (the level is a separate badge), so the shape of the word separates the two.
+        """
+        card_title = _Token("等级7霜鳞避役", ((300, 340), (420, 340), (420, 364), (300, 364)))
+        card_title.confidence = 1.0
+        map_label = _Token("霜鳞避役", ((340, 830), (410, 830), (410, 854), (340, 854)))
+        map_label.confidence = 0.88
+        found = beast_from_its_label("unused.png", _StubOCR([card_title, map_label]), frame_size=FRAME_SIZE)
+        self.assertEqual(found.get("label_text"), "霜鳞避役")
+        # The map label's own box, mapped through the band -- not the card title's row.
+        self.assertAlmostEqual(found["tap_norm"][1], 0.12 + 842 / 1280, places=3)
+        self.assertAlmostEqual(found["tap_norm"][0], 375 / 720, places=3)
+
     def test_noise_and_empty_reads_stay_empty(self):
         for tokens in (["什么都不是"], ["联盟畜牧场"], []):
             with self.subTest(tokens=tokens):

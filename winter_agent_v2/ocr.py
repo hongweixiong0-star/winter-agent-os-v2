@@ -757,6 +757,15 @@ def _beast_name_match(
         text = str(token.text or "").strip()
         if not text:
             continue
+        # A beast's *map* nameplate never carries a digit -- the level is a separate badge beside
+        # it.  Measured 2026-09-20, immediately after the band was widened: a beast CARD drawn over
+        # the map (集结 control, 推荐实力683,100,000) contributes its own title 等级7霜鳞避役 at
+        # confidence 1.00, which outranks the map label underneath at 0.88 and was therefore picked
+        # as the map identity -- with a tap point on the card's title bar rather than on an animal.
+        # The digit rule separates them on the shape of the word itself: the card title is
+        # 等级<N><name>, a composite, and no registered beast name contains a digit.
+        if any(character.isdigit() for character in text):
+            continue
         if token.confidence >= min_confidence:
             matched = next((name for name in names if name in text or text in name), None)
             if matched is not None:
