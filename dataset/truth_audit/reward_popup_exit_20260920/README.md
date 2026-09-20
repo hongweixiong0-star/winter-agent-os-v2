@@ -109,3 +109,15 @@
 "E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_popup_landing.py
 "E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_target_vs_recognition.py
 ```
+
+## 五、`readings/`：验收要的两个读数（按 #64 第 5 条的口径）
+
+| 文件 | 内容 |
+|---|---|
+| `readings/intel_page_20260920T131907.png` | 客户端停在**情报页**。可读：页头 情报；下次刷新 **02:40:54**；右上 **513**；左下等级 **7**、**5/90**；右下 **02:40:55 后开启**；板上 **9 个** pin 标记。 |
+| `readings/map_hud_20260920T132136.png` | 客户端停在**地图**。帧上时间戳 09-20 21:21:36，左上体力表 **491**。 |
+
+**同帧的 pin 计数争议（#68）**：项目自身的 `intel_pin_centers` 在情报帧上返回 **4**，
+而图上数得出 **9**。原因是检测器只用 purple / blue / orange 三组 HSV 掩码，
+而板上 5 个 pin 是**灰色或绿色**。⇒ Agent 眼中的"剩余情报"可能只有实际的一半。
+未查清的是那些灰/绿 pin 是否真是可打任务；**不得**靠放宽 `min_area` 之类的方式"修"。

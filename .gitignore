@@ -194,6 +194,13 @@ dataset/external/repositories/
 # "which surface of this dialog is tappable" from prose, and the live capture
 # directory it came from is trimmed by the panel's retention.
 !dataset/truth_audit/reward_popup_exit_20260920/key/**/*.png
+# The two readings the acceptance table still wants, captured as frames because
+# the criterion is "read the number off the client", not "quote the runtime": the
+# intel page (and the board's pins, which #68 shows the detector undercounts) and
+# one map frame carrying the stamina gauge.  The live capture directory they came
+# from is trimmed by the panel's retention, so without these a later session
+# cannot re-check the readings at all.
+!dataset/truth_audit/reward_popup_exit_20260920/readings/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

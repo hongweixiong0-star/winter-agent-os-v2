@@ -488,3 +488,24 @@ Machine-detected issues (recomputed every run):
 stamina: 585}`（13:04）与 `{status: CLAIMABLE, claimable_count: 1, untried_pins: 1, stamina: 565}`（13:09）
 是**运行读数**，按第 5 条的口径**不算**（要停在页面上抓帧后用 `Read` 直接看图）；
 ② `337bdc4` 的失败让位仍无 `yield` 行；③ 普通野怪出征 0 次。
+
+### #64 第 5 条：两个读数已取到（2026-09-20 21:22，真机帧）
+
+按第 5 条的口径（**停在页面上抓帧 → 用 `Read` 直接看图**，不用运行读数、不用观察存储的旧值）：
+
+**体力**（客户端停在 MAP，帧 `dataset/truth_audit/reward_popup_exit_20260920/readings/map_hud_20260920T132136.png`，帧上时间戳 09-20 21:21:36）：
+
+> 左上角体力表读数 **491**。与同帧 episode 的 `stamina {current: 491, source: MAP_HUD}` 一致。
+
+**情报**（客户端停在情报页，帧 `readings/intel_page_20260920T131907.png`）：
+
+> 页头 **情报**；**下次刷新 02:40:54**；右上角 **513**（运行时把它读作 `intel.stamina`）；
+> 左下角等级徽标 **7**，条上 **5/90**；右下角 **02:40:55 后开启**；
+> 板上可见 pin 标记 **9 个**（灰狼 1、绿狼 2、绿帐篷 1、蓝帐篷 1、紫交叉剑 1、灰交叉剑 1、紫狼 1 含橙色底光）。
+
+⇒ 体力的路径是通的：本轮 513 → 501 → 491，**确实在消耗**（`EXECUTE_INTEL_RESCUE_SURVIVORS` 12 点、
+`INTEL_HERO_DISPATCH` 10 点）。**但 P0 的"体力降到 30 以下"远未达成**，`AVOID_STAMINA_WASTE` 仍未完成。
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 68 | **情报 pin 计数只认紫/蓝/橙 —— 灰与绿的 pin 一律不计** | 🔴 **新发现（有帧）** | 项目自身的 `intel_pin_centers`（`vision` 层 `available_count` / `pins` / `untried_pins` 的唯一来源）只用三组 HSV 掩码：`purple 250-330`、`blue 195-250`、`orange 10-55`。在 `readings/intel_page_20260920T131907.png` 上它返回 **4**（blue 1 / purple 2 / orange 1），而板上按图数得出 **9** 个 pin 标记，**差的 5 个全是灰色或绿色**（灰狼、绿狼×2、绿帐篷、灰交叉剑）。⇒ 只要那 5 个也是可打的情报任务，Agent 眼中的"剩余情报"就**只有实际的一半**，`intel_no_untried_pins` / `pins>0` 这类判定会在还有任务时判"没得打"。**未查清的是**：那些灰/绿 pin 是不是真任务（可能表示已试/已领）。**下一步**：点一个灰或绿的 pin，看是否开出任务卡；不要靠猜颜色。**不得**用放宽 `min_area` 之类的方式"修"这个方法。 |
