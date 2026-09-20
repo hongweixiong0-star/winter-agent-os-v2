@@ -96,3 +96,24 @@
 "E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_training_stage_a.py <frame>
 "E:/无尽冬日智能体/.venv/Scripts/python.exe" .probe_ring_and_icon.py
 ```
+
+## 七、三次真机失败的独立印证（补，2026-09-21 01:20）
+
+修完之后回查 `learning/episodes.jsonl`，发现 `SELECT_INFANTRY_CAMP` **全史只触发过 2 次**
+（我修复之前，用的是旧目标 `TARGET_INFANTRY_CAMP_HIGHLIGHTED`），
+**两次都失败**，加上"跳地图"那次，共**三次真机失败**：
+
+| 真机尝试 | 落点（当时实际点的） | 结果 | **新检测器在同帧给的点** |
+|---|---|---|---|
+| 2026-09-17T04:42:03Z | **(346, 682)** | `FAILURE / INFANTRY_CAMP_MENU_NOT_PROVEN` | **(309, 586)**（103 px 外，环内） |
+| 2026-09-17T09:46:29Z | **(346, 682)** | `FAILURE / INFANTRY_CAMP_MENU_NOT_PROVEN` | **(314, 584)**（103 px 外，环内） |
+| 2026-09-17（`step_004_after_refresh_2`） | **(346, 682)** | **跳到世界地图** | 无环 ⇒ **拒绝** |
+
+⇒ **"点 (346,682) 无效"现在有三次独立真机失败支撑**，不是推理；而三次的落点**完全相同**，
+说明这是模板的**系统性**偏移，不是偶然。
+
+⚠ **仍然只证明了一半**：三次都只说明**环外无效**。**环内是否有效，真机仍未验证过**。
+其中 09:46:29 那帧**有完整环** ⇒ 新代码会点 (314,584) ⇒ **那正是下一轮可以验证的场景**。
+
+`SELECT_INFANTRY_CAMP` 的 verifier 三次都正确报 `INFANTRY_CAMP_MENU_NOT_PROVEN`
+（要求 `after.training.menu_open is True`）⇒ **验证器这一层是可信的**，它没有误报成功。

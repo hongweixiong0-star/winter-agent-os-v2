@@ -841,3 +841,16 @@ result  FAILURE / BEAST_TARGET_SELECTION_NOT_PROVEN
 两点口径说明（与 #63 相同）：① 运行期间面板 AUTO 在跑，`test_live_runtime.py` /
 `test_camp_panel_stamina.py` 会读 `knowledge/**` 与 `config/policy_state.json`，
 它们的失败集合随工作树数据变化；② `test_march_formation_attribution.py` 的两条也是既有基线。
+
+**补：#74 的诊断有三次真机失败支撑（不是推理）**。回查发现 `SELECT_INFANTRY_CAMP` **全史只触发 2 次**
+（都在修复前、都用旧目标）：
+
+| 真机尝试 | 当时落点 | 结果 | 新检测器同帧给的点 |
+|---|---|---|---|
+| 2026-09-17T04:42:03Z | (346,682) | `FAILURE / INFANTRY_CAMP_MENU_NOT_PROVEN` | (309,586)（103 px 外，环内） |
+| 2026-09-17T09:46:29Z | (346,682) | 同上 | (314,584)（103 px 外，环内） |
+| 2026-09-17（跳地图） | (346,682) | 跳到 MAP | 无环 ⇒ 拒绝 |
+
+⇒ 三次落点**完全相同** ⇒ 模板的系统性偏移；**环外无效**有了三次独立印证。
+**但环内是否有效仍未验证**；09:46:29 那帧**有完整环** ⇒ 新代码会点 (314,584) ⇒ 这是下一轮可验证的场景。
+另：verifier 三次都正确报 `INFANTRY_CAMP_MENU_NOT_PROVEN` ⇒ **验证器层可信，没有误报成功**。
