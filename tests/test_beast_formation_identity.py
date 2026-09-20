@@ -288,10 +288,37 @@ class FormationVerifierTests(unittest.TestCase):
         self.assertEqual(result.reason, "BEAST_MARCH_NOT_PROVEN")
 
     def test_a_different_beast_is_never_accepted_as_the_musk_ox(self) -> None:
+        """The musk-ox verifier is species-bound; the generic one is bound by the client's verdict.
+
+        REVISED 2026-09-20.  The second assertion used to hold too, because ``verify_beast_dispatch``
+        required ``target.dispatchable`` -- a per-species pre-approval.  北极狼 carries a *recorded*
+        green assessment (``本次出征胜券在握``) but its status is REVIEWED, not VERIFIED, so the old
+        inference refused it: a beast the client had already graded winnable could never be
+        recorded as dispatched.  The operator's rule is the opposite of that ("as long as we can beat
+        it, we may hit it"), and the evidence for "we can beat it" IS the frame's own victory strip,
+        which is what ``victory_assured`` here is.
+
+        So the species-bound half stays exactly as it was -- ``verify_beast_march_open`` is the
+        musk-ox verifier and must not accept another animal -- and the generic half is now pinned on
+        the three things that must still refuse.
+        """
         after = WorldState(page=Page.MARCH, beast={"name": "北极狼", "target_kind": "WILDERNESS", "victory_assured": True})
-        self.assertFalse(verify_beast_march_open(self.BEAST_TARGET, after).ok)
+        self.assertFalse(verify_beast_march_open(self.BEAST_TARGET, after).ok,
+                         "the musk-ox route's verifier must stay species-bound")
+
         before = WorldState(page=Page.MARCH, beast={"name": "北极狼", "target_kind": "WILDERNESS", "victory_assured": True})
-        self.assertFalse(verify_beast_dispatch(before, self.MAP_MARCHING).ok)
+        self.assertTrue(verify_beast_dispatch(before, self.MAP_MARCHING).ok,
+                        "a client-graded winnable target may be dispatched whatever species it is")
+
+        # The three refusals that carry the safety: no readable name, no verdict, and a target the
+        # client has already been seen turning down.
+        nameless = WorldState(page=Page.MARCH, beast={"victory_assured": True})
+        self.assertFalse(verify_beast_dispatch(nameless, self.MAP_MARCHING).ok)
+        no_verdict = WorldState(page=Page.MARCH, beast={"name": "北极狼"})
+        self.assertFalse(verify_beast_dispatch(no_verdict, self.MAP_MARCHING).ok)
+        refused = WorldState(page=Page.MARCH, beast={"name": "雪豹", "victory_assured": True})
+        self.assertFalse(verify_beast_dispatch(refused, self.MAP_MARCHING).ok,
+                         "the leopard's row records a measured red assessment")
 
     def test_the_measured_name_proves_the_dispatch(self) -> None:
         before = WorldState(page=Page.MARCH, beast={"name": "麝牛", "target_kind": "WILDERNESS", "victory_assured": True})
