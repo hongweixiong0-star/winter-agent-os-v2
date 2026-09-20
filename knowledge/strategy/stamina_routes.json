@@ -1,0 +1,242 @@
+{
+  "schema_version": "1.0",
+  "id": "STAMINA_ROUTES",
+  "type": "DECISION_CARD",
+  "purpose": "体力往哪儿花的成本/可靠性/可用性台账。回答「常见消耗体力的途径有哪些、哪条性价比高」。本文件只放**实测**与**可指到文件的**事实；推断单列在 inferences 里，不混进来。",
+  "last_updated": "2026-09-20",
+  "source": [
+    "LIVE_CLIENT",
+    "USER_POLICY"
+  ],
+  "measurement": {
+    "cost_method": "learning/episodes.jsonl 按序取所有带 HUD 体力读数的 state（1240/3195 条），对每个耗体力技能取同一次运行内最近的前后读数（窗口 ±6 步）求差。窗口跨多次消耗或跨免费领取时会出现正差或多倍差，因此**只采纳重复出现的众数**，并把原始样本一并留下。工具：.probe_stamina_cost_measure.py",
+    "reliability_method": "learning/episodes.jsonl 按 skill 统计 SUCCESS / FAILURE（全史）。",
+    "known_trap": "**显示消耗 ≠ 实际消耗**。普通野兽界面显示 10，实机 92→85 实测扣 7（英雄/账号修正）。见 knowledge/provenance/beast_research_sources.json。⇒ 预算不得用界面数字。"
+  },
+  "routes": [
+    {
+      "route": "INTEL_BEAST",
+      "name_cn": "情报·打野（炽红巨兽 10 级 / 普通野兽任务）",
+      "stamina_displayed": 10,
+      "stamina_measured_repeats": [
+        -10,
+        -10,
+        -10,
+        -10
+      ],
+      "live_attempts": 54,
+      "live_success_rate": 0.889,
+      "failure_types": {
+        "INTEL_BEAST_DISPATCH_NOT_PROVEN": 2,
+        "SEMANTIC_TARGET_NOT_VERIFIED": 4
+      },
+      "cost_per_success": 11.3,
+      "availability": "AVAILABLE",
+      "wired": [
+        "OPEN_INTEL",
+        "SELECT_INTEL_BEAST_MISSION",
+        "SELECT_INTEL_FIREBEAST_MISSION",
+        "OPEN_INTEL_BEAST_TARGET",
+        "INTEL_BEAST_START_MARCH",
+        "DISPATCH_INTEL_BEAST"
+      ],
+      "source": [
+        "LIVE_CLIENT",
+        "knowledge/game/intel.json#INTEL_FIREBEAST_10"
+      ]
+    },
+    {
+      "route": "INTEL_HERO_JOURNEY",
+      "name_cn": "情报·英雄之旅 10 级",
+      "stamina_displayed": 10,
+      "stamina_measured_repeats": [
+        -10,
+        -10,
+        -10,
+        -10
+      ],
+      "live_attempts": 25,
+      "live_success_rate": 0.68,
+      "failure_types": {
+        "INTEL_HERO_DISPATCH_NOT_PROVEN": 8
+      },
+      "cost_per_success": 14.7,
+      "availability": "AVAILABLE",
+      "wired": [
+        "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "INTEL_HERO_START_MARCH",
+        "INTEL_HERO_DISPATCH"
+      ],
+      "source": [
+        "LIVE_CLIENT",
+        "knowledge/game/intel.json#INTEL_HERO_JOURNEY_10"
+      ]
+    },
+    {
+      "route": "INTEL_RESCUE_SURVIVORS",
+      "name_cn": "情报·营救幸存者 10 级",
+      "stamina_displayed": 12,
+      "stamina_measured_repeats": [
+        -12,
+        -12,
+        -12
+      ],
+      "live_attempts": 15,
+      "live_success_rate": 0.533,
+      "failure_types": {
+        "INTEL_RESCUE_START_NOT_PROVEN": 7
+      },
+      "cost_per_success": 22.5,
+      "availability": "AVAILABLE",
+      "wired": [
+        "SELECT_INTEL_RESCUE_SURVIVORS",
+        "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
+        "EXECUTE_INTEL_RESCUE_SURVIVORS"
+      ],
+      "source": [
+        "LIVE_CLIENT",
+        "knowledge/game/intel.json#INTEL_RESCUE_SURVIVORS_10"
+      ]
+    },
+    {
+      "route": "INTEL_MASTER_BOUNTY",
+      "name_cn": "情报·大师悬赏 20 号",
+      "stamina_displayed": 10,
+      "recommended_power": 189295920,
+      "availability": "BLOCKED_BY_POWER",
+      "note": "当前账号战力约 1.64M（2026-09-20 地图帧），与推荐战力差两个数量级。按 knowledge/game/intel.json 记 BLOCKED；**这是环境条件，不开发**（04_OPEN_ISSUES #48）。",
+      "source": [
+        "LIVE_CLIENT",
+        "knowledge/game/intel.json#INTEL_MASTER_BOUNTY_20"
+      ]
+    },
+    {
+      "route": "MAP_NORMAL_BEAST",
+      "name_cn": "世界地图·普通野兽打野",
+      "stamina_displayed": 10,
+      "stamina_actual": 7,
+      "cost_per_success": null,
+      "live_attempts": 4,
+      "live_success_rate": 0.25,
+      "availability": "BLOCKED_BY_RECOGNITION",
+      "blocked_reason": "**不是成本问题，是识别问题**：三张大立绘模板的 ROI 指着空地（04_OPEN_ISSUES #41，23 帧 0 命中），标签读数（名字+等级）已入库但从未接进 world.beast（#43/#44/#45/#46）。",
+      "note": "**每次消耗比任何情报任务都低（实际 7 < 10）**，所以一旦识别修好，它是体力性价比最高的路。当前样本 4 次不足以定成功率。",
+      "source": [
+        "LIVE_CLIENT",
+        "knowledge/game/beasts.json",
+        "knowledge/provenance/beast_research_sources.json"
+      ]
+    },
+    {
+      "route": "GIANT_BEAST_RALLY",
+      "name_cn": "冰原巨兽（集结）",
+      "stamina_displayed": null,
+      "stamina_actual": null,
+      "availability": "NOT_IMPLEMENTED",
+      "blocked_reason": "knowledge/game/giant_beasts.json 只有一条 confidence 0.62 的 LIKELY 记录（source 是 taptap），**入口/按钮/消耗都未在当前客户端验证过**；START_RALLY / JOIN_RALLY 虽已注册但**没有进 VERIFIED_ATOMIC**，因此永远不会被调度（技能无 verifier 绑定 = 永不执行）。",
+      "source": [
+        "knowledge/game/giant_beasts.json"
+      ]
+    },
+    {
+      "route": "BEAR_HUNT_RALLY",
+      "name_cn": "巨熊行动（联盟活动）",
+      "stamina_displayed": null,
+      "stamina_actual": null,
+      "availability": "KNOWLEDGE_READY_CAPABILITY_MISSING",
+      "blocked_reason": "knowledge/game/bear.json 是 VERIFIED（confidence 0.98，含 6 张真机证据帧），发起/加入/官方自动加入都已验证过；但技能侧仍停在 knowledge/skills/candidate/JOIN_BEAR_RALLY.json，未接进注册表。**消耗未知** ⇒ 按 §六.22 先测消耗再谈值不值得。",
+      "source": [
+        "knowledge/game/bear.json",
+        "knowledge/skills/candidate/JOIN_BEAR_RALLY.json"
+      ]
+    },
+    {
+      "route": "GATHER",
+      "name_cn": "采集资源",
+      "stamina_displayed": 0,
+      "stamina_actual": 0,
+      "stamina_measured_repeats": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "live_attempts": 149,
+      "live_success_rate": 0.597,
+      "availability": "AVAILABLE",
+      "note": "**实测 54 次全部为 0**：采集不消耗体力。它是**行军槽**的竞争者而不是体力的竞争者 —— 与体力路线不是同一维度的取舍。",
+      "source": [
+        "LIVE_CLIENT"
+      ]
+    },
+    {
+      "route": "FREE_STAMINA_CLAIM",
+      "name_cn": "领取免费体力（不是消耗，是补充）",
+      "availability": "AVAILABLE",
+      "wired": [
+        "OPEN_STAMINA_SOURCES",
+        "CLAIM_FREE_STAMINA"
+      ],
+      "note": "免费领取永远优先，且**不应**因为「体力还多」而跳过。"
+    }
+  ],
+  "inferences": [
+    {
+      "claim": "在三条可执行的情报路径里，打野性价比最高（每次成功 11.3 体力），营救幸存者最差（22.5）。",
+      "basis": "cost_per_success = stamina / live_success_rate，两个因子都来自实测。",
+      "confidence": "MEDIUM",
+      "caveat": "**只算了体力，没算奖励**：三条任务的奖励量级没有实测数据（intel.json 只记了「有奖励反馈」，没记多少）。若营救的奖励显著更高，结论会翻转。禁把本条当已证事实。"
+    },
+    {
+      "claim": "「体力还多就打野」这个直觉在当前系统里落不了地 —— 打野是唯一被识别层卡死的路。",
+      "basis": "#41 的 23 帧 0 命中 + #43–#46 的接线未完成；对比 SELECT_BEAST_TARGET 1 次 0 成功。",
+      "confidence": "HIGH"
+    },
+    {
+      "claim": "所以「先把情报做完，再用剩余体力打野」这个顺序里，前半段今天可做、后半段今天不可做；在识别修好之前，剩余体力只能继续花在情报上（打野→英雄之旅→营救，按性价比降序）。",
+      "basis": "上面的 availability 列。",
+      "confidence": "HIGH"
+    }
+  ],
+  "unknowns": [
+    "三条情报任务的奖励量级（决定 cost_per_success 是否等价于 value_per_stamina）",
+    "冰原巨兽与巨熊行动的体力消耗（都未在客户端测过）",
+    "情报点/探照灯等级提升对可接任务质量的影响（当前探照灯 7 级，5/90）",
+    "体力上限与自然回复速率（learning/stamina_supply.json 另有记录，本卡未合并）"
+  ],
+  "routing": {
+    "operator_order": [
+      "INTEL",
+      "GIANT_BEAST",
+      "BEAST_HUNT"
+    ],
+    "operator_order_source": "knowledge/strategy/operations_priority.json -> rules.stamina = {threshold: 30, order: [...], unknown: OBSERVE_NO_SPEND}（status CANDIDATE, last_verified 2026-09-09）",
+    "encoded_in_code": [
+      {
+        "where": "winter_agent_v2/operations_policy.py:choose_stamina_goal",
+        "what": "同一条顺序，逐字实现：None->OBSERVE_STAMINA；<=30->NONE；intel AVAILABLE/CLAIMABLE/IN_PROGRESS->INTEL；否则 giant_beast_ready->GIANT_BEAST；否则 beast_ready->BEAST_HUNT；都不行->STAMINA_BLOCKED",
+        "wired": false,
+        "audited": "2026-09-20 grep：**没有任何生产调用者**，只有 tests/test_operations_policy.py。同文件里 choose_resource_balanced 与 operational_priority 是真接线的（resource_rotation.py / scheduler.py）。"
+      },
+      {
+        "where": "winter_agent_v2/scheduler.py:90 -> operations_policy.operational_priority",
+        "what": "体力 > 30 时给 INTEL / GIANT_BEAST / BEAST_HUNT 三个 goal 加 1000+stamina 的优先级",
+        "wired": true
+      },
+      {
+        "where": "winter_agent_v2/runtime.py:876 的 route 映射",
+        "what": "'AVOID_STAMINA_WASTE' -> 'BEAST_HUNT'，并在 gate 报 SPEND_STAMINA_ON_BEAST ∈ {BLOCKED,COOLDOWN,DEFERRED,DEVELOPMENT_PENDING} 时改走 'SPEND_STAMINA'（情报任务）",
+        "wired": true,
+        "note": "这是**真正生效**的那一处。04_OPEN_ISSUES #35 记它在一轮真机里**没生效**：覆盖条件不成立 ⇒ 保留打野路线 ⇒ 3 次 SCAN_MAP_FOR_BEAST 全扫空。"
+      }
+    ],
+    "structural_finding": "操作者的体力顺序在代码里写了**两遍**：一遍在 choose_stamina_goal（无调用者），一遍在 runtime.py 的内联 route 映射（生效）。两处含义相同但不共享实现 —— 改一处不会改另一处。**这不构成第二套调度**（choose_stamina_goal 从不执行），但它是一个真接入缺口。"
+  },
+  "conclusion": {
+    "answer": "常见消耗体力的途径按操作者顺序是 **情报 → 冰原巨兽集结 → 世界地图打野**；性价比（每次成功的体力）实测为：**打野最便宜、英雄之旅次之、营救幸存者最差**。",
+    "but": "顺序不是问题 —— 问题是从第二条起**都跑不了**：冰原巨兽未实现（START_RALLY/JOIN_RALLY 未绑 verifier ⇒ 永不调度），世界地图打野被识别层卡死（#41/#46）。⇒ 「做完情报用剩余体力去打野」今天落不了地，**先修打野识别**才是让这句话成真的唯一路径。",
+    "immediate": "而在那之前，情报本身还没做完：情报板计数漏掉绿/灰 pin（#68），435 帧语料里有 1 帧被旧检测器读成 0 个 pin —— 那会让 CLEAR_INTEL 判自己 COMPLETE。这是必须先修的。"
+  }
+}

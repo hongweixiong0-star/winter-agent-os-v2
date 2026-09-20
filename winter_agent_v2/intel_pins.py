@@ -22,6 +22,49 @@ contradicts it.  Measured 2026-09-14:
 So colour varies per pin and per mission; treat it as a rendering attribute and
 decide from the card the brain reads, never from the colour.  What each colour
 actually encodes is UNKNOWN - do not guess it.
+
+COLOUR COVERAGE (open issue #68, 2026-09-20)
+--------------------------------------------
+The mask list is what this detector can SEE, not what the board draws, and the
+two drifted apart.  Measured on the 2026-09-20 board
+(dataset/truth_audit/reward_popup_exit_20260920/readings/intel_page_20260920T131907.png):
+the detector returned 4 while the board carried 9 markers.  Cropped and looked at
+one by one, the five it missed are the same object as the ones it found -- teardrop
+body, white head icon, orange base ring -- and differ only in body colour:
+
+  counted   BLUE (266,692)  PURPLE (326,695)  PURPLE (283,841)  ORANGE (273,768)
+  missed    GREEN (541,399) GREEN (210,614)   GREY (104,593)    GREY (344,765)
+
+GREEN was a systematic omission: over the corpus of intel-page frames, 40 of 40
+frames from 2026-09-20 carry at least one green pin the detector did not count
+(69 in total), 20 of 40 from 2026-09-19, 11 of 11 from 2026-09-17, and 0 of 40 from
+2026-09-14 -- every added blob measuring w 51-67, h 73-77, i.e. the same geometry
+the counted pins have.  The detector reads the board's *pins*; which colours the
+board happens to draw is not a property the caller can be asked to know in advance.
+
+GREY is admitted with two bounds, because colour alone cannot separate it and the
+neutral mask is the only one that admits the page's own chrome.  Measured over the
+435-frame intel corpus, the two false positives are:
+
+  * the page title 情報, a neutral blob with white pixels in it that is on
+    essentially every intel frame -- w 165-166 at y 73-85, against every real pin's
+    w 51-107.  Without a bound the grey mask is a title detector: 1-2 admissions on
+    53 of 60 corpus frames.  Hence ``max_width``.
+  * a top-left HUD element at y 38-57, x 30-42, on 23 of 435 frames.  Hence
+    ``BOARD_TOP``: the topmost real pin of ANY colour in the corpus is y 261 (PURPLE
+    at 354,261; ORANGE 278, BLUE 282, GREEN 321), and **only GREY** produced a blob
+    with a tap point above 200.  The floor is therefore applied to the neutral class
+    alone, so it cannot cost a coloured pin that a panned board might place higher.
+
+No saturation bound separates the two populations: the title's median saturation is
+54 and the two real grey pins' are 21-22, but tightening to 50, 40, 30 or 25 kept the
+title (or swapped it for neutral terrain) while 20 dropped the real pins too.  The
+orange base ring test drops one of the two real grey pins, because a grey blob's
+vertical extent reaches past its own ring.
+
+A false positive here is not cosmetic either -- ``available_count`` staying above zero
+forever means the CLEAR_INTEL goal can never honestly complete, the mirror of the
+false completion this module already records.
 """
 
 from __future__ import annotations
@@ -31,6 +74,12 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+
+#: The lowest tap point the neutral (grey) mask may report.  Measured, not tuned: the
+#: topmost real pin of any colour over the 435-frame intel corpus is y 261, while the
+#: two neutral false positives are the page title (y 73-85) and a HUD element (y
+#: 38-57).  See the module docstring.
+BOARD_TOP = 200
 
 
 @dataclass(frozen=True)
@@ -64,6 +113,24 @@ def _mask_for(rgb: np.ndarray, hue_lo: int, hue_hi: int, sat_lo: int, val_lo: in
     return (hue >= hue_lo) & (hue < hue_hi) & (sat >= sat_lo) & (val >= val_lo)
 
 
+def _neutral_mask(rgb: np.ndarray, sat_max: int = 60,
+                  val_lo: int = 60, val_hi: int = 215) -> np.ndarray:
+    """The grey / silver pin bodies, which have no hue to gate on.
+
+    Saturation and value bounds only, so this is the loosest mask here and the only
+    one that needs the width bound below to keep the page title out (see the module
+    docstring).  The value band excludes both the pale snow field above it and the
+    dark trees below it.
+    """
+    r = rgb[:, :, 0].astype(int)
+    g = rgb[:, :, 1].astype(int)
+    b = rgb[:, :, 2].astype(int)
+    mx = np.maximum(np.maximum(r, g), b)
+    mn = np.minimum(np.minimum(r, g), b)
+    sat = 255 * (mx - mn) // np.maximum(mx, 1)
+    return (sat <= sat_max) & (val_lo <= mx) & (mx <= val_hi)
+
+
 def _components(mask: np.ndarray) -> list[dict]:
     """Tiny 2-pass labelling; the masks are small (720x1280) so this is fine."""
     visited = np.zeros(mask.shape, dtype=bool)
@@ -86,7 +153,8 @@ def _components(mask: np.ndarray) -> list[dict]:
     return blobs
 
 
-def intel_pin_centers(image_path: Path, min_area: int = 800, max_area: int = 12000) -> list[IntelPin]:
+def intel_pin_centers(image_path: Path, min_area: int = 800, max_area: int = 12000,
+                      max_width: int = 130) -> list[IntelPin]:
     """Return the mission pins visible on an intel-page frame, top to bottom.
 
     Measured on the live client 2026-09-14: pin bodies are ~2700-3400 px, the
@@ -94,18 +162,33 @@ def intel_pin_centers(image_path: Path, min_area: int = 800, max_area: int = 120
     bodies are DARK (hsv hue ~286, sat ~251, val ~81), so the purple gate must
     not require a high value.  Anything below ~800 px is banner text, snow
     shading or the mail blimp, not a pin.
+
+    ``max_width`` is measured, not tuned: over the intel-page corpus every real pin
+    is w 51-107 (730-2600 px of body), while the one neutral blob that passes the
+    shape and white-icon filters but is not a pin -- the page title 情报 on the
+    header band -- is w 165-166.  130 sits between the two populations with ~20 %
+    margin on the pin side.
     """
     with Image.open(image_path) as image:
         rgb = np.asarray(image.convert("RGB"))
     height, width = rgb.shape[:2]
 
-    # Pin bodies: saturated cool colours (purple/blue) plus orange claimables.
+    # Pin bodies: saturated cool colours (purple/blue) plus orange claimables, green
+    # (measured 2026-09-19/20), and the neutral grey/silver ones.  See the module
+    # docstring for the measurement behind each.
     purple = _mask_for(rgb, 250, 330, 70, 50)
     blue = _mask_for(rgb, 195, 250, 90, 110)
     orange = _mask_for(rgb, 10, 55, 90, 120)
+    green = _mask_for(rgb, 70, 170, 90, 90)
+    grey = _neutral_mask(rgb)
 
     pins: list[IntelPin] = []
-    for name, mask in (("PURPLE", purple), ("BLUE", blue), ("ORANGE", orange)):
+    # Only the neutral mask carries a floor: it is the one that admits the page's own
+    # chrome, and every such admission measured is above BOARD_TOP while no real pin
+    # of any colour is.  See the module docstring for the numbers.
+    for name, mask, min_y in (("PURPLE", purple, 0), ("BLUE", blue, 0),
+                              ("ORANGE", orange, 0), ("GREEN", green, 0),
+                              ("GREY", grey, BOARD_TOP)):
         for blob in _components(mask):
             area = len(blob["pixels"])
             if not (min_area <= area <= max_area):
@@ -114,6 +197,8 @@ def intel_pin_centers(image_path: Path, min_area: int = 800, max_area: int = 120
             ys = [p[1] for p in blob["pixels"]]
             w = max(xs) - min(xs) + 1
             h = max(ys) - min(ys) + 1
+            if w > max_width:
+                continue
             # Teardrop pins: taller than (or as wide as) they are long, and
             # never the flat refresh banner (h ~ 47) nor sprawling snow.
             #
@@ -141,6 +226,8 @@ def intel_pin_centers(image_path: Path, min_area: int = 800, max_area: int = 120
             cx = int(round(sum(xs) / len(xs)))
             # Tap the head of the pin (upper 2/3), not the snowy ground below.
             cy = int(round(min(ys) + (max(ys) - min(ys)) * 0.42))
+            if cy < min_y:
+                continue
             pins.append(IntelPin(x=cx, y=cy, color=name, area=area))
     # A pin's soft glow can split off low-fill fragments nearby; keep the
     # largest candidate per ~45 px neighbourhood.

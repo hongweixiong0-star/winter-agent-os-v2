@@ -3,7 +3,7 @@
   "role": "CANONICAL_MAP",
   "purpose": "告诉专家「某个游戏事实的权威来源在哪个文件」，避免在新目录里复制第二份事实。本文件不含事实本身，只含指针。",
   "rule": "knowledge/game/*.json 是实体事实的权威来源（canonical）。domain 目录（combat / resources / alliance / heroes / events / strategy）只放决策口径与机制卡。两者冲突时以 knowledge/game/*.json 为准，并回头修正机制卡。",
-  "last_reviewed": "2026-09-14",
+  "last_reviewed": "2026-09-20",
   "canonical_files": {
     "game/game_overview.json": "游戏本体与版本事实（包名 com.gof.china、2026-08 Fire Crystal 更新）、自动化范围与硬边界",
     "game/mechanism_library_v2.json": "15 个通用机制名 + evidence_priority（权威优先级链）+ 事件适配器规则",
@@ -35,7 +35,8 @@
     "events/mechanism_cards.json": "保底 / 倒计时压力 / 阶段机 / 限次 / 阻塞上报",
     "strategy/worth_it_rubric.json": "为什么做 / 什么时候做 / 做到什么程度 / 什么时候不值得做",
     "events/event_registry.json": "已注册活动（BEAR_HUNT REVIEWED / STATE_VS_STATE DISCOVERED）",
-    "events/*_live_*.json": "单次活动的真机观测原始记录"
+    "events/*_live_*.json": "单次活动的真机观测原始记录",
+    "strategy/stamina_routes.json": "体力路线的成本/可靠性/可用性台账：常见消耗体力的途径有哪些、各实测消耗多少、哪条性价比高、哪条被卡在识别层而不是成本层（2026-09-20，含实测方法）"
   },
   "ui_and_goals": {
     "ui/pages.json": "23 个页面枚举 + state_policy（unknown→NO_CLICK，识别顺序 TEMPLATE→OCR→DETECTOR→QWEN）",

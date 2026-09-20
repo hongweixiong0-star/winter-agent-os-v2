@@ -1,23 +1,52 @@
 {
   "schema_version": "1.0",
   "gate": "REVIEWED",
-  "state_enum": ["AVAILABLE", "IN_PROGRESS", "COMPLETED", "CLAIMABLE", "NOT_AVAILABLE", "EXPIRED", "UNKNOWN", "BLOCKED"],
+  "state_enum": [
+    "AVAILABLE",
+    "IN_PROGRESS",
+    "COMPLETED",
+    "CLAIMABLE",
+    "NOT_AVAILABLE",
+    "EXPIRED",
+    "UNKNOWN",
+    "BLOCKED"
+  ],
   "records": [
     {
       "id": "INTEL",
       "name": "情报",
-      "aliases": ["灯塔", "Intel", "Intel Missions"],
+      "aliases": [
+        "灯塔",
+        "Intel",
+        "Intel Missions"
+      ],
       "entry": "MAP/LIGHTHOUSE_HUD",
       "page": "INTEL",
-      "tasks": ["beast hunt", "survivor rescue", "hero journey", "master bounty"],
+      "tasks": [
+        "beast hunt",
+        "survivor rescue",
+        "hero journey",
+        "master bounty"
+      ],
       "refresh": "live countdown verified; absolute schedule remains version/server candidate",
       "claim": "one-click claim for completed missions",
       "unavailable_semantics": "NOT_AVAILABLE",
       "verification": "claimable markers + reward feedback + markers/button cleared",
-      "source": ["LIVE_CLIENT", "whiteout_survival_wiki_lighthouse", "github_aminul_wos", "frostguard"],
+      "source": [
+        "LIVE_CLIENT",
+        "whiteout_survival_wiki_lighthouse",
+        "github_aminul_wos",
+        "frostguard"
+      ],
       "confidence": 0.99,
       "status": "VERIFIED",
-      "live": {"searchlight_level": 20, "latest_stamina": 161, "ordinary_beast_attempts": 10, "ordinary_beast_successes": 10, "ordinary_beast_claims": 10},
+      "live": {
+        "searchlight_level": 20,
+        "latest_stamina": 161,
+        "ordinary_beast_attempts": 10,
+        "ordinary_beast_successes": 10,
+        "ordinary_beast_claims": 10
+      },
       "notes": "Ordinary Beast Intel select/dispatch/return/claim is verified. State values remain distinct; BLOCKED is never reported as FAILED or DONE."
     },
     {
@@ -26,11 +55,20 @@
       "category": "UI_MODEL",
       "entry": "INTEL page shows a zoomed map sprinkled with teardrop mission pins",
       "observed_live": "2026-09-14",
-      "pin_colours_seen": ["BLUE", "PURPLE", "ORANGE"],
-      "source": ["LIVE_CLIENT"],
-      "confidence": 0.7,
-      "status": "CANDIDATE",
-      "notes": "Colour is NOT a claimability signal. Earlier project text claimed ORANGE = completed/claimable; the live client contradicts it twice on 2026-09-14: an ORANGE pin at (211,664) opened 大师悬赏：20号 read as INTEL_MASTER_BOUNTY with status BLOCKED (an actionable target, not a reward), and an ORANGE pin at (215,611) opened a Hero Journey card. What each colour encodes is UNKNOWN - do not guess it and do not decide from the colour; decide from the card the brain reads. The pin itself is the only way to learn a mission's identity: the board does not reveal type before a tap. Note also that a card's banner colour can differ from one capture to the next for the SAME mission (a Hero Journey card was read as UNKNOWN at 13:56 and as INTEL_HERO_JOURNEY at 14:00), so a template cropped from one banner colour will not match the other."
+      "pin_colours_seen": [
+        "BLUE",
+        "PURPLE",
+        "ORANGE",
+        "GREEN",
+        "GREY"
+      ],
+      "source": [
+        "LIVE_CLIENT"
+      ],
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "notes": "Colour is NOT a claimability signal. Earlier project text claimed ORANGE = completed/claimable; the live client contradicts it twice on 2026-09-14: an ORANGE pin at (211,664) opened 大师悬赏：20号 read as INTEL_MASTER_BOUNTY with status BLOCKED (an actionable target, not a reward), and an ORANGE pin at (215,611) opened a Hero Journey card. What each colour encodes is UNKNOWN - do not guess it and do not decide from the colour; decide from the card the brain reads. The pin itself is the only way to learn a mission's identity: the board does not reveal type before a tap. Note also that a card's banner colour can differ from one capture to the next for the SAME mission (a Hero Journey card was read as UNKNOWN at 13:56 and as INTEL_HERO_JOURNEY at 14:00), so a template cropped from one banner colour will not match the other. COLOUR COVERAGE CORRECTED 2026-09-20 (open issue #68). The list above used to be BLUE/PURPLE/ORANGE because `intel_pins.py` only masked those three, so the record described the detector rather than the board. Measured on dataset/truth_audit/reward_popup_exit_20260920/readings/intel_page_20260920T131907.png (720x1280): the board carries GREEN teardrop pins with a white icon at (541,399) and (210,614), and GREY/silver ones at (104,593) and (344,765) -- same teardrop body, same white head icon, same orange base ring as the counted pins, only the body colour differs, and each was confirmed by cropping and looking. The detector returned 4 where 9 markers are present. The false positive to avoid is the page title 情报 itself (grey mask, blob 166x171, fill 0.32 -- the widest and emptiest of the candidates). This is the third instance of the class its own module docstring already records: a detector that silently drops real pins makes a full board read as empty, and the CLEAR_INTEL goal then declares itself complete.",
+      "last_verified": "2026-09-20"
     },
     {
       "id": "INTEL_FIREBEAST_10",
@@ -41,8 +79,14 @@
       "target_level": 20,
       "stamina_cost": 10,
       "recommended_power": 1467020,
-      "live": {"attempts":2,"successes":2,"claims":2},
-      "source": ["LIVE_CLIENT"],
+      "live": {
+        "attempts": 2,
+        "successes": 2,
+        "claims": 2
+      },
+      "source": [
+        "LIVE_CLIENT"
+      ],
       "confidence": 0.99,
       "status": "VERIFIED",
       "last_verified": "2026-09-07",
@@ -54,8 +98,14 @@
       "category": "RESCUE_SURVIVORS",
       "entry_icon": "orange shelter",
       "stamina_cost": 12,
-      "live": {"attempts":1,"successes":1,"claims":1},
-      "source": ["LIVE_CLIENT"],
+      "live": {
+        "attempts": 1,
+        "successes": 1,
+        "claims": 1
+      },
+      "source": [
+        "LIVE_CLIENT"
+      ],
       "confidence": 0.99,
       "status": "VERIFIED",
       "last_verified": "2026-09-07",
@@ -68,10 +118,16 @@
       "entry_icon": "crossed axes; banner colour varies (blue and orange skins both observed live)",
       "stamina_cost": 10,
       "recommended_power": 957867,
-      "live": {"attempts": 1, "successes": 1, "claimed": 1},
+      "live": {
+        "attempts": 1,
+        "successes": 1,
+        "claimed": 1
+      },
       "boss_power_observed": 6654991,
       "verification": "full chain verified live by the automated loop: card -> 前往查看 -> camp panel (Page.EXPLORATION, 探险 ⚡10) -> squad page (Page.MARCH) -> 战斗 -> victory -> reward claimed (INTEL_CLAIM_REWARDS OK)",
-      "source": ["LIVE_CLIENT"],
+      "source": [
+        "LIVE_CLIENT"
+      ],
       "confidence": 0.99,
       "status": "VERIFIED",
       "last_verified": "2026-09-14",
@@ -85,7 +141,9 @@
       "stamina_cost": 10,
       "recommended_power": 189295920,
       "observed_chief_power": 56089968,
-      "source": ["LIVE_CLIENT"],
+      "source": [
+        "LIVE_CLIENT"
+      ],
       "confidence": 0.99,
       "status": "BLOCKED",
       "last_verified": "2026-09-06",

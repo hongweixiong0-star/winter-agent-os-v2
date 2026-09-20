@@ -48,6 +48,12 @@ LIVE_BOARD = ROOT / "dataset/truth_audit/intel_pin_board_20260915/01_intel_board
 HALO_BOARD = ROOT / "dataset/truth_audit/intel_beast_target_20260914/03_intel_page_full_board.png"
 LIVE_BOARDS = (LIVE_BOARD, HALO_BOARD)
 
+# Published (see the .gitignore whitelist), so the #68 guards run on any machine.
+COLOUR_BOARD = (
+    ROOT / "dataset" / "truth_audit" / "reward_popup_exit_20260920" / "readings"
+    / "intel_page_20260920T131907.png"
+)
+
 
 def _first_existing(paths):
     for path in paths:
@@ -103,6 +109,80 @@ class ProductionIntelAvailabilityTests(unittest.TestCase):
 
         goals = {g.goal_id: g for g in GoalLibrary().discover(_pin_board(5))}
         self.assertNotEqual(goals["CLEAR_INTEL"].status.value, "COMPLETE")
+
+
+class ColourCoverageTests(unittest.TestCase):
+    """The mask list is what the detector can SEE, not what the board DRAWS.
+
+    Open issue #68, live 2026-09-20.  The board carried nine teardrop markers and
+    ``intel_pin_centers`` returned four.  Cropped and looked at one by one, the
+    missed ones are the same object as the counted ones -- teardrop body, white head
+    icon, orange base ring -- and differ only in body colour: two GREEN at (541,399)
+    and (210,614), two GREY/silver at (104,593) and (344,765).  (A ninth blob at
+    (508,410) passes the same filters but is 35 px from (541,399), so the detector's
+    own 45 px neighbourhood rule folds it into that pin.)
+
+    This is the third instance of the class this file's module docstring records: a
+    bound that drops a real pin silently makes a full board read as empty, and
+    ``goal_library`` turns NOT_AVAILABLE into CLEAR_INTEL = COMPLETE.  The frame is
+    whitelisted in .gitignore, so unlike the older guards here this one does not
+    skip on a fresh clone.
+    """
+
+    def test_the_board_is_not_under_counted_where_it_draws_more_colours(self):
+        pins = intel_pin_centers(COLOUR_BOARD)
+        self.assertTrue(
+            {p.color for p in pins} >= {"GREEN", "GREY"},
+            f"green or grey pins were dropped again: {sorted(p.color for p in pins)}",
+        )
+        self.assertGreaterEqual(len(pins), 8)
+
+    def test_the_page_title_is_not_a_pin(self):
+        """The mirror failure of the one above, and why GREY carries two bounds.
+
+        The 情报 page title is a neutral blob with white pixels in it and it is on
+        essentially every intel frame, so an unbounded grey mask is a title
+        detector: 1-2 blobs on 53 of 60 corpus frames, every one of them the title
+        (w 165-166 at y 73-85).  A second neutral false positive sits in the top-left
+        HUD at y 38-57 on 23 of 435 frames.  A false positive is not cosmetic either
+        -- ``available_count`` staying above zero means CLEAR_INTEL can never
+        honestly complete.
+        """
+        pins = intel_pin_centers(COLOUR_BOARD)
+        self.assertFalse([p for p in pins if p.y < 200],
+                         "the header band was admitted as a pin")
+        self.assertFalse([p for p in pins if p.x > 690],
+                         "a right-edge blob was admitted as a pin")
+
+    def test_the_neutral_floor_sits_below_every_real_pin_and_above_the_chrome(self):
+        """BOARD_TOP is measured, and it is scoped to the neutral class on purpose.
+
+        Over the 435-frame corpus the topmost real pin of ANY colour is y 261 (PURPLE
+        at 354,261), and only the neutral mask produced a tap point above 200 -- so a
+        floor at 200 removes both neutral false positives without touching a coloured
+        pin that a panned board might place higher.  A floor applied to every class
+        would be the wrong trade: missing a real coloured pin is the undercount that
+        stops the goal honestly completing.
+        """
+        from winter_agent_v2 import intel_pins
+
+        self.assertEqual(intel_pins.BOARD_TOP, 200)
+        pins = intel_pin_centers(COLOUR_BOARD)
+        self.assertTrue(all(p.y >= intel_pins.BOARD_TOP for p in pins))
+        # the two grey pins this board carries must survive the floor
+        grey = [p for p in pins if p.color == "GREY"]
+        self.assertTrue(grey, "the floor cut the grey pins it exists to keep honest")
+
+    def test_the_width_bound_sits_between_the_two_measured_populations(self):
+        """130 px, because every real pin measured is w 51-107 and the title 165-166."""
+        from winter_agent_v2 import intel_pins
+
+        pins = intel_pin_centers(COLOUR_BOARD)
+        widest = max(p.area for p in pins)
+        self.assertLess(widest, 14000, "still inside max_area")
+        # the bound itself must stay above the widest real pin we have measured
+        self.assertGreater(intel_pins.intel_pin_centers.__defaults__[-1], 107,
+                           "max_width must not cut into the measured pin population")
 
 
 class PinTapDispatchTests(unittest.TestCase):

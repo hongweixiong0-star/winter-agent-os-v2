@@ -525,3 +525,43 @@ live_runtime ×1、capability_gate ×3、march_formation_attribution ×2）⇒ *
 还在改，故其结论不足以代表最终内容；最终内容单独跑过 `24 passed / 27 subtests`。
 ② 运行期间面板 AUTO 在跑，`test_live_runtime.py` / `test_camp_panel_stamina.py` 会读
 `knowledge/**` 与 `config/policy_state.json`，#63 已记它们的失败集合随工作树数据变化。
+
+### #68 已修（2026-09-20，真机语料 435 帧）
+
+**诊断**：`intel_pin_centers` 的三组掩码（purple/blue/orange）是**检测器能看见的东西**，不是**板面画的东西**。
+在 `readings/intel_page_20260920T131907.png` 上逐块裁图核对：漏掉的 5 个标记与已计数的**是同一类物体**
+（水滴本体 + 白色头部图标 + 橙色底环），只有本体颜色不同 —— **2 个绿、2 个灰**
+（第 5 个 (508,410) 距 (541,399) 仅 35 px，被检测器自己的 45 px 邻域规则并成同一个 pin）。
+
+**修法（`winter_agent_v2/intel_pins.py`）**：
+
+1. 新增 **GREEN** 掩码（`hue 70-170 / sat≥90 / val≥90`）。语料上 **153 帧**新增 pin，
+   2026-09-20 的 **40/40 帧**全有；新增 blob 几何 w 51–67 / h 73–77，与已知 pin 一致，**无标题类假阳性**。
+2. 新增 **中性（灰/银）掩码**（无色调，只按 sat≤60 与 val 60–215 门）。
+3. 新增**宽度上界 `max_width=130`**：真 pin 实测 w 51–107，页标题「情报」w 165–166（60 帧里 53 帧误报，全部是它）。
+4. 新增**中性类专属位置下界 `BOARD_TOP=200`**：语料里真实 pin 的 tap 点**最小 y=261**（PURPLE 354,261），
+   而中性假阳性是页标题（y 73–85）与左上 HUD（y 38–57，**23/435 帧**）。
+   **下界只作用于中性类**——加到所有颜色会冒着把上移板面的真彩色 pin 顶掉的风险，那正是本 issue 要防的漏计。
+
+**四条判据的实测淘汰过程**（写下来免得重做）：饱和度上界 50/40/30/25 都留标题（或换成中性地形）、
+20 连真 pin 一起去掉；橙色底环丢掉两个真灰 pin 中的一个（灰斑的垂直范围伸过自己的环）。
+⇒ **只有宽度与位置能分离**。
+
+**全语料复验（435 帧情报帧，新旧并跑）**：
+
+| | 旧 | 新 |
+|---|---:|---:|
+| 读成 **0 个 pin** 的帧（⇒ `goal_library` 判 `CLEAR_INTEL=COMPLETE`） | **1** | **0** |
+| 板外（y<200 或 x>690）录取 = 假阳性 | 0 | **0** |
+| 找回的绿/灰 pin 次数 | — | **397 绿 + 247 灰** |
+
+**测试**：`tests/test_intel_pin_board.py` 新增 `ColourCoverageTests`（3 条，用**已发布**的证据帧，
+不依赖本机语料，也不 skip）。单帧代价 0.27s → **0.6s**（中性掩码的连通域更大），仍在步骤预算内。
+
+**仍开着**：`intel_board_corpus/` 那 435 帧只在**本机**（388 MB，未发布）⇒ 群体数字可由同三个探针在任意情报帧重算，
+但**换台机器要重算群体就得自己再收帧**。另：`readings/` 与 `key/` 已白名单，语料没有。
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 69 | **操作者的体力顺序在代码里写了两遍，其中一遍没有任何调用者** | 🟠 **已定性，未修** | `knowledge/strategy/operations_priority.json` 的 `rules.stamina.order = [INTEL, GIANT_BEAST, BEAST_HUNT]`（threshold 30）在代码里被实现**两次**：① `operations_policy.choose_stamina_goal()` —— **grep 全仓无生产调用者**，只有 `tests/test_operations_policy.py`；② `runtime.py:876` 的内联 route 映射（`AVOID_STAMINA_WASTE → BEAST_HUNT`，gate 报 `SPEND_STAMINA_ON_BEAST ∈ {BLOCKED,COOLDOWN,DEFERRED,DEVELOPMENT_PENDING}` 时改走 `SPEND_STAMINA`）。**生效的是 ②**；`scheduler.py:90` 的 `operational_priority` 给三个耗体力 goal 加权也是真接线的。⇒ **不构成第二套调度**（① 从不执行），但**改一处不会改另一处**，属真接入缺口。同文件里 `choose_troop_rotation` / `choose_shield` / `choose_healing` / `reward_candidates` 同样无调用者。 |
+| 70 | **体力路线的实测成本表与性价比结论** | 🟢 **已落盘** | 见 `knowledge/strategy/stamina_routes.json`（`knowledge/game/_index.json` 已登记）。要点：**采集实测 0 体力（54/54）**；情报三路 10/10/12；**世界地图打野显示 10、实际 7 —— 是所有路里最便宜的**；每次成功的体力 = 消耗 ÷ 真机成功率 ⇒ 打野 **11.3**（88.9%/54 次）< 英雄之旅 **14.7**（68%/25 次）< 营救幸存者 **22.5**（53.3%/15 次）。**但冰原巨兽未实现（`START_RALLY`/`JOIN_RALLY` 未进 `VERIFIED_ATOMIC`，永不调度），打野被识别层卡死（#41/#46）** ⇒ 「做完情报再用剩余体力去打野」今天**落不了地**，先修打野识别才是唯一路径。**未算奖励量级**，所以"性价比"目前只按体力算，别当已证。 |
