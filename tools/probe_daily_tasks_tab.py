@@ -25,7 +25,7 @@ Self-limits (the project's bounded-probe contract):
 
 Usage
 -----
-    "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/probe_daily_tasks_tab.py
+    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_daily_tasks_tab.py
 """
 from __future__ import annotations
 

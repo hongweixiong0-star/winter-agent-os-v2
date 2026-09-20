@@ -121,7 +121,7 @@ def pip_list(py):
 
 
 REPORT["pip_current"] = pip_list(sys.executable)
-PROJECT_VENV = r"E:\dongri-mumu-bot\.venv\Scripts\python.exe"
+PROJECT_VENV = r"E:\无尽冬日智能体\.venv\Scripts\python.exe"
 if os.path.exists(PROJECT_VENV):
     REPORT["pip_project_venv"] = pip_list(PROJECT_VENV)
 else:

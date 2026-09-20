@@ -30,10 +30,10 @@ import sys
 sp = [p for p in sys.path if "site-packages" in p]
 R["site_packages"] = sp
 R["model_hunt"] = hunt(sp + [
-    r"E:\dongri-mumu-bot\.venv\Lib\site-packages\maa",
-    r"E:\dongri-mumu-bot\.venv\Lib\site-packages\MaaAgentBinary",
-    r"E:\dongri-mumu-bot\.venv\Lib\site-packages\rapidocr_onnxruntime",
-    r"E:\dongri-mumu-bot\.venv\Lib\site-packages\onnxruntime",
+    r"E:\无尽冬日智能体\.venv\Lib\site-packages\maa",
+    r"E:\无尽冬日智能体\.venv\Lib\site-packages\MaaAgentBinary",
+    r"E:\无尽冬日智能体\.venv\Lib\site-packages\rapidocr_onnxruntime",
+    r"E:\无尽冬日智能体\.venv\Lib\site-packages\onnxruntime",
 ])
 
 try:

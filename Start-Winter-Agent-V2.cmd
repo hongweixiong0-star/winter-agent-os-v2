@@ -14,8 +14,8 @@ rem environment moves.
 rem ---------------------------------------------------------------------------
 cd /d "E:\无尽冬日智能体"
 
-set "WINTER_PYTHON=E:\dongri-mumu-bot\.venv\Scripts\python.exe"
-set "WINTER_PYTHONW=E:\dongri-mumu-bot\.venv\Scripts\pythonw.exe"
+set "WINTER_PYTHON=E:\无尽冬日智能体\.venv\Scripts\python.exe"
+set "WINTER_PYTHONW=E:\无尽冬日智能体\.venv\Scripts\pythonw.exe"
 
 if not exist "%WINTER_PYTHONW%" (
     echo [Winter Agent OS V2] 找不到生产解释器：%WINTER_PYTHONW%

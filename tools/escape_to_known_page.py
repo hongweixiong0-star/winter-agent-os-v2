@@ -22,7 +22,7 @@ import sys
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-PY = r"E:\dongri-mumu-bot\.venv\Scripts\python.exe"
+PY = r"E:\无尽冬日智能体\.venv\Scripts\python.exe"
 
 # Pages the brain can act on.  HOME/MAP are the ordinary entry points; INTEL and
 # MARCH are accepted because some tasks deliberately start there.

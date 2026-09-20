@@ -5,7 +5,7 @@
   "machine": {
     "os": "Windows",
     "project": "E:\\无尽冬日智能体",
-    "venv": "E:\\dongri-mumu-bot\\.venv\\Scripts\\python.exe",
+    "venv": "E:\\无尽冬日智能体\\.venv\\Scripts\\python.exe",
     "device": "MuMu Player 12 @ 127.0.0.1:7555, 720x1280, com.gof.china"
   },
   "env_traps": [
@@ -21,7 +21,7 @@
       "name": "MaaFramework",
       "version": "5.12.3",
       "status": "VERIFIED / HIGH PRIORITY",
-      "location": "E:\\dongri-mumu-bot\\.venv\\Lib\\site-packages\\maa",
+      "location": "E:\\无尽冬日智能体\\.venv\\Lib\\site-packages\\maa",
       "import_name": "maa",
       "capabilities": [
         "screencap (EmulatorExtras)",
@@ -75,7 +75,7 @@
       "name": "MaaAgentBinary",
       "version": "1.0.1",
       "status": "VERIFIED",
-      "location": "E:\\dongri-mumu-bot\\.venv\\Lib\\site-packages\\MaaAgentBinary",
+      "location": "E:\\无尽冬日智能体\\.venv\\Lib\\site-packages\\MaaAgentBinary",
       "capabilities": ["maatouch", "minicap", "minitouch"],
       "verified": true,
       "verification": "dist-info present; directory contains maatouch/ minicap/ minitouch/ (probed 2026-09-14)",

@@ -28,13 +28,14 @@ MaaFramework 5.12.3 早已安装并可正常驱动 MuMu（截图 8.9 ms vs ADB 3
 
 ```bash
 # 唯一可用的通用执行方式
-cd "E:/无尽冬日智能体" && "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/<script>.py > out.txt 2>&1
+cd "E:/无尽冬日智能体" && "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/<script>.py > out.txt 2>&1
 # 然后 Read out.txt
 ```
 
 Python 环境：
+- **旧目录 `E:\dongri-mumu-bot` 已不再是 V2 的运行环境**（2026-09-20 迁移到 `E:\无尽冬日智能体\.venv`）；不要从旧目录运行脚本，也不要把它当作 venv 的所在地。
 - **项目 venv（含 PIL / rapidocr，跑项目脚本必须用它）**：
-  `E:\dongri-mumu-bot\.venv\Scripts\python.exe`
+  `E:\无尽冬日智能体\.venv\Scripts\python.exe`
 - 托管 Python 3.13（**没有 PIL**）：`C:\Users\xhw\.workbuddy\binaries\python\versions\3.13.12\python.exe`
 
 真机（MuMu 默认**不启动**）：
@@ -57,7 +58,7 @@ Verifier First、安全红线、开发方式等**长期硬规则**。改动架�
 ## 第 2 步：重建当前事实
 
 ```bash
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/update_workbuddy_handoff.py
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/update_workbuddy_handoff.py
 ```
 
 这一步会读 git / registry / capability mapping / episodes.jsonl / runtime snapshot /
@@ -155,7 +156,7 @@ python tools/truth_audit.py    # 重算 episode / registry / 证据完整性
 ### 运行环境预检（2026-09-17 增补，接管必做）
 
 ```bash
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/preflight.py
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/preflight.py
 ```
 
 一条命令回答两件事：**当前解释器能不能跑生产**（`numpy` / `PIL` / `cv2` / `maa` /
@@ -173,7 +174,7 @@ python tools/truth_audit.py    # 重算 episode / registry / 证据完整性
 ### WorkBuddy 升级通道（2026-09-17 增补，可选）
 
 ```bash
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/workbuddy_bridge.py --check
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/workbuddy_bridge.py --check
 ```
 
 撞墙时可以把**一条** capability 交给本机 WorkBuddy 后台 agent，而不是耗完 timebox
@@ -238,7 +239,7 @@ python tools/update_workbuddy_handoff.py
 9. 若本轮改动「逻辑完整 + 测试通过 + 值得保留」，建 checkpoint：
 
 ```bash
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest tests -q
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" -m pytest tests -q
 python tools/update_workbuddy_handoff.py --checkpoint -m "type(scope): summary"
 ```
 

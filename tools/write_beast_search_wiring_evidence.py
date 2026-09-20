@@ -18,7 +18,7 @@ can be re-derived by the next reader instead of trusted.
 
 Usage
 -----
-    "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/write_beast_search_wiring_evidence.py
+    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/write_beast_search_wiring_evidence.py
 """
 
 from __future__ import annotations

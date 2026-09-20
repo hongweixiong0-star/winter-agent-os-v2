@@ -215,7 +215,14 @@ def main(argv: list[str] | None = None) -> int:
     gateway = sections["gateway"]
 
     if args.json:
-        print(json.dumps(data, ensure_ascii=False, indent=2))
+        # ensure_ascii default (True) on purpose, and it is not cosmetic.  The panel runs this
+        # command with a piped stdout and decodes it with the OEM codepage, because that is what
+        # console tools on this machine speak -- so a raw UTF-8 root path (E:\无尽冬日智能体) arrived
+        # as mojibake whose last byte ate the closing quote, and json.loads raised Invalid \escape
+        # on the field after it.  The window then reported "预检输出无法解析" and refused to start
+        # AUTO.  Escaping non-ASCII makes this payload byte-identical under any decoding, which is
+        # what a data format should be; the human-readable path below keeps the readable form.
+        print(json.dumps(data, ensure_ascii=True, indent=2))
         return 0 if data["core_ok"] else 1
 
     print("== Winter Agent OS V2 preflight ==")

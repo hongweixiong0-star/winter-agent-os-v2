@@ -51,7 +51,7 @@ PANEL_SCRIPT = ROOT / "tools/control_panel.py"
 PID_PATH = ROOT / "learning/control_panel/panel.pid"
 PEEK_LOG = ROOT / "learning/control_panel/panel_launch.log"
 SNAPSHOT = ROOT / "learning/runtime_snapshot.json"
-VENV_PYTHONW = Path(r"E:\dongri-mumu-bot\.venv\Scripts\pythonw.exe")
+VENV_PYTHONW = Path(r"E:\无尽冬日智能体\.venv\Scripts\pythonw.exe")
 GATEWAY_PASSWORD_ENV = "CODEBUDDY_GATEWAY_PASSWORD"
 
 # A snapshot older than this says nothing about now, so it must not be used to

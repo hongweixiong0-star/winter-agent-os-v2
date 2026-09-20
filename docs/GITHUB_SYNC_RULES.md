@@ -14,10 +14,10 @@
 
 ```bash
 # 现在同步到哪一步了？（会 fetch，刷新 remote-tracking ref）
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/git_sync.py status
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/git_sync.py status
 
 # 推送（先跑敏感信息闸门，被拦就不推）
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/git_sync.py push
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/git_sync.py push
 ```
 
 `status` 打印：`local_head / remote_head / unpushed_commits / behind / git_dirty / last_push_at /
@@ -59,9 +59,9 @@ last_push_status`，并把脏文件按 **KEEP / TEMP / DISCARD? / UNKNOWN** 分�
 
 ```bash
 git status                                     # 脏文件里有没有不该提交的
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -c "import ast;ast.parse(open('<file>',encoding='utf-8').read())"
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/check_wiring.py     # problems: 0
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -m pytest <targeted tests> -q
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" -c "import ast;ast.parse(open('<file>',encoding='utf-8').read())"
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/check_wiring.py     # problems: 0
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" -m pytest <targeted tests> -q
 ```
 
 - 改动影响生产主链 ⇒ **至少 replay 或对应 verifier test**。
@@ -96,7 +96,7 @@ git status && git log -1 --oneline && git rev-parse HEAD && git rev-parse origin
 **推之前必须先过闸门**（`git_sync.py push` 自动跑；也可单独跑）：
 
 ```bash
-"E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/scan_public_repo.py --json out_secret_scan.json
+"E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/scan_public_repo.py --json out_secret_scan.json
 ```
 
 它检查四类：**不该被跟踪的文件名**（`.env*` / `secrets*` / `credentials*` / `token*` /

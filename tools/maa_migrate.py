@@ -31,7 +31,7 @@ Writes ``learning/maa_migration/<stamp>.json`` and
 
 Run inside the project venv (needs PIL/numpy/opencv and maa):
 
-    E:/dongri-mumu-bot/.venv/Scripts/python.exe tools/maa_migrate.py nodes
+    E:/无尽冬日智能体/.venv/Scripts/python.exe tools/maa_migrate.py nodes
 """
 
 from __future__ import annotations

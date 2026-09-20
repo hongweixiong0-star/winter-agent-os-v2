@@ -11,7 +11,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ADB = r"D:\Program Files\Netease\MuMu Player 12\nx_main\adb.exe"
-PY = r"E:\dongri-mumu-bot\.venv\Scripts\python.exe"
+PY = r"E:\无尽冬日智能体\.venv\Scripts\python.exe"
 
 
 def main() -> None:

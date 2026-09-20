@@ -13,7 +13,7 @@ $RuntimePath = Join-Path $ProjectRoot "tools\run_live.py"
 # the whole launcher ran with "MAA_IMPORT_FAILED:ModuleNotFoundError" (and no
 # cv2 at all: winter_agent_v2.matchers imports it at module scope).  Preflight
 # below refuses to start rather than let that degrade silently.
-$PythonPath = "E:\dongri-mumu-bot\.venv\Scripts\python.exe"
+$PythonPath = "E:\无尽冬日智能体\.venv\Scripts\python.exe"
 $MuMuPath = "D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuNxMain.exe"
 $MuMuManagerPath = "D:\Program Files\Netease\MuMu Player 12\nx_main\MuMuManager.exe"
 $LogRoot = Join-Path $ProjectRoot "learning\launcher"

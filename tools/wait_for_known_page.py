@@ -19,7 +19,7 @@ import sys
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-PY = r"E:\dongri-mumu-bot\.venv\Scripts\python.exe"
+PY = r"E:\无尽冬日智能体\.venv\Scripts\python.exe"
 KNOWN = {"MAP", "HOME", "INTEL", "MARCH", "RESOURCE_DETAIL", "EXPLORATION", "MAIL", "DAILY"}
 
 

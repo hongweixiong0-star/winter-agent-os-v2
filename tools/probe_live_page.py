@@ -25,7 +25,7 @@ another loop owns the device (it only reads one screencap).
 
 Usage
 -----
-    "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/probe_live_page.py
+    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_live_page.py
 """
 
 from __future__ import annotations

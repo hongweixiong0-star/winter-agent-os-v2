@@ -25,8 +25,8 @@ Bounded and honest
 
 Usage
 -----
-    "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py
-    "E:/dongri-mumu-bot/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py --tap 44,900 --tag magnifier
+    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py
+    "E:/无尽冬日智能体/.venv/Scripts/python.exe" -u tools/probe_map_beast_search.py --tap 44,900 --tag magnifier
 """
 
 from __future__ import annotations

@@ -18,7 +18,7 @@ Everything is joined from real files:
 
 Nothing here is hand-written, so the audit cannot drift away from the code.
 
-    E:/dongri-mumu-bot/.venv/Scripts/python.exe -u tools/executor_audit.py
+    E:/无尽冬日智能体/.venv/Scripts/python.exe -u tools/executor_audit.py
 """
 
 from __future__ import annotations

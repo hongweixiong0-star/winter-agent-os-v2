@@ -66,7 +66,7 @@ class Batch:
 
 def interpreter() -> str:
     """The production interpreter, so the suite runs where production runs."""
-    candidate = Path(r"E:\dongri-mumu-bot\.venv\Scripts\python.exe")
+    candidate = Path(r"E:\无尽冬日智能体\.venv\Scripts\python.exe")
     return str(candidate) if candidate.is_file() else sys.executable
 
 

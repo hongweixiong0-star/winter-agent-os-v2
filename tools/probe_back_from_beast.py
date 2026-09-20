@@ -18,7 +18,7 @@ anything (BACK opens no paid surface, and the report says so if it sees one).
 
 Usage
 -----
-    "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/probe_back_from_beast.py
+    "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/probe_back_from_beast.py
 """
 
 from __future__ import annotations

@@ -63,7 +63,7 @@ from typing import Iterable, Sequence
 # rule and config/v2.json's ocr.module_path, which already points inside it).
 # Kept as a fallback rather than the only answer: if the operator moves the venv,
 # config `runtime.python_path` and the ocr.module_path derivation still work.
-PROJECT_VENV = Path(r"E:\dongri-mumu-bot\.venv")
+PROJECT_VENV = Path(r"E:\无尽冬日智能体\.venv")
 
 # How long a single interpreter probe may take.  ``import maa`` loads the native
 # MaaFramework library, which is the slow one; everything else is milliseconds.

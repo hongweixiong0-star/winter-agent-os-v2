@@ -2,7 +2,7 @@
 
 Run inside the project venv (needs PIL/opencv/numpy via rapidocr):
 
-    E:/dongri-mumu-bot/.venv/Scripts/python.exe tools/ab_matcher.py
+    E:/无尽冬日智能体/.venv/Scripts/python.exe tools/ab_matcher.py
 
 For each semantic we measure the phash hamming distance (current matcher,
 lower is better) and the OpenCV ccoeff score (candidate, higher is better)

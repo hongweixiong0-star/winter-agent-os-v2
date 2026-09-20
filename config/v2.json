@@ -16,7 +16,7 @@
   },
   "ocr": {
     "backend": "rapidocr_onnxruntime",
-    "module_path": "E:\\dongri-mumu-bot\\.venv\\Lib\\site-packages",
+    "module_path": "E:\\无尽冬日智能体\\.venv\\Lib\\site-packages",
     "minimum_confidence": 0.88,
     "cache": true,
     "role": "TEXT_RECOGNITION_ONLY"

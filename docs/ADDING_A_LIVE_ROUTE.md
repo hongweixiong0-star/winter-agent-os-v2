@@ -16,8 +16,8 @@
 > `knowledge/game/capability_catalog.json` 里挑：
 >
 > ```bash
-> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --status
-> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --capability OPEN_ARENA
+> "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/bootstrap_scan.py --status
+> "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/bootstrap_scan.py --capability OPEN_ARENA
 > ```
 >
 > 它会**预载**（Preload Before Encounter）：按操作者的优先级阶梯排序、按知识来源阶梯
@@ -30,9 +30,9 @@
 > **这是一个常驻循环，不是一次性任务**（操作者 2026-09-18 定规）。跑一轮看它现在在做什么：
 >
 > ```bash
-> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --cycle --dry-run   # 只决策不派单
-> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --state             # 看门狗那七个问题
-> "E:/dongri-mumu-bot/.venv/Scripts/python.exe" tools/bootstrap_scan.py --coverage          # 五个覆盖率（含分母定义）
+> "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/bootstrap_scan.py --cycle --dry-run   # 只决策不派单
+> "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/bootstrap_scan.py --state             # 看门狗那七个问题
+> "E:/无尽冬日智能体/.venv/Scripts/python.exe" tools/bootstrap_scan.py --coverage          # 五个覆盖率（含分母定义）
 > ```
 >
 > 每个能力开发前先走 **本地知识优先** 的九级顺序（`winter_agent_v2/knowledge_preload.py`）：

@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-PY = r"E:\dongri-mumu-bot\.venv\Scripts\python.exe"
+PY = r"E:\无尽冬日智能体\.venv\Scripts\python.exe"
 sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.runtime_snapshot import NON_FATAL_STOPS, is_fatal_stop  # noqa: E402
