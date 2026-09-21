@@ -724,26 +724,26 @@ class GoalLibrary:
                                     ("TRAIN_TROOPS",), TRAINING_CAMP_VALUE)
 
     def best(self, goals: Iterable[GoalState]) -> GoalState | None:
-        """The goal to work on: real work first, and a look-around only if there is none.
+        """The goal to work on: the highest-priced one that can be advanced this frame.
 
-        The tier exists because the sweep values were set to out-price each other, not to
-        out-price work.  Measured 2026-09-21 on a map frame with an idle march slot: the
-        unread-page tickets price at 180 and ``KEEP_MARCHES_PRODUCTIVE`` at 70, so the loop
-        hopped away from a dispatched march it could have sent, and the operator's rule is
-        that a goal which has stepped aside must not switch off work that is still
-        selectable (``不能因为某个 Goal 被让位就停止其他可执行 Goal``).
+        Deliberately a single ordered comparison and no tiers.  An earlier version of this
+        method tried to rank ``DISCOVERED`` (a page to go and look at) below ``READY`` (work in
+        hand), on the theory that a look-around should never outbid real work.  Measured
+        2026-09-21, that is wrong, and ``test_sweep_rotation_and_hop`` says why: the sweep
+        tickets are *priced* to outbid routine gathering (``SWEEP_BASE_VALUE`` 80-130 against
+        ``KEEP_MARCHES_PRODUCTIVE`` 70), aging to a ceiling that stays under a real claim.  That
+        ordering is the rotation -- it is what stops one unread page being starved forever by
+        whatever is always sitting in the march queue.  A tier that forced ``READY`` first
+        silently disabled it and made ``CLEAR_INTEL`` unreachable on any frame with an idle
+        march slot.
 
-        ``DISCOVERED`` means "never looked at", which is a real thing to do but not work in
-        hand: it is schedulable so the page gets visited (the whole reason the tickets
-        exist), and it is tried only when nothing on the board can be advanced right now.
-        Within each tier the existing priority order is untouched, so the age-asymptote
-        rotation that stops one ticket being re-picked forever still applies.
+        The concern that motivated the tier is real but belongs elsewhere: a *sweep* must not
+        outrank a goal that is already holding a resource the sweep's owner is waiting on.  That
+        is the yield mechanism's job (``_yield_to_next_goal``, Rule A), and it is applied where
+        the conflict is visible, not by reordering the whole board here.
         """
         actionable = [goal for goal in goals if goal.priority != float("-inf") and goal.available_skills]
-        if not actionable:
-            return None
-        work = [goal for goal in actionable if goal.status is not GoalStatus.DISCOVERED]
-        return max(work or actionable, key=lambda goal: goal.priority, default=None)
+        return max(actionable, key=lambda goal: goal.priority, default=None)
 
     def skill_modifier(self, world: WorldState, skill_id: str) -> float:
         # One action may advance several goals (for example Train + Daily + Event).

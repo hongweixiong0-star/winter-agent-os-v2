@@ -44,14 +44,30 @@ TICKETS = ("CLEAR_INTEL", "KEEP_TRAINING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE"
 
 
 def test_the_swept_goals_leave_a_panel_they_do_not_own():
-    """The measured cause: a research goal running the alliance branch."""
+    """The measured cause: a research goal running the alliance branch.
+
+    The second step changed on 2026-09-21, and the reason is worth keeping here because this
+    assertion used to read ``SAFE_STOP``.  Measured: the alliance chest layer does not answer a
+    Back -- ``before ALLIANCE -> PRESS_BACK -> after ALLIANCE``, verifier
+    ``SAFE_BACK_NOT_PROVEN`` -- and because ``foreign_page_left`` was already set, every
+    following run refused with ``training_entry_not_verified`` without trying.  One unmovable
+    layer cost the cycle its training work permanently.  That layer's own exit is the X the
+    client draws, so the hop is now an ordered *pair*: Back, then the verifier-bound close.
+
+    Still bounded: ``foreign_page_steps`` caps it at two, so a layer answering neither exit
+    falls through to the caller's honest stop rather than looping.
+    """
     for goal in ("TRAIN", "RESEARCH"):
         brain = RuleBrain(current_goal=goal)
         first = brain.decide(WorldState(page=Page.ALLIANCE, confidence=0.99), v2_registry())
         assert first.skill == "BACK", f"{goal} on the alliance panel must leave it"
         assert "panel_it_does_not_own" in first.reason
         second = brain.decide(WorldState(page=Page.ALLIANCE, confidence=0.99), v2_registry())
-        assert second.skill == "SAFE_STOP", "the hop happens once, so a Back that did not move ends"
+        assert second.skill == "LEAVE_FOREIGN_LAYER", (
+            "a Back the layer ignored must be followed by the close the client itself draws"
+        )
+        third = brain.decide(WorldState(page=Page.ALLIANCE, confidence=0.99), v2_registry())
+        assert third.skill != "LEAVE_FOREIGN_LAYER", "the pair is bounded, not a loop"
 
 
 def test_a_swept_goal_on_its_own_page_is_not_disturbed():
