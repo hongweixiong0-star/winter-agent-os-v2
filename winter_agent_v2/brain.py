@@ -1277,33 +1277,68 @@ class RuleBrain:
                         # verified gathering chain taps, so this hop invents
                         # nothing about how to reach the panel.
                         return Decision("SEARCH_RESOURCE", "beast_search_starts_by_opening_the_client_search", world.confidence, "resource_search_open")
-                    if world.resource_beast_tab_norm is None:
-                        # Keyed on the tab's own printed label, not on a template and not on
-                        # ``resource_selected``.  Both of the older signals are measured to
-                        # fail here:
+                    # The gate is ``resource_selected_tab``, not ``resource_beast_tab_norm``.
+                    #
+                    # Measured 2026-09-21 on
+                    # ``live_runtime_step_002_after_20260921T103154681030.png``: a freshly
+                    # opened panel draws ALL five tabs, so ``resource_beast_tab_norm`` was
+                    # already non-``None`` (0.0576, 0.7398) while the client had **生肉**
+                    # anchored -- ``resource_selected`` read ``MEAT`` and the brackets sat on
+                    # the 生肉 cell.  Keying on the label's presence therefore declared the
+                    # tab switch unnecessary, fell straight through to ``SUBMIT_BEAST_SEARCH``,
+                    # and the 搜索 tap landed on a gatherable node *behind* the panel: the run
+                    # recorded ``page MAP -> RESOURCE_DETAIL`` and opened a 等级6 废弃畜牧场
+                    # card, with ``BEAST_SEARCH_NOT_SUBMITTED`` as the verifier's verdict.
+                    #
+                    # The label being *drawn* is not the tab being *selected*.  The selected
+                    # pad is the bracket, and ``resource_selected_tab`` is that read, resolved
+                    # over the whole strip so a monster tab is nameable.
+                    #
+                    # Two older signals were tried as the selection test and are measured to
+                    # fail here, so neither is reused below:
+                    #
+                    # * ``resource_selected`` only identifies the four gatherable cells
+                    #   (MEAT/WOOD/COAL/IRON) against reviewed templates, so a monster tab reads
+                    #   back ``None`` even when it is drawn, bracketed and active (measured
+                    #   2026-09-21 on ``beast_tab.png``).  Gating on ``resource_selected ==
+                    #   "BEAST"`` re-issues the switch forever.
+                    # * ``BTN_SEARCH_BEAST_TAB`` is pinned to the leftmost strip slot, and the
+                    #   client moved 野兽 into that slot where the archived frame had 冰原巨兽:
+                    #   all three beast-search templates scored NO MATCH on the live frame and
+                    #   the hop failed with SEMANTIC_TARGET_NOT_VERIFIED.  ``vision.
+                    #   resource_tab_order`` carries that same warning from 2026-09-18.
+                    #
+                    # ``BEAST`` and not ``GIANT_BEAST`` throughout: the measured level-5 mammoth
+                    # card offers only 集结, so a solo-attack route must not treat the rally tab
+                    # as equivalent.
+                    if world.resource_selected_tab == "BEAST":
+                        # Already anchored: nothing to switch, so the search is what this hop
+                        # is for.  Kept as the first branch because it is the only state that
+                        # may spend the ticket.
+                        self.beast_search_used = True
+                        return Decision("SUBMIT_BEAST_SEARCH", "beast_tab_and_level_chosen_submitting_search", world.confidence, "beast_target_resent")
+                    if "BEAST" not in world.resource_tab_kinds:
+                        # The strip was read and carries no 野兽 tab.  Two sub-cases, both of
+                        # which must NOT submit a search:
                         #
-                        # * ``resource_selected`` only identifies the four gatherable cells
-                        #   (MEAT/WOOD/COAL/IRON) against reviewed templates, so a monster tab
-                        #   reads back ``None`` even when it is drawn, bracketed and active
-                        #   (measured 2026-09-21 on ``beast_tab.png``).  Gating on
-                        #   ``resource_selected == "BEAST"`` re-issues this tap forever.
-                        # * ``BTN_SEARCH_BEAST_TAB`` is pinned to the leftmost strip slot, and
-                        #   the client moved 野兽 into that slot where the archived frame had
-                        #   冰原巨兽: all three beast-search templates scored NO MATCH on the
-                        #   live frame and this hop failed with SEMANTIC_TARGET_NOT_VERIFIED.
-                        #   ``vision.resource_tab_order`` carries that same warning from
-                        #   2026-09-18 and names the label read as the durable fix.
-                        #
-                        # ``BEAST`` and not ``GIANT_BEAST``: the measured level-5 mammoth card
-                        # offers only 集结, so a route whose purpose is a solo attack must not
-                        # treat the rally tab as equivalent.  When the client draws no 野兽 tab
-                        # at all the route falls through to the pan budget below rather than
-                        # tapping whichever monster tab happens to be there.
-                        if "GIANT_BEAST" in world.resource_tab_kinds and "BEAST" not in world.resource_tab_kinds:
+                        # * only the rally tab is drawn -- measured 2026-09-21 on the archived
+                        #   ``beast_tab.png`` frames, where 冰原巨兽 is leftmost and there is no
+                        #   野兽 tab at all.  Its cards offer only 集结 (measured on the level-5
+                        #   mammoth), so a solo-attack route must decline outright.
+                        # * nothing readable at all -- an OCR miss or a strip this build draws
+                        #   differently.  Falling through to the pan budget is the honest
+                        #   outcome; tapping the strip would pick whichever cell happens to be
+                        #   there, and spending the ticket would spend the only search this run
+                        #   gets on a panel whose tab was never confirmed.
+                        if "GIANT_BEAST" in world.resource_tab_kinds:
                             return Decision("SAFE_STOP", "only_the_rally_beast_tab_is_offered_no_solo_attack_entry", 1.0, "switch_task")
+                        # Neither monster tab read: leave ``beast_search_used`` alone and let the
+                        # pan budget below run.  A later frame may still read the strip.
+                        pass
+                    else:
+                        # ``BEAST`` is drawn and something else is anchored -- the measured
+                        # live state, where the panel opens on 生肉.  Switch to it.
                         return Decision("OPEN_BEAST_SEARCH_TAB", "search_panel_needs_the_ordinary_beast_tab", world.confidence, "beast_search_tab_selected")
-                    self.beast_search_used = True
-                    return Decision("SUBMIT_BEAST_SEARCH", "beast_tab_and_level_chosen_submitting_search", world.confidence, "beast_target_resent")
                 if self.beast_scans_used < self.max_beast_scans:
                     self.beast_scans_used += 1
                     return Decision("SCAN_MAP_FOR_BEAST", "verified_beast_target_not_visible_scanning_map", world.confidence, "beast_target_resent")

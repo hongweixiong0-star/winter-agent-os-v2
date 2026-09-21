@@ -1683,6 +1683,17 @@ class HybridVision:
                     resource_tab_kinds=tuple(sorted(tab_labels)),
                     resource_beast_tab_norm=tab_labels.get("BEAST"),
                     resource_giant_beast_tab_norm=tab_labels.get("GIANT_BEAST"),
+                    # Which tab the bracket anchors, monsters included.  Distinct from
+                    # ``resource_selected`` (gatherable cells only, so a monster tab reads
+                    # ``None``) and from ``resource_beast_tab_norm`` (where the label is
+                    # *drawn*, which is true for every tab on a freshly opened panel).
+                    # Measured 2026-09-21: the panel opens with 生肉 anchored while
+                    # ``resource_beast_tab_norm`` is already non-``None``, which is exactly
+                    # the pair of facts that made the route skip its tab switch.
+                    resource_selected_tab=(
+                        self.semantic.anchored_tab_kind(image_path)
+                        if primary.resource_search_open else None
+                    ),
                     # The client's beast search ran and left a target on the map.
                     #
                     # Measured 2026-09-21 on ``beast5_found.png``: after 搜索 the

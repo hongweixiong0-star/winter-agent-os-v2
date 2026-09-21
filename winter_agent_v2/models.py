@@ -131,6 +131,18 @@ class WorldState:
     #: the measured level-5 mammoth offered only 集结 -- so a solo-kill route must not treat
     #: it as equivalent to ``BEAST``, which is what the user-facing rule requires.
     resource_giant_beast_tab_norm: tuple[float, float] | None = None
+    #: Which tab of the strip the selection bracket currently anchors, monster tabs included,
+    #: e.g. ``"BEAST"`` / ``"GIANT_BEAST"`` / ``"MEAT"``, or ``None`` when the strip could not
+    #: be located or no tab is marked.
+    #:
+    #: This is the fact that distinguishes "the tab is drawn" from "the tab is selected", and
+    #: the beast route needs the second.  Measured 2026-09-21: a freshly opened panel draws all
+    #: five tabs, so ``resource_beast_tab_norm`` is already non-``None`` while the client has
+    #: **生肉** anchored; a gate keyed on the label's presence therefore submitted the search
+    #: without switching tabs and the 搜索 tap landed on a gatherable node behind the panel.
+    #: ``resource_selected`` cannot stand in for this either, because it is limited to the four
+    #: gatherable cells and reports ``None`` for a monster tab.
+    resource_selected_tab: str | None = None
     # Set when the search panel is open on the beast tab AND the client has drawn
     # its result card on top of it -- the state ``beast5_found.png`` records after
     # 搜索 is tapped.  The panel does not close on success, which is why a

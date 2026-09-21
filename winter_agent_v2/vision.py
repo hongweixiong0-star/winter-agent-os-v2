@@ -469,6 +469,111 @@ class SemanticROIVision:
             return 716 - (left + cell_px)
         return 0.0
 
+    def resource_tab_tap_norm(self, resource: str) -> tuple[float, float] | None:
+        """Tap point for a strip tab, allowing a cell clipped at either edge.
+
+        :meth:`resource_cell_center_norm` deliberately refuses a cell that is not
+        fully on screen, because a *gathering* route must scroll a half-visible
+        target into view rather than tap the part that is showing -- guessing at a
+        clipped cell is what made SELECT_RESOURCE pick the wrong tab.  That rule is
+        right for the four gatherable tabs and wrong for the 野兽 tab, whose cell is
+        routinely clipped: measured 2026-09-21 on
+        ``live_runtime_step_002_after_20260921T103154681030.png`` the strip sits at
+        offset 196.5, putting 野兽 at left -30.5 / centre 42.0, so the client is
+        drawing the right part of the cell and the whole of its 野兽 label while the
+        full-cell test rejects it.  Scrolling instead would be wrong here: the tab is
+        reachable where it stands, and a swipe would move the whole strip to fix a
+        target that was already tappable.
+
+        The returned point is the cell centre clamped into the visible width, and
+        ``None`` only when the cell is entirely off screen or the strip could not be
+        located at all.
+        """
+        if self.resource_tab_offset is None or resource not in self.resource_tab_order:
+            return None
+        left = (
+            self.resource_tab_first_left * 720.0
+            + self.resource_tab_order.index(resource) * self.resource_tab_pitch * 720.0
+            + self.resource_tab_offset
+        )
+        cell_px = self.resource_tab_cell * 720.0
+        if left + cell_px <= 0 or left >= 720:
+            return None
+        centre = left + cell_px / 2
+        visible = min(716.0, max(4.0, centre))
+        return visible / 720.0, (self.resource_tab_band[0] + self.resource_tab_band[1]) / 2
+
+    def anchored_tab_kind(self, image_path: Path) -> str | None:
+        """Which tab of the strip the selection bracket currently marks.
+
+        Unlike :meth:`selected_resource`, this answers for the *whole* strip,
+        monster tabs included.  ``selected_resource`` is deliberately limited to
+        the four gatherable cells because it decides which resource a gathering
+        route should select, and it is validated against reviewed cell templates
+        (MEAT/WOOD/COAL/IRON); a monster tab matches none of them, so it reads
+        back as ``None`` and the caller cannot tell "no selection" from
+        "the 野兽 tab is anchored".
+
+        That distinction is what the beast route needs.  Measured 2026-09-21 on
+        ``live_runtime_step_002_after_20260921T103154681030.png``: the panel was
+        freshly opened, the client had anchored **生肉**, and the strip read
+
+            resource_tab_kinds  = (BEAST, COAL, GIANT_BEAST, MEAT, WOOD)
+            resource_selected   = MEAT
+            resource_beast_tab_norm = (0.0576, 0.7398)   # the label, readable
+
+        A gate keyed on ``resource_beast_tab_norm is None`` therefore saw "the
+        beast tab is there" and submitted the search without ever switching to it
+        -- so the 搜索 tap hit a gatherable node behind the panel and opened a
+        resource card instead.  The label being *drawn* is not the tab being
+        *selected*; this method returns the second fact.
+
+        The tab identity comes from the same reviewed geometry
+        :meth:`selected_resource` uses to place the strip: the bracket's left
+        edge is compared against where the fixed client order says each tab sits
+        under the resolved scroll offset, and the nearest cell within half a
+        pitch wins.  A frame whose strip could not be located returns ``None``.
+
+        The bracket stroke is chosen by the *validated* offset rather than by
+        whichever stroke pair the separator heuristic happens to see first.
+        Measured on the frame above, ``_bracket_strokes`` reports four strokes
+
+            57.5   227.0   283.5   428.5
+
+        and the true bracket is the pair 283.5/428.5, whose gap is 145.0 -- the
+        cell width exactly.  The pair 57.5/227.0 has a gap of 169.5, which still
+        passes the 130-175 pair test, and because ``selected_tab_left`` returns
+        the *first* accepted pair it reported 57.5.  Under the templates' own
+        validated offset (196.5, two supporting cells, margin 9.55) MEAT sits at
+        283.5, so a stroke lies on MEAT's predicted edge to the pixel while none
+        lies near the 57.5 pair's implied reading.  Scoring the strokes against
+        the offset the templates already proved therefore selects 283.5 -> MEAT,
+        which is what the frame shows.
+        """
+        self.selected_resource(image_path)          # resolves resource_tab_offset
+        if self.resource_tab_offset is None:
+            return None
+        with Image.open(image_path) as opened:
+            image = opened.convert("RGB")
+        pitch = self.resource_tab_pitch * 720.0
+        nominals = {
+            resource: (
+                self.resource_tab_first_left * 720.0
+                + self.resource_tab_order.index(resource) * pitch
+                + self.resource_tab_offset
+            )
+            for resource in self.resource_tab_order
+        }
+        best: tuple[float, str] | None = None
+        for centre, _stroke_width in self._bracket_strokes(image):
+            for resource, nominal in nominals.items():
+                delta = abs(nominal - centre)
+                if delta <= pitch / 2.0 and (best is None or delta < best[0]):
+                    best = (delta, resource)
+        if best is None:
+            return None
+        return best[1]
+
     def candidate_tab_lefts(self, image_path: Path) -> list[float]:
         """``candidate_tab_lefts_from`` for a path on disk."""
         with Image.open(image_path) as opened:

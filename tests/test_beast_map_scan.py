@@ -30,6 +30,8 @@ from pathlib import Path
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
+
+ROOT = Path(__file__).resolve().parents[1]
 from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.verifier import verify_beast_scan_observed
 
@@ -39,12 +41,16 @@ def _map_without_target() -> WorldState:
 
 
 def _search_panel_on_beast_tab() -> WorldState:
-    """The frame the 搜索 tap is issued from: panel open, ordinary beast tab read.
+    """The frame the 搜索 tap is issued from: panel open, ordinary beast tab *anchored*.
 
-    ``resource_beast_tab_norm`` is the label-derived field, and it is what the route keys on.
-    The bool ``resource_beast_tab`` is not enough: it is true for a panel showing either monster
-    tab, and the rally tab's cards offer no solo 攻击 -- measured on the level-5 mammoth.  The
-    fixture carries both so a change that reintroduces the conflated reading fails here.
+    ``resource_selected_tab`` is what the route keys on, and it is the anchor rather than the
+    label.  ``resource_beast_tab_norm`` is not enough on its own: measured live 2026-09-21, a
+    freshly opened panel draws all five tabs so that field is already non-``None`` while the
+    client has **生肉** bracketed, and a gate keyed on it submitted the search without ever
+    switching tabs.  The bool ``resource_beast_tab`` is not enough either: it is true for a panel
+    showing either monster tab, and the rally tab's cards offer no solo 攻击 -- measured on the
+    level-5 mammoth.  The fixture carries all three so a change that reintroduces the conflated
+    reading fails here.
     """
     return WorldState(
         page=Page.MAP,
@@ -54,6 +60,31 @@ def _search_panel_on_beast_tab() -> WorldState:
         resource_tab_kinds=("BEAST", "COAL", "GIANT_BEAST", "MEAT", "WOOD"),
         resource_beast_tab_norm=(0.058, 0.740),
         resource_giant_beast_tab_norm=(0.276, 0.740),
+        resource_selected_tab="BEAST",
+        confidence=0.99,
+    )
+
+
+def _search_panel_opened_on_the_meat_tab() -> WorldState:
+    """The frame the panel actually opens on, measured live 2026-09-21.
+
+    All five tabs are drawn -- so ``resource_beast_tab_norm`` is non-``None`` and the old gate
+    declared the tab switch unnecessary -- but the bracket is on **生肉** and ``resource_selected``
+    reads ``MEAT``.  The route must open the 野兽 tab from here rather than submit the search:
+    the measured failure is that 搜索 then hit a gatherable node behind the panel and the run
+    went ``MAP -> RESOURCE_DETAIL`` on a 等级6 废弃畜牧场 card.
+    """
+    return WorldState(
+        page=Page.MAP,
+        march_used=0,
+        resource_search_open=True,
+        resource_beast_tab=True,
+        resource_tab_kinds=("BEAST", "COAL", "GIANT_BEAST", "MEAT", "WOOD"),
+        resource_beast_tab_norm=(0.0576, 0.7398),
+        resource_giant_beast_tab_norm=(0.2764, 0.7394),
+        resource_selected="MEAT",
+        resource_selected_tab="MEAT",
+        resource_level=6,
         confidence=0.99,
     )
 
@@ -72,6 +103,7 @@ def _search_panel_on_the_rally_tab_only() -> WorldState:
         resource_beast_tab=True,
         resource_tab_kinds=("COAL", "GIANT_BEAST", "IRON", "MEAT", "WOOD"),
         resource_giant_beast_tab_norm=(0.066, 0.740),
+        resource_selected_tab="GIANT_BEAST",
         confidence=0.99,
     )
 
@@ -94,9 +126,10 @@ class BeastScanBranchTests(unittest.TestCase):
         opened = brain.decide(_map_without_target(), v2_registry())
         self.assertEqual(opened.skill, "SEARCH_RESOURCE")
 
-        panel_wrong_tab = WorldState(
-            page=Page.MAP, march_used=0, resource_search_open=True, confidence=0.99
-        )
+        # The panel as the client actually opens it: 生肉 anchored, 野兽 drawn but not
+        # selected.  This is the state measured live 2026-09-21 and it is the one the
+        # switch exists for -- a panel with no tab reading at all proves nothing either way.
+        panel_wrong_tab = _search_panel_opened_on_the_meat_tab()
         tab = brain.decide(panel_wrong_tab, v2_registry())
         self.assertEqual(tab.skill, "OPEN_BEAST_SEARCH_TAB")
 
@@ -218,7 +251,8 @@ class TheSearchActuallyReachesADispatchTests(unittest.TestCase):
         brain = RuleBrain(current_goal="BEAST_HUNT")
         # Bare map: the search chain.
         self.assertEqual(brain.decide(_map_without_target(), v2_registry()).skill, "SEARCH_RESOURCE")
-        self.assertEqual(brain.decide(WorldState(page=Page.MAP, resource_search_open=True, resource_beast_tab=False, confidence=0.99), v2_registry()).skill, "OPEN_BEAST_SEARCH_TAB")
+        # The panel's own opening state: 野兽 drawn, 生肉 anchored.
+        self.assertEqual(brain.decide(_search_panel_opened_on_the_meat_tab(), v2_registry()).skill, "OPEN_BEAST_SEARCH_TAB")
         self.assertEqual(brain.decide(_search_panel_on_beast_tab(), v2_registry()).skill, "SUBMIT_BEAST_SEARCH")
         # The search found something: the labelled route takes it, not a stop.
         decision = brain.decide(self._beast_now_on_the_map(), v2_registry())
@@ -314,12 +348,48 @@ class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
         decision = brain.decide(_search_panel_on_beast_tab(), v2_registry())
         self.assertEqual(decision.skill, "SUBMIT_BEAST_SEARCH")
 
+    def test_the_panel_the_client_opens_on_meat_switches_tab_first(self):
+        """The measured live defect: a readable 野兽 label is not a selected 野兽 tab.
+
+        Measured 2026-09-21 on
+        ``live_runtime_step_002_after_20260921T103154681030.png``: the client opens the panel
+        with all five tabs drawn and **生肉** bracketed, so ``resource_beast_tab_norm`` was
+        already ``(0.0576, 0.7398)``.  The gate keyed on that field and went straight to the
+        search, and the 搜索 tap hit a gatherable node behind the panel -- the run recorded
+        ``page MAP -> RESOURCE_DETAIL`` and ``BEAST_SEARCH_NOT_SUBMITTED``.
+
+        The route must open the 野兽 tab from this exact frame, and must not spend the search
+        ticket doing it, because nothing has been searched yet.
+        """
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        decision = brain.decide(_search_panel_opened_on_the_meat_tab(), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_BEAST_SEARCH_TAB")
+        self.assertFalse(
+            brain.beast_search_used,
+            "switching tabs is not searching: spending the ticket here would forbid the search",
+        )
+
+    def test_a_panel_already_anchored_on_the_beast_tab_does_not_switch(self):
+        """The other half: when the anchor is already 野兽 the route must submit directly.
+
+        Without this the switch could be re-issued forever, which is the loop the older
+        ``resource_selected == 'BEAST'`` gate produced and why that signal was rejected.
+        """
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        decision = brain.decide(_search_panel_on_beast_tab(), v2_registry())
+        self.assertEqual(decision.skill, "SUBMIT_BEAST_SEARCH")
+        self.assertTrue(brain.beast_search_used)
+
     def test_the_open_tab_skill_taps_where_the_label_was_read(self):
-        """The tap comes from this frame's own label, not a position-pinned template.
+        """The tap follows the frame, not a position-pinned template.
 
         Asserted through the runtime's own resolver, because that is what the executor taps:
-        a coordinate that is read off the frame cannot follow the client when the strip
-        reorders, and a template pinned to a slot silently taps the wrong tab instead.
+        a coordinate read off the frame cannot follow the client when the strip reorders, and
+        a template pinned to a slot silently taps the wrong tab instead.
+
+        This fixture carries no frame path, so the resolver has no strip geometry to consult
+        and falls back to the label box it read -- which is the branch under test here.  The
+        geometry branch has its own test below.
         """
         from winter_agent_v2.runtime import LiveRuntime
 
@@ -333,6 +403,42 @@ class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
         self.assertEqual(point, panel.resource_beast_tab_norm)
         # The giant-beast tab is a different place, so the two cannot be tapped interchangeably.
         self.assertNotEqual(panel.resource_beast_tab_norm, panel.resource_giant_beast_tab_norm)
+
+    def test_the_geometry_beats_the_label_when_the_tab_is_clipped(self):
+        """Measured on the failing frame: 野兽's cell is clipped, and still tappable.
+
+        On ``live_runtime_step_002_after_20260921T103154681030.png`` the strip sits at offset
+        196.5, putting 野兽 at left -30.5 / centre 42.0 -- the client draws the right part of
+        the cell and the whole 野兽 label, while the full-cell test that guards the gatherable
+        tabs rejects it.  Scrolling would move the whole strip to fix a target that is already
+        reachable, so the geometry tap is preferred and must land inside the visible width.
+
+        The two independent readings are also cross-checked here: the geometry's x (42 px) is
+        where the OCR layer read the 野兽 label (x_norm 0.0576 -> 41.5 px), so the template-free
+        geometry and the label agree on the same cell.
+        """
+        from pathlib import Path as _Path
+
+        from winter_agent_v2.vision import SemanticROIVision
+
+        manifest = ROOT / "dataset" / "candidate" / "template_manifest.json"
+        frame = (
+            ROOT / "dataset" / "raw" / "live_runtime"
+            / "live_runtime_step_002_after_20260921T103154681030.png"
+        )
+        if not frame.exists() or not manifest.exists():
+            self.skipTest("the measured live frame is not in this checkout")
+        vision = SemanticROIVision(_Path(manifest))
+        vision.selected_resource(frame)
+        tap = vision.resource_tab_tap_norm("BEAST")
+        self.assertIsNotNone(tap, "the clipped 野兽 cell is still on screen and tappable")
+        x_px = tap[0] * 720
+        self.assertGreater(x_px, 0.0)
+        self.assertLess(x_px, 720.0)
+        # It lands on the 野兽 cell the label was read from, within a pixel.
+        self.assertAlmostEqual(x_px, 0.0576 * 720, delta=2.0)
+        # And the anchor on this frame is 生肉, which is why the switch is needed at all.
+        self.assertEqual(vision.anchored_tab_kind(frame), "MEAT")
 
     def test_the_resolver_refuses_when_the_panel_is_not_open(self):
         """A stale point must not be reused on a frame that is not showing the strip."""
@@ -355,6 +461,74 @@ class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
             RESOURCE_TAB_LABEL_TO_KIND["野兽"],
             RESOURCE_TAB_LABEL_TO_KIND["冰原巨兽"],
         )
+
+
+class TheSubmitButtonIsTheOneMeasuredOnLiveFramesTests(unittest.TestCase):
+    """The submit control is the same blue 搜索 pill under two names.
+
+    Measured live 2026-09-21 on ``live_runtime_step_002_after_20260921T102557043132.png``,
+    a frame of the beast search panel with 野兽 selected:
+
+        BTN_RESOURCE_SEARCH_SUBMIT   d=0   (six independent records, all d=0)
+        BTN_SUBMIT_BEAST_SEARCH      d=12  (threshold 8 -> NO MATCH)
+
+    On the archived ``beast_search_exploration/beast_tab.png`` -- the frame the beast
+    template was cut from -- the same comparison is d=0 versus d=4, i.e. the beast record
+    matches only the screen it was cut from, 23 px above where the live client draws the
+    button.  Two live runs failed this hop with SEMANTIC_TARGET_NOT_VERIFIED.
+
+    This is the same defect class as the 野兽 tab above: a control registered against an
+    archived frame rather than against the client the run drives.  What is asserted is the
+    binding, because that is what the executor taps.
+    """
+
+    def test_the_submit_skill_taps_the_measured_control(self):
+        skill = v2_registry().get("SUBMIT_BEAST_SEARCH")
+        self.assertEqual(skill.action.target, "BTN_RESOURCE_SEARCH_SUBMIT")
+
+    def test_the_measured_control_resolves_on_the_live_panel_frame(self):
+        """A binding is only as good as the frame it resolves on.
+
+        The panel frame is a real live capture, so this asserts the same thing the run
+        needed: on the screen the beast search actually produces, the control the skill
+        names is found.  A green test here and a NO MATCH at runtime is exactly the
+        contradiction the two failed runs exposed, so the frame is the load-bearing part.
+        """
+        from winter_agent_v2.vision import SemanticROIVision
+
+        frame = ROOT / "dataset/raw/live_runtime/live_runtime_step_002_after_20260921T102557043132.png"
+        if not frame.exists():
+            self.skipTest("the live beast-panel frame is not in this checkout")
+        target = v2_registry().get("SUBMIT_BEAST_SEARCH").action.target
+        match = SemanticROIVision(ROOT / "dataset/candidate/template_manifest.json").find(frame, target)
+        self.assertIsNotNone(match, f"{target} must resolve on the live beast-search panel")
+
+    def test_the_archived_record_matches_the_client_that_drew_it(self):
+        """And the record it replaced is kept explained, not silently deleted.
+
+        ``BTN_SUBMIT_BEAST_SEARCH`` still matches the archive at d=4 -- that is why it
+        looked correct when it was registered.  Pinning that keeps the next reader from
+        "repairing" the binding by cutting a fresh crop of the same archived screen.
+        """
+        import json
+
+        from PIL import Image
+
+        from winter_agent_v2.image_hash import hamming, phash
+
+        frame = ROOT / "dataset/raw/beast_search_exploration/beast_tab.png"
+        if not frame.exists():
+            self.skipTest("the archived beast-tab frame is not in this checkout")
+        rows = json.loads((ROOT / "dataset/candidate/template_manifest.json").read_text(encoding="utf-8"))
+        rec = [r for r in rows["records"] if r["semantic"] == "BTN_SUBMIT_BEAST_SEARCH"][0]
+        roi = rec["roi_norm"]
+        with Image.open(frame) as im, Image.open(ROOT / rec["template_path"]) as t:
+            width, height = im.size
+            box = (round(roi["x_norm"] * width), round(roi["y_norm"] * height),
+                   round((roi["x_norm"] + roi["w_norm"]) * width),
+                   round((roi["y_norm"] + roi["h_norm"]) * height))
+            self.assertLessEqual(hamming(phash(im.crop(box)), phash(t)), 8,
+                                 "the archived record must still match the frame it was cut from")
 
 
 if __name__ == "__main__":

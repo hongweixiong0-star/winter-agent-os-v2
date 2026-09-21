@@ -902,6 +902,29 @@ class LiveRuntime:
             # the tab not on screen -- ends the loop honestly rather than tapping an
             # invented point, which is also what stops a client without a 野兽 tab from
             # being tapped somewhere arbitrary.
+            #
+            # The strip geometry is preferred over the label box when it is available,
+            # and the reason is measured on the frame that failed.  On
+            # ``live_runtime_step_002_after_20260921T103154681030.png`` the strip sits at
+            # offset 196.5, which puts 野兽's cell at left -30.5 / centre 42.0 -- the tab
+            # is *clipped* at the left edge and only its right part and its label are on
+            # screen.  The label's own box centre is a fine target there, but it is
+            # derived from where the client happened to draw the text, so it drifts with
+            # the font and disappears entirely once the cell is clipped past the label.
+            # The geometry is the strip's own prediction and survives both, so it is
+            # tried first; the label box remains the fallback for a frame whose strip
+            # could not be located.
+            geometry = None
+            if frame_path is not None:
+                # ``selected_resource`` records ``resource_tab_offset`` on the vision
+                # instance, and the instance outlives a frame -- so the offset is
+                # re-resolved from THIS frame before it is used, and a frame whose
+                # strip cannot be located leaves the geometry branch to fall through
+                # to the label box below.
+                if self._semantic.selected_resource(frame_path) is not None:
+                    geometry = self._semantic.resource_tab_tap_norm("BEAST")
+            if geometry is not None:
+                return geometry
             if frame.page is not Page.MAP or not frame.resource_search_open:
                 return None
             point = frame.resource_beast_tab_norm

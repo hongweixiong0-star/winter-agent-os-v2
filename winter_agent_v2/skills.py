@@ -599,11 +599,34 @@ def v2_registry() -> SkillRegistry:
         # for the SELECT_BEAST_TARGET_* hop that follows.  The stamina is spent,
         # and verified, much further down by DISPATCH_BEAST behind the client's
         # own 胜券在握 strip.
+        #
+        # The control is ``BTN_RESOURCE_SEARCH_SUBMIT``, measured, not
+        # ``BTN_SUBMIT_BEAST_SEARCH``.  Measured live 2026-09-21 on
+        # ``live_runtime_step_002_after_20260921T102557043132.png`` -- a frame of the beast
+        # search panel with 野兽 selected and 搜索 drawn at the bottom:
+        #
+        #   BTN_RESOURCE_SEARCH_SUBMIT   d=0   (six independent records, all d=0)
+        #   BTN_SUBMIT_BEAST_SEARCH      d=12  (threshold 8 -> NO MATCH)
+        #
+        # and on the archived ``beast_search_exploration/beast_tab.png`` the same
+        # comparison is d=0 versus d=4.  That is the whole story: the beast-search
+        # template was cut from the archive, where it matches, and the archive's panel
+        # sits 23 px above the live client's -- so it matched only on the frame it was
+        # cut from.  The resource-search template is the SAME BUTTON (both crops are the
+        # blue 搜索 pill) and matches at distance 0 on both layouts, because its records
+        # were gathered across live panels rather than from one archived screen.
+        #
+        # This is the second hop of the chain to fail for the same reason the first did
+        # (see OPEN_BEAST_SEARCH_TAB above): a control registered against an archived
+        # frame instead of against the client the run actually drives.  It is not a
+        # second search panel and it is not a second button -- it is the same control
+        # under two names, and the name that was measured on live frames is the one
+        # that works.
         Skill(
             "SUBMIT_BEAST_SEARCH",
             "Ask the client to find and centre a beast matching the selected tab and level",
             Page.MAP,
-            Action("TAP_SEMANTIC", "BTN_SUBMIT_BEAST_SEARCH"),
+            Action("TAP_SEMANTIC", "BTN_RESOURCE_SEARCH_SUBMIT"),
             timeout=30.0,
             risk="LOW",
             state=SkillState.CANDIDATE,

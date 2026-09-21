@@ -978,12 +978,20 @@ def verify_beast_search_tab_selected(before: WorldState, after: WorldState) -> V
     mammoth card offers only 集结, so a verifier that accepted either tab as "the beast
     tab" would pass a frame whose targets cannot be attacked solo -- which is the
     user-facing rule that a rally target must not be attempted as a normal attack.
+
+    The evidence is the *anchor*, ``resource_selected_tab == "BEAST"``, and not merely
+    the label's presence.  Measured 2026-09-21: the panel opens with all five tabs drawn
+    and **生肉** bracketed, so ``resource_beast_tab_norm`` is already non-``None`` on a
+    frame where the 野兽 tab is not selected at all.  A verifier keyed on the label would
+    therefore have passed the very hop that failed -- it reported ``BEAST_SEARCH_TAB_NOT_PROVEN``
+    only because the run never issued the hop, and issuing it would have produced a false
+    pass while the 搜索 tap went to a gatherable node behind the panel.
     """
     before_ok = before.page is Page.MAP and before.resource_search_open
     after_ok = (
         after.page is Page.MAP
         and after.resource_search_open
-        and after.resource_beast_tab_norm is not None
+        and after.resource_selected_tab == "BEAST"
     )
     ok = before_ok and after_ok
     return VerificationResult(
@@ -991,6 +999,7 @@ def verify_beast_search_tab_selected(before: WorldState, after: WorldState) -> V
         "OK" if ok else "BEAST_SEARCH_TAB_NOT_PROVEN",
         {
             "before_search_open": before_ok,
+            "after_selected_tab": after.resource_selected_tab,
             "after_beast_tab_label": after.resource_beast_tab_norm,
             "after_giant_beast_tab_label": after.resource_giant_beast_tab_norm,
             "after_tab_kinds": list(after.resource_tab_kinds),

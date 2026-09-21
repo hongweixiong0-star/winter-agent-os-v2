@@ -178,12 +178,19 @@ class TheReservationRefusesTheSlotTests(unittest.TestCase):
         ``BEAST_HUNT`` refuses only when ``idle_marches <= 0``; with one slot free it goes
         looking for a target.  So nothing about the reservation blocked spending stamina --
         which is why the fix is to hand the cycle over rather than to relax the reservation.
+
+        The first hop was ``SCAN_MAP_FOR_BEAST`` when this test was written.  Since
+        2026-09-21 the route asks the client's own beast search first and pans only after
+        that search is spent (the pan searched bare snow for 23 frames and has no way to
+        fly to a target), so on a map with no target the first answer is ``SEARCH_RESOURCE``.
+        What this test is about is unchanged and still asserted: the reservation does not
+        produce a refusal here.
         """
         decision = RuleBrain(
             current_goal="BEAST_HUNT", reserve_marches=PRODUCTION_RESERVE
         ).decide(INCIDENT, v2_registry())
         self.assertNotEqual(decision.reason, "reserved_march_for_stamina")
-        self.assertEqual(decision.skill, "SCAN_MAP_FOR_BEAST")
+        self.assertEqual(decision.skill, "SEARCH_RESOURCE")
 
 
 class TheRunHandsTheCycleOverTests(unittest.TestCase):
