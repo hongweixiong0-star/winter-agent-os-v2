@@ -801,6 +801,76 @@ class TheSearchResultIsWhatTheRouteMarchesOnTests(unittest.TestCase):
         decision = RuleBrain(current_goal="BEAST_HUNT").decide(rally, v2_registry())
         self.assertNotEqual(decision.skill, "ATTACK_BEAST_CARD")
 
+    def test_refusing_a_rally_leads_on_instead_of_back_to_the_same_beast(self):
+        """The operator's rule: retry elsewhere, do not keep re-reading one refusal.
+
+        Measured live 2026-09-21T12:24Z.  The map carried a ``等级7 霜鳞避役``
+        offering only 集结, and the route walked four identical cycles:
+
+            step 1  SELECT_BEAST_TARGET_LABELLED  tap 147,190  card 霜鳞避役 solo=False
+            step 2  BACK                          beast_card_is_a_rally_not_a_solo_attack
+            step 3  SELECT_BEAST_TARGET_LABELLED  tap 147,189  card 霜鳞避役 solo=False
+            step 4  BACK                          beast_card_is_a_rally_not_a_solo_attack
+
+        Eight actions, stamina 430 -> 430, no dispatch.  The cause is that the
+        labelled route resets ``beast_search_used`` whenever it taps -- which is
+        right, so a *later* beast may search again -- and that reset also refunded
+        the labelled route itself, so the same refusal was re-reached forever.
+
+        After the fix, the map state that followed a refusal answers the client's
+        own search instead.  That is the route which can return a different
+        target, and it is the one the run had not spent yet.
+        """
+        rally = replace(
+            self._solo_card_world(),
+            page=Page.BEAST,
+            beast={"attack_card": True},
+            beast_search_result={
+                "title_level": 7,
+                "title_text": "霜鳞避役",
+                "has_attack": False,
+                "has_rally": True,
+                "solo_attack": False,
+            },
+        )
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        refused = brain.decide(rally, v2_registry())
+        self.assertEqual(refused.skill, "BACK")
+        self.assertEqual(refused.reason, "beast_card_is_a_rally_not_a_solo_attack")
+
+        # The map the run comes back to.  There IS a labelled beast on it, so the
+        # labelled route is selectable -- and before the fix it would take it.
+        after_back = replace(
+            self._solo_card_world(),
+            page=Page.MAP,
+            beast={"label": "霜鳞避役", "level": 7, "tap_norm": (0.204, 0.148)},
+            beast_search_result={},
+            beast_search_submitted=False,
+        )
+        decision = brain.decide(after_back, v2_registry())
+        self.assertNotEqual(
+            decision.skill, "SELECT_BEAST_TARGET_LABELLED",
+            "the route must not re-read the beast it just refused; it must try "
+            "somewhere else, per the operator's rule",
+        )
+        # Which search hop it takes depends on whether the panel is already up;
+        # what matters is that it is a search hop and not another read of the
+        # same animal.
+        self.assertIn(
+            decision.skill,
+            {"SEARCH_RESOURCE", "SUBMIT_BEAST_SEARCH", "OPEN_BEAST_SEARCH_TAB"},
+        )
+
+        # And the marker is bounded: a second refusal in the same run still
+        # refuses safely rather than dispatching the rally.
+        again = brain.decide(rally, v2_registry())
+        self.assertEqual(again.skill, "BACK")
+        self.assertIn(
+            again.reason,
+            {"beast_card_is_a_rally_not_a_solo_attack",
+             "beast_card_not_actionable_leaving_the_page"},
+        )
+
     def test_the_attack_point_is_read_off_the_card_and_guarded_by_it(self):
         """The resolver returns the card's own measured point, and only for that card."""
         from tempfile import TemporaryDirectory

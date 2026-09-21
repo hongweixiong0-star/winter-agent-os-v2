@@ -87,6 +87,29 @@ class RuleBrain:
         # Once per run: has the spend goal already handed over to the intel flow because
         # the beast route found nothing?  See the give-up branch in the BEAST_HUNT route.
         self.spend_route_switched = False
+        # Once per run: has the labelled route already opened a map beast and put it
+        # back because its card offered no ordinary attack?
+        #
+        # ``SELECT_BEAST_TARGET_LABELLED`` taps the beast the client's own label named
+        # so the card can be read.  A card that comes back with 集结 and no 攻击 is
+        # refused (correctly -- see the ``attack_card`` branch), but the tap that read
+        # it resets both search budgets, so the route found the same beast again and
+        # re-read it forever.  Measured 2026-09-21T12:24Z on the live client, whose map
+        # carried a 等级7 霜鳞避役 that offers only 集结:
+        #
+        #     step 1  SELECT_BEAST_TARGET_LABELLED  tap 147,190   card 霜鳞避役 solo=False
+        #     step 2  BACK                          beast_card_is_a_rally_not_a_solo_attack
+        #     step 3  SELECT_BEAST_TARGET_LABELLED  tap 147,189   card 霜鳞避役 solo=False
+        #     step 4  BACK                          beast_card_is_a_rally_not_a_solo_attack
+        #     ... four full cycles, eight actions, stamina 430 -> 430, no dispatch
+        #
+        # That is precisely the loop the operator's rule forbids: "无法普通攻击时应自动
+        # 尝试其他等级/目标，不得持续搜索同一不可攻击目标".  The marker is what makes
+        # "already tried" survive the budget reset, so the search the run has not spent
+        # yet becomes the next step instead of another tap on the same animal.  It is
+        # bounded to one reading per run, so a map that is genuinely all rallies still
+        # ends honestly rather than panning forever.
+        self.beast_labelled_target_refused = False
         # Which goal put this run on its route.  The route name alone cannot say: a
         # `--goal BEAST_HUNT` run and the spend goal riding the same route are
         # indistinguishable from inside the brain, and only one of them may hand over to
@@ -1085,6 +1108,13 @@ class RuleBrain:
                         # is an ordinary-attack target, and refusing is the safe direction:
                         # the wrong way here spends stamina on a rally the account must
                         # commit troops to.
+                        #
+                        # The refusal is remembered so the labelled route above stops
+                        # re-tapping this same animal.  It resets both search budgets
+                        # when it taps -- that is how a *later* beast may search again --
+                        # and without a marker that reset also refunded the label route
+                        # itself, so the pair repeated forever on one refused target.
+                        self.beast_labelled_target_refused = True
                         return Decision(
                             "BACK",
                             "beast_card_is_a_rally_not_a_solo_attack",
@@ -1284,9 +1314,19 @@ class RuleBrain:
                     # decided further down by the client's own 胜券在握 strip -- which
                     # is also why an unsafe target is not a risk of this branch: it is
                     # exactly how the level-29 leopard gets read and refused.
-                    self.beast_scans_used = 0
-                    self.beast_search_used = False
-                    return Decision("SELECT_BEAST_TARGET_LABELLED", "beast_labelled_on_the_map_reading_the_clients_own_verdict", world.confidence, "beast_target_dialog_open")
+                    #
+                    # But only while a card has not already been read and refused this
+                    # run.  The budget reset below is what re-arms the search, and it
+                    # was also what made "read the nearest animal" unbounded: the same
+                    # refused beast was re-tapped, re-read and re-refused, four cycles
+                    # of two actions each with nothing spent (measured 2026-09-21T12:24Z,
+                    # see ``beast_labelled_target_refused``).  Skipping one tap lets the
+                    # search below -- which is the route that can actually find a
+                    # *different* target -- become the next step.
+                    if not self.beast_labelled_target_refused:
+                        self.beast_scans_used = 0
+                        self.beast_search_used = False
+                        return Decision("SELECT_BEAST_TARGET_LABELLED", "beast_labelled_on_the_map_reading_the_clients_own_verdict", world.confidence, "beast_target_dialog_open")
                 # The client's own beast search, tried before any viewport pan.
                 #
                 # SCAN_MAP_FOR_BEAST pans once and re-observes, and its own record
