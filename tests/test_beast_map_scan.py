@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from winter_agent_v2.brain import RuleBrain
@@ -707,6 +708,161 @@ class TheSearchResultCardIsReadFromItsOwnWordsTests(unittest.TestCase):
             result.ok,
             "a search that drew the result card must pass this hop: " + str(result.evidence),
         )
+
+
+class _EnumerationDevice:
+    """A device that is never touched: this test resolves a target, it does not act.
+
+    Present because ``LiveRuntime`` takes one, and a resolver asserting on a *read*
+    must not be able to accidentally reach the hardware if it fell through.
+    """
+
+    def status(self):
+        return type("Status", (), {"connected": True, "resolution": (720, 1280)})()
+
+
+class _NoMatchSemantic:
+    """A semantic layer that matches nothing.
+
+    Used where the point under test is *read off the frame's state* rather than found
+    by a template: the resolver must not be able to fall through to a match, because
+    then the assertion would pass without the reading having been used at all.
+    """
+
+    resource_tab_offset = None
+    resource_tab_band = (0.0, 1.0)
+    resource_level_minus = (0.5, 0.5)
+
+    def find(self, _path, _semantic):
+        return None
+
+    def resource_cell_center_norm(self, _resource):
+        return None
+
+    def resource_tab_swipe_for(self, _resource):
+        return 0.0
+
+    def selected_resource(self, _path):
+        return None
+
+
+class TheSearchResultIsWhatTheRouteMarchesOnTests(unittest.TestCase):
+    """The hop the route was missing: a solo card found by the search is attacked.
+
+    Measured live 2026-09-21 (run at 11:07Z, revision ``af4235e``): the search was submitted
+    and verified, the client drew a **等级10 麝牛** card carrying an orange 攻击 control --
+    and the run then went to ``BACK`` and rescanned the map, because nothing in the route
+    could see that card.  ``world.beast`` stayed empty (no template matched it), so neither
+    ``attack_card`` nor ``is_dispatchable`` could fire, and the beast the run had just found
+    was dropped.  These tests pin the hop that spends it.
+    """
+
+    def _solo_card_world(self):
+        return WorldState(
+            page=Page.MAP,
+            confidence=0.99,
+            resource_search_open=True,
+            resource_selected_tab="BEAST",
+            beast_search_submitted=True,
+            beast_search_result={
+                "title_level": 10,
+                "title_text": "蔚牛",
+                "has_attack": True,
+                "has_rally": False,
+                "solo_attack": True,
+                "attack_centre_norm": (0.5007, 0.4688),
+                "title_centre_norm": (0.4993, 0.2977),
+            },
+        )
+
+    def test_a_card_offering_attack_and_not_rally_is_marched_on(self):
+        decision = RuleBrain(current_goal="BEAST_HUNT").decide(
+            self._solo_card_world(), v2_registry()
+        )
+        self.assertEqual(decision.skill, "ATTACK_BEAST_CARD")
+        self.assertEqual(decision.reason, "solo_attack_card_found_by_the_clients_own_search")
+
+    def test_a_card_offering_rally_is_never_entered_as_an_ordinary_attack(self):
+        """The user's rule, as a guard rather than a convention: 集结 is not 攻击.
+
+        The measured level-5 mammoth card offers 集结 with no 攻击; that card must not
+        reach the ordinary-attack skill, whatever else is true of the frame.
+        """
+        rally = replace(
+            self._solo_card_world(),
+            beast_search_result={
+                "title_level": 5,
+                "title_text": "猛犸象",
+                "has_attack": False,
+                "has_rally": True,
+                "solo_attack": False,
+            },
+        )
+        decision = RuleBrain(current_goal="BEAST_HUNT").decide(rally, v2_registry())
+        self.assertNotEqual(decision.skill, "ATTACK_BEAST_CARD")
+
+    def test_the_attack_point_is_read_off_the_card_and_guarded_by_it(self):
+        """The resolver returns the card's own measured point, and only for that card."""
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            runtime = LiveRuntime(
+                device=_EnumerationDevice(),
+                vision=lambda _path: (_ for _ in ()).throw(AssertionError("vision is not used here")),
+                semantic_vision=_NoMatchSemantic(),
+                capture_dir=Path(temp),
+            )
+            world = self._solo_card_world()
+            point = runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", world)
+            self.assertEqual(point, (0.5007, 0.4688))
+
+            # No card on screen: the point is a fragment of the frame it was measured on,
+            # so it must not survive onto a frame that no longer shows that card.
+            without = replace(self._solo_card_world(), beast_search_result={})
+            self.assertIsNone(runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", without))
+
+            # A rally card is not this route's control either.
+            rally = replace(
+                self._solo_card_world(),
+                beast_search_result={
+                    "title_level": 5, "title_text": "猛犸象",
+                    "has_attack": False, "has_rally": True, "solo_attack": False,
+                },
+            )
+            self.assertIsNone(runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", rally))
+
+            # And a point that is not on the frame is refused rather than tapped.
+            off_frame = replace(
+                self._solo_card_world(),
+                beast_search_result={
+                    "title_level": 10, "title_text": "蔚牛",
+                    "has_attack": True, "has_rally": False, "solo_attack": True,
+                    "attack_centre_norm": (1.4, 0.4688),
+                },
+            )
+            self.assertIsNone(runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", off_frame))
+
+    def test_the_march_verifier_binds_the_search_card_the_same_as_the_map_card(self):
+        """A verified card is a verified card: both are the 攻击 control, measured two ways."""
+        from winter_agent_v2.verifier import verify_beast_card_march_open
+
+        march = WorldState(page=Page.MARCH, beast={"victory_assured": True}, confidence=0.99)
+
+        # the card the client's own search drew (read from its words)
+        result = verify_beast_card_march_open(self._solo_card_world(), march)
+        self.assertTrue(result.ok, result.evidence)
+
+        # the world-map card (matched by template) must still verify
+        map_card = WorldState(page=Page.BEAST, beast={"attack_card": True}, confidence=0.99)
+        result = verify_beast_card_march_open(map_card, march)
+        self.assertTrue(result.ok, result.evidence)
+
+        # and neither half may be satisfied by a frame with no card at all
+        blank = WorldState(page=Page.MAP, confidence=0.99)
+        self.assertFalse(verify_beast_card_march_open(blank, march).ok)
+
+        # opening a formation is not the spend: the after half still has to show it
+        self.assertFalse(verify_beast_card_march_open(self._solo_card_world(), blank).ok)
 
 
 if __name__ == "__main__":

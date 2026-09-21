@@ -1277,6 +1277,36 @@ class RuleBrain:
                         # verified gathering chain taps, so this hop invents
                         # nothing about how to reach the panel.
                         return Decision("SEARCH_RESOURCE", "beast_search_starts_by_opening_the_client_search", world.confidence, "resource_search_open")
+                    # The search has answered: the client drew its result card over the panel.
+                    #
+                    # Measured 2026-09-21 on
+                    # ``live_runtime_step_001_after_refresh_1_20260921T110723901682.png``:
+                    # the search succeeded and the client put a ``等级10 麝牛`` card on
+                    # screen whose orange 攻击 control reads at (361,600), over a map whose
+                    # beast sits at (668,424) -- the panel is *still open behind the card*
+                    # (its 搜索 button and the 10级 slider are both drawn), so
+                    # ``resource_search_open`` stays True and this must be checked BEFORE
+                    # the panel-state branches below, all of which assume the card is not
+                    # there and would re-issue a search the run has already spent.
+                    #
+                    # This is the hop the route was missing.  The card matches no reviewed
+                    # template, so ``world.beast`` stays empty and neither ``attack_card``
+                    # nor ``is_dispatchable`` could ever fire on it; the run verified its
+                    # search and then had nowhere to go.  The card's own 攻击 word is the
+                    # control, and its box is the coordinate, so both are read from it.
+                    #
+                    # ``solo_attack`` is what keeps the user's rule: a card carrying 集结
+                    # (the measured level-5 mammoth) is a rally target and must not be
+                    # entered as an ordinary attack, so that card yields instead -- the
+                    # search is bounded, so refusing here cannot become a loop.
+                    if world.beast_search_result.get("solo_attack"):
+                        self.beast_search_used = True
+                        return Decision(
+                            "ATTACK_BEAST_CARD",
+                            "solo_attack_card_found_by_the_clients_own_search",
+                            world.confidence,
+                            "beast_march_page_open",
+                        )
                     # The gate is ``resource_selected_tab``, not ``resource_beast_tab_norm``.
                     #
                     # Measured 2026-09-21 on

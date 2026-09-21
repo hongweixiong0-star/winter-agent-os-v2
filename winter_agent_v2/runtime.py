@@ -938,6 +938,39 @@ class LiveRuntime:
             if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
                 return None
             return (x_norm, y_norm)
+        if semantic == "BTN_BEAST_CARD_ATTACK":
+            # The 攻击 control on the card the client's own beast search drew.  Its
+            # coordinate comes from that card's reading (see
+            # ``ocr.read_beast_search_result_card``), not from a template, and the
+            # reason is measured on the very frame this branch exists for:
+            # ``live_runtime_step_001_after_refresh_1_20260921T110723901682.png`` is
+            # the ``等级10 麝牛`` result card, and the registered
+            # ``BTN_BEAST_CARD_ATTACK`` scored NO MATCH on it -- the template was cut
+            # from a world-map card and this one is drawn over the open search panel.
+            # A route that named the control but had no coordinate would have ended
+            # its run one hop short of a beast it had already found.
+            #
+            # The guard is that the frame must still be showing that card: the point
+            # is a fragment of the MAP frame it was measured on, and only a verified
+            # solo-attack result makes it meaningful.  ``None`` -- wrong page, no card,
+            # or a card offering 集结 instead -- ends the loop honestly rather than
+            # tapping an invented point, which is also what keeps a rally target from
+            # ever being entered through the ordinary-attack control.
+            if frame.page is not Page.MAP:
+                return None
+            result = frame.beast_search_result or {}
+            if not result.get("solo_attack"):
+                return None
+            point = result.get("attack_centre_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
         if semantic == "BEAST_ON_MAP":
             # The beast the client's own label named, tapped where this frame
             # measured that label (see ocr.beast_from_its_label).  It cannot be a

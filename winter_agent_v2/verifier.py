@@ -814,7 +814,26 @@ def verify_beast_card_march_open(before: WorldState, after: WorldState) -> Verif
     # what the after half accepts (the same safety line the musk-ox march
     # verifier uses).  The stamina spend itself is not proven here -- opening
     # a formation costs nothing -- so this stays honest about what moved.
-    before_ok = before.page is Page.BEAST and before.beast.get("attack_card") is True
+    #
+    # The before half accepts two ways the control can have been measured, and
+    # they are genuinely different readings rather than a loosened assertion:
+    #
+    # * ``attack_card`` is the world-map card, where the template
+    #   ``BTN_BEAST_CARD_ATTACK`` matched.  Unchanged.
+    # * ``beast_search_result.solo_attack`` is the card the client's own beast
+    #   search drew, which matches no reviewed template and is read from its own
+    #   words instead (measured 2026-09-21 on
+    #   ``live_runtime_step_001_after_refresh_1_20260921T110723901682.png``: the
+    #   等级10 麝牛 card, 攻击 at 1.00, no 集结).  Without this the successful
+    #   search produced a verified target the route could not act on, and the run
+    #   stopped with the beast on screen.
+    #
+    # ``solo_attack`` is required, not merely the presence of the read: it is the
+    # measured rule that a card offering 集结 is a rally target, and this verifier
+    # belongs to the ordinary-attack route.
+    before_card = before.page is Page.BEAST and before.beast.get("attack_card") is True
+    before_search_card = bool((before.beast_search_result or {}).get("solo_attack"))
+    before_ok = before_card or before_search_card
     after_ok = after.page is Page.MARCH and after.beast.get("victory_assured") is True
     ok = before_ok and after_ok
     return VerificationResult(ok, "OK" if ok else "BEAST_MARCH_NOT_PROVEN", {"before_card":before_ok,"victory_assured":after_ok})

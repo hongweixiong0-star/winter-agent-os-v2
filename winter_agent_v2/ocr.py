@@ -1115,7 +1115,7 @@ def read_beast_search_result_card(
     scored NO MATCH, and so did every ``TARGET_BEAST_*`` sprite -- while the card's
     own words read cleanly at 0.88-1.00.  The route only needs the words.
 
-    The two fields the caller acts on:
+    The fields the caller acts on:
 
     ``solo_attack``
         the card carries 攻击 and does NOT carry 集结.  This is the user-facing rule
@@ -1128,6 +1128,15 @@ def read_beast_search_result_card(
     ``title_level`` / ``title_text``
         the ``等级<N><name>`` title the card prints, so the evidence names what was
         actually found rather than only that something was.
+
+    ``attack_centre_norm``
+        where the 攻击 control itself sits, as a normalised frame point.  This is the
+        tap target the march needs, and it is read here rather than resolved from a
+        control name for the same measured reason the rest of the card is: the
+        position-pinned ``BTN_BEAST_CARD_ATTACK`` scored NO MATCH on exactly this
+        card, so a route that tapped "the attack control" had no coordinate to tap.
+        Only emitted when the control was found at a confidence above the threshold,
+        so a miss is a miss and never a guessed point.
 
     ``{}`` is returned for a frame that is not this card (no title, or neither
     control word), so a bare map or the open panel cannot be mistaken for a result.
@@ -1144,6 +1153,7 @@ def read_beast_search_result_card(
     title_box: tuple[float, float, float, float] | None = None
     has_attack = False
     has_rally = False
+    attack_box: tuple[float, float, float, float] | None = None
     for token in tokens:
         if not token.box or token.confidence < min_confidence:
             continue
@@ -1152,6 +1162,9 @@ def read_beast_search_result_card(
             continue
         if BEAST_CARD_SOLO_ATTACK_LABEL == text:
             has_attack = True
+            xs = [point[0] for point in token.box]
+            ys = [point[1] for point in token.box]
+            attack_box = (min(xs), min(ys), max(xs), max(ys))
             continue
         if BEAST_CARD_RALLY_LABEL == text:
             has_rally = True
@@ -1175,6 +1188,12 @@ def read_beast_search_result_card(
         # that showed both would be ambiguous, and this route must not guess.
         "solo_attack": bool(has_attack and not has_rally),
     }
+    if attack_box is not None and frame_size is not None:
+        width, height = frame_size
+        result["attack_centre_norm"] = (
+            round(((attack_box[0] + attack_box[2]) / 2.0) / width, 4),
+            round(((attack_box[1] + attack_box[3]) / 2.0) / height, 4),
+        )
     if title_box is not None and frame_size is not None:
         width, height = frame_size
         result["title_centre_norm"] = (
