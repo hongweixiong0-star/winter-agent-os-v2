@@ -969,3 +969,66 @@ CLAIM_EXPLORATION_IDLE），所以 `current_goal=None`，而两个预留分支�
 |---|---|---|---|
 | 85 | **无 goal 的轮次站在联盟页会以 `alliance_state_unknown` 结束整轮** | 🔴 **真的又发生了（有帧与快照）** | 昨天 `ecb0014` 把联盟页的停机改成"**有命名 goal 时**让位一次再停"，并**刻意保留**无 goal 时直接停（依据是 `tests/test_multitask_scheduler.py` 钉的"没有 goal 时是调度器在探测"）。本次实测：`11:43:24` 那轮在 `page=ALLIANCE` 上以 `current_skill=SAFE_STOP / alliance_state_unknown` 结束，**快照的 goal 标签是 `KEEP_TRAINING_PRODUCTIVE`**，但 brain 侧当时 `current_goal=None`（标签取的是 `_committed_goal`）⇒ 走的是**被刻意保留的那条**。⇒ 后果与昨天判断的一致：**一个没人能操作的页面结束了整轮，而没有任何动作把客户端挪出去** —— 只是这次"没人能操作"的原因不是"别的 goal 站错了页"，而是**当轮没有任何 goal 可调度**。**未修**：改它就要推翻 `test_multitask_scheduler.py` 钉住的那条性质，需要单独判断"无 goal 时 Back 是否会被误当成有活干"。 |
 | 33 更正 | **`tasklist` 在本环境不可用，"确认无 git 进程"这一步实际没做成** | ⚠️ **证据更正** | 本次删陈旧锁前的"无 `git.exe` 进程"结论，实际来自 `tasklist` **返回 0 行**——而该命令在本环境**对任何查询都返回 0 行**（`tasklist //FO CSV \| wc -l` = 0），所以它**不能证明任何事**。⇒ 当时删除的依据只有：**0 字节、mtime 早 3h30m、`git add` 报 `index.lock exists` 且无 git 输出**。结论仍合理，但**过程证据要按实际写**。**建议**：把"陈旧锁检测"做成代码（比年龄 + 0 字节），不要依赖进程检查 —— 本环境的进程检查不可用。 |
+
+## 2026-09-21 P0（操作者，第二次）：一个 Goal 等待不能停整个 AUTO；三个兵营要分别检查
+
+操作者要求不要把"预留行军"与"三兵营训练"当成两件互不相关的修复，而要查清**为什么其他可执行
+Goal 还没处理就停轮**。按测量，**两者共有症状、不共有成因**，分开报：
+
+### 一、导致 AUTO 提前等待的真实生产代码位置（两处，都在不同层）
+
+**A. 面板层（本次新发现，也是让 AUTO 直接停摆的那个）**：`tools/control_panel.py` 里
+**16 处 `Popen.communicate()` 全部没有超时**（主 worker 2 处、子任务 fallback 13 处、真机校准 1 处）。
+`_kill_worker_tree` 自己的注释写明：在 Windows 上**面板持有的只是 venv 转发 stub，真正驱动设备的是孙进程**
+⇒ 管道 EOF 由**孙进程**持有 ⇒ 孙进程不退出就 **EOF 永不到来 ⇒ 面板永久阻塞**。
+
+真机证据：`11:43:24` 那轮的 worker **跑完了循环**（`runtime_snapshot` 于 `03:45:04` 写入，
+两个 loop 标志均为 false）却**没有退出**；随后 `panel.log` **13 分钟无输出**、最后一帧 `03:44:57`、
+最后 episode `03:44:56`、`operator_intent=RUNNING`，而 pump 每 30 秒照跳（**这就是它看着像活着的原因**）。
+⇒ **一个 worker 不退出，结束的是整个 AUTO 工作周期，直到人工重启。**
+**已修**：新增 `await_worker()`（有界等待 + 到点 `winproc.kill_tree` + 诚实返回
+`WORKER_ABANDONED_CODE=130` 并把理由写进 `latest.log`），**16 处全部改用它**。
+**不是**缩短重启间隔：间隔一字未改，正常回收照等。
+
+**B. 运行层**：`runtime.py` 对 `SAFE_STOP` 一律 `return finish(reason)` ⇒ 单个 goal 的"我不行"
+结束整轮。上一轮已把 `reserved_march_for_stamina` 改成**让位重选**（`6ced96e`，Rule A 的既有机制）；
+**无 goal 站在联盟页**那条仍会停轮（#85，保留中）。
+
+### 二、预留行军：它**没有**挡住体力 Goal，也**没有**挡住训练
+
+- 同帧同生产配置下 `goal=BEAST_HUNT` 给 `SCAN_MAP_FOR_BEAST` ⇒ **体力路线本来就能用那一格**
+  （只在 `idle_marches<=0` 拒绝）；
+- **训练分支完全不读行军队列**（全仓 grep `idle_marches|reserved|reserve` 在训练路径为空）
+  ⇒ "预留挡住兵营训练"**不成立**。
+
+### 三、三个兵营的真实状态（8 张真机训练帧 = 生产自己记为 `page=TRAINING` 的全部）
+
+| 兵营 | 状态 | 证据 |
+|---|---|---|
+| **盾兵营** INFANTRY | **训练中** | **8/8 帧全是它**，真实倒计时 01:09:31 / 01:00:00 / 01:00:08 / 00:59:58 / 02:59:45 / 02:59:33 / **00:25:15** / 00:25:05，批次 216/250 |
+| **矛兵营** LANCER | **UNKNOWN** | **零帧**（全部历史语料） |
+| **射手营** MARKSMAN | **UNKNOWN** | **零帧** |
+
+**最新真实读数**：`2026-09-21T01:53:21Z` 盾兵营 IN_PROGRESS 剩余 **00:25:15** 批次 250。
+⇒ 盾兵营队列**长期在跑**；矛/射**从未出现**，不得据名称推断其空闲或忙碌。
+
+### 四、训练页的根因与已修部分
+
+**根因**：训练页的模板层已死 —— `PAGE_TRAINING_INFANTRY/LANCER/MARKSMAN` 与 `TRAINING_QUEUE_TIMER`
+**全部不匹配**真机帧，且 `TAB_TRAINING_LANCER` 与 `_MARKSMAN` **都 d=2**（两图相同、都从未选中的蓝底格子裁的
+⇒**分不开三个兵营**）；这些记录全是 `CANDIDATE` + `REPLAY_HUMAN_REVIEWED_SCREENSHOT`（旧截图手裁）。
+⇒ `world.training` 恒空 ⇒ `TRAIN_TROOPS`（要求 `Page.TRAINING`）**永不可能满足**。
+⇒ 且该分支还写着 `"tier": 10, "batch_count": 806` —— **旧截图的常量被当读数**（无任何消费者）。
+
+**已修**：`HybridVision` 在**模板层 UNKNOWN 且无训练状态**时咨询 `OCRPageClassifier`，
+仅在**分类器自己也说是 TRAINING** 时采用。同一批帧分类器读得完整：
+`troop_type=INFANTRY, status=IN_PROGRESS, batch_count=250, timer=01:00:08`（真实读数）。
+**两个半场**：8/8 训练帧经生产入口正确识别；**14 张非训练帧 0/14 被误判**；
+代价只在 `UNKNOWN` 帧发生（占 1.5%），单次 0.59s。守卫 2 条 + 测试 6 条。
+`vision.py` 的 `tier/batch_count` 常量**已删除**并加守卫。
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 86 | **`world.training` 没有兵营维度：一个兵营忙就结束整个训练检查** | 🔴 **未修（结构性）** | 训练是**一个** goal（`KEEP_TRAINING_PRODUCTIVE`，sweep 票）＋**一个** `TRAIN_TROOPS`；`_append_queue_goal` 对**单个** `status` 判一次，`IN_PROGRESS` ⇒ **整个目标标 COMPLETE** ⇒ **盾兵营忙就把训练检查结束，矛/射根本不会被看** —— 正是操作者明令禁止的。**可行**：三个页签名 **OCR 全部读得出**（`盾兵营`1.00/`矛兵营`0.99/`射手营`1.00）⇒ 切换页签**不需要重切模板**。**需要**：三兵营各自一条检查（或一个目标 + 三份子状态）+ 对应技能与 verifier。 |
+| 87 | **矛兵营/射手营的真机页面从未被观测（零帧）** | 🔴 **需要真机** | 队列是否空闲、能否训练、条件与资源，全部 `UNKNOWN`。**下一步**：在客户端分别打开这两页各抓帧（页名可由 OCR 判定），再决定技能与 verifier。不得据名称推断。 |
+| 88 | **训练目标的进展计量被非训练动作污染** | 🟠 **已定性，未修** | `KEEP_TRAINING_PRODUCTIVE` 157 步里含 `OPEN_ALLIANCE_GIFTS`(3)、`CLAIM_FREE_STAMINA`(3)、`OPEN_MAIL`(1)、`OPEN_MAP`(2) 等非训练动作（`_step_goal` 在当轮无可选目标时回落 `_committed_goal`），其 deferral 签名正是 `OPEN_TRAINING_PAGE\|NO_GOAL_PROGRESS\|**OPEN_ALLIANCE_GIFTS**`。**但它被 DEFERRED 的主因仍是自身**（53 次 `WAIT_FOR_CAMP_MENU` 零进展）。改动会触及 2026-09-18 为修 `AUTO_DISCOVERY` 占位符而定的规则，需单独测。 |

@@ -1581,6 +1581,38 @@ class HybridVision:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))
                 if secondary.page is primary.page and secondary.daily:
                     return replace(primary, daily={**primary.daily, **secondary.daily})
+            if primary.page is Page.UNKNOWN and not primary.training:
+                # The training page's template layer is dead, and its numbers live in OCR.
+                #
+                # Measured 2026-09-21: `PAGE_TRAINING_INFANTRY` / `_LANCER` / `_MARKSMAN` and
+                # `TRAINING_QUEUE_TIMER` are CANDIDATE records cut from old screenshots, and on the
+                # frame production itself recorded as `page=TRAINING` none of them match -- so
+                # `world.training` was empty on every frame, the route could never recognise the
+                # page, and `TRAIN_TROOPS` (which requires ``Page.TRAINING``) could never run.
+                # That branch also carried ``tier: 10`` / ``batch_count: 806``, two constants off an
+                # old screenshot written as if they had been read; they are gone.
+                #
+                # The OCR classifier reads the same frame exactly -- 训练中 + 盾兵营 +
+                # 正在训练250位英勇盾兵 + 01:00:08 -- so it carries ``troop_type`` (which of the
+                # three barracks this page IS), ``status``, ``batch_count`` and a real countdown.
+                # Over all eight live training frames in the corpus it answers
+                # TRAINING/INFANTRY/IN_PROGRESS, with countdowns 01:09:31, 01:00:00, 01:00:08,
+                # 00:59:58, 02:59:45, 02:59:33, 00:25:15, 00:25:05 and batch counts 216/250.
+                #
+                # Gated the way the alliance and daily enrichers are gated, with the roles swapped
+                # because here the template layer has nothing to decide: it must be UNKNOWN, and
+                # the classifier must name TRAINING itself, which its own test pins as requiring
+                # BOTH a training-status token AND camp semantics.  Measured on twelve non-training
+                # live frames it answers ALLIANCE or UNKNOWN and never TRAINING, and UNKNOWN is
+                # 1.5% of steps, so this costs one 0.59s read on about one step in seventy.
+                secondary = self.classifier.classify(self.ocr.recognize(image_path))
+                if secondary.page is Page.TRAINING and secondary.training:
+                    return replace(
+                        primary,
+                        page=Page.TRAINING,
+                        training=dict(secondary.training),
+                        confidence=max(primary.confidence, secondary.confidence),
+                    )
             if primary.page is Page.MAIL:
                 # Badge numbers vary and OCR occasionally misses a single
                 # digit. Detect only the saturated red badge pixels inside

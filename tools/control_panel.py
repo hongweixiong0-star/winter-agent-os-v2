@@ -369,6 +369,75 @@ def _background_popen(command: list[str], **kwargs: Any) -> subprocess.Popen[str
     return subprocess.Popen(command, **winproc.hidden_kwargs(), **kwargs)
 
 
+# ---------------------------------------------------------------------------
+# Waiting for a worker has to be bounded, or one non-exiting child ends the cycle.
+#
+# Measured live 2026-09-21 11:43:24 local: that round's worker finished its loop -- the runtime
+# snapshot was written at 03:45:04 with ``runtime_thread_alive`` and ``scheduler_loop_alive`` both
+# false -- and then never exited.  The panel waits on the child's pipe (see ``await_worker``), which
+# returns at EOF, and on Windows the process the panel holds is the venv *redirector*: the real
+# worker (and anything it leaves behind, MAA included) is a grandchild that also holds that pipe.
+# So the panel blocked for the rest of the session: no round started, ``panel.log`` wrote nothing
+# for thirteen minutes, ``operator_intent`` stayed RUNNING, and the panel's own escalation pump kept
+# ticking the whole time -- which is exactly what makes it look alive.  The operator had to restart
+# the window.
+#
+# Sixteen wait sites in this file had the same shape, so the bound lives in one function rather
+# than in each call.  This is not "restart faster": nothing about the interval changes, and a round
+# that is working is still waited for.  What changes is that a worker which does not come back can
+# no longer stop every other task -- the same rule the runtime applies to a goal that cannot act.
+# ---------------------------------------------------------------------------
+
+#: How long one worker invocation may run before the panel stops waiting for it.
+#:
+#: A round is bounded by its own action budget (``--max-actions 24``) and every action is a device
+#: round trip, so this is generous rather than tight.  The number matters less than its existence.
+WORKER_WAIT_SECONDS = 900.0
+
+#: Grace allowed for the killed tree to release the pipe so its last output can still be read.
+WORKER_KILL_GRACE_SECONDS = 20.0
+
+#: Reported instead of a worker's own exit code when the panel stopped waiting.
+#:
+#: Distinct from the codes the worker emits (0 verified, 2 unverified, 4 wrong version) so a reader
+#: can tell "the worker said this" from "the panel gave up waiting".  Non-zero on purpose: the
+#: round did not produce a verified end, and ``summarize_runtime_result`` already treats a non-zero
+#: code as an abnormal round -- which keeps the cycle going and reports it honestly.
+WORKER_ABANDONED_CODE = 130
+
+
+def await_worker(
+    process: subprocess.Popen[str],
+    *,
+    label: str,
+    wait_seconds: float = WORKER_WAIT_SECONDS,
+) -> tuple[str, int]:
+    """Read a worker's output, but never for longer than ``wait_seconds``.
+
+    Returns ``(output, exit_code)``.  On timeout the process tree is ended (the same
+    ``taskkill /T`` the panel's own stop button uses) and the code is
+    ``WORKER_ABANDONED_CODE``, with a line appended to the output saying so -- the output is
+    what gets written to ``latest.log``, so an abandoned round must be readable there rather
+    than looking like a round that simply ended.
+    """
+    try:
+        output, _ = process.communicate(timeout=wait_seconds)
+        return output or "", process.returncode
+    except subprocess.TimeoutExpired:
+        winproc.kill_tree(process.pid, timeout=WORKER_KILL_GRACE_SECONDS)
+        try:
+            output, _ = process.communicate(timeout=WORKER_KILL_GRACE_SECONDS)
+        except subprocess.TimeoutExpired:
+            output = ""
+        note = (
+            f"[panel] {label} did not exit within {wait_seconds:.0f}s after its loop returned; "
+            f"the panel ended its process tree and carried on with the next round. The round's own "
+            f"evidence is in its captures; this line is the panel's, not the worker's."
+        )
+        return f"{output or ''}\n{note}\n", WORKER_ABANDONED_CODE
+
+
+
 # Environment failures the worker raises on purpose when the emulator, the ADB
 # link, or the operator gets in the way.  They are recoverable by waiting and
 # retrying, and they are NOT evidence of a worker defect, so they must not be
@@ -4643,9 +4712,9 @@ class ControlPanel:
             process = _background_popen(command, cwd=str(ROOT), stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, text=True,
                                         encoding="utf-8", errors="replace")
-            output, _ = process.communicate()
+            output, code = await_worker(process, label="真机校准")
             (LOG_ROOT / "validation.log").write_text(output or "", encoding="utf-8")
-            result = f"EXIT_{process.returncode}"
+            result = f"EXIT_{code}"
             parsed = parse_runtime_result(output or "")
             self.events.put(("note", f"真机校准：验证运行结束（{result}），"
                                      f"停止原因 {parsed.get('stop_reason') or '未知'}。"))
@@ -4677,7 +4746,7 @@ class ControlPanel:
                        "--capture-dir", str(CAPTURE_ROOT / "runtime_auto" / stamp), "--serial", self.device.serial]
             self.process = _background_popen(command, cwd=str(ROOT), stdout=subprocess.PIPE,
                                              stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-            output, _ = self.process.communicate(); code = self.process.returncode
+            output, code = await_worker(self.process, label="本轮 AUTO")
             _note_auto_round_completed()
             (LOG_ROOT / "latest.log").write_text(output, encoding="utf-8")
             self.events.put(("complete", (code, parse_runtime_result(output), output)))
@@ -4772,7 +4841,7 @@ class ControlPanel:
             if stop_after:
                 cmd.extend(["--stop-after", stop_after])
             self.process = _background_popen(cmd + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-            output, _ = self.process.communicate(); code = self.process.returncode
+            output, code = await_worker(self.process, label="本轮 AUTO")
             _note_auto_round_completed()
             first_payload = parse_runtime_result(output)
             if is_mail and first_payload.get("stop_reason") == "mail_all_clear" and self.enabled_task_snapshot.get("日常", False) and not self.stop_requested:
@@ -4785,7 +4854,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "DAILY", "--capture-dir", str(CAPTURE_ROOT / "runtime_daily" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4799,7 +4868,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "ALLIANCE", "--capture-dir", str(CAPTURE_ROOT / "runtime_alliance" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4813,7 +4882,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4827,7 +4896,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "ALLIANCE", "--capture-dir", str(CAPTURE_ROOT / "runtime_alliance" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4841,7 +4910,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4855,7 +4924,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "10", "--goal", "TRAIN", "--capture-dir", str(CAPTURE_ROOT / "runtime_training" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4869,7 +4938,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4883,7 +4952,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "EXPLORATION", "--capture-dir", str(CAPTURE_ROOT / "runtime_exploration" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4897,7 +4966,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4911,7 +4980,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4925,7 +4994,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "INTEL", "--stop-after", "DISPATCH_INTEL_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_intel" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4943,7 +5012,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "BEAST_HUNT", "--stop-after", "DISPATCH_BEAST", "--capture-dir", str(CAPTURE_ROOT / "runtime_beast" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
                 first_payload = parse_runtime_result(output)
@@ -4960,7 +5029,7 @@ class ControlPanel:
                 fallback = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "12", "--goal", "GATHER_RESOURCE", "--stop-after", "DISPATCH_MARCH", "--capture-dir", str(CAPTURE_ROOT / "runtime" / fallback_stamp)]
                 if self.stop_requested: return
                 self.process = _background_popen(fallback + ["--serial", self.device.serial], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-                fallback_output, _ = self.process.communicate(); code = self.process.returncode
+                fallback_output, code = await_worker(self.process, label=f"子任务 {self.active_panel_task or '未命名'}")
                 _note_auto_round_completed()
                 output = output.rstrip() + "\n" + fallback_output
             (LOG_ROOT / "latest.log").write_text(output, encoding="utf-8")

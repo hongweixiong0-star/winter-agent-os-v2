@@ -1540,12 +1540,19 @@ class SemanticWorldVision:
         elif match("PAGE_TRAINING_MARKSMAN"):
             training_type = "MARKSMAN"
         if training_type and (match("TRAINING_QUEUE_TIMER") or match("STATUS_TRAINING_IN_PROGRESS")):
+            # No fabricated readings here.
+            #
+            # This branch used to carry ``"tier": 10`` and ``"batch_count": 806``, which are two
+            # numbers off one old screenshot, written as if they had been read off the frame being
+            # classified.  Nothing in production reads either field, and a reader cannot tell an
+            # observation from a constant -- which is the failure mode this project keeps paying
+            # for (the ``0/200`` stamina reading, #32, and the fabricated role identity before it).
+            # ``troop_type`` itself is not a reading either: it is which page template matched.
+            # What the frame is actually understood to say is that a training queue is running.
             return WorldState(
                 page=Page.TRAINING,
                 training={
                     "troop_type": training_type,
-                    "tier": 10,
-                    "batch_count": 806,
                     "status": "IN_PROGRESS",
                     "timer": "VISIBLE",
                     "queue_available": False,
@@ -1557,8 +1564,6 @@ class SemanticWorldVision:
                 page=Page.TRAINING,
                 training={
                     "troop_type": training_type,
-                    "tier": 10,
-                    "batch_count": 806,
                     "status": "AVAILABLE",
                     "queue_available": True,
                     "trainable": True,

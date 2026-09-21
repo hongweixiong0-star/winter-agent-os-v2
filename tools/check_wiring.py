@@ -539,6 +539,40 @@ def main() -> int:
           and 'decision.reason == "reserved_march_for_stamina"\n                    and index < max_actions'
               in _runtime_source)
 
+    # Every wait for a worker is bounded, so a child that never exits cannot end the cycle.
+    #
+    # Live 2026-09-21 11:43:24: the round's worker finished its loop and never exited; the panel
+    # waited on its pipe for the rest of the session, no round started, and the window had to be
+    # restarted.  The bound is one helper; this fails if any call site goes back to a bare wait.
+    _panel_source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+    check("panel: no unbounded wait for a worker anywhere",
+          ".communicate()" not in _panel_source,
+          "a bare communicate() waits for EOF, which a grandchild can hold open for ever")
+    check("panel: ...every wait goes through the bounded helper",
+          _panel_source.count("await_worker(") >= 16
+          and "WORKER_WAIT_SECONDS = " in _panel_source
+          and "WORKER_ABANDONED_CODE = " in _panel_source)
+    check("panel: ...and giving up is not the worker's own exit code",
+          "WORKER_ABANDONED_CODE = 130" in _panel_source)
+
+    # The training page is read by OCR, and its numbers are readings.
+    #
+    # Live evidence 2026-09-21: `PAGE_TRAINING_*` and `TRAINING_QUEUE_TIMER` are CANDIDATE records
+    # that match nothing on the client, so `world.training` was always empty and `TRAIN_TROOPS`
+    # (which requires Page.TRAINING) could never run; the branch that was meant to fill it carried
+    # `tier: 10` / `batch_count: 806` from an old screenshot.  The OCR classifier reads the same
+    # frames exactly, and is consulted only when the template layer has nothing.
+    _ocr_source = (PKG / "ocr.py").read_text(encoding="utf-8")
+    _vision_body = "\n".join(
+        line for line in (PKG / "vision.py").read_text(encoding="utf-8").splitlines()
+        if not line.lstrip().startswith("#")
+    )
+    check("training: the page is consulted through OCR when the templates have nothing",
+          "if primary.page is Page.UNKNOWN and not primary.training:" in _ocr_source
+          and "if secondary.page is Page.TRAINING and secondary.training:" in _ocr_source)
+    check("training: ...and the branch no longer serves an old screenshot's numbers as readings",
+          '"batch_count": 806' not in _vision_body and '"tier": 10' not in _vision_body)
+
     registry = skills.v2_registry()
 
     def decide(state, **kwargs):
