@@ -54,6 +54,21 @@ class OCRToken:
     confidence: float
     box: tuple[tuple[float, float], ...] = ()
 
+    @property
+    def centre(self) -> tuple[float, float]:
+        """The token's box centre, or ``(0.0, 0.0)`` when it carried no box.
+
+        Readers that ask "did the client draw this on the same line as that" need
+        a position, and boxes arrive as four corner points rather than a rect.
+        A token without a box cannot answer, and the origin is the value that
+        makes a same-line test fail rather than silently pass.
+        """
+        if not self.box:
+            return (0.0, 0.0)
+        xs = [point[0] for point in self.box]
+        ys = [point[1] for point in self.box]
+        return (sum(xs) / len(xs), sum(ys) / len(ys))
+
 
 @dataclass(frozen=True)
 class OCRResult:
@@ -242,18 +257,98 @@ class OCRPageClassifier:
     RULES: tuple[tuple[Page, tuple[str, ...]], ...] = (
         (Page.EVENT, ("最强王国",)),
         (Page.ALLIANCE, ("联盟科技", "联盟互助", "联盟永续", "联盟宝箱")),
+        # ``科技研究`` was removed from this list, for the reason the docstring
+        # above already states.  The left triangle opens the 城镇/野外 快捷面板,
+        # and that panel draws 科技研究 twice -- once as its third section
+        # header (measured 2026-09-21 at y_norm 0.61, x_norm 0.13) and once as
+        # the research row's own label beside 空闲中 (y_norm 0.64).  Both are
+        # labels *inside a panel that opens over HOME*, so the string is visible
+        # while the player is not on the research page.
+        #
+        # Measured on the operator's own screenshot, the damage was the whole
+        # training route:
+        #
+        #     template layer   Page.UNKNOWN                     (correct)
+        #     hybrid           Page.RESEARCH  conf 0.9998       (this rule)
+        #     training         {}          <- the three barracks were never read
+        #     research         {timer: "06:39:17", status: "IN_PROGRESS",
+        #                       queue_available: false}
+        #
+        # ``06:39:17`` is not research at all: it is the 使馆升级中 BUILDING
+        # countdown at y_norm 0.33.  The classifier borrowed it because the
+        # research branch matches any HH:MM:SS anywhere on the frame, and then
+        # reported IN_PROGRESS for a row whose own word reads 空闲中 (idle).
+        #
+        # brain.py reads that as a busy queue and answers SAFE_STOP
+        # 'training_queue_busy' without ever looking at a barracks -- so the
+        # route never trained, and the three 已完成 rows (盾兵/矛兵/射手) sitting
+        # in the same panel were invisible.  A confident wrong answer here is
+        # worse than UNKNOWN, which is what the template layer had said.
+        #
+        # The page's own identity is its header, and the header is exactly where
+        # ``_is_quick_panel_section`` refuses to count the words.  Keeping the
+        # keyword therefore costs nothing on the panel and still names a real
+        # research page for callers that reach the classifier with no frame size
+        # (a unit test, an ROI-scoped read), so it is restored rather than lost.
         (Page.RESEARCH, ("科技研究",)),
         (Page.INTEL, ("情报",)),
         (Page.DAILY, ("每日任务",)),
         (Page.HERO, ("英雄招募",)),
     )
 
+    # Section headers of the 快捷面板, which opens *over* another page and
+    # therefore must never be read as that page's identity.  Listed explicitly
+    # so the next keyword added for one of these panels can be checked against
+    # it rather than rediscovered live.
+    QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技研究")
+
+    # How far below a countdown to look when asking which queue owns it.  The 快捷面板
+    # draws a row's text *above* its countdown (使馆升级中 y=393, 06:39:17 y=422, a
+    # 29px gap), so this reaches past a same-row band while staying short of the next
+    # section's rows, which are a full row height away.
+    OWNER_LOOKUP_PX: float = 36.0
+
     def __init__(self, minimum_confidence: float = 0.88) -> None:
         self.minimum_confidence = minimum_confidence
 
-    def classify(self, result: OCRResult) -> WorldState:
+    def classify(
+        self,
+        result: OCRResult,
+        *,
+        frame_size: tuple[int, int] | None = None,
+    ) -> WorldState:
         eligible = [token for token in result.tokens if token.confidence >= self.minimum_confidence]
-        exact_texts = {token.text.strip() for token in eligible}
+        # The quick panel's section headers are drawn near the middle of the
+        # frame, over whatever page is underneath, so any keyword that is one of
+        # them cannot identify a page.  Measured y_norm for the three on the
+        # operator's screenshot: 建筑队列 0.28, 部队训练 0.42, 科技研究 0.61.
+        #
+        # The band is deliberately generous (0.18..0.82) because the panel is
+        # dragged open and could sit higher, and because a false *exclusion*
+        # only costs a keyword match the template layer already covers, while a
+        # false *inclusion* is the failure above.
+        #
+        # With no frame size the test cannot run, and the honest default is to
+        # leave the keywords alone: guessing a height would exclude the wrong
+        # tokens, and the caller that matters (``HybridVision.observe``) always
+        # has the size to pass.
+        def _is_quick_panel_section(token) -> bool:
+            if token.text.strip() not in self.QUICK_PANEL_SECTIONS:
+                return False
+            if not frame_size or frame_size[1] <= 0:
+                return False
+            ys = [point[1] for point in token.box]
+            if not ys:
+                return False
+            centre = (sum(ys) / len(ys)) / float(frame_size[1])
+            return 0.18 <= centre <= 0.82
+
+        section_texts = {token.text.strip() for token in eligible}
+        exact_texts = section_texts - {
+            token.text.strip()
+            for token in eligible
+            if _is_quick_panel_section(token)
+        }
         # Current-client shop skins vary, while the real-currency price is the
         # stable action semantic. OCR may replace the currency glyph under a
         # legacy locale, but a high-confidence decimal price remains intact.
@@ -442,15 +537,59 @@ class OCRPageClassifier:
                 research.update({"node":"WARD_EXPANSION_VII", "name":"病房扩建VII", "branch":"GROWTH"})
                 if "2/3" in exact_texts:
                     research["level_progress"] = "2/3"
-            for text in texts:
-                timer = re.fullmatch(r"(?:(\d+)天)?(\d{1,2}:\d{2}:\d{2})", text)
-                if timer:
-                    research.update({
-                        "timer": f"{timer.group(1)}d{timer.group(2)}" if timer.group(1) else timer.group(2),
-                        "status": "IN_PROGRESS",
-                        "queue_available": False,
-                    })
-                    break
+            # A countdown drawn in the queue's own row is the queue's timer, and the
+            # client draws a countdown only while the queue is running -- see
+            # ``knowledge/resources/mechanism_cards.json``: "队列进行中 -> 使用加速 ->
+            # 剩余时间下降", a remaining time exists only for a running queue.  So a
+            # countdown is itself the proof of IN_PROGRESS, and no separate status word
+            # is required next to it.
+            #
+            # What the row test is for is *ownership*: picking the countdown that
+            # belongs to research rather than the first one on the frame.
+            #
+            # Measured 2026-09-21.  The previous loop took the first ``HH:MM:SS``
+            # anywhere, and on the operator's 快捷面板 screenshot that was ``06:39:17``
+            # -- the countdown of 使馆升级中, the **building** queue, a different feature
+            # drawn in a different row of the same panel.  The panel also prints 科技研究,
+            # so the classifier had already named the page RESEARCH; the borrowed timer
+            # then set ``queue_available=False``, and brain.py (both on HOME, line ~872,
+            # and on the page itself, line ~1000) answered SAFE_STOP
+            # ``research_queue_busy`` / ``training_queue_busy`` without ever looking at a
+            # barracks.  One row's timer silently became another feature's state, and the
+            # three idle camps in that same panel were never opened.
+            #
+            # The test is a *vertical band above the countdown*, not a same-row match,
+            # because in the panel the countdown sits *under* the text it belongs to:
+            # 使馆升级中 y=393 with 06:39:17 y=422.  A same-row test would find nothing
+            # there, and a test that finds nothing lets the borrowed countdown back in.
+            # The band reaches to the row above so it can prove the countdown is *not*
+            # part of it, while still reaching the queue label that owns it.
+            for token in eligible:
+                timer = re.fullmatch(r"(?:(\d+)天)?(\d{1,2}:\d{2}:\d{2})", token.text.strip())
+                if not timer:
+                    continue
+                centre = token.centre[1]
+                above = [
+                    other.text.strip()
+                    for other in eligible
+                    if centre - self.OWNER_LOOKUP_PX <= other.centre[1] < centre
+                ]
+                # The 快捷面板 repeats the section header above each of its rows, so a
+                # countdown whose header reads 建筑队列 belongs to the building queue and is
+                # skipped rather than borrowed.  A countdown with no such owner word above it
+                # is taken, including one with nothing above it at all (an older fixture, a
+                # cropped read): the cost of taking it is one queue read as busy, while the
+                # cost of dropping it is a queue with work never being started.
+                if any("建筑队列" in text or "升级中" in text for text in above):
+                    continue
+                research.update({
+                    "timer": f"{timer.group(1)}d{timer.group(2)}" if timer.group(1) else timer.group(2),
+                    "status": "IN_PROGRESS",
+                    "queue_available": False,
+                })
+                break
+            if "queue_available" not in research and "空闲中" in exact_texts:
+                research.update({"status": "IDLE", "queue_available": True})
         return WorldState(page=page, alliance=alliance, daily=daily, research=research, training=training, events=events, confidence=confidence)
 
 
@@ -1013,6 +1152,24 @@ def read_resource_tab_labels(
         centre_y = ((min(ys) + max(ys)) / 2.0 + top * frame_height) / frame_height
         found[kind] = (centre_x, centre_y)
     return found
+
+
+def read_frame_size(image_path) -> tuple[int, int] | None:
+    """The frame's ``(width, height)`` in pixels, or ``None`` if it cannot be opened.
+
+    Readers that judge *where* a token sits (rather than only what it says) need
+    the frame height to turn a pixel ``y`` into a ``y_norm``.  Returning ``None``
+    rather than raising keeps such a reader from turning a corrupt frame into a
+    crash: a position test that cannot run simply does not run.
+    """
+    try:
+        with Image.open(image_path) as source:
+            width, height = source.size
+    except (OSError, ValueError):
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    return int(width), int(height)
 
 
 def beast_from_its_label(image_path, ocr, frame_size: tuple[int, int] | None = None) -> dict:
@@ -1607,6 +1764,11 @@ class HybridVision:
 
     def observe(self, image_path: Path) -> WorldState:
         primary = self.template_vision.observe(image_path)
+        # The frame's pixel size, needed by the classifier to tell a page's own
+        # wording from the wording of an overlay drawn on top of it (see
+        # ``OCRPageClassifier.QUICK_PANEL_SECTIONS``).  A missing size only costs
+        # those keywords, never the whole reading, so a failed read is not fatal.
+        frame_size = read_frame_size(image_path)
         # A frame the template layer cannot name gets the OCR classifier, and the training
         # page is the one case that needs to be *recognised* here rather than merely enriched.
         #
@@ -1622,7 +1784,9 @@ class HybridVision:
         # training-status token and a camp name) is what stops a genuinely unknown frame from
         # becoming a training page, not this branch.
         if primary.page is Page.UNKNOWN:
-            classified = self.classifier.classify(self.ocr.recognize(image_path))
+            classified = self.classifier.classify(
+                self.ocr.recognize(image_path), frame_size=frame_size
+            )
             if classified.page is Page.TRAINING and classified.training:
                 # The camp model turns the classifier's selected-tab reading into the
                 # per-barracks answer.  Only the open camp is described: the other two were
@@ -2026,7 +2190,9 @@ class HybridVision:
                         stamina["cost_verdict_source"] = "BUTTON_COST_COLOUR"
                         primary = replace(primary, stamina=stamina)
             if primary.page is Page.ALLIANCE:
-                secondary = self.classifier.classify(self.ocr.recognize(image_path))
+                secondary = self.classifier.classify(
+                    self.ocr.recognize(image_path), frame_size=frame_size
+                )
                 if secondary.page is primary.page and secondary.alliance:
                     alliance = {**primary.alliance, **secondary.alliance}
                     # Vision is template-first: OCR may add the structured fields
@@ -2075,7 +2241,9 @@ class HybridVision:
                             alliance["badge_count"] = 0
                     return replace(primary, alliance=alliance)
             if primary.page is Page.DAILY:
-                secondary = self.classifier.classify(self.ocr.recognize(image_path))
+                secondary = self.classifier.classify(
+                    self.ocr.recognize(image_path), frame_size=frame_size
+                )
                 if secondary.page is primary.page and secondary.daily:
                     return replace(primary, daily={**primary.daily, **secondary.daily})
             if primary.page is Page.MAIL:
@@ -2240,15 +2408,21 @@ class HybridVision:
                         beast["target_kind"] = kind
                     return replace(primary, beast=beast)
             if primary.page is Page.TRAINING and primary.training.get("status") == "IN_PROGRESS" and primary.training.get("timer") in {None, "VISIBLE"}:
-                secondary = self.classifier.classify(self.ocr.recognize(image_path))
+                secondary = self.classifier.classify(
+                    self.ocr.recognize(image_path), frame_size=frame_size
+                )
                 if secondary.page is primary.page and secondary.training:
                     return replace(primary, training={**secondary.training, **primary.training, **({"timer": secondary.training["timer"]} if "timer" in secondary.training else {})})
             if primary.page is Page.RESEARCH and primary.research.get("status") == "IN_PROGRESS" and primary.research.get("timer") in {None, "VISIBLE"}:
-                secondary = self.classifier.classify(self.ocr.recognize(image_path))
+                secondary = self.classifier.classify(
+                    self.ocr.recognize(image_path), frame_size=frame_size
+                )
                 if secondary.page is primary.page and secondary.research:
                     merged = {**secondary.research, **primary.research}
                     if "timer" in secondary.research:
                         merged["timer"] = secondary.research["timer"]
                     return replace(primary, research=merged)
             return primary
-        return self.classifier.classify(self.ocr.recognize(image_path))
+        return self.classifier.classify(
+            self.ocr.recognize(image_path), frame_size=frame_size
+        )

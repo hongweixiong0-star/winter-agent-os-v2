@@ -93,7 +93,7 @@ class _GiftsClassifier:
     the home page, so the merge behaviour under test is the real one.
     """
 
-    def classify(self, result):  # noqa: ANN001 - test double
+    def classify(self, result, *, frame_size=None):  # noqa: ANN001 - test double
         return WorldState(
             page=Page.ALLIANCE,
             alliance={
