@@ -34,6 +34,7 @@ about whatever the gate happened to say that minute.
 
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -44,8 +45,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from winter_agent_v2 import control_experience  # noqa: E402
+from winter_agent_v2.brain import RuleBrain  # noqa: E402
 from winter_agent_v2.goal_library import GoalState, GoalStatus  # noqa: E402
-from winter_agent_v2.models import Page, WorldState  # noqa: E402
+from winter_agent_v2.learning import EpisodeStore  # noqa: E402
+from winter_agent_v2.models import Decision, Page, VerificationResult, WorldState  # noqa: E402
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.runtime_snapshot import is_fatal_stop  # noqa: E402
 
@@ -399,6 +403,168 @@ class ABackThatDoesNotMoveTheClientDoesNotEndTheCycleTests(unittest.TestCase):
         self.assertEqual(
             set(LiveRuntime.LEAVING_SKILLS), {"BACK", "LEAVE_FOREIGN_LAYER"},
         )
+
+
+class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
+    """Operator §二.5 / §二.7 (2026-09-21): one failed step is not the whole run.
+
+    The sibling class above covers a *decision* the runtime refused.  This one covers
+    the next wall along: the action ran, the verifier said the state did not arrive,
+    and the run ended -- taking every other goal with it even though nothing about
+    them had changed.
+
+    The relaxation is scoped, and each edge is asserted rather than described:
+
+    * the cycle is handed over through the existing ``_yield_to_next_goal``, so the
+      *failing goal is held back* for the rest of the run and the next iteration
+      selects a different task -- "try another candidate", not "retry the same step";
+    * a run with nobody left to hand to keeps the original honest stop;
+    * ``max_verification_retries`` bounds it, so this cannot become a spin;
+    * fatal reasons still end the run, because ``is_fatal_stop`` decides and the
+      relaxation is written under that guard rather than as a reason allow-list.
+
+    The one stubbed thing is the brain, and the reason is that the subject here is the
+    handover, not which skill the brain would have picked.  ``VERIFIED_ATOMIC`` is
+    patched rather than added to, so the real table is never mutated.
+    """
+
+    #: ``BTN_ALLY_GIFT_CLAIM`` is one of the targets ``_FakeSemantic`` resolves, so the
+    #: step really is executed and really does reach its verifier.  A target that did
+    #: NOT resolve would answer SEMANTIC_TARGET_NOT_VERIFIED at the *resolution* stage
+    #: -- the already-covered Rule A path -- and would leave the branch under test
+    #: unexercised.  (Learned by writing it the wrong way first.)
+    FAILING = "ALLIANCE_ALLY_GIFT_CLAIM"
+    CONTROL = "BTN_ALLY_GIFT_CLAIM"
+    #: A second, *different* control on the same page, so the scenario can show the
+    #: handover reaching new work rather than tapping the same place again.
+    OTHER = "LEAVE_FOREIGN_LAYER"
+    OTHER_CONTROL = "BTN_CLOSE"
+
+    def _second_goal(self) -> GoalState:
+        return GoalState(
+            goal_id="KEEP_TRAINING_PRODUCTIVE",
+            status=GoalStatus.READY,
+            available_skills=(self.FAILING, self.OTHER),
+        )
+
+    def _run(self, *, goals, max_actions=4, decisions=None):
+        device = _FakeDevice()
+        verifier = lambda _before, _after: VerificationResult(False, "FORCED_VERIFIER_FAILURE")  # noqa: E731
+        sequence = decisions or [Decision(self.FAILING, "forced", 1.0, "opens gifts")] * 6
+
+        def stub(runtime, _goals, _deferrals):
+            return [goal for goal in goals if goal.goal_id not in runtime._yielded_goals]
+
+        with TemporaryDirectory() as temp:
+            temp_path = Path(temp)
+            ledger_path = temp_path / "control_experience.json"
+            episodes_path = temp_path / "episodes.jsonl"
+            with patch.object(control_experience, "STATE_PATH", ledger_path), \
+                 patch.object(LiveRuntime, "_selectable", stub), \
+                 patch.object(RuleBrain, "decide", side_effect=sequence), \
+                 patch.dict(LiveRuntime.VERIFIED_ATOMIC,
+                            {self.FAILING: verifier, self.OTHER: verifier}):
+                run = LiveRuntime(
+                    device=device,
+                    vision=_FakeVision([has_something_to_claim()] * 8, sticky=True),
+                    semantic_vision=_FakeSemantic(),
+                    capture_dir=temp_path,
+                    sleeper=lambda _seconds: None,
+                    episode_store=EpisodeStore(episodes_path),
+                ).run(max_actions=max_actions)
+            rows = [
+                json.loads(line) for line in episodes_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ] if episodes_path.exists() else []
+            # Read while the temporary directory still exists: the context manager
+            # deletes it on exit, and returning the path instead of the contents was
+            # how this test first reported "the ledger was never written" for a run
+            # that had written it.
+            ledger = control_experience.load(ledger_path)
+        return device, run, ledger, rows
+
+    def _two_steps(self):
+        return [
+            Decision(self.FAILING, "forced", 1.0, "opens gifts"),
+            Decision(self.OTHER, "forced", 1.0, "leaves the layer"),
+        ] + [Decision(self.OTHER, "forced", 1.0, "leaves the layer")] * 4
+
+    def test_a_failed_step_hands_the_cycle_to_the_next_goal(self):
+        device, run, _ledger, rows = self._run(
+            goals=[ONLY_GOAL, self._second_goal()], decisions=self._two_steps())
+        self.assertEqual(len(device.taps), 2,
+                         "the second goal must get its own cycle after the first one's step failed")
+        self.assertEqual(run.stop_reason, "FORCED_VERIFIER_FAILURE",
+                         "...and the run still ends with the real reason, not silence")
+        self.assertEqual([row["control"] for row in rows],
+                         [self.CONTROL, self.OTHER_CONTROL],
+                         "and the work it reached was a *different* control, not the same one again")
+
+    def test_the_same_control_is_never_tapped_twice_in_one_run(self):
+        """Operator §七.3, and the first version of this relaxation broke it.
+
+        The handover holds the failing goal back, but the next goal's route can land
+        on the very same control -- and with the guard removed the identical failing
+        tap was issued once per goal.  A repeat at the same position is what the rule
+        forbids, so the second attempt at the same control ends the run instead.
+        """
+        device, run, _ledger, rows = self._run(goals=[ONLY_GOAL, self._second_goal()])
+        self.assertEqual(len(device.taps), 1, "one tap, then the same control is left alone")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(run.stop_reason, "FORCED_VERIFIER_FAILURE")
+
+    def test_the_handover_is_bounded_and_does_not_spin(self):
+        _device, run, _ledger, _rows = self._run(goals=[ONLY_GOAL])
+        self.assertEqual(run.stop_reason, "FORCED_VERIFIER_FAILURE")
+        self.assertLessEqual(len(run.steps), 3, "two retries, three failures at the most")
+
+    def test_a_run_out_of_budget_keeps_the_original_honest_stop(self):
+        """Same guard as the other handovers: yielding costs an iteration."""
+        _device, run, _ledger, _rows = self._run(
+            goals=[ONLY_GOAL, self._second_goal()], max_actions=1)
+        self.assertEqual(len(run.steps), 1)
+        self.assertEqual(run.stop_reason, "FORCED_VERIFIER_FAILURE")
+
+    def test_a_fatal_reason_is_still_an_ending(self):
+        """The line the relaxation is written under, asserted where it is used."""
+        self.assertFalse(is_fatal_stop("FORCED_VERIFIER_FAILURE"))
+        for fatal in ("FATAL_ADB_LOST", "ACCOUNT_SUSPENDED", "PAYMENT_REQUIRED"):
+            self.assertTrue(is_fatal_stop(fatal))
+
+    def test_the_episode_now_carries_what_was_expected_and_what_changed(self):
+        """Operator §六/§十二: the causal half of the row reaches the stream."""
+        _device, _run_, _ledger, rows = self._run(
+            goals=[ONLY_GOAL, self._second_goal()], decisions=self._two_steps())
+        self.assertTrue(rows, "the scenario must actually record an episode")
+        row = rows[0]
+        self.assertEqual(row["expected_result"], "opens gifts",
+                         "the decision's own expectation reaches the row")
+        self.assertEqual(row["control"], self.CONTROL,
+                         "and the semantic that was aimed at, for joining back to the ledger")
+        self.assertIn(row["observed_change"], control_experience.CHANGE_KINDS)
+        self.assertFalse(row["verifier_ok"])
+        self.assertEqual(row["failure_type"], "FORCED_VERIFIER_FAILURE")
+
+    def test_the_control_ledger_records_the_attempt_and_keeps_the_failed_hypothesis(self):
+        """§七: a guess that produced nothing stays on the record as a failed guess.
+
+        The expectation is stored as a *hypothesis*, and a step that moved nothing
+        leaves it in place -- which is what stops the same guess being made again
+        with the same confidence.
+        """
+        _device, _run_, ledger, _rows = self._run(goals=[ONLY_GOAL, self._second_goal()])
+        self.assertTrue(ledger, "the run must have written the ledger")
+        entry = ledger[control_experience.control_key("ALLIANCE", self.CONTROL)]
+        self.assertEqual(entry.attempts, 1, "one tap, recorded once")
+        self.assertIn(entry.last_result, control_experience.CHANGE_KINDS)
+        self.assertAlmostEqual(entry.position_norm[0], 0.84, places=3,
+                               msg="the landing point is stored as a normalized position")
+        self.assertAlmostEqual(entry.position_norm[1], 0.50, places=3)
+        self.assertTrue(entry.read_from_frame,
+                        "and it stays traceable to the frame it was read from")
+        self.assertEqual(entry.hypotheses, ("opens gifts",),
+                         "a hypothesis that produced nothing remains on the record")
+        self.assertFalse(entry.resolved)
 
 
 if __name__ == "__main__":

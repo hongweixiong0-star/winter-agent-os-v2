@@ -5,9 +5,10 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 import json
-from typing import Callable
+from typing import Any, Callable, Mapping
 
 from .brain import RuleBrain
+from . import control_experience
 from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
@@ -249,6 +250,11 @@ class LiveRuntime:
         # reachable but a layer that answers neither exit still ends the run.
         max_leave_retries: int = 2,
         max_unknown_page_backs: int = 2,
+        # How many times one run may hand the cycle to another task after a step
+        # failed its verifier (operator §二.5).  Small on purpose: this exists so a
+        # single failed step stops taking the whole run with it, not so a run can
+        # grind through every goal it has.
+        max_verification_retries: int = 2,
         max_battle_reobservations: int = 3,
         observation_retries: int = 2,
         sleeper: Callable[[float], None] = time.sleep,
@@ -302,6 +308,7 @@ class LiveRuntime:
         self.max_stamina_refusals = max_stamina_refusals
         self.max_leave_retries = max_leave_retries
         self.max_unknown_page_backs = max_unknown_page_backs
+        self.max_verification_retries = max_verification_retries
         self.max_battle_reobservations = max_battle_reobservations
         self.observation_retries = observation_retries
         self.sleeper = sleeper
@@ -751,6 +758,24 @@ class LiveRuntime:
         before_screenshot: Path | None = None,
         after_screenshot: Path | None = None,
     ) -> None:
+        state_before = asdict(before)
+        state_after = asdict(after) if after is not None else {}
+        observed_change = (
+            control_experience.classify_change(state_before, state_after)
+            if after is not None else "UNKNOWN"
+        )
+        # Folded before the episode store is consulted: what the control did is what
+        # the *next* decision reads, so losing it because the evidence stream happens
+        # to be switched off would be the worse of the two trades.
+        self._fold_control_experience(
+            decision=decision,
+            before_state=state_before,
+            after_state=state_after,
+            execution=execution,
+            observed_change=observed_change,
+            goal_id=goal_id,
+            frame=after_screenshot or before_screenshot,
+        )
         if self.episode_store is None:
             return
         failure = None
@@ -760,9 +785,9 @@ class LiveRuntime:
             failure = verification.reason
         episode = Episode(
             skill=decision.skill,
-            state_before=asdict(before),
+            state_before=state_before,
             action=asdict(execution.action) if execution is not None else {},
-            state_after=asdict(after) if after is not None else {},
+            state_after=state_after,
             result="SUCCESS" if failure is None else "FAILURE",
             failure_type=failure,
             duration=max(0.0, time.monotonic() - started_at),
@@ -811,12 +836,87 @@ class LiveRuntime:
             job_id=self.job_id,
             capability=self.capability,
             expected_after_version=self.expected_after_version,
+            # Operator §六/§十二: the causal half of the row.  ``control`` is what the
+            # action aimed at, ``expected_result`` is what the decision said would
+            # happen, and ``observed_change`` is what the two states actually differ
+            # by -- one of ``control_experience.CHANGE_KINDS``, so the answer has a
+            # vocabulary instead of being re-derived from two JSON blobs by hand.
+            #
+            # ``control`` is empty for an action with no semantic target (Back, wait),
+            # and ``observed_change`` is UNKNOWN when the run could not observe the
+            # state afterwards -- which is a statement about the reading and must not
+            # be read as "nothing happened".
+            control=(execution.action.target or "") if execution is not None else "",
+            expected_result=decision.expected_result,
+            observed_change=observed_change,
         )
         try:
             self.episode_store.append(episode)
         except (OSError, TypeError, ValueError):
             # Learning persistence must never cause an already-issued action to
             # be repeated. The run result remains authoritative for this turn.
+            pass
+
+    # --------------------------------------------------- per-control experience
+
+    def _fold_control_experience(
+        self,
+        *,
+        decision: Decision,
+        before_state: Mapping[str, Any],
+        after_state: Mapping[str, Any],
+        execution: ExecutionResult | None,
+        observed_change: str,
+        goal_id: str = "",
+        frame: Path | None = None,
+    ) -> None:
+        """Record what the control that was aimed at actually did (operator §四/§六).
+
+        Keyed by ``(page, semantic)`` -- never by a coordinate.  The position is
+        stored **with the frame it was read from**, so a later reader can see that
+        it is a measurement off one picture and cannot be reused as if it were a
+        semantic fact (``00_MASTER_RULES.md`` §5).
+
+        The decision's own ``expected_result`` goes in as a **hypothesis**, not as
+        the outcome.  That is the point of the distinction: an expectation confirmed
+        by a real change is settled and dropped, while one that produced ``NO_OP``
+        stays on the record as a hypothesis that failed -- which is what stops the
+        same guess being made again with the same confidence (§七).
+        """
+        if execution is None:
+            return
+        semantic = (execution.action.target or "").strip()
+        if not semantic:
+            return
+        page = control_experience.label(before_state.get("page"))
+        key = control_experience.control_key(page, semantic)
+        entry = self._control_ledger.get(key)
+        if entry is None:
+            entry = control_experience.ControlExperience(page=page, control=semantic)
+            self._control_ledger[key] = entry
+
+        expected = (decision.expected_result or "").strip()
+        if expected and expected not in entry.hypotheses and not entry.resolved:
+            entry.hypotheses = entry.hypotheses + (expected,)
+
+        control_experience.record_outcome(
+            entry,
+            change=observed_change,
+            before=before_state,
+            after=after_state,
+            clicked=bool(execution.executed),
+            frame=str(frame) if frame else "",
+        )
+        landed = execution.tap_point
+        if landed is not None:
+            entry.position_norm = (landed[0] / 720.0, landed[1] / 1280.0)
+        if goal_id and observed_change not in ("NO_OP", "UNKNOWN"):
+            entry.goal_help[goal_id] = observed_change
+
+    def _save_control_experience(self) -> None:
+        try:
+            control_experience.save(self._control_ledger)
+        except Exception:  # noqa: BLE001 - a ledger write must never fail a run
             pass
 
     def _device_lost(self, call, *args) -> bool:
@@ -1165,6 +1265,11 @@ class LiveRuntime:
         gate = self._gate()
 
         def finish(reason: str) -> LiveRun:
+            # One write per run, not one per step: the ledger is folded in memory as
+            # each step is recorded and persisted here, where the run has a single
+            # exit.  A per-step rewrite of a JSON file would put disk I/O inside the
+            # action loop for no gain -- nothing reads the ledger mid-run.
+            self._save_control_experience()
             return LiveRun(tuple(steps), reason, tuple(item.as_row() for item in deferrals))
 
         self.capture_dir.mkdir(parents=True, exist_ok=True)
@@ -1174,6 +1279,21 @@ class LiveRuntime:
         self._stamina_refusals = 0
         self._leave_retries = 0
         self._unknown_page_backs = 0
+        # Operator §二.5/§二.7 (2026-09-21): a failed step hands the cycle to the next
+        # goal instead of ending the run, bounded here.  Two is enough to reach a
+        # different task; a third failure in one run is a statement about the run's
+        # situation, not about the goal it happened to be holding.
+        self._verification_retries = 0
+        # Controls whose step failed its verifier in THIS run, mapped to the reason it
+        # failed with.  Operator §七.3: a tap that did nothing must not be repeated at
+        # the same position.  The reason is kept so that when this is what ends the run,
+        # the run reports the verifier's own reason rather than a new stop reason that
+        # nothing else knows how to classify.
+        self._failed_controls: dict[str, str] = {}
+        # What each visible control actually did, keyed by (page, semantic).  Folded
+        # per step, written once at ``finish``.  Loaded per run so a fresh process
+        # still has last run's experience.
+        self._control_ledger = control_experience.load()
         # Goals this run has already offered and found it could not execute.  Run-scoped on
         # purpose: the reason is "this cycle cannot run it" (a skill this run may not use, a
         # skill that is not ready, or a candidate pool that is spent), which says nothing about
@@ -1567,6 +1687,33 @@ class LiveRuntime:
                             verifier="PENDING",
                         )
                         continue
+            # Operator §七.3, and the guard has to be HERE rather than after the
+            # verifier: "a control that already failed in this run is not tapped again
+            # at the same position".  The first version of this check ran after the tap
+            # and therefore stopped the *third* attempt while the second -- the one the
+            # rule is about -- had already been issued.  Measured on the two-goal
+            # scenario: one failed control, two identical taps.
+            #
+            # The decision is still the brain's; this only refuses to *repeat* one that
+            # this run has already tried and failed.  Yielding first means the next goal
+            # gets the cycle; when there is nobody to hand to, the run ends with the
+            # verifier's own reason, so nothing new has to be classified downstream.
+            planned_target = ""
+            _planned_skill = self.registry.get(decision.skill)
+            if _planned_skill is not None:
+                planned_target = (_planned_skill.action.target or "")
+            if planned_target and planned_target in self._failed_controls:
+                if index < max_actions and self._yield_to_next_goal(
+                    best_goal,
+                    deferrals,
+                    decision,
+                    f"{planned_target} already failed its verifier in this run "
+                    f"({self._failed_controls[planned_target]}); it is not tapped twice",
+                ):
+                    continue
+                steps.append(LiveStep(index, decision, None, before, None, None))
+                return finish(self._failed_controls[planned_target])
+
             adb_executor = Executor(
                 production=True,
                 dry_run=False,
@@ -1866,6 +2013,61 @@ class LiveRuntime:
                           queues={"building": after.building, "research": after.research, "training": after.training,
                                   "intel": after.intel, "alliance": after.alliance, "events": after.events})
             if not verification.ok:
+                # Operator §二.5 / §二.7, 2026-09-21: one step that did not reach its
+                # final state no longer ends the whole run.  Measured cause: the run
+                # held one goal, that goal's step failed its verifier, and every other
+                # goal lost the cycle with it -- including the ones whose work was
+                # unaffected.  The failure is a statement about *this* step, which is
+                # the same class the SAFE_STOP handover above already refuses to treat
+                # as everyone's ending.
+                #
+                # What is relaxed, exactly: the cycle is handed to the next goal
+                # through the existing ``_yield_to_next_goal`` -- the goal that failed
+                # is held back for the rest of the run, so the next iteration selects a
+                # *different* task rather than retrying the same step.  That is the
+                # operator's "允许尝试其他候选", and it needs no new retry machinery
+                # because the brain owns the re-selection.
+                #
+                # What is NOT relaxed, and each of these was measured by writing it the
+                # other way first:
+                #
+                # * §七.3 "避免重复点击同一错误位置" -- a control that failed its
+                #   verifier is recorded in ``_failed_controls`` and never tapped again
+                #   in this run.  Without this the handover did exactly what the rule
+                #   forbids: the next goal's route landed on the same control and the
+                #   same failing tap was issued three times, once per goal.
+                # * paid and irreversible outcomes (``is_fatal_stop``), a run out of
+                #   action budget, and a repeat budget.  ``_verification_retries`` is
+                #   what keeps the handover from becoming a spin.
+                #
+                # The "do not tap the same control twice" half of §七.3 is enforced
+                # earlier, before the executor -- see the guard above ``adb_executor``.
+                # Putting it here instead was measured wrong: a check after the tap
+                # stops the third attempt while the second, which is the one the rule
+                # is about, has already been issued.
+                semantic = (tick.execution.action.target or "") if tick.execution is not None else ""
+                if semantic:
+                    self._failed_controls.setdefault(semantic, verification.reason)
+                if (
+                    index < max_actions
+                    and self._verification_retries < self.max_verification_retries
+                    and not is_fatal_stop(verification.reason)
+                    and self._yield_to_next_goal(
+                        best_goal,
+                        deferrals,
+                        decision,
+                        f"{decision.skill} failed its verifier ({verification.reason}); "
+                        f"one step is not the whole run, so this task yields to the next one",
+                    )
+                ):
+                    self._verification_retries += 1
+                    self._runtime(
+                        agent_state=AgentState.AUTO_RUNNING.value,
+                        reason=f"{decision.skill.lower()}_did_not_reach_its_state",
+                        next_action="brain_picks_another_task_for_this_cycle",
+                        verifier=verification.reason,
+                    )
+                    continue
                 self._runtime(agent_state=AgentState.DEGRADED.value, runtime_thread_alive=False,
                               scheduler_loop_alive=False, stop_reason=verification.reason)
                 return finish(verification.reason)

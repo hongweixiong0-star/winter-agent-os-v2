@@ -82,6 +82,22 @@ class Episode:
     # claim may only be made from an episode whose scope is at least PERSISTED, and a
     # fresh read never inherits an older run's scope.
     role_scope: str = ""
+    # ---------------------------------------------------------------- causality
+    # Operator §六/§十二: an episode must answer "what did we expect, what actually
+    # changed".  Both existed in the run and neither reached the row -- the
+    # expectation lived only on ``Decision`` (and in the runtime snapshot's
+    # ``next_action``), and the change had to be reverse-engineered by diffing two
+    # ``asdict(WorldState)`` blobs with no vocabulary for the answer.
+    #
+    # ``control`` is the semantic that was aimed at, so a row can be joined back to
+    # ``learning/control_experience.json`` under one key.  Empty means the action had
+    # no semantic target (a Back, a wait), which is not the same as "unknown".
+    control: str = ""
+    expected_result: str = ""
+    # One of ``control_experience.CHANGE_KINDS``.  NO_OP and UNKNOWN are kept apart
+    # on purpose: "the tap was issued and nothing moved" is a finding about the
+    # control, "we could not tell" is a finding about the reading.
+    observed_change: str = ""
     recorded_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
