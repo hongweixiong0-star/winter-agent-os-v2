@@ -29,6 +29,7 @@ under its page plus whatever the frame could name it by, and is marked
 from __future__ import annotations
 
 import json
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -112,6 +113,38 @@ def control_key(page: str, control: str) -> str:
     the semantic's own string and get the same key either way.
     """
     return f"{label(page) or '?'}|{label(control) or UNNAMED}"
+
+
+def measured_on_a_real_frame(experience: "ControlExperience") -> bool:
+    """Was this record measured on a frame from this project, or on a test's scratch frame?
+
+    Measured 2026-09-22, and it is the reason the ledger could not be trusted as evidence:
+    eleven of the thirty-five records had a ``read_from_frame`` under the system temp
+    directory, and their positions gave the game away -- ``HOME|PAGE_MAP``,
+    ``MAP|BTN_OPEN_HOME``, ``EXPLORATION|BTN_HERO_CAMP_FIGHT``, ``POPUP|BTN_CLAIM_FREE_STAMINA``,
+    ``ALLIANCE|BTN_CLOSE`` and ``ALLIANCE|BTN_ALLY_GIFT_CLAIM`` were all filed at exactly
+    ``(0.8403, 0.5)``, which is six different controls at one point.  A test harness stubs
+    ``target_resolver`` with a constant; ``STATE_PATH`` is a module constant; nothing stopped
+    the harness from writing the real ledger, so test coordinates were filed as production
+    measurements.
+
+    A ledger entry is only evidence if the frame it was read from is a frame this project
+    captured.  The test is deliberately narrow -- "is it under the system temp directory" --
+    because that is exactly the condition a test or a throwaway probe satisfies and a real
+    capture directory does not, whichever directory the operator points ``--capture-dir`` at.
+    """
+    recorded = str(getattr(experience, "read_from_frame", "") or "").strip()
+    if not recorded:
+        return False
+    try:
+        scratch = Path(tempfile.gettempdir()).resolve()
+    except (OSError, RuntimeError):
+        return True
+    try:
+        candidate = Path(recorded).resolve()
+    except (OSError, RuntimeError):
+        return False
+    return scratch not in candidate.parents and candidate != scratch
 
 
 def explorable_risk(risk: str | None) -> bool:
@@ -330,6 +363,11 @@ def load(path: Path | str | None = None) -> dict[str, ControlExperience]:
     Empty is the safe direction here: it makes every control unexplored, so the
     cost of a lost file is re-exploration, never a control silently believed to be
     understood.
+
+    Records measured on a scratch frame are dropped on the way in, not only refused on
+    the way out -- a file that has already been polluted has to clean itself, because
+    the alternative is that the next reader re-imports the same six controls filed at one
+    coordinate.  See :func:`measured_on_a_real_frame`.
     """
     source = Path(path) if path is not None else STATE_PATH
     try:
@@ -343,7 +381,10 @@ def load(path: Path | str | None = None) -> dict[str, ControlExperience]:
     for key, body in records.items():
         if not isinstance(body, Mapping):
             continue
-        out[str(key)] = ControlExperience.from_json(body)
+        experience = ControlExperience.from_json(body)
+        if not measured_on_a_real_frame(experience):
+            continue
+        out[str(key)] = experience
     return out
 
 
@@ -353,9 +394,24 @@ def save(
     *,
     limit: int = 4000,
 ) -> None:
-    """Write the ledger.  Never raises -- an experience note must not fail a run."""
+    """Write the ledger.  Never raises -- an experience note must not fail a run.
+
+    Records measured on a scratch frame are not written.  ``STATE_PATH`` is a module
+    constant, so a test or a throwaway probe that does not redirect it writes the real
+    ledger -- which is how six controls ended up filed at one coordinate and the file
+    became untrustworthy as evidence.  The filter here is what makes that impossible
+    rather than merely discouraged, and it costs a real run nothing: every frame a real
+    run measures comes from its capture directory.
+
+    The ledger is sorted by recency **before** filtering, so the ``limit`` still counts
+    records that will be kept instead of being spent on ones that will be dropped.
+    """
     source = Path(path) if path is not None else STATE_PATH
-    rows = sorted(experiences.items(), key=lambda item: str(item[1].last_at), reverse=True)[:limit]
+    kept = [
+        (key, experience) for key, experience in experiences.items()
+        if measured_on_a_real_frame(experience)
+    ]
+    rows = sorted(kept, key=lambda item: str(item[1].last_at), reverse=True)[:limit]
     payload = {
         "schema_version": "1.0",
         "written_at": datetime.now(timezone.utc).isoformat(),

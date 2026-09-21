@@ -1317,7 +1317,62 @@ class LiveRuntime:
         # allowed only after independent page + green-state proof.
         if semantic == "BTN_EXPLORATION_IDLE_CLAIM" and frame.page.value == "EXPLORATION" and frame.exploration.get("status") == "CLAIMABLE":
             return (0.86, 0.68)
+        remembered = self._remembered_control_center(semantic, frame)
+        if remembered is not None:
+            return remembered
         return None
+
+    def _remembered_control_center(self, semantic: str, frame: "WorldState"):
+        """Where this device last saw ``semantic``, when the template can no longer find it.
+
+        Operator §四.1/§四.3: "已知成功操作优先复用", "已知页面跳转结果用于规划导航".
+        Until now the ledger was written on every step and read by nobody, so a control
+        the machine had clicked thirty-five times successfully was still unusable the
+        moment its template stopped matching -- which is the same wall
+        ``TARGET_INFANTRY_CAMP_HIGHLIGHTED`` hits for a different reason.  This is the
+        read.
+
+        Four conditions, and each excludes a different way of being wrong:
+
+        * **the page must match**, because the key is ``(page, semantic)``.  This is the
+          same invariant the reviewed ``BTN_EXPLORATION_IDLE_CLAIM`` fallback above is
+          written under: a normalized point is only allowed behind an independent proof
+          of which page it is on.
+        * **``resolved``**, i.e. at least one attempt produced an observed change.  A
+          control whose only outcome was ``NO_OP`` or ``UNKNOWN`` has no known result and
+          is not reused -- the operator's §四.7 forbids promoting UNKNOWN to known, and
+          this is the place that would otherwise do it silently.
+        * **not ``sterile``** and **no ``refused_reason``**: explored does not mean
+          repeated forever, and a control policy already refused is refused again.
+        * **no live cooldown**, so a control with a measured wait is not tapped early.
+
+        Deliberately *not* asked: ``explorable_risk``.  That whitelist governs tapping a
+        control whose behaviour is *unknown*; this branch is the opposite case -- a named
+        control this device has already exercised and measured.  Requiring a risk label
+        here would also make the branch dead code, since nothing writes one.
+        """
+        page = control_experience.label(frame.page)
+        entry = self._control_ledger.get(control_experience.control_key(page, semantic))
+        if entry is None:
+            return None
+        if entry.position_norm is None or not entry.resolved:
+            return None
+        if entry.sterile or entry.refused_reason:
+            return None
+        if entry.cooldown_remaining() > 0:
+            return None
+        point = (float(entry.position_norm[0]), float(entry.position_norm[1]))
+        if not (0.0 <= point[0] <= 1.0 and 0.0 <= point[1] <= 1.0):
+            return None
+        self._remembered_reuse.append(
+            f"{page}|{semantic} <- {entry.known_change or entry.last_result} "
+            f"@{point[0]:.3f},{point[1]:.3f} (attempts {entry.attempts})"
+        )
+        if self._remembered_reuse[-1] not in self._printed_remembered:
+            self._printed_remembered.add(self._remembered_reuse[-1])
+            print(f"[experience] template missing, reusing a measured position for {page}|{semantic} "
+                  f"({entry.known_change or entry.last_result}, attempts {entry.attempts})", flush=True)
+        return point
 
     def run(
         self,
@@ -1374,6 +1429,12 @@ class LiveRuntime:
         # per step, written once at ``finish``.  Loaded per run so a fresh process
         # still has last run's experience.
         self._control_ledger = control_experience.load()
+        # Every read of that ledger, so "did experience change what the machine did"
+        # is answerable from the run rather than from a claim.  Printed once per
+        # distinct reuse -- a route that reuses the same control twelve times is one
+        # fact, not twelve lines.
+        self._remembered_reuse: list[str] = []
+        self._printed_remembered: set[str] = set()
         # Utility inputs (operator §四).  All three are loaded once per run: the route
         # card is a measured artefact that does not change inside a run, and the
         # fairness ledger is written back at ``finish``.  Kept on the instance so

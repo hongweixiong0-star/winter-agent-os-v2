@@ -459,7 +459,19 @@ class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
             temp_path = Path(temp)
             ledger_path = temp_path / "control_experience.json"
             episodes_path = temp_path / "episodes.jsonl"
+            # Two things this fixture has to declare, because it fakes a production run
+            # inside a temporary directory and the ledger now distinguishes the two:
+            #
+            #   STATE_PATH            -- do not write the real ledger
+            #   measured_on_a_real_frame
+            #                         -- the frames here land under the system temp dir,
+            #                            which is exactly the marker of a scratch frame.
+            #                            The production run this stands in for captures
+            #                            under dataset/raw/, so the fixture says so
+            #                            rather than the guard being loosened for tests.
             with patch.object(control_experience, "STATE_PATH", ledger_path), \
+                 patch.object(control_experience, "measured_on_a_real_frame",
+                              return_value=True), \
                  patch.object(LiveRuntime, "_selectable", stub), \
                  patch.object(RuleBrain, "decide", side_effect=sequence), \
                  patch.dict(LiveRuntime.VERIFIED_ATOMIC,
@@ -472,15 +484,17 @@ class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
                     sleeper=lambda _seconds: None,
                     episode_store=EpisodeStore(episodes_path),
                 ).run(max_actions=max_actions)
+                # Read the ledger *inside* the isolation block, for the same reason the
+                # write happened there: ``load`` applies the provenance rule too, so
+                # reading after the patch is undone would drop the very rows this test is
+                # about -- and report "the ledger was never written" for a run that wrote it.
+                ledger = control_experience.load(ledger_path)
             rows = [
                 json.loads(line) for line in episodes_path.read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ] if episodes_path.exists() else []
-            # Read while the temporary directory still exists: the context manager
-            # deletes it on exit, and returning the path instead of the contents was
-            # how this test first reported "the ledger was never written" for a run
-            # that had written it.
-            ledger = control_experience.load(ledger_path)
+            # (The temporary directory is still alive here; the context manager deletes it
+            # on exit, which is why the contents are returned rather than the path.)
         return device, run, ledger, rows
 
     def _two_steps(self):
