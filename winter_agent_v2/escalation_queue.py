@@ -594,6 +594,32 @@ def _moment(value: Any) -> datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
+def commit_of(revision: Any) -> str:
+    """The *commit* a revision token names, dropping any uncommitted-content digest.
+
+    ``RepoRevision.token`` is ``head`` for a clean tree and ``head+digest`` for a dirty
+    one, and that form is right for the question it was built for: "has the tree changed
+    since dispatch", asked twice inside one process, where both readings describe the same
+    working copy.
+
+    It is the wrong form for the question the activation rung asks -- "is the version the
+    device *loaded* the version the job produced" -- and it is wrong in a way that fails
+    silently.  That comparison happens between two processes: the job's reading at settle
+    time, and the episode's reading from the run that later loaded the tree.  Measured
+    2026-09-21 on ``learning/episodes.jsonl``: the same commit ``39eba75a2...`` appears under
+    two different digests (``e304be3180e1b369`` and ``e324f8791464cd4b``), because a cycle
+    writes version-relevant files while it runs.  A strict token comparison therefore
+    demanded that two processes agree on the *contents* of a tree that is still being
+    written, and it never once held: 111 lease requests, 0 activations, 0 verifications.
+
+    The commit is what is stable across processes, and it is what "the version the job
+    produced" actually means once the job's work is committed.  Everything above this rung
+    still requires a real episode with a passing verifier -- this narrows nothing, it makes
+    the comparison able to succeed at all.
+    """
+    return str(revision or "").split("+", 1)[0]
+
+
 def _from_millis(value: Any) -> datetime | None:
     """A gateway timestamp (milliseconds since epoch) as an aware datetime.
 
@@ -1493,7 +1519,12 @@ def repo_revision(root: Path | str, *, timeout: float = 20.0) -> RepoRevision:
         return (result.stdout or "").strip()
 
     head = run(["rev-parse", "HEAD"])
-    status = run(["status", "--porcelain"])
+    # ``--no-optional-locks``: this is a read, and it runs on the hot path (every cycle,
+    # every drain).  Plain ``git status`` may take ``.git/index.lock`` to refresh its stat
+    # cache -- optional work a reader does not need -- and one interrupted read left a lock
+    # behind that blocked every ``git add`` for forty minutes (measured 2026-09-21/22, with
+    # no git process alive).  See ``version_identity.dirty_entries`` for the full note.
+    status = run(["--no-optional-locks", "status", "--porcelain"])
     if not head:
         return RepoRevision(ok=False)
     dirty = len([line for line in status.splitlines() if line.strip()])
@@ -1911,10 +1942,10 @@ def validation_settlement(
 
     # Version next, and before anything is credited: an attempt on the wrong code proves
     # something about the wrong code.
-    expected = str(after_version or "")
+    expected = commit_of(after_version)
     version_ok = [row for row in context_ok
-                  if str(row.get("repo_revision") or "") == expected
-                  and str(row.get("expected_after_version") or expected) == expected]
+                  if commit_of(row.get("repo_revision")) == expected
+                  and commit_of(row.get("expected_after_version") or expected) == expected]
     if not version_ok:
         latest = context_ok[-1]
         return (VALIDATION_VERSION_MISMATCH,
@@ -2366,12 +2397,26 @@ class EscalationQueueAdapter:
 
         Oldest first on purpose: the version has been waiting the longest, and a queue
         that always validated the newest would starve the one behind it.
+
+        A record whose ``after_version`` is not the commit the device would run is skipped
+        even if it is still pending.  Asking for the device for it could only end the run
+        with ``steps: []`` and hold the device the examination cannot use -- the same shape
+        as the 2026-09-21 loop, where one such record took the device every two minutes for
+        over an hour and AUTO never got a cycle.  ``_activate_pending_versions`` ends those
+        records in the same drain; this is the second lock on the same door, because a
+        lease request that cannot be honoured must not be made even once.
         """
         waiting = [
             record for record in self.ledger.snapshot().records.values()
             if record.state == LIVE_VERIFY_PENDING
         ]
         waiting.sort(key=lambda record: (record.settled_at is None, record.settled_at))
+        head = repo_revision(self.root).head
+        if head:
+            waiting = [
+                record for record in waiting
+                if not record.after_version or commit_of(record.after_version) == head
+            ]
         return waiting[0] if waiting else None
 
     def service_validation_lease(self, *, now: datetime | None = None) -> str:
@@ -3152,27 +3197,51 @@ class EscalationQueueAdapter:
         Operator §二, and every part of it is load-bearing:
 
             job settled  +  after_version known  +  a real episode  +
-            episode.repo_revision == after_version
+            episode's commit == after_version's commit
 
         *The job must be settled*, because before that the tree is still being edited and an
         episode is a statement about a version that no longer exists.  *A revision must have
         changed*, because otherwise there is no new version to activate.  *The episode must
         be real* -- ``new_live_episodes`` already refuses rows without ``recorded_at``,
-        ``verifier_ok`` and evidence.  And *the revision must match exactly*: every cycle is a
-        fresh process that imports the package from disk, so an episode whose
-        ``repo_revision`` equals ``after_version`` is the machine saying "this is what ran",
-        where git HEAD only says what is on the disk.
+        ``verifier_ok`` and evidence.  And *the commit must match*: every cycle is a fresh
+        process that imports the package from disk, so an episode recorded on the job's commit
+        is the machine saying "this is what ran", where git HEAD only says what is on the disk.
+
+        The comparison is on the commit, not on the full ``repo_revision`` token, and that is a
+        correction rather than a loosening -- see :func:`commit_of`.  Requiring the token meant
+        requiring two processes to agree on the *contents* of a tree that the second one is
+        still writing to, and that never held once: measured 2026-09-21, 111 lease requests,
+        0 activations, 0 verifications, while ``learning/episodes.jsonl`` carried the same
+        commit under two different digests.  What the rung is entitled to know is which
+        *commit* the device loaded; how many uncommitted bytes were sitting beside it is not
+        part of "the version the job produced".
+
+        A record whose commit is no longer the one on disk is not waiting for anything.  The
+        examination runs ``run_live`` against the working tree and never checks a version out
+        (``tools/control_panel.py::validation_command``), so a record asking for a commit the
+        tree has moved past can never be activated by any number of cycles.  Those are ended
+        rather than re-queued: a trace that keeps asking for a device it cannot use is the
+        operator's §4 -- a finished development task stopping ordinary gameplay, for good.
 
         Forbidden, and this is the point: file changed, agent said DONE, and tests passed are
         all facts about the *tree*.  None of them is evidence that anything loaded it.
         """
         activated: list[tuple[str, str]] = []
+        head = repo_revision(self.root).head
         for record in list(snapshot.records.values()):
             if record.state != LIVE_VERIFY_PENDING:
                 continue
             if str(record.outcome) != VERSION_ACTIVATION_PENDING:
                 continue
             if not (record.after_version and record.settled_at):
+                continue
+            expected = commit_of(record.after_version)
+            if head and expected and expected != head:
+                self._retire_superseded_version(record, expected=expected, head=head, moment=moment)
+                activated.append((record.key, (
+                    f"{record.capability}: SUPERSEDED（等待的版本 {expected[:12]} 已不是设备会运行的 "
+                    f"版本 {head[:12]}，该 examination 不可能产出它要的 Episode；已终结并交还设备）"
+                )))
                 continue
             try:
                 episodes = new_live_episodes(
@@ -3184,7 +3253,7 @@ class EscalationQueueAdapter:
                 continue
             match = next(
                 (row for row in episodes
-                 if str(row.get("repo_revision") or "") == record.after_version),
+                 if commit_of(row.get("repo_revision")) == expected),
                 None,
             )
             if match is None:
@@ -3211,6 +3280,57 @@ class EscalationQueueAdapter:
                 f"{record.after_version[:12]} 首次被真实 Episode {episode_id} 加载）"
             )))
         return activated
+
+    def _retire_superseded_version(
+        self, record: "EscalationRecord", *, expected: str, head: str, moment: datetime,
+    ) -> None:
+        """End a trace whose version the device can no longer run (operator §4).
+
+        The record is not failed for a code reason and it is not verified -- it is *ended*,
+        because the measurement it was waiting for cannot be taken.  ``NO_IMPROVEMENT`` is the
+        ladder's own word for exactly this ("the honest end when none of that happened"), and
+        the lifecycle goes terminal so the record stops holding the capability's slot: an
+        ``UNFINISHED_TRACE`` here would block a *new* job for the same capability while doing
+        nothing itself.
+
+        Ending it is also what returns the device.  ``service_validation_lease`` runs after the
+        settle phase in the same drain and asks for the device only while a record is waiting;
+        with nothing waiting it releases.  Measured 2026-09-21: this record had been asking for
+        the device every two minutes since 14:37 (30+ acquire/release cycles, none able to
+        settle), and every AUTO cycle in that window stopped with ``steps: []`` and
+        ``device_leased_for_development``.
+        """
+        try:
+            self.ledger.append({
+                "source": "queue",
+                "event": "reconciled",
+                "key": record.key,
+                "job_id": record.job_id,
+                "job_state": FAILED,
+                "outcome": NO_IMPROVEMENT,
+                "skill": record.skill,
+                "capability": record.capability,
+                "failure_signature": record.key,
+                "code_changed": False,
+                "live_improvement": False,
+                "repair_used": False,
+                "verified_episodes": 0,
+                "superseded_version": expected,
+                "superseded_by": head,
+                "before_version": record.before_version,
+                "after_version": record.after_version,
+                "explanation": (
+                    f"SUPERSEDED: this trace waited for version {expected[:12]} to be loaded and "
+                    f"run, but the tree is now {head[:12]}.  The examination drives the working "
+                    f"tree and never checks a version out, so no cycle can produce an episode on "
+                    f"{expected[:12]} -- the record would keep taking the device forever without "
+                    f"being able to settle.  Ended so ordinary gameplay resumes; the capability "
+                    f"itself is neither verified nor blamed, and a new gap may open a new trace."
+                ),
+                "recorded_at": moment.isoformat(),
+            })
+        except Exception:  # noqa: BLE001 - audit must not break the hook
+            pass
 
     def _request_validation(
         self, snapshot: EscalationSnapshot, moment: datetime,

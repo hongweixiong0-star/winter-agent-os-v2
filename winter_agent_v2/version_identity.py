@@ -201,8 +201,17 @@ def dirty_entries(root: Path, *, timeout: float = 30.0) -> list[tuple[str, str]]
     ``-z`` rather than line-splitting because this tree contains a directory with a space and
     a Chinese character in its name; a parser that splits on newlines would mangle it and
     silently drop the very paths the fingerprint is supposed to cover.
+
+    ``--no-optional-locks`` because this is a *read* and it runs on the hot path -- every
+    ``run_live`` cycle reads its own revision, and so does the escalation queue and the
+    process bootstrap.  Plain ``git status`` may take ``.git/index.lock`` to refresh the
+    stat cache, which is an optional convenience, not something a reader needs.  Measured
+    2026-09-21/22: a lock left behind by an interrupted read sat at ``.git/index.lock`` for
+    forty minutes with no git process alive, and every ``git add`` in the meantime died with
+    "Another git process seems to be running in this repository".  A reader must not be able
+    to block the writer whose version it is trying to describe.
     """
-    raw = _run(["status", "--porcelain", "-z"], root, timeout)
+    raw = _run(["--no-optional-locks", "status", "--porcelain", "-z"], root, timeout)
     if not raw:
         return []
     fields = raw.split("\0")
