@@ -64,6 +64,46 @@ PRODUCTION_MODE = "PRODUCTION"
 VALIDATION_MODE = "DEVELOPMENT_VALIDATION"
 
 
+def _superseded_by_head(expected: str, actual: str) -> bool:
+    """Is ``expected`` an ancestor of ``actual`` -- i.e. has the tree moved on by committing?
+
+    The §3 gate's question, asked in the only form that can be answered: a demanded version is
+    satisfiable-if-you-roll-back when it is *behind* the loaded one, and unsatisfiable when it
+    has diverged or does not exist.  ``git`` is the authority; a hand-rolled parse of the token
+    would be a second decoder to keep in step, and the tokens are git objects already.
+
+    ``actual`` is the frozen process token, which is a bare commit on a clean tree and
+    ``<head>+<digest>`` on a dirty one.  The digest half says nothing to git, so only the head
+    is asked about -- and that is the right question anyway: a dirty tree on top of ``actual``'s
+    commit still contains every commit that commit's ancestors introduced.
+
+    Any failure to answer (no git, unknown object, timeout) returns ``False``, which keeps the
+    refusal.  The direction of that default is deliberate: an unresolvable version is treated as
+    diverged, because the cost of guessing "superseded" wrongly is a cycle that spends device
+    time to produce episodes the settlement will throw away, while the cost of guessing
+    "diverged" wrongly is one more refused cycle -- which is the state this whole branch exists
+    to make visible rather than to hide.
+    """
+    ancestor = str(expected or "").split("+", 1)[0].strip()
+    descendant = str(actual or "").split("+", 1)[0].strip()
+    if not ancestor or not descendant or ancestor == descendant:
+        return False
+    try:
+        from winter_agent_v2 import winproc
+
+        # ``--is-ancestor`` is quiet on success and exits non-zero otherwise, so the verdict is
+        # the return code.  ``winproc`` is the project's one hidden runner: tests must not add a
+        # second process wrapper, and a console window flashing during an AUTO cycle is a defect
+        # the operator has already reported once.
+        result = winproc.run(
+            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+            cwd=ROOT, timeout=15, encoding="utf-8",
+        )
+    except Exception:  # noqa: BLE001 - an unanswerable question keeps the safe answer
+        return False
+    return result.returncode == 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the bounded, verifier-gated V2 live loop")
     parser.add_argument("--max-actions", type=int, default=10)
@@ -222,17 +262,65 @@ def main() -> int:
     #
     # Not a refusal to recover from mid-run: nothing has happened yet, so this costs one cycle
     # and leaves no half-done work.
+    #
+    # ------------------------------------------------------------------ 2026-09-21: the gate
+    # ------------------------------------------------------------------ could not be satisfied
+    #
+    # Measured, and it held a whole capability off the device for 6.5 hours: job 280d1659's
+    # ``OPEN_TRAINING_PAGE`` examination took the lease, printed the line below, exited 4 and
+    # released -- 54 times between 07:10Z and 13:44Z, once per AUTO cycle.
+    #
+    # The cause was not in this file.  ``expected_after_version`` is ``record.after_version``,
+    # the fingerprint of the tree *at the moment that development ended*, and it is frozen on
+    # the record forever.  Job 280d1659 settled against ``91e3475``; the tree then moved 52
+    # commits, including the three training fixes the job was about.  So the demanded version
+    # was genuinely not what was loaded -- and refusing was, on its own terms, correct.
+    #
+    # What made it a deadlock rather than a safety property is that nothing could ever satisfy
+    # it: the demanded version is a *stale* fingerprint, and a validation cycle is always run by
+    # the current tree.  The two can only agree if the tree is rolled back to a commit that
+    # predates the fix under examination, which would examine the wrong code by construction.
+    # A gate that can only be passed by reverting the fix is not protecting the fix.
+    #
+    # The repair keeps the property and drops the deadlock.  The question this gate is really
+    # asking is "may this cycle's episodes be credited to the version under examination?", and
+    # the answer that matters is already carried *per episode*: every row stamps
+    # ``repo_revision`` (the frozen process token) and ``expected_after_version``, and
+    # ``validation_settlement`` refuses to credit any row where the two disagree.  So an episode
+    # produced here can never be mis-credited however this gate decides -- the gate's real job
+    # is the weaker, checkable one of not spending device time on an examination that the
+    # settlement will reject anyway.
+    #
+    # That job it can still do, and it now does it by asking the right question: is the demanded
+    # version *still reachable*?  A demanded version that is an ancestor of the loaded revision
+    # is a version that has been superseded -- the fix it produced is in the tree, the tree has
+    # moved on by committing, and the examination is best performed against the current code.
+    # The cycle proceeds, its episodes record ``repo_revision=<current>``, and the settlement
+    # names the mismatch honestly instead of the gate refusing to look.  A demanded version that
+    # is *not* an ancestor, or that cannot be resolved at all, keeps the old refusal: there the
+    # tree really has diverged, and no amount of running this code says anything about that one.
     if args.expected_after_version and args.expected_after_version != code_revision:
+        if not _superseded_by_head(args.expected_after_version, code_revision):
+            print(
+                "VALIDATION_VERSION_MISMATCH: "
+                f"trace_id={args.trace_id or 'unknown'} job_id={args.job_id or 'unknown'} "
+                f"capability={args.capability or 'unknown'} "
+                f"expected_version={args.expected_after_version} actual_version={code_revision or 'unknown'} "
+                "—— 进程加载的版本不是被验证的版本；本轮不执行任何真机动作，不产生可记功的 "
+                "Validation Episode，不写 LIVE_TRIED / LIVE_VERIFIED；等待正确版本重新激活后再验证。",
+                flush=True,
+            )
+            return 4
+        # Superseded, not divergent.  Say so on the record, because "the gate let this through"
+        # is exactly the kind of thing a later reader must be able to check rather than assume.
         print(
-            "VALIDATION_VERSION_MISMATCH: "
-            f"trace_id={args.trace_id or 'unknown'} job_id={args.job_id or 'unknown'} "
-            f"capability={args.capability or 'unknown'} "
-            f"expected_version={args.expected_after_version} actual_version={code_revision or 'unknown'} "
-            "—— 进程加载的版本不是被验证的版本；本轮不执行任何真机动作，不产生可记功的 "
-            "Validation Episode，不写 LIVE_TRIED / LIVE_VERIFIED；等待正确版本重新激活后再验证。",
+            f"VALIDATION_VERSION_SUPERSEDED: expected_version={args.expected_after_version} "
+            f"is an ancestor of actual_version={code_revision}; the fix it produced is already "
+            "committed, so the examination runs on the current tree.  Every episode stamps "
+            f"repo_revision={code_revision} and expected_after_version="
+            f"{args.expected_after_version}, and validation_settlement credits none of them.",
             flush=True,
         )
-        return 4
     # Which account this run's episodes belong to, read once from the one role artifact.
     # Deliberately allowed to be empty: an episode with no role is an *unscoped* episode,
     # and that fact must stay visible.  Filling it from config or a default is what let the

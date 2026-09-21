@@ -80,9 +80,47 @@ EXCLUDED_PREFIXES: tuple[str, ...] = (
 #: -- so it restarted itself, wrote the file again, and restarted again.  A file the system
 #: writes about its own state is not a change to the system's code, and a version identity that
 #: fires on it is a version identity that fires on nothing.
+#:
+#: Extended 2026-09-21 to the knowledge records the same loop writes, and the cost this time was
+#: a whole capability, not a restart loop.
+#:
+#: ``capability_bootstrap`` is the *consumer* side of the escalation queue: whenever a research
+#: job settles it folds the answer back into ``knowledge/preload/<CAPABILITY>.json`` and
+#: regenerates ``knowledge/preload/INDEX.json`` (``KnowledgeStore.save`` / ``write_index``), and
+#: the panel runs that pass on its own clock (``QueuePump.PRELOAD_EVERY = 20`` ticks).  Those
+#: paths sit under ``knowledge/``, which the include list keeps because the runtime really does
+#: load them -- so the panel's own bookkeeping made the tree dirty with a digest that changed
+#: every time it ran, and ``repo_revision`` could never equal the ``after_version`` a job had
+#: fingerprinted at the moment its development ended.
+#:
+#: The measured consequence: job 280d1659's validation cycle took the device lease, exited
+#: ``EXIT_4`` in the version gate of ``run_live`` without touching the device, and released --
+#: every 40 to 90 seconds for 6.5 hours, 54 attempts, one per AUTO cycle.  ``OPEN_TRAINING_PAGE``
+#: could not be examined by any amount of real play, because the version it demanded was one the
+#: running window itself kept invalidating.
+#:
+#: The distinction that decides membership here is the same one the ``config/`` entries rest on:
+#: a knowledge record is a *product of the loop* (what we have learned so far, stamped with the
+#: moment we learned it), while the hand-written rule files beside it (``knowledge/game/beasts``
+#: and the rest of the tracked corpus) are *inputs a developer edits*.  Excluding the former does
+#: not weaken the identity -- the code, the configuration and the rules are still fingerprinted
+#: byte for byte, and ``test_version_fingerprint_content`` pins that a real content edit still
+#: moves the token.
 EXCLUDED_FILES: tuple[str, ...] = (
     "config/control_panel_state.json",
     "config/policy_state.json",
+)
+
+#: Directories under an *included* prefix that the running system populates itself.  The same
+#: argument as :data:`EXCLUDED_FILES`, for a set of paths that grows at runtime and therefore
+#: cannot be listed one by one.
+#:
+#: ``knowledge/preload/`` is the escalation queue's own durable memory: one record per capability,
+#: created when a capability is first examined and rewritten every time an answer comes back.
+#: A record that did not exist when the job started is not a change to the code under test.
+#: Kept as a directory rather than a file list because the set of capabilities is 194 and open.
+EXCLUDED_DIRECTORIES: tuple[str, ...] = (
+    "knowledge/preload/",     # per-capability research records, written by capability_bootstrap
 )
 
 
@@ -100,6 +138,8 @@ def is_version_relevant(relative: str) -> bool:
     if any(path.startswith(prefix) for prefix in EXCLUDED_PREFIXES):
         return False
     if path in EXCLUDED_FILES:
+        return False
+    if any(path.startswith(prefix) for prefix in EXCLUDED_DIRECTORIES):
         return False
     if path in VERSION_RELEVANT_FILES:
         return True
