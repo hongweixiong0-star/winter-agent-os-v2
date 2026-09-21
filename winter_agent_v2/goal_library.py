@@ -74,6 +74,15 @@ GOAL_ROUTES: dict[str, str] = {
     "DAILY_ACTIVITY_TARGET": "DAILY",
     "ALLIANCE_ROUTINE": "ALLIANCE",
     "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
+    # Measured 2026-09-21: this one was missing, and it was the only goal ``discover`` can
+    # emit that ``route_for`` answered ``None`` for.  It still worked -- ``RuleBrain`` with
+    # ``current_goal=None`` falls into its gather branch, and 145 production episodes carry
+    # this goal id -- but that is the default branch, not a decision.  The default happens to
+    # agree today; the moment the gather branch moves or a second goal also goes unrouted,
+    # "no route" stops meaning "gather" and the goal goes quietly inert (which is exactly how
+    # four panel routines stayed invisible).  Named here so the route is chosen rather than
+    # inherited, and ``test_every_goal_has_a_route`` keeps it that way.
+    "KEEP_MARCHES_PRODUCTIVE": "GATHER_RESOURCE",
 }
 
 #: The domains ``run_live.py --goal`` accepts.  Kept beside :data:`GOAL_ROUTES` because the
