@@ -13,9 +13,39 @@ from PIL import Image
 
 from .building_identity import UNKNOWN as UNKNOWN_IDENTITY
 from .building_identity import read_building_identity
-from .camp_training import CAMP_LABELS, TROOP_TO_CAMP
+from .camp_training import CAMP_LABELS, LABEL_TO_CAMP, TROOP_TO_CAMP
 from .camp_training import camp_from_selected_label, merge_camps, observe_camps
 from .models import MarchState, Page, RoleIdentity, WorldState
+
+
+#: Training-page titles seen on the live client -> the troop the page is training.
+#:
+#: Keyed on the full title rather than on the troop word alone so a title that is a substring
+#: of another (a hypothetical 盾兵营 vs 盾兵 title) cannot cross-match.  The wording is not a
+#: constant across camps -- 英勇盾兵, 刚毅矛兵, 王牌矛兵 and 王牌射手 have all been measured --
+#: so the table is data, extended from frames, and a title not in it is simply not read rather
+#: than guessed at.  Every entry here was read off a real frame; see the camp frames under
+#: ``dataset/raw/live_train_*``.
+TITLE_TO_TROOP: dict[str, str] = {
+    "英勇盾兵": "INFANTRY",
+    "盾兵": "INFANTRY",
+    "刚毅矛兵": "LANCER",
+    "王牌矛兵": "LANCER",
+    "矛兵": "LANCER",
+    "刚毅射手": "MARKSMAN",
+    "王牌射手": "MARKSMAN",
+    "射手": "MARKSMAN",
+}
+
+#: A camp's tab label -> its troop.  Used only as a fallback, and only when exactly one label
+#: is present: the client draws all three at once, so presence normally decides nothing.
+LABEL_TO_TROOP: dict[str, str] = {
+    label: troop for troop, label in (
+        ("INFANTRY", CAMP_LABELS["SHIELD_CAMP"]),
+        ("LANCER", CAMP_LABELS["LANCER_CAMP"]),
+        ("MARKSMAN", CAMP_LABELS["MARKSMAN_CAMP"]),
+    )
+}
 
 
 @dataclass(frozen=True)
@@ -338,12 +368,41 @@ class OCRPageClassifier:
             daily.update({"status":"CLAIMABLE" if claimable else "AVAILABLE", "claimable_count":1 if claimable else 0})
         if page is Page.TRAINING:
             training.update({"status":"IN_PROGRESS", "queue_available":False})
-            if "盾兵营" in exact_texts:
-                training["troop_type"] = "INFANTRY"
-            elif "矛兵营" in exact_texts:
-                training["troop_type"] = "LANCER"
-            elif "射手营" in exact_texts:
-                training["troop_type"] = "MARKSMAN"
+            # Which barracks this page *is* -- decided by the PAGE TITLE, never by a tab label.
+            #
+            # Measured 2026-09-21 on every reviewed camp frame: the client draws **all three**
+            # tab labels at once (盾兵营 / 矛兵营 / 射手营, all three read on all five frames),
+            # so their presence is the same on every camp page and *decides nothing*.  The
+            # previous ``if 盾兵营 ... elif 矛兵营 ... elif 射手营 ...`` chain therefore did not
+            # read the camp at all: it returned whichever label happened to be listed first, so
+            # every camp page answered SHIELD_CAMP/盾兵营 and the three camps were not being
+            # read independently -- the exact failure the per-camp WorldState exists to prevent.
+            #
+            # The title is the signal that discriminates, because it is drawn once, for the open
+            # camp only: 王牌射手 on the marksman page, 王牌矛兵 on the lancer page.  OCR reads
+            # it cleanly on every frame (verified on all five), including the ones where the tab
+            # labels are ambiguous.
+            #
+            # The title wording is not a constant across camps (英勇盾兵 / 刚毅矛兵 / 王牌射手 /
+            # 王牌矛兵 have all been seen), so the match is on the TROOP WORD the title contains
+            # rather than on a full title string -- and 射手/矛兵/盾兵 are distinct words, so it
+            # stays unambiguous.  The tab labels are still recorded in ``camps_seen`` as
+            # corroboration, and ``camp_open_label`` is only claimed when the open camp's own
+            # label is among them.
+            titles = [text for text in exact_texts if text in TITLE_TO_TROOP]
+            named = {
+                TITLE_TO_TROOP[title]
+                for title in titles
+            }
+            if len(named) == 1:
+                training["troop_type"] = named.pop()
+            elif not named:
+                # No title read: fall back to a tab label ONLY when exactly one is present, so a
+                # frame that drew all three (the normal case) is left un-attributed rather than
+                # guessed.  ``None`` is the honest reading and keeps the camp unknown.
+                present = [label for label in CAMP_LABELS.values() if label in exact_texts]
+                if len(present) == 1:
+                    training["troop_type"] = LABEL_TO_TROOP[present[0]]
             for text in exact_texts:
                 timer = re.fullmatch(r"\d{1,2}:\d{2}:\d{2}", text)
                 if timer:
