@@ -940,3 +940,32 @@ CLAIM_EXPLORATION_IDLE），所以 `current_goal=None`，而两个预留分支�
 | 83 | **`KEEP_MARCHES_PRODUCTIVE` 不在 goal→route 映射里** | 🟠 **已定性，未补** | 补它**不是无副作用的**：`current_goal is not None` 在 `brain.py:274 / 534 / 1055` 会新激活三条分支（终端页让位、`goal_page_mismatch`、联盟页让位）⇒ 等于同时打开三条未测路径，必须单独测。**本轮不补**，记此处。⚠ 注意：**补它也不会改变本次停机** —— 两个预留分支对 `None` 与 `"GATHER_RESOURCE"` 行为相同。 |
 | 84 | **角色身份没有任何生产路径重读** | 🟠 **真实缺口** | `learning/role_identity.json` 最后观测 **2026-09-16T10:44:08Z**（已过 **112.8h**），`verification=VISION_READ_REPLAY`（**回放**）。生产只把它当**标记**（`[role] 1171757165 (PERSISTED)`）打在 episode 上，**不参与调度门控**、不会把队列/体力写进别的角色 ⇒ **展示层过期**，不是队列问题的伪装。但 `record_role` 只被操作者工具 `tools/state_truth_audit.py --record-role` 调用，**AUTO 从不重读** ⇒ 需要一条生产重读路径（或在无人值守里定期走一次领主档案）。 |
 | 33 | **陈旧 `.git/index.lock`（第 3 次）** | ⚠️ **再次命中** | 本次 0 字节、mtime 早 3h30m、`tasklist` 无 `git.exe` ⇒ 按既有规程删除后恢复。**已三次**，建议尽快在同步路径加"陈旧锁检测"（#33 原有建议），不要靠人记得。 |
+
+### 六、真机验证：**被 AUTO 停摆挡住**（本轮未能完成，据实报告）
+
+**AUTO 在 `11:43:24`（本地）那一轮之后再没有起过新轮**：
+
+| 证据 | 值 |
+|---|---|
+| 最后一轮目录 | `dataset/raw/control_panel/runtime_auto/20260921_114324_887590`，9 帧，**最后一帧 `03:44:57Z`** |
+| 最后一条 episode | `03:44:56Z  OPEN_ALLIANCE_GIFTS  KEEP_MARCHES_PRODUCTIVE  rev=8a8429c77b55` |
+| `runtime_snapshot` | `agent_state=DEGRADED`、`current_skill=SAFE_STOP`、`page=ALLIANCE`、**`stop_reason=alliance_state_unknown`**，`runtime_thread_alive=false`，`updated_at=03:45:04Z` |
+| 面板进程 | **仍然活着**：`pump.json` `last_tick=11:56:51`、`passes=548`、`gateway.json checked_at=11:57:05` |
+| `panel.log` | 最后一行 `11:43:24 自动运行已启动`，**之后 13 分钟没有任何输出** |
+| `operator_intent` | `RUNNING`（11:43:24 置位） |
+
+⇒ **面板活着、AUTO 意图是 RUNNING，但轮转循环不再起轮**。
+
+**这不是本次改动造成的，而且与它无关**：
+① 那个卡住的轮次跑的是 **`8a8429c7`（修复前）**；
+② `winter_agent_v2/runtime.py` **不在** `CONTROL_PLANE_PATHS` 名单里
+（名单 = `tools/control_panel.py`、`workbuddy_bridge.py`、`gateway_service.py`、`escalation_queue.py`、
+`device_lease.py`、`version_identity.py`、`state_truth.py`）⇒ **本次提交不需要控制面重载**。
+
+**处置**：**未自行重启面板**。重启 GUI 进程属于控制面动作，操作者本次明确要求"不得为了本次修复触发
+未经验证的控制面自动重载"，且本会话开头就是操作者手工重启的。⇒ **需要操作者再重启一次**。
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 85 | **无 goal 的轮次站在联盟页会以 `alliance_state_unknown` 结束整轮** | 🔴 **真的又发生了（有帧与快照）** | 昨天 `ecb0014` 把联盟页的停机改成"**有命名 goal 时**让位一次再停"，并**刻意保留**无 goal 时直接停（依据是 `tests/test_multitask_scheduler.py` 钉的"没有 goal 时是调度器在探测"）。本次实测：`11:43:24` 那轮在 `page=ALLIANCE` 上以 `current_skill=SAFE_STOP / alliance_state_unknown` 结束，**快照的 goal 标签是 `KEEP_TRAINING_PRODUCTIVE`**，但 brain 侧当时 `current_goal=None`（标签取的是 `_committed_goal`）⇒ 走的是**被刻意保留的那条**。⇒ 后果与昨天判断的一致：**一个没人能操作的页面结束了整轮，而没有任何动作把客户端挪出去** —— 只是这次"没人能操作"的原因不是"别的 goal 站错了页"，而是**当轮没有任何 goal 可调度**。**未修**：改它就要推翻 `test_multitask_scheduler.py` 钉住的那条性质，需要单独判断"无 goal 时 Back 是否会被误当成有活干"。 |
+| 33 更正 | **`tasklist` 在本环境不可用，"确认无 git 进程"这一步实际没做成** | ⚠️ **证据更正** | 本次删陈旧锁前的"无 `git.exe` 进程"结论，实际来自 `tasklist` **返回 0 行**——而该命令在本环境**对任何查询都返回 0 行**（`tasklist //FO CSV \| wc -l` = 0），所以它**不能证明任何事**。⇒ 当时删除的依据只有：**0 字节、mtime 早 3h30m、`git add` 报 `index.lock exists` 且无 git 输出**。结论仍合理，但**过程证据要按实际写**。**建议**：把"陈旧锁检测"做成代码（比年龄 + 0 字节），不要依赖进程检查 —— 本环境的进程检查不可用。 |
