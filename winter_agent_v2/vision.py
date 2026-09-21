@@ -1083,6 +1083,45 @@ class SemanticWorldVision:
         def match(name: str) -> SemanticMatch | None:
             return self.semantic.find(image_path, name)
 
+        def nearest_question(*names: str) -> str | None:
+            """Which of these sibling dialogs is on screen, decided by distance.
+
+            The client draws one confirm-dialog shape for several different
+            questions: blue title bar, light body, and a 取消/确定 row that is
+            pixel-identical between them.  Measured 2026-09-21 on the two
+            archived frames, the *button* templates match **both** dialogs at
+            distance 0 and the same centres (0.280,0.615)/(0.700,0.615), so the
+            controls carry no identity at all -- only the question does:
+
+                live_phase_e_start.png        the 其他队伍与您的出征目标相同 dialog
+                    POPUP_DUPLICATE_TARGET_TITLE  d=0   <- correct
+                    POPUP_EXIT_CONFIRM            d=2
+
+                the 确认退出游戏吗? dialog
+                    POPUP_DUPLICATE_TARGET_TITLE  d=8
+                    POPUP_EXIT_CONFIRM            d=4   <- correct
+
+            Answering by ``if/elif`` order therefore gets one of the two wrong
+            no matter which order is chosen, and the two answers are not
+            equally costly.  Measured live 2026-09-21: the quit dialog was read
+            as DUPLICATE_TARGET, so the route tapped
+            ``BTN_DUPLICATE_TARGET_CANCEL`` -- the 取消 of *quit the game* --
+            and the run ended with ``DUPLICATE_TARGET_CANCEL_NOT_PROVEN``
+            because the client landed on a page the verifier does not accept as
+            the search panel.
+
+            So the winner is the nearest question, which reproduces both
+            measured readings above.  Names not on screen are skipped; with
+            none of them present the caller falls through to the remaining
+            branches.
+            """
+            scores: list[tuple[int, str]] = []
+            for name in names:
+                hit = match(name)
+                if hit is not None:
+                    scores.append((hit[1], name))
+            return min(scores)[1] if scores else None
+
         def an_overlay_covers_the_screen() -> bool:
             """Whether a modal is parked over the client, read from the HUD strip.
 
@@ -1156,10 +1195,28 @@ class SemanticWorldVision:
         # reviewed policy is to cancel and re-search.  This must be classified
         # before the generic popup branch, otherwise it is closed as an
         # unknown blocker and the gather silently fails.
-        if match("POPUP_DUPLICATE_TARGET_TITLE"):
+        #
+        # The quit dialog shares this shape and is asked alongside it: both are
+        # resolved from their own question text, because the 取消/确定 row is
+        # identical in both and therefore cannot tell them apart (see
+        # ``nearest_question`` for the measurements).  Asking here rather than
+        # at the quit dialog's own branch is what makes the two mutually
+        # exclusive -- an ``if/elif`` on either order hands one of them the
+        # other's answer.
+        question = nearest_question(
+            "POPUP_DUPLICATE_TARGET_TITLE",
+            "POPUP_EXIT_CONFIRM",
+        )
+        if question == "POPUP_DUPLICATE_TARGET_TITLE":
             return WorldState(
                 page=Page.POPUP,
                 popup="DUPLICATE_TARGET",
+                confidence=0.99,
+            )
+        if question == "POPUP_EXIT_CONFIRM":
+            return WorldState(
+                page=Page.POPUP,
+                popup="EXIT_CONFIRM",
                 confidence=0.99,
             )
         if match("HIGH_RISK_REAL_MONEY_OFFER") and match("REAL_MONEY_PRICE_BUTTON"):
@@ -1188,8 +1245,10 @@ class SemanticWorldVision:
         # popup identity: only the free control may ever be tapped.
         if match("POPUP_TITLE_GET_MORE_STAMINA"):
             return WorldState(page=Page.POPUP, popup="GET_MORE_STAMINA", confidence=0.99)
-        if match("POPUP_EXIT_CONFIRM"):
-            return WorldState(page=Page.POPUP, popup="EXIT_CONFIRM", confidence=0.99)
+        # ``POPUP_EXIT_CONFIRM`` is resolved above, beside its sibling question
+        # ``POPUP_DUPLICATE_TARGET_TITLE``, because a bare ``match`` here let the
+        # looser duplicate-target template claim the quit dialog and tap 取消 on
+        # it.  Re-asking it here would reintroduce that.
         if match("POPUP_POWER_OVERVIEW"):
             return WorldState(page=Page.POPUP, popup="POWER_OVERVIEW", confidence=0.99)
         if match("POPUP_POWER_DETAILS"):
