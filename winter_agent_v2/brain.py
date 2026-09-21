@@ -658,9 +658,21 @@ class RuleBrain:
                 # draws the result card over it, so this Back is what exposes the
                 # target -- while a Back that failed to move the client must not be
                 # repeated, or the loop ping-pongs between panel and map forever.
-                if not self.beast_search_panel_left:
-                    self.beast_search_panel_left = True
-                    return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")
+                #
+                # But NOT while the search has already produced something to act on.
+                # Measured 2026-09-21 with the whole chain walked: 搜索 succeeds, the
+                # panel stays open on the beast tab, and the beast is on the map behind
+                # it -- so this branch fired first and answered Back, and the labelled
+                # route below (which is what actually opens the card and spends the
+                # stamina) was never reached.  The search worked and nothing was hunted.
+                # Standing on the panel is fine when there is a target to tap; leaving it
+                # is only the right move when there is not.  The predicate is deliberately
+                # the same pair the dispatch branches use, so the two cannot disagree
+                # about whether a target exists.
+                if not (is_dispatchable(world.beast) or may_evaluate(world.beast)):
+                    if not self.beast_search_panel_left:
+                        self.beast_search_panel_left = True
+                        return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")
         if (
             world.page is Page.EXPLORATION
             and self._intel_like

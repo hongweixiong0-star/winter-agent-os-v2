@@ -150,5 +150,113 @@ class BeastScanBranchTests(unittest.TestCase):
         self.assertIn("SCAN_MAP_FOR_BEAST", LiveRuntime.VERIFIED_ATOMIC)
 
 
+class TheSearchActuallyReachesADispatchTests(unittest.TestCase):
+    """The search is only worth walking if a found beast is then hunted.
+
+    The operator's requirement is a *real dispatch* that keeps going afterwards --
+    "完成一次真实出征后继续下一次，不得首次成功即停止" -- so it is not enough for
+    the search hops to be right in isolation.  This walks the whole route on the
+    frames the client actually produces:
+
+        bare map -> SEARCH_RESOURCE -> OPEN_BEAST_SEARCH_TAB -> SUBMIT_BEAST_SEARCH
+                 -> the client centres a beast -> SELECT_BEAST_TARGET_LABELLED
+                 -> the card's own verdict -> the march
+
+    and then shows a second beast in the same run takes the same route again.
+    """
+
+    def _beast_now_on_the_map(self) -> WorldState:
+        """What the frame looks like after the client's search succeeded.
+
+        A level-25 mammoth, which is what the live search returned -- deliberately
+        not the pre-approved level-9 musk ox, because the whole point of the labelled
+        route is that a species nobody cut a sprite for is still attackable.
+
+        ``visible_target`` carries the species the *frame* named, which is the field the
+        route keys identity on (``may_evaluate`` requires it; a bare ``name`` is not
+        enough).  The label read is what fills it on a real frame.
+        """
+        return WorldState(
+            page=Page.MAP,
+            march_used=0,
+            march_max=6,
+            stamina={"current": 120, "source": "MAP_HUD"},
+            beast={"visible_target": "MAMMOTH", "name": "猛犸象", "level": 25, "available": True},
+            confidence=0.99,
+        )
+
+    def test_the_search_hands_a_found_beast_to_the_labelled_route(self):
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        # Bare map: the search chain.
+        self.assertEqual(brain.decide(_map_without_target(), v2_registry()).skill, "SEARCH_RESOURCE")
+        self.assertEqual(brain.decide(WorldState(page=Page.MAP, resource_search_open=True, resource_beast_tab=False, confidence=0.99), v2_registry()).skill, "OPEN_BEAST_SEARCH_TAB")
+        self.assertEqual(brain.decide(_search_panel_on_beast_tab(), v2_registry()).skill, "SUBMIT_BEAST_SEARCH")
+        # The search found something: the labelled route takes it, not a stop.
+        decision = brain.decide(self._beast_now_on_the_map(), v2_registry())
+        self.assertEqual(decision.skill, "SELECT_BEAST_TARGET_LABELLED")
+        self.assertEqual(decision.reason, "beast_labelled_on_the_map_reading_the_clients_own_verdict")
+
+    def test_a_second_beast_in_the_same_run_still_takes_the_route(self):
+        """One success must not close the goal.
+
+        ``beast_search_used`` and the pan budget are cleared when a target is found,
+        precisely so the route can be walked again rather than ending on the first
+        dispatch.
+        """
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        brain.decide(_map_without_target(), v2_registry())
+        brain.decide(_search_panel_on_beast_tab(), v2_registry())
+        brain.decide(self._beast_now_on_the_map(), v2_registry())
+        self.assertFalse(brain.beast_search_used, "a found target must return the search ticket")
+
+        # A second bare map in the same run starts the search again from the top.
+        brain.beast_search_panel_left = False
+        self.assertEqual(brain.decide(_map_without_target(), v2_registry()).skill, "SEARCH_RESOURCE")
+        self.assertEqual(brain.decide(_search_panel_on_beast_tab(), v2_registry()).skill, "SUBMIT_BEAST_SEARCH")
+
+    def test_a_target_found_behind_the_still_open_panel_is_selected_not_backed_out_of(self):
+        """The panel stays up when the search succeeds, so this is the real frame.
+
+        Measured 2026-09-21 on ``beast5_found.png``: after 搜索 the panel is still
+        open on the beast tab and the result card is drawn over it.  The panel-exit
+        branch and the target branches therefore both match the same frame, and the
+        order between them decides whether the hunt happens at all -- with the exit
+        first, the run answers Back and the labelled route that actually opens the
+        card and spends the stamina is never reached.  Standing on the panel is fine
+        when there is a target to tap; leaving is only right when there is not.
+        """
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        brain.beast_search_used = True  # the search has been spent
+        found = self._beast_now_on_the_map()
+        found = WorldState(
+            page=Page.MAP,
+            march_used=0,
+            march_max=6,
+            stamina={"current": 120, "source": "MAP_HUD"},
+            resource_search_open=True,
+            resource_beast_tab=True,
+            beast=dict(found.beast),
+            confidence=0.99,
+        )
+        decision = brain.decide(found, v2_registry())
+        self.assertEqual(decision.skill, "SELECT_BEAST_TARGET_LABELLED",
+                         "a search that found something must not be backed out of")
+        self.assertFalse(brain.beast_search_panel_left,
+                         "the panel was never left, so a later bare map can still use it")
+
+    def test_a_spent_search_with_nothing_to_show_still_leaves_the_panel(self):
+        """The negative control: the exit is still taken when there is no target."""
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        brain.beast_search_used = True
+        empty_panel = WorldState(
+            page=Page.MAP, march_used=0, resource_search_open=True,
+            resource_beast_tab=True, confidence=0.99,
+        )
+        decision = brain.decide(empty_panel, v2_registry())
+        self.assertEqual(decision.skill, "BACK")
+        self.assertEqual(decision.reason, "close_resource_search_for_beast_goal")
+        self.assertTrue(brain.beast_search_panel_left)
+
+
 if __name__ == "__main__":
     unittest.main()
