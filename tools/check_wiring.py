@@ -534,9 +534,9 @@ def main() -> int:
     # change: the previous version of this check named 'reserved_march_for_stamina', so it
     # only ever covered that one reason -- which is how the same defect (one goal's refusal
     # ending the whole cycle) survived untouched in 'alliance_state_unknown', 'no_idle_march',
-    # 'camp_menu_never_drawn' and the rest.  `is_fatal_stop` is the run's own line between
-    # DEGRADED and FATAL_STOPPED, so a new non-fatal reason is covered the day it appears and
-    # a genuinely fatal one still stops.
+    # 'camp_entry_is_a_guided_step_not_a_selection' and the rest.  `is_fatal_stop` is the run's
+    # own line between DEGRADED and FATAL_STOPPED, so a new non-fatal reason is covered the day
+    # it appears and a genuinely fatal one still stops.
     _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
     check("runtime: a non-fatal refusal hands the cycle over instead of ending the run",
           "not is_fatal_stop(decision.reason)" in _runtime_source
@@ -678,11 +678,14 @@ def main() -> int:
     _manifest_paths = json.loads(
         (ROOT / "dataset/candidate/template_manifest.json").read_text(encoding="utf-8"))
     _manifest_semantics = {row["semantic"] for row in _manifest_paths["records"]}
-    # Targets resolved from the frame by arithmetic rather than by a template -- the five
-    # branches in LiveRuntime's ``resolve`` plus the one reviewed normalized fallback.
+    # Targets resolved from the frame by arithmetic rather than by a template -- the branches
+    # in LiveRuntime._resolve_semantic_target plus the one reviewed normalized fallback.
+    # BEAST_SEARCH_TAB joined on 2026-09-21: it is tapped where this frame's own OCR read the
+    # 野兽 label (ocr.read_resource_tab_labels), because the strip reorders and the three
+    # position-pinned beast-search templates matched nothing on the live client.
     _derived_targets = {"RESOURCE_DYNAMIC", "HUD_STAMINA_GAUGE", "MARCH_ROW_1",
                         "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM",
-                        "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING"}
+                        "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING", "BEAST_SEARCH_TAB"}
     _unresolvable = []
     for _skill in registry.all():
         if _skill.action.kind != "TAP_SEMANTIC":

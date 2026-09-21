@@ -137,7 +137,10 @@ class TheWaitIsBoundedTest(unittest.TestCase):
         brain.decide(stage_a(), v2_registry())
         brain.decide(stage_a(), v2_registry())
         decision = brain.decide(stage_a(), v2_registry())
-        self.assertEqual(decision.reason, "camp_menu_never_drawn")
+        # Named for the precondition, not for a menu that is merely late: issue #82 was
+        # settled on 2026-09-21 (the ellipse is on the ground, the hand points at the
+        # 2-badged action block, three consecutive frames do not progress).
+        self.assertEqual(decision.reason, "camp_entry_is_a_guided_step_not_a_selection")
 
     def test_the_counter_is_per_run(self):
         first = RuleBrain(current_goal="TRAIN")

@@ -12,7 +12,8 @@ target.  The client ships a better answer -- its own beast search -- so the rout
 now asks the client first and pans only after the search has been spent:
 
     SEARCH_RESOURCE (open the panel)
-      -> OPEN_BEAST_SEARCH_TAB (select 冰原巨兽)
+      -> OPEN_BEAST_SEARCH_TAB (select the client's 野兽 tab, i.e. the ordinary
+         solo-attack one -- NOT 冰原巨兽, which is the rally target)
       -> SUBMIT_BEAST_SEARCH (client locates and centres a beast)
       -> SCAN_MAP_FOR_BEAST x max_beast_scans (the old method, still bounded)
       -> SAFE_STOP verified_beast_target_not_visible
@@ -24,6 +25,7 @@ search hops first, which is what the run does on a bare map.
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
@@ -37,12 +39,39 @@ def _map_without_target() -> WorldState:
 
 
 def _search_panel_on_beast_tab() -> WorldState:
-    """The frame the 搜索 tap is issued from: panel open, beast tab selected."""
+    """The frame the 搜索 tap is issued from: panel open, ordinary beast tab read.
+
+    ``resource_beast_tab_norm`` is the label-derived field, and it is what the route keys on.
+    The bool ``resource_beast_tab`` is not enough: it is true for a panel showing either monster
+    tab, and the rally tab's cards offer no solo 攻击 -- measured on the level-5 mammoth.  The
+    fixture carries both so a change that reintroduces the conflated reading fails here.
+    """
     return WorldState(
         page=Page.MAP,
         march_used=0,
         resource_search_open=True,
         resource_beast_tab=True,
+        resource_tab_kinds=("BEAST", "COAL", "GIANT_BEAST", "MEAT", "WOOD"),
+        resource_beast_tab_norm=(0.058, 0.740),
+        resource_giant_beast_tab_norm=(0.276, 0.740),
+        confidence=0.99,
+    )
+
+
+def _search_panel_on_the_rally_tab_only() -> WorldState:
+    """The client's other monster tab, with no ordinary 野兽 tab drawn.
+
+    Measured 2026-09-21: this is the layout the archived ``beast_tab.png`` frames actually
+    have -- 冰原巨兽 leftmost and no 野兽 tab at all.  Its targets are the rally ones, so the
+    route must decline rather than tap it and search for something it cannot solo.
+    """
+    return WorldState(
+        page=Page.MAP,
+        march_used=0,
+        resource_search_open=True,
+        resource_beast_tab=True,
+        resource_tab_kinds=("COAL", "GIANT_BEAST", "IRON", "MEAT", "WOOD"),
+        resource_giant_beast_tab_norm=(0.066, 0.740),
         confidence=0.99,
     )
 
@@ -250,12 +279,82 @@ class TheSearchActuallyReachesADispatchTests(unittest.TestCase):
         brain.beast_search_used = True
         empty_panel = WorldState(
             page=Page.MAP, march_used=0, resource_search_open=True,
-            resource_beast_tab=True, confidence=0.99,
+            resource_beast_tab_norm=(0.058, 0.740), confidence=0.99,
         )
         decision = brain.decide(empty_panel, v2_registry())
         self.assertEqual(decision.skill, "BACK")
         self.assertEqual(decision.reason, "close_resource_search_for_beast_goal")
         self.assertTrue(brain.beast_search_panel_left)
+
+
+class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
+    """The two monster tabs are not interchangeable, and the route must not conflate them.
+
+    Measured 2026-09-21: the archived ``beast_tab.png`` frames -- the ones the beast-search
+    templates were cut from -- have 冰原巨兽 leftmost and draw no 野兽 tab at all, while the
+    live client that day had 野兽 leftmost.  A route whose purpose is a solo kill must target
+    ``BEAST``, because the measured level-5 mammoth card on the rally tab offered only 集结.
+    """
+
+    def test_the_rally_tab_alone_is_refused_rather_than_searched(self):
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        decision = brain.decide(_search_panel_on_the_rally_tab_only(), v2_registry())
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(
+            decision.reason,
+            "only_the_rally_beast_tab_is_offered_no_solo_attack_entry",
+        )
+        self.assertFalse(
+            brain.beast_search_used,
+            "a refusal must not spend the search ticket: another frame may still offer 野兽",
+        )
+
+    def test_a_panel_with_both_tabs_searches_the_ordinary_one(self):
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        decision = brain.decide(_search_panel_on_beast_tab(), v2_registry())
+        self.assertEqual(decision.skill, "SUBMIT_BEAST_SEARCH")
+
+    def test_the_open_tab_skill_taps_where_the_label_was_read(self):
+        """The tap comes from this frame's own label, not a position-pinned template.
+
+        Asserted through the runtime's own resolver, because that is what the executor taps:
+        a coordinate that is read off the frame cannot follow the client when the strip
+        reorders, and a template pinned to a slot silently taps the wrong tab instead.
+        """
+        from winter_agent_v2.runtime import LiveRuntime
+
+        panel = _search_panel_on_beast_tab()
+        runtime = LiveRuntime(
+            device=object(), vision=object(), semantic_vision=object(),
+            capture_dir=Path("."), brain=RuleBrain(current_goal="BEAST_HUNT"),
+            sleeper=lambda _s: None,
+        )
+        point = runtime._resolve_semantic_target("BEAST_SEARCH_TAB", panel)
+        self.assertEqual(point, panel.resource_beast_tab_norm)
+        # The giant-beast tab is a different place, so the two cannot be tapped interchangeably.
+        self.assertNotEqual(panel.resource_beast_tab_norm, panel.resource_giant_beast_tab_norm)
+
+    def test_the_resolver_refuses_when_the_panel_is_not_open(self):
+        """A stale point must not be reused on a frame that is not showing the strip."""
+        from winter_agent_v2.runtime import LiveRuntime
+
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        runtime = LiveRuntime(
+            device=object(), vision=object(), semantic_vision=object(),
+            capture_dir=Path("."), brain=brain, sleeper=lambda _s: None,
+        )
+        bare = WorldState(page=Page.MAP, march_used=0, confidence=0.99)
+        self.assertIsNone(runtime._resolve_semantic_target("BEAST_SEARCH_TAB", bare))
+
+    def test_the_label_reader_maps_both_monster_tabs_apart(self):
+        from winter_agent_v2.ocr import RESOURCE_TAB_LABEL_TO_KIND
+
+        self.assertEqual(RESOURCE_TAB_LABEL_TO_KIND["野兽"], "BEAST")
+        self.assertEqual(RESOURCE_TAB_LABEL_TO_KIND["冰原巨兽"], "GIANT_BEAST")
+        self.assertNotEqual(
+            RESOURCE_TAB_LABEL_TO_KIND["野兽"],
+            RESOURCE_TAB_LABEL_TO_KIND["冰原巨兽"],
+        )
 
 
 if __name__ == "__main__":

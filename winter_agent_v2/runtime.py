@@ -842,6 +842,198 @@ class LiveRuntime:
         tail = f"_{suffix}" if suffix else ""
         return self.capture_dir / f"{episode_id}_step_{index:03d}_{stage}{tail}_{stamp}.png"
 
+    def _resolve_semantic_target(
+        self,
+        semantic: str,
+        frame: "WorldState",
+        *,
+        frame_path: "Path | None" = None,
+        resource: str | None = None,
+        untried_intel_pins: list | None = None,
+    ):
+        """Answer where on ``frame`` the named semantic control is, or ``None``.
+
+        This was a closure inside ``run`` until 2026-09-21.  Nothing about what it
+        decides changed; it was lifted onto the class for one measured reason: a
+        tap target that is *read off the frame* (a label position, a detected pin,
+        a selection ring) is exactly the part of a live run most worth testing
+        without a device, and a closure cannot be reached from a test.  The frame is
+        now an argument instead of a captured local, which is also what makes the
+        page/panel guards testable -- they are the whole reason a stale coordinate
+        cannot be reused.
+
+        ``frame_path`` stays a separate argument rather than a field on ``WorldState``
+        because the observed state deliberately does not carry where it was read from:
+        the template fallback at the bottom is the one branch that needs the pixels,
+        and inventing a field so this branch could reach it would put a path on every
+        state object the rest of the pipeline compares and serialises.
+
+        ``None`` is always the honest answer to "the client did not draw this
+        where it could be read": the caller ends the step rather than tapping an
+        invented point.  Every guard below exists because a real frame made the
+        guess wrong at least once.
+        """
+        if semantic == "RESOURCE_DYNAMIC":
+            # The strip scrolls, so the tap target is derived from the
+            # bracket anchor observed on the current frame (see
+            # SemanticROIVision.resource_cell_center_norm).  The previous
+            # hand-typed centres were only valid for one scroll offset and
+            # selected the wrong tab on live frames.  ``None`` means the
+            # cell is off-screen: the loop scrolls the strip instead of
+            # guessing a coordinate.
+            return self._semantic.resource_cell_center_norm(resource)
+        if semantic == "BEAST_SEARCH_TAB":
+            # The 野兽 tab, tapped where this frame's own OCR read its printed label
+            # (see ``ocr.read_resource_tab_labels``).
+            #
+            # This replaces a template pinned to a strip position, and the reason is
+            # measured rather than theoretical: on 2026-09-21 the live client had 野兽
+            # in the leftmost slot, where the archived frame (and therefore the
+            # registered ``BTN_SEARCH_BEAST_TAB`` control) expected 冰原巨兽.  All three
+            # beast-search templates scored NO MATCH on the live frame, the second hop
+            # of the search chain returned SEMANTIC_TARGET_NOT_VERIFIED, and the goal
+            # yielded without ever reaching a beast.  ``vision.resource_tab_order``
+            # already warns that this part of the strip drifts and that reading the
+            # label is the durable answer; this is that answer.
+            #
+            # The page and panel checks keep a stale point from being reused: the
+            # fragment belongs to the MAP frame it was read from, and only an open
+            # search panel draws the strip at all.  ``None`` -- wrong page, no panel, or
+            # the tab not on screen -- ends the loop honestly rather than tapping an
+            # invented point, which is also what stops a client without a 野兽 tab from
+            # being tapped somewhere arbitrary.
+            if frame.page is not Page.MAP or not frame.resource_search_open:
+                return None
+            point = frame.resource_beast_tab_norm
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
+        if semantic == "BEAST_ON_MAP":
+            # The beast the client's own label named, tapped where this frame
+            # measured that label (see ocr.beast_from_its_label).  It cannot be a
+            # template: the whole point is that the target need not be a species
+            # anyone has cut a sprite for, and a hardcoded coordinate would be a
+            # guess about where the animal happens to stand.
+            #
+            # The page check is what keeps a stale point from being reused: the
+            # fragment is only meaningful on the MAP frame it was read from, so a
+            # tap_norm left over from an earlier observation cannot land on
+            # whatever page the run has since reached.  ``None`` means the label
+            # carried no box (or no frame size was available) and the loop ends
+            # honestly rather than tapping an invented point.
+            if frame.page is not Page.MAP:
+                return None
+            point = frame.beast.get("tap_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
+        if semantic == "TRAINING_CAMP_IN_RING":
+            # The selected camp's own centre, read off the frame by camp_ring.py.
+            #
+            # The template this replaces resolved to (346, 682) on all 46 live stage A
+            # frames -- 103 px below the selection ring, on bare ground between the
+            # buildings.  Tapping there is a map tap, which is what took the client to
+            # the MAP on the one attempt that ever tried it.  The ring's centre is a
+            # measurement of the same frame rather than a correction applied to a
+            # remembered point, so it follows the camera instead of assuming it.
+            #
+            # The page check is what keeps a stale point from being reused, exactly as
+            # for the beast above: the fragment belongs to the HOME frame it was read
+            # from.  ``None`` -- wrong page, no ring, or no frame size -- ends the loop
+            # honestly rather than tapping a point nobody measured.
+            if frame.page is not Page.HOME:
+                return None
+            point = frame.training.get("camp_tap_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
+        if semantic == "HUD_STAMINA_GAUGE":
+            # The gauge is drawn at a measured spot on every map frame.
+            # The page check is what keeps a popup or a loading screen
+            # from absorbing the tap.
+            #
+            # It used to *also* require ``stamina.current is not None``,
+            # i.e. that the number had been read.  Measured 2026-09-15:
+            # the two MAP frames in the recorded corpus whose gauge
+            # could not be read are both genuine ``0`` readings -- the
+            # pill is drawn and plainly shows 0
+            # (dataset/probe_output/map_gauge_unreadable/) -- and the
+            # OCR cannot read a lone 0 at any padding or scale (best
+            # confidence 0.73, and it flips between '0' and 'O'; see
+            # tools/probe_stamina_zero.py).  So that condition did not
+            # test "the gauge is there", it tested "the gauge is not
+            # empty", and it disabled the free-stamina check exactly
+            # when stamina was 0 -- the moment the free gift matters
+            # most.  The tap target is the pill's own centre either way.
+            if frame.page.value != "MAP" or frame.resource_search_open:
+                return None
+            return self._semantic.stamina_gauge_center
+        if semantic == "MARCH_ROW_1":
+            # The march list is a fixed-pitch row list under the HUD, not
+            # a template: the row artwork changes with mission type and
+            # the list reflows.  Refuse when the list cannot be believed
+            # to be visible, because tapping row 1 on a frame without an
+            # active march would tap the bare map.
+            if frame.page.value != "MAP" or frame.resource_search_open:
+                return None
+            if frame.march_used is None or frame.march_used < 1:
+                return None
+            return self._semantic.march_row_1_center
+        if semantic == "RESOURCE_LEVEL_MINUS":
+            # The level filter is a measured slider row, not a
+            # template: the minus control sits at a calibrated centre
+            # whose value was read live across every level 8 -> 1.
+            if not frame.resource_search_open:
+                return None
+            return self._semantic.resource_level_minus
+        if semantic == "INTEL_PIN":
+            # The intel board is a pin map, so the tap target is a
+            # *detected pin* rather than a template: the mission card
+            # that names the mission type does not exist until a pin is
+            # tapped.  Pins already tried in this run are skipped,
+            # because a pin stays on the board after its mission is
+            # consumed; when none is left the resolver refuses instead
+            # of re-tapping one, so the run ends honestly rather than
+            # looping on a consumed pin.
+            if frame.page.value != "INTEL":
+                return None
+            status = self.device.status()
+            if not status.connected or status.resolution is None:
+                return None
+            width, height = status.resolution
+            if untried_intel_pins is not None:
+                pin = untried_intel_pins.pop(0)
+                self._tapped_intel_pins.append((pin.x, pin.y))
+                return (pin.x / width, pin.y / height)
+            return None
+        match = self._semantic.find(frame_path, semantic) if frame_path is not None else None
+        if match:
+            return match.center_norm
+        # The Exploration chest is animated and its perceptual hash
+        # varies between frames. A reviewed normalized fallback is
+        # allowed only after independent page + green-state proof.
+        if semantic == "BTN_EXPLORATION_IDLE_CLAIM" and frame.page.value == "EXPLORATION" and frame.exploration.get("status") == "CLAIMABLE":
+            return (0.86, 0.68)
+        return None
+
     def run(
         self,
         *,
@@ -1187,135 +1379,18 @@ class LiveRuntime:
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 return finish("SKILL_NOT_ENABLED_FOR_LIVE_LOOP")
 
+            # The executor and the backend router both take this one callable.  It binds
+            # the run-scoped arguments (the frame this step observed, the resource this
+            # step planned, the pins this run has not tried) to the class-level resolver
+            # so a test can call the resolver the same way without a device.
             def resolve(semantic: str):
-                if semantic == "RESOURCE_DYNAMIC":
-                    # The strip scrolls, so the tap target is derived from the
-                    # bracket anchor observed on the current frame (see
-                    # SemanticROIVision.resource_cell_center_norm).  The previous
-                    # hand-typed centres were only valid for one scroll offset and
-                    # selected the wrong tab on live frames.  ``None`` means the
-                    # cell is off-screen: the loop scrolls the strip instead of
-                    # guessing a coordinate.
-                    return self._semantic.resource_cell_center_norm(planned_resource)
-                if semantic == "BEAST_ON_MAP":
-                    # The beast the client's own label named, tapped where this frame
-                    # measured that label (see ocr.beast_from_its_label).  It cannot be a
-                    # template: the whole point is that the target need not be a species
-                    # anyone has cut a sprite for, and a hardcoded coordinate would be a
-                    # guess about where the animal happens to stand.
-                    #
-                    # The page check is what keeps a stale point from being reused: the
-                    # fragment is only meaningful on the MAP frame it was read from, so a
-                    # tap_norm left over from an earlier observation cannot land on
-                    # whatever page the run has since reached.  ``None`` means the label
-                    # carried no box (or no frame size was available) and the loop ends
-                    # honestly rather than tapping an invented point.
-                    if before.page is not Page.MAP:
-                        return None
-                    point = before.beast.get("tap_norm")
-                    if not (isinstance(point, (tuple, list)) and len(point) == 2):
-                        return None
-                    try:
-                        x_norm, y_norm = float(point[0]), float(point[1])
-                    except (TypeError, ValueError):
-                        return None
-                    if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
-                        return None
-                    return (x_norm, y_norm)
-                if semantic == "TRAINING_CAMP_IN_RING":
-                    # The selected camp's own centre, read off the frame by camp_ring.py.
-                    #
-                    # The template this replaces resolved to (346, 682) on all 46 live stage A
-                    # frames -- 103 px below the selection ring, on bare ground between the
-                    # buildings.  Tapping there is a map tap, which is what took the client to
-                    # the MAP on the one attempt that ever tried it.  The ring's centre is a
-                    # measurement of the same frame rather than a correction applied to a
-                    # remembered point, so it follows the camera instead of assuming it.
-                    #
-                    # The page check is what keeps a stale point from being reused, exactly as
-                    # for the beast above: the fragment belongs to the HOME frame it was read
-                    # from.  ``None`` -- wrong page, no ring, or no frame size -- ends the loop
-                    # honestly rather than tapping a point nobody measured.
-                    if before.page is not Page.HOME:
-                        return None
-                    point = before.training.get("camp_tap_norm")
-                    if not (isinstance(point, (tuple, list)) and len(point) == 2):
-                        return None
-                    try:
-                        x_norm, y_norm = float(point[0]), float(point[1])
-                    except (TypeError, ValueError):
-                        return None
-                    if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
-                        return None
-                    return (x_norm, y_norm)
-                if semantic == "HUD_STAMINA_GAUGE":
-                    # The gauge is drawn at a measured spot on every map frame.
-                    # The page check is what keeps a popup or a loading screen
-                    # from absorbing the tap.
-                    #
-                    # It used to *also* require ``stamina.current is not None``,
-                    # i.e. that the number had been read.  Measured 2026-09-15:
-                    # the two MAP frames in the recorded corpus whose gauge
-                    # could not be read are both genuine ``0`` readings -- the
-                    # pill is drawn and plainly shows 0
-                    # (dataset/probe_output/map_gauge_unreadable/) -- and the
-                    # OCR cannot read a lone 0 at any padding or scale (best
-                    # confidence 0.73, and it flips between '0' and 'O'; see
-                    # tools/probe_stamina_zero.py).  So that condition did not
-                    # test "the gauge is there", it tested "the gauge is not
-                    # empty", and it disabled the free-stamina check exactly
-                    # when stamina was 0 -- the moment the free gift matters
-                    # most.  The tap target is the pill's own centre either way.
-                    if before.page.value != "MAP" or before.resource_search_open:
-                        return None
-                    return self._semantic.stamina_gauge_center
-                if semantic == "MARCH_ROW_1":
-                    # The march list is a fixed-pitch row list under the HUD, not
-                    # a template: the row artwork changes with mission type and
-                    # the list reflows.  Refuse when the list cannot be believed
-                    # to be visible, because tapping row 1 on a frame without an
-                    # active march would tap the bare map.
-                    if before.page.value != "MAP" or before.resource_search_open:
-                        return None
-                    if before.march_used is None or before.march_used < 1:
-                        return None
-                    return self._semantic.march_row_1_center
-                if semantic == "RESOURCE_LEVEL_MINUS":
-                    # The level filter is a measured slider row, not a
-                    # template: the minus control sits at a calibrated centre
-                    # whose value was read live across every level 8 -> 1.
-                    if not before.resource_search_open:
-                        return None
-                    return self._semantic.resource_level_minus
-                if semantic == "INTEL_PIN":
-                    # The intel board is a pin map, so the tap target is a
-                    # *detected pin* rather than a template: the mission card
-                    # that names the mission type does not exist until a pin is
-                    # tapped.  Pins already tried in this run are skipped,
-                    # because a pin stays on the board after its mission is
-                    # consumed; when none is left the resolver refuses instead
-                    # of re-tapping one, so the run ends honestly rather than
-                    # looping on a consumed pin.
-                    if before.page.value != "INTEL":
-                        return None
-                    status = self.device.status()
-                    if not status.connected or status.resolution is None:
-                        return None
-                    width, height = status.resolution
-                    if untried_intel_pins:
-                        pin = untried_intel_pins.pop(0)
-                        self._tapped_intel_pins.append((pin.x, pin.y))
-                        return (pin.x / width, pin.y / height)
-                    return None
-                match = self._semantic.find(before_path, semantic)
-                if match:
-                    return match.center_norm
-                # The Exploration chest is animated and its perceptual hash
-                # varies between frames. A reviewed normalized fallback is
-                # allowed only after independent page + green-state proof.
-                if semantic == "BTN_EXPLORATION_IDLE_CLAIM" and before.page.value == "EXPLORATION" and before.exploration.get("status") == "CLAIMABLE":
-                    return (0.86, 0.68)
-                return None
+                return self._resolve_semantic_target(
+                    semantic,
+                    before,
+                    frame_path=before_path,
+                    resource=planned_resource,
+                    untried_intel_pins=untried_intel_pins,
+                )
 
             if (
                 decision.skill == "SELECT_RESOURCE"

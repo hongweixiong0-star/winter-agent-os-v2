@@ -938,6 +938,83 @@ def level_beside_label(
     return best[1] if best is not None else None
 
 
+#: The resource-search tab strip's printed labels, as RapidOCR reads them, and what each one
+#: means for the route.  This table exists because the strip's *order* is not stable and never
+#: has been: ``vision.resource_tab_order`` carries a WARNING measured on 2026-09-18 saying the
+#: front three names are the part that drifts and that the durable fix is to read the anchored
+#: tab's own printed label rather than trust any list.  That fix is implemented here.
+#:
+#: Measured live 2026-09-21 on the frame the beast search failed on
+#: (``live_runtime_step_003_before_20260921T100350023898.png``): the strip read
+#: 野兽 0.95 / 冰原巨兽 0.98 / 生肉 1.00 / 木材 1.00 / 煤矿 1.00 -- i.e. the client had put 野兽
+#: at the leftmost position, where the 2026-09-18 list and the template cut from
+#: ``beast_search_exploration/beast_tab.png`` both expected 冰原巨兽.  A template at that
+#: position therefore matched nothing (all three beast-search templates scored NO MATCH on the
+#: live frame) and the search chain could not take its second hop.
+#:
+#: The two monster tabs mean different things to the route and must not be conflated:
+#:
+#: * ``BEAST``       平民野兽.  These are the ordinary huntable animals; the "attack" entry the
+#:                    spend goal needs is on their card.
+#: * ``GIANT_BEAST`` 冰原巨兽.  These are the rally targets -- the measured level-5 mammoth card
+#:                    offered only 集结, no 攻击 -- so a route looking for a solo kill must NOT
+#:                    treat this tab as equivalent.
+RESOURCE_TAB_LABEL_TO_KIND: dict[str, str] = {
+    "野兽": "BEAST",
+    "冰原巨兽": "GIANT_BEAST",
+    "失控的雪怪": "SNOW_MONSTER",
+    "生肉": "MEAT",
+    "木材": "WOOD",
+    "煤矿": "COAL",
+    "铁矿": "IRON",
+}
+
+
+def read_resource_tab_labels(
+    image_path,
+    ocr,
+    *,
+    band: tuple[float, float] = (0.655, 0.795),
+    min_confidence: float = 0.7,
+) -> dict[str, tuple[float, float]]:
+    """Read the search panel's tab strip and return each tab's kind -> its centre.
+
+    Why this exists rather than a template per tab: the strip's order drifts between client
+    versions (see :data:`RESOURCE_TAB_LABEL_TO_KIND` for the measurement), so a template pinned
+    to a position starts matching the *wrong* tab the moment the client reorders them -- which
+    is exactly what happened to the beast search on 2026-09-21.  The printed label is drawn by
+    the client and read at 0.95-1.00 confidence, so it is both the durable and the cheap answer.
+
+    Returns only the tabs whose label was positively read, so a caller can ask "is the beast tab
+    on screen" without a missing tab being confused with an unreadable one.  The band defaults to
+    the strip's own measured y-range and is a parameter because the panel is drawn on the map,
+    whose HUD sits above it.
+    """
+    with Image.open(image_path) as source:
+        frame_width, frame_height = source.size
+    top = band[0]
+    height = band[1] - band[0]
+    roi = {"x_norm": 0.0, "y_norm": top, "w_norm": 1.0, "h_norm": height}
+    tokens = ocr.recognize(image_path, roi).tokens
+
+    found: dict[str, tuple[float, float]] = {}
+    for token in tokens:
+        if token.confidence < min_confidence or not token.box:
+            continue
+        kind = RESOURCE_TAB_LABEL_TO_KIND.get(token.text.strip())
+        if kind is None or kind in found:
+            continue
+        xs = [point[0] for point in token.box]
+        ys = [point[1] for point in token.box]
+        # ROI-scoped token boxes are crop-relative, so the band's top is added back before the
+        # point is normalised -- otherwise every returned centre would be off by the crop offset
+        # and a tap would land above the tab it names.
+        centre_x = (min(xs) + max(xs)) / 2.0 / frame_width
+        centre_y = ((min(ys) + max(ys)) / 2.0 + top * frame_height) / frame_height
+        found[kind] = (centre_x, centre_y)
+    return found
+
+
 def beast_from_its_label(image_path, ocr, frame_size: tuple[int, int] | None = None) -> dict:
     """The beast the client's own label names, plus where to tap it.
 
@@ -1578,12 +1655,34 @@ class HybridVision:
                 beacon_beast = dict(primary.beast) or beast_from_its_label(
                     image_path, self.ocr, frame_size=(frame_width, frame_height)
                 )
+                # Which monster tab the open panel is actually on, read from the client's own
+                # printed label rather than from a template pinned to a position.
+                #
+                # Measured 2026-09-21: the three beast-search templates all scored NO MATCH on
+                # the live frame, because the client had moved 野兽 to the leftmost slot where
+                # the template (cut from an archived frame whose leftmost was 冰原巨兽) expected
+                # it.  ``vision.resource_tab_order`` already carries a WARNING from 2026-09-18
+                # that this part of the strip drifts and that the durable answer is to read the
+                # label; this is that read.  It is done here rather than in the template layer
+                # because the template layer has no OCR, and the label is an OCR-layer fact.
+                tab_labels = (
+                    read_resource_tab_labels(image_path, self.ocr)
+                    if primary.resource_search_open else {}
+                )
                 return replace(
                     primary,
                     marches=tuple(fused_marches),
                     march_used=march_used,
                     march_max=march_max,
                     stamina=stamina,
+                    # The tab itself, by its own name.  A search panel whose strip was read is
+                    # described by the tabs that were positively found; the bool keeps the
+                    # template-layer meaning ("the 冰原巨兽 control is drawn") for callers that
+                    # still key on it, and the kind is what the route should act on.
+                    resource_beast_tab=bool(tab_labels),
+                    resource_tab_kinds=tuple(sorted(tab_labels)),
+                    resource_beast_tab_norm=tab_labels.get("BEAST"),
+                    resource_giant_beast_tab_norm=tab_labels.get("GIANT_BEAST"),
                     # The client's beast search ran and left a target on the map.
                     #
                     # Measured 2026-09-21 on ``beast5_found.png``: after 搜索 the

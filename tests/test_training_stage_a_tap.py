@@ -27,6 +27,7 @@ from __future__ import annotations
 import re
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -175,6 +176,12 @@ class TheDecisionIsBoundedTests(unittest.TestCase):
         state itself is identified.  What the frame still provides -- the ring, and the measured
         point on it -- is pinned by the tests above, because that measurement is sound and is the
         input any future attempt needs.
+
+        The state WAS identified on 2026-09-21, from the frames themselves (issue #82): the
+        ellipse is on the ground, five lit action blocks sit inside it, the tutorial hand rests
+        on the 2-badged one, and three consecutive live frames show nothing progressing toward
+        a menu.  It is a guided tutorial step, so the blocker names the precondition rather than
+        a menu that is merely late.
         """
         brain = RuleBrain(current_goal="TRAIN")
         state = self._stage_a_state()
@@ -182,7 +189,11 @@ class TheDecisionIsBoundedTests(unittest.TestCase):
             self.assertEqual(brain.decide(state, v2_registry()).skill, "WAIT_FOR_CAMP_MENU")
         last = brain.decide(state, v2_registry())
         self.assertEqual(last.skill, "SAFE_STOP")
-        self.assertEqual(last.reason, "camp_menu_never_drawn")
+        self.assertEqual(last.reason, "camp_entry_is_a_guided_step_not_a_selection")
+        # And the reason must hand the cycle over rather than ending it: the training
+        # entry point being unusable says nothing about the other goals.
+        from winter_agent_v2.runtime_snapshot import is_fatal_stop
+        self.assertFalse(is_fatal_stop(last.reason))
 
     def test_nothing_taps_the_highlighted_camp(self):
         """Nothing may send input from this state while its meaning is unknown."""
@@ -211,13 +222,40 @@ class TheDecisionIsBoundedTests(unittest.TestCase):
     def test_the_executor_refuses_a_point_read_on_another_page(self):
         """The fragment belongs to the HOME frame it came from; a stale one must not be used."""
         source = (ROOT / "winter_agent_v2" / "runtime.py").read_text(encoding="utf-8")
+        # The resolver takes the frame as an argument since 2026-09-21 (it was a closure
+        # inside ``run``), so the guard reads ``frame.page`` rather than ``before.page``.
+        # What is asserted is unchanged: the page check sits inside this branch, ahead of
+        # the tap point being returned.
         pattern = (r'if semantic == "TRAINING_CAMP_IN_RING":.*?'
-                   r'if before\.page is not Page\.HOME:\s+return None')
+                   r'if frame\.page is not Page\.HOME:\s+return None')
         # Compiled, not asserted with a flags argument: assertRegex's third parameter is the
         # failure message, so passing re.DOTALL there silently does nothing and the pattern
         # then has to match inside a single line.
         self.assertRegex(source, re.compile(pattern, re.DOTALL))
         self.assertEqual(len(re.findall(r'if semantic == "TRAINING_CAMP_IN_RING":', source)), 1)
+
+    def test_the_resolver_is_reachable_without_a_run(self):
+        """The point of lifting the resolver out: a test can call what the executor taps.
+
+        Before this the page guard could only be asserted by grepping the source, which
+        proves the text exists but not that it answers ``None``.  Now the answer itself is
+        checked, on a frame that is on the wrong page and one that is right.
+        """
+        runtime = LiveRuntime(
+            device=object(), vision=object(), semantic_vision=object(),
+            capture_dir=Path("."), brain=RuleBrain(current_goal="TRAIN"),
+            sleeper=lambda _s: None,
+        )
+        # Right page, a measured ring: the point comes back.
+        on_home = WorldState(page=Page.HOME,
+                             training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",
+                                       "camp_tap_norm": (0.441, 0.4551)},
+                             confidence=0.99)
+        self.assertEqual(runtime._resolve_semantic_target("TRAINING_CAMP_IN_RING", on_home),
+                         (0.441, 0.4551))
+        # Same fragment, different page: refused, so it cannot be reused.
+        on_map = replace(on_home, page=Page.MAP)
+        self.assertIsNone(runtime._resolve_semantic_target("TRAINING_CAMP_IN_RING", on_map))
 
 
 if __name__ == "__main__":

@@ -952,7 +952,7 @@ def verify_resource_found(before: WorldState, after: WorldState) -> Verification
 
 
 def verify_beast_search_tab_selected(before: WorldState, after: WorldState) -> VerificationResult:
-    """Prove the open search panel is showing its beast tab, and that the client agrees.
+    """Prove the open search panel is showing the 野兽 (ordinary beast) tab.
 
     The panel is the same one the verified gathering chain opens; this hop only
     changes which tab is anchored inside it.  Both halves therefore require
@@ -960,29 +960,40 @@ def verify_beast_search_tab_selected(before: WorldState, after: WorldState) -> V
     switch, and reporting one from the bare map is exactly the stale-evidence
     mistake the fixed-ROI selection verifier used to make.
 
-    The evidence is ``resource_beast_tab``, which the vision layer sets from the
-    reviewed ``BTN_SEARCH_BEAST_TAB`` template.  It is deliberately NOT
-    ``resource_selected``: the strip classifier only identifies the four
-    gatherable cells (MEAT/WOOD/COAL/IRON) against reviewed templates, so a
-    monster tab always reads back as ``None`` there.  Measured 2026-09-21 on
-    ``beast_tab.png``: the tab is drawn and anchored with its white bracket, and
-    ``resource_selected`` was still ``None`` -- a verifier keyed on ``"BEAST"``
-    would have refused every correct frame.
+    The evidence is ``resource_beast_tab_norm`` -- where this frame's own OCR read the
+    printed 野兽 label -- and NOT ``resource_selected``.  Two separate reasons, both
+    measured:
 
-    What this proves is "the beast tab is the one this panel is offering", which
-    is exactly the state the next tap (搜索) acts on.  It does not claim a species:
-    the family has two tabs (冰原巨兽 and 野兽) and the client's search treats them
-    as one huntable group.
+    * ``resource_selected`` only identifies the four gatherable cells
+      (MEAT/WOOD/COAL/IRON) against reviewed templates, so a monster tab always reads
+      back as ``None`` there.  Measured 2026-09-21 on ``beast_tab.png``: the tab is
+      drawn and anchored with its white bracket, and ``resource_selected`` was ``None``.
+    * the *position* is not stable, so a template cannot stand in for the label either.
+      Measured live 2026-09-21: the client had 野兽 in the leftmost slot where the
+      archived frame had 冰原巨兽, so ``BTN_SEARCH_BEAST_TAB`` scored NO MATCH and the
+      chain's second hop failed with SEMANTIC_TARGET_NOT_VERIFIED.  The printed label
+      read at 0.95 and is what this now keys on.
+
+    The distinction from 冰原巨兽 is load-bearing, not cosmetic: the measured level-5
+    mammoth card offers only 集结, so a verifier that accepted either tab as "the beast
+    tab" would pass a frame whose targets cannot be attacked solo -- which is the
+    user-facing rule that a rally target must not be attempted as a normal attack.
     """
     before_ok = before.page is Page.MAP and before.resource_search_open
-    after_ok = after.page is Page.MAP and after.resource_search_open and after.resource_beast_tab
+    after_ok = (
+        after.page is Page.MAP
+        and after.resource_search_open
+        and after.resource_beast_tab_norm is not None
+    )
     ok = before_ok and after_ok
     return VerificationResult(
         ok,
         "OK" if ok else "BEAST_SEARCH_TAB_NOT_PROVEN",
         {
             "before_search_open": before_ok,
-            "after_beast_tab": after.resource_beast_tab,
+            "after_beast_tab_label": after.resource_beast_tab_norm,
+            "after_giant_beast_tab_label": after.resource_giant_beast_tab_norm,
+            "after_tab_kinds": list(after.resource_tab_kinds),
             "after_selected": after.resource_selected,
             "level": after.resource_level,
         },

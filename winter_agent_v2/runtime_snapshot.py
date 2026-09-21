@@ -72,6 +72,17 @@ NON_FATAL_STOPS = {
     # SKILL_NOT_ENABLED_FOR_LIVE_LOOP on purpose: that reason used to be what
     # this state produced, and it described a wiring hole rather than the game.
     "MARCH_COUNT_NOT_READ", "intel_no_untried_pins",
+    # The client is sitting on a guided tutorial step over the infantry camp, which
+    # issue #82 identified from the frames on 2026-09-21 (see brain.py: the ring is on
+    # the ground, the hand points at the 2-badged action block, and three consecutive
+    # frames show nothing progressing toward a menu).  A guided step is a precondition
+    # the training route cannot satisfy by tapping or waiting, so it is a statement
+    # about THAT goal only -- exactly like a busy queue.  Without this entry it would
+    # be classified as a heading it does not start with (FATAL_/ACCOUNT_/PAYMENT_) and
+    # could end a cycle that still had other goals to run.  Named alongside
+    # ``training_queue_busy`` because it is the same kind of answer: this entry point
+    # is not usable right now, and another goal is allowed to take the turn.
+    "camp_entry_is_a_guided_step_not_a_selection",
 }
 
 

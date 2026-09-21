@@ -587,9 +587,9 @@ def v2_registry() -> SkillRegistry:
         # generic buttons that would fire anywhere.
         Skill(
             "OPEN_BEAST_SEARCH_TAB",
-            "Switch the open search panel to the client's 冰原巨兽 beast tab",
+            "Switch the open search panel to the client's 野兽 (ordinary beast) tab",
             Page.MAP,
-            Action("TAP_SEMANTIC", "BTN_SEARCH_BEAST_TAB"),
+            Action("TAP_SEMANTIC", "BEAST_SEARCH_TAB"),
             timeout=15.0,
             risk="LOW",
             state=SkillState.CANDIDATE,

@@ -898,14 +898,33 @@ class RuleBrain:
                 # this frame is a FALSE ARRIVAL and the training route's first half has been
                 # reporting success it never had.
                 #
-                # So the wait is restored, and no further tap will be added here until the state
-                # itself is identified.  camp_ring.py and training["camp_tap_norm"] are kept on
-                # purpose: the ring measurement is sound (46/46 frames, sd 4 px, and it is what
-                # made the experiment possible) and it is the input any future attempt needs.
-                # What the ring points AT is the open question, and issue #82 is where it lives.
+                # THE HYPOTHESIS IS NOW CONFIRMED OFF THE FRAMES, and issue #82 asked for exactly
+                # this: on 2026-09-21 the four live stage A frames
+                # (dataset/raw/live_runtime/live_runtime_step_008/009/010_*_20260921T1005*.png)
+                # were read at 3x magnification.  The gold ellipse is drawn on the *ground* beside
+                # the building, not around it; five small lit action blocks sit inside it; and the
+                # tutorial hand's fingertip rests on the rightmost of them -- the one carrying the
+                # 2 badge, measured at (379,592).  Across three consecutive frames (08_after,
+                # 09_after, 10_after) ``menu_open`` stayed absent and ``camp_tap_norm`` moved by
+                # under 2 px, i.e. nothing about the screen is progressing toward a menu.
+                #
+                # That is a guided tutorial step, so this is a PRECONDITION, not a tap target.
+                # Issue #82's own decisive step 3 says what to do once it is identified: record it
+                # as precondition-unmet and stop hunting for a coordinate.  The state below does
+                # that -- it does NOT wait for a menu (which the frames show is not coming) and it
+                # does NOT tap (which four live attempts show does nothing).  The reason string
+                # says the precondition out loud, because the old ``camp_menu_never_drawn``
+                # described a menu that was merely late and thereby invited the same two waits
+                # forever: 45 of 127 historical KEEP_TRAINING_PRODUCTIVE steps -- 35% -- were
+                # spent right here.
+                #
+                # camp_ring.py and training["camp_tap_norm"] are kept on purpose: the ring
+                # measurement is sound (46/46 frames, sd 4 px) and it is the input any future
+                # attempt needs.  What the ring points AT is now answered -- a tutorial step --
+                # and issue #82 closes on that.
                 self._camp_menu_waits += 1
                 if self._camp_menu_waits > self.MAX_CAMP_MENU_WAITS:
-                    return Decision("SAFE_STOP", "camp_menu_never_drawn", 1.0, "switch_task")
+                    return Decision("SAFE_STOP", "camp_entry_is_a_guided_step_not_a_selection", 1.0, "switch_task")
                 return Decision("WAIT_FOR_CAMP_MENU", "camp_highlight_is_stage_a_reobserve", world.confidence, "camp_menu_open")
             if world.page is Page.HOME and world.training.get("menu_open"):
                 return Decision("OPEN_INFANTRY_TRAINING", "idle_infantry_camp_selected", world.confidence, "training_page_open")
@@ -1258,15 +1277,31 @@ class RuleBrain:
                         # verified gathering chain taps, so this hop invents
                         # nothing about how to reach the panel.
                         return Decision("SEARCH_RESOURCE", "beast_search_starts_by_opening_the_client_search", world.confidence, "resource_search_open")
-                    if not world.resource_beast_tab:
-                        # ``resource_beast_tab``, not ``resource_selected``: the strip
-                        # classifier identifies the four gatherable cells against
-                        # reviewed templates and reports ``None`` for a monster tab
-                        # even when it is drawn, bracketed and active (measured
-                        # 2026-09-21 on ``beast_tab.png``).  Gating on
-                        # ``resource_selected == "BEAST"`` would therefore re-issue this
-                        # tap forever -- the tab would never look selected.
-                        return Decision("OPEN_BEAST_SEARCH_TAB", "search_panel_needs_the_beast_tab", world.confidence, "beast_search_tab_selected")
+                    if world.resource_beast_tab_norm is None:
+                        # Keyed on the tab's own printed label, not on a template and not on
+                        # ``resource_selected``.  Both of the older signals are measured to
+                        # fail here:
+                        #
+                        # * ``resource_selected`` only identifies the four gatherable cells
+                        #   (MEAT/WOOD/COAL/IRON) against reviewed templates, so a monster tab
+                        #   reads back ``None`` even when it is drawn, bracketed and active
+                        #   (measured 2026-09-21 on ``beast_tab.png``).  Gating on
+                        #   ``resource_selected == "BEAST"`` re-issues this tap forever.
+                        # * ``BTN_SEARCH_BEAST_TAB`` is pinned to the leftmost strip slot, and
+                        #   the client moved 野兽 into that slot where the archived frame had
+                        #   冰原巨兽: all three beast-search templates scored NO MATCH on the
+                        #   live frame and this hop failed with SEMANTIC_TARGET_NOT_VERIFIED.
+                        #   ``vision.resource_tab_order`` carries that same warning from
+                        #   2026-09-18 and names the label read as the durable fix.
+                        #
+                        # ``BEAST`` and not ``GIANT_BEAST``: the measured level-5 mammoth card
+                        # offers only 集结, so a route whose purpose is a solo attack must not
+                        # treat the rally tab as equivalent.  When the client draws no 野兽 tab
+                        # at all the route falls through to the pan budget below rather than
+                        # tapping whichever monster tab happens to be there.
+                        if "GIANT_BEAST" in world.resource_tab_kinds and "BEAST" not in world.resource_tab_kinds:
+                            return Decision("SAFE_STOP", "only_the_rally_beast_tab_is_offered_no_solo_attack_entry", 1.0, "switch_task")
+                        return Decision("OPEN_BEAST_SEARCH_TAB", "search_panel_needs_the_ordinary_beast_tab", world.confidence, "beast_search_tab_selected")
                     self.beast_search_used = True
                     return Decision("SUBMIT_BEAST_SEARCH", "beast_tab_and_level_chosen_submitting_search", world.confidence, "beast_target_resent")
                 if self.beast_scans_used < self.max_beast_scans:

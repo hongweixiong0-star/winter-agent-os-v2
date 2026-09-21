@@ -107,13 +107,30 @@ class WorldState:
     resource_selected: str | None = None
     resource_level: int | None = None
     resource_available: bool | None = None
-    # The search panel's beast tab, from the reviewed BTN_SEARCH_BEAST_TAB
-    # template.  Separate from ``resource_selected`` on purpose: the strip
-    # classifier only identifies the four gatherable cells (MEAT/WOOD/COAL/IRON)
-    # against reviewed templates, so a monster tab reads back as ``None`` there
-    # even when it is drawn, bracketed and active.  Measured 2026-09-21 on
-    # ``beast_tab.png``, which is what the two fields disagree on.
+    # The search panel's beast tab.  Two readers, and they do not always agree:
+    #
+    # * the template layer sets it from the reviewed ``BTN_SEARCH_BEAST_TAB`` control;
+    # * the OCR fusion layer overwrites it from the client's own printed tab labels,
+    #   which is the durable reading because the strip's order drifts between client
+    #   versions (measured 2026-09-21: 野兽 moved into the leftmost slot where the
+    #   template expected 冰原巨兽, so all three beast-search templates scored NO MATCH
+    #   on the live frame).  See ``ocr.RESOURCE_TAB_LABEL_TO_KIND``.
+    #
+    # Separate from ``resource_selected`` on purpose: the strip classifier only
+    # identifies the four gatherable cells (MEAT/WOOD/COAL/IRON) against reviewed
+    # templates, so a monster tab reads back as ``None`` there even when it is drawn.
     resource_beast_tab: bool = False
+    #: The tab kinds positively read off the strip this frame, e.g.
+    #: ``("BEAST", "COAL", "GIANT_BEAST", "MEAT", "WOOD")``.  Recorded so "the panel is open
+    #: but a different tab is selected" is answerable from the state rather than inferred.
+    resource_tab_kinds: tuple[str, ...] = ()
+    #: Where the client drew the 野兽 (ordinary beast) tab, or ``None`` when it is not on
+    #: screen.  This is the tab whose cards offer a solo 攻击; the route must prefer it.
+    resource_beast_tab_norm: tuple[float, float] | None = None
+    #: Where the client drew the 冰原巨兽 (giant beast) tab.  Its cards are rally targets --
+    #: the measured level-5 mammoth offered only 集结 -- so a solo-kill route must not treat
+    #: it as equivalent to ``BEAST``, which is what the user-facing rule requires.
+    resource_giant_beast_tab_norm: tuple[float, float] | None = None
     # Set when the search panel is open on the beast tab AND the client has drawn
     # its result card on top of it -- the state ``beast5_found.png`` records after
     # 搜索 is tapped.  The panel does not close on success, which is why a

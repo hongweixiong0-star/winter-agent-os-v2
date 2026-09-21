@@ -251,15 +251,21 @@ class TheOperatorNamedReasonsAllQualifyTests(unittest.TestCase):
 
     Pinned as a table because the fix's whole claim is that these hand the cycle over
     rather than stopping it, and a future reader adding a new stop reason needs to see
-    where the line is.  ``camp_menu_never_drawn`` is in here deliberately even though
-    it is absent from NON_FATAL_STOPS: it qualifies by shape (no FATAL_ prefix), and
-    writing that down is what stops someone "fixing" it by adding it to a list.
+    where the line is.
+
+    ``camp_entry_is_a_guided_step_not_a_selection`` replaced ``camp_menu_never_drawn``
+    on 2026-09-21, when issue #82 was settled off the frames: the gold ellipse is on the
+    ground, the tutorial hand points at the 2-badged action block, and three consecutive
+    live frames showed nothing progressing toward a menu.  A guided step is a
+    precondition, not a menu that is late, so the reason now says so -- and unlike its
+    predecessor it is named in NON_FATAL_STOPS as well, because "this entry point is not
+    usable right now" is the same class of answer as ``training_queue_busy``.
     """
 
     NAMED = (
         "reserved_march_for_stamina",
         "no_idle_march",
-        "camp_menu_never_drawn",
+        "camp_entry_is_a_guided_step_not_a_selection",
         "training_queue_busy",
         "research_queue_busy",
         "verified_beast_target_not_visible",
@@ -271,6 +277,18 @@ class TheOperatorNamedReasonsAllQualifyTests(unittest.TestCase):
             with self.subTest(reason=reason):
                 self.assertFalse(is_fatal_stop(reason),
                                  f"{reason} must hand the cycle over, not end it")
+
+    def test_the_guided_step_reason_is_named_in_the_non_fatal_set(self):
+        """The replacement is not merely shaped like a refusal -- it is listed as one.
+
+        The predecessor qualified only by shape (no FATAL_ prefix), which worked but left
+        a reader guessing whether that was intended.  Naming it is the durable version.
+        """
+        from winter_agent_v2.runtime_snapshot import NON_FATAL_STOPS
+
+        self.assertIn("camp_entry_is_a_guided_step_not_a_selection", NON_FATAL_STOPS)
+        self.assertIn("training_queue_busy", NON_FATAL_STOPS,
+                      "the reason it is modelled on must still be there")
 
     def test_the_safe_stop_branch_consults_is_fatal_stop_rather_than_a_reason_list(self):
         """The shape of the fix, asserted where it lives.
