@@ -1241,3 +1241,39 @@ brain 的注释写着 "`SAFE_STOP` is how the brain tells the scheduler 'skip th
   ⚠ 我曾据 `tasklist` 的 0 行下过"无 git 进程"的结论，那是错的。
 - **判断 AUTO 是否在推进，看产物时间戳**（最后 episode / 最后一帧 / `panel.log` mtime），
   **不要**看心跳文件（`pump.json` 是独立泵，面板卡死时它照跳，正是"看着还活着"的原因）。
+
+### 判别法：怎么**确证**是"被回收"而不是"启动失败"（2026-09-21 复现，工具已留在仓库）
+
+两种死法在面板日志里长得**一模一样**（都停在某一行、无退出记录），所以必须用实验分开：
+
+1. **分离启动**：`tools/_launch_panel_detached.py`（`DETACHED_PROCESS` + `desktop` 标记，
+   记录 PID/解释器/revision 到 `learning/control_panel/launch_record.json`）。
+2. **挂载启动**：`tools/_trace_panel_startup.py`——**同一解释器、同一入口**，但挂在当前调用下，
+   stderr 重定向到 `learning/control_panel/startup_trace.log`，观测 60 秒。
+
+**判读**：
+- 挂载能活满观测窗 + trace 文件 **0 字节** ⇒ 启动**干净**，死因是**回收**（不是 bug）。
+- 挂载也立刻死 + trace 有 traceback ⇒ 真的是启动失败，去读 trace。
+
+**已复现的结论**：分离启动约 3 秒后消失，挂载启动 60 秒**全程存活、零报错** ⇒ **回收确证**。
+⇒ **soak / 真机验收只能由操作者双击 `Start-Winter-Agent-V2.cmd` 完成**；
+我这个环境**无法**维持面板存活，**不得**把"我启动的面板"计作验收证据。
+
+### ⚠ 不得伪造的另一样东西：`--goal` 的两个词表（2026-09-21）
+
+台账 `goal` 字段存**goal id**，`run_live --goal` 只收 **route 域**。直接透传 ⇒ **argparse 就死**
+（`invalid choice: 'KEEP_TRAINING_PRODUCTIVE'`），但**租约已拿到** ⇒ 每 30 秒抢一次设备、
+每次 1 秒失败，表现为 AUTO 反复 `device leased for development` 而日志说"EXIT_2 停止原因未知"。
+映射现**唯一**在 `goal_library.GOAL_ROUTES`；`route_for()` **幂等**（台账里已有 `BEAST_HUNT`
+这类域值，必须原样通过）；无路由 **抛错** 不得硬塞；`ROUTE_DOMAINS` 是 `run_live` argparse 与
+映射表**共用**的真相源，有测试钉住二者不得漂移。
+
+### ⚠ 死代码判别法：**单测过 ≠ 生产路径过**（2026-09-21，一天内撞两次）
+
+`ocr.py` 的训练页 OCR 回退分支写成 `if primary.known:` 里嵌 `if primary.page is Page.UNKNOWN:`
+——**互斥，永不执行**；而 `test_training_page_by_ocr` 直接调 `OCRPageClassifier.classify`，
+**比生产入口低一层**，于是全绿。⇒ 同类问题**必须**：
+- 分支移到 `observe()` 等**生产入口**可达处；
+- 测试**断言行为**（经生产入口读真实帧），**不要**只断言源码里有某行字符串
+  （`assertIn` 源码那条测试**正是**让死代码活了一整轮的共犯）。
+
