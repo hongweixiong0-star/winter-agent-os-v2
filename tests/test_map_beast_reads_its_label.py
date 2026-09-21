@@ -229,16 +229,22 @@ class TheMapBeastIsAlsoReadByItsLabelTests(unittest.TestCase):
         """The call site must prefer whatever the template path already produced.
 
         Asserted against the source because the precedence *is* the call-site expression, and this
-        is the property that keeps the LIVE_VERIFIED musk ox route untouched.
+        is the property that keeps the LIVE_VERIFIED musk ox route untouched.  The expression is
+        bound to a local first because the same value now feeds ``beast_search_submitted`` as well
+        as ``beast``; the precedence itself is unchanged.
         """
         source = (ROOT / "winter_agent_v2/ocr.py").read_text(encoding="utf-8")
+        binding = r"beacon_beast = dict\(primary\.beast\) or beast_from_its_label\("
         pattern = (
-            r"beast=dict\(primary\.beast\)\s*\n\s*or beast_from_its_label\("
-            r"image_path, self\.ocr, frame_size=\(frame_width, frame_height\)\)"
+            binding
+            + r"\s*\n\s*image_path, self\.ocr, frame_size=\(frame_width, frame_height\)\s*\n\s*\)"
         )
         self.assertRegex(source, pattern,
                          "the fallback must be reached only when primary.beast is empty")
         self.assertEqual(len(re.findall(pattern, source)), 1)
+        # The local must be the value both call sites read, so neither can drift apart.
+        self.assertEqual(re.findall(r"beast=beacon_beast,", source), ["beast=beacon_beast,"])
+        self.assertRegex(source, r"primary\.resource_beast_tab and beacon_beast")
 
 
 if __name__ == "__main__":

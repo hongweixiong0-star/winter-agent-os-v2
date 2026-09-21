@@ -561,6 +561,53 @@ def v2_registry() -> SkillRegistry:
             risk="LOW",
             state=SkillState.CANDIDATE,
         ),
+        # ------------------------------------------------------------------
+        # The client's own beast search: the convergence the viewport pan never
+        # had.
+        #
+        # SCAN_MAP_FOR_BEAST pans a viewport and re-observes, and its own comment
+        # records why it dead-ends -- it has no way to *fly* to a target.  Five
+        # runs of AVOID_STAMINA_WASTE spent nothing and the species templates
+        # matched nothing on 23 frames because a pan searches bare snow.  The
+        # client, however, already ships the answer: a search panel whose first
+        # tab is 冰原巨兽, whose level slider reaches 5, and whose 搜索 button makes
+        # the client locate and centre a matching beast on the map.
+        #
+        # The route is the *same panel* the verified gathering chain opens:
+        # SEARCH_RESOURCE taps the magnifier (BTN_OPEN_RESOURCE_SEARCH, VERIFIED),
+        # and from there the beast tab and the submit button are two taps away.
+        # Nothing new is invented about how to reach the map.
+        #
+        # All three targets are cut from a human-reviewed live capture and were
+        # merged into the production manifest on 2026-09-21
+        # (tools/register_beast_search_templates.py).  The negative control is
+        # what makes them trustworthy: on the un-selected panel the level reads 8
+        # and no beast tab is active, so BOTH the level template and the submit
+        # template fail to match there -- they discriminate a state, they are not
+        # generic buttons that would fire anywhere.
+        Skill(
+            "OPEN_BEAST_SEARCH_TAB",
+            "Switch the open search panel to the client's 冰原巨兽 beast tab",
+            Page.MAP,
+            Action("TAP_SEMANTIC", "BTN_SEARCH_BEAST_TAB"),
+            timeout=15.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
+        # Tapping 搜索 spends nothing and starts no march: it asks the client to
+        # find and centre a beast, which is what puts a target in the viewport
+        # for the SELECT_BEAST_TARGET_* hop that follows.  The stamina is spent,
+        # and verified, much further down by DISPATCH_BEAST behind the client's
+        # own 胜券在握 strip.
+        Skill(
+            "SUBMIT_BEAST_SEARCH",
+            "Ask the client to find and centre a beast matching the selected tab and level",
+            Page.MAP,
+            Action("TAP_SEMANTIC", "BTN_SUBMIT_BEAST_SEARCH"),
+            timeout=30.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
     ])
     skills.extend([
         Skill(

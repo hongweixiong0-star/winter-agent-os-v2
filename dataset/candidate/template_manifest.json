@@ -1,6 +1,6 @@
 {
- "count": 404,
- "generated_at": "2026-09-17T03:21:58.339975+00:00",
+ "count": 407,
+ "generated_at": "2026-09-21T08:53:10.912017+00:00",
  "records": [
   {
    "confidence": 0.99,
@@ -7266,6 +7266,54 @@
    "template_id": "btn_close__alliance_chest_layer__0",
    "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
    "width": 44
+  },
+  {
+   "note": "beast-search control cut from a human-reviewed live capture; merged from dataset/candidate/beast_search_v2_manifest.json on 2026-09-21 so the production vision can load it (issue #91)",
+   "parent_sha256": "a6a5e9725caf130e7645bb72d208dbe48d159a012026a7f945d0e5f47d0f7a0d",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "REPLAY_HUMAN_REVIEWED_SCREENSHOT",
+   "roi_norm": {
+    "h_norm": 0.11,
+    "w_norm": 0.16,
+    "x_norm": 0.0,
+    "y_norm": 0.665
+   },
+   "semantic": "BTN_SEARCH_BEAST_TAB",
+   "source": "E:/无尽冬日智能体/dataset/raw/beast_search_exploration/search_after.png",
+   "template_id": "btn_search_beast_tab__search_after__0",
+   "template_path": "dataset/candidate/beast_search_v2/btn_search_beast_tab__search_after__0.png"
+  },
+  {
+   "note": "beast-search control cut from a human-reviewed live capture; merged from dataset/candidate/beast_search_v2_manifest.json on 2026-09-21 so the production vision can load it (issue #91)",
+   "parent_sha256": "a3bfea0594bdd0da1fda9b3fe2037b489f3cf24c8af49e126af39125f5b560e8",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "REPLAY_HUMAN_REVIEWED_SCREENSHOT",
+   "roi_norm": {
+    "h_norm": 0.105,
+    "w_norm": 0.5,
+    "x_norm": 0.25,
+    "y_norm": 0.76
+   },
+   "semantic": "SEARCH_BEAST_LEVEL_5_SELECTED",
+   "source": "E:/无尽冬日智能体/dataset/raw/beast_search_exploration/beast_tab.png",
+   "template_id": "search_beast_level_5_selected__beast_tab__0",
+   "template_path": "dataset/candidate/beast_search_v2/search_beast_level_5_selected__beast_tab__0.png"
+  },
+  {
+   "note": "beast-search control cut from a human-reviewed live capture; merged from dataset/candidate/beast_search_v2_manifest.json on 2026-09-21 so the production vision can load it (issue #91)",
+   "parent_sha256": "a3bfea0594bdd0da1fda9b3fe2037b489f3cf24c8af49e126af39125f5b560e8",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "REPLAY_HUMAN_REVIEWED_SCREENSHOT",
+   "roi_norm": {
+    "h_norm": 0.075,
+    "w_norm": 0.44,
+    "x_norm": 0.28,
+    "y_norm": 0.9
+   },
+   "semantic": "BTN_SUBMIT_BEAST_SEARCH",
+   "source": "E:/无尽冬日智能体/dataset/raw/beast_search_exploration/beast_tab.png",
+   "template_id": "btn_submit_beast_search__beast_tab__1",
+   "template_path": "dataset/candidate/beast_search_v2/btn_submit_beast_search__beast_tab__1.png"
   }
  ],
  "schema_version": "1.0",

@@ -1534,12 +1534,39 @@ class SemanticWorldVision:
         if match("PAGE_RESEARCH"):
             return WorldState(page=Page.RESEARCH, research={"status": "UNKNOWN"}, confidence=0.98)
         training_type = None
-        if match("PAGE_TRAINING_INFANTRY"):
-            training_type = "INFANTRY"
-        elif match("PAGE_TRAINING_LANCER"):
-            training_type = "LANCER"
-        elif match("PAGE_TRAINING_MARKSMAN"):
-            training_type = "MARKSMAN"
+        # The three camp page titles, decided by NEAREST match rather than by the
+        # first one that happens to fire.
+        #
+        # This was an ``if/elif`` chain with INFANTRY first, and that order was the
+        # whole bug.  Measured 2026-09-21 on the two reviewed camp frames:
+        #
+        #     PAGE_TRAINING_LANCER     lancer_tab d=0   marksman_tab NO MATCH
+        #     PAGE_TRAINING_MARKSMAN   lancer_tab NO MATCH   marksman_tab d=0
+        #     PAGE_TRAINING_INFANTRY   lancer_tab NO MATCH   marksman_tab d=8
+        #
+        # LANCER and MARKSMAN are cleanly mutually exclusive, but INFANTRY's title
+        # strip also fires weakly on the marksman frame (d=8, inside its threshold).
+        # With ``if match("PAGE_TRAINING_INFANTRY")`` first, that weak hit claimed the
+        # frame before MARKSMAN was ever tried, so ``live_train_marksman_tab.png`` --
+        # a frame whose title reads 王牌射手 and whose own tab is the selected one --
+        # was reported as the shield camp.  The per-camp readings downstream inherit
+        # this, which is why one camp's answer appeared to stand for another's.
+        #
+        # Nearest-wins is the fix that needs no new template: the real camp's title
+        # scores 0 while the false hit scores 8, so the two are 8 apart.  ``None``
+        # when nothing matches, which leaves the OCR layer's own read in charge --
+        # and that read is what the page's ``troop_type`` comes from.
+        camp_title_hits = [
+            (match(name), troop)
+            for name, troop in (
+                ("PAGE_TRAINING_INFANTRY", "INFANTRY"),
+                ("PAGE_TRAINING_LANCER", "LANCER"),
+                ("PAGE_TRAINING_MARKSMAN", "MARKSMAN"),
+            )
+        ]
+        matched = [(found, troop) for found, troop in camp_title_hits if found is not None]
+        if matched:
+            training_type = min(matched, key=lambda pair: pair[0].distance)[1]
         if training_type and (match("TRAINING_QUEUE_TIMER") or match("STATUS_TRAINING_IN_PROGRESS")):
             # No fabricated readings here.
             #
@@ -1770,6 +1797,13 @@ class SemanticWorldVision:
         visible_musk_ox = match("TARGET_BEAST_MUSK_OX_9")
         visible_mammoth = match("TARGET_BEAST_MAMMOTH_5")
         search_submit = match("BTN_RESOURCE_SEARCH_SUBMIT")
+        # The search panel's beast tab.  Its own template is the only reliable
+        # signal: the strip classifier below reads the four gatherable cells
+        # against reviewed templates and reports ``None`` for a monster tab even
+        # when it is drawn, bracketed and active (measured 2026-09-21 on
+        # ``beast_tab.png``).  Keying a verifier on ``resource_selected == "BEAST"``
+        # would therefore refuse every correct frame.
+        beast_tab = match("BTN_SEARCH_BEAST_TAB")
         # The active resource tab is decided by the calibrated strip
         # classifier instead of four fixed-ROI probes: the reviewed strip
         # pitch differs from the hand-typed ROIs, and a fixed probe cannot
@@ -1849,6 +1883,7 @@ class SemanticWorldVision:
                 resource_search_open=bool(search_submit),
                 resource_selected=selected_resource,
                 resource_level=level,
+                resource_beast_tab=beast_tab is not None,
                 beast=(
                     {"visible_target":"MUSK_OX", "level":9, "available":True}
                     if visible_musk_ox

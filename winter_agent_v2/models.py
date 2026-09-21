@@ -107,6 +107,18 @@ class WorldState:
     resource_selected: str | None = None
     resource_level: int | None = None
     resource_available: bool | None = None
+    # The search panel's beast tab, from the reviewed BTN_SEARCH_BEAST_TAB
+    # template.  Separate from ``resource_selected`` on purpose: the strip
+    # classifier only identifies the four gatherable cells (MEAT/WOOD/COAL/IRON)
+    # against reviewed templates, so a monster tab reads back as ``None`` there
+    # even when it is drawn, bracketed and active.  Measured 2026-09-21 on
+    # ``beast_tab.png``, which is what the two fields disagree on.
+    resource_beast_tab: bool = False
+    # Set when the search panel is open on the beast tab AND the client has drawn
+    # its result card on top of it -- the state ``beast5_found.png`` records after
+    # 搜索 is tapped.  The panel does not close on success, which is why a
+    # "panel is gone" test would never pass.
+    beast_search_submitted: bool = False
     confidence: float = 0.0
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 

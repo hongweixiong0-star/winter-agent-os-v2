@@ -514,7 +514,17 @@ class GoalLibrary:
                 "AVOID_STAMINA_WASTE", GoalStatus.COMPLETE if satisfied else GoalStatus.READY,
                 completion=1.0 if satisfied else 0.0, reward_value=100,
                 daily_loss=max(0, stamina - STAMINA_FLOOR + 1) * 5,
-                available_skills=("INTEL_CLAIM_REWARDS", "BEAST_HUNT"),
+                # The beast route reaches a target through the client's own search
+                # before it ever pans the map: SEARCH_RESOURCE taps the world-map
+                # magnifier, OPEN_BEAST_SEARCH_TAB selects 冰原巨兽, and
+                # SUBMIT_BEAST_SEARCH makes the client locate and centre a
+                # matching animal -- the convergence SCAN_MAP_FOR_BEAST never
+                # had.  All three must be listed here or the CapabilityGate
+                # refuses to schedule a skill the brain has decided on.
+                available_skills=(
+                    "INTEL_CLAIM_REWARDS", "BEAST_HUNT",
+                    "SEARCH_RESOURCE", "OPEN_BEAST_SEARCH_TAB", "SUBMIT_BEAST_SEARCH",
+                ),
                 evidence={"current": stamina, "threshold": STAMINA_FLOOR, "reused": stamina_from_store},
                 # Stamina still at or above the floor is exactly the work left to do, and
                 # it is what makes a beast kill progress while a map pan does not.  At the

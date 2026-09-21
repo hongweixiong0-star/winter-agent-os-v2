@@ -11,9 +11,18 @@ vision model) can look at, and (c) negative-control frames.
 Usage (project venv):
 
     E:/无尽冬日智能体/.venv/Scripts/python.exe tools/verify_template.py SEMANTIC frame1.png [frame2.png ...]
+    E:/无尽冬日智能体/.venv/Scripts/python.exe tools/verify_template.py --manifest dataset/candidate/beast_search_v2_manifest.json SEMANTIC frame1.png
 
 Writes an annotated copy next to each frame as <stem>_verify.png and prints
 the match distance plus the overlay coordinates.
+
+The ``--manifest`` switch exists because a candidate that has not been merged
+into the main manifest yet is exactly the case that needs checking before the
+merge: asked about a semantic the main manifest does not carry, this tool used
+to answer ``no records`` and stop, which reads like "the template is broken"
+when the honest answer is "the template is not registered yet".  Measured
+2026-09-21 on the beast-search trio, which lives only in
+``dataset/candidate/beast_search_v2_manifest.json``.
 """
 
 from __future__ import annotations
@@ -33,15 +42,30 @@ MANIFEST = ROOT / "dataset/candidate/template_manifest.json"
 
 
 def main() -> int:
-    if len(sys.argv) < 3:
+    argv = list(sys.argv[1:])
+    manifest = MANIFEST
+    if argv[:1] == ["--manifest"]:
+        if len(argv) < 2:
+            print(__doc__)
+            return 2
+        manifest = Path(argv[1])
+        if not manifest.is_absolute():
+            manifest = ROOT / manifest
+        argv = argv[2:]
+    if len(argv) < 2:
         print(__doc__)
         return 2
-    semantic = sys.argv[1]
-    frames = [Path(p) for p in sys.argv[2:]]
-    records = json.loads(MANIFEST.read_text(encoding="utf-8"))["records"]
-    rows = [r for r in records if r["semantic"] == semantic]
+    semantic = argv[0]
+    frames = [Path(p) for p in argv[1:]]
+    if not manifest.is_file():
+        print(f"missing manifest: {manifest}")
+        return 2
+    records = json.loads(manifest.read_text(encoding="utf-8"))["records"]
+    rows = [r for r in records if r.get("semantic") == semantic]
     if not rows:
-        print(f"no records for semantic {semantic!r}")
+        # Say which manifest was searched: "no records" against the wrong file
+        # is the misread this switch was added to prevent.
+        print(f"no records for semantic {semantic!r} in {manifest}")
         return 2
     print(f"records for {semantic}: {len(rows)}")
     for row in rows:
@@ -49,7 +73,7 @@ def main() -> int:
         print(f"  template={row['template_path']}")
         print(f"  provenance={row.get('provenance', '(none)')}")
 
-    vision = SemanticWorldVision(MANIFEST)
+    vision = SemanticWorldVision(manifest)
     for frame in frames:
         if not frame.is_file():
             print(f"missing frame: {frame}")

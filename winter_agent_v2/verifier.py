@@ -951,9 +951,86 @@ def verify_resource_found(before: WorldState, after: WorldState) -> Verification
     )
 
 
+def verify_beast_search_tab_selected(before: WorldState, after: WorldState) -> VerificationResult:
+    """Prove the open search panel is showing its beast tab, and that the client agrees.
+
+    The panel is the same one the verified gathering chain opens; this hop only
+    changes which tab is anchored inside it.  Both halves therefore require
+    ``resource_search_open``: a frame without the panel cannot prove a tab
+    switch, and reporting one from the bare map is exactly the stale-evidence
+    mistake the fixed-ROI selection verifier used to make.
+
+    The evidence is ``resource_beast_tab``, which the vision layer sets from the
+    reviewed ``BTN_SEARCH_BEAST_TAB`` template.  It is deliberately NOT
+    ``resource_selected``: the strip classifier only identifies the four
+    gatherable cells (MEAT/WOOD/COAL/IRON) against reviewed templates, so a
+    monster tab always reads back as ``None`` there.  Measured 2026-09-21 on
+    ``beast_tab.png``: the tab is drawn and anchored with its white bracket, and
+    ``resource_selected`` was still ``None`` -- a verifier keyed on ``"BEAST"``
+    would have refused every correct frame.
+
+    What this proves is "the beast tab is the one this panel is offering", which
+    is exactly the state the next tap (搜索) acts on.  It does not claim a species:
+    the family has two tabs (冰原巨兽 and 野兽) and the client's search treats them
+    as one huntable group.
+    """
+    before_ok = before.page is Page.MAP and before.resource_search_open
+    after_ok = after.page is Page.MAP and after.resource_search_open and after.resource_beast_tab
+    ok = before_ok and after_ok
+    return VerificationResult(
+        ok,
+        "OK" if ok else "BEAST_SEARCH_TAB_NOT_PROVEN",
+        {
+            "before_search_open": before_ok,
+            "after_beast_tab": after.resource_beast_tab,
+            "after_selected": after.resource_selected,
+            "level": after.resource_level,
+        },
+    )
+
+
+def verify_beast_search_submitted(before: WorldState, after: WorldState) -> VerificationResult:
+    """Prove the 搜索 tap made the client put a beast target on the map.
+
+    The claim is about what the tap achieved, not that a tap happened.  Vision
+    reports ``beast_search_submitted`` when the panel is still open, the beast
+    tab is still selected, and the client has drawn its result card -- which is
+    the state the reviewed ``beast5_found.png`` frame records.
+
+    The panel staying open is why this verifier does NOT require it to close.
+    That was the first design here and the archived frame refutes it: after
+    搜索 the client keeps the panel up and overlays the target card on top of
+    it, so "panel closed" would have been a condition no successful search could
+    ever satisfy.  The measured after-state is the card, not an empty map.
+
+    Nothing here authorises a spend.  搜索 costs no stamina and starts no march;
+    the spend is decided and proven three hops further down, behind the client's
+    own 胜券在握 strip.  The verifier is also careful about what it does not
+    claim: the card for a 5-level beast may offer 集结 rather than 攻击, and that
+    difference is read by the card branch itself -- this hop only establishes
+    that a target is now on screen to be looked at.
+    """
+    before_ok = (
+        before.page is Page.MAP
+        and before.resource_search_open
+        and before.resource_beast_tab
+    )
+    after_ok = after.page is Page.MAP and after.beast_search_submitted
+    ok = before_ok and after_ok
+    return VerificationResult(
+        ok,
+        "OK" if ok else "BEAST_SEARCH_NOT_SUBMITTED",
+        {
+            "before_beast_tab": before_ok,
+            "beast_search_submitted": after.beast_search_submitted,
+            "beast_on_map": bool(after.beast.get("source") == "BEAST_LABEL" or after.beast.get("visible_target")),
+            "after_page": after.page.value,
+        },
+    )
+
+
 def verify_march_page_open(before: WorldState, after: WorldState) -> VerificationResult:
     """Prove the resource-detail Gather control opened the march formation page.
-
     ``MARCH_PAGE_NOT_OPEN`` used to be one opaque reason covering two unrelated
     defects, so the counter could not be acted on:
 

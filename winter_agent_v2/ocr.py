@@ -1516,18 +1516,39 @@ class HybridVision:
                         "roi": dict(HUD_STAMINA_ROI),
                         "gauge_pixels": gauge_green_pixels(image_path),
                     })
+                beacon_beast = dict(primary.beast) or beast_from_its_label(
+                    image_path, self.ocr, frame_size=(frame_width, frame_height)
+                )
                 return replace(
                     primary,
                     marches=tuple(fused_marches),
                     march_used=march_used,
                     march_max=march_max,
                     stamina=stamina,
+                    # The client's beast search ran and left a target on the map.
+                    #
+                    # Measured 2026-09-21 on ``beast5_found.png``: after 搜索 the
+                    # panel stays open on the beast tab and the result card is
+                    # drawn on top of it, so "the panel is gone" would never be
+                    # true for a successful search.  The state that is actually
+                    # observable is the pair -- beast tab still selected AND a
+                    # beast now on the map -- and the beast is taken from the
+                    # label read rather than a species sprite, because the search
+                    # returned a 25-level mammoth that ``TARGET_BEAST_MAMMOTH_5``
+                    # does not match; keying on the sprite would have reported
+                    # that success as a failure.
+                    #
+                    # This is a fusion-layer fact on purpose: the beast tab is a
+                    # template-layer reading and the label is an OCR-layer one, so
+                    # neither layer alone can state it.
+                    beast_search_submitted=bool(
+                        primary.resource_beast_tab and beacon_beast
+                    ),
                     # Only when the template path found nothing: that path is LIVE_VERIFIED and
                     # its values are not re-decided here.  The frame size goes along because the
                     # label read carries a tap point with it, and an ROI-scoped token box can
                     # only be mapped back to the frame with it.
-                    beast=dict(primary.beast)
-                    or beast_from_its_label(image_path, self.ocr, frame_size=(frame_width, frame_height)),
+                    beast=beacon_beast,
                 )
             if (
                 primary.page is Page.EXPLORATION

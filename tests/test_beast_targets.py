@@ -180,15 +180,25 @@ class RouteTest(unittest.TestCase):
         self.assertEqual(self.brain.decide(world, self.registry).skill, "SELECT_BEAST_TARGET")
 
     def test_a_target_the_table_refuses_is_not_selected(self):
-        # The level-29 leopard is the measured refusal; the route must scan past
-        # it rather than spend on it.
+        # The level-29 leopard is the measured refusal; the route must look for a
+        # different target rather than spend on it.
+        #
+        # Since 2026-09-21 "look for a different target" starts with the client's
+        # own search rather than a viewport pan: the pan cannot fly to a beast and
+        # its own record shows it searched bare snow on 23 frames.  The intent of
+        # this test is unchanged -- the refused target is not selected -- and the
+        # route's first move away from it is now the search.
         world = WorldState(page=Page.MAP, march_used=0,
                            beast={"visible_target": "SNOW_LEOPARD", "level": 29, "available": True},
                            confidence=0.99)
-        self.assertEqual(self.brain.decide(world, self.registry).skill, "SCAN_MAP_FOR_BEAST")
+        self.assertNotEqual(self.brain.decide(world, self.registry).skill, "SELECT_BEAST_TARGET")
+        self.assertEqual(self.brain.decide(world, self.registry).skill, "SEARCH_RESOURCE")
 
     def test_an_unrecognised_map_scans_for_a_known_target(self):
         world = WorldState(page=Page.MAP, march_used=0, confidence=0.99)
+        self.assertEqual(self.brain.decide(world, self.registry).skill, "SEARCH_RESOURCE")
+        # And the pan is still reachable once the search has been spent.
+        self.brain.beast_search_used = True
         self.assertEqual(self.brain.decide(world, self.registry).skill, "SCAN_MAP_FOR_BEAST")
 
 

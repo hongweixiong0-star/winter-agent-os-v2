@@ -33,24 +33,84 @@ def _on_map() -> WorldState:
                       confidence=0.99)
 
 
+def _on_map_search_panel() -> WorldState:
+    """The search panel open on the beast tab: where 搜索 is issued from."""
+    return WorldState(page=Page.MAP, stamina={"current": 527}, march_used=1, march_max=6,
+                      resource_search_open=True, resource_beast_tab=True, confidence=0.99)
+
+
+def _on_map_after_search() -> WorldState:
+    """The state the handover is decided in: bare map, both tickets spent.
+
+    Since 2026-09-21 the beast route asks the client's own search for a target
+    before it pans the map, and 搜索 leaves the panel up -- so the route leaves
+    the panel with one Back before its pan budget applies.  A handover cannot be
+    reached while the route is still standing on that panel, which is why this
+    helper is the bare map rather than the panel.
+    """
+    return WorldState(page=Page.MAP, stamina={"current": 527}, march_used=1, march_max=6,
+                      confidence=0.99)
+
+
 class TheSpendGoalHandsOverToIntelTests(unittest.TestCase):
     def _brain(self, *, goal: str, scans_used: int, route: str = "BEAST_HUNT"):
         brain = RuleBrain()
         brain.current_goal = route
         brain.goal_id = goal
         brain.beast_scans_used = scans_used
+        # Both of the route's own methods are spent: the search ticket is part of
+        # the route's turn, and the panel has already been left.  The tests below
+        # pin that both really do come first.
+        brain.beast_search_used = True
+        brain.beast_search_panel_left = True
         return brain
 
     def test_the_beast_route_still_gets_its_whole_scan_budget_first(self):
         """The handover must not pre-empt the route it is replacing."""
         brain = self._brain(goal="AVOID_STAMINA_WASTE", scans_used=0)
-        decision = brain.decide(_on_map(), v2_registry())
+        decision = brain.decide(_on_map_after_search(), v2_registry())
         self.assertEqual(decision.skill, "SCAN_MAP_FOR_BEAST")
         self.assertFalse(brain.spend_route_switched, "the switch must wait for the budget")
 
+    def test_the_search_is_part_of_the_turn_not_a_shortcut(self):
+        """The un-spent search ticket is tried before any handover.
+
+        A brain that has spent its pan budget but never asked the client to
+        search has not finished the route: the search is the convergence the pan
+        lacked, so handing over to intel while it is still unspent would abandon
+        the route's best method.
+        """
+        brain = RuleBrain()
+        brain.current_goal = "BEAST_HUNT"
+        brain.goal_id = "AVOID_STAMINA_WASTE"
+        brain.beast_scans_used = SCAN_BUDGET
+        brain.beast_search_used = False
+        decision = brain.decide(_on_map_after_search(), v2_registry())
+        self.assertEqual(
+            decision.skill, "SEARCH_RESOURCE",
+            "the un-spent search is tried before the handover",
+        )
+        self.assertFalse(brain.spend_route_switched)
+
+    def test_the_panel_is_left_before_the_pan_budget_applies(self):
+        """搜索 leaves the panel up, so one Back is what reaches the bare map.
+
+        Without this hop the route would pan while the panel still covers the map,
+        and the pan would be a gesture on a panel rather than on the world.
+        """
+        brain = RuleBrain()
+        brain.current_goal = "BEAST_HUNT"
+        brain.goal_id = "AVOID_STAMINA_WASTE"
+        brain.beast_scans_used = 0
+        brain.beast_search_used = True
+        brain.beast_search_panel_left = False
+        decision = brain.decide(_on_map_search_panel(), v2_registry())
+        self.assertEqual(decision.skill, "BACK")
+        self.assertTrue(brain.beast_search_panel_left)
+
     def test_after_the_budget_it_opens_the_intel_flow_instead_of_stopping(self):
         brain = self._brain(goal="AVOID_STAMINA_WASTE", scans_used=SCAN_BUDGET)
-        decision = brain.decide(_on_map(), v2_registry())
+        decision = brain.decide(_on_map_after_search(), v2_registry())
         self.assertEqual(
             decision.skill, "OPEN_INTEL",
             "no beast in view means another verified stamina task, not a safe stop",
@@ -67,12 +127,12 @@ class TheSpendGoalHandsOverToIntelTests(unittest.TestCase):
         with the run put back on BEAST_HUNT.
         """
         brain = self._brain(goal="AVOID_STAMINA_WASTE", scans_used=SCAN_BUDGET)
-        brain.decide(_on_map(), v2_registry())
+        brain.decide(_on_map_after_search(), v2_registry())
         self.assertTrue(brain.spend_route_switched)
 
         brain.current_goal = "BEAST_HUNT"      # as if the run were back on the beast route
         brain.goal_id = "AVOID_STAMINA_WASTE"
-        second = brain.decide(_on_map(), v2_registry())
+        second = brain.decide(_on_map_after_search(), v2_registry())
         self.assertEqual(second.skill, "SAFE_STOP",
                          "the handover is once per run; a second give-up is a stop")
 
@@ -83,7 +143,7 @@ class TheSpendGoalHandsOverToIntelTests(unittest.TestCase):
         and turning it into an intel run would change a route the operator chose.
         """
         brain = self._brain(goal="", route="BEAST_HUNT", scans_used=SCAN_BUDGET)
-        decision = brain.decide(_on_map(), v2_registry())
+        decision = brain.decide(_on_map_after_search(), v2_registry())
         self.assertEqual(decision.skill, "SAFE_STOP")
         self.assertFalse(brain.spend_route_switched)
 

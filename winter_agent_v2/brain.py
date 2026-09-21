@@ -63,6 +63,27 @@ class RuleBrain:
         # to be wrong.  The stop itself is no longer treated as a capability wall, so
         # exhausting this budget defers one attempt instead of blocking the goal.
         self.beast_scans_used = 0
+        # Once per run: has the client's own beast search been asked for a target?
+        #
+        # The search is the convergence the viewport pan never had -- it makes the
+        # client locate and centre a beast instead of moving the camera one
+        # viewport and hoping.  It is bounded to one attempt because the client may
+        # legitimately answer "没有发现条件相符的目标", and an unbounded 搜索 loop
+        # would then tap forever; after this flag is set the pan budget below still
+        # applies, so exhausting both still ends with the route's original named
+        # reason.  Cleared alongside ``beast_scans_used`` whenever a target does
+        # appear, so a later beast in the same run can use the search again.
+        self.beast_search_used = False
+        # Once per run: has the beast route already pressed Back to leave the
+        # search panel after spending its search?
+        #
+        # 搜索 leaves the panel up and overlays the result card on it (measured
+        # 2026-09-21 on ``beast5_found.png``), so one Back is what exposes the
+        # target the route just asked for.  A Back that did not move the client
+        # must not be repeated, or the loop ping-pongs between the panel and the
+        # map spending an action each way -- the same guard the daily panel and
+        # the non-actionable beast card already carry.
+        self.beast_search_panel_left = False
         # Once per run: has the spend goal already handed over to the intel flow because
         # the beast route found nothing?  See the give-up branch in the BEAST_HUNT route.
         self.spend_route_switched = False
@@ -617,8 +638,29 @@ class RuleBrain:
                 if leave is not None:
                     return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_beast_route")
-            if world.page is Page.MAP and world.resource_search_open:
-                return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")
+            if world.page is Page.MAP and world.resource_search_open and self.beast_search_used:
+                # This branch used to close the search panel unconditionally, because
+                # the panel belonged to the gathering route and a beast goal standing
+                # on it was somewhere it did not belong.
+                #
+                # Since 2026-09-21 the panel is the beast route's own tool: it is
+                # where 冰原巨兽 is selected and where 搜索 is tapped to make the
+                # client locate and centre a target.  Closing the panel while the
+                # search ticket is still unspent would therefore tear down the very
+                # instrument the route is about to use, and the two branches would
+                # fight -- measured: an unconditional Back here meant the search
+                # route could never issue its first hop at all.
+                #
+                # So the exit is gated on the ticket: the panel is left once the
+                # search has been spent, which is the same "this route is done with
+                # this panel" meaning the branch always had, just scoped to when that
+                # is actually true.  It is also one-shot: 搜索 keeps the panel up and
+                # draws the result card over it, so this Back is what exposes the
+                # target -- while a Back that failed to move the client must not be
+                # repeated, or the loop ping-pongs between panel and map forever.
+                if not self.beast_search_panel_left:
+                    self.beast_search_panel_left = True
+                    return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")
         if (
             world.page is Page.EXPLORATION
             and self._intel_like
@@ -1147,6 +1189,7 @@ class RuleBrain:
                 # leopard with its red assessment -- without touching the route.
                 if is_dispatchable(world.beast):
                     self.beast_scans_used = 0
+                    self.beast_search_used = False
                     # One sprite template per species is the data cost of a
                     # target (CAP-Z01's design note): the skill's tap target is
                     # the sprite itself, so a second dispatchable species gets
@@ -1169,7 +1212,51 @@ class RuleBrain:
                     # is also why an unsafe target is not a risk of this branch: it is
                     # exactly how the level-29 leopard gets read and refused.
                     self.beast_scans_used = 0
+                    self.beast_search_used = False
                     return Decision("SELECT_BEAST_TARGET_LABELLED", "beast_labelled_on_the_map_reading_the_clients_own_verdict", world.confidence, "beast_target_dialog_open")
+                # The client's own beast search, tried before any viewport pan.
+                #
+                # SCAN_MAP_FOR_BEAST pans once and re-observes, and its own record
+                # says why it never converges: it has no way to *fly* to a target.
+                # Five runs of the spend goal spent nothing, and the species
+                # templates matched nothing on 23 frames, because a pan searches
+                # bare snow.  The client ships the answer to exactly this problem:
+                # a search panel whose first tab is 冰原巨兽, whose level slider
+                # reaches 5, and whose 搜索 button makes the client locate and
+                # centre a matching beast -- which is the convergence the pan
+                # lacked.
+                #
+                # The order matters and is the whole fix: search first, pan second.
+                # A pan only ever moves the camera by one viewport and cannot know
+                # whether the beast it wants is nearby; the search asks the client,
+                # which does know.  Running the pan first would spend the run's
+                # budget on the method with no convergence and reach the search
+                # with nothing left to try it with.
+                #
+                # Search is bounded to one attempt per run
+                # (``beast_search_used``), so a client that returns nothing cannot
+                # become an endless loop of 搜索 taps; after it is spent, the pan
+                # budget below still applies and the route still ends with its
+                # original named reason.  Nothing here spends stamina: 搜索 costs
+                # none and starts no march, and the spend stays behind the client's
+                # own 胜券在握 strip three hops further down.
+                if not self.beast_search_used:
+                    if not world.resource_search_open:
+                        # The magnifier on the world-map HUD.  Same control the
+                        # verified gathering chain taps, so this hop invents
+                        # nothing about how to reach the panel.
+                        return Decision("SEARCH_RESOURCE", "beast_search_starts_by_opening_the_client_search", world.confidence, "resource_search_open")
+                    if not world.resource_beast_tab:
+                        # ``resource_beast_tab``, not ``resource_selected``: the strip
+                        # classifier identifies the four gatherable cells against
+                        # reviewed templates and reports ``None`` for a monster tab
+                        # even when it is drawn, bracketed and active (measured
+                        # 2026-09-21 on ``beast_tab.png``).  Gating on
+                        # ``resource_selected == "BEAST"`` would therefore re-issue this
+                        # tap forever -- the tab would never look selected.
+                        return Decision("OPEN_BEAST_SEARCH_TAB", "search_panel_needs_the_beast_tab", world.confidence, "beast_search_tab_selected")
+                    self.beast_search_used = True
+                    return Decision("SUBMIT_BEAST_SEARCH", "beast_tab_and_level_chosen_submitting_search", world.confidence, "beast_target_resent")
                 if self.beast_scans_used < self.max_beast_scans:
                     self.beast_scans_used += 1
                     return Decision("SCAN_MAP_FOR_BEAST", "verified_beast_target_not_visible_scanning_map", world.confidence, "beast_target_resent")
