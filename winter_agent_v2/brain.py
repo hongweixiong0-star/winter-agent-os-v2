@@ -666,10 +666,24 @@ class RuleBrain:
                 # route below (which is what actually opens the card and spends the
                 # stamina) was never reached.  The search worked and nothing was hunted.
                 # Standing on the panel is fine when there is a target to tap; leaving it
-                # is only the right move when there is not.  The predicate is deliberately
-                # the same pair the dispatch branches use, so the two cannot disagree
-                # about whether a target exists.
-                if not (is_dispatchable(world.beast) or may_evaluate(world.beast)):
+                # is only the right move when there is not.
+                #
+                # The result card the search itself drew counts as a target, and it had
+                # to be added here explicitly: it is read into ``beast_search_result``
+                # and NOT into ``world.beast`` (it matches no reviewed card template),
+                # so neither ``is_dispatchable`` nor ``may_evaluate`` could see it.  The
+                # measured cost of leaving it out was this Back firing on the one frame
+                # that had the target -- ``等级10 麝牛``, 攻击 at (361,600) -- and
+                # dropping it.  ``solo_attack`` is required so that a rally card does not
+                # hold the panel open for a route that cannot use it.
+                search_found_a_target = bool(
+                    (world.beast_search_result or {}).get("solo_attack")
+                )
+                if not (
+                    is_dispatchable(world.beast)
+                    or may_evaluate(world.beast)
+                    or search_found_a_target
+                ):
                     if not self.beast_search_panel_left:
                         self.beast_search_panel_left = True
                         return Decision("BACK", "close_resource_search_for_beast_goal", world.confidence, "resource_search_closed")

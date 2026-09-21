@@ -865,5 +865,47 @@ class TheSearchResultIsWhatTheRouteMarchesOnTests(unittest.TestCase):
         self.assertFalse(verify_beast_card_march_open(self._solo_card_world(), blank).ok)
 
 
+    def test_the_panel_is_not_closed_while_it_is_showing_a_target(self):
+        """The measured regression: BACK fired on the one frame that had the beast.
+
+        The panel is left when the search is spent, which is right when the search found
+        nothing.  But the result card is read into ``beast_search_result`` and not into
+        ``world.beast`` -- it matches no reviewed template -- so the branch's existing
+        predicate (``is_dispatchable`` or ``may_evaluate``) could not see it and pressed
+        BACK over a verified 等级10 麝牛.
+        """
+        world = self._solo_card_world()
+        decision = RuleBrain(current_goal="BEAST_HUNT").decide(world, v2_registry())
+        self.assertNotEqual(
+            decision.reason,
+            "close_resource_search_for_beast_goal",
+            "a panel holding a verified solo target must not be torn down",
+        )
+
+        # A panel whose search found nothing is still left, exactly as before.
+        empty = replace(
+            self._solo_card_world(),
+            beast_search_submitted=True,
+            beast_search_result={},
+        )
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        brain.beast_search_used = True
+        decision = brain.decide(empty, v2_registry())
+        self.assertEqual(decision.reason, "close_resource_search_for_beast_goal")
+
+        # And a rally card does not hold it open for a route that cannot use it.
+        rally = replace(
+            self._solo_card_world(),
+            beast_search_result={
+                "title_level": 5, "title_text": "猛犸象",
+                "has_attack": False, "has_rally": True, "solo_attack": False,
+            },
+        )
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        brain.beast_search_used = True
+        decision = brain.decide(rally, v2_registry())
+        self.assertEqual(decision.reason, "close_resource_search_for_beast_goal")
+
+
 if __name__ == "__main__":
     unittest.main()
