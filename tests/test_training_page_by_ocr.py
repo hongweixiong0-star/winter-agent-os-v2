@@ -136,8 +136,33 @@ class TrainingPageIsReadByOcrTests(unittest.TestCase):
     def test_the_fallback_is_gated_on_the_template_layer_having_nothing(self):
         """It may fill a blank, not overrule an answer -- the same rule the other enrichers use."""
         source = (ROOT / "winter_agent_v2" / "ocr.py").read_text(encoding="utf-8")
-        self.assertIn("if primary.page is Page.UNKNOWN and not primary.training:", source)
-        self.assertIn("if secondary.page is Page.TRAINING and secondary.training:", source)
+        self.assertIn("if primary.page is Page.UNKNOWN:", source)
+        self.assertIn("if classified.page is Page.TRAINING and classified.training:", source)
+
+    def test_the_unknown_branch_is_reachable_from_the_production_entry_point(self):
+        """A fallback that can never run is not a fallback.
+
+        Measured 2026-09-21: the first version of this branch read
+        ``if primary.page is Page.UNKNOWN and not primary.training:`` and was nested inside
+        ``if primary.known:``.  Those two conditions are mutually exclusive -- ``known`` means
+        "not UNKNOWN" -- so the branch was dead code, and ``HybridVision.observe`` never reached
+        it even though the contract test above asserted its *text* was present and passed.  The
+        unit tests passed because they called ``OCRPageClassifier.classify`` directly.
+
+        So this test does not read the source at all: it asserts the *behaviour* at the entry
+        point every production step goes through, on the live frame whose template layer answers
+        UNKNOWN.  If the branch is ever nested behind a contradictory guard again, this fails.
+        """
+        for name in TRAINING_FRAMES:
+            with self.subTest(frame=name):
+                path = self._frame(name)
+                self.assertIs(self.template_only.observe(path).page, Page.UNKNOWN,
+                              "premise of this test: the template layer has nothing here")
+                state = self.hybrid.observe(path)
+                self.assertIs(state.page, Page.TRAINING,
+                              "the OCR fallback must be reachable from HybridVision.observe")
+                self.assertTrue(state.camps,
+                                "reading the page must also attribute it to a barracks")
 
 
 if __name__ == "__main__":

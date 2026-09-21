@@ -95,3 +95,40 @@ def test_the_worker_builds_its_command_from_the_record_not_only_the_goal():
     assert "VALIDATION_CONTEXT_MISSING" in worker, (
         "an unresolvable record must stop the run rather than fall back to any pending record"
     )
+
+
+def test_a_goal_id_is_translated_into_a_route_the_runner_accepts():
+    """Measured 2026-09-21: this is not a hypothetical.
+
+    The ledger stores a goal **id**; ``run_live --goal`` accepts a route **domain**.  Passing
+    the id through unchanged made every calibration die inside argparse before the device was
+    touched --
+
+        run_live.py: error: argument --goal: invalid choice: 'KEEP_TRAINING_PRODUCTIVE'
+
+    -- while the lease had already been taken, and the panel narrated the corpse as
+    "验证运行结束（EXIT_2），停止原因 未知".  So the two vocabularies are held together here.
+    """
+    command = cp.validation_command(
+        {**RECORD, "goal": "KEEP_TRAINING_PRODUCTIVE"}, capture_dir="c", serial="s")
+    assert _pair(command, "--goal") == "TRAIN"
+    for camp_goal in ("SHIELD_CAMP_TRAINING", "LANCER_CAMP_TRAINING", "MARKSMAN_CAMP_TRAINING"):
+        camp = cp.validation_command({**RECORD, "goal": camp_goal}, capture_dir="c", serial="s")
+        assert _pair(camp, "--goal") == "TRAIN", f"{camp_goal} shares the training route"
+
+
+def test_every_route_the_ledger_can_name_is_one_the_runner_accepts():
+    """The two vocabularies cannot drift: this is the assertion that keeps them joined."""
+    from winter_agent_v2.goal_library import GOAL_ROUTES, ROUTE_DOMAINS
+
+    for goal_id, route in GOAL_ROUTES.items():
+        assert route in ROUTE_DOMAINS, (
+            f"{goal_id} routes to {route!r}, which run_live --goal would reject"
+        )
+
+
+def test_a_goal_with_no_route_stops_the_run_instead_of_aiming_at_nothing():
+    """A calibration aimed at a nonexistent route would hold the device and prove nothing."""
+    with pytest.raises(ValueError):
+        cp.validation_command(
+            {**RECORD, "goal": "A_GOAL_THAT_HAS_NO_ROUTE"}, capture_dir="c", serial="s")

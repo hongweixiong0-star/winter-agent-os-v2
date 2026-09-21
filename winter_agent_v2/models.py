@@ -76,6 +76,12 @@ class WorldState:
     building: dict[str, Any] = field(default_factory=dict)
     research: dict[str, Any] = field(default_factory=dict)
     training: dict[str, Any] = field(default_factory=dict)
+    #: Per-barracks training state, keyed by ``SHIELD_CAMP`` / ``LANCER_CAMP`` /
+    #: ``MARKSMAN_CAMP``.  Distinct from ``training`` above, which is the single
+    #: "whatever training page was last open" reading and cannot answer "which camp is
+    #: busy" -- the gap that let one running barracks mark the whole goal COMPLETE
+    #: (open issue #86).  ``camp_training`` explains the model and the measurements.
+    camps: dict[str, dict[str, Any]] = field(default_factory=dict)
     events: dict[str, Any] = field(default_factory=dict)
     alliance: dict[str, Any] = field(default_factory=dict)
     intel: dict[str, Any] = field(default_factory=dict)

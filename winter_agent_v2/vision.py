@@ -8,6 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageStat
 
 from .camp_ring import ring_centre_norm
+from .camp_training import TROOP_TO_CAMP, merge_camps, observe_camps
 from .image_hash import dhash, hamming, phash
 from .models import MarchState, Page, WorldState
 
@@ -1549,25 +1550,42 @@ class SemanticWorldVision:
             # for (the ``0/200`` stamina reading, #32, and the fabricated role identity before it).
             # ``troop_type`` itself is not a reading either: it is which page template matched.
             # What the frame is actually understood to say is that a training queue is running.
+            #
+            # ``camps`` is the per-barracks view of the same fact: this template names ONE camp,
+            # and only that camp's queue is being described.  The other two are left out on
+            # purpose -- they were not on screen, and writing ``IDLE`` for them is what let one
+            # running barracks mark the whole goal COMPLETE (#86).
+            reading = {
+                "troop_type": training_type,
+                "status": "IN_PROGRESS",
+                "timer": "VISIBLE",
+                "queue_available": False,
+            }
             return WorldState(
                 page=Page.TRAINING,
-                training={
-                    "troop_type": training_type,
-                    "status": "IN_PROGRESS",
-                    "timer": "VISIBLE",
-                    "queue_available": False,
-                },
+                training=reading,
+                camps=observe_camps(
+                    page_is_training=True,
+                    selected_camp=TROOP_TO_CAMP.get(training_type),
+                    training=reading,
+                ),
                 confidence=0.99,
             )
         if training_type and match("BTN_START_TRAINING"):
+            reading = {
+                "troop_type": training_type,
+                "status": "AVAILABLE",
+                "queue_available": True,
+                "trainable": True,
+            }
             return WorldState(
                 page=Page.TRAINING,
-                training={
-                    "troop_type": training_type,
-                    "status": "AVAILABLE",
-                    "queue_available": True,
-                    "trainable": True,
-                },
+                training=reading,
+                camps=observe_camps(
+                    page_is_training=True,
+                    selected_camp=TROOP_TO_CAMP.get(training_type),
+                    training=reading,
+                ),
                 confidence=0.99,
             )
         if match("BTN_INTEL_CLAIM_ALL"):

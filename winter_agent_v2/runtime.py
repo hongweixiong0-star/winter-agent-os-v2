@@ -13,7 +13,7 @@ from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
 from .scheduler import Scheduler
-from .goal_library import GoalLibrary, GoalStateStore, progress_moved
+from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
@@ -905,7 +905,7 @@ class LiveRuntime:
                 )
                 return finish(reason)
             before_path = self._capture_path(index, "before")
-            if self._device_lost(self.device.screenshot, before_path, index):
+            if self._device_lost(self.device.screenshot, before_path):
                 return finish(self._device_stop_reason)
             before = self.vision.observe(before_path)
             # A known page means whatever owned the screen has finished, so the
@@ -963,14 +963,14 @@ class LiveRuntime:
                 # The one place a goal id becomes a brain route.  A goal that is missing here
                 # is not "handled elsewhere" -- it is scheduled, given no route, and quietly
                 # does nothing, which is how four panel routines stayed invisible while their
-                # capabilities worked.  Each entry maps to a route ``RuleBrain`` already has,
-                # including the MAP -> panel hop that makes an unread routine observable.
-                route = {
-                    "CLEAR_INTEL": "INTEL", "AVOID_STAMINA_WASTE": "BEAST_HUNT",
-                    "KEEP_TRAINING_PRODUCTIVE": "TRAIN", "KEEP_RESEARCH_PRODUCTIVE": "RESEARCH",
-                    "MAIL_ROUTINE": "MAIL", "DAILY_ACTIVITY_TARGET": "DAILY",
-                    "ALLIANCE_ROUTINE": "ALLIANCE", "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
-                }.get(best_goal.goal_id)
+                # capabilities worked.
+                #
+                # The table itself now lives in ``goal_library`` (``GOAL_ROUTES``): the panel's
+                # Development Validation cycle needs the same translation to build a command
+                # line, and a second copy drifted the moment a goal was added -- measured
+                # 2026-09-21, every calibration run died on argparse with EXIT_2 while the map
+                # here was correct.  One table, two readers.
+                route = route_for(best_goal.goal_id)
                 if best_goal.goal_id == "AVOID_STAMINA_WASTE":
                     # The goal declares three ways to spend stamina and the beast one is the
                     # blocked one, so routing it to BEAST_HUNT would send the run down the path
@@ -1067,7 +1067,7 @@ class LiveRuntime:
                         for _ in range(self.max_battle_reobservations):
                             self.sleeper(self.settle_seconds)
                             recovery_path = self._capture_path(index, "after", suffix="battle_wait")
-                            if self._device_lost(self.device.screenshot, recovery_path, index):
+                            if self._device_lost(self.device.screenshot, recovery_path):
                                 return finish(self._device_stop_reason)
                             before = self.vision.observe(recovery_path)
                             before = self._reject_a_dropped_digit(before)
@@ -1083,7 +1083,7 @@ class LiveRuntime:
                             recovery_path = self._capture_path(
                                 index, "after", suffix=f"unknown_page_back_{self._unknown_page_backs}"
                             )
-                            if self._device_lost(self.device.screenshot, recovery_path, index):
+                            if self._device_lost(self.device.screenshot, recovery_path):
                                 return finish(self._device_stop_reason)
                             before = self.vision.observe(recovery_path)
                             before = self._reject_a_dropped_digit(before)
@@ -1426,7 +1426,7 @@ class LiveRuntime:
 
             self.sleeper(self.settle_seconds)
             after_path = self._capture_path(index, "after")
-            if self._device_lost(self.device.screenshot, after_path, index):
+            if self._device_lost(self.device.screenshot, after_path):
                 return finish(self._device_stop_reason)
             after = self.vision.observe(after_path)
             if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
@@ -1441,7 +1441,7 @@ class LiveRuntime:
                 self.device.press_back()
                 self.sleeper(self.settle_seconds)
                 recovery_path = self._capture_path(index, "after", suffix=f"payment_offer_closed_{offer_recovery}")
-                if self._device_lost(self.device.screenshot, recovery_path, index):
+                if self._device_lost(self.device.screenshot, recovery_path):
                     return finish(self._device_stop_reason)
                 after = self.vision.observe(recovery_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
@@ -1459,7 +1459,7 @@ class LiveRuntime:
                     break
                 self.sleeper(self.settle_seconds)
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
-                if self._device_lost(self.device.screenshot, refresh_path, index):
+                if self._device_lost(self.device.screenshot, refresh_path):
                     return finish(self._device_stop_reason)
                 after = self.vision.observe(refresh_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:

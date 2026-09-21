@@ -37,6 +37,9 @@ PROCESS_CODE_REVISION = PROCESS_CODE_REVISION_DETAIL.token
 from winter_agent_v2.device import ADBDevice
 from winter_agent_v2.executor_router import build_maa_adapter
 from winter_agent_v2.brain import RuleBrain
+# The route domains are read from the one table that also maps goals onto them, so this
+# parser can never accept a domain the scheduler does not use, nor reject one it does.
+from winter_agent_v2.goal_library import ROUTE_DOMAINS
 from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
 from winter_agent_v2.learning import EpisodeStore
 from winter_agent_v2.runtime import LiveRuntime
@@ -65,7 +68,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run the bounded, verifier-gated V2 live loop")
     parser.add_argument("--max-actions", type=int, default=10)
     parser.add_argument("--capture-dir", type=Path, default=ROOT / "dataset/raw/live_runtime")
-    parser.add_argument("--goal", choices=["HOME", "GATHER_RESOURCE", "BEAST_HUNT", "INTEL", "MAIL", "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN"], default=None)
+    parser.add_argument("--goal", choices=list(ROUTE_DOMAINS), default=None)
     parser.add_argument("--stop-after", default=None, help="Stop after this skill passes its verifier")
     parser.add_argument("--serial", default=None, help="Device selected by the control panel")
     # Operator §2: the validation context travels as explicit arguments, not as environment

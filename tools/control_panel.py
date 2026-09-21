@@ -83,7 +83,26 @@ def validation_command(record: Mapping[str, Any], *, capture_dir: str, serial: s
     ``--no-escalate`` is passed because failing this examination must not open a second
     WorkBuddy job: the queue and the reconciler own that decision, and a test process that
     filed an escalation for failing its own exam would be a loop.
+
+    The goal is translated through ``GOAL_ROUTES`` before it reaches the command line: the
+    ledger stores a goal **id** and ``run_live --goal`` accepts only a route **domain**.
+    Measured 2026-09-21, passing the id straight through made every calibration die in
+    argparse before the device was touched --
+
+        invalid choice: 'KEEP_TRAINING_PRODUCTIVE'
+
+    -- while still taking the device lease, and the panel reported it as "EXIT_2, reason
+    unknown".  A goal with no route raises instead of being passed through, because a
+    calibration aimed at a route that does not exist would prove nothing about the goal.
     """
+    from winter_agent_v2.goal_library import route_for
+
+    goal_id = str(record.get("goal") or "")
+    route = route_for(goal_id)
+    if goal_id and not route:
+        raise ValueError(
+            f"no route for goal {goal_id!r}: a calibration must aim at a route run_live accepts"
+        )
     return [
         runtime_python_path(), str(RUNTIME_PATH),
         "--execution-mode", VALIDATION_MODE,
@@ -95,7 +114,7 @@ def validation_command(record: Mapping[str, Any], *, capture_dir: str, serial: s
         # What this cycle must be running for its evidence to be creditable.  run_live refuses
         # before the first device action when it does not match (operator §3).
         "--expected-after-version", str(record.get("after_version") or ""),
-        "--goal", str(record.get("goal") or ""),
+        "--goal", route or "",
         "--max-actions", str(VALIDATION_MAX_ACTIONS),
         "--capture-dir", str(capture_dir),
         "--serial", serial,

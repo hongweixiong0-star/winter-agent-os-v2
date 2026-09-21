@@ -13,6 +13,8 @@ from PIL import Image
 
 from .building_identity import UNKNOWN as UNKNOWN_IDENTITY
 from .building_identity import read_building_identity
+from .camp_training import CAMP_LABELS, TROOP_TO_CAMP
+from .camp_training import camp_from_selected_label, merge_camps, observe_camps
 from .models import MarchState, Page, RoleIdentity, WorldState
 
 
@@ -349,6 +351,32 @@ class OCRPageClassifier:
                 count = re.search(r"正在训练\s*([0-9,]+)\s*位", text)
                 if count:
                     training["batch_count"] = int(count.group(1).replace(",", ""))
+            # Which barracks this page *is*.
+            #
+            # The page title names the troop (英勇盾兵 / 刚毅矛兵 / 刚毅射手), and that is the
+            # signal this field is built on: `troop_type` above already comes from the camp
+            # names the client draws, and the title is drawn only for the open camp.  The tab
+            # labels are recorded alongside it as corroboration -- measured 2026-09-21, all
+            # three are drawn at once (盾兵营 / 矛兵营 / 射手营, conf 1.00 / 0.99 / 1.00) at
+            # y_norm ~0.945, so *presence decides nothing*, and `camps_seen` exists to say that
+            # all three were visible rather than to pick one.
+            #
+            # A "which tab is highlighted" pixel test was measured and rejected: sampling the
+            # tile fills gives a muted light plate for the selected tab (225,239,242) against
+            # saturated blue for the other two (107,159,216), but the same statistic fires on
+            # 7 of 14 frames from *other* pages, and the per-tile score is not clean even on
+            # the training frame (one unselected tile scored blue on only 1 of 4 samples).
+            # A discriminator that unreliable would mislabel a camp, and a mislabelled camp is
+            # worse than an unattributed one -- so the tab labels are evidence, and the troop
+            # name is the answer.
+            camp_labels = ("盾兵营", "矛兵营", "射手营")
+            training["camps_seen"] = [label for label in camp_labels if label in exact_texts]
+            # Reported only when exactly the open camp's label is present among the ones the
+            # reader is confident about, so a frame that draws a different camp's tab as the
+            # prominent one does not silently override the title.
+            open_label = CAMP_LABELS.get(TROOP_TO_CAMP.get(training.get("troop_type") or "", ""))
+            if open_label in training["camps_seen"]:
+                training["camp_open_label"] = open_label
         if page is Page.RESEARCH:
             texts = [token.text.strip() for token in eligible]
             if "病房扩建VII" in exact_texts:
@@ -1290,6 +1318,40 @@ class HybridVision:
 
     def observe(self, image_path: Path) -> WorldState:
         primary = self.template_vision.observe(image_path)
+        # A frame the template layer cannot name gets the OCR classifier, and the training
+        # page is the one case that needs to be *recognised* here rather than merely enriched.
+        #
+        # Measured 2026-09-21: the training branch used to sit nested under ``if
+        # primary.known:`` while its own guard was ``primary.page is Page.UNKNOWN``.
+        # ``UNKNOWN`` means ``not known``, so the branch was unreachable and the training page
+        # was never recognised through the production entry point -- the unit test passed
+        # because it called ``OCRPageClassifier.classify`` directly, one layer lower.  The
+        # dead-page problem it was written to solve was still unsolved, and nothing said so.
+        #
+        # It runs before the known-page chain because only an unnamed frame can reach it.
+        # The classifier's own gate (it must answer TRAINING itself, which requires both a
+        # training-status token and a camp name) is what stops a genuinely unknown frame from
+        # becoming a training page, not this branch.
+        if primary.page is Page.UNKNOWN:
+            classified = self.classifier.classify(self.ocr.recognize(image_path))
+            if classified.page is Page.TRAINING and classified.training:
+                # The camp model turns the classifier's selected-tab reading into the
+                # per-barracks answer.  Only the open camp is described: the other two were
+                # not on screen, and writing "idle" about a barracks nobody opened is the
+                # claim that let one busy camp close the whole training goal (#86).
+                camps = observe_camps(
+                    page_is_training=True,
+                    selected_camp=camp_from_selected_label(
+                        [classified.training.get("camp_selected_label") or ""]
+                    ),
+                    training=classified.training,
+                )
+                return replace(
+                    classified,
+                    camps=merge_camps(primary.camps, camps),
+                    confidence=max(primary.confidence, classified.confidence),
+                )
+            return classified
         if primary.known:
             # The march counter is drawn on the map HUD and stays drawn under map
             # overlays such as RESOURCE_DETAIL. Read it on both pages so a target
@@ -1581,38 +1643,6 @@ class HybridVision:
                 secondary = self.classifier.classify(self.ocr.recognize(image_path))
                 if secondary.page is primary.page and secondary.daily:
                     return replace(primary, daily={**primary.daily, **secondary.daily})
-            if primary.page is Page.UNKNOWN and not primary.training:
-                # The training page's template layer is dead, and its numbers live in OCR.
-                #
-                # Measured 2026-09-21: `PAGE_TRAINING_INFANTRY` / `_LANCER` / `_MARKSMAN` and
-                # `TRAINING_QUEUE_TIMER` are CANDIDATE records cut from old screenshots, and on the
-                # frame production itself recorded as `page=TRAINING` none of them match -- so
-                # `world.training` was empty on every frame, the route could never recognise the
-                # page, and `TRAIN_TROOPS` (which requires ``Page.TRAINING``) could never run.
-                # That branch also carried ``tier: 10`` / ``batch_count: 806``, two constants off an
-                # old screenshot written as if they had been read; they are gone.
-                #
-                # The OCR classifier reads the same frame exactly -- 训练中 + 盾兵营 +
-                # 正在训练250位英勇盾兵 + 01:00:08 -- so it carries ``troop_type`` (which of the
-                # three barracks this page IS), ``status``, ``batch_count`` and a real countdown.
-                # Over all eight live training frames in the corpus it answers
-                # TRAINING/INFANTRY/IN_PROGRESS, with countdowns 01:09:31, 01:00:00, 01:00:08,
-                # 00:59:58, 02:59:45, 02:59:33, 00:25:15, 00:25:05 and batch counts 216/250.
-                #
-                # Gated the way the alliance and daily enrichers are gated, with the roles swapped
-                # because here the template layer has nothing to decide: it must be UNKNOWN, and
-                # the classifier must name TRAINING itself, which its own test pins as requiring
-                # BOTH a training-status token AND camp semantics.  Measured on twelve non-training
-                # live frames it answers ALLIANCE or UNKNOWN and never TRAINING, and UNKNOWN is
-                # 1.5% of steps, so this costs one 0.59s read on about one step in seventy.
-                secondary = self.classifier.classify(self.ocr.recognize(image_path))
-                if secondary.page is Page.TRAINING and secondary.training:
-                    return replace(
-                        primary,
-                        page=Page.TRAINING,
-                        training=dict(secondary.training),
-                        confidence=max(primary.confidence, secondary.confidence),
-                    )
             if primary.page is Page.MAIL:
                 # Badge numbers vary and OCR occasionally misses a single
                 # digit. Detect only the saturated red badge pixels inside

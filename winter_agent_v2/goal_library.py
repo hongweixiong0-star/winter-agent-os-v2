@@ -8,6 +8,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .camp_training import CAMP_LABELS, CAMP_ORDER, TROOP_TO_CAMP
 from .models import WorldState
 from .rally import BearPhase, bear_phase
 
@@ -21,6 +22,87 @@ from .rally import BearPhase, bear_phase
 #: the same number in the goal's status, its completion, its loss estimate and its
 #: distance, and four copies of a boundary is how they drift apart.
 STAMINA_FLOOR = 30
+
+#: One training goal per barracks (open issue #86).
+#:
+#: The client has three camps on one page.  A single goal reading a single queue made one
+#: running camp close the whole check, so the other two were never opened.  These are the
+#: per-camp goals; ``KEEP_TRAINING_PRODUCTIVE`` survives only as the label for a legacy
+#: reading that names no camp.  The ids are stable and are what the panel and the episode
+#: stream report, so "which camp was blocked" is answerable from the record.
+CAMP_GOAL_FOR: dict[str, str] = {
+    "SHIELD_CAMP": "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP": "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP": "MARKSMAN_CAMP_TRAINING",
+}
+
+#: What a camp's training is worth when it has work, matching the old single goal's 90 so
+#: the change is about *which camp* and not about re-pricing training against everything
+#: else on the board.
+TRAINING_CAMP_VALUE = 90.0
+
+#: The goal id -> brain route translation, in one place.
+#:
+#: This started life inside ``LiveRuntime`` as a local dict, because that was the only caller
+#: that needed it.  Measured 2026-09-21: it is not.  The panel's Development Validation cycle
+#: passes a goal **id** on the command line while ``run_live.py --goal`` accepts only the
+#: route **domains**, so the calibration was launched as
+#: ``--goal KEEP_TRAINING_PRODUCTIVE`` and argparse rejected it before the device was ever
+#: touched --
+#:
+#:     run_live.py: error: argument --goal: invalid choice: 'KEEP_TRAINING_PRODUCTIVE'
+#:     (choose from HOME, GATHER_RESOURCE, BEAST_HUNT, INTEL, MAIL, EXPLORATION, DAILY,
+#:      ALLIANCE, RESEARCH, TRAIN)
+#:
+#: Every calibration run exited 2 in under a second, took the device lease anyway, and the
+#: panel narrated it as "验证运行结束（EXIT_2），停止原因 未知" -- a real failure reported as an
+#: unknown one.  A second copy of the map would have had the same gap as soon as a goal was
+#: added, which is precisely what happened to the camp goals, so the translation lives here
+#: and both callers read it.
+GOAL_ROUTES: dict[str, str] = {
+    "CLEAR_INTEL": "INTEL",
+    "AVOID_STAMINA_WASTE": "BEAST_HUNT",
+    "KEEP_TRAINING_PRODUCTIVE": "TRAIN",
+    "KEEP_RESEARCH_PRODUCTIVE": "RESEARCH",
+    # The three camps are three goals and share the one route: the route is the training
+    # *page*, and which camp it opens is the brain's decision driven by ``goal_id``.  A
+    # second route name would be a second implementation of the same page.
+    "SHIELD_CAMP_TRAINING": "TRAIN",
+    "LANCER_CAMP_TRAINING": "TRAIN",
+    "MARKSMAN_CAMP_TRAINING": "TRAIN",
+    "MAIL_ROUTINE": "MAIL",
+    "DAILY_ACTIVITY_TARGET": "DAILY",
+    "ALLIANCE_ROUTINE": "ALLIANCE",
+    "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
+}
+
+#: The domains ``run_live.py --goal`` accepts.  Kept beside :data:`GOAL_ROUTES` because the
+#: two are the same question asked from opposite ends, and a test asserts every mapped route
+#: is one of these -- a route ``run_live`` cannot accept is the EXIT_2 bug above.
+ROUTE_DOMAINS: tuple[str, ...] = (
+    "HOME", "GATHER_RESOURCE", "BEAST_HUNT", "INTEL", "MAIL",
+    "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN",
+)
+
+
+def route_for(goal_id: str | None) -> str | None:
+    """The route ``run_live.py --goal`` will accept for ``goal_id``, or ``None``.
+
+    ``None`` means "no route", and callers must treat it as such rather than pass the goal id
+    through: a goal that is scheduled and given no route does nothing at all, and a goal id
+    handed to ``--goal`` is rejected outright.
+
+    A route domain is accepted as its own answer.  The ledger's ``goal`` field normally holds a
+    goal **id**, but records already written hold domains too -- ``BEAST_HUNT`` is a real one,
+    measured 2026-09-21, from the escalation that produced the beast examination -- and
+    translating those would mean refusing to calibrate a version that is already pending.  The
+    function is therefore idempotent: ids map to domains, domains pass through.
+    """
+    value = str(goal_id or "")
+    if value in ROUTE_DOMAINS:
+        return value
+    return GOAL_ROUTES.get(value)
+
 
 
 class GoalStatus(str, Enum):
@@ -222,13 +304,10 @@ SWEEP_ROUTINES: tuple[PanelRoutine, ...] = (
         work_skills=("INTEL_CLAIM_REWARDS", "SELECT_INTEL_BEAST_MISSION"),
         entry_skill="OPEN_INTEL",
     ),
-    PanelRoutine(
-        "KEEP_TRAINING_PRODUCTIVE", "training",
-        work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
-        work_skills=("TRAIN_TROOPS",),
-        # The power-overview hop is the measured way in; OPEN_TRAINING is not a registered skill.
-        entry_skill="OPEN_POWER_OVERVIEW",
-    ),
+    # ``KEEP_TRAINING_PRODUCTIVE`` was here and has moved to the per-camp branch
+    # (``_append_camp_training_goals``), which owns the training page now.  It is no longer
+    # listed here because that branch already emits the never-read ticket as ``TRAINING_SWEEP``
+    # and leaving both would put two identical tickets on the board for one page.
     PanelRoutine(
         "KEEP_RESEARCH_PRODUCTIVE", "research",
         work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
@@ -237,9 +316,17 @@ SWEEP_ROUTINES: tuple[PanelRoutine, ...] = (
     ),
 )
 
+#: The never-read training page, as a routine.  Reachable only when there is no per-camp
+#: model and no single reading either; it is the "go and look" ticket for the page itself.
+TRAINING_SWEEP = PanelRoutine(
+    "KEEP_TRAINING_PRODUCTIVE", "training",
+    work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
+    work_skills=("TRAIN_TROOPS",),
+    entry_skill="OPEN_POWER_OVERVIEW",
+)
 
-def _append_sweep_when_unobserved(
-    goals: list[GoalState],
+
+def _append_sweep_when_unobserved(    goals: list[GoalState],
     routine: PanelRoutine,
     reading: Mapping[str, Any] | None,
     observation: Mapping[str, Any] | None = None,
@@ -426,7 +513,7 @@ class GoalLibrary:
                 # as a number.
                 distance=float(max(0, stamina - STAMINA_FLOOR + 1)),
             ))
-        self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training, ("TRAIN_TROOPS",), 90)
+        self._append_camp_training_goals(goals, world, observations)
         self._append_queue_goal(goals, "KEEP_RESEARCH_PRODUCTIVE", world.research, ("RESEARCH",), 80)
         self._append_queue_goal(goals, "KEEP_BUILDING_PRODUCTIVE", world.building, ("BUILDING_UPGRADE",), 80)
         # Domains whose goal is emitted only from a reading (see SWEEP_ROUTINES).  With a
@@ -532,9 +619,131 @@ class GoalLibrary:
                                available_skills=skills, evidence={"queue_busy": busy},
                                distance=0.0 if busy else 1.0))
 
+    def _append_camp_training_goals(
+        self,
+        goals: list[GoalState],
+        world: WorldState,
+        observations: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> None:
+        """Emit one training ticket per barracks, so one busy camp cannot close the goal.
+
+        The defect this replaces was structural, not a threshold: the goal layer held a single
+        ``world.training`` reading and asked one question of it -- is that queue busy -- then
+        marked ``KEEP_TRAINING_PRODUCTIVE`` COMPLETE when the answer was yes.  The client has
+        three barracks on one page, so::
+
+            shield busy -> "the training queue is busy" -> goal COMPLETE -> 矛兵营/射手营 never read
+
+        Measured evidence for the shape of the client: on every live training frame the three
+        camp labels are drawn together at y_norm ~0.945, and each camp's queue state is drawn
+        only while that camp's tab is selected -- so the three readings are three separate
+        facts, and this emits three separate goals.
+
+        What each camp produces
+        -----------------------
+        * **positively free** (a trainable queue was read) -> READY, work to do now.
+        * **positively running** (a countdown was read) -> COMPLETE for that camp only.  The
+          other two camps are untouched by this, which is the whole point.
+        * **never read** (no frame has ever shown this camp) -> DISCOVERED, schedulable, so the
+          loop goes and opens the tab.  This is the operator's "不得阻止检查另外两个兵营"
+          expressed as a ticket rather than as a comment.  Two of the three camps have zero
+          frames in the live corpus, so this is the common case today, not an edge case.
+
+        The legacy single ``world.training`` reading is still honoured when a camp model is
+        absent entirely (older frames, and the ``page=HOME`` campaign-menu branch), because
+        dropping it would lose the one reading those branches do produce.  It is attributed to
+        its own troop type when that is known, and to a clearly-labelled ``PAGE`` entry when it
+        is not -- never silently to a named camp.
+        """
+        camps = world.camps or {}
+        troop = str((world.training or {}).get("troop_type") or "").upper()
+        legacy_camp = TROOP_TO_CAMP.get(troop) if troop else None
+
+        if not camps:
+            # No per-camp model yet.  Keep the old single reading as one ticket, but name the
+            # camp it belongs to when the troop type identifies one, so the board shows
+            # SHIELD_CAMP rather than an anonymous "training".
+            if world.training:
+                self._append_queue_goal(
+                    goals, CAMP_GOAL_FOR.get(legacy_camp, "KEEP_TRAINING_PRODUCTIVE"),
+                    world.training, ("TRAIN_TROOPS",), TRAINING_CAMP_VALUE,
+                )
+            else:
+                # Never read: a sweep ticket, priced like the other unread routines.
+                _append_panel_routine(goals, TRAINING_SWEEP, None,
+                                      (observations or {}).get("training"))
+            return
+
+        for camp in CAMP_ORDER:
+            state = dict(camps.get(camp) or {})
+            goal_id = CAMP_GOAL_FOR[camp]
+            busy = state.get("busy")
+            observed = state.get("observed") is True
+            evidence = {
+                "camp": camp,
+                "label": CAMP_LABELS[camp],
+                "status": state.get("status", "UNKNOWN"),
+                "timer": state.get("timer"),
+                "batch_count": state.get("batch_count"),
+                "source": state.get("source"),
+                "observed": observed,
+            }
+            if observed and busy is True:
+                goals.append(GoalState(
+                    goal_id, GoalStatus.COMPLETE, completion=1.0,
+                    development_value=TRAINING_CAMP_VALUE, available_skills=(),
+                    evidence={**evidence, "reason": "this_camp_is_training"},
+                    distance=0.0,
+                ))
+            elif observed and busy is False:
+                goals.append(GoalState(
+                    goal_id, GoalStatus.READY, completion=0.0,
+                    development_value=TRAINING_CAMP_VALUE,
+                    available_skills=("TRAIN_TROOPS",),
+                    evidence={**evidence, "reason": "this_camp_has_a_free_queue"},
+                    distance=1.0,
+                ))
+            else:
+                # Not read.  Distinct from both answers above and schedulable in its own right
+                # (DISCOVERED), so "we have not opened this barracks" is work rather than
+                # silently no work.  Its value is the sweep value, not the claim value: looking
+                # at a camp pays less than a camp that has been seen to have a free queue.
+                goals.append(GoalState(
+                    goal_id, GoalStatus.DISCOVERED, completion=0.0,
+                    development_value=SWEEP_BASE_VALUE,
+                    available_skills=("TRAIN_TROOPS",),
+                    evidence={**evidence, "reason": "this_camp_has_never_been_opened"},
+                    distance=1.0,
+                ))
+
+        # The legacy single reading, when it named a camp the per-camp model has nothing for,
+        # is still worth keeping: it is a real reading of a real page, just one the camp model
+        # could not attribute.  Reported under the page's own name so it is visible.
+        if legacy_camp is None and world.training and world.training.get("status"):
+            self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training,
+                                    ("TRAIN_TROOPS",), TRAINING_CAMP_VALUE)
+
     def best(self, goals: Iterable[GoalState]) -> GoalState | None:
+        """The goal to work on: real work first, and a look-around only if there is none.
+
+        The tier exists because the sweep values were set to out-price each other, not to
+        out-price work.  Measured 2026-09-21 on a map frame with an idle march slot: the
+        unread-page tickets price at 180 and ``KEEP_MARCHES_PRODUCTIVE`` at 70, so the loop
+        hopped away from a dispatched march it could have sent, and the operator's rule is
+        that a goal which has stepped aside must not switch off work that is still
+        selectable (``不能因为某个 Goal 被让位就停止其他可执行 Goal``).
+
+        ``DISCOVERED`` means "never looked at", which is a real thing to do but not work in
+        hand: it is schedulable so the page gets visited (the whole reason the tickets
+        exist), and it is tried only when nothing on the board can be advanced right now.
+        Within each tier the existing priority order is untouched, so the age-asymptote
+        rotation that stops one ticket being re-picked forever still applies.
+        """
         actionable = [goal for goal in goals if goal.priority != float("-inf") and goal.available_skills]
-        return max(actionable, key=lambda goal: goal.priority, default=None)
+        if not actionable:
+            return None
+        work = [goal for goal in actionable if goal.status is not GoalStatus.DISCOVERED]
+        return max(work or actionable, key=lambda goal: goal.priority, default=None)
 
     def skill_modifier(self, world: WorldState, skill_id: str) -> float:
         # One action may advance several goals (for example Train + Daily + Event).
