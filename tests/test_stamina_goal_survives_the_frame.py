@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from winter_agent_v2.goal_library import GoalLibrary, GoalStatus  # noqa: E402
+from winter_agent_v2.goal_library import STAMINA_FLOOR, GoalLibrary, GoalStatus  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 
 
@@ -89,12 +89,29 @@ def test_spending_stamina_outranks_browsing_panels():
 
 
 def test_the_meter_is_how_much_is_left_to_spend():
-    """§一: not "one hunt happened" -- the distance is the stamina still above the floor."""
+    """§一: not "one hunt happened" -- the distance is the stamina still above the floor.
+
+    The meter reads one point of work at the floor itself, because the requirement is
+    "under 30" and 30 is not under 30.  The boundary is exclusive, so the distance is
+    measured against ``STAMINA_FLOOR - 1`` rather than against the floor.
+    """
     goal = stamina_goal(WorldState(page=Page.MAP, stamina={"current": 611}))
-    assert goal.distance == 611 - 30
+    assert goal.distance == 611 - (STAMINA_FLOOR - 1)
     spent = stamina_goal(WorldState(page=Page.MAP, stamina={"current": 551}))
-    assert spent.distance == 551 - 30, "spending must show as progress, not as completion"
+    assert spent.distance == 551 - (STAMINA_FLOOR - 1), "spending must show as progress, not as completion"
     assert spent.status is GoalStatus.READY
+
+
+def test_the_floor_itself_is_not_yet_satisfied():
+    """The boundary the operator stated: 30 has not reached "under 30".
+
+    It used to answer COMPLETE here, which stopped the goal one point early -- and that
+    point is a whole beast dispatch, so the goal claimed to be done with work still owed.
+    """
+    goal = stamina_goal(WorldState(page=Page.MAP, stamina={"current": STAMINA_FLOOR}))
+    assert goal.status is GoalStatus.READY
+    assert goal.distance == 1.0, "one point of spending is still owed at the floor"
+    assert goal.completion == 0.0
 
 
 def test_below_the_floor_is_complete():

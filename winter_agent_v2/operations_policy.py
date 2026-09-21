@@ -58,10 +58,14 @@ def choose_troop_rotation(queue_busy: Mapping[str, bool], trained: Mapping[str, 
 def choose_stamina_goal(current: int | None, intel_status: str, giant_beast_ready: bool, beast_ready: bool) -> PolicyDecision:
     if current is None:
         return PolicyDecision("OBSERVE_STAMINA", "stamina_unknown_no_spend", {}, True)
-    if current <= 30:
+    # ``<`` rather than ``<=``: the operator's requirement is stamina UNDER 30, and 30
+    # itself is still unmet, so at exactly 30 there is one point of spending left to do.
+    # Kept in step with ``goal_library.STAMINA_FLOOR`` -- the same boundary stated once
+    # there and once here, which is the drift this comment exists to catch.
+    if current < 30:
         return PolicyDecision("NONE", "stamina_reserve_not_exceeded", {"stamina": current})
     if intel_status in {"AVAILABLE", "CLAIMABLE", "IN_PROGRESS"}:
-        return PolicyDecision("INTEL", "stamina_above_30_intel_first", {"stamina": current})
+        return PolicyDecision("INTEL", "stamina_at_or_above_floor_intel_first", {"stamina": current})
     if giant_beast_ready:
         return PolicyDecision("GIANT_BEAST", "intel_unavailable_use_verified_giant_beast", {"stamina": current})
     if beast_ready:

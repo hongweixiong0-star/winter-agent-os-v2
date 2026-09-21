@@ -19,7 +19,11 @@ class OperationsPolicyTests(unittest.TestCase):
         self.assertEqual(choose_stamina_goal(31, "AVAILABLE", True, True).goal, "INTEL")
         self.assertEqual(choose_stamina_goal(31, "NOT_AVAILABLE", True, True).goal, "GIANT_BEAST")
         self.assertEqual(choose_stamina_goal(31, "NOT_AVAILABLE", False, True).goal, "BEAST_HUNT")
-        self.assertEqual(choose_stamina_goal(30, "AVAILABLE", True, True).goal, "NONE")
+        # The floor is exclusive: the requirement is stamina UNDER 30, so 30 itself still
+        # has a point to spend and only 29 is done.  Kept in step with
+        # goal_library.STAMINA_FLOOR -- same boundary, stated once in each module.
+        self.assertEqual(choose_stamina_goal(30, "AVAILABLE", True, True).goal, "INTEL")
+        self.assertEqual(choose_stamina_goal(29, "AVAILABLE", True, True).goal, "NONE")
 
     def test_shield_requires_verified_attack_and_free_inventory(self):
         self.assertEqual(choose_shield(True, 100001, {"8H": 1, "2H": 1}).parameters["duration"], "8H")

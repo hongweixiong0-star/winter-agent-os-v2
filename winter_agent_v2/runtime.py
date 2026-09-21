@@ -1003,55 +1003,64 @@ class LiveRuntime:
                     if recovered:
                         self._fight_resolving = False
                         continue
-                # The reservation is not an ending.
+                # A refusal is not an ending: it ends the TASK, not the CYCLE.
                 #
-                # ``RuleBrain`` answers SAFE_STOP 'reserved_march_for_stamina' when the
-                # task in progress may not take the last slot because the policy holds
-                # it for the stamina goal -- and that refusal is correct, it is the
-                # whole point of the reservation.  What is wrong is what happened next:
-                # SAFE_STOP ends the cycle, so one task declining the reserved slot
-                # stopped every other task as well, and because nothing moved the
-                # client off MAP the next cycle opened on the same frame and did it
-                # again.
+                # ``SAFE_STOP`` is how the brain says "this goal has nothing to do on this
+                # screen", and every reason it carries is a statement about ONE goal: the
+                # reserved slot may not be taken by this task, the training queue is busy,
+                # the beast is not visible, the mail is all clear, an unknown panel belongs
+                # to nobody.  The runtime answered all of them the same way -- record
+                # DEGRADED and ``return finish(reason)`` -- so one task declining, correctly
+                # declining, ended every other task in the cycle as well.
                 #
-                # Measured live 2026-09-21T03:17:51Z (the incident frame is
-                # dataset/truth_audit/march_reservation_20260921/key/).  The round ran
-                # one action (EXECUTE_INTEL_RESCUE_SURVIVORS, 187 -> 175 stamina), then
-                # stopped with stop_reason 'reserved_march_for_stamina' after reading
-                # ``marches=["GATHERING","RETURNING"], march_used=2, march_max=3`` --
-                # i.e. exactly ONE free slot, which is exactly the reserved one, so the
-                # reservation was doing its job.  The same frame, replayed through the
-                # production chain with the production reserve (march_policy.
-                # reserve_for_stamina = 2, effective 1 at capacity 3):
+                # Measured live, twice, both on that shape:
                 #
-                #     goal=None / GATHER_RESOURCE  -> SAFE_STOP reserved_march_for_stamina
-                #     goal=BEAST_HUNT              -> SCAN_MAP_FOR_BEAST   (it would have run)
+                #   * 2026-09-21T03:17:51Z, stop_reason 'reserved_march_for_stamina'.  The
+                #     round ran one action (EXECUTE_INTEL_RESCUE_SURVIVORS, 187 -> 175) and
+                #     then stopped, after reading marches=["GATHERING","RETURNING"],
+                #     march_used=2, march_max=3 -- exactly ONE free slot, which is exactly
+                #     the reserved one, so the reservation was doing its job.  Replayed
+                #     through the production chain on that same frame with the production
+                #     reserve (march_policy.reserve_for_stamina=2, effective 1 at capacity
+                #     3): goal=None / GATHER_RESOURCE gave the stop, but goal=BEAST_HUNT
+                #     gave SCAN_MAP_FOR_BEAST.  The reservation never blocked the stamina
+                #     goal; the stop blocked everything.  (Incident frame:
+                #     dataset/truth_audit/march_reservation_20260921/key/.)
                 #
-                # so the reservation never blocked the stamina goal -- ``BEAST_HUNT``
-                # refuses only at ``idle_marches <= 0``.  The running goal was
-                # KEEP_MARCHES_PRODUCTIVE, which this file's route map does not name, so
-                # the brain held ``current_goal = None`` and the gather branch below
-                # answered first; the stamina goal itself was separately deferred by a
-                # development job at that moment (job=2d5c3dd5, SPEND_STAMINA_ON_BEAST
-                # DEVELOPMENT_PENDING, settled 03:26:03Z).  Hand the cycle over instead
-                # of ending it: the next pass re-selects, and the reserved slot is then
-                # offered to the goal it was reserved for.
+                #   * 2026-09-21T03:44:56Z, stop_reason 'alliance_state_unknown', goal label
+                #     KEEP_TRAINING_PRODUCTIVE, page ALLIANCE -- a panel that plainly showed
+                #     联盟科技 carrying a 25 badge.  Nothing moved the client off the panel,
+                #     so the next cycle opened on the same screen and repeated it.
                 #
-                # This is the same yield the unexecutable-skill path above already uses,
-                # for the same operator rule -- a task may not be selected and then found
-                # unexecutable and stop the whole AUTO -- and it is bounded by the same
-                # two guards: one iteration must remain, and a goal is only held back
-                # once per run.  No task is renamed and no new scheduler is introduced.
+                # The operator's rule is explicit: a goal that cannot run says only that
+                # THAT goal must step aside; it does not say the work cycle is over.  And
+                # the runtime already owns the mechanism that says exactly that --
+                # ``_yield_to_next_goal``, the same Rule A hop the unexecutable-skill path
+                # below uses.  So the question is no longer "which reason?", it is "is this
+                # a reason to end the whole cycle at all?", and ``is_fatal_stop`` is the
+                # project's own single answer: only FATAL_/ACCOUNT_/PAYMENT_ reasons end
+                # the run.  Everything in NON_FATAL_STOPS yields.
+                #
+                # Bounded by the same two guards as the path below, which is what keeps it
+                # from becoming a spin: one iteration must remain, and a goal is held back
+                # at most once per run.  Once every selectable goal has been held back the
+                # call answers False and the stop happens -- and THAT is the honest "nothing
+                # left to do in this cycle", rather than the first goal that said no.
+                #
+                # No task is renamed, no reason is reclassified, no second scheduler is
+                # introduced: the runtime simply stops treating one goal's refusal as
+                # everyone's.
                 if (
-                    decision.reason == "reserved_march_for_stamina"
+                    not is_fatal_stop(decision.reason)
                     and index < max_actions
                     and self._yield_to_next_goal(
                         best_goal,
                         deferrals,
                         decision,
-                        "the free slot is held for the stamina goal and this task may not take "
-                        "it; the task steps aside so the slot's owner -- or any other selectable "
-                        "goal -- can use the cycle",
+                        "this goal refused on this screen, and the refusal says nothing about "
+                        "the other goals; it steps aside so any other selectable goal -- "
+                        "including the owner of a resource it was holding back -- can use the "
+                        "cycle",
                     )
                 ):
                     continue

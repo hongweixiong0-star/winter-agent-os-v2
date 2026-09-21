@@ -11,6 +11,17 @@ from pathlib import Path
 from .models import WorldState
 from .rally import BearPhase, bear_phase
 
+#: The operator's stamina floor: the spend goal is satisfied once stamina is BELOW it.
+#:
+#: 30 itself does NOT qualify.  The requirement is worded as "stamina under 30" and the
+#: operator confirmed the boundary explicitly -- "体力达到30时仍未低于30" -- so the
+#: comparison is ``< 30``, not ``<= 30``.  It used to be ``> 30`` for READY, which stopped
+#: the goal one point early and called it COMPLETE at exactly 30; the distance meter was
+#: ``stamina - 30``, which read 0 at the same moment.  Kept as one constant because it is
+#: the same number in the goal's status, its completion, its loss estimate and its
+#: distance, and four copies of a boundary is how they drift apart.
+STAMINA_FLOOR = 30
+
 
 class GoalStatus(str, Enum):
     DISCOVERED = "DISCOVERED"
@@ -400,14 +411,20 @@ class GoalLibrary:
         if stamina is None:
             stamina = _optional_int(world.intel.get("stamina"))
         if stamina is not None:
+            # ``< STAMINA_FLOOR`` is the satisfied case, not ``<= STAMINA_FLOOR``: at exactly
+            # 30 the requirement is still unmet and the goal still has 1 point of work.
+            satisfied = stamina < STAMINA_FLOOR
             goals.append(GoalState(
-                "AVOID_STAMINA_WASTE", GoalStatus.READY if stamina > 30 else GoalStatus.COMPLETE,
-                completion=1.0 if stamina <= 30 else 0.0, reward_value=100, daily_loss=max(0, stamina - 30) * 5,
+                "AVOID_STAMINA_WASTE", GoalStatus.COMPLETE if satisfied else GoalStatus.READY,
+                completion=1.0 if satisfied else 0.0, reward_value=100,
+                daily_loss=max(0, stamina - STAMINA_FLOOR + 1) * 5,
                 available_skills=("INTEL_CLAIM_REWARDS", "BEAST_HUNT"),
-                evidence={"current": stamina, "threshold": 30, "reused": stamina_from_store},
-                # Stamina still above the floor is exactly the work left to do, and
-                # it is what makes a beast kill progress while a map pan does not.
-                distance=float(max(0, stamina - 30)),
+                evidence={"current": stamina, "threshold": STAMINA_FLOOR, "reused": stamina_from_store},
+                # Stamina still at or above the floor is exactly the work left to do, and
+                # it is what makes a beast kill progress while a map pan does not.  At the
+                # floor itself this is 1 rather than 0, which is the boundary above stated
+                # as a number.
+                distance=float(max(0, stamina - STAMINA_FLOOR + 1)),
             ))
         self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training, ("TRAIN_TROOPS",), 90)
         self._append_queue_goal(goals, "KEEP_RESEARCH_PRODUCTIVE", world.research, ("RESEARCH",), 80)

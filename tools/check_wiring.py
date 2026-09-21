@@ -527,17 +527,27 @@ def main() -> int:
               incident, _reservation_registry).skill == "SCAN_MAP_FOR_BEAST",
           "the slot is held FOR this goal, so it must be able to use it")
 
-    # ...and the runtime hands the cycle over instead of ending it, for THAT reason only.
-    # Scoped on purpose: the check fails if the handover is widened to every SAFE_STOP,
-    # which would spend an iteration on states that will answer identically next pass.
+    # ...and the runtime hands the cycle over instead of ending it, for EVERY reason the
+    # project does not call fatal.
+    #
+    # What is asserted is the shape of the decision, not a list, and that is the point of the
+    # change: the previous version of this check named 'reserved_march_for_stamina', so it
+    # only ever covered that one reason -- which is how the same defect (one goal's refusal
+    # ending the whole cycle) survived untouched in 'alliance_state_unknown', 'no_idle_march',
+    # 'camp_menu_never_drawn' and the rest.  `is_fatal_stop` is the run's own line between
+    # DEGRADED and FATAL_STOPPED, so a new non-fatal reason is covered the day it appears and
+    # a genuinely fatal one still stops.
     _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
-    check("runtime: the reservation hands the cycle over instead of ending the run",
-          'decision.reason == "reserved_march_for_stamina"' in _runtime_source
+    check("runtime: a non-fatal refusal hands the cycle over instead of ending the run",
+          "not is_fatal_stop(decision.reason)" in _runtime_source
           and "_yield_to_next_goal(" in _runtime_source)
-    check("runtime: ...and the handover is scoped to that reason, not to SAFE_STOP generally",
-          'if decision.skill == "SAFE_STOP":\n                # MASTER_RULES 7' in _runtime_source
-          and 'decision.reason == "reserved_march_for_stamina"\n                    and index < max_actions'
-              in _runtime_source)
+    check("runtime: ...for every reason the project does not call fatal, not a hand-picked one",
+          'decision.reason == "reserved_march_for_stamina"' not in _runtime_source,
+          "the single-reason special case must be gone, not duplicated")
+    check("runtime: ...and the handover stays bounded by the remaining budget",
+          "not is_fatal_stop(decision.reason)\n                    and index < max_actions"
+          in _runtime_source,
+          "yielding costs an iteration, so it needs one to yield in")
 
     # Every wait for a worker is bounded, so a child that never exits cannot end the cycle.
     #
@@ -776,6 +786,44 @@ def main() -> int:
 
     goals_source = (ROOT / "winter_agent_v2/goal_library.py").read_text(encoding="utf-8")
     check("goal_library reads world.stamina", "world.stamina" in goals_source)
+
+    # The stamina floor is exclusive, and it is stated in two modules that each own a copy.
+    #
+    # The operator's requirement is stamina UNDER 30 -- confirmed explicitly as "体力达到30时
+    # 仍未低于30" -- so 30 itself is still unmet.  Both copies used to read it inclusively:
+    # the goal answered COMPLETE at exactly 30 and the policy answered NONE there, each one
+    # point early, and one point is a whole beast dispatch.  Checked behaviourally rather
+    # than by grepping for a comparison, because what has to hold is the answer, not the
+    # spelling of the expression that produces it.
+    from winter_agent_v2 import goal_library as _goal_library
+    from winter_agent_v2.goal_library import STAMINA_FLOOR
+    from winter_agent_v2.operations_policy import choose_stamina_goal as _choose_stamina
+
+    check("stamina: the floor is 30", STAMINA_FLOOR == 30, f"got {STAMINA_FLOOR}")
+
+    def _stamina_goal(current):
+        found = [
+            goal
+            for goal in _goal_library.GoalLibrary().discover(
+                WorldState(page=Page.MAP, stamina={"current": current})
+            )
+            if goal.goal_id == "AVOID_STAMINA_WASTE"
+        ]
+        return found[0] if found else None
+
+    _at_floor = _stamina_goal(STAMINA_FLOOR)
+    _below = _stamina_goal(STAMINA_FLOOR - 1)
+    check("stamina: at the floor the goal is still unfinished",
+          _at_floor is not None and _at_floor.status is _goal_library.GoalStatus.READY,
+          "30 is not under 30, so there is still a point to spend")
+    check("stamina: ...and still owes exactly that one point",
+          _at_floor is not None and _at_floor.distance == 1.0)
+    check("stamina: below the floor it is finished",
+          _below is not None and _below.status is _goal_library.GoalStatus.COMPLETE)
+    check("stamina: the policy agrees with the goal at the same boundary",
+          _choose_stamina(STAMINA_FLOOR, "AVAILABLE", True, True).goal != "NONE"
+          and _choose_stamina(STAMINA_FLOOR - 1, "AVAILABLE", True, True).goal == "NONE",
+          "one boundary, two modules, one answer")
 
     # The 战力 route: HOME -> 加成总览 -> 实力详情 -> 部队实力 提升 -> camp focus -> 训练.
     # It is four skills whose decisions all already existed; what it never had was
