@@ -162,6 +162,23 @@ class WorldState:
     #: ``{'title_level': 10, 'title_text': '蔚牛', 'has_attack': True, 'has_rally': False,
     #: 'solo_attack': True}``.  Empty when the frame is not that card.
     beast_search_result: dict = field(default_factory=dict)
+    #: The 快捷面板, opened by the left-edge triangle, read as its own surface.
+    #:
+    #: The panel is an overlay: it is drawn on top of whichever page is underneath
+    #: (measured 2026-09-21, open over the city view), so it is not a ``Page`` and
+    #: must not name one.  What makes it worth reading is that it prints, in one
+    #: frame, the state of three queues the route otherwise has to navigate to
+    #: separately -- 建筑队列, 部队训练, 科技研究 -- and in particular the per-barracks
+    #: training state for all three camps at once (盾兵 / 矛兵 / 射手 each with its own
+    #: 已完成 / 训练中), which the training page only reveals one camp at a time.
+    #:
+    #: Shape: ``{"open": True, "building": {...}, "camps": {...}, "research": {...}}``,
+    #: where ``camps`` uses the same ``SHIELD_CAMP`` / ``LANCER_CAMP`` /
+    #: ``MARKSMAN_CAMP`` keys as ``WorldState.camps`` so one per-camp model serves both.
+    #: ``open`` is the only key always present; each section is added only when its own
+    #: rows were positively read, so a section that could not be read is absent rather
+    #: than reported idle.  See ``ocr.read_quick_panel``.
+    quick_panel: dict = field(default_factory=dict)
     confidence: float = 0.0
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 

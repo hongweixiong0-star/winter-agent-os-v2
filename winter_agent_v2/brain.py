@@ -110,6 +110,12 @@ class RuleBrain:
         # bounded to one reading per run, so a map that is genuinely all rallies still
         # ends honestly rather than panning forever.
         self.beast_labelled_target_refused = False
+        # The barracks the 快捷面板 last proved idle, or ``None``.  The panel reports all
+        # three camps in one frame, so it can say a camp is startable without the three
+        # page visits the power route costs.  Recorded rather than acted on: the panel's
+        # own 加号 has no proven template, so the value informs the route's reason and is
+        # available to a later step, while the tap still goes through proven controls.
+        self.idle_camp_from_quick_panel: str | None = None
         # Which goal put this run on its route.  The route name alone cannot say: a
         # `--goal BEAST_HUNT` run and the spend goal riding the same route are
         # indistinguishable from inside the brain, and only one of them may hand over to
@@ -965,6 +971,42 @@ class RuleBrain:
                 return Decision("WAIT_FOR_CAMP_MENU", "camp_highlight_is_stage_a_reobserve", world.confidence, "camp_menu_open")
             if world.page is Page.HOME and world.training.get("menu_open"):
                 return Decision("OPEN_INFANTRY_TRAINING", "idle_infantry_camp_selected", world.confidence, "training_page_open")
+            # The 快捷面板 reports every barracks' state in one frame, which is the one
+            # reading the power route below cannot give: it names a camp and highlights
+            # it, but does not say whether that camp has a free queue.
+            #
+            # Measured 2026-09-21, this is what answers "为什么不训练士兵".  The panel was
+            # on screen with all three rows reading 已完成, but the frame was misread as
+            # `Page.RESEARCH` carrying a borrowed building-queue timer, so `training` was
+            # empty and the route walked the power list to the research lab instead.
+            #
+            # What the panel changes is the *diagnosis*, not the route: it proves a camp
+            # is idle, so the goal is known to be startable and the power route is the
+            # right way to reach the camp.  The panel's own 加号 is deliberately NOT
+            # tapped here -- its template was cut from the training page and does not
+            # match the panel (checked on the live panel frame), so a tap at that ROI
+            # would be an unproven coordinate.  The power route reaches the camp through
+            # controls that are proven.
+            #
+            # It only fires when a camp is positively idle; a panel that was not read,
+            # or whose rows were busy, leaves the route on its existing path.
+            if world.page is Page.HOME and world.quick_panel.get("open"):
+                idle_camp = next(
+                    (
+                        camp
+                        for camp, reading in (world.quick_panel.get("camps") or {}).items()
+                        if reading.get("queue_available") is True and reading.get("status") == "IDLE"
+                    ),
+                    None,
+                )
+                if idle_camp is not None:
+                    self.idle_camp_from_quick_panel = idle_camp
+                    return Decision(
+                        "OPEN_POWER_OVERVIEW",
+                        f"quick_panel_{idle_camp.lower()}_is_idle",
+                        world.confidence,
+                        "power_overview_open",
+                    )
             if world.page is Page.HOME and world.training.get("queue_available") is False:
                 return Decision("SAFE_STOP", "training_queue_busy", 1.0, "switch_task")
             if world.page is Page.HOME:

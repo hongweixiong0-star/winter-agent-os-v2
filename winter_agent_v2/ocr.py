@@ -238,6 +238,16 @@ class OCRService:
         return result
 
 
+#: The section headers of the 快捷面板, in the order the client draws them.
+#:
+#: The panel opens *over* another page, so these words can be on screen while the
+#: player is not on the page they would otherwise name -- 科技研究 is also the
+#: research lab's own header.  Both the page classifier below and
+#: ``read_quick_panel`` are built on this list, so the two can never disagree about
+#: what the panel says.
+QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技研究")
+
+
 class OCRPageClassifier:
     """Conservative exact-keyword fallback; ambiguous OCR stays UNKNOWN.
 
@@ -299,8 +309,10 @@ class OCRPageClassifier:
     # Section headers of the 快捷面板, which opens *over* another page and
     # therefore must never be read as that page's identity.  Listed explicitly
     # so the next keyword added for one of these panels can be checked against
-    # it rather than rediscovered live.
-    QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技研究")
+    # it rather than rediscovered live.  The list itself lives at module level
+    # (see ``QUICK_PANEL_SECTIONS``) because ``read_quick_panel`` reads the panel
+    # by those same words, and one list is what keeps the two in step.
+    QUICK_PANEL_SECTIONS = QUICK_PANEL_SECTIONS
 
     # How far below a countdown to look when asking which queue owns it.  The 快捷面板
     # draws a row's text *above* its countdown (使馆升级中 y=393, 06:39:17 y=422, a
@@ -1109,6 +1121,253 @@ RESOURCE_TAB_LABEL_TO_KIND: dict[str, str] = {
 }
 
 
+# --- the 快捷面板 -----------------------------------------------------------
+# The left-edge triangle opens a panel drawn *over* the current page.  It repeats
+# the three queue states the route otherwise walks to one at a time, and it is the
+# only surface that shows all three barracks together -- which matters because the
+# training page reveals one camp per visit (#86).
+#
+# The panel has a regular shape, measured 2026-09-21 on a live frame open over the
+# city view: each row prints its name and its state on consecutive lines about 30px
+# apart, name above state.
+#
+#     y=321 建筑队列      (section header)
+#     y=360 使馆升级中
+#     y=390 06:14:58
+#     y=433 队列2
+#     y=464 购买队列
+#     y=507 部队训练      (section header)
+#     y=546 盾兵           y=576 已完成
+#     y=619 矛兵           y=649 已完成
+#     y=692 射手           y=723 已完成
+#     y=765 科技研究      (section header)
+#     y=805 科技研究       y=835 空闲中
+#
+# The reader therefore walks the section headers in vertical order and assigns the
+# rows between one header and the next to that section.  It is driven by the section
+# headers rather than by absolute positions because the panel is draggable and its
+# rows are scrolled, and a reading pinned to y would be wrong the moment it moved.
+#: The state words the panel prints under a row's name.
+QUICK_PANEL_IDLE_WORDS: tuple[str, ...] = ("已完成", "空闲中")
+QUICK_PANEL_BUSY_WORDS: tuple[str, ...] = ("训练中", "升级中", "研究中", "进行中")
+
+#: How far below a row's name its state line is drawn.  Measured at 30px on a
+#: 720x1280 frame; the band is generous because the two lines are separate OCR
+#: tokens whose boxes vary a little, and because the state word is short.
+QUICK_PANEL_STATE_OFFSET_PX: float = 30.0
+
+
+#: Where the 快捷面板 is drawn, as an ROI.
+#:
+#: Measured 2026-09-21 on a live 720x1280 frame with the panel open over the city: every
+#: token it draws sits between x_norm 0.10 and 0.34 -- headers at 0.11, row names and
+#: states at 0.31 -- and between y_norm 0.25 (建筑队列) and 0.66 (科技研究's 空闲中).  The
+#: ROI is that box with margin, because the panel is draggable and can be pulled wider
+#: when a row's text is long.
+#:
+#: Narrower than the full frame on purpose: it carries none of the words that identify a
+#: *page*, so a cropped read of it cannot let the panel's own section headers name the
+#: page underneath, which is the defect this whole area exists to fix.
+QUICK_PANEL_ROI = {"x_norm": 0.02, "y_norm": 0.20, "w_norm": 0.46, "h_norm": 0.52}
+
+#: The part of the frame the panel's plate covers, as ``(left, top, right, bottom)``
+#: fractions.  Used only by the pixel gate that decides whether to OCR the panel at all;
+#: the reader itself works from the tokens, so this box does not have to be exact.
+QUICK_PANEL_PLATE_ROI: tuple[float, float, float, float] = (0.10, 0.26, 0.42, 0.66)
+
+#: How much of ``QUICK_PANEL_PLATE_ROI`` must carry the plate's fill before the panel is
+#: considered drawn.  Measured 0.674 with the panel open against 0.038 or less without,
+#: so the value sits in the middle of a wide gap rather than on a measured edge.
+QUICK_PANEL_PLATE_MIN_FRACTION: float = 0.30
+
+
+def _is_quick_panel_plate_pixel(pixel: tuple[int, int, int]) -> bool:
+    """True when ``pixel`` is the colour of the 快捷面板's card.
+
+    The plate is a flat dark navy: blue clearly above both red and green, a moderate
+    blue-over-green separation, and a low red.  Measured samples from the live panel
+    frame include ``(53, 62, 91)``, ``(56, 70, 102)`` and ``(61, 74, 104)``.
+    """
+    red, green, blue = pixel
+    return (
+        90 <= blue <= 130
+        and blue > red
+        and blue > green
+        and 15 <= blue - green <= 45
+        and 40 <= red <= 80
+    )
+
+
+def _roi_box(rect: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    """Pass through an already-absolute ROI box, for symmetry with dict ROIs."""
+    return rect
+
+
+def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dict:
+    """Read the 快捷面板 as its own surface, or ``{}`` when it is not open.
+
+    Returns ``{"open": True, "building": {...}, "camps": {...}, "research": {...}}``,
+    where only the sections whose rows were positively read appear: a section that
+    could not be read is *absent* rather than reported idle.  The panel is an
+    overlay, so nothing here names a ``Page``.
+
+    ``camps`` is keyed by ``SHIELD_CAMP`` / ``LANCER_CAMP`` / ``MARKSMAN_CAMP`` --
+    the same keys ``WorldState.camps`` uses -- so one per-camp model serves both the
+    panel and the training page, and a consumer does not need to know which surface
+    the reading came from.
+
+    The triangle is not a template yet, so "the panel is open" is decided by the
+    section headers being present and *stacked in the order and spacing the client
+    draws them*, which a page that merely mentions one of these words cannot fake.
+
+    ``result`` lets a caller that has already recognised the frame pass that reading
+    in rather than paying for a second pass.  ``HybridVision.observe`` does exactly
+    that on the pages it OCRs anyway; a page the template layer resolves on its own
+    is never recognised, so the panel cannot be seen there -- which is the same
+    trade the rest of ``observe`` makes, and it is why the panel reading is advisory
+    rather than the only path to a training decision.
+    """
+    if result is None:
+        result = ocr.recognize(image_path)
+    tokens = [token for token in result.tokens if token.confidence >= 0.80]
+    if not tokens:
+        return {}
+    by_y = sorted(tokens, key=lambda token: token.centre[1])
+
+    def section_of(text: str) -> str | None:
+        """Which section header ``text`` is, tolerating the noise OCR adds.
+
+        Measured 2026-09-21: the 科技研究 header was read as ``X科技研究`` at
+        confidence 0.90 -- the panel draws a small icon immediately left of each
+        header and the recogniser occasionally folds a stroke of it into the word.
+        An exact match would drop that header and, with it, the whole research
+        section.  A containment test is used instead, and it is safe here because
+        the three headers are not substrings of one another and the reader already
+        requires all three to be present in the client's own order before it
+        believes the panel is open.
+        """
+        stripped = text.strip()
+        for section in QUICK_PANEL_SECTIONS:
+            if section in stripped:
+                return section
+        return None
+
+    headers: list[tuple[int, str]] = []
+    for index, token in enumerate(by_y):
+        section = section_of(token.text)
+        if section is None:
+            continue
+        # A section's own header is followed by a row that repeats its name (the
+        # 科技研究 header at y=765 is followed by the 科技研究 row at y=805), and
+        # OCR can also read the header twice.  Only the first of a run counts, so
+        # the section list stays one entry per section.
+        if headers and headers[-1][1] == section:
+            continue
+        headers.append((index, section))
+    # Three headers, each below the last: that is the panel.  A page that prints one
+    # of these words (the research lab prints 科技研究) does not print all three.
+    if len(headers) < 3:
+        return {}
+    # The client draws these three in a fixed vertical order, and prints each once.
+    # Requiring exactly that order is what separates a real panel from a frame that
+    # happens to mention all three words at arbitrary places, such as a knowledge
+    # page or the 城镇 tab strip.
+    if [section for _, section in headers] != list(QUICK_PANEL_SECTIONS):
+        return {}
+
+    panel: dict[str, object] = {"open": True}
+
+    def state_below(name_y: float) -> str | None:
+        """The state word drawn under the row whose name is at ``name_y``."""
+        for token in by_y:
+            offset = token.centre[1] - name_y
+            if not 4.0 <= offset <= QUICK_PANEL_STATE_OFFSET_PX * 1.6:
+                continue
+            text = token.text.strip()
+            if text in QUICK_PANEL_IDLE_WORDS or text in QUICK_PANEL_BUSY_WORDS:
+                return text
+            # 训练中 is also drawn as 训练中 03:12:45, so the prefix is what counts.
+            for word in QUICK_PANEL_BUSY_WORDS:
+                if text.startswith(word):
+                    return word
+            # 建筑队列's row states itself with a countdown rather than a status word
+            # (使馆升级中 06:14:58).  A countdown means the queue is running -- see
+            # ``knowledge/resources/mechanism_cards.json``: "队列进行中 -> 使用加速 ->
+            # 剩余时间下降" -- so it is returned as the state and the caller treats it
+            # as busy, the same way the research reader does.
+            if re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", text):
+                return text
+        return None
+
+    def rows_between(start: int, end: int) -> list[tuple[str, float]]:
+        return [
+            (by_y[index].text.strip(), by_y[index].centre[1])
+            for index in range(start, end)
+        ]
+
+    for position, (index, section) in enumerate(headers):
+        after = headers[position + 1][0] if position + 1 < len(headers) else len(by_y)
+        rows = rows_between(index + 1, after)
+
+        if section == "建筑队列":
+            # The row is named by its own text (使馆升级中) and states itself with the
+            # countdown under it, so both lines are read and the row is judged busy when
+            # either says so.  Only the first row is taken: the panel draws 队列2 below
+            # it when the player owns a second building queue, and that row belongs to
+            # the same section rather than being a separate reading.
+            for name, name_y in rows:
+                state = state_below(name_y)
+                if state is None:
+                    continue
+                running = name in QUICK_PANEL_BUSY_WORDS or any(
+                    word in name for word in QUICK_PANEL_BUSY_WORDS
+                )
+                if re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state):
+                    running = True
+                panel["building"] = {
+                    "name": name,
+                    "timer": None if running and state in QUICK_PANEL_IDLE_WORDS else state,
+                    "status": "IN_PROGRESS" if running else "IDLE",
+                    "queue_available": not running,
+                    "source_word": state,
+                }
+                break
+
+        elif section == "部队训练":
+            camps: dict[str, dict[str, object]] = {}
+            for name, name_y in rows:
+                camp = TROOP_TO_CAMP.get(TITLE_TO_TROOP.get(name, ""))
+                if camp is None:
+                    continue
+                state = state_below(name_y)
+                if state is None:
+                    continue
+                camps[camp] = {
+                    "troop_type": TITLE_TO_TROOP[name],
+                    "label": name,
+                    "status": "IDLE" if state in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
+                    "queue_available": state in QUICK_PANEL_IDLE_WORDS,
+                    "source_word": state,
+                }
+            if camps:
+                panel["camps"] = camps
+
+        elif section == "科技研究":
+            for name, name_y in rows:
+                state = state_below(name_y)
+                if state is None:
+                    continue
+                panel["research"] = {
+                    "name": name,
+                    "status": "IDLE" if state in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
+                    "queue_available": state in QUICK_PANEL_IDLE_WORDS,
+                    "source_word": state,
+                }
+                break
+
+    return panel
+
+
 def read_resource_tab_labels(
     image_path,
     ocr,
@@ -1730,6 +1989,55 @@ class HybridVision:
             return None
         return replace(primary, beast_search_result=card)
 
+    def _quick_panel_is_drawn(self, image_path: Path) -> bool:
+        """True when the 快捷面板's plate is drawn over the frame.
+
+        A cheap pixel gate, so the OCR pass that reads the panel's rows only runs on
+        frames where it can be there -- the same trade ``_building_is_selected`` makes for
+        the building label, and what keeps "a page the template layer resolves costs no
+        OCR" true.
+
+        The test is the plate's own fill, not a template: the panel is a flat dark
+        navy card with rounded corners, and nothing else on the city or map view paints
+        that value across that much of the left strip.  Measured 2026-09-21 over the
+        region ``QUICK_PANEL_PLATE_ROI``:
+
+            panel open (live frame)                 0.674
+            city view, panel closed                 0.038
+            city view, panel closed (other frame)   0.035
+            map/intel, panel closed                 0.007
+            city view, panel closed (third frame)   0.0001
+
+        The gap between 0.674 and 0.038 is wide enough that the threshold is not a
+        fitted constant: anything between roughly 0.15 and 0.6 separates these frames.
+
+        It answers "is the panel there", not "is it readable".  A ``True`` that leads to
+        an unreadable panel costs one OCR pass and yields no reading, which is the
+        honest outcome; a ``False`` costs nothing and leaves the state untouched.
+        """
+        rect = _roi_box(QUICK_PANEL_PLATE_ROI)
+        try:
+            with Image.open(image_path) as source:
+                image = source.convert("RGB")
+                width, height = image.size
+                box = (
+                    round(rect[0] * width),
+                    round(rect[1] * height),
+                    round(rect[2] * width),
+                    round(rect[3] * height),
+                )
+                if box[2] <= box[0] or box[3] <= box[1]:
+                    return False
+                crop = image.crop(box)
+                pixels = crop.get_flattened_data() if hasattr(crop, "get_flattened_data") else crop.getdata()
+                pixels = list(pixels)
+        except (OSError, ValueError):
+            return False
+        if not pixels:
+            return False
+        plate = sum(1 for pixel in pixels if _is_quick_panel_plate_pixel(pixel))
+        return plate / len(pixels) >= QUICK_PANEL_PLATE_MIN_FRACTION
+
     def _read_building_identity(self, image_path: Path, primary: WorldState) -> WorldState | None:
         """Attach building identity read off pixels, or ``None`` when this is not that frame.
 
@@ -1769,6 +2077,23 @@ class HybridVision:
         # ``OCRPageClassifier.QUICK_PANEL_SECTIONS``).  A missing size only costs
         # those keywords, never the whole reading, so a failed read is not fatal.
         frame_size = read_frame_size(image_path)
+        # The 快捷面板 is an overlay, so it is not tied to one page: it can be open over
+        # the city, over the map, or over any page.  Its reading is attached below, in
+        # the branch where the frame was OCR'd anyway.
+        #
+        # Measured 2026-09-21.  Missing this reading is what made the operator's
+        # "为什么不训练士兵" answerable only by hand: the panel's 部队训练 rows (盾兵 /
+        # 矛兵 / 射手, all 已完成) were on a frame the route read as `Page.RESEARCH`
+        # with an empty `training`, so the route believed every queue was busy and
+        # stopped instead of training.  Reading the panel gives the route the same
+        # per-camp answer the training page would, without navigating to three pages.
+        #
+        # It is read from the frame's left strip rather than the whole frame.  Measured:
+        # every token the panel draws sits between x_norm 0.10 and 0.34, while the rest
+        # of the frame is the page underneath.  Reading only the strip is what keeps the
+        # panel's own section headers from naming that page -- the defect this whole area
+        # exists to fix -- because the strip carries none of the page-identifying words.
+        quick_panel: dict = {}
         # A frame the template layer cannot name gets the OCR classifier, and the training
         # page is the one case that needs to be *recognised* here rather than merely enriched.
         #
@@ -1784,8 +2109,13 @@ class HybridVision:
         # training-status token and a camp name) is what stops a genuinely unknown frame from
         # becoming a training page, not this branch.
         if primary.page is Page.UNKNOWN:
+            result = self.ocr.recognize(image_path)
+            # The panel is read here, where the frame has already been recognised for the
+            # page question, so it costs no extra OCR pass.  A page the template layer
+            # resolves is left untouched, which is this module's long-standing contract.
+            quick_panel = read_quick_panel(image_path, self.ocr, result=result)
             classified = self.classifier.classify(
-                self.ocr.recognize(image_path), frame_size=frame_size
+                result, frame_size=frame_size
             )
             if classified.page is Page.TRAINING and classified.training:
                 # The camp model turns the classifier's selected-tab reading into the
@@ -1799,12 +2129,15 @@ class HybridVision:
                     ),
                     training=classified.training,
                 )
-                return replace(
-                    classified,
-                    camps=merge_camps(primary.camps, camps),
-                    confidence=max(primary.confidence, classified.confidence),
+                return self._with_quick_panel(
+                    replace(
+                        classified,
+                        camps=merge_camps(primary.camps, camps),
+                        confidence=max(primary.confidence, classified.confidence),
+                    ),
+                    quick_panel,
                 )
-            return classified
+            return self._with_quick_panel(classified, quick_panel)
         if primary.known:
             # The march counter is drawn on the map HUD and stays drawn under map
             # overlays such as RESOURCE_DETAIL. Read it on both pages so a target
@@ -2422,7 +2755,47 @@ class HybridVision:
                     if "timer" in secondary.research:
                         merged["timer"] = secondary.research["timer"]
                     return replace(primary, research=merged)
-            return primary
-        return self.classifier.classify(
-            self.ocr.recognize(image_path), frame_size=frame_size
+            # The 快捷面板 can be open over a page the template layer *did* name -- the
+            # operator's own frame is the city view (HOME) with the panel over it.
+            #
+            # Gated on a pixel probe (``_quick_panel_is_drawn``) before any OCR is spent,
+            # the same way ``_building_is_selected`` gates the building read below: the
+            # panel is absent on most frames, and this module's contract is that a page
+            # the template layer resolves costs no OCR at all.  When the gate says the
+            # panel is not there, the frame stays exactly as cheap as it was.
+            if self._quick_panel_is_drawn(image_path):
+                quick_panel = read_quick_panel(
+                    image_path,
+                    self.ocr,
+                    result=self.ocr.recognize(image_path, QUICK_PANEL_ROI),
+                )
+            return self._with_quick_panel(primary, quick_panel)
+        # The template layer could not name the page.  The classifier is asked, and the
+        # panel reading is attached to whatever it answers -- including UNKNOWN, because
+        # the panel being open is what makes a frame usable even when the page under it
+        # is not recognised.
+        return self._with_quick_panel(
+            self.classifier.classify(
+                self.ocr.recognize(image_path), frame_size=frame_size
+            ),
+            quick_panel,
+        )
+
+    @staticmethod
+    def _with_quick_panel(state: WorldState, quick_panel: dict) -> WorldState:
+        """Attach the 快捷面板 reading, and merge its camps into the per-camp model.
+
+        The panel's 部队训练 rows describe all three barracks in one frame, which is
+        more than the training page can say at once (it draws one camp per visit, #86),
+        so where the panel has an answer it is merged in.  The panel is the *overlay*
+        and the page is the thing under it, so a page that positively read a camp wins:
+        the merge is ``{**panel_camps, **page_camps}``.
+        """
+        if not quick_panel:
+            return state
+        camps = quick_panel.get("camps") or {}
+        return replace(
+            state,
+            quick_panel=quick_panel,
+            camps=merge_camps(camps, state.camps) if camps else state.camps,
         )
