@@ -903,17 +903,18 @@ class LiveRuntime:
             # invented point, which is also what stops a client without a 野兽 tab from
             # being tapped somewhere arbitrary.
             #
-            # The strip geometry is preferred over the label box when it is available,
-            # and the reason is measured on the frame that failed.  On
-            # ``live_runtime_step_002_after_20260921T103154681030.png`` the strip sits at
-            # offset 196.5, which puts 野兽's cell at left -30.5 / centre 42.0 -- the tab
-            # is *clipped* at the left edge and only its right part and its label are on
-            # screen.  The label's own box centre is a fine target there, but it is
-            # derived from where the client happened to draw the text, so it drifts with
-            # the font and disappears entirely once the cell is clipped past the label.
-            # The geometry is the strip's own prediction and survives both, so it is
-            # tried first; the label box remains the fallback for a frame whose strip
-            # could not be located.
+            # The strip geometry is preferred over the label box, and it must be a cell
+            # that is FULLY on screen.  Measured live 2026-09-21 on
+            # ``live_runtime_step_001_after_20260921T105247039793.png``: the strip sat at
+            # offset 197, putting 野兽's cell left at -30, and a tap on its visible sliver
+            # at x=42 left **冰原巨兽** anchored -- the client selects the neighbour, not the
+            # cell that is showing a sliver of itself.  Revealing the cell is therefore the
+            # runtime's job (see its scroll branch), and this resolver must not hand the
+            # executor a clipped point in the first place: a partial cell whose position the
+            # geometry cannot confirm is exactly the "invented point" the guards below exist
+            # to refuse.  When the cell is clipped the resolver returns ``None`` and the
+            # runtime swipes instead; the label box below is the fallback for a frame whose
+            # strip could not be located at all.
             geometry = None
             if frame_path is not None:
                 # ``selected_resource`` records ``resource_tab_offset`` on the vision
@@ -921,8 +922,8 @@ class LiveRuntime:
                 # re-resolved from THIS frame before it is used, and a frame whose
                 # strip cannot be located leaves the geometry branch to fall through
                 # to the label box below.
-                if self._semantic.selected_resource(frame_path) is not None:
-                    geometry = self._semantic.resource_tab_tap_norm("BEAST")
+                self._semantic.selected_resource(frame_path)
+                geometry = self._semantic.resource_cell_center_norm("BEAST")
             if geometry is not None:
                 return geometry
             if frame.page is not Page.MAP or not frame.resource_search_open:
@@ -1416,16 +1417,31 @@ class LiveRuntime:
                 )
 
             if (
-                decision.skill == "SELECT_RESOURCE"
+                decision.skill in ("SELECT_RESOURCE", "OPEN_BEAST_SEARCH_TAB")
                 and self._semantic.resource_tab_offset is not None
-                and self._semantic.resource_cell_center_norm(planned_resource) is None
+                and self._semantic.resource_cell_center_norm(
+                    "BEAST" if decision.skill == "OPEN_BEAST_SEARCH_TAB" else planned_resource
+                ) is None
                 and self._scroll_attempts < self.max_scroll_attempts
             ):
                 # The requested resource tab is outside the visible strip (WOOD,
                 # COAL and IRON sit past the right edge at the default offset).
                 # Scroll it into view and re-observe on the next iteration; no
                 # click is issued for a target whose position is unknown.
-                delta = self._semantic.resource_tab_swipe_for(planned_resource)
+                #
+                # ``OPEN_BEAST_SEARCH_TAB`` is included because 野兽 clips on the LEFT
+                # edge just as routinely, and the measured consequence of tapping a
+                # clipped cell instead of revealing it is that the client selects the
+                # NEIGHBOUR: measured live 2026-09-21,
+                # ``live_runtime_step_001_after_20260921T105247039793.png`` shows a tap
+                # at x=42 (野兽's own visible sliver, offset 197) leaving 冰原巨兽
+                # anchored, and the verifier's honest ``BEAST_SEARCH_TAB_NOT_PROVEN``
+                # is what stopped the run from searching the wrong tab.  A controlled
+                # swipe of +34 px then moved the strip to offset 237.5, put 野兽's cell
+                # left on a stroke at 10.5 -- an exact match with its nominal position --
+                # and the same frame read ``anchored_tab_kind == "BEAST"``.
+                target_tab = "BEAST" if decision.skill == "OPEN_BEAST_SEARCH_TAB" else planned_resource
+                delta = self._semantic.resource_tab_swipe_for(target_tab)
                 if delta:
                     self._scroll_attempts += 1
                     band_y = (self._semantic.resource_tab_band[0]
@@ -1444,7 +1460,7 @@ class LiveRuntime:
                         steps.append(LiveStep(index, decision, None, before, None, None))
                         self._runtime(
                             agent_state=AgentState.AUTO_RUNNING.value,
-                            reason=f"scroll_resource_strip_to_{planned_resource}",
+                            reason=f"scroll_resource_strip_to_{target_tab}",
                             next_action="reevaluate_after_scroll",
                             verifier="PENDING",
                         )

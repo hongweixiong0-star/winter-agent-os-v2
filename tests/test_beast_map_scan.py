@@ -24,6 +24,7 @@ search hops first, which is what the run does on a bare map.
 """
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 
@@ -404,41 +405,122 @@ class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
         # The giant-beast tab is a different place, so the two cannot be tapped interchangeably.
         self.assertNotEqual(panel.resource_beast_tab_norm, panel.resource_giant_beast_tab_norm)
 
-    def test_the_geometry_beats_the_label_when_the_tab_is_clipped(self):
-        """Measured on the failing frame: 野兽's cell is clipped, and still tappable.
+    def test_the_anchor_is_read_through_the_composite_vision(self):
+        """The semantic layer hangs off ``template_vision``, and the first live run proved it.
+
+        The opening live run of this change crashed inside ``observe`` with
+        ``AttributeError: 'HybridVision' object has no attribute 'semantic'`` -- the composite
+        exposes the semantic layer as ``template_vision.semantic`` (see ``_semantic_roi``), and
+        reading it under the shorter name works for a bare ``SemanticROIVision`` and fails for
+        the object production actually builds.  This test constructs the real composite, so the
+        shorter name cannot creep back in.
+        """
+        from winter_agent_v2.ocr import (
+            HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend,
+        )
+        from winter_agent_v2.vision import SemanticWorldVision
+
+        manifest = ROOT / "dataset" / "candidate" / "template_manifest.json"
+        if not manifest.exists():
+            self.skipTest("the template manifest is not in this checkout")
+        try:
+            composite = HybridVision(
+                SemanticWorldVision(manifest),
+                OCRService(ResilientOCRBackend(RapidOCRBackend())),
+            )
+        except Exception as error:                      # pragma: no cover - backend missing
+            self.skipTest(f"the OCR backend is unavailable here: {error}")
+        semantic = getattr(getattr(composite, "template_vision", None), "semantic", None)
+        self.assertIsNotNone(
+            semantic,
+            "the anchor read reaches the semantic layer through template_vision",
+        )
+        self.assertTrue(hasattr(semantic, "anchored_tab_kind"))
+
+    def test_a_clipped_tab_is_refused_and_the_swipe_is_what_reveals_it(self):
+        """Measured end to end: tapping a clipped 野兽 picks its neighbour instead.
 
         On ``live_runtime_step_002_after_20260921T103154681030.png`` the strip sits at offset
-        196.5, putting 野兽 at left -30.5 / centre 42.0 -- the client draws the right part of
-        the cell and the whole 野兽 label, while the full-cell test that guards the gatherable
-        tabs rejects it.  Scrolling would move the whole strip to fix a target that is already
-        reachable, so the geometry tap is preferred and must land inside the visible width.
+        196.5, putting 野兽's cell left at -30.5 and its centre at 42.0 -- the client draws a
+        sliver of the cell and the whole 野兽 label.  Tapping that sliver was measured to do the
+        wrong thing: on ``live_runtime_step_001_after_20260921T105247039793.png`` the tap at
+        x=42 left **冰原巨兽** anchored, because the client selects the neighbouring cell rather
+        than the one showing a sliver of itself.  The verifier's honest
+        ``BEAST_SEARCH_TAB_NOT_PROVEN`` is what stopped the run from searching the wrong tab.
 
-        The two independent readings are also cross-checked here: the geometry's x (42 px) is
-        where the OCR layer read the 野兽 label (x_norm 0.0576 -> 41.5 px), so the template-free
-        geometry and the label agree on the same cell.
+        So the resolver must refuse the clipped point (leaving the runtime's scroll branch to
+        reveal the cell), the anchor must read the neighbour that the tap actually selected, and
+        the client's own swipe amount must be the small positive drag that fixes it.  The
+        controlled swipe of +34 px was measured to move the strip to offset 237.5 and put 野兽's
+        cell left on a bracket stroke at 10.5 -- the exact nominal position -- after which the
+        same frame reads ``anchored_tab_kind == "BEAST"``.
         """
         from pathlib import Path as _Path
 
         from winter_agent_v2.vision import SemanticROIVision
 
         manifest = ROOT / "dataset" / "candidate" / "template_manifest.json"
-        frame = (
+        clipped = (
             ROOT / "dataset" / "raw" / "live_runtime"
             / "live_runtime_step_002_after_20260921T103154681030.png"
         )
-        if not frame.exists() or not manifest.exists():
+        if not clipped.exists() or not manifest.exists():
             self.skipTest("the measured live frame is not in this checkout")
         vision = SemanticROIVision(_Path(manifest))
-        vision.selected_resource(frame)
-        tap = vision.resource_tab_tap_norm("BEAST")
-        self.assertIsNotNone(tap, "the clipped 野兽 cell is still on screen and tappable")
-        x_px = tap[0] * 720
-        self.assertGreater(x_px, 0.0)
-        self.assertLess(x_px, 720.0)
-        # It lands on the 野兽 cell the label was read from, within a pixel.
-        self.assertAlmostEqual(x_px, 0.0576 * 720, delta=2.0)
-        # And the anchor on this frame is 生肉, which is why the switch is needed at all.
-        self.assertEqual(vision.anchored_tab_kind(frame), "MEAT")
+        vision.selected_resource(clipped)
+        self.assertEqual(
+            vision.anchored_tab_kind(clipped), "MEAT",
+            "the panel opens on 生肉, which is why the switch is needed at all",
+        )
+        self.assertIsNone(
+            vision.resource_cell_center_norm("BEAST"),
+            "a clipped cell has no confirmed centre, so the resolver must refuse it",
+        )
+        swipe = vision.resource_tab_swipe_for("BEAST")
+        self.assertIsNotNone(swipe, "the reveal amount is derivable from the strip geometry")
+        self.assertGreater(
+            swipe, 0.0,
+            "野兽 clips on the LEFT edge, so the drag that reveals it is positive",
+        )
+
+    def test_the_neighbour_is_what_a_clipped_tap_actually_selected(self):
+        """The frame the wrong tap produced, read back through the same anchor."""
+        from pathlib import Path as _Path
+
+        from winter_agent_v2.vision import SemanticROIVision
+
+        manifest = ROOT / "dataset" / "candidate" / "template_manifest.json"
+        tapped = (
+            ROOT / "dataset" / "raw" / "live_runtime"
+            / "live_runtime_step_001_after_20260921T105247039793.png"
+        )
+        if not tapped.exists() or not manifest.exists():
+            self.skipTest("the measured live frame is not in this checkout")
+        vision = SemanticROIVision(_Path(manifest))
+        self.assertEqual(
+            vision.anchored_tab_kind(tapped), "GIANT_BEAST",
+            "the tap at 野兽's clipped sliver left the rally tab anchored, not 野兽",
+        )
+
+    def test_the_swipe_is_what_makes_the_beast_tab_anchored(self):
+        """The controlled experiment: after the +34 swipe the anchor really is 野兽."""
+        from pathlib import Path as _Path
+
+        from winter_agent_v2.vision import SemanticROIVision
+
+        manifest = ROOT / "dataset" / "candidate" / "template_manifest.json"
+        revealed = ROOT / "dataset" / "raw" / "live_runtime" / "probe_swipe_right34.png"
+        if not revealed.exists() or not manifest.exists():
+            self.skipTest("the controlled-experiment frame is not in this checkout")
+        vision = SemanticROIVision(_Path(manifest))
+        self.assertEqual(
+            vision.anchored_tab_kind(revealed), "BEAST",
+            "the revealed 野兽 tab is the anchored one",
+        )
+        self.assertIsNotNone(
+            vision.resource_cell_center_norm("BEAST"),
+            "once revealed, the cell has a confirmed centre and is tappable",
+        )
 
     def test_the_resolver_refuses_when_the_panel_is_not_open(self):
         """A stale point must not be reused on a frame that is not showing the strip."""
@@ -529,6 +611,102 @@ class TheSubmitButtonIsTheOneMeasuredOnLiveFramesTests(unittest.TestCase):
                    round((roi["y_norm"] + roi["h_norm"]) * height))
             self.assertLessEqual(hamming(phash(im.crop(box)), phash(t)), 8,
                                  "the archived record must still match the frame it was cut from")
+
+
+class TheSearchResultCardIsReadFromItsOwnWordsTests(unittest.TestCase):
+    """The successful search produces a card no template matches, but its words read.
+
+    Measured live 2026-09-21 on
+    ``live_runtime_step_001_after_refresh_2_20260921T105832480183.png``: the search found a
+    **等级10 麝牛**, and on that frame ``BTN_BEAST_CARD_ATTACK`` (cut from a world-map card)
+    and every ``TARGET_BEAST_*`` sprite scored NO MATCH, while the card's own text read at
+    0.88-1.00.  The old ``beast_search_submitted`` was ``resource_beast_tab and
+    beacon_beast`` -- a NO-MATCH template and a map-nameplate reader that returned ``{}`` --
+    so a search that visibly succeeded was reported as not submitted.
+
+    The load-bearing distinction is 攻击 vs 集结, which is what keeps a rally target from
+    being attempted as a normal attack: the measured level-5 mammoth card offered 集结 and
+    no 攻击, this one offers 攻击 and no 集结.
+    """
+
+    @staticmethod
+    def _card_reader():
+        from winter_agent_v2.ocr import (
+            OCRService, RapidOCRBackend, ResilientOCRBackend, read_beast_search_result_card,
+        )
+        try:
+            config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+            ocr = OCRService(
+                ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))
+            )
+        except Exception as error:                      # pragma: no cover - backend missing
+            raise unittest.SkipTest(f"the OCR backend is unavailable here: {error}")
+        return read_beast_search_result_card, ocr
+
+    def test_the_found_beast_card_offers_a_solo_attack(self):
+        reader, ocr = self._card_reader()
+        frame = (
+            ROOT / "dataset" / "raw" / "live_runtime"
+            / "live_runtime_step_001_after_refresh_2_20260921T105832480183.png"
+        )
+        if not frame.exists():
+            self.skipTest("the measured result-card frame is not in this checkout")
+        card = reader(frame, ocr, frame_size=(720, 1280))
+        self.assertTrue(card, "the successful search frame must read as a result card")
+        self.assertEqual(card["title_level"], 10)
+        self.assertTrue(card["has_attack"], "this card carries the 攻击 control")
+        self.assertFalse(card["has_rally"], "and it does not carry 集结, so it is a solo target")
+        self.assertTrue(card["solo_attack"])
+
+    def test_the_open_panel_is_not_a_result_card(self):
+        """The negative control: the panel before 搜索 must not read as a result."""
+        reader, ocr = self._card_reader()
+        frame = (
+            ROOT / "dataset" / "raw" / "live_runtime"
+            / "live_runtime_step_001_before_20260921T105747410273.png"
+        )
+        if not frame.exists():
+            self.skipTest("the measured panel frame is not in this checkout")
+        self.assertEqual(
+            reader(frame, ocr, frame_size=(720, 1280)), {},
+            "an open panel with no result drawn is not a result card",
+        )
+
+    def test_the_verifier_accepts_the_card_and_still_refuses_the_panel(self):
+        """The hop's verdict, on the two measured frames, through the real verifier."""
+        from winter_agent_v2.ocr import (
+            HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend,
+        )
+        from winter_agent_v2.verifier import verify_beast_search_submitted
+        from winter_agent_v2.vision import SemanticWorldVision
+
+        try:
+            config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+            vision = HybridVision(
+                SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"),
+                OCRService(
+                    ResilientOCRBackend(RapidOCRBackend(Path(config["ocr"]["module_path"])))
+                ),
+            )
+        except Exception as error:                      # pragma: no cover - backend missing
+            raise unittest.SkipTest(f"the OCR backend is unavailable here: {error}")
+        panel = (
+            ROOT / "dataset" / "raw" / "live_runtime"
+            / "live_runtime_step_001_before_20260921T105747410273.png"
+        )
+        card = (
+            ROOT / "dataset" / "raw" / "live_runtime"
+            / "live_runtime_step_001_after_refresh_2_20260921T105832480183.png"
+        )
+        if not panel.exists() or not card.exists():
+            self.skipTest("the measured frames are not in this checkout")
+        before = vision.observe(panel)
+        after = vision.observe(card)
+        result = verify_beast_search_submitted(before, after)
+        self.assertTrue(
+            result.ok,
+            "a search that drew the result card must pass this hop: " + str(result.evidence),
+        )
 
 
 if __name__ == "__main__":

@@ -469,40 +469,6 @@ class SemanticROIVision:
             return 716 - (left + cell_px)
         return 0.0
 
-    def resource_tab_tap_norm(self, resource: str) -> tuple[float, float] | None:
-        """Tap point for a strip tab, allowing a cell clipped at either edge.
-
-        :meth:`resource_cell_center_norm` deliberately refuses a cell that is not
-        fully on screen, because a *gathering* route must scroll a half-visible
-        target into view rather than tap the part that is showing -- guessing at a
-        clipped cell is what made SELECT_RESOURCE pick the wrong tab.  That rule is
-        right for the four gatherable tabs and wrong for the 野兽 tab, whose cell is
-        routinely clipped: measured 2026-09-21 on
-        ``live_runtime_step_002_after_20260921T103154681030.png`` the strip sits at
-        offset 196.5, putting 野兽 at left -30.5 / centre 42.0, so the client is
-        drawing the right part of the cell and the whole of its 野兽 label while the
-        full-cell test rejects it.  Scrolling instead would be wrong here: the tab is
-        reachable where it stands, and a swipe would move the whole strip to fix a
-        target that was already tappable.
-
-        The returned point is the cell centre clamped into the visible width, and
-        ``None`` only when the cell is entirely off screen or the strip could not be
-        located at all.
-        """
-        if self.resource_tab_offset is None or resource not in self.resource_tab_order:
-            return None
-        left = (
-            self.resource_tab_first_left * 720.0
-            + self.resource_tab_order.index(resource) * self.resource_tab_pitch * 720.0
-            + self.resource_tab_offset
-        )
-        cell_px = self.resource_tab_cell * 720.0
-        if left + cell_px <= 0 or left >= 720:
-            return None
-        centre = left + cell_px / 2
-        visible = min(716.0, max(4.0, centre))
-        return visible / 720.0, (self.resource_tab_band[0] + self.resource_tab_band[1]) / 2
-
     def anchored_tab_kind(self, image_path: Path) -> str | None:
         """Which tab of the strip the selection bracket currently marks.
 

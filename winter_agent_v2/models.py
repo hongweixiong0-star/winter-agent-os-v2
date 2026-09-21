@@ -148,6 +148,20 @@ class WorldState:
     # 搜索 is tapped.  The panel does not close on success, which is why a
     # "panel is gone" test would never pass.
     beast_search_submitted: bool = False
+    #: What the client's beast-search result card offered, read from its own words.
+    #:
+    #: ``solo_attack`` is the load-bearing field: True when the card carries 攻击 and does
+    #: NOT carry 集结.  This is how the route honours the rule that a rally target must not
+    #: be attempted as a normal attack -- the measured level-5 mammoth card offered 集结 and
+    #: no 攻击, while the measured 等级10 麝牛 card (live 2026-09-21) offered 攻击 and no
+    #: 集结.  Read from words rather than a sprite so it holds for species nobody has cut a
+    #: template for, which is exactly what the client's own search returns.
+    #:
+    #: Measured on the successful-search frame
+    #: ``live_runtime_step_001_after_refresh_2_20260921T105832480183.png``:
+    #: ``{'title_level': 10, 'title_text': '蔚牛', 'has_attack': True, 'has_rally': False,
+    #: 'solo_attack': True}``.  Empty when the frame is not that card.
+    beast_search_result: dict = field(default_factory=dict)
     confidence: float = 0.0
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 

@@ -1087,6 +1087,103 @@ def beast_from_its_label(image_path, ocr, frame_size: tuple[int, int] | None = N
     return beast
 
 
+#: The client's two ways to answer a beast search.  Their difference is the whole
+#: reason the beast route distinguishes the tabs, so it is read as words rather than
+#: matched as sprites: the card that offers 攻击 can be fought solo, the one that
+#: offers 集结 cannot.
+BEAST_CARD_SOLO_ATTACK_LABEL = "攻击"
+BEAST_CARD_RALLY_LABEL = "集结"
+#: The result card's title is ``等级<N><name>`` -- a composite, measured 2026-09-21 as
+#: ``等级10蔚牛`` (a one-glyph misread of 麝牛) at confidence 0.88.  The digit is what
+#: separates it from a map nameplate, which never carries one.
+BEAST_CARD_TITLE_PATTERN = re.compile(r"^等级\s*(\d{1,3})\s*(.+)$")
+
+
+def read_beast_search_result_card(
+    image_path,
+    ocr,
+    *,
+    frame_size: tuple[int, int] | None = None,
+    min_confidence: float = 0.75,
+) -> dict:
+    """Read the card the client draws over the panel after a beast search.
+
+    Returns ``{}`` when this is not that card, and otherwise a dict describing what
+    the client offered.  Why it exists rather than a template: measured live
+    2026-09-21, the successful search produced a card that matches **none** of the
+    reviewed card templates -- ``BTN_BEAST_CARD_ATTACK`` (cut from a world-map card)
+    scored NO MATCH, and so did every ``TARGET_BEAST_*`` sprite -- while the card's
+    own words read cleanly at 0.88-1.00.  The route only needs the words.
+
+    The two fields the caller acts on:
+
+    ``solo_attack``
+        the card carries 攻击 and does NOT carry 集结.  This is the user-facing rule
+        that a rally target must never be attempted as a normal attack: the measured
+        level-5 mammoth card offered 集结 with no 攻击, and the measured 等级10 麝牛
+        card offered 攻击 with no 集结.  Keying on the words keeps the distinction
+        working for species nobody has cut a sprite for, which is the whole point of
+        searching by the client's own search rather than by species template.
+
+    ``title_level`` / ``title_text``
+        the ``等级<N><name>`` title the card prints, so the evidence names what was
+        actually found rather than only that something was.
+
+    ``{}`` is returned for a frame that is not this card (no title, or neither
+    control word), so a bare map or the open panel cannot be mistaken for a result.
+    """
+    try:
+        if frame_size is None:
+            with Image.open(image_path) as opened:
+                frame_size = opened.size
+        tokens = tuple(ocr.recognize(image_path, None).tokens)
+    except Exception:  # noqa: BLE001 - recognition must never take the frame with it
+        return {}
+    title_level: int | None = None
+    title_text = ""
+    title_box: tuple[float, float, float, float] | None = None
+    has_attack = False
+    has_rally = False
+    for token in tokens:
+        if not token.box or token.confidence < min_confidence:
+            continue
+        text = str(token.text or "").strip().replace(" ", "")
+        if not text:
+            continue
+        if BEAST_CARD_SOLO_ATTACK_LABEL == text:
+            has_attack = True
+            continue
+        if BEAST_CARD_RALLY_LABEL == text:
+            has_rally = True
+            continue
+        if title_level is None:
+            match = BEAST_CARD_TITLE_PATTERN.match(text)
+            if match is not None:
+                title_level = int(match.group(1))
+                title_text = match.group(2)
+                xs = [point[0] for point in token.box]
+                ys = [point[1] for point in token.box]
+                title_box = (min(xs), min(ys), max(xs), max(ys))
+    if title_level is None and not (has_attack or has_rally):
+        return {}
+    result: dict = {
+        "title_level": title_level,
+        "title_text": title_text,
+        "has_attack": has_attack,
+        "has_rally": has_rally,
+        # Solo only when the attack word is offered and the rally word is not: a card
+        # that showed both would be ambiguous, and this route must not guess.
+        "solo_attack": bool(has_attack and not has_rally),
+    }
+    if title_box is not None and frame_size is not None:
+        width, height = frame_size
+        result["title_centre_norm"] = (
+            round(((title_box[0] + title_box[2]) / 2.0) / width, 4),
+            round(((title_box[1] + title_box[3]) / 2.0) / height, 4),
+        )
+    return result
+
+
 def _name_token(tokens: tuple[OCRToken, ...], name: str, *, min_confidence: float = 0.8) -> OCRToken | None:
     """The token the name was read from, so its box can anchor the level read and the tap."""
     best: OCRToken | None = None
@@ -1669,6 +1766,39 @@ class HybridVision:
                     read_resource_tab_labels(image_path, self.ocr)
                     if primary.resource_search_open else {}
                 )
+                # The client's beast search ran and left a target on the map.
+                #
+                # Measured 2026-09-21: the successful search draws a result card over the
+                # panel whose layout matches NO reviewed template -- ``BTN_BEAST_CARD_ATTACK``
+                # (cut from a world-map card) and every ``TARGET_BEAST_*`` sprite all scored
+                # NO MATCH on
+                # ``live_runtime_step_001_after_refresh_2_20260921T105832480183.png``, while
+                # its words read at 0.88-1.00.  The card is therefore read from its own words,
+                # and ``beast_search_submitted`` is that read.
+                #
+                # The pair this replaced was ``resource_beast_tab and beacon_beast``, and both
+                # halves are broken on this very frame -- each an independent reason:
+                #
+                # * ``resource_beast_tab`` came from ``match("BTN_SEARCH_BEAST_TAB")``, the
+                #   position-pinned template measured to score NO MATCH once the client moved
+                #   野兽 into the leftmost slot.  The search chain was changed to read the
+                #   tab's printed label for exactly this reason; leaving the verifier on the
+                #   template kept the old defect alive behind the fix.  Confirmed NO MATCH on
+                #   the result frame.
+                # * ``beacon_beast`` came from ``beast_from_its_label``, which looks for a
+                #   *map nameplate*; the result card's title is the composite ``等级10麝牛``
+                #   and that reader returned ``{}``.
+                #
+                # So a search that visibly succeeded -- the card, its 攻击 control, its
+                # recommended-power line -- was reported as not submitted, and the run stopped
+                # one hop short of a target it had actually found.  The panel staying open is
+                # still why "panel closed" is not the test.
+                beast_search_result = (
+                    read_beast_search_result_card(
+                        image_path, self.ocr, frame_size=(frame_width, frame_height)
+                    )
+                    if primary.resource_search_open else {}
+                )
                 return replace(
                     primary,
                     marches=tuple(fused_marches),
@@ -1690,29 +1820,18 @@ class HybridVision:
                     # Measured 2026-09-21: the panel opens with 生肉 anchored while
                     # ``resource_beast_tab_norm`` is already non-``None``, which is exactly
                     # the pair of facts that made the route skip its tab switch.
+                    #
+                    # ``template_vision.semantic`` and not ``self.semantic``: the semantic
+                    # layer hangs off the template vision on this composite (see
+                    # ``_semantic_roi`` above), and reaching for the shorter name is what
+                    # crashed the first live run of this change with
+                    # ``AttributeError: 'HybridVision' object has no attribute 'semantic'``.
                     resource_selected_tab=(
-                        self.semantic.anchored_tab_kind(image_path)
+                        self.template_vision.semantic.anchored_tab_kind(image_path)
                         if primary.resource_search_open else None
                     ),
-                    # The client's beast search ran and left a target on the map.
-                    #
-                    # Measured 2026-09-21 on ``beast5_found.png``: after 搜索 the
-                    # panel stays open on the beast tab and the result card is
-                    # drawn on top of it, so "the panel is gone" would never be
-                    # true for a successful search.  The state that is actually
-                    # observable is the pair -- beast tab still selected AND a
-                    # beast now on the map -- and the beast is taken from the
-                    # label read rather than a species sprite, because the search
-                    # returned a 25-level mammoth that ``TARGET_BEAST_MAMMOTH_5``
-                    # does not match; keying on the sprite would have reported
-                    # that success as a failure.
-                    #
-                    # This is a fusion-layer fact on purpose: the beast tab is a
-                    # template-layer reading and the label is an OCR-layer one, so
-                    # neither layer alone can state it.
-                    beast_search_submitted=bool(
-                        primary.resource_beast_tab and beacon_beast
-                    ),
+                    beast_search_submitted=bool(beast_search_result.get("title_level")),
+                    beast_search_result=beast_search_result,
                     # Only when the template path found nothing: that path is LIVE_VERIFIED and
                     # its values are not re-decided here.  The frame size goes along because the
                     # label read carries a tap point with it, and an ROI-scoped token box can
