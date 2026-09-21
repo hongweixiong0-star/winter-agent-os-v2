@@ -951,12 +951,31 @@ class LiveRuntime:
             # its run one hop short of a beast it had already found.
             #
             # The guard is that the frame must still be showing that card: the point
-            # is a fragment of the MAP frame it was measured on, and only a verified
+            # is a fragment of the frame it was measured on, and only a verified
             # solo-attack result makes it meaningful.  ``None`` -- wrong page, no card,
             # or a card offering 集结 instead -- ends the loop honestly rather than
             # tapping an invented point, which is also what keeps a rally target from
             # ever being entered through the ordinary-attack control.
-            if frame.page is not Page.MAP:
+            #
+            # The page is ``MAP`` or ``BEAST``, and requiring ``MAP`` alone was
+            # measured wrong live 2026-09-21T12:09:41Z.  The card carries the search
+            # panel open behind it, and ``HybridVision.observe`` classifies that frame
+            # ``Page.BEAST`` -- the same page it emits for the card itself (see the
+            # card branch in ``observe``).  With the guard written against ``MAP`` the
+            # resolver refused the very frame the reading came from:
+            #
+            #     step 003 before   page = BEAST
+            #                       beast_search_result = {title_level: 10,
+            #                           title_text: 蔚牛, solo_attack: True,
+            #                           attack_centre_norm: (0.5007, 0.4688)}
+            #     decision          ATTACK_BEAST_CARD
+            #     execution         SEMANTIC_TARGET_NOT_VERIFIED, tap_point = null
+            #
+            # so the route found an ordinary-attack target, decided correctly, and
+            # could not tap it -- one word short of the dispatch.  Accepting BEAST
+            # keeps what the guard is for (the point belongs to a frame that carries
+            # the card) without rejecting the page the card is actually read on.
+            if frame.page not in {Page.MAP, Page.BEAST}:
                 return None
             result = frame.beast_search_result or {}
             if not result.get("solo_attack"):

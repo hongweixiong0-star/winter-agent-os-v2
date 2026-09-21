@@ -842,6 +842,67 @@ class TheSearchResultIsWhatTheRouteMarchesOnTests(unittest.TestCase):
             )
             self.assertIsNone(runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", off_frame))
 
+    def test_the_card_is_resolved_on_the_page_the_card_is_actually_read_on(self):
+        """The card frame is BEAST, not MAP, and the resolver must accept it.
+
+        The fixture above says ``page=Page.MAP``, and that is the reason this
+        slipped through: ``HybridVision.observe`` classifies the frame that
+        carries the search result card as ``Page.BEAST`` -- the same page it
+        emits for the card itself -- while the resolver's guard was written
+        against ``Page.MAP`` alone.
+
+        Measured live 2026-09-21T12:09:41Z, which is the whole of the damage:
+
+            step 003 before   page = BEAST
+                              beast_search_result = {title_level: 10,
+                                  title_text: 蔚牛, solo_attack: True,
+                                  attack_centre_norm: (0.5007, 0.4688)}
+            decision          ATTACK_BEAST_CARD          (correct)
+            execution         SEMANTIC_TARGET_NOT_VERIFIED, tap_point = null
+
+        The route found an ordinary-attack target, decided correctly, and had
+        no coordinate for it -- one word short of the dispatch.  Re-run with
+        the guard accepting BEAST, the same frame dispatched a real march:
+        stamina 440 -> 430, march_used -> 1.
+
+        The rest of the guard still holds on this page: no card and a rally
+        card both stay refused.
+        """
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            runtime = LiveRuntime(
+                device=_EnumerationDevice(),
+                vision=lambda _path: (_ for _ in ()).throw(AssertionError("vision is not used here")),
+                semantic_vision=_NoMatchSemantic(),
+                capture_dir=Path(temp),
+            )
+
+            on_beast = replace(self._solo_card_world(), page=Page.BEAST)
+            self.assertEqual(
+                runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", on_beast),
+                (0.5007, 0.4688),
+                "the page the result card is read on must resolve its own point",
+            )
+
+            # The guard is still a guard on that page.
+            no_card = replace(on_beast, beast_search_result={})
+            self.assertIsNone(runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", no_card))
+
+            rally = replace(
+                on_beast,
+                beast_search_result={
+                    "title_level": 7, "title_text": "霜鳞避役",
+                    "has_attack": False, "has_rally": True, "solo_attack": False,
+                },
+            )
+            self.assertIsNone(runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", rally))
+
+            # A page the card is never read on is still refused, so the widened
+            # set is not "anywhere".
+            elsewhere = replace(on_beast, page=Page.HOME)
+            self.assertIsNone(runtime._resolve_semantic_target("BTN_BEAST_CARD_ATTACK", elsewhere))
+
     def test_the_march_verifier_binds_the_search_card_the_same_as_the_map_card(self):
         """A verified card is a verified card: both are the 攻击 control, measured two ways."""
         from winter_agent_v2.verifier import verify_beast_card_march_open
