@@ -907,5 +907,36 @@ class TheSearchResultIsWhatTheRouteMarchesOnTests(unittest.TestCase):
         self.assertEqual(decision.reason, "close_resource_search_for_beast_goal")
 
 
+    def test_the_card_is_spent_even_after_the_ticket_was_spent_submitting(self):
+        """The measured regression: the ticket gates asking, not spending the answer.
+
+        ``beast_search_used`` is set when the search is SUBMITTED, so on the step after a
+        successful submit the flag is already True and the card check -- if it lives inside
+        the ticket gate -- is skipped.  Run at 11:26Z: step 3 submitted (flag set), step 4
+        read 等级10 麝牛 in its before-state, and the run answered SCAN_MAP_FOR_BEAST over a
+        verified target.
+        """
+        for spent in (False, True):
+            world = self._solo_card_world()
+            brain = RuleBrain(current_goal="BEAST_HUNT")
+            brain.beast_search_used = spent
+            decision = brain.decide(world, v2_registry())
+            self.assertEqual(
+                decision.skill,
+                "ATTACK_BEAST_CARD",
+                f"the found target must be spent with beast_search_used={spent}",
+            )
+
+        # A spent ticket and no card keeps its old behaviour.
+        empty = replace(
+            self._solo_card_world(),
+            beast_search_submitted=False,
+            beast_search_result={},
+        )
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        brain.beast_search_used = True
+        self.assertNotEqual(brain.decide(empty, v2_registry()).skill, "ATTACK_BEAST_CARD")
+
+
 if __name__ == "__main__":
     unittest.main()

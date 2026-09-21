@@ -1285,6 +1285,22 @@ class RuleBrain:
                 # original named reason.  Nothing here spends stamina: 搜索 costs
                 # none and starts no march, and the spend stays behind the client's
                 # own 胜券在握 strip three hops further down.
+                # ``beast_search_used`` is set when the search is SUBMITTED, not when its
+                # result is acted on, so the card check must sit ABOVE the ticket gate.
+                # Measured cost of getting this wrong: the run at 11:26Z submitted on step
+                # 3 (flag set), step 4 read 等级10 麝牛 back in its before-state, and the
+                # branch below -- being inside ``if not self.beast_search_used`` -- was
+                # skipped, so the run answered SCAN_MAP_FOR_BEAST over a verified target.
+                # The ticket bounds how often the client is ASKED; it does not bound
+                # spending an answer that has already arrived.
+                if world.beast_search_result.get("solo_attack"):
+                    self.beast_search_used = True
+                    return Decision(
+                        "ATTACK_BEAST_CARD",
+                        "solo_attack_card_found_by_the_clients_own_search",
+                        world.confidence,
+                        "beast_march_page_open",
+                    )
                 if not self.beast_search_used:
                     if not world.resource_search_open:
                         # The magnifier on the world-map HUD.  Same control the
@@ -1313,14 +1329,6 @@ class RuleBrain:
                     # (the measured level-5 mammoth) is a rally target and must not be
                     # entered as an ordinary attack, so that card yields instead -- the
                     # search is bounded, so refusing here cannot become a loop.
-                    if world.beast_search_result.get("solo_attack"):
-                        self.beast_search_used = True
-                        return Decision(
-                            "ATTACK_BEAST_CARD",
-                            "solo_attack_card_found_by_the_clients_own_search",
-                            world.confidence,
-                            "beast_march_page_open",
-                        )
                     # The gate is ``resource_selected_tab``, not ``resource_beast_tab_norm``.
                     #
                     # Measured 2026-09-21 on
