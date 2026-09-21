@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .camp_training import CAMP_LABELS, CAMP_ORDER, TROOP_TO_CAMP
 from .models import WorldState
+from . import goal_utility
 from .rally import BearPhase, bear_phase
 
 #: The operator's stamina floor: the spend goal is satisfied once stamina is BELOW it.
@@ -742,7 +743,34 @@ class GoalLibrary:
             self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training,
                                     ("TRAIN_TROOPS",), TRAINING_CAMP_VALUE)
 
-    def best(self, goals: Iterable[GoalState]) -> GoalState | None:
+    def rank(
+        self,
+        goals: Iterable[GoalState],
+        world: WorldState | None = None,
+        *,
+        fairness: Mapping[str, goal_utility.GoalFairness] | None = None,
+        routes: Iterable[goal_utility.RouteFact] | None = None,
+        now: datetime | None = None,
+    ) -> tuple[tuple[GoalState, goal_utility.UtilityBreakdown], ...]:
+        """The whole board, best first, with every term of each goal's utility (§九).
+
+        ``best`` answers "what next"; this answers "why that, and what lost", which is
+        what a decision log has to carry.  Both go through the same ranking so the log
+        can never disagree with the choice it is describing.
+        """
+        return goal_utility.rank(
+            goals, world=world, facts=routes or (), ledger=fairness, now=now
+        )
+
+    def best(
+        self,
+        goals: Iterable[GoalState],
+        world: WorldState | None = None,
+        *,
+        fairness: Mapping[str, goal_utility.GoalFairness] | None = None,
+        routes: Iterable[goal_utility.RouteFact] | None = None,
+        now: datetime | None = None,
+    ) -> GoalState | None:
         """The goal to work on: the highest-priced one that can be advanced this frame.
 
         Deliberately a single ordered comparison and no tiers.  An earlier version of this
@@ -760,9 +788,19 @@ class GoalLibrary:
         outrank a goal that is already holding a resource the sweep's owner is waiting on.  That
         is the yield mechanism's job (``_yield_to_next_goal``, Rule A), and it is applied where
         the conflict is visible, not by reordering the whole board here.
+
+        ``world`` / ``fairness`` / ``routes`` add the dynamic layer (operator §四) on top of
+        those catalogue prices.  With none of them supplied the answer is byte-identical to
+        the original comparison, which is what keeps every existing caller and test valid;
+        production supplies all three.  The dynamic terms are bounded inside the gaps the
+        catalogue already has -- see ``goal_utility`` for the numbers and why.
         """
-        actionable = [goal for goal in goals if goal.priority != float("-inf") and goal.available_skills]
-        return max(actionable, key=lambda goal: goal.priority, default=None)
+        board = tuple(goals)
+        if world is None and not fairness and not routes:
+            actionable = [goal for goal in board if goal.priority != float("-inf") and goal.available_skills]
+            return max(actionable, key=lambda goal: goal.priority, default=None)
+        ranked = self.rank(board, world, fairness=fairness, routes=routes, now=now)
+        return ranked[0][0] if ranked else None
 
     def skill_modifier(self, world: WorldState, skill_id: str) -> float:
         # One action may advance several goals (for example Train + Daily + Event).

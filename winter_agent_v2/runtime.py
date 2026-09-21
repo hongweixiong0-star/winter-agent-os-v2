@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import time
 from dataclasses import asdict, dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
 from typing import Any, Callable, Mapping
 
 from .brain import RuleBrain
 from . import control_experience
+from . import goal_utility
 from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
@@ -919,6 +920,84 @@ class LiveRuntime:
         except Exception:  # noqa: BLE001 - a ledger write must never fail a run
             pass
 
+    # ------------------------------------------------- utility bookkeeping
+
+    def _note_the_choice(self, board, world) -> None:
+        """Record the fairness facts of one ranking, and log a change of mind.
+
+        Operator §四.6 (waiting compensation) needs a fact the goal board cannot hold:
+        ``GoalState`` is a frozen value rebuilt from the world every frame, so "how long
+        has this goal been eligible without winning" has to survive across frames.  That
+        is the whole reason for the ledger -- every goal on the board is counted as
+        *offered*, and only the winner's clock is reset.
+
+        The decision log gets one row per **change of the chosen goal**, not per step
+        (§九: "避免高频输出重复日志，重点记录真实决策变化").  A twelve-step run that
+        works one goal writes one row; a run that is forced to switch writes the switch.
+        """
+        if not board:
+            return
+        moment = datetime.now(timezone.utc)
+        for goal, _breakdown in board:
+            goal_utility.entry(self._fairness, str(goal.goal_id)).offered += 1
+        chosen_goal, chosen = board[0]
+        chosen_row = goal_utility.entry(self._fairness, str(chosen_goal.goal_id))
+        chosen_row.last_selected_at = moment.isoformat()
+        chosen_row.selected += 1
+
+        if str(chosen_goal.goal_id) == self._logged_goal:
+            return
+        goal_utility.append_decision(goal_utility.decision_row(
+            role_id=self.role_id,
+            page=str(getattr(getattr(world, "page", ""), "value", getattr(world, "page", ""))),
+            ranked=board,
+            chosen=str(chosen_goal.goal_id),
+            runner_up=str(board[1][0].goal_id) if len(board) > 1 else "",
+            reason=chosen.why(),
+            now=moment,
+        ))
+        self._logged_goal = str(chosen_goal.goal_id)
+        print(f"[utility] chose {chosen_goal.goal_id} "
+              f"({chosen.total:.0f}; {chosen.why()})", flush=True)
+
+    def _note_deferrals(self, deferrals) -> None:
+        """Persist each deferral's own retry window, for the log and the panel (§五).
+
+        ``Deferral`` already carries everything §五 asks a blocked task to record --
+        ``goal_id``, ``reason``, ``until``, ``streak``, ``last_attempt``, ``last_skill``
+        -- but all of it lived only in the runtime snapshot for the current cycle.  This
+        keeps the last one per goal so "when will this be looked at again" survives the
+        run.  It is deliberately **not** used to block selection: the gate owns
+        eligibility, and a second window here could only extend a block (see
+        ``goal_utility.rank``).
+
+        ``until`` is frequently empty in production -- measured 2026-09-21, four goals
+        deferred with ``until=""`` and nothing to bring them back.  For those the
+        estimate is the gate's own ``probe_minutes``; when that is zero too, the entry
+        says so by leaving the window unset rather than inventing one.
+        """
+        moment = datetime.now(timezone.utc)
+        for item in deferrals:
+            goal_id = str(getattr(item, "goal_id", "") or "")
+            if not goal_id:
+                continue
+            row = goal_utility.entry(self._fairness, goal_id)
+            row.last_block_reason = str(getattr(item, "reason", "") or "")
+            until = getattr(item, "until", None)
+            if until is not None:
+                row.retry_after = until.isoformat()
+                continue
+            minutes = int(getattr(item, "probe_minutes", 0) or 0)
+            row.retry_after = (
+                (moment + timedelta(minutes=minutes)).isoformat() if minutes > 0 else ""
+            )
+
+    def _save_fairness(self) -> None:
+        try:
+            goal_utility.save(self._fairness)
+        except Exception:  # noqa: BLE001 - a ledger write must never fail a run
+            pass
+
     def _device_lost(self, call, *args) -> bool:
         """Run one device call; answer True if the DEVICE left rather than the goal failing.
 
@@ -1270,6 +1349,7 @@ class LiveRuntime:
             # exit.  A per-step rewrite of a JSON file would put disk I/O inside the
             # action loop for no gain -- nothing reads the ledger mid-run.
             self._save_control_experience()
+            self._save_fairness()
             return LiveRun(tuple(steps), reason, tuple(item.as_row() for item in deferrals))
 
         self.capture_dir.mkdir(parents=True, exist_ok=True)
@@ -1294,6 +1374,15 @@ class LiveRuntime:
         # per step, written once at ``finish``.  Loaded per run so a fresh process
         # still has last run's experience.
         self._control_ledger = control_experience.load()
+        # Utility inputs (operator §四).  All three are loaded once per run: the route
+        # card is a measured artefact that does not change inside a run, and the
+        # fairness ledger is written back at ``finish``.  Kept on the instance so
+        # every ranking in this run reads the same factors.
+        self._routes = goal_utility.load_routes()
+        self._fairness = goal_utility.load()
+        # The last goal this run actually committed to, so the decision log records
+        # *changes* of mind rather than one row per step (§九: no high-frequency noise).
+        self._logged_goal = ""
         # Goals this run has already offered and found it could not execute.  Run-scoped on
         # purpose: the reason is "this cycle cannot run it" (a skill this run may not use, a
         # skill that is not ready, or a candidate pool that is spent), which says nothing about
@@ -1386,7 +1475,18 @@ class LiveRuntime:
             before = self._reject_a_dropped_digit(before)
             goals = self._record_goals(before, frame=before_path)
             self._remember_goal_meters(goals)
-            best_goal = self.goal_library.best(self._selectable(goals, deferrals))
+            # Operator §四/§五: the board is re-ranked here, on every step, against the
+            # frame we are standing on -- not once per run.  ``rank`` returns the whole
+            # board with each term, and ``best`` is the same ordering, so the choice and
+            # the explanation can never disagree.
+            board = self.goal_library.rank(
+                self._selectable(goals, deferrals),
+                before,
+                fairness=self._fairness,
+                routes=self._routes,
+            )
+            best_goal = board[0][0] if board else None
+            self._note_the_choice(board, before)
             if best_goal is not None:
                 self._committed_goal = best_goal.goal_id
             if deferrals:
@@ -1397,6 +1497,7 @@ class LiveRuntime:
                 # run repeated the same line twelve times, which buries the signal it
                 # exists to provide (measured 2026-09-18).
                 self._runtime(deferred_goals=[item.as_row() for item in deferrals])
+                self._note_deferrals(deferrals)
                 for item in deferrals:
                     if item.describe() in self._printed_deferrals:
                         continue
@@ -1864,6 +1965,19 @@ class LiveRuntime:
                 self.stamina_supply.record_claim_refused()
                 self.brain.free_stamina_claim_cooling = True
             step_goal = self._step_goal(best_goal)
+            # Operator §四.5: a candidate that keeps being chosen and keeps making no
+            # progress drops in the order.  ``None`` (the goal's own meter was not
+            # observable on both frames) leaves the streak alone -- unobservable is not
+            # failure, and counting it would penalise a goal for the camera, not for
+            # itself.  Bounded in ``goal_utility``, so this lowers a candidate and never
+            # removes it: a starved goal must still be able to come back (§八E).
+            progress = progress_moved(self._goal_meters, goals_after, step_goal)
+            if step_goal:
+                row = goal_utility.entry(self._fairness, str(step_goal))
+                if progress is True:
+                    row.no_progress_streak = 0
+                elif progress is False:
+                    row.no_progress_streak += 1
             self._record_episode(
                 decision=tick.decision, before=before, execution=tick.execution,
                 after=after, verification=verification, started_at=started_at,
@@ -1872,7 +1986,7 @@ class LiveRuntime:
                 # The verifier passed means the action landed.  This says whether the
                 # *goal* moved, and the two are not the same statement: 58 episodes
                 # passed their verifier while stamina sat at 457 (2026-09-18).
-                goal_progress=progress_moved(self._goal_meters, goals_after, step_goal),
+                goal_progress=progress,
                 before_screenshot=before_path, after_screenshot=after_path,
             )
             steps.append(LiveStep(index, tick.decision, tick.execution, before, after, verification))
