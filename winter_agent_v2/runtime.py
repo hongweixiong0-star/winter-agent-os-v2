@@ -49,6 +49,39 @@ class LiveRun:
 Verifier = Callable[[WorldState, WorldState], VerificationResult]
 
 
+#: Failures that belong to the DEVICE, not to any goal.
+#:
+#: The distinction is the operator's, and it is not cosmetic.  Every reason in
+#: ``NON_FATAL_STOPS`` is a statement about ONE goal -- "this queue is busy", "this panel
+#: has nothing to collect" -- and the runtime answers those by handing the cycle to the
+#: next goal.  A device that has gone away says nothing about any goal: the adb endpoint
+#: dropped, MuMu was closed, the emulator is restarting.  Handing THAT to the next goal
+#: produces a run that walks goal to goal issuing nothing while the real problem sits
+#: unchanged underneath, and then reports each goal as merely blocked.
+#:
+#: These markers are the exact strings ``device.py`` raises (``ADB_FAILED:``,
+#: ``DEVICE_NOT_CONNECTED``, ``DEVICE_AMBIGUOUS``, ``ADB_DISCOVERY_FAILED``) plus the
+#: screenshot failures a half-dead transport produces.  They are matched case-sensitively
+#: as substrings because the devices layer carries its own return codes in the message.
+#:
+#: The response is a separate state, not a longer yield list: the run ends as
+#: ``RECOVERING`` with the device's own reason, the GUI's existing classifier already
+#: reads that as ENVIRONMENT (so it restarts the watchdog without counting a worker crash),
+#: and the next cycle re-runs ``_ensure_device`` against a client that has had time to come
+#: back.  See ``_device_gone``.
+DEVICE_FAILURE_MARKERS = (
+    "DEVICE_NOT_CONNECTED", "DEVICE_AMBIGUOUS", "ADB_DISCOVERY_FAILED", "ADB_FAILED",
+    "SCREENSHOT_NOT_PNG", "SCREENSHOT_DAMAGED",
+    "device offline", "device unauthorized", "no devices/emulators found",
+)
+
+
+def _device_gone(exc: BaseException) -> bool:
+    """Is this exception the device leaving, rather than a goal declining to act?"""
+    text = str(exc)
+    return any(marker in text for marker in DEVICE_FAILURE_MARKERS)
+
+
 def _executor_label(execution: ExecutionResult | None) -> str:
     """Summarise one action's real backend chain for the episode.
 
@@ -267,6 +300,12 @@ class LiveRuntime:
         self.max_battle_reobservations = max_battle_reobservations
         self.observation_retries = observation_retries
         self.sleeper = sleeper
+        #: Set by ``_device_lost`` when the transport dies mid-run, and read by the
+        #: ``return finish(self._device_stop_reason)`` that follows it.  A placeholder rather
+        #: than only being written on failure: a guard that can raise AttributeError on its
+        #: own failure path is not a guard, and the attribute has to exist from construction
+        #: so the value is also readable by anyone inspecting a run that never lost its device.
+        self._device_stop_reason = "DEVICE_NOT_CONNECTED"
         self.episode_store = episode_store
         self.goal_store = goal_store
         self.goal_library = GoalLibrary()
@@ -745,6 +784,43 @@ class LiveRuntime:
             # be repeated. The run result remains authoritative for this turn.
             pass
 
+    def _device_lost(self, call, *args) -> bool:
+        """Run one device call; answer True if the DEVICE left rather than the goal failing.
+
+        Every capture in this loop used to call ``self.device.screenshot`` bare, so a
+        transport that died mid-run raised straight out of ``run()``.  What the operator got
+        was a worker crash report whose cause was classified ENVIRONMENT -- correct, but the
+        run in between recorded nothing about WHERE it was standing when the device went,
+        and the next cycle met the same screen.
+
+        The distinction this method exists to draw is the one the operator named: a goal
+        refusing is a statement about that goal and hands the cycle over; a device that has
+        gone away is a statement about the environment and cannot be handed to anybody.  So
+        a device failure is neither yielded nor allowed to escape -- it ends the run as
+        ``RECOVERING`` with the device's own words as the reason, which is the state the GUI
+        already reads as ENVIRONMENT and restarts the watchdog for without counting a worker
+        crash.  The next cycle re-runs ``_ensure_device`` against a client that has had a
+        full restart interval to come back.
+
+        An exception that is NOT a device failure is re-raised unchanged: this is a
+        device guard, not a blanket ``except`` that would swallow real defects.
+        """
+        try:
+            call(*args)
+        except Exception as exc:  # noqa: BLE001 -- inspected below; only device failures are handled
+            if not _device_gone(exc):
+                raise
+            self._device_stop_reason = str(exc) or "DEVICE_NOT_CONNECTED"
+            self._runtime(
+                agent_state=AgentState.RECOVERING.value,
+                runtime_thread_alive=False, scheduler_loop_alive=False,
+                stop_reason=self._device_stop_reason,
+                reason="the device left mid-run; this is not a goal declining to act",
+                next_action="the next cycle re-checks the device before observing",
+            )
+            return True
+        return False
+
     def _capture_path(self, index: int, stage: str, *, suffix: str = "") -> Path:
         """Build the canonical screenshot name for one step.
 
@@ -829,7 +905,8 @@ class LiveRuntime:
                 )
                 return finish(reason)
             before_path = self._capture_path(index, "before")
-            self.device.screenshot(before_path)
+            if self._device_lost(self.device.screenshot, before_path, index):
+                return finish(self._device_stop_reason)
             before = self.vision.observe(before_path)
             # A known page means whatever owned the screen has finished, so the
             # fight-aware branch of the unknown-page recovery is no longer needed.
@@ -990,7 +1067,8 @@ class LiveRuntime:
                         for _ in range(self.max_battle_reobservations):
                             self.sleeper(self.settle_seconds)
                             recovery_path = self._capture_path(index, "after", suffix="battle_wait")
-                            self.device.screenshot(recovery_path)
+                            if self._device_lost(self.device.screenshot, recovery_path, index):
+                                return finish(self._device_stop_reason)
                             before = self.vision.observe(recovery_path)
                             before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
@@ -1005,7 +1083,8 @@ class LiveRuntime:
                             recovery_path = self._capture_path(
                                 index, "after", suffix=f"unknown_page_back_{self._unknown_page_backs}"
                             )
-                            self.device.screenshot(recovery_path)
+                            if self._device_lost(self.device.screenshot, recovery_path, index):
+                                return finish(self._device_stop_reason)
                             before = self.vision.observe(recovery_path)
                             before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
@@ -1347,7 +1426,8 @@ class LiveRuntime:
 
             self.sleeper(self.settle_seconds)
             after_path = self._capture_path(index, "after")
-            self.device.screenshot(after_path)
+            if self._device_lost(self.device.screenshot, after_path, index):
+                return finish(self._device_stop_reason)
             after = self.vision.observe(after_path)
             if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 after = replace(after, resource_target=planned_resource)
@@ -1361,7 +1441,8 @@ class LiveRuntime:
                 self.device.press_back()
                 self.sleeper(self.settle_seconds)
                 recovery_path = self._capture_path(index, "after", suffix=f"payment_offer_closed_{offer_recovery}")
-                self.device.screenshot(recovery_path)
+                if self._device_lost(self.device.screenshot, recovery_path, index):
+                    return finish(self._device_stop_reason)
                 after = self.vision.observe(recovery_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
@@ -1378,7 +1459,8 @@ class LiveRuntime:
                     break
                 self.sleeper(self.settle_seconds)
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
-                self.device.screenshot(refresh_path)
+                if self._device_lost(self.device.screenshot, refresh_path, index):
+                    return finish(self._device_stop_reason)
                 after = self.vision.observe(refresh_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
