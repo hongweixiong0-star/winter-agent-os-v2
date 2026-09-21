@@ -1,0 +1,61 @@
+{
+ "capability": "ECONOMY_RESEARCH",
+ "capability_id": "CAP-E07",
+ "game_version": "",
+ "observed_date": "2026-09-18",
+ "source": "preload plan (LEGACY_ASSET)",
+ "source_type": "LEGACY_VERIFIED_ASSET",
+ "source_confidence": 0.5,
+ "status": "UNVERIFIED",
+ "missing_fields": [
+  "preconditions",
+  "navigation",
+  "actions",
+  "success_state",
+  "verifier_prior",
+  "recovery_prior"
+ ],
+ "conflicts": [],
+ "live_calibration_status": "PENDING_RESEARCH",
+ "question": "前置条件：从哪里、在什么状态下可以开始 | 导航路线：入口在哪里，需要哪几跳 | 动作：操作顺序是什么，点哪里、点什么语义 | 成功状态：什么状态代表成功 | Verifier：用什么可观测状态判定成功 | 基础 Recovery：失败后怎么恢复",
+ "research_attempts": 1,
+ "created_at": "2026-09-18T19:08:56.139093+00:00",
+ "updated_at": "2026-09-18T19:08:56.139093+00:00",
+ "evidence": [],
+ "notes": [
+  "no knowledge record yet"
+ ],
+ "field_status": {
+  "preconditions": "PRIOR",
+  "navigation": "PRIOR",
+  "recognition": "UNVERIFIED",
+  "actions": "PRIOR",
+  "success_state": "PRIOR",
+  "verifier_prior": "PRIOR",
+  "recovery_prior": "PRIOR",
+  "risk": "UNVERIFIED"
+ },
+ "field_source": {
+  "preconditions": "",
+  "navigation": "",
+  "recognition": "LEGACY_ASSET",
+  "actions": "",
+  "success_state": "",
+  "verifier_prior": "",
+  "recovery_prior": "",
+  "risk": "V2_EVIDENCE"
+ },
+ "acquisition_rung": 4,
+ "preconditions": "",
+ "navigation": "",
+ "page_semantics": "",
+ "recognition": "dataset/truth_audit 与 dataset/candidate 中有同名资产，可先量再设计",
+ "actions": "",
+ "success_state": "",
+ "failure_states": "",
+ "verifier_prior": "",
+ "recovery_prior": "",
+ "resource_rules": "",
+ "risk": "T1（总表判定，资源成本 UNKNOWN）",
+ "client_specific_notes": ""
+}

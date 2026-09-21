@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -78,6 +78,182 @@ def _cell_template_signature(path: Path) -> bytes | None:
 
 def _signature_distance(left: bytes, right: bytes) -> float:
     return sum(abs(a - b) for a, b in zip(left, right)) / len(left)
+
+
+# ---------------------------------------------------------------------------
+# Troop-preset strip on the 出征 (dispatch/formation) page.
+#
+# Read off the archived live frames rather than guessed, on 2026-09-21, with
+# ``tools/probe_troop_preset_rule.py`` (measurement) and
+# ``tools/probe_troop_preset_rows.py`` (per-row colour).  What the frames show:
+#
+#   * the page draws a near-uniform light-blue bar across y=88..96 whose colour
+#     is (13,129,198).  The blue channel is what separates it from the lookalike
+#     alliance-tech bar at B=227 -- the only false positive the symmetric
+#     tolerance produced over the 454-frame corpus, and the reason the test
+#     below is written on blue instead of as a tightened radius.
+#   * inside the bar the preset chips are the runs of non-bar columns.  They are
+#     FOUND, not pinned: how many presets exist is player-defined.  This account
+#     draws eight chips plus a save button, and another role's frames in the same
+#     corpus draw the same eight at a different cell width, so a table of eight
+#     centres would be wrong on the next role.
+#   * a chip's border is gold (245,188,61) when it is the selected preset and
+#     light blue (87,190,255) when it is not.  Measured on
+#     ``dataset/raw/bear_live_20260909/bear_preset6.png``: chip index 5 (the
+#     account's preset named 熊6) scores gold=81 / blue=0 while the other eight
+#     score gold=0.  Distances are ~250 apart, so the tolerance is generous.
+#
+# What this does NOT claim: that tapping a chip moves the ring.  The one frame
+# with a gold chip is not a before/after pair of a tap, so the action->state
+# link is exactly what live calibration still has to prove.
+# ---------------------------------------------------------------------------
+
+TROOP_PRESET_BAR_ROWS = (88, 96)
+TROOP_PRESET_BAR_REF = (13, 129, 198)
+TROOP_PRESET_BAR_TOL = 30
+TROOP_PRESET_BAR_BLUE_REF = 196
+TROOP_PRESET_BAR_BLUE_TOL = 20
+TROOP_PRESET_BAR_GREEN_REF = 131
+TROOP_PRESET_BAR_GREEN_TOL = 14
+TROOP_PRESET_BAR_RED_MAX = 45
+TROOP_PRESET_CHIP_ROWS = (104, 144)
+TROOP_PRESET_MIN_CELL_W = 30
+TROOP_PRESET_RING_ROWS = (112, 136)
+TROOP_PRESET_RING_INSET = 6
+TROOP_PRESET_GOLD_REF = (245, 188, 61)
+TROOP_PRESET_BLUE_RING_REF = (87, 190, 255)
+TROOP_PRESET_RING_TOL = 45
+TROOP_PRESET_MIN_RING_PIXELS = 12
+TROOP_PRESET_SCREEN = (720, 1280)
+
+
+def _near_colour(a, b, tol: int) -> bool:
+    return abs(a[0] - b[0]) <= tol and abs(a[1] - b[1]) <= tol and abs(a[2] - b[2]) <= tol
+
+
+@dataclass(frozen=True)
+class TroopPresetStrip:
+    """The preset chips as they were actually drawn on one frame.
+
+    ``cells`` are normalized ``(x0, x1)`` spans in draw order.  ``selected_index``
+    is ``None`` when no chip carries the gold ring -- which on this client means
+    the player has not chosen one this session, NOT that the read failed; the
+    distinction is the caller's to make and is why the field is nullable.
+    """
+
+    cells: tuple[tuple[float, float], ...]
+    selected_index: int | None
+    save_button: tuple[float, float] | None
+    bar_colour: tuple[int, int, int]
+
+    @property
+    def count(self) -> int:
+        return len(self.cells)
+
+    def center_norm(self, index: int) -> tuple[float, float] | None:
+        """Tap centre of chip ``index``, or ``None`` if there is no such chip.
+
+        ``None`` is the honest answer to "this frame does not draw what you are
+        aiming at"; the caller ends the step instead of tapping an invented point.
+        """
+        if index < 0 or index >= len(self.cells):
+            return None
+        left, right = self.cells[index]
+        rows = TROOP_PRESET_CHIP_ROWS
+        return (left + right) / 2, ((rows[0] + rows[1]) / 2) / TROOP_PRESET_SCREEN[1]
+
+
+def read_troop_preset_strip(image_path: Path | str) -> TroopPresetStrip | None:
+    """Read the 出征 page's preset strip, or ``None`` when the page is not up.
+
+    ``None`` means the bar was not found at all -- i.e. this is not the dispatch
+    page, or it is covered.  A strip with ``selected_index is None`` is a
+    different answer: the page is up and no preset is chosen.
+    """
+    try:
+        with Image.open(image_path) as opened:
+            image = opened.convert("RGB")
+    except (OSError, ValueError):
+        return None
+    if image.size != TROOP_PRESET_SCREEN:
+        return None
+    px = image.load()
+    width = image.size[0]
+
+    # -- page gate: the bar's own colour, sampled above every chip ----------
+    acc = [0, 0, 0]
+    n = 0
+    for y in range(TROOP_PRESET_BAR_ROWS[0], TROOP_PRESET_BAR_ROWS[1] + 1):
+        for x in range(24, 700, 8):
+            colour = px[x, y]
+            acc[0] += colour[0]
+            acc[1] += colour[1]
+            acc[2] += colour[2]
+            n += 1
+    bar = (acc[0] // n, acc[1] // n, acc[2] // n)
+    if not (
+        abs(bar[2] - TROOP_PRESET_BAR_BLUE_REF) <= TROOP_PRESET_BAR_BLUE_TOL
+        and abs(bar[1] - TROOP_PRESET_BAR_GREEN_REF) <= TROOP_PRESET_BAR_GREEN_TOL
+        and bar[0] <= TROOP_PRESET_BAR_RED_MAX
+        and _near_colour(bar, TROOP_PRESET_BAR_REF, TROOP_PRESET_BAR_TOL)
+    ):
+        return None
+
+    # -- chips: runs of columns that are not the bar -----------------------
+    rows = range(TROOP_PRESET_CHIP_ROWS[0], TROOP_PRESET_CHIP_ROWS[1], 4)
+    runs: list[tuple[int, int]] = []
+    start: int | None = None
+    for x in range(18, width - 8):
+        off_bar = 0
+        for y in rows:
+            if not _near_colour(px[x, y], TROOP_PRESET_BAR_REF, TROOP_PRESET_BAR_TOL):
+                off_bar += 1
+        is_cell = off_bar >= 3
+        if is_cell and start is None:
+            start = x
+        elif not is_cell and start is not None:
+            if x - start >= TROOP_PRESET_MIN_CELL_W:
+                runs.append((start, x - 1))
+            start = None
+    if start is not None and width - 8 - start >= TROOP_PRESET_MIN_CELL_W:
+        runs.append((start, width - 9))
+    if len(runs) < 2:
+        # One run is the bar itself or a covered page, not a row of presets.
+        return None
+
+    # The rightmost run is the save control: it is the only cell whose fill is
+    # the saturated blue (4,115,232) rather than a preset's dark (4,88,146) or,
+    # when selected, pale (202,217,233).  Red is what separates the saturated
+    # fill from the pale one -- they differ by ~1 in blue.
+    save = None
+    if runs:
+        last = runs[-1]
+        fill = px[(last[0] + last[1]) // 2, 150]
+        if fill[0] < 60 and abs(fill[2] - 232) <= 24:
+            save = last
+    chips = runs[:-1] if save is not None else runs
+
+    selected: int | None = None
+    for index, (left, right) in enumerate(chips):
+        gold = blue = 0
+        for x in (left + TROOP_PRESET_RING_INSET, left + TROOP_PRESET_RING_INSET + 1,
+                  right - TROOP_PRESET_RING_INSET - 1, right - TROOP_PRESET_RING_INSET):
+            for y in range(TROOP_PRESET_RING_ROWS[0], TROOP_PRESET_RING_ROWS[1] + 1):
+                colour = px[x, y]
+                if _near_colour(colour, TROOP_PRESET_GOLD_REF, TROOP_PRESET_RING_TOL):
+                    gold += 1
+                elif _near_colour(colour, TROOP_PRESET_BLUE_RING_REF, TROOP_PRESET_RING_TOL):
+                    blue += 1
+        if gold >= TROOP_PRESET_MIN_RING_PIXELS and gold > blue:
+            selected = index
+            break
+
+    return TroopPresetStrip(
+        cells=tuple((left / width, (right + 1) / width) for left, right in chips),
+        selected_index=selected,
+        save_button=(save[0] / width, (save[1] + 1) / width) if save else None,
+        bar_colour=bar,
+    )
 
 
 class SemanticMatch(tuple):

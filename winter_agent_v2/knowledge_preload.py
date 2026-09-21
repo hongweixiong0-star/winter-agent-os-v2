@@ -213,6 +213,28 @@ def _text(value: Any) -> str:
     return "" if value is None else str(value)
 
 
+def _unique(items: Any) -> tuple[str, ...]:
+    """Collapse repeated entries, keeping first-seen order.
+
+    A note is a sentence about the record, so repeating it carries no
+    information -- and the record is re-written on every bootstrap pass, which
+    prepends this pass's notes to the stored ones.  Measured on
+    ``knowledge/preload/TROOP_SELECT.json`` on 2026-09-21: the same two
+    sentences had accumulated ~560 copies, burying the notes that do say
+    something.  Applied on both read and write so an already-polluted file
+    cleans itself the next time it is loaded.
+    """
+    seen: set[str] = set()
+    out: list[str] = []
+    for item in items or ():
+        text = str(item)
+        if text in seen:
+            continue
+        seen.add(text)
+        out.append(text)
+    return tuple(out)
+
+
 # ------------------------------------------------------------- the record
 
 
@@ -362,7 +384,7 @@ class KnowledgeRecord:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "evidence": list(self.evidence),
-            "notes": list(self.notes),
+            "notes": list(_unique(self.notes)),
             "field_status": dict(self.field_status),
             "field_source": dict(self.field_source),
             "acquisition_rung": acquisition_rank(self.source_type),
@@ -378,7 +400,7 @@ class KnowledgeRecord:
         data.pop("missing_fields", None)   # derived on read; a stored copy can go stale
         data["conflicts"] = tuple(data.get("conflicts") or ())
         data["evidence"] = tuple(data.get("evidence") or ())
-        data["notes"] = tuple(data.get("notes") or ())
+        data["notes"] = _unique(data.get("notes"))
         if not isinstance(data.get("field_status"), dict):
             data["field_status"] = {}
         if not isinstance(data.get("field_source"), dict):
