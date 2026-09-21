@@ -854,6 +854,20 @@ def verify_beast_card_opened(before: WorldState, after: WorldState) -> Verificat
     #
     # `refused` is what keeps the level-29 leopard out: its printed red assessment is a
     # measured refusal, so it is not a target this hop may claim.
+    #
+    # The after half accepts the card being *read*, not the card's control being 攻击, and
+    # the distinction is the point: this hop's job is to prove the tap opened the card for
+    # the labelled animal, and the card is the same layout whichever control it carries.
+    # Requiring 攻击 here conflated "the selection worked" with "the beast is attackable",
+    # and the two are different facts -- measured live 2026-09-21 on
+    # ``live_runtime_step_001_after_refresh_1_20260921T113541458785.png``: the tap opened a
+    # ``等级7 霜鳞避役`` card offering only 集结, which is a *successful* selection of a
+    # beast that turns out to be a rally target, and the old predicate recorded it as
+    # BEAST_TARGET_SELECTION_NOT_PROVEN -- a correct refusal scored as a broken tap.
+    #
+    # A card read with neither control word is still not a card (``read_beast_search_result_card``
+    # returns ``{}`` unless it found a title or a control), so this did not become a hole:
+    # ``title_level`` is required as well.
     identity = before.beast.get("visible_target"), before.beast.get("level")
     before_ok = (
         before.page is Page.MAP
@@ -862,7 +876,13 @@ def verify_beast_card_opened(before: WorldState, after: WorldState) -> Verificat
         and before.beast.get("source") == "BEAST_LABEL"
         and not refused_by_evidence(before.beast)
     )
-    after_ok = after.page is Page.BEAST and after.beast.get("attack_card") is True
+    card = after.beast_search_result or {}
+    after_ok = (
+        after.page is Page.BEAST
+        and after.beast.get("attack_card") is True
+        and bool(card.get("title_level"))
+        and bool(card.get("has_attack") or card.get("has_rally"))
+    )
     ok = before_ok and after_ok
     return VerificationResult(
         ok, "OK" if ok else "BEAST_TARGET_SELECTION_NOT_PROVEN",
@@ -1054,7 +1074,10 @@ def verify_beast_search_submitted(before: WorldState, after: WorldState) -> Veri
         and before.resource_search_open
         and before.resource_beast_tab
     )
-    after_ok = after.page is Page.MAP and after.beast_search_submitted
+    after_ok = (
+        after.page in {Page.MAP, Page.BEAST}
+        and after.beast_search_submitted
+    )
     ok = before_ok and after_ok
     return VerificationResult(
         ok,

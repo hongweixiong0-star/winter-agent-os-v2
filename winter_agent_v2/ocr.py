@@ -1536,6 +1536,43 @@ class HybridVision:
             return replace(primary, popup=popup, intel=intel)
         return None
 
+    def _read_beast_card_words(self, image_path: Path, primary: WorldState) -> WorldState | None:
+        """Attach the open beast card's own words, or ``None`` when this is not that frame.
+
+        The card a tapped wilderness beast opens is the same layout the search result
+        uses, and the client puts either 攻击 (ordinary attack) or 集结 (rally) at its
+        bottom.  Which one it is has to come from the words, because the template that
+        claims to describe this control does not match the card:
+
+        * ``BTN_BEAST_CARD_ATTACK`` was cut from
+          ``dataset/truth_audit/map_beast_search_20260918/key/go_20260918_014947_001_after_382_844.png``
+          with its ROI at ``y 0.8187``, and on the live card the same control sits at
+          ``y ~0.61`` -- the client moved it, so the template scores NO MATCH (measured
+          2026-09-21 on all four frames of the run that opened it).
+        * ``read_beast_search_result_card`` reads the same card correctly on the search
+          path, because it reads words rather than positions.
+
+        Measured cost of having no reader here: the labelled route tapped a **霜鳞避役**
+        its map label named, a ``等级7`` card opened carrying only 集结 with
+        推荐实力683,100,000, and the run recorded ``BEAST_TARGET_SELECTION_NOT_PROVEN``
+        -- a correct refusal scored as a failure, which is exactly the kind of evidence
+        that hides whether the route works.
+
+        ``solo_attack`` therefore becomes measurable on ``Page.BEAST`` too, and the
+        user's rule -- 集结 is not an ordinary attack -- is a guard the verifier can
+        evaluate rather than a convention.
+
+        ``None`` means "not a beast card" and leaves the template layer's state alone.
+        """
+        if primary.page is not Page.BEAST:
+            return None
+        if not (primary.beast.get("attack_card") or primary.beast.get("name")):
+            return None
+        card = read_beast_search_result_card(image_path, self.ocr, frame_size=None)
+        if not card:
+            return None
+        return replace(primary, beast_search_result=card)
+
     def _read_building_identity(self, image_path: Path, primary: WorldState) -> WorldState | None:
         """Attach building identity read off pixels, or ``None`` when this is not that frame.
 
@@ -1669,6 +1706,52 @@ class HybridVision:
             building_state = self._read_building_identity(image_path, primary)
             if building_state is not None:
                 return building_state
+            # The card a tapped wilderness beast opens, recognized by its own words.
+            #
+            # This has to come before the map branch below, and it has to exist at all,
+            # because the template that described this card no longer matches it: the
+            # client moved the control from y 0.8187 (where ``BTN_BEAST_CARD_ATTACK`` was
+            # cut) to y ~0.61, so the frame reads ``MAP`` and the card's 攻击/集结 control
+            # becomes invisible to every route that keys on the page.  Measured
+            # 2026-09-21 on
+            # ``live_runtime_step_001_after_refresh_1_20260921T113541458785.png``: the
+            # card was on screen, fully readable, and the run recorded the labelled
+            # selection as ``BEAST_TARGET_SELECTION_NOT_PROVEN``.
+            #
+            # It is gated on the frame NOT already being a known non-map page, so a
+            # dialog or panel that happens to carry a 攻击 word cannot be re-labelled
+            # as a beast card.  The card's title (``等级<N><name>``) is what makes the
+            # reading specific: a bare map carries no such title.
+            if primary.page in {Page.MAP, Page.RESOURCE_DETAIL}:
+                card_words = read_beast_search_result_card(
+                    image_path, self.ocr, frame_size=None
+                )
+                if card_words.get("title_level") and (
+                    card_words.get("has_attack") or card_words.get("has_rally")
+                ):
+                    # ``beast_search_submitted`` goes along for the same reason the map
+                    # branch sets it: the card IS the search's answer, and this branch now
+                    # preempts that one on exactly the frames a search succeeded on.  The
+                    # verifier reads this flag, so leaving it False would turn every
+                    # successful search into BEAST_SEARCH_NOT_SUBMITTED -- which is the
+                    # defect this whole path exists to fix, in a new place.
+                    #
+                    # The panel fields go along too, and they must: the card is drawn
+                    # *over* the search panel, which stays open behind it (its 搜索 button
+                    # and level slider are both still drawn -- measured on
+                    # ``live_runtime_step_001_after_refresh_1_20260921T110723901682.png``).
+                    # Reporting ``resource_search_open=False`` here would tell the route
+                    # the panel had closed, and the search chain keys on that flag to
+                    # decide whether it still owns the screen.
+                    return replace(
+                        primary,
+                        page=Page.BEAST,
+                        beast={"attack_card": True},
+                        beast_search_submitted=bool(card_words.get("title_level")),
+                        # The card is on top of whatever was underneath, so the page is
+                        # BEAST while the panel state is whatever the frame still shows.
+                        beast_search_result=card_words,
+                    )
             # Every world-map frame is OCR-enriched, not only the ones where the
             # reviewed layer already saw a march counter: the map is also where
             # the stamina gauge is read, and both facts feed the same decision.
@@ -1856,6 +1939,30 @@ class HybridVision:
                     # label read carries a tap point with it, and an ROI-scoped token box can
                     # only be mapped back to the frame with it.
                     beast=beacon_beast,
+                )
+            if primary.page is Page.BEAST and primary.beast.get("attack_card"):
+                # Which control the open beast card offers, read from its own words.
+                #
+                # The template layer sees only ``attack_card``, and that name is a
+                # misnomer it carries from the one card it was cut from: the client
+                # draws the same layout for every huntable beast and puts either 攻击
+                # (ordinary attack) or 集结 (rally) at the bottom.  Measured live
+                # 2026-09-21 on
+                # ``live_runtime_step_001_after_refresh_1_20260921T113541458785.png``:
+                # the labelled route tapped a **霜鳞避役** the map label named, a
+                # 等级7 card opened carrying only 集结 with 推荐实力683,100,000, and
+                # the selection was recorded as ``BEAST_TARGET_SELECTION_NOT_PROVEN``
+                # -- a correct refusal scored as a failure, because a template cannot
+                # read a word.
+                #
+                # The words are what keep the user's rule measurable: 集结 is not an
+                # ordinary attack, and this is where that is decided.
+                card = read_beast_search_result_card(
+                    image_path, self.ocr, frame_size=(frame_width, frame_height)
+                )
+                return replace(
+                    primary,
+                    beast_search_result=card,
                 )
             if (
                 primary.page is Page.EXPLORATION

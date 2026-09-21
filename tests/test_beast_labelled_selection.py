@@ -29,6 +29,7 @@ from __future__ import annotations
 import re
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -109,10 +110,43 @@ class TheRouteReachesALabelledBeastTests(unittest.TestCase):
 
 class TheCardProvesTheTargetNotTheActionTests(unittest.TestCase):
     def test_the_card_opening_is_the_proof(self):
+        """The hop proves the card opened, for *any* card the tap can produce.
+
+        Measured live 2026-09-21: the labelled tap on a 霜鳞避役 opened a 等级7 card
+        offering only 集结 (``has_rally=True, solo_attack=False``).  That is a successful
+        selection of a beast that turns out to be a rally target, and it must verify --
+        requiring 攻击 here conflated "the tap worked" with "the beast is attackable".
+        """
         before = labelled_map()
-        after = WorldState(page=Page.BEAST, beast={"attack_card": True}, confidence=0.99)
+        after = WorldState(
+            page=Page.BEAST,
+            beast={"attack_card": True},
+            beast_search_result={
+                "title_level": 7, "title_text": "霜鳞避役",
+                "has_attack": False, "has_rally": True, "solo_attack": False,
+            },
+            confidence=0.99,
+        )
         result = verify_beast_card_opened(before, after)
         self.assertTrue(result.ok, result.reason)
+
+        # And the 攻击 card verifies the same way.
+        solo = replace(after, beast_search_result={
+            "title_level": 10, "title_text": "蔚牛",
+            "has_attack": True, "has_rally": False, "solo_attack": True,
+        })
+        self.assertTrue(verify_beast_card_opened(before, solo).ok)
+
+    def test_a_card_with_no_words_is_not_a_card(self):
+        """The after half still needs the card to have been *read*.
+
+        ``attack_card`` alone is the template layer's flag, and the template it comes
+        from no longer matches the live card -- so accepting it by itself would let a
+        frame whose card was never read count as proof the tap worked.
+        """
+        before = labelled_map()
+        unread = WorldState(page=Page.BEAST, beast={"attack_card": True}, confidence=0.99)
+        self.assertFalse(verify_beast_card_opened(before, unread).ok)
 
     def test_a_tap_that_did_not_open_a_card_is_a_failure(self):
         before = labelled_map()
@@ -168,13 +202,30 @@ class TheWiringExistsTests(unittest.TestCase):
         )
 
     def test_the_executor_can_resolve_the_dynamic_target(self):
-        """The tap point lives in the world state, so the resolver has to read it from there."""
-        source = (ROOT / "winter_agent_v2/runtime.py").read_text(encoding="utf-8")
-        self.assertIn('if semantic == "BEAST_ON_MAP":', source)
-        block = source.split('if semantic == "BEAST_ON_MAP":', 1)[1].split('if semantic ==', 1)[0]
-        self.assertIn("before.page is not Page.MAP", block,
-                      "a stale tap_norm must not be usable on another page")
-        self.assertIn('before.beast.get("tap_norm")', block)
+        """The tap point lives in the world state, so the resolver has to read it from there.
+
+        The guard is asserted by what it *does* rather than by a literal: the parameter
+        was renamed from ``before`` to ``frame`` when the resolver was lifted onto the
+        class (see its docstring), and this check used to spell the old name, so it
+        failed on every run while the guard itself was correct the whole time.  A
+        behavioural assertion cannot rot the same way.
+        """
+        from winter_agent_v2.runtime import LiveRuntime
+        from winter_agent_v2.models import Page, WorldState
+
+        runtime = LiveRuntime.__new__(LiveRuntime)
+        stale = WorldState(page=Page.HOME, confidence=0.99,
+                           beast={"visible_target": "FROST_SCALED_RUNNER", "level": 20,
+                                  "tap_norm": (0.5, 0.5)})
+        self.assertIsNone(
+            runtime._resolve_semantic_target("BEAST_ON_MAP", stale),
+            "a stale tap_norm must not be usable on another page",
+        )
+
+        on_map = WorldState(page=Page.MAP, confidence=0.99,
+                            beast={"visible_target": "FROST_SCALED_RUNNER", "level": 20,
+                                   "tap_norm": (0.5, 0.5)})
+        self.assertEqual(runtime._resolve_semantic_target("BEAST_ON_MAP", on_map), (0.5, 0.5))
 
     def test_the_frame_this_came_from_is_still_in_the_repo(self):
         self.assertTrue(LABELLED_FRAME.exists(),

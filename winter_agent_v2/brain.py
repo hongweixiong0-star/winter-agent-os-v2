@@ -1063,6 +1063,34 @@ class RuleBrain:
                 # the convergence the viewport pan never had.  The stamina is
                 # not spent here: the tap only opens the formation page, and
                 # DISPATCH_BEAST plus its verifier decide and prove the spend.
+                #
+                # ``attack_card`` is the template layer's name for "a huntable card is
+                # open", and it is a misnomer: the client draws the same card for every
+                # huntable beast and puts either 攻击 or 集结 at the bottom, so the flag
+                # alone cannot tell an ordinary attack from a rally.  Reading that
+                # distinction is the user's hard rule -- a beast offering only 集结 is
+                # NOT an ordinary-attack target -- and it is available because the card's
+                # own words are read into ``beast_search_result``.
+                #
+                # Measured live 2026-09-21 on
+                # ``live_runtime_step_001_after_refresh_1_20260921T113541458785.png``: a
+                # ``等级7 霜鳞避役`` card offering only 集结 (推荐实力683,100,000) read
+                # ``has_rally=True, solo_attack=False``, and this branch still answered
+                # ATTACK_BEAST_CARD -- i.e. it would have entered a rally target through
+                # the ordinary-attack control.  The card's words are required now.
+                card = world.beast_search_result or {}
+                if card:
+                    if not card.get("solo_attack"):
+                        # A rally card, or a card whose words could not be read.  Neither
+                        # is an ordinary-attack target, and refusing is the safe direction:
+                        # the wrong way here spends stamina on a rally the account must
+                        # commit troops to.
+                        return Decision(
+                            "BACK",
+                            "beast_card_is_a_rally_not_a_solo_attack",
+                            world.confidence,
+                            "beast_card_dismissed",
+                        )
                 return Decision("ATTACK_BEAST_CARD", "beast_card_attack_control_visible", world.confidence, "beast_march_page_open")
             if self._intel_like and not world.beast:
                 # A Hero Journey camp target card: same layout as the beast

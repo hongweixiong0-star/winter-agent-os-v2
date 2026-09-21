@@ -1405,6 +1405,15 @@ class SemanticWorldVision:
             # it (tap it into the formation page) is gated by the card's own
             # page: Page.BEAST with attack_card, verified afterwards by the
             # march page that only a real tap can open.
+            #
+            # Which control the card actually offers (攻击 vs 集结) is NOT read
+            # here: this layer has no OCR by design, and the words are an
+            # OCR-layer fact.  ``HybridVision.observe`` adds
+            # ``beast_search_result`` to this state for exactly that reason --
+            # measured live 2026-09-21 on
+            # ``live_runtime_step_001_after_refresh_1_20260921T113541458785.png``,
+            # where a 等级7 霜鳞避役 card carrying only 集结 was recorded as a
+            # failed solo selection because a template cannot see the word.
             return WorldState(
                 page=Page.BEAST,
                 beast={"attack_card": True},
