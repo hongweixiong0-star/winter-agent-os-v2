@@ -507,6 +507,38 @@ def main() -> int:
         reserved = reservation_brain.reserved_slots(WorldState(page=Page.MAP, march_max=capacity))
         check(f"reservation.leaves_a_usable_slot.capacity_{capacity}", reserved < capacity, f"reserved={reserved}")
 
+    # What the reservation refuses, and what it does not.
+    #
+    # Measured live 2026-09-21T03:17:51Z: one round ran a single action and then stopped
+    # with stop_reason 'reserved_march_for_stamina' while the frame read
+    # marches GATHERING+RETURNING, march_used 2, march_max 3 -- one free slot, exactly the
+    # reserved one.  The refusal itself is right; ending the whole cycle because of it is
+    # not, and the two are pinned separately so neither can be "fixed" by weakening the
+    # other.  This is the same frame the runtime guard below refers to.
+    incident = WorldState(page=Page.MAP, march_used=2, march_max=3,
+                          stamina={"current": 175, "source": "MAP_HUD"}, confidence=0.99)
+    intent = int(config.get("march_policy", {}).get("reserve_for_stamina", 0))
+    _reservation_registry = skills.v2_registry()
+    check("reservation.refuses_the_last_slot_to_the_gather_route",
+          RuleBrain(current_goal="GATHER_RESOURCE", reserve_marches=intent).decide(
+              incident, _reservation_registry).reason == "reserved_march_for_stamina")
+    check("reservation.does_not_refuse_it_to_the_stamina_goal",
+          RuleBrain(current_goal="BEAST_HUNT", reserve_marches=intent).decide(
+              incident, _reservation_registry).skill == "SCAN_MAP_FOR_BEAST",
+          "the slot is held FOR this goal, so it must be able to use it")
+
+    # ...and the runtime hands the cycle over instead of ending it, for THAT reason only.
+    # Scoped on purpose: the check fails if the handover is widened to every SAFE_STOP,
+    # which would spend an iteration on states that will answer identically next pass.
+    _runtime_source = (PKG / "runtime.py").read_text(encoding="utf-8")
+    check("runtime: the reservation hands the cycle over instead of ending the run",
+          'decision.reason == "reserved_march_for_stamina"' in _runtime_source
+          and "_yield_to_next_goal(" in _runtime_source)
+    check("runtime: ...and the handover is scoped to that reason, not to SAFE_STOP generally",
+          'if decision.skill == "SAFE_STOP":\n                # MASTER_RULES 7' in _runtime_source
+          and 'decision.reason == "reserved_march_for_stamina"\n                    and index < max_actions'
+              in _runtime_source)
+
     registry = skills.v2_registry()
 
     def decide(state, **kwargs):

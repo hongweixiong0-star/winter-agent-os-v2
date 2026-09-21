@@ -1003,6 +1003,58 @@ class LiveRuntime:
                     if recovered:
                         self._fight_resolving = False
                         continue
+                # The reservation is not an ending.
+                #
+                # ``RuleBrain`` answers SAFE_STOP 'reserved_march_for_stamina' when the
+                # task in progress may not take the last slot because the policy holds
+                # it for the stamina goal -- and that refusal is correct, it is the
+                # whole point of the reservation.  What is wrong is what happened next:
+                # SAFE_STOP ends the cycle, so one task declining the reserved slot
+                # stopped every other task as well, and because nothing moved the
+                # client off MAP the next cycle opened on the same frame and did it
+                # again.
+                #
+                # Measured live 2026-09-21T03:17:51Z (the incident frame is
+                # dataset/truth_audit/march_reservation_20260921/key/).  The round ran
+                # one action (EXECUTE_INTEL_RESCUE_SURVIVORS, 187 -> 175 stamina), then
+                # stopped with stop_reason 'reserved_march_for_stamina' after reading
+                # ``marches=["GATHERING","RETURNING"], march_used=2, march_max=3`` --
+                # i.e. exactly ONE free slot, which is exactly the reserved one, so the
+                # reservation was doing its job.  The same frame, replayed through the
+                # production chain with the production reserve (march_policy.
+                # reserve_for_stamina = 2, effective 1 at capacity 3):
+                #
+                #     goal=None / GATHER_RESOURCE  -> SAFE_STOP reserved_march_for_stamina
+                #     goal=BEAST_HUNT              -> SCAN_MAP_FOR_BEAST   (it would have run)
+                #
+                # so the reservation never blocked the stamina goal -- ``BEAST_HUNT``
+                # refuses only at ``idle_marches <= 0``.  The running goal was
+                # KEEP_MARCHES_PRODUCTIVE, which this file's route map does not name, so
+                # the brain held ``current_goal = None`` and the gather branch below
+                # answered first; the stamina goal itself was separately deferred by a
+                # development job at that moment (job=2d5c3dd5, SPEND_STAMINA_ON_BEAST
+                # DEVELOPMENT_PENDING, settled 03:26:03Z).  Hand the cycle over instead
+                # of ending it: the next pass re-selects, and the reserved slot is then
+                # offered to the goal it was reserved for.
+                #
+                # This is the same yield the unexecutable-skill path above already uses,
+                # for the same operator rule -- a task may not be selected and then found
+                # unexecutable and stop the whole AUTO -- and it is bounded by the same
+                # two guards: one iteration must remain, and a goal is only held back
+                # once per run.  No task is renamed and no new scheduler is introduced.
+                if (
+                    decision.reason == "reserved_march_for_stamina"
+                    and index < max_actions
+                    and self._yield_to_next_goal(
+                        best_goal,
+                        deferrals,
+                        decision,
+                        "the free slot is held for the stamina goal and this task may not take "
+                        "it; the task steps aside so the slot's owner -- or any other selectable "
+                        "goal -- can use the cycle",
+                    )
+                ):
+                    continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(decision.reason) else AgentState.DEGRADED.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=decision.reason,

@@ -214,6 +214,14 @@ dataset/external/repositories/
 # because of it.  Published because the guards assert against them and because the offset
 # is only checkable by looking at the picture.
 !dataset/truth_audit/training_stage_a_20260921/key/**/*.png
+# The round the march reservation ended after one action (2026-09-21T03:17:51Z).  The
+# decision frame is the only record of the state the runtime answered to -- marches
+# GATHERING+RETURNING, march_used 2, march_max 3, stamina 175, i.e. one free slot which
+# is exactly the reserved one -- and 03_ is the crop that answers what the beast route's
+# real blocker was on that same frame (an animal with a level badge and no name, so no
+# identity for the label reader).  Published because the guard tests and the runtime's
+# own comment refer to them.
+!dataset/truth_audit/march_reservation_20260921/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

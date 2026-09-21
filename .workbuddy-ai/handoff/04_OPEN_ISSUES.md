@@ -873,3 +873,70 @@ after 帧（`key/09_*`）显示：**菜单没出现，金色高亮环消失**（
 | # | 问题 | 状态 | 说明 |
 |---|---|---|---|
 | 82 | **stage A 那个"金色椭圆 + 教学手指 + `2` 角标"到底是什么状态？** | 🔴 **未决（有帧）** | **假设（非结论）**：它不是"兵营被选中"的**圆形**选中框，而是**椭圆**（rx=102, ry=56）画在一个**大型多部件建筑**上、带 `2` 角标、且有教学手指指着角标 ⇒ 更像**引导式步骤**。**若成立**，`verify_infantry_camp_highlighted` 接受这一帧就是**假到达**，训练路线前半段一直在报**从未获得的成功**。**可判定的下一步**（不需盲点坐标）：① 在 stage A 帧上 OCR 环内/附近建筑名，与 `knowledge/game/buildings.json`（13 条，含 `INFANTRY_CAMP` 但**无位置/外观字段**）比对；② 查有无**教程/引导态**证据（项目目前**零 tutorial 语义**）；③ 若确为引导态 ⇒ 记为**前置条件未满足**（`DEFER`），停止找点击点。 |
+
+## 2026-09-21 P0（操作者）：预留行军导致体力任务无法执行、AUTO 提前等待
+
+### 一、那句话的真实来源与生产位置
+
+GUI 显示的「已为体力任务预留1支行军」是 `reserved_march_for_stamina` 的中文，
+产生处**只有两处**，都在 `winter_agent_v2/brain.py`：
+
+| 位置 | 页面 | 条件 |
+|---|---|---|
+| `brain.py:857` | `RESOURCE_DETAIL` | `current_goal in {None,"GATHER_RESOURCE"}` 且 `idle_marches <= reserved_slots(world)` |
+| `brain.py:1214` | `MAP` | 同上 |
+
+现场那一帧（`dataset/truth_audit/march_reservation_20260921/key/01_*`）**是 MAP** ⇒ 命中的是 **1214**。
+`reserved_slots` = `max(0, min(reserve_marches, capacity-2))`；`config/v2.json` 的
+`march_policy.reserve_for_stamina=2`、容量 3 ⇒ 有效预留 **1**。
+
+### 二、预留队列是否真正空闲：**是**
+
+患者帧用生产链读：`marches=[GATHERING, RETURNING]`、`march_used=2`、`march_max=3`
+⇒ `idle_marches=1` ⇒ `idle(1) <= reserved(1)` ⇒ 停。**预留机制本身正确**（挡住采集占用最后一格）。
+
+### 三、根因：**不是预留挡住体力任务，而是"拒绝"被写成了"结束整轮"**
+
+同帧用**生产 reserve=2** 跑 `RuleBrain.decide`：
+
+```
+goal=None / GATHER_RESOURCE  ->  SAFE_STOP  reserved_march_for_stamina
+goal=BEAST_HUNT              ->  SCAN_MAP_FOR_BEAST       ← 体力路线本来就能用这一格
+```
+
+⇒ **预留从未挡住 `AVOID_STAMINA_WASTE`**（`BEAST_HUNT` 只在 `idle_marches <= 0` 时拒绝）。
+真正的问题是 `runtime.py` 对 `SAFE_STOP` 的处理：记 `DEGRADED` 并 `return finish(reason)`
+⇒ **一轮只做 1 件事就结束**，且没有动作把客户端挪出地图 ⇒ **下一轮开局还在同一屏**。
+
+**为什么当时是采集目标在跑**：`KEEP_MARCHES_PRODUCTIVE` **不在这份文件的 goal→route 映射里**
+（`runtime.py:880` 的 8 条：CLEAR_INTEL / AVOID_STAMINA_WASTE / KEEP_TRAINING_PRODUCTIVE /
+KEEP_RESEARCH_PRODUCTIVE / MAIL_ROUTINE / DAILY_ACTIVITY_TARGET / ALLIANCE_ROUTINE /
+CLAIM_EXPLORATION_IDLE），所以 `current_goal=None`，而两个预留分支的条件正好是
+`{None, "GATHER_RESOURCE"}` ⇒ 采集分支先回答。同时 `AVOID_STAMINA_WASTE` 被开发作业
+`2d5c3dd5`（`SPEND_STAMINA_ON_BEAST = DEVELOPMENT_PENDING`）挡住；它是该帧上优先级最高的
+可调度目标（**825**），门禁 **03:26:03Z** 一放行（`RUNNABLE`）立刻被选中并开始跑。
+
+**该帧上打野的真实阻塞**：地图上那只兽只有 `22` 徽标、**没有名字**（`key/03_*`），
+生产链 `beast={}`、整帧 OCR 也找不到已注册兽名 ⇒ **"没有可识别目标"**，与预留无关。
+
+### 四、修法与验证
+
+`runtime.py` 的 `SAFE_STOP` 分支内，**只针对该理由**改用项目已有的
+`_yield_to_next_goal`（与"技能不可执行"同一条 Rule A 路径）⇒ 循环 `continue`、重新取帧、重选目标。
+**不是改状态名**；范围精确限定（守卫会因"扩到所有 SAFE_STOP"变红）；保留两道既有边界
+（`index < max_actions`、同一 goal 一轮只让位一次）。
+
+`tests/test_march_reservation_handover.py` 7 条：**本树 7 passed / 未修 HEAD 3 failed + 4 passed**
+（红的三条正是缺陷：`stop_reason` 就是该理由、让位后没有发出任何真实步骤、零次让位叙事；
+另外 4 条两侧都过 ⇒ 钉的是不变行为）。守卫 +5，`problems: 0`。
+
+**当前这批相关测试的 3 条红（`test_capability_gate.py::DeferredGoalSchedulingTests`）已在
+未改动的 HEAD 上复现** ⇒ 是 #63 基线，不是本次引入。
+
+### 五、仍未做
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 83 | **`KEEP_MARCHES_PRODUCTIVE` 不在 goal→route 映射里** | 🟠 **已定性，未补** | 补它**不是无副作用的**：`current_goal is not None` 在 `brain.py:274 / 534 / 1055` 会新激活三条分支（终端页让位、`goal_page_mismatch`、联盟页让位）⇒ 等于同时打开三条未测路径，必须单独测。**本轮不补**，记此处。⚠ 注意：**补它也不会改变本次停机** —— 两个预留分支对 `None` 与 `"GATHER_RESOURCE"` 行为相同。 |
+| 84 | **角色身份没有任何生产路径重读** | 🟠 **真实缺口** | `learning/role_identity.json` 最后观测 **2026-09-16T10:44:08Z**（已过 **112.8h**），`verification=VISION_READ_REPLAY`（**回放**）。生产只把它当**标记**（`[role] 1171757165 (PERSISTED)`）打在 episode 上，**不参与调度门控**、不会把队列/体力写进别的角色 ⇒ **展示层过期**，不是队列问题的伪装。但 `record_role` 只被操作者工具 `tools/state_truth_audit.py --record-role` 调用，**AUTO 从不重读** ⇒ 需要一条生产重读路径（或在无人值守里定期走一次领主档案）。 |
+| 33 | **陈旧 `.git/index.lock`（第 3 次）** | ⚠️ **再次命中** | 本次 0 字节、mtime 早 3h30m、`tasklist` 无 `git.exe` ⇒ 按既有规程删除后恢复。**已三次**，建议尽快在同步路径加"陈旧锁检测"（#33 原有建议），不要靠人记得。 |
