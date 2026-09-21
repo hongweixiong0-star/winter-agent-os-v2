@@ -172,6 +172,27 @@ def test_an_out_of_bounds_position_is_refused():
     assert runtime._remembered_control_center("PAGE_MAP", WorldState(page=Page.HOME)) is None
 
 
+def test_a_control_labelled_with_a_forbidden_risk_is_not_reused():
+    """The permanent block survives the shortcut.
+
+    Nothing writes a risk label yet, so this branch costs nothing today -- but the field
+    is in the ledger schema and round-trips, and operator §二 states the boundary as
+    something established *before* submitting an operation: real money, account safety
+    and the irreversible class.  A remembered position is a weaker basis than a live
+    template match, so it is the last place that should be allowed to skip that check.
+    """
+    runtime = _runtime_with({"HOME|PAGE_MAP": _entry(risk="REAL_MONEY")})
+    assert runtime._remembered_control_center("PAGE_MAP", WorldState(page=Page.HOME)) is None
+    assert runtime._remembered_reuse == [], "and it must not be reported as a reuse either"
+
+
+def test_an_explorable_risk_label_does_not_block_reuse():
+    """The check is on the label, not on labelling: a low-risk control still reuses."""
+    runtime = _runtime_with({"HOME|PAGE_MAP": _entry(risk="LOW")})
+    assert runtime._remembered_control_center("PAGE_MAP", WorldState(page=Page.HOME)) == (
+        0.9236, 0.9539)
+
+
 # ----------------------------------------------------------------- the wiring
 
 

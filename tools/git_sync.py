@@ -64,9 +64,22 @@ DISCARD_HINTS = (".tmp", ".log~", ".orig", ".rej", ".bak")
 
 
 def git(*args: str) -> tuple[int, str, str]:
+    """Run git.  Read-only subcommands get ``--no-optional-locks``.
+
+    git takes ``.git/index.lock`` for subcommands that refresh the index, even
+    when they only report -- and a process killed while holding it leaves the lock
+    behind, which then blocks every later ``git add`` while ``git log`` and
+    ``git status`` keep working.  That happened twice on 2026-09-21/22: a lock sat
+    for forty minutes with no git process alive.  The flag is git's own answer for
+    read-only callers and does not change what is read.  Naming every read
+    subcommand explicitly is the point: a silent default would put us back here.
+    """
+    readonly = {"status", "rev-parse", "log", "diff", "show", "rev-list", "ls-files",
+                "remote", "branch", "worktree", "cat-file", "describe"}
+    extra = ("--no-optional-locks",) if args and args[0] in readonly else ()
     try:
         proc = subprocess.run(
-            ["git", *args], cwd=ROOT, capture_output=True, text=True,
+            ["git", *extra, *args], cwd=ROOT, capture_output=True, text=True,
             timeout=GIT_TIMEOUT,
         )
     except subprocess.TimeoutExpired:

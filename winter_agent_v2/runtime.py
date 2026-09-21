@@ -1346,10 +1346,15 @@ class LiveRuntime:
           repeated forever, and a control policy already refused is refused again.
         * **no live cooldown**, so a control with a measured wait is not tapped early.
 
-        Deliberately *not* asked: ``explorable_risk``.  That whitelist governs tapping a
-        control whose behaviour is *unknown*; this branch is the opposite case -- a named
-        control this device has already exercised and measured.  Requiring a risk label
-        here would also make the branch dead code, since nothing writes one.
+        A *recorded* risk label is honoured: if the ledger says this control is not one
+        an ordinary tap may carry, the remembered position is refused and the caller
+        falls through to its own refusal.  Nothing writes that label yet, so this costs
+        nothing today -- but the field is in the ledger schema and round-trips, and the
+        operator's boundary is that an expensive or irreversible outcome is identified
+        *before* it is submitted, not after.  An *unlabelled* control is not refused:
+        this branch is a named control the device has already exercised and measured,
+        which is a stronger basis than the unrecognised-tap case ``explorable_risk``
+        was written for.
         """
         page = control_experience.label(frame.page)
         entry = self._control_ledger.get(control_experience.control_key(page, semantic))
@@ -1360,6 +1365,8 @@ class LiveRuntime:
         if entry.sterile or entry.refused_reason:
             return None
         if entry.cooldown_remaining() > 0:
+            return None
+        if entry.risk and not control_experience.explorable_risk(entry.risk):
             return None
         point = (float(entry.position_norm[0]), float(entry.position_norm[1]))
         if not (0.0 <= point[0] <= 1.0 and 0.0 <= point[1] <= 1.0):
