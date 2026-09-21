@@ -5,6 +5,7 @@ import json
 from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageStat
 
 from .camp_ring import ring_centre_norm
@@ -1082,6 +1083,45 @@ class SemanticWorldVision:
         def match(name: str) -> SemanticMatch | None:
             return self.semantic.find(image_path, name)
 
+        def an_overlay_covers_the_screen() -> bool:
+            """Whether a modal is parked over the client, read from the HUD strip.
+
+            Every reward dialog the client draws is a full-screen dim: the game keeps
+            rendering behind it, so the world-map HUD at the top of the frame is no
+            longer its own colours.  Measured on the two reviewed
+            ``POPUP_GENERIC_REWARD_HEADER`` parents, that strip reads
+            mean 17.9/18.7 and std 4.9/5.0 -- near-black and almost flat -- while the
+            bare map reads mean ~110 and std ~66, because the HUD's bars, badges and
+            avatar are still drawn at full brightness.
+
+            This exists because the header template is a *content* crop (a 518x115
+            peach band at y 0.21-0.30) and therefore answers "is there a peach band
+            here", not "did a reward dialog open".  Measured live 2026-09-21 on
+            ``live_runtime_step_007_before_20260921T113000717351.png``: a bare map
+            carrying a chat banner scored distance 16 on that band -- bare snow, a
+            beast and event icons -- and the frame was reported as
+            ``POPUP/GENERIC_REWARD`` with confidence 0.99.  The brain then answered
+            ``DISMISS_SHARED_REWARD`` seven times over a map it could not dismiss,
+            ran out of actions, and the whole round stopped on
+            ``SEMANTIC_TARGET_NOT_VERIFIED`` without ever reaching a beast.  The
+            separation between the two populations is wide (a 5x gap in both
+            statistics), so the threshold is not delicate.
+
+            ``True`` is the safe direction: a frame this cannot read stays on the
+            popup branch, which is where a dialog would need to be dismissed from
+            anyway, and the branch's own templates still have to match.
+            """
+            try:
+                with Image.open(image_path) as opened:
+                    image = opened.convert("RGB")
+                    width, height = image.size
+                    strip = np.asarray(
+                        image.crop((0, 0, width, max(1, int(0.05 * height))))
+                    ).astype("float32")
+            except Exception:  # noqa: BLE001 - a frame we cannot measure is not evidence
+                return True
+            return float(strip.std()) <= 24.0
+
         # The splash/loading screen must be recognized before any popup
         # branch.  Its artwork contains bright, high-contrast shapes that
         # previously matched a popup template, and the resulting BACK tap
@@ -1213,7 +1253,14 @@ class SemanticWorldVision:
         # live Intel claims fail on 2026-09-16/17: the reward popup over the Intel
         # page read DAILY_REWARD, the daily dismiss ran, and its verifier -- which
         # requires the DAILY page afterwards -- rejected a dismissal that worked.
-        if match("POPUP_GENERIC_REWARD_HEADER") or match("BTN_DISMISS_INTEL_REWARD"):
+        # The header is a content crop, so a match on it is only believed when a
+        # modal is actually covering the client -- see
+        # ``an_overlay_covers_the_screen`` for the measurements and for the round
+        # this guard was added to fix.  ``BTN_DISMISS_INTEL_REWARD`` is on the
+        # dialog itself, so it is specific enough to stand on its own.
+        if match("BTN_DISMISS_INTEL_REWARD") or (
+            match("POPUP_GENERIC_REWARD_HEADER") and an_overlay_covers_the_screen()
+        ):
             return WorldState(page=Page.POPUP, popup="GENERIC_REWARD", confidence=0.99)
         if match("POPUP_DAILY_REWARD_CURRENT"):
             return WorldState(page=Page.POPUP, popup="DAILY_REWARD", daily={"claim_feedback": True}, confidence=0.99)

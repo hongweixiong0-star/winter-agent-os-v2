@@ -132,6 +132,38 @@ EXIT_FRAME = (
 FOOTER_BOX = (214, 1135, 510, 1175)
 BANNER_BOX = (180, 215, 545, 310)
 
+# The bare world map the 2026-09-21 run burned seven dismiss steps on.  Archived,
+# not read live, for the retention reason above (issue #46).
+_BARE_MAP_DIR = (
+    ROOT / "dataset" / "truth_audit" / "reward_popup_band_false_positive_20260921" / "key"
+)
+BARE_MAP_FRAMES = (
+    _BARE_MAP_DIR / "01_bare_map_band_false_positive_step_007_before_20260921T113000717351.png",
+    _BARE_MAP_DIR / "02_bare_map_band_false_positive_step_006_before_20260921T112959358612.png",
+)
+
+# The two reviewed BANNER parents: real 获得奖励 dialogs, each a full-screen dim.
+DIALOG_FRAME = (
+    ROOT / "dataset" / "raw" / "live_deploy_mail_generic_reward_v2" / "step_006_before.png"
+)
+DIALOG_FRAME_2 = ROOT / "dataset" / "raw" / "live_20260908_daily_reward.png"
+
+
+def _hud_strip_std(frame: Path) -> float:
+    """The standard deviation of the top 5% of the frame.
+
+    This is the measurement ``vision.an_overlay_covers_the_screen`` gates on: a
+    dimmed HUD is near-flat as well as near-black, so the spread separates the
+    two populations more widely than the mean does.
+    """
+    import numpy as np
+
+    with Image.open(frame) as opened:
+        image = opened.convert("RGB")
+        width, height = image.size
+        strip = np.asarray(image.crop((0, 0, width, max(1, int(0.05 * height)))))
+    return float(strip.astype("float32").std())
+
 
 def _vision() -> SemanticWorldVision:
     return SemanticWorldVision(MANIFEST)
@@ -286,6 +318,78 @@ class TheMailInboxIsNotARewardDialogTests(unittest.TestCase):
             with self.subTest(goal=goal):
                 decision = _decide(state, goal)
                 self.assertNotIn("DISMISS", decision.skill)
+
+
+class TheBareMapIsNotARewardDialogTests(unittest.TestCase):
+    """The same content-crop trap, on a world-map frame with no dialog at all.
+
+    Defect (live run 2026-09-21T11:29Z, revision ``fa06cc1``).  The 11:28 run
+    reported ``POPUP / GENERIC_REWARD`` with confidence 0.99 on a bare world map
+    -- the frame shows the HUD, a chat banner reading '系统消息: xx退出了联盟',
+    the beast strip and 搜索, and nothing modal anywhere.  The brain answered
+    ``DISMISS_SHARED_REWARD`` seven times over a map it could not dismiss, the
+    run hit ``MAX_ACTIONS`` on those steps and ended ``SEMANTIC_TARGET_NOT_EXIT``
+    -> ``SEMANTIC_TARGET_NOT_VERIFIED`` without ever opening a search.
+
+    The cause is the third instance of the class this file documents: ``BANNER``
+    is a content crop -- a 518x115 peach band at y 0.21-0.30 -- so it answers
+    "is there a peach band here" rather than "did a dialog open".  On the map
+    that band lands on bare snow, a beast sprite and event icons and scores 16,
+    which is inside the default tolerance.
+
+    What separates the two populations is whether a modal is actually covering
+    the client.  Every reward dialog is a full-screen dim, so the HUD strip at
+    the top of the frame is no longer drawn at its own brightness:
+
+        frame                                   strip mean   strip std
+        the two reviewed BANNER parents           17.9/18.7    4.9/5.0
+        the bare map (this defect)                 111.7       67.2
+
+    A 5x gap on both statistics, so the gate is not delicate.  The frames are
+    archived under ``dataset/truth_audit/reward_popup_band_false_positive_20260921``
+    rather than read from the live capture directory, for the same retention
+    reason as ``EXIT_FRAME`` (issue #46).
+    """
+
+    def test_the_bare_map_classifies_as_the_map(self):
+        for frame in BARE_MAP_FRAMES:
+            with self.subTest(frame=frame.name):
+                state = _vision().observe(frame)
+                self.assertIs(state.page, Page.MAP, f"{frame.name} is a bare map")
+                self.assertIsNone(state.popup)
+
+    def test_the_band_still_matches_the_map(self):
+        """Pin the defect independent of any tolerance: the peach band is there.
+
+        It is genuinely inside the default tolerance, which is why the gate is
+        about whether a dialog is covering the screen rather than about the band.
+        """
+        for frame in BARE_MAP_FRAMES:
+            with self.subTest(frame=frame.name):
+                self.assertLessEqual(_raw_distance(frame, BANNER), 24)
+
+    def test_the_hud_strip_separates_the_bare_map_from_a_real_dialog(self):
+        """The measurement the gate is built on, asserted on both populations."""
+        bare = [_hud_strip_std(frame) for frame in BARE_MAP_FRAMES]
+        dialog = [_hud_strip_std(frame) for frame in (DIALOG_FRAME, DIALOG_FRAME_2)]
+        self.assertTrue(all(value > 40.0 for value in bare), bare)
+        self.assertTrue(all(value <= 24.0 for value in dialog), dialog)
+
+    def test_a_real_reward_dialog_still_classifies_as_one(self):
+        """The gate must not buy the map frame by losing the dialogs."""
+        for frame in (DIALOG_FRAME, DIALOG_FRAME_2):
+            with self.subTest(frame=frame.name):
+                state = _vision().observe(frame)
+                self.assertIs(state.page, Page.POPUP)
+                self.assertEqual(state.popup, "GENERIC_REWARD")
+
+    def test_the_brain_is_never_asked_to_dismiss_a_popup_here(self):
+        """The consequence the aborted round was made of: a dismiss was dispatched."""
+        for frame in BARE_MAP_FRAMES:
+            state = _vision().observe(frame)
+            for goal in ("BEAST_HUNT", "AVOID_STAMINA_WASTE", "MAIL"):
+                with self.subTest(frame=frame.name, goal=goal):
+                    self.assertNotIn("DISMISS", _decide(state, goal).skill)
 
 
 class TheBrainChoosesTheDismissFromGoalContextTests(unittest.TestCase):
