@@ -155,13 +155,24 @@ class RuntimeYieldsTest(unittest.TestCase):
         self.assertIn("device_leased_for_development", control_panel.RUNTIME_WAITING_STOPS)
 
     def test_the_guard_is_at_the_top_of_an_iteration(self):
-        """Checked before the screenshot, because that is where no input is in flight."""
+        """Checked before the screenshot, because that is where no input is in flight.
+
+        The window is measured to the capture rather than to a fixed character count:
+        the guard's own docstring grew on 2026-09-21 (it now explains why an examination
+        does not yield to the lease it holds), and a literal 1200 was a bound on the
+        *comment* while claiming to be a bound on the ordering.  Slicing to the capture
+        asserts the same thing and cannot be broken by a longer explanation.
+        """
         source = (ROOT / "winter_agent_v2/runtime.py").read_text(encoding="utf-8")
-        head = source.split("for index in range(1, max_actions + 1):")[1][:1200]
+        body = source.split("for index in range(1, max_actions + 1):")[1]
+        head = body[:body.index('self._capture_path(index, "before")')]
         guard = head.index("self.device_lease.holder()")
-        capture = head.index('self._capture_path(index, "before")')
-        self.assertLess(guard, capture, "the lease must be checked before the next step starts")
+        self.assertLess(guard, len(head), "the lease must be checked before the next step starts")
         self.assertIn("held.owner != OWNER_GAMEPLAY", head)
+        # And the ownership question must be asked, not just the owner comparison: the
+        # measured 2026-09-21 defect was a validation yielding to the lease it had itself
+        # acquired, which the bare comparison cannot tell apart from a real examination.
+        self.assertIn("self._owns_the_lease(held)", head)
 
 
 class AReleasedLeaseIsNotAnOrphan(unittest.TestCase):

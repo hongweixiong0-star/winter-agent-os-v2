@@ -15,7 +15,7 @@ from .models import Decision, ExecutionResult, Page, VerificationResult, WorldSt
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
-from .device_lease import OWNER_GAMEPLAY, DeviceLease
+from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
@@ -362,6 +362,36 @@ class LiveRuntime:
         # the same as gameplay owning the device and keeps the guard free in tests that
         # do not care about it.
         self.device_lease = device_lease
+
+    def _owns_the_lease(self, held: object) -> bool:
+        """Is the lease this run is looking at *its own*?
+
+        Only a development validation may answer yes, and only about a
+        ``DEVELOPMENT_VALIDATION`` lease.  Both halves are load-bearing:
+
+        * ``execution_mode`` is what makes this process an examination.  An AUTO cycle is
+          PRODUCTION by declaration, so it answers no and keeps yielding -- the operator's §19
+          property that gameplay steps aside for an examination is untouched.
+        * the holder's owner is the record's own field, i.e. the same value
+          ``escalation_queue`` and ``capability_bootstrap`` already compare against.  Not
+          re-derived from the trace id or the capability, because those are what the lease is
+          *about* rather than who holds it.
+
+        Why this exists at all: the window takes the lease and then spawns ``run_live`` as a
+        child, so the examining process is the child while the lease was written by the parent.
+        Without this check the child reads its own lock as a foreign one, yields with
+        ``device_leased_for_development`` and ``steps: []``, and the examination can never run
+        -- measured 2026-09-21, every validation cycle for 6.5 hours.
+
+        The mode is compared against ``OWNER_DEVELOPMENT_VALIDATION`` rather than against a
+        second constant spelled out here: it is the same string, the project already treats
+        ``device_lease`` as the one place that names the owner, and a parallel literal is how
+        two disagreeing names for one mode start.  ``escalation_queue`` reads episodes by the
+        literal for a different reason (episode rows are data, not owners).
+        """
+        if self.execution_mode != OWNER_DEVELOPMENT_VALIDATION:
+            return False
+        return str(getattr(held, "owner", "") or "") == OWNER_DEVELOPMENT_VALIDATION
 
     @property
     def _semantic(self):
@@ -1167,8 +1197,28 @@ class LiveRuntime:
             # the run here, so V2 yields the device at a safe point instead of being
             # interrupted mid-transaction -- which is why this is at the top of an
             # iteration and not inside one.
+            #
+            # "Anyone else" is the load-bearing word, and it was wrong for six hours
+            # (measured 2026-09-21).  A development validation is performed *by this
+            # process*: the window acquires the lease as DEVELOPMENT_VALIDATION and then
+            # spawns run_live, so the child's first iteration found a lease it did not
+            # recognise, concluded a developer owned the device, and yielded -- to itself.
+            # Every validation cycle produced ``steps: []`` and ``EXIT_2`` with
+            # ``device_leased_for_development``, which looked like the operator's AUTO
+            # correctly deferring and was in fact the examination refusing to examine.
+            # The lease was never the obstacle; not knowing whose it is was.
+            #
+            # So the question is not "does gameplay hold it" but "does *someone else* hold
+            # it".  A validation cycle legitimately owns the device -- that is what the
+            # lease is FOR -- and must run while it does, or the examination can never
+            # happen.  The identity is the one the lease record already carries and that
+            # ``escalation_queue`` and ``capability_bootstrap`` already compare against:
+            # this process is that validation iff its own ``execution_mode`` says so and
+            # the holder is a DEVELOPMENT_VALIDATION.  Both halves are required, because
+            # an AUTO cycle must still yield to a real examination -- that is the §19
+            # property this guard exists for, and it stays exactly as it was.
             held = self.device_lease.holder() if self.device_lease is not None else None
-            if held is not None and held.owner != OWNER_GAMEPLAY:
+            if held is not None and held.owner != OWNER_GAMEPLAY and not self._owns_the_lease(held):
                 reason = "device_leased_for_development"
                 self._runtime(
                     agent_state=AgentState.PAUSED.value, runtime_thread_alive=False,
