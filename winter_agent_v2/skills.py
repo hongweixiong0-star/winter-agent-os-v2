@@ -98,6 +98,13 @@ class SkillRegistry:
 def p0_registry() -> SkillRegistry:
     return SkillRegistry([
         Skill("CLOSE_POPUP", "Close a blocking popup without accepting it", Page.POPUP, Action("TAP_SEMANTIC", "BTN_CLOSE"), state=SkillState.VERIFIED),
+        # The second exit for a layer another goal owned: Back first, and when the layer
+        # ignores it, the close the client draws in its own corner.  Measured 2026-09-21 on
+        # the alliance chest layer -- PRESS_BACK left page ALLIANCE reading ALLIANCE, and the
+        # X at (682, 38) is what that layer answers.  Declared on Page.ALLIANCE rather than
+        # POPUP because the layer IS an alliance sub-page: a POPUP declaration is the thing
+        # that would keep the skill from being selected exactly when it is needed.
+        Skill("LEAVE_FOREIGN_LAYER", "Leave a sub-layer another goal owned when a Back did not move it", Page.ALLIANCE, Action("TAP_SEMANTIC", "BTN_CLOSE"), state=SkillState.VERIFIED),
         Skill("RECONNECT_SESSION", "Reconnect a disconnected game session without changing account settings", Page.POPUP, Action("TAP_SEMANTIC", "BTN_RECONNECT_SESSION"), state=SkillState.CANDIDATE),
         Skill("DISMISS_BATTLEFIELD_REVIVAL", "Dismiss the battlefield-revival event without spending revival resources", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
         Skill("DISMISS_BATTLE_VICTORY", "Dismiss a verified battle-result blocker and restore its underlying page", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),

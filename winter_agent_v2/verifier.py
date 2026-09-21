@@ -312,6 +312,51 @@ def verify_safe_back(before: WorldState, after: WorldState) -> VerificationResul
     return VerificationResult(ok, "OK" if ok else "SAFE_BACK_NOT_PROVEN", {"search_closed":search_closed, "page_returned":page_returned, "popup_closed":popup_closed, "before_page":before.page.value, "after_page":after.page.value})
 
 
+def verify_left_foreign_layer(before: WorldState, after: WorldState) -> VerificationResult:
+    """Did closing a sub-layer another goal owned actually move the client off it?
+
+    The second exit of ``Brain._leave_foreign_page_once``.  Most panels answer one Back,
+    and ``verify_safe_back`` proves it because the page changes.  Not every layer does: the
+    alliance chest layer was measured on 2026-09-21 leaving the client exactly where it
+    started --
+
+        before  page ALLIANCE  ->  PRESS_BACK  ->  after  page ALLIANCE  (confidence 0.98)
+        verifier  SAFE_BACK_NOT_PROVEN
+
+    -- and that layer's own exit is the X the client draws in its corner, not a Back.  The
+    close it needs cannot be verified by ``verify_popup_closed``: that verifier's own
+    precondition is ``before.page is Page.POPUP`` (``before_ok = ... bool(before.popup)``),
+    and a sub-page of ALLIANCE is not POPUP, so a close that worked perfectly would still
+    have answered ``POPUP_CLOSE_NOT_PROVEN``.  That is the same trap the shared-reward
+    branch records for the identical reason: a close is bound to the verifier that matches
+    what it is closing.
+
+    So the statement this verifier proves is deliberately the weaker, true one: the client
+    left the layer it was on.  ``after.known`` is required, because a page that could not be
+    read afterwards is not evidence of movement -- it is evidence of nothing, and treating
+    it as success is how a dead end becomes a loop.  ``before.page`` is required to be a
+    definite page for the same reason: with an UNKNOWN start, ``is not before.page`` would
+    be satisfied by any two unknowns.
+
+    Measured separation, 2026-09-21: the frame that Back could not move reads ALLIANCE both
+    before and after; every frame behind the close (HOME, MAP) reads a different known page.
+    """
+    definite_start = before.known and before.page not in {Page.UNKNOWN, Page.POPUP}
+    moved = after.known and after.page is not before.page
+    ok = definite_start and moved
+    return VerificationResult(
+        ok,
+        "OK" if ok else "FOREIGN_LAYER_NOT_LEFT",
+        {
+            "definite_start": definite_start,
+            "moved": moved,
+            "before_page": before.page.value,
+            "after_page": after.page.value,
+            "after_known": after.known,
+        },
+    )
+
+
 def verify_offline_rewards_claimed(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.POPUP and before.popup == "WELCOME_BACK_OFFLINE" and before.daily.get("offline_rewards") == "CLAIMABLE"
     after_ok = after.page is Page.HOME and after.popup is None

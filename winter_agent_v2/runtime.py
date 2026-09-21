@@ -19,7 +19,7 @@ from .device_lease import OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
-from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
+from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
@@ -80,9 +80,16 @@ class LiveRuntime:
     # each addition weakens the ordinary unknown-page recovery, so it needs frames.
     FIGHT_STARTING_VERIFIERS = frozenset({"INTEL_HERO_DISPATCHED"})
 
+    #: The skills whose job is to leave a page the current goal does not own.  A failed
+    #: verification from one of these is the first half of a two-step exit rather than a
+    #: dead end, because the brain answers the layer's own second exit on the next step.
+    #: See the branch that reads it for the measured frame.
+    LEAVING_SKILLS = frozenset({"BACK", "LEAVE_FOREIGN_LAYER"})
+
     VERIFIED_ATOMIC: dict[str, Verifier] = {
         "WAIT": verify_environmental_wait,
         "CLOSE_POPUP": verify_popup_closed,
+        "LEAVE_FOREIGN_LAYER": verify_left_foreign_layer,
         "CANCEL_DUPLICATE_TARGET": verify_duplicate_target_cancelled,
         "RECONNECT_SESSION": verify_popup_closed,
         "DISMISS_BATTLEFIELD_REVIVAL": verify_popup_closed,
@@ -200,6 +207,9 @@ class LiveRuntime:
         max_scroll_attempts: int = 3,
         max_resource_switches: int = 2,
         max_stamina_refusals: int = 1,
+        # One per run above the pair's own bound of two, so the second exit is always
+        # reachable but a layer that answers neither exit still ends the run.
+        max_leave_retries: int = 2,
         max_unknown_page_backs: int = 2,
         max_battle_reobservations: int = 3,
         observation_retries: int = 2,
@@ -252,6 +262,7 @@ class LiveRuntime:
         self.max_scroll_attempts = max_scroll_attempts
         self.max_resource_switches = max_resource_switches
         self.max_stamina_refusals = max_stamina_refusals
+        self.max_leave_retries = max_leave_retries
         self.max_unknown_page_backs = max_unknown_page_backs
         self.max_battle_reobservations = max_battle_reobservations
         self.observation_retries = observation_retries
@@ -782,6 +793,7 @@ class LiveRuntime:
         self._scroll_attempts = 0
         self._resource_switches = 0
         self._stamina_refusals = 0
+        self._leave_retries = 0
         self._unknown_page_backs = 0
         # Goals this run has already offered and found it could not execute.  Run-scoped on
         # purpose: the reason is "this cycle cannot run it" (a skill this run may not use, a
@@ -1507,6 +1519,40 @@ class LiveRuntime:
                     agent_state=AgentState.AUTO_RUNNING.value,
                     reason="camp_fight_refused_by_the_client_for_stamina",
                     next_action="claim_free_stamina_else_back_to_map",
+                    verifier=verification.reason,
+                )
+                continue
+            if (
+                not verification.ok
+                and decision.skill in self.LEAVING_SKILLS
+                and verification.reason in {"SAFE_BACK_NOT_PROVEN", "FOREIGN_LAYER_NOT_LEFT"}
+                and index < max_actions
+                and self._leave_retries < self.max_leave_retries
+            ):
+                # A Back that moved nothing is not a dead cycle, it is the first half of a
+                # two-step exit.  Measured live 2026-09-21: KEEP_TRAINING_PRODUCTIVE opened on
+                # the alliance chest layer, PRESS_BACK left page ALLIANCE reading ALLIANCE, the
+                # verifier answered SAFE_BACK_NOT_PROVEN, and the run ended -- taking every
+                # other goal with it.  The failing skill is a statement about ONE layer, which
+                # is the same class the SAFE_STOP handover above already refuses to treat as
+                # everyone's ending.
+                #
+                # Nothing new is decided here: the brain owns the ordered exit and answers
+                # ``LEAVE_FOREIGN_LAYER`` on the next sight of the same layer, so ``continue``
+                # simply lets it take its own second step.  ``max_leave_retries`` is what keeps
+                # this from becoming a spin -- the pair itself is bounded at two, and this
+                # budget sits above that so a layer that answers neither exit still ends the
+                # run honestly instead of burning the whole action budget on retries.
+                #
+                # Deliberately not a general "retry any failed skill" branch: every other
+                # failed verification has either its own measured recovery above or is a real
+                # failure that must end the run.  This one is scoped to the leaving skills,
+                # where the recovery is the brain's own declared second exit.
+                self._leave_retries += 1
+                self._runtime(
+                    agent_state=AgentState.AUTO_RUNNING.value,
+                    reason=f"{decision.skill.lower()}_did_not_move_the_client",
+                    next_action="brain_takes_its_second_exit_for_this_layer",
                     verifier=verification.reason,
                 )
                 continue

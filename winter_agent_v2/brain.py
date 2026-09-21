@@ -91,10 +91,10 @@ class RuleBrain:
         # afterwards, so leaving is verifiable rather than hopeful.  The flag is
         # what stops a Back that did not move the client from being repeated.
         self.terminal_page_left = False
-        # Set once a run has backed out of a panel another goal owned, so a
-        # Back that did not move the client is not repeated (see
-        # ``_leave_foreign_page_once``).
-        self.foreign_page_left = False
+        # How many exits this run has already tried on a panel another goal owned, so a Back (or
+        # a close) that did not move the client is not repeated.  Two, because a layer can ignore
+        # a Back and still answer its own close button -- see ``_leave_foreign_page_once``.
+        self.foreign_page_steps = 0
         # Consecutive Stage A re-observations in this run.  Measured 2026-09-17:
         # the highlighted-camp state is NOT a transient animation -- seven waits in a
         # row all reported ``menu_drawn: false`` and ended with MAX_ACTIONS_REACHED,
@@ -200,7 +200,7 @@ class RuleBrain:
         )
 
     def _leave_foreign_page_once(self, world: WorldState, *, owner: str) -> Decision | None:
-        """One Back off a panel this goal does not own, so the next run can hop home.
+        """Leave a panel this goal does not own, so the next run can hop home.
 
         Measured live 2026-09-19, the first time the sweep was ever selected: one run opened the
         mail panel, read it, and recorded a reading; the next run selected ``DAILY_ACTIVITY_TARGET``
@@ -209,22 +209,47 @@ class RuleBrain:
 
         That is the difference between "one panel got looked at" and a sweep that walks all of
         them: consecutive routines meet each other on the previous panel, and refusing to move is
-        the one answer that cannot work.  Every panel's own exit is a single Back to HOME (the
-        same transition ``_leave_daily_panel_once`` and ``_leave_terminal_page_once`` were
-        measured on), and ``verify_safe_back`` accepts it because ``before`` is neither MAP nor
-        POPUP and ``after`` is a different known page.
+        the one answer that cannot work.  Most panels' own exit is a single Back to HOME (the same
+        transition ``_leave_daily_panel_once`` and ``_leave_terminal_page_once`` were measured on),
+        and ``verify_safe_back`` accepts it because ``before`` is neither MAP nor POPUP and
+        ``after`` is a different known page.
 
-        Returns ``None`` once the flag is set, so a Back that did not actually move the client
-        cannot be repeated; the caller then falls through to its honest SAFE_STOP.
+        Not every layer answers a Back, though, and the measured counter-example is what gives this
+        method its second step.  On 2026-09-21 the alliance chest layer was left standing by
+        ``KEEP_TRAINING_PRODUCTIVE``, which is a goal that does not own ALLIANCE:
+
+            before  page ALLIANCE  ->  PRESS_BACK  ->  after  page ALLIANCE  (confidence 0.98)
+            verifier  SAFE_BACK_NOT_PROVEN
+
+        The Back moved nothing, so the run ended and -- worse -- the ``foreign_page_left`` flag was
+        already set, so every following run answered ``training_entry_not_verified`` without even
+        trying.  One unmovable layer cost the cycle its training work permanently.  That layer is a
+        sub-page with its own X in the top-right corner rather than a page with a back arrow, so its
+        declared exit is a close, not a Back.
+
+        Hence an ordered, bounded pair: Back first (cheap, and correct on every panel measured so
+        far), then the close the client itself draws.  ``CLOSE_POPUP`` is the existing
+        verifier-bound close -- ``verify_popup_closed`` accepts a page that is no longer POPUP --
+        and it taps ``BTN_CLOSE``, whose alliance-chest-layer template was measured on the same
+        frame (ccoeff 1.000 at (682, 38); 24 frames without that X measured 0.432-0.580).  Two
+        steps per run, not a loop: the flag still ends the sequence, so a layer that answers
+        neither exit still falls through to the caller's honest stop.
         """
-        if self.foreign_page_left:
+        if self.foreign_page_steps >= 2:
             return None
-        self.foreign_page_left = True
+        self.foreign_page_steps += 1
+        if self.foreign_page_steps == 1:
+            return Decision(
+                "BACK",
+                f"{owner.lower()}_goal_leaves_a_panel_it_does_not_own",
+                world.confidence,
+                "home_opened",
+            )
         return Decision(
-            "BACK",
-            f"{owner.lower()}_goal_leaves_a_panel_it_does_not_own",
+            "LEAVE_FOREIGN_LAYER",
+            f"{owner.lower()}_goal_closes_a_layer_a_back_did_not_move",
             world.confidence,
-            "home_opened",
+            "foreign_layer_left",
         )
 
     def _leave_terminal_page_once(self, world: WorldState) -> Decision | None:

@@ -66,8 +66,12 @@ class _FakeMatch:
 
 
 class _FakeSemantic:
+    #: BTN_CLOSE is in the set because the exit-sequence tests below drive a real
+    #: LEAVE_FOREIGN_LAYER step, whose whole point is the close in the layer's corner.
+    #: Without it the step answers SEMANTIC_TARGET_NOT_VERIFIED and the scenario degenerates
+    #: into "the close was never sendable", which is a different (and already tested) fact.
     def find(self, _path, semantic):
-        return _FakeMatch() if semantic in {"BTN_ALLY_GIFT_CLAIM", "PAGE_MAP", "BTN_OPEN_HOME"} else None
+        return _FakeMatch() if semantic in {"BTN_ALLY_GIFT_CLAIM", "PAGE_MAP", "BTN_OPEN_HOME", "BTN_CLOSE"} else None
 
     semantic = property(lambda self: self)
     resource_tab_band = (0.0, 1.0)
@@ -82,11 +86,27 @@ class _FakeSemantic:
 
 
 class _FakeVision:
-    def __init__(self, states):
-        self.states = iter(states)
+    """Replay a fixed frame list, then keep answering with the last one.
+
+    The sticky tail is deliberate for the exit-sequence tests: a run that is refused and
+    re-observes captures more frames than the scenario list has, and stopping the iterator
+    there would report a test-harness exhaustion as if it were a product failure.  A
+    scenario that wants a run to end supplies its own terminal frame.
+    """
+
+    def __init__(self, states, *, sticky: bool = False):
+        self.states = list(states)
+        self._index = 0
+        self._sticky = sticky
 
     def observe(self, _path):
-        return next(self.states)
+        if self._index < len(self.states):
+            state = self.states[self._index]
+            self._index += 1
+            return state
+        if self._sticky and self.states:
+            return self.states[-1]
+        raise StopIteration
 
 
 class _FakeDevice:
@@ -263,6 +283,104 @@ class TheOperatorNamedReasonsAllQualifyTests(unittest.TestCase):
                       "the SAFE_STOP branch must ask the project's fatal line")
         self.assertNotIn('decision.reason == "reserved_march_for_stamina"', source,
                          "the single-reason special case must be gone, not duplicated")
+
+
+class ABackThatDoesNotMoveTheClientDoesNotEndTheCycleTests(unittest.TestCase):
+    """The other half of "a refusal is about one goal": a FAILED exit is too.
+
+    Measured live 2026-09-21 14:22, and this is the frame the class is named for:
+
+        goal KEEP_TRAINING_PRODUCTIVE, page ALLIANCE (the alliance chest layer)
+        step 1  BACK  ->  after page ALLIANCE   verifier SAFE_BACK_NOT_PROVEN
+        stop_reason SAFE_BACK_NOT_PROVEN
+
+    The layer is a sub-page with its own X in the corner; a Back moves nothing.  The run
+    ended, and ``foreign_page_left`` was already set, so every later run answered
+    ``training_entry_not_verified`` without trying -- one unmovable layer cost the cycle
+    its training work permanently.  Two things had to change and both are asserted here:
+    the runtime must give the brain room for its second exit, and the brain must have one.
+    """
+
+    #: The goal from the live frame.  KEEP_TRAINING_PRODUCTIVE is what the 14:22 run selected,
+    #: and it is the one that carries the two-step route: its brain branch starts from HOME,
+    #: so a client found on ALLIANCE gets the foreign-page hop -- Back, then the close.  The
+    #: sibling class above uses ALLIANCE_ROUTINE, whose *own* route answers on this layer and
+    #: therefore never reaches the hop; using it here would have tested the SAFE_STOP handover
+    #: a second time instead of the exit sequence, which is exactly what the first red run of
+    #: these tests showed.  ``available_skills`` is load-bearing: ``GoalLibrary.best`` drops a
+    #: goal that declares none.
+    LAYER_GOAL = GoalState(
+        goal_id="KEEP_TRAINING_PRODUCTIVE",
+        status=GoalStatus.READY,
+        available_skills=("TRAIN_TROOPS",),
+    )
+
+    def _selectable_stub(self, goal):
+        def stub(runtime, _goals, _deferrals):
+            if goal is None or goal.goal_id in runtime._yielded_goals:
+                return []
+            return [goal]
+        return stub
+
+    def _run(self, states, max_actions=6):
+        device = _FakeDevice()
+        with TemporaryDirectory() as temp:
+            with patch.object(LiveRuntime, "_selectable", self._selectable_stub(self.LAYER_GOAL)):
+                run = LiveRuntime(
+                    device=device,
+                    vision=_FakeVision(states, sticky=True),
+                    semantic_vision=_FakeSemantic(),
+                    capture_dir=Path(temp),
+                    sleeper=lambda _seconds: None,
+                ).run(max_actions=max_actions)
+        return device, run
+
+    def test_the_second_exit_is_the_close_not_a_repeated_back(self):
+        """The Back moves nothing, so the close is what the run must reach.
+
+        Both frames are the alliance layer.  The first Back cannot change that, so the
+        only way this run touches the device twice is if the runtime handed the cycle
+        back and the brain answered the layer's own exit.
+        """
+        layer = alliance_gift("CLAIMED", buttons=0, claimed=2, progress=250)
+        device, run = self._run([layer, layer, layer])
+        self.assertGreaterEqual(
+            len(device.backs), 1,
+            "the first exit is still a Back -- it is correct on every panel measured so far",
+        )
+        self.assertGreaterEqual(
+            len(device.taps), 1,
+            "the layer ignored the Back, so the close must actually be sent",
+        )
+
+    def test_a_layer_that_answers_neither_exit_still_ends_honestly(self):
+        """The pair is bounded, and so is the runtime's patience with it.
+
+        The device never moves, so neither exit can verify.  The run must stop rather
+        than spend its whole action budget re-sending two commands at a wall, and the
+        stop reason must be the verifier's own answer rather than a fabricated success.
+        """
+        layer = alliance_gift("CLAIMED", buttons=0, claimed=2, progress=250)
+        device, run = self._run([layer] * 10, max_actions=8)
+        # The wall costs the pair and nothing more.  Asserted as a bound rather than as one
+        # exact stop reason: once the goal has been held back, the selector may legitimately
+        # land on a different goal's own answer, and pinning that here would make this test
+        # about the selector instead of about the exit sequence it exists to guard.
+        self.assertLessEqual(
+            len(run.steps), 6,
+            "a wall must cost a bounded number of attempts, not the whole budget",
+        )
+        self.assertGreaterEqual(
+            len(device.backs) + len(device.taps), 1,
+            "the exits were tried before the run gave up",
+        )
+        self.assertIsNotNone(run.stop_reason, "and it ended with a stated reason, not silence")
+
+    def test_the_leaving_skills_are_the_two_the_brain_can_answer(self):
+        """Pinned where the branch reads it, so the recovery cannot silently lose a skill."""
+        self.assertEqual(
+            set(LiveRuntime.LEAVING_SKILLS), {"BACK", "LEAVE_FOREIGN_LAYER"},
+        )
 
 
 if __name__ == "__main__":
