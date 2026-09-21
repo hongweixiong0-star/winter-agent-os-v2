@@ -1032,3 +1032,74 @@ Goal 还没处理就停轮**。按测量，**两者共有症状、不共有成�
 | 86 | **`world.training` 没有兵营维度：一个兵营忙就结束整个训练检查** | 🔴 **未修（结构性）** | 训练是**一个** goal（`KEEP_TRAINING_PRODUCTIVE`，sweep 票）＋**一个** `TRAIN_TROOPS`；`_append_queue_goal` 对**单个** `status` 判一次，`IN_PROGRESS` ⇒ **整个目标标 COMPLETE** ⇒ **盾兵营忙就把训练检查结束，矛/射根本不会被看** —— 正是操作者明令禁止的。**可行**：三个页签名 **OCR 全部读得出**（`盾兵营`1.00/`矛兵营`0.99/`射手营`1.00）⇒ 切换页签**不需要重切模板**。**需要**：三兵营各自一条检查（或一个目标 + 三份子状态）+ 对应技能与 verifier。 |
 | 87 | **矛兵营/射手营的真机页面从未被观测（零帧）** | 🔴 **需要真机** | 队列是否空闲、能否训练、条件与资源，全部 `UNKNOWN`。**下一步**：在客户端分别打开这两页各抓帧（页名可由 OCR 判定），再决定技能与 verifier。不得据名称推断。 |
 | 88 | **训练目标的进展计量被非训练动作污染** | 🟠 **已定性，未修** | `KEEP_TRAINING_PRODUCTIVE` 157 步里含 `OPEN_ALLIANCE_GIFTS`(3)、`CLAIM_FREE_STAMINA`(3)、`OPEN_MAIL`(1)、`OPEN_MAP`(2) 等非训练动作（`_step_goal` 在当轮无可选目标时回落 `_committed_goal`），其 deferral 签名正是 `OPEN_TRAINING_PAGE\|NO_GOAL_PROGRESS\|**OPEN_ALLIANCE_GIFTS**`。**但它被 DEFERRED 的主因仍是自身**（53 次 `WAIT_FOR_CAMP_MENU` 零进展）。改动会触及 2026-09-18 为修 `AUTO_DISCOVERY` 占位符而定的规则，需单独测。 |
+
+## 2026-09-21 P0（操作者第三次）：生产闭环修复
+
+### 一、`SAFE_STOP` 不再结束整个工作周期（已修 `e568017`）
+
+`SAFE_STOP` 是大脑在说"**这个 goal** 在这屏上没事可做"，而它的每一个理由都只关于**一个** goal。
+runtime 却把它们全部按同一个方式处理：记 `DEGRADED` 再 `return finish(reason)` ⇒ **一个任务正确地拒绝，
+结束了本轮里其他所有任务**。真机两次实测，同一种形状：
+
+| 时刻 | stop_reason | 实际发生了什么 |
+|---|---|---|
+| `2026-09-21T03:17:51Z` | `reserved_march_for_stamina` | 该轮只做了 1 个动作（`EXECUTE_INTEL_RESCUE_SURVIVORS`，187→175）就停；读数是 `marches=[GATHERING,RETURNING], used=2/3` ⇒ **恰好 1 格空闲，正是预留的那格，预留机制在正常工作**。同帧同生产 reserve 重放：`goal=None/GATHER_RESOURCE` 给停，而 **`goal=BEAST_HUNT` 给 `SCAN_MAP_FOR_BEAST`** ⇒ 预留从未挡住体力目标，是**停**挡住了全部。 |
+| `2026-09-21T03:44:56Z` | `alliance_state_unknown` | page=ALLIANCE，画面上明明有 `联盟科技` 带 25 角标。没有任何动作把客户端挪出该屏 ⇒ **下一轮开局还在同一屏**。 |
+
+**修法不是新机制**：`_yield_to_next_goal` 早已存在，上一轮只把**一个**理由接了进去。
+那种"点名一个理由"的写法正是缺陷的藏身处 —— `alliance_state_unknown`、`no_idle_march`、
+`camp_menu_never_drawn`、`training_queue_busy`、`research_queue_busy`、
+`verified_beast_target_not_visible` **全都走到同一行**，全都继续停轮。
+⇒ 问题从"是哪个理由"改成"**这条理由到底该不该结束整轮**"，而项目自己的 `is_fatal_stop`
+（runtime 用来在 DEGRADED 与 FATAL_STOPPED 之间选的那个）就是答案：**只有
+`FATAL_`/`ACCOUNT_`/`PAYMENT_` 结束本轮**，其余一律让位。
+
+边界与既有路径相同：**剩余迭代 > 0**、**同一 goal 一轮只让位一次**。所有可选 goal 都让位过后，
+调用返回 False，此时才停 —— **那才是诚实的"本轮没事可做了"**，而不是"第一个说不的 goal"。
+
+### 二、体力边界：30 尚未达标（已修 `e568017`）
+
+操作者口径：**体力低于 30**，且**达到 30 时仍未低于 30**。两处副本都写成了包含式：
+
+| 位置 | 旧 | 新 |
+|---|---|---|
+| `goal_library` | `READY if stamina > 30`；`completion=1.0 if stamina <= 30`；`distance=stamina-30` | `< STAMINA_FLOOR` 才算满足；`distance = stamina - FLOOR + 1` ⇒ **在 30 时 READY / 完成度 0 / 距离 1.0** |
+| `operations_policy.choose_stamina_goal` | `current <= 30 -> NONE` | `current < 30 -> NONE`（30 时继续消耗） |
+
+⇒ 各早停 1 点，而 1 点体量级是**一次完整的野兽出征**。
+新增 `goal_library.STAMINA_FLOOR = 30` 一处定义，状态/完成度/损失/距离全部由它派生。
+
+### 三、GUI 重启：正式桌面入口已确认可用，但**必须由操作者双击**
+
+诊断（用 `Get-CimInstance Win32_Process`，因为本环境 `tasklist` 在 Git Bash 里不可用）：
+
+| 事实 | 值 |
+|---|---|
+| 卡住的面板 | PID **11152**，`pythonw.exe`，**`C:\Users\xhw\.cache\codex-runtimes\...\pythonw.exe`** —— **不是项目 venv** |
+| worker | **不存在**（无 `run_live.py` 进程）；设备租约是 2026-09-19 的旧租约且 `released_at` 已写 |
+| 遗留进程 | 我此前会话的 `pytest`（PID 24624，卡了约 12 小时）—— 已清理 |
+
+⇒ 面板跑在错误解释器上（正是 `Start-Winter-Agent-V2.cmd` 注释里记的那个事故："a wrong interpreter
+reached production unnoticed ... without maa/cv2"）。
+
+按正式方式重启：`preflight` **PASS**（正确解释器 + MuMu `127.0.0.1:7555` 在线、`com.gof.china` 前台），
+先 `taskkill /T /F /PID 11152`，再用 **venv pythonw** 启动 —— 新面板起来并写了日志：
+
+    12:33:10  运行环境预检通过：E:\无尽冬日智能体\.venv\Scripts\python.exe
+    12:33:10  自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定
+
+**但它随后被回收了**：约 2 分钟后进程列表里已无该 PID，`panel.log` 停在 `12:33:10` 且**无退出记录**
+（被强制终止，没机会写日志）。⇒ 这正是启动脚本注释预警的那条：
+"A GUI started by a development tool cannot be kept alive -- that host reaps its children when
+its call ends, measured on panels 24936/25408"。
+
+⚠ **因此这一步无法由我代做**：不管用 `Start-Process` 还是 `cmd /c start`，进程都在本会话的作业对象里，
+会话结束即被回收。**必须由操作者双击 `Start-Winter-Agent-V2.cmd`**（它会自己跑 preflight 并用 venv
+解释器启动）。我另需说明：我那次启动**带了 `WINTER_AGENT_LAUNCH_PATH=desktop` 标记**，而那正是
+"从桌面启动"的声明 —— 我这次是伪造的，因为它是被开发工具启动的；面板若活着会把它当真实桌面 soak 计入。
+
+| # | 问题 | 状态 | 说明 |
+|---|---|---|---|
+| 89 | **`SAFE_STOP` 的让位只覆盖了非 fatal 理由，但 `best_goal is None` 时仍会结束本轮** | 🟠 **已定性，未修** | 让位需要有一个 goal 可让（`_yield_to_next_goal(goal=None)` 返回 False）。当调度器处于"探测"状态（当轮无可选 goal）且客户端停在无人认领的页面上时，仍会 `finish`。`_deferral_replan` 能缓解，但它只在 **MAP** 页生效（`OPEN_HOME` 的 `required_page` 就是 MAP）。⇒ 在 ALLIANCE/DAILY/MAIL 等页上"没活干"时只能停。**未修**：改它要动 `test_multitask_scheduler.py` 钉住的"无 goal 时不做 Back"（那条测试的理由是"Back 会被当成有活干"），需单独判断。 |
+| 90 | **`world.training` 仍无兵营维度（#86 未变）** | 🔴 **未修** | 三个兵营要分别检查，需要数据模型有那一维；本轮未动（真机验收前提是 AUTO 先恢复）。 |
+| 91 | **野兽搜索三模板仍无人使用** | 🔴 **未接（资产存在）** | `BTN_SEARCH_BEAST_TAB`(58,922)、`SEARCH_BEAST_LEVEL_5_SELECTED`(360,1040)、`BTN_SUBMIT_BEAST_SEARCH`(360,1200) 三个模板已在 `dataset/candidate/beast_search_v2_manifest.json`，**全部 `CANDIDATE` 且零技能引用**。而资源搜索链（`SUBMIT_RESOURCE_SEARCH` 等）**已 VERIFIED** ⇒ 这是操作者点名的"搜索→野兽页签→按等级搜"的最小接入面。 |
