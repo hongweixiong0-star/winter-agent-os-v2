@@ -10,6 +10,7 @@ from typing import Any, Callable, Mapping
 from .brain import RuleBrain
 from . import control_experience
 from . import goal_utility
+from . import ui_collection
 from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
@@ -847,6 +848,27 @@ class LiveRuntime:
             goal_id=goal_id,
             frame=after_screenshot or before_screenshot,
         )
+        # The automatic UI collector reads the same evidence, one step later (operator
+        # 2026-09-22): the frame this step already captured, the name it was aiming at, and the
+        # verifier's own verdict.  It writes candidate records and, once a step's verifier has
+        # proven an element's declared effect, a template into the one manifest.  It never
+        # observes, decides or clicks on its own, and a bug in it must not cost a run -- hence
+        # the swallow, the same trade ``_save_control_experience`` makes.
+        try:
+            self._collect_ui_evidence(
+                decision=decision,
+                before=before,
+                after=after,
+                execution=execution,
+                verification=verification,
+                observed_change=observed_change,
+                before_screenshot=before_screenshot,
+                after_screenshot=after_screenshot,
+                episode_id=str(getattr(getattr(self, "capture_dir", None), "name", "") or ""),
+                goal_id=goal_id,
+            )
+        except Exception:  # noqa: BLE001 - collection must never fail the step it reads
+            pass
         if self.episode_store is None:
             return
         failure = None
@@ -989,6 +1011,152 @@ class LiveRuntime:
             control_experience.save(self._control_ledger)
         except Exception:  # noqa: BLE001 - a ledger write must never fail a run
             pass
+
+    # ------------------------------------------------- automatic UI collection
+
+    def _ui_store(self) -> "ui_collection.UiCandidateStore | None":
+        """The candidate store, created once per run and never allowed to break one."""
+        store = getattr(self, "_ui_candidates", None)
+        if store is None:
+            try:
+                store = ui_collection.UiCandidateStore()
+            except Exception:  # noqa: BLE001 - collection is optional, playing is not
+                store = None
+            self._ui_candidates = store
+        return store
+
+    def _save_ui_candidates(self) -> None:
+        """Persist the candidate index and hold it to its bound, once per run.
+
+        Same single-exit discipline as the ledger above, and the same trade: the shipped copy
+        (``_collect_ui_evidence``) saves eagerly because a candidate whose crops exist but whose
+        index does not is an orphan file nobody can read, while reaching the cap is a
+        whole-run-scale event that belongs here.
+        """
+        store = getattr(self, "_ui_candidates", None)
+        if store is None:
+            return
+        try:
+            store.prune()
+            store.save()
+        except Exception:  # noqa: BLE001 - a store write must never fail a run
+            pass
+
+    def _collect_ui_evidence(
+        self,
+        *,
+        decision: Decision,
+        before: WorldState,
+        after: "WorldState | None",
+        execution: ExecutionResult | None,
+        verification: VerificationResult | None,
+        observed_change: str,
+        before_screenshot: "Path | None",
+        after_screenshot: "Path | None",
+        episode_id: str,
+        goal_id: str,
+    ) -> None:
+        """Turn the evidence this step already paid for into a UI candidate (operator 2026-09-22).
+
+        Four cases, and they are the four the directive names; nothing here observes, decides or
+        clicks:
+
+        (a) **named but unlocatable** -- template, ledger and printed words all failed, so the
+            step died with ``SEMANTIC_TARGET_NOT_VERIFIED``.  The record keeps the page, the name
+            and the frame; no crop, because no region was measured (inventing one is the mistake
+            the directive forbids).
+        (b) **located by the client's own printed words on this frame** -- there IS a measured
+            region (the token's box), so the element and its context are cropped, and the step's
+            own verifier decides whether that becomes a ``VERIFIED`` candidate.
+        (c) **exercised** -- an executed step on a page that already has candidates for this
+            semantic folds its outcome in: attempts counted, and a passed verifier promotes.
+        (d) **promotion to a template** -- only for a candidate a step's verifier proved, only
+            when the crop carries no countdown, and never over a protected record (the refusal
+            is reported, not swallowed).
+
+        The page is part of every key: the same icon on two pages is two controls, and a record
+        that merged them would let one page's evidence answer for the other.
+        """
+        store = self._ui_store()
+        if store is None:
+            return
+        target = ((execution.action.target if execution is not None else "") or "").strip()
+        if not target:
+            skill = self.registry.get(decision.skill)
+            target = ((skill.action.target if skill is not None else "") or "").strip()
+        if not target:
+            return
+        page = control_experience.label(before.page)
+        expected = decision.expected_result or ""
+        frame = after_screenshot or before_screenshot
+        goal = goal_id or str(self.brain.current_goal or "")
+
+        # (a) named and unlocatable
+        not_executed = execution is None or not execution.executed
+        if not_executed and (execution is None or execution.error == "SEMANTIC_TARGET_NOT_VERIFIED"):
+            store.stage_unlocated(
+                page=page,
+                semantic=target,
+                goal=goal,
+                episode=episode_id,
+                source_frame=str(before_screenshot or ""),
+                expected_effect=expected,
+            )
+            store.save()
+            return
+
+        proved = (
+            verification is not None
+            and verification.ok
+            and observed_change not in ("NO_OP", "UNKNOWN")
+        )
+
+        # (b) located by the client's own words on this frame
+        printed = (getattr(self, "_printed_boxes", None) or {}).get(f"{page}|{target}")
+        if printed is not None and frame is not None:
+            record = store.stage(
+                frame_path=frame,
+                page=page,
+                semantic=target,
+                box_norm=printed.get("box_norm") or {},
+                goal=goal,
+                episode=episode_id,
+                ocr_text=str(printed.get("word") or ""),
+                ocr_confidence=printed.get("confidence"),
+                recognition_method=ui_collection.METHOD_OCR_WORD,
+                expected_effect=expected,
+                notes=(
+                    "located on this frame by the client's own printed words; the element box is "
+                    "that text padded to a control-sized region"
+                ),
+            )
+            if record is not None:
+                store.record_attempt(
+                    page=page,
+                    semantic=target,
+                    verified=proved,
+                    observed_effect=observed_change,
+                    expected_effect=expected,
+                )
+                if proved:
+                    store.ingest(record, ocr_text=str(printed.get("word") or ""))
+                store.save()
+                return
+
+        # (c)/(d) fold an executed step's outcome into whatever is already known
+        if execution is not None and execution.executed:
+            touched = store.record_attempt(
+                page=page,
+                semantic=target,
+                verified=proved,
+                observed_effect=observed_change,
+                expected_effect=expected,
+            )
+            for record in touched:
+                if record.verification_status == ui_collection.STATUS_VERIFIED and not record.template_version:
+                    store.ingest(record, ocr_text=record.ocr_text)
+            if touched:
+                store.save()
 
     # ------------------------------------------------- utility bookkeeping
 
@@ -1734,7 +1902,15 @@ class LiveRuntime:
                 hit = find_printed_words(frame_path, words, ocr)
                 if hit is not None:
                     point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
-                    self._note_printed(semantic, page, f"the word {hit['word']!r}", point)
+                    self._note_printed(
+                        semantic,
+                        page,
+                        f"the word {hit['word']!r}",
+                        point,
+                        box_norm=hit.get("box_norm"),
+                        text=str(hit.get("word") or ""),
+                        confidence=hit.get("confidence"),
+                    )
                     return "FOUND", point
                 return "ABSENT", None
         if frame_path is None:
@@ -1746,7 +1922,23 @@ class LiveRuntime:
         if instruction is None:
             return "UNDECLARED", None
         point = (float(instruction["center_norm"][0]), float(instruction["center_norm"][1]))
-        self._note_printed(semantic, page, f"the client's own {instruction['phrase']!r}", point)
+        self._note_printed(
+            semantic,
+            page,
+            f"the client's own {instruction['phrase']!r}",
+            point,
+            # No box: the client drew an *instruction*, not a control, so the only measured
+            # region is the instruction's own text.  The point is what the caller taps; the
+            # collector anchors its element box on the same point and says so.
+            box_norm={
+                "x_norm": round(point[0], 4),
+                "y_norm": round(point[1], 4),
+                "w_norm": 0.0,
+                "h_norm": 0.0,
+            },
+            text=str(instruction.get("phrase") or ""),
+            confidence=instruction.get("confidence"),
+        )
         return "FOUND", point
 
     def _ocr_service(self):
@@ -1762,17 +1954,42 @@ class LiveRuntime:
                 return service
         return None
 
-    def _note_printed(self, semantic: str, page: str, source: str, point: tuple[float, float]) -> None:
+    def _note_printed(
+        self,
+        semantic: str,
+        page: str,
+        source: str,
+        point: tuple[float, float],
+        *,
+        box_norm: Mapping[str, Any] | None = None,
+        text: str = "",
+        confidence: float | None = None,
+    ) -> None:
         """Record and narrate one read, once per control: the layer must not be silent.
 
         ``_printed_reads`` is what makes "did the client's own words change what the machine
         did" answerable from the run rather than from a log, which is the same reason the
         ledger reads are kept.
+
+        ``box_norm``/``text``/``confidence`` are the same read's *shape*, kept because the
+        automatic UI collector needs a region rather than a point to crop an element from
+        (operator 2026-09-22).  They are optional so every existing caller is unchanged: a
+        caller that knows only the point records only the point.
         """
         line = f"{page}|{semantic}"
         self._printed_reads.append(
             f"{line} <- {source} @{point[0]:.4f},{point[1]:.4f}"
         )
+        if box_norm is not None:
+            boxes = getattr(self, "_printed_boxes", None)
+            if boxes is None:
+                boxes = {}
+                self._printed_boxes = boxes
+            boxes[line] = {
+                "box_norm": dict(box_norm),
+                "word": text,
+                "confidence": confidence,
+            }
         if line in self._printed_printed:
             return
         self._printed_printed.add(line)
@@ -1812,6 +2029,7 @@ class LiveRuntime:
             # exit.  A per-step rewrite of a JSON file would put disk I/O inside the
             # action loop for no gain -- nothing reads the ledger mid-run.
             self._save_control_experience()
+            self._save_ui_candidates()
             self._save_fairness()
             return LiveRun(tuple(steps), reason, tuple(item.as_row() for item in deferrals))
 

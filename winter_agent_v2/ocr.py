@@ -1797,6 +1797,18 @@ def find_printed_words(
             "exact": bool(exact),
             "center_norm": (round(centre[0], 4), round(centre[1], 4)),
             "confidence": confidence,
+            # The token's own box, normalised.  Additive: every existing caller reads
+            # ``word``/``center_norm``/``confidence`` and is unaffected.  The automatic UI
+            # collector needs the box rather than the centre, because an element crop taken
+            # from a centre needs a size and inventing one is what turns a measurement into a
+            # guess -- the client drew this rectangle, and it is the only honest starting point
+            # for "where is the control this word is printed on" (see ui_collection.py).
+            "box_norm": {
+                "x_norm": round(min(xs) / width, 4),
+                "y_norm": round(min(ys) / height, 4),
+                "w_norm": round((max(xs) - min(xs)) / width, 4),
+                "h_norm": round((max(ys) - min(ys)) / height, 4),
+            },
         }
         if best is None or confidence > best[0]:
             best = (confidence, row)
