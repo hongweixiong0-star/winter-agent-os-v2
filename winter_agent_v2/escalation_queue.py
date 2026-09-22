@@ -2405,6 +2405,11 @@ class EscalationQueueAdapter:
         over an hour and AUTO never got a cycle.  ``_activate_pending_versions`` ends those
         records in the same drain; this is the second lock on the same door, because a
         lease request that cannot be honoured must not be made even once.
+
+        A record with **no** ``after_version`` is skipped for the same reason and it is not
+        a variant of the above: nothing was ever recorded, so there is nothing to examine.
+        Measured 2026-09-22: a job cancelled at its 45-minute timebox leaves exactly that,
+        and this guard is what stops the device being asked for it every 40 seconds.
         """
         waiting = [
             record for record in self.ledger.snapshot().records.values()
@@ -2415,7 +2420,7 @@ class EscalationQueueAdapter:
         if head:
             waiting = [
                 record for record in waiting
-                if not record.after_version or commit_of(record.after_version) == head
+                if record.after_version and commit_of(record.after_version) == head
             ]
         return waiting[0] if waiting else None
 
@@ -3233,7 +3238,24 @@ class EscalationQueueAdapter:
                 continue
             if str(record.outcome) != VERSION_ACTIVATION_PENDING:
                 continue
-            if not (record.after_version and record.settled_at):
+            if not record.settled_at:
+                continue
+            if not record.after_version:
+                # The job ended and recorded no version at all.  Measured 2026-09-22: a job
+                # cancelled for exceeding its 45-minute timebox leaves exactly this -- state
+                # ``LIVE_VERIFY_PENDING``, outcome ``VERSION_ACTIVATION_PENDING``,
+                # ``settled_at`` set, ``after_version`` empty -- and before this branch it was
+                # skipped here *and* selected by ``validation_lease_target`` (whose guard
+                # treated "no version" as "no constraint"), so it asked for the device every
+                # ~40 seconds for as long as it stayed pending and could never settle: there
+                # is nothing to activate.  Same ending as the superseded case, different
+                # reason: neither the capability nor the job is judged here, the record is
+                # ended because the measurement it waits for cannot be taken.
+                self._retire_superseded_version(record, expected="", head=head, moment=moment)
+                activated.append((record.key, (
+                    f"{record.capability}: UNACTIVATABLE（job {str(record.job_id)[:8]} 结束时没有记下"
+                    f"任何版本，VERSION_ACTIVATION_PENDING 没有可激活的对象；已终结并交还设备）"
+                )))
                 continue
             expected = commit_of(record.after_version)
             if head and expected and expected != head:
@@ -3284,7 +3306,13 @@ class EscalationQueueAdapter:
     def _retire_superseded_version(
         self, record: "EscalationRecord", *, expected: str, head: str, moment: datetime,
     ) -> None:
-        """End a trace whose version the device can no longer run (operator §4).
+        """End a trace whose version cannot be activated on this device (operator §4).
+
+        Two ways to be unactivatable, one ending, and both are measured rather than
+        imagined.  A version that has been superseded (2026-09-21: ``91e3475`` waited while
+        the tree moved on by 57 commits) and a job that ended having recorded no version at
+        all (2026-09-22: cancelled at its 45-minute timebox).  In both cases the record
+        keeps asking for the device on every drain while no cycle can ever settle it.
 
         The record is not failed for a code reason and it is not verified -- it is *ended*,
         because the measurement it was waiting for cannot be taken.  ``NO_IMPROVEMENT`` is the
@@ -3320,12 +3348,22 @@ class EscalationQueueAdapter:
                 "before_version": record.before_version,
                 "after_version": record.after_version,
                 "explanation": (
-                    f"SUPERSEDED: this trace waited for version {expected[:12]} to be loaded and "
-                    f"run, but the tree is now {head[:12]}.  The examination drives the working "
-                    f"tree and never checks a version out, so no cycle can produce an episode on "
-                    f"{expected[:12]} -- the record would keep taking the device forever without "
-                    f"being able to settle.  Ended so ordinary gameplay resumes; the capability "
-                    f"itself is neither verified nor blamed, and a new gap may open a new trace."
+                    (
+                        f"SUPERSEDED: this trace waited for version {expected[:12]} to be loaded and "
+                        f"run, but the tree is now {head[:12]}.  The examination drives the working "
+                        f"tree and never checks a version out, so no cycle can produce an episode on "
+                        f"{expected[:12]} -- the record would keep taking the device forever without "
+                        f"being able to settle.  Ended so ordinary gameplay resumes; the capability "
+                        f"itself is neither verified nor blamed, and a new gap may open a new trace."
+                    )
+                    if expected else
+                    (
+                        "NO_VERSION: the job for this trace ended without recording an "
+                        "after_version, so VERSION_ACTIVATION_PENDING has nothing to activate and "
+                        "no cycle can ever settle it -- while it stayed pending it asked for the "
+                        "device on every drain.  Ended so ordinary gameplay resumes; the capability "
+                        "itself is neither verified nor blamed, and a new gap may open a new trace."
+                    )
                 ),
                 "recorded_at": moment.isoformat(),
             })

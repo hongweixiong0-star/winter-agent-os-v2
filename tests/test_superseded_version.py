@@ -227,3 +227,56 @@ def test_the_device_is_still_asked_for_when_the_commit_matches(tmp_path, monkeyp
     adapter = _adapter(tmp_path, head=AFTER, monkeypatch=monkeypatch)
     target = adapter.validation_lease_target()
     assert target is not None and target.key == KEY
+
+
+# ------------------------------------------------------------- fault 3: no version at all
+
+
+def test_a_job_that_recorded_no_version_is_ended_instead_of_re_queued(tmp_path, monkeypatch):
+    """Measured 2026-09-22: a job cancelled at its 45-minute timebox leaves exactly this.
+
+    State ``LIVE_VERIFY_PENDING``, outcome ``VERSION_ACTIVATION_PENDING``, ``settled_at``
+    set, and **no** ``after_version``.  Nothing can ever be activated, so no drain can ever
+    settle it -- and the lease guard treated "no version" as "no constraint", so it asked
+    for the device every ~40 seconds for as long as it stayed pending.
+    """
+    adapter = _adapter(tmp_path, rows=_rows(after=""), head=AFTER, monkeypatch=monkeypatch)
+    record = adapter.ledger.snapshot().get(KEY)
+    assert record.after_version == "" and record.settled_at, "the fixture is the cancelled job"
+
+    events = adapter._activate_pending_versions(adapter.ledger.snapshot(), NOW)
+    assert len(events) == 1
+    key, message = events[0]
+    assert key == KEY and "UNACTIVATABLE" in message
+
+    record = adapter.ledger.snapshot().get(KEY)
+    assert record.state == FAILED, "it must stop being a pending trace, or it keeps asking"
+    assert record.outcome == NO_IMPROVEMENT, "ended, not verified and not blamed on the code"
+    assert not eq.unfinished_trace(record), (
+        "a new gap for the same capability must be allowed to open a new trace"
+    )
+
+
+def test_the_no_version_end_says_which_kind_of_end_it_was(tmp_path, monkeypatch):
+    """The two endings read differently, so a reader does not have to guess which happened."""
+    adapter = _adapter(tmp_path, rows=_rows(after=""), head=AFTER, monkeypatch=monkeypatch)
+    adapter._activate_pending_versions(adapter.ledger.snapshot(), NOW)
+
+    row = [r for r in adapter.ledger.events()
+           if r.get("event") == "reconciled" and r.get("after_version") == ""][-1]
+    assert row["superseded_version"] == ""
+    assert row["superseded_by"] == AFTER, "the version the device runs is still recorded"
+    assert row["verified_episodes"] == 0
+    assert row["live_improvement"] is False and row["repair_used"] is False
+    assert "NO_VERSION" in row["explanation"]
+    assert "SUPERSEDED" not in row["explanation"], (
+        "a job that never recorded a version was not superseded by anything"
+    )
+
+
+def test_the_device_is_not_asked_for_a_trace_that_has_no_version(tmp_path, monkeypatch):
+    """Second lock on the same door, for the no-version case."""
+    adapter = _adapter(tmp_path, rows=_rows(after=""), head=AFTER, monkeypatch=monkeypatch)
+    assert adapter.validation_lease_target() is None, (
+        "there is nothing to examine, so no request may go out"
+    )
