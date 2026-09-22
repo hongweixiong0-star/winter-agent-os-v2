@@ -1,0 +1,16 @@
+lease: acquired (expires 2026-09-22T19:22:31.289558+00:00)
+device resolution (wm size): (720, 1280) focus=com.gof.china
+page=POPUP conf=0.99 popup=EXIT_CONFIRM panel_open=None rows=[]
+   red_dot BTN_OPEN_DAILY                     UNKNOWN
+   red_dot BTN_OPEN_MAIL                      UNKNOWN
+   red_dot QUICK_PANEL_ROW_ALLIANCE_DONATION  UNKNOWN
+   red_dot QUICK_PANEL_ROW_HERO_RECRUIT       UNKNOWN
+   red_dot QUICK_PANEL_ROW_LANCER_CAMP        UNKNOWN
+   red_dot QUICK_PANEL_ROW_MARKSMAN_CAMP      UNKNOWN
+   red_dot QUICK_PANEL_ROW_MY_REWARDS         UNKNOWN
+   red_dot QUICK_PANEL_ROW_RESEARCH           UNKNOWN
+   red_dot QUICK_PANEL_ROW_SHIELD_CAMP        UNKNOWN
+   red_dot TAB_ALLIANCE                       UNKNOWN
+   red_dot TAB_EXPLORATION                    UNKNOWN
+   red_dot TAB_HERO                           UNKNOWN
+frame: E:\无尽冬日智能体\dataset\truth_audit\nav_to_map_20260918\preflight_20260922_190731_page.png
