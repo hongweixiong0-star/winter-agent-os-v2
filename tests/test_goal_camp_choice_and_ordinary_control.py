@@ -654,5 +654,73 @@ class TrainingStartHopTests(unittest.TestCase):
         self.assertLess(abs(by_template[1] - by_printed[1]), 0.02)
 
 
+class TroopWordDerivationTests(unittest.TestCase):
+    """The page title is read by the troop word it contains, not by a table of full titles.
+
+    Measured live 2026-09-22T05:24:12Z: tapping 射手营's tab opened the camp and the page drew
+    ``英勇射手``.  The full-title table had 英勇盾兵 / 刚毅射手 / 王牌射手 and not that one, so the
+    page read UNKNOWN and the switch was recorded as unproven -- a real, well-understood screen
+    lost to an incomplete list.  The classifier's own note had already said which fix was right:
+    match the troop word, because the adjective is what the client varies.
+    """
+
+    def test_the_troop_word_in_a_title_decides_the_troop(self):
+        from winter_agent_v2.ocr import troop_from_title
+
+        self.assertEqual(troop_from_title("英勇射手"), "MARKSMAN")
+        self.assertEqual(troop_from_title("英勇盾兵"), "INFANTRY")
+        self.assertEqual(troop_from_title("刚毅矛兵"), "LANCER")
+        self.assertEqual(troop_from_title("王牌射手"), "MARKSMAN")
+        # A title the project has never seen still resolves, which is the whole point.
+        self.assertEqual(troop_from_title("王牌盾兵"), "INFANTRY")
+
+    def test_a_tab_label_is_not_a_title(self):
+        from winter_agent_v2.ocr import troop_from_title
+
+        for label in ("盾兵营", "矛兵营", "射手营"):
+            self.assertIsNone(troop_from_title(label))
+
+    def test_an_unrelated_word_is_not_a_title(self):
+        from winter_agent_v2.ocr import troop_from_title
+
+        self.assertIsNone(troop_from_title("立即完成"))
+        self.assertIsNone(troop_from_title("原始时间：04:42:00"))
+
+
+class MarksmanCampPageFrameTests(unittest.TestCase):
+    """The 射手营 page, on the frame that produced the failure above."""
+
+    FRAME = ROOT / (
+        "dataset/raw/control_panel/runtime_auto/20260922_131903_427429/"
+        "20260922_131903_427429_step_013_after_refresh_2_20260922T052412735195.png"
+    )
+
+    def test_the_marksman_page_is_named_and_attributed(self):
+        if not self.FRAME.exists():
+            self.skipTest("the live capture was pruned by the retention policy")
+        import json
+
+        from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
+        from winter_agent_v2.vision import SemanticWorldVision
+
+        cfg = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+        vision = HybridVision(
+            SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"),
+            OCRService(ResilientOCRBackend(RapidOCRBackend(Path(cfg["ocr"]["module_path"])))),
+        )
+        world = vision.observe(image_path=self.FRAME)
+        self.assertEqual(world.page, Page.TRAINING)
+        self.assertEqual(world.training.get("troop_type"), "MARKSMAN")
+        self.assertEqual(world.training.get("camp_open_label"), "射手营")
+        self.assertEqual(world.training.get("camps_seen"), ["盾兵营", "矛兵营", "射手营"])
+        # ...and the switch the client really made is provable from two real frames.
+        from winter_agent_v2.verifier import verify_training_camp_switched
+
+        before = WorldState(
+            page=Page.TRAINING, training={"camp_open_label": "矛兵营"}, confidence=0.99
+        )
+        self.assertTrue(verify_training_camp_switched(before, world).ok)
+
+
 if __name__ == "__main__":
     unittest.main()

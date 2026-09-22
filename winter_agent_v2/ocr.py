@@ -48,6 +48,36 @@ LABEL_TO_TROOP: dict[str, str] = {
 }
 
 
+#: The troop word inside a page title, and the troop it names.  This is the *derivation* the
+#: classifier's own note asked for -- "the title wording is not a constant across camps, so the
+#: match is on the TROOP WORD the title contains rather than on a full title string" -- and it
+#: exists because the full-title table above could not keep up with the client: measured live
+#: 2026-09-22T05:24:12Z, the 射手营 page drew ``英勇射手``, which was in no table, so the page
+#: read UNKNOWN and a tap that had opened the camp was recorded as an unproven switch.
+TROOP_WORDS: tuple[tuple[str, str], ...] = (
+    ("盾兵", "INFANTRY"),
+    ("矛兵", "LANCER"),
+    ("射手", "MARKSMAN"),
+)
+
+
+def troop_from_title(text: str) -> str | None:
+    """The troop a page title names, or ``None`` when this token is not a camp title.
+
+    Deliberately *not* a table lookup: the client varies the adjective (英勇 / 刚毅 / 王牌) and
+    has been measured changing it, while 盾兵 / 矛兵 / 射手 have held.  A token that ends in 营 is
+    a tab label rather than a title and is refused, because all three tabs are drawn at once and
+    accepting them would report three troops for one page.
+    """
+    value = str(text or "").strip()
+    if not value or value.endswith("营"):
+        return None
+    for word, troop in TROOP_WORDS:
+        if word in value:
+            return troop
+    return None
+
+
 @dataclass(frozen=True)
 class OCRToken:
     text: str
@@ -425,7 +455,7 @@ class OCRPageClassifier:
         #   (英勇盾兵 here, conf 0.996), and a title only exists for the camp the page is open on.
         if (
             all(text in exact_texts for text in ("盾兵营", "矛兵营", "射手营"))
-            and any(title in exact_texts for title in TITLE_TO_TROOP)
+            and any(troop_from_title(text) for text in exact_texts)
         ):
             found.append(Page.TRAINING)
         if len(set(found)) != 1:
@@ -546,11 +576,8 @@ class OCRPageClassifier:
             # stays unambiguous.  The tab labels are still recorded in ``camps_seen`` as
             # corroboration, and ``camp_open_label`` is only claimed when the open camp's own
             # label is among them.
-            titles = [text for text in exact_texts if text in TITLE_TO_TROOP]
-            named = {
-                TITLE_TO_TROOP[title]
-                for title in titles
-            }
+            titles = [text for text in exact_texts if troop_from_title(text)]
+            named = {troop_from_title(title) for title in titles}
             if len(named) == 1:
                 training["troop_type"] = named.pop()
             elif not named:
