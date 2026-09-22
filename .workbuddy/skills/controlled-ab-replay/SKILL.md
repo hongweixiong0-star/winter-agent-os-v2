@@ -1,8 +1,8 @@
 ---
 name: controlled-ab-replay
-description: "Prove a decision-layer change in Winter Agent OS V2 (priority, ranking, gating, a branch) using recorded production frames and no device: rebuild the world from each frame with the production vision, then toggle exactly one variable between two runs of the same code. Use when the change is a judgement rather than a pixel, when AUTO holds the device, or when you need cause rather than correlation."
-description_zh: "离线受控 A/B 回放：同帧同代码只切一个变量，用生产帧证明决策层改动"
-description_en: "Controlled single-variable A/B replay over production frames for decision-layer changes"
+description: "Prove a decision-layer change in Winter Agent OS V2 (priority, ranking, gating, a branch) using recorded production frames and no device: rebuild the world from each frame with the production vision, then toggle exactly one variable between two runs of the same code. Also covers whole-RUN replay -- feeding a recorded run's frames in order into ONE brain instance to attribute a decision chain whose reasons never reached episodes.jsonl. Use when the change is a judgement rather than a pixel, when AUTO holds the device, or when you need cause rather than correlation."
+description_zh: "离线受控 A/B 回放：同帧同代码只切一个变量；也覆盖整轮回放（按序喂进同一个 brain 实例，为没有进语料的决策链归因）"
+description_en: "Controlled single-variable A/B replay over production frames, and whole-run decision replay"
 agent_created: true
 ---
 
@@ -59,6 +59,37 @@ before = library.rank(goals, replace(world, red_dots={}))        # 变量关掉
   分数与来源）+ `README.md`（口径、结果表、**刻意没做的事**、复算命令）。
   帧不进 git（`.gitignore`），README 里写路径即可复现。
 
+## 3b. 整轮回放：当问题是"**这一串**决策为什么会这样"
+
+单帧 A/B 回答"这条规则改不改变选择"；但本项目更常见的问题是
+"**一个运行为什么来回走**"——而 `episodes.jsonl` 当时**不记 `decision.reason`**
+（本项目的 `Episode.decision_reason` 2026-09-23 才落地），运行时日志只保留最新一轮，
+于是**理由没有幸存证人**，帧是唯一能回放的东西。工具：`tools/replay_run_decisions.py`。
+
+三条纪律，缺一条结论就不能信：
+
+1. **按运行分组、按顺序喂，而且一个 run 只用一个 brain 实例。**
+   `RuleBrain` 的计数器（`ordinary_attempts`、`_panel_row_attempts`）和运行时的
+   `_replan_attempted` / `_barren_pages` 都是**运行内状态机**；每步新建实例 = 每步重放第一步。
+   同理，运行时侧的兜底分支要用 `object.__new__(LiveRuntime)`（照
+   `tests/test_capability_gate.py` 的写法）**保留跨步状态**。
+2. **回放结果必须与语料逐条对账，并公布一致率**，而不是只报成功的那些。
+   本项目：18 个空转运行 36 步里**一致 28 步**，不一致的 8 步是"生产里当时**有**目标的步骤"——
+   回放只重建无目标链，限度要写进工具 docstring 和 README。**一致率是这套证据的可信区间。**
+3. **A/B 做在同一个工具里**（每个运行跑两遍：带守卫 / 不带守卫），而不是"改代码前跑一次、
+   改代码后跑一次"。后者会被"两次运行之间机器上的台账变了"污染，而且无法在同一个归档里证明
+   两侧只差一个变量。本项目：**36 步 → 27 步，7 个运行提前诚实停止**。
+
+### 3c. 基线那一腿的两个坑（都踩过）
+
+- **把新增的测试文件挪开再做基线**。新测试引用新符号，无改动时**收集期就报错**，
+  pytest 退出码 2，整腿没有任何汇总（本项目连续两次 A/B 因此作废）。
+  基线要跑的是**同一批既有文件**，再单独跑新文件。
+- **绝不要在测试还在跑的时候 `git stash`**。stash 会改工作树，而套件读工作树
+  （本项目有一次 2671 项的全量跑在 18% 处被自己 stash 掉 `runtime.py` 打死；
+  另一次是 onnxruntime 在多线程下原生崩溃——环境问题，也要如实写进提交信息，不要冒充通过）。
+  做法：`git stash push … && pytest …; git stash pop` 写成**一条命令**，且不与任何后台套件并行。
+
 ## 判据（本项目已付过代价的）
 
 - **一个新项必须有界，而且界要算出来**：`RED_DOT_BONUS = 60` 的依据是板上真实间隙
@@ -74,6 +105,17 @@ before = library.rank(goals, replace(world, red_dots={}))        # 变量关掉
 - **确认改动的日志字段**：项要进 `as_row()` / `why()`，让决策日志写出"是哪个入口在指"，
   否则事后只能看到一个 +60。
 - **负向对照为 0 才算通过**；对照组非 0 时先找误触发，不要解释成"可能是别的原因"。
+- **"界"的检查**：看到"某某每轮只能一次"的界，先问它保护的是**一个动作**还是**一对动作**。
+  本项目真实缺陷：`_replan_attempted` 的注释自称防两页乒乓，实测只给双向环的**一侧**上界，
+  环还在（18/75 个运行纯粹在 `OPEN_MAP` ↔ `OPEN_HOME` 之间来回）。
+  **给环的一半加上界，环没有消失**；缺的往往不是第二个界，是**记忆**（哪一页已经看过且什么都没有）。
+- **状态机式的桩要真的会变**：给整轮测试造设备/视觉桩时，让"视觉读到的页面"由**桩自己收到的点击**
+  推出来（本项目 `test_no_repeated_look_around._TwoPageClient`）。忽略点击的桩会让运行因为
+  **真实客户端给不出的理由**绕圈，于是测试在测一个不存在的世界。
+- **新名字要同时登记到所有读这份词汇表的地方**：本项目一个停机理由要进
+  `runtime_snapshot.NON_FATAL_STOPS`、面板的 `REASON_ZH`、`RUNTIME_WAITING_STOPS`、
+  `summarize_runtime_result` 的 `successful_stops` —— 少一处，一个每步都验证通过的运行
+  在面板上显示 ● 异常。**加理由前先 grep 这个字符串在别处的用法。**
 
 ## 反面清单
 
