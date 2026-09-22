@@ -1206,8 +1206,27 @@ class RuleBrain:
                 # SELECT_INFANTRY_CAMP carried training["camp_tap_norm"] = (0.441, 0.4551), i.e.
                 # (317, 583) -- inside the ring -- action_backend was ADB so the tap really went
                 # out, and the outcome was FAILURE / INFANTRY_CAMP_MENU_NOT_PROVEN with
-                # after.training EMPTY: neither a menu nor the highlight.  The ring was simply
-                # gone, which is what the client does when a tap lands on nothing.
+                # after.training EMPTY: no menu drawn.
+                #
+                # One clause of that reading is now withdrawn, and issue #92 is where it was
+                # caught: "the ring was simply gone, which is what the client does when a tap
+                # lands on nothing" is not supported, because the client takes the ring away by
+                # itself.  Measured 2026-09-23: on the frames where the city is on screen and the
+                # 快捷面板 is closed, the ring is present in 62 alternating runs across 217 frames
+                # between 16:08 and 18:00 -- bursts of one to six frames lasting ~5-40 s, quiet
+                # stretches of 5-23 minutes, and flips on and off inside a second or two while the
+                # page stays HOME.  24 of those frames sit on steps as unrelated as OPEN_MAIL,
+                # OPEN_DAILY, OPEN_MAP and BACK.  So on those four live attempts the ring's
+                # absence after the tap says nothing about where the tap landed; what remains as
+                # failure evidence is that no menu was drawn, which is enough for FAILURE but not
+                # for the explanation that was built on it.
+                #
+                # This also corrects the transcript of 17:50:59 the same evening: that tap on the
+                # panel's green tick closed the panel, and the ring seen in the next frame is the
+                # client's own drawing, not the tap's consequence.  The tick still collected
+                # nothing -- the row read 已完成 / DONE when the panel was re-read at 17:53:39,
+                # 17:54:12 and 17:54:28 -- but "the tap drew a guided highlight at the camp" is
+                # withdrawn.
                 #
                 # Four live taps now, four failures: three at the template's own centre
                 # (346, 682, on bare ground; one of them ending on the map) and one inside the

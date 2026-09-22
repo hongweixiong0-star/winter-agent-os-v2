@@ -6,23 +6,27 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **FREE_STAMINA_CLAIM_NOT_PROVEN** x236 all-time; recent=153 (last 2d), last seen 2026-09-20T10:18:03.144489+00:00 — CLAIM_FREE_STAMINA(236)
-- **SEMANTIC_TARGET_NOT_VERIFIED** x224 all-time; recent=90 (last 2d), last seen 2026-09-20T13:00:04.155708+00:00 — SELECT_RESOURCE(44), DISMISS_MAIL_GENERIC_REWARD(39), DISMISS_INTEL_REWARD(35)
-- **ALLIANCE_GIFTS_CLAIM_NOT_PROVEN** x11 all-time; recent=11 (last 2d), last seen 2026-09-19T09:09:43.182090+00:00 — ALLIANCE_GIFTS(11)
-- **INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN** x12 all-time; recent=10 (last 2d), last seen 2026-09-19T12:31:43.758085+00:00 — NAVIGATE_INFANTRY_CAMP(12)
-- **SAFE_BACK_NOT_PROVEN** x13 all-time; recent=9 (last 2d), last seen 2026-09-20T10:16:19.235731+00:00 — BACK(13)
-- **EXPLORATION_IDLE_DIALOG_NOT_PROVEN** x8 all-time; recent=7 (last 2d), last seen 2026-09-19T11:24:22.269603+00:00 — EXPLORATION_IDLE_CLAIM(8)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x268 all-time; recent=119 (last 2d), last seen 2026-09-21T14:22:24.381116+00:00 — SELECT_RESOURCE(44), DISMISS_MAIL_GENERIC_REWARD(42), DISMISS_INTEL_REWARD(35)
+- **RESOURCE_NOT_FOUND** x55 all-time; recent=25 (last 2d), last seen 2026-09-20T15:54:31.788819+00:00 — SUBMIT_RESOURCE_SEARCH(55)
+- **SAFE_BACK_NOT_PROVEN** x25 all-time; recent=14 (last 2d), last seen 2026-09-21T11:21:24.378102+00:00 — BACK(25)
+- **EXPLORATION_IDLE_DIALOG_NOT_PROVEN** x20 all-time; recent=12 (last 2d), last seen 2026-09-21T14:15:09.500699+00:00 — EXPLORATION_IDLE_CLAIM(20)
+- **BEAST_TARGET_SELECTION_NOT_PROVEN** x7 all-time; recent=6 (last 2d), last seen 2026-09-21T11:36:03.193288+00:00 — SELECT_BEAST_TARGET_LABELLED(6), SELECT_BEAST_TARGET(1)
+- **NO_EXECUTION** x9 all-time; recent=4 (last 2d), last seen 2026-09-21T12:11:28.398927+00:00 — SAFE_STOP(9)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
+- `CANCEL_DUPLICATE_TARGET` never succeeded (attempts=1, failure=1)
 - `CONFIRM_EXPLORATION_IDLE_CLAIM` never succeeded (attempts=2, failure=2)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
-- `DISPATCH_BEAST` never succeeded (attempts=1, failure=1)
+- `DISMISS_SHARED_REWARD` never succeeded (attempts=11, failure=11)
+- `LEAVE_FOREIGN_LAYER` never succeeded (attempts=1, failure=1)
+- `OPEN_BEAST_SEARCH_TAB` never succeeded (attempts=2, failure=2)
 - `RESEARCH` never succeeded (attempts=1, failure=0)
-- `SAFE_STOP` never succeeded (attempts=5, failure=5)
+- `SAFE_STOP` never succeeded (attempts=9, failure=9)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
-- `SELECT_INFANTRY_CAMP` never succeeded (attempts=2, failure=2)
+- `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=5, failure=5)
+- `SELECT_INFANTRY_CAMP` never succeeded (attempts=3, failure=3)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 149 uncommitted file(s): ['M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
+- 170 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md']
 <!-- /AUTO:open_issues -->
 
 ---
@@ -1103,3 +1107,4 @@ its call ends, measured on panels 24936/25408"。
 | 89 | **`SAFE_STOP` 的让位只覆盖了非 fatal 理由，但 `best_goal is None` 时仍会结束本轮** | 🟠 **已定性，未修** | 让位需要有一个 goal 可让（`_yield_to_next_goal(goal=None)` 返回 False）。当调度器处于"探测"状态（当轮无可选 goal）且客户端停在无人认领的页面上时，仍会 `finish`。`_deferral_replan` 能缓解，但它只在 **MAP** 页生效（`OPEN_HOME` 的 `required_page` 就是 MAP）。⇒ 在 ALLIANCE/DAILY/MAIL 等页上"没活干"时只能停。**未修**：改它要动 `test_multitask_scheduler.py` 钉住的"无 goal 时不做 Back"（那条测试的理由是"Back 会被当成有活干"），需单独判断。 |
 | 90 | **`world.training` 仍无兵营维度（#86 未变）** | 🔴 **未修** | 三个兵营要分别检查，需要数据模型有那一维；本轮未动（真机验收前提是 AUTO 先恢复）。 |
 | 91 | **野兽搜索三模板仍无人使用** | 🔴 **未接（资产存在）** | `BTN_SEARCH_BEAST_TAB`(58,922)、`SEARCH_BEAST_LEVEL_5_SELECTED`(360,1040)、`BTN_SUBMIT_BEAST_SEARCH`(360,1200) 三个模板已在 `dataset/candidate/beast_search_v2_manifest.json`，**全部 `CANDIDATE` 且零技能引用**。而资源搜索链（`SUBMIT_RESOURCE_SEARCH` 等）**已 VERIFIED** ⇒ 这是操作者点名的"搜索→野兽页签→按等级搜"的最小接入面。 |
+| 92 | **金环/教学手指是客户端自己周期性画的，单帧的"有环/无环"不能作为任何判据的证据** | 🟠 **已定性 + 已修一处（verifier）** | 2026-09-23 晚 16:08–18:00，把 `episodes.jsonl` 每步保存的帧按"城市可见 + 快捷面板关闭"筛出 217 帧（只有这类帧才可能看到环），对 `TARGET_INFANTRY_CAMP_HIGHLIGHTED` 逐帧做匹配：**62 段交替**，段长 1–6 帧（约 5–40 s），中间静默 5–23 分钟，且页面保持 HOME 时**1–2 秒内就能翻转**；其中 24 帧落在 `OPEN_MAIL`/`OPEN_DAILY`/`OPEN_MAP`/`BACK` 这类与训练无关的步骤上。⇒ ① 17:50:59 那次按绿勾之后出现的环**不是那次 tap 画的**（上一轮记录已撤回，见 brain.py 注释）；② `verify_infantry_camp_highlighted` 用"有环"作为**到达兵营的证明**，在单帧上不成立（#82 的"假到达"现在有了机制与数字）；③ `verify_camp_menu_reobserved` 用"环还在"作为等待成功条件 = **让一次掷硬币判结论**，已改为只看页面，环只作证据记录（`ring_still_drawn` / `ring_absent_is_not_progress`）。**未做**：`WAIT_FOR_CAMP_MENU` 的 35%（45/127）浪费仍照旧（改它要动 3 个测试与接线表，需单独一轮）。 | 另：2026-09-20 那 4 次失败的说明里"环消失了，正是点空处时客户端的样子"这句**不成立**（环本来就会自己消失），剩下的失败依据只有"菜单没画出来"。金环归属经项目自己的 `BUILDING_INFANTRY_CAMP` 模板复核（17:51:00 帧得分 0.649，科研所 0.232、仓库 0.301，落点与环重合，环下方就是列队的盾兵）⇒ 2026-09-08 的命名**成立**，"环画在科研所上"这一推断已撤回。 |

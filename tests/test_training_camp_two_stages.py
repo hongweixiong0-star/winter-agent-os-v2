@@ -103,6 +103,27 @@ class StageAVerifierTest(unittest.TestCase):
         self.assertTrue(result.ok, result.reason)
         self.assertTrue(result.evidence["menu_drawn"])
 
+    def test_the_ring_pulsing_off_is_not_a_failed_wait(self):
+        """Measured 2026-09-23: the client draws this ring on its own schedule.
+
+        Over the evening session's frames, restricted to those where the city is on screen and the
+        快捷面板 is closed -- the only frames in which the ring can be seen at all -- the template
+        ``TARGET_INFANTRY_CAMP_HIGHLIGHTED`` is present in 62 alternating runs across 217 frames
+        between 16:08 and 18:00: bursts of one to six frames lasting ~5-40 s, separated by quiet
+        stretches of 5-23 minutes, and it flips on and off inside a second or two while the page
+        stays HOME.  Twenty-four of those frames sit on steps as unrelated as OPEN_MAIL, OPEN_DAILY,
+        OPEN_MAP and BACK.
+
+        So a wait whose only failure evidence was "the ring pulsed off" was never a failed wait, and
+        this pins the corrected verdict.  The guard the verifier exists for -- a wait that ends
+        anywhere but HOME is never a success -- is untouched and still tested below.
+        """
+        after = WorldState(page=Page.HOME, training={}, confidence=0.99)  # the ring is not drawn here
+        result = verify_camp_menu_reobserved(stage_a(), after)
+        self.assertTrue(result.ok, result.reason)
+        self.assertFalse(result.evidence["ring_still_drawn"])
+        self.assertTrue(result.evidence["ring_absent_is_not_progress"])
+
     def test_a_wait_that_ends_on_the_map_is_never_a_success(self):
         # This is the exact regression: the old path tapped in Stage A and the client
         # ended on the map.  A wait that lands there must fail loudly.

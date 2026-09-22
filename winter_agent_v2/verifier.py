@@ -180,30 +180,43 @@ def verify_camp_menu_reobserved(before: WorldState, after: WorldState) -> Verifi
     (``step_004_after_refresh_2`` is the world map), which is why the route must wait
     instead of tapping.
 
-    Nothing is sent, so the only honest expectations are:
+    Nothing is sent, so the only honest expectation is that nothing happened:
 
-      * the client is still on HOME, and
-      * the camp is still highlighted (menu not drawn) or the menu has since drawn.
+      * the client is still on HOME.
 
     A wait that ends on the MAP is precisely the failure this guards against, so it
     must never be recorded as a successful wait.
+
+    **The ring is recorded, but it is not required to still be there** -- and the reason is measured
+    rather than cautious.  2026-09-23, over the evening session's frames (the city on screen,
+    the 快捷面板 closed, i.e. the only frames in which the ring can be seen at all): the ring is
+    present in 62 alternating runs across 217 frames between 16:08 and 18:00, in bursts of one to six
+    frames lasting ~5-40 s, separated by quiet stretches of 5-23 minutes, and it flips on and off
+    inside a second or two *while the page stays HOME*.  It is drawn on steps as unrelated as
+    OPEN_MAIL, OPEN_DAILY, OPEN_MAP and BACK, so the client draws it on its own schedule.
+
+    Requiring it here was therefore deciding this verdict by a coin flip: a wait whose only failure
+    evidence was "the ring pulsed off" is recorded as ``CAMP_MENU_REOBSERVE_NOT_PROVEN`` and the run
+    retries a step that was never wrong.  ``ring_absent_is_not_progress`` in the evidence says so out
+    loud, and the ring's state is still published so nothing about the frame is hidden.
     """
     before_ok = (
         before.page is Page.HOME
         and before.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED"
     )
-    still_highlighted = (
+    ring_still_drawn = (
         after.page is Page.HOME
         and after.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED"
     )
     menu_drawn = after.page is Page.HOME and after.training.get("menu_open") is True
-    ok = before_ok and (still_highlighted or menu_drawn)
+    ok = before_ok and after.page is Page.HOME
     return VerificationResult(
         ok,
         "OK" if ok else "CAMP_MENU_REOBSERVE_NOT_PROVEN",
         {
             "before_highlighted": before_ok,
-            "still_highlighted": still_highlighted,
+            "ring_still_drawn": ring_still_drawn,
+            "ring_absent_is_not_progress": not ring_still_drawn,
             "menu_drawn": menu_drawn,
             "page_after": after.page.value,
         },
