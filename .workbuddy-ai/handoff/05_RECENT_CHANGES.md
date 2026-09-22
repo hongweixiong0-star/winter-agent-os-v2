@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `ca5524f 2026-09-23T06:28:15+08:00 fix(runtime): a refusal names its gate -- 21 of TRY_ORDINARY_CONTROL's 32 failures said "the frame names no control"`
+- `de55d6a 2026-09-23T05:57:58+08:00 docs(memory): the expert package shipped a venv path that no longer exists -- 31 command lines fixed`
+- `556aaa8 2026-09-23T05:56:00+08:00 docs(handoff): the red dot is a priority signal now -- #102, and what §二③-⑥ still need`
 - `9496761 2026-09-23T05:54:57+08:00 feat(red-dot): the client's dot becomes a bounded priority signal, and a binding that named a route domain is fixed`
 - `c522bc9 2026-09-23T04:41:32+08:00 fix(home): close the resource-search panel before going home -- the guard three goals had and four did not`
 - `9640fcf 2026-09-23T04:31:04+08:00 docs(skill): when the probe aborts on a missing exit, check whether the runtime fails there too`
@@ -15,22 +18,12 @@ Last 12 commits (newest first):
 - `41589cd 2026-09-23T04:11:55+08:00 docs(skill): directed device verification -- lease, frame-derived coordinates, and when to refuse to tap`
 - `9a19d33 2026-09-23T04:11:21+08:00 feat(live): the row's point is verified on the device, and tapping a finished row draws the client's marker`
 - `ab38772 2026-09-23T04:00:04+08:00 docs(skill): the shape the fix took -- locate the control by an opaque glyph inside it, and never fall back to a guess`
-- `e93ea44 2026-09-23T03:59:43+08:00 fix(panel): a row's arrow point comes from the button's own chevron, not from a band that reaches the city`
-- `e0c0da9 2026-09-23T03:41:37+08:00 docs(skill): the tap point itself can be the defect -- check the ledger's tap_point against the drawn control`
-- `1b3114f 2026-09-23T03:41:08+08:00 docs(evidence): the panel row -> camp menu -> training page chain is recorded on the device for the first time`
 
-Uncommitted changes: 463
+Uncommitted changes: 482
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
-- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
-- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
-- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
-- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
-- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
 - ` M .workbuddy/memory/2026-09-21.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
@@ -40,6 +33,13 @@ Uncommitted changes: 463
 - ` M knowledge/game/capability_catalog.json`
 - ` M knowledge/goals/capability_skill_map.json`
 - ` M knowledge/goals/goal_capability_map.json`
+- ` M knowledge/perception/candidates/INDEX.json`
+- ` M knowledge/perception/candidates/alliance__eca25dc9a7/metadata.yaml`
+- ` M knowledge/perception/pages/INDEX.json`
+- ` M knowledge/preload/INDEX.json`
+- ` M knowledge/preload/TROOP_SELECT.json`
+- ` M knowledge/ui/page_transitions.json`
+- ` M learning/candidate_attempt_pool.json`
 <!-- /AUTO:recent_commits -->
 
 ---
