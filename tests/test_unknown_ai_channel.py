@@ -30,6 +30,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -137,6 +138,7 @@ class _StubBridge:
         self.available = available
         self.statuses = dict(statuses or {})
         self.submitted = []
+        self.cancelled = []
         self._next = 0
 
     def is_available(self):
@@ -150,6 +152,10 @@ class _StubBridge:
         )
         return SimpleNamespace(job_id=job_id, state="working", name=name, cwd=str(ROOT), raw={})
 
+    def cancel(self, job_id):
+        self.cancelled.append(job_id)
+        return True
+
     def status(self, job_id):
         entry = self.statuses.get(job_id)
         if entry is None:
@@ -160,6 +166,10 @@ class _StubBridge:
             verdict=entry.get("verdict", "RUNNING"),
             terminal=entry.get("terminal", False),
             gateway_state=entry.get("state", "working"),
+            # The two clocks the abandon rule reads.  Without them the rule cannot fire, which is how
+            # the first version of this stub silently made the timebox untestable.
+            started_at=entry.get("started_at"),
+            progress_at=entry.get("progress_at"),
             detail="",
             result="",
         )
@@ -383,6 +393,47 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual(result["lock"], "", "a dead holder is not a reason to refuse")
         self.assertIn("checked", result["reconcile"], "the pass actually ran")
         self.assertFalse(lock.exists(), "and it left nothing behind")
+
+    def test_a_job_that_never_finishes_releases_its_slot(self):
+        """Measured live: both dispatched jobs were still working at 49 and 43 minutes, so the
+        gateway does not apply the escalation queue's 45-minute timebox -- a job dispatched from here
+        has nobody's timebox but this module's.  Without abandoning it, the in-flight slot is held for
+        ever and the question is never retried: the channel stops answering while looking busy.
+        """
+        bridge = _StubBridge()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.dispatch(limit=1)
+        long_ago = int(datetime.now(timezone.utc).timestamp() * 1000) - (60 * 60 * 1000)
+        bridge.statuses["job01"] = {
+            "verdict": "RUNNING", "terminal": False, "state": "working",
+            "started_at": long_ago, "progress_at": long_ago,
+        }
+        report = dispatcher.reconcile()
+        self.assertEqual(report["abandoned"], 1)
+        self.assertEqual(bridge.cancelled, ["job01"], "and it is asked to stop")
+        self.assertFalse(dispatcher.in_flight(), "the slot is free again")
+        row = [r for r in dispatcher.rows() if r["event"] == "reconciled"][-1]
+        self.assertEqual(row["state"], "ABANDONED")
+
+    def test_a_slow_job_that_is_still_working_keeps_its_slot(self):
+        """The other side of it: a job that is thinking is not a job that is stuck.
+
+        The frozen ``updatedAt`` is passed in on purpose.  It is what the second, rejected clock would
+        have fired on -- every observed job freezes it about seven seconds in, healthy ones included
+        -- so this case is what stops that rule being reintroduced by someone reading the gateway
+        docs and believing the signal.
+        """
+        bridge = _StubBridge()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.dispatch(limit=1)
+        now = int(datetime.now(timezone.utc).timestamp() * 1000)
+        bridge.statuses["job01"] = {
+            "verdict": "RUNNING", "terminal": False, "state": "working",
+            "started_at": now - (40 * 60 * 1000), "progress_at": now - (39 * 60 * 1000),
+        }
+        report = dispatcher.reconcile()
+        self.assertEqual(report["abandoned"], 0, "40 minutes of honest work is not a slot to reclaim")
+        self.assertEqual(len(dispatcher.in_flight()), 1)
 
     def test_a_gateway_that_is_gone_is_an_answer_not_a_crash(self):
         class _Broken(_StubBridge):

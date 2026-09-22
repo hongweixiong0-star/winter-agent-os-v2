@@ -81,6 +81,24 @@ MAX_ATTEMPTS_PER_REQUEST = 2
 #: the shorter "did the attempt visibly fail" clock.
 DISPATCH_COOLDOWN_SECONDS = 900
 
+#: How long a job may run before it is abandoned and its slot freed.
+#:
+#: Measured on the first live dispatch, and it is a liveness hole rather than a slow job: both jobs
+#: were still ``working`` at 49 and 43 minutes, so the gateway does **not** apply the escalation
+#: queue's own 45-minute timebox -- that is the queue's policy, and a job dispatched from here has
+#: nobody's timebox but this one.  Without it a wedged job holds the in-flight slot for ever, and the
+#: question it was asked for is never retried: the channel stops answering and looks merely busy.
+#: The number is the project's own timebox (``EscalationPolicy.job_timebox_minutes``), reused rather
+#: than invented.
+#:
+#: **Only the age is used, and that was decided by measurement.**  The gateway publishes
+#: ``updatedAt`` and this module first read it as a progress clock, so that a job which had "said
+#: nothing" could be caught early.  Then both live jobs and every job in the escalation ledger were
+#: seen to freeze ``updatedAt`` about seven seconds after starting -- healthy ones included -- so the
+#: signal cannot separate "wedged" from "long", and acting on it would have cancelled every thorough
+#: job at the forty-minute mark.  A rule that fires on healthy work is worse than a slower rule.
+JOB_ABANDON_SECONDS = 45 * 60
+
 #: The model-router task bucket this work belongs to.  ``UNKNOWN_UI`` maps to ``TASK_UI_RECOGNITION``
 #: and, with ``needs="vision"``, the router's cold start picks the vision rung -- a text-only model
 #: cannot read the screenshot the question is about.
@@ -307,7 +325,9 @@ class UnknownDispatcher:
         """
         folded = self.records()
         answered = self.answered_ids()
-        report: dict[str, Any] = {"checked": 0, "done": 0, "failed": 0, "lost": 0, "errors": []}
+        report: dict[str, Any] = {
+            "checked": 0, "done": 0, "failed": 0, "lost": 0, "abandoned": 0, "errors": [],
+        }
         for record in self.open_jobs(folded):
             report["checked"] += 1
             try:
@@ -331,6 +351,22 @@ class UnknownDispatcher:
             state = str(status.gateway_state or "").strip().lower() or "unknown"
             verdict = str(status.verdict or "UNKNOWN")
             if not status.terminal:
+                stalled = self._job_abandoned(status)
+                if stalled:
+                    # A job nobody can finish must not hold the slot: abandon it, and cancel it when
+                    # the gateway will let us, so the question can be asked again.
+                    report["abandoned"] = report.get("abandoned", 0) + 1
+                    self._append({
+                        "event": "reconciled",
+                        "request_id": record.request_id,
+                        "job_id": record.job_id,
+                        "state": "ABANDONED",
+                        "verdict": verdict,
+                        "note": stalled,
+                    })
+                    self._cancel(record.job_id)
+                    self._record_model_outcome(record, success=False, state="ABANDONED")
+                    continue
                 if state != record.state:
                     self._append({
                         "event": "reconciled",
@@ -355,6 +391,26 @@ class UnknownDispatcher:
             })
             self._record_model_outcome(record, success=produced, state=verdict)
         return report
+
+    def _job_abandoned(self, status: Any) -> str:
+        """Why this running job cannot be waited for any longer, or ``""``.
+
+        One clock: how long the job has existed.  ``updatedAt`` was tried as a second one and
+        rejected -- see ``JOB_ABANDON_SECONDS`` -- because it freezes early on healthy jobs too, so a
+        rule built on it would abandon thorough work while catching nothing extra.
+        """
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        started = getattr(status, "started_at", None)
+        if started and now_ms - int(started) > JOB_ABANDON_SECONDS * 1000:
+            return f"no result after {JOB_ABANDON_SECONDS // 60} minutes"
+        return ""
+
+    def _cancel(self, job_id: str) -> None:
+        """Best-effort stop of a job this module dispatched.  Never raises, never reported as fatal."""
+        try:
+            self.bridge.cancel(job_id)
+        except Exception:  # noqa: BLE001 - the record is already written; a stop is a courtesy
+            pass
 
     def dispatch(self, *, limit: int = 1, dry_run: bool = False) -> dict[str, Any]:
         """Submit jobs for pending questions, within every bound.
