@@ -14,8 +14,11 @@
    参考量：自 16:00Z 起 75 个运行里有 18 个是这种运行；受控 A/B 36 步 → 27 步。
 2. **具名拒绝**（`ca5524f`）：`ORDINARY_CONTROL_ALREADY_USED_THIS_RUN` **已在真机语料里**（见 #103），
    另两个结构性名字（`_NOT_FOR_THIS_GOAL` 等）仍只有单测实例，值得盯。
-3. `Episode.decision_reason`（`c2d80de`）**尚未在语料中出现过任何一条** —— 它落地后还没跑过一轮
-   含该字段的运行；出现后，本项目的「为什么这么做」第一次可以直接从语料读出来，不再需要回放。
+3. `Episode.decision_reason`（`c2d80de`）**已经开始落进语料**：`09-22T23:31–23:39Z`（rev `7da38a6`）
+   的四条 episode 都带理由（`alliance_gifts_badge_visible` /
+   `mail_goal_leaves_a_panel_it_does_not_own` / `first_ready_p0_skill`）⇒
+   **"为什么这么做"第一次可以直接从 `episodes.jsonl` 读出来**。本轮的整轮回放（`tools/replay_run_decisions.py`）
+   仍然是那一轮的唯一证人，因为那些步骤写在字段落地之前；从下一轮起，先用字段，字段缺了再回放。
 
 ## 手写：本轮（2026-09-17 12:1x–13:0x GMT+8）—— 打开 #22（奖励弹窗来源）；终止页退出落地但**真机 episode 未取到**；工作队列按 CAPABILITY-FIRST 重建
 
