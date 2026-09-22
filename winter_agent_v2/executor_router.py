@@ -422,6 +422,12 @@ class ExecutorRouter:
             "executed": result.executed,
             "error": result.error,
             "latency_ms": result.latency_ms,
+            # Where a TAP_SEMANTIC landed, in device pixels.  ExecutionResult has carried this since
+            # 2026-09-20, and the ledger -- the artifact a post-mortem actually reads -- dropped it,
+            # so every row in learning/executor_backend.jsonl showed tap_point None including the
+            # taps that worked.  "The target did not open" is only answerable next to "and it landed
+            # here"; that is the whole reason the field exists.
+            "tap_point": list(result.tap_point) if result.tap_point else None,
             "attempts": attempts,
         })
         return routed

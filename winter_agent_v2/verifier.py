@@ -417,6 +417,75 @@ def verify_infantry_camp_selected(before: WorldState, after: WorldState) -> Veri
     return VerificationResult(ok, "OK" if ok else "INFANTRY_CAMP_MENU_NOT_PROVEN", {"highlight_before": before.training.get("navigation"), "menu_after": after.training.get("menu_open")})
 
 
+def verify_panel_row_task_bar_opened(
+    before: WorldState, after: WorldState, *, camp: str = ""
+) -> VerificationResult:
+    """What a quick-panel row arrow really does: it opens that task's own surface.
+
+    Measured on the device 2026-09-22 23:42:41: the 矛兵 row's arrow was tapped from the panel and
+    the frame after it (`20260922_234118_459931_step_006_after_refresh_2_...png`) shows the city
+    with 矛兵营 selected and the client's action bar 详情 / 升级 / 训练, which the reader already
+    names as ``training.menu_open`` with ``camp = LANCER_CAMP`` and ``train_tap_norm``.  One tap
+    cannot produce ``Page.TRAINING`` -- that page is behind the bar's own 训练 button -- so judging
+    this skill by ``verify_training_page_open`` reported the working tap as
+    ``TRAINING_PAGE_NOT_PROVEN`` and the bar was left open with nobody pressing it (23:43:39, and
+    the goal rotated on the next step).
+
+    Two surfaces count as arrived, and which one it was is reported rather than flattened:
+
+    * the task's action bar is open in the city (``menu_open``) -- the measured outcome for a
+      barracks row;
+    * the task's own page opened directly -- what an earlier design assumed, and which may be what
+      some other row does.
+
+    ``camp`` names the barracks this row is about.  A frame that names a *different* campped is a
+    real failure and is not accepted: the panel draws three look-alike rows and operator §二 is
+    explicit that the tap must belong to the row it came from.  A frame that names no camp at all
+    is accepted on the state that is there (the bar is open) but says so in the evidence, because
+    inventing a mismatch would be as wrong as ignoring one.
+    """
+    named = str(after.training.get("camp") or "")
+    same_camp = (not camp) or (not named) or named == f"{camp}_CAMP"
+    bar_open = after.page is Page.HOME and after.training.get("menu_open") is True
+    page_open = after.page is Page.TRAINING
+    ok = before.page is Page.HOME and same_camp and (bar_open or page_open)
+    if not same_camp:
+        reason = "PANEL_ROW_OPENED_THE_WRONG_CAMP"
+    elif not ok:
+        reason = "PANEL_ROW_TASK_BAR_NOT_PROVEN"
+    else:
+        reason = "OK"
+    return VerificationResult(
+        ok,
+        reason,
+        {
+            "before_page": before.page.value,
+            "task_bar_open_after": bar_open,
+            "task_page_open_after": page_open,
+            "camp_expected": f"{camp}_CAMP" if camp else "",
+            "camp_named_after": named,
+        },
+    )
+
+
+def verify_panel_row_research_bar_opened(before: WorldState, after: WorldState) -> VerificationResult:
+    """The same reading for the 科技研究 row: the lab's own bar, or the research page itself.
+
+    ``research.menu_open`` is the state the research route's own ``NAVIGATE_RESEARCH_LAB`` already
+    produces and the brain already acts on (``research_lab_menu_open``), so the panel row reaching
+    the same state is the same arrival -- and a row that reached ``Page.RESEARCH`` is accepted too,
+    because the honest question is which one happened, not which one was designed for.
+    """
+    bar_open = after.page is Page.HOME and after.research.get("menu_open") is True
+    page_open = after.page is Page.RESEARCH
+    ok = before.page is Page.HOME and (bar_open or page_open)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "PANEL_ROW_RESEARCH_BAR_NOT_PROVEN",
+        {"lab_bar_open_after": bar_open, "research_page_open_after": page_open},
+    )
+
+
 def verify_training_page_open(before: WorldState, after: WorldState) -> VerificationResult:
     ok = before.page is Page.HOME and before.training.get("menu_open") is True and after.page is Page.TRAINING
     return VerificationResult(ok, "OK" if ok else "TRAINING_PAGE_NOT_PROVEN", {"menu_before": before.training.get("menu_open"), "training_after": after.page is Page.TRAINING})

@@ -35,7 +35,11 @@ from winter_agent_v2.brain import RuleBrain  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 from winter_agent_v2.ocr import OCRPageClassifier, OCRResult, OCRToken  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
-from winter_agent_v2.verifier import verify_exploration_claim_feedback  # noqa: E402
+from winter_agent_v2.vision import SemanticWorldVision  # noqa: E402
+from winter_agent_v2.verifier import (  # noqa: E402
+    verify_exploration_claim_feedback,
+    verify_panel_row_task_bar_opened,
+)
 
 AUTO = ROOT / "dataset/raw/control_panel/runtime_auto"
 CONFIG = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
@@ -48,6 +52,7 @@ MARKSMAN_PAGE = sorted(AUTO.glob("*/" + "*_step_010_before_20260922T112451123479
 LANCER_PAGE = sorted(AUTO.glob("*/" + "*_step_009_before_20260922T112425181244.png"))[-1]
 
 _OCR = None
+_VISION = None
 
 
 def _ocr():
@@ -60,6 +65,16 @@ def _ocr():
             )
         )
     return _OCR
+
+
+def _vision():
+    """The same page model production runs: template tier first, the OCR classifier behind it."""
+    global _VISION
+    if _VISION is None:
+        _VISION = ocr_module.HybridVision(
+            SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"), _ocr()
+        )
+    return _VISION
 
 
 def _brain(goal_id, goal=None):
@@ -335,13 +350,22 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
         self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
 
     def test_the_row_arrow_is_not_repeated_forever(self):
+        """Bounded per run, so a row whose tap opens nothing cannot become a tap loop.
+
+        The ceiling is read from the brain rather than written here twice: it is a per-run budget for
+        the whole board (three barracks plus the research lab and the reward rows), so a literal 2 in
+        the test would pin the old size of the panel rather than the property being tested.
+        """
         brain = _brain("TRAIN")
         frame = self._home(self.OPEN_WITH_ROWS)
-        first = brain.decide(frame, v2_registry()).skill
-        self.assertEqual(first, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD")
-        seen = [first]
-        for _ in range(4):
+        seen = []
+        for _ in range(brain.MAX_PANEL_ROW_ATTEMPTS_PER_RUN + 1):
             seen.append(brain.decide(frame, v2_registry()).skill)
+        self.assertEqual(seen[0], "OPEN_TASK_FROM_QUICK_PANEL_SHIELD")
+        self.assertEqual(
+            seen[:brain.MAX_PANEL_ROW_ATTEMPTS_PER_RUN],
+            ["OPEN_TASK_FROM_QUICK_PANEL_SHIELD"] * brain.MAX_PANEL_ROW_ATTEMPTS_PER_RUN,
+        )
         self.assertIn("OPEN_POWER_OVERVIEW", seen,
                       "an arrow that does not open the page must hand back to the proven route")
 
@@ -371,6 +395,132 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
         decision = brain.decide(frame, v2_registry())
         self.assertNotEqual(decision.skill, "TRY_ORDINARY_CONTROL",
                             "the budget is what keeps this from becoming a tap loop")
+
+
+class TheRowArrowOpensTheTaskBarTests(unittest.TestCase):
+    """What a quick-panel row arrow really produces, measured on the frame after the tap.
+
+    Operator 2026-09-22 23:42: the 矛兵 row's arrow was tapped from the panel and the client opened
+    that barracks' **own action bar** in the city -- 详情 / 升级 / 训练 -- and the training page is
+    behind that bar's 训练 button, one more hop.  The skill was judged by ``verify_training_page_open``,
+    which demands ``after.page is Page.TRAINING``, so a working tap recorded
+    FAILURE TRAINING_PAGE_NOT_PROVEN and the bar was left open: on the next step the goals re-ranked
+    and nobody ever pressed it.
+    """
+
+    #: The archived frame the tap produced (23:42:41), and the panel frame it was tapped from.
+    BAR_AFTER = sorted(AUTO.glob("*/" + "*_step_006_after_refresh_2_20260922T154326121610.png"))[-1]
+    ROW_BEFORE = sorted(AUTO.glob("*/" + "*_step_006_before_20260922T154241186835.png"))[-1]
+
+    @classmethod
+    def setUpClass(cls):
+        if not cls.BAR_AFTER.exists():
+            raise unittest.SkipTest("the archived bar frame is not on this machine")
+        cls.state = _vision().observe(cls.BAR_AFTER)
+
+    def test_the_frame_says_which_bar_is_open_and_where_its_button_is(self):
+        """The reading the launch of this whole hop depends on, on the frame itself."""
+        self.assertEqual(self.state.page, Page.HOME)
+        self.assertIs(self.state.training.get("menu_open"), True)
+        self.assertEqual(self.state.training.get("camp"), "LANCER_CAMP")
+        point = self.state.training.get("train_tap_norm")
+        self.assertIsInstance(point, (list, tuple), "the 训练 label's own position must be read")
+
+    def test_the_tap_that_opened_the_bar_verifies(self):
+        before = _vision().observe(self.ROW_BEFORE)
+        result = verify_panel_row_task_bar_opened(before, self.state, camp="LANCER")
+        self.assertTrue(result.ok, result.reason)
+        self.assertTrue(result.evidence["task_bar_open_after"])
+        self.assertFalse(result.evidence["task_page_open_after"],
+                         "the training page is behind the bar, not behind the row's arrow")
+
+    def test_a_look_alike_row_that_opened_another_camp_is_a_failure(self):
+        """Operator §二: 不能因为多个箭头外观相同，就点击错误的任务行 -- and accepting it would say
+        the same thing in the other direction."""
+        result = verify_panel_row_task_bar_opened(self.state, self.state, camp="SHIELD")
+        self.assertFalse(result.ok)
+        self.assertEqual(result.reason, "PANEL_ROW_OPENED_THE_WRONG_CAMP")
+
+    def test_a_frame_with_no_bar_is_not_a_verified_row(self):
+        """The proof is the state after the tap, never the tap: nothing opened means nothing proved."""
+        before = _vision().observe(self.ROW_BEFORE)
+        nothing = WorldState(page=Page.HOME, training={})
+        result = verify_panel_row_task_bar_opened(before, nothing, camp="LANCER")
+        self.assertFalse(result.ok)
+        self.assertEqual(result.reason, "PANEL_ROW_TASK_BAR_NOT_PROVEN")
+
+    def test_the_goal_that_came_for_that_camp_finishes_the_bar(self):
+        """§一: 当前 Goal 已在正确任务页面且仍可推进时，直接完成当前任务，不要返回主城."""
+        for goal in ("LANCER_CAMP_TRAINING", "KEEP_TRAINING_PRODUCTIVE", "TRAIN"):
+            with self.subTest(goal=goal):
+                brain = _brain(goal)
+                decision = brain.decide(self.state, v2_registry())
+                self.assertEqual(decision.skill, "OPEN_INFANTRY_TRAINING", decision.reason)
+
+    def test_the_bar_of_another_camp_is_left_to_its_own_goal(self):
+        brain = _brain("SHIELD_CAMP_TRAINING")
+        decision = brain.decide(self.state, v2_registry())
+        self.assertNotEqual(
+            decision.skill, "OPEN_INFANTRY_TRAINING",
+            "SHIELD's goal must not press the LANCER bar's 訓練 button",
+        )
+
+    def test_a_per_camp_goal_picks_its_own_row_and_not_the_first_idle_one(self):
+        """The regression this round found: the camp id was compared with ``f"{camp}_CAMP"``.
+
+        ``_goal_camp()`` answers in the canonical form (``MARKSMAN_CAMP``) and that is what the panel
+        reader puts in ``row["key"]``, so the extra suffix made the comparison unsatisfiable and every
+        per-camp goal was handed no row at all.
+        """
+        rows = [
+            {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IN_PROGRESS",
+             "arrow_norm": [0.6, 0.4266]},
+            {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IN_PROGRESS",
+             "arrow_norm": [0.6, 0.4832]},
+            {"kind": "CAMP", "key": "MARKSMAN_CAMP", "label": "射手", "status": "IDLE",
+             "arrow_norm": [0.6, 0.5402]},
+        ]
+        frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
+        decision = _brain("MARKSMAN_CAMP_TRAINING").decide(frame, v2_registry())
+        self.assertEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN", decision.reason)
+
+
+class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
+    """A tap that did nothing must still carry where it went.
+
+    ``ExecutionResult.tap_point`` has existed since 2026-09-20 for exactly this, and the ledger --
+    the artifact a post-mortem reads -- dropped it, so every row in
+    ``learning/executor_backend.jsonl`` showed ``tap_point: None`` including the taps that worked.
+    """
+
+    class _StubExecutor:
+        def __init__(self, tap_point):
+            self._tap = tap_point
+            self.device = None
+
+        def execute(self, action):
+            from winter_agent_v2.models import ExecutionResult
+
+            return ExecutionResult(True, False, action, backend="ADB", tap_point=self._tap)
+
+    def test_the_ledger_row_carries_the_landing_point(self):
+        import tempfile
+
+        from winter_agent_v2.executor_router import BackendLedger, ExecutorRouter, RoutingTable
+        from winter_agent_v2.models import Action
+
+        with tempfile.TemporaryDirectory() as folder:
+            ledger_path = Path(folder) / "ledger.jsonl"
+            router = ExecutorRouter(
+                adb_executor=self._StubExecutor((441, 620)),
+                routing=RoutingTable(),
+                ledger=BackendLedger(ledger_path),
+            )
+            router.execute(Action("TAP_SEMANTIC", "QUICK_PANEL_ROW_LANCER_CAMP"),
+                           "OPEN_TASK_FROM_QUICK_PANEL_LANCER")
+            row = json.loads(ledger_path.read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(row["action_target"], "QUICK_PANEL_ROW_LANCER_CAMP")
+        self.assertEqual(row["tap_point"], [441, 620])
 
 
 if __name__ == "__main__":

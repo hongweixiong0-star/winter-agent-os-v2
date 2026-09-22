@@ -198,6 +198,13 @@ class RuleBrain:
         # a tap the frame cannot name.
         self.ordinary_attempts = 0
         self.MAX_ORDINARY_ATTEMPTS = 2
+        # How many panel rows one run may be navigated through.  The panel is a task board -- three
+        # barracks, the research lab, 联盟捐献, 英雄招募, 我的奖励 -- and the operator's §五 asks for
+        # several in-city tasks handled in one pass, so a bound of two cut off the third barracks.
+        # It stays bounded because a row whose tap opens nothing must not be retried forever; that
+        # is what this ceiling is for, and each row is now only offered while its own reading says
+        # it is idle, so a row that succeeded is never offered again in the same run.
+        self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN = 6
         self.ordinary_scan_exhausted = False
         # Two waits is the whole budget: measured, the state does not converge, so the
         # third Stage A observation is a blocker rather than another wait.
@@ -996,6 +1003,53 @@ class RuleBrain:
         #
         # It does not touch a page that can already be advanced: this only ever runs on HOME, and when
         # the goal is already standing where it can work, the branches below answer first.
+        # ---- a task bar opened from a panel row is *the page that row promised* ---------------
+        #
+        # Measured on the device 2026-09-22 23:42:41: the 矛兵 row's arrow was tapped and the
+        # client opened that barracks' own action bar in the city (详情 / 升级 / 训练), which the
+        # reader names as ``training.menu_open`` with ``camp = LANCER_CAMP`` and ``train_tap_norm``.
+        # The frame after the tap is archived as
+        # 20260922_234118_459931_step_006_after_refresh_2_20260922T154326121610.png.
+        #
+        # Finishing it is one more tap of the client's own 训练 label, which
+        # ``BTN_OPEN_TRAINING_FROM_CAMP`` resolves from this very frame.  Doing it here, before the
+        # per-route branches, is what keeps a row that has already advanced to its last step from
+        # being dropped: on 23:43:39 the bar was open and the next step re-ranked the goals, so the
+        # bar sat there with nobody pressing it (operator §一: 当前 Goal 已在正确任务页面且仍可推进
+        # 时，直接完成当前任务; §六: 完成一项后继续).
+        #
+        # The barracks must be this goal's own.  A bar for another camp is left alone -- the panel
+        # draws three look-alike rows and §二 is explicit that a tap must belong to the task it came
+        # from; that camp's own goal gets its turn on the board.
+        if world.page is Page.HOME and self._goal_route() == "TRAIN" and world.training.get("menu_open"):
+            open_camp = str(world.training.get("camp") or "")
+            own_camp = self._goal_camp()
+            # ``_goal_camp`` already answers in the canonical camp form (``LANCER_CAMP``), the same
+            # form ``world.training["camp"]`` and the panel's row keys use.  An earlier version of
+            # this appended ``_CAMP`` a second time, which made the comparison impossible to satisfy
+            # and silently disabled the branch for every per-camp goal -- caught by replaying this
+            # frame, not by reading the code.
+            if own_camp is None or not open_camp or open_camp == own_camp:
+                return Decision(
+                    "OPEN_INFANTRY_TRAINING",
+                    "an_opened_camp_bar_is_the_page_this_goal_came_for",
+                    world.confidence,
+                    "training_page_open",
+                )
+        if (
+            world.page is Page.HOME
+            and self._goal_route() == "RESEARCH"
+            and world.research.get("menu_open")
+            # Same precedence the research route already had: a queue that is already running needs
+            # nothing from us, and entering the page to confirm that is a wasted round trip.
+            and world.research.get("queue_available") is not False
+        ):
+            return Decision(
+                "OPEN_RESEARCH",
+                "an_opened_lab_bar_is_the_page_this_goal_came_for",
+                world.confidence,
+                "research_page_open",
+            )
         panel = world.quick_panel or {}
         if world.page is Page.HOME and self._panel_rows_for_this_goal():
             if not panel.get("open"):
@@ -1016,7 +1070,7 @@ class RuleBrain:
                     )
             else:
                 row = self._actionable_panel_row(world)
-                if row is not None and self._panel_row_attempts < 2:
+                if row is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
                     self._panel_row_attempts += 1
                     key = str(row.get("key") or "")
                     return Decision(
@@ -1057,8 +1111,6 @@ class RuleBrain:
                 # once -- the 科研所's menu is open *and* the queue is busy -- which is
                 # why vision reports them separately.)
                 return Decision("SAFE_STOP", "research_queue_busy", 1.0, "switch_task")
-            if world.page is Page.HOME and world.research.get("menu_open"):
-                return Decision("OPEN_RESEARCH", "research_lab_menu_open", world.confidence, "research_page_open")
             if world.page is Page.HOME:
                 return Decision("OPEN_POWER_OVERVIEW", "research_goal_requires_power_route", world.confidence, "power_overview_open")
             if world.page is Page.MAP:
@@ -1144,8 +1196,6 @@ class RuleBrain:
                 if self._camp_menu_waits > self.MAX_CAMP_MENU_WAITS:
                     return Decision("SAFE_STOP", "camp_entry_is_a_guided_step_not_a_selection", 1.0, "switch_task")
                 return Decision("WAIT_FOR_CAMP_MENU", "camp_highlight_is_stage_a_reobserve", world.confidence, "camp_menu_open")
-            if world.page is Page.HOME and world.training.get("menu_open"):
-                return Decision("OPEN_INFANTRY_TRAINING", "idle_infantry_camp_selected", world.confidence, "training_page_open")
             # The 快捷面板 reports every barracks' state in one frame, which is the one
             # reading the power route below cannot give: it names a camp and highlights
             # it, but does not say whether that camp has a free queue.
@@ -1192,7 +1242,7 @@ class RuleBrain:
                         ),
                         None,
                     )
-                    if row is not None and self._panel_row_attempts < 2:
+                    if row is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
                         self._panel_row_attempts += 1
                         return Decision(
                             _QUICK_PANEL_ROW_SKILL.get(idle_camp, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"),
@@ -2063,14 +2113,22 @@ class RuleBrain:
         "DAILY": ("MY_REWARDS",),
     }
 
-    def _panel_rows_for_this_goal(self) -> tuple[str, ...]:
-        """The panel row kinds the running goal works from; empty when the panel is not its board."""
+    def _goal_route(self) -> str | None:
+        """Which route the running goal belongs to, asked of the goal layer.
+
+        The concrete goal first (the runtime sets ``goal_id`` per goal), then the route name the
+        sweeps use.  Nothing here compares goal ids or capability ids: ``route_for`` is the goal
+        layer's own answer, so a goal nobody has heard of yet still routes correctly.
+        """
         from .goal_library import route_for
 
-        route = route_for(str(getattr(self, "goal_id", "") or "")) or route_for(
+        return route_for(str(getattr(self, "goal_id", "") or "")) or route_for(
             str(self.current_goal or "")
         )
-        return self.PANEL_ROWS_FOR_ROUTE.get(str(route or ""), ())
+
+    def _panel_rows_for_this_goal(self) -> tuple[str, ...]:
+        """The panel row kinds the running goal works from; empty when the panel is not its board."""
+        return self.PANEL_ROWS_FOR_ROUTE.get(str(self._goal_route() or ""), ())
 
     def _actionable_panel_row(self, world: WorldState) -> dict | None:
         """The first panel row this goal can act on, from this frame's own reading.
@@ -2098,8 +2156,12 @@ class RuleBrain:
         # ``SHIELD_CAMP_TRAINING`` the **LANCER** row because it took the first match of the right kind.
         own = self._goal_camp()
         if own:
+            # The same form on both sides: ``_goal_camp`` answers ``LANCER_CAMP`` and that is what
+            # ``read_quick_panel`` puts in ``row["key"]``.  (The first version of this compared
+            # ``f"{own}_CAMP"``, i.e. ``LANCER_CAMP_CAMP``, and so never matched -- which returned
+            # ``None`` and left every per-camp goal without a row to tap.)
             for row in candidates:
-                if str(row.get("key")) == f"{own}_CAMP":
+                if str(row.get("key")) == own:
                     return row
             return None
         return candidates[0]

@@ -26,7 +26,7 @@ from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLe
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
-from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
+from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
@@ -291,13 +291,21 @@ class LiveRuntime:
         # that state.
         "WAIT_FOR_CAMP_MENU": verify_camp_menu_reobserved,
         "OPEN_INFANTRY_TRAINING": verify_training_page_open,
-        # The quick panel's row arrows enter the same pages the routes reach, so they are judged by
-        # the same verifiers -- the state after the tap, never the tap itself (operator §二: 不得仅以
-        # Brain 输出展开动作或点击成功，代替真实面板展开结果).
-        "OPEN_TASK_FROM_QUICK_PANEL_SHIELD": verify_training_page_open,
-        "OPEN_TASK_FROM_QUICK_PANEL_LANCER": verify_training_page_open,
-        "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN": verify_training_page_open,
-        "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH": verify_research_page_open,
+        # The quick panel's row arrows are judged by the state after the tap, never by the tap
+        # itself (operator §二: 不得仅以 Brain 输出展开动作或点击成功，代替真实面板展开结果) -- but by
+        # the state they *really* produce.  Measured 2026-09-22 23:42:41: a barracks row's arrow
+        # opens that barracks' action bar in the city (``training.menu_open``, ``camp`` named,
+        # ``train_tap_norm`` present), not the training page; the training page is behind the bar's
+        # own 训练 button, which is the next hop.  Binding these to ``verify_training_page_open``
+        # made a working tap record FAILURE and the opened bar was abandoned.  Each is bound to its
+        # own camp so a look-alike row that opens the wrong barracks is a real failure.
+        "OPEN_TASK_FROM_QUICK_PANEL_SHIELD": lambda b, a: verify_panel_row_task_bar_opened(b, a, camp="SHIELD"),
+        "OPEN_TASK_FROM_QUICK_PANEL_LANCER": lambda b, a: verify_panel_row_task_bar_opened(b, a, camp="LANCER"),
+        "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN": lambda b, a: verify_panel_row_task_bar_opened(b, a, camp="MARKSMAN"),
+        "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH": verify_panel_row_research_bar_opened,
+        "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION": verify_ordinary_control_tried,
+        "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": verify_ordinary_control_tried,
+        "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS": verify_ordinary_control_tried,
         # The hop that did not exist: switch the training page to another barracks when the
         # one on screen has its queue busy.  Operator §八, "一个兵营正在训练，不得阻止其他空闲
         # 兵营执行训练" -- without it the goal stopped at the first busy camp and 矛兵营 /
