@@ -610,10 +610,21 @@ class TheTrainingButtonPositionTests(unittest.TestCase):
         # The label really is unreadable on this frame -- that is what makes the caption the answer.
         self.assertEqual(self.state.training.get("train_button_basis"), "BUTTON_CAPTION")
 
-    def test_the_button_is_located_from_that_reading(self):
+    @staticmethod
+    def _resolver():
+        """A runtime with only what the resolver path touches (no device, no cycle)."""
         from winter_agent_v2.runtime import LiveRuntime
 
         runtime = object.__new__(LiveRuntime)
+        runtime._control_ledger = {}
+        runtime._semantic_records_cache = None
+        runtime._printed_reads = []
+        runtime._printed_printed = set()
+        runtime._printed_boxes = {}
+        return runtime
+
+    def test_the_button_is_located_from_that_reading(self):
+        runtime = self._resolver()
         point = runtime._resolve_semantic_target("BTN_START_TRAINING", self.state)
         self.assertIsNotNone(point, "a lit button must resolve")
         x_norm, y_norm = point
@@ -624,16 +635,12 @@ class TheTrainingButtonPositionTests(unittest.TestCase):
         self.assertLess(y_norm, 0.95, "still above the camp tab strip")
 
     def test_a_page_that_drew_no_button_is_not_tapped(self):
-        from winter_agent_v2.runtime import LiveRuntime
-
-        runtime = object.__new__(LiveRuntime)
+        runtime = self._resolver()
         bare = WorldState(page=Page.TRAINING, training={"status": "UNKNOWN"})
         self.assertIsNone(runtime._resolve_semantic_target("BTN_START_TRAINING", bare))
 
     def test_the_button_is_not_tapped_from_another_page(self):
-        from winter_agent_v2.runtime import LiveRuntime
-
-        runtime = object.__new__(LiveRuntime)
+        runtime = self._resolver()
         elsewhere = WorldState(page=Page.HOME, training=self.state.training)
         self.assertIsNone(
             runtime._resolve_semantic_target("BTN_START_TRAINING", elsewhere),

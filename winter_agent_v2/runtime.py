@@ -2122,33 +2122,6 @@ class LiveRuntime:
                 self._tapped_intel_pins.append((pin.x, pin.y))
                 return (pin.x / width, pin.y / height)
             return None
-        if semantic == "BTN_START_TRAINING":
-            # The training page's own 训练 button, tapped where this frame's reading found it.
-            #
-            # Why not the template: it is the whole button, its text included, and the client paints
-            # its own hand cursor on that button as soon as the camp is entered.  Measured
-            # 2026-09-23 00:48:35 in the directed ``--goal TRAIN`` run: the quick panel's 矛兵 row
-            # arrow opened that camp's bar, the bar opened its training page (reading AVAILABLE /
-            # trainable / BUTTON_CAPTION), the brain emitted TRAIN_TROOPS -- and this resolver
-            # returned ``None``, so a lit button went unpressed and the step recorded
-            # SEMANTIC_TARGET_NOT_VERIFIED.  On that very frame the reader had the button's own
-            # caption (``02:33:11``) at (0.760, 0.888).
-            #
-            # The guard is the frame's reading: ``train_button_norm`` is written only when that frame
-            # drew the button, so a training page with no button on it ends the step honestly rather
-            # than tapping a remembered coordinate.
-            if frame.page is not Page.TRAINING:
-                return None
-            point = (frame.training or {}).get("train_button_norm")
-            if not (isinstance(point, (tuple, list)) and len(point) == 2):
-                return None
-            try:
-                x_norm, y_norm = float(point[0]), float(point[1])
-            except (TypeError, ValueError):
-                return None
-            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
-                return None
-            return (x_norm, y_norm)
         if semantic == "BTN_OPEN_TRAINING_FROM_CAMP":
             # The 训练 control of the selected camp, tapped where this frame's own OCR read
             # the client's label (see ``ocr.read_selected_building_actions``).
@@ -2253,6 +2226,37 @@ class LiveRuntime:
         # allowed only after independent page + green-state proof.
         if semantic == "BTN_EXPLORATION_IDLE_CLAIM" and frame.page.value == "EXPLORATION" and frame.exploration.get("status") == "CLAIMABLE":
             return (0.86, 0.68)
+        if semantic == "BTN_START_TRAINING":
+            # The training page's own 训练 button, located from that frame's reading.
+            #
+            # It sits after the template and before the word scan, and both halves are measured:
+            #
+            # * after the template, because a frame the project can already read must keep resolving
+            #   that way.  ``dataset/raw/live_train_selection_available.png`` resolves the button
+            #   through the template tier, its reading carries no ``train_button_norm``, and an
+            #   earlier version of this block ran *before* the template and returned None there --
+            #   caught by the project's own test, in a frame that had worked for months.
+            # * before the word scan, because that scan answers **ABSENT** when the client's word
+            #   cannot be read, and ABSENT stops the chain rather than falling through (see the
+            #   comment below).  The client paints its own hand cursor on this button as soon as the
+            #   camp is entered, so on exactly the frame this exists for the word is unreadable while
+            #   the button is drawn -- measured 2026-09-23 00:48:35 in the directed ``--goal TRAIN``
+            #   run (20260923_004710_train_step_005_before_...png): the panel's 矛兵 row arrow opened
+            #   that camp's bar, the bar opened this training page, the reading said AVAILABLE /
+            #   trainable / BUTTON_CAPTION with the caption ``02:33:11`` at (0.760, 0.888), the brain
+            #   emitted TRAIN_TROOPS, and the tap target resolved to nothing.
+            #
+            # What it answers with is the frame's own reading, so a page that drew no button leaves
+            # this silent rather than tapping a remembered coordinate.
+            if frame.page is Page.TRAINING:
+                point = (frame.training or {}).get("train_button_norm")
+                if isinstance(point, (tuple, list)) and len(point) == 2:
+                    try:
+                        x_norm, y_norm = float(point[0]), float(point[1])
+                    except (TypeError, ValueError):
+                        x_norm = y_norm = -1.0
+                    if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0:
+                        return (x_norm, y_norm)
         # The client's own drawing of the control, tried before anything remembered.  Order is
         # the argument: a printed word or instruction is a statement about *this* frame, while
         # the ledger below is a coordinate measured on an earlier one.  The weaker layer is
@@ -2261,6 +2265,22 @@ class LiveRuntime:
         # why it must stop here rather than fall through.  See ``_client_printed_control`` for
         # the frame that establishes it (a covered navigation bar whose remembered point would
         # have landed on 自动狩猎).
+        # A quick-panel row's control is the blue arrow at the row's right edge, and it is read from
+        # *this* frame (``panel["rows"][].arrow_norm``).  It is answered here, before the word scan,
+        # because for these semantics the client's own word names the **row** and not the control: the
+        # records' ``ocr`` field is 矛兵 / 科技研究, drawn in the panel's text column, so the scan below
+        # found the label and never the button.  Measured 2026-09-23 across every panel-row tap in
+        # ``learning/executor_backend.jsonl``: ``tap_point`` x was 225 (0.3125) on all of them while the
+        # row's arrow is at x ~480 (0.666) -- and the same coordinate opened a barracks' action bar once
+        # and left the city for the world map the next time, because it is the row's text.
+        #
+        # Ordering argument, same as the one below: this is a reading of the frame in hand, which is
+        # stronger than a coordinate remembered from an earlier frame, so it must not be behind the
+        # ledger either.
+        if semantic.startswith("QUICK_PANEL_ROW_"):
+            row_point = self._dictionary_hint(semantic, frame, frame_path)
+            if row_point is not None:
+                return row_point
         verdict, printed = self._client_printed_control(semantic, frame, frame_path)
         if verdict == "FOUND":
             return printed
@@ -2278,6 +2298,7 @@ class LiveRuntime:
         hinted = self._dictionary_hint(semantic, frame, frame_path)
         if hinted is not None:
             return hinted
+        return None
         return None
 
     #: The ordinary actions this layer may try without a registered skill, in the
