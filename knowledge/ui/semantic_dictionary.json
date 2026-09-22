@@ -2463,6 +2463,146 @@
    "notes": "The row is located by its own measured y and the arrow is the panel's right-hand column on that same row, so a task's navigation entry can never be confused with another row's. The arrow's presence is never evidence that the row is idle -- the state word under the row is."
   },
   {
+   "id": "QUICK_PANEL_ROW_ALLIANCE_DONATION",
+   "type": "ROW",
+   "cn": "联盟捐献",
+   "en_aliases": [],
+   "ocr": [
+    "联盟捐献"
+   ],
+   "icon_semantic": "panel.row",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "ALLIANCE_DONATION_ROW",
+   "actions": [
+    "OPEN_TASK"
+   ],
+   "status": "CANDIDATE",
+   "source": "one live capture (measurement)",
+   "last_verified": "",
+   "visual_features": {
+    "state_word": "可捐献25/25",
+    "measured_on": "learning/_panel_scroll/05_after_scroll_4.png"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row",
+    "y": "the row's own y, read from this frame",
+    "x": "the row's own blue arrow button, located on this frame (measured x 0.539-0.749, centre ~0.64 on a 720 px frame)",
+    "measured_on": "learning/_panel_scroll/05_after_scroll_4.png"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "row_read"
+   ],
+   "expected_transition": "ALLIANCE_DONATION_OPENED",
+   "verification": {
+    "row_position": "MEASURED_ON_A_LIVE_FRAME",
+    "arrow_appearance": "MEASURED (blue button, min..max x 0.539-0.749)",
+    "state_word": "MEASURED (可捐献25/25, a count and a total read from the client's own words)",
+    "entering_the_row": "NOT YET OBSERVED on the device"
+   },
+   "related_goals": [
+    "ALLIANCE_ROUTINE"
+   ],
+   "notes": "Created 2026-09-22 from the panel frame the operator supplied plus the two device frames, because the row was drawn and read while no record named it.  The state carries the count the client prints (可捐献25/25), so a consumer can tell 可捐献 from 已捐献 without opening anything; the row's own arrow is the navigation entry."
+  },
+  {
+   "id": "QUICK_PANEL_ROW_HERO_RECRUIT",
+   "type": "ROW",
+   "cn": "英雄招募",
+   "en_aliases": [],
+   "ocr": [
+    "英雄招募",
+    "高级招募"
+   ],
+   "icon_semantic": "panel.row",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "HERO_RECRUIT_ROW",
+   "actions": [
+    "OPEN_TASK"
+   ],
+   "status": "CANDIDATE",
+   "source": "one live capture (measurement)",
+   "last_verified": "",
+   "visual_features": {
+    "state_word": "免费招募",
+    "measured_on": "learning/_panel_scroll/05_after_scroll_4.png"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row",
+    "y": "the row's own y, read from this frame",
+    "x": "the row's own blue arrow button, located on this frame",
+    "measured_on": "learning/_panel_scroll/05_after_scroll_4.png"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "row_read"
+   ],
+   "expected_transition": "HERO_RECRUIT_OPENED",
+   "verification": {
+    "row_position": "MEASURED_ON_A_LIVE_FRAME",
+    "arrow_appearance": "MEASURED (blue button, min..max x 0.539-0.749)",
+    "state_word": "MEASURED (免费招募 on 高级招募; 史诗招募 carries a 1天01:51:08 countdown instead)",
+    "entering_the_row": "NOT YET OBSERVED on the device"
+   },
+   "related_goals": [],
+   "notes": "The section draws two rows and the reader keeps both (hero_recruit_rows); this record names the row the operator's frame showed a free draw on.  No goal serves it yet, which is why related_goals is empty rather than guessed at."
+  },
+  {
+   "id": "QUICK_PANEL_ROW_MY_REWARDS",
+   "type": "ROW",
+   "cn": "我的奖励",
+   "en_aliases": [],
+   "ocr": [
+    "我的奖励",
+    "仓库补给"
+   ],
+   "icon_semantic": "panel.row",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "MY_REWARDS_ROW",
+   "actions": [
+    "OPEN_TASK"
+   ],
+   "status": "CANDIDATE",
+   "source": "one live capture (measurement)",
+   "last_verified": "",
+   "visual_features": {
+    "state_word": "已完成",
+    "measured_on": "learning/_panel_scroll/05_after_scroll_4.png"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row",
+    "y": "the row's own y, read from this frame",
+    "x": "the row's own entry, located on this frame -- note this row was measured with a GREEN CHECK where the other rows draw a blue arrow, so the arrow scan legitimately finds none and the row is entered by its own box",
+    "measured_on": "learning/_panel_scroll/05_after_scroll_4.png"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "row_read"
+   ],
+   "expected_transition": "MY_REWARDS_OPENED",
+   "verification": {
+    "row_position": "MEASURED_ON_A_LIVE_FRAME",
+    "arrow_appearance": "MEASURED ABSENT on the frame in hand: 仓库补给 shows a green check (已完成), and measured blue-button scan gives x 0.619-0.749 (a narrower run, i.e. the check, not the arrow)",
+    "state_word": "MEASURED (已完成)",
+    "claim_state": "NOT VERIFIED -- operator §四: 已完成 is not 已领取, and this record deliberately carries no 已领取 claim",
+    "entering_the_row": "NOT YET OBSERVED on the device"
+   },
+   "related_goals": [],
+   "notes": "Operator §四, and the reason this record exists at all: 已完成 (or a green check) says the task finished, never that its reward was taken.  A consumer must enter the row, look for a 领取/免费领取 control and read the resulting 获得奖励 feedback before calling it claimed; until then the item stays 待确认领取."
+  },
+  {
    "id": "QUICK_PANEL_TAB_CITY",
    "type": "TAB",
    "cn": "城镇",

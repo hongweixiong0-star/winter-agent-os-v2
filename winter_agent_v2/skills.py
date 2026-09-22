@@ -799,6 +799,19 @@ def v2_registry() -> SkillRegistry:
                 state=SkillState.CANDIDATE,
             )
         )
+    for _row, _label in (("ALLIANCE_DONATION", "联盟捐献"), ("HERO_RECRUIT", "英雄招募"),
+                         ("MY_REWARDS", "我的奖励")):
+        skills.append(
+            Skill(
+                f"OPEN_TASK_FROM_QUICK_PANEL_{_row}",
+                f"Enter {_label} from the quick panel's own row entry",
+                Page.HOME,
+                Action("TAP_SEMANTIC", f"QUICK_PANEL_ROW_{_row}"),
+                timeout=20.0,
+                risk="LOW",
+                state=SkillState.CANDIDATE,
+            )
+        )
     skills.append(
         Skill(
             "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",

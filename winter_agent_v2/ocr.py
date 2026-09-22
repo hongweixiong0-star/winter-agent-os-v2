@@ -305,6 +305,16 @@ QUICK_PANEL_BADGE_MIN_PX: int = 4
 #: Measured: the dot sits within ~0.013 of the row's y, so this keeps it off the neighbouring row.
 QUICK_PANEL_BADGE_HALF_HEIGHT: float = 0.013
 
+#: Which panel section's own row is named by which row key.  The section that draws *several*
+#: sub-rows (部队训练 -> 盾兵/矛兵/射手, 英雄招募 -> 高级招募/史诗招募) is not here: those rows are named
+#: by their own words and resolved through ``TROOP_TO_CAMP`` or the section's own branch.
+SECTION_ROW_KEYS: dict[str, str] = {
+    "科技研究": "RESEARCH",
+    "联盟捐献": "ALLIANCE_DONATION",
+    "英雄招募": "HERO_RECRUIT",
+    "我的奖励": "MY_REWARDS",
+}
+
 QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
     "建筑队列",
     "部队训练",
@@ -1788,17 +1798,29 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
             except (OSError, ValueError, AttributeError, TypeError):
                 frame_pixels = None
             out_rows: list[dict] = []
+            keyed_sections: set[str] = set()
             for section, name, name_y in section_rows:
                 camp = TROOP_TO_CAMP.get(TITLE_TO_TROOP.get(name, ""))
-                # The research row names itself 科技研究 under the header of the same name; any
-                # other row in that section is not the section's own control.
-                key = camp or ("RESEARCH" if "科技" in name else None)
+                # A section's own entry row is its *first* row, and that is the one a consumer
+                # navigates from: measured on the device, 科技研究 names itself, 联盟捐献 names
+                # itself, but 我的奖励's row is 仓库补给 and 英雄招募's first row is 高级招募 -- so
+                # "the row repeats the section's name" would have missed two of the four.  The extra
+                # rows of a section (史诗招募 under 英雄招募) carry their own state and keep no key.
+                key = camp
+                if key is None:
+                    section_key = SECTION_ROW_KEYS.get(section)
+                    if section_key and section not in keyed_sections:
+                        key = section_key
+                        keyed_sections.add(section)
                 if key is None:
                     continue
                 state_word = state_below(name_y)
                 located, badge, box = _panel_arrow_and_badge(frame_pixels, name_y / height)
                 record = {
-                    "kind": "CAMP" if camp else "RESEARCH",
+                    # The kind is the row's own identity, not a two-way guess: a consumer matches it
+                    # against the row kinds its goal works from, so labelling 联盟捐献 as RESEARCH
+                    # (which the earlier two-way form did) would have let a research goal tap it.
+                    "kind": "CAMP" if camp else key,
                     "key": key,
                     "label": name,
                     "y_norm": round(name_y / height, 4),

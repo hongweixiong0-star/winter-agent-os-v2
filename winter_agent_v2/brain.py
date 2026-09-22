@@ -984,6 +984,47 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_alliance_route")
             if world.alliance.get("section") == "HOME":
                 return Decision("OPEN_ALLIANCE_GIFTS", "alliance_gifts_badge_visible", world.confidence, "alliance_gifts_open")
+        # ---- the 快捷面板 as the in-city task board (operator directive 2026-09-22 §一) -------------
+        #
+        # This used to live *inside* the TRAIN branch below, so only the TRAIN route could use the
+        # panel.  Measured live 2026-09-22 22:54:15: ``KEEP_RESEARCH_PRODUCTIVE`` won the step, the
+        # branch never ran, and the round fell back to the power route and failed twice
+        # (``NAVIGATE_INFANTRY_CAMP``, ``NAVIGATE_RESEARCH_LAB``).  It sits before the per-route
+        # branches now, and it asks which rows the running goal works from through the goal layer's own
+        # route (``route_for``) and the panel's own row kinds -- never by comparing goal ids, route
+        # names or capability ids against each other.
+        #
+        # It does not touch a page that can already be advanced: this only ever runs on HOME, and when
+        # the goal is already standing where it can work, the branches below answer first.
+        panel = world.quick_panel or {}
+        if world.page is Page.HOME and self._panel_rows_for_this_goal():
+            if not panel.get("open"):
+                handle = panel.get("handle") or {}
+                # Not open: ask for one ordinary control, which the runtime's dictionary tier resolves
+                # to a tap of the handle on this very frame (proved live 21:24:58, QUICK_PANEL_OPENED).
+                if (
+                    str(handle.get("state") or "") == "COLLAPSED"
+                    and self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
+                    and not self.ordinary_scan_exhausted
+                ):
+                    self.ordinary_attempts += 1
+                    return Decision(
+                        "TRY_ORDINARY_CONTROL",
+                        "quick_panel_is_the_in_city_task_board_for_this_goal",
+                        world.confidence,
+                        "ordinary_control_observed",
+                    )
+            else:
+                row = self._actionable_panel_row(world)
+                if row is not None and self._panel_row_attempts < 2:
+                    self._panel_row_attempts += 1
+                    key = str(row.get("key") or "")
+                    return Decision(
+                        _QUICK_PANEL_ROW_SKILL.get(key, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"),
+                        f"quick_panel_row_{key.lower()}_enters_its_own_task_page",
+                        world.confidence,
+                        "task_page_open",
+                    )
         if self.current_goal == "RESEARCH":
             # Same route shape as the training goal below, one category row across:
             # 加成总览 -> 实力详情 -> 科技实力 提升 -> the 科研所's 研究 button.
@@ -1165,33 +1206,6 @@ class RuleBrain:
                         world.confidence,
                         "power_overview_open",
                     )
-            # The panel is the only surface that names all three barracks at once, and the training
-            # page cannot always be read: measured 2026-09-22 21:13, 盾兵营's own page read
-            # ``UNKNOWN`` because the 训练 label was covered by the pointer, so the frame carried no
-            # word the reader accepts.  With the panel closed and its handle still drawn on this
-            # frame, the honest next move is to open it -- the runtime's dictionary tier locates the
-            # handle on *this* frame and taps it, and the states arrive on the following step.  This
-            # sits above the busy-queue stop below on purpose: that stop is what makes a route give
-            # up on in-city work it cannot see, and the panel is how it can see.
-            #
-            # Bounded by the same three things the rest of the ordinary path is: the ordinary-attempt
-            # budget, the runtime's once-per-run ``_ordinary_tried``, and the record's own refusal
-            # while the panel is already open (``states`` -> ``satisfies_target_state``).
-            handle = (world.quick_panel or {}).get("handle") or {}
-            if (
-                world.page is Page.HOME
-                and not world.quick_panel.get("open")
-                and str(handle.get("state") or "") == "COLLAPSED"
-                and self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
-                and not self.ordinary_scan_exhausted
-            ):
-                self.ordinary_attempts += 1
-                return Decision(
-                    "TRY_ORDINARY_CONTROL",
-                    "training_route_opens_the_quick_panel_to_read_the_barracks",
-                    world.confidence,
-                    "ordinary_control_observed",
-                )
             if world.page is Page.HOME and world.training.get("queue_available") is False:
                 return Decision("SAFE_STOP", "training_queue_busy", 1.0, "switch_task")
             if world.page is Page.HOME:
@@ -2037,6 +2051,58 @@ class RuleBrain:
         """Count one barracks switch in both budgets."""
         self._camp_switch_attempts += 1
         self._camp_switches_this_run += 1
+
+    #: Which panel row kinds each route works from.  Keyed by the goal layer's own route names, so a
+    #: goal nobody has a row kind for is simply not served by the panel -- and no goal id is named here.
+    PANEL_ROWS_FOR_ROUTE: dict[str, tuple[str, ...]] = {
+        "TRAIN": ("CAMP",),
+        "RESEARCH": ("RESEARCH",),
+        # 联盟捐献 lives on the alliance route; 我的奖励 is where the daily/goal rewards are collected.
+        # 英雄招募 has no route of its own yet, which is stated here rather than invented.
+        "ALLIANCE": ("ALLIANCE_DONATION",),
+        "DAILY": ("MY_REWARDS",),
+    }
+
+    def _panel_rows_for_this_goal(self) -> tuple[str, ...]:
+        """The panel row kinds the running goal works from; empty when the panel is not its board."""
+        from .goal_library import route_for
+
+        route = route_for(str(getattr(self, "goal_id", "") or "")) or route_for(
+            str(self.current_goal or "")
+        )
+        return self.PANEL_ROWS_FOR_ROUTE.get(str(route or ""), ())
+
+    def _actionable_panel_row(self, world: WorldState) -> dict | None:
+        """The first panel row this goal can act on, from this frame's own reading.
+
+        A row qualifies when its kind is one the goal's route works from, its *own* state says it is
+        idle, and an arrow was located on that row to navigate with.  A row whose state says it is
+        running is never offered: 进行中 is not "worth starting again", which is the distinction the
+        operator's §四 insists on (进行中 / 已完成待领取 / 已领取 are three different things).
+        """
+        kinds = self._panel_rows_for_this_goal()
+        if not kinds:
+            return None
+        candidates = [
+            row
+            for row in (world.quick_panel.get("rows") or ())
+            if str(row.get("kind")) in kinds
+            and str(row.get("status")) == "IDLE"
+            and row.get("arrow_norm")
+        ]
+        if not candidates:
+            return None
+        # A goal that names a barracks gets that barracks' row, and only that one: the panel draws
+        # three look-alike rows and the operator's §二 is explicit that the arrow must belong to the
+        # row the goal is about.  Measured live 23:09:30, this function handed
+        # ``SHIELD_CAMP_TRAINING`` the **LANCER** row because it took the first match of the right kind.
+        own = self._goal_camp()
+        if own:
+            for row in candidates:
+                if str(row.get("key")) == f"{own}_CAMP":
+                    return row
+            return None
+        return candidates[0]
 
     def _goal_camp(self) -> str | None:
         """The barracks this run's goal names, or ``None`` for a goal that names none.
