@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from .brain import RuleBrain
 from . import control_experience
@@ -1025,6 +1025,73 @@ class LiveRuntime:
             self._ui_candidates = store
         return store
 
+    def _declared_dictionary_words(self) -> set[str]:
+        """Every word the semantic dictionary declares, whatever control it belongs to.
+
+        Needed so the collector never re-stages a control the project already knows under a new
+        name -- the dictionary is where "we know this button" lives, and a word in it is not news.
+        """
+        words: set[str] = set()
+        try:
+            payload = json.loads(UI_DICTIONARY_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return words
+        for record in payload.get("records") or ():
+            if not isinstance(record, Mapping):
+                continue
+            for word in record.get("ocr") or ():
+                value = str(word or "").strip()
+                if value:
+                    words.add(value)
+        return words
+
+    def _collect_printed_controls(
+        self,
+        *,
+        store: "ui_collection.UiCandidateStore",
+        frame: "Path | None",
+        page: str,
+        goal: str,
+        episode_id: str,
+        skip_words: Iterable[str],
+    ) -> None:
+        """Harvest ordinary action words on this frame that nobody has written down yet."""
+        if frame is None:
+            return
+        seen = getattr(self, "_ui_scans", 0)
+        if seen >= ui_collection.MAX_SCANS_PER_RUN:
+            return
+        ocr = self._ocr_service()
+        if ocr is None:
+            return
+        self._ui_scans = seen + 1
+        try:
+            found = ui_collection.find_plain_controls(frame, ocr, skip_words=skip_words)
+        except Exception:  # noqa: BLE001 - a scan must never fail the step it rides on
+            return
+        staged = False
+        for hit in found:
+            record = store.stage(
+                frame_path=frame,
+                page=page,
+                semantic="",
+                box_norm=hit["box_norm"],
+                goal=goal,
+                episode=episode_id,
+                ocr_text=hit["word"],
+                ocr_confidence=hit["confidence"],
+                recognition_method=ui_collection.METHOD_OCR_WORD,
+                semantic_candidates=(f"OCR:{page}:{hit['word']}",),
+                notes=(
+                    "the client printed an ordinary action word the semantic dictionary does not "
+                    "declare; the candidate semantic is a guess from the word and the page and is "
+                    "kept unconfirmed until a real step exercises it"
+                ),
+            )
+            staged = staged or record is not None
+        if staged:
+            store.save()
+
     def _save_ui_candidates(self) -> None:
         """Persist the candidate index and hold it to its bound, once per run.
 
@@ -1157,6 +1224,22 @@ class LiveRuntime:
                     store.ingest(record, ocr_text=record.ocr_text)
             if touched:
                 store.save()
+
+        # (e) a frame on which the client printed an ordinary action the project has never
+        # recorded (operator §二.3/§十).  This is the collector's only *positive* source: the
+        # cases above need something to have already gone wrong, while this one fires on a
+        # screen whose controls the machine can simply look at.  Bounded to
+        # ``MAX_SCANS_PER_RUN`` frames per run so collection can never become the expensive part
+        # of a cycle, and skipped entirely for the frame whose measured word this step already
+        # turned into a candidate above.
+        self._collect_printed_controls(
+            store=store,
+            frame=frame,
+            page=page,
+            goal=goal,
+            episode_id=episode_id,
+            skip_words=self._declared_dictionary_words(),
+        )
 
     # ------------------------------------------------- utility bookkeeping
 
@@ -1675,15 +1758,10 @@ class LiveRuntime:
     #: a navigation, an open.  Deliberately absent: anything that can spend a resource
     #: or confirm a dialog (挑战 / 捐献 / 升级 / 扫荡 / 确认 all belong to registered,
     #: verifier-bound skills).
-    ORDINARY_CONTROL_WORDS: tuple[str, ...] = (
-        "领取",
-        "免费领取",
-        "签到",
-        "前往",
-        "去完成",
-        "打开",
-        "帮助",
-    )
+    #: Defined once, in ``ui_collection``, because the collector reads the same list to decide
+    #: what is worth harvesting: a second copy here would let the two disagree about which
+    #: printed words this project acts on.
+    ORDINARY_CONTROL_WORDS: tuple[str, ...] = ui_collection.PLAIN_ACTION_WORDS
     #: Words that refuse a candidate outright, wherever they appear on the frame: the
     #: real-money and irreversible boundary the directive restates ("保留真实货币、高代价
     #: 及不可逆风险操作限制").  The scan checks the whole token list, not just the hit,

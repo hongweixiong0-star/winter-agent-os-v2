@@ -103,6 +103,99 @@ MAX_CANDIDATES = 400
 #: edge artefact) rather than a control, and is refused at stage time.
 MIN_ELEMENT_SIDE_PX = 12
 
+#: The ordinary actions this project may act on without a registered skill, in the client's own
+#: words.  **One definition, two readers**: ``runtime._ordinary_control_candidate`` uses it to
+#: decide what it may tap, and ``find_plain_controls`` below uses it to decide what is worth
+#: collecting.  A second copy would let the collector gather words the executor refuses (or miss
+#: the ones it taps), which is exactly the drift a shared constant prevents.
+PLAIN_ACTION_WORDS: tuple[str, ...] = (
+    "领取",
+    "免费领取",
+    "签到",
+    "前往",
+    "去完成",
+    "打开",
+    "帮助",
+)
+
+#: How many frames one run may spend scanning for unregistered printed controls.  The scan is an
+#: OCR pass on a frame the run already captured, and it exists to find NEW controls -- not to
+#: re-read every screen.  Two is enough for a run that meets something new, and it is small
+#: enough that collection can never become the expensive part of a cycle.
+MAX_SCANS_PER_RUN = 2
+
+#: Minimum OCR confidence for a word to become a candidate.  The same bar ``find_printed_words``
+#: uses for the tap path: a word that is not read well enough to tap is not read well enough to
+#: remember either.
+MIN_SCAN_CONFIDENCE = 0.9
+
+
+def find_plain_controls(
+    frame_path: Path | str,
+    ocr,
+    *,
+    skip_words: Iterable[str] = (),
+    words: Sequence[str] = PLAIN_ACTION_WORDS,
+) -> list[dict]:
+    """The ordinary action words on this frame that the project has never recorded.
+
+    This is operator §二.3/§十 ("OCR 识别到新的按钮文字、页面入口或操作提示") and it is the
+    collector's positive source: the failure-context cases only fire when something already went
+    wrong, while this one fires whenever the client draws an ordinary action somebody has not
+    written down yet -- a 领取 on a new panel, a 前往 the route has never taken.
+
+    ``skip_words`` is what keeps it from re-collecting knowledge the project already has: the
+    caller passes every word the semantic dictionary declares (whatever control they belong to)
+    so a known control is never re-staged under a new name.  Exact match, like the tap path --
+    a substring would collect ``我的城镇`` as ``城镇``.
+
+    Returns ``[{"word", "box_norm", "confidence"}]``, highest confidence first per word, and an
+    empty list when the frame is unreadable or names nothing new.
+    """
+    wanted = [str(word).strip() for word in words if str(word or "").strip()]
+    if not wanted:
+        return []
+    skip = {str(word).strip() for word in skip_words if str(word or "").strip()}
+    wanted = [word for word in wanted if word not in skip]
+    if not wanted:
+        return []
+    frame_path = Path(frame_path)
+    try:
+        result = ocr.recognize(frame_path)
+    except (OSError, ValueError):
+        return []
+    from .ocr import read_frame_size
+
+    size = read_frame_size(frame_path)
+    if not size:
+        return []
+    width, height = int(size[0]), int(size[1])
+    if width <= 0 or height <= 0:
+        return []
+    best: dict[str, dict] = {}
+    for token in result.tokens:
+        text = (token.text or "").strip()
+        confidence = float(token.confidence or 0.0)
+        if not text or not token.box or confidence < MIN_SCAN_CONFIDENCE:
+            continue
+        if text not in wanted:
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        row = {
+            "word": text,
+            "confidence": round(confidence, 4),
+            "box_norm": {
+                "x_norm": round(min(xs) / width, 4),
+                "y_norm": round(min(ys) / height, 4),
+                "w_norm": round((max(xs) - min(xs)) / width, 4),
+                "h_norm": round((max(ys) - min(ys)) / height, 4),
+            },
+        }
+        if text not in best or row["confidence"] > best[text]["confidence"]:
+            best[text] = row
+    return sorted(best.values(), key=lambda item: item["confidence"], reverse=True)
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()

@@ -366,5 +366,130 @@ class RuntimeHookTests(unittest.TestCase):
         self.assertEqual(self.store.all()[0].attempt_count, 2)
 
 
+class PlainControlScanTests(unittest.TestCase):
+    """The collector's positive source: ordinary action words nobody has written down.
+
+    Operator §二.3/§十.  Uses a stub OCR so the assertion is about the *rule* (exact match, a
+    confidence floor, and never re-collecting a word the dictionary already declares) rather than
+    about whichever words happen to be on one capture.
+    """
+
+    class _OCR:
+        def __init__(self, *tokens):
+            self._tokens = tokens
+
+        def recognize(self, image_path, roi=None):
+            from winter_agent_v2.ocr import OCRResult, OCRToken
+
+            return OCRResult(
+                tuple(
+                    OCRToken(text=text, confidence=conf, box=box) for text, conf, box in self._tokens
+                ),
+                "stub",
+            )
+
+    BOX = ((100.0, 1000.0), (160.0, 1000.0), (160.0, 1024.0), (100.0, 1024.0))
+
+    def test_a_new_action_word_becomes_a_candidate_row(self):
+        ocr = self._OCR(("领取", 0.99, self.BOX))
+        found = ui_collection.find_plain_controls(FRAME, ocr)
+        self.assertEqual([row["word"] for row in found], ["领取"])
+        self.assertGreater(found[0]["box_norm"]["w_norm"], 0.0)
+
+    def test_a_word_the_dictionary_already_declares_is_not_re_collected(self):
+        ocr = self._OCR(("领取", 0.99, self.BOX))
+        self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr, skip_words=["领取"]), [])
+
+    def test_a_low_confidence_reading_is_not_staged(self):
+        ocr = self._OCR(("领取", 0.62, self.BOX))
+        self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr), [])
+
+    def test_a_substring_is_not_an_exact_control_word(self):
+        """``我的城镇`` must not be harvested as ``城镇`` -- the same rule the tap path uses."""
+        ocr = self._OCR(("我的城镇", 0.99, self.BOX))
+        self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr), [])
+
+    def test_a_non_action_word_is_ignored(self):
+        ocr = self._OCR(("等级", 0.99, self.BOX))
+        self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr), [])
+
+
+class RuntimeHookScanTests(unittest.TestCase):
+    """The scan as the runtime drives it: bounded per run, and staged with its uncertainty kept."""
+
+    def setUp(self):
+        if not FRAME.exists():
+            self.skipTest("the live capture was pruned by the retention policy")
+        self.tmp = tempfile.TemporaryDirectory()
+        base = Path(self.tmp.name)
+        self.manifest = base / "template_manifest.json"
+        self.manifest.write_text(json.dumps({"records": []}), encoding="utf-8")
+        self.store = _store(base / "candidates", self.manifest)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _runtime(self, words=("领取",)):
+        from winter_agent_v2.ocr import OCRResult, OCRToken
+
+        class OCR:
+            def recognize(self, image_path, roi=None):
+                return OCRResult(
+                    tuple(
+                        OCRToken(
+                            text=word, confidence=0.99,
+                            box=((100.0, 1000.0), (160.0, 1000.0), (160.0, 1024.0), (100.0, 1024.0)),
+                        )
+                        for word in words
+                    ),
+                    "stub",
+                )
+
+        runtime = object.__new__(LiveRuntime)
+        runtime.vision = type("V", (), {"ocr": OCR()})()
+        runtime.semantic_vision = None
+        runtime._ui_candidates = self.store
+        runtime._printed_boxes = {}
+        runtime._ui_scans = 0
+        return runtime
+
+    def test_a_scanned_word_is_staged_as_an_unconfirmed_candidate(self):
+        runtime = self._runtime()
+        runtime._collect_printed_controls(
+            store=self.store, frame=FRAME, page="EVENT", goal="DAILY_ACTIVITY_TARGET",
+            episode_id="run1", skip_words=(),
+        )
+        records = self.store.all()
+        self.assertEqual(len(records), 1)
+        record = records[0]
+        self.assertEqual(record.verification_status, ui_collection.STATUS_DISCOVERED)
+        self.assertEqual(record.semantic_id, "")
+        self.assertEqual(record.semantic_candidates, ("OCR:EVENT:领取",))
+        self.assertEqual(record.ocr_text, "领取")
+        self.assertTrue(Path(record.image_path).exists())
+
+    def test_the_scan_is_bounded_per_run(self):
+        runtime = self._runtime()
+        for _ in range(ui_collection.MAX_SCANS_PER_RUN + 3):
+            runtime._collect_printed_controls(
+                store=self.store, frame=FRAME, page="EVENT", goal="G", episode_id="r", skip_words=(),
+            )
+        # One candidate per (page, word, picture) however many times the scan is offered, and the
+        # counter stops the OCR after the budget -- both matter, and the first is what the
+        # directory proves.
+        self.assertEqual(len(self.store.all()), 1)
+        # Exactly the budget was spent: the third call is refused *before* any OCR happens, so the
+        # counter is the budget and not one more.
+        self.assertEqual(runtime._ui_scans, ui_collection.MAX_SCANS_PER_RUN)
+
+    def test_a_declared_word_is_never_staged_again(self):
+        runtime = self._runtime()
+        runtime._collect_printed_controls(
+            store=self.store, frame=FRAME, page="EVENT", goal="G", episode_id="r",
+            skip_words=["领取"],
+        )
+        self.assertEqual(self.store.all(), [])
+
+
 if __name__ == "__main__":
     unittest.main()
