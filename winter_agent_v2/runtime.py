@@ -1147,16 +1147,31 @@ class LiveRuntime:
         store = self._ui_store()
         if store is None:
             return
+        page = control_experience.label(before.page)
+        frame = after_screenshot or before_screenshot
+        goal = goal_id or str(self.brain.current_goal or "")
+
+        # (e) the positive source, and it runs first on purpose: it needs nothing to have gone
+        # wrong, so gating it behind "this step aimed at a named control" would leave it silent
+        # on exactly the steps that see the most of the game -- a BACK, an OBSERVE, a navigation
+        # hop all carry a frame, and a frame is all this needs.  Bounded per run
+        # (``MAX_SCANS_PER_RUN``) and skipped for words the dictionary already declares.
+        self._collect_printed_controls(
+            store=store,
+            frame=frame,
+            page=page,
+            goal=goal,
+            episode_id=episode_id,
+            skip_words=self._declared_dictionary_words(),
+        )
+
         target = ((execution.action.target if execution is not None else "") or "").strip()
         if not target:
             skill = self.registry.get(decision.skill)
             target = ((skill.action.target if skill is not None else "") or "").strip()
         if not target:
             return
-        page = control_experience.label(before.page)
         expected = decision.expected_result or ""
-        frame = after_screenshot or before_screenshot
-        goal = goal_id or str(self.brain.current_goal or "")
 
         # (a) named and unlocatable
         not_executed = execution is None or not execution.executed
@@ -1224,22 +1239,6 @@ class LiveRuntime:
                     store.ingest(record, ocr_text=record.ocr_text)
             if touched:
                 store.save()
-
-        # (e) a frame on which the client printed an ordinary action the project has never
-        # recorded (operator §二.3/§十).  This is the collector's only *positive* source: the
-        # cases above need something to have already gone wrong, while this one fires on a
-        # screen whose controls the machine can simply look at.  Bounded to
-        # ``MAX_SCANS_PER_RUN`` frames per run so collection can never become the expensive part
-        # of a cycle, and skipped entirely for the frame whose measured word this step already
-        # turned into a candidate above.
-        self._collect_printed_controls(
-            store=store,
-            frame=frame,
-            page=page,
-            goal=goal,
-            episode_id=episode_id,
-            skip_words=self._declared_dictionary_words(),
-        )
 
     # ------------------------------------------------- utility bookkeeping
 
