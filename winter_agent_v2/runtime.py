@@ -926,7 +926,7 @@ class LiveRuntime:
             return
         failure = None
         if execution is None or not execution.executed:
-            failure = execution.error if execution else "NO_EXECUTION"
+            failure = self._failure_type_from(execution)
         elif verification is not None and not verification.ok:
             failure = verification.reason
         episode = Episode(
@@ -1122,6 +1122,38 @@ class LiveRuntime:
             pass
 
     # ------------------------------------------------- automatic UI collection
+
+    def _failure_type_from(self, execution: "ExecutionResult | None") -> str:
+        """The failure type a step that did not execute gets, with the runtime's refusals named.
+
+        The executor answers ``SEMANTIC_TARGET_NOT_VERIFIED`` whenever the resolver it was handed
+        returns no point, and for a named control that is the right sentence: the frame did not show
+        it.  For the one generic skill it can be the wrong one, because that resolver can also decline
+        a control **the frame does draw** -- it has already been used in this run
+        (``ORDINARY_CONTROL_ALREADY_USED_THIS_RUN``).  Recording the executor's verdict there is how a
+        policy refusal becomes a puzzle ("the control is not on the frame") for whoever reads the
+        failure table next, and how it gets classified as ``UNKNOWN_UI`` -- "the client showed
+        something V2 could not read" -- which is a diagnosis no development agent can act on because
+        nothing is unreadable.
+
+        Operator §6: two defects with different root causes must not share a reason string.  This is
+        that rule at the boundary where the strings are made.
+        """
+        error = str(getattr(execution, "error", "") or "") if execution is not None else ""
+        if execution is None:
+            return "NO_EXECUTION"
+        declined = getattr(self, "_ordinary_declined", None)
+        if (
+            error == "SEMANTIC_TARGET_NOT_VERIFIED"
+            and isinstance(declined, Mapping)
+            and declined.get("reason")
+            # ...and nothing was resolved *after* the refusal.  ``_ordinary_last`` is set by every
+            # tier that finds a control, so a set one means this step did aim at something -- and for
+            # a target that was aimed at, "the frame does not show it" is the true sentence.
+            and getattr(self, "_ordinary_last", None) is None
+        ):
+            return str(declined["reason"])
+        return error
 
     def _ui_store(self) -> "ui_collection.UiCandidateStore | None":
         """The candidate store, created once per run and never allowed to break one."""
@@ -1621,8 +1653,23 @@ class LiveRuntime:
         expected = decision.expected_result or ""
 
         # (a) named and unlocatable
+        #
+        # ...but not when the runtime declined the control by name: "unlocated" means no reader could
+        # find it, and this case is the opposite -- the frame drew it, the runtime measured it, and
+        # then refused to use it again.  Staging it as unlocated would file a false candidate (and the
+        # collector's whole output is read as evidence of what the client shows).
         not_executed = execution is None or not execution.executed
-        if not_executed and (execution is None or execution.error == "SEMANTIC_TARGET_NOT_VERIFIED"):
+        declined = getattr(self, "_ordinary_declined", None)
+        declined_by_name = (
+            isinstance(declined, Mapping)
+            and bool(declined.get("reason"))
+            and getattr(self, "_ordinary_last", None) is None
+        )
+        if (
+            not_executed
+            and not declined_by_name
+            and (execution is None or execution.error == "SEMANTIC_TARGET_NOT_VERIFIED")
+        ):
             store.stage_unlocated(
                 page=page,
                 semantic=target,
@@ -2321,6 +2368,36 @@ class LiveRuntime:
     #: what is worth harvesting: a second copy here would let the two disagree about which
     #: printed words this project acts on.
     ORDINARY_CONTROL_WORDS: tuple[str, ...] = ui_collection.PLAIN_ACTION_WORDS
+
+    #: The names this runtime gives the *gates* of the declared-control tier when one of them refuses.
+    #:
+    #: Named rather than left to the executor's generic verdict, for the same reason ``brain.py``'s
+    #: unaffordable-dispatch branch exists ("Refusing here records what actually happened instead"):
+    #: the executor answers ``SEMANTIC_TARGET_NOT_VERIFIED`` -- "the frame names no control" -- for
+    #: *any* resolver that returns no point, and every gate below refuses a control the frame draws.
+    #: Measured 2026-09-23 over the 69 live attempts of ``TRY_ORDINARY_CONTROL``
+    #: (``tools/probe_ordinary_control_resolution.py``): 31 failed and all 31 were recorded as
+    #: "the frame names no control"; for 15 of them the frame demonstrably draws the collapsed handle
+    #: (7 refused by "already used this run", 8 by one of the structural gates below).
+    #:
+    #: Classification follows the names: none ends in ``escalation_queue``'s UI-unread suffixes, so
+    #: they stop being reported as ``UNKNOWN_UI`` -- "the client showed something V2 could not read" --
+    #: which is a diagnosis nothing can act on, because nothing is unreadable.
+    ORDINARY_CONTROL_DECLINES: dict[str, str] = {
+        # Measured: this run already tapped this control on this page, and a control already pressed
+        # is not pressed again in the same run (operator §七.3).  The frame is fine; the run is not
+        # allowed to use it twice.
+        "already_used": "ORDINARY_CONTROL_ALREADY_USED_THIS_RUN",
+        # The record says which pages the control exists on, and this is not one of them.
+        "not_on_page": "ORDINARY_CONTROL_NOT_ON_THIS_PAGE",
+        # The record names the goals the control serves (by goal id or by route); this run is another.
+        "not_for_goal": "ORDINARY_CONTROL_NOT_FOR_THIS_GOAL",
+        # The record's own risk is not one this project explores.
+        "risk": "ORDINARY_CONTROL_RISK_NOT_EXPLORABLE",
+        # The client has already drawn it in the state the goal wanted, so toggling it would undo
+        # that state.
+        "already_open": "ORDINARY_CONTROL_ALREADY_OPEN",
+    }
     #: Words that refuse a candidate outright, wherever they appear on the frame: the
     #: real-money and irreversible boundary the directive restates ("保留真实货币、高代价
     #: 及不可逆风险操作限制").  The scan checks the whole token list, not just the hit,
@@ -2535,6 +2612,10 @@ class LiveRuntime:
         """
         if frame_path is None:
             return None
+        # Cleared at the very top, before every early return: a refusal belongs to the call that made
+        # it, and a step that resolved nothing must not inherit the previous step's reason any more
+        # than it may inherit its control (``_ordinary_last`` is cleared for the same reason below).
+        self._ordinary_declined = None
         if frame.page in (Page.MAINTENANCE, Page.LOADING):
             return None
         ocr = self._ocr_service()
@@ -3231,15 +3312,46 @@ class LiveRuntime:
             return None
 
         page_label = control_experience.label(page)
+
+        def _declined(gate: str, semantic: str = "") -> None:
+            """Name the gate that refused, once.
+
+            The first gate to refuse is the reason reported: a later gate's answer would describe a
+            control this one already ruled out, and the report has to name the cause that actually
+            decided the step.  Every gate below is a refusal of a control the frame *draws* -- that is
+            what makes the executor's generic "the frame names no control" the wrong sentence.
+
+            ``getattr`` rather than a bare read: several harnesses call this method directly on a
+            runtime built with ``object.__new__``, so a refusal must not require a run-scoped
+            attribute to already exist.
+            """
+            if getattr(self, "_ordinary_declined", None) is None:
+                self._ordinary_declined = {
+                    "reason": self.ORDINARY_CONTROL_DECLINES[gate],
+                    "semantic": str(semantic),
+                    "page": str(page_label),
+                }
+
         for semantic, record in self._semantic_records().items():
             locator = record.get("locator")
             if not isinstance(locator, Mapping) or str(locator.get("state_field") or "") != "quick_panel.handle":
                 continue
             pages = [str(item) for item in (record.get("pages") or ())]
             if pages and page_label not in pages:
+                print(
+                    f"[declared] {semantic} refused: its record names {pages}, not {page_label}",
+                    flush=True,
+                )
+                _declined("not_on_page", semantic)
                 continue
             served = {str(item).strip().upper() for item in (record.get("related_goals") or ())}
             if not self._record_serves_goal(goal, served):
+                print(
+                    f"[declared] {semantic} refused: its record serves {sorted(served)}, and this run "
+                    f"is {goal or '(no goal)'}",
+                    flush=True,
+                )
+                _declined("not_for_goal", semantic)
                 continue
             risk = str(record.get("risk") or "").upper()
             if risk not in control_experience.EXPLORABLE_RISKS:
@@ -3248,6 +3360,7 @@ class LiveRuntime:
                     f"which is not one of {sorted(control_experience.EXPLORABLE_RISKS)}",
                     flush=True,
                 )
+                _declined("risk", semantic)
                 continue
             states = record.get("states") or {}
             reached = str(handle.get("state") or "")
@@ -3258,8 +3371,17 @@ class LiveRuntime:
                     f"(the goal wants it read, not toggled)",
                     flush=True,
                 )
+                _declined("already_open", semantic)
                 return None
             if (page_label, semantic) in self._ordinary_tried:
+                # The frame draws it; this run has already used it.  Refusing is right -- a control
+                # that was already pressed is not pressed again in the same run (operator §七.3).
+                print(
+                    f"[declared] {semantic} not tapped: this run already used it on {page_label} "
+                    f"({len(self._ordinary_tried)} control(s) used this run)",
+                    flush=True,
+                )
+                _declined("already_used", semantic)
                 return None
             self._ordinary_tried.add((page_label, semantic))
             self._ordinary_attempts += 1
@@ -3871,6 +3993,12 @@ class LiveRuntime:
         self.MAX_ORDINARY_ATTEMPTS = 2
         self._ordinary_attempts = 0
         self._ordinary_tried: set[tuple[str, str]] = set()
+        #: Why the ordinary resolver declined this step, when the reason is the runtime's own rather
+        #: than the frame's.  Set and cleared by ``_ordinary_control_candidate``, read by
+        #: ``_failure_type_from`` and by the candidate collector -- so a refusal is recorded as the
+        #: refusal it was, instead of as "the frame names no control" (measured: 17 of the 18 repeats
+        #: inside one run failed that way while the frame demonstrably drew the handle).
+        self._ordinary_declined: dict[str, Any] | None = None
         # Which control the ordinary resolver chose this step, for the transition ledger: the
         # word is known at resolution time and nowhere else, because "ORDINARY_CONTROL" is a
         # placeholder name by construction (operator 2026-09-22, unknown pages).

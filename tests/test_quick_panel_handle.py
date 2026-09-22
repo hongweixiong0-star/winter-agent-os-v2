@@ -195,12 +195,26 @@ class TheRouteTests(unittest.TestCase):
         self.assertEqual(runtime._ordinary_last["semantic"], "QUICK_PANEL_HANDLE")
 
     def test_a_goal_the_record_does_not_serve_cannot_tap_it(self):
-        for goal in ("CLEAR_INTEL", "DAILY_ACTIVITY_TARGET", ""):
+        for goal in ("CLEAR_INTEL", "DAILY_ACTIVITY_TARGET"):
             runtime = _runtime(goal=goal)
             self.assertIsNone(
                 runtime._declared_textless_control_point("HOME", "", _frame_with_handle()),
                 f"{goal!r} is not a reason to open the panel",
             )
+            # ...and the refusal names its gate.  Without this the step reached the episode stream as
+            # "the frame names no control" -- measured 2026-09-23, 15 of the 31 failed live attempts
+            # stood on a frame that draws the handle.
+            self.assertEqual(
+                (getattr(runtime, "_ordinary_declined", None) or {}).get("reason"),
+                LiveRuntime.ORDINARY_CONTROL_DECLINES["not_for_goal"],
+                f"{goal!r}: the refusal must say which gate refused",
+            )
+        # No goal at all is refused before any gate is consulted -- there is nothing to compare the
+        # record's ``related_goals`` against -- so there is no gate to name.  Asserted so the
+        # difference between "a gate refused" and "the tier was never entered" stays visible.
+        bare = _runtime(goal="")
+        self.assertIsNone(bare._declared_textless_control_point("HOME", "", _frame_with_handle()))
+        self.assertIsNone(getattr(bare, "_ordinary_declined", None))
 
     def test_the_shipped_shape_reaches_it_too(self):
         """``current_goal`` is a **route** in production, not a goal id.
@@ -236,6 +250,10 @@ class TheRouteTests(unittest.TestCase):
         runtime = _runtime()
         frame = _frame_with_handle(page=Page.ALLIANCE)
         self.assertIsNone(runtime._declared_textless_control_point("ALLIANCE", "", frame))
+        self.assertEqual(
+            (getattr(runtime, "_ordinary_declined", None) or {}).get("reason"),
+            LiveRuntime.ORDINARY_CONTROL_DECLINES["not_on_page"],
+        )
 
     def test_an_already_expanded_panel_is_not_toggled(self):
         """已经展开时，直接读取状态，不重复点击 -- the record's own ``states`` decides it."""
