@@ -211,7 +211,15 @@ class PanelReadingTests(unittest.TestCase):
         self.assertAlmostEqual(rows["SHIELD_CAMP"]["y_norm"], 0.427, delta=0.02)
         self.assertAlmostEqual(rows["LANCER_CAMP"]["y_norm"], 0.484, delta=0.02)
         self.assertAlmostEqual(rows["MARKSMAN_CAMP"]["y_norm"], 0.541, delta=0.02)
-        self.assertLess(rows["SHIELD_CAMP"]["arrow_norm"][0], 0.55, "the arrow is on the panel")
+        # The arrow is the row's own blue button now.  Measured on the device 2026-09-22: the button
+        # spans x 0.539-0.749 while the old text-column estimate reported 0.4097 -- a tap that landed
+        # on the row's state word.  What must hold is that the point is *inside the box reported for
+        # that row*; the number itself is located per frame, which is the entire point.
+        for key in ("SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"):
+            box = rows[key].get("arrow_box_norm")
+            self.assertIsNotNone(box, f"{key}: a located button must report its own box")
+            self.assertGreaterEqual(rows[key]["arrow_norm"][0], box["x_norm"], key)
+            self.assertLessEqual(rows[key]["arrow_norm"][0], box["x_norm"] + box["w_norm"], key)
         for key, row in rows.items():
             self.assertEqual(row["arrow_norm"][1], row["y_norm"], key)
 
@@ -294,7 +302,10 @@ class DictionaryConsumerTests(unittest.TestCase):
         self.assertAlmostEqual(spearman[1], 0.4836, delta=0.02)
         self.assertAlmostEqual(archer[1], 0.541, delta=0.02)
         self.assertNotAlmostEqual(spearman[1], archer[1], places=2)
-        self.assertEqual(spearman[0], archer[0], "both arrows live in the panel's own column")
+        # Each row's arrow is located from that row's own button, so the two need not share an exact x.
+        # What they must share is the panel's button column: measured on the device the button spans
+        # x 0.539-0.749 on every row, and the located centres differ by <=0.03.
+        self.assertLess(abs(spearman[0] - archer[0]), 0.06, "both arrows live in the panel's own column")
         self.assertTrue(
             [line for line in runtime._printed_reads if "ROW_RELATIVE" in line],
             "the basis has to be visible in the run, like every other read",

@@ -284,6 +284,27 @@ QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技
 #: so it must not name a page.  The panel does draw it, though -- measured on the operator's frame
 #: 2026-09-22 21:50, 联盟捐献 可捐献25/25 和 英雄招募 免费招募 都在这块面板里，两个状态正是指令 §三
 #: 要读的东西.  Hence one list per job.
+#: The quick panel's row arrows, measured on real device frames 2026-09-22 (720x1280).
+#:
+#: A row's arrow is the client's own blue rounded button, and it is found by its own pixels rather than
+#: from a stored position: a run of saturated blue right of the panel's text column, at that row's y,
+#: ~150 px wide on a 720 px frame.
+QUICK_PANEL_ARROW_BLUE_MIN: int = 150
+QUICK_PANEL_ARROW_BLUE_OVER_RED: int = 35
+QUICK_PANEL_ARROW_BAND_X_NORM: tuple[float, float] = (0.45, 0.80)
+QUICK_PANEL_ARROW_MIN_RUN_PX: int = 40
+
+#: The client's unclaimed-task dot.  Measured: red pixels in the button's left part on the row's own y --
+#: present on 矛兵 空闲中 and 科技研究 空闲中, absent on the two training rows and on the finished one.
+QUICK_PANEL_BADGE_RED_MIN: int = 150
+QUICK_PANEL_BADGE_OVER_GREEN: int = 60
+QUICK_PANEL_BADGE_OVER_BLUE: int = 60
+QUICK_PANEL_BADGE_MIN_PX: int = 4
+
+#: How far above and below a row's own y the badge is searched, as a fraction of the frame height.
+#: Measured: the dot sits within ~0.013 of the row's y, so this keeps it off the neighbouring row.
+QUICK_PANEL_BADGE_HALF_HEIGHT: float = 0.013
+
 QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
     "建筑队列",
     "部队训练",
@@ -1380,6 +1401,93 @@ def _roi_box(rect: tuple[float, float, float, float]) -> tuple[float, float, flo
     return rect
 
 
+def _panel_arrow_and_badge(
+    pixels: list[list[tuple[int, int, int]]] | None, row_y_norm: float
+) -> tuple[list[float] | None, str, dict | None]:
+    """The row's own blue arrow button, and whether it carries the client's red dot.
+
+    ``pixels`` is the frame as rows of RGB triples (``None`` when the frame could not be read).
+    Returns the button's centre in normalised coordinates (or ``None``), the badge state
+    (``PRESENT`` / ``ABSENT`` / ``UNKNOWN``) and the button's normalised box.
+
+    Two things the measurements forced, both from real frames:
+
+    * the button is scanned over **several rows** around the row's own y.  The row's name is its first
+      line while the button spans both lines, so the widest run is not always at the name's own y --
+      sampling one line made the scan fail on 射手 (21:28) and 矛兵 (21:50);
+    * blue runs separated by a small gap are **merged**.  The client draws a white chevron *inside* the
+      button, which splits one button into two blue runs: taking the longest run alone put the centre at
+      0.73 where the button's real centre is 0.644, i.e. a tap just outside it.
+
+    The badge is only ever judged inside a button that was found.  No button means no place to look,
+    which is UNKNOWN -- the operator's §四: UNKNOWN must never be read as ABSENT.
+    """
+    if not pixels or not pixels[0]:
+        return None, "UNKNOWN", None
+    height = len(pixels)
+    width = len(pixels[0])
+    y = int(round(row_y_norm * height))
+    if not 0 <= y < height:
+        return None, "UNKNOWN", None
+    half = max(1, int(QUICK_PANEL_BADGE_HALF_HEIGHT * height))
+    gap_px = max(2, int(0.05 * width))
+    left_bound = int(QUICK_PANEL_ARROW_BAND_X_NORM[0] * width)
+    right_bound = min(int(QUICK_PANEL_ARROW_BAND_X_NORM[1] * width), width)
+
+    def is_button(pixel: tuple[int, int, int]) -> bool:
+        red, green, blue = pixel
+        return blue >= QUICK_PANEL_ARROW_BLUE_MIN and blue - red >= QUICK_PANEL_ARROW_BLUE_OVER_RED
+
+    def blue_span(scan_y: int) -> tuple[int, int] | None:
+        """The button's blue extent on one frame row.
+
+        The extent is **min..max** of the blue pixels, not the longest unbroken run, and the measurement
+        is why: the client draws the unclaimed dot *on the button's left end*, so on a row that has one
+        the leftmost blue starts after it (0.625 where the button begins at 0.539).  A run-based extent
+        therefore began past the dot and the badge window built from it missed the very dot it exists to
+        find.  Taking min..max gives the button's true extent on every row measured, and the caller's
+        badge window then starts at the button's own left edge.
+        """
+        xs = [x for x in range(left_bound, right_bound) if is_button(pixels[scan_y][x])]
+        if not xs or xs[-1] - xs[0] < QUICK_PANEL_ARROW_MIN_RUN_PX:
+            return None
+        return xs[0], xs[-1]
+
+    best: tuple[int, int, int] | None = None
+    for scan_y in range(max(0, y - half), min(height, y + half + 1)):
+        span = blue_span(scan_y)
+        if span is None:
+            continue
+        if best is None or span[1] - span[0] > best[1] - best[0]:
+            best = (span[0], span[1], scan_y)
+    if best is None:
+        return None, "UNKNOWN", None
+    left, right, button_y = best
+    centre_x = (left + right) / 2
+
+    # The dot sits on the button's left end, so the window starts at the button's own left edge and
+    # reaches a third of the way in.  Measured: the dot occupies x 0.569-0.589 while the button starts
+    # at 0.539.
+    badge_left = max(0, left)
+    badge_right = min(width, left + max(8, (right - left) // 3))
+    reds = 0
+    for scan_y in range(max(0, button_y - half), min(height, button_y + half)):
+        for scan_x in range(badge_left, badge_right):
+            red, green, blue = pixels[scan_y][scan_x]
+            if (red >= QUICK_PANEL_BADGE_RED_MIN
+                    and red - green >= QUICK_PANEL_BADGE_OVER_GREEN
+                    and red - blue >= QUICK_PANEL_BADGE_OVER_BLUE):
+                reds += 1
+    box = {
+        "x_norm": round(left / width, 4),
+        "y_norm": round((button_y - half) / height, 4),
+        "w_norm": round((right - left) / width, 4),
+        "h_norm": round((2 * half) / height, 4),
+    }
+    centre = [round(centre_x / width, 4), round(row_y_norm, 4)]
+    return centre, ("PRESENT" if reds >= QUICK_PANEL_BADGE_MIN_PX else "ABSENT"), box
+
+
 def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dict:
     """Read the 快捷面板 as its own surface, or ``{}`` when it is not open.
 
@@ -1634,38 +1742,6 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
         section_rows.append(("部队训练", name, token.centre[1]))
     if camps_panel_wide:
         panel["camps"] = camps_panel_wide
-    # Every row of every known section, as the panel draws them.  The named readings above
-    # (``camps`` / ``research`` / ``alliance_donation`` / ``hero_recruit``) are the ones with a
-    # consumer today; this list is what makes the panel's own growth visible without new code -- the
-    # operator's point (2026-09-22) is that sections appear as the account progresses, and a reader
-    # whose list of rows is hard-coded per section cannot see them.
-    if section_rows:
-        # Guarded exactly like the geometry block below: a caller may hand this reader a path that is
-        # not an image at all (the panel tests use a stub), and geometry must never be the reason a
-        # reading fails -- the sections are what the panel's consumers read.
-        try:
-            size_for_rows = read_frame_size(image_path)
-        except (OSError, ValueError, AttributeError, TypeError):
-            size_for_rows = None
-        height_for_rows = int(size_for_rows[1]) if size_for_rows and int(size_for_rows[1]) else 0
-        panel["sections"] = [
-            {
-                "section": section,
-                "name": name,
-                "y_norm": round(name_y / height_for_rows, 4) if height_for_rows else None,
-                "state": state,
-            }
-            for section, name, name_y in section_rows
-            # Only rows that really state themselves: a token with no state word under it is not a task
-            # row.  Measured on the device 2026-09-22 22:02 -- without this the event rail's own labels
-            # (梦境寻忆 / 玉魄流光礼包 / 生存者试炼) sat in the band and were listed as research rows.
-            if (state := state_below(name_y)) is not None
-        ]
-    # The rows are listed top-to-bottom, whichever pass found them: a consumer locating "the arrow on
-    # that task's row" reads the list, and a list whose order depends on which loop ran first would
-    # make the same panel describe itself differently from one frame to the next.
-    section_rows.sort(key=lambda item: item[2])
-
     # ---- the panel's own geometry: its rows, and what hangs off its right edge ---------------
     #
     # Measured on the one real capture of the expanded panel this project owns
@@ -1699,6 +1775,18 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
         )
         arrow_x = min(0.62, (right_px + QUICK_PANEL_ARROW_MARGIN_PX) / width) if right_px else None
         if arrow_x is not None:
+            # The frame's pixels, read once for all the row scans (a per-row decode would decode the
+            # same file four times).  A frame that cannot be read leaves every row on the estimate and
+            # every badge UNKNOWN, which is the honest reading of "this frame could not be examined".
+            frame_pixels: list[list[tuple[int, int, int]]] | None = None
+            try:
+                with Image.open(image_path) as image:
+                    rgb = image.convert("RGB")
+                    flat = list(rgb.getdata())
+                    frame_width = rgb.width
+                    frame_pixels = [flat[i:i + frame_width] for i in range(0, len(flat), frame_width)]
+            except (OSError, ValueError, AttributeError, TypeError):
+                frame_pixels = None
             out_rows: list[dict] = []
             for section, name, name_y in section_rows:
                 camp = TROOP_TO_CAMP.get(TITLE_TO_TROOP.get(name, ""))
@@ -1708,18 +1796,24 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 if key is None:
                     continue
                 state_word = state_below(name_y)
-                out_rows.append(
-                    {
-                        "kind": "CAMP" if camp else "RESEARCH",
-                        "key": key,
-                        "label": name,
-                        "y_norm": round(name_y / height, 4),
-                        "status": "IDLE" if state_word in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
-                        "source_word": state_word,
-                        "arrow_norm": [round(arrow_x, 4), round(name_y / height, 4)],
-                        "arrow_basis": "PANEL_RELATIVE_ESTIMATE",
-                    }
-                )
+                located, badge, box = _panel_arrow_and_badge(frame_pixels, name_y / height)
+                record = {
+                    "kind": "CAMP" if camp else "RESEARCH",
+                    "key": key,
+                    "label": name,
+                    "y_norm": round(name_y / height, 4),
+                    "status": "IDLE" if state_word in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
+                    "source_word": state_word,
+                    # The row's own button when this frame draws it; the old text-column estimate only
+                    # as a labelled fallback, because a tap from it lands on the row's state word
+                    # (measured: 0.4097 against a button at 0.539-0.749).
+                    "arrow_norm": located if located else [round(arrow_x, 4), round(name_y / height, 4)],
+                    "arrow_basis": "ROW_BUTTON_SCAN" if located else "PANEL_RELATIVE_ESTIMATE",
+                    "badge": badge,
+                }
+                if box is not None:
+                    record["arrow_box_norm"] = box
+                out_rows.append(record)
             if out_rows:
                 panel["rows"] = out_rows
             # Where the handle actually is, measured, with the panel-relative estimate kept only as
