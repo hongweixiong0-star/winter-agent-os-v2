@@ -291,6 +291,13 @@ class LiveRuntime:
         # that state.
         "WAIT_FOR_CAMP_MENU": verify_camp_menu_reobserved,
         "OPEN_INFANTRY_TRAINING": verify_training_page_open,
+        # The quick panel's row arrows enter the same pages the routes reach, so they are judged by
+        # the same verifiers -- the state after the tap, never the tap itself (operator §二: 不得仅以
+        # Brain 输出展开动作或点击成功，代替真实面板展开结果).
+        "OPEN_TASK_FROM_QUICK_PANEL_SHIELD": verify_training_page_open,
+        "OPEN_TASK_FROM_QUICK_PANEL_LANCER": verify_training_page_open,
+        "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN": verify_training_page_open,
+        "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH": verify_research_page_open,
         # The hop that did not exist: switch the training page to another barracks when the
         # one on screen has its queue busy.  Operator §八, "一个兵营正在训练，不得阻止其他空闲
         # 兵营执行训练" -- without it the goal stopped at the first busy camp and 矛兵营 /

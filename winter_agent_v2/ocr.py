@@ -277,6 +277,23 @@ class OCRService:
 #: what the panel says.
 QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技研究")
 
+#: The sections the **panel reader** accepts and reads, in the client's own order.
+#:
+#: Wider than ``QUICK_PANEL_SECTIONS`` on purpose, and the difference is not an oversight: that tuple
+#: is the *classifier's* page-identity evidence, and 联盟捐献 is printed by the alliance page as well,
+#: so it must not name a page.  The panel does draw it, though -- measured on the operator's frame
+#: 2026-09-22 21:50, 联盟捐献 可捐献25/25 和 英雄招募 免费招募 都在这块面板里，两个状态正是指令 §三
+#: 要读的东西.  Hence one list per job.
+QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
+    "建筑队列",
+    "部队训练",
+    "科技研究",
+    "联盟捐献",
+    "英雄招募",
+    "我的奖励",
+    "市场切换",
+)
+
 
 class OCRPageClassifier:
     """Conservative exact-keyword fallback; ambiguous OCR stays UNKNOWN.
@@ -1407,7 +1424,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
         believes the panel is open.
         """
         stripped = text.strip()
-        for section in QUICK_PANEL_SECTIONS:
+        for section in QUICK_PANEL_READ_SECTIONS:
             if section in stripped:
                 return section
         return None
@@ -1424,15 +1441,20 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
         if headers and headers[-1][1] == section:
             continue
         headers.append((index, section))
-    # Three headers, each below the last: that is the panel.  A page that prints one
-    # of these words (the research lab prints 科技研究) does not print all three.
-    if len(headers) < 3:
+    # Two or more *known* headers, each below the last and in the client's own order: that is the
+    # panel.  It used to demand all three of ``QUICK_PANEL_READ_SECTIONS``' first three, which made
+    # a scrolled panel unreadable -- measured on the operator's frame 2026-09-22 21:50: the visible
+    # headers were 科技研究 / 联盟捐献 / 英雄招募 and the reader returned ``{}``, i.e. "no panel",
+    # for a frame whose whole left column is the panel.
+    #
+    # One header is not enough, and the order is not negotiable: the research lab prints 科技研究 on
+    # its own, the alliance page prints 联盟捐献, and the bottom navigation bar prints 英雄 -- which
+    # is why the membership test below is exact and not a containment test, and why the order check
+    # stays (it is what a knowledge page or the 城镇 tab strip cannot reproduce).
+    if len(headers) < 2:
         return {}
-    # The client draws these three in a fixed vertical order, and prints each once.
-    # Requiring exactly that order is what separates a real panel from a frame that
-    # happens to mention all three words at arbitrary places, such as a knowledge
-    # page or the 城镇 tab strip.
-    if [section for _, section in headers] != list(QUICK_PANEL_SECTIONS):
+    order = [QUICK_PANEL_READ_SECTIONS.index(section) for _, section in headers]
+    if order != sorted(order) or len(set(order)) != len(order):
         return {}
 
     panel: dict[str, object] = {"open": True}
@@ -1445,6 +1467,12 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 continue
             text = token.text.strip()
             if text in QUICK_PANEL_IDLE_WORDS or text in QUICK_PANEL_BUSY_WORDS:
+                return text
+            # The 联盟捐献 row and the 英雄招募 row state themselves in their own words
+            # (可捐献25/25, 免费招募) rather than with 空闲中: measured on the operator's frame
+            # 2026-09-22 21:50.  Recognising them here keeps one place that decides "is this a state",
+            # and the section branches above read the meaning.
+            if "可捐献" in text or "免费" in text:
                 return text
             # 训练中 is also drawn as 训练中 03:12:45, so the prefix is what counts.
             for word in QUICK_PANEL_BUSY_WORDS:
@@ -1522,6 +1550,46 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 }
             if camps:
                 panel["camps"] = camps
+            camps_from_the_header = set(camps)
+
+        elif section == "联盟捐献":
+            # The row states itself with its own count: 可捐献25/25 (green) while a donation is
+            # possible, and a countdown or a plain count once it is spent.  The number is read out of
+            # the client's own words rather than inferred, and the row is kept on the panel only when
+            # a state was actually read -- an unread row is absent, never reported as unavailable.
+            for name, name_y in rows:
+                state = state_below(name_y)
+                if state is None:
+                    continue
+                numbers = re.findall(r"(\d+)", state)
+                panel["alliance_donation"] = {
+                    "name": name,
+                    "status": "AVAILABLE" if "可捐献" in state else "UNAVAILABLE",
+                    "available": int(numbers[0]) if numbers else None,
+                    "total": int(numbers[1]) if len(numbers) > 1 else None,
+                    "source_word": state,
+                }
+                break
+
+        elif section == "英雄招募":
+            # Measured on the device 2026-09-22 22:02: this section draws two rows -- 高级招募
+            # 免费招募 and 史诗招募 1天01:51:08 -- so reading only the first hid the running one.
+            # A row whose state is a countdown is in progress; 免费/可 marks one that is waiting.
+            recruit_rows: list[dict[str, object]] = []
+            for name, name_y in rows:
+                state = state_below(name_y)
+                if state is None:
+                    continue
+                running = bool(re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state))
+                recruit_rows.append({
+                    "name": name,
+                    "status": "IN_PROGRESS" if running else ("AVAILABLE" if ("免费" in state or "可" in state) else "UNKNOWN"),
+                    "timer": state if running else None,
+                    "source_word": state,
+                })
+            if recruit_rows:
+                panel["hero_recruit"] = recruit_rows[0]
+                panel["hero_recruit_rows"] = recruit_rows
 
         elif section == "科技研究":
             for name, name_y in rows:
@@ -1535,6 +1603,68 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     "source_word": state,
                 }
                 break
+
+    # The camp rows are read **panel-wide**, not only under a 部队训练 header.
+    #
+    # The panel scrolls, and measured on the operator's frame 2026-09-22 21:50 the three barracks
+    # were on screen (盾兵 03:04:16, 矛兵 空闲中, 射手 02:33:49) while the 部队训练 header sat above
+    # the visible area -- so a reader that only looked under that header could not see the one thing
+    # the panel exists for.  The names are the client's own troop names and are read exactly, with a
+    # state word below them, which is what keeps this from matching the training page's tab strip
+    # (盾兵营 / 矛兵营 / 射手营) or the bottom navigation bar.
+    camps_panel_wide: dict[str, dict[str, object]] = dict(panel.get("camps") or {})
+    for token in by_y:
+        name = token.text.strip()
+        troop = TITLE_TO_TROOP.get(name)
+        camp = TROOP_TO_CAMP.get(troop or "")
+        if camp is None:
+            continue
+        if any(section == "部队训练" and row_name == name for section, row_name, _ in section_rows):
+            continue  # already read under its header
+        state = state_below(token.centre[1])
+        if state is None:
+            continue
+        camps_panel_wide[camp] = {
+            "troop_type": troop,
+            "label": name,
+            "status": "IDLE" if state in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
+            "queue_available": state in QUICK_PANEL_IDLE_WORDS,
+            "source_word": state,
+        }
+        section_rows.append(("部队训练", name, token.centre[1]))
+    if camps_panel_wide:
+        panel["camps"] = camps_panel_wide
+    # Every row of every known section, as the panel draws them.  The named readings above
+    # (``camps`` / ``research`` / ``alliance_donation`` / ``hero_recruit``) are the ones with a
+    # consumer today; this list is what makes the panel's own growth visible without new code -- the
+    # operator's point (2026-09-22) is that sections appear as the account progresses, and a reader
+    # whose list of rows is hard-coded per section cannot see them.
+    if section_rows:
+        # Guarded exactly like the geometry block below: a caller may hand this reader a path that is
+        # not an image at all (the panel tests use a stub), and geometry must never be the reason a
+        # reading fails -- the sections are what the panel's consumers read.
+        try:
+            size_for_rows = read_frame_size(image_path)
+        except (OSError, ValueError, AttributeError, TypeError):
+            size_for_rows = None
+        height_for_rows = int(size_for_rows[1]) if size_for_rows and int(size_for_rows[1]) else 0
+        panel["sections"] = [
+            {
+                "section": section,
+                "name": name,
+                "y_norm": round(name_y / height_for_rows, 4) if height_for_rows else None,
+                "state": state,
+            }
+            for section, name, name_y in section_rows
+            # Only rows that really state themselves: a token with no state word under it is not a task
+            # row.  Measured on the device 2026-09-22 22:02 -- without this the event rail's own labels
+            # (梦境寻忆 / 玉魄流光礼包 / 生存者试炼) sat in the band and were listed as research rows.
+            if (state := state_below(name_y)) is not None
+        ]
+    # The rows are listed top-to-bottom, whichever pass found them: a consumer locating "the arrow on
+    # that task's row" reads the list, and a list whose order depends on which loop ran first would
+    # make the same panel describe itself differently from one frame to the next.
+    section_rows.sort(key=lambda item: item[2])
 
     # ---- the panel's own geometry: its rows, and what hangs off its right edge ---------------
     #

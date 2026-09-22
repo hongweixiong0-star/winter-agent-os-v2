@@ -13,6 +13,14 @@ from .skills import SkillRegistry
 #: what licenses the one bounded generic attempt (see the fallback in ``decide``).
 GENERIC_READY_SKILLS: frozenset[str] = frozenset({"BACK", "NAVIGATE_TO", "RECOVER_HOME"})
 
+#: Which quick-panel row skill enters which camp's task page.  The panel keys the reading by the same
+#: camp names ``WorldState.camps`` uses (``SHIELD_CAMP`` ...), so no second vocabulary is introduced.
+_QUICK_PANEL_ROW_SKILL: dict[str, str] = {
+    "SHIELD_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
+    "LANCER_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
+    "MARKSMAN_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN",
+}
+
 
 class RuleBrain:
     """Strict deterministic fallback brain for P0; decides WHAT, never clicks."""
@@ -122,6 +130,9 @@ class RuleBrain:
         # own 加号 has no proven template, so the value informs the route's reason and is
         # available to a later step, while the tap still goes through proven controls.
         self.idle_camp_from_quick_panel: str | None = None
+        #: Row arrows of the 快捷面板 asked for in this run.  A tap that does not open the task page
+        #: must hand the next step back to the proven power route rather than repeat itself.
+        self._panel_row_attempts = 0
         # Which goal put this run on its route.  The route name alone cannot say: a
         # `--goal BEAST_HUNT` run and the spend goal riding the same route are
         # indistinguishable from inside the brain, and only one of them may hand over to
@@ -1124,6 +1135,30 @@ class RuleBrain:
                 )
                 if idle_camp is not None:
                     self.idle_camp_from_quick_panel = idle_camp
+                    # The row's own arrow is the shortcut (operator §五): one tap onto that task's
+                    # page, and it can reach any of the three camps, where the power route reaches
+                    # only the infantry one.  Preferred while the reading still carries the row --
+                    # the resolver needs ``arrow_norm`` on THIS frame, so a row the panel no longer
+                    # draws falls through to the proven power route instead of tapping blind.
+                    #
+                    # Bounded to two tries per run: a row arrow whose tap does not open the page
+                    # must not become a loop on a panel that stays open.
+                    row = next(
+                        (
+                            item
+                            for item in (world.quick_panel.get("rows") or ())
+                            if str(item.get("key")) == idle_camp and item.get("arrow_norm")
+                        ),
+                        None,
+                    )
+                    if row is not None and self._panel_row_attempts < 2:
+                        self._panel_row_attempts += 1
+                        return Decision(
+                            _QUICK_PANEL_ROW_SKILL.get(idle_camp, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"),
+                            f"quick_panel_{idle_camp.lower()}_row_arrow_enters_its_own_task_page",
+                            world.confidence,
+                            "task_page_open",
+                        )
                     return Decision(
                         "OPEN_POWER_OVERVIEW",
                         f"quick_panel_{idle_camp.lower()}_is_idle",

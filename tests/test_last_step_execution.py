@@ -301,6 +301,50 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
         "handle": {"state": "EXPANDED", "point_norm": [0.4569, 0.5502]},
     }
 
+    #: The same panel, with the rows the reader measures on a real frame (``arrow_norm`` per row).
+    OPEN_WITH_ROWS = {
+        "open": True,
+        "camps": {"SHIELD_CAMP": {"status": "IDLE", "queue_available": True}},
+        "rows": [
+            {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IDLE",
+             "arrow_norm": [0.4569, 0.4266], "arrow_basis": "PANEL_RELATIVE_ESTIMATE"},
+        ],
+        "handle": {"state": "EXPANDED", "point_norm": [0.4569, 0.5502]},
+    }
+
+    def test_the_rows_own_arrow_is_preferred_to_the_power_route(self):
+        """Operator §五: 如果对应快捷入口当前可见，优先使用对应行右侧箭头直接进入目标页面.
+
+        Resolving the name is the runtime's job and it already does it per row
+        (``QUICK_PANEL_ROW_<KEY>`` -> that row's own ``arrow_norm``), which is how the three
+        look-alike arrows are told apart.
+        """
+        brain = _brain("TRAIN")
+        decision = brain.decide(self._home(self.OPEN_WITH_ROWS), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD", decision.reason)
+        row = next(r for r in self.OPEN_WITH_ROWS["rows"] if r["key"] == "SHIELD_CAMP")
+        registry = v2_registry()
+        self.assertEqual(registry.get(decision.skill).action.target, "QUICK_PANEL_ROW_SHIELD_CAMP")
+        self.assertEqual(row["arrow_norm"], [0.4569, 0.4266])
+
+    def test_a_row_the_panel_no_longer_draws_falls_back_to_the_proven_route(self):
+        """``rows`` is read from *this* frame: no row means no arrow to tap, so the old hop runs."""
+        panel = dict(self.OPEN_WITH_ROWS)
+        panel["rows"] = []
+        decision = _brain("TRAIN").decide(self._home(panel), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
+
+    def test_the_row_arrow_is_not_repeated_forever(self):
+        brain = _brain("TRAIN")
+        frame = self._home(self.OPEN_WITH_ROWS)
+        first = brain.decide(frame, v2_registry()).skill
+        self.assertEqual(first, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD")
+        seen = [first]
+        for _ in range(4):
+            seen.append(brain.decide(frame, v2_registry()).skill)
+        self.assertIn("OPEN_POWER_OVERVIEW", seen,
+                      "an arrow that does not open the page must hand back to the proven route")
+
     def test_a_closed_panel_is_opened_instead_of_stopping(self):
         brain = _brain("TRAIN")
         decision = brain.decide(self._home(self.CLOSED, {"queue_available": False}), v2_registry())

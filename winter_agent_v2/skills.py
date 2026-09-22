@@ -776,4 +776,38 @@ def v2_registry() -> SkillRegistry:
             state=SkillState.VERIFIED,
         ),
     ])
+    # The quick panel's own task rows (operator directive 2026-09-22 §五: 如果对应快捷入口当前可见，
+    # 优先使用对应行右侧箭头直接进入目标页面).
+    #
+    # The panel draws three look-alike blue arrows; what tells them apart is the row each one sits on,
+    # and the reader already measured that (``rows[].arrow_norm``).  So each row is its own skill whose
+    # target names that row, and the runtime resolves the name to the point measured on *that* row --
+    # never "an arrow on the right-hand side".
+    #
+    # Declared on ``Page.HOME`` because that is where the panel is read and where the handle lives
+    # (the dictionary's own ``pages``); declared CANDIDATE because the tap is not proved yet, and the
+    # step's verifier is what will prove it.
+    for _row, _label in (("SHIELD", "盾兵"), ("LANCER", "矛兵"), ("MARKSMAN", "射手")):
+        skills.append(
+            Skill(
+                f"OPEN_TASK_FROM_QUICK_PANEL_{_row}",
+                f"Enter the {_label}营 task page from the quick panel's own row arrow",
+                Page.HOME,
+                Action("TAP_SEMANTIC", f"QUICK_PANEL_ROW_{_row}_CAMP"),
+                timeout=20.0,
+                risk="LOW",
+                state=SkillState.CANDIDATE,
+            )
+        )
+    skills.append(
+        Skill(
+            "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+            "Enter 科技研究 from the quick panel's own row arrow",
+            Page.HOME,
+            Action("TAP_SEMANTIC", "QUICK_PANEL_ROW_RESEARCH"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
     return SkillRegistry(skills)
