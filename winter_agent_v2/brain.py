@@ -41,12 +41,24 @@ from .ocr import QUICK_PANEL_ARROW_BASIS_SCAN, QUICK_PANEL_CONTROL_ARROW, QUICK_
 #: Separate from ``_QUICK_PANEL_ROW_SKILL`` on purpose: that table enters a task's page, this one takes
 #: what the client says is finished.  A row appears in both only by accident of the client's drawing,
 #: and ``_actionable_panel_row`` refuses a row whose tick is drawn, so the two can never both answer.
-_QUICK_PANEL_ROW_CLAIM_SKILL: dict[str, str] = {
-    "SHIELD_CAMP": "COLLECT_FINISHED_TRAINING_SHIELD",
-    "LANCER_CAMP": "COLLECT_FINISHED_TRAINING_LANCER",
-    "MARKSMAN_CAMP": "COLLECT_FINISHED_TRAINING_MARKSMAN",
-    "MY_REWARDS": "COLLECT_MY_REWARDS_ROW",
-}
+#: EMPTY ON PURPOSE, and the reason is measured rather than cautious.
+#:
+#: The row reading, the four collect skills, their verifier and their dictionary records all exist
+#: (``test_last_step_expert``... see ``TheDoneMarkerTests``); what does not exist yet is a control that
+#: collects.  Measured on the device 2026-09-23 17:51:02: ``COLLECT_FINISHED_TRAINING_SHIELD`` tapped
+#: the tick's own centre (404, 556 -- the point this project computes), the panel closed, no reward
+#: dialog appeared, and when the panel was re-read at 17:53:39 the 盾兵 row still said 已完成 / DONE.
+#: So the tick is not the collect control, and its point is a dead end.
+#:
+#: Keeping the entries here would mean one guaranteed failure per run, a panel closed for nothing, and
+#: -- the part that decides it -- ten such episodes would trip this project's own no-progress rule and
+#: DEFER the whole training goal (``OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS``), which costs far more than
+#: the collect it was trying to win.  An empty table is the honest state: nothing is claimable yet.
+#:
+#: To fill it: find what actually collects a finished batch (the row's own page, reached through its
+#: enter-arrow, is the untried candidate -- 已完成 rows draw no arrow, so that path needs the row's box
+#: or a re-render), measure it, then add the row key here.
+_QUICK_PANEL_ROW_CLAIM_SKILL: dict[str, str] = {}
 
 
 class RuleBrain:

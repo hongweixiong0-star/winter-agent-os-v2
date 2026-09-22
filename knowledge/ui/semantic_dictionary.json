@@ -2717,8 +2717,8 @@
    ],
    "expected_transition": "SHIELD_CAMP_BATCH_COLLECTED",
    "verification": {
-    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
-    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none  The point resolves and the tap lands exactly there -- the action was issued, the client did not collect.",
+    "what_tapping_it_does": "MEASURED 2026-09-23 17:51:02 on the device: tapping the tick's own centre (404, 556 -- this record's point) closed the panel and produced no reward dialog; the panel was re-read at 17:53:39 and this row still read 已完成 / DONE, so the tap collected nothing.  Its point is therefore NOT the collect control, and what collects a finished batch is still unknown."
    },
    "related_goals": [
     "SHIELD_CAMP_TRAINING",
@@ -2765,8 +2765,8 @@
    ],
    "expected_transition": "LANCER_CAMP_BATCH_COLLECTED",
    "verification": {
-    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
-    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none  The point resolves and the tap lands exactly there -- the action was issued, the client did not collect.",
+    "what_tapping_it_does": "MEASURED 2026-09-23 17:51:02 on the device: tapping the tick's own centre (404, 556 -- this record's point) closed the panel and produced no reward dialog; the panel was re-read at 17:53:39 and this row still read 已完成 / DONE, so the tap collected nothing.  Its point is therefore NOT the collect control, and what collects a finished batch is still unknown."
    },
    "related_goals": [
     "LANCER_CAMP_TRAINING",
@@ -2813,8 +2813,8 @@
    ],
    "expected_transition": "MARKSMAN_CAMP_BATCH_COLLECTED",
    "verification": {
-    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
-    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none  The point resolves and the tap lands exactly there -- the action was issued, the client did not collect.",
+    "what_tapping_it_does": "MEASURED 2026-09-23 17:51:02 on the device: tapping the tick's own centre (404, 556 -- this record's point) closed the panel and produced no reward dialog; the panel was re-read at 17:53:39 and this row still read 已完成 / DONE, so the tap collected nothing.  Its point is therefore NOT the collect control, and what collects a finished batch is still unknown."
    },
    "related_goals": [
     "MARKSMAN_CAMP_TRAINING",
@@ -2861,8 +2861,8 @@
    ],
    "expected_transition": "MY_REWARDS_BATCH_COLLECTED",
    "verification": {
-    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
-    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none  The point resolves and the tap lands exactly there -- the action was issued, the client did not collect.",
+    "what_tapping_it_does": "MEASURED 2026-09-23 17:51:02 on the device: tapping the tick's own centre (404, 556 -- this record's point) closed the panel and produced no reward dialog; the panel was re-read at 17:53:39 and this row still read 已完成 / DONE, so the tap collected nothing.  Its point is therefore NOT the collect control, and what collects a finished batch is still unknown."
    },
    "related_goals": [
     "DAILY_ACTIVITY_TARGET",

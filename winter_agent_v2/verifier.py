@@ -438,7 +438,15 @@ def verify_panel_row_done_collected(before: WorldState, after: WorldState, *, ro
 
     before_control = controls(before).get(row_key, "")
     after_control = controls(after).get(row_key, "")
-    tick_gone = before_control == "DONE" and after_control != "DONE"
+    # The panel has to still be *there* for "the tick is gone" to mean anything.  Measured 2026-09-23
+    # 17:51:02: the tap on the tick's own centre (404, 556) closed the panel, and an earlier version of
+    # this verifier accepted that as proof because an unread panel has no tick in it -- a pass earned by
+    # no longer looking.  The panel was re-read at 17:53:39 and the row still said 已完成 / DONE, i.e.
+    # the tap had collected nothing.  A vanished panel is its own outcome and is reported as such.
+    panel_readable_after = bool((after.quick_panel or {}).get("rows"))
+    tick_gone = (
+        before_control == "DONE" and panel_readable_after and after_control != "DONE"
+    )
     reward_dialog = after.page is Page.POPUP and bool(after.popup)
     ok = before.page is Page.HOME and before_control == "DONE" and (tick_gone or reward_dialog)
     if before_control != "DONE":
@@ -454,6 +462,7 @@ def verify_panel_row_done_collected(before: WorldState, after: WorldState, *, ro
             "row_key": row_key,
             "control_before": before_control,
             "control_after": after_control,
+            "panel_readable_after": panel_readable_after,
             "tick_gone": tick_gone,
             "reward_dialog_after": reward_dialog,
             "popup_after": after.popup,

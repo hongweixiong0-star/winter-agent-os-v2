@@ -718,9 +718,11 @@ class TheDoneMarkerTests(unittest.TestCase):
         self.assertTrue(controls)
         self.assertNotIn("DONE", {control for _, control in controls})
 
-    def test_the_goal_that_owns_that_camp_collects_it(self):
+    def test_the_enter_path_never_taps_the_tick(self):
+        """Whatever else happens, a tick is not an enter-arrow: this is the wrong-action guard."""
         decision = _brain("SHIELD_CAMP_TRAINING").decide(self.state, v2_registry())
-        self.assertEqual(decision.skill, "COLLECT_FINISHED_TRAINING_SHIELD", decision.reason)
+        self.assertNotIn("OPEN_TASK_FROM_QUICK_PANEL", decision.skill)
+        self.assertNotEqual(decision.skill, "COLLECT_FINISHED_TRAINING_SHIELD")
 
     def test_the_collect_target_is_the_tick_itself(self):
         from winter_agent_v2.runtime import LiveRuntime
@@ -742,14 +744,33 @@ class TheDoneMarkerTests(unittest.TestCase):
         decision = _brain("RESEARCH").decide(self.state, v2_registry())
         self.assertEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH")
 
-    def test_every_claim_skill_exists_and_taps_the_tick(self):
-        from winter_agent_v2.brain import _QUICK_PANEL_ROW_CLAIM_SKILL
-
-        for key, skill in _QUICK_PANEL_ROW_CLAIM_SKILL.items():
+    def test_the_collect_skills_are_built_and_wired(self):
+        """The capability exists; what is missing is a control that works, and that is stated below."""
+        for key, skill in (
+            ("SHIELD_CAMP", "COLLECT_FINISHED_TRAINING_SHIELD"),
+            ("LANCER_CAMP", "COLLECT_FINISHED_TRAINING_LANCER"),
+            ("MARKSMAN_CAMP", "COLLECT_FINISHED_TRAINING_MARKSMAN"),
+            ("MY_REWARDS", "COLLECT_MY_REWARDS_ROW"),
+        ):
             with self.subTest(row=key):
                 entry = v2_registry().get(skill)
                 self.assertIsNotNone(entry, f"{key} maps to {skill}, which does not exist")
                 self.assertEqual(entry.action.target, f"QUICK_PANEL_ROW_{key}_DONE")
+
+    def test_no_row_is_offered_for_collection_yet(self):
+        """Measured 2026-09-23 17:51:02: the tick's own point collects nothing.
+
+        The tap landed exactly on (404, 556), the panel closed, no reward dialog appeared, and the row
+        still read 已完成 when the panel was re-read at 17:53:39.  So no row is claimable until what
+        collects a finished batch is found -- an entry here would be one guaranteed failure per run and
+        would eventually defer the whole training goal through this project's no-progress rule.
+        """
+        from winter_agent_v2.brain import _QUICK_PANEL_ROW_CLAIM_SKILL
+
+        self.assertEqual(_QUICK_PANEL_ROW_CLAIM_SKILL, {})
+        # ...and with an empty table the brain never emits a collect, however the frame reads.
+        decision = _brain("SHIELD_CAMP_TRAINING").decide(self.state, v2_registry())
+        self.assertNotIn("COLLECT", decision.skill)
 
     def test_collecting_is_proven_by_the_tick_going_away(self):
         from winter_agent_v2.verifier import verify_panel_row_done_collected
@@ -758,7 +779,7 @@ class TheDoneMarkerTests(unittest.TestCase):
             return WorldState(page=Page.HOME, quick_panel={"open": True, "rows": [
                 {"kind": "CAMP", "key": "SHIELD_CAMP", "status": "IDLE", "source_word": "已完成",
                  "control": control, "arrow_norm": [0.6, 0.42],
-                 "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW", "done_norm": [0.5618, 0.435]}]})
+                 "arrow_basis": "ROW_BUTTON_SCAN", "done_norm": [0.5618, 0.435]}]})
 
         ok = verify_panel_row_done_collected(frame("DONE"), frame("ARROW"), row_key="SHIELD_CAMP")
         self.assertTrue(ok.ok, ok.reason)
