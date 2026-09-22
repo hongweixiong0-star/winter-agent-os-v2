@@ -104,7 +104,20 @@ def p0_registry() -> SkillRegistry:
         # X at (682, 38) is what that layer answers.  Declared on Page.ALLIANCE rather than
         # POPUP because the layer IS an alliance sub-page: a POPUP declaration is the thing
         # that would keep the skill from being selected exactly when it is needed.
-        Skill("LEAVE_FOREIGN_LAYER", "Leave a sub-layer another goal owned when a Back did not move it", Page.ALLIANCE, Action("TAP_SEMANTIC", "BTN_CLOSE"), state=SkillState.VERIFIED),
+        Skill(
+            "LEAVE_FOREIGN_LAYER",
+            "Leave a sub-layer another goal owned when a Back did not move it",
+            Page.ALLIANCE,
+            # BTN_BACK_ARROW, not BTN_CLOSE: the alliance page draws no close button at all.
+            # Its exit is the client's own navigation arrow at the top left, which is the same
+            # control the mail page draws (measured 2026-09-22: phash distance 0 between the two,
+            # 32 against the city and the map).  Aiming at BTN_CLOSE here is the whole of the
+            # current top failure -- SAFE_BACK_NOT_PROVEN, 20 times, every one of them a BACK that
+            # did not move the alliance page, plus 7 SEMANTIC_TARGET_NOT_VERIFIED for a control
+            # this page does not have.
+            Action("TAP_SEMANTIC", "BTN_BACK_ARROW"),
+            state=SkillState.VERIFIED,
+        ),
         Skill("RECONNECT_SESSION", "Reconnect a disconnected game session without changing account settings", Page.POPUP, Action("TAP_SEMANTIC", "BTN_RECONNECT_SESSION"), state=SkillState.CANDIDATE),
         Skill("DISMISS_BATTLEFIELD_REVIVAL", "Dismiss the battlefield-revival event without spending revival resources", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
         Skill("DISMISS_BATTLE_VICTORY", "Dismiss a verified battle-result blocker and restore its underlying page", Page.POPUP, Action("PRESS_BACK"), state=SkillState.CANDIDATE),
