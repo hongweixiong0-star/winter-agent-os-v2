@@ -688,10 +688,14 @@ def main() -> int:
     # is the next camp after the one the page title says is open, read off this frame by
     # ocr.read_training_camp_tabs.  It is the hop that lets a busy 盾兵营 stop ending the whole
     # training goal (operator §八).
+    # ``ORDINARY_CONTROL`` is derived the same way as the pin and the tab answers: the
+    # frame's own words, not a template.  It stands for "the ordinary control this frame
+    # named", so by construction nothing in the manifest can resolve it -- the same reason
+    # ``INTEL_PIN`` is here.
     _derived_targets = {"RESOURCE_DYNAMIC", "HUD_STAMINA_GAUGE", "MARCH_ROW_1",
                         "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM",
                         "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING", "BEAST_SEARCH_TAB",
-                        "TRAINING_CAMP_NEXT"}
+                        "TRAINING_CAMP_NEXT", "ORDINARY_CONTROL"}
     _unresolvable = []
     for _skill in registry.all():
         if _skill.action.kind != "TAP_SEMANTIC":

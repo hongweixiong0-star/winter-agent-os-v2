@@ -460,6 +460,24 @@ def v2_registry() -> SkillRegistry:
             state=SkillState.CANDIDATE,
         )
     )
+    # The generic ordinary-control attempt (operator directive 2026-09-22, third item).
+    # ONE skill, not one per button: the brain decides THAT an ordinary control should be
+    # tried when no registered skill can advance a named goal, and the runtime resolves
+    # WHICH control from the frame itself (the client's own printed words, screened by a
+    # whitelist and a spend blacklist).  The risk stays LOW by construction -- the resolver
+    # refuses every word that can cost money, gems or an irreversible action, and the real
+    # money offers keep their dedicated permanently-blocked branch upstream.
+    skills.append(
+        Skill(
+            "TRY_ORDINARY_CONTROL",
+            "Tap one ordinary control the client printed on this frame when no registered skill can advance the goal",
+            None,
+            Action("TAP_SEMANTIC", "ORDINARY_CONTROL"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
     skills.append(
         Skill(
             "TRAIN_TROOPS",

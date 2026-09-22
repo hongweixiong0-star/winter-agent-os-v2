@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from .models import MarchState, Page, VerificationResult, WorldState
 from .beast_targets import is_dispatchable, lookup_by_name, refused_by_evidence
+from . import control_experience
 
 
 def verify_event_points_increased(before: WorldState, after: WorldState) -> VerificationResult:
@@ -1308,6 +1311,40 @@ def verify_training_camp_switched(before: WorldState, after: WorldState) -> Veri
     if was == now:
         return VerificationResult(False, "TRAINING_CAMP_UNCHANGED", {"camp": was})
     return VerificationResult(True, "", {"from": was, "to": now})
+
+
+def verify_ordinary_control_tried(before: WorldState, after: WorldState) -> VerificationResult:
+    """The unregistered control the frame named actually moved something it can show.
+
+    Operator directive 2026-09-22, third item: an ordinary control with no registered
+    skill, no template and no pre-registered expectation is attempted through the
+    generic executor, and the observed change IS the verification -- there is nothing
+    else to check against.  The change kinds come from
+    ``control_experience.classify_change``, the same reading every control's ledger
+    entry is built from, so this verifier and the experience ledger can never disagree
+    about what happened.
+
+    Two honest failures:
+
+    * ``UNKNOWN``-change -- one of the two states was not readable.  That is a reading
+      gap, not a success: claiming it would let a blind tap count as an explored one.
+    * ``NO_OP`` -- the frame is byte-identical in every state the reader watches.  The
+      control was tapped and did nothing visible; the ledger keeps that outcome, and
+      §七.3 keeps the position from being re-tapped.
+
+    ``NUMBER_CHANGED`` is accepted deliberately: an ordinary control's most common real
+    effect (a chest opened, a counter advanced) shows exactly as a value moving.  A
+    resource *decrease* is also accepted as a change the client showed -- the spend
+    blacklist at the resolver is what keeps this verifier from ever seeing a forbidden
+    spend, and a tap that could not be resolved never reaches this function.
+    """
+    change = control_experience.classify_change(asdict(before), asdict(after))
+    ok = change not in ("NO_OP", "UNKNOWN")
+    return VerificationResult(
+        ok,
+        "" if ok else f"ORDINARY_CONTROL_{change}",
+        {"change": change, "page_before": before.page.value, "page_after": after.page.value},
+    )
 
 def verify_intel_claim(before: WorldState, reward: WorldState, after: WorldState) -> VerificationResult:
     was_claimable = before.page is Page.INTEL and before.intel.get("status") == "CLAIMABLE" and int(before.intel.get("claimable_count", 0)) > 0

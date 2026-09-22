@@ -3,13 +3,13 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 96,
-    "schedulable": 80,
-    "navigation_like_entries": 40,
-    "schedulable_navigation_entries": 38,
-    "distinct_targets": 72,
-    "semantics_with_templates": 230,
-    "semantics_with_templates_and_no_skill": 172
+    "skills": 101,
+    "schedulable": 85,
+    "navigation_like_entries": 43,
+    "schedulable_navigation_entries": 41,
+    "distinct_targets": 76,
+    "semantics_with_templates": 235,
+    "semantics_with_templates_and_no_skill": 176
   },
   "operator_functions": [
     {
@@ -39,14 +39,16 @@
       "registered_entry_skills": [
         "OPEN_INFANTRY_TRAINING",
         "SELECT_INFANTRY_CAMP",
+        "SELECT_TRAINING_CAMP",
         "TRAIN_TROOPS"
       ],
       "schedulable_entry_skills": [
         "OPEN_INFANTRY_TRAINING",
         "SELECT_INFANTRY_CAMP",
+        "SELECT_TRAINING_CAMP",
         "TRAIN_TROOPS"
       ],
-      "path_count": 3,
+      "path_count": 4,
       "semantics_with_templates": 20,
       "semantics_with_templates_and_no_skill": [
         "BTN_OPEN_TRAINING",
@@ -189,24 +191,31 @@
     {
       "function": "地图搜索栏",
       "registered_entry_skills": [
+        "OPEN_BEAST_SEARCH_TAB",
         "RELAX_RESOURCE_LEVEL",
         "SEARCH_RESOURCE",
         "SELECT_RESOURCE",
+        "SUBMIT_BEAST_SEARCH",
         "SUBMIT_RESOURCE_SEARCH"
       ],
       "schedulable_entry_skills": [
+        "OPEN_BEAST_SEARCH_TAB",
         "RELAX_RESOURCE_LEVEL",
         "SEARCH_RESOURCE",
         "SELECT_RESOURCE",
+        "SUBMIT_BEAST_SEARCH",
         "SUBMIT_RESOURCE_SEARCH"
       ],
-      "path_count": 4,
-      "semantics_with_templates": 6,
+      "path_count": 6,
+      "semantics_with_templates": 9,
       "semantics_with_templates_and_no_skill": [
+        "BTN_SEARCH_BEAST_TAB",
+        "BTN_SUBMIT_BEAST_SEARCH",
         "RESOURCE_TAB_COAL_SELECTED",
         "RESOURCE_TAB_IRON_SELECTED",
         "RESOURCE_TAB_MEAT_SELECTED",
-        "RESOURCE_TAB_WOOD_SELECTED"
+        "RESOURCE_TAB_WOOD_SELECTED",
+        "SEARCH_BEAST_LEVEL_5_SELECTED"
       ]
     },
     {
@@ -496,7 +505,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_popup_closed",
-      "visual_evidence": 3,
+      "visual_evidence": 4,
       "navigation_like": false
     },
     {
@@ -797,6 +806,17 @@
       "navigation_like": false
     },
     {
+      "skill": "LEAVE_FOREIGN_LAYER",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC:BTN_BACK_ARROW",
+      "target": "BTN_BACK_ARROW",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_left_foreign_layer",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
       "skill": "MAIL_CLAIM_REWARDS",
       "source_page": "MAIL",
       "action": "TAP_SEMANTIC:BTN_MAIL_CLAIM_ALL",
@@ -860,6 +880,17 @@
       "schedulable": true,
       "verifier": "verify_open_alliance_gifts",
       "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_BEAST_SEARCH_TAB",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BEAST_SEARCH_TAB",
+      "target": "BEAST_SEARCH_TAB",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_search_tab_selected",
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": true
     },
     {
@@ -1303,6 +1334,17 @@
       "navigation_like": true
     },
     {
+      "skill": "SELECT_TRAINING_CAMP",
+      "source_page": "TRAINING",
+      "action": "TAP_SEMANTIC:TRAINING_CAMP_NEXT",
+      "target": "TRAINING_CAMP_NEXT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_training_camp_switched",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
       "skill": "SEND_MARCH",
       "source_page": "UNKNOWN",
       "action": "SEND_MARCH",
@@ -1336,6 +1378,17 @@
       "navigation_like": false
     },
     {
+      "skill": "SUBMIT_BEAST_SEARCH",
+      "source_page": "MAP",
+      "action": "TAP_SEMANTIC:BTN_RESOURCE_SEARCH_SUBMIT",
+      "target": "BTN_RESOURCE_SEARCH_SUBMIT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_beast_search_submitted",
+      "visual_evidence": 6,
+      "navigation_like": true
+    },
+    {
       "skill": "SUBMIT_RESOURCE_SEARCH",
       "source_page": "MAP",
       "action": "TAP_SEMANTIC:BTN_RESOURCE_SEARCH_SUBMIT",
@@ -1355,6 +1408,17 @@
       "schedulable": true,
       "verifier": "<lambda>",
       "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "TRY_ORDINARY_CONTROL",
+      "source_page": "UNKNOWN",
+      "action": "TAP_SEMANTIC:ORDINARY_CONTROL",
+      "target": "ORDINARY_CONTROL",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_ordinary_control_tried",
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": false
     },
     {
@@ -1604,7 +1668,15 @@
       "templates": 2
     },
     {
+      "semantic": "BTN_SEARCH_BEAST_TAB",
+      "templates": 1
+    },
+    {
       "semantic": "BTN_SIDE_EXPAND",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_SUBMIT_BEAST_SEARCH",
       "templates": 1
     },
     {
@@ -2004,6 +2076,10 @@
       "templates": 2
     },
     {
+      "semantic": "SEARCH_BEAST_LEVEL_5_SELECTED",
+      "templates": 1
+    },
+    {
       "semantic": "STATUS_ALLIANCE_AUTO_HELP_ACTIVE",
       "templates": 1
     },
@@ -2157,6 +2233,10 @@
     },
     {
       "semantic": "TAB_TRAINING_MARKSMAN",
+      "templates": 1
+    },
+    {
+      "semantic": "TARGET_CAMP_ACTION_BAR",
       "templates": 1
     },
     {

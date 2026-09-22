@@ -23,7 +23,7 @@ from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLe
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
-from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
+from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
@@ -293,6 +293,11 @@ class LiveRuntime:
         # 兵营执行训练" -- without it the goal stopped at the first busy camp and 矛兵营 /
         # 射手营 were never trained once.
         "SELECT_TRAINING_CAMP": verify_training_camp_switched,
+        # The generic ordinary-control attempt (operator directive 2026-09-22, third item).
+        # The proof is the observed change itself: the control had no pre-registered
+        # expectation to check against, so "did anything the state reader can see move" is
+        # the whole verification -- the same classify_change the ledger already runs.
+        "TRY_ORDINARY_CONTROL": verify_ordinary_control_tried,
         "NAVIGATE_RESEARCH_LAB": verify_research_lab_focused,
         "OPEN_RESEARCH": verify_research_page_open,
     }
@@ -1403,6 +1408,16 @@ class LiveRuntime:
             if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
                 return None
             return (x_norm, y_norm)
+        if semantic == "ORDINARY_CONTROL":
+            # The generic ordinary-control attempt (operator directive 2026-09-22, third
+            # item): the brain said an unregistered control should be tried, and WHERE is
+            # answered by this frame alone -- the client's own printed words, screened by
+            # a whitelist of ordinary actions and a blacklist of spend words.  No
+            # template, no ledger, no remembered coordinate can answer for a control that
+            # was never registered, and none is consulted here: a screen that names
+            # nothing tap-safe ends the step honestly instead of tapping an invented
+            # point.
+            return self._ordinary_control_candidate(frame, frame_path)
         if semantic == "TRAINING_CAMP_NEXT":
             # Another barracks on the training page, tapped where this frame drew its tab.
             #
@@ -1427,6 +1442,21 @@ class LiveRuntime:
             present = [CAMP_LABELS[camp] for camp in CAMP_ORDER if CAMP_LABELS.get(camp) in tabs]
             if not present:
                 return None
+            # The goal's own pick first.  The brain chose it from the camps' measured
+            # states (operator directive 2026-09-22: never switch mechanically), and it
+            # is consulted only when the brain still wants it this frame -- a label the
+            # tabs no longer draw cannot be tapped, so that falls through to the frame's
+            # own order below rather than tapping an absent control.
+            desired = getattr(getattr(self, "brain", None), "desired_camp_label", None)
+            if isinstance(desired, str) and desired in present:
+                point = tabs.get(desired)
+                if isinstance(point, (tuple, list)) and len(point) == 2:
+                    try:
+                        x_norm, y_norm = float(point[0]), float(point[1])
+                    except (TypeError, ValueError):
+                        point = None
+                    if point is not None and 0.0 <= float(point[0]) <= 1.0 and 0.0 <= float(point[1]) <= 1.0:
+                        return (float(point[0]), float(point[1]))
             open_label = str((frame.training or {}).get("camp_open_label") or "")
             if open_label in present:
                 at = present.index(open_label)
@@ -1445,15 +1475,6 @@ class LiveRuntime:
                     if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0:
                         return (x_norm, y_norm)
             return None
-            if not (isinstance(point, (tuple, list)) and len(point) == 2):
-                return None
-            try:
-                x_norm, y_norm = float(point[0]), float(point[1])
-            except (TypeError, ValueError):
-                return None
-            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
-                return None
-            return (x_norm, y_norm)
         match = self._semantic.find(frame_path, semantic) if frame_path is not None else None
         if match:
             return match.center_norm
@@ -1478,6 +1499,109 @@ class LiveRuntime:
         remembered = self._remembered_control_center(semantic, frame)
         if remembered is not None:
             return remembered
+        return None
+
+    #: The ordinary actions this layer may try without a registered skill, in the
+    #: client's own words (operator directive 2026-09-22, third item).  Each is an
+    #: action whose worst measured cost in this project's vocabulary is LOW: a claim,
+    #: a navigation, an open.  Deliberately absent: anything that can spend a resource
+    #: or confirm a dialog (挑战 / 捐献 / 升级 / 扫荡 / 确认 all belong to registered,
+    #: verifier-bound skills).
+    ORDINARY_CONTROL_WORDS: tuple[str, ...] = (
+        "领取",
+        "免费领取",
+        "签到",
+        "前往",
+        "去完成",
+        "打开",
+        "帮助",
+    )
+    #: Words that refuse a candidate outright, wherever they appear on the frame: the
+    #: real-money and irreversible boundary the directive restates ("保留真实货币、高代价
+    #: 及不可逆风险操作限制").  The scan checks the whole token list, not just the hit,
+    #: so a control named 免费领取 that sits on a dialog whose title says 特惠 is refused.
+    ORDINARY_CONTROL_REFUSED_WORDS: tuple[str, ...] = (
+        "充值",
+        "购买",
+        "支付",
+        "钻石",
+        "礼包",
+        "特惠",
+        "首充",
+        "月卡",
+        "基金",
+        "招募",
+        "加速",
+        "花费",
+        "消费",
+        "立即完成",
+    )
+
+    def _ordinary_control_candidate(
+        self, frame: "WorldState", frame_path: "Path | None"
+    ) -> tuple[float, float] | None:
+        """One tap-safe ordinary control this frame names, or ``None`` when it names none.
+
+        Operator directive 2026-09-22, third item: an unregistered ordinary control must
+        be attemptable through the existing executor -- no per-button skill, no brain
+        hard-coding, no second execution chain.  The evidence is the strongest a control
+        without a template can have: the client printed its name on this frame, read by
+        the same exact-match OCR the declared controls use.
+
+        The gates, in order:
+
+        * known page, real frame, real OCR -- anything else cannot name a control;
+        * the run's bounds -- at most ``MAX_ORDINARY_ATTEMPTS`` taps, and never the same
+          ``(page, word)`` twice (operator §七.3: a tap that did nothing is not repeated);
+        * the spend blacklist over every token the frame carries -- one refused word
+          anywhere on the screen stops the whole attempt, because a whitelist word on a
+          purchase dialog is exactly the trap the directive forbids walking into;
+        * the whitelist, first untried hit wins.
+
+        ``None`` also sets the brain's ``ordinary_scan_exhausted``, so the fallback
+        stops asking this run for a tap the frames cannot name.
+        """
+        if frame_path is None:
+            return None
+        if not frame.known or frame.page in (Page.MAINTENANCE, Page.LOADING):
+            return None
+        ocr = self._ocr_service()
+        if ocr is None:
+            return None
+        if self._ordinary_attempts >= self.MAX_ORDINARY_ATTEMPTS:
+            brain = getattr(self, "brain", None)
+            if brain is not None:
+                brain.ordinary_scan_exhausted = True
+            return None
+        page = control_experience.label(frame.page)
+        # One OCR pass, cached by the service; the blacklist is checked over every
+        # token so a spend word anywhere on the screen vetoes the attempt.
+        try:
+            tokens = [(t.text or "").strip() for t in ocr.recognize(frame_path).tokens]
+        except (OSError, ValueError):
+            return None
+        joined = "".join(tokens)
+        if any(refused and refused in joined for refused in self.ORDINARY_CONTROL_REFUSED_WORDS):
+            brain = getattr(self, "brain", None)
+            if brain is not None:
+                brain.ordinary_scan_exhausted = True
+            return None
+        for word in self.ORDINARY_CONTROL_WORDS:
+            if (page, word) in self._ordinary_tried:
+                continue
+            hit = find_printed_words(frame_path, (word,), ocr)
+            if hit is None:
+                continue
+            self._ordinary_tried.add((page, word))
+            self._ordinary_attempts += 1
+            point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
+            self._note_printed(
+                f"ORDINARY_CONTROL[{word}]", page, f"the client's own printed {word!r}", point
+            )
+            return point
+        brain = getattr(self, "brain", None)
+        if brain is not None:
+            brain.ordinary_scan_exhausted = True
         return None
 
     def _remembered_control_center(self, semantic: str, frame: "WorldState"):
@@ -1727,6 +1851,14 @@ class LiveRuntime:
         self._printed_remembered: set[str] = set()
         self._printed_reads: list[str] = []
         self._printed_printed: set[str] = set()
+        # The generic ordinary-control attempt (operator directive 2026-09-22, third
+        # item).  Run-scoped bounds: at most ``MAX_ORDINARY_ATTEMPTS`` taps, and never
+        # the same (page, word) twice -- a control whose tap did nothing must not be
+        # re-tapped, and a screen with no untried whitelisted word sets the brain's
+        # ``ordinary_scan_exhausted`` so the fallback stops asking this run.
+        self.MAX_ORDINARY_ATTEMPTS = 2
+        self._ordinary_attempts = 0
+        self._ordinary_tried: set[tuple[str, str]] = set()
         # Utility inputs (operator §四).  All three are loaded once per run: the route
         # card is a measured artefact that does not change inside a run, and the
         # fairness ledger is written back at ``finish``.  Kept on the instance so

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from .models import Decision, MarchState, Page, WorldState
 from .beast_targets import is_dispatchable, may_evaluate
+from .camp_training import CAMP_LABELS, CAMP_ORDER, LABEL_TO_CAMP
 from .skills import SkillRegistry
 
 
@@ -154,6 +155,24 @@ class RuleBrain:
         # cannot turn into a loop of taps (operator §八, bounded the same way as the wait above).
         self._camp_switch_attempts = 0
         self.MAX_CAMP_SWITCHES = 2
+        # The camp this run wants the training page switched TO, as the client's own tab
+        # label (盾兵营 / 矛兵营 / 射手营), or ``None`` when no camp is preferred.
+        #
+        # Operator directive 2026-09-22: TRAINING_CAMP_NEXT must not march through the
+        # tabs mechanically ("当前打开哪个兵营就切下一个").  The choice belongs to the
+        # goal, so the brain -- which owns WHAT -- picks the target from the camps' own
+        # measured states, and the resolver only turns the picked label into the pixel
+        # its tab sits at on this frame.  Recomputed on every switch decision, so a
+        # stale preference cannot outlive the reading it came from.
+        self.desired_camp_label: str | None = None
+        # The generic ordinary-control attempt budget (operator directive 2026-09-22,
+        # third item).  Two per run, and only while the runtime's frame scan can still
+        # find an untried control: ``ordinary_scan_exhausted`` is set by the runtime
+        # when its whitelist found nothing on the frame, so the brain stops asking for
+        # a tap the frame cannot name.
+        self.ordinary_attempts = 0
+        self.MAX_ORDINARY_ATTEMPTS = 2
+        self.ordinary_scan_exhausted = False
         # Two waits is the whole budget: measured, the state does not converge, so the
         # third Stage A observation is a blocker rather than another wait.
         self.MAX_CAMP_MENU_WAITS = 2
@@ -1070,13 +1089,22 @@ class RuleBrain:
                     self._camp_switch_attempts < self.MAX_CAMP_SWITCHES
                     and (world.training.get("camp_tab_norm") or {})
                 ):
-                    self._camp_switch_attempts += 1
-                    return Decision(
-                        "SELECT_TRAINING_CAMP",
-                        "training_queue_busy_switch_to_another_barracks",
-                        world.confidence,
-                        "another_camp_open",
-                    )
+                    # WHICH camp is the goal's answer, not the resolver's: the brain reads the
+                    # camps it has measured, prefers a positively idle one, falls back to a
+                    # barracks it has never seen (UNKNOWN is "still worth a look", the same
+                    # doctrine camp_training.py states), and refuses to spend a tap on a camp
+                    # that was positively read busy.  ``None`` means every other known camp
+                    # is busy -- switching would only walk into the same wall, so the goal
+                    # leaves the page instead of cycling.
+                    self.desired_camp_label = self._choose_target_camp(world)
+                    if self.desired_camp_label is not None:
+                        self._camp_switch_attempts += 1
+                        return Decision(
+                            "SELECT_TRAINING_CAMP",
+                            f"training_queue_busy_switch_to_{self.desired_camp_label}",
+                            world.confidence,
+                            "another_camp_open",
+                        )
                 return self._leave_or_stop(world, "training_queue_busy", "inspect_other_training_queue")
             if world.training.get("trainable"):
                 return Decision("TRAIN_TROOPS", "training_queue_available", world.confidence, "training_queue_started")
@@ -1698,7 +1726,115 @@ class RuleBrain:
             actionable = [skill for skill in ready if skill.id != "WAIT"]
             skill = (actionable or ready)[0]
             return Decision(skill.id, "first_ready_p0_skill", world.confidence, skill.description)
+        # The generic ordinary-control attempt (operator directive 2026-09-22, third item).
+        # A named goal, a known page, and no registered skill that can advance it: this is
+        # exactly the state that used to end in SAFE_STOP while the client sat there
+        # printing an ordinary control the frame could have named.  The brain only says
+        # THAT one should be tried -- WHICH control is the runtime's frame scan, screened
+        # by its spend blacklist, and the existing verifier decides whether the tap did
+        # anything.  Bounded per run and disabled once the scan reports the frame offers
+        # nothing untried, so this cannot become a tap loop.
+        if (
+            self.current_goal
+            and self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
+            and not self.ordinary_scan_exhausted
+        ):
+            self.ordinary_attempts += 1
+            return Decision(
+                "TRY_ORDINARY_CONTROL",
+                f"goal_{self.current_goal}_has_no_ready_skill_but_the_frame_may_name_a_control",
+                world.confidence,
+                "ordinary_control_observed",
+            )
         return Decision("SAFE_STOP", "no_ready_skill", 1.0, "no_action")
+
+    def _choose_target_camp(self, world: WorldState) -> str | None:
+        """Which barracks the goal wants the training page switched to, or ``None``.
+
+        Operator directive 2026-09-22: the switch target is decided by the goal and the
+        camps' own states, never by "which camp is open, tap the next tab".  A tap into a
+        barracks that was positively read busy is a wasted round trip the directive names
+        explicitly ("避免反复切换或进入不需要训练的兵营"), so those are excluded.
+
+        The evidence is exactly what this run has measured, in two layers:
+
+        * **the goal's own camp**, when the goal is one of the per-camp training goals.  The
+          goal layer splits the three barracks into three goals precisely so "which camp was
+          blocked" is answerable from the record (open issue #86), and that answer is only
+          real if the route honours it: a ``LANCER_CAMP_TRAINING`` run that taps 射手营's tab
+          is training somebody else's goal.  When that camp is positively busy there is
+          nothing for *this* goal on this page, so the answer is ``None`` (leave) rather than
+          a switch -- walking to another camp is exactly the mechanical behaviour the
+          operator forbade.
+        * ``world.camps`` -- per-barracks readings carried in the frame (from the 快捷
+          panel or a visited camp page).  ``busy`` follows camp_training's own doctrine:
+          ``True`` only from a positive busy reading, ``False`` only from a positive idle
+          reading, ``None`` when this run never saw that camp.
+        * tabs drawn on *this* frame -- a camp whose tab is not on screen cannot be
+          tapped at all, whatever its state says.
+
+        Preference order inside each tier is the operator's own priority: 矛兵营 then
+        射手营, 盾兵营 last (it is the camp the route reaches first and the one whose
+        queue being busy created this whole problem).  A camp never seen counts as worth
+        a look -- ``UNKNOWN`` is "still worth a look" in this codebase's vocabulary -- but
+        it loses to any camp positively known idle.
+
+        ``None`` is the honest "do not switch": every other camp whose tab is drawn was
+        positively read busy, so the only thing a tap can produce is the same page again.
+        """
+        training = world.training or {}
+        open_label = str(training.get("camp_open_label") or "")
+        open_camp = LABEL_TO_CAMP.get(open_label)
+        tabs = training.get("camp_tab_norm") or {}
+        present = [camp for camp in CAMP_ORDER if CAMP_LABELS.get(camp) in (tabs or {})]
+
+        # The goal's own camp comes first: the goal layer's three per-camp goals are the
+        # caller's statement of *which* barracks this run is for.
+        goal_camp = self._goal_camp()
+        if goal_camp is not None and goal_camp != open_camp and goal_camp in present:
+            reading = (world.camps or {}).get(goal_camp) or {}
+            positively_busy = (
+                reading.get("training") is True or reading.get("status") == "IN_PROGRESS"
+            )
+            if positively_busy:
+                return None  # this goal's camp has nothing to start; do not walk elsewhere
+            return CAMP_LABELS[goal_camp]
+
+        idle: list[str] = []
+        unknown: list[str] = []
+        for camp in present:
+            if camp == open_camp:
+                continue
+            reading = (world.camps or {}).get(camp) or {}
+            if reading.get("training") is True or reading.get("status") == "IN_PROGRESS":
+                continue  # positively busy: not a switch target
+            if reading.get("queue_available") is True or reading.get("status") == "AVAILABLE":
+                idle.append(camp)
+            else:
+                unknown.append(camp)
+
+        priority = ("LANCER_CAMP", "MARKSMAN_CAMP", "SHIELD_CAMP")
+        for pool in (idle, unknown):
+            for camp in sorted(set(pool), key=priority.index):
+                return CAMP_LABELS[camp]
+        return None
+
+    def _goal_camp(self) -> str | None:
+        """The barracks this run's goal names, or ``None`` for a goal that names none.
+
+        The one mapping is ``goal_library.CAMP_GOAL_FOR`` -- imported here rather than
+        copied, because a second copy of "which goal is which camp" is exactly how the two
+        drift apart, and the goal layer is where that pairing is defined.
+        """
+        goal_id = str(getattr(self, "goal_id", "") or "")
+        if not goal_id:
+            return None
+        from .goal_library import CAMP_GOAL_FOR
+
+        for camp, camp_goal in CAMP_GOAL_FOR.items():
+            if camp_goal == goal_id:
+                return camp
+        return None
 
 
 def parse_qwen_decision(text: str, registry: SkillRegistry) -> Decision:
