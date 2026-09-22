@@ -15,10 +15,21 @@ GENERIC_READY_SKILLS: frozenset[str] = frozenset({"BACK", "NAVIGATE_TO", "RECOVE
 
 #: Which quick-panel row skill enters which camp's task page.  The panel keys the reading by the same
 #: camp names ``WorldState.camps`` uses (``SHIELD_CAMP`` ...), so no second vocabulary is introduced.
+#: Every panel row the reader can name, and the skill that taps *that* row's own arrow.
+#:
+#: The keys are the row keys ``read_quick_panel`` produces, spelled once here so the two cannot drift.
+#: An incomplete table is not a cosmetic problem: on 2026-09-23 00:42:30 the research row was offered
+#: by the reading, this map had no ``RESEARCH`` entry, and the caller's default substituted
+#: ``..._SHIELD`` -- a real action pointing at the 盾兵 row.  There is no default any more (see
+#: ``_panel_row_skill``): a row this table cannot name is a row this brain does not tap.
 _QUICK_PANEL_ROW_SKILL: dict[str, str] = {
     "SHIELD_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
     "LANCER_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
     "MARKSMAN_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN",
+    "RESEARCH": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+    "ALLIANCE_DONATION": "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION",
+    "HERO_RECRUIT": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+    "MY_REWARDS": "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS",
 }
 
 
@@ -1070,11 +1081,12 @@ class RuleBrain:
                     )
             else:
                 row = self._actionable_panel_row(world)
-                if row is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
+                skill_id = self._panel_row_skill(row)
+                if skill_id is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
                     self._panel_row_attempts += 1
                     key = str(row.get("key") or "")
                     return Decision(
-                        _QUICK_PANEL_ROW_SKILL.get(key, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"),
+                        skill_id,
                         f"quick_panel_row_{key.lower()}_enters_its_own_task_page",
                         world.confidence,
                         "task_page_open",
@@ -1242,10 +1254,11 @@ class RuleBrain:
                         ),
                         None,
                     )
-                    if row is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
+                    skill_id = self._panel_row_skill(row)
+                    if skill_id is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
                         self._panel_row_attempts += 1
                         return Decision(
-                            _QUICK_PANEL_ROW_SKILL.get(idle_camp, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"),
+                            skill_id,
                             f"quick_panel_{idle_camp.lower()}_row_arrow_enters_its_own_task_page",
                             world.confidence,
                             "task_page_open",
@@ -2116,19 +2129,37 @@ class RuleBrain:
     def _goal_route(self) -> str | None:
         """Which route the running goal belongs to, asked of the goal layer.
 
-        The concrete goal first (the runtime sets ``goal_id`` per goal), then the route name the
-        sweeps use.  Nothing here compares goal ids or capability ids: ``route_for`` is the goal
+        ``current_goal`` first: that field *is* the route (the runtime assigns it from
+        ``route_for(best_goal.goal_id)``, and a directed run hands ``run_live`` a route name), so it is
+        the run's own statement of where it is.  ``goal_id`` is the fallback for callers that set only
+        that.  Measured 2026-09-23 in a ``--goal TRAIN`` run: the runtime writes ``goal_id`` only when
+        it also sets ``current_goal``, so ``goal_id`` kept the scheduler's last attribution
+        (``CLEAR_INTEL``) and asking it first made this run read as the INTEL route while it was in
+        TRAIN -- which kept the panel's own branch from firing at all.
+
+        Nothing here compares goal ids or capability ids against each other: ``route_for`` is the goal
         layer's own answer, so a goal nobody has heard of yet still routes correctly.
         """
         from .goal_library import route_for
 
-        return route_for(str(getattr(self, "goal_id", "") or "")) or route_for(
-            str(self.current_goal or "")
+        return route_for(str(self.current_goal or "")) or route_for(
+            str(getattr(self, "goal_id", "") or "")
         )
 
     def _panel_rows_for_this_goal(self) -> tuple[str, ...]:
         """The panel row kinds the running goal works from; empty when the panel is not its board."""
         return self.PANEL_ROWS_FOR_ROUTE.get(str(self._goal_route() or ""), ())
+
+    def _panel_row_skill(self, row: dict | None) -> str | None:
+        """The skill that taps this row's own arrow, or ``None`` when no skill names that row.
+
+        ``None`` means the row is not offered: the callers fall through to their route's own hop
+        instead.  That is the whole point -- the previous ``.get(key, "..._SHIELD")`` turned "I have no
+        skill for this row" into "tap the 盾兵 row", which is a wrong tap rather than a missing one.
+        """
+        if not row:
+            return None
+        return _QUICK_PANEL_ROW_SKILL.get(str(row.get("key") or ""))
 
     def _actionable_panel_row(self, world: WorldState) -> dict | None:
         """The first panel row this goal can act on, from this frame's own reading.
@@ -2164,6 +2195,14 @@ class RuleBrain:
                 if str(row.get("key")) == own:
                     return row
             return None
+        # No barracks named: prefer a row the client is *pointing at*.  Measured 2026-09-23 on the live
+        # panel (20260923_004054_research_step_003_after_...): 矛兵 空闲中 carried the red dot and
+        # 射手 also read IDLE without one.  The operator's §五 is that a red dot means that row has
+        # something to do, and it is the only per-row signal the panel draws that distinguishes two
+        # otherwise identical IDLE rows -- so it decides the order, not the eligibility.
+        for row in candidates:
+            if str(row.get("badge")) == "PRESENT":
+                return row
         return candidates[0]
 
     def _goal_camp(self) -> str | None:

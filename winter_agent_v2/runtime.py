@@ -2122,6 +2122,33 @@ class LiveRuntime:
                 self._tapped_intel_pins.append((pin.x, pin.y))
                 return (pin.x / width, pin.y / height)
             return None
+        if semantic == "BTN_START_TRAINING":
+            # The training page's own 训练 button, tapped where this frame's reading found it.
+            #
+            # Why not the template: it is the whole button, its text included, and the client paints
+            # its own hand cursor on that button as soon as the camp is entered.  Measured
+            # 2026-09-23 00:48:35 in the directed ``--goal TRAIN`` run: the quick panel's 矛兵 row
+            # arrow opened that camp's bar, the bar opened its training page (reading AVAILABLE /
+            # trainable / BUTTON_CAPTION), the brain emitted TRAIN_TROOPS -- and this resolver
+            # returned ``None``, so a lit button went unpressed and the step recorded
+            # SEMANTIC_TARGET_NOT_VERIFIED.  On that very frame the reader had the button's own
+            # caption (``02:33:11``) at (0.760, 0.888).
+            #
+            # The guard is the frame's reading: ``train_button_norm`` is written only when that frame
+            # drew the button, so a training page with no button on it ends the step honestly rather
+            # than tapping a remembered coordinate.
+            if frame.page is not Page.TRAINING:
+                return None
+            point = (frame.training or {}).get("train_button_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
         if semantic == "BTN_OPEN_TRAINING_FROM_CAMP":
             # The 训练 control of the selected camp, tapped where this frame's own OCR read
             # the client's label (see ``ocr.read_selected_building_actions``).

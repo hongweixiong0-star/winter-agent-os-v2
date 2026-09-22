@@ -637,6 +637,9 @@ class OCRPageClassifier:
             batch_count: int | None = None
             queue_timer: str | None = None
             has_train_button = False
+            button_caption: str | None = None
+            train_button_norm: list[float] | None = None
+            caption_norm: list[float] | None = None
             # Which barracks this page *is* -- decided by the PAGE TITLE, never by a tab label.
             #
             # Measured 2026-09-21 on every reviewed camp frame: the client draws **all three**
@@ -675,11 +678,28 @@ class OCRPageClassifier:
                     # Only a countdown drawn above the action bar is the queue's own; the training
                     # button's caption sits inside the bar and is the batch's projected duration.
                     queue_timer = timer.group(0)
+                elif timer is not None:
+                    # ...and that caption is *evidence the button is drawn*.  Measured 2026-09-23 on
+                    # the 矛兵营 page the panel had just entered
+                    # (20260923_001145_train_step_004_after_20260922T161254908568.png): the client
+                    # paints its own hand cursor over the 訓練 label right after the tap, so the label
+                    # itself is unreadable, the page read UNKNOWN, and the brain -- whose gate is
+                    # ``trainable`` -- emitted no TRAIN_TROOPS on a page whose button was lit.  The
+                    # caption is the same fact in a place the hand does not cover: on that frame
+                    # ``02:33:11`` sits at (x 0.760, y 0.888) while 訓練 would be at y 0.862.
+                    #
+                    # The running page draws no such caption -- measured on the 射手营 page of the
+                    # same run, its right-hand button reads 加速 with no time under it, and its queue
+                    # countdown ``00:11:02`` is drawn *above* the bar at y 0.732 next to 訓練中.  So
+                    # this is the button's caption and cannot be a queue's countdown.
+                    button_caption = timer.group(0)
+                    caption_norm = _token_centre_norm(text, eligible, frame_size)
                 count = re.search(r"正在训练\s*([0-9,]+)\s*位", text)
                 if count:
                     batch_count = int(count.group(1).replace(",", ""))
                 if text == TRAINING_BUTTON_LABEL:
                     has_train_button = True
+                    train_button_norm = _token_centre_norm(text, eligible, frame_size)
             # Which barracks this page *is*.
             #
             # The page title names the troop (英勇盾兵 / 刚毅矛兵 / 刚毅射手), and that is the
@@ -706,8 +726,22 @@ class OCRPageClassifier:
             # ``queue_available`` at all, so a page nobody could read is not mistaken for a busy one.
             if batch_count is not None or queue_timer is not None:
                 training.update({"status": "IN_PROGRESS", "queue_available": False})
-            elif has_train_button:
+            elif has_train_button or button_caption is not None:
+                # Two ways of seeing the same button: its label, or the projected duration printed
+                # under that label.  Either one says the button is drawn, which is what ``trainable``
+                # claims -- and reading it from the caption is what survives the client's own hand
+                # cursor sitting on the word.
                 training.update({"status": "AVAILABLE", "queue_available": True, "trainable": True})
+                training["train_button_basis"] = (
+                    "LABEL" if has_train_button else "BUTTON_CAPTION"
+                )
+                # Where the button *is*, on this frame.  The client draws the label at the button's
+                # upper line and its projected duration at the lower one, so either centre is a point
+                # inside the button -- and the caption is the one that survives the client's own hand
+                # cursor sitting on the word, which is the frame this exists for.  The template for
+                # ``BTN_START_TRAINING`` is the whole button including its text, so a hand over it is
+                # exactly what makes that template score no match; the reading is the durable answer.
+                training["train_button_norm"] = train_button_norm or caption_norm
             else:
                 training.update({"status": "UNKNOWN"})
             if queue_timer is not None:
@@ -1901,6 +1935,28 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
 
 #: The training button's own printed label.
 TRAINING_BUTTON_LABEL: str = "训练"
+
+
+def _token_centre_norm(text: str, tokens, frame_size) -> list[float] | None:
+    """The centre of the token that read ``text``, in normalised frame coordinates.
+
+    The counterpart of :func:`_above_the_action_bar`: that one asks *where* a time token is drawn, this
+    one asks where the token carrying a given word is drawn.  Both exist because the client prints a
+    control and its text together, so the text's own box is the control's own position -- the only
+    answer available when a template cannot be cut from a control the client's hand is covering.
+    """
+    if not frame_size or frame_size[0] <= 0 or frame_size[1] <= 0:
+        return None
+    for token in tokens:
+        if token.text.strip() != text:
+            continue
+        xs = [point[0] for point in token.box]
+        ys = [point[1] for point in token.box]
+        if not xs or not ys:
+            continue
+        return [round(sum(xs) / len(xs) / float(frame_size[0]), 4),
+                round(sum(ys) / len(ys) / float(frame_size[1]), 4)]
+    return None
 
 
 def _above_the_action_bar(timer: "re.Match", tokens, frame_size) -> bool:

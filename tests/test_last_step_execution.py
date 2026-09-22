@@ -485,6 +485,20 @@ class TheRowArrowOpensTheTaskBarTests(unittest.TestCase):
         self.assertEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN", decision.reason)
 
 
+#: An executor that reports a landing point without a device.  Module level, not nested in the test
+#: case: the project's static check reads ``self.<Name>`` as a call it must find a definition for, and
+#: a class defined inside a TestCase resolves through the instance, not the class.
+class _StubExecutor:
+    def __init__(self, tap_point):
+        self._tap = tap_point
+        self.device = None
+
+    def execute(self, action):
+        from winter_agent_v2.models import ExecutionResult
+
+        return ExecutionResult(True, False, action, backend="ADB", tap_point=self._tap)
+
+
 class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
     """A tap that did nothing must still carry where it went.
 
@@ -492,16 +506,6 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
     the artifact a post-mortem reads -- dropped it, so every row in
     ``learning/executor_backend.jsonl`` showed ``tap_point: None`` including the taps that worked.
     """
-
-    class _StubExecutor:
-        def __init__(self, tap_point):
-            self._tap = tap_point
-            self.device = None
-
-        def execute(self, action):
-            from winter_agent_v2.models import ExecutionResult
-
-            return ExecutionResult(True, False, action, backend="ADB", tap_point=self._tap)
 
     def test_the_ledger_row_carries_the_landing_point(self):
         import tempfile
@@ -512,7 +516,7 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             ledger_path = Path(folder) / "ledger.jsonl"
             router = ExecutorRouter(
-                adb_executor=self._StubExecutor((441, 620)),
+                adb_executor=_StubExecutor((441, 620)),
                 routing=RoutingTable(),
                 ledger=BackendLedger(ledger_path),
             )
@@ -521,6 +525,120 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
             row = json.loads(ledger_path.read_text(encoding="utf-8").splitlines()[-1])
         self.assertEqual(row["action_target"], "QUICK_PANEL_ROW_LANCER_CAMP")
         self.assertEqual(row["tap_point"], [441, 620])
+
+
+    def test_a_row_the_table_cannot_name_is_never_offered_as_another_row(self):
+        """Measured live 2026-09-23 00:42:30, and it tapped the wrong barracks.
+
+        The reading offered the ``RESEARCH`` row and ``_QUICK_PANEL_ROW_SKILL`` held only the three camp
+        keys, so ``.get(key, "..._SHIELD")`` substituted a real action aimed at the 盾兵 row --
+        ``tap_point [225, 546]``, y 0.427, the 盾兵 row, while the goal was the research route.  A row
+        with no skill must leave the decision to the route, not become somebody else's row.
+        """
+        rows = [
+            {"kind": "CAMP", "key": "SOMETHING_NEW", "label": "新行", "status": "IDLE",
+             "arrow_norm": [0.6, 0.5], "badge": "PRESENT"},
+        ]
+        frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
+        decision = _brain("TRAIN").decide(frame, v2_registry())
+        self.assertNotIn("QUICK_PANEL", decision.skill)
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
+
+    def test_every_row_the_reader_can_name_has_its_own_skill(self):
+        """The row table and the reader's keys must not drift apart in silence."""
+        from winter_agent_v2.brain import _QUICK_PANEL_ROW_SKILL
+
+        for key, skill in _QUICK_PANEL_ROW_SKILL.items():
+            with self.subTest(row=key):
+                entry = v2_registry().get(skill)
+                self.assertIsNotNone(entry, f"{key} maps to {skill}, which does not exist")
+                self.assertEqual(entry.action.target, f"QUICK_PANEL_ROW_{key}")
+
+    def test_a_badged_idle_row_is_preferred_over_an_unmarked_one(self):
+        """The red dot is the only per-row signal that separates two IDLE rows (operator §五)."""
+        rows = [
+            {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IDLE",
+             "arrow_norm": [0.6, 0.4832], "badge": "ABSENT"},
+            {"kind": "CAMP", "key": "MARKSMAN_CAMP", "label": "射手", "status": "IDLE",
+             "arrow_norm": [0.6, 0.5402], "badge": "PRESENT"},
+        ]
+        frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
+        decision = _brain("KEEP_TRAINING_PRODUCTIVE").decide(frame, v2_registry())
+        self.assertEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN", decision.reason)
+
+    def test_the_route_is_read_from_the_route_not_from_a_stale_goal_id(self):
+        """Measured 2026-09-23: a ``--goal TRAIN`` run kept the scheduler's ``goal_id``.
+
+        The runtime writes ``brain.goal_id`` only when it also sets ``brain.current_goal``, so during a
+        directed run ``goal_id`` held ``CLEAR_INTEL`` while ``current_goal`` was ``TRAIN`` -- and
+        asking ``goal_id`` first made the run read as the INTEL route, which kept the panel branch from
+        firing at all.
+        """
+        panel = {"open": True, "rows": [
+            {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IDLE",
+             "arrow_norm": [0.6, 0.4832], "badge": "PRESENT"}]}
+        frame = WorldState(page=Page.HOME, quick_panel=panel)
+        brain = RuleBrain(current_goal="TRAIN")
+        brain.goal_id = "CLEAR_INTEL"
+        self.assertEqual(brain._goal_route(), "TRAIN")
+        self.assertEqual(brain.decide(frame, v2_registry()).skill, "OPEN_TASK_FROM_QUICK_PANEL_LANCER")
+
+
+class TheTrainingButtonPositionTests(unittest.TestCase):
+    """The button's own place, read from the frame that drew it.
+
+    Measured 2026-09-23 00:48:35: the quick panel's 矛兵 row arrow opened that barracks' bar, the bar
+    opened its training page, the page read AVAILABLE / trainable, the brain emitted TRAIN_TROOPS -- and
+    the target resolved to ``None``, so a lit button went unpressed.  The template for
+    ``BTN_START_TRAINING`` is the whole button with its text, and the client's own hand cursor sits on
+    that text as soon as the camp is entered, which is exactly what makes the template miss.
+    """
+
+    #: The two independently archived 矛兵营 training pages whose 訓練 label the hand covers.
+    PAGE_WITH_HAND = sorted(AUTO.glob("*/" + "*_step_005_before_20260922T164827367068.png"))[-1]
+
+    @classmethod
+    def setUpClass(cls):
+        if not cls.PAGE_WITH_HAND.exists():
+            raise unittest.SkipTest("the archived training frame is not on this machine")
+        cls.state = _vision().observe(cls.PAGE_WITH_HAND)
+
+    def test_the_page_is_startable_even_though_its_label_is_covered(self):
+        self.assertEqual(self.state.page, Page.TRAINING)
+        self.assertEqual(self.state.training.get("status"), "AVAILABLE")
+        self.assertIs(self.state.training.get("trainable"), True)
+        # The label really is unreadable on this frame -- that is what makes the caption the answer.
+        self.assertEqual(self.state.training.get("train_button_basis"), "BUTTON_CAPTION")
+
+    def test_the_button_is_located_from_that_reading(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        runtime = object.__new__(LiveRuntime)
+        point = runtime._resolve_semantic_target("BTN_START_TRAINING", self.state)
+        self.assertIsNotNone(point, "a lit button must resolve")
+        x_norm, y_norm = point
+        # Measured on this frame: the caption ``02:33:11`` at (0.7611, 0.8883); the button is the
+        # right-hand control of the action bar, so the point has to be in its own band.
+        self.assertGreater(x_norm, 0.5, "the button is the action bar's right-hand control")
+        self.assertGreater(y_norm, 0.83, "inside the bar")
+        self.assertLess(y_norm, 0.95, "still above the camp tab strip")
+
+    def test_a_page_that_drew_no_button_is_not_tapped(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        runtime = object.__new__(LiveRuntime)
+        bare = WorldState(page=Page.TRAINING, training={"status": "UNKNOWN"})
+        self.assertIsNone(runtime._resolve_semantic_target("BTN_START_TRAINING", bare))
+
+    def test_the_button_is_not_tapped_from_another_page(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        runtime = object.__new__(LiveRuntime)
+        elsewhere = WorldState(page=Page.HOME, training=self.state.training)
+        self.assertIsNone(
+            runtime._resolve_semantic_target("BTN_START_TRAINING", elsewhere),
+            "the point belongs to the page it was read from",
+        )
 
 
 if __name__ == "__main__":
