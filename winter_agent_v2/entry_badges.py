@@ -1,0 +1,271 @@
+"""Entry badges: which entry is showing a notification, read from that entry's own corner.
+
+The operator's rule for this layer is one sentence -- a red dot must be bound to a concrete entry or
+task row -- and the first measurement campaign showed why it matters.  Counting red pixels in a box
+around an entry attributed the 英雄 tab's dot to 探险 (the window reached into the next tab), reported
+"no badge" for the mail entry on a frame whose badge is plainly drawn (the window was written
+``(x0, y0, x1, y1)`` and unpacked ``(x0, x1, y0, y1)``, so it scanned an empty range), and produced a
+wrong inference from a right number (the 联盟 count badge is present in 26 of 26 sampled frames, which
+looks constant but is simply never zero).
+
+So this module reads the table at ``knowledge/ui/entry_badges.json`` -- measured, per entry, with the
+frames it was measured on -- and refuses to answer for any entry that is not in it.  Three states,
+because two cannot express the truth:
+
+    PRESENT   a red blob of badge size sits at this entry's own corner
+    ABSENT    the entry is on screen, its corner is visible, and no such blob is there
+    UNKNOWN   the entry is not on this page, its frame was not given, or its badge is still only
+              suspected of being artwork -- never "no red dot"
+
+The last one is the operator's own requirement (§一: a row the panel has not scrolled to is UNKNOWN,
+not ABSENT; §五: UNKNOWN must be observed again, never treated as "nothing there").
+"""
+
+from __future__ import annotations
+
+import json
+from collections import deque
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+TABLE_PATH = ROOT / "knowledge/ui/entry_badges.json"
+
+PRESENT = "PRESENT"
+ABSENT = "ABSENT"
+UNKNOWN = "UNKNOWN"
+
+#: The red family the 快捷面板 row reader already uses (``ocr.QUICK_PANEL_BADGE_RED_MIN`` is its
+#: brightness floor).  Shared on purpose: two different definitions of "red" in one project is how
+#: two layers start disagreeing about the same frame.
+RED_MIN = 150
+RED_EXCESS = 50
+#: A badge is a drawn circle, so a handful of anti-aliased pixels is not one.  Measured: the smallest
+#: real badge in the campaign (英雄 tab) is 195 px, and the mail badge 276-302 px, so 40 leaves a wide
+#: margin on both sides of the boundary without ever being the deciding factor.
+MIN_BLOB_PX = 40
+
+_state_cache: dict[str, Any] = {}
+
+
+def table() -> dict[str, Any]:
+    """The measured table, read once per process."""
+    if "table" not in _state_cache:
+        _state_cache["table"] = json.loads(TABLE_PATH.read_text(encoding="utf-8"))
+    return _state_cache["table"]
+
+
+def entries() -> dict[str, dict[str, Any]]:
+    return {str(row["entry"]): row for row in table()["entries"]}
+
+
+@dataclass(frozen=True)
+class EntryBadge:
+    """One entry's notification state, with the evidence that produced it."""
+
+    entry: str
+    page: str
+    state: str
+    observed_at: str = ""
+    goal: str | None = None
+    task_state: str = ""
+    pixels: int = 0
+    box_norm: tuple[float, float, float, float] | None = None
+    reason: str = ""
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "entry": self.entry,
+            "page": self.page,
+            "state": self.state,
+            "observed_at": self.observed_at,
+            "goal": self.goal,
+            "task_state": self.task_state,
+            "pixels": self.pixels,
+            "box_norm": self.box_norm,
+            "reason": self.reason,
+        }
+
+
+def _is_red(pixel: tuple[int, int, int]) -> bool:
+    r, g, b = pixel
+    return r >= RED_MIN and r - g >= RED_EXCESS and r - b >= RED_EXCESS
+
+
+def _largest_blob(image, box: tuple[int, int, int, int]) -> tuple[int, tuple[int, int, int, int]]:
+    """The biggest red blob in ``box`` and its pixel count, or ``(0, (0, 0, 0, 0))``."""
+    x0, y0, x1, y1 = box
+    seen: set[tuple[int, int]] = set()
+    best = (0, (0, 0, 0, 0))
+    for cy in range(y0, y1):
+        for cx in range(x0, x1):
+            if (cx, cy) in seen or not _is_red(image.getpixel((cx, cy))):
+                continue
+            queue = deque([(cx, cy)])
+            seen.add((cx, cy))
+            comp: list[tuple[int, int]] = []
+            while queue:
+                px, py = queue.popleft()
+                comp.append((px, py))
+                for nx, ny in ((px + 1, py), (px - 1, py), (px, py + 1), (px, py - 1)):
+                    if x0 <= nx < x1 and y0 <= ny < y1 and (nx, ny) not in seen and _is_red(image.getpixel((nx, ny))):
+                        seen.add((nx, ny))
+                        queue.append((nx, ny))
+            if len(comp) > best[0]:
+                xs = [q[0] for q in comp]
+                ys = [q[1] for q in comp]
+                best = (len(comp), (min(xs), min(ys), max(xs), max(ys)))
+    return best
+
+
+def read_entry_badges(
+    frame: Path | None,
+    page: str,
+    *,
+    observed_at: str = "",
+    task_states: dict[str, str] | None = None,
+) -> dict[str, EntryBadge]:
+    """Every entry in the measured table, each with PRESENT / ABSENT / UNKNOWN and its reason.
+
+    ``page`` is the page the reading belongs to, as the vision layer resolved it.  An entry whose
+    page does not match is UNKNOWN -- it is simply not on this screen, and saying ABSENT would turn
+    "I cannot see it" into "there is nothing there", which is the whole failure this layer exists to
+    avoid.
+    """
+    states = task_states or {}
+    answer: dict[str, EntryBadge] = {}
+    image = None
+    for entry, row in entries().items():
+        goal = row.get("goal")
+        task_state = states.get(entry, "")
+        entry_page = str(row.get("page", ""))
+        if entry_page and entry_page != page:
+            answer[entry] = EntryBadge(
+                entry, page, UNKNOWN, observed_at, goal, task_state,
+                reason=f"entry_is_on_{entry_page}_not_{page}",
+            )
+            continue
+        if row.get("status") == "SUSPECT_ARTWORK":
+            answer[entry] = EntryBadge(
+                entry, page, UNKNOWN, observed_at, goal, task_state,
+                reason="badge_geometry_never_varies_so_it_may_be_artwork",
+            )
+            continue
+        if frame is None:
+            answer[entry] = EntryBadge(entry, page, UNKNOWN, observed_at, goal, task_state, reason="no_frame_given")
+            continue
+        if image is None:
+            from PIL import Image  # imported here: this module is also used by replay tests
+
+            image = Image.open(frame).convert("RGB")
+        width, height = image.size
+        wx0, wy0, wx1, wy1 = (float(v) for v in row["search_window_norm"])
+        box = (
+            int(max(0.0, wx0) * width),
+            int(max(0.0, wy0) * height),
+            int(min(1.0, wx1) * width),
+            int(min(1.0, wy1) * height),
+        )
+        pixels, blob = _largest_blob(image, box)
+        answer[entry] = EntryBadge(
+            entry,
+            page,
+            PRESENT if pixels >= MIN_BLOB_PX else ABSENT,
+            observed_at,
+            goal,
+            task_state,
+            pixels=pixels,
+            box_norm=(
+                (blob[0] / width, blob[1] / height, blob[2] / width, blob[3] / height) if pixels else None
+            ),
+            reason="" if pixels >= MIN_BLOB_PX else (
+                f"no_red_blob_of_badge_size_in_x{row['search_window_norm'][0]:.3f}-"
+                f"{row['search_window_norm'][2]:.3f}_y{row['search_window_norm'][1]:.3f}-"
+                f"{row['search_window_norm'][3]:.3f}" + (f"_largest_was_{pixels}px" if pixels else "")
+            ),
+        )
+    return answer
+
+
+#: The 快捷面板's own rows, which already carry a badge reading from ``read_quick_panel``.  Kept as
+#: a mapping so a row's entry name and its goal are stated once, here, rather than inferred.
+QUICK_PANEL_ROW_GOALS = {
+    "SHIELD_CAMP": "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP": "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP": "MARKSMAN_CAMP_TRAINING",
+    "RESEARCH": "RESEARCH",
+    "ALLIANCE_DONATION": "ALLIANCE_ROUTINE",
+    "HERO_RECRUIT": "HERO_RECRUIT",
+    "MY_REWARDS": "DAILY_ACTIVITY_TARGET",
+}
+
+
+def quick_panel_badges(state: Any) -> dict[str, EntryBadge]:
+    """The panel's rows, with UNKNOWN for every row that was not read (scrolled out, or panel shut).
+
+    ``read_quick_panel`` returns only the rows it could read, so a row missing from that reading is
+    exactly the "not scrolled to" case the operator calls out.  Reporting ABSENT for it would claim
+    the client drew no dot on a row nobody looked at.
+    """
+    panel = getattr(state, "quick_panel", None) or {}
+    open_ = bool(panel.get("open"))
+    rows = {str(r.get("key")): r for r in (panel.get("rows") or [])}
+    answer: dict[str, EntryBadge] = {}
+    for key, goal in QUICK_PANEL_ROW_GOALS.items():
+        row = rows.get(key)
+        entry = f"QUICK_PANEL_ROW_{key}"
+        if not open_:
+            answer[entry] = EntryBadge(entry, "HOME", UNKNOWN, goal=goal, reason="quick_panel_is_closed")
+            continue
+        if row is None:
+            answer[entry] = EntryBadge(entry, "HOME", UNKNOWN, goal=goal, reason="row_not_read_this_frame")
+            continue
+        badge = str(row.get("badge") or UNKNOWN)
+        if badge not in (PRESENT, ABSENT):
+            badge = UNKNOWN
+        answer[entry] = EntryBadge(
+            entry,
+            "HOME",
+            badge,
+            goal=goal,
+            task_state=str(row.get("status") or ""),
+            reason="" if badge != UNKNOWN else "panel_read_did_not_settle_this_row",
+        )
+    return answer
+
+
+def read_all(state: Any, frame: Path | None = None, *, observed_at: str = "") -> dict[str, EntryBadge]:
+    """The whole ledger for one observation: measured entries plus the panel's own rows."""
+    page = getattr(getattr(state, "page", None), "value", str(getattr(state, "page", "")))
+    ledger = read_entry_badges(frame, page, observed_at=observed_at)
+    ledger.update(quick_panel_badges(state))
+    return ledger
+
+
+def transitions(previous: dict[str, EntryBadge], current: dict[str, EntryBadge]) -> list[dict[str, Any]]:
+    """What changed, in the terms the goal layer triggers on.
+
+    Only real changes are reported.  An entry that stays PRESENT across frames is *not* a change, so
+    it cannot be turned into a new goal every round (operator §二: the same dot seen again in
+    consecutive screenshots must not re-create the same goal), and an UNKNOWN on either side is not a
+    change either -- there is nothing to compare a reading that was never made against.
+    """
+    events = []
+    for entry, now in sorted(current.items()):
+        before = previous.get(entry)
+        if before is None:
+            continue
+        if before.state == UNKNOWN or now.state == UNKNOWN:
+            continue
+        if before.state != now.state:
+            events.append(
+                {
+                    "entry": entry,
+                    "from": before.state,
+                    "to": now.state,
+                    "goal": now.goal,
+                    "observed_at": now.observed_at,
+                }
+            )
+    return events

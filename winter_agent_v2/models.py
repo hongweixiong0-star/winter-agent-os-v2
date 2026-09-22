@@ -88,6 +88,13 @@ class WorldState:
     beast: dict[str, Any] = field(default_factory=dict)
     daily: dict[str, Any] = field(default_factory=dict)
     mail: dict[str, Any] = field(default_factory=dict)
+    #: Entry notification badges, keyed by the entry's semantic id (``BTN_OPEN_MAIL``,
+    #: ``QUICK_PANEL_ROW_SHIELD_CAMP``, ...).  Each record carries its own state, the page it
+    #: belongs to, when it was observed, the goal it serves and the entry's task state -- see
+    #: ``entry_badges`` for the three-state rule and ``knowledge/ui/entry_badges.json`` for the
+    #: measured windows.  Empty means "this frame was not read for badges", which is NOT the same as
+    #: "no entry has a badge": an entry that is not on screen is recorded as UNKNOWN, never ABSENT.
+    red_dots: dict[str, Any] = field(default_factory=dict)
     exploration: dict[str, Any] = field(default_factory=dict)
     stamina: dict[str, Any] = field(default_factory=dict)
     hospital: dict[str, Any] = field(default_factory=dict)

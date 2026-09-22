@@ -796,6 +796,21 @@ class RuleBrain:
         # on a resource or formation page must never inherit Gather behavior.
         if self.current_goal == "MAIL":
             if world.page is Page.HOME:
+                # Operator directive §五 (2026-09-23): the mail entry carries a MEASURED notification
+                # badge (``entry_badges`` / knowledge/ui/entry_badges.json), so a run that can see it
+                # read ABSENT does not open the page at all -- the repetition the directive asks to
+                # stop is exactly this screenshot-every-round of a mail page with nothing new.
+                #
+                # Only ABSENT skips.  UNKNOWN is not "nothing there": the reading reports UNKNOWN
+                # when the entry is not on this page, when no frame was given, or when the badge is
+                # still only suspected of being artwork, and in all three cases the honest action is
+                # the one the route already took.  A missing ledger (older state, replay fixture)
+                # behaves the same way, which is why the lookup falls through instead of asserting.
+                mail_badge = str(((world.red_dots or {}).get("BTN_OPEN_MAIL") or {}).get("state") or "")
+                if mail_badge == "ABSENT":
+                    # Not fatal: the mail goal having nothing to do says nothing about the others
+                    # (§六 -- a task that cannot be handled is deferred, it never stops the sweep).
+                    return Decision("SAFE_STOP", "mail_entry_has_no_badge_this_frame", 1.0, "switch_task")
                 return Decision("OPEN_MAIL", "mail_sweep_goal", world.confidence, "mail_page_open")
             if world.page is Page.MAP:
                 if world.resource_search_open:

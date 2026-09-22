@@ -15,6 +15,22 @@ from .building_identity import UNKNOWN as UNKNOWN_IDENTITY
 from .building_identity import read_building_identity
 from .camp_training import CAMP_LABELS, LABEL_TO_CAMP, TROOP_TO_CAMP
 from .camp_training import camp_from_selected_label, merge_camps, observe_camps
+from .entry_badges import read_all
+
+def _frame_stamp(frame: Path) -> str:
+    """When this frame was written, taken from the file itself.
+
+    The frame's *name* carries a step timestamp (``..._20260922T160220374378.png``), but that is the
+    container's clock and it has already been misread once in this project's analysis; the file's own
+    mtime is the clock the runtime wrote it with, so that is the one published.
+    """
+    from datetime import datetime, timezone
+
+    try:
+        return datetime.fromtimestamp(frame.stat().st_mtime, timezone.utc).isoformat()
+    except OSError:
+        return ""
+
 from .models import MarchState, Page, RoleIdentity, WorldState
 
 
@@ -3562,6 +3578,23 @@ class HybridVision:
         return replace(primary, building=state)
 
     def observe(self, image_path: Path) -> WorldState:
+        """The frame's world, with the entry badges read onto it.
+
+        Wrapped rather than edited in place: ``_observe_inner`` has many returns (one per page it
+        recognises) and attaching the ledger at each of them is how a lower layer passes while the
+        production entry point silently does not run -- a defect this module has already been bitten
+        by twice.  A badge read can never take the observation down with it: the frames it needs are
+        optional evidence, so a failure leaves ``red_dots`` empty rather than raising.
+        """
+        state = self._observe_inner(image_path)
+        try:
+            frame = image_path if isinstance(image_path, Path) else Path(image_path)
+            ledger = read_all(state, frame, observed_at=_frame_stamp(frame))
+            return replace(state, red_dots={name: badge.as_record() for name, badge in ledger.items()})
+        except (OSError, ValueError, KeyError):
+            return state
+
+    def _observe_inner(self, image_path: Path) -> WorldState:
         primary = self.template_vision.observe(image_path)
         # The frame's pixel size, needed by the classifier to tell a page's own
         # wording from the wording of an overlay drawn on top of it (see

@@ -1,0 +1,182 @@
+{
+ "_read_me": "入口红点读数的唯一事实源。红点必须绑定到一个入口或一条任务行；任何没有在这张表里登记过的入口，其红点不得被读成 PRESENT 或 ABSENT。每条记录都写明它是被量过的还是只是声明。PRESENT / ABSENT / UNKNOWN 三态：入口不在当前页面、或它在页面上但被滚动或遮挡而看不到时，一律 UNKNOWN，绝不可记成 ABSENT（操作者 §一、§五）。",
+ "measured_on": "2026-09-23, over frames whose own episode record says page=HOME with the 快捷面板 closed",
+ "red_pixel_rule": "r >= 150 and r-g >= 50 and r-b >= 50, connected blob >= 40 px (the family the 快捷面板 row reader already uses)",
+ "entries": [
+  {
+   "entry": "BTN_OPEN_MAIL",
+   "label": "邮件",
+   "page": "HOME",
+   "goal": "MAIL_ROUTINE",
+   "anchor": "the entry icon's own top-right corner",
+   "search_window_norm": [
+    0.85,
+    0.745,
+    1.0,
+    0.845
+   ],
+   "measured_blob_norm": {
+    "x": [
+     0.9431,
+     0.9764
+    ],
+    "y": [
+     0.7867,
+     0.8016
+    ],
+    "centre": [
+     0.96,
+     0.794
+    ],
+    "pixels": [
+     276,
+     302
+    ]
+   },
+   "behaviour": "present in 9 of 26 sampled city frames, absent in 17 -- it comes and goes",
+   "evidence_frames": [
+    "a city frame at 16:02:29 whose entry draws a red circle with the count 5",
+    "a city frame at 16:20:06 whose entry draws no badge at all"
+   ],
+   "verification": "the badge is a red circle with a white count; it is the only red blob inside the search window in every sampled frame that has one, and there is no blob at all in the frames where the client draws none"
+  },
+  {
+   "entry": "TAB_EXPLORATION",
+   "label": "探险页签",
+   "page": "HOME",
+   "goal": "DAILY_ACTIVITY_TARGET",
+   "anchor": "the bottom-bar tab's own top-right corner",
+   "search_window_norm": [
+    0.06,
+    0.89,
+    0.165,
+    0.96
+   ],
+   "measured_blob_norm": {
+    "x": [
+     0.1264,
+     0.1472
+    ],
+    "y": [
+     0.9227,
+     0.9344
+    ],
+    "centre": [
+     0.137,
+     0.929
+    ],
+    "pixels": [
+     197,
+     197
+    ]
+   },
+   "behaviour": "present in 9 of 26 sampled city frames; the geometry is identical whenever it is present",
+   "evidence_frames": [
+    "a city frame at 16:05:26 with the dot drawn",
+    "a city frame at 16:02:29 with none"
+   ],
+   "verification": "197 px in every frame that has it, in the same 21x15 px box.  The first pass reported red in 10 of 14 frames here and was wrong twice over: its window (x 0.092-0.252) reached into the 英雄 tab, so a neighbour's dot was attributed to 探险"
+  },
+  {
+   "entry": "BTN_OPEN_DAILY",
+   "label": "章节/每日任务入口",
+   "page": "HOME",
+   "goal": "DAILY_ACTIVITY_TARGET",
+   "anchor": "the entry icon's own top-right corner",
+   "search_window_norm": [
+    0.045,
+    0.775,
+    0.125,
+    0.835
+   ],
+   "measured_blob_norm": {
+    "x": [
+     0.0722,
+     0.1069
+    ],
+    "y": [
+     0.7961,
+     0.8102
+    ],
+    "pixels": [
+     278,
+     284
+    ]
+   },
+   "behaviour": "present in 26 of 26 sampled frames -- a count badge that never read zero in this sample",
+   "evidence_frames": [
+    "a city frame at 16:02:29 whose badge reads 2",
+    "a city frame at 16:05:26 whose badge reads 4"
+   ],
+   "verification": "the pixel count follows the digits (278-284) while the circle stays fixed, so this is a count badge rather than artwork.  NOT usable as a trigger yet: no sampled frame shows it absent, so ABSENT cannot be distinguished from 'the sample never caught it empty'"
+  },
+  {
+   "entry": "TAB_ALLIANCE",
+   "label": "联盟页签",
+   "page": "HOME",
+   "goal": "ALLIANCE_ROUTINE",
+   "anchor": "the bottom-bar tab's own top-right corner",
+   "search_window_norm": [
+    0.72,
+    0.89,
+    0.825,
+    0.96
+   ],
+   "measured_blob_norm": {
+    "x": [
+     0.7556,
+     0.8056
+    ],
+    "y": [
+     0.9211,
+     0.9359
+    ],
+    "pixels": [
+     346,
+     419
+    ]
+   },
+   "behaviour": "present in 26 of 26 sampled frames -- a count badge that never read zero in this sample",
+   "evidence_frames": [
+    "a city frame at 16:02:29 whose badge reads 26",
+    "a city frame at 16:07:14 whose badge reads 34"
+   ],
+   "verification": "the count follows the digits; the measured box is 45x19 px and sits to the right of the tab's icon"
+  },
+  {
+   "entry": "TAB_HERO",
+   "label": "英雄页签",
+   "page": "HOME",
+   "goal": "HERO_RECRUIT",
+   "anchor": "the bottom-bar tab's own top-right corner",
+   "search_window_norm": [
+    0.27,
+    0.89,
+    0.335,
+    0.96
+   ],
+   "measured_blob_norm": {
+    "x": [
+     0.2903,
+     0.3111
+    ],
+    "y": [
+     0.9227,
+     0.9344
+    ],
+    "pixels": [
+     195,
+     195
+    ]
+   },
+   "behaviour": "present in 26 of 26 sampled frames with identical geometry AND identical size",
+   "status": "SUSPECT_ARTWORK",
+   "verification": "a notification has to be able to go away, and this one never varied across three hours, so a permanent badge and a fixed red element inside the button's artwork cannot be told apart with this sample.  Do not read it as PRESENT or ABSENT until a frame with an empty hero tab is available"
+  }
+ ],
+ "not_measured": [
+  "RED_DOT_TASK, RED_DOT_EVENT, RED_DOT_REWARD, RED_DOT_BUILDING, RED_DOT_RESEARCH: the dictionary declares them and no window has been measured for any of them. They are UNBOUND and must not be read.",
+  "快捷面板的行角标由 read_quick_panel 的行读数给出（rows[].badge）；面板关闭时那些行是 UNKNOWN 而不是 ABSENT，这一点已由面板读取器实现，不重复登记在这里。",
+  "邮件页签角标与联盟赠礼角标由邮件页与联盟页的读取器给出（mail.tab_badges / alliance.badge_count）。"
+ ]
+}
