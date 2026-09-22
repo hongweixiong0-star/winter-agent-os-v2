@@ -534,7 +534,11 @@ REASON_ZH = {"no_idle_march": "没有空闲行军，已安全等待", "reserved_
              "target_skill_verified": "任务已通过验证", "UNKNOWN_PAGE": "页面未识别",
              "unknown_page": "页面未识别", "DEVICE_BUSY": "设备忙", "VISION_FAILURE": "视觉识别失败",
              "PAGE_NOT_FOUND": "未找到目标页面", "SKILL_NOT_ENABLED_FOR_LIVE_LOOP": "能力尚未接入实机主循环",
-             "mail_all_clear": "邮件奖励已全部清空", "mail_state_unknown": "邮件状态未识别"}
+             "mail_all_clear": "邮件奖励已全部清空", "mail_state_unknown": "邮件状态未识别",
+             # A run that has stood on every page it can reach and been offered nothing on any of
+             # them.  It reads as a sentence about the round's search, not as an error code, because
+             # that is what it is -- see ``LiveRuntime._stop_instead_of_looking_again``.
+             "every_page_this_run_was_fruitless": "本轮每一页都看过，都没有可做的事"}
 MARCH_ZH = {MarchState.IDLE: "空闲", MarchState.MARCHING: "行军中", MarchState.GATHERING: "采集中",
             MarchState.RETURNING: "返回中", MarchState.UNKNOWN: "未识别"}
 
@@ -580,7 +584,7 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
             verified += int(verification.get("ok") is True)
             failures += int(verification.get("ok") is False)
     reason = payload.get("stop_reason", "暂无结构化结果") if isinstance(payload, dict) else "暂无结构化结果"
-    successful_stops = {"TARGET_SKILL_VERIFIED", "target_skill_verified", "MAX_ACTIONS_REACHED", "max_actions_reached", "no_idle_march", "reserved_march_for_stamina", "mail_all_clear", "exploration_income_not_ready", "daily_state_unknown_or_not_actionable", "daily_no_claimable_rewards", "alliance_action_not_needed", "training_queue_busy"}
+    successful_stops = {"TARGET_SKILL_VERIFIED", "target_skill_verified", "MAX_ACTIONS_REACHED", "max_actions_reached", "no_idle_march", "reserved_march_for_stamina", "mail_all_clear", "exploration_income_not_ready", "daily_state_unknown_or_not_actionable", "daily_no_claimable_rewards", "alliance_action_not_needed", "training_queue_busy", "every_page_this_run_was_fruitless"}
     return {"steps": len(steps), "executed": executed, "verified": verified, "failures": failures,
             "reason": reason, "ok": exit_code == 0 and failures == 0 and reason in successful_stops}
 
@@ -871,6 +875,14 @@ RUNTIME_WAITING_STOPS = frozenset({
     # The device belongs to a development validation right now (§2 A).  Waiting, not
     # broken -- and the device row says which of the operator's four states it is in.
     "device_leased_for_development",
+    # Nothing anywhere: the run looked at every page it can reach and the scheduler offered
+    # nothing on any of them.  It is the end of a *search*, which is a waiting state -- the
+    # next cycle re-observes -- and not a failure of the round.  Registered on the day the
+    # reason was introduced (2026-09-23) precisely so the panel does not show ● 异常 for a
+    # round whose every step verified; ``human_reason`` and ``successful_stops`` above carry
+    # the same entry, because all three read this vocabulary and only one of them is the
+    # runtime's.
+    "every_page_this_run_was_fruitless",
 })
 
 CATALOG_META = {

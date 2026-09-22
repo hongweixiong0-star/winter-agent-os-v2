@@ -1,0 +1,145 @@
+[schedule] OPEN_HOME refused on MAP: it lands on HOME, which this run has already stood on with nothing selectable (['HOME']) -- looking there again is not looking, it is repeating the look
+=== run 20260923_062948_568906  (3 recorded steps)
+  22:30:26 #1   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  22:31:28 #3   MAP->HOME      recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+  22:31:58 #4   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  -> with the guard the run ends at step 2 instead of 3:
+     22:30:26 #1 OPEN_MAP             first_ready_p0_skill
+     22:31:28 #3 SAFE_STOP            every_page_this_run_was_fruitless
+        (the refused decision was OPEN_HOME / deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here)
+
+=== run 20260923_055256_959620  (2 recorded steps)
+  21:53:50 #1   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  21:55:06 #4   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+
+=== run 20260923_052732_081600  (1 recorded steps)
+  21:27:57 #1   MAP->          recorded=OPEN_HOME            != replayed=BACK                 by runtime
+        reason=close_resource_search_before_the_deferral_hop
+
+=== run 20260923_052644_347466  (1 recorded steps)
+  21:27:13 #1   MAP->          recorded=OPEN_HOME            != replayed=BACK                 by runtime
+        reason=close_resource_search_before_the_deferral_hop
+
+=== run 20260923_052554_016557  (1 recorded steps)
+  21:26:20 #1   MAP->          recorded=OPEN_HOME            != replayed=BACK                 by runtime
+        reason=close_resource_search_before_the_deferral_hop
+
+=== run 20260923_052508_661097  (1 recorded steps)
+  21:25:34 #1   MAP->          recorded=OPEN_HOME            != replayed=BACK                 by runtime
+        reason=close_resource_search_before_the_deferral_hop
+
+=== run 20260923_052423_781688  (1 recorded steps)
+  21:24:50 #1   MAP->          recorded=OPEN_HOME            != replayed=BACK                 by runtime
+        reason=close_resource_search_before_the_deferral_hop
+
+=== run 20260923_052338_889685  (1 recorded steps)
+  21:24:04 #1   MAP->          recorded=OPEN_HOME            != replayed=BACK                 by runtime
+        reason=close_resource_search_before_the_deferral_hop
+
+=== run 20260923_052253_240829  (1 recorded steps)
+  21:23:17 #1   MAP->          recorded=OPEN_HOME            != replayed=BACK                 by runtime
+        reason=close_resource_search_before_the_deferral_hop
+
+[schedule] OPEN_HOME refused on MAP: it lands on HOME, which this run has already stood on with nothing selectable (['HOME']) -- looking there again is not looking, it is repeating the look
+=== run 20260923_023624_446462  (4 recorded steps)
+  18:37:02 #1   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  18:37:33 #2   MAP->HOME      recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+  18:38:03 #3   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  18:39:08 #4   MAP->MAP       recorded=CHECK_MARCH          == replayed=CHECK_MARCH          by brain.decide
+        reason=march_capacity_unknown
+  -> with the guard the run ends at step 2 instead of 4:
+     18:37:02 #1 OPEN_MAP             first_ready_p0_skill
+     18:37:33 #2 SAFE_STOP            every_page_this_run_was_fruitless
+        (the refused decision was OPEN_HOME / deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here)
+
+[schedule] OPEN_HOME refused on MAP: it lands on HOME, which this run has already stood on with nothing selectable (['HOME']) -- looking there again is not looking, it is repeating the look
+=== run 20260923_020337_150950  (3 recorded steps)
+  18:04:04 #1   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  18:04:36 #2   MAP->HOME      recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+  18:04:56 #3   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  -> with the guard the run ends at step 2 instead of 3:
+     18:04:04 #1 OPEN_MAP             first_ready_p0_skill
+     18:04:36 #2 SAFE_STOP            every_page_this_run_was_fruitless
+        (the refused decision was OPEN_HOME / deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here)
+
+=== run 20260923_015152_596685  (1 recorded steps)
+  17:53:03 #3   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+
+=== run 20260923_015108_379688  (1 recorded steps)
+  17:51:32 #1   MAP->          recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+
+[schedule] OPEN_MAP refused on HOME: it lands on MAP, which this run has already stood on with nothing selectable (['MAP']) -- looking there again is not looking, it is repeating the look
+=== run 20260923_012544_513833  (3 recorded steps)
+  17:26:21 #1   MAP->HOME      recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+  17:26:41 #2   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  17:27:41 #3   MAP->MAP       recorded=CHECK_MARCH          == replayed=CHECK_MARCH          by brain.decide
+        reason=march_capacity_unknown
+  -> with the guard the run ends at step 2 instead of 3:
+     17:26:21 #1 OPEN_HOME            deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+     17:26:41 #2 SAFE_STOP            every_page_this_run_was_fruitless
+        (the refused decision was OPEN_MAP / first_ready_p0_skill)
+
+[schedule] OPEN_MAP refused on HOME: it lands on MAP, which this run has already stood on with nothing selectable (['MAP']) -- looking there again is not looking, it is repeating the look
+=== run 20260923_012247_815339  (3 recorded steps)
+  17:23:27 #1   MAP->HOME      recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+  17:23:48 #2   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  17:24:52 #3   MAP->MAP       recorded=CHECK_MARCH          == replayed=CHECK_MARCH          by brain.decide
+        reason=march_capacity_unknown
+  -> with the guard the run ends at step 2 instead of 3:
+     17:23:27 #1 OPEN_HOME            deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+     17:23:48 #2 SAFE_STOP            every_page_this_run_was_fruitless
+        (the refused decision was OPEN_MAP / first_ready_p0_skill)
+
+=== run 20260923_001936_231102  (2 recorded steps)
+  16:20:06 #1   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  16:21:13 #3   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+
+[schedule] OPEN_HOME refused on MAP: it lands on HOME, which this run has already stood on with nothing selectable (['HOME']) -- looking there again is not looking, it is repeating the look
+=== run 20260923_000958_683601  (4 recorded steps)
+  16:10:37 #1   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  16:11:08 #2   MAP->HOME      recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+  16:11:37 #3   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  16:12:39 #4   MAP->HOME      recorded=CHECK_MARCH          == replayed=CHECK_MARCH          by brain.decide
+        reason=march_capacity_unknown
+  -> with the guard the run ends at step 2 instead of 4:
+     16:10:37 #1 OPEN_MAP             first_ready_p0_skill
+     16:11:08 #2 SAFE_STOP            every_page_this_run_was_fruitless
+        (the refused decision was OPEN_HOME / deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here)
+
+[schedule] OPEN_MAP refused on HOME: it lands on MAP, which this run has already stood on with nothing selectable (['MAP']) -- looking there again is not looking, it is repeating the look
+=== run 20260923_000639_research  (3 recorded steps)
+  16:06:57 #1   MAP->          recorded=OPEN_HOME            == replayed=OPEN_HOME            by runtime
+        reason=deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+  16:07:15 #2   HOME->MAP       recorded=OPEN_MAP             == replayed=OPEN_MAP             by brain.decide
+        reason=first_ready_p0_skill
+  16:07:24 #3   MAP->          recorded=OPEN_HOME            != replayed=SEARCH_RESOURCE      by brain.decide
+        reason=idle_march_available
+  -> with the guard the run ends at step 2 instead of 3:
+     16:06:57 #1 OPEN_HOME            deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+     16:07:15 #2 SAFE_STOP            every_page_this_run_was_fruitless
+        (the refused decision was OPEN_MAP / first_ready_p0_skill)
+
+summary: {"runs_replayed": 18, "steps_replayed": 36, "steps_agreeing_with_the_stream": 28, "steps_disagreeing": 8, "steps_before_the_guard": 36, "steps_with_the_guard": 27, "runs_that_end_earlier": 7}
+wrote E:\无尽冬日智能体\dataset\truth_audit\nav_pingpong_20260923\replay.json

@@ -434,7 +434,17 @@ class LiveRuntime:
         self.capability_gate = capability_gate
         # True once this run has taken its one hop toward a page where more goals are
         # observable, so leaving cannot become a two-page ping-pong.
+        #
+        # Measured 2026-09-23: that bound bounds *this* hop and nothing else.  The brain's goal-less
+        # fallback makes the opposite hop, is not bounded by anything, and re-opens the cycle the
+        # moment the run is back on the page this flag was supposed to have finished with -- so 18 of
+        # the 75 runs since 16:00Z were nothing but OPEN_MAP / OPEN_HOME / OPEN_MAP.  ``_barren_pages``
+        # below is what makes the bound hold for the pair.
         self._replan_attempted = False
+        # Pages this run has stood on with nothing selectable on them.  Read by
+        # ``_stop_instead_of_looking_again``: a look-around hop whose destination is already in here
+        # is not a look-around, it is a repeat of one.
+        self._barren_pages: set[str] = set()
         # The tree revision this process imported.  Read once by the caller (one git
         # call per run) and stamped on every episode, so a later reconciliation can
         # tell an episode that ran the *new* code from one that ran the code the job
@@ -699,6 +709,68 @@ class LiveRuntime:
             world.confidence,
             "home_opened",
         )
+
+    def _stop_instead_of_looking_again(
+        self, before: WorldState, decision: Decision, best_goal
+    ) -> Decision:
+        """A run that has already looked everywhere stops; it does not hop back.
+
+        The failure this exists for is a *pair* of individually correct moves.  The brain's goal-less
+        fallback answers ``OPEN_MAP`` on HOME (``first_ready_p0_skill``: "the map is where goals are
+        observable") and ``_deferral_replan`` answers ``OPEN_HOME`` on MAP
+        (``deferred_..._left_nothing_to_do_here``: "HOME is where the queue goals are readable"), so a
+        run with nothing selectable walks one way, then the other, and ends where it began.
+
+        Measured 2026-09-23 with the production reader and the production brain on the recorded frames
+        (``tools/replay_run_decisions.py``; the reason is not in the episode stream, and the runtime
+        log only keeps the newest run, so the frames are the only remaining witness):
+
+            run 20260923_062948_568906   3/3 replay exactly
+              22:30:26  HOME -> MAP   OPEN_MAP    brain.decide          first_ready_p0_skill
+              22:31:28  MAP  -> HOME  OPEN_HOME   runtime._deferral_replan
+                                                                       deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here
+              22:31:58  HOME -> MAP   OPEN_MAP    brain.decide          first_ready_p0_skill
+
+            18 of the 75 runs since 16:00Z are nothing but this walk; run 20260923_060723_868796 ends
+            the same way (steps 20/23/24: OPEN_MAP, OPEN_HOME, OPEN_MAP) after twenty steps of real
+            work -- the last two hops are pure loss.
+
+        ``_replan_attempted`` already bounds one half of it.  Its own comment says the bound is "so
+        leaving cannot become a two-page ping-pong", and the measurement above is that it cannot:
+        bounding one direction of a two-direction cycle leaves the cycle.  What was missing is not a
+        second bound but the *memory* -- a hop is only a look-around if the page it lands on has not
+        already been looked at this run.
+
+        The rule, and its four deliberate edges:
+
+        * only a step with **no selectable goal** is judged, because that is the only step for which
+          the scheduler's silence at this page is known.  A hop carrying a goal is that goal's
+          business and is returned untouched;
+        * only the two hops whose entire purpose is to look for goals
+          (:data:`PAGE_HOPS_THAT_ONLY_LOOK_FOR_GOALS`).  ``OPEN_MAP`` taken by a committed INTEL route
+          is a different decision with a different reason, and this guard never sees it;
+        * the page the client is standing on is recorded as fruitless whether or not the step is a
+          hop, so a run that inspects the map (``CHECK_MARCH``) and finds nothing is remembered the
+          same way;
+        * the answer is a stop, not another hop.  ``best_goal`` is None, so ``_yield_to_next_goal``
+          answers False by its own first line and the run ends with
+          :data:`NOTHING_LEFT_TO_LOOK_AT` recorded -- which is the honest "nothing left in this
+          cycle", the same sentence the refusal path uses when every goal has been held back once.
+        """
+        if best_goal is not None:
+            return decision
+        page = str(getattr(before.page, "value", before.page))
+        destination = self.PAGE_HOPS_THAT_ONLY_LOOK_FOR_GOALS.get(str(decision.skill))
+        if destination is None or destination not in self._barren_pages:
+            self._barren_pages.add(page)
+            return decision
+        print(
+            f"[schedule] {decision.skill} refused on {page}: it lands on {destination}, which this run "
+            f"has already stood on with nothing selectable ({sorted(self._barren_pages)}) -- looking "
+            f"there again is not looking, it is repeating the look",
+            flush=True,
+        )
+        return Decision("SAFE_STOP", self.NOTHING_LEFT_TO_LOOK_AT, 1.0, "no_action")
 
     def _remember_goal_meters(self, goals) -> None:
         """Record every goal's meter as this run reads it.
@@ -2419,6 +2491,34 @@ class LiveRuntime:
         # that state.
         "already_open": "ORDINARY_CONTROL_ALREADY_OPEN",
     }
+
+    #: The two hops whose only reason to exist is "there may be goals on the other page".
+    #:
+    #: They are the ends of one pair, and that is the whole point of listing them: each is right on
+    #: its own and the two together are a cycle.  The brain's goal-less fallback answers ``OPEN_MAP``
+    #: on HOME ("the map is where goals are observable"), and ``_deferral_replan`` answers
+    #: ``OPEN_HOME`` on MAP ("HOME is where the queue goals are readable"), so a run with nothing
+    #: selectable walks one way and then the other for as long as its step budget lasts.  Measured
+    #: 2026-09-23 (``tools/replay_run_decisions.py``, production vision + production brain on the
+    #: recorded frames): run ``20260923_062948_568906`` replays 3/3 exactly -- OPEN_MAP by
+    #: ``brain.decide`` / ``first_ready_p0_skill``, OPEN_HOME by ``runtime._deferral_replan`` /
+    #: ``deferred_SPEND_STAMINA_ON_BEAST_left_nothing_to_do_here``, OPEN_MAP again by the same
+    #: fallback -- and 18 of the 75 runs since 16:00Z are nothing but this walk.
+    #:
+    #: The value is the page the hop lands on, which is what the skill's own name says.  Read by
+    #: ``_stop_instead_of_looking_again`` and by nothing else; it is a statement about what these two
+    #: names mean, not a second route table (``goal_library.GOAL_ROUTES`` still owns which goal goes
+    #: where).
+    PAGE_HOPS_THAT_ONLY_LOOK_FOR_GOALS: dict[str, str] = {
+        "OPEN_MAP": "MAP",
+        "OPEN_HOME": "HOME",
+    }
+
+    #: The honest end of a run that has already stood on every page it can reach and been offered
+    #: nothing there.  Not a refusal by a goal -- so not a reason to hand the cycle on, which is what
+    #: ``NON_FATAL_STOPS`` is for -- and not a fault either: it is the answer to "what is left?".
+    NOTHING_LEFT_TO_LOOK_AT = "every_page_this_run_was_fruitless"
+
     #: Words that refuse a candidate outright, wherever they appear on the frame: the
     #: real-money and irreversible boundary the directive restates ("保留真实货币、高代价
     #: 及不可逆风险操作限制").  The scan checks the whole token list, not just the hit,
@@ -4237,6 +4337,7 @@ class LiveRuntime:
             if leave is None:
                 leave = self._deferral_replan(before, deferrals, best_goal)
             decision = leave if leave is not None else self.brain.decide(before, self.registry)
+            decision = self._stop_instead_of_looking_again(before, decision, best_goal)
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,
                           current_goal=self._step_goal(best_goal),
                           current_skill=decision.skill, reason=decision.reason,

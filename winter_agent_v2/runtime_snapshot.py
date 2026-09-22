@@ -83,6 +83,14 @@ NON_FATAL_STOPS = {
     # ``training_queue_busy`` because it is the same kind of answer: this entry point
     # is not usable right now, and another goal is allowed to take the turn.
     "camp_entry_is_a_guided_step_not_a_selection",
+    # The honest end of a run that has stood on every page it can reach and been offered
+    # nothing on any of them (``LiveRuntime._stop_instead_of_looking_again``, measured
+    # 2026-09-23: 18 of 75 runs were OPEN_MAP / OPEN_HOME / OPEN_MAP and nothing else).
+    # Registered here rather than left to the FATAL_/ACCOUNT_/PAYMENT_ prefix test for the
+    # same reason ``camp_entry_is_a_guided_step_not_a_selection`` is: it is an answer about
+    # this run's search, not about any goal and not about the device, so a reader of this
+    # table should find it here instead of inferring it from what it does not start with.
+    "every_page_this_run_was_fruitless",
 }
 
 
