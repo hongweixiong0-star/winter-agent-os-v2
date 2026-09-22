@@ -42,6 +42,28 @@ FRAME = ROOT / (
 )
 
 
+class _StubOCR:
+    """One canned token list in the shape the OCR readers consume.
+
+    Module level rather than a nested class: ``tools/check_wiring.py`` reads ``self.<Name>(...)``
+    as a call to a method of the enclosing class and reports a dangling self-call, which is the
+    right hunt for production code and a false positive on a test helper.
+    """
+
+    def __init__(self, *tokens):
+        self._tokens = tokens
+
+    def recognize(self, image_path, roi=None):
+        from winter_agent_v2.ocr import OCRResult, OCRToken
+
+        return OCRResult(
+            tuple(
+                OCRToken(text=text, confidence=conf, box=box) for text, conf, box in self._tokens
+            ),
+            "stub",
+        )
+
+
 def _store(root: Path, manifest: Path) -> ui_collection.UiCandidateStore:
     return ui_collection.UiCandidateStore(root=root, manifest=manifest)
 
@@ -374,43 +396,29 @@ class PlainControlScanTests(unittest.TestCase):
     about whichever words happen to be on one capture.
     """
 
-    class _OCR:
-        def __init__(self, *tokens):
-            self._tokens = tokens
-
-        def recognize(self, image_path, roi=None):
-            from winter_agent_v2.ocr import OCRResult, OCRToken
-
-            return OCRResult(
-                tuple(
-                    OCRToken(text=text, confidence=conf, box=box) for text, conf, box in self._tokens
-                ),
-                "stub",
-            )
-
     BOX = ((100.0, 1000.0), (160.0, 1000.0), (160.0, 1024.0), (100.0, 1024.0))
 
     def test_a_new_action_word_becomes_a_candidate_row(self):
-        ocr = self._OCR(("领取", 0.99, self.BOX))
+        ocr = _StubOCR(("领取", 0.99, self.BOX))
         found = ui_collection.find_plain_controls(FRAME, ocr)
         self.assertEqual([row["word"] for row in found], ["领取"])
         self.assertGreater(found[0]["box_norm"]["w_norm"], 0.0)
 
     def test_a_word_the_dictionary_already_declares_is_not_re_collected(self):
-        ocr = self._OCR(("领取", 0.99, self.BOX))
+        ocr = _StubOCR(("领取", 0.99, self.BOX))
         self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr, skip_words=["领取"]), [])
 
     def test_a_low_confidence_reading_is_not_staged(self):
-        ocr = self._OCR(("领取", 0.62, self.BOX))
+        ocr = _StubOCR(("领取", 0.62, self.BOX))
         self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr), [])
 
     def test_a_substring_is_not_an_exact_control_word(self):
         """``我的城镇`` must not be harvested as ``城镇`` -- the same rule the tap path uses."""
-        ocr = self._OCR(("我的城镇", 0.99, self.BOX))
+        ocr = _StubOCR(("我的城镇", 0.99, self.BOX))
         self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr), [])
 
     def test_a_non_action_word_is_ignored(self):
-        ocr = self._OCR(("等级", 0.99, self.BOX))
+        ocr = _StubOCR(("等级", 0.99, self.BOX))
         self.assertEqual(ui_collection.find_plain_controls(FRAME, ocr), [])
 
 
