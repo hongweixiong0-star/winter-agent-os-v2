@@ -561,5 +561,98 @@ class PrintedExitOnTheRealFrameTests(unittest.TestCase):
         self.assertIn("点击任意位置继续", runtime._printed_reads[0])
 
 
+# --------------------------------------------------------------- the last hop, on a real page
+
+
+class TrainingStartHopTests(unittest.TestCase):
+    """An idle camp page: the decision is TRAIN_TROOPS, and the button is reachable two ways.
+
+    ``dataset/raw/live_train_selection_available.png`` is the reviewed frame the
+    ``BTN_START_TRAINING`` template was cut from, so it is the one frame where both answers can be
+    compared: the template's own point, and the point the OCR fallback reads off the same frame
+    when no template exists.  The second half is run against an **in-memory** manifest with the one
+    record removed -- nothing on disk is touched, and the point of it is that the two answers have
+    to agree closely enough that a client repaint cannot move the tap onto something else.
+    """
+
+    FRAME = ROOT / "dataset/raw/live_train_selection_available.png"
+
+    def _vision(self, template):
+        import json
+
+        from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
+
+        cfg = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+        return HybridVision(
+            template,
+            OCRService(ResilientOCRBackend(RapidOCRBackend(Path(cfg["ocr"]["module_path"])))),
+        )
+
+    def _runtime(self, vision, template):
+        runtime = object.__new__(LiveRuntime)
+        runtime.vision = vision
+        runtime.semantic_vision = template.semantic
+        runtime._control_ledger = {}
+        runtime._remembered_reuse = []
+        runtime._printed_remembered = set()
+        runtime._printed_reads = []
+        runtime._printed_printed = set()
+        runtime.brain = RuleBrain(current_goal="TRAIN")
+        return runtime
+
+    def test_an_idle_camp_page_decides_to_start_training(self):
+        import json
+
+        from winter_agent_v2.vision import SemanticWorldVision
+
+        template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+        vision = self._vision(template)
+        world = vision.observe(image_path=self.FRAME)
+        self.assertEqual(world.page, Page.TRAINING)
+        self.assertIs(world.training.get("queue_available"), True)
+        decision = RuleBrain(current_goal="TRAIN").decide(world, _registry_with_camp_skills())
+        # The training branch's own reason, so a future rule that wins this frame is visible.
+        self.assertEqual(decision.skill, "TRAIN_TROOPS")
+
+    def test_the_start_button_resolves_and_the_printed_word_agrees_with_it(self):
+        import json
+        import tempfile
+
+        from winter_agent_v2.vision import SemanticWorldVision
+
+        manifest = json.loads(
+            (ROOT / "dataset/candidate/template_manifest.json").read_text(encoding="utf-8")
+        )
+        template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+        vision = self._vision(template)
+        world = vision.observe(image_path=self.FRAME)
+
+        runtime = self._runtime(vision, template)
+        by_template = runtime._resolve_semantic_target(
+            "BTN_START_TRAINING", world, frame_path=self.FRAME
+        )
+        self.assertIsNotNone(by_template)
+
+        # The same frame with that one record removed, in memory only.
+        manifest["records"] = [
+            record for record in manifest["records"] if record.get("semantic") != "BTN_START_TRAINING"
+        ]
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fh:
+            json.dump(manifest, fh, ensure_ascii=False)
+            stripped_path = Path(fh.name)
+        stripped = SemanticWorldVision(stripped_path)
+        stripped_vision = self._vision(stripped)
+        runtime2 = self._runtime(stripped_vision, stripped)
+        by_printed = runtime2._resolve_semantic_target(
+            "BTN_START_TRAINING", world, frame_path=self.FRAME
+        )
+        self.assertIsNotNone(by_printed, "the client's own printed 训练 must locate the control")
+        self.assertTrue(runtime2._printed_reads)
+        # Both answers sit on the button: within ~1% of the frame, i.e. under 10 px on a 720-wide
+        # client.  A disagreement that large would mean one of them is aiming at something else.
+        self.assertLess(abs(by_template[0] - by_printed[0]), 0.01)
+        self.assertLess(abs(by_template[1] - by_printed[1]), 0.02)
+
+
 if __name__ == "__main__":
     unittest.main()
