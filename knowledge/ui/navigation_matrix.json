@@ -8,8 +8,8 @@
     "navigation_like_entries": 43,
     "schedulable_navigation_entries": 41,
     "distinct_targets": 76,
-    "semantics_with_templates": 235,
-    "semantics_with_templates_and_no_skill": 176
+    "semantics_with_templates": 236,
+    "semantics_with_templates_and_no_skill": 177
   },
   "operator_functions": [
     {
@@ -1842,6 +1842,10 @@
     {
       "semantic": "MARCH_COUNT_2_OF_6",
       "templates": 4
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[退出]",
+      "templates": 1
     },
     {
       "semantic": "PAGE_ALLIANCE",
