@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -274,6 +275,32 @@ class SemanticMatch(tuple):
         )
 
 
+#: The pages on which the world-map field is on screen, so a moving target on the map can be
+#: looked for.  Everything else is a page that *covers* the map field (or is a room inside the city),
+#: and a map sweep there can only cost seconds and, at worst, find a false positive -- which is not
+#: hypothetical: a bogus ``TARGET_INTEL_BEAST_MISSION`` match classifies a frame as ``Page.INTEL``
+#: with ``list_read: True``, which is exactly the kind of misread the sweep is meant to prevent.
+#:
+#: Written from the project's own ``Page`` enum rather than from a new table, and deliberately a
+#: short *positive* list: a page this build has never heard of is not in it, and an unknown page
+#: therefore keeps its sweeps.
+MAP_FIELD_PAGES: tuple[str, ...] = ("MAP", "BEAST", "MARCH", "INTEL", "EXPLORATION")
+
+#: The goal vocabulary that makes a map sweep worth its seconds even on a page that normally hides
+#: the map.  Reused from the goal library's own words rather than invented here; a goal that matches
+#: none of them is a goal about something else, and something else is where the attention should go
+#: (directive §一: 不要因为当前 Goal 是训练矛兵，就反复分析聊天、无关红点和其他活动入口).
+MAP_GOAL_WORDS: tuple[str, ...] = (
+    "INTEL",
+    "BEAST",
+    "MARCH",
+    "EXPLOR",
+    "RESOURCE",
+    "GATHER",
+    "SEARCH",
+)
+
+
 class SemanticROIVision:
     """Verify a semantic at its reviewed normalized ROI; it never performs actions."""
 
@@ -536,6 +563,28 @@ class SemanticROIVision:
             "TARGET_INTEL_BEAST_MISSION": (0.15, 0.16, 0.95, 0.70),
         }
         self.records = payload.get("records", [])
+        # ---------------------------------------------------------------- frame-scoped reading
+        #
+        # Measured 2026-09-22 and the reason these exist: one production observation asks about
+        # ~100 semantics, and every ``find`` call decoded the whole 720x1280 frame again because
+        # ``Image.crop`` forces the PNG decode -- the same picture, decoded a hundred times, for one
+        # look at the screen.  The template hashes were recomputed too, once per frame per template,
+        # for files that never change.
+        #
+        # Both caches are keyed and bounded so they cannot become a leak or a stale answer: the frame
+        # cache holds the last two decoded frames, and a template hash is keyed by path, mtime and
+        # size, so a re-collected template at the same path is re-hashed rather than remembered.
+        self._frames: dict[str, Any] = {}
+        self._frame_order: list[str] = []
+        self._template_digests: dict[tuple[str, float, int, int, str], str] = {}
+        #: Per-frame answers, so a chain that asks the same question twice in one observation pays
+        #: once.  Measured: ``PAGE_ALLIANCE`` is asked twice on a HOME frame.
+        self._answers: dict[tuple[str, str], Any] = {}
+        #: What this observation is *for*.  Set by the caller through :meth:`focus`; read by the
+        #: anywhere-sweeps, which are the only lookups expensive enough to be worth conditioning.
+        self.attention: dict[str, Any] = {}
+        #: Sweeps this observation declined to do, by semantic -> why.  Read by the widening path.
+        self._sweeps_skipped: dict[str, str] = {}
 
     # ---------------------------------------------------------------- tab strip
     def _tab_band_rows(self, height: int) -> tuple[int, int]:
@@ -1106,13 +1155,160 @@ class SemanticROIVision:
         match = self.find(image_path, "POPUP_LOADING_BAR_CAP")
         return match is not None and match.distance <= 12
 
+    # ------------------------------------------------------------------ frame-scoped reading
+
+    def begin_frame(self, image_path: Path | str) -> None:
+        """One observation of one picture: decode it once, and keep what it already told us.
+
+        The per-frame answers are keyed by ``(path, semantic)``, so they are already scoped to the
+        picture they describe -- what this has to do is drop them when the picture *changes*, not
+        every time we look again.  That distinction is load-bearing: the widening path (item 五)
+        observes the same frame a second time with the sweeps allowed, and clearing the answers there
+        would make an unnamed screen pay for the whole chain twice -- measured 6.4 s instead of the
+        2.4 s that pass actually needs.
+        """
+        key = str(image_path)
+        if getattr(self, "_frame_key", "") == key:
+            return
+        self._frame_key = key
+        self._answers.clear()
+        self._sweeps_skipped = {}
+        self._frames.pop(key, None)
+        if key in self._frame_order:
+            self._frame_order.remove(key)
+        self._frame_order.append(key)
+        while len(self._frame_order) > 2:
+            self._frames.pop(self._frame_order.pop(0), None)
+
+    def end_frame(self) -> None:
+        """Nothing to do: the answers are keyed by frame, and ``begin_frame`` drops them on a change.
+
+        Kept as a named seam so a caller that wants to release earlier has somewhere to say so.
+        """
+
+    @contextmanager
+    def _frame_open(self, image_path: Path):
+        """The decoded frame, as a context manager so the reading bodies are written unchanged.
+
+        Added because the first version of the frame cache left an ``if True:`` where the old
+        ``with Image.open(...) as image:`` had been, which is the kind of placeholder that outlives
+        the reason for it.  This says the same thing and reads as what it is.
+        """
+        yield self._decoded(image_path)
+
+    def _decoded(self, image_path: Path) -> "Image.Image":
+        """The frame, decoded once, for the duration of one observation."""
+        key = str(image_path)
+        cached = self._frames.get(key)
+        if cached is not None:
+            return cached
+        with Image.open(image_path) as opened:
+            image = opened.convert("RGB")
+        if len(self._frame_order) < 2 or not self._frame_order:
+            self._frame_order.append(key)
+        self._frames[key] = image
+        while len(self._frame_order) > 2:
+            self._frames.pop(self._frame_order.pop(0), None)
+        return image
+
+    def _template_digest(self, template_path: Path, *, size: int, kind: str) -> str:
+        """A template's hash, computed once per file and content rather than once per frame."""
+        try:
+            stat = template_path.stat()
+        except OSError:
+            return ""
+        key = (str(template_path), stat.st_mtime, stat.st_size, size, kind)
+        cached = self._template_digests.get(key)
+        if cached is not None:
+            return cached
+        with Image.open(template_path) as template:
+            digest = (
+                phash(template, size=size) if kind == "phash" else dhash(template, size=size)
+            )
+        self._template_digests[key] = digest
+        return digest
+
+    def focus(
+        self,
+        *,
+        goal: str = "",
+        page_hint: str = "",
+        reason: str = "",
+        widen: bool = False,
+    ) -> None:
+        """What this observation is for: the goal being pursued and the page last seen.
+
+        Deliberately two fields and not a scoring function.  The directive for 2026-09-22 ("Goal 驱动
+        的视觉注意力优化") asks the observation to be driven by the current Goal, page and state, and
+        the honest shape of that here is small: the anywhere-sweeps are the only lookups that cost
+        seconds, so they are the only ones conditioned, and the condition is a *page* the caller
+        already knows plus the goal's own vocabulary.  A ``page_hint`` is a page, never a coordinate
+        (§二: 不要把旧截图坐标当成当前目标位置), and the sweeps widen again by themselves when the
+        frame is not recognized.
+        """
+        self.attention = {
+            "goal": str(goal or ""),
+            "page_hint": str(page_hint or ""),
+            "reason": str(reason or ""),
+            # Set for exactly one observation, by the caller that is widening.  Never sticky: an
+            # attention that quietly stayed wide would be an attention that stopped attending.
+            "widen": bool(widen),
+        }
+        self._sweeps_skipped: dict[str, str] = {}
+
+    def sweep_worth_doing(self, semantic: str) -> str:
+        """Why this map sweep is not worth its seconds now, or ``""`` to do it.
+
+        One-sided on purpose: an empty answer (do the sweep) is what everything unknown, unnamed or
+        map-related gets, and only a *confirmed* non-map page with an unrelated goal is refused.
+        """
+        attention = self.attention or {}
+        if attention.get("widen"):
+            # §五's widening path: the caller looked, found nothing, and asked for the full sweep.
+            self._sweeps_skipped.pop(semantic, None)
+            return ""
+        goal = str(attention.get("goal") or "").upper()
+        if not goal or any(word in goal for word in MAP_GOAL_WORDS):
+            return ""
+        hint = str(attention.get("page_hint") or "").strip().upper()
+        if not hint or hint in MAP_FIELD_PAGES:
+            return ""
+        if hint == "UNKNOWN":
+            # An unnamed screen may well *be* a map the classifier could not put a name to, so it
+            # keeps its sweeps.  This is the case the first version of this rule got wrong.
+            return ""
+        self._sweeps_skipped[semantic] = hint
+        return (
+            f"the goal {goal!r} is not about the map field and the last confirmed page was {hint}"
+        )
+
+    def sweeps_skipped(self) -> dict[str, str]:
+        """The sweeps this observation did not do, and why -- what the widening path is for."""
+        return dict(self._sweeps_skipped)
+
     def find(self, image_path: Path, semantic: str) -> SemanticMatch | None:
         candidates = [row for row in self.records if row["semantic"] == semantic]
         if not candidates:
             return None
+        answer_key = (str(image_path), semantic)
+        if answer_key in self._answers:
+            return self._answers[answer_key]
+        result = self._find_in_roi(image_path, candidates, semantic)
+        if result is None and semantic in self._sweeps_skipped:
+            # A "not found" that came from a sweep this observation *declined to do* is not an
+            # answer, and caching it as one is how the widening path silently stopped working:
+            # measured, the second look returned the cached None and skipped the sweep it existed
+            # to perform, costing 0.00 s and widening nothing at all.
+            return None
+        self._answers[answer_key] = result
+        return result
 
-        with Image.open(image_path) as image:
-            width, height = image.size
+    def _find_in_roi(
+        self, image_path: Path, candidates: list[dict], semantic: str
+    ) -> SemanticMatch | None:
+        image = self._decoded(image_path)
+        width, height = image.size
+        with self._frame_open(image_path) as image:
             matches: list[SemanticMatch] = []
             for row in candidates:
                 roi = row["roi_norm"]
@@ -1162,8 +1358,14 @@ class SemanticROIVision:
                             "h_norm": round(bh / height, 4),
                         }))
                 else:
-                    with Image.open(row["template_path"]) as template:
-                        distance = hamming(phash(image.crop(bounds)), phash(template))
+                    template_hash = self._template_digest(
+                        Path(row["template_path"]), size=8, kind="phash"
+                    )
+                    if not template_hash:
+                        continue
+                    distance = hamming(
+                        phash(image.crop(bounds), size=8), template_hash
+                    )
                     matches.append(SemanticMatch(semantic, distance, roi))
         if not matches:
             # The ``ccoeff`` branch appends nothing when the matcher cannot be
@@ -1191,10 +1393,13 @@ class SemanticROIVision:
 
     def _find_anywhere(self, image_path: Path, candidates: list[dict], semantic: str) -> SemanticMatch | None:
         """Find a reviewed moving target in the safe map field, never under UI chrome."""
+        reason = self.sweep_worth_doing(semantic)
+        if reason:
+            return None
         threshold = self.anywhere_max_distance[semantic]
-        with Image.open(image_path) as image:
-            image = image.convert("RGB")
-            width, height = image.size
+        image = self._decoded(image_path)
+        width, height = image.size
+        with self._frame_open(image_path) as image:
             x0, y0, x1, y1 = self.anywhere_regions[semantic]
             x_start, x_stop = round(width * x0), round(width * x1)
             y_start, y_stop = round(height * y0), round(height * y1)
@@ -1204,8 +1409,11 @@ class SemanticROIVision:
                 roi = row["roi_norm"]
                 crop_width = max(8, round(roi["w_norm"] * width))
                 crop_height = max(8, round(roi["h_norm"] * height))
-                with Image.open(row["template_path"]) as template:
-                    target_hash = dhash(template, size=16)
+                target_hash = self._template_digest(
+                    Path(row["template_path"]), size=16, kind="dhash"
+                )
+                if not target_hash:
+                    continue
                 for y in range(y_start, max(y_start + 1, y_stop - crop_height + 1), step):
                     for x in range(x_start, max(x_start + 1, x_stop - crop_width + 1), step):
                         distance = hamming(
@@ -1233,6 +1441,17 @@ class SemanticWorldVision:
     when a reviewed template is present in its normalized ROI.
     """
 
+    def focus(self, **kwargs: Any) -> None:
+        """Set what the next observation is for; see ``SemanticROIVision.focus``.
+
+        A forwarder so a caller holds one object (the vision) rather than reaching through it to the
+        matcher, and so the attention cannot be set on a different instance than the one that reads.
+        """
+        self.semantic.focus(**kwargs)
+
+    def sweeps_skipped(self) -> dict[str, str]:
+        return self.semantic.sweeps_skipped()
+
     def __init__(
         self,
         manifest_path: Path,
@@ -1256,6 +1475,12 @@ class SemanticWorldVision:
         self.calibrated_march_max = calibrated_march_max
 
     def observe(self, image_path: Path) -> WorldState:
+        # One observation of one picture: decoded once, and the per-frame answers forgotten so a
+        # repeated semantic costs nothing while a *new* frame is never answered from an old one.
+        self.semantic.begin_frame(image_path)
+        self.semantic.attention.setdefault("widen", False)
+        self.semantic._sweeps_skipped = {}
+
         def match(name: str) -> SemanticMatch | None:
             return self.semantic.find(image_path, name)
 

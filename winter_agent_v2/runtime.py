@@ -1698,6 +1698,62 @@ class LiveRuntime:
         except Exception:  # noqa: BLE001 - a ledger write must never fail a run
             pass
 
+    def _observe(self, frame_path: Path) -> "WorldState":
+        """Look at the screen once, with this step's goal deciding what is worth the seconds.
+
+        Operator directive 2026-09-22 ("Goal 驱动的视觉注意力优化").  Everything the observation does
+        is unchanged -- the full-frame classification, the popup detection, the risk checks -- and the
+        attention only decides the *order and scope of the expensive lookups*:
+
+        * the goal being pursued comes from the brain, and the page hint is the last page this run
+          could actually **name** (``_last_known_label``).  A page is not a coordinate, so nothing
+          here is a remembered position (§二);
+        * the vision uses that to skip the map-field sweeps when the goal is not about the map and the
+          last confirmed page was not the map -- the sweeps are the only lookups that cost seconds
+          (measured: one of them, ``TARGET_INTEL_BEAST_MISSION``, is 3.6-3.8 s of a 6.2 s
+          observation);
+        * **and it widens by itself**: when a skipped sweep left the frame unnamed, the same frame is
+          observed again with every sweep allowed, which is §五's 扩大观察范围 as a path through the
+          code rather than a promise.  That second pass costs only the sweeps, because the per-frame
+          answers are keyed to the picture and the chain is not repeated.
+
+        A vision that has no ``focus`` (a test stub, a replay vision) is observed exactly as before.
+        """
+        vision = self.vision
+        focus = getattr(vision, "focus", None)
+        if focus is None:
+            return vision.observe(frame_path)
+        goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
+        page_hint = str(getattr(self, "_last_known_label", "") or "")
+
+        def look(*, widen: bool, reason: str):
+            focus(goal=goal, page_hint=page_hint, reason=reason, widen=widen)
+            return vision.observe(frame_path)
+
+        state = look(widen=False, reason=f"goal {goal or '(none)'} from {page_hint or '(nowhere)'}")
+        skipped = getattr(vision, "sweeps_skipped", None)
+        pending = skipped() if callable(skipped) else {}
+        if pending:
+            # Audible whether or not it changes the outcome.  An attention that can only be seen when
+            # it fails is an attention nobody can confirm is running -- and the directive is explicit
+            # that this has to be verified as participating in the live observation, not inferred.
+            print(
+                f"[attention] {page_hint or '(no page)'} + goal {goal or '(none)'}: skipped "
+                f"{len(pending)} map sweep(s) on this frame",
+                flush=True,
+            )
+        if pending and state.page is Page.UNKNOWN:
+            # §五: the focused look did not find a page, so the focus was too narrow and the full
+            # observation is what happens next -- same frame, sweeps allowed, answers reused.
+            print(
+                f"[attention] {page_hint or '(no page)'} + goal {goal or '(none)'}: skipped "
+                f"{len(pending)} map sweep(s) and the frame stayed unnamed -- widening to the full "
+                f"look",
+                flush=True,
+            )
+            state = look(widen=True, reason="widening after an unnamed frame")
+        return state
+
     def _device_lost(self, call, *args) -> bool:
         """Run one device call; answer True if the DEVICE left rather than the goal failing.
 
@@ -3553,7 +3609,7 @@ class LiveRuntime:
             before_path = self._capture_path(index, "before")
             if self._device_lost(self.device.screenshot, before_path):
                 return finish(self._device_stop_reason)
-            before = self.vision.observe(before_path)
+            before = self._observe(before_path)
             # A known page means whatever owned the screen has finished, so the
             # fight-aware branch of the unknown-page recovery is no longer needed.
             # Cleared here rather than where the fight is dispatched because this
@@ -3727,7 +3783,7 @@ class LiveRuntime:
                             recovery_path = self._capture_path(index, "after", suffix="battle_wait")
                             if self._device_lost(self.device.screenshot, recovery_path):
                                 return finish(self._device_stop_reason)
-                            before = self.vision.observe(recovery_path)
+                            before = self._observe(recovery_path)
                             before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
@@ -3743,7 +3799,7 @@ class LiveRuntime:
                             )
                             if self._device_lost(self.device.screenshot, recovery_path):
                                 return finish(self._device_stop_reason)
-                            before = self.vision.observe(recovery_path)
+                            before = self._observe(recovery_path)
                             before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
@@ -4011,7 +4067,7 @@ class LiveRuntime:
             after_path = self._capture_path(index, "after")
             if self._device_lost(self.device.screenshot, after_path):
                 return finish(self._device_stop_reason)
-            after = self.vision.observe(after_path)
+            after = self._observe(after_path)
             if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 after = replace(after, resource_target=planned_resource)
             # Some successful game actions are followed by a promotional
@@ -4026,7 +4082,7 @@ class LiveRuntime:
                 recovery_path = self._capture_path(index, "after", suffix=f"payment_offer_closed_{offer_recovery}")
                 if self._device_lost(self.device.screenshot, recovery_path):
                     return finish(self._device_stop_reason)
-                after = self.vision.observe(recovery_path)
+                after = self._observe(recovery_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
                 after_path = recovery_path
@@ -4044,7 +4100,7 @@ class LiveRuntime:
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
                 if self._device_lost(self.device.screenshot, refresh_path):
                     return finish(self._device_stop_reason)
-                after = self.vision.observe(refresh_path)
+                after = self._observe(refresh_path)
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
                 after = self._reject_a_dropped_digit(after)
