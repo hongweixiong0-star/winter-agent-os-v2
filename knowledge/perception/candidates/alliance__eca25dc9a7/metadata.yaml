@@ -1,0 +1,35 @@
+candidate_id: alliance__eca25dc9a7
+semantic_id: ''
+page: ALLIANCE
+goal: ALLIANCE
+source_frame: dataset/raw/control_panel/runtime_exploration/unknown_page_check/unknown_page_check_step_007_after_20260922T071939437289.png
+source_episode: unknown_page_check
+image_path: knowledge/perception/candidates/alliance__eca25dc9a7/element.png
+context_image_path: knowledge/perception/candidates/alliance__eca25dc9a7/context.png
+bbox:
+  x_norm: 0.8
+  y_norm: 0.3703
+  w_norm: 0.0903
+  h_norm: 0.0312
+ocr_text: 前往
+ocr_confidence: 0.9874
+visual_match: ''
+recognition_method: OCR_WORD
+semantic_candidates:
+- OCR:ALLIANCE:前往
+expected_effect: ''
+observed_effect: ''
+verification_status: DISCOVERED
+confidence: 0.9874
+attempt_count: 0
+success_count: 0
+failure_count: 0
+created_at: '2026-09-22T06:46:37.227458+00:00'
+last_seen_at: '2026-09-22T07:19:46.765435+00:00'
+template_version: ''
+notes: the client printed an ordinary action word the semantic dictionary does not
+  declare; the candidate semantic is a guess from the word and the page and is kept
+  unconfirmed until a real step exercises it
+bbox_frame_size:
+- 720
+- 1280

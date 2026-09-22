@@ -1,12 +1,117 @@
 {
  "schema_version": "1.0",
- "written_at": "2026-09-22T06:31:35.169426+00:00",
- "count": 0,
+ "written_at": "2026-09-22T07:31:08.640650+00:00",
+ "count": 3,
  "counts_by_status": {
-  "DISCOVERED": 0,
+  "DISCOVERED": 3,
   "CANDIDATE": 0,
   "VERIFIED": 0,
   "FAILED": 0
  },
- "candidates": []
+ "candidates": [
+  {
+   "candidate_id": "alliance__eca25dc9a7",
+   "semantic_id": "",
+   "page": "ALLIANCE",
+   "goal": "AVOID_STAMINA_WASTE",
+   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_145213_460613/20260922_145213_460613_step_018_after_20260922T070256340421.png",
+   "source_episode": "20260922_145213_460613",
+   "image_path": "knowledge/perception/candidates/alliance__eca25dc9a7/element.png",
+   "context_image_path": "knowledge/perception/candidates/alliance__eca25dc9a7/context.png",
+   "bbox": {
+    "x_norm": 0.8,
+    "y_norm": 0.3703,
+    "w_norm": 0.0903,
+    "h_norm": 0.0312
+   },
+   "frame_size": [
+    720,
+    1280
+   ],
+   "ocr_text": "前往",
+   "ocr_confidence": 0.9874,
+   "visual_match": "",
+   "recognition_method": "OCR_WORD",
+   "semantic_candidates": [
+    "OCR:ALLIANCE:前往"
+   ],
+   "expected_effect": "",
+   "observed_effect": "",
+   "verification_status": "DISCOVERED",
+   "confidence": 0.9874,
+   "attempt_count": 0,
+   "success_count": 0,
+   "failure_count": 0,
+   "created_at": "2026-09-22T06:46:37.227458+00:00",
+   "last_seen_at": "2026-09-22T07:03:07.471305+00:00",
+   "template_version": "",
+   "notes": "the client printed an ordinary action word the semantic dictionary does not declare; the candidate semantic is a guess from the word and the page and is kept unconfirmed until a real step exercises it"
+  },
+  {
+   "candidate_id": "map_target_beast_mammoth_5__5d46c98074",
+   "semantic_id": "TARGET_BEAST_MAMMOTH_5",
+   "page": "MAP",
+   "goal": "AVOID_STAMINA_WASTE",
+   "source_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_150702_726193\\20260922_150702_726193_step_008_before_20260922T071153035595.png",
+   "source_episode": "20260922_150702_726193",
+   "image_path": "",
+   "context_image_path": "",
+   "bbox": {},
+   "frame_size": null,
+   "ocr_text": "",
+   "ocr_confidence": null,
+   "visual_match": "",
+   "recognition_method": "UNLOCATED",
+   "semantic_candidates": [],
+   "expected_effect": "beast_target_dialog_open",
+   "observed_effect": "",
+   "verification_status": "DISCOVERED",
+   "confidence": 0.0,
+   "attempt_count": 0,
+   "success_count": 0,
+   "failure_count": 1,
+   "created_at": "2026-09-22T07:12:11.506064+00:00",
+   "last_seen_at": "2026-09-22T07:12:11.506064+00:00",
+   "template_version": "",
+   "notes": "named control could not be located on this frame (no template, no ledger entry, no printed word); no crop is stored because no region was measured"
+  },
+  {
+   "candidate_id": "home__04f39eb7e9",
+   "semantic_id": "",
+   "page": "HOME",
+   "goal": "AUTO_DISCOVERY",
+   "source_frame": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_150702_726193/20260922_150702_726193_step_022_after_refresh_2_20260922T071959806184.png",
+   "source_episode": "20260922_150702_726193",
+   "image_path": "knowledge/perception/candidates/home__04f39eb7e9/element.png",
+   "context_image_path": "knowledge/perception/candidates/home__04f39eb7e9/context.png",
+   "bbox": {
+    "x_norm": 0.8,
+    "y_norm": 0.3703,
+    "w_norm": 0.0903,
+    "h_norm": 0.0312
+   },
+   "frame_size": [
+    720,
+    1280
+   ],
+   "ocr_text": "前往",
+   "ocr_confidence": 0.9874,
+   "visual_match": "",
+   "recognition_method": "OCR_WORD",
+   "semantic_candidates": [
+    "OCR:HOME:前往"
+   ],
+   "expected_effect": "",
+   "observed_effect": "",
+   "verification_status": "DISCOVERED",
+   "confidence": 0.9874,
+   "attempt_count": 0,
+   "success_count": 0,
+   "failure_count": 0,
+   "created_at": "2026-09-22T07:20:11.927243+00:00",
+   "last_seen_at": "2026-09-22T07:20:11.927243+00:00",
+   "template_version": "",
+   "notes": "the client printed an ordinary action word the semantic dictionary does not declare; the candidate semantic is a guess from the word and the page and is kept unconfirmed until a real step exercises it"
+  }
+ ]
 }

@@ -1,0 +1,54 @@
+page_candidate_id: unknown__8ba5e65de5
+page_label: UNKNOWN
+page_key: UNKNOWN::挂机收益
+title: 挂机收益
+title_confidence: 0.9978
+candidate_page_semantics:
+- DICTIONARY_PAGE:EXPLORATION
+- REWARD_PANEL
+ocr_texts:
+- 13万
+- 挂机最多可获得9小时收益。
+- 挂机时间
+- 挂机收益
+- 领取
+- 获得奖励
+- 1,600/小时
+- 5,600/小时
+- 3,721
+- 02:19:33
+- X
+controls:
+- text: X
+  kind: CLOSE_GLYPH
+  confidence: 0.7759
+  box_norm:
+    x_norm: 0.8472
+    y_norm: 0.2195
+    w_norm: 0.0528
+    h_norm: 0.0273
+- text: 领取
+  kind: ACTION
+  confidence: 0.9946
+  box_norm:
+    x_norm: 0.4472
+    y_norm: 0.7047
+    w_norm: 0.1083
+    h_norm: 0.0367
+entry_page: EXPLORATION
+entry_trigger: EXPLORATION_IDLE_CLAIM::idle_income_claimable
+goal: AUTO_DISCOVERY
+world_state:
+  page: UNKNOWN
+source_frame: E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_152056_984583/20260922_152056_984583_step_010_after_refresh_2_20260922T072507769696.png
+source_episode: '20260922_152056_984583'
+page_image_path: knowledge/perception/pages/unknown__8ba5e65de5/page.png
+recognition_method: OCR_TITLE
+verification_status: DISCOVERED
+confidence: 0.9978
+attempt_count: 0
+success_count: 0
+failure_count: 0
+created_at: '2026-09-22T07:25:22.983431+00:00'
+last_seen_at: '2026-09-22T07:25:22.983431+00:00'
+notes: ''

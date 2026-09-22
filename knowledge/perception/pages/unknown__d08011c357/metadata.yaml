@@ -1,0 +1,36 @@
+page_candidate_id: unknown__d08011c357
+page_label: UNKNOWN
+page_key: UNKNOWN::领主指令
+title: 领主指令
+title_confidence: 0.9962
+candidate_page_semantics: []
+ocr_texts:
+- 节日狂欢
+- 立即生产
+- 加速建造
+- 高效工作
+- 领主指令
+- 药到病除
+- 紧急动员
+- 冷却中
+- 244.7万+
+- 07:42:38
+- O
+controls: []
+entry_page: HOME
+entry_trigger: OPEN_EXPLORATION::exploration_goal
+goal: AVOID_STAMINA_WASTE
+world_state:
+  page: UNKNOWN
+source_frame: dataset/raw/control_panel/runtime_exploration/unknown_page_check/unknown_page_check_step_002_after_refresh_2_20260922T071820460740.png
+source_episode: unknown_page_check
+page_image_path: knowledge/perception/pages/unknown__d08011c357/page.png
+recognition_method: OCR_TITLE
+verification_status: DISCOVERED
+confidence: 0.9962
+attempt_count: 0
+success_count: 0
+failure_count: 0
+created_at: '2026-09-22T07:18:30.450913+00:00'
+last_seen_at: '2026-09-22T07:18:30.450913+00:00'
+notes: ''
