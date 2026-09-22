@@ -1,0 +1,45 @@
+rule: near-white component >= 55 px tall in the callout window
+sample: 60 frames (779 had a blob under the old rule, 634 did not)
+   had-blob 01:51:40 old= 1079px  new=None
+   had-blob 02:44:14 old= 2482px  new=65x74 px
+   had-blob 02:51:36 old= 2482px  new=65x74 px
+   had-blob 03:21:17 old= 2510px  new=68x75 px
+   had-blob 04:41:57 old=  210px  new=None
+   had-blob 05:50:15 old=  212px  new=None
+   had-blob 06:48:54 old= 2482px  new=65x74 px
+   had-blob 07:13:08 old= 2507px  new=66x75 px
+   had-blob 08:51:47 old=  170px  new=None
+   had-blob 09:39:51 old= 2515px  new=67x75 px
+   had-blob 10:00:48 old= 1366px  new=59x67 px
+   had-blob 10:02:20 old= 1343px  new=61x67 px
+   had-blob 10:03:57 old= 1343px  new=62x67 px
+   had-blob 10:13:20 old=  519px  new=17x59 px
+   had-blob 10:40:24 old= 2482px  new=65x74 px
+   had-blob 10:54:53 old= 2482px  new=65x74 px
+   had-blob 11:31:59 old=  210px  new=None
+   had-blob 12:28:26 old= 2487px  new=67x75 px
+   had-blob 12:39:18 old= 2486px  new=66x74 px
+   had-blob 13:11:46 old= 1171px  new=60x67 px
+   had-blob 13:30:40 old= 2482px  new=65x74 px
+   had-blob 13:54:58 old= 2504px  new=68x74 px
+   had-blob 14:23:51 old= 2517px  new=67x75 px
+   had-blob 14:50:45 old= 1090px  new=None
+   had-blob 15:07:26 old=  572px  new=25x61 px
+   had-blob 15:43:38 old= 1174px  new=61x67 px
+   had-blob 16:06:24 old=  551px  new=24x59 px
+   had-blob 16:19:45 old= 2488px  new=66x74 px
+   had-blob 16:38:19 old=  501px  new=18x59 px
+   had-blob 16:50:27 old=  170px  new=None
+   had-blob 17:05:10 old= 2466px  new=65x74 px
+   had-blob 17:37:22 old= 1069px  new=None
+   had-blob 17:45:29 old= 1184px  new=59x67 px
+   had-blob 17:56:49 old= 2482px  new=65x74 px
+   had-blob 18:19:05 old= 1174px  new=61x67 px
+   had-blob 18:38:03 old= 2517px  new=67x75 px
+   had-blob 18:56:10 old= 2491px  new=66x74 px
+   had-blob 19:47:20 old= 1087px  new=None
+   had-blob 20:14:33 old= 2486px  new=66x74 px
+   had-blob 21:22:48 old=  163px  new=None
+
+of the sampled frames that had a blob: 30/40 still return one
+of the sampled frames that had none: 0 now return one (lower is better)

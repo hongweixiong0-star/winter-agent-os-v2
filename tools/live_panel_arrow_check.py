@@ -63,16 +63,26 @@ OUT_DIR = ROOT / "dataset" / "truth_audit" / "live_panel_arrow_20260923"
 #: falls inside this window.
 CALLOUT_WINDOW_NORM = (0.28, 0.26, 0.66, 0.54)
 
+#: How tall the callout's white component is, in pixels of a 1280-high frame.  Measured over the whole
+#: archive: the callout is 58-76 px tall (full, 59-70 px wide) or 58-60 px tall (with the hand over it,
+#: 13-34 px wide); nothing else in the window is taller than 41 px, and the objects that come closest
+#: are a level glyph at 23 and the panel's own handle at 29.  55 sits in the middle of that gap.
+CALLOUT_MIN_HEIGHT_PX = 55
+
 
 def _largest_bright_blob(frame: Path):
     """The callout's own box in normalised coordinates, or ``None``.
 
-    It is a white rounded box with an opaque icon inside, so the three channels are all very high --
-    while the palest pixel of the snow behind the panel is 200-227.  But the icon and the hand split
-    that white frame into pieces, so what this returns is the largest PIECE (891 px of a callout whose
-    whole frame is larger), not the callout's own extent: that is why it is reported and not tapped.
-    Nearby white things exist (the hand is cream, the ring is gold), so the component also has to be
-    dense and above a floor, not merely a bright pixel count.
+    A near-white component at least ``CALLOUT_MIN_HEIGHT_PX`` tall inside the callout window.  The
+    height, not the pixel count, is what separates it: measured over every city frame in the archive,
+    the objects that are not the callout are all short (a level glyph 20-23 px, the panel's handle 29,
+    a building's name plate 21-23) while the callout is 58-76 px tall even when the tutorial hand covers
+    two thirds of it -- and in that state its blob is only 395-520 px, which is why a size floor of
+    ~400 px (last round's plan) would have failed in both directions.
+
+    What this returns is a PIECE of the callout's white frame (its icon and the hand split the whole),
+    which is fine for tapping -- any point inside the control is the control -- but it means the box is
+    not the callout's full extent and must not be reported as if it were.
     """
     from collections import deque
 
@@ -109,10 +119,10 @@ def _largest_bright_blob(frame: Path):
                             and bright(image.getpixel((nx, ny)))):
                         seen.add((nx, ny))
                         queue.append((nx, ny))
-            if len(comp) < 800:
-                continue
             xs = [q[0] for q in comp]
             ys = [q[1] for q in comp]
+            if max(ys) - min(ys) + 1 < CALLOUT_MIN_HEIGHT_PX:
+                continue
             if best is None or len(comp) > best[4]:
                 best = (min(xs), min(ys), max(xs), max(ys), len(comp))
     if best is None:
@@ -132,12 +142,14 @@ def main() -> int:
     parser.add_argument("--row", default="")
     #: What to tap on that row: the enter-arrow's own point, or the row's body (its label).
     parser.add_argument("--on", choices=("arrow", "body"), default="arrow")
-    #: Measure the client's own callout on the resulting frame -- and do NOT tap it.  The tap is the
-    #: hop the project has never tried (the client draws the callout above the building it wants looked
-    #: at, and every historical tap went to the ring on the ground), but the locator is not sound yet:
-    #: see ``_largest_bright_blob`` for the four frames that say so.  Naming it "measure" keeps the
-    #: vehicle honest -- it reports the blob and what it would have tapped, and refuses to tap.
+    #: Report the callout's box on the resulting frame without touching it.
     parser.add_argument("--measure-callout", action="store_true")
+    #: Tap the callout's own centre.  This is the hop the project has never tried -- the client draws
+    #: the callout above the building it wants looked at, and every historical camp tap went to the
+    #: gold ring on the ground instead.  The locator is a measured shape rule now (see
+    #: ``CALLOUT_MIN_HEIGHT_PX`` and ``_largest_bright_blob``), and what remains unmeasured is the
+    #: effect: whether tapping it collects anything, opens a page, or does nothing.
+    parser.add_argument("--tap-callout", action="store_true")
     args = parser.parse_args()
 
     from winter_agent_v2.ocr import find_quick_panel_handle, read_quick_panel
@@ -328,21 +340,43 @@ def main() -> int:
             "page_after": state.page.value, "training_after": training,
             "template_training_after": ttraining, "frame": str(path),
         })
-        if args.measure_callout:
+        if args.measure_callout or args.tap_callout:
             callout = _largest_bright_blob(frame)
             print(f"  callout blob on this frame: {callout}")
             record["callout"] = callout
             if callout is None:
-                print("  nothing near-white and dense enough in the callout window on this frame")
+                print(f"  no near-white component at least {CALLOUT_MIN_HEIGHT_PX} px tall in the callout "
+                      "window on this frame; not tapping a remembered box")
+                record["callout_verdict"] = "callout_not_drawn_on_this_frame"
+            elif not args.tap_callout:
+                cbox = (round(callout[0] * status.resolution[0]), round(callout[1] * status.resolution[1]),
+                        round(callout[2] * status.resolution[0]), round(callout[3] * status.resolution[1]))
+                print(f"  its centre would be {((cbox[0] + cbox[2]) // 2, (cbox[1] + cbox[3]) // 2)} px, "
+                      f"in a box {cbox} (measurement only; --tap-callout is what taps it)")
             else:
                 cbox = (round(callout[0] * status.resolution[0]), round(callout[1] * status.resolution[1]),
                         round(callout[2] * status.resolution[0]), round(callout[3] * status.resolution[1]))
-                print(f"  its centre would be {((cbox[0] + cbox[2]) // 2, (cbox[1] + cbox[3]) // 2)} "
-                      f"px, in a box {cbox} -- NOT tapped: the locator is unsound (see the docstring)")
-            record["callout_tap"] = ("withheld: the largest near-white blob is the panel's own handle on "
-                                     "a panel frame (270px at 0.6431,0.4301) and a 33x71 fragment of a "
-                                     "real callout (891px) on another, so no single threshold is a basis")
-            print(f"  callout tap withheld: {record['callout_tap']}")
+                cpoint = (round((cbox[0] + cbox[2]) / 2), round((cbox[1] + cbox[3]) / 2))
+                print(f"  tapping the callout's own centre {cpoint} "
+                      f"(box px {cbox}, {cbox[2] - cbox[0]}x{cbox[3] - cbox[1]})")
+                device.tap(*cpoint)
+                time.sleep(2.5)
+                path2, state2 = look("03_after_callout")
+                training2 = (state2.training or {}) if isinstance(state2.training, dict) else {}
+                print(f"  after callout: page={state2.page.value} popup={state2.popup} "
+                      f"panel_open={((state2.quick_panel or {}).get('open'))} "
+                      f"training={json.dumps(training2, ensure_ascii=False)}")
+                print(f"                 frame {path2.name}")
+                record["steps"].append({
+                    "what": "tapped the client's own callout", "tap": list(cpoint),
+                    "callout_box_norm": list(callout), "page_after": state2.page.value,
+                    "popup_after": state2.popup, "training_after": training2, "frame": str(path2),
+                })
+                record["callout_verdict"] = (
+                    "something opened" if state2.page.value != state.page.value or state2.popup
+                    else f"nothing opened (page={state2.page.value}); the callout is not an enter control"
+                )
+                print(f"  CALLOUT VERDICT: {record['callout_verdict']}")
 
         record["verdict"] = (
             "the row's own control responded: the camp menu opened"

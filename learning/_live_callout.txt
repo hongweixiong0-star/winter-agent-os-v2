@@ -1,0 +1,4 @@
+lease: acquired (expires 2026-09-22T20:40:56.756656+00:00)
+device: (720, 1280) focus=com.gof.china
+  start: page=MAP conf=0.99 (20260922_202556_00_start.png)
+ABORT: on MAP with no registered way home

@@ -1,0 +1,6 @@
+1-200    12:54:38   167px  OPEN_INFANTRY_TRAINING   training={"menu_open": true, "camp": "SHIELD_CAMP"}
+200-400  14:04:38   212px  OPEN_MAP                 training={}
+400-600  15:08:19   511px  WAIT_FOR_CAMP_MENU       training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+800-1200 16:11:04  1169px  OPEN_HOME                training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+1200+    18:41:07  2482px  OPEN_MAP                 training={}
+-> E:\无尽冬日智能体\learning\_camp_menu\callout_bands_tight.png (1632, 1256)

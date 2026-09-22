@@ -1,0 +1,25 @@
+frames with a blob: 779; distinct (w,h) boxes: 81
+
+the boxes, by how many frames draw them:
+    65x 74 px box :  161 frames   blob 2465..2482 px
+    59x 67 px box :   78 frames   blob 1180..1366 px
+    67x 75 px box :   46 frames   blob 2487..2520 px
+    68x 75 px box :   44 frames   blob 2509..2520 px
+    65x 21 px box :   42 frames   blob 1069..1070 px
+    60x 67 px box :   38 frames   blob 1166..1348 px
+    17x 20 px box :   35 frames   blob 163..178 px
+    66x 74 px box :   30 frames   blob 2461..2497 px
+    69x 76 px box :   22 frames   blob 2497..2518 px
+    66x 22 px box :   21 frames   blob 1077..1090 px
+    70x 76 px box :   19 frames   blob 2501..2503 px
+    19x 23 px box :   17 frames   blob 206..224 px
+    19x 22 px box :   16 frames   blob 196..212 px
+    61x 67 px box :   15 frames   blob 1161..1343 px
+
+cluster 65x74: representative 12:00:53 2482px skill=OPEN_MAP training={}
+cluster 59x67: representative 17:44:51 1184px skill=OPEN_MAP training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+cluster 67x75: representative 15:06:49 2515px skill=BACK training={}
+cluster 68x75: representative 10:10:52 2517px skill=OPEN_POWER_OVERVIEW training={}
+cluster 65x21: representative 16:15:55 1069px skill=NAVIGATE_RESEARCH_LAB training={}
+cluster 60x67: representative 18:18:49 1186px skill=WAIT_FOR_CAMP_MENU training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+-> E:\无尽冬日智能体\learning\_camp_menu\callout_clusters.png (1860, 1392)

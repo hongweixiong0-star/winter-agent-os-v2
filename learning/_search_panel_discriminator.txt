@@ -1,0 +1,37 @@
+OPEN_HOME frames: failing 41 of 44, successful 260 of 280
+
+sample of each side:
+  OPEN_HOME FAILED (door absent)     n= 30  search-submit present  22  door present   8  neither   0
+  OPEN_HOME SUCCEEDED (door present) n= 30  search-submit present   0  door present  30  neither   0
+
+per-frame detail, failing side:
+   05:05:09  search_submit=no   door=yes d=0
+   05:06:04  search_submit=yes d=0  door=no 
+   15:17:40  search_submit=yes d=0  door=no 
+   15:55:21  search_submit=yes d=0  door=no 
+   15:55:41  search_submit=yes d=0  door=no 
+   15:56:00  search_submit=yes d=0  door=no 
+   15:56:19  search_submit=yes d=0  door=no 
+   15:56:37  search_submit=yes d=0  door=no 
+   15:56:56  search_submit=yes d=0  door=no 
+   15:57:17  search_submit=yes d=0  door=no 
+   15:57:39  search_submit=yes d=0  door=no 
+   15:58:02  search_submit=yes d=0  door=no 
+   13:39:08  search_submit=yes d=0  door=no 
+   14:22:24  search_submit=yes d=0  door=no 
+   14:39:47  search_submit=yes d=0  door=no 
+   14:40:26  search_submit=yes d=0  door=no 
+   15:55:55  search_submit=no   door=yes d=2
+   15:58:28  search_submit=no   door=yes d=2
+   16:19:16  search_submit=no   door=yes d=2
+   21:57:49  search_submit=yes d=0  door=no 
+   22:37:04  search_submit=yes d=0  door=no 
+   22:37:23  search_submit=yes d=0  door=no 
+   23:18:17  search_submit=yes d=0  door=no 
+   00:00:56  search_submit=yes d=0  door=no 
+   00:01:16  search_submit=yes d=0  door=no 
+   08:11:57  search_submit=no   door=yes d=2
+   08:14:12  search_submit=no   door=yes d=2
+   08:16:18  search_submit=no   door=yes d=2
+   08:19:01  search_submit=no   door=yes d=2
+   10:14:32  search_submit=yes d=0  door=no 

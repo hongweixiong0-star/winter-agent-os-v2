@@ -1,0 +1,11 @@
+the failing OPEN_HOME steps whose own frame DOES draw the door:
+  05:05:09  fail=SEMANTIC_TARGET_NOT_VERIFIED before page=Page.MAP popup=None | recorded before page=MAP after page=None
+  15:55:55  fail=SEMANTIC_TARGET_NOT_VERIFIED before page=Page.MAP popup=None | recorded before page=MAP after page=None
+  15:58:28  fail=SEMANTIC_TARGET_NOT_VERIFIED before page=Page.MAP popup=None | recorded before page=MAP after page=None
+  16:19:16  fail=SEMANTIC_TARGET_NOT_VERIFIED before page=Page.MAP popup=None | recorded before page=MAP after page=None
+  08:11:57  fail=OPEN_HOME_NOT_PROVEN         before page=Page.MAP popup=None | recorded before page=MAP after page=MAP
+  08:14:12  fail=OPEN_HOME_NOT_PROVEN         before page=Page.MAP popup=None | recorded before page=MAP after page=POPUP
+  08:16:18  fail=OPEN_HOME_NOT_PROVEN         before page=Page.MAP popup=None | recorded before page=MAP after page=POPUP
+  08:19:01  fail=OPEN_HOME_NOT_PROVEN         before page=Page.MAP popup=None | recorded before page=MAP after page=POPUP
+
+checked 8 of 8

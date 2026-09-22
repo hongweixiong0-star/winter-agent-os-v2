@@ -1,0 +1,8 @@
+two of the failing OPEN_HOME steps, with the ROI the door is registered at:
+  15:55:55: before frame 20260921_235437_118504_step_003_before_20260921T155538156393.png
+        door match = ('BTN_OPEN_HOME', 2, {'h_norm': 0.088, 'w_norm': 0.148, 'x_norm': 0.85, 'y_norm': 0.91})
+        after  frame  (exists=True)  after page=None
+  08:14:12: before frame 20260922_161342_770413_step_001_before_20260922T081346693324.png
+        door match = ('BTN_OPEN_HOME', 2, {'h_norm': 0.088, 'w_norm': 0.148, 'x_norm': 0.85, 'y_norm': 0.91})
+        after  frame 20260922_161342_770413_step_001_after_refresh_2_20260922T081411615738.png (exists=True)  after page=POPUP
+-> E:\无尽冬日智能体\learning\_camp_menu\door_roi_two_failing_cases.png (432, 1128)

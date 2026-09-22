@@ -1,0 +1,107 @@
+blob frames: 779   distinct boxes: 81
+
+every distinct box, by height (a callout is drawn as a ~60x70 px rounded square,
+whether or not the hand covers it; the hand leaves the LEFT part, so a covered one is narrow but still tall):
+       box  frames        blob px   tallest/shortest
+   172x 94       1  11570.. 11570
+    69x 76      22   2497..  2518
+    70x 76      19   2501..  2503
+    67x 75      46   2487..  2520
+    68x 75      44   2509..  2520
+    66x 75       9   2507..  2507
+    69x 75       2   2510..  2510
+    65x 74     161   2465..  2482
+    66x 74      30   2461..  2497
+    67x 74       6   2478..  2479
+    68x 74       4   2503..  2504
+    72x 73       1   2474..  2474
+    67x 72       2   2471..  2471
+    63x 68      14   1181..  1367
+    62x 68       8   1179..  1357
+    64x 68       4   1192..  1371
+    31x 68       1    624..   624
+    56x 68       1    741..   741
+    59x 67      78   1180..  1366
+    60x 67      38   1166..  1348
+    61x 67      15   1161..  1343
+    62x 67       5   1163..  1343
+    46x 67       2    735..   735
+    56x 67       1    729..   729
+    33x 67       1    647..   647
+    34x 67       1    656..   656
+    39x 67       1    693..   693
+    52x 67       1    776..   776
+    32x 67       1    627..   627
+    43x 67       1    698..   698
+   100x 66       1   4758..  4758
+    70x 63       1   1727..  1727
+    26x 62       2    577..   581
+    30x 62       1    587..   587
+    66x 62       1   1699..  1699
+    25x 61       3    568..   572
+    14x 60      15    488..   503
+    16x 60       7    514..   523
+    26x 60       5    557..   581
+    21x 60       3    551..   551
+    23x 60       2    542..   550
+    18x 60       2    526..   537
+    19x 60       1    529..   529
+    15x 60       1    482..   482
+    24x 60       1    554..   554
+    27x 60       1    570..   570
+    17x 59       5    506..   520
+    13x 59       3    448..   475
+    14x 59       2    469..   476
+    16x 59       2    495..   506
+    15x 59       1    500..   500
+    24x 59       1    551..   551
+    18x 59       1    501..   501
+    14x 58       5    395..   418
+    43x 57       1   1981..  1981
+    87x 41       1   2181..  2181
+    66x 33       1    688..   688
+    14x 29       2    269..   269
+    27x 28       1    448..   448
+    19x 25       1    233..   233
+    19x 23      17    206..   224
+    16x 23      10    156..   157
+    67x 23       4   1063..  1070
+    20x 23       3    229..   236
+     9x 23       1    159..   159
+    41x 23       1    921..   921
+    66x 23       1   1084..  1084
+    66x 22      21   1077..  1090
+    19x 22      16    196..   212
+    18x 22       5    202..   203
+    65x 21      42   1069..  1070
+    66x 21       8   1068..  1079
+    17x 21       8    174..   177
+    18x 21       1    187..   187
+    20x 21       1    221..   221
+    19x 21       1    192..   192
+    17x 20      35    163..   178
+    18x 20       6    170..   177
+    18x 19       2    162..   163
+    96x 18       1    391..   391
+   183x  2       1    465..   465
+
+boxes at least 55 px tall: 55 kinds, 588 frames
+boxes under 55 px tall  : 26 kinds, 191 frames
+
+the narrow-but-tall ones (a callout with the hand over it), with a sample frame each:
+   13x59    3 frames   e.g. 12:37:09 WAIT_FOR_CAMP_MENU training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+   14x58    5 frames   e.g. 02:47:44 NAVIGATE_INFANTRY_CAMP training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+   14x60   15 frames   e.g. 02:47:51 WAIT_FOR_CAMP_MENU training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+   14x59    2 frames   e.g. 02:47:51 WAIT_FOR_CAMP_MENU training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+   15x60    1 frames   e.g. 12:36:55 NAVIGATE_INFANTRY_CAMP training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+   15x59    1 frames   e.g. 15:07:26 WAIT_FOR_CAMP_MENU training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+
+the SHORT ones, in case one of them is a callout the rule would miss:
+   65x21   42 frames   e.g. 01:51:46 OPEN_RESEARCH training={}
+   17x20   35 frames   e.g. 04:42:49 OPEN_MAIL training={}
+   66x22   21 frames   e.g. 02:22:42 OPEN_RESEARCH training={}
+   19x23   17 frames   e.g. 05:09:51 BACK training={}
+   19x22   16 frames   e.g. 04:41:57 BACK training={}
+   16x23   10 frames   e.g. 04:54:24 BACK training={}
+   66x21    8 frames   e.g. 01:51:40 NAVIGATE_RESEARCH_LAB training={}
+   17x21    8 frames   e.g. 04:44:40 BACK training={}

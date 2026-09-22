@@ -1,0 +1,10 @@
+-> learning/_camp_menu/map_202556_half.png (720, 1280)
+
+what the registered controls say about this frame:
+   BTN_OPEN_HOME                      not present
+   BTN_OPEN_MAIL                      hit (0.085, 0.105, 0.865, 0.785)
+   BTN_OPEN_ALLIANCE                  not present
+   PAGE_MAP                           not present
+   BTN_OPEN_MAP_HUD                   not present
+   BTN_CLOSE                          not present
+   TARGET_INFANTRY_CAMP_HIGHLIGHTED   not present

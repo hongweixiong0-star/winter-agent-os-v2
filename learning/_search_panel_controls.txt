@@ -1,0 +1,17 @@
+============================================================================================
+the failing frame 20:26:44 (search panel up, door absent)
+  BTN_RESOURCE_SEARCH_SUBMIT   hit  d=0  x 0.278-0.722 y 0.918-0.988
+  BTN_OPEN_MAIL                hit  d=24  x 0.865-0.970 y 0.785-0.870
+  (the rest)                   not present
+============================================================================================
+my probe frame 20:25:56 (SEARCH_RESOURCE view)
+  BTN_RESOURCE_SEARCH_SUBMIT   hit  d=0  x 0.278-0.722 y 0.918-0.988
+  BTN_OPEN_MAIL                hit  d=24  x 0.865-0.970 y 0.785-0.870
+  (the rest)                   not present
+============================================================================================
+a successful OPEN_HOME frame 19:30:03 (plain map)
+  BTN_OPEN_RESOURCE_SEARCH     hit  d=12  x 0.012-0.116 y 0.656-0.726
+  BTN_OPEN_HOME                hit  d=2  x 0.850-0.998 y 0.910-0.998
+  BTN_OPEN_MAIL                hit  d=4  x 0.865-0.970 y 0.785-0.870
+  BTN_OPEN_ALLIANCE            hit  d=8  x 0.690-0.810 y 0.925-0.995
+  (the rest)                   not present

@@ -1,0 +1,7 @@
+nothing      12:55:26     0px skill=OPEN_HOME                  box=None training={}
+1-200 px     12:54:38   167px skill=OPEN_INFANTRY_TRAINING     box=[0.525, 0.443, 0.5486, 0.4586] training={"menu_open": true, "camp": "SHIELD_CAMP"}
+200-400 px   14:04:38   212px skill=OPEN_MAP                   box=[0.5292, 0.4359, 0.5556, 0.4531] training={}
+400-600 px   15:08:19   511px skill=WAIT_FOR_CAMP_MENU         box=[0.4597, 0.3969, 0.4833, 0.443] training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+800-1200 px  16:11:04  1169px skill=OPEN_HOME                  box=[0.4597, 0.3969, 0.5431, 0.4492] training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED"}
+1200+ px     18:41:07  2482px skill=OPEN_MAP                   box=[0.4542, 0.3914, 0.5444, 0.4492] training={}
+-> E:\无尽冬日智能体\learning\_camp_menu\callout_bands_sheet.png (864, 7986)
