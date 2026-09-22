@@ -1446,6 +1446,17 @@ class LiveRuntime:
             target = ((skill.action.target if skill is not None else "") or "").strip()
         if not target:
             return
+        if target == "ORDINARY_CONTROL":
+            # The one generic skill resolves WHICH control off the frame, so the name this
+            # collector files it under has to carry that word.  Without it the two halves of the
+            # same read never meet -- the resolver files the box as ``ORDINARY_CONTROL[领取]``
+            # while this looks up ``ORDINARY_CONTROL`` -- and the unnamed screen's element
+            # candidate is silently lost.  Measured 2026-09-22 on the live 挂机收益 frame: the
+            # resolver returned the client's own 领取, `_printed_boxes` held the box, and no
+            # candidate was written.
+            chosen = str((getattr(self, "_ordinary_last", None) or {}).get("word") or "")
+            if chosen:
+                target = f"ORDINARY_CONTROL[{chosen}]"
         expected = decision.expected_result or ""
 
         # (a) named and unlocatable
@@ -2163,6 +2174,9 @@ class LiveRuntime:
                 box_norm=hit.get("box_norm"),
                 text=word,
                 confidence=hit.get("confidence"),
+                # The label, so the element collector can file the crop under the same key it
+                # looks up -- an unnamed screen's element candidates would otherwise be lost.
+                label=page,
             )
             return point
         brain = getattr(self, "brain", None)
@@ -2393,6 +2407,7 @@ class LiveRuntime:
         box_norm: Mapping[str, Any] | None = None,
         text: str = "",
         confidence: float | None = None,
+        label: str = "",
     ) -> None:
         """Record and narrate one read, once per control: the layer must not be silent.
 
@@ -2406,6 +2421,12 @@ class LiveRuntime:
         caller that knows only the point records only the point.
         """
         line = f"{page}|{semantic}"
+        #: ``label`` is what the *collector* files the region under, and it is the page label
+        #: (``UNKNOWN``), not the page key (``UNKNOWN::挂机收益``): ``_collect_ui_evidence`` looks
+        #: the box up as ``<page label>|<semantic>``.  Measured 2026-09-22 -- narrating an
+        #: ordinary control under its page key silently cost the unnamed screen its element
+        #: candidate, because the two keys never met.
+        box_line = f"{label}|{semantic}" if label else line
         self._printed_reads.append(
             f"{line} <- {source} @{point[0]:.4f},{point[1]:.4f}"
         )
@@ -2414,7 +2435,7 @@ class LiveRuntime:
             if boxes is None:
                 boxes = {}
                 self._printed_boxes = boxes
-            boxes[line] = {
+            boxes[box_line] = {
                 "box_norm": dict(box_norm),
                 "word": text,
                 "confidence": confidence,
