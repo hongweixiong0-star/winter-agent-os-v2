@@ -97,7 +97,8 @@ def _once(dispatcher: UnknownDispatcher) -> int:
     print(
         "reconciled  : "
         f"checked={reconcile.get('checked', 0)} done={reconcile.get('done', 0)} "
-        f"failed={reconcile.get('failed', 0)} lost={reconcile.get('lost', 0)}"
+        f"failed={reconcile.get('failed', 0)} lost={reconcile.get('lost', 0)} "
+        f"abandoned={reconcile.get('abandoned', 0)}"
     )
     for error in list(reconcile.get("errors") or []) + list(dispatch.get("errors") or []):
         print(f"  error     : {error}")
