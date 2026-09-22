@@ -127,6 +127,10 @@ MAX_TEXTS_PER_PAGE = 24
 MAX_PAGES = 200
 MAX_TRANSITIONS = 400
 
+#: How many answers one page record keeps.  A screen asked about for a year would otherwise grow
+#: without bound; the most recent answers are the ones a reader can still act on.
+MAX_ADVICE_PER_PAGE = 4
+
 #: The key every unknown screen shares.  Named here so the ledger and the candidate store cannot
 #: disagree about which screens are "the same screen".
 UNKNOWN_LABEL = "UNKNOWN"
@@ -374,6 +378,11 @@ class PageCandidate:
     source_episode: str = ""
     page_image_path: str = ""
     recognition_method: str = PAGE_METHOD_OCR
+    #: What an on-demand analysis said about this screen (operator 2026-09-22 §五), kept as its
+    #: own field so it can never be read as a measurement.  ``candidate_page_semantics`` stays what
+    #: OCR read; this is what a reasoner *proposed*, and ``verification_status`` still moves only
+    #: when a real step's verifier passes.
+    ai_advice: tuple[dict[str, Any], ...] = ()
     verification_status: str = STATUS_DISCOVERED
     confidence: float = 0.0
     attempt_count: int = 0
@@ -409,6 +418,7 @@ class PageCandidateStore:
                 data["candidate_page_semantics"] = tuple(data.get("candidate_page_semantics") or ())
                 data["ocr_texts"] = tuple(data.get("ocr_texts") or ())
                 data["controls"] = tuple(data.get("controls") or ())
+                data["ai_advice"] = tuple(data.get("ai_advice") or ())
                 page = PageCandidate(
                     **{k: v for k, v in data.items() if k in PageCandidate.__dataclass_fields__}
                 )
@@ -477,6 +487,7 @@ class PageCandidateStore:
         world_state: Mapping[str, Any] | None = None,
         episode: str = "",
         recognition_method: str = PAGE_METHOD_OCR,
+        ai_advice: Sequence[Mapping[str, Any]] = (),
         notes: str = "",
     ) -> PageCandidate | None:
         """Write one screen's frame and metadata; return it, or ``None`` when it cannot be read.
@@ -531,6 +542,8 @@ class PageCandidateStore:
         if world_state:
             record.world_state = dict(world_state)
         record.recognition_method = recognition_method or record.recognition_method
+        if ai_advice:
+            record.ai_advice = _merge_advice(record.ai_advice, ai_advice)
         record.confidence = round(
             float(title_confidence or record.confidence or 0.0), 4
         )
@@ -604,6 +617,22 @@ def _merge_controls(
             continue
         merged[key] = dict(item)
     return tuple(list(merged.values())[:MAX_CONTROLS_PER_PAGE])
+
+
+def _merge_advice(
+    existing: Sequence[Any], incoming: Sequence[Mapping[str, Any]]
+) -> tuple[dict[str, Any], ...]:
+    """One entry per ``request_id``, newest winning: the same question answered twice is one
+    answer, and the later one is the one the reasoner most recently stood behind."""
+    merged: dict[str, dict[str, Any]] = {}
+    for item in tuple(existing) + tuple(incoming):
+        if not isinstance(item, Mapping):
+            continue
+        key = str(item.get("request_id") or "")
+        if not key:
+            continue
+        merged[key] = dict(item)
+    return tuple(list(merged.values())[-MAX_ADVICE_PER_PAGE:])
 
 
 @dataclass

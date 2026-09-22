@@ -12,6 +12,7 @@ from . import control_experience
 from . import goal_utility
 from . import ui_collection
 from . import page_knowledge
+from . import unknown_advisor
 from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
@@ -1115,6 +1116,17 @@ class LiveRuntime:
         ledger = self._transitions_store()
         label_before = control_experience.label(before.page)
         label_after = control_experience.label(after.page) if after is not None else ""
+        # What this run last tried, for §二's "最近尝试的动作、预期结果与实际结果": a question asked about an
+        # unnamed screen is much more useful when the reasoner is told what already failed there.
+        self._last_attempt_summary = {
+            "skill": str(decision.skill or ""),
+            "reason": str(decision.reason or ""),
+            "expected_result": str(decision.expected_result or ""),
+            "executed": bool(execution is not None and execution.executed),
+            "observed_change": str(observed_change or ""),
+            "verified": bool(verification.ok) if verification is not None else None,
+            "verification_reason": str(verification.reason) if verification is not None else "",
+        }
         # (1) an unnamed screen, on either side of this step.
         #
         # Only the *before* side is an attempt on the screen: a step that merely landed here
@@ -1239,6 +1251,16 @@ class LiveRuntime:
             except (OSError, ValueError):
                 pass
         key = page_knowledge.page_key(control_experience.label(Page.UNKNOWN), title)
+        # Whatever an on-demand analysis said about this screen travels with it (§五): the picture,
+        # the boxes and the candidate semantics end up side by side, and the answer keeps its own
+        # field so no reader can mistake a proposal for a measurement.  Matched by request id,
+        # which is exactly "this screen, this question".
+        advice: tuple[dict[str, Any], ...] = ()
+        last_advice = getattr(self, "_last_advice", None)
+        if last_advice and last_advice.get("request_id") == unknown_advisor.request_id(
+            key, unknown_advisor.UNKNOWN_CONTROL
+        ):
+            advice = (dict(last_advice),)
         existing = store.find_key(key)
         if existing is not None and (
             not existing.page_image_path or not Path(existing.page_image_path).exists()
@@ -1261,6 +1283,7 @@ class LiveRuntime:
                 entry_trigger=entry_trigger,
                 goal=goal,
                 world_state=world_state,
+                ai_advice=advice,
                 episode=episode_id,
                 notes=f"first seen from {entry_page or 'UNKNOWN'} via {entry_trigger}",
             )
@@ -2179,10 +2202,144 @@ class LiveRuntime:
                 label=page,
             )
             return point
+        # Only now, with every method this project already has exhausted, does the on-demand
+        # analysis get asked (directive §一: 现有方法足以推断就直接用，不足才调用 AI).  On a named
+        # page it is not consulted at all: a named page's controls are the registry's business.
+        if unnamed:
+            advised = self._advised_control(
+                page, title, frame_path, unnamed=True, confidence=float(frame.confidence or 0.0)
+            )
+            if advised is not None:
+                self._ordinary_attempts += 1
+                self._ordinary_last = {
+                    "page": page,
+                    "title": title,
+                    "word": (self._last_advice or {}).get("proposed_action", "AI_ADVICE"),
+                    "point": (round(advised[0], 4), round(advised[1], 4)),
+                }
+                return advised
         brain = getattr(self, "brain", None)
         if brain is not None:
             brain.ordinary_scan_exhausted = True
         return None
+
+    def _advised_control(
+        self, page: str, title: str, frame_path: Path, unnamed: bool, confidence: float = 0.0
+    ) -> tuple[float, float] | None:
+        """An on-demand reasoner's candidate for this screen, when one has already answered.
+
+        Operator directive 2026-09-22 ("复用现有 UNKNOWN，接入按需 AI 分析").  This runs **after**
+        every method the project already has -- templates, the ledger, the client's own printed
+        words -- has failed, and only on an unnamed screen, which is §一's顺序 exactly:
+
+            如果现有 OCR、模板、语义词典或历史经验已经足以推断下一步，直接使用现有 MAA 执行，不必调用 AI
+
+        Three properties, and each is a rule from the directive rather than a preference:
+
+        * **it cannot block.**  There is no call here -- an answer is a file that either exists or
+          does not, so §六's "不能让正式 AUTO 无限等待" is true by construction, and a request with
+          no answer simply leaves the cycle to the chain that already works;
+        * **it cannot invent a control.**  The answer's point is used only if this frame's own OCR
+          read text there (``justified_point``), which is §四's "有合理的当前画面定位依据";
+        * **it cannot spend.**  ``parse_advice`` refuses an answer mentioning money, gems or an
+          irreversible action, using the same boundary the ordinary-control resolver draws.
+
+        The question is filed when there is no answer yet, so the next visit -- or a WorkBuddy
+        session reading ``learning/unknown_requests/`` -- has something to answer.
+        """
+        advisor = getattr(self, "_advisor", None)
+        if advisor is None:
+            return None
+        key = page_knowledge.page_key(page, title)
+        boxes: list[dict] = []
+        texts: tuple[str, ...] = ()
+        size = None
+        ocr = self._ocr_service()
+        if ocr is not None:
+            try:
+                from .ocr import read_frame_size
+
+                size = read_frame_size(frame_path)
+                result = ocr.recognize(frame_path)
+                texts = page_knowledge.ocr_texts(result.tokens)
+                if size:
+                    for token in result.tokens:
+                        if not token.box or not (token.text or "").strip():
+                            continue
+                        xs = [float(point[0]) for point in token.box]
+                        ys = [float(point[1]) for point in token.box]
+                        boxes.append(
+                            {
+                                "text": (token.text or "").strip(),
+                                "confidence": round(float(token.confidence or 0.0), 4),
+                                "x_norm": round(min(xs) / size[0], 4),
+                                "y_norm": round(min(ys) / size[1], 4),
+                                "w_norm": round((max(xs) - min(xs)) / size[0], 4),
+                                "h_norm": round((max(ys) - min(ys)) / size[1], 4),
+                            }
+                        )
+            except (OSError, ValueError):
+                pass
+        request = unknown_advisor.build_request(
+            unknown_type=unknown_advisor.UNKNOWN_CONTROL,
+            page_label=page,
+            page_key=key,
+            frame_path=frame_path,
+            goal=str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
+            page_confidence=confidence,
+            ocr_texts=texts,
+            ocr_boxes=boxes,
+            entry_page=getattr(self, "_last_known_label", ""),
+            ledger_match="; ".join(
+                f"{control}->{row.after_page}"
+                for row in (
+                    getattr(getattr(self, "_transitions", None), "rows_for", lambda *a, **k: [])(page, title)
+                    or []
+                )
+                for control in (row.control,)
+            ),
+            last_attempt=dict(getattr(self, "_last_attempt_summary", {}) or {}),
+            question=(
+                f"这张屏幕（页面模型读作 {page}，标题 {title or '未读出'}）上，与当前 Goal 相关的"
+                "普通低风险控件在哪里？请给出 target_point（归一化）与 proposed_action。"
+            ),
+        )
+        advice = advisor.take(request.request_id, registry=self.registry)
+        if advice is None:
+            if advisor.ask(request) and unnamed:
+                print(
+                    f"[advisor] asked for help on {key}: {request.request_id} "
+                    f"(no answer yet; the cycle continues without one)",
+                    flush=True,
+                )
+            return None
+        point = unknown_advisor.justified_point(advice, boxes)
+        if point is None:
+            print(
+                f"[advisor] {request.request_id}: the answer's point is not over any text this "
+                f"frame read -- refused, nothing is tapped",
+                flush=True,
+            )
+            return None
+        self._last_advice = {
+            "request_id": request.request_id,
+            "unknown_type": advice.unknown_type,
+            "candidate_semantics": list(advice.candidate_semantics),
+            "proposed_action": advice.proposed_action,
+            "expected_result": advice.expected_result,
+            "uncertainty": advice.uncertainty,
+            "note": advice.note,
+            "target_point": [point[0], point[1]],
+            "source": advice.source,
+        }
+        self._note_printed(
+            f"AI_ADVICE[{advice.proposed_action}]",
+            key,
+            f"the on-demand analysis of {key} (uncertainty: {advice.uncertainty or 'unstated'})",
+            point,
+            label=page,
+        )
+        return point
 
     def _ordinary_word_order(self, page: str, title: str, *, unnamed: bool) -> list[str]:
         """Which printed words to try on this screen, best evidence first.
@@ -2538,6 +2695,13 @@ class LiveRuntime:
         # The last page this run could *name*, so a screen reached from another unnamed screen
         # still records what it was entered from (operator §四: "进入前的页面及触发动作").
         self._last_known_label = ""
+        # On-demand UNKNOWN analysis (operator 2026-09-22).  The advisor writes questions and reads
+        # answers; it has no client, so nothing here can block a cycle.  ``_last_advice`` is the
+        # answer this step used, and ``_last_attempt_summary`` is the evidence §二 asks to hand over
+        # with a question -- what was last tried here, what it was expected to do, what was seen.
+        self._advisor = unknown_advisor.UnknownAdvisor()
+        self._last_advice: dict[str, Any] | None = None
+        self._last_attempt_summary: dict[str, Any] = {}
         # Utility inputs (operator §四).  All three are loaded once per run: the route
         # card is a measured artefact that does not change inside a run, and the
         # fairness ledger is written back at ``finish``.  Kept on the instance so
