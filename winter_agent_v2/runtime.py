@@ -2157,8 +2157,9 @@ class LiveRuntime:
         # resolves nothing cannot be credited with the previous step's control.
         self._ordinary_last = None
         if unnamed:
-            # The title is what keeps two unnamed screens apart in the ledger key, so it is read
-            # before anything is asked about this screen's history.  One cached OCR pass.
+            # The title is what keeps two unnamed screens apart in the ledger key and in a
+            # question's id, so it is read before anything is asked about this screen.  One cached
+            # OCR pass.
             title_info = page_knowledge.read_title_candidate(frame_path, ocr)
             title = str((title_info or {}).get("text") or "")
         # One OCR pass, cached by the service; the blacklist is checked over every
@@ -2169,6 +2170,17 @@ class LiveRuntime:
             return None
         joined = "".join(tokens)
         if any(refused and refused in joined for refused in self.ORDINARY_CONTROL_REFUSED_WORDS):
+            # A screen that mentions a spend word is never tapped -- that boundary is unchanged --
+            # but it can still be *understood* (operator 2026-09-22 §一: 现有方法无法确定页面用途
+            # 或控件语义时，再调用实际可用的 AI 推理能力).  So an unnamed screen like this one files
+            # its question and records any answer for the page knowledge, and the answer's point is
+            # deliberately not used: a candidate on a spend screen may be named, never pressed.
+            # The parse side refuses an answer that mentions the spend itself, so the two ends of
+            # the boundary agree.
+            if unnamed:
+                self._advised_control(
+                    page, "", frame_path, unnamed=True, confidence=float(frame.confidence or 0.0), ask_only=True
+                )
             brain = getattr(self, "brain", None)
             if brain is not None:
                 brain.ordinary_scan_exhausted = True
@@ -2224,7 +2236,13 @@ class LiveRuntime:
         return None
 
     def _advised_control(
-        self, page: str, title: str, frame_path: Path, unnamed: bool, confidence: float = 0.0
+        self,
+        page: str,
+        title: str,
+        frame_path: Path,
+        unnamed: bool,
+        confidence: float = 0.0,
+        ask_only: bool = False,
     ) -> tuple[float, float] | None:
         """An on-demand reasoner's candidate for this screen, when one has already answered.
 
@@ -2339,6 +2357,16 @@ class LiveRuntime:
         # answer invented: the point is only used because it is over real text, and this is that
         # text's measurement.
         landed = unknown_advisor.box_containing(point, boxes)
+        if ask_only:
+            # The answer is kept as knowledge about this screen and its point is not used: this
+            # screen mentions a spend word, so nothing on it may be pressed (§一 vs the existing
+            # boundary -- understanding is allowed, touching is not).
+            print(
+                f"[advisor] {request.request_id}: answer filed for the page record; "
+                f"not tapped, this screen mentions a spend word",
+                flush=True,
+            )
+            return None
         self._note_printed(
             f"AI_ADVICE[{advice.proposed_action}]",
             key,
