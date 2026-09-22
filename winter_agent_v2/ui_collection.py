@@ -126,10 +126,11 @@ PLAIN_ACTION_WORDS: tuple[str, ...] = (
 #: whole budget on the run's first two steps, and over 213 real frames from one hour it collected
 #: nothing, because the frames that carry an undeclared plain action word (``前往``, 9 of 213)
 #: cluster at steps 22-24 of a run -- long after the budget was gone.  Sampling every
-#: ``UI_SCAN_STRIDE`` steps spends the same small number of OCR passes but spreads them across
-#: the run, which is what makes them land on the informative frames.
-MAX_SCANS_PER_RUN = 4
-UI_SCAN_STRIDE = 6
+#: ``UI_SCAN_STRIDE`` steps spreads the same OCR passes across the whole run, so the samples reach
+#: the steps where new controls actually appear (4/8/12/16/20/24 covers a 24-step run, while a
+#: front-loaded budget covered none of it).
+MAX_SCANS_PER_RUN = 6
+UI_SCAN_STRIDE = 4
 
 #: Minimum OCR confidence for a word to become a candidate.  The same bar ``find_printed_words``
 #: uses for the tap path: a word that is not read well enough to tap is not read well enough to

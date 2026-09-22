@@ -506,6 +506,9 @@ class RuntimeHookScanTests(unittest.TestCase):
         self.assertEqual(scanned_at[:ui_collection.MAX_SCANS_PER_RUN],
                          [ui_collection.UI_SCAN_STRIDE * (index + 1)
                           for index in range(ui_collection.MAX_SCANS_PER_RUN)])
+        # The last sample must still be inside a normal run's length, or the budget would be
+        # spent before the frame that matters: measured 2026-09-22, the new control sat at step 24.
+        self.assertLessEqual(ui_collection.UI_SCAN_STRIDE * ui_collection.MAX_SCANS_PER_RUN, 24)
 
     def test_a_declared_word_is_never_staged_again(self):
         runtime = self._runtime()
