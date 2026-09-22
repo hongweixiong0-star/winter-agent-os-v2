@@ -948,6 +948,11 @@ class LiveRuntime:
             before_screenshot=str(before_screenshot) if before_screenshot else "",
             after_screenshot=str(after_screenshot) if after_screenshot else "",
             verifier_ok=None if verification is None else bool(verification.ok),
+            # The verifier's own evidence, so an audit can read what a step was accepted on instead
+            # of reconstructing it from the frames.  Kept verbatim: every verifier already reports
+            # the fields it judged (control_before, panel_readable_after, menu_drawn, ...), and
+            # dropping them at the write is what left 6574 of 6603 episodes unaccountable.
+            verifier_evidence=({} if verification is None else dict(verification.evidence)),
             # The real call chain for this step. Empty when nothing was issued
             # (resolution refused, dry run) - that distinction is what keeps
             # "MAA is in production" an evidence claim rather than a hope.

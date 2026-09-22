@@ -32,6 +32,11 @@ class Episode:
     before_screenshot: str = ""
     after_screenshot: str = ""
     verifier_ok: bool | None = None
+    # Why the verifier said so.  The boolean alone cannot answer what a step was accepted ON, and
+    # measured 2026-09-23 that cost real time: of 6603 episodes on file only 29 carried any evidence
+    # dict, so auditing a passed step meant re-deriving the verifier's reasoning from the two frames.
+    # Every verifier already returns that dict; this is the field that keeps it.
+    verifier_evidence: dict[str, Any] = field(default_factory=dict)
     recovery_result: str | None = None
     # Did the *goal* move, which is a different question from whether the action
     # worked.  Measured 2026-09-18: 58 of 60 consecutive episodes were
