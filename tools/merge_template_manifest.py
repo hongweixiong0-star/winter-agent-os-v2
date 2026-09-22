@@ -29,7 +29,11 @@ def main() -> int:
             added += 1
     payload["records"] = records
     payload["count"] = len(records)
-    args.target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    # indent=1 is what the manifest on disk uses.  These two writers used indent=2, and
+    # measured 2026-09-23 that costs 7499 insertions / 7359 deletions for ONE added record --
+    # every key of all 408 records re-indented -- which makes a registration unreviewable and
+    # hides the real change inside the noise.
+    args.target.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({"added": added, "count": len(records)}))
     return 0
 

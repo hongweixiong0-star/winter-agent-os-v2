@@ -54,6 +54,10 @@ FRAME = (720, 1280)
 #: that points at a prunable file is a test that will one day fail for the wrong reason.
 EVIDENCE = ROOT / "dataset/truth_audit/camp_action_bar_20260922"
 ACTION_BAR_FRAME = EVIDENCE / "camp_selected_action_bar__shield_camp__live_20260922T0747.png"
+#: The two live renderings of the same bar, kept 2026-09-23: a camp with a batch in training and one
+#: without.  Both are needed, because the layout -- not the client -- is what changes between them.
+BUSY_ACTION_BAR_FRAME = EVIDENCE / "camp_selected_action_bar__shield_camp__busy_queue__live_20260922T1642.png"
+IDLE_ACTION_BAR_FRAME = EVIDENCE / "camp_selected_action_bar__lancer_camp__idle__live_20260922T1709.png"
 GOLD_RING_FRAME = EVIDENCE / "camp_gold_ring_render__shield_camp__live_20260921T1307.png"
 TRAINING_PAGE_FRAME = EVIDENCE / "training_page__three_camp_tabs_and_queue__live_20260921T0953.png"
 OTHER_BUILDING_FRAME = EVIDENCE / "gate_also_matches__research_lab_selected__live_20260919T1012.png"
@@ -315,6 +319,104 @@ class GateTests(unittest.TestCase):
         )
         state = self.vision.observe(OTHER_BUILDING_FRAME)
         self.assertEqual(state.training, {}, "a selected research lab is not a training camp")
+
+
+def busy_bar_tokens(confidence: float = 0.99) -> list[OCRToken]:
+    """The same bar drawn by a camp that HAS a batch in training, at the boxes OCR reported.
+
+    Read off 2026-09-22 16:42:30 (720x1280), a step recorded FAILURE / PANEL_ROW_TASK_BAR_NOT_PROVEN
+    whose own after-frame shows this bar.  The layout differs from `action_bar_tokens` in three
+    measurable ways: no 升级, a second sub-row (立即完成 / 加速), and 详情 and 训练 pushed outward and
+    about 0.030 up.
+    """
+    return [
+        token("盾兵营", (342, 540, 392, 568), confidence),
+        token("详情", (169, 859, 219, 889), confidence),
+        token("立即完成", (270, 924, 334, 954), confidence),
+        token("加速", (390, 926, 446, 956), confidence),
+        token("训练", (501, 861, 551, 891), confidence),
+        token("166", (282, 898, 322, 928)),          # the diamonds 立即完成 costs
+        token("通关探险第80关（0/1）", (120, 1030, 420, 1060)),
+    ]
+
+
+class TheBarHasTwoLayoutsTests(unittest.TestCase):
+    """A busy camp draws the same bar at a different height, and the band used to reject it.
+
+    Measured 2026-09-22: the band was (0.69, 0.76), taken from an IDLE camp, whose words sit at
+    y 0.714-0.737.  A camp with a batch in training draws a second sub-row and pushes 详情 and 训练
+    up to y 0.683-0.685 -- below that band -- so ``training`` came back empty on 16:42:30, 18:54:27
+    and the 18:43:51 ring tap, all of whose frames show the client's bar.  The route then judged the
+    client to have failed on a screen it had already reached.
+    """
+
+    def test_the_busy_bar_is_read(self):
+        reading = read_building_action_tokens(busy_bar_tokens(), FRAME)
+        self.assertEqual(set(reading["actions"]), {"详情", "训练"})
+        self.assertEqual(reading["name"], "盾兵营")
+        self.assertEqual(reading["camp"], "SHIELD_CAMP")
+
+    def test_the_training_control_is_read_where_this_layout_draws_it(self):
+        """The point must be this frame's own, not the idle layout's remembered 483."""
+        x_norm, y_norm = read_building_action_tokens(busy_bar_tokens(), FRAME)["actions"]["训练"]
+        self.assertAlmostEqual(x_norm, 526 / 720, places=3)
+        self.assertAlmostEqual(y_norm, 876 / 1280, places=3)
+
+    def test_the_spend_controls_are_not_readable(self):
+        """立即完成 costs 166 diamonds on the measured frame; it must not become a tap target.
+
+        The band now covers the row these two sit on, so the whitelist is the only thing keeping
+        them out of ``actions`` -- and ``actions`` is what turns a word into a point the executor
+        may tap.
+        """
+        reading = read_building_action_tokens(busy_bar_tokens(), FRAME)
+        for spend in ("立即完成", "加速"):
+            self.assertNotIn(spend, reading["actions"])
+        self.assertNotIn("166", reading["actions"])
+
+
+class TheGateHasTwoRecordsTests(unittest.TestCase):
+    """The gate is one control per layout, because the middle plate is not the same control."""
+
+    def setUp(self):
+        from live_stack import production_vision  # noqa: E402 - tests/ is on sys.path
+
+        vision = production_vision()
+        if vision is None:
+            self.skipTest("OCR runtime unavailable in this environment")
+        self.vision = vision
+
+    def _gate_finds(self, path: Path) -> bool:
+        from winter_agent_v2.ocr import CAMP_ACTION_BAR_GATE
+
+        if not path.exists():
+            self.skipTest(f"evidence frame missing: {path}")
+        return self.vision.template_vision.semantic.find(path, CAMP_ACTION_BAR_GATE) is not None
+
+    def test_the_idle_layout_matches_the_render_the_gate_was_cut_from(self):
+        self.assertTrue(self._gate_finds(ACTION_BAR_FRAME))
+        self.assertTrue(self._gate_finds(IDLE_ACTION_BAR_FRAME))
+
+    def test_the_busy_layout_matches(self):
+        """This is the layout the single 升级-glyph gate scored background on (0.651, d=22)."""
+        self.assertTrue(self._gate_finds(BUSY_ACTION_BAR_FRAME))
+
+    def test_the_ring_render_matches_neither(self):
+        """The ring render draws no bar at all; it is what camp_ring.py is for."""
+        self.assertFalse(self._gate_finds(GOLD_RING_FRAME))
+
+    def test_a_busy_frame_now_reads_as_the_camp_bar(self):
+        """End to end: the frame recorded FAILURE for having no bar now reports one."""
+        if not BUSY_ACTION_BAR_FRAME.exists():
+            self.skipTest(f"evidence frame missing: {BUSY_ACTION_BAR_FRAME}")
+        state = self.vision.observe(BUSY_ACTION_BAR_FRAME)
+        self.assertIs(state.page, Page.HOME)
+        self.assertTrue(state.training.get("menu_open"), state.training)
+        self.assertEqual(state.training.get("camp"), "SHIELD_CAMP")
+        self.assertEqual(state.training.get("source"), "ACTION_BAR")
+        x_norm, y_norm = state.training["train_tap_norm"]
+        self.assertAlmostEqual(x_norm, 0.7312, places=3)
+        self.assertAlmostEqual(y_norm, 0.6844, places=3)
 
 
 if __name__ == "__main__":

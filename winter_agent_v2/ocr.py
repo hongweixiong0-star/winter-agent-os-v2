@@ -2505,13 +2505,37 @@ def read_resource_tab_labels(
 #: Spread of 4 px over seven hours and ten frames, because the bar is a screen-space
 #: overlay rather than part of the city.  The band is wider than those numbers need: it
 #: is a filter for "is this label drawn in the bar", not a pin.
-SELECTED_BUILDING_ACTION_BAND = (0.69, 0.76)
+#: Where the bar draws its words -- and it draws them at TWO heights, which is why this band is not
+#: the tight one it used to be.  Measured 2026-09-22 on the two live renderings of the same bar:
+#:
+#:   camp IDLE  详情 (0.328, 0.714)  conf 0.998   升级 (0.501, 0.737)  conf 1.000   训练 (0.672, 0.714) conf 0.994
+#:   camp BUSY  详情 (0.269, 0.683)  conf 0.998   训练 (0.732, 0.685)  conf 0.996
+#:              立即完成 (0.419, 0.734) conf 0.997   加速 (0.581, 0.735) conf 0.999
+#:
+#: A camp with a batch in training has no 升级 and gets a second sub-row (立即完成 / 加速), so the
+#: client pushes 详情 and 训练 outward AND about 0.030 UP -- to y 0.683-0.685, which the previous band
+#: (0.69, 0.76), measured only on the idle bar, rejected.  The consequence was not cosmetic:
+#: ``training`` came back empty on three recorded steps (2026-09-22 16:42:30, 18:54:27 and the
+#: ring tap at 18:43:51) whose own frames show the bar drawn, and the route judged the client to have
+#: failed on a screen it had already reached correctly.
+#:
+#: The band is the union of both measured rows with room on each side, and the words it may accept are
+#: still the whitelist below -- so widening it cannot make a control readable that was not one.
+SELECTED_BUILDING_ACTION_BAND = (0.66, 0.78)
 
 #: Where the client names the building it has selected.  盾兵营 measured at
-#: (376-378, 545-548), conf 0.958 - 0.995, on the same ten frames.
+#: (376-378, 545-548), conf 0.958 - 0.995, on the same ten frames.  The bar's layout does not move
+#: this: 盾兵营 read at conf 0.994-0.995 at (0.510, 0.433) on the busy frames above, where the bar
+#: itself sits 0.030 higher.
 SELECTED_BUILDING_NAME_BAND = (0.39, 0.46)
 
 #: The three controls the bar draws, in the client's own words.
+#:
+#: 立即完成 and 加速 are deliberately absent even though the busy bar draws them right beside 详情
+#: and 训练 in the same band.  They are spend controls -- 立即完成 read "166" diamonds under it on the
+#: measured frame -- and this whitelist is what turns a word into a point the executor may tap, so a
+#: control that spends must not become readable by accident.  A reader that silently learned them
+#: would hand the route a tap on a paid control the moment some goal asked the bar for anything.
 BUILDING_ACTION_LABELS: tuple[str, ...] = ("详情", "升级", "训练")
 
 

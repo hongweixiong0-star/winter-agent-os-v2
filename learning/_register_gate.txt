@@ -1,0 +1,58 @@
+wrote dataset\candidate\camp_action_bar_20260922\target_camp_action_bar__shield_camp__20260922.png  (44, 44)
+updated TARGET_CAMP_ACTION_BAR [target_camp_action_bar__shield_camp__20260922]
+wrote dataset\candidate\camp_action_bar_20260922\target_camp_action_bar__busy_bar_detail_glyph__20260922.png  (44, 44)
+updated TARGET_CAMP_ACTION_BAR [target_camp_action_bar__busy_bar_detail_glyph__20260922]
+manifest records: 416
+gate for TARGET_CAMP_ACTION_BAR: max_distance 6
+======================================================================
+MUST MATCH  (the frames the route died on, plus one of each bar layout)
+   16:24  hit  distance=0
+   17:01  hit  distance=0
+   17:06  hit  distance=0
+   19:47  hit  distance=0
+   19:55  hit  distance=0
+   20:34  hit  distance=0
+   21:22  hit  distance=0
+   22:51  hit  distance=0
+   23:07  hit  distance=0
+   23:20  hit  distance=0
+   23:37  hit  distance=0
+   23:47  hit  distance=0
+   04:10  hit  distance=0
+   04:12  hit  distance=0
+   04:36  hit  distance=0
+   04:40  hit  distance=0
+   05:22  hit  distance=0
+   05:25  hit  distance=0
+   05:42  hit  distance=0
+   05:44  hit  distance=0
+   07:14  hit  distance=0
+   08:05  hit  distance=0
+   08:47  hit  distance=0
+   09:02  hit  distance=0
+   09:39  hit  distance=0
+   09:48  hit  distance=0
+   11:23  hit  distance=0
+   12:54  hit  distance=0
+   15:42  hit  distance=0
+   16:19  hit  distance=0
+   IDLE bar, evidence  hit  distance=0
+   BUSY bar, evidence  hit  distance=0
+======================================================================
+MUST NOT MATCH  (HOME frames without the bar, and the other two renders)
+   09-18T15:08        no match  distance=None
+   09-19T11:29        no match  distance=None
+   09-20T14:55        no match  distance=None
+   09-20T18:15        no match  distance=None
+   09-21T10:27        no match  distance=None
+   09-21T17:54        no match  distance=None
+   09-21T22:53        no match  distance=None
+   09-22T05:09        no match  distance=None
+   09-22T10:05        no match  distance=None
+   09-22T14:23        no match  distance=None
+   gold-ring render   no match  distance=None
+   training page      no match  distance=None
+   ring render 19:03  no match  distance=None
+
+action-bar frames missed: 0
+false positives: none

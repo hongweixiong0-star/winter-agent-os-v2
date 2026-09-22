@@ -1,6 +1,6 @@
 {
- "count": 408,
- "generated_at": "2026-09-22T02:04:36.243512+00:00",
+ "count": 410,
+ "generated_at": "2026-09-22T19:28:57.481493+00:00",
  "records": [
   {
    "confidence": 0.99,
@@ -7333,7 +7333,7 @@
    "parent_screenshot": "dataset/truth_audit/camp_action_bar_20260922/camp_selected_action_bar__shield_camp__live_20260922T0747.png",
    "width": 44,
    "height": 44,
-   "note": "The selected building's action bar, as a GATE for the OCR reading in ocr.read_selected_building_actions: the middle control's opaque icon, cropped from the 2026-09-22 render where all three plates are translucent.  Measured identical at x338-381 y860-903 on all twelve live frames that failed NAVIGATE_INFANTRY_CAMP between 16:24 and 23:47; it gates, it is not the tap target -- the 训练 label read off the frame is, so a moved bar still taps right."
+   "note": "The selected building's action bar, as a GATE for the OCR reading in ocr.read_selected_building_actions: the middle control's opaque icon, cropped from the 2026-09-22 render where all three plates are translucent.  Measured identical at x338-381 y860-903 on all twelve live frames that failed NAVIGATE_INFANTRY_CAMP between 16:24 and 23:47; it gates, it is not the tap target -- the 训练 label read off the frame is, so a moved bar still taps right.  It covers the IDLE bar only: that middle plate is 升级, and a camp with a batch in training draws 立即完成 there instead (see the second record)."
   },
   {
    "semantic": "BTN_BACK_ARROW",
@@ -7354,6 +7354,26 @@
    "width": 52,
    "height": 52,
    "note": "The client's own navigation back arrow, top-left, drawn next to the page title. Measured 2026-09-22: identical (phash d=0) on the alliance page and the mail page, and different (d=32) on the city and the map, so it is one control rather than one screen's decoration. Registered because LEAVE_FOREIGN_LAYER taps BTN_CLOSE, which the alliance page does not draw -- the mismatch behind SAFE_BACK_NOT_PROVEN (20, all of them BACK from ALLIANCE to ALLIANCE) and 7 SEMANTIC_TARGET_NOT_VERIFIED for BTN_CLOSE on ALLIANCE."
+  },
+  {
+   "semantic": "TARGET_CAMP_ACTION_BAR",
+   "template_path": "dataset/candidate/camp_action_bar_20260922/target_camp_action_bar__busy_bar_detail_glyph__20260922.png",
+   "roi_norm": {
+    "x_norm": 0.238889,
+    "y_norm": 0.617969,
+    "w_norm": 0.061111,
+    "h_norm": 0.034375
+   },
+   "source": "dataset/truth_audit/camp_action_bar_20260922/camp_selected_action_bar__shield_camp__busy_queue__live_20260922T1642.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "LIVE_CLIENT_SCREENSHOT",
+   "confidence": 0.99,
+   "status": "CANDIDATE",
+   "template_id": "target_camp_action_bar__busy_bar_detail_glyph__20260922",
+   "parent_screenshot": "dataset/truth_audit/camp_action_bar_20260922/camp_selected_action_bar__shield_camp__busy_queue__live_20260922T1642.png",
+   "width": 44,
+   "height": 44,
+   "note": "The same gate for the OTHER rendering of the bar: a camp with a batch in training, which draws 详情 / 立即完成 / 加速 / 训练 and no 升级.  Cropped from the 详情 plate's document glyph, because it is the one control both renderings draw the same way -- cropping each layout's own 详情 glyph and scoring it on all three live frames gives IDLE 1.000 BUSY 0.969 BUSY 0.969 from the idle crop and IDLE 0.969 BUSY 1.000 BUSY 1.000 from the busy crop, i.e. distance <= 2 against the default 6, while the 升级 glyph above scores background (0.651, distance 22) on this layout and the 训练 glyph carries across neither (0.929 / 0.585).  Without it the reader is never called on a busy camp and a frame showing the client's own bar is recorded as having none."
   }
  ],
  "schema_version": "1.0",

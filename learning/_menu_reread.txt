@@ -1,0 +1,25 @@
+18:43:51  SELECT_INFANTRY_CAMP               FAILURE
+      reader NOW -> page=Page.HOME training={}
+      recorded   -> page=HOME training={}
+      frame      -> 20260921_024232_776919_step_005_after_refresh_2_20260920T184341680971.png
+16:33:15  OPEN_TASK_FROM_QUICK_PANEL_SHIELD  SUCCESS
+      reader NOW -> page=Page.HOME training={"building": "INFANTRY_CAMP", "status": "IDLE", "queue_available": true, "menu_open": true}
+      recorded   -> page=HOME training={"building": "INFANTRY_CAMP", "status": "IDLE", "queue_available": true, "menu_open": true}
+      frame      -> 20260923_003144_278086_step_003_after_20260922T163312273596.png
+16:42:30  OPEN_TASK_FROM_QUICK_PANEL_SHIELD  FAILURE
+      reader NOW -> page=Page.HOME training={}
+      recorded   -> page=HOME training={}
+      frame      -> 20260923_004054_research_step_004_after_refresh_2_20260922T164221037950.png
+17:09:50  OPEN_TASK_FROM_QUICK_PANEL_LANCER  SUCCESS
+      reader NOW -> page=Page.HOME training={"menu_open": true, "camp": "LANCER_CAMP", "camp_label": "矛兵营", "train_tap_norm": [0.6722, 0.7137], "source": "ACTION_BAR"}
+      recorded   -> page=HOME training={"menu_open": true, "camp": "LANCER_CAMP", "camp_label": "矛兵营", "train_tap_norm": [0.6722, 0.7137], "source": "ACTION_BA
+      frame      -> 20260923_010759_205873_step_004_after_20260922T170938329603.png
+17:54:28  OPEN_TASK_FROM_QUICK_PANEL_SHIELD  FAILURE
+      reader NOW -> page=Page.HOME training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED", "queue_available": true, "camp_tap_norm": [0.4243, 0.4613]}
+      recorded   -> page=HOME training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED", "queue_available": true, "camp_tap_norm": [0.4243, 0.4613]}
+      frame      -> 20260923_015303_research_step_004_after_refresh_2_20260922T175426690713.png
+18:54:27  OPEN_TASK_FROM_QUICK_PANEL_SHIELD  FAILURE
+      reader NOW -> page=Page.HOME training={}
+      recorded   -> page=HOME training={}
+      frame      -> live_runtime_step_008_after_refresh_2_20260922T185419887295.png
+episodes matched: 6
