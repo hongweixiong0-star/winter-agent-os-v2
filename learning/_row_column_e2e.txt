@@ -1,0 +1,14 @@
+page: Page.HOME | panel open: True
+   RESEARCH             status=IDLE         word=空闲中        control=ARROW  y=0.3207 arrow=[0.5618, 0.3207]
+   ALLIANCE_DONATION    status=IN_PROGRESS  word=可捐献25/25   control=ARROW  y=0.4082 arrow=[0.5618, 0.4082]
+   HERO_RECRUIT         status=IN_PROGRESS  word=免费招募       control=ARROW  y=0.4965 arrow=[0.5618, 0.4965]
+   MY_REWARDS           status=IDLE         word=已完成        control=DONE   y=0.641 arrow=[0.4028, 0.641]
+
+goal RESEARCH       -> OPEN_TASK_FROM_QUICK_PANEL_RESEARCH    reason=quick_panel_row_research_enters_its_own_task_page
+goal ALLIANCE       -> OPEN_ALLIANCE                          reason=alliance_goal
+goal HERO_RECRUIT   -> OPEN_MAP                               reason=first_ready_p0_skill
+
+--- the same frame carrying the OLD reading of the research row (label/status/control it used to report) ---
+  with the old reading -> OPEN_POWER_OVERVIEW                    reason=research_goal_requires_power_route
+  with the real reading -> OPEN_TASK_FROM_QUICK_PANEL_RESEARCH    reason=quick_panel_row_research_enters_its_own_task_page
+  the decision changed: True

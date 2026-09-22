@@ -1788,9 +1788,45 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
 
     panel: dict[str, object] = {"open": True}
 
+    #: The frame's own width, so a token's x can be tested against the panel's column.  Resolved
+    #: here rather than only where the geometry below needs it, because the section loop needs it too;
+    #: ``read_frame_size`` returns None for a frame it cannot open, and the same guard the geometry
+    #: uses keeps a stub path from raising here.
+    try:
+        frame_size = read_frame_size(image_path)
+    except (OSError, ValueError, AttributeError, TypeError):
+        frame_size = None
+    frame_width = int(frame_size[0]) if frame_size else 0
+
+    def drawn_by_the_panel(token) -> bool:
+        """Whether the panel drew ``token``, judged by where it sits.
+
+        The panel's own tokens measure x_norm 0.10-0.34 and ``QUICK_PANEL_COLUMN_MAX_X_NORM`` is the
+        left-edge bound the geometry below has always used for exactly this question.  Without the test
+        a row's *identity* can be taken from text the panel never drew: measured 2026-09-23, the
+        科技研究 section's row was reported as 梦境寻忆 -- a token at x 0.769, out on the city's event
+        rail -- because it sat by y between that section's header and its own row, so it became the
+        section's first row and the real 科技研究 / 空闲中 row was not reported at all (issue #99).
+
+        A frame whose width could not be read leaves every token acceptable, which is the same trade
+        the geometry section makes: a position test that cannot run does not run.
+        """
+        if frame_width <= 0:
+            return True
+        return (
+            min(float(point[0]) for point in token.box) / frame_width
+            <= QUICK_PANEL_COLUMN_MAX_X_NORM
+        )
+
     def state_below(name_y: float) -> str | None:
-        """The state word drawn under the row whose name is at ``name_y``."""
+        """The state word drawn under the row whose name is at ``name_y``.
+
+        Only a word the panel drew counts -- the same reason as ``drawn_by_the_panel`` above: a state
+        word read off some other surface would decide whether this row is idle.
+        """
         for token in by_y:
+            if not drawn_by_the_panel(token):
+                continue
             offset = token.centre[1] - name_y
             if not 4.0 <= offset <= QUICK_PANEL_STATE_OFFSET_PX * 1.6:
                 continue
@@ -1820,6 +1856,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
         return [
             (by_y[index].text.strip(), by_y[index].centre[1])
             for index in range(start, end)
+            if drawn_by_the_panel(by_y[index])
         ]
 
     section_rows: list[tuple[str, str, float]] = []
@@ -1943,6 +1980,8 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
     # (盾兵营 / 矛兵营 / 射手营) or the bottom navigation bar.
     camps_panel_wide: dict[str, dict[str, object]] = dict(panel.get("camps") or {})
     for token in by_y:
+        if not drawn_by_the_panel(token):
+            continue  # not the panel's text, so not one of the panel's rows (issue #99)
         name = token.text.strip()
         troop = TITLE_TO_TROOP.get(name)
         camp = TROOP_TO_CAMP.get(troop or "")
@@ -1976,10 +2015,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
     # The geometry below is an addition to this reader, so a frame it cannot measure (a stub path
     # in a test, a capture that vanished) must leave the sections exactly as they were rather than
     # raise: the sections are what the panel's consumers have always read.
-    try:
-        size = read_frame_size(image_path)
-    except (OSError, ValueError, AttributeError, TypeError):
-        size = None
+    size = frame_size
     if section_rows and size and int(size[0]) > 0 and int(size[1]) > 0:
         width, height = int(size[0]), int(size[1])
         row_ys = [name_y for _, _, name_y in section_rows]

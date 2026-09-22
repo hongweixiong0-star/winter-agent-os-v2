@@ -1,0 +1,12 @@
+=== the frame #99 was filed from ===
+   RESEARCH             label=科技研究       status=IDLE         word=空闲中        control=ARROW  badge=PRESENT  y=0.3211 arrow=[0.5618, 0.3211]
+   ALLIANCE_DONATION    label=联盟捐献       status=IN_PROGRESS  word=可捐献25/25   control=ARROW  badge=PRESENT  y=0.409 arrow=[0.5618, 0.409]
+   HERO_RECRUIT         label=高级招募       status=IN_PROGRESS  word=免费招募       control=ARROW  badge=PRESENT  y=0.4965 arrow=[0.5618, 0.4965]
+   MY_REWARDS           label=仓库补给       status=IDLE         word=已完成        control=DONE   badge=UNKNOWN  y=0.6422 arrow=[0.4056, 0.6422]
+
+=== the rest of that scroll set, to be sure nothing else moved ===
+   02_after_scroll_1.png  ['RESEARCH:IDLE/A', 'ALLIANCE_DONATIO:IN_P/A', 'HERO_RECRUIT:IN_P/A', 'MY_REWARDS:IDLE/D']
+   03_after_scroll_2.png  ['RESEARCH:IDLE/A', 'ALLIANCE_DONATIO:IN_P/A', 'HERO_RECRUIT:IN_P/A', 'MY_REWARDS:IDLE/D']
+   04_after_scroll_3.png  ['RESEARCH:IDLE/A', 'ALLIANCE_DONATIO:IN_P/A', 'HERO_RECRUIT:IN_P/A', 'MY_REWARDS:IDLE/D']
+   05_after_scroll_4.png  ['RESEARCH:IDLE/A', 'ALLIANCE_DONATIO:IN_P/A', 'HERO_RECRUIT:IN_P/A', 'MY_REWARDS:IDLE/D']
+   06_after_scroll_5.png  ['RESEARCH:IDLE/A', 'ALLIANCE_DONATIO:IN_P/A', 'HERO_RECRUIT:IN_P/A', 'MY_REWARDS:IDLE/D']

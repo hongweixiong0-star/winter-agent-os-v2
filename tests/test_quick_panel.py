@@ -303,6 +303,9 @@ ROWS_WITH_BADGES = ROWS_ARCHIVE / "panel_rows_arrows_and_badges__live_20260922T1
 #: 2026-09-22 19:44:14.  Its 矛兵 row is 已完成, so the client draws its green tick there instead of a
 #: chevron -- the frame that pins "no chevron" as the client's own statement rather than a scan failure.
 ROWS_ONE_DONE = ROWS_ARCHIVE / "panel_rows_one_done__live_20260922T1944.png"
+#: The panel scrolled one screen down, so its lower sections are in view -- and so is the city's event
+#: rail to its right, which is what made this frame evidence (issue #99).
+ROWS_SCROLLED = ROWS_ARCHIVE / "panel_scrolled_sections_with_the_city_event_rail__live_20260922T2202.png"
 
 
 class TheButtonIsLocatedByItsChevronTests(unittest.TestCase):
@@ -384,6 +387,73 @@ class TheButtonIsLocatedByItsChevronTests(unittest.TestCase):
                 self.assertEqual(rows[key]["control"], "ARROW")
                 self.assertEqual(rows[key]["arrow_basis"], "ROW_BUTTON_SCAN")
                 self.assertAlmostEqual(rows[key]["arrow_norm"][0], 0.5618, places=4)
+
+
+class TheRowMustBeThePanelsOwnTests(unittest.TestCase):
+    """A row's identity may only come from text the panel itself drew (issue #99).
+
+    What was wrong, measured 2026-09-22 22:02.  The reader takes the tokens that follow a section
+    header *in y order* and stops at the next header, with no test on where they sit -- and the panel
+    is drawn over a city whose right-hand event rail draws its own text at the same heights:
+
+        the 科技研究 header            y 0.2898   x 0.112
+        梦境寻忆, on the event rail    y 0.2977   x 0.769      <- between the two
+        the 科技研究 row itself        y 0.3211   x 0.311, with 空闲中 30 px below and a blue arrow
+
+    So the section's "first row" became the rail's token: key RESEARCH (correct, by section), label
+    梦境寻忆, status IN_PROGRESS, source_word None, control NONE.  The real row was not reported at all,
+    which means a RESEARCH goal saw a busy, arrowless row where the client had drawn an idle one with a
+    button -- it would skip a research building that was free.
+
+    The fix is one predicate built on the constant that already answers this question for the geometry
+    (``QUICK_PANEL_COLUMN_MAX_X_NORM``, whose note records the panel's measured band 0.10-0.34); the
+    three places that take a token as part of a row use it.  After it, this frame reads exactly what
+    the live device read on the same slot the next evening: 科技研究 / 空闲中 / control=ARROW /
+    badge=PRESENT at y 0.3207.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.vision = production_vision()
+
+    def test_the_research_row_is_the_panels_own_row(self) -> None:
+        if self.vision is None:
+            self.skipTest("OCR runtime unavailable")
+        if not ROWS_SCROLLED.exists():
+            self.skipTest(f"evidence frame missing: {ROWS_SCROLLED}")
+        rows = {str(row.get("key")): row
+                for row in (self.vision.observe(ROWS_SCROLLED).quick_panel or {}).get("rows") or []}
+        self.assertEqual(set(rows), {"RESEARCH", "ALLIANCE_DONATION", "HERO_RECRUIT", "MY_REWARDS"})
+        research = rows["RESEARCH"]
+        self.assertEqual(research["label"], "科技研究")
+        self.assertEqual(research["source_word"], "空闲中")
+        self.assertEqual(research["status"], "IDLE")
+        self.assertEqual(research["control"], "ARROW")
+        # The row's own y is the one under its header, 30 px above its state word -- not the rail
+        # token's y, which is 0.023 higher and is what the reader used to report.
+        self.assertAlmostEqual(research["y_norm"], 0.6293 - 0.308, delta=0.01)
+        self.assertNotEqual(research["y_norm"], 0.2977)
+        # ...and no row on this frame is named by the rail.
+        self.assertNotIn("梦境寻忆", {row["label"] for row in rows.values()})
+
+    def test_a_token_the_panel_did_not_draw_cannot_name_a_row(self) -> None:
+        """The same decoy, injected into the synthetic panel: it must not become the row.
+
+        Driven with the archived frame as the image path (so the width the column test needs is real)
+        and a fixed token set, with 梦境寻忆 placed at x 553 -- the rail's own x on a 720-wide frame,
+        which is beyond the panel's column -- between the 科技研究 header and its row.
+        """
+        if not ROWS_SCROLLED.exists():
+            self.skipTest(f"frame missing: {ROWS_SCROLLED}")
+        tokens = PANEL_TOKENS + (_token("梦境寻忆", 553.0, 785.0),)
+        panel = read_quick_panel(ROWS_SCROLLED, _NullOCR(tokens))
+        rows = {str(row.get("key")): row for row in panel.get("rows") or []}
+        self.assertIn("RESEARCH", rows)
+        self.assertEqual(rows["RESEARCH"]["label"], "科技研究")
+        self.assertEqual(rows["RESEARCH"]["source_word"], "空闲中")
+        self.assertEqual(rows["RESEARCH"]["status"], "IDLE")
+        # and the decoy's height is not the row's height
+        self.assertNotAlmostEqual(rows["RESEARCH"]["y_norm"], 785.0 / 1280, places=3)
 
 
 if __name__ == "__main__":
