@@ -438,6 +438,17 @@ def v2_registry() -> SkillRegistry:
     )
     skills.append(
         Skill(
+            "SELECT_TRAINING_CAMP",
+            "Switch the training page to another barracks when the one on screen has its queue busy",
+            Page.TRAINING,
+            Action("TAP_SEMANTIC", "TRAINING_CAMP_NEXT"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
+    skills.append(
+        Skill(
             "TRAIN_TROOPS",
             "Train or promote troops when one of the three camp queues is available",
             Page.TRAINING,

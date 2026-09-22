@@ -1281,6 +1281,34 @@ def verify_training_started(before: WorldState, after: WorldState, troop_type: s
     )
 
 
+
+def verify_training_camp_switched(before: WorldState, after: WorldState) -> VerificationResult:
+    """The training page is a *different* barracks than it was before the tap.
+
+    Operator §八: "一个兵营正在训练，不得阻止其他空闲兵营执行训练".  Until now the route had no
+    hop for this at all -- ``SELECT_LANCER_CAMP`` / ``SELECT_MARKSMAN_CAMP`` do not exist, and
+    the brain's own branch said ``inspect_other_training_queue`` while nothing inspected
+    anything -- so 矛兵营 and 射手营 were never trained once in the project's history.
+
+    The proof is the page title, never a tab label: measured 2026-09-21 on every reviewed camp
+    frame, the client draws all three labels at once, so a label being on screen proves nothing
+    about which page this is, and a verifier that accepted it would pass on a tap that changed
+    nothing.  Both readings are required, because "the before-state was not read" is not evidence
+    that the page changed -- it is the absence of evidence, and treating it as success is the
+    mistake this function is written to avoid.
+    """
+
+    def open_camp(state: WorldState) -> str:
+        training = state.training or {}
+        return str(training.get("camp_open_label") or training.get("troop_type") or "")
+
+    was, now = open_camp(before), open_camp(after)
+    if not was or not now:
+        return VerificationResult(False, "TRAINING_CAMP_SWITCH_NOT_PROVEN", {"was": was, "now": now})
+    if was == now:
+        return VerificationResult(False, "TRAINING_CAMP_UNCHANGED", {"camp": was})
+    return VerificationResult(True, "", {"from": was, "to": now})
+
 def verify_intel_claim(before: WorldState, reward: WorldState, after: WorldState) -> VerificationResult:
     was_claimable = before.page is Page.INTEL and before.intel.get("status") == "CLAIMABLE" and int(before.intel.get("claimable_count", 0)) > 0
     reward_visible = is_reward_popup(reward)

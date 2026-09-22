@@ -683,9 +683,15 @@ def main() -> int:
     # BEAST_SEARCH_TAB joined on 2026-09-21: it is tapped where this frame's own OCR read the
     # 野兽 label (ocr.read_resource_tab_labels), because the strip reorders and the three
     # position-pinned beast-search templates matched nothing on the live client.
+    # TRAINING_CAMP_NEXT joined 2026-09-22: the training page draws all three barracks tabs at
+    # once, so no template and no remembered coordinate can say which one to tap -- the target
+    # is the next camp after the one the page title says is open, read off this frame by
+    # ocr.read_training_camp_tabs.  It is the hop that lets a busy 盾兵营 stop ending the whole
+    # training goal (operator §八).
     _derived_targets = {"RESOURCE_DYNAMIC", "HUD_STAMINA_GAUGE", "MARCH_ROW_1",
                         "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM",
-                        "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING", "BEAST_SEARCH_TAB"}
+                        "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING", "BEAST_SEARCH_TAB",
+                        "TRAINING_CAMP_NEXT"}
     _unresolvable = []
     for _skill in registry.all():
         if _skill.action.kind != "TAP_SEMANTIC":

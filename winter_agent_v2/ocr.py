@@ -543,6 +543,18 @@ class OCRPageClassifier:
             open_label = CAMP_LABELS.get(TROOP_TO_CAMP.get(training.get("troop_type") or "", ""))
             if open_label in training["camps_seen"]:
                 training["camp_open_label"] = open_label
+            # Where each tab is drawn *on this frame*.  The labels above answer which camp the
+            # page is; these answer where to tap in order to reach a different one, and the two
+            # have to come from the same frame or the tap lands on a tab that has moved.
+            #
+            # Measured 2026-09-22 on the live training page: 盾兵营 (134,1260) / 矛兵营 (361,1260)
+            # / 射手营 (586,1260), all three drawn at once, read at 0.990-0.997.  Note what this
+            # is *not*: a decision.  All three are present on every camp page, so presence cannot
+            # say which is open -- the title above does that.  These are positions only.
+            #
+            # The reader was written 2026-09-21 and referenced by nothing until now, which is why
+            # "switch to the idle barracks" had no route: the goal asked for it, and nothing could
+            # turn the tab's name into a pixel.
         if page is Page.RESEARCH:
             texts = [token.text.strip() for token in eligible]
             if "病房扩建VII" in exact_texts:
@@ -2426,6 +2438,33 @@ class HybridVision:
         })
         return replace(primary, training=training)
 
+    def _read_training_camp_tabs(self, image_path: Path, primary: WorldState) -> WorldState | None:
+        """Where the three barracks tabs are drawn on this training page, or ``None``.
+
+        This is the half that did not exist: the goal asked for another barracks and nothing
+        could turn a tab's name into a pixel.  ``read_training_camp_tabs`` was written
+        2026-09-21 and referenced by nothing.
+
+        What this returns is **positions only**, and that boundary is the whole point: the
+        client draws all three labels at once on every camp page (measured 2026-09-21 on all
+        five reviewed frames), so a label being on screen proves nothing about which page this
+        is.  Which camp is open comes from the title, in ``camp_open_label``; these are where to
+        tap in order to reach a different one.  Both readings come off the same frame, so a tab
+        that moves is followed rather than remembered.
+
+        Measured 2026-09-22 on the live training page (720x1280): 盾兵营 (134,1260),
+        矛兵营 (361,1260), 射手营 (586,1260), read at 0.990-0.997.  One narrow band along the
+        bottom, so the cost is one small ROI pass and only on this page.
+        """
+        if primary.page is not Page.TRAINING:
+            return None
+        tabs = read_training_camp_tabs(image_path, self.ocr)
+        if not tabs:
+            return None
+        training = dict(primary.training)
+        training["camp_tab_norm"] = {label: list(point) for label, point in tabs.items()}
+        return replace(primary, training=training)
+
     def _read_building_identity(self, image_path: Path, primary: WorldState) -> WorldState | None:
         """Attach building identity read off pixels, or ``None`` when this is not that frame.
 
@@ -2506,6 +2545,15 @@ class HybridVision:
                 result, frame_size=frame_size
             )
             if classified.page is Page.TRAINING and classified.training:
+                # Where the three tabs are drawn, read now: this branch RETURNS, so a fold
+                # placed with the other per-page reads (further down, in the known-page chain)
+                # would never run for a training frame -- the first version of this was written
+                # there and produced nothing, while every test that called the classifier
+                # directly looked fine.  Same lesson as the training branch above: a lower layer
+                # passing does not mean the production entry point reaches it.
+                tab_state = self._read_training_camp_tabs(image_path, classified)
+                if tab_state is not None:
+                    classified = tab_state
                 # The camp model turns the classifier's selected-tab reading into the
                 # per-barracks answer.  Only the open camp is described: the other two were
                 # not on screen, and writing "idle" about a barracks nobody opened is the

@@ -15,13 +15,14 @@ from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
 from .ocr import find_printed_words, read_tap_anywhere_instruction
+from .camp_training import CAMP_LABELS, CAMP_ORDER
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
-from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_intel_list_read, verify_alliance_gifts_claimed
+from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
 from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
@@ -287,6 +288,11 @@ class LiveRuntime:
         # that state.
         "WAIT_FOR_CAMP_MENU": verify_camp_menu_reobserved,
         "OPEN_INFANTRY_TRAINING": verify_training_page_open,
+        # The hop that did not exist: switch the training page to another barracks when the
+        # one on screen has its queue busy.  Operator §八, "一个兵营正在训练，不得阻止其他空闲
+        # 兵营执行训练" -- without it the goal stopped at the first busy camp and 矛兵营 /
+        # 射手营 were never trained once.
+        "SELECT_TRAINING_CAMP": verify_training_camp_switched,
         "NAVIGATE_RESEARCH_LAB": verify_research_lab_focused,
         "OPEN_RESEARCH": verify_research_page_open,
     }
@@ -1388,6 +1394,57 @@ class LiveRuntime:
             if frame.page is not Page.HOME:
                 return None
             point = (frame.training or {}).get("train_tap_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
+        if semantic == "TRAINING_CAMP_NEXT":
+            # Another barracks on the training page, tapped where this frame drew its tab.
+            #
+            # Why a derived target and not three named controls: the page draws all three tab
+            # labels at once on every camp page, so a template or a remembered coordinate cannot
+            # say which one to tap -- only "which page am I on" can, and that is the title
+            # (``camp_open_label``).  Choosing the *next* camp in the client's own order is what
+            # keeps one busy barracks from ending the goal, and it needs no per-camp route.
+            #
+            # Measured 2026-09-22 on the live training page (720x1280): 盾兵营 (134,1260),
+            # 矛兵营 (361,1260), 射手营 (586,1260), read at 0.990-0.997.
+            #
+            # The guard is that the frame must still be the training page AND must carry the
+            # tabs' own positions: a point is a fragment of the frame it was measured on.  ``None``
+            # -- wrong page, or a page whose tabs could not be read -- ends the step honestly
+            # rather than tapping an invented coordinate.
+            if frame.page is not Page.TRAINING:
+                return None
+            tabs = (frame.training or {}).get("camp_tab_norm") or {}
+            if not isinstance(tabs, Mapping) or not tabs:
+                return None
+            present = [CAMP_LABELS[camp] for camp in CAMP_ORDER if CAMP_LABELS.get(camp) in tabs]
+            if not present:
+                return None
+            open_label = str((frame.training or {}).get("camp_open_label") or "")
+            if open_label in present:
+                at = present.index(open_label)
+                candidates = present[at + 1:] + present[:at]
+            else:
+                # The open camp is unknown, so the first tab is as good a choice as any -- and
+                # tapping it cannot make the situation worse than not acting at all.
+                candidates = present
+            for label in candidates:
+                point = tabs.get(label)
+                if isinstance(point, (tuple, list)) and len(point) == 2:
+                    try:
+                        x_norm, y_norm = float(point[0]), float(point[1])
+                    except (TypeError, ValueError):
+                        continue
+                    if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0:
+                        return (x_norm, y_norm)
+            return None
             if not (isinstance(point, (tuple, list)) and len(point) == 2):
                 return None
             try:

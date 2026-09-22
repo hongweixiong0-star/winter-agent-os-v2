@@ -150,6 +150,10 @@ class RuleBrain:
         # row all reported ``menu_drawn: false`` and ended with MAX_ACTIONS_REACHED,
         # so an unbounded wait burns a whole run on a state that is not converging.
         self._camp_menu_waits = 0
+        # Barracks switched inside one run, so a training page whose three queues are all busy
+        # cannot turn into a loop of taps (operator §八, bounded the same way as the wait above).
+        self._camp_switch_attempts = 0
+        self.MAX_CAMP_SWITCHES = 2
         # Two waits is the whole budget: measured, the state does not converge, so the
         # third Stage A observation is a blocker rather than another wait.
         self.MAX_CAMP_MENU_WAITS = 2
@@ -1052,6 +1056,27 @@ class RuleBrain:
             if world.training.get("all_queues_busy"):
                 return self._leave_or_stop(world, "all_training_queues_busy", "switch_task")
             if world.training.get("queue_available") is False:
+                # Operator §八: "一个兵营正在训练，不得阻止其他空闲兵营执行训练".
+                #
+                # This used to end the goal here ("inspect_other_training_queue") and nothing ever
+                # inspected anything -- there was no hop to reach another barracks, so 矛兵营 and
+                # 射手营 went untrained for the whole project while the shield camp's queue was
+                # busy.  The page draws all three tabs, so switching is an ordinary tap, and the
+                # target is derived from this frame's own reading.
+                #
+                # Bounded like the camp-menu wait above: at most two switches per run, so a page
+                # whose tabs are all busy cannot become a loop.
+                if (
+                    self._camp_switch_attempts < self.MAX_CAMP_SWITCHES
+                    and (world.training.get("camp_tab_norm") or {})
+                ):
+                    self._camp_switch_attempts += 1
+                    return Decision(
+                        "SELECT_TRAINING_CAMP",
+                        "training_queue_busy_switch_to_another_barracks",
+                        world.confidence,
+                        "another_camp_open",
+                    )
                 return self._leave_or_stop(world, "training_queue_busy", "inspect_other_training_queue")
             if world.training.get("trainable"):
                 return Decision("TRAIN_TROOPS", "training_queue_available", world.confidence, "training_queue_started")
