@@ -1,0 +1,18 @@
+lease: acquired (expires 2026-09-22T20:17:02.214610+00:00)
+device: (720, 1280) focus=com.gof.china
+  start: page=MAP conf=0.99 (20260922_200202_00_start.png)
+  recovering: BTN_OPEN_HOME on this frame -> tap (665, 1221)
+  start: page=HOME conf=0.98 (20260922_200202_00_recover0.png)
+  handle on this frame: {"state": "COLLAPSED", "triangle_direction": "RIGHT", "point_norm": [0.0181, 0.4301], "box_norm": {"x_norm": 0.0083, "y_norm": 0.4203, "w_norm": 0.0208, "h_norm": 0.0203}, "basis": "HANDLE_TRIANGLE_SCAN", "measured_on": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200202_00_recover0.png", "evidence": {"triangle_rows": 26, "triangle_width_px": 15, "frame": [720, 1280]}}
+  tapping the handle at its own point (13, 551)
+  after handle: page=HOME panel_open=True rows=4 (20260922_200202_01_after_handle.png)
+    SHIELD_CAMP                        status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.4262] box={'x_norm': 0.5333, 'y_norm': 0.418, 'w_norm': 0.0569, 'h_norm': 0.025}
+    LANCER_CAMP                        status=IDLE         control=DONE   basis=PANEL_RELATIVE_ESTIMATE point=[0.4042, 0.4832] box=None
+    MARKSMAN_CAMP                      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.5402] box={'x_norm': 0.5333, 'y_norm': 0.532, 'w_norm': 0.0569, 'h_norm': 0.025}
+    RESEARCH                           status=IDLE         control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.6285] box={'x_norm': 0.5333, 'y_norm': 0.6203, 'w_norm': 0.0569, 'h_norm': 0.025}
+  tapping row SHIELD_CAMP's own point (404, 546) (box x 0.5333-0.5902 w=0.0569)
+  after row: page=HOME | training={"building": "INFANTRY_CAMP", "status": "IDLE", "queue_available": true, "menu_open": true, "camp": "SHIELD_CAMP", "camp_label": "盾兵营", "train_tap_norm": [0.7312, 0.6844], "source": "ACTION_BAR"}
+             template-only page=HOME training={"building": "INFANTRY_CAMP", "status": "IDLE", "queue_available": true, "menu_open": true}
+             frame 20260922_200202_02_after_row.png
+VERDICT: the row's own control responded: the camp menu opened
+  panel_open_after=False

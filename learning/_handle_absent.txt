@@ -1,0 +1,5 @@
+page: Page.HOME | popup: None | panel_open: None | rows: 0
+  find_quick_panel_handle(panel_open=None) -> None
+  find_quick_panel_handle(panel_open=False) -> None
+  find_quick_panel_handle(panel_open=True) -> None
+-> learning/_camp_menu/handle_absent_half.png

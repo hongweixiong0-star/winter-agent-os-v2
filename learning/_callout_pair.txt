@@ -1,0 +1,6 @@
+callout window x 0.28-0.68  y 0.24-0.58 ; blob floor 150 px
+  04:02  city, before any panel work (run A, recovered from MAP)   no blob >=150px  ring=no
+  04:03  city, run B start -- still before any tap                 no blob >=150px  ring=no
+  04:03  panel open (handle tapped)                                5 blob(s), largest x 0.6333-0.6528 y 0.4188-0.4414 270px  ring=no
+  04:04  after the MY_REWARDS row BODY tap                         1 blob(s), largest x 0.4514-0.4958 y 0.3891-0.4437 891px  ring=no
+  04:08  city, 4 min later, nothing tapped since                   1 blob(s), largest x 0.4514-0.4833 y 0.3891-0.4422 733px  ring=no

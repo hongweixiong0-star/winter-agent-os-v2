@@ -1,0 +1,411 @@
+{
+ "recorded_at": "2026-09-22T20:03:43.434670+00:00",
+ "steps": [
+  {
+   "what": "reached HOME",
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_00_start.png"
+  },
+  {
+   "what": "tapped handle at its own point",
+   "tap": [
+    13,
+    551
+   ],
+   "panel_open_after": true,
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_01_after_handle.png"
+  },
+  {
+   "what": "tapped a row's own body",
+   "row": "MY_REWARDS",
+   "on": "body",
+   "tap": [
+    225,
+    822
+   ],
+   "arrow_norm": [
+    0.4028,
+    0.641
+   ],
+   "arrow_box_norm": null,
+   "page_after": "HOME",
+   "training_after": {},
+   "template_training_after": {},
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_02_after_row.png"
+  }
+ ],
+ "handle": {
+  "state": "COLLAPSED",
+  "triangle_direction": "RIGHT",
+  "point_norm": [
+   0.0181,
+   0.4301
+  ],
+  "box_norm": {
+   "x_norm": 0.0083,
+   "y_norm": 0.4203,
+   "w_norm": 0.0208,
+   "h_norm": 0.0203
+  },
+  "basis": "HANDLE_TRIANGLE_SCAN",
+  "measured_on": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_00_start.png",
+  "evidence": {
+   "triangle_rows": 26,
+   "triangle_width_px": 15,
+   "frame": [
+    720,
+    1280
+   ]
+  }
+ },
+ "scrolls": [
+  {
+   "step": 1,
+   "rows": [
+    {
+     "key": "RESEARCH",
+     "label": "科技研究",
+     "status": "IDLE",
+     "source_word": "空闲中",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.3207
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.3125,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.3207
+    },
+    {
+     "key": "ALLIANCE_DONATION",
+     "label": "联盟捐献",
+     "status": "IN_PROGRESS",
+     "source_word": "可捐献25/25",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.4086
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.4008,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.4086
+    },
+    {
+     "key": "HERO_RECRUIT",
+     "label": "高级招募",
+     "status": "IN_PROGRESS",
+     "source_word": "免费招募",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.4965
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.4883,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.4965
+    },
+    {
+     "key": "MY_REWARDS",
+     "label": "仓库补给",
+     "status": "IDLE",
+     "source_word": "已完成",
+     "control": "DONE",
+     "arrow_basis": "PANEL_RELATIVE_ESTIMATE",
+     "arrow_norm": [
+      0.4028,
+      0.641
+     ],
+     "arrow_box_norm": null,
+     "done_norm": [
+      0.5618,
+      0.6488
+     ],
+     "badge": "UNKNOWN",
+     "y_norm": 0.641
+    }
+   ],
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_01_scroll1.png"
+  },
+  {
+   "step": 2,
+   "rows": [
+    {
+     "key": "RESEARCH",
+     "label": "科技研究",
+     "status": "IDLE",
+     "source_word": "空闲中",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.3207
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.3125,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.3207
+    },
+    {
+     "key": "ALLIANCE_DONATION",
+     "label": "联盟捐献",
+     "status": "IN_PROGRESS",
+     "source_word": "可捐献25/25",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.4086
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.4008,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.4086
+    },
+    {
+     "key": "HERO_RECRUIT",
+     "label": "高级招募",
+     "status": "IN_PROGRESS",
+     "source_word": "免费招募",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.4965
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.4883,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.4965
+    },
+    {
+     "key": "MY_REWARDS",
+     "label": "仓库补给",
+     "status": "IDLE",
+     "source_word": "已完成",
+     "control": "DONE",
+     "arrow_basis": "PANEL_RELATIVE_ESTIMATE",
+     "arrow_norm": [
+      0.4028,
+      0.641
+     ],
+     "arrow_box_norm": null,
+     "done_norm": [
+      0.5618,
+      0.6488
+     ],
+     "badge": "UNKNOWN",
+     "y_norm": 0.641
+    }
+   ],
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_01_scroll2.png"
+  },
+  {
+   "step": 3,
+   "rows": [
+    {
+     "key": "RESEARCH",
+     "label": "科技研究",
+     "status": "IDLE",
+     "source_word": "空闲中",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.3207
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.3125,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.3207
+    },
+    {
+     "key": "ALLIANCE_DONATION",
+     "label": "联盟捐献",
+     "status": "IN_PROGRESS",
+     "source_word": "可捐献25/25",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.4086
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.4008,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.4086
+    },
+    {
+     "key": "HERO_RECRUIT",
+     "label": "高级招募",
+     "status": "IN_PROGRESS",
+     "source_word": "免费招募",
+     "control": "ARROW",
+     "arrow_basis": "ROW_BUTTON_SCAN",
+     "arrow_norm": [
+      0.5618,
+      0.4965
+     ],
+     "arrow_box_norm": {
+      "x_norm": 0.5333,
+      "y_norm": 0.4883,
+      "w_norm": 0.0569,
+      "h_norm": 0.025
+     },
+     "done_norm": null,
+     "badge": "PRESENT",
+     "y_norm": 0.4965
+    },
+    {
+     "key": "MY_REWARDS",
+     "label": "仓库补给",
+     "status": "IDLE",
+     "source_word": "已完成",
+     "control": "DONE",
+     "arrow_basis": "PANEL_RELATIVE_ESTIMATE",
+     "arrow_norm": [
+      0.4028,
+      0.641
+     ],
+     "arrow_box_norm": null,
+     "done_norm": [
+      0.5618,
+      0.6488
+     ],
+     "badge": "UNKNOWN",
+     "y_norm": 0.641
+    }
+   ],
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_01_scroll3.png"
+  }
+ ],
+ "panel_rows": [
+  {
+   "key": "RESEARCH",
+   "label": "科技研究",
+   "status": "IDLE",
+   "source_word": "空闲中",
+   "control": "ARROW",
+   "arrow_basis": "ROW_BUTTON_SCAN",
+   "arrow_norm": [
+    0.5618,
+    0.3207
+   ],
+   "arrow_box_norm": {
+    "x_norm": 0.5333,
+    "y_norm": 0.3125,
+    "w_norm": 0.0569,
+    "h_norm": 0.025
+   },
+   "done_norm": null,
+   "badge": "PRESENT",
+   "y_norm": 0.3207
+  },
+  {
+   "key": "ALLIANCE_DONATION",
+   "label": "联盟捐献",
+   "status": "IN_PROGRESS",
+   "source_word": "可捐献25/25",
+   "control": "ARROW",
+   "arrow_basis": "ROW_BUTTON_SCAN",
+   "arrow_norm": [
+    0.5618,
+    0.4086
+   ],
+   "arrow_box_norm": {
+    "x_norm": 0.5333,
+    "y_norm": 0.4008,
+    "w_norm": 0.0569,
+    "h_norm": 0.025
+   },
+   "done_norm": null,
+   "badge": "PRESENT",
+   "y_norm": 0.4086
+  },
+  {
+   "key": "HERO_RECRUIT",
+   "label": "高级招募",
+   "status": "IN_PROGRESS",
+   "source_word": "免费招募",
+   "control": "ARROW",
+   "arrow_basis": "ROW_BUTTON_SCAN",
+   "arrow_norm": [
+    0.5618,
+    0.4965
+   ],
+   "arrow_box_norm": {
+    "x_norm": 0.5333,
+    "y_norm": 0.4883,
+    "w_norm": 0.0569,
+    "h_norm": 0.025
+   },
+   "done_norm": null,
+   "badge": "PRESENT",
+   "y_norm": 0.4965
+  },
+  {
+   "key": "MY_REWARDS",
+   "label": "仓库补给",
+   "status": "IDLE",
+   "source_word": "已完成",
+   "control": "DONE",
+   "arrow_basis": "PANEL_RELATIVE_ESTIMATE",
+   "arrow_norm": [
+    0.4028,
+    0.641
+   ],
+   "arrow_box_norm": null,
+   "done_norm": [
+    0.5618,
+    0.6488
+   ],
+   "badge": "UNKNOWN",
+   "y_norm": 0.641
+  }
+ ],
+ "verdict": "the row's control did NOT respond (page=HOME); the tap point did not reach it"
+}

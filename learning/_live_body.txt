@@ -1,0 +1,27 @@
+lease: acquired (expires 2026-09-22T20:18:43.435661+00:00)
+device: (720, 1280) focus=com.gof.china
+  start: page=HOME conf=0.99 (20260922_200343_00_start.png)
+  handle on this frame: {"state": "COLLAPSED", "triangle_direction": "RIGHT", "point_norm": [0.0181, 0.4301], "box_norm": {"x_norm": 0.0083, "y_norm": 0.4203, "w_norm": 0.0208, "h_norm": 0.0203}, "basis": "HANDLE_TRIANGLE_SCAN", "measured_on": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200343_00_start.png", "evidence": {"triangle_rows": 26, "triangle_width_px": 15, "frame": [720, 1280]}}
+  tapping the handle at its own point (13, 551)
+  after handle: page=HOME panel_open=True rows=4 (20260922_200343_01_after_handle.png)
+  scrolling the panel's list (1/3): swipe (216,794) -> (216,384)
+    RESEARCH                           status=IDLE         control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.3207] box={'x_norm': 0.5333, 'y_norm': 0.3125, 'w_norm': 0.0569, 'h_norm': 0.025}
+    ALLIANCE_DONATION                  status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.4086] box={'x_norm': 0.5333, 'y_norm': 0.4008, 'w_norm': 0.0569, 'h_norm': 0.025}
+    HERO_RECRUIT                       status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.4965] box={'x_norm': 0.5333, 'y_norm': 0.4883, 'w_norm': 0.0569, 'h_norm': 0.025}
+    MY_REWARDS                         status=IDLE         control=DONE   basis=PANEL_RELATIVE_ESTIMATE point=[0.4028, 0.641] box=None
+  scrolling the panel's list (2/3): swipe (216,794) -> (216,384)
+    RESEARCH                           status=IDLE         control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.3207] box={'x_norm': 0.5333, 'y_norm': 0.3125, 'w_norm': 0.0569, 'h_norm': 0.025}
+    ALLIANCE_DONATION                  status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.4086] box={'x_norm': 0.5333, 'y_norm': 0.4008, 'w_norm': 0.0569, 'h_norm': 0.025}
+    HERO_RECRUIT                       status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.4965] box={'x_norm': 0.5333, 'y_norm': 0.4883, 'w_norm': 0.0569, 'h_norm': 0.025}
+    MY_REWARDS                         status=IDLE         control=DONE   basis=PANEL_RELATIVE_ESTIMATE point=[0.4028, 0.641] box=None
+  scrolling the panel's list (3/3): swipe (216,794) -> (216,384)
+    RESEARCH                           status=IDLE         control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.3207] box={'x_norm': 0.5333, 'y_norm': 0.3125, 'w_norm': 0.0569, 'h_norm': 0.025}
+    ALLIANCE_DONATION                  status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.4086] box={'x_norm': 0.5333, 'y_norm': 0.4008, 'w_norm': 0.0569, 'h_norm': 0.025}
+    HERO_RECRUIT                       status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTON_SCAN        point=[0.5618, 0.4965] box={'x_norm': 0.5333, 'y_norm': 0.4883, 'w_norm': 0.0569, 'h_norm': 0.025}
+    MY_REWARDS                         status=IDLE         control=DONE   basis=PANEL_RELATIVE_ESTIMATE point=[0.4028, 0.641] box=None
+  tapping row MY_REWARDS's BODY: label '仓库补给' at x 183.0-267.0 y 809.0-835.0 -> (225, 822)
+  after row: page=HOME | training={}
+             template-only page=HOME training={}
+             frame 20260922_200343_02_after_row.png
+VERDICT: the row's control did NOT respond (page=HOME); the tap point did not reach it
+  panel_open_after=None

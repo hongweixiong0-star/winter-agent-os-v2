@@ -1,0 +1,166 @@
+{
+ "recorded_at": "2026-09-22T20:02:02.213626+00:00",
+ "steps": [
+  {
+   "what": "reached HOME",
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200202_00_recover0.png"
+  },
+  {
+   "what": "tapped handle at its own point",
+   "tap": [
+    13,
+    551
+   ],
+   "panel_open_after": true,
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200202_01_after_handle.png"
+  },
+  {
+   "what": "tapped a row's own located point",
+   "row": "SHIELD_CAMP",
+   "tap": [
+    404,
+    546
+   ],
+   "arrow_norm": [
+    0.5618,
+    0.4262
+   ],
+   "arrow_box_norm": {
+    "x_norm": 0.5333,
+    "y_norm": 0.418,
+    "w_norm": 0.0569,
+    "h_norm": 0.025
+   },
+   "page_after": "HOME",
+   "training_after": {
+    "building": "INFANTRY_CAMP",
+    "status": "IDLE",
+    "queue_available": true,
+    "menu_open": true,
+    "camp": "SHIELD_CAMP",
+    "camp_label": "盾兵营",
+    "train_tap_norm": [
+     0.7312,
+     0.6844
+    ],
+    "source": "ACTION_BAR"
+   },
+   "template_training_after": {
+    "building": "INFANTRY_CAMP",
+    "status": "IDLE",
+    "queue_available": true,
+    "menu_open": true
+   },
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200202_02_after_row.png"
+  }
+ ],
+ "handle": {
+  "state": "COLLAPSED",
+  "triangle_direction": "RIGHT",
+  "point_norm": [
+   0.0181,
+   0.4301
+  ],
+  "box_norm": {
+   "x_norm": 0.0083,
+   "y_norm": 0.4203,
+   "w_norm": 0.0208,
+   "h_norm": 0.0203
+  },
+  "basis": "HANDLE_TRIANGLE_SCAN",
+  "measured_on": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200202_00_recover0.png",
+  "evidence": {
+   "triangle_rows": 26,
+   "triangle_width_px": 15,
+   "frame": [
+    720,
+    1280
+   ]
+  }
+ },
+ "panel_rows": [
+  {
+   "key": "SHIELD_CAMP",
+   "label": "盾兵",
+   "status": "IN_PROGRESS",
+   "source_word": "02:59:46",
+   "control": "ARROW",
+   "arrow_basis": "ROW_BUTTON_SCAN",
+   "arrow_norm": [
+    0.5618,
+    0.4262
+   ],
+   "arrow_box_norm": {
+    "x_norm": 0.5333,
+    "y_norm": 0.418,
+    "w_norm": 0.0569,
+    "h_norm": 0.025
+   },
+   "done_norm": null,
+   "badge": "ABSENT",
+   "y_norm": 0.4262
+  },
+  {
+   "key": "LANCER_CAMP",
+   "label": "矛兵",
+   "status": "IDLE",
+   "source_word": "已完成",
+   "control": "DONE",
+   "arrow_basis": "PANEL_RELATIVE_ESTIMATE",
+   "arrow_norm": [
+    0.4042,
+    0.4832
+   ],
+   "arrow_box_norm": null,
+   "done_norm": [
+    0.5618,
+    0.491
+   ],
+   "badge": "UNKNOWN",
+   "y_norm": 0.4832
+  },
+  {
+   "key": "MARKSMAN_CAMP",
+   "label": "射手",
+   "status": "IN_PROGRESS",
+   "source_word": "00:38:00",
+   "control": "ARROW",
+   "arrow_basis": "ROW_BUTTON_SCAN",
+   "arrow_norm": [
+    0.5618,
+    0.5402
+   ],
+   "arrow_box_norm": {
+    "x_norm": 0.5333,
+    "y_norm": 0.532,
+    "w_norm": 0.0569,
+    "h_norm": 0.025
+   },
+   "done_norm": null,
+   "badge": "ABSENT",
+   "y_norm": 0.5402
+  },
+  {
+   "key": "RESEARCH",
+   "label": "科技研究",
+   "status": "IDLE",
+   "source_word": "空闲中",
+   "control": "ARROW",
+   "arrow_basis": "ROW_BUTTON_SCAN",
+   "arrow_norm": [
+    0.5618,
+    0.6285
+   ],
+   "arrow_box_norm": {
+    "x_norm": 0.5333,
+    "y_norm": 0.6203,
+    "w_norm": 0.0569,
+    "h_norm": 0.025
+   },
+   "done_norm": null,
+   "badge": "PRESENT",
+   "y_norm": 0.6285
+  }
+ ],
+ "verdict": "the row's own control responded: the camp menu opened"
+}

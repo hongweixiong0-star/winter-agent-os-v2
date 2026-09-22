@@ -1,0 +1,15 @@
+=== (a) does the project's own ring template see a marker on these frames? ===
+  panel open (no callout expected)   ring=None
+  after MY_REWARDS row body          ring=None
+  after SHIELD arrow (camp menu)     ring=None
+
+=== (b) the panel rows as the production reader saw them in the live runs ===
+
+=== (c) the live busy-layout reading vs the offline measurement ===
+  live  : {'menu_open': True, 'camp': 'SHIELD_CAMP', 'camp_label': '盾兵营', 'train_tap_norm': [0.7312, 0.6844], 'source': 'ACTION_BAR'}
+  offline measurement of the busy bar: 详情 (0.269,0.683)  训练 (0.732,0.685)
+  offline measurement of the idle bar: 详情 (0.328,0.714)  训练 (0.672,0.714)  升级 (0.501,0.737)
+
+=== (d) which rows were live on the device, and their red dots ===
+  first screen: [('SHIELD_CAMP', 'ARROW', 'ABSENT'), ('LANCER_CAMP', 'DONE', 'UNKNOWN'), ('MARKSMAN_CAMP', 'ARROW', 'ABSENT'), ('RESEARCH', 'ARROW', 'PRESENT')]
+  after scroll: []

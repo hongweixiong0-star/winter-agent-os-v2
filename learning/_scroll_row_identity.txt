@@ -1,0 +1,8 @@
+every token whose text contains 梦 or 忆, anywhere on the frame:
+   y=0.2977 x=0.769 conf=0.998 '梦境寻忆'
+
+the reader's rows for this frame:
+    {"kind": "RESEARCH", "key": "RESEARCH", "label": "梦境寻忆", "y_norm": 0.2977, "status": "IN_PROGRESS", "source_word": null, "arrow_norm": [0.4056, 0.2977], "arrow_basis": "PANEL_RELATIVE_ESTIMATE", "badge": "UNKNOWN", "control": "NONE"}
+    {"kind": "ALLIANCE_DONATION", "key": "ALLIANCE_DONATION", "label": "联盟捐献", "y_norm": 0.409, "status": "IN_PROGRESS", "source_word": "可捐献25/25", "arrow_norm": [0.5618, 0.409], "arrow_basis": "ROW_BUTTON_SCAN", "badge": "PRESENT", "control": "ARROW", "arrow_box_norm": {"x_norm": 0.5333, "y_norm": 0.4008, "w_norm": 0.0569, "h_norm": 0.025}}
+    {"kind": "HERO_RECRUIT", "key": "HERO_RECRUIT", "label": "高级招募", "y_norm": 0.4965, "status": "IN_PROGRESS", "source_word": "免费招募", "arrow_norm": [0.5618, 0.4965], "arrow_basis": "ROW_BUTTON_SCAN", "badge": "PRESENT", "control": "ARROW", "arrow_box_norm": {"x_norm": 0.5333, "y_norm": 0.4883, "w_norm": 0.0569, "h_norm": 0.025}}
+    {"kind": "MY_REWARDS", "key": "MY_REWARDS", "label": "仓库补给", "y_norm": 0.6422, "status": "IDLE", "source_word": "已完成", "arrow_norm": [0.4056, 0.6422], "arrow_basis": "PANEL_RELATIVE_ESTIMATE", "badge": "UNKNOWN", "control": "DONE", "done_norm": [0.5618, 0.6496], "done_box_norm": {"x_norm": 0.5333, "y_norm": 0.6352, "w_norm": 0.0569, "h_norm": 0.0289}}

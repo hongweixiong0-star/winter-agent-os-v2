@@ -1,0 +1,11 @@
+{
+ "recorded_at": "2026-09-22T20:08:05.837314+00:00",
+ "steps": [
+  {
+   "what": "reached HOME",
+   "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_panel_arrow_20260923\\20260922_200805_00_start.png"
+  }
+ ],
+ "handle": null,
+ "aborted": "handle_not_drawn_on_this_frame"
+}

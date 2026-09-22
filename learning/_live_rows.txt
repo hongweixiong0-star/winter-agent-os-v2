@@ -1,0 +1,21 @@
+run 20:03  handle: {"state": "COLLAPSED", "triangle_direction": "RIGHT", "point_norm": [0.0181, 0.4301], "box_norm": {"x_norm": 0.0083, "y_
+  --- first screen
+      RESEARCH               label=科技研究       status=IDLE         word=空闲中        control=ARROW  badge=PRESENT  y=0.3207 basis=ROW_BUTTON_SCAN
+      ALLIANCE_DONATION      label=联盟捐献       status=IN_PROGRESS  word=可捐献25/25   control=ARROW  badge=PRESENT  y=0.4086 basis=ROW_BUTTON_SCAN
+      HERO_RECRUIT           label=高级招募       status=IN_PROGRESS  word=免费招募       control=ARROW  badge=PRESENT  y=0.4965 basis=ROW_BUTTON_SCAN
+      MY_REWARDS             label=仓库补给       status=IDLE         word=已完成        control=DONE   badge=UNKNOWN  y=0.641 basis=PANEL_RELATIVE_ESTIMATE
+  --- after 1 swipe
+      RESEARCH               label=科技研究       status=IDLE         word=空闲中        control=ARROW  badge=PRESENT  y=0.3207 basis=ROW_BUTTON_SCAN
+      ALLIANCE_DONATION      label=联盟捐献       status=IN_PROGRESS  word=可捐献25/25   control=ARROW  badge=PRESENT  y=0.4086 basis=ROW_BUTTON_SCAN
+      HERO_RECRUIT           label=高级招募       status=IN_PROGRESS  word=免费招募       control=ARROW  badge=PRESENT  y=0.4965 basis=ROW_BUTTON_SCAN
+      MY_REWARDS             label=仓库补给       status=IDLE         word=已完成        control=DONE   badge=UNKNOWN  y=0.641 basis=PANEL_RELATIVE_ESTIMATE
+  --- after 2 swipes
+      RESEARCH               label=科技研究       status=IDLE         word=空闲中        control=ARROW  badge=PRESENT  y=0.3207 basis=ROW_BUTTON_SCAN
+      ALLIANCE_DONATION      label=联盟捐献       status=IN_PROGRESS  word=可捐献25/25   control=ARROW  badge=PRESENT  y=0.4086 basis=ROW_BUTTON_SCAN
+      HERO_RECRUIT           label=高级招募       status=IN_PROGRESS  word=免费招募       control=ARROW  badge=PRESENT  y=0.4965 basis=ROW_BUTTON_SCAN
+      MY_REWARDS             label=仓库补给       status=IDLE         word=已完成        control=DONE   badge=UNKNOWN  y=0.641 basis=PANEL_RELATIVE_ESTIMATE
+
+step: reached HOME | row None | on None | tap None | page_after None | training {}
+step: tapped handle at its own point | row None | on None | tap [13, 551] | page_after None | training {}
+step: tapped a row's own body | row MY_REWARDS | on body | tap [225, 822] | page_after HOME | training {}
+verdict: the row's control did NOT respond (page=HOME); the tap point did not reach it
