@@ -8,33 +8,33 @@
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
 <!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-22T22:28:44+00:00
+HANDOFF TIME: 2026-09-22T22:40:59+00:00
 LAST GOOD COMMIT: e4fd245
-WORKING TREE: 482 dirty file(s)
-  ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy/memory/2026-09-21.md', ' M config/control_panel_state.json', ' M config/policy_state.json', ' M dataset/candidate/template_manifest.json', ' M docs/CAPABILITY_COVERAGE.md', ' M evidence/INDEX.json']
+WORKING TREE: 497 dirty file(s)
+  ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/memory/2026-09-23.md', ' M .workbuddy-ai/memory/MEMORY.md', ' M .workbuddy/memory/2026-09-21.md', ' M .workbuddy/memory/2026-09-23.md', ' M config/control_panel_state.json', ' M config/policy_state.json']
 
-WHAT FINISHED (machine-visible): 20 skills live verified, 42 stable, 471 commit(s) in history
+WHAT FINISHED (machine-visible): 20 skills live verified, 42 stable, 473 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 21 skills never executed, 11 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=GOAL_RUNNING stop_reason=None
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-22T22:28:39.317111+00:00", "episode_id": "20260923_062647_424478", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062647_424478\\20260923_062647_424478_step_004_before_20260922T222812924542.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062647_424478\\20260923_062647_424478_step_004_after_20260922T222825470978.png"}
+STOPPED AT: agent_state=IDLE stop_reason=reserved_march_for_stamina
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-22T22:31:58.359686+00:00", "episode_id": "20260923_062948_568906", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_004_before_20260922T223128373025.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_004_after_20260922T223143325021.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 376, "recent": 140, "last_seen": "2026-09-22T21:47:42.619776+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 84}, "undated": 31, "top_skills": [["OPEN_HOME", 45], ["SELECT_RESOURCE", 44], ["DISMISS_MAIL_GENERIC_REWARD", 42]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 482
+DIRTY FILES: 497
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-22T22:28:44+00:00
+SYNC STATE at 2026-09-22T22:40:59+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : ca5524fbf65a824562dc4a779f9d6471fd707b13
-remote_head       : ca5524fbf65a824562dc4a779f9d6471fd707b13   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+local_head        : c2d80de7c1992f66cabb9c732c5fd84c29c49a99
+remote_head       : c2d80de7c1992f66cabb9c732c5fd84c29c49a99   (local remote-tracking ref; run tools/git_sync.py status to refresh)
 unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (482 path(s))
-last_push_at      : 2026-09-22T22:28:35.335181+00:00
+git_dirty         : True (497 path(s))
+last_push_at      : 2026-09-22T22:40:17.578005+00:00
 last_push_status  : PUSHED
 verdict           : GitHub mirrors the local tree
 

@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-09-22T22:28:44+00:00",
+  "generated_at": "2026-09-22T22:40:59+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "ca5524f",
+  "commit": "c2d80de",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
-    "agent_state": "GOAL_RUNNING",
-    "runtime_thread_alive": true,
-    "scheduler_loop_alive": true,
-    "last_tick_time": "2026-09-22T22:28:23.771516+00:00",
-    "last_action_time": "2026-09-22T22:28:23.967977+00:00",
-    "last_success_time": "2026-09-22T22:28:39.530812+00:00",
+    "agent_state": "IDLE",
+    "runtime_thread_alive": false,
+    "scheduler_loop_alive": false,
+    "last_tick_time": "2026-09-22T22:32:13.067674+00:00",
+    "last_action_time": "2026-09-22T22:31:41.822526+00:00",
+    "last_success_time": "2026-09-22T22:31:58.572613+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 21,
     "unexpected_worker_exits": 15,
-    "page": "HOME",
-    "current_goal": "DAILY",
-    "current_skill": "BACK",
-    "reason": "daily_panel_not_actionable_leaving_the_page",
+    "page": "MAP",
+    "current_goal": "AUTO_DISCOVERY",
+    "current_skill": "SAFE_STOP",
+    "reason": "reserved_march_for_stamina",
     "preconditions": [],
     "verifier": "PASS",
-    "next_action": "home_opened",
+    "next_action": "stamina_task_slot_preserved",
     "risk": "UNKNOWN",
-    "confidence": 0.98,
+    "confidence": 1.0,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062647_424478\\20260923_062647_424478_step_004_after_20260922T222825470978.png",
-    "march_used": null,
-    "march_max": null,
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_005_before_20260922T223158574739.png",
+    "march_used": 2,
+    "march_max": 3,
     "queues": {
       "building": {},
       "research": {},
@@ -38,7 +38,7 @@
       "alliance": {},
       "events": {}
     },
-    "stop_reason": null,
+    "stop_reason": "reserved_march_for_stamina",
     "deferred_goals": [
       {
         "goal_id": "AVOID_STAMINA_WASTE",
@@ -107,12 +107,12 @@
         "last_skill": "TRY_ORDINARY_CONTROL"
       }
     ],
-    "updated_at": "2026-09-22T22:28:39.530812+00:00"
+    "updated_at": "2026-09-22T22:32:38.002771+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-22T22:26:01+00:00",
-    "size_bytes": 116517,
+    "modified_at": "2026-09-22T22:32:21+00:00",
+    "size_bytes": 43243,
     "last_stop_reason": null
   },
   "recent_crash_reports": [

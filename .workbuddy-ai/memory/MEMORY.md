@@ -1964,3 +1964,22 @@ before = rank(discover(world), replace(world, red_dots={}))     # 这就是改�
 （写一条假候选进 `knowledge/perception/candidates/`）；`escalation_queue` 按后缀把
 `..._NOT_VERIFIED` 分类成 `UNKNOWN_UI`，于是会请开发 agent 去修一个**没有东西读不懂**的问题
 ——该文件自己记着一次因错误归因而耗尽整个修复预算的代价。
+
+## 给某个 skill 加守卫时，按 skill id 搜**整个包**（2026-09-23，issue #101 第二轮）
+
+`OPEN_HOME` 有**八个**发出点。上一轮给 `brain.py` 的七处补上了"先关资源搜索面板"，40 分钟后同类失败
+又成串出现 8 次——**七次是"一步长"的运行**，六分钟死循环：决定回城 → 失败 → 结束 → 面板 30 秒后重启到
+同一张地图，直到一次无关的 `SCAN_MAP_FOR_BEAST` 平移才把面板关掉。
+
+第八处在**运行时**：`LiveRuntime._deferral_replan`（`runtime.py:651`，运行时唯一的 Decision 发出点），
+只在 `best_goal is None`（所有 goal 都被 defer）时触发。它的触发条件正是"这张地图上无事可做"，而"无事可做"
+最常见的成因就是上一轮把面板留在地图上 ⇒ **最需要守卫的地方没有守卫**。
+
+三条可复用：
+
+1. `grep -n '"<SKILL_ID>"' winter_agent_v2/*.py` 找**所有**发出者；大脑 ≠ 决策的唯一来源。
+   本项目的运行时也发 Decision（兜底跳转），而它不在 `brain.decide` 的任何守卫覆盖范围内。
+2. **证否"是谁发的"**可以用条件排他：同一帧上把每个可能的 `current_goal` 都问一遍（生产视觉 + 生产大脑），
+   若没有任何一处能发出那个 skill，而某处运行时的分支条件与现场完全吻合，那就是它。
+3. 之所以只能排除法，是因为 **episode 流里没有 `decision.reason`**（它只写进 worker stdout，随
+   `latest.log` 的滚动消失）⇒ 已给 `Episode` 加 `decision_reason`。**证据字段缺一个，事后就要多绕一圈。**

@@ -1171,10 +1171,10 @@ WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.5713. The bloc
 
 CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 140 in the last 2 day(s), 376 all-time, last seen 2026-09-22T21:47:42.619776+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 482
-LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-22T22:28:39.317111+00:00", "episode_id": "20260923_062647_424478", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062647_424478\\20260923_062647_424478_step_004_before_20260922T222812924542.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062647_424478\\20260923_062647_424478_step_004_after_20260922T222825470978.png"}
+CURRENT DIRTY FILES: 497
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-22T22:31:58.359686+00:00", "episode_id": "20260923_062948_568906", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_004_before_20260922T223128373025.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_004_after_20260922T223143325021.png"}
 TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 376, "recent": 140, "last_seen": "2026-09-22T21:47:42.619776+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 84}, "undated": 31, "top_skills": [["OPEN_HOME", 45], ["SELECT_RESOURCE", 44], ["DISMISS_MAIL_GENERIC_REWARD", 42]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-20T22:28:39.317111+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-20T22:31:58.359686+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
@@ -1219,6 +1219,40 @@ DO NOT: re-architect, rename goals, or touch anything already live-verified with
 **不要重复**：不要把"读到红点"当成"任务完成"；不要用恒亮的角标（每日/联盟 26/26、英雄图案）排序；
 不要为没有量到盲窗的规则增加会重复开页的分支；回放时**不要采信记录里的读数**（记录可能是旧读取器写的，
 本轮有 2 帧如此）。
+
+---
+
+## 手写：第二轮交接（2026-09-23 夜二，`c2d80de`）—— 失败理由与守卫覆盖
+
+两轮都以"**离线取证、不抢设备**"完成（AUTO 全程在跑）。
+
+1. **假失败理由（issue #103）**：`TRY_ORDINARY_CONTROL` 32 次失败里 **21 次理由是假的**——声明控件层
+   四个闸门（本 run 已用过 / 记录不服务这个 goal / 记录不列这个页 / risk 不可探索）都只 `return None`，
+   `executor.py:78` 一律压成"帧上没有这个控件"。已改成**具名拒绝**（`ORDINARY_CONTROL_DECLINES`）+
+   `_failure_type_from()`，**点击行为零变化**，理由为假 **21 → 0**（剩 11 条帧上确实没有控件）。
+   连带修掉：假"unlocated"候选不再入库、不再被分类成 `UNKNOWN_UI`。
+2. **守卫的第八个发出点（issue #101 第二轮）**：`OPEN_HOME` 有八处发出点，上一轮只护了大脑那七处；
+   第八处在运行时 `LiveRuntime._deferral_replan`（只在"地图上无事可做"时触发，而那正是上一轮留下
+   面板的场景）⇒ 40 分钟后同类失败又**成串 8 次**，其中七次是"一步长"的运行 = **六分钟死循环**。已修。
+   教训：**加守卫要按 skill id grep 全包**（新技能 `guard-emitter-coverage`）。
+3. **证据缺口已补**：`Episode.decision_reason`——“这一步是哪个分支决定的”此前只进 worker stdout，
+   随日志滚动消失，所以第 2 条只能靠排除法定性。
+
+**下一个精确动作（按价值排序）**：
+1. **真机确认**这两处改动（都要等下一次真机出现相应状态）：① 拒绝的新名字落进 episode；
+   ② 地图上搜索面板在场且无事可做时，第一步是 `BACK`（`close_resource_search_before_the_deferral_hop`）
+   而不是 `OPEN_HOME`。两条都只要看 `episodes.jsonl` 的 `decision_reason` 就能确认。
+2. **#101 剩余两种成因**（都已有帧、可离线归因）：① 4 次"控件在帧上（d=2）却
+   `SEMANTIC_TARGET_NOT_VERIFIED`"的解析器层不一致；② 4 次 `OPEN_HOME_NOT_PROVEN`（3 次 after=POPUP）。
+3. **`QUICK_PANEL_HANDLE.related_goals` 比面板实际使用范围窄**（#103 的附带发现，10 条
+   `_NOT_FOR_THIS_GOAL`）：面板也有 `ALLIANCE_DONATION` / `MY_REWARDS` 行，但那处记录只列 TRAIN/RESEARCH。
+   扩宽 = 设备上多 10 次面板打开，需操作者确认或真机验收。
+4. 红点指令 §二③④⑤⑥（⑤ 仍受 #95 B「领取控件未找到」制约）。
+
+**不要重复**：不要只改 `brain.py` 就宣布守卫加好了；不要用"这一处不可能走到"代替 grep；
+不要让守卫静默 `return None`（执行器会替它把理由说错）；不要相信 `latest.log` 里的理由是持久的
+（只保留最近一轮）。
+
 
 
 ---
