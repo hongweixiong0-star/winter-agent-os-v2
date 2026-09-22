@@ -317,12 +317,29 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
     }
 
     #: The same panel, with the rows the reader measures on a real frame (``arrow_norm`` per row).
+    #:
+    #: ``arrow_basis`` is ``ROW_BUTTON_SCAN`` and ``control`` is ``ARROW`` because that is what a real
+    #: reading carries when the row can be entered: the button was located *on this frame*.  The
+    #: estimate-only reading (``PANEL_RELATIVE_ESTIMATE`` / ``NONE``) is a separate state, tested
+    #: below, and it is deliberately no longer a row to tap -- measured 2026-09-23 17:21:50, the tap
+    #: at x 0.4042 landed on the row's own text and opened nothing.
     OPEN_WITH_ROWS = {
         "open": True,
         "camps": {"SHIELD_CAMP": {"status": "IDLE", "queue_available": True}},
         "rows": [
             {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IDLE",
-             "arrow_norm": [0.4569, 0.4266], "arrow_basis": "PANEL_RELATIVE_ESTIMATE", "control": "NONE"},
+             "arrow_norm": [0.4569, 0.4266], "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
+        ],
+        "handle": {"state": "EXPANDED", "point_norm": [0.4569, 0.5502]},
+    }
+
+    #: The same row as the reader writes it when it could NOT locate the button: a hint, not a point.
+    OPEN_WITH_AN_ESTIMATED_ROW = {
+        "open": True,
+        "camps": {"SHIELD_CAMP": {"status": "IDLE", "queue_available": True}},
+        "rows": [
+            {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IDLE",
+             "arrow_norm": [0.4042, 0.4266], "arrow_basis": "PANEL_RELATIVE_ESTIMATE", "control": "NONE"},
         ],
         "handle": {"state": "EXPANDED", "point_norm": [0.4569, 0.5502]},
     }
@@ -341,6 +358,17 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
         registry = v2_registry()
         self.assertEqual(registry.get(decision.skill).action.target, "QUICK_PANEL_ROW_SHIELD_CAMP")
         self.assertEqual(row["arrow_norm"], [0.4569, 0.4266])
+
+    def test_a_row_whose_button_was_only_estimated_is_not_tapped(self):
+        """The estimate is honest as a hint and worthless as a coordinate.
+
+        This is the state the training route used to tap anyway: measured 2026-09-23 17:21:50, a row
+        whose button scan found nothing still carried the reading's own fallback point (x 0.4042), the
+        tap landed on the row's text, and no action bar opened.  The generic row picker refuses such a
+        row on ``arrow_basis``; this pins that the route's own picker does too.
+        """
+        decision = _brain("TRAIN").decide(self._home(self.OPEN_WITH_AN_ESTIMATED_ROW), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
 
     def test_a_row_the_panel_no_longer_draws_falls_back_to_the_proven_route(self):
         """``rows`` is read from *this* frame: no row means no arrow to tap, so the old hop runs."""
@@ -789,6 +817,55 @@ class TheDoneMarkerTests(unittest.TestCase):
         wrong_before = verify_panel_row_done_collected(frame("ARROW"), frame("ARROW"), row_key="SHIELD_CAMP")
         self.assertFalse(wrong_before.ok)
         self.assertEqual(wrong_before.reason, "PANEL_ROW_NOT_WAITING_TO_COLLECT")
+
+
+class TheTickRowIsNotAnEnterTargetTest(unittest.TestCase):
+    """Live 2026-09-23 18:54:27: a row the client marked done was tapped as an enter target.
+
+    Goal MAIL, the 快捷面板 open, the 盾兵 row reading ``status=IDLE`` with ``control=DONE`` -- the
+    client had drawn its green tick there -- and ``OPEN_TASK_FROM_QUICK_PANEL_SHIELD`` was issued.
+    It failed ``PANEL_ROW_TASK_BAR_NOT_PROVEN``: the panel closed and no task bar appeared.  The
+    generic row picker already refused such a row on ``control``; the TRAIN branch's own copy of the
+    picker did not, which is what this pins.
+    """
+
+    def _state(self, control: str):
+        row = {
+            "key": "SHIELD_CAMP",
+            "kind": "CAMP",
+            "status": "IDLE",
+            "control": control,
+            "arrow_norm": [0.7097, 0.4262],
+            "arrow_basis": "ROW_BUTTON_SCAN",
+        }
+        if control == "DONE":
+            row["done_norm"] = [0.5618, 0.4344]
+        return WorldState(
+            page=Page.HOME,
+            quick_panel={"open": True, "rows": [row], "camps": {"SHIELD_CAMP": {
+                "status": "IDLE", "queue_available": True, "label": "盾兵"}}},
+            confidence=0.99,
+        )
+
+    def test_a_done_row_is_not_entered(self):
+        from winter_agent_v2.brain import RuleBrain
+        from winter_agent_v2.skills import v2_registry
+
+        brain = RuleBrain()
+        brain.current_goal = "TRAIN"
+        decision = brain.decide(self._state("DONE"), v2_registry())
+        self.assertNotEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD")
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW")
+        self.assertEqual(decision.reason, "quick_panel_shield_camp_is_idle")
+
+    def test_a_row_with_a_located_arrow_is_still_entered(self):
+        from winter_agent_v2.brain import RuleBrain
+        from winter_agent_v2.skills import v2_registry
+
+        brain = RuleBrain()
+        brain.current_goal = "TRAIN"
+        decision = brain.decide(self._state("ARROW"), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD")
 
 
 if __name__ == "__main__":

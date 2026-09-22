@@ -1,0 +1,51 @@
+{
+ "panel": {
+  "rows_for_route": {
+   "TRAIN": [
+    "CAMP"
+   ],
+   "RESEARCH": [
+    "RESEARCH"
+   ],
+   "ALLIANCE": [
+    "ALLIANCE_DONATION"
+   ],
+   "DAILY": [
+    "MY_REWARDS"
+   ]
+  },
+  "generic_branch": "brain.py:1106-1120 -- any goal whose route has panel rows; when the panel is closed it asks for one ordinary control, which the runtime's dictionary tier resolves to a tap of the handle (live-proved QUICK_PANEL_OPENED)",
+  "gap": "英雄招募 has no route of its own; the code says so rather than inventing one",
+  "verdict": "the defect the directive feared (readers and resolvers exist but no decision asks for the panel) is NOT present"
+ },
+ "ai_fallback": {
+  "worker": "tools/unknown_ai_worker.py --state",
+  "state": {
+   "gateway": "up",
+   "pending": 2,
+   "answered": 1,
+   "in_flight": 0,
+   "attempts": {
+    "unknown__control__b6546e80": 1,
+    "unknown__control__23759997": 2,
+    "unknown__control__78694f1b": 1
+   }
+  },
+  "ledger_events": 10,
+  "converted_to_tap": {
+   "request": "unknown__control__b6546e80",
+   "kind": "ORDINARY_CONTROL",
+   "anchor_text": "奖励",
+   "point_norm": [
+    0.8819,
+    0.2908
+   ],
+   "tap_px": [
+    635,
+    372
+   ],
+   "risk": "allowed"
+  },
+  "missing_leg": "no episode field records that an advice was consumed, so 'the AUTO acted on the AI advice' cannot be proven from the logs"
+ }
+}

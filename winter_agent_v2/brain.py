@@ -1340,11 +1340,25 @@ class RuleBrain:
                     #
                     # Bounded to two tries per run: a row arrow whose tap does not open the page
                     # must not become a loop on a panel that stays open.
+                    # The same two guards the generic ``_actionable_panel_row`` applies, and for a
+                    # reason that is now measured live rather than argued: run 2026-09-23 18:54:27,
+                    # goal MAIL, the panel open -- the 盾兵 row read ``status=IDLE`` with
+                    # ``control=DONE`` (the client had drawn its green tick on that row) and this
+                    # branch, which only asked for ``arrow_norm``, tapped it as an *enter* target:
+                    # OPEN_TASK_FROM_QUICK_PANEL_SHIELD, FAILURE / PANEL_ROW_TASK_BAR_NOT_PROVEN, the
+                    # panel closed behind it and no task bar appeared.
+                    #
+                    # The tick means finished-and-waiting-to-be-collected, which is not an enter
+                    # arrow: a row the client marked done belongs to the collect path, and while that
+                    # path is withdrawn (issue #92) the honest answer is not to tap it at all.
                     row = next(
                         (
                             item
                             for item in (world.quick_panel.get("rows") or ())
-                            if str(item.get("key")) == idle_camp and item.get("arrow_norm")
+                            if str(item.get("key")) == idle_camp
+                            and item.get("arrow_norm")
+                            and str(item.get("control")) == QUICK_PANEL_CONTROL_ARROW
+                            and str(item.get("arrow_basis")) == QUICK_PANEL_ARROW_BASIS_SCAN
                         ),
                         None,
                     )
