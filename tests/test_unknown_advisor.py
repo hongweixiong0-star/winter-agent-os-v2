@@ -259,9 +259,11 @@ class TheAnswerTests(unittest.TestCase):
         self.assertEqual(landed["x_norm"], CLAIM_BOX["x_norm"])
 
     def test_an_answer_cannot_propose_money_or_an_invented_skill(self):
+        # The boundary is on the *action's own identity* (directive 2026-09-22 §五): what is being
+        # pressed may not be a purchase, and an invented mechanism is still refused.
         with self.assertRaises(unknown_advisor.AdviceRejected):
             unknown_advisor.parse_advice(
-                _answer("r", note="先充值 6 元再看"), request_id="r"
+                _answer("r", proposed_action="ORDINARY_CONTROL[立即购买]"), request_id="r"
             )
         with self.assertRaises(unknown_advisor.AdviceRejected):
             unknown_advisor.parse_advice(
@@ -276,12 +278,61 @@ class TheAnswerTests(unittest.TestCase):
             payload.pop("uncertainty")
             unknown_advisor.parse_advice(payload, request_id="r")
 
+    def test_a_reasoner_may_describe_a_page_that_sells_things(self):
+        """§五: understanding such a page is not the same as buying from it.
+
+        Before this round the whole answer was screened, so a reasoner could not even say "this page
+        offers gems; the low-risk move is 关闭" -- which is exactly the understanding the directive
+        asks it for.  The commentary is now free and the action is what is fenced.
+        """
+        advice = unknown_advisor.parse_advice(
+            _answer(
+                "r",
+                proposed_action="ORDINARY_CONTROL[关闭]",
+                target_semantics="关闭",
+                target_point=[0.50, 0.72],
+                note="这个页面在卖钻石和加速礼包，但我要点的是右上角的关闭，不碰任何付费入口",
+                uncertainty="high",
+            ),
+            request_id="r",
+        )
+        self.assertEqual(advice.action_kind, unknown_advisor.ACTION_ORDINARY)
+        self.assertEqual(advice.target_semantics, "关闭")
+
+    def test_the_three_action_shapes_are_all_answerable(self):
+        """§二 A/B/C: a registered skill, an L1 action, or a temporary ordinary candidate."""
+        skill = unknown_advisor.parse_advice(
+            _answer("r", proposed_action="TRY_ORDINARY_CONTROL"), request_id="r", registry=v2_registry()
+        )
+        self.assertEqual(skill.action_kind, unknown_advisor.ACTION_SKILL)
+
+        l1 = unknown_advisor.parse_advice(
+            _answer("r", proposed_action="L1[ORDINARY_CONTROL[退出]]"), request_id="r",
+            registry=v2_registry(),
+        )
+        self.assertEqual(l1.action_kind, unknown_advisor.ACTION_L1)
+        self.assertEqual(unknown_advisor.l1_target(l1.proposed_action), "ORDINARY_CONTROL[退出]")
+
+        # C: nothing is registered, nothing was ever learned, and the answer is still answerable.
+        ordinary = unknown_advisor.parse_advice(
+            _answer("r", proposed_action="ORDINARY_CONTROL[前往]", target_semantics="前往"),
+            request_id="r",
+            registry=v2_registry(),
+        )
+        self.assertEqual(ordinary.action_kind, unknown_advisor.ACTION_ORDINARY)
+        self.assertEqual(ordinary.target_semantics, "前往")
+
+        with self.assertRaises(unknown_advisor.AdviceRejected):
+            unknown_advisor.parse_advice(
+                _answer("r", proposed_action="L1[]"), request_id="r", registry=v2_registry()
+            )
+
     def test_a_refused_answer_is_kept_aside_with_its_reason(self):
         runtime = _runtime(self.root, ocr=_ocr())
         key = unknown_advisor.request_id(
             page_knowledge.page_key("UNKNOWN", "挂机收益"), unknown_advisor.UNKNOWN_CONTROL
         )
-        self.answer(key, _answer(key, note="购买礼包"))
+        self.answer(key, _answer(key, proposed_action="ORDINARY_CONTROL[立即购买]"))
         self.assertIsNone(runtime._advisor.take(key, registry=runtime.registry))
         self.assertTrue(
             (self.root / "requests" / unknown_advisor.ANSWERS_DIR / f"{key}.rejected.reason").exists(),

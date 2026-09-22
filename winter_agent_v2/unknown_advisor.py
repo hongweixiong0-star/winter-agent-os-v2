@@ -90,11 +90,50 @@ ANSWER_FIELDS = (
     "expected_result",
     "uncertainty",
 )
-OPTIONAL_ANSWER_FIELDS = ("target_point", "target_bbox", "alternative_actions", "note")
+OPTIONAL_ANSWER_FIELDS = (
+    "target_point",
+    "target_bbox",
+    "alternative_actions",
+    "note",
+    # Which of the three shapes the action is (see ACTION_KINDS).  Absent, it is inferred from
+    # ``proposed_action`` itself, so an answer written before this existed keeps working.
+    "action_kind",
+    # What the answer is asking for, named.  Kept apart from ``proposed_action`` because the action
+    # names a *mechanism* ("tap this", "reuse the L1 action") while this names the *element*.
+    "target_semantics",
+    # Directive §三's third basis: a region derived from a text box the frame really drew, e.g.
+    # ``{"text": "说明", "dy_norm": -0.045, "w_norm": 0.06, "h_norm": 0.05}`` -- the icon above that
+    # label.  The anchor is measured on the current frame and the offset is bounded; see
+    # ``ui_collection.anchored_region``.
+    "target_anchor",
+    # What the reasoner believes it anchored on.  Recorded, never trusted: the runtime decides which
+    # basis actually justified the point, and files *that* one.
+    "grounding_basis",
+    "grounding_ref",
+)
 
-#: The same boundary the ordinary-control resolver draws, restated here so a *reasoner* cannot be
-#: the way around it: an answer carrying any of these is refused before it is even parsed into a
-#: candidate.
+#: The three shapes an answer's action may take (directive §二).  Before this, only the first was
+#: accepted -- every answer had to name a registered skill -- which made the channel useless for
+#: exactly the case it exists for: an element nobody has registered.
+ACTION_SKILL = "SKILL"
+ACTION_L1 = "L1"
+ACTION_ORDINARY = "ORDINARY_CONTROL"
+ACTION_KINDS: tuple[str, ...] = (ACTION_SKILL, ACTION_L1, ACTION_ORDINARY)
+
+#: The strings that name the action *itself* -- its mechanism, and the element it acts on.  The
+#: boundary below is applied to these and to nothing else.
+ACTION_IDENTITY_FIELDS = ("proposed_action", "candidate_semantics", "target_semantics", "grounding_ref")
+
+#: Fields that are the reasoner *talking*, not the reasoner acting.  Directive §五 is explicit that a
+#: reasoner must be able to understand a page that offers 钻石 / 加速 / 购买, and it cannot
+#: demonstrate that understanding if those words are banned from its explanation.  So the boundary
+#: is not applied here: an answer may say "this page sells gems; the low-risk action is 关闭".
+COMMENTARY_FIELDS = ("note", "uncertainty", "expected_result", "alternative_actions")
+
+#: The boundary the ordinary-control resolver draws, restated here so a *reasoner* cannot be the
+#: way around it.  It is applied to the action's own identity -- what is being pressed -- and never
+#: to the answer's commentary (``COMMENTARY_FIELDS``), because understanding a page that sells
+#: things is not the same as buying from it (directive §五).
 REFUSED_WORDS: tuple[str, ...] = (
     "充值",
     "购买",
@@ -189,6 +228,12 @@ class UnknownRequest:
     #: Which picture the question is about.  Not part of the identity (see ``request_id``), kept so
     #: a reasoner can tell "the same screen, one frame later" from "a different frame entirely".
     frame_digest: str = ""
+    #: The state the question was asked in -- the same signature an L1 registration is conditional
+    #: on, so an answer and the reuse it enables agree about what "this screen" means (§四).
+    situation: str = ""
+    #: Who was being played, when the frame could say.  A control that is safe for one role is not
+    #: automatically safe for another, and §四 asks the answer to be tied to the conditions.
+    character: str = ""
 
     def as_row(self) -> dict[str, Any]:
         return asdict(self)
@@ -210,6 +255,17 @@ class Advice:
     note: str = ""
     answered_at: str = ""
     source: str = METHOD_AI
+    #: One of ``ACTION_KINDS``: whether this answer names a registered skill, an L1 action this
+    #: project has already proved, or an ordinary control candidate that needs no registration.
+    action_kind: str = ACTION_SKILL
+    #: The element the answer is about, as the reasoner named it.
+    target_semantics: str = ""
+    #: The region the reasoner derived from a text box, if it used that basis.
+    target_anchor: dict[str, Any] | None = None
+    #: What the reasoner *claimed* it anchored on.  Recorded for the audit; the runtime files the
+    #: basis it actually measured instead.
+    grounding_basis: str = ""
+    grounding_ref: str = ""
 
     def as_row(self) -> dict[str, Any]:
         return asdict(self)
@@ -239,27 +295,65 @@ def parse_advice(payload: Mapping[str, Any], *, request_id: str = "", registry: 
     if unknown_type not in UNKNOWN_TYPES:
         raise AdviceRejected(f"REJECT: unknown_type {unknown_type!r} is not one of {UNKNOWN_TYPES}")
 
-    # The boundary first: an answer that mentions a purchase is refused whatever else it says,
-    # over every string it carries, exactly as the resolver screens a whole frame.
-    blob = json.dumps(payload, ensure_ascii=False).lower()
-    for word in REFUSED_WORDS:
-        if word.lower() in blob:
-            raise AdviceRejected(f"REJECT: answer mentions {word!r}, which no advice may propose")
-
     semantics = payload["candidate_semantics"]
     if isinstance(semantics, str):
         semantics = [semantics]
     if not isinstance(semantics, (list, tuple)) or not all(isinstance(item, str) for item in semantics):
         raise AdviceRejected("REJECT: candidate_semantics must be a list of strings")
+    semantics = tuple(str(item) for item in semantics)
 
     proposed = str(payload["proposed_action"]).strip()
     if not proposed:
         raise AdviceRejected("REJECT: empty proposed_action")
-    # A proposed action must name a skill this project already has.  The one it is *expected* to
-    # name is the ordinary-control attempt; naming anything else is allowed only if it is real,
-    # so an invented skill cannot arrive through an answer.
-    if registry is not None and registry.get(proposed) is None:
+    target_semantics = str(payload.get("target_semantics") or "").strip()
+
+    # The boundary, applied to the action's own identity (directive §五).  ``note``/``uncertainty``
+    # /``expected_result`` are deliberately not screened: an answer has to be able to say that the
+    # page in front of it offers gems in order to explain why it is *not* pressing them.
+    identity = " ".join(
+        [str(payload.get(name) or "") for name in ACTION_IDENTITY_FIELDS]
+    ).lower()
+    for word in REFUSED_WORDS:
+        if word.lower() in identity:
+            raise AdviceRejected(
+                f"REJECT: the proposed action itself involves {word!r}.  An answer may *describe* a "
+                "page that offers it -- note/uncertainty/expected_result are not screened -- but it "
+                "may not propose pressing it"
+            )
+
+    # Which of the three shapes this is (§二).  Inferred when absent, so an answer written against
+    # the old contract -- a registered skill, or the ordinary-control attempt -- is read the same
+    # way it always was.
+    kind = str(payload.get("action_kind") or "").strip().upper()
+    if kind and kind not in ACTION_KINDS:
+        raise AdviceRejected(f"REJECT: action_kind {kind!r} is not one of {ACTION_KINDS}")
+    if not kind:
+        kind = infer_action_kind(proposed, registry=registry)
+        if kind is None:
+            raise AdviceRejected(
+                f"REJECT: {proposed!r} is not a registered skill, not an L1[...] action and not an "
+                "ORDINARY_CONTROL[...] candidate, so there is nothing this answer could execute"
+            )
+    elif kind == ACTION_SKILL and registry is not None and registry.get(proposed) is None:
         raise AdviceRejected(f"REJECT: unknown skill {proposed!r}")
+    if kind == ACTION_L1 and not l1_target(proposed):
+        raise AdviceRejected(
+            "REJECT: an L1 action must name the control it reuses, e.g. L1[ORDINARY_CONTROL[退出]]"
+        )
+    if kind == ACTION_ORDINARY and not (target_semantics or semantics):
+        raise AdviceRejected(
+            "REJECT: an ordinary-control candidate must say which element it means "
+            "(target_semantics or candidate_semantics)"
+        )
+
+    anchor = payload.get("target_anchor")
+    if anchor is not None:
+        if not isinstance(anchor, Mapping) or not str(anchor.get("text") or "").strip():
+            raise AdviceRejected(
+                "REJECT: target_anchor must be an object naming the text it is anchored to, e.g. "
+                '{\"text\": \"说明\", \"dy_norm\": -0.045}'
+            )
+        anchor = dict(anchor)
 
     point = payload.get("target_point")
     if point is not None:
@@ -280,7 +374,7 @@ def parse_advice(payload: Mapping[str, Any], *, request_id: str = "", registry: 
     return Advice(
         request_id=request_id,
         unknown_type=unknown_type,
-        candidate_semantics=tuple(str(item) for item in semantics),
+        candidate_semantics=semantics,
         proposed_action=proposed,
         expected_result=str(payload["expected_result"]),
         uncertainty=str(payload["uncertainty"]),
@@ -289,7 +383,97 @@ def parse_advice(payload: Mapping[str, Any], *, request_id: str = "", registry: 
         alternative_actions=alternatives,
         note=str(payload.get("note") or ""),
         answered_at=_now(),
+        action_kind=kind,
+        target_semantics=target_semantics,
+        target_anchor=anchor,
+        grounding_basis=str(payload.get("grounding_basis") or ""),
+        grounding_ref=str(payload.get("grounding_ref") or ""),
     )
+
+
+def infer_action_kind(proposed: str, *, registry: Any = None) -> str | None:
+    """Which of §二's three shapes ``proposed_action`` is, or ``None`` when it is none of them.
+
+    Read from the action's own syntax first, because the syntax is unambiguous: ``L1[...]`` and
+    ``ORDINARY_CONTROL[...]`` are the shapes this project already writes into its ledgers.  A bare
+    name is a skill only if the registry really has it -- that check is what stops an invented
+    action from arriving through an answer, and it is kept here rather than dropped.
+    """
+    text = str(proposed or "").strip()
+    if not text:
+        return None
+    upper = text.upper()
+    if upper.startswith("L1[") or upper.startswith("L1_ACTION["):
+        return ACTION_L1
+    if upper.startswith("ORDINARY_CONTROL[") or upper.startswith("ORDINARY_CONTROL:"):
+        return ACTION_ORDINARY
+    if registry is not None and registry.get(text) is not None:
+        return ACTION_SKILL
+    if registry is None:
+        # Nothing to check a bare name against at this layer.  The old contract did the same, and
+        # the checker that matters -- ``tools/unknown_advisor.py`` -- always passes a real registry,
+        # so an invented skill is refused where it is written rather than where it is read.
+        return ACTION_SKILL
+    return None
+
+
+def l1_target(proposed: str) -> str:
+    """The control an ``L1[...]`` action names, or ``""`` when the shape is wrong."""
+    text = str(proposed or "").strip()
+    for prefix in ("L1[", "l1[", "L1_ACTION[", "l1_action["):
+        if text.startswith(prefix):
+            inner = text[len(prefix):]
+            # Exactly one closing bracket: ``L1[ORDINARY_CONTROL[退出]]`` nests, so stripping every
+            # trailing ``]`` would eat the inner control's own bracket and name a control that does
+            # not exist in the ledger.
+            if inner.endswith("]"):
+                inner = inner[:-1]
+            return inner.strip()
+    return ""
+
+
+def ordinary_target(proposed: str, semantics: Iterable[str] = ()) -> str:
+    """The element an ``ORDINARY_CONTROL[...]`` action names, or the first semantic offered."""
+    text = str(proposed or "").strip()
+    upper = text.upper()
+    for prefix in ("ORDINARY_CONTROL[", "ORDINARY_CONTROL:"):
+        if upper.startswith(prefix):
+            inner = text[len(prefix):]
+            if inner.endswith("]"):
+                inner = inner[:-1]
+            return inner.strip()
+    for item in semantics:
+        if str(item or "").strip():
+            return str(item).strip()
+    return ""
+
+
+def advice_staleness(
+    advice: Advice,
+    request: UnknownRequest | None,
+    *,
+    page_key: str,
+    goal: str,
+) -> str:
+    """Why this answer may not be used on the screen in front of us, or ``""`` when it may (§四).
+
+    An answer is a claim about a *screen and a purpose*, and both travel in the request it answers.
+    Reusing it elsewhere is how an asynchronous channel turns into a wrong tap: a reasoner answered
+    about 燃霜矿区 under the DAILY goal, and the AUTO is now on 挂机收益 pursuing TRAIN.  The check
+    is deliberately about identity rather than about how old the file is -- an old answer about the
+    same screen and the same goal is still a correct answer.
+
+    It does **not** decide whether the element is still drawn: that is a measurement on the current
+    frame (the point has to fall inside a region this frame really has), and it is made separately
+    so a moved control is re-*located* rather than merely refused.
+    """
+    if request is None:
+        return "NO_REQUEST_FOR_THIS_SCREEN"
+    if str(request.page_key or "") != str(page_key or ""):
+        return "PAGE_CHANGED"
+    if str(request.goal or "") != str(goal or ""):
+        return "GOAL_CHANGED"
+    return ""
 
 
 def _norm_point(value: Any) -> tuple[float, float] | None:
@@ -336,12 +520,46 @@ def justified_point(
     *,
     slop: float = POINT_SLOP_NORM,
 ) -> tuple[float, float] | None:
-    """The advice's point **only if this frame's own OCR puts text there**, else ``None``.
+    """The advice's point **only if this frame's own evidence puts something there**, else ``None``.
 
     This is §四's "有合理的当前画面定位依据" made mechanical: an answer may choose which of the
-    frame's real controls to use, but it cannot invent a control.  A point that matches no text box
-    (or an answer that carries only a bbox, which is then used when it *is* over a text box) is
-    refused, and the step ends honestly instead of tapping an unmeasured coordinate.
+    frame's real elements to use, but it cannot invent one.  A point that matches no region the
+    frame supplied (or an answer that carries only a bbox, which is then used when it *is* over
+    one) is refused, and the step ends honestly instead of tapping an unmeasured coordinate.
+
+    A thin wrapper over :func:`grounded_region`, so the rule has exactly one implementation and
+    "may this be tapped" and "what did the frame draw there" can never drift apart.
+    """
+    region = grounded_region(advice, boxes, slop=slop)
+    if region is None:
+        return None
+    point = region.get("point")
+    if point is None:
+        return None
+    return (float(point[0]), float(point[1]))
+
+
+def grounded_region(
+    advice: Advice,
+    regions: Iterable[Mapping[str, Any]],
+    *,
+    slop: float = POINT_SLOP_NORM,
+    points: Iterable[tuple[float, float]] = (),
+) -> dict[str, Any] | None:
+    """The region of the **current** frame that justifies this answer's point, or ``None``.
+
+    ``justified_point`` answers "may this point be tapped"; this answers "what did the frame draw
+    there", which is what the collector crops, what the ledger records and what makes an anchored or
+    template-based answer auditable afterwards.  The basis returned is the one the *frame* supplied
+    -- ``regions`` is built by the caller from its own measurements -- so a reasoner's claim about
+    how it anchored never becomes the record.
+
+    ``points`` is how an answer that carries **no coordinate at all** can still be grounded.  Its
+    only member is the centre of a region the caller derived from this frame's own evidence (for a
+    wordless element: the region ``ui_collection.anchored_region`` computed from a text box the
+    frame really drew, see §三).  The rule is unchanged: the point still has to fall inside a region
+    on this frame, so this adds a way for a grounded answer to *name* its point and not a way to
+    invent one.
     """
     candidates: list[tuple[float, float]] = []
     if advice.target_point is not None:
@@ -351,15 +569,24 @@ def justified_point(
         candidates.append(
             (round(box["x_norm"] + box["w_norm"] / 2, 4), round(box["y_norm"] + box["h_norm"] / 2, 4))
         )
+    for point in points:
+        try:
+            candidates.append((round(float(point[0]), 4), round(float(point[1]), 4)))
+        except (TypeError, ValueError, IndexError):
+            continue
+    region_list = [dict(region) for region in regions]
     for point in candidates:
-        for box in boxes:
+        for region in region_list:
+            box = region.get("box_norm") if isinstance(region.get("box_norm"), Mapping) else region
             try:
                 x, y = float(box["x_norm"]), float(box["y_norm"])
                 w, h = float(box["w_norm"]), float(box["h_norm"])
             except (KeyError, TypeError, ValueError):
                 continue
             if x - slop <= point[0] <= x + w + slop and y - slop <= point[1] <= y + h + slop:
-                return point
+                out = dict(region)
+                out["point"] = point
+                return out
     return None
 
 
@@ -403,22 +630,29 @@ class UnknownAdvisor:
 
     # ------------------------------------------------------------------ the ask
 
-    def ask(self, request: UnknownRequest) -> bool:
+    def ask(self, request: UnknownRequest, *, force: bool = False) -> bool:
         """Write one request if the bounds allow; return whether it was written.
 
         Never blocks, never calls out: the file *is* the question.  ``False`` means either the run
         has already asked its share or the same question is already on file, which is the answer to
         "should this step stop to ask" -- no.
+
+        ``force`` skips the cooldown and nothing else.  It exists for one case (§四): the answer on
+        file turned out to be about a different screen or a different goal, so the question is
+        genuinely unanswered again, and waiting an hour for a new one would leave the screen
+        unanalysed for no reason.  The per-run bound still applies, so this cannot become a
+        question generator.
         """
         if self._written >= MAX_REQUESTS_PER_RUN:
             return False
         key = request.request_id
-        if key in self._asked:
+        if key in self._asked and not force:
             return False
-        existing = self.read_request(key)
-        if existing is not None and _seconds_since(existing.created_at) < REQUEST_COOLDOWN_SECONDS:
-            self._asked.add(key)
-            return False
+        if not force:
+            existing = self.read_request(key)
+            if existing is not None and _seconds_since(existing.created_at) < REQUEST_COOLDOWN_SECONDS:
+                self._asked.add(key)
+                return False
         self.root.mkdir(parents=True, exist_ok=True)
         request.created_at = _now()
         path = self.root / f"{key}.json"
@@ -504,6 +738,8 @@ def build_request(
     before_frame_path: Path | str = "",
     after_frame_path: Path | str = "",
     question: str = "",
+    situation: str = "",
+    character: str = "",
 ) -> UnknownRequest:
     """Assemble one request from evidence the caller already has.  Pure; writes nothing."""
     digest = frame_digest(frame_path)
@@ -527,4 +763,6 @@ def build_request(
         before_frame_path=str(before_frame_path or ""),
         after_frame_path=str(after_frame_path or ""),
         question=str(question or ""),
+        situation=str(situation or ""),
+        character=str(character or ""),
     )

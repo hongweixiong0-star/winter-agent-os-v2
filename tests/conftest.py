@@ -13,6 +13,11 @@ directory here, once, for the whole session:
 * ``ui_collection.CANDIDATE_ROOT``    element candidates (knowledge/perception/candidates/)
 * ``page_knowledge.PAGE_ROOT``        unnamed-page candidates (knowledge/perception/pages/)
 * ``page_knowledge.TRANSITIONS_PATH`` the learned page transitions (knowledge/ui/)
+* ``unknown_advisor.REQUEST_ROOT``    the UNKNOWN question queue (learning/unknown_requests/)
+
+The last one is the newest and it matters for the same reason as the rest: the queue is what the
+running AUTO asks a reasoner, and a test that writes into it -- or that dispatches a job from it --
+would be answering questions the device actually asked.
 
 A test that wants its own paths still passes them explicitly, exactly as before; what changes is
 only what "no path given" means inside a test run.  ``online`` no-ops for anyone importing these
@@ -32,7 +37,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from winter_agent_v2 import control_experience, page_knowledge, ui_collection  # noqa: E402
+from winter_agent_v2 import (  # noqa: E402
+    control_experience,
+    page_knowledge,
+    ui_collection,
+    unknown_advisor,
+)
 
 
 def _seed(source: Path, target: Path) -> Path:
@@ -69,6 +79,7 @@ def _protect_the_live_learning_assets():
             "PAGE_ROOT": page_knowledge.PAGE_ROOT,
             "TRANSITIONS_PATH": page_knowledge.TRANSITIONS_PATH,
         },
+        unknown_advisor: {"REQUEST_ROOT": unknown_advisor.REQUEST_ROOT},
     }
     control_experience.STATE_PATH = _seed(
         control_experience.STATE_PATH, scratch / "learning/control_experience.json"
@@ -91,6 +102,10 @@ def _protect_the_live_learning_assets():
     page_knowledge.TRANSITIONS_PATH = _seed(
         page_knowledge.TRANSITIONS_PATH, scratch / "knowledge/ui/page_transitions.json"
     )
+    # Not seeded: a test run starts with an empty question queue.  Copying the live requests would
+    # hand a test the AUTO's real questions -- and, with the dispatcher in the loop, would let a test
+    # suite dispatch jobs about screens the device really asked about.
+    unknown_advisor.REQUEST_ROOT = scratch / "learning/unknown_requests"
     try:
         yield
     finally:

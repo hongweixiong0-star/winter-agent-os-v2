@@ -518,6 +518,435 @@ def box_to_pixels(box: Mapping[str, float], frame: tuple[int, int]) -> tuple[int
     return left, top, right, bottom
 
 
+# ---------------------------------------------------------- what a point may be justified by
+
+#: The bases a point may be justified by.  All of them are taken from the **current** frame:
+#: the text this frame's OCR read, the templates this project has already collected and can find
+#: *here*, and a region derived from one of those text boxes by a declared offset.  A point
+#: matching none of them is a coordinate nobody measured, which is what the directive forbids a
+#: reasoner to supply.
+BASIS_OCR_BOX = "OCR_BOX"
+BASIS_TEMPLATE = "TEMPLATE"
+BASIS_ANCHOR = "ANCHORED_TO_TEXT"
+GROUNDING_BASES: tuple[str, ...] = (BASIS_OCR_BOX, BASIS_TEMPLATE, BASIS_ANCHOR)
+
+#: The same bar MAA's own matcher defaults to, used when a template from the candidate library or
+#: the experience ledger is matched against the current frame.
+MIN_TEMPLATE_SCORE = 0.7
+
+#: The least internal contrast (grayscale standard deviation) a template, or the region it matched,
+#: must have before the match means anything.
+#:
+#: Normalised cross-correlation is ill-conditioned on a flat patch, and this project has a flat
+#: patch on file: measured 2026-09-22, the first live dispatch's template for ``ORDINARY_CONTROL[退出]``
+#: has std **2.22** -- it was cropped from a blurred transition frame -- and it "matched" another
+#: transition frame at score **0.9943** in a window whose std was 2.23.  A region like that would
+#: have justified a tap on a screen with nothing drawn on it.  Every crop measured from a real UI
+#: screen sits at 39.5-62.1, so the bar is not close to any of them.
+MIN_TEMPLATE_CONTRAST = 8.0
+
+#: Bounds on a region *derived* from a text box.  The offset is declared rather than measured, so
+#: it is the weakest of the three bases and is fenced accordingly: a region bigger than 35% of the
+#: frame is a panel rather than a control, and an offset further than 20% is not "next to" the
+#: anchor it names.  Both are what separates "the icon above 说明" from "somewhere else entirely".
+ANCHOR_MAX_SIZE_NORM: tuple[float, float] = (0.35, 0.35)
+ANCHOR_MAX_OFFSET_NORM = 0.20
+
+
+def _match_ccoeff_anywhere(
+    image_path: Path,
+    template_path: Path,
+    roi_norm: Mapping[str, float],
+    *,
+    margin: int = 40,
+):
+    """``matchers.match_ccoeff`` imported at call time, so cv2 stays off this module's import path."""
+    from .matchers import match_ccoeff
+
+    return match_ccoeff(image_path, template_path, dict(roi_norm), margin=margin)
+
+
+def _contrast(image: "Image.Image") -> float:
+    """Grayscale standard deviation of an image: how much there is here to recognise."""
+    try:
+        import numpy as np
+
+        return float(np.asarray(image.convert("L"), dtype=np.float32).std())
+    except Exception:  # noqa: BLE001 - a picture that cannot be measured is not evidence
+        return 0.0
+
+
+def _crop_cache(source: Path, roi: Mapping[str, float], directory: Path) -> Path | None:
+    """A crop of ``roi`` inside ``source``, cached on disk under its own digest.
+
+    ``match_ccoeff`` takes a template *file*, so an experience record's region -- which lives inside
+    the frame it was measured on -- has to become one crop.  The digest in the name makes it
+    idempotent, so a screen visited twenty times pays for the crop once, and the directory is the
+    candidate store's own, which is where this project already keeps element crops.
+    """
+    box = _norm_box(roi)
+    if box is None:
+        return None
+    material = f"{source}|{box['x_norm']},{box['y_norm']},{box['w_norm']},{box['h_norm']}"
+    name = hashlib.sha256(material.encode("utf-8")).hexdigest()[:16] + ".png"
+    target = Path(directory) / name
+    if target.exists():
+        return target
+    try:
+        with Image.open(source) as image:
+            width, height = image.size
+            crop = image.crop((
+                round(box["x_norm"] * width),
+                round(box["y_norm"] * height),
+                round((box["x_norm"] + box["w_norm"]) * width),
+                round((box["y_norm"] + box["h_norm"]) * height),
+            ))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            crop.save(target)
+    except (OSError, ValueError):
+        return None
+    return target
+
+
+def template_regions(
+    frame_path: Path | str,
+    templates: Iterable[Mapping[str, Any]],
+    *,
+    margin: int = 40,
+    min_score: float = MIN_TEMPLATE_SCORE,
+    min_contrast: float = MIN_TEMPLATE_CONTRAST,
+    limit: int = 6,
+) -> list[dict[str, Any]]:
+    """Where this project's own collected templates are drawn on the **current** frame.
+
+    Directive §三's third and fourth sources: 当前页面适用的已有模板 and 已有控件经验与当前视觉匹配
+    结果.  Both are the same mechanism -- a crop this project already holds, found on the frame in
+    front of it -- and both go through ``matchers.match_ccoeff``, the normalised cross-correlation
+    the vision layer already uses, rather than a second matcher written here.  That is also the
+    answer to "how is a textless icon located": this project's way of locating one has always been
+    a registered crop plus a matcher, never a pixel heuristic.
+
+    Each entry names a ``template_path`` (a crop on disk) and the ``roi_norm`` its registration was
+    measured at.  The match reports the bounds it *found*, not the registration, for the same reason
+    the vision layer does: a tap has to land where the control is now.
+
+    Two contrast gates stand in front of the score, and they are not decoration -- see
+    ``MIN_TEMPLATE_CONTRAST``: a crop with nothing in it, and a matched window with nothing in it,
+    both produce high scores on flat pictures and neither identifies anything.
+    """
+    frame_path = Path(frame_path)
+    out: list[dict[str, Any]] = []
+    try:
+        with Image.open(frame_path) as image:
+            width, height = image.size
+            frame_image = image.convert("L")
+    except (OSError, ValueError):
+        return out
+    if width <= 0 or height <= 0:
+        return out
+    for entry in templates:
+        if len(out) >= limit:
+            break
+        template_path = Path(str(entry.get("template_path") or ""))
+        roi = entry.get("roi_norm")
+        if not template_path.exists() or not isinstance(roi, Mapping):
+            continue
+        try:
+            with Image.open(template_path) as template_image:
+                if _contrast(template_image) < min_contrast:
+                    continue
+        except (OSError, ValueError):
+            continue
+        try:
+            found = _match_ccoeff_anywhere(frame_path, template_path, roi, margin=margin)
+        except Exception:  # noqa: BLE001 - one unusable template must not lose the others
+            continue
+        if found is None or float(found.score) < float(min_score):
+            continue
+        bx, by, bw, bh = found.bounds
+        if bw <= 0 or bh <= 0:
+            continue
+        if _contrast(frame_image.crop((bx, by, bx + bw, by + bh))) < min_contrast:
+            continue
+        out.append(
+            {
+                "text": "",
+                "box_norm": {
+                    "x_norm": round(bx / width, 4),
+                    "y_norm": round(by / height, 4),
+                    "w_norm": round(bw / width, 4),
+                    "h_norm": round(bh / height, 4),
+                },
+                "basis": BASIS_TEMPLATE,
+                "score": round(float(found.score), 4),
+                "detail": {
+                    "template_path": str(template_path),
+                    "semantic": str(entry.get("semantic") or ""),
+                    "source": str(entry.get("source") or ""),
+                    "scale": float(found.scale),
+                },
+            }
+        )
+    return out
+
+
+def template_entries_from_candidates(
+    candidates: Iterable[Any],
+    *,
+    page: str = "",
+    limit: int = 4,
+) -> list[dict[str, Any]]:
+    """Candidate records that can act as a template *on this page*: a crop, and where it was seen.
+
+    The page filter is the directive's own (§四/§九 elsewhere): the same-looking icon on two pages
+    is two different controls, so a template collected on MAP is not evidence about EVENT.
+    """
+    wanted = str(page or "").strip()
+    out: list[dict[str, Any]] = []
+    for record in candidates:
+        if len(out) >= limit:
+            break
+        record_page = str(getattr(record, "page", "") or "")
+        if wanted and record_page and record_page != wanted:
+            continue
+        image_path = Path(str(getattr(record, "image_path", "") or ""))
+        bbox = getattr(record, "bbox", None)
+        if not image_path.exists() or not isinstance(bbox, Mapping) or not bbox:
+            continue
+        roi = _norm_box(bbox)
+        if roi is None:
+            continue
+        out.append(
+            {
+                "template_path": str(image_path),
+                "roi_norm": roi,
+                "semantic": str(getattr(record, "semantic_id", "") or ""),
+                "source": "CANDIDATE",
+            }
+        )
+    return out
+
+
+def template_entries_from_experience(
+    experiences: Iterable[Any],
+    *,
+    page: str = "",
+    limit: int = 4,
+    cache_dir: Path | str | None = None,
+) -> list[dict[str, Any]]:
+    """Ledger records whose own measured crop can be found on this frame (§三's fourth source).
+
+    An L1 registration carries the frame it was measured on and the box inside it, which together
+    *are* a template -- the region the project proved was a control.  The crop is materialised on
+    demand (``_crop_cache``) because the matcher takes a file, and it is cached by digest so a
+    screen visited repeatedly does not re-cut the same region.
+
+    A correction worth stating: this used to hand the matcher the *source frame* as the template,
+    which would have searched for a whole 720x1280 screenshot inside a 40 px window of another one.
+    Nothing could ever have matched, so the source was quietly useless -- found by running it, not
+    by reading it.
+    """
+    wanted = str(page or "").strip()
+    directory = Path(cache_dir) if cache_dir else TEMPLATE_DIR / "experience_crops"
+    out: list[dict[str, Any]] = []
+    for record in experiences:
+        if len(out) >= limit:
+            break
+        record_page = str(getattr(record, "page", "") or "")
+        if wanted and record_page and record_page != wanted:
+            continue
+        features = getattr(record, "visual_features", None)
+        if not isinstance(features, Mapping):
+            continue
+        box = features.get("box_norm")
+        frame = Path(str(features.get("read_from_frame") or ""))
+        roi = _norm_box(box) if isinstance(box, Mapping) else None
+        if roi is None or not frame.exists():
+            continue
+        crop = _crop_cache(frame, roi, directory)
+        if crop is None:
+            continue
+        out.append(
+            {
+                "template_path": str(crop),
+                "roi_norm": roi,
+                "semantic": str(getattr(record, "control", "") or ""),
+                "source": "EXPERIENCE",
+            }
+        )
+    return out
+
+
+def anchored_region(
+    anchor: Mapping[str, Any],
+    regions: Iterable[Mapping[str, Any]],
+    *,
+    limit: int = 40,
+) -> dict[str, Any] | None:
+    """The region a reasoner derived from a text box this frame really drew, or ``None``.
+
+    This is the third basis of §三, and it exists because two real cases have no other evidence.
+    The 燃霜矿区 event page has four textless icons (说明/奖励/指南/历史排名) that each sit directly
+    above their own label, and the quick panel's rows each have a blue arrow at the row's right
+    edge.  A template only covers such an element *after* somebody has collected it; an OCR box
+    covers the label and not the icon.  What a person says is "the icon above 说明", and that is
+    exactly what this resolves: an anchor text, plus the offset of the element's centre from the
+    anchor's centre.
+
+    What keeps it honest is that the anchor is **measured** and the offset is **bounded**.  The
+    anchor text has to be among the words this frame's OCR read -- a text the frame does not draw
+    resolves to nothing -- and the derived region is refused when it is larger than a control or
+    further from its anchor than "next to" can mean (``ANCHOR_MAX_SIZE_NORM``,
+    ``ANCHOR_MAX_OFFSET_NORM``).  The basis is recorded as ANCHORED_TO_TEXT rather than as a
+    measurement, so the weaker evidence never masquerades as the stronger.
+    """
+    text = str(anchor.get("text") or "").strip()
+    if not text:
+        return None
+    source: dict[str, Any] | None = None
+    for region in regions:
+        candidate_text = str(region.get("text") or "").strip()
+        if not candidate_text:
+            continue
+        if candidate_text == text or text in candidate_text:
+            source = dict(region)
+            break
+        if limit <= 0:
+            break
+        limit -= 1
+    if source is None:
+        return None
+    box = _norm_box(source.get("box_norm"))
+    if box is None:
+        return None
+    try:
+        dx = float(anchor.get("dx_norm") or 0.0)
+        dy = float(anchor.get("dy_norm") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    if abs(dx) > ANCHOR_MAX_OFFSET_NORM or abs(dy) > ANCHOR_MAX_OFFSET_NORM:
+        return None
+    try:
+        w = float(anchor["w_norm"]) if anchor.get("w_norm") is not None else box["w_norm"]
+        h = float(anchor["h_norm"]) if anchor.get("h_norm") is not None else box["h_norm"]
+    except (TypeError, ValueError):
+        return None
+    if w <= 0 or h <= 0:
+        return None
+    if w > ANCHOR_MAX_SIZE_NORM[0] or h > ANCHOR_MAX_SIZE_NORM[1]:
+        return None
+    centre_x = box["x_norm"] + box["w_norm"] / 2 + dx
+    centre_y = box["y_norm"] + box["h_norm"] / 2 + dy
+    x_norm = centre_x - w / 2
+    y_norm = centre_y - h / 2
+    if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+        return None
+    w = min(w, 1.0 - x_norm)
+    h = min(h, 1.0 - y_norm)
+    if w <= 0 or h <= 0:
+        return None
+    return {
+        "text": "",
+        "box_norm": {
+            "x_norm": round(x_norm, 4),
+            "y_norm": round(y_norm, 4),
+            "w_norm": round(w, 4),
+            "h_norm": round(h, 4),
+        },
+        "basis": BASIS_ANCHOR,
+        "score": 0.0,
+        "detail": {
+            "anchor_text": str(source.get("text") or ""),
+            "anchor_box": box,
+            "offset": [round(dx, 4), round(dy, 4)],
+        },
+    }
+
+
+def grounding_regions(
+    frame_path: Path | str,
+    ocr,
+    *,
+    skip_words: Iterable[str] = (),
+    limit: int = 200,
+) -> list[dict[str, Any]]:
+    """The text regions of this frame, as the basis every other source is checked against.
+
+    One call, one answer to "what words did this frame actually draw".  Template regions are
+    produced by :func:`template_regions` and anchored regions by :func:`anchored_region`; both are
+    appended by the caller, which is what keeps this function free of any knowledge about where
+    templates live or what a reasoner asked for.
+    """
+    frame_path = Path(frame_path)
+    try:
+        from .ocr import read_frame_size
+    except ImportError:  # pragma: no cover
+        return []
+    try:
+        size = read_frame_size(frame_path)
+    except (OSError, ValueError):
+        return []
+    if not size or int(size[0]) <= 0 or int(size[1]) <= 0:
+        return []
+    width, height = int(size[0]), int(size[1])
+    skip = {str(word).strip() for word in skip_words if str(word or "").strip()}
+    regions: list[dict[str, Any]] = []
+    try:
+        result = ocr.recognize(frame_path)
+    except (OSError, ValueError, AttributeError):
+        result = None
+    if result is None:
+        return regions
+    for token in result.tokens:
+        text = (token.text or "").strip()
+        if not text or not token.box or text in skip:
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        w_px = max(xs) - min(xs)
+        h_px = max(ys) - min(ys)
+        if w_px <= 0 or h_px <= 0:
+            continue
+        regions.append(
+            {
+                "text": text,
+                "box_norm": {
+                    "x_norm": round(min(xs) / width, 4),
+                    "y_norm": round(min(ys) / height, 4),
+                    "w_norm": round(w_px / width, 4),
+                    "h_norm": round(h_px / height, 4),
+                },
+                "basis": BASIS_OCR_BOX,
+                "score": round(float(token.confidence or 0.0), 4),
+                "detail": {},
+            }
+        )
+        if len(regions) >= limit:
+            break
+    return regions
+
+
+#: Why there is no fourth basis here.  Directive §三 lists 当前帧视觉元素 bbox, and a pixel-level
+#: detector for it was written, measured on the real frames, and **removed** because its own
+#: measurements refused it:
+#:
+#:   * on the 燃霜矿区 event page, a 9%-window blob test reported an "element" at 138 of 289 grid
+#:     points -- the volcanic artwork behind the panel is as textured as the icons in front of it;
+#:   * the gates that were meant to separate them (surround spread, contour circularity, fill of the
+#:     component's own box) measured the two populations as *overlapping*: surround spread 22.8-84.0
+#:     for real icons against 26.6-85.6 for artwork, and every large component's contour is clipped
+#:     by its own window, which makes circularity 0.0 for both;
+#: * a flat-surface test at 12-50% windows overlapped as well (icons 0.11-0.65, artwork 0.14-0.39).
+#:
+#: So the honest statement is that this module can measure *text* and it can match *crops*, and it
+#: cannot tell a textless control from a picture.  A textless control is therefore located the way
+#: this project has always located one -- a registered template found on the frame (§三's third and
+#: fourth sources, both shipped here) or a region anchored to a text box the frame really drew
+#: (``anchored_region``) -- and never by a guess about pixels.  MAA's own ColorMatch / FeatureMatch
+#: recognitions are the engine-side way to find a textless element and are named in the delivery
+#: notes as the next step, not claimed here as done.
+
+
 def carries_dynamic_text(texts: Iterable[str]) -> bool:
     """Whether any of these strings is a countdown/ratio -- i.e. a template that would rot."""
     for text in texts:

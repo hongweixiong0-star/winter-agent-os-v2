@@ -744,29 +744,7 @@ class WorkBuddyBridge:
         if effort:
             payload["effort"] = effort
 
-        code, body = self._request("POST", JOBS_PATH, payload, timeout=SUBMIT_TIMEOUT_SECONDS)
-        data = body.get("data") if isinstance(body.get("data"), Mapping) else {}
-        if code != 200 or not data:
-            self._ledger({
-                "source": "bridge",
-                "event": "submit_failed",
-                "capability": ctx.capability,
-                "condition": ctx.condition,
-                "http_status": code,
-                "error": _error_of(body),
-            })
-            raise GatewayUnavailable(
-                f"POST {JOBS_PATH} -> HTTP {code}: "
-                f"{json.dumps(_error_of(body), ensure_ascii=False)}"
-            )
-
-        submission = Submission(
-            job_id=str(data.get("id", "")),
-            state=str(data.get("state", "")),
-            name=str(data.get("name", "")),
-            cwd=str(data.get("cwd", "")),
-            raw=dict(data),
-        )
+        submission = self._post_job(payload, name=str(payload["name"]))
         self._ledger({
             # source tells the escalation queue's fold that this is transport
             # audit rather than queue state; the two share one file on purpose so
@@ -778,11 +756,90 @@ class WorkBuddyBridge:
             "condition": ctx.condition,
             "goal": ctx.goal,
             "skill": ctx.skill,
-            "session_id": data.get("sessionId"),
+            "session_id": submission.raw.get("sessionId"),
             "permission_mode": self.permission_mode,
             "bg_isolation": self.bg_isolation,
         })
         return submission
+
+    # -- 2b. submit_prompt -------------------------------------------------
+
+    def submit_prompt(
+        self,
+        prompt: str,
+        *,
+        name: str = "",
+        model: str | None = None,
+        effort: str | None = None,
+        channel: str = "",
+        extra: Mapping[str, Any] | None = None,
+    ) -> Submission:
+        """Dispatch one **already composed** task as a background job.
+
+        The UNKNOWN-question channel needs the transport and not the escalation gate.  Nothing is
+        being escalated there: a bounded question about one screenshot is waiting in
+        ``learning/unknown_requests/``, and the job's whole task is to read the frame and write one
+        answer file.  So this method takes the prompt as given instead of composing a capability
+        escalation from an ``EscalationContext``, while sharing everything that makes a submission
+        auditable -- the same payload shape, the same permission mode, the same ledger.
+
+        What it deliberately does **not** do is relax :meth:`submit`'s gate.  A capability escalation
+        still has to name one of the five conditions; this path cannot be used to slip an ordinary
+        game tick past that check, because it names no condition at all and its ledger rows say
+        ``channel=UNKNOWN_REQUEST`` rather than claiming an escalation happened.
+        """
+        text = redact(str(prompt or ""), [self._password]).strip()
+        if not text:
+            raise EscalationRefused("a dispatched task needs a prompt")
+        payload: dict[str, Any] = {
+            "prompt": text,
+            "cwd": str(self.cwd),
+            "name": name or "V2 task",
+            "permissionMode": self.permission_mode,
+            "bgIsolation": self.bg_isolation,
+        }
+        if model:
+            payload["model"] = model
+        if effort:
+            payload["effort"] = effort
+        submission = self._post_job(payload, name=str(name or "V2 task"))
+        row: dict[str, Any] = {
+            "source": "bridge",
+            "event": "submitted",
+            "job_id": submission.job_id,
+            "channel": str(channel or "PROMPT"),
+            "session_id": submission.raw.get("sessionId"),
+            "permission_mode": self.permission_mode,
+            "bg_isolation": self.bg_isolation,
+        }
+        for key, value in dict(extra or {}).items():
+            row[str(key)] = value
+        self._ledger(row)
+        return submission
+
+    def _post_job(self, payload: Mapping[str, Any], *, name: str) -> Submission:
+        """The one POST /jobs round trip, shared by both submission paths."""
+        code, body = self._request("POST", JOBS_PATH, payload, timeout=SUBMIT_TIMEOUT_SECONDS)
+        data = body.get("data") if isinstance(body.get("data"), Mapping) else {}
+        if code != 200 or not data:
+            self._ledger({
+                "source": "bridge",
+                "event": "submit_failed",
+                "name": name,
+                "http_status": code,
+                "error": _error_of(body),
+            })
+            raise GatewayUnavailable(
+                f"POST {JOBS_PATH} -> HTTP {code}: "
+                f"{json.dumps(_error_of(body), ensure_ascii=False)}"
+            )
+        return Submission(
+            job_id=str(data.get("id", "")),
+            state=str(data.get("state", "")),
+            name=str(data.get("name", "")),
+            cwd=str(data.get("cwd", "")),
+            raw=dict(data),
+        )
 
     # -- 3. status --------------------------------------------------------
 

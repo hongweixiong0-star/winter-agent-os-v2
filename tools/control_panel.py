@@ -2512,8 +2512,16 @@ class QueuePump:
     # while anything more important is owed -- see capability_bootstrap.preload_gate.
     PRELOAD_EVERY = 20
 
+    # The UNKNOWN question channel, in ticks (30 s each).  Eight ticks is four minutes: a question
+    # the AUTO filed is worth answering promptly -- the screen it is about is often gone within a
+    # cycle -- while asking more often than that would only re-poll jobs whose state cannot have
+    # changed.  Cheaper than the preload pass because a pass with nothing pending is one directory
+    # listing and one gateway probe.
+    UNKNOWN_EVERY = 8
+
     def __init__(self, *, enabled: Any | None = None, interval: float | None = None,
-                 preload_every: int | None = None) -> None:
+                 preload_every: int | None = None,
+                 unknown_every: int | None = None) -> None:
         self._enabled = enabled or (lambda: True)
         self._interval = float(interval or self.INTERVAL)
         self._lock = threading.Lock()
@@ -2526,6 +2534,14 @@ class QueuePump:
             "preload_waiting": 0, "preload_gap": "", "preload_ingest": "",
             "preload_coverage": {},
             "preload_every": self.PRELOAD_EVERY if preload_every is None else int(preload_every),
+            # The UNKNOWN question channel (winter_agent_v2/unknown_dispatch.py).  Separate keys so
+            # the heartbeat answers the two questions an operator actually asks -- "are questions
+            # being answered without me" and "is the thing that answers them alive" -- in words
+            # rather than in a log they have to grep.
+            "unknown_ticks": 0, "unknown_last": "", "unknown_note": "",
+            "unknown_gateway": None, "unknown_pending": 0, "unknown_answered": 0,
+            "unknown_in_flight": [], "unknown_submitted": 0, "unknown_attempts": {},
+            "unknown_every": self.UNKNOWN_EVERY if unknown_every is None else int(unknown_every),
         }
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
@@ -2593,6 +2609,7 @@ class QueuePump:
             self._state["last_line"] = observation.line
             self._state["last_tick"] = datetime.now().strftime("%H:%M:%S")
         self._preload_tick()
+        self._unknown_tick()
         self._persist()
         return self.state()
 
@@ -2654,6 +2671,68 @@ class QueuePump:
             with self._lock:
                 self._state["preload_note"] = f"preload failed: {type(exc).__name__}: {exc}"
                 self._state["preload_last"] = datetime.now().strftime("%H:%M:%S")
+
+    def _unknown_tick(self) -> None:
+        """Answer the AUTO's UNKNOWN questions without an operator (winter_agent_v2/unknown_dispatch).
+
+        This is the consumer the channel never had: ``unknown_advisor`` writes a question and reads
+        an answer if one is there, and until this ran the only thing that ever wrote one was a person
+        at a terminal.  Each pass reconciles the jobs already dispatched, then submits at most one new
+        one -- so the AUTO keeps playing throughout and a screen that has generated no question costs
+        nothing beyond a directory listing.
+
+        Never raises: a gateway that is down, a ledger that cannot be read or a request that turns out
+        to be malformed is reported in the heartbeat and left for the next tick.  The channel must not
+        be able to take the window down, for the same reason the queue consumer must not.
+        """
+        try:
+            every = int(self._state.get("unknown_every") or self.UNKNOWN_EVERY)
+            ticks = int(self._state.get("unknown_ticks") or 0) + 1
+            self._state["unknown_ticks"] = ticks
+            if every <= 0 or ticks % every:
+                return
+
+            from winter_agent_v2.unknown_dispatch import UnknownDispatcher
+
+            dispatcher = UnknownDispatcher(root=self._root_path or None)
+            result = dispatcher.worker()
+            snapshot = dispatcher.state()
+            reconcile = result.get("reconcile") or {}
+            dispatch = result.get("dispatch") or {}
+            submitted = dispatch.get("submitted") or []
+            errors = list(reconcile.get("errors") or []) + list(dispatch.get("errors") or [])
+            with self._lock:
+                self._state["unknown_gateway"] = snapshot.get("gateway")
+                self._state["unknown_pending"] = snapshot.get("pending", 0)
+                self._state["unknown_answered"] = snapshot.get("answered", 0)
+                self._state["unknown_in_flight"] = snapshot.get("in_flight") or []
+                self._state["unknown_attempts"] = snapshot.get("attempts") or {}
+                self._state["unknown_submitted"] = int(
+                    self._state.get("unknown_submitted") or 0
+                ) + len(submitted)
+                if submitted:
+                    self._state["unknown_note"] = "submitted " + ", ".join(
+                        f"{item['request_id']}->{item.get('job_id', '?')}" for item in submitted
+                    )
+                elif reconcile.get("done") or reconcile.get("failed"):
+                    self._state["unknown_note"] = (
+                        f"reconciled: done={reconcile.get('done', 0)} "
+                        f"failed={reconcile.get('failed', 0)} lost={reconcile.get('lost', 0)}"
+                    )
+                elif errors:
+                    self._state["unknown_note"] = errors[-1][:200]
+                elif snapshot.get("pending"):
+                    self._state["unknown_note"] = (
+                        f"{snapshot['pending']} question(s) waiting, "
+                        f"{len(snapshot.get('in_flight') or [])} in flight"
+                    )
+                else:
+                    self._state["unknown_note"] = "nothing pending"
+                self._state["unknown_last"] = datetime.now().strftime("%H:%M:%S")
+        except Exception as exc:  # noqa: BLE001 - a background pass, not a critical path
+            with self._lock:
+                self._state["unknown_note"] = f"unknown channel failed: {type(exc).__name__}: {exc}"
+                self._state["unknown_last"] = datetime.now().strftime("%H:%M:%S")
 
     def alive(self) -> bool:
         """Is the clock actually running?

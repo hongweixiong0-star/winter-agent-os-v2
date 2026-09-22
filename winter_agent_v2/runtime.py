@@ -2385,17 +2385,25 @@ class LiveRuntime:
             return None
         joined = "".join(tokens)
         if any(refused and refused in joined for refused in self.ORDINARY_CONTROL_REFUSED_WORDS):
-            # A screen that mentions a spend word is never tapped -- that boundary is unchanged --
-            # but it can still be *understood* (operator 2026-09-22 §一: 现有方法无法确定页面用途
-            # 或控件语义时，再调用实际可用的 AI 推理能力).  So an unnamed screen like this one files
-            # its question and records any answer for the page knowledge, and the answer's point is
-            # deliberately not used: a candidate on a spend screen may be named, never pressed.
-            # The parse side refuses an answer that mentions the spend itself, so the two ends of
-            # the boundary agree.
+            # A screen that mentions a spend word is not tapped *by this tier*: neither a printed
+            # word nor an ordinary hypothesis may press it, and that boundary is unchanged.  What
+            # the follow-up directive §五 removes is the refusal of the whole page: such a screen
+            # can still be understood, so the on-demand analysis runs here and its candidate is
+            # judged on the candidate itself (``_advice_risk``) -- 关闭 or 返回 on a page that sells
+            # gems is allowed through, and an answer pointing at the purchase is refused.  Every
+            # other gate is unchanged: the device lease, the page check, the attempt budget and the
+            # executor's own bounds.
             if unnamed:
-                self._advised_control(
-                    page, "", frame_path, unnamed=True, confidence=float(frame.confidence or 0.0), ask_only=True
+                advised = self._advised_control(
+                    page,
+                    "",
+                    frame_path,
+                    frame,
+                    unnamed=True,
+                    confidence=float(frame.confidence or 0.0),
                 )
+                if advised is not None:
+                    return advised
             brain = getattr(self, "brain", None)
             if brain is not None:
                 brain.ordinary_scan_exhausted = True
@@ -2482,39 +2490,13 @@ class LiveRuntime:
         # analysis get asked (directive §一: 现有方法足以推断就直接用，不足才调用 AI).  On a named
         # page it is not consulted at all: a named page's controls are the registry's business.
         if unnamed:
+            # The bookkeeping an advised tap needs -- the ledger key, the L1 evidence, the attempt
+            # count -- is done inside ``_advised_control``, so both callers (this one and the
+            # spend-screen pass above) leave the same record behind and neither can drift.
             advised = self._advised_control(
-                page, title, frame_path, unnamed=True, confidence=float(frame.confidence or 0.0)
+                page, title, frame_path, frame, unnamed=True, confidence=float(frame.confidence or 0.0)
             )
             if advised is not None:
-                self._ordinary_attempts += 1
-                advised_word = str(
-                    (self._last_advice or {}).get("proposed_action", "AI_ADVICE") or "AI_ADVICE"
-                )
-                self._ordinary_last = {
-                    "page": page,
-                    "title": title,
-                    "word": advised_word,
-                    "point": (round(advised[0], 4), round(advised[1], 4)),
-                    "semantic": f"AI_ADVICE[{advised_word}]",
-                    "basis": "AI_ADVICE",
-                    "source": "AI_ADVICE",
-                }
-                # The advice's own region (the text box its point landed in) travels with it, so an
-                # advised tap registers an L1 action exactly like a measured one -- while the
-                # answer itself stays a proposal in the page record, never a measurement.
-                landed_box = dict((self._last_advice or {}).get("box_norm") or {})
-                self._l1_context = {
-                    "page": page,
-                    "goal": str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
-                    "state": self._l1_state(frame, title),
-                    "semantic": f"AI_ADVICE[{advised_word}]",
-                    "text": advised_word,
-                    "box_norm": landed_box,
-                    "basis": "AI_ADVICE",
-                    "source": "AI_ADVICE",
-                    "confidence": 0.0,
-                    "frame": str(frame_path),
-                }
                 return advised
         brain = getattr(self, "brain", None)
         if brain is not None:
@@ -2526,74 +2508,66 @@ class LiveRuntime:
         page: str,
         title: str,
         frame_path: Path,
+        frame: "WorldState",
         unnamed: bool,
         confidence: float = 0.0,
-        ask_only: bool = False,
     ) -> tuple[float, float] | None:
         """An on-demand reasoner's candidate for this screen, when one has already answered.
 
-        Operator directive 2026-09-22 ("复用现有 UNKNOWN，接入按需 AI 分析").  This runs **after**
-        every method the project already has -- templates, the ledger, the client's own printed
-        words -- has failed, and only on an unnamed screen, which is §一's顺序 exactly:
+        Operator directive 2026-09-22 ("复用现有 UNKNOWN，接入按需 AI 分析"), extended by the same
+        day's follow-up ("UNKNOWN AI 求助通道补齐").  This runs **after** every method the project
+        already has -- templates, the ledger, the client's own printed words -- has failed, which is
+        §一's order exactly:
 
             如果现有 OCR、模板、语义词典或历史经验已经足以推断下一步，直接使用现有 MAA 执行，不必调用 AI
 
-        Three properties, and each is a rule from the directive rather than a preference:
+        Four properties, each a rule from the directive rather than a preference:
 
         * **it cannot block.**  There is no call here -- an answer is a file that either exists or
-          does not, so §六's "不能让正式 AUTO 无限等待" is true by construction, and a request with
-          no answer simply leaves the cycle to the chain that already works;
-        * **it cannot invent a control.**  The answer's point is used only if this frame's own OCR
-          read text there (``justified_point``), which is §四's "有合理的当前画面定位依据";
-        * **it cannot spend.**  ``parse_advice`` refuses an answer mentioning money, gems or an
-          irreversible action, using the same boundary the ordinary-control resolver draws.
+          does not, so "正式 AUTO 不等待 AI 回复" is true by construction, and a request with no
+          answer simply leaves the cycle to the chain that already works.
+        * **it cannot invent a control.**  §三 allows three kinds of locating basis and all three are
+          measured on *this* frame: a text box the OCR read, a template this project collected
+          found here (``ui_collection.template_regions``), or a region derived from a text box by a
+          bounded offset (``ui_collection.anchored_region``).  A point matching none of them is an
+          unmeasured coordinate and is refused.
+        * **it cannot be used on the wrong screen.**  §四: the request carries the page, the goal,
+          the state signature and the frame; an answer whose screen or purpose has changed is filed
+          as knowledge and re-asked, never acted on.
+        * **it is judged on the candidate, not on the page.**  §五: the risk check is applied to the
+          element being pressed (``_advice_risk``), so an answer may point at 关闭 on a page that
+          sells gems, while an answer that points at the purchase itself is refused.
 
-        The question is filed when there is no answer yet, so the next visit -- or a WorkBuddy
-        session reading ``learning/unknown_requests/`` -- has something to answer.
+        The question is filed when there is no answer yet, so a WorkBuddy session reading
+        ``learning/unknown_requests/`` -- or the dispatcher that asks one for it -- has something to
+        answer.
         """
         advisor = getattr(self, "_advisor", None)
         if advisor is None:
             return None
         key = page_knowledge.page_key(page, title)
-        boxes: list[dict] = []
-        texts: tuple[str, ...] = ()
-        size = None
+        goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
+        situation = self._l1_state(frame, title)
         ocr = self._ocr_service()
-        if ocr is not None:
-            try:
-                from .ocr import read_frame_size
-
-                size = read_frame_size(frame_path)
-                result = ocr.recognize(frame_path)
-                texts = page_knowledge.ocr_texts(result.tokens)
-                if size:
-                    for token in result.tokens:
-                        if not token.box or not (token.text or "").strip():
-                            continue
-                        xs = [float(point[0]) for point in token.box]
-                        ys = [float(point[1]) for point in token.box]
-                        boxes.append(
-                            {
-                                "text": (token.text or "").strip(),
-                                "confidence": round(float(token.confidence or 0.0), 4),
-                                "x_norm": round(min(xs) / size[0], 4),
-                                "y_norm": round(min(ys) / size[1], 4),
-                                "w_norm": round((max(xs) - min(xs)) / size[0], 4),
-                                "h_norm": round((max(ys) - min(ys)) / size[1], 4),
-                            }
-                        )
-            except (OSError, ValueError):
-                pass
+        regions, boxes, texts, template_note = self._advice_evidence(page, frame_path, ocr)
         request = unknown_advisor.build_request(
             unknown_type=unknown_advisor.UNKNOWN_CONTROL,
             page_label=page,
             page_key=key,
             frame_path=frame_path,
-            goal=str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
+            goal=goal,
             page_confidence=confidence,
             ocr_texts=texts,
             ocr_boxes=boxes,
             entry_page=getattr(self, "_last_known_label", ""),
+            world_state=frame.to_dict(),
+            situation=situation,
+            character=str(
+                ((frame.to_dict().get("player") or {}).get("name"))
+                if isinstance(frame.to_dict().get("player"), Mapping)
+                else ""
+            ),
+            template_match=template_note,
             ledger_match="; ".join(
                 f"{control}->{row.after_page}"
                 for row in (
@@ -2604,8 +2578,8 @@ class LiveRuntime:
             ),
             last_attempt=dict(getattr(self, "_last_attempt_summary", {}) or {}),
             question=(
-                f"这张屏幕（页面模型读作 {page}，标题 {title or '未读出'}）上，与当前 Goal 相关的"
-                "普通低风险控件在哪里？请给出 target_point（归一化）与 proposed_action。"
+                f"这张屏幕（页面模型读作 {page}，标题 {title or '未读出'}）上，与当前 Goal {goal or '(未定)'} "
+                "相关的普通低风险控件在哪里？请给出定位依据与 proposed_action。"
             ),
         )
         advice = advisor.take(request.request_id, registry=self.registry)
@@ -2617,62 +2591,276 @@ class LiveRuntime:
                     flush=True,
                 )
             return None
-        point = unknown_advisor.justified_point(advice, boxes)
-        if point is None:
+
+        # §四: the answer has to be about *this* screen and *this* purpose.  An answer to a question
+        # asked on another screen is knowledge about that screen, not an instruction for this one.
+        stale = unknown_advisor.advice_staleness(
+            advice, advisor.read_request(request.request_id), page_key=key, goal=goal
+        )
+        if stale:
             print(
-                f"[advisor] {request.request_id}: the answer's point is not over any text this "
-                f"frame read -- refused, nothing is tapped",
+                f"[advisor] {request.request_id}: the answer was made for a different screen or goal "
+                f"({stale}); filed and re-asked, nothing is tapped",
                 flush=True,
             )
+            self._advice_knowledge(
+                advice, key, page, note=f"stale:{stale}", frame_path=frame_path
+            )
+            advisor.ask(request, force=True)
             return None
+
+        # §三: the third basis has to be resolved against *this* frame's own text before it can
+        # justify anything, and it joins the same pool as the measured ones.  An answer that is only
+        # an anchor carries no coordinate, so the region the anchor produced is what names the point.
+        anchor_point: tuple[float, float] | None = None
+        if advice.target_anchor:
+            anchored = ui_collection.anchored_region(advice.target_anchor, regions)
+            if anchored is not None:
+                # Prepended, not appended: this region is the one the answer asked for, derived from
+                # a text box this frame really drew, so it outranks a generic box that merely
+                # overlaps it.  Measured on the real 燃霜矿区 frame: appending put the icon above 说明
+                # behind a stray one-character OCR box 3 px away, and the tap was named after that
+                # box instead of after the icon.
+                regions = [anchored] + list(regions)
+                box = anchored.get("box_norm") or {}
+                anchor_point = (
+                    round(float(box.get("x_norm", 0.0)) + float(box.get("w_norm", 0.0)) / 2, 4),
+                    round(float(box.get("y_norm", 0.0)) + float(box.get("h_norm", 0.0)) / 2, 4),
+                )
+                print(
+                    f"[advisor] {request.request_id}: the answer's anchor "
+                    f"{str(advice.target_anchor.get('text'))!r} is on this frame -> "
+                    f"{anchored['box_norm']}",
+                    flush=True,
+                )
+        region = unknown_advisor.grounded_region(
+            advice, regions, points=[anchor_point] if anchor_point else ()
+        )
+        if region is None:
+            print(
+                f"[advisor] {request.request_id}: the answer's point is over nothing this frame "
+                f"measured -- refused, nothing is tapped",
+                flush=True,
+            )
+            self._advice_knowledge(advice, key, page, note="ungrounded", frame_path=frame_path)
+            return None
+        point = (float(region["point"][0]), float(region["point"][1]))
+        basis = str(region.get("basis") or "")
+
+        # §五: the boundary is on *this candidate*, not on the page it sits on.
+        reason = self._advice_risk(advice, region)
+        if reason:
+            print(
+                f"[advisor] {request.request_id}: {reason} -- understood, filed, not tapped",
+                flush=True,
+            )
+            self._advice_knowledge(advice, key, page, note=f"risk:{reason}", frame_path=frame_path)
+            return None
+
+        semantic = self._advice_semantic(advice, region)
+        box_norm = dict(region.get("box_norm") or {})
         self._last_advice = {
             "request_id": request.request_id,
             "unknown_type": advice.unknown_type,
             "candidate_semantics": list(advice.candidate_semantics),
             "proposed_action": advice.proposed_action,
+            "action_kind": advice.action_kind,
+            "target_semantics": advice.target_semantics,
             "expected_result": advice.expected_result,
             "uncertainty": advice.uncertainty,
             "note": advice.note,
             "target_point": [point[0], point[1]],
+            "basis": basis,
+            "basis_detail": dict(region.get("detail") or {}),
+            "box_norm": box_norm,
             "source": advice.source,
         }
-        # The region the tap landed in, handed to the element collector like any other read
-        # (directive §五: an AI-identified candidate has to end up in the same collector as the
-        # rest -- screenshot, bbox, context, candidate semantics -- so that a proven one can become
-        # a template).  The box is the frame's own OCR box the point fell in, never a box the
-        # answer invented: the point is only used because it is over real text, and this is that
-        # text's measurement.
-        landed = unknown_advisor.box_containing(point, boxes)
-        if ask_only:
-            # The answer is kept as knowledge about this screen and its point is not used: this
-            # screen mentions a spend word, so nothing on it may be pressed (§一 vs the existing
-            # boundary -- understanding is allowed, touching is not).
-            print(
-                f"[advisor] {request.request_id}: answer filed for the page record; "
-                f"not tapped, this screen mentions a spend word",
-                flush=True,
-            )
-            return None
+        self._ordinary_tried.add((page, semantic))
+        self._ordinary_attempts += 1
+        self._ordinary_last = {
+            "page": page,
+            "title": title,
+            "word": str(advice.proposed_action or ""),
+            "point": (round(point[0], 4), round(point[1], 4)),
+            "semantic": semantic,
+            "basis": f"AI_ADVICE/{basis}",
+            "source": "AI_ADVICE",
+            "box_norm": box_norm,
+        }
+        # The advice's own region travels with it, so an advised tap registers an L1 action exactly
+        # like a measured one -- while the answer itself stays a proposal in the page record.
+        self._l1_context = {
+            "page": page,
+            "goal": goal,
+            "state": situation,
+            "semantic": semantic,
+            "text": str(region.get("text") or advice.target_semantics or ""),
+            "box_norm": box_norm,
+            "basis": f"AI_ADVICE/{basis}",
+            "source": "AI_ADVICE",
+            "confidence": 0.0,
+            "frame": str(frame_path),
+        }
         self._note_printed(
-            f"AI_ADVICE[{advice.proposed_action}]",
+            semantic,
             key,
-            f"the on-demand analysis of {key} (uncertainty: {advice.uncertainty or 'unstated'})",
+            f"the on-demand analysis of {key} (basis {basis}, uncertainty: "
+            f"{advice.uncertainty or 'unstated'})",
             point,
-            box_norm=(
-                {
-                    "x_norm": landed["x_norm"],
-                    "y_norm": landed["y_norm"],
-                    "w_norm": landed["w_norm"],
-                    "h_norm": landed["h_norm"],
-                }
-                if landed
-                else None
-            ),
-            text=str((landed or {}).get("text") or ""),
-            confidence=(landed or {}).get("confidence"),
+            box_norm=box_norm or None,
+            text=str(region.get("text") or ""),
+            confidence=float(region.get("score") or 0.0) or None,
             label=page,
         )
+        print(
+            f"[advisor] {request.request_id}: {advice.action_kind} -> {semantic} at "
+            f"{point[0]:.4f},{point[1]:.4f} (basis {basis})",
+            flush=True,
+        )
         return point
+
+    def _advice_evidence(
+        self,
+        page: str,
+        frame_path: Path,
+        ocr,
+    ) -> tuple[list[dict], list[dict], tuple[str, ...], str]:
+        """Everything this frame can justify a point with, and the record of it (§三).
+
+        One place builds the three bases -- the text this frame read, the templates this project
+        already collected and can find here, and (from a later step, against these) a region derived
+        from one of those text boxes.  The request carries the first and a summary of the second, so
+        a reasoner is told what the AUTO has already found rather than being asked to rediscover it.
+        """
+        regions: list[dict] = []
+        boxes: list[dict] = []
+        texts: tuple[str, ...] = ()
+        note = ""
+        if ocr is not None:
+            try:
+                regions = ui_collection.grounding_regions(frame_path, ocr)
+                texts = tuple(
+                    str(region.get("text") or "") for region in regions if region.get("text")
+                )
+                boxes = [
+                    {
+                        "text": str(region.get("text") or ""),
+                        "confidence": float(region.get("score") or 0.0),
+                        **dict(region.get("box_norm") or {}),
+                    }
+                    for region in regions
+                    if region.get("text")
+                ]
+            except (OSError, ValueError, AttributeError):
+                regions, boxes, texts = [], [], ()
+        templates: list[dict] = []
+        try:
+            candidates = getattr(self, "_ui_store", lambda: None)()
+            if candidates is not None:
+                templates.extend(
+                    ui_collection.template_entries_from_candidates(candidates.all(), page=page)
+                )
+        except Exception:  # noqa: BLE001 - collection must never fail a step
+            pass
+        try:
+            templates.extend(
+                ui_collection.template_entries_from_experience(
+                    (getattr(self, "_control_ledger", {}) or {}).values(), page=page
+                )
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        if templates:
+            try:
+                hits = ui_collection.template_regions(frame_path, templates)
+            except Exception:  # noqa: BLE001
+                hits = []
+            if hits:
+                regions = list(regions) + hits
+                note = "; ".join(
+                    f"{hit['detail'].get('semantic') or 'template'}@{hit['score']}"
+                    f"({hit['detail'].get('source')})"
+                    for hit in hits
+                )
+        return regions, boxes, texts, note
+
+    def _advice_risk(self, advice, region: Mapping[str, Any]) -> str:
+        """Why this *candidate* may not be pressed, or ``""`` (§五).
+
+        The boundary is the same list the ordinary-control resolver carries, but it is applied to
+        the thing being pressed -- the anchored region's own wording, and the element the answer
+        named -- instead of to every word on the screen.  A page that mentions 钻石 therefore stays
+        analysable: an answer that points at 关闭 is accepted and an answer that points at the
+        gem offer is refused, which is the distinction the directive asks for.  Real-money payment
+        and unauthorised high-value or irreversible operations stay refused outright, and nothing
+        here reaches the device lease, the page check or the executor's bounds.
+        """
+        identity = " ".join(
+            [
+                str(region.get("text") or ""),
+                str(advice.target_semantics or ""),
+                str(advice.grounding_ref or ""),
+            ]
+        ).lower()
+        for word in unknown_advisor.REFUSED_WORDS:
+            if word.lower() in identity:
+                return f"the candidate itself is {word!r}"
+        return ""
+
+    def _advice_semantic(self, advice, region: Mapping[str, Any]) -> str:
+        """What this advised tap is called in the ledger, in the project's own vocabulary.
+
+        The naming is what lets an advised step be *learned* rather than re-asked: an answer that
+        names a real element on the screen is filed as ``ORDINARY_CONTROL[<its own word>]``, which is
+        the same key the interactive tier and the L1 reuse use -- so the next visit reuses the proven
+        action with no reasoner involved.  An answer whose element has no wording at all (a textless
+        icon anchored to a label) keeps its own ``AI_ADVICE`` name, because there is no screen word
+        to key a reuse on.
+
+        The word chosen is the **region's own text**, not the reasoner's label for the element, and
+        that is deliberate: reuse requires the recorded wording to be among the words the next frame
+        draws, so a key the screen never prints could never be found again.  What the reasoner called
+        the element is kept beside it in ``_last_advice["target_semantics"]`` rather than replacing
+        the screen's own word here.
+        """
+        if advice.action_kind == unknown_advisor.ACTION_L1:
+            target = unknown_advisor.l1_target(advice.proposed_action)
+            if target:
+                return target
+        word = str(region.get("text") or "").strip()
+        if advice.action_kind == unknown_advisor.ACTION_ORDINARY and word:
+            return f"ORDINARY_CONTROL[{word}]"
+        return f"AI_ADVICE[{advice.proposed_action}]"
+
+    def _advice_knowledge(
+        self,
+        advice,
+        key: str,
+        page: str,
+        *,
+        note: str,
+        frame_path: Path,
+    ) -> None:
+        """Keep a reasoner answer that was *not* acted on, with why (§四/§五).
+
+        A stale answer is still a claim about a screen this project has seen, and the directive says
+        so: 过期建议可以保存为知识候选.  It is filed through the same ``_last_advice`` channel the
+        page record already reads, with the reason it was not used, so the record says both what was
+        answered and that nothing was pressed because of it.
+        """
+        self._last_advice = {
+            "request_id": str(getattr(advice, "request_id", "") or ""),
+            "unknown_type": str(getattr(advice, "unknown_type", "") or ""),
+            "candidate_semantics": list(getattr(advice, "candidate_semantics", ()) or ()),
+            "proposed_action": str(getattr(advice, "proposed_action", "") or ""),
+            "action_kind": str(getattr(advice, "action_kind", "") or ""),
+            "expected_result": str(getattr(advice, "expected_result", "") or ""),
+            "uncertainty": str(getattr(advice, "uncertainty", "") or ""),
+            "note": str(getattr(advice, "note", "") or ""),
+            "filed_only": note,
+            "source": str(getattr(advice, "source", "") or ""),
+            "frame": str(frame_path),
+        }
 
     def _ordinary_word_order(self, page: str, title: str, *, unnamed: bool) -> list[str]:
         """Which printed words to try on this screen, best evidence first.
