@@ -472,6 +472,22 @@ class RuleBrain:
             return Decision("DISMISS_BATTLE_VICTORY", "battle_result_blocks_underlying_page", world.confidence, "underlying_page_restored")
         if world.page is Page.POPUP and world.popup == "REAL_MONEY_OFFER":
             return Decision("DISMISS_REAL_MONEY_OFFER", "real_money_action_permanently_blocked", world.confidence, "offer_closed_without_purchase")
+        if world.page is Page.POPUP and world.popup == "NEW_TROOP_UNLOCK":
+            # The barracks' first-open reveal.  Measured live 2026-09-22T04:39:04Z: it is what
+            # the client answered the 射手营 tab tap with, the run could not name the screen, and
+            # the switch it had really made was recorded as TRAINING_CAMP_SWITCH_NOT_PROVEN.
+            #
+            # The goal-neutral close is the right one and not a guess: the client prints
+            # 点击任意位置继续 on the card itself, which is the runtime's existing
+            # "declared its own exit" path (``read_tap_anywhere_instruction``), and the verifier
+            # only asks that the screen be gone afterwards -- the page underneath is whichever
+            # the reveal covered, which is why no domain-named dismiss fits here.
+            return Decision(
+                "DISMISS_SHARED_REWARD",
+                "new_troop_reveal_declares_its_own_exit",
+                world.confidence,
+                "underlying_page_restored",
+            )
         # A duplicate-target question means another of our teams already holds
         # the node this search produced.  Sending anyway burns a march on a
         # contested node, so cancel and let the next search offer a new one.

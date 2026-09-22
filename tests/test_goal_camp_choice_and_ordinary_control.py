@@ -463,5 +463,103 @@ class TrainingPageSecondRenderTests(unittest.TestCase):
         self.assertNotEqual(state.page, Page.TRAINING)
 
 
+# --------------------------------------------------------------- the barracks' first-open reveal
+
+
+class NewTroopRevealTests(unittest.TestCase):
+    """The screen the client answers the first tap on a barracks tab with.
+
+    Measured live 2026-09-22T04:39:04Z, run 20260922_123407_610951: tapping 射手营's tab opened
+    the camp and the client drew its new-troop card over it -- ``新``, ``6级英勇射手``, and the
+    instruction ``点击任意位置继续``.  The run read the frame as an unknown page and recorded the
+    switch as ``TRAINING_CAMP_SWITCH_NOT_PROVEN``, on a tap that had worked.
+    """
+
+    TOKENS = (
+        ("新", 1.000, ((522.0, 177.0), (565.0, 177.0), (565.0, 201.0), (522.0, 201.0))),
+        ("6级英勇射手", 0.999, ((238.0, 951.0), (485.0, 951.0), (485.0, 977.0), (238.0, 977.0))),
+        ("点击任意位置继续", 0.985, ((226.0, 1221.0), (495.0, 1221.0), (495.0, 1243.0), (226.0, 1243.0))),
+    )
+
+    def _result(self, tokens=TOKENS):
+        from winter_agent_v2.ocr import OCRResult, OCRToken
+
+        return OCRResult(
+            tuple(OCRToken(text=text, confidence=conf, box=box) for text, conf, box in tokens),
+            "stub",
+        )
+
+    def test_the_reveal_is_named_from_its_own_words(self):
+        from winter_agent_v2.ocr import OCRPageClassifier
+
+        state = OCRPageClassifier().classify(self._result(), frame_size=(720, 1280))
+        self.assertEqual(state.page, Page.POPUP)
+        self.assertEqual(state.popup, "NEW_TROOP_UNLOCK")
+        self.assertEqual(state.rewards.get("unlocked_troop_title"), "6级英勇射手")
+
+    def test_the_goal_neutral_close_is_what_the_brain_picks(self):
+        """The card declares its own exit, so the decision is the existing declared-exit close."""
+        state = WorldState(page=Page.POPUP, popup="NEW_TROOP_UNLOCK", confidence=0.99)
+        decision = RuleBrain(current_goal="TRAIN").decide(state, _registry_with_camp_skills())
+        self.assertEqual(decision.skill, "DISMISS_SHARED_REWARD")
+
+    def test_a_title_without_the_instruction_is_not_a_reveal(self):
+        """The instruction is half the evidence: a unit name alone must not name the screen."""
+        from winter_agent_v2.ocr import OCRPageClassifier
+
+        state = OCRPageClassifier().classify(
+            self._result(self.TOKENS[:2]), frame_size=(720, 1280)
+        )
+        self.assertNotEqual(state.popup, "NEW_TROOP_UNLOCK")
+
+
+class PrintedExitOnTheRealFrameTests(unittest.TestCase):
+    """The OCR fallback path, on the frame it was needed for: no template, no ledger entry.
+
+    ``BTN_DISMISS_INTEL_REWARD`` is the target the goal-neutral close aims at, and on this it has
+    no template at all and no ledger entry for a POPUP page -- which is precisely the state the
+    fallback exists for.  The point comes from the client's own printed instruction, read off
+    this frame.
+    """
+
+    FRAME = ROOT / (
+        "dataset/raw/control_panel/runtime_auto/20260922_123407_610951/"
+        "20260922_123407_610951_step_011_after_refresh_2_20260922T043904261212.png"
+    )
+
+    def test_the_client_instruction_supplies_the_point(self):
+        if not self.FRAME.exists():
+            self.skipTest("the live capture was pruned by the retention policy")
+        import json
+
+        from winter_agent_v2.ocr import HybridVision, OCRService, RapidOCRBackend, ResilientOCRBackend
+        from winter_agent_v2.vision import SemanticWorldVision
+
+        cfg = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+        template = SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json")
+        vision = HybridVision(
+            template,
+            OCRService(ResilientOCRBackend(RapidOCRBackend(Path(cfg["ocr"]["module_path"])))),
+        )
+        world = vision.observe(image_path=self.FRAME)
+        self.assertEqual(world.popup, "NEW_TROOP_UNLOCK")
+
+        runtime = object.__new__(LiveRuntime)
+        runtime.vision = vision
+        runtime.semantic_vision = template.semantic
+        runtime._control_ledger = {}
+        runtime._remembered_reuse = []
+        runtime._printed_remembered = set()
+        runtime._printed_reads = []
+        runtime._printed_printed = set()
+        runtime.brain = RuleBrain(current_goal="TRAIN")
+        point = runtime._resolve_semantic_target(
+            "BTN_DISMISS_INTEL_REWARD", world, frame_path=self.FRAME
+        )
+        self.assertIsNotNone(point)
+        self.assertTrue(runtime._printed_reads, "the read must be visible, not silent")
+        self.assertIn("点击任意位置继续", runtime._printed_reads[0])
+
+
 if __name__ == "__main__":
     unittest.main()

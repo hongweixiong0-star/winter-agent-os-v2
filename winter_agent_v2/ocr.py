@@ -372,6 +372,32 @@ class OCRPageClassifier:
                 rewards={"real_money_cost": True, "action": "BLOCKED"},
                 confidence=max(token.confidence for token in eligible),
             )
+        # The new-troop reveal, measured live 2026-09-22T04:39:04Z.
+        #
+        # It is what the client answers with the first time a barracks tab is opened: a
+        # full-screen troop card, ``新`` in the corner, the unit named as ``6级英勇射手``, and
+        # the client's own instruction ``点击任意位置继续`` at the foot.  The frame was recorded
+        # as an unknown page, so ``SELECT_TRAINING_CAMP``'s verifier answered
+        # TRAINING_CAMP_SWITCH_NOT_PROVEN on a tap that had in fact switched the page -- the
+        # camp had been reached and the run could not see it.
+        #
+        # Two of the client's own words, and the second is what makes it specific rather than a
+        # guess about any splash: the instruction it prints is the dismissal, so naming this
+        # screen is enough for the runtime's existing "the client declared its own exit" path to
+        # clear it (``read_tap_anywhere_instruction`` already covers 点击任意位置继续).
+        title = next(
+            (text for text in exact_texts if re.fullmatch(r"\d+级(英勇|刚毅|王牌)?(盾兵|矛兵|射手)", text)),
+            None,
+        )
+        if title is not None and any(
+            phrase in text for text in exact_texts for phrase in CLIENT_TAP_ANYWHERE_PHRASES
+        ):
+            return WorldState(
+                page=Page.POPUP,
+                popup="NEW_TROOP_UNLOCK",
+                rewards={"unlocked_troop_title": title},
+                confidence=max(token.confidence for token in eligible),
+            )
         found: list[Page] = []
         for page, alternatives in self.RULES:
             if any(keyword in exact_texts for keyword in alternatives):
