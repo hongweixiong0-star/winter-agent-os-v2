@@ -1904,7 +1904,9 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     # as a labelled fallback, because a tap from it lands on the row's state word
                     # (measured: 0.4097 against a button at 0.539-0.749).
                     "arrow_norm": located if located else [round(arrow_x, 4), round(name_y / height, 4)],
-                    "arrow_basis": "ROW_BUTTON_SCAN" if located else "PANEL_RELATIVE_ESTIMATE",
+                    "arrow_basis": (
+                        QUICK_PANEL_ARROW_BASIS_SCAN if located else QUICK_PANEL_ARROW_BASIS_ESTIMATE
+                    ),
                     "badge": badge,
                 }
                 if box is not None:
@@ -1931,6 +1933,18 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     "basis": "PANEL_RELATIVE_ESTIMATE",
                 }
     return panel
+
+
+#: How a quick-panel row's tap point was obtained, and the two answers are not equivalent.
+#:
+#: ``SCAN`` is the row's own blue arrow button located **in this frame's pixels**; ``ESTIMATE`` is the
+#: reading's fallback when that scan found nothing.  They are named once, here, because a consumer has
+#: to be able to tell them apart to decide whether to tap at all -- measured 2026-09-23 17:21:50, the
+#: 盾兵 row drew the client's **green check** (its batch was 已完成) instead of a blue arrow, the scan
+#: correctly found none, and the estimate (x 0.4042) was tapped anyway: the tap landed on the row's
+#: text at x 291 and opened nothing.
+QUICK_PANEL_ARROW_BASIS_SCAN: str = "ROW_BUTTON_SCAN"
+QUICK_PANEL_ARROW_BASIS_ESTIMATE: str = "PANEL_RELATIVE_ESTIMATE"
 
 
 #: The training button's own printed label.

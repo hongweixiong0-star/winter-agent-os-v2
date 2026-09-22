@@ -33,6 +33,9 @@ _QUICK_PANEL_ROW_SKILL: dict[str, str] = {
 }
 
 
+from .ocr import QUICK_PANEL_ARROW_BASIS_SCAN
+
+
 class RuleBrain:
     """Strict deterministic fallback brain for P0; decides WHAT, never clicks."""
 
@@ -2178,6 +2181,14 @@ class RuleBrain:
             if str(row.get("kind")) in kinds
             and str(row.get("status")) == "IDLE"
             and row.get("arrow_norm")
+            # ...and the row's button had to be *located on this frame*.  Measured 2026-09-23
+            # 17:21:50: the 盾兵 row read ``已完成`` with the client drawing a **green check** where the
+            # other rows draw their blue arrow, so the button scan correctly found none -- and the row
+            # was still offered, with the reading's own weak fallback (``PANEL_RELATIVE_ESTIMATE``,
+            # x 0.4042) standing in for a button.  The tap landed at x 291 on the row's text and no
+            # action bar opened.  A row whose control was not found is not a row to tap: the estimate
+            # is honest as a hint and worthless as a coordinate (operator: 未验证不等于可以点).
+            and str(row.get("arrow_basis")) == QUICK_PANEL_ARROW_BASIS_SCAN
         ]
         if not candidates:
             return None

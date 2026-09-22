@@ -474,11 +474,11 @@ class TheRowArrowOpensTheTaskBarTests(unittest.TestCase):
         """
         rows = [
             {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IN_PROGRESS",
-             "arrow_norm": [0.6, 0.4266]},
+             "arrow_norm": [0.6, 0.4266], "arrow_basis": "ROW_BUTTON_SCAN"},
             {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IN_PROGRESS",
-             "arrow_norm": [0.6, 0.4832]},
+             "arrow_norm": [0.6, 0.4832], "arrow_basis": "ROW_BUTTON_SCAN"},
             {"kind": "CAMP", "key": "MARKSMAN_CAMP", "label": "射手", "status": "IDLE",
-             "arrow_norm": [0.6, 0.5402]},
+             "arrow_norm": [0.6, 0.5402], "arrow_basis": "ROW_BUTTON_SCAN"},
         ]
         frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
         decision = _brain("MARKSMAN_CAMP_TRAINING").decide(frame, v2_registry())
@@ -537,7 +537,7 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
         """
         rows = [
             {"kind": "CAMP", "key": "SOMETHING_NEW", "label": "新行", "status": "IDLE",
-             "arrow_norm": [0.6, 0.5], "badge": "PRESENT"},
+             "arrow_norm": [0.6, 0.5], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN"},
         ]
         frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
         decision = _brain("TRAIN").decide(frame, v2_registry())
@@ -558,9 +558,9 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
         """The red dot is the only per-row signal that separates two IDLE rows (operator §五)."""
         rows = [
             {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IDLE",
-             "arrow_norm": [0.6, 0.4832], "badge": "ABSENT"},
+             "arrow_norm": [0.6, 0.4832], "badge": "ABSENT", "arrow_basis": "ROW_BUTTON_SCAN"},
             {"kind": "CAMP", "key": "MARKSMAN_CAMP", "label": "射手", "status": "IDLE",
-             "arrow_norm": [0.6, 0.5402], "badge": "PRESENT"},
+             "arrow_norm": [0.6, 0.5402], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN"},
         ]
         frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
         decision = _brain("KEEP_TRAINING_PRODUCTIVE").decide(frame, v2_registry())
@@ -576,7 +576,7 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
         """
         panel = {"open": True, "rows": [
             {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IDLE",
-             "arrow_norm": [0.6, 0.4832], "badge": "PRESENT"}]}
+             "arrow_norm": [0.6, 0.4832], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN"}]}
         frame = WorldState(page=Page.HOME, quick_panel=panel)
         brain = RuleBrain(current_goal="TRAIN")
         brain.goal_id = "CLEAR_INTEL"
@@ -646,6 +646,33 @@ class TheTrainingButtonPositionTests(unittest.TestCase):
             runtime._resolve_semantic_target("BTN_START_TRAINING", elsewhere),
             "the point belongs to the page it was read from",
         )
+
+
+    def test_a_row_whose_button_was_not_located_is_not_tapped(self):
+        """Measured 2026-09-23 17:21:50 on the live panel, and it cost a wrong tap.
+
+        The 盾兵 row read ``已完成`` -- the client draws a **green check** there where the other rows
+        draw their blue arrow -- so the button scan found none and the reading fell back to its own
+        estimate (``PANEL_RELATIVE_ESTIMATE``, x 0.4042).  The row was still offered and the tap landed
+        at x 291, on the row's text, opening nothing.  An estimate is a hint, not a coordinate.
+        """
+        rows = [
+            {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IDLE",
+             "source_word": "已完成", "badge": "UNKNOWN", "arrow_norm": [0.4042, 0.4262],
+             "arrow_basis": "PANEL_RELATIVE_ESTIMATE"},
+            {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IN_PROGRESS",
+             "source_word": "02:22:00", "badge": "ABSENT", "arrow_norm": [0.6125, 0.4832],
+             "arrow_basis": "ROW_BUTTON_SCAN"},
+            {"kind": "RESEARCH", "key": "RESEARCH", "label": "科技研究", "status": "IDLE",
+             "source_word": "空闲中", "badge": "PRESENT", "arrow_norm": [0.6222, 0.6285],
+             "arrow_basis": "ROW_BUTTON_SCAN"},
+        ]
+        frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
+        decision = _brain("TRAIN").decide(frame, v2_registry())
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
+        # The research row *was* located, so it is still offered to the goal that works from it.
+        research = _brain("RESEARCH").decide(frame, v2_registry())
+        self.assertEqual(research.skill, "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH")
 
 
 if __name__ == "__main__":
