@@ -1693,7 +1693,14 @@ def verify_exploration_claim_feedback(before: WorldState, after: WorldState) -> 
 
 
 def verify_exploration_claim_confirmed(before: WorldState, after: WorldState) -> VerificationResult:
-    reward_visible = after.page is Page.POPUP and (after.popup == "GENERIC_REWARD" or (after.popup == "EXPLORATION_REWARD" and after.exploration.get("claim_feedback") is True))
+    # The reward test is the project's one shared predicate, not a second list kept here.  Both
+    # copies existed, and they disagreed: this one accepted GENERIC_REWARD / EXPLORATION_REWARD-with-
+    # feedback while ``is_reward_popup`` -- used by every other reward path in this file -- also
+    # accepts INTEL_REWARD, which the client really does show for this claim (the note above
+    # ``REWARD_POPUPS`` records the same client behaviour for the Intel claim: one shared popup, and
+    # which branch wins is not stable).  A verifier that refuses a reward the project already knows
+    # is a reward is the "reached the page and did not finish" failure in its verification form.
+    reward_visible = is_reward_popup(after)
     ok = before.page is Page.POPUP and before.popup == "EXPLORATION_IDLE_DIALOG" and reward_visible
     return VerificationResult(ok, "OK" if ok else "EXPLORATION_REWARD_FEEDBACK_NOT_PROVEN", {"dialog_before":before.popup == "EXPLORATION_IDLE_DIALOG", "reward_visible":reward_visible})
 
