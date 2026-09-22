@@ -149,23 +149,39 @@ class DictionaryStructureTests(unittest.TestCase):
         self.assertIn("10:03:12", by_id["BTN_START_TRAINING"].get("ocr_dynamic") or [])
         self.assertNotIn("10:03:12", by_id["BTN_START_TRAINING"]["ocr"])
 
-    def test_the_handle_is_registered_as_an_unverified_hypothesis(self):
+    def test_the_handle_is_measured_but_its_action_is_not(self):
+        """Both appearances are measured now; the *tap* is still unproven, and the record says so.
+
+        This test replaces one that asserted the opposite, and the correction is the point of it:
+        the operator's message of 2026-09-22 ("我用红色圈起来的地方就是快捷面板把手") supplied the
+        collapsed appearance the project had never captured, so ``UNVERIFIED``/``NEVER_SEEN`` stopped
+        being the truth.  What must NOT drift is the other half: the appearance being measured says
+        nothing about whether pressing it opens the panel, so the status stays CANDIDATE and
+        ``tap_to_open`` has to admit it.
+        """
         record = {r["id"]: r for r in self.records}["QUICK_PANEL_HANDLE"]
-        self.assertEqual(record["status"], "CANDIDATE")
+        self.assertEqual(record["status"], "CANDIDATE", "the appearance is measured; the action is not")
         self.assertEqual(set(record["states"]), {"EXPANDED", "COLLAPSED"})
-        self.assertEqual(record["position_hint"]["basis"], "PANEL_RELATIVE")
-        self.assertIn("ANEL", record["position_hint"]["anchor"].upper())
+        self.assertEqual(record["position_hint"]["basis"], "SCREEN_EDGE_RELATIVE")
+        self.assertIn("EDGE", record["position_hint"]["anchor"].upper())
         for state in ("EXPANDED", "COLLAPSED"):
-            verification = str(record["verification"][state]).upper()
-            # Either "unverified" or "never seen": the point is that neither claims to be verified.
             self.assertTrue(
-                "UNVERIF" in verification or "NEVER" in verification,
-                f"{state} must not claim verification, got {verification!r}",
+                record["visual_features"][state]["confirmed_by_measurement"],
+                f"{state} was measured on a real frame",
             )
-        self.assertFalse(
-            record["visual_features"]["EXPANDED"]["confirmed_by_measurement"],
-            "the triangle was not confirmed on the only capture there is",
+            self.assertIn("MEASURED", str(record["verification"][state]).upper())
+        self.assertIn("NOT YET VERIFIED", str(record["verification"]["tap_to_open"]).upper())
+        # And every measurement names the frame it came from, because that is what makes it checkable.
+        for state in ("EXPANDED", "COLLAPSED"):
+            self.assertTrue(record["visual_features"][state]["measured_on"])
+        self.assertTrue(
+            record["visual_features"]["COLLAPSED"]["cross_checked_on"].endswith(
+                "dataset/raw/reference/quick_panel_handle_collapsed_20260922.jpg"
+            ),
+            "the operator's own frame is the cross-check, and it is kept in the repository",
         )
+        self.assertEqual(record["locator"]["reader"], "ocr.find_quick_panel_handle")
+        self.assertEqual(str(record["risk"]).upper(), "LOW")
 
 
 class PanelReadingTests(unittest.TestCase):
@@ -179,7 +195,11 @@ class PanelReadingTests(unittest.TestCase):
     def test_the_panel_reports_its_state_its_rows_and_its_handle(self):
         self.assertTrue(self.panel.get("open"))
         self.assertEqual(self.panel["handle"]["state"], "EXPANDED")
-        self.assertEqual(self.panel["handle"]["basis"], "PANEL_RELATIVE_ESTIMATE")
+        # The handle's point is measured, not estimated: the estimate put it at (0.3708, 0.2779),
+        # the middle of the panel, while the tab with its left-pointing triangle is at
+        # (0.6431, 0.4301).  A tap from the estimate would have hit the panel's own content.
+        self.assertEqual(self.panel["handle"]["basis"], "HANDLE_TRIANGLE_SCAN")
+        self.assertAlmostEqual(self.panel["handle"]["point_norm"][0], 0.6431, places=3)
         keys = [row["key"] for row in self.panel["rows"]]
         self.assertEqual(keys, ["SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"])
         # The three bottom-navigation words must not have become research rows (measured failure).

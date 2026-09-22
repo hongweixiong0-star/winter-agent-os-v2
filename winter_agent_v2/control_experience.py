@@ -42,7 +42,14 @@ STATE_PATH = ROOT / "learning/control_experience.json"
 #: deliberately distinct: "the tap was issued and nothing moved" is a real
 #: finding about the control, while "we could not tell" is a finding about the
 #: *reading* and must never be collapsed into the first.
+#: ``QUICK_PANEL_OPENED`` is here because a control can now be *proved* to have opened an overlay:
+#: the 快捷面板's handle, whose whole effect is that the panel's own reading flips from absent to
+#: present.  Without it the name the verifier reports would be recorded as ``UNKNOWN`` by
+#: ``record_outcome`` -- measured: that is exactly what happened on the first real step, and it made
+#: the L1 registration that step earned unusable (``l1_reusable`` refuses an UNKNOWN last result).
+#: A vocabulary that cannot hold a fact the project can measure is the wrong vocabulary.
 CHANGE_KINDS: tuple[str, ...] = (
+    "QUICK_PANEL_OPENED",
     "PAGE_CHANGED",
     "POPUP_OPENED",
     "POPUP_CLOSED",
@@ -281,6 +288,17 @@ class ControlExperience:
     cost_seen: dict[str, Any] = field(default_factory=dict)
     cooldown_seconds: int | None = None
     goal_help: dict[str, str] = field(default_factory=dict)
+    #: True when the control has no wording of its own but its registration names a reader that can
+    #: find it again on a later frame (``basis`` is a locator's name).
+    #:
+    #: Added for the 快捷面板 handle -- the one control in this project that is drawn with no text at
+    #: all.  Before it, "no wording" meant "cannot be re-confirmed", which was true while every
+    #: element was identified by what was printed on it and stopped being true once a locator could
+    #: re-measure the same control from the frame in front of it.  A registration that sets this is
+    #: reusable *because* the caller re-runs that reader: the confirmation happens there, on the
+    #: current picture, exactly as a wording search does for a printed control.
+    relocatable: bool = False
+
     #: Set when the control was refused by policy rather than tried.  Kept apart
     #: from ``last_result`` so "we decided not to" never reads as "it did nothing".
     refused_reason: str = ""
@@ -355,6 +373,7 @@ class ControlExperience:
             "cooldown_seconds": self.cooldown_seconds,
             "goal_help": dict(self.goal_help),
             "refused_reason": self.refused_reason,
+            "relocatable": self.relocatable,
             "level": self.level,
             "conditions": dict(self.conditions),
             "visual_features": dict(self.visual_features),
@@ -390,6 +409,7 @@ class ControlExperience:
             cooldown_seconds=_int_or_none(payload.get("cooldown_seconds")),
             goal_help={str(k): str(v) for k, v in (payload.get("goal_help") or {}).items()},
             refused_reason=str(payload.get("refused_reason") or ""),
+            relocatable=bool(payload.get("relocatable", False)),
             level=str(payload.get("level") or ""),
             conditions={str(k): str(v) for k, v in (payload.get("conditions") or {}).items()},
             visual_features=dict(payload.get("visual_features") or {}),
@@ -635,6 +655,7 @@ def register_l1(
     action: Mapping[str, Any] | None = None,
     expected_effect: str = "",
     observed_effect: str = "",
+    relocatable: bool = False,
     now: datetime | None = None,
 ) -> ControlExperience:
     """Record one single-step success as an L1 action (§七/§八).
@@ -667,6 +688,9 @@ def register_l1(
         experience.action = {str(k): v for k, v in dict(action).items()}
     experience.expected_effect = str(expected_effect or "")
     experience.observed_effect = str(observed_effect or "")
+    # How this control can be found again.  A printed control is found by its wording; this flag says
+    # this one is found by its reader, which is what makes a textless registration reusable at all.
+    experience.relocatable = bool(relocatable or experience.relocatable)
     if goal and observed_effect:
         experience.goal_help[str(goal)] = str(observed_effect)
     return experience
@@ -682,9 +706,11 @@ def l1_reusable(experience: ControlExperience, *, now: datetime | None = None) -
     """
     if experience.level != LEVEL_L1:
         return False
-    if not experience.visual_features.get("text"):
+    if not experience.visual_features.get("text") and not experience.relocatable:
         # Nothing to re-confirm it against on a later frame.  A registration that cannot be
-        # checked is not reusable; it stays on the record as history.
+        # checked is not reusable; it stays on the record as history.  A ``relocatable`` one *can*
+        # be checked -- by re-running the reader its ``basis`` names, which is what the caller does
+        # before it taps -- so it is not refused on the grounds of having no wording.
         return False
     if experience.refused_reason or experience.sterile:
         return False
@@ -731,7 +757,12 @@ def l1_for(
         if str(conditions.get(CONDITION_STATE) or "") != str(state or ""):
             continue
         text = str(experience.visual_features.get("text") or "").strip()
-        if not text or text not in words:
+        if text:
+            if text not in words:
+                continue
+        elif not experience.relocatable:
+            # An element with neither wording nor a reader to find it again is not something reuse
+            # may act on.
             continue
         if not l1_reusable(experience, now=now):
             continue

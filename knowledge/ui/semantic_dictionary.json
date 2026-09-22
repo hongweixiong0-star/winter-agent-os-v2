@@ -2187,53 +2187,96 @@
     "TOGGLE_QUICK_PANEL"
    ],
    "status": "CANDIDATE",
-   "source": "operator screenshot + one live capture",
+   "source": "operator screenshot 2026-09-22 (collapsed appearance) + three MuMu frames (collapsed on HOME and MAP, expanded on the one frame whose panel read as open)",
    "last_verified": "",
    "visual_features": {
     "EXPANDED": {
-     "shape": "left-pointing triangle at the panel's right edge",
-     "colour": "white",
+     "shape": "left-pointing white triangle inside a slate tab with a white outline, at the panel's right edge",
+     "triangle_direction": "LEFT",
+     "triangle_box_norm": {
+      "x_norm": 0.6333,
+      "y_norm": 0.4203,
+      "w_norm": 0.0208,
+      "h_norm": 0.0203
+     },
+     "tap_point_norm": [
+      0.6431,
+      0.4301
+     ],
+     "outline_bar": "a 5-6 px near-white vertical bar 7-8 px to the right of the triangle",
+     "fill": "muted blue, measured rgb(70,112,170) inside the tab",
      "measured_on": "dataset/raw/control_panel/runtime_auto/20260921_213506_694242/20260921_213506_694242_step_001_before_20260921T133510479855.png",
-     "confirmed_by_measurement": false,
-     "measurement": "the band x 0.20-0.40, y 0.10-0.84 of that frame contains no pixel brighter than 215 in every channel, so the triangle the operator describes was NOT confirmed on it; the shape stays a hypothesis"
+     "confirmed_by_measurement": true,
+     "measurement": "ocr.find_quick_panel_handle(frame, panel_open=True) -> EXPANDED, triangle apex LEFT, 26 rows, 15 px wide. This CORRECTS the previous entry, which recorded the appearance as unconfirmed: the earlier search looked in the band x 0.20-0.40, which is the right edge of the panel *text*, not of the panel -- the handle is at x 0.633-0.654. The operator's description (\"a white left-pointing triangle at the panel's right edge\") is confirmed."
     },
     "COLLAPSED": {
-     "shape": "unknown",
-     "confirmed_by_measurement": false,
-     "measurement": "no capture of the collapsed panel exists in this project"
+     "shape": "right-pointing white triangle inside a slate tab with a white outline, anchored to the frame's left edge",
+     "triangle_direction": "RIGHT",
+     "triangle_box_norm": {
+      "x_norm": 0.0083,
+      "y_norm": 0.4203,
+      "w_norm": 0.0208,
+      "h_norm": 0.0203
+     },
+     "tap_point_norm": [
+      0.0181,
+      0.4301
+     ],
+     "outline_bar": "a 5-6 px near-white vertical bar 7-8 px to the right of the triangle",
+     "fill": "muted blue, measured rgb(54,97,150) beside the base and rgb(80,117,172) on the operator's frame",
+     "badge": "a red notification dot at the tab's top-right corner (measured x 0.029-0.051, y 0.392-0.402); recorded as observed, not used for locating",
+     "measured_on": "dataset/raw/control_panel/runtime_auto/20260922_185821_069146/20260922_185821_069146_step_008_before_20260922T110032859453.png",
+     "confirmed_by_measurement": true,
+     "cross_checked_on": "dataset/raw/reference/quick_panel_handle_collapsed_20260922.jpg",
+     "cross_check": "The operator's frame (739x1231, of which x 0-48 is a white capture margin, so the game viewport is 690x1231 -- 4% smaller than the device) reads COLLAPSED at triangle centre (0.0832, 0.4338) of the file, i.e. (0.0217, 0.4338) of the viewport, against the device's (0.0181, 0.4301). Two independent captures agree within 0.004.",
+     "measurement": "Found on every HUD frame measured and on none of the others: 60 live frames -> the handle is drawn on MAP 9/9, HOME 7/7, BEAST 3/3 and on 0 of POPUP / INTEL / MARCH / ALLIANCE / EXPLORATION / DAILY / RESEARCH / UNKNOWN. It is absent from a full-screen event page (燃霜矿区). One real false positive was found and eliminated by measurement: the alliance page's white numbered-list card -- its shape test passes, and what separates it is the fill (the card is rgb(227,241,254) where the tab is muted blue)."
     }
    },
    "position_hint": {
-    "basis": "PANEL_RELATIVE",
-    "anchor": "quick_panel_row_block",
-    "x": "right_edge_of_panel_rows + 0.02",
-    "y": "vertical_centre_of_panel_rows",
-    "measured_on": "dataset/raw/control_panel/runtime_auto/20260921_213506_694242/20260921_213506_694242_step_001_before_20260921T133510479855.png"
+    "basis": "SCREEN_EDGE_RELATIVE",
+    "anchor": "frame_left_edge",
+    "x": "the collapsed tab is flush with the frame's left edge (visible width 0.046); the expanded one is at the panel's right edge",
+    "y": "0.420-0.442 of the frame height in BOTH states -- measured identical on the collapsed and expanded device frames, which is why the vertical position is stable while the horizontal one is not",
+    "measured_on": "dataset/raw/control_panel/runtime_auto/20260922_185821_069146/20260922_185821_069146_step_008_before_20260922T110032859453.png",
+    "note": "Recorded as what was measured rather than as a coordinate to trust: the point is re-derived every time by the locator below, and the anchor recorded here is the screen edge, not the panel -- while the panel is closed it is not there to anchor to, which is the whole reason this record needed a locator."
    },
    "preconditions": [
-    "panel_sections_read",
-    "goal_wants_the_panel"
+    "the frame draws the handle (the locator returns nothing otherwise)",
+    "goal_wants_the_panel (related_goals)",
+    "page_is_listed_in_pages"
    ],
    "states": {
     "EXPANDED": {
      "satisfies_target_state": true,
-     "measured_on": "one live capture"
+     "measured_on": "dataset/raw/control_panel/runtime_auto/20260921_213506_694242/20260921_213506_694242_step_001_before_20260921T133510479855.png"
     },
     "COLLAPSED": {
      "satisfies_target_state": false,
-     "measured_on": ""
+     "measured_on": "dataset/raw/control_panel/runtime_auto/20260922_185821_069146/20260922_185821_069146_step_008_before_20260922T110032859453.png (+ the operator's frame)"
     }
    },
    "expected_transition": "QUICK_PANEL_OPEN",
    "verification": {
-    "EXPANDED": "UNVERIFIED (hypothesis: the operator's description, not confirmed here)",
-    "COLLAPSED": "NEVER_SEEN"
+    "EXPANDED": "MEASURED ON A REAL DEVICE FRAME (appearance, position and triangle direction)",
+    "COLLAPSED": "MEASURED ON REAL DEVICE FRAMES AND ON THE OPERATOR'S FRAME (appearance, position and triangle direction)",
+    "tap_to_open": "NOT YET VERIFIED ON THE DEVICE: the locator and the reading are measured, but no tap of this handle has been observed opening the panel. A step that does it is judged by verify_ordinary_control_tried, which reports QUICK_PANEL_OPENED when the panel reading flips to open -- so the first real tap either produces that record or is an honest failure."
    },
    "related_goals": [
     "KEEP_TRAINING_PRODUCTIVE",
     "KEEP_RESEARCH_PRODUCTIVE"
    ],
-   "notes": "Registered so the panel can be opened rather than assumed open. The appearance of both states must be confirmed on a real capture before this record leaves CANDIDATE; until then a tap on it is a candidate action, and the observation decides. The reader refuses to locate it while the panel is in a state whose own record says the target state is already satisfied -- that is what stops a goal that wants the panel *read* from tapping the handle and collapsing it."
+   "notes": "Operator 2026-09-22: \"我用红色圈起来的地方就是快捷面板把手，点进去就可以看到很多功能快捷入口和状态等信息\". That frame is what this record was missing: every anchor the panel reader had belonged to the *open* panel, so the collapsed handle -- the state it is needed in -- could not be located at all. Both appearances are now measured, the locator reads the frame rather than a stored position, and the runtime has a tier that can use it (runtime._declared_textless_control_point, gated on this record's pages and related_goals, and refusing when states says the target state is already satisfied). Status stays CANDIDATE because the *action* is unproven: the appearance is measured, the tap is not.",
+   "locator": {
+    "reader": "ocr.find_quick_panel_handle",
+    "state_field": "quick_panel.handle",
+    "basis": "HANDLE_TRIANGLE_SCAN",
+    "inputs": "the frame alone (pixels; no OCR, no template, no stored position)",
+    "discriminator": "a near-white triangle with one flat vertical edge, 5-60 px per row over >=10 rows, on the tab's muted-blue fill, with the tab's 3-12 px near-white outline bar just to its right",
+    "returns": "state (COLLAPSED/EXPANDED), triangle_direction, point_norm, box_norm, basis, measured_on",
+    "measured_on": "dataset/raw/control_panel/runtime_auto/20260922_185821_069146/20260922_185821_069146_step_008_before_20260922T110032859453.png"
+   },
+   "risk": "LOW",
+   "risk_basis": "The action is TOGGLE_QUICK_PANEL: it opens or closes an overlay and spends nothing, consumes no resource and destroys nothing. Read by runtime._declared_textless_control_point, which refuses any record whose risk is outside control_experience.EXPLORABLE_RISKS and is why the city view's own 首充 / 礼包 wording no longer vetoes this control."
   },
   {
    "id": "QUICK_PANEL_ROW_SHIELD_CAMP",

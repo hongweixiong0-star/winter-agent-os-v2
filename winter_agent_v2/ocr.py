@@ -1539,16 +1539,355 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 )
             if out_rows:
                 panel["rows"] = out_rows
-            panel["handle"] = {
-                "state": "EXPANDED",
-                "point_norm": [
-                    round(arrow_x, 4),
-                    round((min(row_ys) + max(row_ys) + QUICK_PANEL_STATE_OFFSET_PX) / 2.0 / height, 4),
-                ],
-                "basis": "PANEL_RELATIVE_ESTIMATE",
-            }
+            # Where the handle actually is, measured, with the panel-relative estimate kept only as
+            # the fallback.  Measured 2026-09-22: the estimate put the expanded handle at
+            # (0.3708, 0.2779) -- the middle of the panel -- while the tab with its left-pointing
+            # triangle is at (0.6431, 0.4301), i.e. a tap issued from the estimate would have landed
+            # on the panel's own content instead of the control.  The estimate was written when the
+            # appearance was unknown; now it is measured, and the weaker evidence must not outrank it.
+            measured = find_quick_panel_handle(image_path, panel_open=True)
+            if measured is not None:
+                panel["handle"] = measured
+            else:
+                panel["handle"] = {
+                    "state": "EXPANDED",
+                    "point_norm": [
+                        round(arrow_x, 4),
+                        round((min(row_ys) + max(row_ys) + QUICK_PANEL_STATE_OFFSET_PX) / 2.0 / height, 4),
+                    ],
+                    "basis": "PANEL_RELATIVE_ESTIMATE",
+                }
     return panel
 
+
+#: The 快捷面板 handle's own drawn structure, measured on real frames 2026-09-22.
+#:
+#: The handle is a small slate tab with a white outline and a white triangle, and it is the one
+#: control in this file that has **no text at all** -- which is why it could not be located while the
+#: panel was closed: the panel reader anchored everything to the panel's own section headers, and a
+#: collapsed panel draws none.  What follows is the measurement that replaces that anchor, taken from
+#: two independent captures of the same client (a MuMu 720x1280 frame and the operator's own
+#: screenshot, whose game viewport is 690x1231 -- a 4% scale difference, and the two agree to within
+#: 0.015 in both axes):
+#:
+#:   collapsed (MuMu, HOME frame 20260922_185821_069146 step_008)
+#:       triangle   x   6- 20  y 538-566   apex RIGHT   (norm x 0.008-0.028, y 0.420-0.442)
+#:       outline    x  28- 33  (a 6 px white vertical bar to the right of the triangle)
+#:       red badge  x  21- 37  y 502-514   (the corner badge; not used for locating)
+#:   collapsed (operator screenshot, viewed at 690x1231)
+#:       triangle   x  55- 73  y 524-545   apex RIGHT   (norm x 0.009-0.035, y 0.426-0.443)
+#:   expanded  (MuMu, the one frame whose panel read as open)
+#:       triangle   x 450-464  y 538-566   apex LEFT    (norm x 0.625-0.644, y 0.420-0.442)
+#:       the same 6 px white bar sits at x 471-476, i.e. always to the *right* of the triangle
+#:
+#: So the triangle's pointing side is the state (it points the way the panel will move), and the tab
+#: itself is anchored to a screen edge rather than to a coordinate: the frame's own left edge when
+#: collapsed, the panel's right edge when expanded.  Nothing here is a stored position.
+QUICK_PANEL_HANDLE_BAND_NORM: tuple[float, float] = (0.30, 0.56)
+
+#: The collapsed handle's search strip, as an x fraction.  Measured: the tab's visible part ends
+#: at x 0.046 on the device and at x 0.041 of the *game viewport* on the operator's frame (that
+#: screenshot carries a 49 px white margin, so the same tab lands at x 0.074 of the file).  0.10
+#: covers both, and it is only ever searched while the panel is closed -- the expanded handle lives
+#: at the panel's right edge, an entirely different window.
+QUICK_PANEL_HANDLE_STRIP_X_NORM: float = 0.10
+
+#: Where the expanded handle is looked for: to the right of the panel's body.  Measured x 0.625-0.68.
+QUICK_PANEL_HANDLE_OPEN_X_NORM: tuple[float, float] = (0.45, 0.80)
+
+QUICK_PANEL_HANDLE_BRIGHT_MIN: int = 190
+QUICK_PANEL_HANDLE_TRIANGLE_MIN_PX: int = 5
+
+#: The width a row must reach before it is treated as part of the triangle rather than the tab's
+#: outline.  Measured: the outline bar is 6 px wide and 88 px tall (it outlives the triangle), while
+#: the triangle itself reaches 15-20 px on the device and 19 px on the operator's frame.  Selecting
+#: rows by this width is what separates the two shapes -- without it the bar's own rows join the
+#: profile, the profile then has *two* flat edges, and every real handle is rejected (measured: that
+#: is exactly what the first version of this function did on all three known frames).
+#: The widest a row of the triangle may be.  Measured 19-20 px in both states, so 40 is generous --
+#: and it has to be a bound at all because the operator's own screenshot carries a 49 px white margin
+#: down its left side (a capture artifact: the bottom navigation bar is cut by the same band), and an
+#: unbounded run would let that margin be the widest thing in every row it touches, hiding the tab
+#: behind it.  With the bound, that frame reads like any device frame.
+QUICK_PANEL_HANDLE_TRIANGLE_MAX_PX: int = 40
+QUICK_PANEL_HANDLE_SELECT_MIN_PX: int = 10
+QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS: int = 10
+QUICK_PANEL_HANDLE_BAR_MIN_PX: int = 3
+QUICK_PANEL_HANDLE_BAR_MAX_PX: int = 12
+QUICK_PANEL_HANDLE_BAR_MAX_GAP_PX: int = 30
+QUICK_PANEL_HANDLE_EDGE_FLAT_PX: int = 3
+QUICK_PANEL_HANDLE_BAR_COVERAGE: float = 0.75
+
+#: How much of the tab's own fill must surround the triangle, and what that fill is.
+#:
+#: Measured 2026-09-22, because without this the reader produced a real false positive: the alliance
+#: page's numbered-list card (a big white rounded panel) contains runs between its own glyphs that
+#: pass every shape test above it, and it was read as a COLLAPSED handle at (0.0569, 0.3551).  What
+#: separates the two is what the triangle is drawn *on*:
+#:
+#:   genuine handle, device collapsed   rgb(54, 97,150) left of the base, rgb(59,101,155) at the apex
+#:   genuine handle, operator's frame   rgb(80,117,172) inside the tab
+#:   the alliance card's false triangle rgb(227,241,254) -- white
+#:
+#: So the fill is a muted blue that is clearly not white, and the test is on the patches just above
+#: and just below the triangle, which works for both pointing directions.
+QUICK_PANEL_HANDLE_FILL_MIN_FRACTION: float = 0.60
+QUICK_PANEL_HANDLE_FILL_PATCH_PX: int = 9
+
+
+def _bright_runs(row) -> list[tuple[int, int]]:
+    """Consecutive runs of near-white pixels in one row, as inclusive ``(start, end)`` pairs."""
+    runs: list[tuple[int, int]] = []
+    opener = None
+    for index, value in enumerate(row):
+        if value and opener is None:
+            opener = index
+        elif not value and opener is not None:
+            runs.append((opener, index - 1))
+            opener = None
+    if opener is not None:
+        runs.append((opener, len(row) - 1))
+    return runs
+
+
+def _widest(runs: list[tuple[int, int]]) -> tuple[int, int]:
+    """The widest run in a row; ties go to the leftmost, which is the tab's own order."""
+    best = runs[0]
+    for run in runs[1:]:
+        if run[1] - run[0] > best[1] - best[0]:
+            best = run
+    return best
+
+
+def _handle_triangle(per_row: dict[int, list[tuple[int, int]]], seed_rows: list[int]) -> dict | None:
+    """The triangle a band of seed rows belongs to, or ``None`` when they describe something else.
+
+    ``seed_rows`` are the rows that carry a run at least ``QUICK_PANEL_HANDLE_SELECT_MIN_PX`` wide --
+    only the triangle can produce those, because the tab's outline bar is 5-6 px (measured).  The
+    seed is then **grown** along the base edge, because the triangle's own tips are narrower than the
+    seed threshold: taking the seed rows alone truncates the shape and its width variation measures
+    5 px instead of 11, which is the mistake the first version made and it rejected every real
+    handle.  Growing stops when the run from the base edge is gone, which is the triangle's tip.
+
+    A triangle has exactly one flat vertical edge -- its base -- and one that travels out to the apex
+    and back.  That, plus unimodality and a minimum apex travel, is the whole test; it is what keeps
+    this from being the generic "something is drawn here" detector this project measured and threw
+    away.  It recognises **one named control's own shape**, in the strip the operator pointed at.
+    """
+    if len(seed_rows) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
+        return None
+    seed_runs = [_widest(per_row[y]) for y in seed_rows]
+    starts = [run[0] for run in seed_runs]
+    ends = [run[1] for run in seed_runs]
+    start_flat = (max(starts) - min(starts)) <= QUICK_PANEL_HANDLE_EDGE_FLAT_PX
+    end_flat = (max(ends) - min(ends)) <= QUICK_PANEL_HANDLE_EDGE_FLAT_PX
+    if start_flat == end_flat:
+        return None
+    base_x = sorted(starts)[len(starts) // 2] if start_flat else sorted(ends)[len(ends) // 2]
+    on_base = 0 if start_flat else 1
+
+    def matches(y: int) -> tuple[int, int] | None:
+        for run in per_row.get(y, ()):
+            if abs(run[on_base] - base_x) <= QUICK_PANEL_HANDLE_EDGE_FLAT_PX:
+                return run
+        return None
+
+    top, bottom = seed_rows[0], seed_rows[-1]
+    while top - 1 in per_row and matches(top - 1) is not None:
+        top -= 1
+    while bottom + 1 in per_row and matches(bottom + 1) is not None:
+        bottom += 1
+    profile: list[tuple[int, int, int]] = []
+    for y in range(top, bottom + 1):
+        run = matches(y)
+        if run is not None:
+            profile.append((y, run[0], run[1]))
+    if len(profile) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
+        return None
+    widths = [row[2] - row[1] + 1 for row in profile]
+    travel = max(widths) - min(widths)
+    if travel < QUICK_PANEL_HANDLE_TRIANGLE_MIN_PX + 1:
+        return None
+    peak = widths.index(max(widths))
+    if peak == 0 or peak == len(widths) - 1:
+        return None
+    left = widths[:peak + 1]
+    right = widths[peak:]
+    if any(b < a for a, b in zip(left, left[1:])) or any(b > a for a, b in zip(right, right[1:])):
+        return None
+    if max(widths) < QUICK_PANEL_HANDLE_SELECT_MIN_PX:
+        return None
+    return {
+        "direction": "RIGHT" if start_flat else "LEFT",
+        "rows": len(profile),
+        "width_px": max(widths),
+        "x0": min(row[1] for row in profile),
+        "x1": max(row[2] for row in profile),
+        "y0": profile[0][0],
+        "y1": profile[-1][0],
+    }
+
+
+def _handle_drawn_on_the_tab(array, triangle: dict) -> bool:
+    """True when the triangle sits on the tab's own muted-blue fill rather than on white.
+
+    See ``QUICK_PANEL_HANDLE_FILL_MIN_FRACTION``: this is the test that separates the real handle
+    from the alliance page's white card, which otherwise passes the shape tests.
+    """
+    height, width = array.shape[0], array.shape[1]
+    mid = (triangle["x0"] + triangle["x1"]) // 2
+    left = max(0, mid - 2)
+    right = min(width, mid + 3)
+    patches = []
+    span = QUICK_PANEL_HANDLE_FILL_PATCH_PX
+    for top, bottom in (
+        (triangle["y0"] - span, triangle["y0"] - 3),
+        (triangle["y1"] + 3, triangle["y1"] + span),
+    ):
+        top, bottom = max(0, top), min(height, bottom)
+        if bottom > top and right > left:
+            patches.append(array[top:bottom, left:right].reshape(-1, 3))
+    if not patches:
+        return False
+    import numpy as np  # noqa: PLC0415 - see the note in find_quick_panel_handle
+
+    pixels = np.concatenate(patches)
+    if not len(pixels):
+        return False
+    red, green, blue = pixels[:, 0], pixels[:, 1], pixels[:, 2]
+    fill = (red < 140) & (green > 70) & (green < 170) & (blue > 120) & (blue <= 215)
+    return float(fill.mean()) >= QUICK_PANEL_HANDLE_FILL_MIN_FRACTION
+
+
+def _handle_bar(bright, triangle: dict, y0: int, y1: int) -> tuple[int, int] | None:
+    """The tab's white outline bar, which must sit just right of the triangle.
+
+    Measured in both states: 5-6 px wide, 7-8 px from the triangle.  Requiring it is what stops a
+    lone bright wedge elsewhere in the strip from being read as the handle -- and it is a property of
+    this control (the tab's own outline), not a generic filter.
+    """
+    start = triangle["x1"] + 2
+    stop = min(bright.shape[1], triangle["x1"] + QUICK_PANEL_HANDLE_BAR_MAX_GAP_PX + 1)
+    for x in range(start, stop):
+        column = bright[triangle["y0"]:triangle["y1"] + 1, x]
+        if column.mean() < QUICK_PANEL_HANDLE_BAR_COVERAGE:
+            continue
+        end = x
+        while (
+            end + 1 < stop
+            and bright[triangle["y0"]:triangle["y1"] + 1, end + 1].mean() >= QUICK_PANEL_HANDLE_BAR_COVERAGE
+        ):
+            end += 1
+        if QUICK_PANEL_HANDLE_BAR_MIN_PX <= end - x + 1 <= QUICK_PANEL_HANDLE_BAR_MAX_PX:
+            return x, end
+    return None
+
+
+def find_quick_panel_handle(
+    image_path: str | Path,
+    *,
+    panel_open: bool | None = None,
+) -> dict | None:
+    """Where the 快捷面板's handle is drawn on **this** frame, or ``None``.
+
+    Operator 2026-09-22: 我用红色圈起来的地方就是快捷面板把手，点进去就可以看到很多功能快捷入口和状态
+    等信息.  That message is the missing half of what the panel reader needed.  Until it arrived the
+    handle was only locatable while the panel was already open -- every anchor the reader had
+    (section headers, rows) is drawn *by the panel* -- so the one state where the handle is actually
+    needed was the state it could not be found in.
+
+    This reads the handle the way it is drawn, not the way it was last seen: a near-white triangle
+    with one flat edge whose other edge travels out to the apex and back, and the tab's near-white
+    outline bar just to its right.  The pointing side names the state, because the triangle points the
+    way the panel will move: right when the panel is closed (it will slide out to the right), left
+    when it is open.
+
+    Returns ``None`` when this frame draws no such thing, which is a real answer and a common one:
+    measured, the handle is absent from a full-screen event page (``燃霜矿区``) and present on the city
+    and world-map views.  A frame that does not draw it must not be told a position it does not have
+    -- that is the difference between locating a control and remembering where one used to be.
+    """
+    import numpy as np  # noqa: PLC0415 - kept local so this module's import surface is unchanged
+
+    try:
+        with Image.open(image_path) as source:
+            frame = source.convert('RGB')
+            width, height = frame.size
+        array = np.asarray(frame).astype(np.int16)
+    except (OSError, ValueError):
+        return None
+    if width <= 0 or height <= 0:
+        return None
+
+    if panel_open is True:
+        windows = [QUICK_PANEL_HANDLE_OPEN_X_NORM]
+    elif panel_open is False:
+        windows = [(0.0, QUICK_PANEL_HANDLE_STRIP_X_NORM)]
+    else:
+        windows = [(0.0, QUICK_PANEL_HANDLE_STRIP_X_NORM), QUICK_PANEL_HANDLE_OPEN_X_NORM]
+
+    y0 = int(QUICK_PANEL_HANDLE_BAND_NORM[0] * height)
+    y1 = int(QUICK_PANEL_HANDLE_BAND_NORM[1] * height)
+    bright = array.min(axis=2) > QUICK_PANEL_HANDLE_BRIGHT_MIN
+
+    for x0_norm, x1_norm in windows:
+        x0, x1 = int(x0_norm * width), int(x1_norm * width)
+        if x1 <= x0:
+            continue
+        per_row: dict[int, list[tuple[int, int]]] = {}
+        for y in range(y0, y1):
+            found = [
+                (x0 + start, x0 + end)
+                for start, end in _bright_runs(bright[y, x0:x1])
+                if QUICK_PANEL_HANDLE_TRIANGLE_MIN_PX <= end - start + 1 <= QUICK_PANEL_HANDLE_TRIANGLE_MAX_PX
+            ]
+            if found:
+                per_row[y] = found
+        if not per_row:
+            continue
+        seeds = sorted(
+            y for y, runs in per_row.items()
+            if any(end - start + 1 >= QUICK_PANEL_HANDLE_SELECT_MIN_PX for start, end in runs)
+        )
+        bands: list[list[int]] = []
+        current: list[int] = []
+        for y in seeds:
+            if current and y - current[-1] > 2:
+                bands.append(current)
+                current = []
+            current.append(y)
+        if current:
+            bands.append(current)
+
+        for band in bands:
+            triangle = _handle_triangle(per_row, band)
+            if triangle is None:
+                continue
+            if _handle_bar(bright, triangle, y0, y1) is None:
+                continue
+            if not _handle_drawn_on_the_tab(array, triangle):
+                continue
+            centre_x = (triangle["x0"] + triangle["x1"]) / 2.0
+            centre_y = (triangle["y0"] + triangle["y1"]) / 2.0
+            return {
+                "state": "COLLAPSED" if triangle["direction"] == "RIGHT" else "EXPANDED",
+                "triangle_direction": triangle["direction"],
+                "point_norm": [round(centre_x / width, 4), round(centre_y / height, 4)],
+                "box_norm": {
+                    "x_norm": round(triangle["x0"] / width, 4),
+                    "y_norm": round(triangle["y0"] / height, 4),
+                    "w_norm": round((triangle["x1"] - triangle["x0"] + 1) / width, 4),
+                    "h_norm": round((triangle["y1"] - triangle["y0"] + 1) / height, 4),
+                },
+                "basis": "HANDLE_TRIANGLE_SCAN",
+                "measured_on": str(image_path),
+                "evidence": {
+                    "triangle_rows": triangle["rows"],
+                    "triangle_width_px": triangle["width_px"],
+                    "frame": [width, height],
+                },
+            }
+    return None
 
 def read_resource_tab_labels(
     image_path,
@@ -2686,6 +3025,27 @@ class HybridVision:
         # ``OCRPageClassifier.QUICK_PANEL_SECTIONS``).  A missing size only costs
         # those keywords, never the whole reading, so a failed read is not fatal.
         frame_size = read_frame_size(image_path)
+        # Is the panel drawn, and -- when it is not -- where is its handle.  Read here, once, rather
+        # than in the panel branch far below, because that branch is not reached on every frame: a
+        # world-map frame with a building selected returns from the building branch first (measured
+        # 2026-09-22 on ``20260922_184834_110558 step_010``, which draws the handle at
+        # (0.0181, 0.4301) and reported no panel at all through that path).  A control that is only
+        # read on some of the frames that draw it is the same defect this module has already been
+        # bitten by twice -- a lower layer passing does not mean the production entry point runs.
+        #
+        # Both probes are pixels only, so a page the template layer resolved still spends no OCR.
+        panel_drawn = self._quick_panel_is_drawn(image_path)
+        if not panel_drawn:
+            collapsed_handle = find_quick_panel_handle(image_path, panel_open=False)
+            if collapsed_handle is not None:
+                primary = replace(
+                    primary,
+                    quick_panel={
+                        "open": False,
+                        "state": "COLLAPSED",
+                        "handle": collapsed_handle,
+                    },
+                )
         # The 快捷面板 is an overlay, so it is not tied to one page: it can be open over
         # the city, over the map, or over any page.  Its reading is attached below, in
         # the branch where the frame was OCR'd anyway.
@@ -3388,7 +3748,9 @@ class HybridVision:
             # panel is absent on most frames, and this module's contract is that a page
             # the template layer resolves costs no OCR at all.  When the gate says the
             # panel is not there, the frame stays exactly as cheap as it was.
-            if self._quick_panel_is_drawn(image_path):
+            if panel_drawn:
+                # The open panel's own reading overrides the collapsed handle attached above; the
+                # two cannot both be true, and ``read_quick_panel`` is the measurement that settles it.
                 quick_panel = read_quick_panel(
                     image_path,
                     self.ocr,

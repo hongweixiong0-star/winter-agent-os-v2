@@ -17,7 +17,7 @@ from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
-from .ocr import find_printed_words, read_tap_anywhere_instruction
+from .ocr import find_printed_words, find_quick_panel_handle, read_tap_anywhere_instruction
 from .camp_training import CAMP_LABELS, CAMP_ORDER
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
@@ -838,6 +838,16 @@ class LiveRuntime:
             control_experience.classify_change(state_before, state_after)
             if after is not None else "UNKNOWN"
         )
+        # When the step's own verifier named the change, that name is the record -- the ledger and
+        # the verifier must not disagree about what happened, which is the same reason
+        # ``classify_change`` is shared with the verifier in the first place.  Measured on the
+        # 快捷面板 handle: the generic classifier reported NUMBER_CHANGED (its fallback for "the two
+        # states differ") while the verifier, which knows what this control does, reported
+        # QUICK_PANEL_OPENED -- and the weaker name had been written to the ledger.
+        if verification is not None and verification.ok:
+            named = str((verification.evidence or {}).get("change") or "")
+            if named:
+                observed_change = named
         # Folded before the episode store is consulted: what the control did is what
         # the *next* decision reads, so losing it because the evidence stream happens
         # to be switched off would be the worse of the two trades.
@@ -1072,6 +1082,7 @@ class LiveRuntime:
                 },
                 expected_effect=str(context.get("expected_effect") or expected),
                 observed_effect=observed_change,
+                relocatable=bool(context.get("relocatable")),
             )
             print(
                 f"[l1] registered {semantic} on {page} for goal "
@@ -2440,7 +2451,21 @@ class LiveRuntime:
         except (OSError, ValueError):
             return None
         joined = "".join(tokens)
-        if any(refused and refused in joined for refused in self.ORDINARY_CONTROL_REFUSED_WORDS):
+        spend_refused = any(refused and refused in joined for refused in self.ORDINARY_CONTROL_REFUSED_WORDS)
+        # A control the dictionary declares -- and declares as non-spending -- is judged by its own
+        # identity, not by words printed elsewhere on the screen (operator directive 2026-09-22 §五:
+        # 页面上出现"钻石""加速""购买"等文字，不代表这个页面上的返回、关闭或普通查看动作全部禁止).
+        #
+        # Measured, and it is why this had to change: the city view's own event entries print 首充 and
+        # 玉魄流光礼包, so the veto below fired on *every* city frame and the whole ordinary-control path
+        # was dead on the one screen the 快捷面板 handle lives on.  The rule now matches the directive:
+        # the veto still covers every control this project names by its words (whitelist, interactive
+        # boxes, on-demand answers), while a declared control carries its own risk and is refused by it.
+        if frame.known:
+            declared = self._declared_textless_control_point(page, title, frame)
+            if declared is not None:
+                return declared
+        if spend_refused:
             # A screen that mentions a spend word is not tapped *by this tier*: neither a printed
             # word nor an ordinary hypothesis may press it, and that boundary is unchanged.  What
             # the follow-up directive §五 removes is the refusal of the whole page: such a screen
@@ -2470,7 +2495,13 @@ class LiveRuntime:
         # cheaper than the first.  A frame that no longer draws it matches nothing, which is the
         # same sentence's "current frame does not match -> identify again", and the caller then
         # falls through to the tiers below.
-        reused = self._l1_action_point(page, title, frame, frame_path, ocr, tokens)
+        # Recorded before the tiers run, so a registration made by a tier that does not itself
+        # receive the frame path (the declared-control tier) still knows which frame it proved its
+        # action on -- the same discipline the printed tiers keep.
+        self._l1_frame_hint = str(frame_path)
+        reused = self._l1_action_point(
+            page, title, frame, frame_path, ocr, tokens, spend_refused=spend_refused
+        )
         if reused is not None:
             return reused
         order = self._ordinary_word_order(page, title, unnamed=unnamed)
@@ -2533,6 +2564,22 @@ class LiveRuntime:
                 label=page,
             )
             return point
+        # (2.6) A control the semantic dictionary declares for this page that is drawn **without any
+        # words at all**.  Operator 2026-09-22: 我用红色圈起来的地方就是快捷面板把手，点进去就可以
+        # 看到很多功能快捷入口和状态等信息.  Every tier above resolves a control by what is written on
+        # it, so a control with no text could not be resolved by any of them -- and the project's own
+        # answer to that has always been "a registered crop plus a match", which is what the dictionary
+        # record now carries (``locator``, read by ``ocr.find_quick_panel_handle``).
+        #
+        # Three things bound it, and all three come from the record rather than from this call site:
+        # the record names the pages it exists on, the goals it serves, and the reader that locates
+        # it.  A goal the record does not list cannot reach it, so this cannot hijack a route: it is
+        # the last deterministic option before the on-demand analysis, and it costs one attribute read
+        # when the vision layer already looked.
+        declared = self._declared_textless_control_point(page, title, frame)
+        if declared is not None:
+            return declared
+
         # (3) The general case the directive asks for (sections 1-3): a control this frame draws,
         # that the semantic dictionary does not declare, that looks interactive from its own box
         # and wording, and whose words belong to the goal being pursued.  No whitelist, no skill,
@@ -2950,6 +2997,61 @@ class LiveRuntime:
             order += [word for word in self.UNKNOWN_PAGE_EXIT_WORDS if word not in order]
         return [word for word in order if word not in failed]
 
+    def _relocate_textless_control(
+        self,
+        entry,
+        page: str,
+        title: str,
+        frame: "WorldState",
+        frame_path: Path,
+    ) -> tuple[float, float] | None:
+        """Re-run the reader a textless L1 action was measured with, on the current frame.
+
+        The record names its own ``basis`` (``HANDLE_TRIANGLE_SCAN`` for the 快捷面板 handle), and
+        that is the reader to run -- so the second visit costs one scan and no guessing, and the point
+        it returns belongs to the picture in front of us.  Reuse still obeys everything the printed
+        path obeys: the same page, goal and state have to hold (``l1_for`` already decided that), the
+        element has to still be drawn, and ``(page, semantic)`` is only tried once in a run.
+        """
+        basis = str(getattr(entry, "basis", "") or "")
+        if basis != "HANDLE_TRIANGLE_SCAN":
+            return None
+        # No spend check here on purpose: this control has no wording, so the words printed elsewhere
+        # on the frame say nothing about it, and the action it performs (a panel toggle) spends
+        # nothing.  What is pressed is still bounded -- it is the tab the frame draws at its own left
+        # edge, located by measurement on the frame it is about to be pressed on.
+        handle = find_quick_panel_handle(frame_path, panel_open=False)
+        if handle is None:
+            print(
+                f"[l1] {entry.control} is registered for {page} but this frame does not draw the "
+                f"handle any more; re-identifying instead",
+                flush=True,
+            )
+            return None
+        if str(handle.get("state") or "") != "COLLAPSED":
+            return None
+        if (page, entry.control) in self._ordinary_tried:
+            return None
+        point = (round(float(handle["point_norm"][0]), 4), round(float(handle["point_norm"][1]), 4))
+        self._ordinary_tried.add((page, entry.control))
+        self._ordinary_attempts += 1
+        self._ordinary_last = {
+            "page": page,
+            "title": title,
+            "word": entry.control,
+            "point": point,
+            "semantic": entry.control,
+            "basis": basis,
+            "source": "L1_REUSE",
+            "box_norm": dict(handle.get("box_norm") or {}),
+        }
+        print(
+            f"[l1] reusing {entry.control} on {page_knowledge.page_key(page, title)} "
+            f"@ {point[0]:.4f},{point[1]:.4f} -- re-located on this frame with {basis}",
+            flush=True,
+        )
+        return point
+
     def _l1_state(self, frame: "WorldState", title: str) -> str:
         """The state a registration is conditional on, including *which* unnamed screen.
 
@@ -2968,6 +3070,122 @@ class LiveRuntime:
             return f"{state}#{title}"
         return state
 
+    def _declared_textless_control_point(
+        self,
+        page: str,
+        title: str,
+        frame: "WorldState",
+    ) -> tuple[float, float] | None:
+        """Tap a control the dictionary declares and this frame draws without words.
+
+        The point is the one the vision layer **measured on this frame**,
+        ``quick_panel.handle.point_norm``, whose basis says which reader produced it
+        (``HANDLE_TRIANGLE_SCAN`` for the triangle scan).  Nothing here stores a position: if the
+        frame does not draw the control, there is no handle in the reading and this returns ``None``,
+        which is the same sentence the L1 reuse honours -- 当前画面不匹配时重新识别.
+
+        The gates are the record's own, not this function's invention:
+
+        * ``pages`` -- the record says where the control exists, and ``QUICK_PANEL_HANDLE`` names
+          HOME and MAP.  A page that is not listed is not a page this control is on.
+        * ``related_goals`` -- the reason to toggle the panel is the goal that needs what is inside
+          it, and the operator lists them (training and research productivity).  Without a listed
+          goal a tap here would be curiosity, which is not a thing a route should spend on.
+        * ``states`` -- the same consumption the dictionary hint already does.  A state whose own
+          record says it satisfies the target state (``EXPANDED`` satisfies ``QUICK_PANEL_OPEN``) is
+          refused, which is what keeps "已经展开时直接读取状态，不重复点击" true.
+        """
+        goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
+        if not goal:
+            return None
+        panel = getattr(frame, "quick_panel", None)
+        if not isinstance(panel, Mapping):
+            return None
+        handle = panel.get("handle")
+        if not isinstance(handle, Mapping):
+            return None
+        point_values = handle.get("point_norm")
+        if not isinstance(point_values, (list, tuple)) or len(point_values) < 2:
+            return None
+        try:
+            point = (round(float(point_values[0]), 4), round(float(point_values[1]), 4))
+        except (TypeError, ValueError):
+            return None
+        if not (0.0 <= point[0] <= 1.0 and 0.0 <= point[1] <= 1.0):
+            return None
+
+        page_label = control_experience.label(page)
+        for semantic, record in self._semantic_records().items():
+            locator = record.get("locator")
+            if not isinstance(locator, Mapping) or str(locator.get("state_field") or "") != "quick_panel.handle":
+                continue
+            pages = [str(item) for item in (record.get("pages") or ())]
+            if pages and page_label not in pages:
+                continue
+            served = {str(item).strip().upper() for item in (record.get("related_goals") or ())}
+            if goal.upper() not in served:
+                continue
+            risk = str(record.get("risk") or "").upper()
+            if risk not in control_experience.EXPLORABLE_RISKS:
+                print(
+                    f"[declared] {semantic} refused: its record declares risk {risk or '(none)'}, "
+                    f"which is not one of {sorted(control_experience.EXPLORABLE_RISKS)}",
+                    flush=True,
+                )
+                continue
+            states = record.get("states") or {}
+            reached = str(handle.get("state") or "")
+            body = states.get(reached) if isinstance(states, Mapping) else None
+            if isinstance(body, Mapping) and bool(body.get("satisfies_target_state")):
+                print(
+                    f"[declared] {semantic} not tapped: the panel is already {reached} "
+                    f"(the goal wants it read, not toggled)",
+                    flush=True,
+                )
+                return None
+            if (page_label, semantic) in self._ordinary_tried:
+                return None
+            self._ordinary_tried.add((page_label, semantic))
+            self._ordinary_attempts += 1
+            box = handle.get("box_norm")
+            box_norm = dict(box) if isinstance(box, Mapping) else {}
+            basis = str(handle.get("basis") or locator.get("basis") or "DECLARED_CONTROL")
+            self._ordinary_last = {
+                "page": page_label,
+                "title": title,
+                "word": semantic,
+                "point": point,
+                "semantic": semantic,
+                "basis": basis,
+                "source": "DECLARED_CONTROL",
+                "box_norm": box_norm,
+            }
+            self._l1_context = {
+                "page": page_label,
+                "goal": goal,
+                "state": self._l1_state(frame, title),
+                "semantic": semantic,
+                "text": "",
+                "box_norm": box_norm,
+                "basis": basis,
+                "source": "DECLARED_CONTROL",
+                "confidence": 1.0,
+                # This control is drawn with no words, so the registration has to say how it can be
+                # found again: ``basis`` names the reader, and that is what turns "no wording" from
+                # "cannot be re-confirmed" into "re-confirmed by measurement on the next frame".
+                "relocatable": True,
+                "frame": str(getattr(self, "_l1_frame_hint", "") or ""),
+                "expected_effect": self._declared_expectation(semantic),
+            }
+            print(
+                f"[declared] {page_knowledge.page_key(page_label, title)}: {semantic} is drawn "
+                f"without words at {point[0]:.4f},{point[1]:.4f} (basis {basis}); tapping it for "
+                f"goal {goal}",
+                flush=True,
+            )
+            return point
+        return None
+
     def _l1_action_point(
         self,
         page: str,
@@ -2976,6 +3194,7 @@ class LiveRuntime:
         frame_path: Path,
         ocr,
         present_words: list[str],
+        spend_refused: bool = False,
     ) -> tuple[float, float] | None:
         """Tap the L1 action already registered for this page, goal and state (directive section 11).
 
@@ -3003,7 +3222,20 @@ class LiveRuntime:
         if entry is None:
             return None
         word = str(entry.visual_features.get("text") or "").strip()
-        if not word or (page, word) in self._ordinary_tried:
+        if not word:
+            # A control with no wording cannot be looked up by wording.  What the registration does
+            # carry is *how it was measured*, so the same reader is run again on this frame -- and a
+            # frame that no longer draws it returns nothing, which is §十一's "当前画面不匹配时重新
+            # 识别" applied to a textless element.  Measured on the handle: the second look re-derives
+            # the point from the current frame rather than replaying a coordinate.
+            return self._relocate_textless_control(entry, page, title, frame, frame_path)
+        if spend_refused:
+            # A recorded *word* on a screen that mentions spending stays refused: that is the trap
+            # the blacklist exists for, and reuse must not become a way around it.  The textless
+            # branch above is the exception, and only because the record itself declares the control
+            # non-spending (see ``_ordinary_control_candidate``).
+            return None
+        if (page, word) in self._ordinary_tried:
             return None
         hit = find_printed_words(frame_path, (word,), ocr)
         if hit is None:

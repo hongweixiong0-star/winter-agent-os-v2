@@ -202,12 +202,26 @@ class LiveQuickPanelTests(unittest.TestCase):
         self.assertIsNot(world.page, Page.RESEARCH)
 
     def test_the_panel_is_not_read_when_it_is_closed(self) -> None:
-        """Four frames without the panel, each read as no panel at all."""
+        """A closed panel yields no *panel reading* -- no sections, no rows, nothing to act on.
+
+        What it may now carry is the handle, and that is not the panel: the handle is drawn *by* the
+        closed state, at the frame's own left edge, and the route needs it precisely to open what is
+        not open (operator 2026-09-22, the screenshot with the handle circled).  So the assertion is
+        about what must stay empty -- the three sections and the task rows -- while a handle, if the
+        frame draws one, has to describe itself as COLLAPSED and say what located it.
+        """
         for frame in (CITY_CLOSED, INTEL_CLOSED, CITY_CLOSED_2):
             with self.subTest(frame=frame.name):
                 world = self.vision.observe(frame)
-                self.assertFalse(world.quick_panel.get("open"), frame.name)
-                self.assertEqual(world.quick_panel, {}, frame.name)
+                panel = world.quick_panel or {}
+                self.assertFalse(panel.get("open"), frame.name)
+                for section in ("building", "camps", "research", "rows"):
+                    self.assertNotIn(section, panel, f"{frame.name}: a closed panel has no {section}")
+                handle = panel.get("handle")
+                if handle is not None:
+                    self.assertEqual(handle["state"], "COLLAPSED", frame.name)
+                    self.assertEqual(handle["basis"], "HANDLE_TRIANGLE_SCAN", frame.name)
+                    self.assertLess(handle["point_norm"][0], 0.1, f"{frame.name}: the handle is at the left edge")
 
     def test_the_plate_gate_separates_open_from_closed(self) -> None:
         """The pixel gate itself, measured on the archived frames."""

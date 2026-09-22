@@ -1338,6 +1338,25 @@ def verify_ordinary_control_tried(before: WorldState, after: WorldState) -> Veri
     blacklist at the resolver is what keeps this verifier from ever seeing a forbidden
     spend, and a tap that could not be resolved never reaches this function.
     """
+    # One ordinary control has an effect the generic classifier would only report as a fallback
+    # "something differs": the 快捷面板 handle, whose whole job is to open a panel whose state is
+    # now part of the reading.  Saying so by name is the difference between "a tap happened" and
+    # "the quick entries appeared", which is what the operator asked this step to be judged by.
+    # It is additively checked, so every other ordinary control is unaffected.
+    panel_before = before.quick_panel if isinstance(before.quick_panel, dict) else {}
+    panel_after = after.quick_panel if isinstance(after.quick_panel, dict) else {}
+    if panel_after.get("open") and not panel_before.get("open"):
+        return VerificationResult(
+            True,
+            "",
+            {
+                "change": "QUICK_PANEL_OPENED",
+                "handle": (panel_after.get("handle") or {}).get("point_norm"),
+                "sections": [key for key in ("building", "camps", "research") if panel_after.get(key)],
+                "page_before": before.page.value,
+                "page_after": after.page.value,
+            },
+        )
     change = control_experience.classify_change(asdict(before), asdict(after))
     ok = change not in ("NO_OP", "UNKNOWN")
     return VerificationResult(
