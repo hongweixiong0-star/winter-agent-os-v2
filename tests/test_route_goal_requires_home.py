@@ -61,14 +61,31 @@ class RouteGoalFromMapTest(unittest.TestCase):
         self.assertIn("OPEN_HOME", LiveRuntime.VERIFIED_ATOMIC)
 
     def test_an_open_resource_search_panel_is_closed_first(self):
-        # OPEN_HOME's control is the 回城 button on the HUD; the resource-search
-        # panel covers it, and MAIL's branch already handles this.
-        for goal, reason in (("TRAIN", "close_resource_search_for_training_goal"),
-                             ("RESEARCH", "close_resource_search_for_research_goal")):
-            world = WorldState(page=Page.MAP, resource_search_open=True, confidence=0.99)
-            decision = decide(goal, world)
-            self.assertEqual(decision.skill, "BACK", goal)
-            self.assertEqual(decision.reason, reason, goal)
+        """Every goal that comes home must close the panel first, not hope the door is there.
+
+        OPEN_HOME's control is the 回城 door on the map HUD and the resource-search panel covers it.
+        Measured 2026-09-23 (issue #101): the step failed 44 times in 323, every one with
+        page_before=MAP, 37 of them `SEMANTIC_TARGET_NOT_VERIFIED` -- and on the runtime's own frames
+        the failing one draws the panel (`BTN_RESOURCE_SEARCH_SUBMIT` d=0) with the door absent, while
+        a successful one draws no panel and the door at d=2.  Three goals had this guard and four did
+        not, which is what this list now pins: all seven, each with its own named reason.
+        """
+        for goal, reason in (("MAIL", "close_resource_search_for_mail_goal"),
+                             ("TRAIN", "close_resource_search_for_training_goal"),
+                             ("RESEARCH", "close_resource_search_for_research_goal"),
+                             ("EXPLORATION", "close_resource_search_for_exploration_goal"),
+                             ("DAILY", "close_resource_search_for_daily_goal"),
+                             ("ALLIANCE", "close_resource_search_for_alliance_goal"),
+                             ("HOME", "close_resource_search_to_go_home")):
+            with self.subTest(goal=goal):
+                world = WorldState(page=Page.MAP, resource_search_open=True, confidence=0.99)
+                decision = decide(goal, world)
+                self.assertEqual(decision.skill, "BACK", goal)
+                self.assertEqual(decision.reason, reason, goal)
+                # ...and the door is taken once the panel is gone, so the guard is a detour and not
+                # a replacement: the same goal on the same page without the panel still goes home.
+                cleared = decide(goal, WorldState(page=Page.MAP, confidence=0.99))
+                self.assertEqual(cleared.skill, "OPEN_HOME", goal)
 
 
 class UnrelatedPageStillStopsTest(unittest.TestCase):

@@ -1001,6 +1001,8 @@ class RuleBrain:
             if world.page is Page.HOME:
                 return Decision("OPEN_EXPLORATION", "exploration_goal", world.confidence, "exploration_open")
             if world.page is Page.MAP:
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_for_exploration_goal", world.confidence, "resource_search_closed")
                 return Decision("OPEN_HOME", "exploration_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.EXPLORATION:
                 leave = self._leave_foreign_page_once(world, owner="EXPLORATION")
@@ -1018,6 +1020,8 @@ class RuleBrain:
             if world.page is Page.MAP:
                 if self.daily_panel_not_actionable_left:
                     return Decision("SAFE_STOP", "daily_panel_already_read_not_actionable", 1.0, "switch_task")
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_for_daily_goal", world.confidence, "resource_search_closed")
                 return Decision("OPEN_HOME", "daily_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.DAILY:
                 leave = self._leave_foreign_page_once(world, owner="DAILY")
@@ -1036,6 +1040,8 @@ class RuleBrain:
             if world.page is Page.HOME:
                 return Decision("OPEN_ALLIANCE", "alliance_goal", world.confidence, "alliance_open")
             if world.page is Page.MAP:
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_for_alliance_goal", world.confidence, "resource_search_closed")
                 return Decision("OPEN_HOME", "alliance_goal_requires_home", world.confidence, "home_opened")
             if world.page is not Page.ALLIANCE:
                 leave = self._leave_foreign_page_once(world, owner="ALLIANCE")
@@ -1933,6 +1939,10 @@ class RuleBrain:
                     return Decision("OPEN_INTEL", "spend_goal_switches_to_intel_no_beast_in_view", world.confidence, "intel_page_open")
                 return Decision("SAFE_STOP", "verified_beast_target_not_visible", 1.0, "refresh_or_switch_task")
             if self.current_goal == "HOME":
+                # This branch sits inside ``world.page is Page.MAP`` (line's enclosing block), so the
+                # search panel is the only thing that can be between the loop and the door here.
+                if world.resource_search_open:
+                    return Decision("BACK", "close_resource_search_to_go_home", world.confidence, "resource_search_closed")
                 return Decision("OPEN_HOME", "current_goal_home", world.confidence, "home_opened")
             if (
                 self.current_goal in {None, "GATHER_RESOURCE"}
