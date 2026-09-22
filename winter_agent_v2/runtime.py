@@ -14,6 +14,7 @@ from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
+from .ocr import find_printed_words, read_tap_anywhere_instruction
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
@@ -97,6 +98,64 @@ def _executor_label(execution: ExecutionResult | None) -> str:
     if execution.backend == "MAA":
         return "MAA" if execution.recognition_backend in {"MAA", "NONE"} else "HYBRID"
     return execution.backend
+
+
+#: Where the client's own names for its controls are written down.
+#:
+#: This is the one resolver input that is *knowledge* rather than a measurement of this device:
+#: per semantic, the words the client prints on the control and the pages it is drawn on.
+#: Wiring it in is the operator's rule for the ordinary case -- "no template, no skill, not
+#: VERIFIED" must not mean "cannot be located" when the client has drawn the control's own name
+#: on the screen being looked at.
+#:
+#: The client's own "tap anywhere" instruction is obeyed only where the dictionary does not say
+#: the control belongs somewhere else.  It needs no further gate, and that is the client's own
+#: logic rather than a relaxation: the phrase means *a tap anywhere on this screen dismisses it*,
+#: so on such a screen no point can mean anything else.  What it must not do is answer for a
+#: control that is declared for a different page -- ``BTN_ATTACK`` declares ["BEAST", "MAP"], so
+#: a POPUP frame cannot satisfy it however loudly that popup asks to be tapped.  The page
+#: declaration is therefore the whole gate, and it is data.
+UI_DICTIONARY_PATH = Path(__file__).resolve().parents[1] / "knowledge" / "ui" / "semantic_dictionary.json"
+
+#: Cached per file *state*, not once per process.  The operator's rule is that ordinary learning
+#: should arrive as data, so an edit to the dictionary has to take effect without a code change;
+#: keying on mtime gives that inside a long-lived process.  A worker here is a fresh process per
+#: cycle anyway, which is the other half of why this is safe.
+_UI_DICTIONARY: tuple[float, dict[str, tuple[tuple[str, ...], tuple[str, ...]]]] = (0.0, {})
+
+
+def _declared_record(semantic: str) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+    """``(pages, the client's words)`` for one semantic, or ``None``.
+
+    ``None`` means the dictionary says nothing about this name -- *not* that the control does
+    not exist.  That distinction is load-bearing for the caller: an undeclared control must
+    fall through to the layers that remember or derive a position, while a declared control
+    whose words are missing from the frame is a control that is not on screen.
+    """
+    global _UI_DICTIONARY
+    stamp = None
+    try:
+        stamp = UI_DICTIONARY_PATH.stat().st_mtime
+    except OSError:
+        return None
+    if stamp != _UI_DICTIONARY[0]:
+        table: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {}
+        try:
+            payload = json.loads(UI_DICTIONARY_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        for record in payload.get("records") or ():
+            if not isinstance(record, Mapping):
+                continue
+            name = str(record.get("id") or "")
+            if not name:
+                continue
+            table[name] = (
+                tuple(str(page) for page in (record.get("pages") or ())),
+                tuple(str(word).strip() for word in (record.get("ocr") or ()) if str(word or "").strip()),
+            )
+        _UI_DICTIONARY = (stamp, table)
+    return _UI_DICTIONARY[1].get(str(semantic))
 
 
 class LiveRuntime:
@@ -1346,6 +1405,19 @@ class LiveRuntime:
         # allowed only after independent page + green-state proof.
         if semantic == "BTN_EXPLORATION_IDLE_CLAIM" and frame.page.value == "EXPLORATION" and frame.exploration.get("status") == "CLAIMABLE":
             return (0.86, 0.68)
+        # The client's own drawing of the control, tried before anything remembered.  Order is
+        # the argument: a printed word or instruction is a statement about *this* frame, while
+        # the ledger below is a coordinate measured on an earlier one.  The weaker layer is
+        # consulted only when the stronger one has no opinion -- and ``ABSENT`` is how the
+        # stronger one says it has an opinion and the answer is "not on this screen", which is
+        # why it must stop here rather than fall through.  See ``_client_printed_control`` for
+        # the frame that establishes it (a covered navigation bar whose remembered point would
+        # have landed on 自动狩猎).
+        verdict, printed = self._client_printed_control(semantic, frame, frame_path)
+        if verdict == "FOUND":
+            return printed
+        if verdict == "ABSENT":
+            return None
         remembered = self._remembered_control_center(semantic, frame)
         if remembered is not None:
             return remembered
@@ -1400,15 +1472,134 @@ class LiveRuntime:
         point = (float(entry.position_norm[0]), float(entry.position_norm[1]))
         if not (0.0 <= point[0] <= 1.0 and 0.0 <= point[1] <= 1.0):
             return None
+        narration = f"{page}|{semantic}"
         self._remembered_reuse.append(
-            f"{page}|{semantic} <- {entry.known_change or entry.last_result} "
+            f"{narration} <- {entry.known_change or entry.last_result} "
             f"@{point[0]:.3f},{point[1]:.3f} (attempts {entry.attempts})"
         )
-        if self._remembered_reuse[-1] not in self._printed_remembered:
-            self._printed_remembered.add(self._remembered_reuse[-1])
+        if narration not in self._printed_remembered:
+            self._printed_remembered.add(narration)
             print(f"[experience] template missing, reusing a measured position for {page}|{semantic} "
                   f"({entry.known_change or entry.last_result}, attempts {entry.attempts})", flush=True)
         return point
+
+    def _client_printed_control(
+        self, semantic: str, frame: "WorldState", frame_path: "Path | None"
+    ) -> tuple[str, tuple[float, float] | None]:
+        """Where the client printed this control's own name, or that it is not on this screen.
+
+        Operator §二.2/§五: "没有预定义模板，不等于禁止根据当前画面定位并尝试普通控件" -- and the
+        strongest evidence available for an ordinary control is the client's own drawing of it.
+        This is the general answer to the failure class that dominates the episode stream:
+        measured 2026-09-22 over 2485 production steps, ``SEMANTIC_TARGET_NOT_VERIFIED`` is the
+        single largest failure at 150, and its four biggest names are the most ordinary controls
+        in the game -- ``POPUP_GENERIC_REWARD_HEADER`` (38), ``BTN_DISMISS_INTEL_REWARD`` (31),
+        ``BTN_OPEN_HOME`` (16), ``BTN_CLOSE`` (14).  A route that names one of those had nothing
+        to turn the name into a pixel with.
+
+        Two sources, both a statement about *this* frame:
+
+        * **the word the client printed on the control.**  The dictionary declares, per
+          semantic, the client's own words for it; ``find_printed_words`` reads one off the
+          frame.  Nothing is remembered, so nothing can go stale -- which is the operator's
+          §六 rule that an absolute coordinate may never be the only basis for a tap.
+        * **the instruction the client printed for the screen.**  Reward popups say
+          ``点击任意位置退出`` (read at 0.9977 on two frames three days apart, both at
+          (0.5000, 0.9227)), which is the client stating the interaction; the point used is the
+          instruction's own box centre, so it is read rather than assumed.  Measured on the real
+          device 2026-09-17: that phrase, one tap, and the frame afterwards was MAIL with
+          ``popup = null``.
+
+        Three answers, and the middle one is the one that matters:
+
+        * ``("FOUND", point)``   -- the control is located on this frame.
+        * ``("ABSENT", None)``   -- the dictionary declares words for this control and none of
+          them is on this frame, so **the control is not on screen** and the caller must not fall
+          through to a remembered position either.  This is measured, not cautious: on a MAP
+          frame with the beast-search panel open, ``BTN_OPEN_HOME``'s remembered point
+          (0.9236, 0.9539) lands on 自动狩猎, because the panel covers the navigation bar and the
+          memory has no way to know that.  Refusing is what keeps a stale coordinate from being
+          spent on a live control.
+        * ``("UNDECLARED", None)`` -- the dictionary says nothing about this name, the page does
+          not match its declaration, or this runtime has no OCR.  The next layer answers.
+
+        Deliberately *not* asked: ``explorable_risk``.  Both sources are the client itself
+        declaring the control, which is a stronger basis than the unrecognised-tap case that
+        whitelist was written for.  The instruction half needs no dismissal-intent gate either,
+        and leaving it out is the client's own logic rather than a relaxation: "tap anywhere to
+        exit" means that on this screen *no* point can mean anything else.  Its first version did
+        carry such a gate (a name matching CLOSE/DISMISS/LEAVE) and it was measured wrong on the
+        largest class there is -- ``POPUP_GENERIC_REWARD_HEADER`` names no dismissal, is dismissed
+        by the brain as one, and 38 steps died refusing to obey a screen that said outright what
+        to do.  What guards the instruction instead is the page declaration below.
+        """
+        page = control_experience.label(frame.page)
+        declared = _declared_record(semantic)
+        if declared is not None:
+            pages, words = declared
+            page_ok = not pages or "*" in pages or page in pages
+            if not page_ok:
+                # The dictionary places this control on other pages, so what is on this screen
+                # cannot be it.  Falling through (rather than refusing) is right here: the page
+                # declaration is about *where it is drawn*, not about whether this runtime has
+                # some other way to reach it.
+                return "UNDECLARED", None
+            if words:
+                if frame_path is None:
+                    return "UNDECLARED", None
+                ocr = self._ocr_service()
+                if ocr is None:
+                    return "UNDECLARED", None
+                hit = find_printed_words(frame_path, words, ocr)
+                if hit is not None:
+                    point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
+                    self._note_printed(semantic, page, f"the word {hit['word']!r}", point)
+                    return "FOUND", point
+                return "ABSENT", None
+        if frame_path is None:
+            return "UNDECLARED", None
+        ocr = self._ocr_service()
+        if ocr is None:
+            return "UNDECLARED", None
+        instruction = read_tap_anywhere_instruction(frame_path, ocr)
+        if instruction is None:
+            return "UNDECLARED", None
+        point = (float(instruction["center_norm"][0]), float(instruction["center_norm"][1]))
+        self._note_printed(semantic, page, f"the client's own {instruction['phrase']!r}", point)
+        return "FOUND", point
+
+    def _ocr_service(self):
+        """The OCR this runtime may read a frame with, or ``None`` when it has none.
+
+        Asked defensively rather than required: a harness with a fake vision has no OCR, and the
+        honest answer there is that this layer cannot answer -- not an exception thrown in the
+        middle of a live run.
+        """
+        for holder in (self.vision, self.semantic_vision):
+            service = getattr(holder, "ocr", None)
+            if service is not None:
+                return service
+        return None
+
+    def _note_printed(self, semantic: str, page: str, source: str, point: tuple[float, float]) -> None:
+        """Record and narrate one read, once per control: the layer must not be silent.
+
+        ``_printed_reads`` is what makes "did the client's own words change what the machine
+        did" answerable from the run rather than from a log, which is the same reason the
+        ledger reads are kept.
+        """
+        line = f"{page}|{semantic}"
+        self._printed_reads.append(
+            f"{line} <- {source} @{point[0]:.4f},{point[1]:.4f}"
+        )
+        if line in self._printed_printed:
+            return
+        self._printed_printed.add(line)
+        print(
+            f"[printed] template and ledger both failed; {semantic} located by {source} "
+            f"at {point[0]:.4f},{point[1]:.4f} on {page}",
+            flush=True,
+        )
 
     def run(
         self,
@@ -1469,8 +1660,16 @@ class LiveRuntime:
         # is answerable from the run rather than from a claim.  Printed once per
         # distinct reuse -- a route that reuses the same control twelve times is one
         # fact, not twelve lines.
+        #
+        # ``_printed_reads`` is the same record for the other non-template layer: a
+        # position the client's own printed words supplied.  Kept apart from the ledger
+        # reads because they are different evidence -- one is what this device measured
+        # earlier, the other is what the client states now -- and a run that has to be
+        # read back later must not blur them.
         self._remembered_reuse: list[str] = []
         self._printed_remembered: set[str] = set()
+        self._printed_reads: list[str] = []
+        self._printed_printed: set[str] = set()
         # Utility inputs (operator §四).  All three are loaded once per run: the route
         # card is a measured artefact that does not change inside a run, and the
         # fairness ledger is written back at ``finish``.  Kept on the instance so

@@ -1589,6 +1589,158 @@ def read_training_camp_tabs(
 CAMP_ACTION_BAR_GATE = "TARGET_CAMP_ACTION_BAR"
 
 
+#: The client's own "tap anywhere" instructions, and the one thing each means.
+#:
+#: These are the client telling us the interaction, which is why obeying one is reading the
+#: frame rather than guessing at it: the screen states that a tap anywhere dismisses it.
+#: Measured 2026-09-17 on the mail-reward popup
+#: (``dataset/truth_audit/power_route_20260917/probe_dismiss_mail_reward_20260917_044652.json``):
+#: the phrase read at 0.998, one tap dismissed the popup, and the frame after it was the
+#: MAIL page with ``popup = null``.  Kept as data because a new phrasing is knowledge, not a
+#: code change -- the operator's rule that ordinary learning should arrive as data.
+CLIENT_TAP_ANYWHERE_PHRASES: tuple[str, ...] = (
+    "点击任意位置退出",
+    "点击任意位置继续",
+    "点击任意处退出",
+    "点击任意处继续",
+    "点击空白处退出",
+    "点击空白处继续",
+    "点击屏幕继续",
+)
+
+
+def read_tap_anywhere_instruction(image_path, ocr: OCRService) -> dict | None:
+    """The client's own "tap anywhere" instruction, and where it drew it.
+
+    ``None`` when this screen carries no such instruction, which is most of them and is the
+    answer that keeps a caller from inventing a dismissal.  The point returned is the
+    instruction's own box centre: that is a spot the client has just said is safe to tap,
+    and it is read off *this* frame rather than remembered from another one.
+
+    The phrase is matched on the token's text, not on the frame's whole OCR blob, because
+    the caller needs the position as well as the fact -- a dismissal executed at a position
+    nobody measured is the thing this function exists to avoid.
+    """
+    try:
+        result = ocr.recognize(image_path)
+    except (OSError, ValueError):
+        return None
+    size = read_frame_size(image_path)
+    if not size:
+        return None
+    width, height = int(size[0]), int(size[1])
+    if width <= 0 or height <= 0:
+        return None
+    best: dict | None = None
+    for token in result.tokens:
+        text = (token.text or "").strip()
+        if not text or not token.box:
+            continue
+        phrase = next((word for word in CLIENT_TAP_ANYWHERE_PHRASES if word in text), None)
+        if phrase is None:
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        centre = (
+            round((min(xs) + max(xs)) / 2.0 / width, 4),
+            round((min(ys) + max(ys)) / 2.0 / height, 4),
+        )
+        if not (0.0 <= centre[0] <= 1.0 and 0.0 <= centre[1] <= 1.0):
+            continue
+        candidate = {
+            "phrase": phrase,
+            "instruction": "TAP_ANYWHERE_TO_DISMISS",
+            "center_norm": centre,
+            "confidence": round(float(token.confidence or 0.0), 4),
+        }
+        if best is None or candidate["confidence"] > best["confidence"]:
+            best = candidate
+    return best
+
+
+def find_printed_words(
+    image_path,
+    words: tuple[str, ...] | list[str],
+    ocr: OCRService,
+    *,
+    band: dict[str, float] | None = None,
+    allow_containment: bool = False,
+) -> dict | None:
+    """Locate a control by the word the client printed on it.
+
+    This is the general answer to "the route names a control and no template exists for it":
+    the client draws control names next to the controls, and reading one is a statement about
+    *this* frame, so it cannot go stale the way a remembered coordinate can.
+
+    **The match is exact by default, and that default is measured, not cautious.**  2026-09-22,
+    on a MAP frame with the beast-search panel open: the 城镇 navigation cell is covered by the
+    panel, the word ``城镇`` is nowhere on the bar, and a containment match still "found" it at
+    (0.5062, 0.4945) -- inside ``我的城镇``, the town-hall label the client draws on the map
+    itself.  A reader that accepts a substring would have answered with a *different* control's
+    position and looked successful doing it.  Exactness is also what selects the right reading
+    on a HOME frame, where the alliance cell's ``联盟`` (0.7444, 0.9820, conf 1.000) shares the
+    screen with chat lines reading ``系统消息：…退出了联盟``.
+
+    ``allow_containment`` exists for a caller that knows the client merges a name with a
+    number; nothing uses it yet, and it is not the default for the reason above.
+
+    ``band`` optionally narrows the search to a normalised region, for a control whose word also
+    appears as a page title elsewhere on the same screen.  Highest confidence wins; ties keep
+    reading order.  ``None`` means the word is not on this frame -- the honest answer, and the
+    one a caller needs in order to know the control is not on screen at all.
+    """
+    wanted = [str(word).strip() for word in words if str(word or "").strip()]
+    if not wanted:
+        return None
+    try:
+        result = ocr.recognize(image_path)
+    except (OSError, ValueError):
+        return None
+    size = read_frame_size(image_path)
+    if not size:
+        return None
+    width, height = int(size[0]), int(size[1])
+    if width <= 0 or height <= 0:
+        return None
+    best: tuple[float, dict] | None = None
+    for token in result.tokens:
+        text = (token.text or "").strip()
+        if not text or not token.box:
+            continue
+        word = next((candidate for candidate in wanted if candidate == text), None)
+        exact = True
+        if word is None:
+            if not allow_containment:
+                continue
+            word = next((candidate for candidate in wanted if candidate in text), None)
+            exact = False
+        if word is None:
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        centre = (
+            (min(xs) + max(xs)) / 2.0 / width,
+            (min(ys) + max(ys)) / 2.0 / height,
+        )
+        if not (0.0 <= centre[0] <= 1.0 and 0.0 <= centre[1] <= 1.0):
+            continue
+        if band is not None:
+            inside_x = band["x_norm"] <= centre[0] <= band["x_norm"] + band["w_norm"]
+            inside_y = band["y_norm"] <= centre[1] <= band["y_norm"] + band["h_norm"]
+            if not (inside_x and inside_y):
+                continue
+        confidence = round(float(token.confidence or 0.0), 4)
+        row = {
+            "word": word,
+            "exact": bool(exact),
+            "center_norm": (round(centre[0], 4), round(centre[1], 4)),
+            "confidence": confidence,
+        }
+        if best is None or confidence > best[0]:
+            best = (confidence, row)
+    return best[1] if best is not None else None
+
+
 def read_frame_size(image_path) -> tuple[int, int] | None:
     """The frame's ``(width, height)`` in pixels, or ``None`` if it cannot be opened.
 
