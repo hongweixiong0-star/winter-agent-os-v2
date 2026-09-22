@@ -447,6 +447,23 @@ class ProvenStepTests(unittest.TestCase):
         self.assertNotEqual((other._ordinary_last or {}).get("source"), "L1_REUSE")
 
 
+    def test_two_unnamed_screens_are_not_the_same_state(self):
+        """§十一: the state a registration holds under must tell two unnamed screens apart.
+
+        Measured need: the live L1 written on 2026-09-22 was registered with state ``UNKNOWN`` --
+        the same signature every screen the model cannot name would produce -- so a registration
+        made on 战斗已结束 would have claimed to apply to 挂机收益.  The title the page reader already
+        produced is what the page records and the transition ledger are keyed by, so it joins the
+        signature.
+        """
+        runtime = _runtime(ocr=_StubOCR(("退出", 0.99, BUTTON_BOX)), goal="DAILY")
+        unnamed = WorldState(page=Page.UNKNOWN)
+        self.assertEqual(runtime._l1_state(unnamed, "战斗已结束"), "UNKNOWN#战斗已结束")
+        self.assertNotEqual(runtime._l1_state(unnamed, "挂机收益"), "UNKNOWN#战斗已结束")
+        # A named page has its own fields; no title is needed and none is added.
+        self.assertEqual(runtime._l1_state(WorldState(page=Page.MAP), "whatever"), "MAP")
+
+
 class BrainReachabilityTests(unittest.TestCase):
     """§3: "no registered skill can advance the goal" must include "the only option is to leave".
 

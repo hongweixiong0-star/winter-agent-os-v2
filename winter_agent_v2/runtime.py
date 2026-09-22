@@ -2273,7 +2273,7 @@ class LiveRuntime:
             self._l1_context = {
                 "page": page,
                 "goal": str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
-                "state": control_experience.state_signature(frame.to_dict()),
+                "state": self._l1_state(frame, title),
                 "semantic": f"ORDINARY_CONTROL[{word}]",
                 "text": word,
                 "box_norm": dict(hit.get("box_norm") or {}),
@@ -2343,7 +2343,7 @@ class LiveRuntime:
                 self._l1_context = {
                     "page": page,
                     "goal": str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
-                    "state": control_experience.state_signature(frame.to_dict()),
+                    "state": self._l1_state(frame, title),
                     "semantic": f"AI_ADVICE[{advised_word}]",
                     "text": advised_word,
                     "box_norm": landed_box,
@@ -2542,6 +2542,24 @@ class LiveRuntime:
             order += [word for word in self.UNKNOWN_PAGE_EXIT_WORDS if word not in order]
         return [word for word in order if word not in failed]
 
+    def _l1_state(self, frame: "WorldState", title: str) -> str:
+        """The state a registration is conditional on, including *which* unnamed screen.
+
+        ``state_signature`` reads the frame's own fields -- page, popup, and the two sub-states this
+        client switches inside a page.  An unnamed screen has none of those, so every one of them
+        would share the signature ``UNKNOWN`` and a registration made on 战斗已结束 would look like it
+        applied to any other screen the model could not name.  The title the page reader already
+        produced is what tells two unnamed screens apart -- it is what the page records and the
+        transition ledger are keyed by -- so it joins the signature here.
+
+        Registration and lookup both go through this one function, so the two can never hold
+        different notions of "the same state".
+        """
+        state = control_experience.state_signature(frame.to_dict())
+        if not frame.known and title:
+            return f"{state}#{title}"
+        return state
+
     def _l1_action_point(
         self,
         page: str,
@@ -2566,7 +2584,7 @@ class LiveRuntime:
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         if not goal:
             return None
-        state = control_experience.state_signature(frame.to_dict())
+        state = self._l1_state(frame, title)
         entry = control_experience.l1_for(
             self._control_ledger,
             page=page,
@@ -2652,7 +2670,7 @@ class LiveRuntime:
         )
         if not rows:
             return None
-        state = control_experience.state_signature(frame.to_dict())
+        state = self._l1_state(frame, title)
         for row in rows:
             word = str(row.get("word") or "").strip()
             if not word or not row.get("goal_relevant"):
