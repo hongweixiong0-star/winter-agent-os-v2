@@ -1,0 +1,12 @@
+{
+ "schema_version": "1.0",
+ "written_at": "2026-09-22T06:31:35.169426+00:00",
+ "count": 0,
+ "counts_by_status": {
+  "DISCOVERED": 0,
+  "CANDIDATE": 0,
+  "VERIFIED": 0,
+  "FAILED": 0
+ },
+ "candidates": []
+}
