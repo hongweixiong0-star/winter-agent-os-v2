@@ -88,6 +88,12 @@ def _once(dispatcher: UnknownDispatcher) -> int:
     result = dispatcher.worker()
     reconcile = result.get("reconcile") or {}
     dispatch = result.get("dispatch") or {}
+    if result.get("lock"):
+        # A pass that did nothing because someone else was doing it must say so: measured during the
+        # first working session, a leaked lock made two passes print "nothing to do" while two open
+        # jobs waited to be reconciled -- the quietest possible way for a channel to stop.
+        print(f"skipped     : {result['lock']}")
+        return 0
     print(
         "reconciled  : "
         f"checked={reconcile.get('checked', 0)} done={reconcile.get('done', 0)} "

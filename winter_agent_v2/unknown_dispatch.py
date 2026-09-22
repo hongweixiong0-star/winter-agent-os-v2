@@ -114,6 +114,32 @@ def _seconds_since(stamp: str) -> float:
 OPEN_STATES = frozenset({"submitted", "working", "queued", "running"})
 
 
+def _pid_alive(pid: int) -> bool | None:
+    """Whether a process id is alive, or ``None`` when that cannot be established here.
+
+    ``os.kill(pid, 0)`` is **not** usable for this on Windows: that platform supports only
+    CTRL_C_EVENT / CTRL_BREAK_EVENT, and any other signal -- 0 included -- calls TerminateProcess, so
+    the check would kill the very process it is asking about.  ``OpenProcess`` is the read-only way,
+    and ``None`` means "no opinion", which the caller falls back to an age for.
+
+    This exists because a lock file was left behind during this round's own first working session
+    and silently blocked the next pass: the holding process was gone but the file was not, so every
+    consumer that read it refused to work.  A leaked lock is survivable; a *silent* one is not.
+    """
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        SYNCHRONIZE = 0x00100000
+        handle = kernel32.OpenProcess(SYNCHRONIZE, False, int(pid))
+        if not handle:
+            return False
+        kernel32.CloseHandle(handle)
+        return True
+    except Exception:  # noqa: BLE001 - not Windows, no ctypes, no permission: no opinion
+        return None
+
+
 @dataclass(frozen=True)
 class Dispatch:
     """One request's dispatch state, folded from the ledger."""
@@ -435,35 +461,54 @@ class UnknownDispatcher:
         """A best-effort exclusive pass lock, released however the pass ends.
 
         ``O_CREAT|O_EXCL`` is the atomic step, so two processes cannot both win it.  A lock left
-        behind by a killed process is taken over once it is older than ``stale_after`` -- the
-        alternative is a channel that stops for ever because something died while holding a file.
+        behind by a process that is **gone** is taken over immediately -- measured during this
+        round's first working session, where exactly that happened and the next consumer refused to
+        work for no visible reason -- and one whose holder cannot be asked about is taken over once it
+        is older than ``stale_after``.  Either way the alternative would be a channel that stops
+        because something died while holding a file.
         """
         path = self.ledger_path.with_suffix(".lock")
         acquired = False
         handle = None
+
+        def _take() -> bool:
+            nonlocal handle
+            try:
+                handle = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(handle, f"{os.getpid()} {_now()}".encode("utf-8"))
+                return True
+            except OSError:
+                return False
+
+        def _holder_is_gone() -> bool:
+            try:
+                pid_text = path.read_text(encoding="utf-8").split(" ", 1)[0].strip()
+                alive = _pid_alive(int(pid_text))
+            except (OSError, ValueError):
+                return True
+            if alive is True:
+                return False
+            if alive is False:
+                return True
+            try:
+                return datetime.now(timezone.utc).timestamp() - path.stat().st_mtime > stale_after
+            except OSError:
+                return True
+
         try:
             try:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                handle = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                os.write(handle, f"{os.getpid()} {_now()}".encode("utf-8"))
-                acquired = True
-            except FileExistsError:
-                try:
-                    age = datetime.now(timezone.utc).timestamp() - path.stat().st_mtime
-                except OSError:
-                    age = 0.0
-                if age > stale_after:
-                    try:
-                        path.unlink()
-                        handle = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                        os.write(handle, f"{os.getpid()} {_now()}".encode("utf-8"))
-                        acquired = True
-                    except OSError:
-                        acquired = False
+                acquired = _take()
             except OSError:
                 # A lock that cannot be created at all (a read-only tree) must not stop the channel:
                 # the bound it protects is a nicety, and refusing to work would be the worse bug.
                 acquired = True
+            if not acquired and _holder_is_gone():
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+                acquired = _take()
             yield acquired
         finally:
             if handle is not None:

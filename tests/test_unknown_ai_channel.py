@@ -363,6 +363,27 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual(second.worker()["lock"], "")
         self.assertEqual(len(bridge.submitted), 1)
 
+    def test_a_lock_left_by_a_dead_process_is_taken_over(self):
+        """Measured during this round: a lock file outlived the process that wrote it, and every
+        consumer that read it refused to work while printing "nothing to do".  A holder that is
+        gone must not be able to stop the channel, and one that cannot be asked about falls back to
+        the age.
+        """
+        import os as _os
+
+        from winter_agent_v2.unknown_dispatch import _pid_alive
+
+        self.assertIs(_pid_alive(_os.getpid()), True)
+        self.assertIs(_pid_alive(999999), False)
+        dispatcher = self._dispatcher(_StubBridge())
+        lock = dispatcher.ledger_path.with_suffix(".lock")
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.write_text("999999 gone", encoding="utf-8")
+        result = dispatcher.worker()
+        self.assertEqual(result["lock"], "", "a dead holder is not a reason to refuse")
+        self.assertIn("checked", result["reconcile"], "the pass actually ran")
+        self.assertFalse(lock.exists(), "and it left nothing behind")
+
     def test_a_gateway_that_is_gone_is_an_answer_not_a_crash(self):
         class _Broken(_StubBridge):
             def submit_prompt(self, *args, **kwargs):
