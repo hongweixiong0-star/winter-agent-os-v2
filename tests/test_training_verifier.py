@@ -45,7 +45,10 @@ class TrainingVerifierTests(unittest.TestCase):
         # "guided step", not "this camp is selected" -- in which case accepting it in
         # verify_infantry_camp_highlighted would be a FALSE ARRIVAL, and the training route's
         # first half has been reporting a success it never had.
-        expected = ("OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP", "WAIT_FOR_CAMP_MENU", "OPEN_INFANTRY_TRAINING", "TRAIN_TROOPS")
+        # Step 4 stopped being a wait on 2026-09-23 (issue #92): the ring that state is read from
+        # is drawn by the client on its own schedule, so waiting on it waits on an animation.  The
+        # blocker is the same one, reached at once.
+        expected = ("OPEN_POWER_OVERVIEW", "OPEN_POWER_DETAILS", "NAVIGATE_INFANTRY_CAMP", "SAFE_STOP", "OPEN_INFANTRY_TRAINING", "TRAIN_TROOPS")
         states = (home, overview, details, highlighted, selected, training)
         self.assertEqual(tuple(RuleBrain(current_goal="TRAIN").decide(s, v2_registry()).skill for s in states), expected)
 

@@ -182,11 +182,14 @@ class TheDecisionIsBoundedTests(unittest.TestCase):
         on the 2-badged one, and three consecutive live frames show nothing progressing toward
         a menu.  It is a guided tutorial step, so the blocker names the precondition rather than
         a menu that is merely late.
+
+        Since 2026-09-23 the wait in front of the blocker is gone as well: the ring is drawn by the
+        client on its own schedule (17:50:32 no ring, 17:51:00 the same city view with it, the
+        盾兵 row's state unchanged in between), so there was nothing to wait on.  The blocker is
+        reached on the first sighting, with the same reason and the same non-fatal hand-over.
         """
         brain = RuleBrain(current_goal="TRAIN")
         state = self._stage_a_state()
-        for _ in range(brain.MAX_CAMP_MENU_WAITS):
-            self.assertEqual(brain.decide(state, v2_registry()).skill, "WAIT_FOR_CAMP_MENU")
         last = brain.decide(state, v2_registry())
         self.assertEqual(last.skill, "SAFE_STOP")
         self.assertEqual(last.reason, "camp_entry_is_a_guided_step_not_a_selection")
@@ -209,7 +212,9 @@ class TheDecisionIsBoundedTests(unittest.TestCase):
                            training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",
                                      "queue_available": True},
                            confidence=0.99)
-        self.assertEqual(brain.decide(state, v2_registry()).skill, "WAIT_FOR_CAMP_MENU")
+        decision = brain.decide(state, v2_registry())
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertNotEqual(decision.skill, "SELECT_INFANTRY_CAMP")
 
     def test_the_hop_is_registered_and_bound_to_the_menu_verifier(self):
         registry = v2_registry()

@@ -696,6 +696,16 @@ def main() -> int:
                         "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM",
                         "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING", "BEAST_SEARCH_TAB",
                         "TRAINING_CAMP_NEXT", "ORDINARY_CONTROL"}
+    # ``QUICK_PANEL_ROW_*`` is the same category, and it is the largest family of them: the
+    # 快捷面板 draws its rows at coordinates that depend on which rows the client chose to show
+    # and on the list's own scroll, so no template can pin one.  What the resolver acts on is the
+    # ROW the frame itself reports -- ``rows[].arrow_norm`` for the enter-arrow targets and
+    # ``rows[].done_norm`` for the finished ones (measured 2026-09-23: the tick's own centre came
+    # out at x 0.5618 on three independent frames, and the live tap landed at (404, 556)).  A
+    # target whose point comes from the frame belongs here by construction, exactly like
+    # ORDINARY_CONTROL above, and keeping the four pre-existing enter-arrow rows out of it left
+    # this check red for reasons that had nothing to do with the rows being unactionable.
+    _derived_prefixes = ("QUICK_PANEL_ROW_",)
     _unresolvable = []
     for _skill in registry.all():
         if _skill.action.kind != "TAP_SEMANTIC":
@@ -703,7 +713,8 @@ def main() -> int:
         if _skill.id not in runtime.LiveRuntime.VERIFIED_ATOMIC:
             continue
         target = _skill.action.target
-        if target in _manifest_semantics or target in _derived_targets:
+        if (target in _manifest_semantics or target in _derived_targets
+                or target.startswith(_derived_prefixes)):
             continue
         _unresolvable.append(f"{_skill.id}->{target}")
     # Known, recorded exception -- issue #71.  The set is pinned EXACTLY rather than
@@ -905,20 +916,23 @@ def main() -> int:
     # no menu appeared.  Four live taps, four failures (three at the template's own centre on
     # bare ground, one inside the ring).  So aiming was not the problem, the tap is withdrawn,
     # and these two checks now pin the withdrawal rather than the experiment.
-    check("brain: stage A waits -- the ring tap was tried live and did not open the menu",
-          _stage_a_brain.decide(_stage_a_state, registry).skill == "WAIT_FOR_CAMP_MENU")
+    # Since 2026-09-23 the ring is known to be drawn by the client on its own schedule (issue
+    # #92: 17:50:32 no ring, 17:51:00 the same city view with it, the panel state unchanged), so
+    # Stage A spends no step waiting on it and blocks at once.
+    check("brain: stage A blocks at once -- the ring draws itself, so a wait would wait on an animation",
+          _stage_a_brain.decide(_stage_a_state, registry).skill == "SAFE_STOP")
     check("brain: ...and does not substitute another action",
-          _stage_a_brain.decide(_stage_a_state, registry).skill == "WAIT_FOR_CAMP_MENU")
+          _stage_a_brain.decide(_stage_a_state, registry).skill == "SAFE_STOP")
     check("brain: nothing in the brain taps the highlighted camp while its meaning is unknown",
           'return Decision("SELECT_INFANTRY_CAMP"' not in
           (PKG / "brain.py").read_text(encoding="utf-8"))
-    check("brain: stage A without a measured point behaves the same -- it waits",
+    check("brain: stage A without a measured point behaves the same -- it blocks",
           RuleBrain(current_goal="TRAIN").decide(
               WorldState(page=Page.HOME,
                          training={"navigation": "INFANTRY_CAMP_HIGHLIGHTED",
                                    "queue_available": True},
                          confidence=0.99),
-              registry).skill == "WAIT_FOR_CAMP_MENU")
+              registry).skill == "SAFE_STOP")
     check("dispatchable.SELECT_INFANTRY_CAMP targets the ring and keeps the menu verifier",
           registry.get("SELECT_INFANTRY_CAMP").action.target == "TRAINING_CAMP_IN_RING"
           and runtime.LiveRuntime.VERIFIED_ATOMIC.get("SELECT_INFANTRY_CAMP")

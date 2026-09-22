@@ -55,10 +55,18 @@ def stage_b() -> WorldState:
 
 
 class StageRoutingTest(unittest.TestCase):
-    def test_stage_a_reobserves_and_never_taps_the_camp(self):
+    def test_stage_a_stops_at_once_and_never_taps_the_camp(self):
+        """The ring draws itself, so a sighting of it is not a state to spend a step on.
+
+        Measured 2026-09-23: at 17:50:32 the city was on screen with the panel closed and no ring
+        drawn, and the 盾兵 row already carried its green tick twenty seconds later; at 17:51:00 the
+        same view -- the camp's own bubble at the same pixel -- had the ring and its hand.  So the
+        client draws it on its own schedule, the two waits this branch used to spend were spent on
+        an animation, and the blocker is reached at once instead.
+        """
         decision = decide("TRAIN", stage_a())
-        self.assertEqual(decision.skill, "WAIT_FOR_CAMP_MENU")
-        self.assertEqual(decision.reason, "camp_highlight_is_stage_a_reobserve")
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(decision.reason, "camp_entry_is_a_guided_step_not_a_selection")
         self.assertNotEqual(decision.skill, "SELECT_INFANTRY_CAMP")
 
     def test_stage_b_opens_training(self):
@@ -138,43 +146,37 @@ class StageAVerifierTest(unittest.TestCase):
         self.assertFalse(result.evidence["before_highlighted"])
 
 
-class TheWaitIsBoundedTest(unittest.TestCase):
-    """Stage A is persistent, not transient -- so the wait must not be unbounded.
+class TheRingStopsTheRouteAtOnceTest(unittest.TestCase):
+    """Stage A used to be bounded at two waits; since 2026-09-23 it costs nothing.
 
-    Measured 2026-09-17 18:00 GMT+8: seven consecutive Stage A re-observations each
-    returned ``menu_drawn=false`` and the run ended ``MAX_ACTIONS_REACHED``.  An
-    unbounded wait spends an entire run on a state that is not converging, so after
-    two waits the honest answer is a named blocker.
+    Measured 2026-09-17 18:00 GMT+8, the bound itself: seven consecutive Stage A re-observations
+    each returned ``menu_drawn=false`` and the run ended ``MAX_ACTIONS_REACHED``.  Measured
+    2026-09-23, what the waits were waiting on: the ring is drawn by the client on its own
+    schedule -- 17:50:32 city, panel closed, no ring; 17:51:00 the same view, ring and hand drawn,
+    with the 盾兵 row's state unchanged in between.  Waiting for an animation to become a menu
+    cannot succeed, so the honest answer is the named blocker and it is reached on the first
+    sighting.
     """
 
-    def test_two_waits_then_a_named_blocker(self):
+    def test_the_first_sighting_is_the_named_blocker(self):
         brain = RuleBrain(current_goal="TRAIN")
-        skills = [brain.decide(stage_a(), v2_registry()).skill for _ in range(4)]
-        self.assertEqual(skills[:2], ["WAIT_FOR_CAMP_MENU", "WAIT_FOR_CAMP_MENU"])
-        self.assertEqual(skills[2:], ["SAFE_STOP", "SAFE_STOP"])
-
-    def test_the_blocker_is_named(self):
-        brain = RuleBrain(current_goal="TRAIN")
-        brain.decide(stage_a(), v2_registry())
-        brain.decide(stage_a(), v2_registry())
         decision = brain.decide(stage_a(), v2_registry())
-        # Named for the precondition, not for a menu that is merely late: issue #82 was
-        # settled on 2026-09-21 (the ellipse is on the ground, the hand points at the
-        # 2-badged action block, three consecutive frames do not progress).
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        # Named for the precondition, not for a menu that is merely late: issue #82 was settled
+        # on 2026-09-21 (the ellipse is on the ground, the hand points at the 2-badged action
+        # block, three consecutive frames do not progress).
         self.assertEqual(decision.reason, "camp_entry_is_a_guided_step_not_a_selection")
 
-    def test_the_counter_is_per_run(self):
-        first = RuleBrain(current_goal="TRAIN")
-        first.decide(stage_a(), v2_registry())
-        first.decide(stage_a(), v2_registry())
-        fresh = RuleBrain(current_goal="TRAIN")
-        self.assertEqual(fresh.decide(stage_a(), v2_registry()).skill, "WAIT_FOR_CAMP_MENU")
-
-    def test_a_menu_that_draws_after_the_budget_is_still_acted_on(self):
-        # The bound must not become a wall: vision reports the drawn menu as
-        # ``menu_open`` (a different field), so a late Stage B still opens training.
+    def test_no_wait_is_ever_emitted_from_this_state(self):
         brain = RuleBrain(current_goal="TRAIN")
-        brain.decide(stage_a(), v2_registry())
+        skills = [brain.decide(stage_a(), v2_registry()).skill for _ in range(4)]
+        self.assertEqual(skills, ["SAFE_STOP"] * 4)
+        self.assertNotIn("WAIT_FOR_CAMP_MENU", skills)
+
+    def test_a_menu_that_was_drawn_is_still_acted_on(self):
+        # The blocker must not become a wall: vision reports a drawn menu as ``menu_open``, a
+        # different field, so Stage B still opens training.
+        brain = RuleBrain(current_goal="TRAIN")
         brain.decide(stage_a(), v2_registry())
         self.assertEqual(brain.decide(stage_b(), v2_registry()).skill, "OPEN_INFANTRY_TRAINING")
 

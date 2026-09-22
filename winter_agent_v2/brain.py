@@ -205,7 +205,6 @@ class RuleBrain:
         # the highlighted-camp state is NOT a transient animation -- seven waits in a
         # row all reported ``menu_drawn: false`` and ended with MAX_ACTIONS_REACHED,
         # so an unbounded wait burns a whole run on a state that is not converging.
-        self._camp_menu_waits = 0
         # Barracks switched inside one run, so a training page whose three queues are all busy
         # cannot turn into a loop of taps (operator §八, bounded the same way as the wait above).
         #
@@ -245,9 +244,9 @@ class RuleBrain:
         # it is idle, so a row that succeeded is never offered again in the same run.
         self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN = 6
         self.ordinary_scan_exhausted = False
-        # Two waits is the whole budget: measured, the state does not converge, so the
-        # third Stage A observation is a blocker rather than another wait.
-        self.MAX_CAMP_MENU_WAITS = 2
+        # (``MAX_CAMP_MENU_WAITS`` stood here and was removed on 2026-09-23 with the wait it
+        # bounded: the ring is drawn by the client on its own schedule, so there was never
+        # anything to wait for.  See the Stage A branch for the measurement.)
         # The panel opens on its 章节任务 tab, and the daily skills were calibrated on the
         # 每日任务 tab, so one tap is needed to read the content they act on.  One-shot:
         # if the tap does not take, repeating it would spend an action per step forever,
@@ -1259,14 +1258,35 @@ class RuleBrain:
                 # forever: 45 of 127 historical KEEP_TRAINING_PRODUCTIVE steps -- 35% -- were
                 # spent right here.
                 #
+                # THE TWO WAITS ARE GONE TOO, measured 2026-09-23 (issue #92).  They bounded a
+                # wait that had nothing to wait for, because the ring is drawn by the client on
+                # its own schedule rather than reporting a state:
+                #
+                #   17:50:32  city on screen, 快捷面板 closed, no ring drawn
+                #   17:50:52  the panel reads the 盾兵 row as 已完成, green tick and all
+                #   17:51:00  the same view -- the camp's own bubble sits at the same pixel --
+                #             the ring and its tutorial hand are drawn
+                #
+                # Twenty-eight seconds and one unchanged panel state, with the ring appearing in
+                # between.  Nothing about the training task can be read from a single frame's ring,
+                # so waiting for it to become a menu waits for an animation.  The blocker below is
+                # the same one the two waits used to reach, reached at once: the outcome is
+                # unchanged and the wasted steps are gone.
+                #
+                # Two further readings of this signal are known and left alone here, both its own
+                # round: (a) the frame at 17:51:16 that the ring template and the page reader
+                # BOTH accept is the world map (issue #93), so a sighting can be a false positive
+                # on a frame where the camp is not on screen at all; (b) because this branch sits
+                # before the 快捷面板 branch, a ring sighting preempts the panel-row path that
+                # actually reaches the training page -- measured, the ring was read on 71 of 119
+                # frames in which the camp was on screen, but those counts come from the same
+                # reading that false-positived on the map, so the ratio is not yet trustworthy.
+                #
                 # camp_ring.py and training["camp_tap_norm"] are kept on purpose: the ring
                 # measurement is sound (46/46 frames, sd 4 px) and it is the input any future
                 # attempt needs.  What the ring points AT is now answered -- a tutorial step --
                 # and issue #82 closes on that.
-                self._camp_menu_waits += 1
-                if self._camp_menu_waits > self.MAX_CAMP_MENU_WAITS:
-                    return Decision("SAFE_STOP", "camp_entry_is_a_guided_step_not_a_selection", 1.0, "switch_task")
-                return Decision("WAIT_FOR_CAMP_MENU", "camp_highlight_is_stage_a_reobserve", world.confidence, "camp_menu_open")
+                return Decision("SAFE_STOP", "camp_entry_is_a_guided_step_not_a_selection", 1.0, "switch_task")
             # The 快捷面板 reports every barracks' state in one frame, which is the one
             # reading the power route below cannot give: it names a camp and highlights
             # it, but does not say whether that camp has a free queue.
