@@ -28,6 +28,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from winter_agent_v2 import control_experience
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.executor import Executor
 from winter_agent_v2.learning import EpisodeStore
@@ -132,15 +133,27 @@ class CauseOneTheFramesStillHaveAChannelTests(unittest.TestCase):
         device = _Device()
         with TemporaryDirectory() as temp:
             path = Path(temp) / "episodes.jsonl"
-            LiveRuntime(
-                device=device,
-                vision=_Vision(states),
-                semantic_vision=_NoMatch(),
-                capture_dir=Path(temp),
-                brain=brain or RuleBrain(current_goal="INTEL"),
-                sleeper=lambda _seconds: None,
-                episode_store=EpisodeStore(path),
-            ).run(max_actions=1, allowed_skills=allowed)
+            # The experience ledger is redirected for the same reason the episode store is: it is
+            # a *module* constant pointing at the live file, and a run that ends writes it back --
+            # so this test used to rewrite the AUTO's own learning, and, worse, its assertion
+            # depended on what the live ledger happened to contain (a real run had left
+            # ``MAP|BTN_OPEN_INTEL_WILD_HUD`` in it, which made this step resolve and fail as
+            # OPEN_INTEL_NOT_PROVEN instead of never reaching the backend).  Measured 2026-09-22:
+            # the file went from 52 records to 5 across one such suite run.
+            previous_ledger = control_experience.STATE_PATH
+            control_experience.STATE_PATH = Path(temp) / "control_experience.json"
+            try:
+                LiveRuntime(
+                    device=device,
+                    vision=_Vision(states),
+                    semantic_vision=_NoMatch(),
+                    capture_dir=Path(temp),
+                    brain=brain or RuleBrain(current_goal="INTEL"),
+                    sleeper=lambda _seconds: None,
+                    episode_store=EpisodeStore(path),
+                ).run(max_actions=1, allowed_skills=allowed)
+            finally:
+                control_experience.STATE_PATH = previous_ledger
             if not path.exists():
                 return device, []
             return device, [
