@@ -428,6 +428,27 @@ class OCRPageClassifier:
                 rewards={"unlocked_troop_title": title},
                 confidence=max(token.confidence for token in eligible),
             )
+        # The 挂机收益 dialog, measured live 2026-09-22T11:21:44Z.
+        #
+        # The runtime taps 领取 on the exploration page, the client answers with this dialog, and the
+        # frame was read as an unknown page -- so ``EXPLORATION_IDLE_CLAIM``'s verifier reported
+        # EXPLORATION_IDLE_DIALOG_NOT_PROVEN on a tap that had in fact opened the dialog, and no skill
+        # could act on it afterwards (the skill that confirms it requires Page.POPUP).  The run ended
+        # with the green 领取 button on screen and nobody to press it.
+        #
+        # ``POPUP_EXPLORATION_IDLE_DIALOG`` exists in the template manifest with **zero templates**,
+        # so that path can never match; what identifies the dialog is the words the client prints on
+        # it, which OCR reads at 1.00.  Two of them: the title and the header beneath it.
+        if (
+            IDLE_INCOME_DIALOG_TITLE in exact_texts
+            and IDLE_INCOME_DIALOG_SUBTITLE in exact_texts
+        ):
+            return WorldState(
+                page=Page.POPUP,
+                popup="EXPLORATION_IDLE_DIALOG",
+                exploration={"status": "CLAIMABLE", "idle_dialog": True},
+                confidence=max(token.confidence for token in eligible),
+            )
         found: list[Page] = []
         for page, alternatives in self.RULES:
             if any(keyword in exact_texts for keyword in alternatives):
@@ -554,7 +575,20 @@ class OCRPageClassifier:
             claimable = "一键领取" in exact_texts
             daily.update({"status":"CLAIMABLE" if claimable else "AVAILABLE", "claimable_count":1 if claimable else 0})
         if page is Page.TRAINING:
-            training.update({"status":"IN_PROGRESS", "queue_available":False})
+            # This used to say ``{"status": "IN_PROGRESS", "queue_available": False}`` before a single
+            # token was looked at, which made "the client is on the training page" mean "a queue is
+            # running" -- and the brain's own gate for TRAIN_TROOPS is
+            # ``training.get("trainable")``, a key this branch never set.  Measured on the live
+            # frames: the page was startable (訓練 button lit, 282 troops set, 03:28:53 projected),
+            # the reading called it busy, and the route switched camps twice and then left for the
+            # city with the button untouched.
+            #
+            # What the frame actually says is decided below, from the evidence it draws: a batch
+            # count (``正在训练N位``) or a queue countdown above the action bar means running, and the
+            # training button's own label means startable.  Nothing is written until then.
+            batch_count: int | None = None
+            queue_timer: str | None = None
+            has_train_button = False
             # Which barracks this page *is* -- decided by the PAGE TITLE, never by a tab label.
             #
             # Measured 2026-09-21 on every reviewed camp frame: the client draws **all three**
@@ -589,11 +623,15 @@ class OCRPageClassifier:
                     training["troop_type"] = LABEL_TO_TROOP[present[0]]
             for text in exact_texts:
                 timer = re.fullmatch(r"\d{1,2}:\d{2}:\d{2}", text)
-                if timer:
-                    training["timer"] = timer.group(0)
+                if timer and _above_the_action_bar(timer, eligible, frame_size):
+                    # Only a countdown drawn above the action bar is the queue's own; the training
+                    # button's caption sits inside the bar and is the batch's projected duration.
+                    queue_timer = timer.group(0)
                 count = re.search(r"正在训练\s*([0-9,]+)\s*位", text)
                 if count:
-                    training["batch_count"] = int(count.group(1).replace(",", ""))
+                    batch_count = int(count.group(1).replace(",", ""))
+                if text == TRAINING_BUTTON_LABEL:
+                    has_train_button = True
             # Which barracks this page *is*.
             #
             # The page title names the troop (英勇盾兵 / 刚毅矛兵 / 刚毅射手), and that is the
@@ -613,6 +651,21 @@ class OCRPageClassifier:
             # worse than an unattributed one -- so the tab labels are evidence, and the troop
             # name is the answer.
             camp_labels = ("盾兵营", "矛兵营", "射手营")
+            # Now the training page can be read as what it is.  A batch count or a queue countdown
+            # is a queue at work; the button's own label without either of those is a camp that can
+            # be started, which is the state ``trainable`` names and the one this project kept
+            # failing to reach.  With neither, the honest reading is UNKNOWN -- and no
+            # ``queue_available`` at all, so a page nobody could read is not mistaken for a busy one.
+            if batch_count is not None or queue_timer is not None:
+                training.update({"status": "IN_PROGRESS", "queue_available": False})
+            elif has_train_button:
+                training.update({"status": "AVAILABLE", "queue_available": True, "trainable": True})
+            else:
+                training.update({"status": "UNKNOWN"})
+            if queue_timer is not None:
+                training["timer"] = queue_timer
+            if batch_count is not None:
+                training["batch_count"] = batch_count
             training["camps_seen"] = [label for label in camp_labels if label in exact_texts]
             # Reported only when exactly the open camp's label is present among the ones the
             # reader is confident about, so a frame that draws a different camp's tab as the
@@ -1559,6 +1612,56 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 }
     return panel
 
+
+#: The training button's own printed label.
+TRAINING_BUTTON_LABEL: str = "训练"
+
+
+def _above_the_action_bar(timer: "re.Match", tokens, frame_size) -> bool:
+    """True when a time token sits above the training page's action bar.
+
+    See :data:`TRAINING_QUEUE_TIMER_MAX_Y`.  A ``False`` here does not lose the token -- the caller
+    simply does not treat it as a queue countdown, which is the point: the training button prints the
+    projected duration of the batch it would start, in the same ``HH:MM:SS`` shape as a countdown.
+    """
+    if not frame_size or frame_size[1] <= 0:
+        return True
+    for token in tokens:
+        if token.text.strip() != timer.group(0):
+            continue
+        ys = [point[1] for point in token.box]
+        if not ys:
+            continue
+        return (sum(ys) / len(ys)) / float(frame_size[1]) < TRAINING_QUEUE_TIMER_MAX_Y
+    return True
+
+
+#: Where a training page's *action bar* starts, and above which a time token can still be a running
+#: queue's own countdown.
+#:
+#: Measured 2026-09-22 on six archived training pages (three camps, two sessions each).  Every one of
+#: them draws, at the same places:
+#:
+#:     原始时间：04:42:00      y 0.815   x 0.66-0.76   the base duration label
+#:     立即完成                y 0.863   x 0.267       the diamond button
+#:     训练                    y 0.862   x 0.736       the training button
+#:     <a bare HH:MM:SS>       y 0.888   x 0.761       the training button's OWN caption
+#:
+#: That last line is the defect this constant exists for: the training button is drawn as two lines
+#: (训练 over the projected duration of the batch that would be started), and a bare ``\d{1,2}:\d{2}:\d{2}``
+#: regex cannot tell it from a queue countdown.  So it was read as one, the camp was declared busy, and
+#: the route left a page whose 训练 button was lit.  A queue's own countdown is drawn in the queue row
+#: *above* this line; everything at or below it belongs to the action bar.
+TRAINING_QUEUE_TIMER_MAX_Y: float = 0.80
+
+#: The 挂机收益 (idle income) dialog's own static words, measured on the live capture.
+#:
+#: The frame reads: 挂机收益 1.00 @ (0.501, 0.233), 挂机时间 1.00 @ (0.501, 0.284), 领取 0.99 @
+#: (0.501, 0.723), 挂机最多可获得9小时收益。 1.00 @ (0.488, 0.784).  The amounts beside the icons
+#: (411 / 1,438) are dynamic and are deliberately NOT part of the identity -- the same lesson as the
+#: 10:03:12 countdown that used to be part of the training button's identity.
+IDLE_INCOME_DIALOG_TITLE: str = "挂机收益"
+IDLE_INCOME_DIALOG_SUBTITLE: str = "挂机时间"
 
 #: The 快捷面板 handle's own drawn structure, measured on real frames 2026-09-22.
 #:

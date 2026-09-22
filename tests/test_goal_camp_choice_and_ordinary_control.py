@@ -420,7 +420,11 @@ class TrainingPageSecondRenderTests(unittest.TestCase):
         ("矛兵营", 0.990, ((286.0, 1233.0), (350.0, 1233.0), (350.0, 1257.0), (286.0, 1257.0))),
         ("射手营", 0.995, ((512.0, 1233.0), (576.0, 1233.0), (576.0, 1257.0), (512.0, 1257.0))),
         ("原始时间：", 0.926, ((400.0, 1019.0), (466.0, 1019.0), (466.0, 1042.0), (400.0, 1042.0))),
-        ("训", 1.000, ((487.0, 1078.0), (517.0, 1078.0), (517.0, 1102.0), (487.0, 1102.0))),
+        # The training button prints its own label above its projected duration; the label is the
+        # client's ``训练`` (measured at 1.00 on the archived pages), and the reader matches that word
+        # rather than a single ``训`` -- a bare ``训`` is also how ``训练中`` can arrive, and that one
+        # means the opposite (a queue at work).
+        ("训练", 1.000, ((487.0, 1078.0), (517.0, 1078.0), (517.0, 1102.0), (487.0, 1102.0))),
         ("03:28:53", 0.951, ((448.0, 1108.0), (514.0, 1108.0), (514.0, 1132.0), (448.0, 1132.0))),
     )
 
@@ -438,8 +442,17 @@ class TrainingPageSecondRenderTests(unittest.TestCase):
         state = OCRPageClassifier().classify(self._result(self.TOKENS), frame_size=(720, 1280))
         self.assertEqual(state.page, Page.TRAINING)
         self.assertEqual(state.training.get("camp_open_label"), "盾兵营")
-        self.assertEqual(state.training.get("timer"), "03:28:53")
         self.assertEqual(state.training.get("troop_type"), "INFANTRY")
+        # ``03:28:53`` sits at y 0.875 in these tokens, i.e. *inside* the action bar, right under the
+        # training button's own label -- which is what it is on the real client: the button prints
+        # the projected duration of the batch it would start.  This test used to assert it was the
+        # page's queue timer, and that reading is what left a lit 训练 button unpressed (operator
+        # 2026-09-22).  A queue's own countdown is drawn above the bar; this one is not one.
+        self.assertIsNone(state.training.get("timer"), "the button's caption is not a queue countdown")
+        self.assertTrue(
+            state.training.get("trainable"),
+            "the training button is drawn, so this camp can be started",
+        )
 
     def test_it_would_still_be_unknown_without_the_camp_tabs(self):
         """The rule needs both halves: a title alone is not this page."""

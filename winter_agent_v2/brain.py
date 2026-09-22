@@ -381,11 +381,39 @@ class RuleBrain:
         return Decision("SAFE_STOP", reason, 1.0, transition)
 
     def _owns_terminal_page(self, world: WorldState) -> bool:
-        """True when the current goal is the one that works on this leaf page."""
-        return (
-            (world.page is Page.TRAINING and self.current_goal == "TRAIN")
-            or (world.page is Page.RESEARCH and self.current_goal == "RESEARCH")
-        )
+        """True when the current goal is one that works on this leaf page.
+
+        The training page is owned by the legacy ``TRAIN`` goal **and** by any of the three
+        per-camp goals.  That second half was missing, and it is the defect the operator reported on
+        2026-09-22: the goal layer splits training into ``SHIELD_CAMP_TRAINING`` /
+        ``LANCER_CAMP_TRAINING`` / ``MARKSMAN_CAMP_TRAINING``, so the sweep almost never runs the
+        legacy goal -- and the gate above this one (``_leave_terminal_page_once``) backs off the
+        training page for any goal that does not "own" it.  Measured on the archived run
+        (20260922_192231_632514): the client stood on 射手营's page with the 训练 button lit, the
+        goal was ``MARKSMAN_CAMP_TRAINING`` -- its own camp, open on screen -- and the decision was
+        ``BACK`` with reason ``training_page_not_actionable_leaving_the_page``.  The route could not
+        act on the page it had just navigated to, whatever the page said.
+
+        Which goals those are is **the goal library's own answer**, not a list kept here: the route a
+        goal belongs to (``goal_library.route_for``) is ``TRAIN`` for the legacy goal, for the three
+        per-camp goals and for the aggregate ``KEEP_TRAINING_PRODUCTIVE`` -- measured -- and
+        ``RESEARCH`` for the research pair.  A second copy of "which goals are training goals" is
+        exactly how such a list drifts from the goal layer that defines it.
+
+        ``goal_id`` is the concrete goal (the runtime sets it per goal, ``runtime.py``); a goal-less
+        sweep reads ``None`` here and keeps its old fall-through, which is what the comment above
+        ``_leave_terminal_page_once`` asks for -- the route for an unnamed goal is ``None`` too, so
+        only a goal that really belongs to the page's route is treated as owning it.
+        """
+        if world.page not in (Page.TRAINING, Page.RESEARCH):
+            return False
+        from .goal_library import route_for
+
+        route = route_for(str(getattr(self, "goal_id", "") or ""))
+        if route is None:
+            route = route_for(str(self.current_goal or ""))
+        wanted = "TRAIN" if world.page is Page.TRAINING else "RESEARCH"
+        return route == wanted
 
     def _select_daily_tab_once(self, world: WorldState) -> Decision | None:
         """One tap onto the 每日任务 tab, the first time the panel is read elsewhere.
@@ -1134,6 +1162,27 @@ class RuleBrain:
             # through every later branch to the same stop with no reason).
             return self._leave_or_stop(world, "research_page_no_startable_node", "switch_task")
         if world.page is Page.TRAINING:
+            # Which barracks is open, and which one this goal is for.  The page draws all three tab
+            # labels but names only the open camp (``camp_open_label``, read from the title), so the
+            # comparison is the page's own word against the goal's own camp -- never "a camp is open,
+            # tap the training button".  Operator 2026-09-22 §三: 当前 Goal 是训练矛兵时，应定位矛兵行
+            # 右侧箭头，而不是任意选择一个外观相同的蓝色箭头.
+            goal_camp = self._goal_camp()
+            open_camp = LABEL_TO_CAMP.get(str((world.training or {}).get("camp_open_label") or ""))
+            if goal_camp is not None and open_camp is not None and goal_camp != open_camp:
+                if (
+                    self._camp_switch_attempts < self.MAX_CAMP_SWITCHES
+                    and (world.training.get("camp_tab_norm") or {})
+                ):
+                    self._camp_switch_attempts += 1
+                    self.desired_camp_label = CAMP_LABELS[goal_camp]
+                    return Decision(
+                        "SELECT_TRAINING_CAMP",
+                        f"another_camp_is_open_and_this_goal_is_{goal_camp}",
+                        world.confidence,
+                        "goal_camp_open",
+                    )
+                return self._leave_or_stop(world, "goal_camp_not_open_and_cannot_switch", "switch_task")
             if world.training.get("all_queues_busy"):
                 return self._leave_or_stop(world, "all_training_queues_busy", "switch_task")
             if world.training.get("queue_available") is False:
@@ -1168,7 +1217,7 @@ class RuleBrain:
                             "another_camp_open",
                         )
                 return self._leave_or_stop(world, "training_queue_busy", "inspect_other_training_queue")
-            if world.training.get("trainable"):
+            if world.training.get("trainable") and (goal_camp is None or open_camp == goal_camp):
                 return Decision("TRAIN_TROOPS", "training_queue_available", world.confidence, "training_queue_started")
         if world.page is Page.INTEL:
             status = world.intel.get("status", "UNKNOWN")
