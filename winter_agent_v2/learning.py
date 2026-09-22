@@ -99,6 +99,17 @@ class Episode:
     # no semantic target (a Back, a wait), which is not the same as "unknown".
     control: str = ""
     expected_result: str = ""
+    # *Which branch* decided this step.  The decision's own reason string, verbatim.
+    #
+    # Measured 2026-09-23, and it is why the field exists: eight consecutive `OPEN_HOME` failures stood
+    # on a map whose search panel covers the 城镇 door, and the whole question -- "who emitted a hop
+    # home from a frame it cannot land on?" -- could not be answered from the stream.  The reason WAS
+    # written by every step, into the worker's stdout, where it survives only until the log rotates
+    # (``learning/control_panel/latest.log`` held the last round and nothing older), so the answer had
+    # to be re-derived by elimination: the brain cannot emit `OPEN_HOME` for a goal-less run, so the
+    # emitter had to be the runtime's own deferral hop.  That reasoning was right, and it should not
+    # have been necessary -- the same lesson as ``verifier_evidence`` above and open issue #0aw.
+    decision_reason: str = ""
     # One of ``control_experience.CHANGE_KINDS``.  NO_OP and UNKNOWN are kept apart
     # on purpose: "the tap was issued and nothing moved" is a finding about the
     # control, "we could not tell" is a finding about the reading.

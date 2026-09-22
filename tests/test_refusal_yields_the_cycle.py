@@ -558,6 +558,10 @@ class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
         self.assertIn(row["observed_change"], control_experience.CHANGE_KINDS)
         self.assertFalse(row["verifier_ok"])
         self.assertEqual(row["failure_type"], "FORCED_VERIFIER_FAILURE")
+        self.assertEqual(row["decision_reason"], "forced",
+                         "and *which branch* decided it, verbatim: measured 2026-09-23, eight "
+                         "OPEN_HOME failures needed exactly this string to be answerable, and the "
+                         "reason only ever lived in the worker's stdout")
 
     def test_the_control_ledger_records_the_attempt_and_keeps_the_failed_hypothesis(self):
         """§七: a guess that produced nothing stays on the record as a failed guess.

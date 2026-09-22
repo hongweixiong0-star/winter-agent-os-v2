@@ -13,11 +13,14 @@ goal every 30 seconds.  These tests pin the three answers that were missing:
 
 import json
 import unittest
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 
 from winter_agent_v2 import observation_store
+from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.capability_gate import (
     BLOCKED,
     BLOCKED_PROBE_MINUTES,
@@ -566,7 +569,7 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         base.update(kwargs)
         return CapabilityGate(**base)
 
-    def _run(self, states, gate, **kwargs):
+    def _run(self, states, gate, *, max_actions=1, allowed_skills=GATHER_ROUTE, **kwargs):
         device = FakeDevice()
         with TemporaryDirectory() as temp:
             path = Path(temp) / "episodes.jsonl"
@@ -591,7 +594,7 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
                     episode_store=EpisodeStore(path),
                     capability_gate=gate,
                     **kwargs,
-                ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
+                ).run(max_actions=max_actions, allowed_skills=allowed_skills)
             finally:
                 observation_store.STATE_PATH = previous
             # A run that records no episode is a valid outcome (it may stop before
@@ -611,6 +614,58 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         self.assertEqual(len(run.deferrals), 1)
         self.assertEqual(run.deferrals[0]["goal_id"], "AVOID_STAMINA_WASTE")
         self.assertEqual(run.deferrals[0]["state"], BLOCKED)
+
+    def test_the_deferral_hop_closes_the_search_panel_before_it_leaves(self):
+        """Measured 2026-09-23: eight consecutive runs died at exactly this hop.
+
+        The map's resource-search panel is drawn over the corner the 城镇 door lives in while the
+        page still reads MAP (#101), so a hop home taken with the panel up cannot land.  In the live
+        stream seven of those eight runs were **one step long**: decide the hop, fail
+        ``SEMANTIC_TARGET_NOT_VERIFIED``, end, be restarted half a minute later onto the same map --
+        six minutes of livelock, broken only by an unrelated beast scan panning the map.
+
+        The brain's seven ``OPEN_HOME`` sites have closed the panel first since c522bc9; this hop is
+        issued by ``LiveRuntime._deferral_replan``, which is not the brain, so no brain-side guard
+        could see it.  Asserted on the function rather than through a run: whether a run has a
+        selectable goal at all depends on the machine's own ledgers (that is the moving set the two
+        tests above are already victims of), and this rule has nothing to do with which goal won.
+        """
+        runtime = object.__new__(LiveRuntime)
+        runtime._replan_attempted = False
+        runtime.registry = v2_registry()
+        runtime.brain = SimpleNamespace(current_goal=None)
+        deferred = [SimpleNamespace(capability="SPEND_STAMINA_ON_BEAST", goal_id="AVOID_STAMINA_WASTE")]
+
+        panel_up = WorldState(page=Page.MAP, resource_search_open=True, confidence=0.99)
+        decision = runtime._deferral_replan(panel_up, deferred, None)
+        self.assertIsNotNone(decision)
+        self.assertEqual(decision.skill, "BACK")
+        self.assertEqual(decision.reason, "close_resource_search_before_the_deferral_hop")
+        self.assertEqual(decision.expected_result, "resource_search_closed")
+        self.assertFalse(runtime._replan_attempted,
+                         "closing a panel is the prerequisite of the hop, not the hop")
+
+        closed = replace(panel_up, resource_search_open=False)
+        hop = runtime._deferral_replan(closed, deferred, None)
+        self.assertEqual(hop.skill, "OPEN_HOME", "with the panel gone the hop still happens")
+        self.assertTrue(runtime._replan_attempted, "and it is still bounded to once per run")
+
+    def test_the_deferral_hop_keeps_its_own_bounds(self):
+        """The negative controls: a Back must not appear where the hop itself would be refused."""
+        runtime = object.__new__(LiveRuntime)
+        runtime._replan_attempted = False
+        runtime.registry = v2_registry()
+        runtime.brain = SimpleNamespace(current_goal=None)
+        deferred = [SimpleNamespace(capability="X", goal_id="Y")]
+        panel_up = WorldState(page=Page.MAP, resource_search_open=True, confidence=0.99)
+
+        self.assertIsNone(runtime._deferral_replan(panel_up, [], None),
+                          "nothing was deferred, so there is nothing to hop for")
+        self.assertIsNone(runtime._deferral_replan(panel_up, deferred, best_goal=object()),
+                          "a selectable goal still owns the frame")
+        self.assertIsNone(runtime._deferral_replan(
+            replace(panel_up, page=Page.HOME), deferred, None),
+            "the hop is a map hop; no other page may pay a Back for it")
 
     def test_a_deferred_goal_is_replaced_by_a_hop_to_where_goals_are_observable(self):
         """Standing on the map doing nothing is not a plan.

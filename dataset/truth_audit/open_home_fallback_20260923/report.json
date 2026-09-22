@@ -1,0 +1,104 @@
+{
+ "frames": [
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_052732_081600\\20260923_052732_081600_step_001_before_20260922T212736070510.png",
+   "recorded_at": "2026-09-22T21:27:57.160719+00:00",
+   "goal_recorded": "AUTO_DISCOVERY",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "ready": [
+    "EXECUTE_INTEL_RESCUE_SURVIVORS",
+    "OPEN_INTEL",
+    "OPEN_HOME",
+    "SEARCH_RESOURCE",
+    "SELECT_RESOURCE",
+    "SUBMIT_RESOURCE_SEARCH",
+    "RELAX_RESOURCE_LEVEL",
+    "CHECK_MARCH",
+    "WAIT",
+    "BACK",
+    "START_RALLY",
+    "JOIN_RALLY",
+    "NAVIGATE_TO",
+    "RECOVER_HOME",
+    "READ_TIMER",
+    "READ_COUNTER",
+    "CLAIM_REWARD",
+    "SEND_MARCH",
+    "OPEN_STAMINA_SOURCES",
+    "SELECT_MARCH_TO_RECALL",
+    "REINFORCE_TARGET",
+    "USE_ACTIVITY_ATTEMPT",
+    "SELECT_REWARD_OPTION",
+    "TRY_ORDINARY_CONTROL",
+    "SELECT_BEAST_TARGET",
+    "SCAN_MAP_FOR_BEAST",
+    "SELECT_BEAST_TARGET_MAMMOTH",
+    "SELECT_BEAST_TARGET_LABELLED",
+    "OPEN_BEAST_SEARCH_TAB",
+    "SUBMIT_BEAST_SEARCH"
+   ],
+   "answers_by_goal": {
+    "goal | current_goal=AUTO_DISCOVERY": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal | current_goal=(none)": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal | current_goal=HOME": {
+     "skill": "BACK",
+     "reason": "close_resource_search_to_go_home",
+     "expected": "resource_search_closed"
+    },
+    "goal | current_goal=DAILY_ACTIVITY_TARGET": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal + search exhausted | current_goal=AUTO_DISCOVERY": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal + search exhausted | current_goal=(none)": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal + search exhausted | current_goal=HOME": {
+     "skill": "BACK",
+     "reason": "close_resource_search_to_go_home",
+     "expected": "resource_search_closed"
+    },
+    "goal + search exhausted | current_goal=DAILY_ACTIVITY_TARGET": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal + search exhausted + resource_target | current_goal=AUTO_DISCOVERY": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal + search exhausted + resource_target | current_goal=(none)": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    },
+    "goal + search exhausted + resource_target | current_goal=HOME": {
+     "skill": "BACK",
+     "reason": "close_resource_search_to_go_home",
+     "expected": "resource_search_closed"
+    },
+    "goal + search exhausted + resource_target | current_goal=DAILY_ACTIVITY_TARGET": {
+     "skill": "SELECT_RESOURCE",
+     "reason": "balanced_resource_not_selected",
+     "expected": "wood_selected"
+    }
+   }
+  }
+ ]
+}

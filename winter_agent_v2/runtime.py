@@ -665,9 +665,29 @@ class LiveRuntime:
 
         Bounded to once per run, refused on any page but MAP, and silent when
         ``best_goal`` exists or the hop is not actually ready.
+
+        The map's resource-search panel is closed first, because it is drawn over the corner the
+        城镇 door lives in while the page still reads MAP (issue #101), so the hop cannot land while
+        it is up.  Measured 2026-09-23, and it is why this guard exists: eight consecutive runs --
+        seven of them one step long -- took this exact hop, failed ``SEMANTIC_TARGET_NOT_VERIFIED``,
+        ended, and were restarted by the panel half a minute later onto the same map.  Six minutes of
+        livelock, ended only by an unrelated beast scan panning the map and closing the panel.  The
+        brain's seven ``OPEN_HOME`` sites had closed the panel since commit c522bc9; this hop is
+        issued by the runtime, so no brain-side guard could ever see it.
         """
         if best_goal is not None or not deferrals or self._replan_attempted or world.page is not Page.MAP:
             return None
+        if world.resource_search_open:
+            # ``_replan_attempted`` is deliberately not set here: closing a panel is the prerequisite
+            # of the hop, not the hop.  The bound that flag exists for -- go home at most once per
+            # run, and never while other work is selectable -- is unchanged, and the next step of
+            # this same run re-enters this function with the panel gone.
+            return Decision(
+                "BACK",
+                "close_resource_search_before_the_deferral_hop",
+                world.confidence,
+                "resource_search_closed",
+            )
         home = self.registry.get("OPEN_HOME")
         if home is None or not home.ready(world):
             return None
@@ -936,6 +956,7 @@ class LiveRuntime:
             state_after=state_after,
             result="SUCCESS" if failure is None else "FAILURE",
             failure_type=failure,
+            decision_reason=str(getattr(decision, "reason", "") or ""),
             duration=max(0.0, time.monotonic() - started_at),
             mode="PRODUCTION",
             # Locate the evidence.  Retention reads these paths so a referenced
