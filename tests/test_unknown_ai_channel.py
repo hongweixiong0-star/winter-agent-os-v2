@@ -342,6 +342,23 @@ class DispatchTests(unittest.TestCase):
         self.assertTrue(records[self.request.request_id].open)
         self.assertEqual([record.job_id for record in dispatcher.open_jobs()], ["legacy01"])
 
+    def test_a_second_consumer_cannot_run_a_pass_at_the_same_time(self):
+        """There can legitimately be two consumers -- the panel's clock and the console tool while
+        the panel runs an older build -- and two passes reading one ledger could both decide a
+        question has no job and both submit one.  The lock is what makes that impossible; a refused
+        pass reports it rather than pretending it did the work.
+        """
+        bridge = _StubBridge()
+        first = self._dispatcher(bridge)
+        second = self._dispatcher(bridge)
+        with first._pass_lock() as held:
+            self.assertTrue(held)
+            self.assertIn("another consumer", second.worker()["lock"])
+            self.assertEqual(bridge.submitted, [], "the refused pass submitted nothing")
+        # ...and the lock is released however the pass ended, so the next one works.
+        self.assertEqual(second.worker()["lock"], "")
+        self.assertEqual(len(bridge.submitted), 1)
+
     def test_a_gateway_that_is_gone_is_an_answer_not_a_crash(self):
         class _Broken(_StubBridge):
             def submit_prompt(self, *args, **kwargs):

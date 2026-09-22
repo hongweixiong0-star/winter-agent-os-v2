@@ -42,6 +42,8 @@ uses, and a job that produces nothing leaves the request pending -- reported as 
 from __future__ import annotations
 
 import json
+import os
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -404,17 +406,76 @@ class UnknownDispatcher:
         return report
 
     def worker(self) -> dict[str, Any]:
-        """One full pass: reconcile what is open, then submit what is pending.  Never raises."""
-        out: dict[str, Any] = {"reconcile": {}, "dispatch": {}}
-        try:
-            out["reconcile"] = self.reconcile()
-        except Exception as exc:  # noqa: BLE001
-            out["reconcile"] = {"errors": [f"{type(exc).__name__}: {exc}"]}
-        try:
-            out["dispatch"] = self.dispatch(limit=max(1, self.max_in_flight))
-        except Exception as exc:  # noqa: BLE001
-            out["dispatch"] = {"errors": [f"{type(exc).__name__}: {exc}"]}
+        """One full pass: reconcile what is open, then submit what is pending.  Never raises.
+
+        Guards against a second consumer with a lock file, because there can legitimately be two: the
+        panel's clock inside the long-lived process, and ``tools/unknown_ai_worker.py`` on a console
+        while the panel is running an older build.  Two processes reading the same ledger could both
+        decide a question has no job and both submit one -- and that costs a real job each time.  A
+        pass that cannot take the lock simply reports so and returns; the other consumer is already
+        doing this work.
+        """
+        out: dict[str, Any] = {"reconcile": {}, "dispatch": {}, "lock": ""}
+        with self._pass_lock() as held:
+            if not held:
+                out["lock"] = "another consumer is running a pass"
+                return out
+            try:
+                out["reconcile"] = self.reconcile()
+            except Exception as exc:  # noqa: BLE001
+                out["reconcile"] = {"errors": [f"{type(exc).__name__}: {exc}"]}
+            try:
+                out["dispatch"] = self.dispatch(limit=max(1, self.max_in_flight))
+            except Exception as exc:  # noqa: BLE001
+                out["dispatch"] = {"errors": [f"{type(exc).__name__}: {exc}"]}
         return out
+
+    @contextmanager
+    def _pass_lock(self, stale_after: float = 300.0):
+        """A best-effort exclusive pass lock, released however the pass ends.
+
+        ``O_CREAT|O_EXCL`` is the atomic step, so two processes cannot both win it.  A lock left
+        behind by a killed process is taken over once it is older than ``stale_after`` -- the
+        alternative is a channel that stops for ever because something died while holding a file.
+        """
+        path = self.ledger_path.with_suffix(".lock")
+        acquired = False
+        handle = None
+        try:
+            try:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                handle = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(handle, f"{os.getpid()} {_now()}".encode("utf-8"))
+                acquired = True
+            except FileExistsError:
+                try:
+                    age = datetime.now(timezone.utc).timestamp() - path.stat().st_mtime
+                except OSError:
+                    age = 0.0
+                if age > stale_after:
+                    try:
+                        path.unlink()
+                        handle = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                        os.write(handle, f"{os.getpid()} {_now()}".encode("utf-8"))
+                        acquired = True
+                    except OSError:
+                        acquired = False
+            except OSError:
+                # A lock that cannot be created at all (a read-only tree) must not stop the channel:
+                # the bound it protects is a nicety, and refusing to work would be the worse bug.
+                acquired = True
+            yield acquired
+        finally:
+            if handle is not None:
+                try:
+                    os.close(handle)
+                except OSError:
+                    pass
+            if acquired:
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
 
     def state(self) -> dict[str, Any]:
         """A small, JSON-safe summary for the panel's heartbeat and for a person asking."""
