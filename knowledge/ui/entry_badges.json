@@ -178,5 +178,95 @@
   "RED_DOT_TASK, RED_DOT_EVENT, RED_DOT_REWARD, RED_DOT_BUILDING, RED_DOT_RESEARCH: the dictionary declares them and no window has been measured for any of them. They are UNBOUND and must not be read.",
   "快捷面板的行角标由 read_quick_panel 的行读数给出（rows[].badge）；面板关闭时那些行是 UNKNOWN 而不是 ABSENT，这一点已由面板读取器实现，不重复登记在这里。",
   "邮件页签角标与联盟赠礼角标由邮件页与联盟页的读取器给出（mail.tab_badges / alliance.badge_count）。"
- ]
+ ],
+ "_dot_variability_read_me": "红点能不能当优先级信号，取决于它会不会消失：只有被观察到既有 PRESENT 又有 ABSENT 的角标才算信号（winter_agent_v2.entry_badges.dot_varies）。一个一直是 PRESENT 的角标是常量或图案，拿它排序等于用常量排序；只见过 ABSENT 的角标不会触发，但也还没被证明是信号。本节数字由 tools/measure_mail_dot_blind_window.py 与 tools/measure_panel_row_badges.py 从 learning/episodes.jsonl 复算，改动前请先复算。",
+ "dot_variability": {
+  "measured_on": "2026-09-23",
+  "reproduce_with": [
+   "tools/measure_mail_dot_blind_window.py",
+   "tools/measure_panel_row_badges.py"
+  ],
+  "entries": {
+   "BTN_OPEN_MAIL": {
+    "present": 5,
+    "absent": 35,
+    "no_reading": 1045,
+    "varies": true,
+    "evidence": "1085 个 HOME before-帧里只有 40 帧带该行读数（红点层 2026-09-22 才落地），其中 5 帧画着红点（276-290 px）、35 帧没有"
+   },
+   "TAB_EXPLORATION": {
+    "present": 9,
+    "absent": 17,
+    "varies": true,
+    "evidence": "26 帧采样：9 有 17 无（与 measured_blob_norm 同一次测量）。注意：它绑定到 DAILY_ACTIVITY_TARGET 是一句声明——本表没有它打开哪个页面的导航证据，所以它只会把一个已经在板上的目标排前 60 分，不会把任何目标叫醒"
+   },
+   "BTN_OPEN_DAILY": {
+    "present": 26,
+    "absent": 0,
+    "varies": false,
+    "evidence": "26/26 都在位（计数角标，读数 2/4 变而圆圈不变）⇒ 常量，不作为信号"
+   },
+   "TAB_ALLIANCE": {
+    "present": 26,
+    "absent": 0,
+    "varies": false,
+    "evidence": "26/26 都在位（计数 26/34）⇒ 常量，不作为信号"
+   },
+   "TAB_HERO": {
+    "present": 26,
+    "absent": 0,
+    "varies": false,
+    "evidence": "26/26 几何与尺寸完全不变，已标 SUSPECT_ARTWORK ⇒ 不作为信号"
+   },
+   "QUICK_PANEL_ROW_SHIELD_CAMP": {
+    "present": 2,
+    "absent": 9,
+    "unknown": 1,
+    "varies": true,
+    "evidence": "12 个「面板打开且该行有读数」的帧（tools/measure_panel_row_badges.py）"
+   },
+   "QUICK_PANEL_ROW_LANCER_CAMP": {
+    "present": 0,
+    "absent": 10,
+    "unknown": 2,
+    "varies": false,
+    "evidence": "12 帧里从未见 PRESENT ⇒ 还没被证明是信号，暂不参与排序"
+   },
+   "QUICK_PANEL_ROW_MARKSMAN_CAMP": {
+    "present": 0,
+    "absent": 11,
+    "unknown": 1,
+    "varies": false,
+    "evidence": "同上"
+   },
+   "QUICK_PANEL_ROW_RESEARCH": {
+    "present": 9,
+    "absent": 3,
+    "unknown": 0,
+    "varies": true,
+    "evidence": "12 帧里最常亮的一行；也是唯一真正有区分度的行（9 个帧里它 PRESENT 而别的行 ABSENT）"
+   },
+   "QUICK_PANEL_ROW_ALLIANCE_DONATION": {
+    "present": 0,
+    "absent": 0,
+    "unknown": 12,
+    "varies": false,
+    "evidence": "12 帧全部 UNKNOWN（读取器没有把该行的角标读定）⇒ 读不出来就没有信号，这也是 #100 的一半"
+   },
+   "QUICK_PANEL_ROW_HERO_RECRUIT": {
+    "present": 0,
+    "absent": 0,
+    "unknown": 12,
+    "varies": false,
+    "evidence": "同上；且该行绑定的 HERO_RECRUIT 目前不是板上的目标（见 #100）"
+   },
+   "QUICK_PANEL_ROW_MY_REWARDS": {
+    "present": 0,
+    "absent": 0,
+    "unknown": 12,
+    "varies": false,
+    "evidence": "同上"
+   }
+  }
+ }
 }

@@ -1,0 +1,638 @@
+{
+ "read_me": "受控 A/B：同一帧、同一代码，只切红点这一个变量（before=把这个世界的 red_dots 清空，after=保留）。before 侧就是改动前的行为，因为那时没有任何一层读 red_dots 来排序。",
+ "generated_at": "2026-09-22T20:55:25.179288+00:00",
+ "frames": [
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260922T185245768094.png",
+   "recorded_at": "2026-09-22T18:53:00.239469+00:00",
+   "recorded_lit_entries": [
+    "BTN_OPEN_MAIL"
+   ],
+   "recorded_skill": "OPEN_MAIL",
+   "recorded_goal": "AVOID_STAMINA_WASTE",
+   "selected_by": "record_showed_a_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "MAIL_ROUTINE": [
+     "BTN_OPEN_MAIL"
+    ]
+   },
+   "board_before": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "board_after": [
+    "MAIL_ROUTINE",
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "MAIL_ROUTINE": {
+     "goal_id": "MAIL_ROUTINE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "BTN_OPEN_MAIL"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260922T190302163274.png",
+   "recorded_at": "2026-09-22T19:03:12.364516+00:00",
+   "recorded_lit_entries": [
+    "QUICK_PANEL_ROW_RESEARCH"
+   ],
+   "recorded_skill": "OPEN_POWER_OVERVIEW",
+   "recorded_goal": "ALLIANCE_ROUTINE",
+   "selected_by": "record_showed_a_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "KEEP_RESEARCH_PRODUCTIVE": [
+     "QUICK_PANEL_ROW_RESEARCH"
+    ]
+   },
+   "board_before": [
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "board_after": [
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "KEEP_RESEARCH_PRODUCTIVE": {
+     "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_RESEARCH"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_032158_020595\\20260923_032158_020595_step_018_before_20260922T193104559465.png",
+   "recorded_at": "2026-09-22T19:32:04.892827+00:00",
+   "recorded_lit_entries": [
+    "QUICK_PANEL_ROW_RESEARCH",
+    "QUICK_PANEL_ROW_SHIELD_CAMP"
+   ],
+   "recorded_skill": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+   "recorded_goal": "LANCER_CAMP_TRAINING",
+   "selected_by": "record_showed_a_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "KEEP_RESEARCH_PRODUCTIVE": [
+     "QUICK_PANEL_ROW_RESEARCH"
+    ],
+    "SHIELD_CAMP_TRAINING": [
+     "QUICK_PANEL_ROW_SHIELD_CAMP"
+    ]
+   },
+   "board_before": [
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "board_after": [
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "KEEP_RESEARCH_PRODUCTIVE": {
+     "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_RESEARCH"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    },
+    "SHIELD_CAMP_TRAINING": {
+     "goal_id": "SHIELD_CAMP_TRAINING",
+     "base": 80.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_SHIELD_CAMP"
+     ],
+     "dynamic": 60.0,
+     "total": 140.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_032158_020595\\20260923_032158_020595_step_019_before_20260922T193205098060.png",
+   "recorded_at": "2026-09-22T19:32:34.956985+00:00",
+   "recorded_lit_entries": [
+    "QUICK_PANEL_ROW_RESEARCH",
+    "QUICK_PANEL_ROW_SHIELD_CAMP"
+   ],
+   "recorded_skill": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
+   "recorded_goal": "SHIELD_CAMP_TRAINING",
+   "selected_by": "record_showed_a_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "KEEP_RESEARCH_PRODUCTIVE": [
+     "QUICK_PANEL_ROW_RESEARCH"
+    ],
+    "SHIELD_CAMP_TRAINING": [
+     "QUICK_PANEL_ROW_SHIELD_CAMP"
+    ]
+   },
+   "board_before": [
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "board_after": [
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "KEEP_RESEARCH_PRODUCTIVE": {
+     "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_RESEARCH"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    },
+    "SHIELD_CAMP_TRAINING": {
+     "goal_id": "SHIELD_CAMP_TRAINING",
+     "base": 80.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_SHIELD_CAMP"
+     ],
+     "dynamic": 60.0,
+     "total": 140.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_033527_933602\\20260923_033527_933602_step_002_before_20260922T193607144145.png",
+   "recorded_at": "2026-09-22T19:36:24.441342+00:00",
+   "recorded_lit_entries": [
+    "QUICK_PANEL_ROW_RESEARCH"
+   ],
+   "recorded_skill": "OPEN_POWER_OVERVIEW",
+   "recorded_goal": "CLAIM_EXPLORATION_IDLE",
+   "selected_by": "record_showed_a_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "KEEP_RESEARCH_PRODUCTIVE": [
+     "QUICK_PANEL_ROW_RESEARCH"
+    ]
+   },
+   "board_before": [
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "board_after": [
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "KEEP_RESEARCH_PRODUCTIVE": {
+     "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_RESEARCH"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_034129_667495\\20260923_034129_667495_step_004_before_20260922T194248155449.png",
+   "recorded_at": "2026-09-22T19:43:48.209442+00:00",
+   "recorded_lit_entries": [
+    "QUICK_PANEL_ROW_RESEARCH"
+   ],
+   "recorded_skill": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+   "recorded_goal": "KEEP_RESEARCH_PRODUCTIVE",
+   "selected_by": "record_showed_a_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "KEEP_RESEARCH_PRODUCTIVE": [
+     "QUICK_PANEL_ROW_RESEARCH"
+    ]
+   },
+   "board_before": [
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "board_after": [
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "KEEP_RESEARCH_PRODUCTIVE": {
+     "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_RESEARCH"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_007_before_20260922T185337688008.png",
+   "recorded_at": "2026-09-22T18:53:54.578316+00:00",
+   "recorded_lit_entries": [],
+   "recorded_skill": "TRY_ORDINARY_CONTROL",
+   "recorded_goal": "ALLIANCE_ROUTINE",
+   "selected_by": "record_showed_no_dot",
+   "control": "undotted",
+   "page": "HOME",
+   "read_lit_goals": {},
+   "board_before": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "board_after": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "order_changed": false,
+   "red_dot_terms": {},
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 0.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_008_before_20260922T185354694754.png",
+   "recorded_at": "2026-09-22T18:54:27.496512+00:00",
+   "recorded_lit_entries": [],
+   "recorded_skill": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
+   "recorded_goal": "SHIELD_CAMP_TRAINING",
+   "selected_by": "record_showed_no_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "KEEP_RESEARCH_PRODUCTIVE": [
+     "QUICK_PANEL_ROW_RESEARCH"
+    ]
+   },
+   "board_before": [
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "board_after": [
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "KEEP_RESEARCH_PRODUCTIVE": {
+     "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_RESEARCH"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_025406_717108\\20260923_025406_717108_step_001_before_20260922T185411116140.png",
+   "recorded_at": "2026-09-22T18:54:51.247163+00:00",
+   "recorded_lit_entries": [],
+   "recorded_skill": "TRY_ORDINARY_CONTROL",
+   "recorded_goal": "KEEP_RESEARCH_PRODUCTIVE",
+   "selected_by": "record_showed_no_dot",
+   "control": "undotted",
+   "page": "HOME",
+   "read_lit_goals": {},
+   "board_before": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "board_after": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "order_changed": false,
+   "red_dot_terms": {},
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 0.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_025406_717108\\20260923_025406_717108_step_002_before_20260922T185451452737.png",
+   "recorded_at": "2026-09-22T18:55:10.431715+00:00",
+   "recorded_lit_entries": [],
+   "recorded_skill": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+   "recorded_goal": "SHIELD_CAMP_TRAINING",
+   "selected_by": "record_showed_no_dot",
+   "control": "dotted",
+   "page": "HOME",
+   "read_lit_goals": {
+    "KEEP_RESEARCH_PRODUCTIVE": [
+     "QUICK_PANEL_ROW_RESEARCH"
+    ]
+   },
+   "board_before": [
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "board_after": [
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "SHIELD_CAMP_TRAINING",
+    "LANCER_CAMP_TRAINING",
+    "MARKSMAN_CAMP_TRAINING"
+   ],
+   "order_changed": true,
+   "red_dot_terms": {
+    "KEEP_RESEARCH_PRODUCTIVE": {
+     "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+     "base": 180.0,
+     "fairness": 0.0,
+     "resource": 0.0,
+     "history": 0.0,
+     "repeat_failure": 0.0,
+     "red_dot": 60.0,
+     "red_dot_on": [
+      "QUICK_PANEL_ROW_RESEARCH"
+     ],
+     "dynamic": 60.0,
+     "total": 240.0
+    }
+   },
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 60.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_025406_717108\\20260923_025406_717108_step_003_before_20260922T185510586518.png",
+   "recorded_at": "2026-09-22T18:55:28.031745+00:00",
+   "recorded_lit_entries": [],
+   "recorded_skill": "OPEN_RESEARCH",
+   "recorded_goal": "KEEP_RESEARCH_PRODUCTIVE",
+   "selected_by": "record_showed_no_dot",
+   "control": "undotted",
+   "page": "HOME",
+   "read_lit_goals": {},
+   "board_before": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "KEEP_RESEARCH_PRODUCTIVE"
+   ],
+   "board_after": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE",
+    "KEEP_RESEARCH_PRODUCTIVE"
+   ],
+   "order_changed": false,
+   "red_dot_terms": {},
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 0.0
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_025406_717108\\20260923_025406_717108_step_005_before_20260922T185556434730.png",
+   "recorded_at": "2026-09-22T18:56:10.354366+00:00",
+   "recorded_lit_entries": [],
+   "recorded_skill": "TRY_ORDINARY_CONTROL",
+   "recorded_goal": "RESEARCH",
+   "selected_by": "record_showed_no_dot",
+   "control": "undotted",
+   "page": "HOME",
+   "read_lit_goals": {},
+   "board_before": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "board_after": [
+    "KEEP_TRAINING_PRODUCTIVE",
+    "CLEAR_INTEL",
+    "KEEP_RESEARCH_PRODUCTIVE",
+    "MAIL_ROUTINE",
+    "DAILY_ACTIVITY_TARGET",
+    "ALLIANCE_ROUTINE",
+    "CLAIM_EXPLORATION_IDLE"
+   ],
+   "order_changed": false,
+   "red_dot_terms": {},
+   "runner_up_gap_before": 0.0,
+   "runner_up_gap_after": 0.0
+  }
+ ],
+ "summary": {
+  "frames": 12,
+  "frames_with_a_rankable_dot": 8,
+  "dotted_frames_where_the_order_changed": 8,
+  "negative_control_frames": 4,
+  "negative_control_frames_where_the_order_changed": 0,
+  "records_that_understated_the_dot": 2
+ }
+}

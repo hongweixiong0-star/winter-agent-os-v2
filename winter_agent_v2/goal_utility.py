@@ -22,7 +22,23 @@ bounded well inside the gaps that already exist:
                         goal is genuinely starved, never enough to outrank a claim
     + 40  resource fit  the work has the resource it needs right now
     + 30  history       this route has a *measured* success rate
+    + 60  red dot       the client is drawing a notification dot on this goal's entry
     - 60  repeated failure
+
+The red-dot term carries the operator's second directive (2026-09-23 §一-§三): a dot the client
+draws is a priority signal, and it is *only* a priority signal -- never the reason a goal runs, and
+never the highest priority by itself.  It is therefore bounded by the same rule as every other term
+here, and the bound is measured rather than chosen: a never-read visit prices at 180
+(``goal_library.SWEEP_NEVER_VALUE``) and a claimable routine at 250, so 60 is the largest round
+number that keeps a dotted visit (240) strictly under a real claim (250).  It cannot outbid intel
+(800), the bear (1000), or the stamina goal (2450) either -- a dot is a hint about *what is
+waiting*, not a valuation of *what it is worth*, which is exactly the operator's "红点本身不自动
+最高优先".
+
+Which dots may be ranked with is not a judgement made here: ``entry_badges.dot_varies`` owns it, and
+it answers from the measured table -- a badge that never read zero (the 每日/联盟 counts) and a
+badge suspected of being artwork (英雄) are constants, and ranking on a constant is ranking on
+nothing.
 
 What this module deliberately does NOT do
 -----------------------------------------
@@ -47,6 +63,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from . import entry_badges
+
 ROOT = Path(__file__).resolve().parents[1]
 ROUTES_PATH = ROOT / "knowledge/strategy/stamina_routes.json"
 STATE_PATH = ROOT / "learning/goal_fairness.json"
@@ -59,6 +77,17 @@ FAIRNESS_OVERDUE_MINUTES = 30.0
 RESOURCE_FIT_BONUS = 40.0
 HISTORY_BONUS = 30.0
 REPEAT_FAILURE_PENALTY = 60.0
+#: What the client pointing at a goal is worth, and the measurement that fixes it.
+#:
+#: The board's own gaps: ordinary routine work at 70-90, a never-read visit at 180
+#: (``goal_library.SWEEP_NEVER_VALUE``), a measured claimable routine at 250, intel rewards at 800,
+#: the bear at 1000, the stamina goal around 2450.  60 is the largest round value strictly below
+#: the 70-point gap between a visit and a claim, so a dotted goal can outrank routine work (110-150)
+#: and every other unread sweep, and can never outrank something that actually pays.  The operator's
+#: §二③ is the same requirement stated as a rule of precedence: an ordinary dot must not be able to
+#: interrupt a goal that is at its last step, and the last step of a claimable goal is *always* on
+#: the paying side of that gap.
+RED_DOT_BONUS = 60.0
 #: Consecutive selections that produced no goal progress before the penalty saturates.
 REPEAT_FAILURE_SATURATES_AT = 3
 #: Below this many attempts, a measured success rate is not evidence yet.
@@ -346,6 +375,24 @@ def repeat_failure_penalty(row: GoalFairness | None) -> float:
     return -REPEAT_FAILURE_PENALTY * (streak / REPEAT_FAILURE_SATURATES_AT)
 
 
+def red_dot_bonus(world: Any, goal_id: str) -> tuple[float, tuple[str, ...]]:
+    """The client is pointing at this goal: a bounded bonus, and which entries say so (§二②).
+
+    Only PRESENT dots on entries whose badge was *measured to vary* count, and only when the entry
+    names this goal -- ``entry_badges.dots_pointing_at`` owns both rules, so this function cannot
+    invent a second definition of "a dot" (the operator's §一: a red pixel is not a notification
+    until it is bound to a concrete entry).
+
+    Returns the bonus and the entries, so the decision log can name what the client pointed at
+    rather than only that something was worth 60 points.
+    """
+    if not goal_id:
+        return 0.0, ()
+    pointed_at = entry_badges.dots_pointing_at(getattr(world, "red_dots", None))
+    entries = pointed_at.get(str(goal_id), ())
+    return (RED_DOT_BONUS, entries) if entries else (0.0, ())
+
+
 @dataclass(frozen=True)
 class UtilityBreakdown:
     """Every term of one goal's utility, so a decision can be explained (§九)."""
@@ -356,14 +403,20 @@ class UtilityBreakdown:
     resource: float = 0.0
     history: float = 0.0
     repeat_failure: float = 0.0
+    red_dot: float = 0.0
+    #: The entries whose own dot produced ``red_dot``.  Carried here rather than looked up again by
+    #: the caller because the frame the term was computed on is the only frame that can explain it.
+    red_dot_on: tuple[str, ...] = ()
 
     @property
     def total(self) -> float:
-        return self.base + self.fairness + self.resource + self.history + self.repeat_failure
+        return (self.base + self.fairness + self.resource + self.history
+                + self.repeat_failure + self.red_dot)
 
     @property
     def dynamic(self) -> float:
-        return self.fairness + self.resource + self.history + self.repeat_failure
+        return (self.fairness + self.resource + self.history + self.repeat_failure
+                + self.red_dot)
 
     def as_row(self) -> dict[str, Any]:
         return {
@@ -373,6 +426,8 @@ class UtilityBreakdown:
             "resource": round(self.resource, 1),
             "history": round(self.history, 1),
             "repeat_failure": round(self.repeat_failure, 1),
+            "red_dot": round(self.red_dot, 1),
+            "red_dot_on": list(self.red_dot_on),
             "dynamic": round(self.dynamic, 1),
             "total": round(self.total, 1),
         }
@@ -388,6 +443,8 @@ class UtilityBreakdown:
             parts.append(f"history {self.history:+.1f}")
         if self.repeat_failure:
             parts.append(f"repeat-failure {self.repeat_failure:+.1f}")
+        if self.red_dot:
+            parts.append(f"red-dot {self.red_dot:+.1f} on {'/'.join(self.red_dot_on)}")
         return ", ".join(parts) if parts else "catalogue price only"
 
 
@@ -408,6 +465,7 @@ def utility(
     if base == float("-inf"):
         return UtilityBreakdown(goal_id=str(goal.goal_id), base=base)
     skills = tuple(getattr(goal, "available_skills", ()) or ())
+    dot, dot_entries = red_dot_bonus(world, str(goal.goal_id)) if world is not None else (0.0, ())
     return UtilityBreakdown(
         goal_id=str(goal.goal_id),
         base=base,
@@ -415,6 +473,8 @@ def utility(
         resource=resource_fit(world, skills, facts) if world is not None else 0.0,
         history=history_bonus(facts, skills),
         repeat_failure=repeat_failure_penalty(row),
+        red_dot=dot,
+        red_dot_on=dot_entries,
     )
 
 

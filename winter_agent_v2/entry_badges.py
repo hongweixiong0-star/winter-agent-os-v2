@@ -190,15 +190,89 @@ def read_entry_badges(
 
 #: The 快捷面板's own rows, which already carry a badge reading from ``read_quick_panel``.  Kept as
 #: a mapping so a row's entry name and its goal are stated once, here, rather than inferred.
+#:
+#: Every value is a **goal id the goal layer uses**, not a route domain and not a label.  Measured
+#: 2026-09-23 over the 12 panel-open frames whose ledger carries these rows
+#: (``tools/measure_panel_row_badges.py``): the 科技研究 row is the single most common dotted row
+#: (PRESENT in 9 of those 12, and the only row that ever discriminates -- ``>=1 PRESENT`` while
+#: another row reads ABSENT in 9 frames), and its binding used to be the string ``"RESEARCH"``,
+#: which is the *route domain* ``run_live.py --goal`` accepts, not a goal id.  ``GOAL_ROUTES``
+#: maps the goal to that domain (``KEEP_RESEARCH_PRODUCTIVE -> RESEARCH``), so a consumer asking
+#: the goal layer "which goal is the client pointing at" could never match it: the majority of the
+#: panel's dot signal was silently unattributable.  The same trap is why the vocabulary here is
+#: asserted against ``goal_library`` in ``tests/test_red_dot_priority.py`` rather than eyeballed.
 QUICK_PANEL_ROW_GOALS = {
     "SHIELD_CAMP": "SHIELD_CAMP_TRAINING",
     "LANCER_CAMP": "LANCER_CAMP_TRAINING",
     "MARKSMAN_CAMP": "MARKSMAN_CAMP_TRAINING",
-    "RESEARCH": "RESEARCH",
+    "RESEARCH": "KEEP_RESEARCH_PRODUCTIVE",
     "ALLIANCE_DONATION": "ALLIANCE_ROUTINE",
+    # 英雄招募 names a goal the board does not have: there is no route domain for it, the goal
+    # layer cannot emit it, and ``DAILY_HERO_RECRUIT`` is documented as having no live-loop
+    # verifier (open issue #100).  Stated rather than invented -- and ``dots_pointing_at`` drops
+    # it, so the row's dot points at nothing until that goal exists.
     "HERO_RECRUIT": "HERO_RECRUIT",
     "MY_REWARDS": "DAILY_ACTIVITY_TARGET",
 }
+
+
+def dot_varies(entry: str) -> bool:
+    """Whether this entry's badge was *measured to come and go* -- the licence to rank with it.
+
+    Read from the table's ``dot_variability`` section, which carries the counts and the two tools
+    that reproduce them from ``learning/episodes.jsonl``.  The rule is the operator's §二② read
+    strictly: ``P(work) != P(work|dot)`` is what makes a dot a signal, so a badge observed only
+    ever present (the 每日/联盟 count badges, measured 26 of 26) cannot decide an order -- a signal
+    that is always on is a constant, and ranking on it is ranking on nothing.  One observed only
+    ever absent is not a signal either; it simply never fires.
+
+    An entry with **no** variability record answers False, which is the same direction as
+    ``read_entry_badges`` refusing to read an entry that is not in the table: a new row does not
+    become a priority signal by being added to a mapping.
+
+    Never raises.  This answer is consulted on the ranking path, where an unreadable table must
+    cost a priority hint and not a step of the run -- ``read_entry_badges`` may raise, because
+    there the caller is already an observation that can be left empty, and this is not.
+    """
+    try:
+        record = (table().get("dot_variability") or {}).get("entries") or {}
+        row = record.get(str(entry))
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    if not isinstance(row, dict):
+        return False
+    return bool(row.get("varies"))
+
+
+def dots_pointing_at(red_dots: Any) -> dict[str, tuple[str, ...]]:
+    """Which goals the client is currently pointing at, by drawing a dot on their entry.
+
+    ``{goal_id: (entry, ...)}`` -- only PRESENT dots, only entries whose badge was measured to
+    vary, and only when the entry names a goal.  ABSENT contributes nothing (the client saying
+    "nothing here" is not a reason to rank a goal up), UNKNOWN contributes nothing (§一: a reading
+    that was never made is not evidence in either direction), and a dot that never goes away is
+    not a signal at all (see ``dot_varies``).
+
+    A binding that names no goal the board has (英雄招募 today) is dropped here rather than
+    mistranslated: the whole point of the three-state layer is that a dot is bound to a concrete
+    entry, and an entry bound to no goal is a gap to record, not a dot to act on.
+
+    Never raises and never reads the frame: the input is the ledger production already wrote onto
+    ``WorldState.red_dots``, so a caller in the ranking path pays nothing for it.
+    """
+    answer: dict[str, list[str]] = {}
+    if not isinstance(red_dots, dict):
+        return {}
+    for entry, record in sorted(red_dots.items()):
+        if not isinstance(record, dict):
+            continue
+        if str(record.get("state") or "") != PRESENT:
+            continue
+        goal = str(record.get("goal") or "")
+        if not goal or not dot_varies(str(entry)):
+            continue
+        answer.setdefault(goal, []).append(str(entry))
+    return {goal: tuple(entries) for goal, entries in answer.items()}
 
 
 def quick_panel_badges(state: Any) -> dict[str, EntryBadge]:
