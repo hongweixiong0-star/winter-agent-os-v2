@@ -1070,7 +1070,7 @@ class LiveRuntime:
                     "kind": str(getattr(execution.action, "kind", "") or ""),
                     "target": semantic,
                 },
-                expected_effect=expected,
+                expected_effect=str(context.get("expected_effect") or expected),
                 observed_effect=observed_change,
             )
             print(
@@ -1342,6 +1342,26 @@ class LiveRuntime:
                 return
         if attempt:
             store.record_attempt(key=key, verified=verified, observed_effect=observed_change)
+
+    def _declared_goal_words(self, goal: str) -> tuple[str, ...]:
+        """The words the dictionary ties to ``goal``, through each record's ``related_goals``.
+
+        A goal is matched by name and by its parts, so ``KEEP_TRAINING_PRODUCTIVE`` also picks up a
+        record that declares ``TRAINING``: the ids in this project's goal library are compound, and
+        requiring an exact string would make the field useless for half of them.
+        """
+        wanted = str(goal or "").strip().upper()
+        if not wanted:
+            return ()
+        parts = {part for part in wanted.split("_") if len(part) > 3}
+        words: list[str] = []
+        for record in self._semantic_records().values():
+            declared = {str(item).strip().upper() for item in (record.get("related_goals") or ())}
+            if not declared:
+                continue
+            if wanted in declared or any(part in declared for part in parts):
+                words.extend(str(word).strip() for word in (record.get("ocr") or ()))
+        return tuple(dict.fromkeys(word for word in words if word))
 
     def _declared_dictionary_words(self) -> set[str]:
         """Every word the semantic dictionary declares, whatever control it belongs to.
@@ -2109,6 +2129,15 @@ class LiveRuntime:
         remembered = self._remembered_control_center(semantic, frame)
         if remembered is not None:
             return remembered
+        # The weakest layer of all, and the only one that reads the semantic dictionary's own
+        # ``position_hint`` (operator directive 2026-09-22 item 一: a field added to the file has to
+        # have a reader).  A control the project has declared but cannot find -- no template yet, no
+        # ledger entry, no printed word, no answer -- is still reachable, with the basis it was
+        # located by recorded in ``_printed_reads`` so nobody can mistake a declared hint for a
+        # measurement.  ``ABSENT``, the spend blacklist and the page gate all still apply.
+        hinted = self._dictionary_hint(semantic, frame, frame_path)
+        if hinted is not None:
+            return hinted
         return None
 
     #: The ordinary actions this layer may try without a registered skill, in the
@@ -2152,6 +2181,138 @@ class LiveRuntime:
     #: a one-glyph word at confidence 0.776 is not a measured control -- the system Back key this
     #: project already trusts (STABLE, 97.6%) is what closes those screens.
     UNKNOWN_PAGE_EXIT_WORDS: tuple[str, ...] = tuple(page_knowledge.BACK_WORDS)
+
+    def _semantic_records(self) -> dict[str, dict]:
+        """The semantic dictionary as ``id -> record``, read once per run.
+
+        The dictionary has declared this project's controls since before this layer existed, and
+        until now the runtime read exactly one field of it -- ``ocr``, as the set of words that are
+        not news.  This is the reader the directive's first requirement asks for, and the four
+        consumers below are what use it: ``position_hint``, ``states``, ``related_goals`` and
+        ``expected_transition``.
+        """
+        cached = getattr(self, "_semantic_records_cache", None)
+        if cached is not None:
+            return cached
+        records: dict[str, dict] = {}
+        try:
+            payload = json.loads(UI_DICTIONARY_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            payload = {}
+        for record in payload.get("records") or ():
+            if isinstance(record, Mapping) and record.get("id"):
+                records[str(record["id"])] = dict(record)
+        self._semantic_records_cache = records
+        return records
+
+    def _declared_expectation(self, semantic: str, default: str = "") -> str:
+        """What the dictionary says acting on this control should change, or ``default``.
+
+        Consumes ``expected_transition``: an L1 step registered through this function records the
+        *declared* expectation beside the effect that really followed, so the two can be compared
+        later without re-reading the dictionary.
+        """
+        record = self._semantic_records().get(semantic) or {}
+        declared = str(record.get("expected_transition") or "").strip()
+        return declared or default
+
+    def _dictionary_hint(
+        self, semantic: str, frame: "WorldState", frame_path: "Path | None"
+    ) -> tuple[float, float] | None:
+        """Where the dictionary says this control is, or ``None`` (directive item 一 / item 四).
+
+        Two kinds of hint are honoured, and both are ``PANEL_RELATIVE``/``ROW_RELATIVE`` rather
+        than a screen coordinate:
+
+        * a **row** of the quick panel (``QUICK_PANEL_ROW_<KEY>``): its point is the panel's own
+          right-hand column on that row's live y, which is what ties an arrow to its task;
+        * the **handle** (``QUICK_PANEL_HANDLE``): the panel's right edge at the block's middle --
+          and it refuses outright while the panel is already in the state the record's
+          ``expected_transition`` describes, because a tap there would close what the goal wants to
+          read.  That refusal is ``states`` being consumed: what the record names as a state is
+          matched against what the frame reads.
+
+        A hint whose basis is a single-frame measurement is used as-is and labelled as such.  No
+        hint is ever consulted for a semantic the dictionary does not declare, and a page gate that
+        excludes the current page is honoured.
+        """
+        record = self._semantic_records().get(semantic)
+        if not record:
+            return None
+        pages = [str(page) for page in (record.get("pages") or ())]
+        page = control_experience.label(frame.page)
+        if pages and page not in pages:
+            return None
+        hint = record.get("position_hint") or {}
+        if not isinstance(hint, Mapping):
+            return None
+        basis = str(hint.get("basis") or "")
+        panel = getattr(frame, "quick_panel", None) or {}
+        point: tuple[float, float] | None = None
+
+        if semantic.startswith("QUICK_PANEL_ROW_"):
+            key = semantic[len("QUICK_PANEL_ROW_"):]
+            for row in panel.get("rows") or ():
+                if str(row.get("key")) == key and row.get("arrow_norm"):
+                    point = (float(row["arrow_norm"][0]), float(row["arrow_norm"][1]))
+                    break
+            if point is None:
+                return None
+        elif semantic == "QUICK_PANEL_HANDLE":
+            handle = panel.get("handle") or {}
+            if not handle:
+                # The panel is not drawn, or not read: there is nothing to toggle from here.
+                return None
+            declared_states = record.get("states") or {}
+            reached = str(handle.get("state") or "")
+            body = declared_states.get(reached) if isinstance(declared_states, Mapping) else None
+            satisfied = bool(body.get("satisfies_target_state")) if isinstance(body, Mapping) else False
+            if reached and satisfied:
+                print(
+                    f"[hint] {semantic} refused: the panel is already {reached} "
+                    f"(the goal wants it read, not toggled)",
+                    flush=True,
+                )
+                return None
+            point = tuple(float(value) for value in (handle.get("point_norm") or ())[:2])
+            if len(point) != 2:
+                return None
+        else:
+            values: list[float] = []
+            for axis in ("x", "y"):
+                raw = str(hint.get(axis) or "").strip()
+                if not raw:
+                    return None
+                # A measurement can be a point (0.212) or a range (0.125-0.196, as the two quick
+                # panel tabs are recorded): a range resolves to its centre, which is where a tap on
+                # that control belongs.
+                try:
+                    if "-" in raw[1:]:
+                        low, _, high = raw[1:].partition("-")
+                        values.append((float(raw[0] + low) + float(high)) / 2.0)
+                    else:
+                        values.append(float(raw))
+                except ValueError:
+                    return None
+            if len(values) != 2 or not (0.0 <= values[0] <= 1.0 and 0.0 <= values[1] <= 1.0):
+                return None
+            point = (values[0], values[1])
+
+        if point is None or not (0.0 <= point[0] <= 1.0 and 0.0 <= point[1] <= 1.0):
+            return None
+        self._note_printed(
+            semantic,
+            page_knowledge.page_key(page, str((hint.get("anchor") or hint.get("basis") or ""))),
+            f"the semantic dictionary's {basis or 'position_hint'} ({hint.get('anchor') or 'declared'})",
+            point,
+            label=page,
+        )
+        print(
+            f"[hint] {semantic} located by the dictionary's {basis or 'position_hint'} "
+            f"@ {point[0]:.4f},{point[1]:.4f}",
+            flush=True,
+        )
+        return point
 
     def _ordinary_control_candidate(
         self, frame: "WorldState", frame_path: "Path | None"
@@ -2281,6 +2442,8 @@ class LiveRuntime:
                 "source": "PRINTED_WORD",
                 "confidence": float(hit.get("confidence") or 0.0),
                 "frame": str(frame_path),
+                # What the dictionary says this control should do, beside what really happened.
+                "expected_effect": self._declared_expectation(f"ORDINARY_CONTROL[{word}]"),
             }
             self._stage_interaction_candidate(
                 page=page,
@@ -2667,6 +2830,9 @@ class LiveRuntime:
             ocr,
             skip_words=self._declared_dictionary_words(),
             goal=goal,
+            # The dictionary's own vocabulary for this goal (``related_goals``), so a word it ties
+            # to the running goal counts as relevant without a code change.
+            hints=self._declared_goal_words(goal),
         )
         if not rows:
             return None
@@ -2718,6 +2884,7 @@ class LiveRuntime:
                 "source": "INTERACTIVE_CANDIDATE",
                 "confidence": float(row.get("confidence") or 0.0),
                 "frame": str(frame_path),
+                "expected_effect": self._declared_expectation(semantic),
             }
             self._stage_interaction_candidate(
                 page=page,

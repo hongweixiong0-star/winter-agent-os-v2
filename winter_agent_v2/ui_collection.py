@@ -242,6 +242,7 @@ def interactive_controls(
     *,
     skip_words: Iterable[str] = (),
     goal: str = "",
+    hints: Iterable[str] = (),
     limit: int = 8,
 ) -> list[dict]:
     """Text boxes on this frame that *look* like a control nobody has recorded (directive §2).
@@ -319,7 +320,14 @@ def interactive_controls(
             continue
         if w_norm * h_norm > CONTROL_MAX_AREA_NORM:
             continue
-        relevant = goal_relevant(word, goal)
+        # ``hints`` is the goal's vocabulary as the *semantic dictionary* declares it (each
+        # record's ``related_goals``): a word the project has already tied to this goal counts as
+        # relevant even when the built-in table has no entry for it, which is how the dictionary
+        # widens the judgement without a code change.
+        extra = {str(item).strip() for item in hints if str(item or "").strip()}
+        relevant = goal_relevant(word, goal) or any(
+            token in word or word in token for token in extra if len(word) >= 2 and len(token) >= 2
+        )
         centre_y = y_norm + h_norm / 2
         score = confidence
         if CONTROL_MIN_TEXT_PX * 1.2 <= box_h <= 72:

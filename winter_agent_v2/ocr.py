@@ -1245,6 +1245,24 @@ QUICK_PANEL_BUSY_WORDS: tuple[str, ...] = ("训练中", "升级中", "研究中"
 #: tokens whose boxes vary a little, and because the state word is short.
 QUICK_PANEL_STATE_OFFSET_PX: float = 30.0
 
+#: How far right of the panel's own text the per-task arrows and the handle sit, in pixels of a
+#: 720-wide frame.  Measured from the panel's row block on the one live capture of the expanded
+#: panel this project owns; the reader reports the resulting point with ``PANEL_RELATIVE_ESTIMATE``
+#: as its basis, because the arrows and the triangle are icons that have not been confirmed
+#: pixel-by-pixel yet -- an estimated region is a candidate to try, not a measurement to trust.
+QUICK_PANEL_ARROW_MARGIN_PX: float = 8.0
+
+#: How far below a section's header its own rows may sit.  Measured on the expanded panel: the
+#: section's rows are ~73 px apart and the third one (射手, y=0.541) is 185 px below the 部队训练
+#: header, while the bottom navigation bar sits 487 px below the 科技研究 header.  260 separates them
+#: without dropping a real row -- 120 was tried first and silently lost 射手.
+QUICK_PANEL_MAX_ROW_OFFSET_PX: float = 260.0
+
+#: The panel is a left-hand strip.  Its right edge has to be measured from the tokens *inside* it:
+#: the same y band also carries the right-hand HUD (00:00:00 at x 0.86-0.98 measured), and including
+#: it pushed the computed edge to the clamp and put the arrows off the panel entirely.
+QUICK_PANEL_COLUMN_MAX_X_NORM: float = 0.55
+
 
 #: Where the 快捷面板 is drawn, as an ROI.
 #:
@@ -1394,9 +1412,20 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
             for index in range(start, end)
         ]
 
+    section_rows: list[tuple[str, str, float]] = []
     for position, (index, section) in enumerate(headers):
         after = headers[position + 1][0] if position + 1 < len(headers) else len(by_y)
+        header_y = by_y[index].centre[1]
         rows = rows_between(index + 1, after)
+        for row_name, row_y in rows:
+            # A section ends where the next header begins, and the *last* section has no next
+            # header -- so without this bound the bottom navigation bar (野外 / 英雄 / 联盟 /
+            # 探险 / 商店, measured at y 0.97-0.99) was read as the research section's rows, and one
+            # of them became a "research" row.  A row is only this section's while it sits a few
+            # line heights under its header.
+            if row_y - header_y > QUICK_PANEL_MAX_ROW_OFFSET_PX:
+                break
+            section_rows.append((section, row_name, row_y))
 
         if section == "建筑队列":
             # The row is named by its own text (使馆升级中) and states itself with the
@@ -1454,6 +1483,70 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 }
                 break
 
+    # ---- the panel's own geometry: its rows, and what hangs off its right edge ---------------
+    #
+    # Measured on the one real capture of the expanded panel this project owns
+    # (20260921_213506_694242 step_001): headers at x 0.024-0.203, rows at x 0.24-0.39, the
+    # 部队训练 rows at y 0.427 (盾兵) / 0.484 (矛兵) / 0.541 (射手) and 科技研究 at y 0.629.
+    #
+    # So a task row is identified by *its own y*, and the arrow that navigates to that task is the
+    # panel's right-hand column on the same row -- never "a blue arrow that looks like the others".
+    # A row's state is the word under it, which is why an arrow's presence is never read as idle:
+    # the arrows are not read at all here, only located.
+    # The geometry below is an addition to this reader, so a frame it cannot measure (a stub path
+    # in a test, a capture that vanished) must leave the sections exactly as they were rather than
+    # raise: the sections are what the panel's consumers have always read.
+    try:
+        size = read_frame_size(image_path)
+    except (OSError, ValueError, AttributeError, TypeError):
+        size = None
+    if section_rows and size and int(size[0]) > 0 and int(size[1]) > 0:
+        width, height = int(size[0]), int(size[1])
+        row_ys = [name_y for _, _, name_y in section_rows]
+        block_top = min(row_ys) - QUICK_PANEL_STATE_OFFSET_PX
+        block_bottom = max(row_ys) + QUICK_PANEL_STATE_OFFSET_PX * 2
+        block_tokens = [
+            token
+            for token in tokens
+            if block_top <= token.centre[1] <= block_bottom
+            and min(float(point[0]) for point in token.box) / width <= QUICK_PANEL_COLUMN_MAX_X_NORM
+        ]
+        right_px = max(
+            (max(float(point[0]) for point in token.box) for token in block_tokens), default=0.0
+        )
+        arrow_x = min(0.62, (right_px + QUICK_PANEL_ARROW_MARGIN_PX) / width) if right_px else None
+        if arrow_x is not None:
+            out_rows: list[dict] = []
+            for section, name, name_y in section_rows:
+                camp = TROOP_TO_CAMP.get(TITLE_TO_TROOP.get(name, ""))
+                # The research row names itself 科技研究 under the header of the same name; any
+                # other row in that section is not the section's own control.
+                key = camp or ("RESEARCH" if "科技" in name else None)
+                if key is None:
+                    continue
+                state_word = state_below(name_y)
+                out_rows.append(
+                    {
+                        "kind": "CAMP" if camp else "RESEARCH",
+                        "key": key,
+                        "label": name,
+                        "y_norm": round(name_y / height, 4),
+                        "status": "IDLE" if state_word in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
+                        "source_word": state_word,
+                        "arrow_norm": [round(arrow_x, 4), round(name_y / height, 4)],
+                        "arrow_basis": "PANEL_RELATIVE_ESTIMATE",
+                    }
+                )
+            if out_rows:
+                panel["rows"] = out_rows
+            panel["handle"] = {
+                "state": "EXPANDED",
+                "point_norm": [
+                    round(arrow_x, 4),
+                    round((min(row_ys) + max(row_ys) + QUICK_PANEL_STATE_OFFSET_PX) / 2.0 / height, 4),
+                ],
+                "basis": "PANEL_RELATIVE_ESTIMATE",
+            }
     return panel
 
 
