@@ -378,6 +378,30 @@ class OCRPageClassifier:
                 found.append(page)
         if "训练中" in exact_texts and any(text in exact_texts for text in ("盾兵营", "矛兵营", "射手营")):
             found.append(Page.TRAINING)
+        # The second render of the same page, measured live 2026-09-22.
+        #
+        # The queue line is not always drawn with the word 训练中.  On the frame that reached the
+        # training page for the first time in the project's history
+        # (``20260922_120820_865903_step_006_after_refresh_2``, 720x1280) the client drew
+        # 原始时间：03:28:53 instead, the 训练 control underneath a tutorial hand (OCR read it as
+        # ``训`` alone, conf 1.000), and the three camp tabs 盾兵营 / 矛兵营 / 射手营 at the foot of
+        # the page (conf 0.995-0.997).  Nothing above matched, the classifier answered UNKNOWN,
+        # ``verify_training_page_open`` answered TRAINING_PAGE_NOT_PROVEN, and a tap that had
+        # landed exactly right was recorded as a failure.
+        #
+        # Two structural words, both drawn by the client, and the conjunction is what makes this
+        # specific rather than a guess:
+        #
+        # * **all three camp tabs at once** -- 盾兵营 / 矛兵营 / 射手营 with the 营 suffix are drawn
+        #   together on this page and nowhere else (the 快捷面板 draws 盾兵 / 矛兵 / 射手, without
+        #   营, which is why presence of the bare words cannot be used here);
+        # * **a camp title from TITLE_TO_TROOP** -- the page title names the troop being trained
+        #   (英勇盾兵 here, conf 0.996), and a title only exists for the camp the page is open on.
+        if (
+            all(text in exact_texts for text in ("盾兵营", "矛兵营", "射手营"))
+            and any(title in exact_texts for title in TITLE_TO_TROOP)
+        ):
+            found.append(Page.TRAINING)
         if len(set(found)) != 1:
             return WorldState(page=Page.UNKNOWN, confidence=0.0)
         page = found[0]

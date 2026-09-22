@@ -398,5 +398,70 @@ class RealFrameChainTests(unittest.TestCase):
         self.assertEqual(point, tuple(world.training["camp_tab_norm"]["矛兵营"]))
 
 
+# --------------------------------------------------------------- the training page, second render
+
+
+class TrainingPageSecondRenderTests(unittest.TestCase):
+    """The queue line without 训练中, measured live 2026-09-22.
+
+    The first time this project reached a barracks training page for real
+    (``20260922_120820_865903_step_006_after_refresh_2``), the client drew the running queue as
+    ``原始时间：03:28:53``, put a tutorial hand over the 训练 control (OCR read the label as ``训``
+    alone, conf 1.000), and drew the three camp tabs at the foot of the page.  The classifier's
+    only training rule keyed on the word 训练中, so a page that had been reached correctly was
+    answered UNKNOWN and the step died as ``TRAINING_PAGE_NOT_PROVEN``.
+
+    The tokens below are that frame's own reading, at the confidences the live OCR produced.
+    """
+
+    TOKENS = (
+        ("英勇盾兵", 0.996, ((282.0, 20.0), (420.0, 20.0), (420.0, 48.0), (282.0, 48.0))),
+        ("盾兵营", 0.997, ((60.0, 1231.0), (125.0, 1231.0), (125.0, 1255.0), (60.0, 1255.0))),
+        ("矛兵营", 0.990, ((286.0, 1233.0), (350.0, 1233.0), (350.0, 1257.0), (286.0, 1257.0))),
+        ("射手营", 0.995, ((512.0, 1233.0), (576.0, 1233.0), (576.0, 1257.0), (512.0, 1257.0))),
+        ("原始时间：", 0.926, ((400.0, 1019.0), (466.0, 1019.0), (466.0, 1042.0), (400.0, 1042.0))),
+        ("训", 1.000, ((487.0, 1078.0), (517.0, 1078.0), (517.0, 1102.0), (487.0, 1102.0))),
+        ("03:28:53", 0.951, ((448.0, 1108.0), (514.0, 1108.0), (514.0, 1132.0), (448.0, 1132.0))),
+    )
+
+    def _result(self, tokens):
+        from winter_agent_v2.ocr import OCRResult, OCRToken
+
+        return OCRResult(
+            tuple(OCRToken(text=text, confidence=conf, box=box) for text, conf, box in tokens),
+            "stub",
+        )
+
+    def test_the_page_is_named_without_the_word_训练中(self):
+        from winter_agent_v2.ocr import OCRPageClassifier
+
+        state = OCRPageClassifier().classify(self._result(self.TOKENS), frame_size=(720, 1280))
+        self.assertEqual(state.page, Page.TRAINING)
+        self.assertEqual(state.training.get("camp_open_label"), "盾兵营")
+        self.assertEqual(state.training.get("timer"), "03:28:53")
+        self.assertEqual(state.training.get("troop_type"), "INFANTRY")
+
+    def test_it_would_still_be_unknown_without_the_camp_tabs(self):
+        """The rule needs both halves: a title alone is not this page."""
+        from winter_agent_v2.ocr import OCRPageClassifier
+
+        without_tabs = tuple(t for t in self.TOKENS if not t[0].endswith("营"))
+        state = OCRPageClassifier().classify(self._result(without_tabs), frame_size=(720, 1280))
+        self.assertNotEqual(state.page, Page.TRAINING)
+
+    def test_the_quick_panels_bare_words_are_not_this_page(self):
+        """The panel draws 盾兵 / 矛兵 / 射手 without 营 -- that must stay a panel, not a page."""
+        from winter_agent_v2.ocr import OCRPageClassifier
+
+        panel = (
+            ("部队训练", 0.99, ((60.0, 500.0), (150.0, 500.0), (150.0, 522.0), (60.0, 522.0))),
+            ("盾兵", 0.99, ((70.0, 540.0), (110.0, 540.0), (110.0, 562.0), (70.0, 562.0))),
+            ("矛兵", 0.99, ((70.0, 580.0), (110.0, 580.0), (110.0, 602.0), (70.0, 602.0))),
+            ("射手", 0.99, ((70.0, 620.0), (110.0, 620.0), (110.0, 642.0), (70.0, 642.0))),
+        )
+        state = OCRPageClassifier().classify(self._result(panel), frame_size=(720, 1280))
+        self.assertNotEqual(state.page, Page.TRAINING)
+
+
 if __name__ == "__main__":
     unittest.main()
