@@ -6,6 +6,8 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `b07b3f5 2026-09-23T07:38:25+08:00 fix(runtime): a run that has looked everywhere stops instead of walking back and forth`
+- `7da38a6 2026-09-23T06:41:16+08:00 docs(handoff): the eighth emitter, the false reasons, and a skill for finding them`
 - `c2d80de 2026-09-23T06:39:53+08:00 fix(home): the eighth OPEN_HOME emitter closes the search panel too -- six minutes of livelock, seven runs one step long`
 - `ad9df5b 2026-09-23T06:28:59+08:00 docs(handoff): the refusal now names its gate -- #103, and the three things it leaves open`
 - `ca5524f 2026-09-23T06:28:15+08:00 fix(runtime): a refusal names its gate -- 21 of TRY_ORDINARY_CONTROL's 32 failures said "the frame names no control"`
@@ -16,18 +18,13 @@ Last 12 commits (newest first):
 - `9640fcf 2026-09-23T04:31:04+08:00 docs(skill): when the probe aborts on a missing exit, check whether the runtime fails there too`
 - `02f87db 2026-09-23T04:30:48+08:00 feat(callout): the shape rule replaces a size floor the archive refutes, and a new defect gets its numbers`
 - `81cedc2 2026-09-23T04:21:52+08:00 docs(skill): a reader's tokens belong to the surface that drew them`
-- `1533b26 2026-09-23T04:21:31+08:00 fix(panel): a row may only be built from tokens the panel itself drew`
-- `41589cd 2026-09-23T04:11:55+08:00 docs(skill): directed device verification -- lease, frame-derived coordinates, and when to refuse to tap`
 
-Uncommitted changes: 497
+Uncommitted changes: 514
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
-- ` M .workbuddy-ai/memory/2026-09-23.md`
-- ` M .workbuddy-ai/memory/MEMORY.md`
 - ` M .workbuddy/memory/2026-09-21.md`
-- ` M .workbuddy/memory/2026-09-23.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
 - ` M dataset/candidate/template_manifest.json`
@@ -40,6 +37,9 @@ Uncommitted changes: 497
 - ` M knowledge/perception/candidates/alliance__eca25dc9a7/metadata.yaml`
 - ` M knowledge/perception/pages/INDEX.json`
 - ` M knowledge/preload/INDEX.json`
+- ` M knowledge/preload/TROOP_SELECT.json`
+- ` M knowledge/ui/page_transitions.json`
+- ` M learning/candidate_attempt_pool.json`
 <!-- /AUTO:recent_commits -->
 
 ---

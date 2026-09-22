@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-09-22T22:40:59+00:00",
+  "generated_at": "2026-09-22T23:38:44+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "c2d80de",
+  "commit": "b07b3f5",
   "last_good_commit": "e4fd245",
-  "dirty_count": 497,
+  "dirty_count": 514,
   "episodes": {
-    "total": 6889,
-    "production": 6889,
-    "success": 5650,
-    "failure": 1234,
-    "success_rate_over_decided": 0.8207,
+    "total": 6926,
+    "production": 6926,
+    "success": 5677,
+    "failure": 1244,
+    "success_rate_over_decided": 0.8203,
     "modes": {
-      "PRODUCTION": 6889
+      "PRODUCTION": 6926
     },
     "mixed_case_rows": 35
   },
@@ -34,9 +34,9 @@
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 376,
+      "count": 379,
       "recent": 140,
-      "last_seen": "2026-09-22T21:47:42.619776+00:00",
+      "last_seen": "2026-09-22T22:54:32.402635+00:00",
       "dates": {
         "2026-09-12": 36,
         "2026-09-13": 37,
@@ -48,7 +48,7 @@
         "2026-09-19": 16,
         "2026-09-20": 89,
         "2026-09-21": 53,
-        "2026-09-22": 84
+        "2026-09-22": 87
       },
       "undated": 31,
       "top_skills": [
@@ -68,9 +68,9 @@
     },
     {
       "failure_type": "SAFE_BACK_NOT_PROVEN",
-      "count": 86,
-      "recent": 65,
-      "last_seen": "2026-09-22T21:45:34.327550+00:00",
+      "count": 88,
+      "recent": 67,
+      "last_seen": "2026-09-22T23:38:15.399549+00:00",
       "dates": {
         "2026-09-13": 1,
         "2026-09-17": 2,
@@ -78,13 +78,13 @@
         "2026-09-19": 8,
         "2026-09-20": 9,
         "2026-09-21": 13,
-        "2026-09-22": 52
+        "2026-09-22": 54
       },
       "undated": 0,
       "top_skills": [
         [
           "BACK",
-          86
+          88
         ]
       ]
     },
@@ -109,18 +109,18 @@
     },
     {
       "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
-      "count": 41,
-      "recent": 40,
-      "last_seen": "2026-09-22T22:11:11.536830+00:00",
+      "count": 43,
+      "recent": 42,
+      "last_seen": "2026-09-22T23:19:20.924851+00:00",
       "dates": {
         "2026-09-21": 9,
-        "2026-09-22": 31
+        "2026-09-22": 33
       },
       "undated": 1,
       "top_skills": [
         [
           "DISPATCH_BEAST",
-          41
+          43
         ]
       ]
     },
@@ -181,19 +181,19 @@
     },
     {
       "failure_type": "RECALL_DIALOG_NOT_OPEN",
-      "count": 11,
-      "recent": 10,
-      "last_seen": "2026-09-22T22:11:33.774929+00:00",
+      "count": 12,
+      "recent": 11,
+      "last_seen": "2026-09-22T22:46:01.363450+00:00",
       "dates": {
         "2026-09-18": 1,
         "2026-09-21": 5,
-        "2026-09-22": 5
+        "2026-09-22": 6
       },
       "undated": 0,
       "top_skills": [
         [
           "SELECT_MARCH_TO_RECALL",
-          11
+          12
         ]
       ]
     },
@@ -275,9 +275,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 11994,
-    "present_on_disk": 11994,
-    "traceable_episodes": 6157,
+    "referenced_screenshots": 12065,
+    "present_on_disk": 12065,
+    "traceable_episodes": 6194,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -288,20 +288,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "c2d80de7c1992f66cabb9c732c5fd84c29c49a99",
-    "remote_head": "c2d80de7c1992f66cabb9c732c5fd84c29c49a99",
+    "local_head": "b07b3f5185991a487361973c850b2f574737fd0f",
+    "remote_head": "b07b3f5185991a487361973c850b2f574737fd0f",
     "unpushed_commits": 0,
     "behind": 0,
     "in_sync": true,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-09-22T22:40:17.578005+00:00",
+    "last_push_at": "2026-09-22T23:38:38.060230+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "IDLE",
+    "agent_state": "GOAL_RUNNING",
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 21,
     "last_fatal_error": null,
-    "stop_reason": "reserved_march_for_stamina"
+    "stop_reason": null
   }
 }

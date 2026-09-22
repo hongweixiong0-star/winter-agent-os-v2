@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-09-22T22:40:59+00:00",
+  "generated_at": "2026-09-22T23:38:44+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "c2d80de",
+  "commit": "b07b3f5",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
-    "agent_state": "IDLE",
-    "runtime_thread_alive": false,
-    "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-22T22:32:13.067674+00:00",
-    "last_action_time": "2026-09-22T22:31:41.822526+00:00",
-    "last_success_time": "2026-09-22T22:31:58.572613+00:00",
+    "agent_state": "GOAL_RUNNING",
+    "runtime_thread_alive": true,
+    "scheduler_loop_alive": true,
+    "last_tick_time": "2026-09-22T23:38:24.135665+00:00",
+    "last_action_time": "2026-09-22T23:38:24.354986+00:00",
+    "last_success_time": "2026-09-22T23:38:40.379267+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 21,
     "unexpected_worker_exits": 15,
-    "page": "MAP",
-    "current_goal": "AUTO_DISCOVERY",
-    "current_skill": "SAFE_STOP",
-    "reason": "reserved_march_for_stamina",
+    "page": "HOME",
+    "current_goal": "MAIL_ROUTINE",
+    "current_skill": "LEAVE_FOREIGN_LAYER",
+    "reason": "mail_goal_closes_a_layer_a_back_did_not_move",
     "preconditions": [],
     "verifier": "PASS",
-    "next_action": "stamina_task_slot_preserved",
+    "next_action": "foreign_layer_left",
     "risk": "UNKNOWN",
-    "confidence": 1.0,
+    "confidence": 0.98,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_005_before_20260922T223158574739.png",
-    "march_used": 2,
-    "march_max": 3,
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_073725_909108\\20260923_073725_909108_step_002_after_20260922T233825857175.png",
+    "march_used": null,
+    "march_max": null,
     "queues": {
       "building": {},
       "research": {},
@@ -38,82 +38,49 @@
       "alliance": {},
       "events": {}
     },
-    "stop_reason": "reserved_march_for_stamina",
+    "stop_reason": null,
     "deferred_goals": [
       {
         "goal_id": "AVOID_STAMINA_WASTE",
         "capability": "SPEND_STAMINA_ON_BEAST",
         "state": "DEFERRED",
-        "reason": "3 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SELECT_MARCH_TO_RECALL",
-        "streak": 3,
+        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|ATTACK_BEAST_CARD",
+        "streak": 4,
         "until": "",
-        "last_skill": "SELECT_MARCH_TO_RECALL"
+        "last_skill": "ATTACK_BEAST_CARD"
       },
       {
         "goal_id": "KEEP_TRAINING_PRODUCTIVE",
         "capability": "OPEN_TRAINING_PAGE",
         "state": "DEFERRED",
-        "reason": "5 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "4 consecutive production episodes advanced no part of this goal (3 passed their verifier, 0 were rejected by it, 1 issued no action)",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|NAVIGATE_INFANTRY_CAMP",
-        "streak": 5,
+        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|BACK",
+        "streak": 4,
         "until": "",
-        "last_skill": "NAVIGATE_INFANTRY_CAMP"
+        "last_skill": "BACK"
       },
       {
         "goal_id": "CLEAR_INTEL",
         "capability": "READ_INTEL_LIST",
         "state": "DEFERRED",
-        "reason": "4 consecutive production episodes advanced no part of this goal (3 passed their verifier, 1 were rejected by it, 0 issued no action)",
+        "reason": "4 consecutive production episodes advanced no part of this goal (2 passed their verifier, 2 were rejected by it, 0 issued no action)",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|DISPATCH_BEAST",
+        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|BACK",
         "streak": 4,
         "until": "",
-        "last_skill": "DISPATCH_BEAST"
-      },
-      {
-        "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
-        "capability": "OPEN_RESEARCH_PAGE",
-        "state": "DEFERRED",
-        "reason": "5 consecutive production episodes passed their verifier and advanced no part of this goal",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_RESEARCH_PAGE|NO_GOAL_PROGRESS|OPEN_RESEARCH",
-        "streak": 5,
-        "until": "",
-        "last_skill": "OPEN_RESEARCH"
-      },
-      {
-        "goal_id": "MAIL_ROUTINE",
-        "capability": "READ_MAIL_TABS",
-        "state": "DEVELOPMENT_PENDING",
-        "reason": "a development job owns it (job=d78e61af)",
-        "source": "ESCALATION_QUEUE",
-        "failure_signature": "",
-        "streak": 0,
-        "until": "",
-        "last_skill": ""
-      },
-      {
-        "goal_id": "ALLIANCE_ROUTINE",
-        "capability": "OPEN_ALLIANCE_PAGE",
-        "state": "DEFERRED",
-        "reason": "5 consecutive production episodes passed their verifier and advanced no part of this goal",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_ALLIANCE_PAGE|NO_GOAL_PROGRESS|TRY_ORDINARY_CONTROL",
-        "streak": 5,
-        "until": "",
-        "last_skill": "TRY_ORDINARY_CONTROL"
+        "last_skill": "BACK"
       }
     ],
-    "updated_at": "2026-09-22T22:32:38.002771+00:00"
+    "updated_at": "2026-09-22T23:38:40.379267+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-22T22:32:21+00:00",
-    "size_bytes": 43243,
-    "last_stop_reason": null
+    "modified_at": "2026-09-22T23:36:37+00:00",
+    "size_bytes": 9971,
+    "last_stop_reason": "alliance_state_unknown"
   },
   "recent_crash_reports": [
     {

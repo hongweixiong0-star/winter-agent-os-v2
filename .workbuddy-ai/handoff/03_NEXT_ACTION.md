@@ -4,6 +4,19 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：两处**离线已证、真机待验**（2026-09-23 06:4x GMT+8，issue #104）
+
+两处的判据都只看 `learning/episodes.jsonl`，不需要额外设备时间：
+
+1. **空转守卫**（`b07b3f5`）：下一轮 AUTO 出现「无事可做」时，`stop_reason` 应出现
+   `every_page_this_run_was_fruitless`，且**不再**出现 `OPEN_MAP → OPEN_HOME → OPEN_MAP` 的三步运行
+   （筛法：按 `episode_id` 分组，全部技能都在 `{OPEN_MAP, OPEN_HOME, CHECK_MARCH}` 里即为空转运行）。
+   参考量：自 16:00Z 起 75 个运行里有 18 个是这种运行；受控 A/B 36 步 → 27 步。
+2. **具名拒绝**（`ca5524f`）：`ORDINARY_CONTROL_ALREADY_USED_THIS_RUN` **已在真机语料里**（见 #103），
+   另两个结构性名字（`_NOT_FOR_THIS_GOAL` 等）仍只有单测实例，值得盯。
+3. `Episode.decision_reason`（`c2d80de`）**尚未在语料中出现过任何一条** —— 它落地后还没跑过一轮
+   含该字段的运行；出现后，本项目的「为什么这么做」第一次可以直接从语料读出来，不再需要回放。
+
 ## 手写：本轮（2026-09-17 12:1x–13:0x GMT+8）—— 打开 #22（奖励弹窗来源）；终止页退出落地但**真机 episode 未取到**；工作队列按 CAPABILITY-FIRST 重建
 
 接手时 `HEAD == origin/main == ac694ee8`，工作树 8 项脏（KEEP 3 / UNKNOWN 5）。旧 `WORK_QUEUE.json`
@@ -1169,12 +1182,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.5713. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 140 in the last 2 day(s), 376 all-time, last seen 2026-09-22T21:47:42.619776+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 140 in the last 2 day(s), 379 all-time, last seen 2026-09-22T22:54:32.402635+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 497
-LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-22T22:31:58.359686+00:00", "episode_id": "20260923_062948_568906", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_004_before_20260922T223128373025.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_062948_568906\\20260923_062948_568906_step_004_after_20260922T223143325021.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 376, "recent": 140, "last_seen": "2026-09-22T21:47:42.619776+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 84}, "undated": 31, "top_skills": [["OPEN_HOME", 45], ["SELECT_RESOURCE", 44], ["DISMISS_MAIL_GENERIC_REWARD", 42]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-20T22:31:58.359686+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 514
+LAST PRODUCTION EPISODE: {"skill": "LEAVE_FOREIGN_LAYER", "result": "SUCCESS", "recorded_at": "2026-09-22T23:38:40.168239+00:00", "episode_id": "20260923_073725_909108", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_073725_909108\\20260923_073725_909108_step_002_before_20260922T233815596944.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_073725_909108\\20260923_073725_909108_step_002_after_20260922T233825857175.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 379, "recent": 140, "last_seen": "2026-09-22T22:54:32.402635+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 87}, "undated": 31, "top_skills": [["OPEN_HOME", 45], ["SELECT_RESOURCE", 44], ["DISMISS_MAIL_GENERIC_REWARD", 42]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-20T23:38:40.168239+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
