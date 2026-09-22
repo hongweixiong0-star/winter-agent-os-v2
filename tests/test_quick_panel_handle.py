@@ -53,8 +53,13 @@ NO_HANDLE_FRAME = sorted(AUTO.glob("*/" + "*_step_002_before_20260922T0830496540
 OPERATOR_FRAME = ROOT / "dataset/raw/reference/quick_panel_handle_collapsed_20260922.jpg"
 
 
-def _runtime(*, goal="KEEP_TRAINING_PRODUCTIVE", ocr=None):
-    """A runtime with nothing but what these tests exercise (no device, no cycle)."""
+def _runtime(*, goal="KEEP_TRAINING_PRODUCTIVE", goal_id="", ocr=None):
+    """A runtime with nothing but what these tests exercise (no device, no cycle).
+
+    ``goal`` is what the scheduler puts in ``brain.current_goal`` and ``goal_id`` what it puts in
+    ``brain.goal_id``.  Production sets the first to a **route** (``TRAIN``) and the second to the
+    concrete goal; a test that sets ``current_goal`` to a goal id is not testing the shipped shape.
+    """
     runtime = object.__new__(LiveRuntime)
     runtime.vision = SimpleNamespace(ocr=ocr)
     runtime.semantic_vision = SimpleNamespace(ocr=None)
@@ -68,7 +73,7 @@ def _runtime(*, goal="KEEP_TRAINING_PRODUCTIVE", ocr=None):
     runtime._ordinary_last = None
     runtime._l1_context = None
     runtime._ui_candidates = None
-    runtime.brain = SimpleNamespace(current_goal=goal)
+    runtime.brain = SimpleNamespace(current_goal=goal, goal_id=goal_id)
     runtime.capture_dir = Path("dataset/raw/control_panel/runtime_auto/run_stub")
     return runtime
 
@@ -196,6 +201,36 @@ class TheRouteTests(unittest.TestCase):
                 runtime._declared_textless_control_point("HOME", "", _frame_with_handle()),
                 f"{goal!r} is not a reason to open the panel",
             )
+
+    def test_the_shipped_shape_reaches_it_too(self):
+        """``current_goal`` is a **route** in production, not a goal id.
+
+        The scheduler sets ``brain.current_goal`` from ``goal_library.route_for`` (``TRAIN``,
+        ``RESEARCH``, ``HOME``) and ``brain.goal_id`` to the concrete goal, so comparing
+        ``current_goal`` against the record's ``related_goals`` -- which names ids -- is false for
+        every goal the project has.  That is why the record's own verification still reads
+        "tap_to_open: NOT YET VERIFIED ON THE DEVICE ... no tap of this handle has been observed
+        opening the panel": the mechanism was wired and the name never matched.
+        """
+        for route, goal_id in (("TRAIN", "KEEP_TRAINING_PRODUCTIVE"),
+                               ("TRAIN", "MARKSMAN_CAMP_TRAINING"),
+                               ("RESEARCH", "KEEP_RESEARCH_PRODUCTIVE")):
+            with self.subTest(route=route, goal_id=goal_id):
+                runtime = _runtime(goal=route, goal_id=goal_id)
+                self.assertEqual(
+                    runtime._declared_textless_control_point("HOME", "", _frame_with_handle()),
+                    (0.0181, 0.4301),
+                )
+
+    def test_a_route_nobody_listed_still_cannot_tap_it(self):
+        """Widening the match must not turn the panel into a control any goal may press."""
+        for route, goal_id in (("HOME", ""), ("MAIL", "MAIL_ROUTINE"), ("INTEL", "CLEAR_INTEL")):
+            with self.subTest(route=route):
+                runtime = _runtime(goal=route, goal_id=goal_id)
+                self.assertIsNone(
+                    runtime._declared_textless_control_point("HOME", "", _frame_with_handle()),
+                    f"{route!r} is not a reason to open the panel",
+                )
 
     def test_a_page_the_record_does_not_name_cannot_tap_it(self):
         runtime = _runtime()

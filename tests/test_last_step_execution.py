@@ -218,5 +218,116 @@ class TheCampGoalOwnsThePageTests(unittest.TestCase):
         self.assertEqual(decision.skill, "BACK")
 
 
+class TheCampSwitchBudgetTests(unittest.TestCase):
+    """The live 2026-09-22 20:50 run, where the page answered BACK with an idle camp on screen.
+
+    That run's own worker log, every step on the training page:
+
+        12  TRY_ORDINARY_CONTROL  goal TRAIN, 盾兵营 open, status UNKNOWN
+        13  SELECT_TRAINING_CAMP  goal MARKSMAN_CAMP_TRAINING -> 射手营 (AVAILABLE, trainable)
+        14  TRAIN_TROOPS          -> after: IN_PROGRESS, batch 282, timer 03:28:51
+        15  SELECT_TRAINING_CAMP  "training_queue_busy_switch_to_矛兵营" -> 矛兵营 (AVAILABLE, trainable)
+        16  BACK                  "training_page_not_actionable_leaving_the_page"
+
+    Step 16 stands on 矛兵营 with ``AVAILABLE``/``trainable`` in its own reading and leaves, because the
+    two barracks switches had been spent by steps 13 and 15 -- *earlier goals'* switches, since the goal
+    board is re-ranked every step (operator §四/§五).  The frames below are that run's own.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from winter_agent_v2.ocr import HybridVision
+        from winter_agent_v2.vision import SemanticWorldVision
+
+        run = AUTO / "20260922_205021_021360"
+        cls.vision = HybridVision(
+            SemanticWorldVision(ROOT / "dataset/candidate/template_manifest.json"), _ocr()
+        )
+        cls.shield_open = cls.vision.observe(run / "20260922_205021_021360_step_013_before_20260922T125450115785.png")
+        cls.marksman_free = cls.vision.observe(run / "20260922_205021_021360_step_014_before_20260922T125515312326.png")
+        cls.marksman_busy = cls.vision.observe(run / "20260922_205021_021360_step_015_before_20260922T125540200598.png")
+        cls.lancer_free = cls.vision.observe(run / "20260922_205021_021360_step_016_before_20260922T125607147502.png")
+
+    def test_the_frames_read_the_way_that_run_read_them(self):
+        """If the reading differs, the rest of this class is testing another page."""
+        self.assertTrue(self.marksman_free.training.get("trainable"), self.marksman_free.training)
+        self.assertEqual(self.marksman_free.training.get("camp_open_label"), "射手营")
+        self.assertIs(self.marksman_busy.training.get("queue_available"), False)
+        self.assertTrue(self.lancer_free.training.get("trainable"), self.lancer_free.training)
+        self.assertEqual(self.lancer_free.training.get("camp_open_label"), "矛兵营")
+
+    def test_a_late_goal_still_reaches_its_own_camp(self):
+        """The exact sequence above: two switches by one goal must not spend a third goal's chance."""
+        brain = _brain("TRAIN")
+        brain.goal_id = brain.current_goal = "MARKSMAN_CAMP_TRAINING"
+        self.assertEqual(brain.decide(self.shield_open, v2_registry()).skill, "SELECT_TRAINING_CAMP")
+        self.assertEqual(brain.decide(self.marksman_free, v2_registry()).skill, "TRAIN_TROOPS")
+        self.assertEqual(brain.decide(self.marksman_busy, v2_registry()).skill, "SELECT_TRAINING_CAMP")
+        brain.goal_id = brain.current_goal = "SHIELD_CAMP_TRAINING"
+        decision = brain.decide(self.lancer_free, v2_registry())
+        self.assertEqual(decision.skill, "SELECT_TRAINING_CAMP", decision.reason)
+        self.assertIn("SHIELD_CAMP", decision.reason)
+
+    def test_the_run_still_cannot_march_through_the_tabs_forever(self):
+        """The per-run ceiling the per-goal count replaced is still there."""
+        brain = _brain("TRAIN")
+        switches = 0
+        for goal in ("SHIELD_CAMP_TRAINING", "MARKSMAN_CAMP_TRAINING", "LANCER_CAMP_TRAINING") * 3:
+            brain.goal_id = brain.current_goal = goal
+            if brain.decide(self.lancer_free, v2_registry()).skill == "SELECT_TRAINING_CAMP":
+                switches += 1
+        self.assertLessEqual(switches, brain.MAX_CAMP_SWITCHES_PER_RUN)
+
+
+class TheQuickPanelOpeningTests(unittest.TestCase):
+    """The training route opens the 快捷面板 instead of stopping where it cannot see.
+
+    Its states are the only in-city reading the client draws all at once, and the training page is
+    not always legible: measured 2026-09-22 21:13, 盾兵营's page read ``UNKNOWN`` because the pointer
+    covered the 训练 label.  The record for the handle, its reader and the runtime tier that taps it
+    all existed; nothing ever asked, and 盾兵营's states stayed invisible.
+    """
+
+    def _home(self, panel, training=None):
+        return WorldState(page=Page.HOME, quick_panel=panel, training=training or {})
+
+    CLOSED = {"open": False, "handle": {"state": "COLLAPSED", "point_norm": [0.0181, 0.4301]}}
+    OPEN = {
+        "open": True,
+        "camps": {
+            "SHIELD_CAMP": {"status": "IDLE", "queue_available": True},
+            "LANCER_CAMP": {"status": "IN_PROGRESS", "queue_available": False},
+        },
+        "handle": {"state": "EXPANDED", "point_norm": [0.4569, 0.5502]},
+    }
+
+    def test_a_closed_panel_is_opened_instead_of_stopping(self):
+        brain = _brain("TRAIN")
+        decision = brain.decide(self._home(self.CLOSED, {"queue_available": False}), v2_registry())
+        self.assertEqual(decision.skill, "TRY_ORDINARY_CONTROL", decision.reason)
+        self.assertIn("quick_panel", decision.reason)
+
+    def test_the_open_panel_is_read_and_not_toggled_again(self):
+        brain = _brain("TRAIN")
+        decision = brain.decide(self._home(self.OPEN), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
+        self.assertEqual(brain.idle_camp_from_quick_panel, "SHIELD_CAMP")
+
+    def test_a_frame_that_draws_no_handle_keeps_the_old_path(self):
+        """Nothing to open means nothing to tap: the route is exactly what it was."""
+        brain = _brain("TRAIN")
+        decision = brain.decide(self._home({"open": False}), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW", decision.reason)
+
+    def test_the_opening_is_bounded(self):
+        brain = _brain("TRAIN")
+        frame = self._home(self.CLOSED, {"queue_available": False})
+        for _ in range(brain.MAX_ORDINARY_ATTEMPTS):
+            self.assertEqual(brain.decide(frame, v2_registry()).skill, "TRY_ORDINARY_CONTROL")
+        decision = brain.decide(frame, v2_registry())
+        self.assertNotEqual(decision.skill, "TRY_ORDINARY_CONTROL",
+                            "the budget is what keeps this from becoming a tap loop")
+
+
 if __name__ == "__main__":
     unittest.main()

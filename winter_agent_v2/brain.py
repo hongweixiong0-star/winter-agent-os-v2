@@ -158,8 +158,18 @@ class RuleBrain:
         self._camp_menu_waits = 0
         # Barracks switched inside one run, so a training page whose three queues are all busy
         # cannot turn into a loop of taps (operator §八, bounded the same way as the wait above).
+        #
+        # Counted per *goal* as well as per run.  The goal board is re-ranked on every step
+        # (operator §四/§五, ``runtime.py``), so a per-run budget alone is spent by whichever goals
+        # happened to win earlier and leaves a later goal unable to reach its own camp even when the
+        # open camp is idle: measured live 2026-09-22 20:55-20:56, where the page answered ``BACK``
+        # with 矛兵营 ``AVAILABLE``/``trainable`` on screen because two earlier goals had used the
+        # switches.  ``_camp_switch_goal`` is the goal the current count belongs to.
         self._camp_switch_attempts = 0
+        self._camp_switches_this_run = 0
+        self._camp_switch_goal = ""
         self.MAX_CAMP_SWITCHES = 2
+        self.MAX_CAMP_SWITCHES_PER_RUN = 4
         # The camp this run wants the training page switched TO, as the client's own tab
         # label (盾兵营 / 矛兵营 / 射手营), or ``None`` when no camp is preferred.
         #
@@ -1120,6 +1130,33 @@ class RuleBrain:
                         world.confidence,
                         "power_overview_open",
                     )
+            # The panel is the only surface that names all three barracks at once, and the training
+            # page cannot always be read: measured 2026-09-22 21:13, 盾兵营's own page read
+            # ``UNKNOWN`` because the 训练 label was covered by the pointer, so the frame carried no
+            # word the reader accepts.  With the panel closed and its handle still drawn on this
+            # frame, the honest next move is to open it -- the runtime's dictionary tier locates the
+            # handle on *this* frame and taps it, and the states arrive on the following step.  This
+            # sits above the busy-queue stop below on purpose: that stop is what makes a route give
+            # up on in-city work it cannot see, and the panel is how it can see.
+            #
+            # Bounded by the same three things the rest of the ordinary path is: the ordinary-attempt
+            # budget, the runtime's once-per-run ``_ordinary_tried``, and the record's own refusal
+            # while the panel is already open (``states`` -> ``satisfies_target_state``).
+            handle = (world.quick_panel or {}).get("handle") or {}
+            if (
+                world.page is Page.HOME
+                and not world.quick_panel.get("open")
+                and str(handle.get("state") or "") == "COLLAPSED"
+                and self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
+                and not self.ordinary_scan_exhausted
+            ):
+                self.ordinary_attempts += 1
+                return Decision(
+                    "TRY_ORDINARY_CONTROL",
+                    "training_route_opens_the_quick_panel_to_read_the_barracks",
+                    world.confidence,
+                    "ordinary_control_observed",
+                )
             if world.page is Page.HOME and world.training.get("queue_available") is False:
                 return Decision("SAFE_STOP", "training_queue_busy", 1.0, "switch_task")
             if world.page is Page.HOME:
@@ -1170,11 +1207,8 @@ class RuleBrain:
             goal_camp = self._goal_camp()
             open_camp = LABEL_TO_CAMP.get(str((world.training or {}).get("camp_open_label") or ""))
             if goal_camp is not None and open_camp is not None and goal_camp != open_camp:
-                if (
-                    self._camp_switch_attempts < self.MAX_CAMP_SWITCHES
-                    and (world.training.get("camp_tab_norm") or {})
-                ):
-                    self._camp_switch_attempts += 1
+                if self._camp_switch_allowed() and (world.training.get("camp_tab_norm") or {}):
+                    self._note_camp_switch()
                     self.desired_camp_label = CAMP_LABELS[goal_camp]
                     return Decision(
                         "SELECT_TRAINING_CAMP",
@@ -1196,10 +1230,7 @@ class RuleBrain:
                 #
                 # Bounded like the camp-menu wait above: at most two switches per run, so a page
                 # whose tabs are all busy cannot become a loop.
-                if (
-                    self._camp_switch_attempts < self.MAX_CAMP_SWITCHES
-                    and (world.training.get("camp_tab_norm") or {})
-                ):
+                if self._camp_switch_allowed() and (world.training.get("camp_tab_norm") or {}):
                     # WHICH camp is the goal's answer, not the resolver's: the brain reads the
                     # camps it has measured, prefers a positively idle one, falls back to a
                     # barracks it has never seen (UNKNOWN is "still worth a look", the same
@@ -1209,7 +1240,7 @@ class RuleBrain:
                     # leaves the page instead of cycling.
                     self.desired_camp_label = self._choose_target_camp(world)
                     if self.desired_camp_label is not None:
-                        self._camp_switch_attempts += 1
+                        self._note_camp_switch()
                         return Decision(
                             "SELECT_TRAINING_CAMP",
                             f"training_queue_busy_switch_to_{self.desired_camp_label}",
@@ -1949,6 +1980,28 @@ class RuleBrain:
             for camp in sorted(set(pool), key=priority.index):
                 return CAMP_LABELS[camp]
         return None
+
+    def _camp_switch_allowed(self) -> bool:
+        """Whether this goal may switch barracks once more; renews the count when the goal changes.
+
+        The per-goal count is what stops a goal from marching through the tabs; the per-run ceiling
+        is what stops a *sequence* of goals from doing the same thing between them.  Both are
+        required: with only the first, three camp goals could take turns tapping forever, and with
+        only the second, the live failure above returns.
+        """
+        goal = str(getattr(self, "goal_id", "") or self.current_goal or "")
+        if goal != self._camp_switch_goal:
+            self._camp_switch_goal = goal
+            self._camp_switch_attempts = 0
+        return (
+            self._camp_switch_attempts < self.MAX_CAMP_SWITCHES
+            and self._camp_switches_this_run < self.MAX_CAMP_SWITCHES_PER_RUN
+        )
+
+    def _note_camp_switch(self) -> None:
+        """Count one barracks switch in both budgets."""
+        self._camp_switch_attempts += 1
+        self._camp_switches_this_run += 1
 
     def _goal_camp(self) -> str | None:
         """The barracks this run's goal names, or ``None`` for a goal that names none.

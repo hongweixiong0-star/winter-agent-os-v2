@@ -1354,6 +1354,37 @@ class LiveRuntime:
         if attempt:
             store.record_attempt(key=key, verified=verified, observed_effect=observed_change)
 
+    def _record_serves_goal(self, goal: str, served: set[str]) -> bool:
+        """Whether the running goal is one a dictionary record serves.
+
+        A record's ``related_goals`` names goal **ids** (``KEEP_TRAINING_PRODUCTIVE``), while
+        ``brain.current_goal`` holds the **route** the scheduler derived for this step (``TRAIN``)
+        and ``brain.goal_id`` holds the concrete goal.  Comparing those names as strings is false for
+        every goal in the project, and that is what left the 快捷面板 handle untappable: the record
+        is measured, its reader is measured, the runtime tier that uses it exists, and no step ever
+        asked for the tap.
+
+        The list is not extended here.  Which goals belong to a route is the goal library's answer
+        (``route_for``) -- the same derivation ``RuleBrain._owns_terminal_page`` uses -- so the three
+        per-camp training goals count for the training entry without anyone editing this list, and a
+        goal whose route nobody listed is still refused.
+        """
+        wanted = {item for item in served if item}
+        if not wanted:
+            return False
+        candidates = {
+            str(goal or "").strip().upper(),
+            str(getattr(getattr(self, "brain", None), "goal_id", "") or "").strip().upper(),
+        }
+        candidates = {item for item in candidates if item}
+        if candidates & wanted:
+            return True
+        from .goal_library import route_for
+
+        routes = {route_for(item) for item in wanted}
+        routes.discard(None)
+        return bool(routes) and any(route_for(item) in routes for item in candidates)
+
     def _declared_goal_words(self, goal: str) -> tuple[str, ...]:
         """The words the dictionary ties to ``goal``, through each record's ``related_goals``.
 
@@ -3123,7 +3154,7 @@ class LiveRuntime:
             if pages and page_label not in pages:
                 continue
             served = {str(item).strip().upper() for item in (record.get("related_goals") or ())}
-            if goal.upper() not in served:
+            if not self._record_serves_goal(goal, served):
                 continue
             risk = str(record.get("risk") or "").upper()
             if risk not in control_experience.EXPLORABLE_RISKS:
