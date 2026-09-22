@@ -1309,6 +1309,35 @@ class LiveRuntime:
                 self._tapped_intel_pins.append((pin.x, pin.y))
                 return (pin.x / width, pin.y / height)
             return None
+        if semantic == "BTN_OPEN_TRAINING_FROM_CAMP":
+            # The 训练 control of the selected camp, tapped where this frame's own OCR read
+            # the client's label (see ``ocr.read_selected_building_actions``).
+            #
+            # Why not the template: ``BTN_OPEN_TRAINING_FROM_CAMP`` was cut from the older
+            # rendering -- the camp highlighted with a radial menu -- and on the client of
+            # 2026-09-22 it scores NO MATCH on the screen it names.  The label, read at
+            # 0.986-0.997 across ten live frames spanning seven hours, is drawn by the
+            # client at the control it belongs to, which is why it is the durable answer:
+            # it moves with the layout instead of assuming it.
+            #
+            # The guard is that the frame must still be showing that bar: the point is a
+            # fragment of the frame it was read from, and a frame whose reading carries no
+            # ``train_tap_norm`` never had a 训练 control on it.  ``None`` -- wrong page,
+            # no reading, or a point outside the frame -- ends the step honestly rather
+            # than tapping an invented coordinate, which is also what stops a 训练 label
+            # read on some later screen from being reused here.
+            if frame.page is not Page.HOME:
+                return None
+            point = (frame.training or {}).get("train_tap_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
+                return None
+            return (x_norm, y_norm)
         match = self._semantic.find(frame_path, semantic) if frame_path is not None else None
         if match:
             return match.center_norm

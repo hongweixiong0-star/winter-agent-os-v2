@@ -1413,6 +1413,182 @@ def read_resource_tab_labels(
     return found
 
 
+#: The selected-building action bar, as a y-range like the tab strip above.
+#:
+#: Measured 2026-09-22 on the ten live frames that failed ``NAVIGATE_INFANTRY_CAMP``
+#: between 16:24 and 23:47 GMT+8 (720x1280), every one of them reading:
+#:
+#:   详情   (236, 914-915)   conf 0.994 - 0.998
+#:   升级   (360, 943-944)   conf 1.000
+#:   训练   (483-487, 912-916)   conf 0.986 - 0.997
+#:
+#: Spread of 4 px over seven hours and ten frames, because the bar is a screen-space
+#: overlay rather than part of the city.  The band is wider than those numbers need: it
+#: is a filter for "is this label drawn in the bar", not a pin.
+SELECTED_BUILDING_ACTION_BAND = (0.69, 0.76)
+
+#: Where the client names the building it has selected.  盾兵营 measured at
+#: (376-378, 545-548), conf 0.958 - 0.995, on the same ten frames.
+SELECTED_BUILDING_NAME_BAND = (0.39, 0.46)
+
+#: The three controls the bar draws, in the client's own words.
+BUILDING_ACTION_LABELS: tuple[str, ...] = ("详情", "升级", "训练")
+
+
+def read_selected_building_actions(
+    image_path,
+    ocr,
+    *,
+    min_confidence: float = 0.85,
+) -> dict:
+    """What the client drew for the building it has selected, read from its own words.
+
+    Why this exists.  The training route ends on this screen and the route could not see
+    it: ``SemanticWorldVision._building_is_selected`` gates on three templates
+    (``BTN_UPGRADE`` / ``BTN_TRAINING_MENU_LABEL`` / ``BTN_OPEN_TRAINING_FROM_CAMP``) and
+    **all three miss this rendering**, so ``training`` came back empty, the verifier
+    answered ``INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN``, the goal was deferred, and the
+    barracks were never reached -- ten consecutive attempts, 16:24 to 23:47.
+
+    The old render is a gold ring around the barracks and nothing else, which is what
+    ``camp_ring.py`` was built from.  This one is the client's ordinary selected-building
+    treatment: the scene dimmed, the building named above it, and 详情 / 升级 / 训练 drawn
+    along the bottom.  Verified as a *different* render rather than a second reading of
+    the same one: the two 训练 labels do not appear at all on the gold-ring frames.
+
+    Returns what was actually read, never a default::
+
+        {"actions": {"训练": (x_norm, y_norm), ...},   # only labels positively read
+         "name": "盾兵营" or "",                        # the selected building's label
+         "camp": "SHIELD_CAMP" or "",                   # that label as a camp id
+         "name_norm": (x_norm, y_norm) or None}
+
+    ``actions`` is empty when the bar is not drawn, and ``camp`` is empty for a selected
+    building that is not a barracks -- the bar is drawn for any building, so presence
+    alone must never be read as "the infantry camp is selected".
+    """
+    with Image.open(image_path) as source:
+        frame_width, frame_height = source.size
+    result = ocr.recognize(image_path)
+    return read_building_action_tokens(
+        result.tokens, (frame_width, frame_height), min_confidence=min_confidence
+    )
+
+
+def read_building_action_tokens(
+    tokens,
+    frame_size: tuple[int, int] | None,
+    *,
+    min_confidence: float = 0.85,
+) -> dict:
+    """The pure half of :func:`read_selected_building_actions`, over tokens and a size.
+
+    Split out so the reading can be tested against boxes measured on real frames without
+    an OCR backend in the loop -- ``RapidOCRBackend`` is optional at import time, and a
+    reading that cannot be tested is a reading nobody can check.
+    """
+    empty = {"actions": {}, "name": "", "camp": "", "name_norm": None}
+    if not frame_size:
+        return empty
+    width, height = int(frame_size[0]), int(frame_size[1])
+    if width <= 0 or height <= 0:
+        return empty
+
+    action_lo, action_hi = SELECTED_BUILDING_ACTION_BAND
+    name_lo, name_hi = SELECTED_BUILDING_NAME_BAND
+    actions: dict[str, tuple[float, float]] = {}
+    name = ""
+    name_norm: tuple[float, float] | None = None
+
+    for token in tokens:
+        if token.confidence < min_confidence or not token.box:
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        centre_x = (min(xs) + max(xs)) / 2.0 / width
+        centre_y = (min(ys) + max(ys)) / 2.0 / height
+        text = token.text.strip()
+        if action_lo <= centre_y <= action_hi:
+            if text in BUILDING_ACTION_LABELS and text not in actions:
+                actions[text] = (round(centre_x, 4), round(centre_y, 4))
+            continue
+        if name_lo <= centre_y <= name_hi and text in LABEL_TO_CAMP and not name:
+            name = text
+            name_norm = (round(centre_x, 4), round(centre_y, 4))
+    return {
+        "actions": actions,
+        "name": name,
+        "camp": LABEL_TO_CAMP.get(name, ""),
+        "name_norm": name_norm,
+    }
+
+
+def read_training_camp_tabs(
+    image_path,
+    ocr,
+    *,
+    band: tuple[float, float] = (0.95, 1.0),
+    min_confidence: float = 0.85,
+) -> dict[str, tuple[float, float]]:
+    """The three barracks tabs on the training page: camp label -> its centre.
+
+    The same reasoning as :func:`read_resource_tab_labels`: the client draws the names
+    and the labels are what is stable, so reading them costs one pass and cannot drift
+    out of step with a client reorder.  Measured 2026-09-22 on the three live training
+    pages that exist (720x1280):
+
+        盾兵营   (134, 1260)   conf 0.997
+        矛兵营   (361, 1260)   conf 0.990
+        射手营   (586, 1260)   conf 0.995
+
+    All three drawn at once on every one of them -- which is exactly why presence alone
+    cannot say which is *selected*, and why this returns their positions rather than a
+    choice.  Choosing belongs to the caller that knows what it wants (``observe_camps``
+    answers "which camp is open" from the page title instead).
+    """
+    with Image.open(image_path) as source:
+        frame_width, frame_height = source.size
+    top, bottom = band
+    roi = {"x_norm": 0.0, "y_norm": top, "w_norm": 1.0, "h_norm": bottom - top}
+    found: dict[str, tuple[float, float]] = {}
+    for token in ocr.recognize(image_path, roi).tokens:
+        if token.confidence < min_confidence or not token.box:
+            continue
+        label = token.text.strip()
+        if label not in LABEL_TO_CAMP or label in found:
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        # Crop-relative boxes: the band's own top is added back before normalising, the
+        # same step ``read_resource_tab_labels`` documents, or every centre lands above
+        # the tab it names.
+        found[label] = (
+            round((min(xs) + max(xs)) / 2.0 / frame_width, 4),
+            round(((min(ys) + max(ys)) / 2.0 + top * frame_height) / frame_height, 4),
+        )
+    return found
+
+
+#: The template that gates the reading above, and the reason it exists.
+#:
+#: ``tests/test_ocr.py::test_hybrid_is_template_first`` pins a contract this module keeps
+#: on purpose: **a page the template layer fully resolves is not OCR'd**, because HOME is
+#: the most common frame in the loop.  Reading the action bar on every HOME frame broke it
+#: (backend calls 0 -> 1 on a plain city frame, measured), so the OCR pass is gated on a
+#: template first -- and no *existing* template could serve, because on these frames every
+#: registered control scores NO MATCH, ``BTN_UPGRADE`` included.
+#:
+#: So one was cut: the opaque white up-arrow of the bar's middle control, which is
+#: identical (distance 0) on all twelve live action-bar frames and absent from ordinary
+#: city frames.  It is a gate, never a tap target -- the 训练 label read off the frame is
+#: the point, so a bar that moves still gets tapped where it actually is.
+#:
+#: It is also deliberately loose: it matches the same bar drawn for the 研究实验室, so the
+#: reader below is what says "and it has a 训练 control on a barracks" (measured on that
+#: frame: gate distance 0, reading refused).
+CAMP_ACTION_BAR_GATE = "TARGET_CAMP_ACTION_BAR"
+
+
 def read_frame_size(image_path) -> tuple[int, int] | None:
     """The frame's ``(width, height)`` in pixels, or ``None`` if it cannot be opened.
 
@@ -2038,6 +2214,66 @@ class HybridVision:
         plate = sum(1 for pixel in pixels if _is_quick_panel_plate_pixel(pixel))
         return plate / len(pixels) >= QUICK_PANEL_PLATE_MIN_FRACTION
 
+    def _read_selected_building(self, image_path: Path, primary: WorldState) -> WorldState | None:
+        """Attach the selected building's action bar, or ``None`` when this is not that frame.
+
+        This is the third rendering of "a building is selected" and the first one that is
+        *read* rather than matched.  The other two are templates --
+
+          * ``BTN_UPGRADE`` for a selected 仓库,
+          * ``BTN_TRAINING_MENU_LABEL`` / ``BTN_OPEN_TRAINING_FROM_CAMP`` for the radial
+            menu of a selected 盾兵营;
+
+        -- and on the client of 2026-09-22 all three miss, while the frame shows the
+        client's own 详情 / 升级 / 训练 bar at confidence 0.986-1.000.  The consequence was
+        not cosmetic: ``training`` stayed empty, ``verify_infantry_camp_highlighted``
+        answered ``INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN``, and every ``NAVIGATE_INFANTRY_CAMP``
+        from 16:24 to 23:47 failed on a screen the route had already reached correctly.
+
+        Two conditions, and both are load-bearing:
+
+        * **the 训练 control is drawn** -- that is what makes this the camp's own bar and
+          not some other overlay;
+        * **the client named the building, and the name is a barracks** -- the bar is drawn
+          for any selected building, so presence alone would let a selected 仓库 be
+          reported as a selected camp.
+
+        ``menu_open`` is what the reading sets, and it is the honest word for it: the
+        client's menu for the selected building IS drawn.  ``navigation`` is deliberately
+        left alone -- that key means the gold ring was seen, and this render has no ring,
+        so setting it would be the same false-arrival this area has already been bitten by
+        once.
+
+        What it does NOT claim: that the queue is free.  ``queue_available`` is absent
+        rather than True or False, because this screen does not say, and the route's own
+        guard reads ``is False`` -- so unknown keeps it on its normal path instead of
+        stopping it or authorising a spend.
+        """
+        if primary.page is not Page.HOME:
+            return None
+        # The cheap gate first, and it is load-bearing: nothing below this line may run on
+        # a frame whose template layer already resolved the page, or every city frame in
+        # the loop pays for an OCR pass.  ``TARGET_CAMP_ACTION_BAR`` is the bar's own
+        # control, so a frame without a selected building never reaches the OCR call.
+        semantic = getattr(self.template_vision, "semantic", None)
+        if semantic is None or semantic.find(image_path, CAMP_ACTION_BAR_GATE) is None:
+            return None
+        reading = read_selected_building_actions(image_path, self.ocr)
+        actions = reading.get("actions") or {}
+        camp = str(reading.get("camp") or "")
+        train_norm = actions.get("训练")
+        if train_norm is None or not camp:
+            return None
+        training = dict(primary.training)
+        training.update({
+            "menu_open": True,
+            "camp": camp,
+            "camp_label": str(reading.get("name") or ""),
+            "train_tap_norm": train_norm,
+            "source": "ACTION_BAR",
+        })
+        return replace(primary, training=training)
+
     def _read_building_identity(self, image_path: Path, primary: WorldState) -> WorldState | None:
         """Attach building identity read off pixels, or ``None`` when this is not that frame.
 
@@ -2200,6 +2436,13 @@ class HybridVision:
             #   * the upgrade dialog, gated on Page.BUILDING, whose title carries the
             #     name (the dialog has no current level -- only the prerequisite row).
             # ``None`` means "not one of those frames" and leaves the state untouched.
+            # The selected building's action bar, before the identity read below, because
+            # this render is the one the template gate cannot see: a camp frame is read
+            # here from the client's own words, and ``_read_building_identity`` would ask
+            # its template gate about the same frame and answer "not that frame".
+            selected_state = self._read_selected_building(image_path, primary)
+            if selected_state is not None:
+                return selected_state
             building_state = self._read_building_identity(image_path, primary)
             if building_state is not None:
                 return building_state

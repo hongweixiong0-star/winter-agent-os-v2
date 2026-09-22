@@ -40,7 +40,13 @@ if str(ROOT) not in sys.path:
 from winter_agent_v2 import control_experience  # noqa: E402
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
 
-PROJECT_FRAME = str(ROOT / "dataset/raw/control_panel/runtime_auto/run/step_001_before.png")
+#: A frame a probe really read, under ``dataset/truth_audit`` -- which is kept, not pruned.
+#: It used to be an invented path under the capture directory, and
+#: ``test_evidence_integrity`` counts every image literal in the suite: an invented one is
+#: a missing file, and a capture path is a file the retention policy will delete underneath
+#: the test.
+PROJECT_FRAME = str(ROOT / "dataset/truth_audit/role_identity_20260916"
+                          / "profile_panel_live_20260916T184004.png")
 SCRATCH_FRAME = str(Path(tempfile.gettempdir()) / "tmpscratch" / "captures" / "step_001.png")
 
 
