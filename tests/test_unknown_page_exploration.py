@@ -24,6 +24,7 @@ recorded steps failed with ``EXPLORATION_IDLE_DIALOG_NOT_PROVEN`` while the rewa
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -278,6 +279,22 @@ class TheScreenItselfIsKeptTests(unittest.TestCase):
         keys = {page.page_key for page in self.store.all()}
         self.assertEqual(len(keys), 2, keys)
         self.assertIn("UNKNOWN::挂机收益", keys)
+
+    def test_a_record_whose_picture_is_gone_is_not_knowledge_any_more(self):
+        """The evidence is the record.  Measured live: an index outlived its own directory and
+        every later cycle re-saved the resurrected row while refusing to re-capture the screen."""
+        self.collect()
+        record = self.store.all()[0]
+        picture = Path(record.page_image_path)
+        self.assertTrue(picture.exists())
+        shutil.rmtree(picture.parent)
+        reloaded = page_knowledge.PageCandidateStore(root=self.store.root)
+        self.assertEqual(reloaded.all(), [])
+        # And the next sighting stages it properly instead of folding into a row with no picture.
+        self.collect()
+        again = self.store.all()
+        self.assertEqual(len(again), 1)
+        self.assertTrue(Path(again[0].page_image_path).exists())
 
     def test_a_named_page_is_not_staged(self):
         """A screen the model can name already has a better identifier than a picture."""

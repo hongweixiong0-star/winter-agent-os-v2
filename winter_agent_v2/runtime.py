@@ -1230,6 +1230,14 @@ class LiveRuntime:
                 pass
         key = page_knowledge.page_key(control_experience.label(Page.UNKNOWN), title)
         existing = store.find_key(key)
+        if existing is not None and (
+            not existing.page_image_path or not Path(existing.page_image_path).exists()
+        ):
+            # A record whose picture is gone cannot answer "what did this screen look like", so
+            # this sighting re-stages instead of folding into it.  Measured 2026-09-22: an index
+            # outlived its own directory, and until this check every later step re-saved the row
+            # and skipped re-capturing the screen -- the record stayed useless forever.
+            existing = None
         if existing is None:
             record = store.stage(
                 frame_path=frame,

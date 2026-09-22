@@ -414,6 +414,20 @@ class PageCandidateStore:
                 )
             except (TypeError, ValueError):
                 continue
+            # A record whose own picture is gone is not knowledge any more -- and keeping it is
+            # actively harmful, not merely untidy.  Measured 2026-09-22: a store index survived
+            # its ``<id>/`` directory (the directory had been removed while a live cycle still
+            # held the record), and every later cycle then re-saved the resurrected record and
+            # skipped re-capturing the screen -- ``_stage_unknown_page`` sees a record for that
+            # key and folds the sighting into it instead of staging.  So the index grew a row
+            # whose evidence nobody could open, for as long as the key kept being met.
+            #
+            # Dropping it here is the honest answer: the screen is unnamed again, and the next
+            # sighting writes a new record with a fresh picture.  Only a *set* path is checked --
+            # a record that was never given an image (a refusal) is not affected.
+            image = str(page.page_image_path or "")
+            if image and not Path(image).exists():
+                continue
             out[page.page_candidate_id] = page
         return out
 
