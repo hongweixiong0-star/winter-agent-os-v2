@@ -11,6 +11,7 @@ from .brain import RuleBrain
 from . import control_experience
 from . import goal_utility
 from . import ui_collection
+from . import page_knowledge
 from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
@@ -869,6 +870,26 @@ class LiveRuntime:
             )
         except Exception:  # noqa: BLE001 - collection must never fail the step it reads
             pass
+        # The same evidence, for the *pages* (operator directive 2026-09-22, "未知页面自主探索"):
+        # an unnamed screen is kept with its picture, its title and its controls, and every step
+        # that really executed is one learned transition.  Separate try, because the two records
+        # are independent -- a page store that cannot be written must not cost the element
+        # candidates this step also produced.
+        try:
+            self._collect_page_evidence(
+                decision=decision,
+                before=before,
+                after=after,
+                execution=execution,
+                verification=verification,
+                observed_change=observed_change,
+                before_screenshot=before_screenshot,
+                after_screenshot=after_screenshot,
+                episode_id=str(getattr(getattr(self, "capture_dir", None), "name", "") or ""),
+                goal_id=goal_id,
+            )
+        except Exception:  # noqa: BLE001 - collection must never fail the step it reads
+            pass
         if self.episode_store is None:
             return
         failure = None
@@ -1025,6 +1046,210 @@ class LiveRuntime:
             self._ui_candidates = store
         return store
 
+    def _page_store(self) -> "page_knowledge.PageCandidateStore | None":
+        """The page-candidate store, created once per run and never allowed to break one."""
+        store = getattr(self, "_ui_pages", None)
+        if store is None:
+            try:
+                store = page_knowledge.PageCandidateStore()
+            except Exception:  # noqa: BLE001 - collection is optional, playing is not
+                store = None
+            self._ui_pages = store
+        return store
+
+    def _transitions_store(self) -> "page_knowledge.TransitionLedger | None":
+        """The transition ledger, the same one the resolver reads, or ``None``."""
+        return getattr(self, "_transitions", None)
+
+    def _page_title_of(self, frame_path: "Path | None") -> str:
+        """The client's own largest word in the title band, or ``""``.
+
+        Read only where it is load-bearing -- an unnamed screen, where the title is what keeps two
+        of them apart in every key this project writes about pages.  A named page has a better
+        identifier already (its label) and is not charged an OCR pass for one.
+        """
+        if frame_path is None:
+            return ""
+        ocr = self._ocr_service()
+        if ocr is None:
+            return ""
+        info = page_knowledge.read_title_candidate(frame_path, ocr)
+        return str((info or {}).get("text") or "")
+
+    def _collect_page_evidence(
+        self,
+        *,
+        decision: Decision,
+        before: WorldState,
+        after: "WorldState | None",
+        execution: ExecutionResult | None,
+        verification: VerificationResult | None,
+        observed_change: str,
+        before_screenshot: "Path | None",
+        after_screenshot: "Path | None",
+        episode_id: str,
+        goal_id: str,
+    ) -> None:
+        """Keep what this step showed about *pages*: the unnamed screen, and where the step went.
+
+        Operator directive 2026-09-22 ("未知页面自主探索").  Two records, both fed by the same
+        evidence the element collector reads -- the frames this step captured and the verifier's
+        own verdict -- and neither of them is allowed to observe, decide or click:
+
+        * **the unnamed screen** (§四).  When either frame is ``Page.UNKNOWN``, the frame, its
+          candidate title, its visible controls with boxes, what it was entered from and the
+          trigger are written to ``knowledge/perception/pages/<id>/``.  The record is written
+          **once per distinct screen** -- a second visit folds into it (attempt counts,
+          ``last_seen_at``) instead of copying the picture again, which is both the storage bound
+          of §九 and the "do not start over" of §六.
+        * **the transition** (§五).  Every step that really executed, from a page this run could
+          name, is one row: ``before page -> control -> action -> after page`` plus the verifier's
+          verdict.  That row is what the resolver reads on the next visit, so an unnamed screen
+          whose 领取 was proven once is tried with 领取 first the next time.
+
+        The page's status and an element's status are separate (§四): a control working on a
+        screen does not verify the screen, so ``candidate_page_semantics`` is never rewritten by
+        an action result -- only ``recognition_method`` moves, from OCR to ACTION_RESULT.
+        """
+        store = self._page_store()
+        ledger = self._transitions_store()
+        label_before = control_experience.label(before.page)
+        label_after = control_experience.label(after.page) if after is not None else ""
+        # (1) an unnamed screen, on either side of this step.
+        for state, frame in ((after, after_screenshot), (before, before_screenshot)):
+            if state is None or frame is None or state.page is not Page.UNKNOWN:
+                continue
+            self._stage_unknown_page(
+                store=store,
+                frame=frame,
+                entry_page=label_before if before.known else self._last_known_label,
+                entry_trigger=f"{decision.skill}::{str(decision.reason or '')}",
+                goal=goal_id or str(self.brain.current_goal or ""),
+                episode_id=episode_id,
+                world_state={"page": control_experience.label(state.page)},
+                verified=bool(verification.ok) if verification is not None and state is after else False,
+                observed_change=observed_change,
+            )
+        # The entry page for a screen reached from another unnamed screen: the last page this run
+        # could actually name.  Updated after the read above so a step sees the page it left.
+        if before.known:
+            self._last_known_label = label_before
+        # (2) the transition this step measured, when it really executed something.
+        #
+        # A step that *begins* on an unnamed screen is recorded too, and that is the interesting
+        # one -- "this unnamed screen's 领取 led to EXPLORATION" is exactly the knowledge §五 asks
+        # for.  What it needs is a key: a named page has one, and an unnamed screen has one only
+        # once its title can be read.  Without a title the row would be filed under the bare label
+        # ``UNKNOWN``, which is every unnamed screen at once, so it is not written.
+        if (
+            ledger is not None
+            and execution is not None
+            and execution.executed
+            and after is not None
+        ):
+            title_before = self._page_title_of(before_screenshot) if not before.known else ""
+            title_after = self._page_title_of(after_screenshot) if not after.known else ""
+            if before.known or title_before:
+                target = str(getattr(execution.action, "target", "") or "")
+                if decision.skill == "TRY_ORDINARY_CONTROL" and self._ordinary_last:
+                    control = f"ORDINARY_CONTROL[{self._ordinary_last.get('word', '')}]"
+                elif target:
+                    control = target
+                else:
+                    control = decision.skill
+                ledger.record(
+                    before_page=label_before,
+                    before_title=title_before,
+                    control=control,
+                    after_page=label_after,
+                    after_title=title_after,
+                    verified=bool(verification.ok) if verification is not None else False,
+                    skill=decision.skill,
+                    action=str(execution.action.kind or "") if execution.action else "",
+                    goal=goal_id or str(self.brain.current_goal or ""),
+                    observed_change=observed_change,
+                    expected_effect=str(decision.expected_result or ""),
+                )
+        if store is None:
+            return
+        try:
+            # Saved per step rather than at ``finish``, unlike the element candidates: what this
+            # store holds is the *screen itself*, and a worker that dies mid-run (this project's
+            # workers are restarted routinely) would otherwise leave the screen unnamed for the
+            # next run to rediscover from nothing.  The record set is one per distinct screen, so
+            # the write is a few KB; the transition ledger keeps the once-per-run trade, because
+            # nothing reads it from disk mid-run.
+            store.prune()
+            store.save()
+        except Exception:  # noqa: BLE001 - a store write must never fail a run
+            pass
+
+    def _stage_unknown_page(
+        self,
+        *,
+        store: "page_knowledge.PageCandidateStore | None",
+        frame: Path,
+        entry_page: str,
+        entry_trigger: str,
+        goal: str,
+        episode_id: str,
+        world_state: Mapping[str, Any],
+        verified: bool,
+        observed_change: str,
+    ) -> None:
+        """Write one unnamed screen's record, or fold this sighting into the record it has.
+
+        First sighting writes the picture and the reading; every later sighting is an attempt on
+        the same screen, which is what ``attempt_count``/``success_count`` and ``last_seen_at``
+        are for.  Nothing here needs a template, a skill or a VERIFIED status to *record* a
+        screen -- recording is how the screen stops being unknown next time.
+        """
+        if store is None:
+            return
+        ocr = self._ocr_service()
+        title = ""
+        title_confidence: float | None = None
+        controls: list[dict[str, Any]] = []
+        texts: tuple[str, ...] = ()
+        semantics: tuple[str, ...] = ()
+        size = None
+        if ocr is not None:
+            try:
+                from .ocr import read_frame_size
+
+                size = read_frame_size(frame)
+                result = ocr.recognize(frame)
+                info = page_knowledge.read_title_candidate(frame, ocr, size) if size else None
+                title = str((info or {}).get("text") or "")
+                title_confidence = (info or {}).get("confidence")
+                if size:
+                    controls = page_knowledge.visible_controls(result.tokens, size)
+                texts = page_knowledge.ocr_texts(result.tokens)
+                semantics = page_knowledge.suggest_page_semantics(title, texts)
+            except (OSError, ValueError):
+                pass
+        key = page_knowledge.page_key(control_experience.label(Page.UNKNOWN), title)
+        existing = store.find_key(key)
+        if existing is None:
+            record = store.stage(
+                frame_path=frame,
+                page_label=control_experience.label(Page.UNKNOWN),
+                title=title,
+                title_confidence=title_confidence,
+                candidate_page_semantics=semantics,
+                ocr_texts=texts,
+                controls=controls,
+                entry_page=entry_page,
+                entry_trigger=entry_trigger,
+                goal=goal,
+                world_state=world_state,
+                episode=episode_id,
+                notes=f"first seen from {entry_page or 'UNKNOWN'} via {entry_trigger}",
+            )
+            if record is None:
+                return
+        store.record_attempt(key=key, verified=verified, observed_effect=observed_change)
+
     def _declared_dictionary_words(self) -> set[str]:
         """Every word the semantic dictionary declares, whatever control it belongs to.
 
@@ -1117,6 +1342,28 @@ class LiveRuntime:
             store.save()
         except Exception:  # noqa: BLE001 - a store write must never fail a run
             pass
+
+    def _save_page_candidates(self) -> None:
+        """Persist the page candidates and the learned transitions, once per run.
+
+        One write per run rather than one per step, the same trade ``_save_control_experience``
+        makes and for the same reason: nothing reads either file mid-run (the resolver reads the
+        in-memory ledger), while the whole file is rewritten on every save -- so a per-step write
+        would put two processes' full rewrites in the same window and buy nothing.
+        """
+        store = getattr(self, "_ui_pages", None)
+        if store is not None:
+            try:
+                store.prune()
+                store.save()
+            except Exception:  # noqa: BLE001 - a store write must never fail a run
+                pass
+        ledger = getattr(self, "_transitions", None)
+        if ledger is not None:
+            try:
+                ledger.save()
+            except Exception:  # noqa: BLE001 - a ledger write must never fail a run
+                pass
 
     def _collect_ui_evidence(
         self,
@@ -1791,6 +2038,17 @@ class LiveRuntime:
         "立即完成",
     )
 
+    #: The client's own way out of a screen, tried on an *unnamed* page after the goal's own
+    #: words (operator §一: "如果页面无法理解或确实无法推进当前 Goal，则尝试已有的可靠返回路径",
+    #: and §三 names the case outright -- "UNKNOWN 页面中出现明确的'返回'按钮，可以尝试返回").
+    #:
+    #: Deliberately not used on a named page: there, a registered skill or the brain owns
+    #: navigation, and a wholesale 返回 tap would fight it.  The bare ✕ the client draws beside
+    #: these is *not* in the list and is recorded rather than tapped (see page_knowledge), because
+    #: a one-glyph word at confidence 0.776 is not a measured control -- the system Back key this
+    #: project already trusts (STABLE, 97.6%) is what closes those screens.
+    UNKNOWN_PAGE_EXIT_WORDS: tuple[str, ...] = tuple(page_knowledge.BACK_WORDS)
+
     def _ordinary_control_candidate(
         self, frame: "WorldState", frame_path: "Path | None"
     ) -> tuple[float, float] | None:
@@ -1814,10 +2072,22 @@ class LiveRuntime:
 
         ``None`` also sets the brain's ``ordinary_scan_exhausted``, so the fallback
         stops asking this run for a tap the frames cannot name.
+
+        Operator directive 2026-09-22 ("未知页面自主探索"): this used to require ``frame.known``,
+        so an unnamed screen refused every control at once however clearly the client had drawn
+        one.  Measured: 31 of the 87 steps that landed on ``UNKNOWN`` landed on 挂机收益, whose own
+        largest control is 领取 and whose goal was to claim it.  The screen is now read like any
+        other -- its title comes from ``page_knowledge`` and its controls from the same exact-match
+        OCR -- while the two screens that genuinely cannot be tapped (maintenance, loading) still
+        refuse.
+
+        The learned reuse (§五/§六) rides here rather than in a second mechanism: the transition
+        ledger says which control on *this screen* really left it and which one did nothing, so the
+        order below prefers the first and skips the second instead of rediscovering the page.
         """
         if frame_path is None:
             return None
-        if not frame.known or frame.page in (Page.MAINTENANCE, Page.LOADING):
+        if frame.page in (Page.MAINTENANCE, Page.LOADING):
             return None
         ocr = self._ocr_service()
         if ocr is None:
@@ -1828,6 +2098,16 @@ class LiveRuntime:
                 brain.ordinary_scan_exhausted = True
             return None
         page = control_experience.label(frame.page)
+        unnamed = not frame.known
+        title = ""
+        # Which word this step chose, for the transition ledger: cleared first, so a step that
+        # resolves nothing cannot be credited with the previous step's control.
+        self._ordinary_last = None
+        if unnamed:
+            # The title is what keeps two unnamed screens apart in the ledger key, so it is read
+            # before anything is asked about this screen's history.  One cached OCR pass.
+            title_info = page_knowledge.read_title_candidate(frame_path, ocr)
+            title = str((title_info or {}).get("text") or "")
         # One OCR pass, cached by the service; the blacklist is checked over every
         # token so a spend word anywhere on the screen vetoes the attempt.
         try:
@@ -1840,7 +2120,8 @@ class LiveRuntime:
             if brain is not None:
                 brain.ordinary_scan_exhausted = True
             return None
-        for word in self.ORDINARY_CONTROL_WORDS:
+        order = self._ordinary_word_order(page, title, unnamed=unnamed)
+        for word in order:
             if (page, word) in self._ordinary_tried:
                 continue
             hit = find_printed_words(frame_path, (word,), ocr)
@@ -1849,14 +2130,57 @@ class LiveRuntime:
             self._ordinary_tried.add((page, word))
             self._ordinary_attempts += 1
             point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
+            self._ordinary_last = {
+                "page": page,
+                "title": title,
+                "word": word,
+                "point": (round(point[0], 4), round(point[1], 4)),
+            }
             self._note_printed(
-                f"ORDINARY_CONTROL[{word}]", page, f"the client's own printed {word!r}", point
+                f"ORDINARY_CONTROL[{word}]",
+                page_knowledge.page_key(page, title),
+                f"the client's own printed {word!r}",
+                point,
+                box_norm=hit.get("box_norm"),
+                text=word,
+                confidence=hit.get("confidence"),
             )
             return point
         brain = getattr(self, "brain", None)
         if brain is not None:
             brain.ordinary_scan_exhausted = True
         return None
+
+    def _ordinary_word_order(self, page: str, title: str, *, unnamed: bool) -> list[str]:
+        """Which printed words to try on this screen, best evidence first.
+
+        The order is what makes a second visit to the same screen cheaper than the first, and
+        every step of it is a measured statement rather than a preference:
+
+        * a control the transition ledger recorded as *really leaving this screen* comes first;
+        * a control whose recorded attempts on this screen all did nothing is dropped -- that is
+          §七.3 ("一次点击无响应时... 不得反复盲点同一位置") answered from the record rather than
+          from a run-scoped set;
+        * then the ordinary whitelist in its own order;
+        * and on an unnamed screen only, the client's own exit words last (§一/§三).
+        """
+        ledger = getattr(self, "_transitions", None)
+        learned: list[str] = []
+        failed: set[str] = set()
+        if ledger is not None:
+            for control in ledger.preferred_controls(page, title):
+                word = page_knowledge.word_from_control(control)
+                if word and word not in learned:
+                    learned.append(word)
+            failed = {
+                page_knowledge.word_from_control(control)
+                for control in ledger.failed_controls(page, title)
+            }
+        order = [word for word in learned if word in self.ORDINARY_CONTROL_WORDS]
+        order += [word for word in self.ORDINARY_CONTROL_WORDS if word not in order]
+        if unnamed:
+            order += [word for word in self.UNKNOWN_PAGE_EXIT_WORDS if word not in order]
+        return [word for word in order if word not in failed]
 
     def _remembered_control_center(self, semantic: str, frame: "WorldState"):
         """Where this device last saw ``semantic``, when the template can no longer find it.
@@ -2116,6 +2440,7 @@ class LiveRuntime:
             # action loop for no gain -- nothing reads the ledger mid-run.
             self._save_control_experience()
             self._save_ui_candidates()
+            self._save_page_candidates()
             self._save_fairness()
             return LiveRun(tuple(steps), reason, tuple(item.as_row() for item in deferrals))
 
@@ -2163,6 +2488,16 @@ class LiveRuntime:
         self.MAX_ORDINARY_ATTEMPTS = 2
         self._ordinary_attempts = 0
         self._ordinary_tried: set[tuple[str, str]] = set()
+        # Which control the ordinary resolver chose this step, for the transition ledger: the
+        # word is known at resolution time and nowhere else, because "ORDINARY_CONTROL" is a
+        # placeholder name by construction (operator 2026-09-22, unknown pages).
+        self._ordinary_last: dict[str, Any] | None = None
+        # The learned navigation (operator §五): loaded once per run, written back at ``finish``.
+        # It is read through ``getattr`` by the resolver so a harness without it still runs.
+        self._transitions = page_knowledge.TransitionLedger()
+        # The last page this run could *name*, so a screen reached from another unnamed screen
+        # still records what it was entered from (operator §四: "进入前的页面及触发动作").
+        self._last_known_label = ""
         # Utility inputs (operator §四).  All three are loaded once per run: the route
         # card is a measured artefact that does not change inside a run, and the
         # fairness ledger is written back at ``finish``.  Kept on the instance so

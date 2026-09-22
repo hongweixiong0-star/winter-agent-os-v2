@@ -454,6 +454,47 @@ class RuleBrain:
 
     def decide(self, world: WorldState, registry: SkillRegistry) -> Decision:
         if not world.known:
+            # A screen the page model cannot name used to end the task here: ``SAFE_STOP
+            # unknown_page``, nothing clicked, and -- because the runtime then backed out --
+            # whatever the client had drawn on that screen went unread.  Operator directive
+            # 2026-09-22 ("未知页面自主探索"):
+            #
+            #   不因页面尚未注册就拒绝全部普通操作 ... 先判断当前画面是否仍能支持当前 Goal；
+            #   如果可以，就继续尝试普通低风险操作。
+            #
+            # The evidence that this is not a hypothetical: measured over this project's own
+            # episode stream, 31 of the 87 steps that landed on UNKNOWN did so on one screen --
+            # 挂机收益, an idle-income dialog whose own largest control is 领取 and whose goal
+            # (``CLAIM_EXPLORATION_IDLE``) is to claim it.  The dialog was opened, the page model
+            # could not name it, and the reward sat there for every one of those 31 steps.
+            #
+            # So an unnamed screen with a named goal now gets the same bounded ordinary attempt a
+            # *named* page gets: the brain says only THAT a control should be tried, and the
+            # runtime answers WHICH from this frame's own printed words, screened by the spend
+            # blacklist it already carries.  That is the whole change -- no new skill, no new
+            # executor, no page registry.
+            #
+            # Three things keep it from becoming an exploration loop:
+            #
+            #   * a named goal is required -- with no goal there is nothing to advance, so the
+            #     answer stays the old one;
+            #   * the budget is the same counter and the same ceiling the named-page fallback
+            #     uses (``MAX_ORDINARY_ATTEMPTS``), shared rather than doubled;
+            #   * once the budget is gone -- or the frame names nothing untried -- the answer is
+            #     still ``SAFE_STOP unknown_page``, which is what hands the screen to the
+            #     runtime's own bounded Back recovery and then the next goal (§六).
+            if (
+                self.current_goal
+                and self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
+                and not self.ordinary_scan_exhausted
+            ):
+                self.ordinary_attempts += 1
+                return Decision(
+                    "TRY_ORDINARY_CONTROL",
+                    f"unnamed_page_with_goal_{self.current_goal}_may_still_name_an_ordinary_control",
+                    world.confidence,
+                    "ordinary_control_observed",
+                )
             return Decision("SAFE_STOP", "unknown_page", 1.0, "no_action")
         # Maintenance and loading are environmental states.  Nothing in the
         # game can be acted on, and tapping would only restart the client, so
