@@ -368,6 +368,24 @@ def boxes_from_request(request: UnknownRequest) -> list[dict[str, Any]]:
     return [dict(box) for box in request.ocr_boxes if isinstance(box, Mapping)]
 
 
+def box_containing(point: tuple[float, float], boxes: Iterable[Mapping[str, Any]]) -> dict[str, Any] | None:
+    """The frame's own OCR box a point landed in, or ``None``.
+
+    Used by the collector past (directive §五): the element that gets cropped and remembered is the
+    region this frame really drew, not a box the answer supplied.  A point that sits on no box is a
+    point ``justified_point`` would already have refused, so ``None`` here means "nothing to file".
+    """
+    for box in boxes:
+        try:
+            x, y = float(box["x_norm"]), float(box["y_norm"])
+            w, h = float(box["w_norm"]), float(box["h_norm"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if x <= point[0] <= x + w and y <= point[1] <= y + h:
+            return dict(box)
+    return None
+
+
 class UnknownAdvisor:
     """The runtime's side of the queue: write a request, read an answer, never wait.
 

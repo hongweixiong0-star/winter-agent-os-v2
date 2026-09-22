@@ -2332,11 +2332,30 @@ class LiveRuntime:
             "target_point": [point[0], point[1]],
             "source": advice.source,
         }
+        # The region the tap landed in, handed to the element collector like any other read
+        # (directive §五: an AI-identified candidate has to end up in the same collector as the
+        # rest -- screenshot, bbox, context, candidate semantics -- so that a proven one can become
+        # a template).  The box is the frame's own OCR box the point fell in, never a box the
+        # answer invented: the point is only used because it is over real text, and this is that
+        # text's measurement.
+        landed = unknown_advisor.box_containing(point, boxes)
         self._note_printed(
             f"AI_ADVICE[{advice.proposed_action}]",
             key,
             f"the on-demand analysis of {key} (uncertainty: {advice.uncertainty or 'unstated'})",
             point,
+            box_norm=(
+                {
+                    "x_norm": landed["x_norm"],
+                    "y_norm": landed["y_norm"],
+                    "w_norm": landed["w_norm"],
+                    "h_norm": landed["h_norm"],
+                }
+                if landed
+                else None
+            ),
+            text=str((landed or {}).get("text") or ""),
+            confidence=(landed or {}).get("confidence"),
             label=page,
         )
         return point

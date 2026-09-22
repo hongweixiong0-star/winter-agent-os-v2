@@ -251,6 +251,13 @@ class TheAnswerTests(unittest.TestCase):
             unknown_advisor.justified_point(near, [CLAIM_BOX]), (0.502, 0.724)
         )
 
+    def test_the_collector_is_handed_the_frame_s_own_box_not_the_answer_s(self):
+        """§五: what gets cropped and remembered is the region this frame drew."""
+        self.assertIsNone(unknown_advisor.box_containing((0.02, 0.02), [CLAIM_BOX]))
+        landed = unknown_advisor.box_containing((0.50, 0.72), [CLAIM_BOX])
+        self.assertIsNotNone(landed)
+        self.assertEqual(landed["x_norm"], CLAIM_BOX["x_norm"])
+
     def test_an_answer_cannot_propose_money_or_an_invented_skill(self):
         with self.assertRaises(unknown_advisor.AdviceRejected):
             unknown_advisor.parse_advice(
