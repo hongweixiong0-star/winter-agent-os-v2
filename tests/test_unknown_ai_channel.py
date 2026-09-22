@@ -32,6 +32,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -410,6 +411,75 @@ class NeverWaitsTests(unittest.TestCase):
         worker = (ROOT / "tools/unknown_ai_worker.py").read_text(encoding="utf-8")
         self.assertIn("unknown_dispatch", panel, "the panel's clock owns the channel")
         self.assertIn("UnknownDispatcher", worker)
+
+
+class PanelClockTests(unittest.TestCase):
+    """The channel rides the panel's clock, and that wiring is the part production depends on.
+
+    The panel is a long-lived process, so a new tick only exists after a restart -- which is exactly
+    why the wiring has to be checked here rather than discovered in the window.  ``UnknownDispatcher``
+    is patched to a stub: the point is that the heartbeat gets filled in and that a failure inside the
+    pass is reported rather than raised, not that a real job is submitted.
+    """
+
+    def _pump(self):
+        from tools import control_panel as panel
+
+        # ``preload_every=0`` disables the other background pass this thread carries, so a failure
+        # here is this test's failure and not the preloader's.
+        return panel, panel.QueuePump(interval=0.01, preload_every=0, unknown_every=1)
+
+    def test_the_tick_reports_what_the_channel_did(self):
+        panel, pump = self._pump()
+        seen: dict[str, object] = {}
+
+        class _Stub:
+            def __init__(self, root=None):
+                seen["root"] = root
+
+            def worker(self):
+                return {"reconcile": {"checked": 1, "done": 1}, "dispatch": {"submitted": []}}
+
+            def state(self):
+                return {"gateway": True, "pending": 2, "answered": 1, "in_flight": ["job01"],
+                        "attempts": {"q": 1}}
+
+        # Patched where the tick imports it from: the import is lazy (inside the pass), which is
+        # what keeps a heavy dependency off the panel's import path -- and what makes patching the
+        # panel module itself do nothing at all.
+        with mock.patch("winter_agent_v2.unknown_dispatch.UnknownDispatcher", _Stub):
+            pump.tick()
+        state = pump.state()
+        self.assertEqual(state["unknown_gateway"], True)
+        self.assertEqual(state["unknown_pending"], 2)
+        self.assertEqual(state["unknown_answered"], 1)
+        self.assertEqual(state["unknown_in_flight"], ["job01"])
+        self.assertIn("reconciled", state["unknown_note"])
+        self.assertTrue(state["unknown_last"], "the heartbeat carries a time")
+
+    def test_a_broken_channel_is_a_state_not_a_dead_window(self):
+        panel, pump = self._pump()
+
+        class _Exploding:
+            def __init__(self, root=None):
+                pass
+
+            def worker(self):
+                raise RuntimeError("gateway went away")
+
+            def state(self):
+                raise RuntimeError("and so did the probe")
+
+        with mock.patch("winter_agent_v2.unknown_dispatch.UnknownDispatcher", _Exploding):
+            pump.tick()
+        self.assertIn("unknown channel failed", pump.state()["unknown_note"])
+
+    def test_the_renderer_shows_the_channel(self):
+        """The heartbeat is written to disk for a reader outside the window; it has to be shown."""
+        panel, _ = self._pump()
+        source = (ROOT / "tools/control_panel.py").read_text(encoding="utf-8")
+        for key in ("unknown_note", "unknown_pending", "unknown_in_flight"):
+            self.assertIn(key, source)
 
 
 class GroundingTests(unittest.TestCase):
