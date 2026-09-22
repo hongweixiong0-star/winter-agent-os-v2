@@ -1498,6 +1498,46 @@ def _panel_arrow_and_badge(
     return centre, ("PRESENT" if reds >= QUICK_PANEL_BADGE_MIN_PX else "ABSENT"), box
 
 
+def _tokens_in_frame_space(
+    result: OCRResult, roi: Mapping[str, float], frame_size: tuple[int, int] | None
+) -> OCRResult:
+    """The same tokens, moved out of the roi crop's space and into the frame's.
+
+    ``OCRService.recognize(path, roi)`` crops the image and returns its boxes in the **crop's**
+    coordinates.  A consumer that compares those boxes with frame-space quantities -- which is exactly
+    what ``read_quick_panel`` does when it reports ``y_norm`` and locates each row's own button -- then
+    reads every row shifted by the crop's top edge.
+
+    Measured 2026-09-22, and it is what made a row arrow tap miss: the panel's four rows came out at
+    y 0.2262 / 0.2832 / 0.3402 / 0.4285 through ``HybridVision.observe``, while the same frame read
+    0.427 / 0.484 / 0.541 / 0.6283 through ``read_quick_panel`` on the whole image -- a uniform
+    0.2008, which is ``QUICK_PANEL_ROI``'s ``y_norm`` 0.20 times the frame height, i.e. the crop's top
+    edge and nothing else.  The tap issued from that reading landed one row above the intended arrow
+    (``TRAINING_PAGE_NOT_PROVEN``, ``NUMBER_CHANGED``, the client still on HOME).
+    """
+    if not frame_size or not roi:
+        return result
+    width, height = int(frame_size[0]), int(frame_size[1])
+    if width <= 0 or height <= 0:
+        return result
+    left = round(float(roi.get("x_norm") or 0.0) * width)
+    top = round(float(roi.get("y_norm") or 0.0) * height)
+    if left == 0 and top == 0:
+        return result
+    return OCRResult(
+        tuple(
+            OCRToken(
+                text=token.text,
+                confidence=token.confidence,
+                box=tuple((float(point[0]) + left, float(point[1]) + top) for point in token.box),
+            )
+            for token in result.tokens
+        ),
+        result.backend,
+        result.cached,
+    )
+
+
 def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dict:
     """Read the 快捷面板 as its own surface, or ``{}`` when it is not open.
 
@@ -4100,10 +4140,18 @@ class HybridVision:
             if panel_drawn:
                 # The open panel's own reading overrides the collapsed handle attached above; the
                 # two cannot both be true, and ``read_quick_panel`` is the measurement that settles it.
+                try:
+                    panel_size = read_frame_size(image_path)
+                except (OSError, ValueError, AttributeError, TypeError):
+                    panel_size = None
                 quick_panel = read_quick_panel(
                     image_path,
                     self.ocr,
-                    result=self.ocr.recognize(image_path, QUICK_PANEL_ROI),
+                    # The roi pass is kept (it is why this costs no extra OCR), but its boxes belong to
+                    # the crop and the reader works in frame space -- see ``_tokens_in_frame_space``.
+                    result=_tokens_in_frame_space(
+                        self.ocr.recognize(image_path, QUICK_PANEL_ROI), QUICK_PANEL_ROI, panel_size
+                    ),
                 )
             return self._with_quick_panel(primary, quick_panel)
         # The template layer could not name the page.  The classifier is asked, and the
