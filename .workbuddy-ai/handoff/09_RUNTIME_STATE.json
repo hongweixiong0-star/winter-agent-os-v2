@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-09-20T13:03:05+00:00",
+  "generated_at": "2026-09-22T21:55:21+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "a882c5c",
+  "commit": "9496761",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
     "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-20T13:02:37.138766+00:00",
-    "last_action_time": "2026-09-20T13:00:04.153592+00:00",
-    "last_success_time": "2026-09-20T13:00:02.711755+00:00",
+    "last_tick_time": "2026-09-22T21:55:21.301143+00:00",
+    "last_action_time": "2026-09-22T21:54:50.581769+00:00",
+    "last_success_time": "2026-09-22T21:55:07.192785+00:00",
     "last_fatal_error": null,
-    "watchdog_restart_count": 13,
+    "watchdog_restart_count": 21,
     "unexpected_worker_exits": 15,
-    "page": "POPUP",
+    "page": "MAP",
     "current_goal": "AUTO_DISCOVERY",
     "current_skill": "SAFE_STOP",
-    "reason": "generic_reward_without_goal_context",
+    "reason": "reserved_march_for_stamina",
     "preconditions": [],
-    "verifier": null,
-    "next_action": "no_action",
+    "verifier": "PASS",
+    "next_action": "stamina_task_slot_preserved",
     "risk": "UNKNOWN",
     "confidence": 1.0,
     "device": "UNKNOWN",
@@ -27,9 +27,9 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260920_210233_059601\\20260920_210233_059601_step_001_before_20260920T130235565840.png",
-    "march_used": null,
-    "march_max": null,
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_055256_959620\\20260923_055256_959620_step_005_before_20260922T215507194744.png",
+    "march_used": 2,
+    "march_max": 3,
     "queues": {
       "building": {},
       "research": {},
@@ -38,29 +38,18 @@
       "alliance": {},
       "events": {}
     },
-    "stop_reason": "generic_reward_without_goal_context",
+    "stop_reason": "reserved_march_for_stamina",
     "deferred_goals": [
       {
         "goal_id": "AVOID_STAMINA_WASTE",
         "capability": "SPEND_STAMINA_ON_BEAST",
         "state": "DEFERRED",
-        "reason": "3 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|OPEN_INTEL",
-        "streak": 3,
+        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST",
+        "streak": 4,
         "until": "",
-        "last_skill": "OPEN_INTEL"
-      },
-      {
-        "goal_id": "CLEAR_INTEL",
-        "capability": "READ_INTEL_LIST",
-        "state": "DEFERRED",
-        "reason": "5 consecutive production episodes advanced no part of this goal (4 passed their verifier, 1 were rejected by it, 0 issued no action)",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|DISMISS_INTEL_GENERIC_REWARD",
-        "streak": 5,
-        "until": "",
-        "last_skill": "DISMISS_INTEL_GENERIC_REWARD"
+        "last_skill": "SCAN_MAP_FOR_BEAST"
       },
       {
         "goal_id": "KEEP_TRAINING_PRODUCTIVE",
@@ -68,43 +57,43 @@
         "state": "DEFERRED",
         "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|NAVIGATE_INFANTRY_CAMP",
+        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|TRY_ORDINARY_CONTROL",
         "streak": 4,
         "until": "",
-        "last_skill": "NAVIGATE_INFANTRY_CAMP"
+        "last_skill": "TRY_ORDINARY_CONTROL"
+      },
+      {
+        "goal_id": "CLEAR_INTEL",
+        "capability": "READ_INTEL_LIST",
+        "state": "DEFERRED",
+        "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "source": "NO_GOAL_PROGRESS",
+        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|OPEN_INTEL",
+        "streak": 4,
+        "until": "",
+        "last_skill": "OPEN_INTEL"
       },
       {
         "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
         "capability": "OPEN_RESEARCH_PAGE",
-        "state": "DEVELOPMENT_PENDING",
-        "reason": "a development job owns it (job=129cc68f)",
-        "source": "ESCALATION_QUEUE",
-        "failure_signature": "",
-        "streak": 0,
+        "state": "DEFERRED",
+        "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "source": "NO_GOAL_PROGRESS",
+        "failure_signature": "OPEN_RESEARCH_PAGE|NO_GOAL_PROGRESS|OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+        "streak": 4,
         "until": "",
-        "last_skill": ""
+        "last_skill": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH"
       },
       {
         "goal_id": "MAIL_ROUTINE",
-        "capability": "OPEN_MAIL_PAGE",
+        "capability": "READ_MAIL_TABS",
         "state": "DEFERRED",
-        "reason": "3 consecutive production episodes advanced no part of this goal (0 passed their verifier, 2 were rejected by it, 1 issued no action)",
+        "reason": "3 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_MAIL_PAGE|NO_GOAL_PROGRESS|DISMISS_MAIL_GENERIC_REWARD",
+        "failure_signature": "READ_MAIL_TABS|NO_GOAL_PROGRESS|TRY_ORDINARY_CONTROL",
         "streak": 3,
         "until": "",
-        "last_skill": "DISMISS_MAIL_GENERIC_REWARD"
-      },
-      {
-        "goal_id": "DAILY_ACTIVITY_TARGET",
-        "capability": "READ_DAILY_PROGRESS",
-        "state": "DEFERRED",
-        "reason": "3 consecutive production episodes advanced no part of this goal (2 passed their verifier, 0 were rejected by it, 1 issued no action)",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "READ_DAILY_PROGRESS|NO_GOAL_PROGRESS|DISMISS_DAILY_GENERIC_REWARD",
-        "streak": 3,
-        "until": "",
-        "last_skill": "DISMISS_DAILY_GENERIC_REWARD"
+        "last_skill": "TRY_ORDINARY_CONTROL"
       },
       {
         "goal_id": "ALLIANCE_ROUTINE",
@@ -112,20 +101,41 @@
         "state": "DEFERRED",
         "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_ALLIANCE_PAGE|NO_GOAL_PROGRESS|DISPATCH_INTEL_BEAST",
+        "failure_signature": "OPEN_ALLIANCE_PAGE|NO_GOAL_PROGRESS|OPEN_ALLIANCE",
         "streak": 4,
         "until": "",
-        "last_skill": "DISPATCH_INTEL_BEAST"
+        "last_skill": "OPEN_ALLIANCE"
       }
     ],
-    "updated_at": "2026-09-20T13:02:40.414459+00:00"
+    "updated_at": "2026-09-22T21:55:21.310556+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-20T13:02:38+00:00",
-    "size_bytes": 8852,
-    "last_stop_reason": "generic_reward_without_goal_context"
+    "modified_at": "2026-09-22T21:52:18+00:00",
+    "size_bytes": 175060,
+    "last_stop_reason": null
   },
-  "recent_crash_reports": [],
+  "recent_crash_reports": [
+    {
+      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260921_082612_963293_unified_worker.json",
+      "modified_at": "2026-09-21T10:24:05+00:00"
+    },
+    {
+      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260921_084519_539259_unified_worker.json",
+      "modified_at": "2026-09-21T10:24:05+00:00"
+    },
+    {
+      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260921_090424_676980_unified_worker.json",
+      "modified_at": "2026-09-21T10:24:05+00:00"
+    },
+    {
+      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260921_092331_166289_unified_worker.json",
+      "modified_at": "2026-09-21T10:24:05+00:00"
+    },
+    {
+      "path": "E:\\无尽冬日智能体\\learning\\control_panel\\crashes\\20260921_094236_608796_unified_worker.json",
+      "modified_at": "2026-09-21T10:24:05+00:00"
+    }
+  ],
   "process_alive_interpretation": "runtime_thread_alive/scheduler_loop_alive mean the in-process worker loop is running. They do NOT mean the emulator or the game is reachable; check the device separately."
 }

@@ -1169,17 +1169,17 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.5713. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: FREE_STAMINA_CLAIM_NOT_PROVEN — 153 in the last 2 day(s), 236 all-time, last seen 2026-09-20T10:18:03.144489+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 140 in the last 2 day(s), 376 all-time, last seen 2026-09-22T21:47:42.619776+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 149
-LAST PRODUCTION EPISODE: {"skill": "DISMISS_INTEL_GENERIC_REWARD", "result": "FAILURE", "recorded_at": "2026-09-20T13:00:04.155708+00:00", "episode_id": "20260920_205419_420369", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260920_205419_420369\\20260920_205419_420369_step_014_before_20260920T130002712730.png", "after_screenshot": ""}
-TOP FAILURE: {"failure_type": "FREE_STAMINA_CLAIM_NOT_PROVEN", "count": 236, "recent": 153, "last_seen": "2026-09-20T10:18:03.144489+00:00", "dates": {"2026-09-18": 221, "2026-09-19": 14, "2026-09-20": 1}, "undated": 0, "top_skills": [["CLAIM_FREE_STAMINA", 236]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-18T13:00:04.155708+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 463
+LAST PRODUCTION EPISODE: {"skill": "OPEN_MAP", "result": "SUCCESS", "recorded_at": "2026-09-22T21:55:06.968914+00:00", "episode_id": "20260923_055256_959620", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_055256_959620\\20260923_055256_959620_step_004_before_20260922T215437783377.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_055256_959620\\20260923_055256_959620_step_004_after_20260922T215452084048.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 376, "recent": 140, "last_seen": "2026-09-22T21:47:42.619776+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 84}, "undated": 31, "top_skills": [["OPEN_HOME", 45], ["SELECT_RESOURCE", 44], ["DISMISS_MAIL_GENERIC_REWARD", 42]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-20T21:55:06.968914+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]
 DESIGN-BLOCKED (not implementable from the draft alone; each needs a live frame of its page first): CHECK_ALLIANCE_EVENT [NOT_REGISTERED] — requires semantic(s) `ALLIANCE_EVENT_ENTRY` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; CLAIM_EVENT_TIER [NOT_REGISTERED] — requires semantic(s) `EVENT_TIER_CLAIMABLE` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; JOIN_RALLY [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_BEAR_TIMER [NOT_REGISTERED] — requires semantic(s) `BEAR_TIMER` that do not exist in dataset/candidate/template_manifest.json; the page has never been observed live, so this needs new vision design first; READ_COUNTER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined; READ_TIMER [NO_VERIFIER] — has no design draft at all (absent from winter_agent_v2/skill_factory.PRIORS), so its required semantics and success condition are undefined ... and 14 more
-NEVER EXECUTED SKILLS (first 12): ['ATTACK_BEAST_CARD', 'CANCEL_DUPLICATE_TARGET', 'CLAIM_REWARD', 'JOIN_RALLY', 'NAVIGATE_TO', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER', 'RECOVER_HOME', 'REINFORCE_TARGET', 'RELAX_RESOURCE_LEVEL', 'SELECT_BEAST_TARGET_MAMMOTH']
+NEVER EXECUTED SKILLS (first 12): ['CLAIM_REWARD', 'COLLECT_FINISHED_TRAINING_LANCER', 'COLLECT_FINISHED_TRAINING_MARKSMAN', 'COLLECT_MY_REWARDS_ROW', 'JOIN_RALLY', 'NAVIGATE_TO', 'OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION', 'OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT', 'OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS', 'READ_COUNTER', 'READ_INTEL_LIST', 'READ_TIMER']
 
 NEXT EXACT ACTION: Do not implement a design-blocked skill from its draft. The cheapest real progress is to obtain a live frame of the page the skill needs (a read-only discovery probe), design the missing semantic from that evidence, then implement. Failing that, take the highest-value *live-evidenced* defect from 04_OPEN_ISSUES — those are already proven by production episodes.
 
@@ -1187,6 +1187,39 @@ ACCEPTANCE: production episode + passing verifier + screenshot evidence, and the
 
 DO NOT: re-architect, rename goals, or touch anything already live-verified without new failure evidence.
 <!-- /AUTO:next_action -->
+
+---
+
+## 手写：本轮交接（2026-09-23 夜，`9496761`）—— 红点已是优先级信号；§二③④⑤⑥ 仍未做
+
+接管时 AUTO 正在真机跑（`runtime_snapshot` 每秒更新、`GOAL_RUNNING`）。**本轮不抢设备**，
+全程离线取证，改的是决策层（见 issue **#102**）：
+
+- 红点此前只被**读取**、只被一处消费（邮件无角标就不进邮件页）⇒ 客户端画的红点**影响不了任何选择**。
+  现在：`entry_badges.dot_varies`（只认被量到**会消失**的角标）+ `dots_pointing_at` +
+  `goal_utility.RED_DOT_BONUS = 60`（界来自板的真实间隙：未读探访 180 + 60 = 240 **<** 一次可领取 250）。
+- 顺带修掉一个**真实的绑定缺陷**：面板「科技研究」行的红点原本绑的是路由域 `"RESEARCH"` 而不是
+  Goal id，而这一行是面板红点信号的主体（12 帧 9 PRESENT、唯一有区分度）⇒ 信号大半落不到 Goal 上，
+  且**没有任何地方会报错**。已改为 `KEEP_RESEARCH_PRODUCTIVE`，并用测试断言"绑定不得是路由域"。
+- 证据：`tools/replay_red_dot_priority.py` 在 12 张生产帧上做受控 A/B（同帧同代码只切 `red_dots`）
+  ⇒ **处理组 8/8 换板首、负向对照 0/4**；归档 `dataset/truth_audit/red_dot_priority_20260923/`。
+- **刻意没做** §二①「红点唤醒 Goal」：量出该盲窗在语料里**一次都没出现**（唯一一次在 1841 分钟后），
+  而规则只能写成"红点在就重开页面"，红点一旦不消失就会成环。测量与理由写在 #102。
+
+**下一个精确动作（按价值排序）**：
+1. **§二① 的替代方案**：不重开页面，而是让"新红点"只影响**已经在板上的目标**的次序——本轮已做；
+   若要"唤醒"，先量出一个真实存在盲窗（例如邮件角标在 TTL 内重现的帧），没有帧就不加规则。
+2. **§三 / §四**（各入口分别判断 + 五态结算词汇）：受 #95 B「已完成待领取的领取控件未找到」制约，
+   需要一次**真机受控实验**（按 #95 记录的下一跳：营房**气泡**，本项目历史四次 tap 打的都是环/地面）。
+3. **#101 另两种成因**：① 4 次"控件在帧上（d=2）却 `SEMANTIC_TARGET_NOT_VERIFIED`"的解析器层不一致；
+   ② 4 次 `OPEN_HOME_NOT_PROVEN`（3 次 after=POPUP）。两者都已有帧，可离线先做归因。
+4. **面板 `联盟捐献 / 英雄招募 / 我的奖励` 三行的角标**在 12 帧里全是 UNKNOWN（读不出来就没有信号）；
+   这是 #100 的另一半，先让读取器能读定这三行的角标。
+
+**不要重复**：不要把"读到红点"当成"任务完成"；不要用恒亮的角标（每日/联盟 26/26、英雄图案）排序；
+不要为没有量到盲窗的规则增加会重复开页的分支；回放时**不要采信记录里的读数**（记录可能是旧读取器写的，
+本轮有 2 帧如此）。
+
 
 ---
 

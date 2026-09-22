@@ -6,8 +6,8 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x362 all-time; recent=126 (last 2d), last seen 2026-09-22T20:26:44.089397+00:00 — SELECT_RESOURCE(44), DISMISS_MAIL_GENERIC_REWARD(42), OPEN_HOME(37)
-- **SAFE_BACK_NOT_PROVEN** x83 all-time; recent=62 (last 2d), last seen 2026-09-22T20:43:13.032191+00:00 — BACK(83)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x376 all-time; recent=140 (last 2d), last seen 2026-09-22T21:47:42.619776+00:00 — OPEN_HOME(45), SELECT_RESOURCE(44), DISMISS_MAIL_GENERIC_REWARD(42)
+- **SAFE_BACK_NOT_PROVEN** x86 all-time; recent=65 (last 2d), last seen 2026-09-22T21:45:34.327550+00:00 — BACK(86)
 - **NO_EXECUTION** x47 all-time; recent=42 (last 2d), last seen 2026-09-22T17:14:12.782205+00:00 — SAFE_STOP(47)
 - **BEAST_DISPATCH_NOT_PROVEN** x40 all-time; recent=39 (last 2d), last seen 2026-09-22T17:00:21.491819+00:00 — DISPATCH_BEAST(40)
 - **EXPLORATION_IDLE_DIALOG_NOT_PROVEN** x39 all-time; recent=28 (last 2d), last seen 2026-09-22T11:21:51.270358+00:00 — EXPLORATION_IDLE_CLAIM(39)
@@ -23,7 +23,7 @@ Machine-detected issues (recomputed every run):
 - `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=8, failure=8)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=3, failure=3)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 426 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md']
+- 463 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md']
 <!-- /AUTO:open_issues -->
 
 ---

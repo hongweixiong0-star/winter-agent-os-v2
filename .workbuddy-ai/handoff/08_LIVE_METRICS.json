@@ -1,60 +1,42 @@
 {
-  "generated_at": "2026-09-20T13:03:05+00:00",
+  "generated_at": "2026-09-22T21:55:21+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "a882c5c",
+  "commit": "9496761",
   "last_good_commit": "e4fd245",
-  "dirty_count": 149,
+  "dirty_count": 463,
   "episodes": {
-    "total": 3091,
-    "production": 3091,
-    "success": 2339,
-    "failure": 747,
-    "success_rate_over_decided": 0.7579,
+    "total": 6854,
+    "production": 6854,
+    "success": 5619,
+    "failure": 1230,
+    "success_rate_over_decided": 0.8204,
     "modes": {
-      "PRODUCTION": 3091
+      "PRODUCTION": 6854
     },
     "mixed_case_rows": 35
   },
   "skills": {
-    "registry_total": 94,
+    "registry_total": 112,
     "by_state": {
-      "VERIFIED": 46,
-      "CANDIDATE": 46,
+      "VERIFIED": 47,
+      "CANDIDATE": 63,
       "BLOCKED": 2
     },
-    "dispatchable": 78,
+    "dispatchable": 96,
     "counts": {
-      "live_verified": 20,
-      "stable": 30,
-      "degraded": 18,
-      "only_failed": 10,
-      "never_executed": 18
+      "live_verified": 21,
+      "stable": 42,
+      "degraded": 19,
+      "only_failed": 11,
+      "never_executed": 21
     }
   },
   "top_failures": [
     {
-      "failure_type": "FREE_STAMINA_CLAIM_NOT_PROVEN",
-      "count": 236,
-      "recent": 153,
-      "last_seen": "2026-09-20T10:18:03.144489+00:00",
-      "dates": {
-        "2026-09-18": 221,
-        "2026-09-19": 14,
-        "2026-09-20": 1
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "CLAIM_FREE_STAMINA",
-          236
-        ]
-      ]
-    },
-    {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 224,
-      "recent": 90,
-      "last_seen": "2026-09-20T13:00:04.155708+00:00",
+      "count": 376,
+      "recent": 140,
+      "last_seen": "2026-09-22T21:47:42.619776+00:00",
       "dates": {
         "2026-09-12": 36,
         "2026-09-13": 37,
@@ -64,160 +46,202 @@
         "2026-09-17": 3,
         "2026-09-18": 2,
         "2026-09-19": 16,
-        "2026-09-20": 74
+        "2026-09-20": 89,
+        "2026-09-21": 53,
+        "2026-09-22": 84
       },
       "undated": 31,
       "top_skills": [
+        [
+          "OPEN_HOME",
+          45
+        ],
         [
           "SELECT_RESOURCE",
           44
         ],
         [
           "DISMISS_MAIL_GENERIC_REWARD",
-          39
-        ],
-        [
-          "DISMISS_INTEL_REWARD",
-          35
-        ]
-      ]
-    },
-    {
-      "failure_type": "ALLIANCE_GIFTS_CLAIM_NOT_PROVEN",
-      "count": 11,
-      "recent": 11,
-      "last_seen": "2026-09-19T09:09:43.182090+00:00",
-      "dates": {
-        "2026-09-19": 11
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "ALLIANCE_GIFTS",
-          11
-        ]
-      ]
-    },
-    {
-      "failure_type": "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN",
-      "count": 12,
-      "recent": 10,
-      "last_seen": "2026-09-19T12:31:43.758085+00:00",
-      "dates": {
-        "2026-09-19": 10
-      },
-      "undated": 2,
-      "top_skills": [
-        [
-          "NAVIGATE_INFANTRY_CAMP",
-          12
+          42
         ]
       ]
     },
     {
       "failure_type": "SAFE_BACK_NOT_PROVEN",
-      "count": 13,
-      "recent": 9,
-      "last_seen": "2026-09-20T10:16:19.235731+00:00",
+      "count": 86,
+      "recent": 65,
+      "last_seen": "2026-09-22T21:45:34.327550+00:00",
       "dates": {
         "2026-09-13": 1,
         "2026-09-17": 2,
         "2026-09-18": 1,
         "2026-09-19": 8,
-        "2026-09-20": 1
+        "2026-09-20": 9,
+        "2026-09-21": 13,
+        "2026-09-22": 52
       },
       "undated": 0,
       "top_skills": [
         [
           "BACK",
-          13
+          86
+        ]
+      ]
+    },
+    {
+      "failure_type": "NO_EXECUTION",
+      "count": 47,
+      "recent": 42,
+      "last_seen": "2026-09-22T17:14:12.782205+00:00",
+      "dates": {
+        "2026-09-14": 4,
+        "2026-09-15": 1,
+        "2026-09-21": 10,
+        "2026-09-22": 32
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SAFE_STOP",
+          47
+        ]
+      ]
+    },
+    {
+      "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
+      "count": 40,
+      "recent": 39,
+      "last_seen": "2026-09-22T17:00:21.491819+00:00",
+      "dates": {
+        "2026-09-21": 9,
+        "2026-09-22": 30
+      },
+      "undated": 1,
+      "top_skills": [
+        [
+          "DISPATCH_BEAST",
+          40
         ]
       ]
     },
     {
       "failure_type": "EXPLORATION_IDLE_DIALOG_NOT_PROVEN",
-      "count": 8,
-      "recent": 7,
-      "last_seen": "2026-09-19T11:24:22.269603+00:00",
+      "count": 39,
+      "recent": 28,
+      "last_seen": "2026-09-22T11:21:51.270358+00:00",
       "dates": {
-        "2026-09-19": 7
+        "2026-09-19": 7,
+        "2026-09-20": 3,
+        "2026-09-21": 18,
+        "2026-09-22": 10
       },
       "undated": 1,
       "top_skills": [
         [
           "EXPLORATION_IDLE_CLAIM",
-          8
+          39
         ]
       ]
     },
     {
-      "failure_type": "RESOURCE_NOT_FOUND",
-      "count": 33,
-      "recent": 3,
-      "last_seen": "2026-09-20T12:59:14.238482+00:00",
+      "failure_type": "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN",
+      "count": 27,
+      "recent": 15,
+      "last_seen": "2026-09-22T14:55:21.909586+00:00",
       "dates": {
-        "2026-09-13": 8,
-        "2026-09-14": 22,
-        "2026-09-20": 3
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "SUBMIT_RESOURCE_SEARCH",
-          33
-        ]
-      ]
-    },
-    {
-      "failure_type": "MAIL_REWARD_DISMISS_NOT_PROVEN",
-      "count": 3,
-      "recent": 3,
-      "last_seen": "2026-09-20T12:53:45.949926+00:00",
-      "dates": {
-        "2026-09-19": 1,
-        "2026-09-20": 2
-      },
-      "undated": 0,
-      "top_skills": [
-        [
-          "DISMISS_MAIL_GENERIC_REWARD",
-          3
-        ]
-      ]
-    },
-    {
-      "failure_type": "OPEN_MAIL_NOT_PROVEN",
-      "count": 4,
-      "recent": 2,
-      "last_seen": "2026-09-20T04:07:11.370137+00:00",
-      "dates": {
-        "2026-09-20": 2
+        "2026-09-19": 10,
+        "2026-09-21": 14,
+        "2026-09-22": 1
       },
       "undated": 2,
       "top_skills": [
         [
-          "OPEN_MAIL",
-          4
+          "NAVIGATE_INFANTRY_CAMP",
+          27
         ]
       ]
     },
     {
-      "failure_type": "OPEN_MAP_NOT_PROVEN",
-      "count": 7,
-      "recent": 1,
-      "last_seen": "2026-09-18T15:27:22.674670+00:00",
+      "failure_type": "OPEN_INTEL_NOT_PROVEN",
+      "count": 16,
+      "recent": 15,
+      "last_seen": "2026-09-22T21:33:56.537796+00:00",
       "dates": {
-        "2026-09-13": 1,
-        "2026-09-14": 1,
-        "2026-09-15": 1,
-        "2026-09-17": 2,
-        "2026-09-18": 2
+        "2026-09-17": 1,
+        "2026-09-21": 5,
+        "2026-09-22": 10
       },
       "undated": 0,
       "top_skills": [
         [
-          "OPEN_MAP",
-          7
+          "OPEN_INTEL",
+          16
+        ]
+      ]
+    },
+    {
+      "failure_type": "RECALL_DIALOG_NOT_OPEN",
+      "count": 10,
+      "recent": 9,
+      "last_seen": "2026-09-22T15:29:24.289325+00:00",
+      "dates": {
+        "2026-09-18": 1,
+        "2026-09-21": 5,
+        "2026-09-22": 4
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "SELECT_MARCH_TO_RECALL",
+          10
+        ]
+      ]
+    },
+    {
+      "failure_type": "POPUP_CLOSE_NOT_PROVEN",
+      "count": 14,
+      "recent": 8,
+      "last_seen": "2026-09-22T08:28:22.442943+00:00",
+      "dates": {
+        "2026-09-13": 5,
+        "2026-09-17": 1,
+        "2026-09-22": 8
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "CLOSE_POPUP",
+          8
+        ],
+        [
+          "DISMISS_REAL_MONEY_OFFER",
+          5
+        ],
+        [
+          "RECONNECT_SESSION",
+          1
+        ]
+      ]
+    },
+    {
+      "failure_type": "INTEL_BEAST_TARGET_NOT_PROVEN",
+      "count": 16,
+      "recent": 7,
+      "last_seen": "2026-09-22T09:24:15.834973+00:00",
+      "dates": {
+        "2026-09-14": 2,
+        "2026-09-15": 3,
+        "2026-09-16": 1,
+        "2026-09-17": 2,
+        "2026-09-20": 1,
+        "2026-09-21": 3,
+        "2026-09-22": 4
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_INTEL_BEAST_TARGET",
+          16
         ]
       ]
     }
@@ -255,9 +279,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 4593,
-    "present_on_disk": 4593,
-    "traceable_episodes": 2359,
+    "referenced_screenshots": 11925,
+    "present_on_disk": 11925,
+    "traceable_episodes": 6122,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -268,20 +292,20 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "a882c5c4791a2e76221e680d42c17ce447404f86",
-    "remote_head": "a882c5c4791a2e76221e680d42c17ce447404f86",
+    "local_head": "9496761c819bea1d3bd0c11a1dfb13a0d8599db8",
+    "remote_head": "9496761c819bea1d3bd0c11a1dfb13a0d8599db8",
     "unpushed_commits": 0,
     "behind": 0,
     "in_sync": true,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
-    "last_push_at": "2026-09-18T10:00:11.524299+00:00",
+    "last_push_at": "2026-09-22T21:55:11.574148+00:00",
     "last_push_status": "PUSHED"
   },
   "runtime": {
     "agent_state": "DEGRADED",
     "unexpected_worker_exits": 15,
-    "watchdog_restart_count": 13,
+    "watchdog_restart_count": 21,
     "last_fatal_error": null,
-    "stop_reason": "generic_reward_without_goal_context"
+    "stop_reason": "reserved_march_for_stamina"
   }
 }

@@ -6,36 +6,36 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `a882c5c 2026-09-20T20:58:48+08:00 docs(issues): #64 is deeper than refusal -- the dismissal is attempted and fails`
-- `352a87c 2026-09-20T20:53:01+08:00 docs(issues): the tap-anywhere popup blocker, with the agreed fix and its measurements`
-- `0792cb8 2026-09-20T20:13:46+08:00 fix(panel): stop the unverified self-reload from closing a live panel`
-- `337bdc4 2026-09-20T18:26:59+08:00 fix(runtime): a step that issued no action must yield the goal, not end the run`
-- `fd3f153 2026-09-20T18:18:45+08:00 fix(panel): a finished subprocess is not a finished work cycle`
-- `88e4a6d 2026-09-20T18:15:08+08:00 docs: correct my own call-chain claim -- the stage ladder is dead code, confirmed by artifacts`
-- `fbb786e 2026-09-20T18:05:23+08:00 docs: 9ee62cc independently verified over 6747 frames, no regression found`
-- `197f979 2026-09-20T14:18:11+08:00 docs(issues): rebuild the test baseline, and correct a wrong known-failure list`
-- `d145242 2026-09-20T13:39:10+08:00 docs: production health check of the AUTO chain, with every claim tied to evidence`
-- `0cb30cc 2026-09-20T13:33:37+08:00 fix(runtime): a goal that cannot make progress must feed the deferral that exists`
-- `7b712d8 2026-09-20T13:27:49+08:00 test(brain): the reward-popup test asserted a stop the brain no longer takes`
-- `9ee62cc 2026-09-20T13:22:32+08:00 fix(vision): the mail inbox is not a reward dialog, and a content crop may not say it is`
+- `9496761 2026-09-23T05:54:57+08:00 feat(red-dot): the client's dot becomes a bounded priority signal, and a binding that named a route domain is fixed`
+- `c522bc9 2026-09-23T04:41:32+08:00 fix(home): close the resource-search panel before going home -- the guard three goals had and four did not`
+- `9640fcf 2026-09-23T04:31:04+08:00 docs(skill): when the probe aborts on a missing exit, check whether the runtime fails there too`
+- `02f87db 2026-09-23T04:30:48+08:00 feat(callout): the shape rule replaces a size floor the archive refutes, and a new defect gets its numbers`
+- `81cedc2 2026-09-23T04:21:52+08:00 docs(skill): a reader's tokens belong to the surface that drew them`
+- `1533b26 2026-09-23T04:21:31+08:00 fix(panel): a row may only be built from tokens the panel itself drew`
+- `41589cd 2026-09-23T04:11:55+08:00 docs(skill): directed device verification -- lease, frame-derived coordinates, and when to refuse to tap`
+- `9a19d33 2026-09-23T04:11:21+08:00 feat(live): the row's point is verified on the device, and tapping a finished row draws the client's marker`
+- `ab38772 2026-09-23T04:00:04+08:00 docs(skill): the shape the fix took -- locate the control by an opaque glyph inside it, and never fall back to a guess`
+- `e93ea44 2026-09-23T03:59:43+08:00 fix(panel): a row's arrow point comes from the button's own chevron, not from a band that reaches the city`
+- `e0c0da9 2026-09-23T03:41:37+08:00 docs(skill): the tap point itself can be the defect -- check the ledger's tap_point against the drawn control`
+- `1b3114f 2026-09-23T03:41:08+08:00 docs(evidence): the panel row -> camp menu -> training page chain is recorded on the device for the first time`
 
-Uncommitted changes: 149
-- `M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+Uncommitted changes: 463
+- `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
+- ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
+- ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
+- ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
 - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
-- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
 - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
-- ` M .workbuddy-ai/memory/MEMORY.md`
-- ` M .workbuddy/memory/2026-09-18.md`
-- ` M .workbuddy/memory/2026-09-20.md`
+- ` M .workbuddy/memory/2026-09-21.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
+- ` M dataset/candidate/template_manifest.json`
 - ` M docs/CAPABILITY_COVERAGE.md`
-- ` M docs/CURRENT_TRUTH.md`
-- ` M docs/LEGACY_AUDIT.md`
 - ` M evidence/INDEX.json`
 - ` M knowledge/game/capability_catalog.json`
 - ` M knowledge/goals/capability_skill_map.json`
