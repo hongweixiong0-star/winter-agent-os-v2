@@ -255,11 +255,19 @@ class TheScreenItselfIsKeptTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def collect(self, frame=UNKNOWN_FRAME, *, verified=True, goal="CLAIM_EXPLORATION_IDLE"):
+    def collect(self, frame=UNKNOWN_FRAME, *, verified=True, goal="CLAIM_EXPLORATION_IDLE",
+                ran_on_the_screen=False):
+        """One step's evidence through the real hook.
+
+        ``ran_on_the_screen`` is the difference the live record taught: a step whose *before*
+        frame is the unnamed screen has been taken on it, while a step that merely *landed* there
+        has not -- and only the first is an attempt on that screen.
+        """
         self.runtime._collect_page_evidence(
             decision=Decision("EXPLORATION_IDLE_CLAIM", "test", 0.99, "idle_income_claimed"),
-            before=WorldState(page=Page.EXPLORATION, confidence=0.97),
-            after=WorldState(page=Page.UNKNOWN),
+            before=WorldState(page=Page.UNKNOWN if ran_on_the_screen else Page.EXPLORATION,
+                              confidence=0.97),
+            after=WorldState(page=Page.POPUP if ran_on_the_screen else Page.UNKNOWN),
             execution=ExecutionResult(
                 executed=True, dry_run=False, action=Action("TAP_SEMANTIC", "BTN_EXPLORATION_IDLE_CLAIM"),
                 backend="ADB",
@@ -295,9 +303,9 @@ class TheScreenItselfIsKeptTests(unittest.TestCase):
 
     def test_the_second_visit_folds_into_the_same_record(self):
         """§六: the same screen again must not start from zero -- or copy its picture again."""
-        self.collect()
+        self.collect(ran_on_the_screen=True)
         first = self.store.all()[0]
-        self.collect(verified=False)
+        self.collect(ran_on_the_screen=True, verified=False)
         pages = self.store.all()
         self.assertEqual(len(pages), 1)
         same = pages[0]
@@ -306,10 +314,23 @@ class TheScreenItselfIsKeptTests(unittest.TestCase):
         self.assertEqual(same.failure_count, 1)
         self.assertEqual(same.success_count, 1)
 
+    def test_only_a_step_taken_on_the_screen_is_an_attempt_on_it(self):
+        """Measured live: 挂机收益 read FAILED with two failures, both of them the steps that
+        *opened* it from EXPLORATION.  Landing on a screen is not acting on it."""
+        self.collect()                                  # EXPLORATION -> UNKNOWN: landed here
+        landed = self.store.all()[0]
+        self.assertEqual(landed.attempt_count, 0)
+        self.assertEqual(landed.verification_status, page_knowledge.STATUS_DISCOVERED)
+        self.collect(ran_on_the_screen=True)            # UNKNOWN -> POPUP: acted here, passed
+        acted = self.store.all()[0]
+        self.assertEqual(acted.attempt_count, 1)
+        self.assertEqual(acted.success_count, 1)
+        self.assertEqual(acted.verification_status, page_knowledge.STATUS_VERIFIED)
+
     def test_an_action_result_moves_the_status_but_not_the_semantics(self):
         """§四: "页面与元素分别管理验证状态" -- a control working does not name the screen."""
-        self.collect()
-        self.collect()
+        self.collect(ran_on_the_screen=True)
+        self.collect(ran_on_the_screen=True)
         page = self.store.all()[0]
         self.assertEqual(page.verification_status, page_knowledge.STATUS_VERIFIED)
         self.assertEqual(page.recognition_method, page_knowledge.PAGE_METHOD_ACTION)

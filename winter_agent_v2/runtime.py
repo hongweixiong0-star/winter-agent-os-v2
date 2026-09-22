@@ -1116,6 +1116,14 @@ class LiveRuntime:
         label_before = control_experience.label(before.page)
         label_after = control_experience.label(after.page) if after is not None else ""
         # (1) an unnamed screen, on either side of this step.
+        #
+        # Only the *before* side is an attempt on the screen: a step that merely landed here
+        # (the after side) says nothing about whether this screen can be acted on, and folding it
+        # in as a failure is how the first live record came out wrong -- 挂机收益 read FAILED with
+        # two failures, both of them the steps that *opened* it from EXPLORATION.  A step that ran
+        # on the screen and passed its verifier is what makes the screen VERIFIED (measured
+        # 2026-09-22T07:26:34Z: TRY_ORDINARY_CONTROL on 挂机收益, UNKNOWN -> POPUP, SUCCESS).
+        executed = execution is not None and bool(execution.executed)
         for state, frame in ((after, after_screenshot), (before, before_screenshot)):
             if state is None or frame is None or state.page is not Page.UNKNOWN:
                 continue
@@ -1127,7 +1135,8 @@ class LiveRuntime:
                 goal=goal_id or str(self.brain.current_goal or ""),
                 episode_id=episode_id,
                 world_state={"page": control_experience.label(state.page)},
-                verified=bool(verification.ok) if verification is not None and state is after else False,
+                attempt=bool(executed and state is before),
+                verified=bool(verification.ok) if verification is not None else False,
                 observed_change=observed_change,
             )
         # The entry page for a screen reached from another unnamed screen: the last page this run
@@ -1194,6 +1203,7 @@ class LiveRuntime:
         goal: str,
         episode_id: str,
         world_state: Mapping[str, Any],
+        attempt: bool,
         verified: bool,
         observed_change: str,
     ) -> None:
@@ -1256,7 +1266,8 @@ class LiveRuntime:
             )
             if record is None:
                 return
-        store.record_attempt(key=key, verified=verified, observed_effect=observed_change)
+        if attempt:
+            store.record_attempt(key=key, verified=verified, observed_effect=observed_change)
 
     def _declared_dictionary_words(self) -> set[str]:
         """Every word the semantic dictionary declares, whatever control it belongs to.
