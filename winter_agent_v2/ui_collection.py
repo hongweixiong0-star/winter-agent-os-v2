@@ -118,19 +118,19 @@ PLAIN_ACTION_WORDS: tuple[str, ...] = (
     "帮助",
 )
 
-#: How many frames one run may spend scanning for unregistered printed controls, and how far
-#: apart they are taken.  The scan is an OCR pass on a frame the run already captured, and it
-#: exists to find NEW controls -- not to re-read every screen.
-#:
-#: The stride is the part that was measured rather than guessed.  The first version spent its
-#: whole budget on the run's first two steps, and over 213 real frames from one hour it collected
-#: nothing, because the frames that carry an undeclared plain action word (``前往``, 9 of 213)
-#: cluster at steps 22-24 of a run -- long after the budget was gone.  Sampling every
-#: ``UI_SCAN_STRIDE`` steps spreads the same OCR passes across the whole run, so the samples reach
-#: the steps where new controls actually appear (4/8/12/16/20/24 covers a 24-step run, while a
-#: front-loaded budget covered none of it).
-MAX_SCANS_PER_RUN = 6
-UI_SCAN_STRIDE = 4
+#: Safety valve on the per-run scan, not a ration.  The scan used to be rationed (two frames, then
+#: every fourth), and three production cycles collected nothing while frames that carried an
+#: unregistered control went by unscanned -- so the bound was re-derived from a measurement
+#: instead: one cold OCR pass over a 720x1280 frame costs 0.31 s on average (0.95 s worst of 8
+#: frames), a frame another layer already read costs 0.000 s through ``OCRService``'s cache, and a
+#: production step is 20-40 s apart.  Scanning every step is therefore about 1% of a step, and the
+#: cap exists only so a pathological frame cannot make collection the expensive part of a cycle.
+MAX_SCANS_PER_RUN = 40
+
+#: Scan every step.  Kept as a named constant because the *reason* it is 1 matters: coverage is
+#: how many of the run's frames can offer a new control, and no sampling stride survived contact
+#: with the data (the frames that qualified sat at steps 22-24 of one run and at 1/6/9 of others).
+UI_SCAN_EVERY_STEP = 1
 
 #: Minimum OCR confidence for a word to become a candidate.  The same bar ``find_printed_words``
 #: uses for the tap path: a word that is not read well enough to tap is not read well enough to

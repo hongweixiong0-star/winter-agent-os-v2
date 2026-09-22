@@ -1057,19 +1057,18 @@ class LiveRuntime:
     ) -> None:
         """Harvest ordinary action words on this frame that nobody has written down yet.
 
-        Called for every step, and it decides for itself whether this is one of the sampled ones:
-        the budget is spent on every ``UI_SCAN_STRIDE``-th step rather than on the first steps of
-        the run.  Measured 2026-09-22 over 213 frames from one hour: the frames carrying an
-        undeclared plain action word sat at steps 22-24, so a budget spent up front collected
-        nothing while the informative frames went by unscanned.
+        Every step, because the alternative was measured and did not work: the first version
+        rationed the scan to a couple of frames and collected nothing across three production
+        cycles, the second sampled every fourth step and missed again (the qualifying frames sat
+        at step 22-24 of one run and at 1/6/9 of others).  The cost is why it can be every step --
+        0.31 s for a cold OCR pass on a frame the run already captured, 0.000 s when another layer
+        already read it, against steps 20-40 s apart.  ``MAX_SCANS_PER_RUN`` stays as a safety
+        valve so one pathological frame cannot make collection expensive.
         """
         if frame is None:
             return
-        self._ui_steps_seen = getattr(self, "_ui_steps_seen", 0) + 1
         seen = getattr(self, "_ui_scans", 0)
         if seen >= ui_collection.MAX_SCANS_PER_RUN:
-            return
-        if self._ui_steps_seen % ui_collection.UI_SCAN_STRIDE:
             return
         ocr = self._ocr_service()
         if ocr is None:

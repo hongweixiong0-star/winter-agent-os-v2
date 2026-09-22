@@ -455,8 +455,6 @@ class RuntimeHookScanTests(unittest.TestCase):
 
     def test_a_scanned_word_is_staged_as_an_unconfirmed_candidate(self):
         runtime = self._runtime()
-        # Stand on a sampled step: the hook counts steps and scans every UI_SCAN_STRIDE-th one.
-        runtime._ui_steps_seen = ui_collection.UI_SCAN_STRIDE - 1
         runtime._collect_printed_controls(
             store=self.store, frame=FRAME, page="EVENT", goal="DAILY_ACTIVITY_TARGET",
             episode_id="run1", skip_words=(),
@@ -470,49 +468,27 @@ class RuntimeHookScanTests(unittest.TestCase):
         self.assertEqual(record.ocr_text, "领取")
         self.assertTrue(Path(record.image_path).exists())
 
-    def test_the_scan_is_bounded_per_run(self):
+    def test_every_step_is_scanned_and_the_cap_is_only_a_safety_valve(self):
+        """Measured: a cold pass is 0.31 s against steps 20-40 s apart, so coverage is every step.
+
+        The ration was tried twice and missed both times -- two frames per run, then every fourth
+        step -- so what this pins is that the policy is now coverage, with the cap far above any
+        real run's step count.
+        """
+        self.assertEqual(ui_collection.UI_SCAN_EVERY_STEP, 1)
+        self.assertGreaterEqual(ui_collection.MAX_SCANS_PER_RUN, 24)
         runtime = self._runtime()
-        for step in range(1, 60):
-            runtime._ui_steps_seen = step - 1
+        for _ in range(30):
             runtime._collect_printed_controls(
                 store=self.store, frame=FRAME, page="EVENT", goal="G", episode_id="r", skip_words=(),
             )
-        # One candidate per (page, word, picture) however many times the scan is offered, and the
-        # budget caps the OCR passes -- both matter, and the first is what the directory proves.
+        # One candidate per (page, word, picture) however many times the scan is offered...
         self.assertEqual(len(self.store.all()), 1)
-        self.assertEqual(runtime._ui_scans, ui_collection.MAX_SCANS_PER_RUN)
-
-    def test_the_budget_is_spread_across_the_run_not_spent_on_its_first_steps(self):
-        """Measured 2026-09-22: the informative frames sat at steps 22-24, so a budget spent up
-        front collected nothing.  The stride is what makes the samples land there."""
-        runtime = self._runtime()
-        scanned_at = []
-        original = runtime._collect_printed_controls
-
-        real_store = self.store
-
-        class Recording(ui_collection.UiCandidateStore):
-            def stage(self, **kwargs):  # type: ignore[override]
-                scanned_at.append(runtime._ui_steps_seen)
-                return None
-
-        runtime._ui_candidates = Recording(root=real_store.root, manifest=real_store.manifest)
-        for step in range(1, 30):
-            runtime._ui_steps_seen = step - 1
-            original(
-                store=runtime._ui_candidates, frame=FRAME, page="EVENT", goal="G",
-                episode_id="r", skip_words=(),
-            )
-        self.assertEqual(scanned_at[:ui_collection.MAX_SCANS_PER_RUN],
-                         [ui_collection.UI_SCAN_STRIDE * (index + 1)
-                          for index in range(ui_collection.MAX_SCANS_PER_RUN)])
-        # The last sample must still be inside a normal run's length, or the budget would be
-        # spent before the frame that matters: measured 2026-09-22, the new control sat at step 24.
-        self.assertLessEqual(ui_collection.UI_SCAN_STRIDE * ui_collection.MAX_SCANS_PER_RUN, 24)
+        # ...and the counter stops climbing at the cap, so the valve still works.
+        self.assertEqual(runtime._ui_scans, min(30, ui_collection.MAX_SCANS_PER_RUN))
 
     def test_a_declared_word_is_never_staged_again(self):
         runtime = self._runtime()
-        runtime._ui_steps_seen = ui_collection.UI_SCAN_STRIDE - 1
         runtime._collect_printed_controls(
             store=self.store, frame=FRAME, page="EVENT", goal="G", episode_id="r",
             skip_words=["领取"],
