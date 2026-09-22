@@ -71,9 +71,25 @@ class Skill:
     vision_evidence: tuple[str, ...] = ()
     unknown_policy: str = ""
     ui_change_tolerance: tuple[str, ...] = ()
+    #: Whether this skill may run on a screen the page model cannot name (``Page.UNKNOWN``).
+    #:
+    #: Off by default, and it is off for the fourteen other page-less skills in this registry --
+    #: ``SEND_MARCH``, ``CLAIM_REWARD``, ``START_RALLY`` and the rest -- because "no required page"
+    #: means "any page I recognise", not "a page nobody recognises".  The one skill that turns it
+    #: on is the generic ordinary-control attempt, whose whole contract is that the *frame* says
+    #: which control may be tapped, with a whitelist and a spend blacklist screening it.
+    #:
+    #: Measured live 2026-09-22T07:18:40Z (run at 15:17:18, targeted ``--goal EXPLORATION``):
+    #: steps 3 and 4 stood on an unnamed screen, the brain answered ``TRY_ORDINARY_CONTROL``, and
+    #: ``Scheduler.tick`` replaced it with ``SAFE_STOP skill_not_ready`` because this very
+    #: condition was ``world.known`` -- so the unnamed screen could not be acted on however the
+    #: brain decided.  Same class of gate as the ``frame.known`` check the resolver used to carry.
+    page_agnostic: bool = False
 
     def ready(self, world: WorldState) -> bool:
-        return world.known and (self.required_page is None or world.page is self.required_page)
+        if not world.known:
+            return self.page_agnostic and self.required_page is None
+        return self.required_page is None or world.page is self.required_page
 
     @property
     def semantic_contract_complete(self) -> bool:
@@ -476,6 +492,14 @@ def v2_registry() -> SkillRegistry:
             timeout=20.0,
             risk="LOW",
             state=SkillState.CANDIDATE,
+            # The one skill allowed on a screen the page model cannot name (operator directive
+            # 2026-09-22, "未知页面自主探索").  Its target is resolved from the frame's own printed
+            # words -- not from a page declaration -- so "the page is unknown" is not a reason to
+            # refuse it, and refusing it is exactly what made 14 consecutive unnamed screens
+            # inert.  The screening that keeps it safe lives in the resolver: a whitelist of
+            # ordinary actions, a spend blacklist over every word on the frame, two taps per run,
+            # and never the same (page, word) twice.
+            page_agnostic=True,
         )
     )
     skills.append(

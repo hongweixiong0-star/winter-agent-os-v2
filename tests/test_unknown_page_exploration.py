@@ -46,6 +46,7 @@ from winter_agent_v2.models import (  # noqa: E402
     WorldState,
 )
 from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
+from winter_agent_v2.scheduler import Scheduler  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
 
 #: The real unnamed screen: 720x1280, 挂机收益 with 领取, ✕ and the client's own footer line.
@@ -181,7 +182,49 @@ class UnnamedPageKeepsTheGoalTests(unittest.TestCase):
         self.assertTrue(runtime._printed_reads)
         self.assertIn("UNKNOWN::挂机收益", runtime._printed_reads[0])
 
-    def test_a_screen_that_cannot_be_tapped_still_refuses(self):
+    def test_the_scheduler_gate_no_longer_refuses_the_one_skill_that_may_run_there(self):
+        """Measured live 2026-09-22T07:18:40Z: the brain answered TRY_ORDINARY_CONTROL on an
+        unnamed screen and ``Scheduler.tick`` replaced it with ``SAFE_STOP skill_not_ready``,
+        because ``Skill.ready`` required ``world.known``.  The brain's answer was unreachable --
+        the same class of gate as the ``frame.known`` check the resolver used to carry."""
+        registry = v2_registry()
+        unnamed = WorldState(page=Page.UNKNOWN)
+        self.assertTrue(registry.get("TRY_ORDINARY_CONTROL").ready(unnamed))
+        self.assertEqual([skill.id for skill in registry.ready(unnamed)], ["TRY_ORDINARY_CONTROL"])
+        # And no other page-less skill is dragged along: "no required page" has never meant
+        # "any page, including one nobody recognises".
+        for skill_id in ("SEND_MARCH", "CLAIM_REWARD", "START_RALLY", "BACK", "WAIT"):
+            self.assertFalse(registry.get(skill_id).ready(unnamed), skill_id)
+        self.assertFalse(registry.get("TRY_ORDINARY_CONTROL").ready(WorldState(page=Page.HOME)) is None)
+
+    def test_the_whole_chain_reaches_the_executor(self):
+        """brain -> Scheduler.tick -> executor, in one call, on the real unnamed frame."""
+        runtime = _runtime(ocr=_ocr())
+        world = WorldState(page=Page.UNKNOWN)
+        registry = v2_registry()
+        decision = runtime.brain.decide(world, registry)
+        self.assertEqual(decision.skill, "TRY_ORDINARY_CONTROL")
+        issued: list[tuple[str, str]] = []
+
+        class _Executor:
+            def execute(self, action, skill_id=None):
+                issued.append((str(skill_id), str(action.target)))
+                return ExecutionResult(
+                    executed=True, dry_run=False, action=action, backend="STUB"
+                )
+
+        tick = Scheduler(runtime.brain, registry, _Executor()).tick(world, decision)
+        self.assertEqual(tick.decision.skill, "TRY_ORDINARY_CONTROL")
+        self.assertEqual(issued, [("TRY_ORDINARY_CONTROL", "ORDINARY_CONTROL")])
+        # The action itself is the generic tap: WHICH control is the resolver's answer, off the
+        # frame, which is why this skill needs no page of its own.
+        self.assertEqual(tick.execution.action.kind, "TAP_SEMANTIC")
+        self.assertIsNotNone(
+            runtime._ordinary_control_candidate(world, UNKNOWN_FRAME),
+            "and the frame that made the decision still names a control to tap",
+        )
+
+    def test_maintenance_and_loading_still_refuse(self):
         runtime = _runtime(ocr=_ocr())
         for page in (Page.MAINTENANCE, Page.LOADING):
             self.assertIsNone(
