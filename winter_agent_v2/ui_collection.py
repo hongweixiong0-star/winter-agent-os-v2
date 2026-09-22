@@ -118,6 +118,236 @@ PLAIN_ACTION_WORDS: tuple[str, ...] = (
     "帮助",
 )
 
+#: Words that *end* an interaction instead of committing one, so they need no goal to justify
+#: them.  Stated once here because the tap path (the interactivity gate below) and the collection
+#: scan both read it, and two copies would drift into disagreeing about what counts as an exit.
+SAFE_EXIT_WORDS: tuple[str, ...] = ("返回", "关闭", "取消", "退出", "跳过")
+
+#: Substrings that make a piece of text a *label* rather than a control: they name a value, a
+#: count or a status the client draws beside one.  Taken from the vocabulary this project's own
+#: frames keep producing (``原始时间``, ``剩余``, ``距离``, ``等级``) -- a caption that gets tapped
+#: is a wasted step, so this gate is about precision, not recall.
+NON_CONTROL_MARKERS: tuple[str, ...] = (
+    "时间",
+    "剩余",
+    "距离",
+    "等级",
+    "战力",
+    "数量",
+    "消耗",
+    "获得",
+    "加成",
+    "上限",
+    "次数",
+    "进度",
+    "排名",
+    "分数",
+    "积分",
+    "产量",
+    "速度",
+    "容量",
+    "耐久",
+    "说明",
+    "提示",
+    "条件",
+    "需求",
+    "总计",
+    "当前",
+    "已满",
+    "已领",
+    "已达",
+)
+
+#: What a goal looks for on a screen, as substrings of the client's own words.  This is the
+#: "候选元素与目标相关" half of the directive's §3: a control whose words belong to the goal being
+#: pursued is worth one bounded try; a control that belongs to nothing is not chased.  The keys are
+#: substrings of the goal ids this project really runs (``KEEP_TRAINING_PRODUCTIVE``,
+#: ``AVOID_STAMINA_WASTE``, ``CLEAR_INTEL``, ...), so a new goal whose name contains one of them
+#: inherits the hints instead of needing a new table.
+GOAL_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("TRAIN", ("训练", "兵营", "士兵", "部队")),
+    ("TROOP", ("训练", "兵营", "士兵")),
+    ("CAMP", ("训练", "兵营", "士兵")),
+    ("RESEARCH", ("研究", "科技", "学院")),
+    ("INTEL", ("情报", "线索", "调查", "前往")),
+    ("BEAST", ("野怪", "讨伐", "搜索", "前往")),
+    ("STAMINA", ("体力", "补给", "领取")),
+    ("RESOURCE", ("采集", "资源", "搜索", "前往")),
+    ("GATHER", ("采集", "资源", "前往")),
+    ("MAIL", ("邮件", "领取", "前往")),
+    ("ALLIANCE", ("联盟", "帮助", "捐献", "领取")),
+    ("DAILY", ("每日", "任务", "活跃", "领取")),
+    ("ACTIVITY", ("活动中心", "参与", "报名")),
+    ("EXPLORATION", ("探索", "挂机", "领取")),
+    ("MARCH", ("行军", "部队", "前往")),
+    ("HOME", ("主城", "返回", "关闭")),
+    ("DISCOVERY", ("前往", "打开", "查看")),
+)
+
+#: Text shapes that are *not* a control's label, measured on this project's own frames.  Every
+#: entry killed a real false positive: ``系统消息：`` / ``退出了联盟`` (a system toast), ``-12.7`` /
+#: ``166`` (a value), ``Q#4298（644,4`` (OCR debris on an overlay), ``统帅4`` (a tier caption).
+#: The client's own button labels are Chinese words with no punctuation and no digits, so both are
+#: required to be absent -- precision is the whole job of this gate, and a skipped control costs
+#: one unexplored screen while a tapped caption costs a wasted step on the live game.
+CONTROL_TEXT_REJECT = tuple("：:#（）()[]【】《》<>,.、/\\-—+%\"'“”·!！?？")
+CONTROL_MIN_CJK_CHARS = 2
+
+#: Longest label a control in this client carries, in Chinese characters.  Measured: every control
+#: in the sampled frames is at most six (``增加行军队列``), while the whole sentences that are *not*
+#: controls are longer (``您的部队已经返回`` = 8, ``仅搜索资源为满的资源点`` = 11, ``天子退出了联盟`` = 7).
+#: A client that prints a sentence is telling the player something, not offering a button.
+CONTROL_MAX_CJK_CHARS = 6
+
+#: Geometry of a control's *label*, measured on 720x1280 captures.  A caption is smaller than the
+#: floor and a page title is larger than the ceiling; a wide-and-short box is a button's own text
+#: while a tall-and-narrow one is a column heading or a tab stack.
+CONTROL_MIN_TEXT_PX = 18
+CONTROL_MAX_TEXT_PX = 130
+CONTROL_MIN_ASPECT = 1.0
+CONTROL_MAX_ASPECT = 14.0
+CONTROL_MAX_AREA_NORM = 0.05
+CONTROL_TOP_MARGIN_NORM = 0.02
+
+
+def goal_relevant(text: str, goal: str) -> bool:
+    """Does this control's own wording belong to the goal being pursued? (directive §3)
+
+    Two ways to qualify, and both are the client's evidence rather than a preference: the words
+    name something the goal's hints name, or they are one of the exit words that end an
+    interaction under any goal.  An empty goal has no hints, so nothing qualifies -- "有 Goal 明确"
+    is a precondition of the whole mechanism, not an optional extra.
+    """
+    word = str(text or "").strip()
+    if not word:
+        return False
+    if word in SAFE_EXIT_WORDS:
+        return True
+    if len(word) < 2:
+        return False
+    wanted = str(goal or "").strip().upper()
+    if not wanted:
+        return False
+    for key, hints in GOAL_HINTS:
+        if key not in wanted:
+            continue
+        if any(hint and (hint in word or word in hint) for hint in hints):
+            return True
+    return False
+
+
+def interactive_controls(
+    frame_path: Path | str,
+    ocr,
+    *,
+    skip_words: Iterable[str] = (),
+    goal: str = "",
+    limit: int = 8,
+) -> list[dict]:
+    """Text boxes on this frame that *look* like a control nobody has recorded (directive §2).
+
+    The tap path's other source is exact match against ``PLAIN_ACTION_WORDS`` -- the client's own
+    words, but only the seven somebody wrote down.  This is the general case the directive asks
+    for: an element is judged from what the existing vision gives, not from a list.
+
+        * the frame's own OCR boxes (``token.box``, the client's own text bounds);
+        * their geometry -- a label-sized, wide-and-short box in the frame's usable area;
+        * the text itself -- not a value, a countdown, a caption or OCR debris
+          (``NON_CONTROL_MARKERS``, ``DYNAMIC_TEXT``, ``CONTROL_TEXT_REJECT``, digits, and a floor
+          of ``CONTROL_MIN_CJK_CHARS`` Chinese characters);
+        * the page context, through ``skip_words``: a word the semantic dictionary already
+          declares is a control the project knows, and re-deriving it here would be a second,
+          worse definition of it.
+
+    ``score`` ranks what is left: confidence plus a bonus for the label-height band, the
+    button-shaped aspect, the lower two thirds of the screen, and -- decisively -- for wording
+    that matches the goal being pursued.  A row is returned with the box it was measured on, so a
+    caller can tap it *and* file it as a candidate, and ``goal_relevant`` says whether the
+    directive's relevance condition holds for it.
+
+    Nothing here clicks, decides or remembers; it is the evidence, not the act.  An empty list is
+    a real answer ("this frame shows no unrecorded control") and not a failure.
+    """
+    skip = {str(word).strip() for word in skip_words if str(word or "").strip()}
+    frame_path = Path(frame_path)
+    try:
+        result = ocr.recognize(frame_path)
+    except (OSError, ValueError):
+        return []
+    from .ocr import read_frame_size
+
+    size = read_frame_size(frame_path)
+    if not size:
+        return []
+    width, height = int(size[0]), int(size[1])
+    if width <= 0 or height <= 0:
+        return []
+    rows: list[dict] = []
+    for token in result.tokens:
+        word = (token.text or "").strip()
+        confidence = float(token.confidence or 0.0)
+        if not word or not token.box or confidence < MIN_SCAN_CONFIDENCE:
+            continue
+        if word in skip or DYNAMIC_TEXT.search(word):
+            continue
+        if any(marker in word for marker in NON_CONTROL_MARKERS):
+            continue
+        if any(char in word for char in CONTROL_TEXT_REJECT):
+            continue
+        if any(char.isdigit() for char in word):
+            continue
+        if sum(1 for char in word if "\u4e00" <= char <= "\u9fff") < CONTROL_MIN_CJK_CHARS:
+            continue
+        if sum(1 for char in word if "\u4e00" <= char <= "\u9fff") > CONTROL_MAX_CJK_CHARS:
+            continue
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        box_w = max(xs) - min(xs)
+        box_h = max(ys) - min(ys)
+        if box_h < CONTROL_MIN_TEXT_PX or box_h > CONTROL_MAX_TEXT_PX:
+            continue
+        if box_w <= 0 or box_h <= 0:
+            continue
+        aspect = box_w / box_h
+        if aspect < CONTROL_MIN_ASPECT or aspect > CONTROL_MAX_ASPECT:
+            continue
+        x_norm = min(xs) / width
+        y_norm = min(ys) / height
+        w_norm = box_w / width
+        h_norm = box_h / height
+        if y_norm < CONTROL_TOP_MARGIN_NORM:
+            continue
+        if w_norm * h_norm > CONTROL_MAX_AREA_NORM:
+            continue
+        relevant = goal_relevant(word, goal)
+        centre_y = y_norm + h_norm / 2
+        score = confidence
+        if CONTROL_MIN_TEXT_PX * 1.2 <= box_h <= 72:
+            score += 0.30
+        if 1.4 <= aspect <= 7:
+            score += 0.20
+        if 0.30 <= centre_y <= 0.95:
+            score += 0.15
+        if relevant:
+            score += 0.25
+        rows.append(
+            {
+                "word": word,
+                "confidence": round(confidence, 4),
+                "box_norm": {
+                    "x_norm": round(x_norm, 4),
+                    "y_norm": round(y_norm, 4),
+                    "w_norm": round(w_norm, 4),
+                    "h_norm": round(h_norm, 4),
+                },
+                "score": round(score, 4),
+                "goal_relevant": relevant,
+                "basis": "OCR_BOX",
+            }
+        )
+    rows.sort(key=lambda item: (-item["score"], -item["box_norm"]["y_norm"], item["word"]))
+    return rows[:limit]
+
 #: Safety valve on the per-run scan, not a ration.  The scan used to be rationed (two frames, then
 #: every fourth), and three production cycles collected nothing while frames that carried an
 #: unregistered control went by unscanned -- so the bound was re-derived from a measurement

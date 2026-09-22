@@ -849,6 +849,7 @@ class LiveRuntime:
             observed_change=observed_change,
             goal_id=goal_id,
             frame=after_screenshot or before_screenshot,
+            verification_ok=bool(verification.ok) if verification is not None else False,
         )
         # The automatic UI collector reads the same evidence, one step later (operator
         # 2026-09-22): the frame this step already captured, the name it was aiming at, and the
@@ -984,6 +985,7 @@ class LiveRuntime:
         observed_change: str,
         goal_id: str = "",
         frame: Path | None = None,
+        verification_ok: bool = False,
     ) -> None:
         """Record what the control that was aimed at actually did (operator §四/§六).
 
@@ -1004,6 +1006,15 @@ class LiveRuntime:
         if not semantic:
             return
         page = control_experience.label(before_state.get("page"))
+        # The one generic skill resolves WHICH control off the frame, so its ledger key has to
+        # carry that choice: otherwise every element tried on a page would share one record, and
+        # a control that worked could never be told apart from the one beside it.
+        if semantic == "ORDINARY_CONTROL":
+            last = getattr(self, "_ordinary_last", None) or {}
+            if control_experience.label(last.get("page")) == page:
+                refined = str(last.get("semantic") or "")
+                if refined:
+                    semantic = refined
         key = control_experience.control_key(page, semantic)
         entry = self._control_ledger.get(key)
         if entry is None:
@@ -1027,6 +1038,46 @@ class LiveRuntime:
             entry.position_norm = (landed[0] / 720.0, landed[1] / 1280.0)
         if goal_id and observed_change not in ("NO_OP", "UNKNOWN"):
             entry.goal_help[goal_id] = observed_change
+
+        # One real step that reached its expected result is the whole bar for registering an L1
+        # action -- the *step*, not the goal and not the skill.  The conditions it holds under,
+        # the element's own features, how its region was located, what was issued and what
+        # followed are stored; the absolute coordinate is not, because reuse re-derives the point
+        # from the frame it is standing on.  The skill registry and the template manifest are
+        # separate stores and are deliberately not touched here.
+        context = getattr(self, "_l1_context", None)
+        if (
+            verification_ok
+            and execution.executed
+            and observed_change not in ("NO_OP", "UNKNOWN")
+            and isinstance(context, Mapping)
+            and control_experience.label(context.get("page")) == page
+            and str(context.get("semantic") or "") == semantic
+        ):
+            features = control_experience.visual_features(
+                text=str(context.get("text") or ""),
+                box_norm=context.get("box_norm") if isinstance(context.get("box_norm"), Mapping)
+                else None,
+                read_from_frame=str(context.get("frame") or ""),
+            )
+            control_experience.register_l1(
+                entry,
+                goal=str(context.get("goal") or goal_id or ""),
+                state=str(context.get("state") or ""),
+                features=features,
+                basis=str(context.get("basis") or ""),
+                action={
+                    "kind": str(getattr(execution.action, "kind", "") or ""),
+                    "target": semantic,
+                },
+                expected_effect=expected,
+                observed_effect=observed_change,
+            )
+            print(
+                f"[l1] registered {semantic} on {page} for goal "
+                f"{context.get('goal') or goal_id} (basis {context.get('basis')}, effect {observed_change})",
+                flush=True,
+            )
 
     def _save_control_experience(self) -> None:
         try:
@@ -2154,8 +2205,11 @@ class LiveRuntime:
         unnamed = not frame.known
         title = ""
         # Which word this step chose, for the transition ledger: cleared first, so a step that
-        # resolves nothing cannot be credited with the previous step's control.
+        # resolves nothing cannot be credited with the previous step's control.  The L1 evidence
+        # is cleared with it, for the same reason: a step that resolved nothing must not register
+        # what an earlier step proved.
         self._ordinary_last = None
+        self._l1_context = None
         if unnamed:
             # The title is what keeps two unnamed screens apart in the ledger key and in a
             # question's id, so it is read before anything is asked about this screen.  One cached
@@ -2185,6 +2239,15 @@ class LiveRuntime:
             if brain is not None:
                 brain.ordinary_scan_exhausted = True
             return None
+        # (1) L1 reuse (operator directive 2026-09-22 section 11).  A single-step action
+        # registered for this page, goal and state, whose element is *still drawn on this frame*,
+        # is taken before anything is identified again -- that is what makes the second visit
+        # cheaper than the first.  A frame that no longer draws it matches nothing, which is the
+        # same sentence's "current frame does not match -> identify again", and the caller then
+        # falls through to the tiers below.
+        reused = self._l1_action_point(page, title, frame, frame_path, ocr, tokens)
+        if reused is not None:
+            return reused
         order = self._ordinary_word_order(page, title, unnamed=unnamed)
         for word in order:
             if (page, word) in self._ordinary_tried:
@@ -2200,7 +2263,36 @@ class LiveRuntime:
                 "title": title,
                 "word": word,
                 "point": (round(point[0], 4), round(point[1], 4)),
+                "semantic": f"ORDINARY_CONTROL[{word}]",
+                "basis": "PRINTED_WORD",
+                "source": "PRINTED_WORD",
             }
+            # Every tier that resolves a control leaves the same evidence behind, so a step that
+            # proves what the control does registers an L1 action whichever tier found it -- the
+            # directive's §七 is about the *step*, not about which reader supplied the point.
+            self._l1_context = {
+                "page": page,
+                "goal": str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
+                "state": control_experience.state_signature(frame.to_dict()),
+                "semantic": f"ORDINARY_CONTROL[{word}]",
+                "text": word,
+                "box_norm": dict(hit.get("box_norm") or {}),
+                "basis": "PRINTED_WORD",
+                "source": "PRINTED_WORD",
+                "confidence": float(hit.get("confidence") or 0.0),
+                "frame": str(frame_path),
+            }
+            self._stage_interaction_candidate(
+                page=page,
+                title=title,
+                goal=str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
+                frame_path=frame_path,
+                word=word,
+                box_norm=dict(hit.get("box_norm") or {}),
+                confidence=float(hit.get("confidence") or 0.0),
+                basis="PRINTED_WORD",
+                source="PRINTED_WORD",
+            )
             self._note_printed(
                 f"ORDINARY_CONTROL[{word}]",
                 page_knowledge.page_key(page, title),
@@ -2214,6 +2306,15 @@ class LiveRuntime:
                 label=page,
             )
             return point
+        # (3) The general case the directive asks for (sections 1-3): a control this frame draws,
+        # that the semantic dictionary does not declare, that looks interactive from its own box
+        # and wording, and whose words belong to the goal being pursued.  No whitelist, no skill,
+        # no template -- and it is filed as a CANDIDATE *before* the tap (section 6), so the region
+        # is on record even if the step never finishes.
+        interactive = self._interactive_control_point(page, title, frame, frame_path, ocr)
+        if interactive is not None:
+            return interactive
+
         # Only now, with every method this project already has exhausted, does the on-demand
         # analysis get asked (directive §一: 现有方法足以推断就直接用，不足才调用 AI).  On a named
         # page it is not consulted at all: a named page's controls are the registry's business.
@@ -2223,11 +2324,33 @@ class LiveRuntime:
             )
             if advised is not None:
                 self._ordinary_attempts += 1
+                advised_word = str(
+                    (self._last_advice or {}).get("proposed_action", "AI_ADVICE") or "AI_ADVICE"
+                )
                 self._ordinary_last = {
                     "page": page,
                     "title": title,
-                    "word": (self._last_advice or {}).get("proposed_action", "AI_ADVICE"),
+                    "word": advised_word,
                     "point": (round(advised[0], 4), round(advised[1], 4)),
+                    "semantic": f"AI_ADVICE[{advised_word}]",
+                    "basis": "AI_ADVICE",
+                    "source": "AI_ADVICE",
+                }
+                # The advice's own region (the text box its point landed in) travels with it, so an
+                # advised tap registers an L1 action exactly like a measured one -- while the
+                # answer itself stays a proposal in the page record, never a measurement.
+                landed_box = dict((self._last_advice or {}).get("box_norm") or {})
+                self._l1_context = {
+                    "page": page,
+                    "goal": str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
+                    "state": control_experience.state_signature(frame.to_dict()),
+                    "semantic": f"AI_ADVICE[{advised_word}]",
+                    "text": advised_word,
+                    "box_norm": landed_box,
+                    "basis": "AI_ADVICE",
+                    "source": "AI_ADVICE",
+                    "confidence": 0.0,
+                    "frame": str(frame_path),
                 }
                 return advised
         brain = getattr(self, "brain", None)
@@ -2418,6 +2541,244 @@ class LiveRuntime:
         if unnamed:
             order += [word for word in self.UNKNOWN_PAGE_EXIT_WORDS if word not in order]
         return [word for word in order if word not in failed]
+
+    def _l1_action_point(
+        self,
+        page: str,
+        title: str,
+        frame: "WorldState",
+        frame_path: Path,
+        ocr,
+        present_words: list[str],
+    ) -> tuple[float, float] | None:
+        """Tap the L1 action already registered for this page, goal and state (directive section 11).
+
+        The registration is a claim about a *control*, not about a coordinate, so the point is
+        re-derived from this frame's own box for the element's wording.  That is the whole reason
+        the record keeps ``visual_features`` instead of a stored position (section 8): the element
+        is confirmed to be on the current picture before the tap, and the tap lands where the
+        current picture draws it.
+
+        Everything that made the first attempt safe still applies: the spend blacklist was checked
+        over every word of this frame before this ran, the run's attempt budget is shared with the
+        other tiers, and ``(page, word)`` is never used twice in one run.
+        """
+        goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
+        if not goal:
+            return None
+        state = control_experience.state_signature(frame.to_dict())
+        entry = control_experience.l1_for(
+            self._control_ledger,
+            page=page,
+            goal=goal,
+            state=state,
+            present_words=present_words,
+        )
+        if entry is None:
+            return None
+        word = str(entry.visual_features.get("text") or "").strip()
+        if not word or (page, word) in self._ordinary_tried:
+            return None
+        hit = find_printed_words(frame_path, (word,), ocr)
+        if hit is None:
+            # Registered, but the current picture does not draw it any more: re-identify rather
+            # than tap where it used to be.
+            print(
+                f"[l1] {entry.control} is registered for {page} but this frame does not draw "
+                f"{word!r}; re-identifying instead",
+                flush=True,
+            )
+            return None
+        self._ordinary_tried.add((page, word))
+        self._ordinary_attempts += 1
+        point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
+        self._ordinary_last = {
+            "page": page,
+            "title": title,
+            "word": word,
+            "point": (round(point[0], 4), round(point[1], 4)),
+            "semantic": entry.control,
+            "basis": str(entry.basis or "L1_REUSE"),
+            "source": "L1_REUSE",
+        }
+        self._note_printed(
+            entry.control,
+            page_knowledge.page_key(page, title),
+            f"the L1 action registered for {entry.control}",
+            point,
+            box_norm=hit.get("box_norm"),
+            text=word,
+            confidence=hit.get("confidence"),
+            label=page,
+        )
+        print(
+            f"[l1] reusing {entry.control} on {page_knowledge.page_key(page, title)} "
+            f"@ {point[0]:.4f},{point[1]:.4f} (registered for goal {goal})",
+            flush=True,
+        )
+        return point
+
+    def _interactive_control_point(
+        self,
+        page: str,
+        title: str,
+        frame: "WorldState",
+        frame_path: Path,
+        ocr,
+    ) -> tuple[float, float] | None:
+        """One control this frame draws that nobody recorded, tried when the goal justifies it.
+
+        This is the directive's central case: no Skill, no template and no VERIFIED record is
+        required, and a control the dictionary does not declare is still attemptable once.  The
+        evidence is what the project already has -- ``ui_collection.interactive_controls`` reads
+        this frame's OCR boxes, their geometry and the page context -- and the judgement is the
+        goal's: the wording has to belong to the goal being pursued, or be an exit that ends an
+        interaction under any goal.
+
+        The bounds are the ones already in force elsewhere, not new ones: the frame was checked
+        against the spend blacklist by the caller, the run's attempt budget is shared, ``(page,
+        word)`` is never used twice in a run, and a word that has twice produced nothing on this
+        page is skipped.  A tap here is never a claim -- the step's own verifier decides, and only
+        that can register the L1 action.
+        """
+        goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
+        if not goal:
+            return None
+        rows = ui_collection.interactive_controls(
+            frame_path,
+            ocr,
+            skip_words=self._declared_dictionary_words(),
+            goal=goal,
+        )
+        if not rows:
+            return None
+        state = control_experience.state_signature(frame.to_dict())
+        for row in rows:
+            word = str(row.get("word") or "").strip()
+            if not word or not row.get("goal_relevant"):
+                continue
+            if (page, word) in self._ordinary_tried:
+                continue
+            semantic = f"ORDINARY_CONTROL[{word}]"
+            recorded = self._control_ledger.get(control_experience.control_key(page, semantic))
+            if recorded is not None and recorded.attempts >= 2 and not recorded.known_result:
+                # Twice with nothing to show is enough to stop repeating it here.
+                continue
+            box = row.get("box_norm")
+            if not isinstance(box, Mapping):
+                continue
+            try:
+                x_norm = float(box.get("x_norm", 0.0))
+                y_norm = float(box.get("y_norm", 0.0))
+                w_norm = float(box.get("w_norm", 0.0))
+                h_norm = float(box.get("h_norm", 0.0))
+            except (TypeError, ValueError):
+                continue
+            point = (round(x_norm + w_norm / 2, 4), round(y_norm + h_norm / 2, 4))
+            if not (0.0 <= point[0] <= 1.0 and 0.0 <= point[1] <= 1.0):
+                continue
+            self._ordinary_tried.add((page, word))
+            self._ordinary_attempts += 1
+            self._ordinary_last = {
+                "page": page,
+                "title": title,
+                "word": word,
+                "point": point,
+                "semantic": semantic,
+                "basis": str(row.get("basis") or "OCR_BOX"),
+                "source": "INTERACTIVE_CANDIDATE",
+                "box_norm": dict(box),
+            }
+            self._l1_context = {
+                "page": page,
+                "goal": goal,
+                "state": state,
+                "semantic": semantic,
+                "text": word,
+                "box_norm": dict(box),
+                "basis": str(row.get("basis") or "OCR_BOX"),
+                "source": "INTERACTIVE_CANDIDATE",
+                "confidence": float(row.get("confidence") or 0.0),
+                "frame": str(frame_path),
+            }
+            self._stage_interaction_candidate(
+                page=page,
+                title=title,
+                goal=goal,
+                frame_path=frame_path,
+                word=word,
+                box_norm=dict(box),
+                confidence=float(row.get("confidence") or 0.0),
+                basis=str(row.get("basis") or "OCR_BOX"),
+                source="INTERACTIVE_CANDIDATE",
+            )
+            self._note_printed(
+                semantic,
+                page_knowledge.page_key(page, title),
+                f"the frame's own {word!r} (interactive box, goal {goal})",
+                point,
+                box_norm=dict(box),
+                text=word,
+                confidence=float(row.get("confidence") or 0.0),
+                label=page,
+            )
+            print(
+                f"[interactive] {page_knowledge.page_key(page, title)}: {word!r} was not in the "
+                f"dictionary but looks like a control and matches goal {goal}; "
+                f"tapping @ {point[0]:.4f},{point[1]:.4f}",
+                flush=True,
+            )
+            return point
+        return None
+
+    def _stage_interaction_candidate(
+        self,
+        *,
+        page: str,
+        title: str,
+        goal: str,
+        frame_path: Path,
+        word: str,
+        box_norm: Mapping[str, Any],
+        confidence: float,
+        basis: str,
+        source: str,
+    ) -> None:
+        """File the element as a CANDIDATE *before* the tap (directive section 6).
+
+        The collector's hook in ``_record_episode`` runs after the step, which is right for folding
+        an outcome in and too late for this clause: a step that dies -- a crash, a timeout, a killed
+        cycle -- would leave nothing behind, and the region that was measured is exactly what a
+        retry would need.  So the crop, the context image and the metadata are written here, with
+        the page, the goal, the frame, the bbox, the candidate semantic and the basis.
+
+        The after-step hook then folds the attempt and the verifier's verdict into the same record,
+        so the two never disagree about which element was tried.
+        """
+        store = self._ui_store()
+        if store is None:
+            return
+        try:
+            store.stage(
+                frame_path=frame_path,
+                page=page,
+                semantic=f"ORDINARY_CONTROL[{word}]",
+                box_norm=box_norm,
+                goal=goal,
+                episode=str(getattr(getattr(self, "capture_dir", None), "name", "") or ""),
+                ocr_text=word,
+                ocr_confidence=confidence,
+                recognition_method=ui_collection.METHOD_OCR_WORD,
+                semantic_candidates=(f"OCR_WORD:{word}",),
+                expected_effect="ordinary_control_observed",
+                notes=(
+                    f"staged before the tap; basis={basis}; source={source}; "
+                    f"page_key={page_knowledge.page_key(page, title)}"
+                ),
+            )
+            store.save()
+        except Exception:  # noqa: BLE001 - collection must never fail a step
+            pass
 
     def _remembered_control_center(self, semantic: str, frame: "WorldState"):
         """Where this device last saw ``semantic``, when the template can no longer find it.
@@ -2736,6 +3097,10 @@ class LiveRuntime:
         # word is known at resolution time and nowhere else, because "ORDINARY_CONTROL" is a
         # placeholder name by construction (operator 2026-09-22, unknown pages).
         self._ordinary_last: dict[str, Any] | None = None
+        #: The evidence this step's ordinary-control resolution produced (page, goal, state,
+        #: the element's own box and wording, and how it was located), so a step whose verifier
+        #: passes can register an L1 single-step action without re-deriving any of it.
+        self._l1_context: dict[str, Any] | None = None
         # The learned navigation (operator §五): loaded once per run, written back at ``finish``.
         # It is read through ``getattr`` by the resolver so a harness without it still runs.
         self._transitions = page_knowledge.TransitionLedger()

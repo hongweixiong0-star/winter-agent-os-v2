@@ -73,6 +73,18 @@ FORBIDDEN_RISKS: frozenset[str] = frozenset({
 
 UNNAMED = "UNNAMED"
 
+#: A control whose effect **one real step** has established, with the conditions it holds under
+#: (operator directive 2026-09-22 §七/§八).  Deliberately a level and not a status: a single-step
+#: success is not a finished skill and not a stable template, and those two keep their own states
+#: in their own stores (§十).
+LEVEL_L1 = "L1"
+
+#: The keys a registration's ``conditions`` carries.  Spelled out so a reader never has to guess
+#: which fields "the same conditions" means.
+CONDITION_PAGE = "page"
+CONDITION_GOAL = "goal"
+CONDITION_STATE = "state"
+
 
 def _moment(value: Any) -> datetime | None:
     if not value:
@@ -272,6 +284,26 @@ class ControlExperience:
     #: Set when the control was refused by policy rather than tried.  Kept apart
     #: from ``last_result`` so "we decided not to" never reads as "it did nothing".
     refused_reason: str = ""
+    # -- operator 2026-09-22: the L1 single-step action ----------------------
+    #: :data:`LEVEL_L1` once one real step proved what this control does *here*.  A level and not
+    #: a status on purpose: a single-step success is neither a finished skill nor a stable
+    #: template, and those two keep their own states in their own stores.
+    level: str = ""
+    #: The page, goal and state signature the success is conditional on (keyed by
+    #: :data:`CONDITION_PAGE` / :data:`CONDITION_GOAL` / :data:`CONDITION_STATE`).
+    conditions: dict[str, str] = field(default_factory=dict)
+    #: What the element looked like on the frame that proved it -- its own wording, its box
+    #: normalized to that frame, and the frame itself.  This is what lets a later frame answer
+    #: "is this still the same control" without trusting a stored coordinate.
+    visual_features: dict[str, Any] = field(default_factory=dict)
+    #: How the region was located: an OCR box, the client's printed instruction, the ledger, an
+    #: on-demand analysis, or a template -- so an inferred position never reads as a measured one.
+    basis: str = ""
+    #: The action that was issued, as the executor described it (kind + target).
+    action: dict[str, Any] = field(default_factory=dict)
+    #: The expected result and the effect that actually followed, side by side and never merged.
+    expected_effect: str = ""
+    observed_effect: str = ""
 
     # -- reading ------------------------------------------------------------
 
@@ -323,6 +355,13 @@ class ControlExperience:
             "cooldown_seconds": self.cooldown_seconds,
             "goal_help": dict(self.goal_help),
             "refused_reason": self.refused_reason,
+            "level": self.level,
+            "conditions": dict(self.conditions),
+            "visual_features": dict(self.visual_features),
+            "basis": self.basis,
+            "action": dict(self.action),
+            "expected_effect": self.expected_effect,
+            "observed_effect": self.observed_effect,
         }
         return payload
 
@@ -351,6 +390,13 @@ class ControlExperience:
             cooldown_seconds=_int_or_none(payload.get("cooldown_seconds")),
             goal_help={str(k): str(v) for k, v in (payload.get("goal_help") or {}).items()},
             refused_reason=str(payload.get("refused_reason") or ""),
+            level=str(payload.get("level") or ""),
+            conditions={str(k): str(v) for k, v in (payload.get("conditions") or {}).items()},
+            visual_features=dict(payload.get("visual_features") or {}),
+            basis=str(payload.get("basis") or ""),
+            action=dict(payload.get("action") or {}),
+            expected_effect=str(payload.get("expected_effect") or ""),
+            observed_effect=str(payload.get("observed_effect") or ""),
         )
 
 
@@ -381,11 +427,46 @@ def load(path: Path | str | None = None) -> dict[str, ControlExperience]:
     for key, body in records.items():
         if not isinstance(body, Mapping):
             continue
-        experience = ControlExperience.from_json(body)
+        # A record this build cannot read is skipped, never raised: the ledger is read on the
+        # runtime path, and a schema this build does not know is a reason to re-explore one
+        # control, not a reason to stop a cycle.  (Measured the hard way: a field added to
+        # ``as_json`` without the matching dataclass field made ``from_json`` raise ``TypeError``
+        # straight through ``load``.)
+        try:
+            experience = ControlExperience.from_json(body)
+        except (TypeError, ValueError):
+            continue
         if not measured_on_a_real_frame(experience):
             continue
         out[str(key)] = experience
     return out
+
+
+def _merge(
+    on_disk: Mapping[str, ControlExperience],
+    in_memory: Mapping[str, ControlExperience],
+) -> dict[str, ControlExperience]:
+    """Union of two copies of the ledger, per key, losing neither side's history.
+
+    Measured 2026-09-22: this file went from 52 records to 4 while a test suite was running.  The
+    store is a plain full-file rewrite and more than one process holds a copy of it (the control
+    panel's cycles, a test run, a probe), so the last writer won and everything the others had
+    learned was gone -- including an L1 registration a real step had just proved.
+
+    Entries are never deleted by design (a control is retired by its own recorded outcomes, never
+    by being forgotten), so a union is the correct join: the copy with more real attempts for a key
+    wins, and the more recent one breaks the tie.  A run therefore cannot roll back what another
+    run learned, whatever order they finish in.
+    """
+    merged: dict[str, ControlExperience] = dict(on_disk)
+    for key, record in in_memory.items():
+        current = merged.get(key)
+        if current is None:
+            merged[key] = record
+            continue
+        if (record.attempts, record.last_at) >= (current.attempts, current.last_at):
+            merged[key] = record
+    return merged
 
 
 def save(
@@ -394,7 +475,7 @@ def save(
     *,
     limit: int = 4000,
 ) -> None:
-    """Write the ledger.  Never raises -- an experience note must not fail a run.
+    """Write the ledger, **merged with what is already on disk**.  Never raises.
 
     Records measured on a scratch frame are not written.  ``STATE_PATH`` is a module
     constant, so a test or a throwaway probe that does not redirect it writes the real
@@ -403,12 +484,17 @@ def save(
     rather than merely discouraged, and it costs a real run nothing: every frame a real
     run measures comes from its capture directory.
 
+    The read-modify-write is a union (:func:`_merge`) rather than a replace, for the reason
+    recorded there: this is the project's only experience ledger, several processes can hold a
+    copy, and a run that finishes later must not be able to delete what another proved.
+
     The ledger is sorted by recency **before** filtering, so the ``limit`` still counts
     records that will be kept instead of being spent on ones that will be dropped.
     """
     source = Path(path) if path is not None else STATE_PATH
+    combined = _merge(load(source), experiences)
     kept = [
-        (key, experience) for key, experience in experiences.items()
+        (key, experience) for key, experience in combined.items()
         if measured_on_a_real_frame(experience)
     ]
     rows = sorted(kept, key=lambda item: str(item[1].last_at), reverse=True)[:limit]
@@ -485,6 +571,175 @@ def record_outcome(
         experience.cost_seen = spent
 
     return experience
+
+
+# --------------------------------------------------- L1 single-step actions
+
+
+def state_signature(state: Mapping[str, Any] | None) -> str:
+    """The part of a frame's state that changes what its controls *do* (§十一).
+
+    Deliberately narrow, and the narrowness is the design: the page, the popup, and the two
+    sub-states this project's own frames keep switching *inside* one page -- which barracks the
+    training page is open on, which section the alliance page is showing.  Wider would make "the
+    same state" never recur (a countdown or a resource counter moves every step); narrower would
+    reuse a control across screens whose controls mean different things.
+    """
+    if not isinstance(state, Mapping):
+        return ""
+    parts = [label(state.get("page")), label(state.get("popup"))]
+    for holder, field_name in (("training", "camp_open_label"), ("alliance", "section")):
+        body = state.get(holder)
+        if isinstance(body, Mapping):
+            value = body.get(field_name)
+            if value:
+                parts.append(f"{holder}.{field_name}={label(value)}")
+    return "|".join(part for part in parts if part)
+
+
+def visual_features(
+    *,
+    text: str,
+    box_norm: Mapping[str, Any] | None,
+    read_from_frame: str = "",
+) -> dict[str, Any]:
+    """Describe an element the way a later frame can be compared against it (§八).
+
+    The wording it carried, the box it occupied **normalized to that frame**, and the frame
+    itself.  No absolute pixel coordinate: a registration is a claim about a control, and the
+    claim has to be re-established on whatever frame the next visit produces (§九).
+    """
+    features: dict[str, Any] = {}
+    if text:
+        features["text"] = str(text)
+    if isinstance(box_norm, Mapping):
+        box = {
+            str(key): round(float(value), 4)
+            for key, value in box_norm.items()
+            if isinstance(value, (int, float))
+        }
+        if box:
+            features["box_norm"] = box
+    if read_from_frame:
+        features["read_from_frame"] = str(read_from_frame)
+    return features
+
+
+def register_l1(
+    experience: ControlExperience,
+    *,
+    goal: str,
+    state: str,
+    features: Mapping[str, Any],
+    basis: str = "",
+    action: Mapping[str, Any] | None = None,
+    expected_effect: str = "",
+    observed_effect: str = "",
+    now: datetime | None = None,
+) -> ControlExperience:
+    """Record one single-step success as an L1 action (§七/§八).
+
+    Called when -- and only when -- a real step's own verifier passed on a control that had no
+    registered skill behind it.  Every field §八 names is stored: the page, goal and state the
+    success is conditional on, the element's visual features, how its region was located, the
+    action that was issued, and the effect that was observed.  The absolute coordinate is not the
+    record; the box travels inside ``visual_features`` **with the frame it was measured on**, and
+    reuse re-derives the point from the current frame.
+
+    A later success under different conditions adds those conditions rather than replacing them,
+    which is how one control can end up with two separate L1 registrations (§七 "不同页面、不同状态
+    下的结果分别记录").
+    """
+    moment = now or datetime.now(timezone.utc)
+    experience.level = LEVEL_L1
+    experience.conditions = {
+        CONDITION_PAGE: str(experience.page or ""),
+        CONDITION_GOAL: str(goal or ""),
+        CONDITION_STATE: str(state or ""),
+    }
+    features = dict(features or {})
+    if features:
+        features["recorded_at"] = moment.isoformat()
+        experience.visual_features = features
+    if basis:
+        experience.basis = str(basis)
+    if action:
+        experience.action = {str(k): v for k, v in dict(action).items()}
+    experience.expected_effect = str(expected_effect or "")
+    experience.observed_effect = str(observed_effect or "")
+    if goal and observed_effect:
+        experience.goal_help[str(goal)] = str(observed_effect)
+    return experience
+
+
+def l1_reusable(experience: ControlExperience, *, now: datetime | None = None) -> bool:
+    """Is this L1 registration still worth reusing? (§九/§十一)
+
+    A registration stops applying -- without being deleted -- when its most recent attempt on the
+    live game did nothing or could not be read, when a policy refusal is on record, or while a
+    cooldown runs.  That is §九's "结果不符时记录失败并调整候选，不得在同一状态下无限重复失败点击"
+    answered from the record instead of from a run-scoped set.
+    """
+    if experience.level != LEVEL_L1:
+        return False
+    if not experience.visual_features.get("text"):
+        # Nothing to re-confirm it against on a later frame.  A registration that cannot be
+        # checked is not reusable; it stays on the record as history.
+        return False
+    if experience.refused_reason or experience.sterile:
+        return False
+    if experience.last_result in ("", "NO_OP", "UNKNOWN"):
+        return False
+    return experience.cooldown_remaining(now) == 0
+
+
+def l1_for(
+    experiences: Mapping[str, ControlExperience],
+    *,
+    page: str,
+    goal: str,
+    state: str,
+    present_words: Iterable[str] = (),
+    now: datetime | None = None,
+) -> ControlExperience | None:
+    """The registered single-step action to reuse on this frame, or ``None`` (§十一).
+
+    Four clauses, each a directive rule rather than a heuristic:
+
+    * **the same page** -- a control's meaning is page-local (§九: 同一个图标在不同页面可以具有不同
+      语义, so a match may never cross pages);
+    * **the same goal** -- unless the registration was made without one, which is a wildcard;
+    * **the same state** -- the conditions the success was recorded as conditional on;
+    * **the element must still be on this frame** -- its recorded wording has to be among the
+      words this frame's OCR read.  A screen that no longer draws it is exactly §十一's
+      "当前画面不匹配时重新识别", and refusing here is what sends the caller back to
+      identification instead of tapping where something used to be.
+
+    Strongest evidence first: a registration whose wording is on the frame, then the one with the
+    most real attempts behind it.
+    """
+    wanted_page = label(page)
+    wanted_goal = str(goal or "")
+    words = {str(word).strip() for word in present_words if str(word or "").strip()}
+    matches: list[ControlExperience] = []
+    for experience in experiences.values():
+        if label(experience.page) != wanted_page:
+            continue
+        conditions = experience.conditions or {}
+        if str(conditions.get(CONDITION_GOAL) or "") not in ("", wanted_goal):
+            continue
+        if str(conditions.get(CONDITION_STATE) or "") != str(state or ""):
+            continue
+        text = str(experience.visual_features.get("text") or "").strip()
+        if not text or text not in words:
+            continue
+        if not l1_reusable(experience, now=now):
+            continue
+        matches.append(experience)
+    if not matches:
+        return None
+    matches.sort(key=lambda item: (-item.attempts, item.control))
+    return matches[0]
 
 
 def candidates(

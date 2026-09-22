@@ -8,6 +8,11 @@ from .beast_targets import is_dispatchable, may_evaluate
 from .camp_training import CAMP_LABELS, CAMP_ORDER, LABEL_TO_CAMP
 from .skills import SkillRegistry
 
+#: Skills that leave a page or restore a known state instead of advancing whatever goal is being
+#: pursued.  A page whose ready set contains nothing else has no registered way forward, which is
+#: what licenses the one bounded generic attempt (see the fallback in ``decide``).
+GENERIC_READY_SKILLS: frozenset[str] = frozenset({"BACK", "NAVIGATE_TO", "RECOVER_HOME"})
+
 
 class RuleBrain:
     """Strict deterministic fallback brain for P0; decides WHAT, never clicks."""
@@ -1782,6 +1787,26 @@ class RuleBrain:
             # chosen here silently stalls whatever page the loop is actually on.
             actionable = [skill for skill in ready if skill.id != "WAIT"]
             skill = (actionable or ready)[0]
+            # When the best this page can offer is to *leave* it, nothing registered advances this
+            # goal, and one bounded ordinary attempt is the cheaper first move: it is screened by
+            # the resolver's relevance rule and its spend blacklist, the budget is shared with the
+            # unnamed-page attempt above, and a step that does nothing at all leaves the ledger
+            # wiser and the page still there to leave on the next step.  A page whose only option
+            # is a registered route (or any domain skill) is untouched: a hypothesis never
+            # outranks a route.
+            if (
+                self.current_goal
+                and skill.id in GENERIC_READY_SKILLS
+                and self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
+                and not self.ordinary_scan_exhausted
+            ):
+                self.ordinary_attempts += 1
+                return Decision(
+                    "TRY_ORDINARY_CONTROL",
+                    f"goal_{self.current_goal}_has_only_{skill.id}_left_on_this_page",
+                    world.confidence,
+                    "ordinary_control_observed",
+                )
             return Decision(skill.id, "first_ready_p0_skill", world.confidence, skill.description)
         # The generic ordinary-control attempt (operator directive 2026-09-22, third item).
         # A named goal, a known page, and no registered skill that can advance it: this is

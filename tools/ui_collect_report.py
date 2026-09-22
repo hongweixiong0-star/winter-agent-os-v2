@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from winter_agent_v2 import page_knowledge, ui_collection  # noqa: E402
+from winter_agent_v2 import control_experience, page_knowledge, ui_collection  # noqa: E402
 
 COLUMNS = (
     ("candidate_id", 46),
@@ -100,12 +100,56 @@ def report_pages(detail: bool) -> None:
         )
 
 
+def report_l1() -> None:
+    """The single-step actions the AUTO has proved, with the conditions they hold under (§八).
+
+    A different shelf from the element candidates and the templates, and it says so: an L1 record
+    means one real step reached its expected result with this control -- not a finished skill and
+    not a stable template.
+    """
+    ledger = control_experience.load()
+    entries = [entry for entry in ledger.values() if entry.level == control_experience.LEVEL_L1]
+    print()
+    print("=" * 100)
+    print("L1 single-step actions the AUTO registered (one proven step each)")
+    print(f"ledger  : {control_experience.STATE_PATH.as_posix()}")
+    print(f"controls: {len(ledger)} recorded, {len(entries)} at level L1")
+    if not entries:
+        print("none yet -- an L1 is only written by a step whose own verifier passed")
+        return
+    print()
+    print("page".ljust(14) + "control".ljust(32) + "goal".ljust(24) + "state".ljust(18) + "basis".ljust(14) + "effect")
+    for entry in sorted(entries, key=lambda item: item.last_at or "", reverse=True):
+        conditions = entry.conditions or {}
+        print(
+            str(entry.page or "")[:12].ljust(14)
+            + str(entry.control or "")[:30].ljust(32)
+            + str(conditions.get(control_experience.CONDITION_GOAL) or "")[:22].ljust(24)
+            + str(conditions.get(control_experience.CONDITION_STATE) or "")[:16].ljust(18)
+            + str(entry.basis or "")[:12].ljust(14)
+            + str(entry.observed_effect or "")
+        )
+        print(
+            "      element: "
+            + json.dumps(
+                {
+                    "text": entry.visual_features.get("text"),
+                    "box_norm": entry.visual_features.get("box_norm"),
+                    "read_from_frame": str(entry.visual_features.get("read_from_frame") or "")[-52:],
+                },
+                ensure_ascii=False,
+            )
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--status", default="", help="only this verification status")
     parser.add_argument("--detail", action="store_true", help="one block per record")
     parser.add_argument("--pages-only", action="store_true", help="skip the element candidates")
     args = parser.parse_args()
+
+    report_l1()
 
     if not args.pages_only:
         root = ui_collection.CANDIDATE_ROOT
