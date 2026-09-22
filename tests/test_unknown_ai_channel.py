@@ -68,9 +68,12 @@ DONE_BOX = {
     "h_norm": 0.0281,
 }
 
-#: The wordless icon above 说明, as an offset from the label's own centre.  Measured on the frame:
-#: the icon block sits at y 0.161 and the label's centre is at y 0.234.
-ICON_ABOVE_EXPLAIN = {"text": "说明", "dy_norm": -0.056, "w_norm": 0.06, "h_norm": 0.035}
+#: The wordless icon above 说明, as an offset from the label's own centre.  Measured on the frame by
+#: cropping and looking: 说明's centre is at y 0.234, its clipboard icon's centre at y 0.205, so the
+#: offset is -0.030.  (A first guess of -0.056 was written here and it lands in the gap *between*
+#: two rows of icons -- see ``ui_collection.anchored_region``: the offset is declared, not measured,
+#: so it has to be looked at rather than reasoned about.)
+ICON_ABOVE_EXPLAIN = {"text": "说明", "dy_norm": -0.030, "w_norm": 0.06, "h_norm": 0.035}
 
 
 def _ocr():

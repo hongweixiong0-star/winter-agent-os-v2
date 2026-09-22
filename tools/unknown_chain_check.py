@@ -2,6 +2,8 @@
 
     python tools/unknown_chain_check.py                 every request on file
     python tools/unknown_chain_check.py --request <id>  one of them
+    python tools/unknown_chain_check.py --request <id> --answer-file a.json
+                                                        convert a candidate answer, writing nothing
 
 What this is for
 ----------------
@@ -21,6 +23,10 @@ prints every step of the conversion with the value that step produced:
 It is read-only: nothing is tapped, no job is submitted, and no file is written.  A question with no
 answer yet prints the point in the chain where it is waiting, which is the honest result -- the
 runtime is not blocked by it either, and the next matching step picks the answer up if one arrives.
+
+``--answer-file`` exists so a candidate answer can be put through exactly this conversion *without*
+writing it into the live queue: an answer handed to the running AUTO is a real action on a real
+screen, and checking one should not be the same act as publishing it.
 """
 
 from __future__ import annotations
@@ -76,7 +82,7 @@ def _regions_for(request, ocr):
     return regions
 
 
-def _one(request, ocr, advisor) -> bool:
+def _one(request, ocr, advisor, *, answer_file: str = "") -> bool:
     print("=" * 78)
     print(f"question  : {request.request_id}")
     print(f"screen    : {request.page_key}   (page model read it as {request.page_label})")
@@ -94,6 +100,8 @@ def _one(request, ocr, advisor) -> bool:
 
     answers = advisor.root / unknown_advisor.ANSWERS_DIR
     answer_path = answers / f"{request.request_id}.json"
+    if answer_file:
+        answer_path = Path(answer_file)
     if not answer_path.exists():
         rejected = answers / f"{request.request_id}.rejected.json"
         if rejected.exists():
@@ -155,6 +163,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="replay the UNKNOWN channel on real questions")
     parser.add_argument("--request", default="", help="one request id (default: all on file)")
     parser.add_argument("--root", default="", help="request directory (default: the project's)")
+    parser.add_argument(
+        "--answer-file",
+        default="",
+        help="convert this candidate answer instead of the one on file (writes nothing)",
+    )
     args = parser.parse_args()
 
     advisor = unknown_advisor.UnknownAdvisor(root=args.root or None)
@@ -174,9 +187,12 @@ def main() -> int:
         requests = [item for item in requests if item is not None]
 
     print(f"requests  : {advisor.root.as_posix()}  ({len(requests)} on file)")
+    if args.answer_file and not args.request:
+        print("--answer-file needs --request: an answer is about one question")
+        return 2
     complete = 0
     for request in requests:
-        if _one(request, ocr, advisor):
+        if _one(request, ocr, advisor, answer_file=args.answer_file):
             complete += 1
     print("=" * 78)
     print(

@@ -799,6 +799,16 @@ def anchored_region(
     further from its anchor than "next to" can mean (``ANCHOR_MAX_SIZE_NORM``,
     ``ANCHOR_MAX_OFFSET_NORM``).  The basis is recorded as ANCHORED_TO_TEXT rather than as a
     measurement, so the weaker evidence never masquerades as the stronger.
+
+    What it does **not** guarantee, measured on the real 燃霜矿区 frame while writing this: the
+    offset is the reasoner's, so this basis promises a bounded neighbourhood of a word the frame
+    drew and *not* that something is drawn in that neighbourhood.  An offset of -0.056 above 奖励
+    lands in the gap between two rows of icons and resolves just as happily as the -0.030 that
+    lands squarely on the gift; this module cannot tell the two apart (see the note below on why a
+    pixel test for it was written and removed).  The bound on the damage is the step's own verifier:
+    a tap on empty background changes nothing, the step fails honestly, and no L1 action is
+    registered from it.  That is why the offset is the reasoner's to declare and not this module's
+    to guess.
     """
     text = str(anchor.get("text") or "").strip()
     if not text:

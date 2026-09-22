@@ -2548,6 +2548,11 @@ class LiveRuntime:
         key = page_knowledge.page_key(page, title)
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         situation = self._l1_state(frame, title)
+        # Serialised once: the request needs it as the world state, the state signature and the
+        # character are read out of it, and ``to_dict`` on a whole WorldState is not free on a path
+        # that runs on every step of an unnamed screen.
+        observed = frame.to_dict()
+        player = observed.get("player")
         ocr = self._ocr_service()
         regions, boxes, texts, template_note = self._advice_evidence(page, frame_path, ocr)
         request = unknown_advisor.build_request(
@@ -2560,13 +2565,9 @@ class LiveRuntime:
             ocr_texts=texts,
             ocr_boxes=boxes,
             entry_page=getattr(self, "_last_known_label", ""),
-            world_state=frame.to_dict(),
+            world_state=observed,
             situation=situation,
-            character=str(
-                ((frame.to_dict().get("player") or {}).get("name"))
-                if isinstance(frame.to_dict().get("player"), Mapping)
-                else ""
-            ),
+            character=str(player.get("name")) if isinstance(player, Mapping) else "",
             template_match=template_note,
             ledger_match="; ".join(
                 f"{control}->{row.after_page}"
