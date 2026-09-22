@@ -1055,11 +1055,21 @@ class LiveRuntime:
         episode_id: str,
         skip_words: Iterable[str],
     ) -> None:
-        """Harvest ordinary action words on this frame that nobody has written down yet."""
+        """Harvest ordinary action words on this frame that nobody has written down yet.
+
+        Called for every step, and it decides for itself whether this is one of the sampled ones:
+        the budget is spent on every ``UI_SCAN_STRIDE``-th step rather than on the first steps of
+        the run.  Measured 2026-09-22 over 213 frames from one hour: the frames carrying an
+        undeclared plain action word sat at steps 22-24, so a budget spent up front collected
+        nothing while the informative frames went by unscanned.
+        """
         if frame is None:
             return
+        self._ui_steps_seen = getattr(self, "_ui_steps_seen", 0) + 1
         seen = getattr(self, "_ui_scans", 0)
         if seen >= ui_collection.MAX_SCANS_PER_RUN:
+            return
+        if self._ui_steps_seen % ui_collection.UI_SCAN_STRIDE:
             return
         ocr = self._ocr_service()
         if ocr is None:
