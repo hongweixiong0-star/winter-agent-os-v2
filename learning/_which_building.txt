@@ -1,0 +1,22 @@
+registered building templates: ['BUILDING_INFANTRY_CAMP', 'BUILDING_QUEUE_TIMER', 'BUILDING_RESEARCH_CENTER', 'BUILDING_STOREHOUSE', 'BUILDING_UPGRADE_DIALOG']
+============================================================================================
+18:54:27 after DONE-row tap live_runtime_step_008_after_refresh_2_20260922T185419887295.png
+  BUILDING_INFANTRY_CAMP     score=0.257  centre=(0.478,0.260)
+  BUILDING_QUEUE_TIMER       score=0.339  centre=(0.431,0.028)
+  BUILDING_RESEARCH_CENTER   score=0.654  centre=(0.575,0.517)
+  BUILDING_STOREHOUSE        score=0.300  centre=(0.503,0.523)
+  BUILDING_UPGRADE_DIALOG    score=0.104  centre=(0.499,0.561)
+============================================================================================
+17:43:20 city frame 20260921_014255_284134_step_002_after_20260920T174313923489.png
+  BUILDING_INFANTRY_CAMP     score=0.192  centre=(0.305,0.491)
+  BUILDING_QUEUE_TIMER       score=0.361  centre=(0.259,0.157)
+  BUILDING_RESEARCH_CENTER   score=0.197  centre=(0.768,0.705)
+  BUILDING_STOREHOUSE        score=0.168  centre=(0.676,0.444)
+  BUILDING_UPGRADE_DIALOG    score=0.246  centre=(0.499,0.386)
+============================================================================================
+17:55:01 city frame 20260922_015351_067143_step_002_after_20260921T175448249787.png
+  BUILDING_INFANTRY_CAMP     score=0.059  centre=(0.512,0.527)
+  BUILDING_QUEUE_TIMER       score=0.323  centre=(0.269,0.063)
+  BUILDING_RESEARCH_CENTER   score=0.090  centre=(0.365,0.544)
+  BUILDING_STOREHOUSE        score=0.085  centre=(0.649,0.470)
+  BUILDING_UPGRADE_DIALOG    score=0.237  centre=(0.499,0.385)

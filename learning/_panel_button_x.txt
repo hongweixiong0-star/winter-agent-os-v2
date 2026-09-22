@@ -1,0 +1,11 @@
+frame 20260923_032158_020595_step_018_before_20260922T193104559465.png (720, 1280)
+SHIELD 546     blue x 0.2833-0.8472 (px 204-610, centre 0.5653)   y 0.3828-0.4711
+LANCER 618     blue x 0.2833-0.8472 (px 204-610, centre 0.5653)   y 0.4375-0.5172
+MARKSMAN 691   blue x 0.2833-0.7972 (px 204-574, centre 0.5403)   y 0.4945-0.5844
+RESEARCH 804   blue x 0.2542-0.8486 (px 183-611, centre 0.5514)   y 0.5828-0.6727
+
+what the reader reported for this frame:
+   SHIELD_CAMP      status=IDLE         control=ARROW  y=0.4262 arrow=[0.5979, 0.4262] basis=ROW_BUTTON_SCAN badge=PRESENT
+   LANCER_CAMP      status=IN_PROGRESS  control=ARROW  y=0.4832 arrow=[0.6125, 0.4832] basis=ROW_BUTTON_SCAN badge=ABSENT
+   MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  y=0.5402 arrow=[0.6681, 0.5402] basis=ROW_BUTTON_SCAN badge=ABSENT
+   RESEARCH         status=IDLE         control=ARROW  y=0.6285 arrow=[0.6222, 0.6285] basis=ROW_BUTTON_SCAN badge=PRESENT

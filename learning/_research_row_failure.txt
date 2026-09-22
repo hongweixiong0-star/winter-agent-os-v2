@@ -1,0 +1,7 @@
+skill: OPEN_TASK_FROM_QUICK_PANEL_RESEARCH | FAILURE | PANEL_ROW_RESEARCH_BAR_NOT_PROVEN
+before page: HOME panel_open: True
+RESEARCH row: {"kind": "RESEARCH", "key": "RESEARCH", "label": "科技研究", "y_norm": 0.6285, "status": "IDLE", "source_word": "空闲中", "arrow_norm": [0.6222, 0.6285], "arrow_basis": "ROW_BUTTON_SCAN", "badge": "PRESENT", "control": "ARROW",
+verifier_evidence: {"lab_bar_open_after": false, "research_page_open_after": false}
+after frame: 20260923_032158_020595_step_018_after_refresh_2_20260922T193150332946.png
+  reader NOW -> page= Page.HOME | training= {} | research= {}
+  recorded   -> page= HOME | training= {} | research= {}

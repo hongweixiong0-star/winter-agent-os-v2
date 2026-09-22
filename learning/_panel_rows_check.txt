@@ -1,0 +1,24 @@
+frame: live_runtime_step_008_before_20260922T185354694754.png
+panel open: True | state None
+key                        status       control   y_norm   y_px         arrow_norm        done_norm
+SHIELD_CAMP                IDLE         DONE      0.4262    546   [0.6896, 0.4262] [0.5618, 0.4344]
+LANCER_CAMP                IN_PROGRESS  ARROW     0.4832    618   [0.6132, 0.4832]             None
+MARKSMAN_CAMP              IN_PROGRESS  ARROW     0.5402    691   [0.6486, 0.5402]             None
+RESEARCH                   IDLE         ARROW     0.6285    804   [0.5618, 0.6285]             None
+
+OCR tokens in the panel band (x 0.10-0.52, y 0.22-0.60), with their own centres:
+   y=0.2121 (  272px) x=0.162 conf=0.999  '城镇'
+   y=0.2129 (  272px) x=0.465 conf=1.000  '野外'
+   y=0.2508 (  321px) x=0.113 conf=0.868  '尚建筑队列'
+   y=0.2816 (  360px) x=0.312 conf=0.998  '大熔炉升级中'
+   y=0.3047 (  390px) x=0.312 conf=0.977  '03:51:53'
+   y=0.3387 (  434px) x=0.311 conf=0.998  '队列2'
+   y=0.3625 (  464px) x=0.311 conf=0.997  '购买队列'
+   y=0.3965 (  508px) x=0.138 conf=0.993  '部队训练'
+   y=0.4266 (  546px) x=0.312 conf=0.998  '盾兵'
+   y=0.4504 (  576px) x=0.312 conf=0.997  '已完成'
+   y=0.4836 (  619px) x=0.312 conf=0.978  '矛兵'
+   y=0.5059 (  648px) x=0.312 conf=0.978  '00:49:50'
+   y=0.5406 (  692px) x=0.311 conf=0.999  '射手'
+   y=0.5629 (  720px) x=0.310 conf=0.980  '01:46:30'
+   y=0.5977 (  765px) x=0.112 conf=0.999  '科技研究'

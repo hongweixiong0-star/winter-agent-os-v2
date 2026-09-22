@@ -1,0 +1,9 @@
+frame                               RESEARCH  INFANTRY   verdict
+the step itself: before                0.303     0.250   no research marker
+the step itself: after                 0.654     0.257   research lab marked (callout marker present)
+unrelated city frame 19:02:11          0.524     0.195   no research marker
+unrelated city frame 17:43:20          0.271     0.729   no research marker
+unrelated city frame 18:43:14          0.233     0.696   no research marker
+unrelated city frame 17:55:01          0.655     0.269   research lab marked (callout marker present)
+unrelated city frame 18:50:44          0.596     0.252   no research marker
+unrelated city frame 19:03:40          0.597     0.252   no research marker
