@@ -322,7 +322,7 @@ class TheQuickPanelOpeningTests(unittest.TestCase):
         "camps": {"SHIELD_CAMP": {"status": "IDLE", "queue_available": True}},
         "rows": [
             {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IDLE",
-             "arrow_norm": [0.4569, 0.4266], "arrow_basis": "PANEL_RELATIVE_ESTIMATE"},
+             "arrow_norm": [0.4569, 0.4266], "arrow_basis": "PANEL_RELATIVE_ESTIMATE", "control": "NONE"},
         ],
         "handle": {"state": "EXPANDED", "point_norm": [0.4569, 0.5502]},
     }
@@ -474,11 +474,11 @@ class TheRowArrowOpensTheTaskBarTests(unittest.TestCase):
         """
         rows = [
             {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IN_PROGRESS",
-             "arrow_norm": [0.6, 0.4266], "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_norm": [0.6, 0.4266], "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
             {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IN_PROGRESS",
-             "arrow_norm": [0.6, 0.4832], "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_norm": [0.6, 0.4832], "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
             {"kind": "CAMP", "key": "MARKSMAN_CAMP", "label": "射手", "status": "IDLE",
-             "arrow_norm": [0.6, 0.5402], "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_norm": [0.6, 0.5402], "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
         ]
         frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
         decision = _brain("MARKSMAN_CAMP_TRAINING").decide(frame, v2_registry())
@@ -537,7 +537,7 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
         """
         rows = [
             {"kind": "CAMP", "key": "SOMETHING_NEW", "label": "新行", "status": "IDLE",
-             "arrow_norm": [0.6, 0.5], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_norm": [0.6, 0.5], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
         ]
         frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
         decision = _brain("TRAIN").decide(frame, v2_registry())
@@ -558,9 +558,9 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
         """The red dot is the only per-row signal that separates two IDLE rows (operator §五)."""
         rows = [
             {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IDLE",
-             "arrow_norm": [0.6, 0.4832], "badge": "ABSENT", "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_norm": [0.6, 0.4832], "badge": "ABSENT", "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
             {"kind": "CAMP", "key": "MARKSMAN_CAMP", "label": "射手", "status": "IDLE",
-             "arrow_norm": [0.6, 0.5402], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_norm": [0.6, 0.5402], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
         ]
         frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
         decision = _brain("KEEP_TRAINING_PRODUCTIVE").decide(frame, v2_registry())
@@ -576,7 +576,7 @@ class TheTapLandsSomewhereRecordedTests(unittest.TestCase):
         """
         panel = {"open": True, "rows": [
             {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IDLE",
-             "arrow_norm": [0.6, 0.4832], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN"}]}
+             "arrow_norm": [0.6, 0.4832], "badge": "PRESENT", "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"}]}
         frame = WorldState(page=Page.HOME, quick_panel=panel)
         brain = RuleBrain(current_goal="TRAIN")
         brain.goal_id = "CLEAR_INTEL"
@@ -659,13 +659,13 @@ class TheTrainingButtonPositionTests(unittest.TestCase):
         rows = [
             {"kind": "CAMP", "key": "SHIELD_CAMP", "label": "盾兵", "status": "IDLE",
              "source_word": "已完成", "badge": "UNKNOWN", "arrow_norm": [0.4042, 0.4262],
-             "arrow_basis": "PANEL_RELATIVE_ESTIMATE"},
+             "arrow_basis": "PANEL_RELATIVE_ESTIMATE", "control": "NONE"},
             {"kind": "CAMP", "key": "LANCER_CAMP", "label": "矛兵", "status": "IN_PROGRESS",
              "source_word": "02:22:00", "badge": "ABSENT", "arrow_norm": [0.6125, 0.4832],
-             "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
             {"kind": "RESEARCH", "key": "RESEARCH", "label": "科技研究", "status": "IDLE",
              "source_word": "空闲中", "badge": "PRESENT", "arrow_norm": [0.6222, 0.6285],
-             "arrow_basis": "ROW_BUTTON_SCAN"},
+             "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW"},
         ]
         frame = WorldState(page=Page.HOME, quick_panel={"open": True, "rows": rows})
         decision = _brain("TRAIN").decide(frame, v2_registry())
@@ -673,6 +673,101 @@ class TheTrainingButtonPositionTests(unittest.TestCase):
         # The research row *was* located, so it is still offered to the goal that works from it.
         research = _brain("RESEARCH").decide(frame, v2_registry())
         self.assertEqual(research.skill, "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH")
+
+
+class TheDoneMarkerTests(unittest.TestCase):
+    """已完成 is a tick to press, not a reward that was taken.
+
+    Measured on three independent frames (2026-09-23, all 720x1280): a row whose task finished carries
+    the client's green done-marker in its own control slot -- x 0.533-0.590, ~41x31 px, ~1270 green
+    pixels -- and a frame whose every row is idle draws none.  Before this, the reader reported such a
+    row as ``IDLE`` with its fallback estimate as the point, and the live run tapped that estimate at
+    x 291 on the row's text (17:21:50) and opened nothing.
+    """
+
+    DONE_FRAME = sorted(AUTO.glob("*/" + "*_step_006_before_20260922T172143222865.png"))[-1]
+    ALL_IDLE_FRAME = sorted(AUTO.glob("*/" + "*_step_003_before_20260922T161229012339.png"))[-1]
+
+    @classmethod
+    def setUpClass(cls):
+        if not cls.DONE_FRAME.exists():
+            raise unittest.SkipTest("the archived frames are not on this machine")
+        cls.state = _vision().observe(cls.DONE_FRAME)
+
+    def _row(self, state, key):
+        return next((r for r in (state.quick_panel.get("rows") or []) if r.get("key") == key), {})
+
+    def test_the_tick_is_read_as_the_rows_control(self):
+        shield = self._row(self.state, "SHIELD_CAMP")
+        self.assertEqual(shield.get("control"), "DONE")
+        self.assertEqual(shield.get("source_word"), "已完成")
+        # Measured on this frame: the green block's centre is (0.5618, 0.4375).
+        done = shield.get("done_norm")
+        self.assertIsInstance(done, list)
+        self.assertAlmostEqual(done[0], 0.5618, places=2)
+        self.assertAlmostEqual(done[1], 0.435, places=2)
+
+    def test_the_other_rows_are_not_done(self):
+        for key in ("LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"):
+            with self.subTest(row=key):
+                self.assertEqual(self._row(self.state, key).get("control"), "ARROW")
+
+    def test_a_frame_whose_rows_are_all_idle_draws_no_tick(self):
+        state = _vision().observe(self.ALL_IDLE_FRAME)
+        controls = {(r.get("key"), r.get("control")) for r in (state.quick_panel.get("rows") or [])}
+        self.assertTrue(controls)
+        self.assertNotIn("DONE", {control for _, control in controls})
+
+    def test_the_goal_that_owns_that_camp_collects_it(self):
+        decision = _brain("SHIELD_CAMP_TRAINING").decide(self.state, v2_registry())
+        self.assertEqual(decision.skill, "COLLECT_FINISHED_TRAINING_SHIELD", decision.reason)
+
+    def test_the_collect_target_is_the_tick_itself(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._control_ledger = {}
+        runtime._semantic_records_cache = None
+        runtime._printed_reads = []
+        runtime._printed_printed = set()
+        runtime._printed_boxes = {}
+        point = runtime._resolve_semantic_target(
+            "QUICK_PANEL_ROW_SHIELD_CAMP_DONE", self.state
+        )
+        self.assertIsNotNone(point, "the tick the frame drew must resolve")
+        self.assertAlmostEqual(point[0], 0.5618, places=2)
+
+    def test_a_done_row_is_not_offered_to_the_enter_path(self):
+        """The two controls share a slot, so the arrow scan alone cannot tell them apart."""
+        decision = _brain("RESEARCH").decide(self.state, v2_registry())
+        self.assertEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH")
+
+    def test_every_claim_skill_exists_and_taps_the_tick(self):
+        from winter_agent_v2.brain import _QUICK_PANEL_ROW_CLAIM_SKILL
+
+        for key, skill in _QUICK_PANEL_ROW_CLAIM_SKILL.items():
+            with self.subTest(row=key):
+                entry = v2_registry().get(skill)
+                self.assertIsNotNone(entry, f"{key} maps to {skill}, which does not exist")
+                self.assertEqual(entry.action.target, f"QUICK_PANEL_ROW_{key}_DONE")
+
+    def test_collecting_is_proven_by_the_tick_going_away(self):
+        from winter_agent_v2.verifier import verify_panel_row_done_collected
+
+        def frame(control):
+            return WorldState(page=Page.HOME, quick_panel={"open": True, "rows": [
+                {"kind": "CAMP", "key": "SHIELD_CAMP", "status": "IDLE", "source_word": "已完成",
+                 "control": control, "arrow_norm": [0.6, 0.42],
+                 "arrow_basis": "ROW_BUTTON_SCAN", "control": "ARROW", "done_norm": [0.5618, 0.435]}]})
+
+        ok = verify_panel_row_done_collected(frame("DONE"), frame("ARROW"), row_key="SHIELD_CAMP")
+        self.assertTrue(ok.ok, ok.reason)
+        still = verify_panel_row_done_collected(frame("DONE"), frame("DONE"), row_key="SHIELD_CAMP")
+        self.assertFalse(still.ok)
+        self.assertEqual(still.reason, "PANEL_ROW_COLLECT_NOT_PROVEN")
+        wrong_before = verify_panel_row_done_collected(frame("ARROW"), frame("ARROW"), row_key="SHIELD_CAMP")
+        self.assertFalse(wrong_before.ok)
+        self.assertEqual(wrong_before.reason, "PANEL_ROW_NOT_WAITING_TO_COLLECT")
 
 
 if __name__ == "__main__":

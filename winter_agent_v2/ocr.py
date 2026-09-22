@@ -1445,6 +1445,48 @@ def _roi_box(rect: tuple[float, float, float, float]) -> tuple[float, float, flo
     return rect
 
 
+def _panel_done_marker(
+    pixels: list[list[tuple[int, int, int]]] | None, row_y_norm: float
+) -> tuple[list[float] | None, dict | None]:
+    """The client's green done-marker on this row, when it drew one.
+
+    See :data:`QUICK_PANEL_DONE_GREEN_MIN` for the measurement.  Returns the centre and box in
+    normalised coordinates, or ``(None, None)`` for a row the client drew an enter-arrow on -- which is
+    the ordinary case and must stay silent.
+    """
+    if not pixels or not pixels[0]:
+        return None, None
+    height = len(pixels)
+    width = len(pixels[0])
+    y = int(round(row_y_norm * height))
+    half = max(1, int(QUICK_PANEL_DONE_HALF_HEIGHT * height))
+    left_bound = int(QUICK_PANEL_DONE_BAND_X_NORM[0] * width)
+    right_bound = min(int(QUICK_PANEL_DONE_BAND_X_NORM[1] * width), width)
+    hits: list[tuple[int, int]] = []
+    for scan_y in range(max(0, y - half), min(height, y + half + 1)):
+        row = pixels[scan_y]
+        for scan_x in range(left_bound, right_bound):
+            red, green, blue = row[scan_x]
+            if (green >= QUICK_PANEL_DONE_GREEN_MIN
+                    and green - red >= QUICK_PANEL_DONE_OVER_RED
+                    and green - blue >= QUICK_PANEL_DONE_OVER_BLUE):
+                hits.append((scan_x, scan_y))
+    if len(hits) < QUICK_PANEL_DONE_MIN_PIXELS:
+        return None, None
+    xs = [item[0] for item in hits]
+    ys = [item[1] for item in hits]
+    if len(set(ys)) < QUICK_PANEL_DONE_MIN_ROWS or max(xs) - min(xs) < QUICK_PANEL_DONE_MIN_WIDTH_PX:
+        return None, None
+    centre = [round(((min(xs) + max(xs)) / 2) / width, 4), round(((min(ys) + max(ys)) / 2) / height, 4)]
+    box = {
+        "x_norm": round(min(xs) / width, 4),
+        "y_norm": round(min(ys) / height, 4),
+        "w_norm": round((max(xs) - min(xs)) / width, 4),
+        "h_norm": round((max(ys) - min(ys)) / height, 4),
+    }
+    return centre, box
+
+
 def _panel_arrow_and_badge(
     pixels: list[list[tuple[int, int, int]]] | None, row_y_norm: float
 ) -> tuple[list[float] | None, str, dict | None]:
@@ -1890,6 +1932,13 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     continue
                 state_word = state_below(name_y)
                 located, badge, box = _panel_arrow_and_badge(frame_pixels, name_y / height)
+                # The tick is looked for on **every** row, not only where the arrow scan failed.
+                # Measured: some 已完成 rows carry the client's blue button with the green tick inside
+                # it (16:41 射手 row, 22:02 我的奖励 row -- both frames draw a ~1270 px green block and
+                # their blue scan also succeeds), while others carry the tick alone (17:21 盾兵 row,
+                # whose blue scan finds nothing).  The tick is what says the row is waiting to be
+                # collected, so it decides the row's identity and the arrow is the alternative.
+                done_norm, done_box = _panel_done_marker(frame_pixels, name_y / height)
                 record = {
                     # The kind is the row's own identity, not a two-way guess: a consumer matches it
                     # against the row kinds its goal works from, so labelling 联盟捐献 as RESEARCH
@@ -1908,9 +1957,23 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                         QUICK_PANEL_ARROW_BASIS_SCAN if located else QUICK_PANEL_ARROW_BASIS_ESTIMATE
                     ),
                     "badge": badge,
+                    # What the client drew in this row's own control slot.  A row whose task is done
+                    # gets a green tick instead of an enter-arrow, and which one it is decides what
+                    # the row is for: tapping a tick is collecting, and tapping a tick as if it were an
+                    # enter-arrow is the wrong action.  None of ``arrow_norm`` above changes -- it stays
+                    # the arrow's own point, with the labelled estimate as its fallback.
+                    "control": (
+                        QUICK_PANEL_CONTROL_DONE if done_norm is not None
+                        else QUICK_PANEL_CONTROL_ARROW if located is not None
+                        else QUICK_PANEL_CONTROL_NONE
+                    ),
                 }
                 if box is not None:
                     record["arrow_box_norm"] = box
+                if done_norm is not None:
+                    record["done_norm"] = done_norm
+                if done_box is not None:
+                    record["done_box_norm"] = done_box
                 out_rows.append(record)
             if out_rows:
                 panel["rows"] = out_rows
@@ -1943,6 +2006,27 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
 #: 盾兵 row drew the client's **green check** (its batch was 已完成) instead of a blue arrow, the scan
 #: correctly found none, and the estimate (x 0.4042) was tapped anyway: the tap landed on the row's
 #: text at x 291 and opened nothing.
+#: The client's done-marker: the green tick it draws in the control slot of a row whose task has
+#: finished and is waiting to be collected.  Measured on three frames (2026-09-23, 720x1280): the block
+#: is x 0.533-0.590, ~41x31 px, ~1270 green pixels, at the row's own y -- and a frame whose every row is
+#: idle draws none at all.  The threshold is the measured signature, not a guess.
+QUICK_PANEL_DONE_GREEN_MIN: int = 150
+QUICK_PANEL_DONE_OVER_RED: int = 50
+QUICK_PANEL_DONE_OVER_BLUE: int = 50
+#: The slot the tick shares with the enter-arrow.  Right of the row's text column, inside the panel.
+QUICK_PANEL_DONE_BAND_X_NORM: tuple[float, float] = (0.50, 0.66)
+#: How far either side of the row's own y the tick may sit, and how big it has to be to count.  The
+#: measured centre sits ~0.011 below the row's name line and the block is ~30 px tall.
+QUICK_PANEL_DONE_HALF_HEIGHT: float = 0.022
+QUICK_PANEL_DONE_MIN_PIXELS: int = 200
+QUICK_PANEL_DONE_MIN_ROWS: int = 8
+QUICK_PANEL_DONE_MIN_WIDTH_PX: int = 20
+
+#: What the client drew in a row's own control slot.
+QUICK_PANEL_CONTROL_ARROW: str = "ARROW"
+QUICK_PANEL_CONTROL_DONE: str = "DONE"
+QUICK_PANEL_CONTROL_NONE: str = "NONE"
+
 QUICK_PANEL_ARROW_BASIS_SCAN: str = "ROW_BUTTON_SCAN"
 QUICK_PANEL_ARROW_BASIS_ESTIMATE: str = "PANEL_RELATIVE_ESTIMATE"
 

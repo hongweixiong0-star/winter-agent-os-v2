@@ -2677,6 +2677,198 @@
    },
    "related_goals": [],
    "notes": "The operator describes these as the panel's own tabs. Measured, they sit at y=0.212, above 建筑队列 (y=0.251), so this capture does not decide whether they belong to the panel or to the map behind it; that is left to a capture that shows one without the other, and the record says so rather than guessing."
+  },
+  {
+   "id": "QUICK_PANEL_ROW_SHIELD_CAMP_DONE",
+   "type": "ROW_CONTROL",
+   "cn": "盾兵行 已完成（待领取）",
+   "en_aliases": [],
+   "ocr": [
+    "盾兵营"
+   ],
+   "icon_semantic": "panel.row.done",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "SHIELD_CAMP_BATCH_COLLECTED",
+   "actions": [
+    "COLLECT"
+   ],
+   "status": "CANDIDATE",
+   "source": "one live capture (measurement)",
+   "last_verified": "",
+   "visual_features": {
+    "state_word": "已完成",
+    "control": "the client's green done-marker, inside the row's own control slot",
+    "measured_green_block": "17:21 frame: 盾兵 已完成, green tick ~1265 px at x 0.533-0.590, y centre 0.4375"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row_done",
+    "y": "the row's own y, read from this frame",
+    "x": "the green done-marker the frame drew on this row (measured x 0.533-0.590, centre 0.5618)",
+    "measured_on": "dataset/raw/control_panel/runtime_auto/20260923_012051_train/20260923_012051_train_step_006_before_20260922T172143222865.png"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "row_read",
+    "row_control_is_DONE"
+   ],
+   "expected_transition": "SHIELD_CAMP_BATCH_COLLECTED",
+   "verification": {
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
+    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+   },
+   "related_goals": [
+    "SHIELD_CAMP_TRAINING",
+    "KEEP_TRAINING_PRODUCTIVE"
+   ],
+   "notes": "The third state the operator names: 进行中 is a queue at work, 已完成 is finished-and-waiting, and 已领取 is only true after the client answers.  This control exists so the second and third cannot be conflated: 已完成 is a tick to press, never a reward that was taken.  联盟捐献 and 英雄招募 draw the same tick shape on the 22:02 frame but what it does there is unmeasured, so no record claims them."
+  },
+  {
+   "id": "QUICK_PANEL_ROW_LANCER_CAMP_DONE",
+   "type": "ROW_CONTROL",
+   "cn": "矛兵行 已完成（待领取）",
+   "en_aliases": [],
+   "ocr": [
+    "矛兵营"
+   ],
+   "icon_semantic": "panel.row.done",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "LANCER_CAMP_BATCH_COLLECTED",
+   "actions": [
+    "COLLECT"
+   ],
+   "status": "CANDIDATE",
+   "source": "one live capture (measurement)",
+   "last_verified": "",
+   "visual_features": {
+    "state_word": "已完成",
+    "control": "the client's green done-marker, inside the row's own control slot",
+    "measured_green_block": "same rendering as 盾兵 (the tick is drawn by the client's done state, not per barracks)"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row_done",
+    "y": "the row's own y, read from this frame",
+    "x": "the green done-marker the frame drew on this row (measured x 0.533-0.590, centre 0.5618)",
+    "measured_on": "dataset/raw/control_panel/runtime_auto/20260923_012051_train/20260923_012051_train_step_006_before_20260922T172143222865.png"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "row_read",
+    "row_control_is_DONE"
+   ],
+   "expected_transition": "LANCER_CAMP_BATCH_COLLECTED",
+   "verification": {
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
+    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+   },
+   "related_goals": [
+    "LANCER_CAMP_TRAINING",
+    "KEEP_TRAINING_PRODUCTIVE"
+   ],
+   "notes": "The third state the operator names: 进行中 is a queue at work, 已完成 is finished-and-waiting, and 已领取 is only true after the client answers.  This control exists so the second and third cannot be conflated: 已完成 is a tick to press, never a reward that was taken.  联盟捐献 and 英雄招募 draw the same tick shape on the 22:02 frame but what it does there is unmeasured, so no record claims them."
+  },
+  {
+   "id": "QUICK_PANEL_ROW_MARKSMAN_CAMP_DONE",
+   "type": "ROW_CONTROL",
+   "cn": "射手行 已完成（待领取）",
+   "en_aliases": [],
+   "ocr": [
+    "射手营"
+   ],
+   "icon_semantic": "panel.row.done",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "MARKSMAN_CAMP_BATCH_COLLECTED",
+   "actions": [
+    "COLLECT"
+   ],
+   "status": "CANDIDATE",
+   "source": "one live capture (measurement)",
+   "last_verified": "",
+   "visual_features": {
+    "state_word": "已完成",
+    "control": "the client's green done-marker, inside the row's own control slot",
+    "measured_green_block": "16:41 frame: 射手 已完成, green tick ~1268 px at x 0.533-0.590, y centre 0.5520"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row_done",
+    "y": "the row's own y, read from this frame",
+    "x": "the green done-marker the frame drew on this row (measured x 0.533-0.590, centre 0.5618)",
+    "measured_on": "dataset/raw/control_panel/runtime_auto/20260923_004054_research/20260923_004054_research_step_003_after_20260922T164141475672.png"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "row_read",
+    "row_control_is_DONE"
+   ],
+   "expected_transition": "MARKSMAN_CAMP_BATCH_COLLECTED",
+   "verification": {
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
+    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+   },
+   "related_goals": [
+    "MARKSMAN_CAMP_TRAINING",
+    "KEEP_TRAINING_PRODUCTIVE"
+   ],
+   "notes": "The third state the operator names: 进行中 is a queue at work, 已完成 is finished-and-waiting, and 已领取 is only true after the client answers.  This control exists so the second and third cannot be conflated: 已完成 is a tick to press, never a reward that was taken.  联盟捐献 and 英雄招募 draw the same tick shape on the 22:02 frame but what it does there is unmeasured, so no record claims them."
+  },
+  {
+   "id": "QUICK_PANEL_ROW_MY_REWARDS_DONE",
+   "type": "ROW_CONTROL",
+   "cn": "我的奖励行 已完成（待领取）",
+   "en_aliases": [],
+   "ocr": [
+    "仓库补给"
+   ],
+   "icon_semantic": "panel.row.done",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "MY_REWARDS_BATCH_COLLECTED",
+   "actions": [
+    "COLLECT"
+   ],
+   "status": "CANDIDATE",
+   "source": "one live capture (measurement)",
+   "last_verified": "",
+   "visual_features": {
+    "state_word": "已完成",
+    "control": "the client's green done-marker, inside the row's own control slot",
+    "measured_green_block": "22:02 frame: 仓库补给 已完成, green tick ~1276 px at x 0.533-0.590, y centre 0.6527"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row_done",
+    "y": "the row's own y, read from this frame",
+    "x": "the green done-marker the frame drew on this row (measured x 0.533-0.590, centre 0.5618)",
+    "measured_on": "learning/_panel_scroll/05_after_scroll_4.png"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "row_read",
+    "row_control_is_DONE"
+   ],
+   "expected_transition": "MY_REWARDS_BATCH_COLLECTED",
+   "verification": {
+    "control_identity": "MEASURED on three independent frames: the green block is x 0.533-0.590, ~41x31 px, ~1270 px, at the row's own y; a frame whose every row is idle draws none",
+    "what_tapping_it_does": "NOT YET OBSERVED on the device"
+   },
+   "related_goals": [
+    "DAILY_ACTIVITY_TARGET",
+    "COLLECT_DAILY_REWARDS"
+   ],
+   "notes": "The third state the operator names: 进行中 is a queue at work, 已完成 is finished-and-waiting, and 已领取 is only true after the client answers.  This control exists so the second and third cannot be conflated: 已完成 is a tick to press, never a reward that was taken.  联盟捐献 and 英雄招募 draw the same tick shape on the 22:02 frame but what it does there is unmeasured, so no record claims them."
   }
  ],
  "notes": "OCR strings are candidates until observed in current CN/EN clients. Icon semantics are labels, not production templates.",

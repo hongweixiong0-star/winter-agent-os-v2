@@ -417,6 +417,50 @@ def verify_infantry_camp_selected(before: WorldState, after: WorldState) -> Veri
     return VerificationResult(ok, "OK" if ok else "INFANTRY_CAMP_MENU_NOT_PROVEN", {"highlight_before": before.training.get("navigation"), "menu_after": after.training.get("menu_open")})
 
 
+def verify_panel_row_done_collected(before: WorldState, after: WorldState, *, row_key: str) -> VerificationResult:
+    """Collecting a finished task: the row stops saying it is waiting to be collected.
+
+    The proof has to be the row's own reading, because this is a tap on the panel itself: before, the
+    client drew its green tick on that row (``control == DONE``); after, either it no longer does --
+    the ordinary outcome, the tick replaced by the enter-arrow or the row gone -- or the client
+    answered with a reward dialog.  Anything else is not proof, and the step fails honestly rather
+    than recording a claim that was not made.
+
+    Which barracks it was is not re-derived here: the caller binds ``row_key``, and the reading it
+    came from is reported so a reader can see the two agree.
+    """
+
+    def controls(state: WorldState) -> dict[str, str]:
+        return {
+            str(row.get("key")): str(row.get("control") or "")
+            for row in ((state.quick_panel or {}).get("rows") or ())
+        }
+
+    before_control = controls(before).get(row_key, "")
+    after_control = controls(after).get(row_key, "")
+    tick_gone = before_control == "DONE" and after_control != "DONE"
+    reward_dialog = after.page is Page.POPUP and bool(after.popup)
+    ok = before.page is Page.HOME and before_control == "DONE" and (tick_gone or reward_dialog)
+    if before_control != "DONE":
+        reason = "PANEL_ROW_NOT_WAITING_TO_COLLECT"
+    elif not ok:
+        reason = "PANEL_ROW_COLLECT_NOT_PROVEN"
+    else:
+        reason = "OK"
+    return VerificationResult(
+        ok,
+        reason,
+        {
+            "row_key": row_key,
+            "control_before": before_control,
+            "control_after": after_control,
+            "tick_gone": tick_gone,
+            "reward_dialog_after": reward_dialog,
+            "popup_after": after.popup,
+        },
+    )
+
+
 def verify_panel_row_task_bar_opened(
     before: WorldState, after: WorldState, *, camp: str = ""
 ) -> VerificationResult:

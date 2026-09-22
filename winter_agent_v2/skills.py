@@ -823,4 +823,34 @@ def v2_registry() -> SkillRegistry:
             state=SkillState.CANDIDATE,
         )
     )
+    # The client's own green tick on a barracks row: its batch is finished and the troops are waiting
+    # to be collected.  A separate skill from the row's enter-arrow because it is a separate control
+    # with a separate outcome -- measured 2026-09-23, the tick shares the arrow's slot (x 0.533-0.590)
+    # but is what the client draws for 已完成, and the operator's §四 is that 已完成 is not 已领取.
+    for _row, _label in (("SHIELD", "盾兵"), ("LANCER", "矛兵"), ("MARKSMAN", "射手")):
+        skills.append(
+            Skill(
+                f"COLLECT_FINISHED_TRAINING_{_row}",
+                f"Collect the finished batch of the {_label}营 from the quick panel's own done-marker",
+                Page.HOME,
+                Action("TAP_SEMANTIC", f"QUICK_PANEL_ROW_{_row}_CAMP_DONE"),
+                timeout=20.0,
+                risk="LOW",
+                state=SkillState.CANDIDATE,
+            )
+        )
+    # 我的奖励's own row, which draws the same tick (measured 22:02: 仓库补给 已完成, ~1276 green px at
+    # x 0.533-0.590).  The operator's §四 names this row: 已完成 must not be read as 已领取, and the
+    # way to tell them apart is to take it and watch what the client answers.
+    skills.append(
+        Skill(
+            "COLLECT_MY_REWARDS_ROW",
+            "Collect the finished task the 我的奖励 row names, from that row's own done-marker",
+            Page.HOME,
+            Action("TAP_SEMANTIC", "QUICK_PANEL_ROW_MY_REWARDS_DONE"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
     return SkillRegistry(skills)

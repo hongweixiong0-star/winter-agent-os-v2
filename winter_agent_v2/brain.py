@@ -33,7 +33,20 @@ _QUICK_PANEL_ROW_SKILL: dict[str, str] = {
 }
 
 
-from .ocr import QUICK_PANEL_ARROW_BASIS_SCAN
+from .ocr import QUICK_PANEL_ARROW_BASIS_SCAN, QUICK_PANEL_CONTROL_ARROW, QUICK_PANEL_CONTROL_DONE
+
+
+#: The rows whose done-marker this project acts on, and the skill that collects each.
+#:
+#: Separate from ``_QUICK_PANEL_ROW_SKILL`` on purpose: that table enters a task's page, this one takes
+#: what the client says is finished.  A row appears in both only by accident of the client's drawing,
+#: and ``_actionable_panel_row`` refuses a row whose tick is drawn, so the two can never both answer.
+_QUICK_PANEL_ROW_CLAIM_SKILL: dict[str, str] = {
+    "SHIELD_CAMP": "COLLECT_FINISHED_TRAINING_SHIELD",
+    "LANCER_CAMP": "COLLECT_FINISHED_TRAINING_LANCER",
+    "MARKSMAN_CAMP": "COLLECT_FINISHED_TRAINING_MARKSMAN",
+    "MY_REWARDS": "COLLECT_MY_REWARDS_ROW",
+}
 
 
 class RuleBrain:
@@ -1083,6 +1096,18 @@ class RuleBrain:
                         "ordinary_control_observed",
                     )
             else:
+                # A row the client has marked done comes first: its only valid action is to collect
+                # what is finished, and _actionable_panel_row refuses it, so the two never compete.
+                claimed = self._panel_row_claim_skill(self._claimable_panel_row(world))
+                if claimed is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
+                    self._panel_row_attempts += 1
+                    key = str(self._claimable_panel_row(world).get("key") or "")
+                    return Decision(
+                        claimed,
+                        f"quick_panel_row_{key.lower()}_is_finished_and_waiting_to_be_collected",
+                        world.confidence,
+                        "task_collected",
+                    )
                 row = self._actionable_panel_row(world)
                 skill_id = self._panel_row_skill(row)
                 if skill_id is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
@@ -2153,6 +2178,45 @@ class RuleBrain:
         """The panel row kinds the running goal works from; empty when the panel is not its board."""
         return self.PANEL_ROWS_FOR_ROUTE.get(str(self._goal_route() or ""), ())
 
+    def _claimable_panel_row(self, world: WorldState) -> dict | None:
+        """The first row of a kind this goal works from whose done-marker the client drew.
+
+        The tick is the row's own statement that its task finished and is waiting to be collected --
+        the operator's third state, distinct from 进行中 and from 空闲中.  A goal that names a barracks
+        gets that barracks' row and only that one, the same rule the enter path follows: the panel
+        draws look-alike rows and §二 is that a control must belong to the row it came from.
+        """
+        kinds = self._panel_rows_for_this_goal()
+        if not kinds:
+            return None
+        candidates = [
+            row
+            for row in (world.quick_panel.get("rows") or ())
+            if str(row.get("kind")) in kinds
+            and str(row.get("control")) == QUICK_PANEL_CONTROL_DONE
+            and row.get("done_norm")
+            and str(row.get("key")) in _QUICK_PANEL_ROW_CLAIM_SKILL
+        ]
+        if not candidates:
+            return None
+        own = self._goal_camp()
+        if own:
+            for row in candidates:
+                if str(row.get("key")) == own:
+                    return row
+            return None
+        return candidates[0]
+
+    def _panel_row_claim_skill(self, row: dict | None) -> str | None:
+        """The skill that collects this row, or ``None`` when no skill claims that row.
+
+        ``None`` -- never another row's skill: a row this table cannot name is a row this brain does not
+        collect, exactly as a row the enter table cannot name is a row it does not enter.
+        """
+        if not row:
+            return None
+        return _QUICK_PANEL_ROW_CLAIM_SKILL.get(str(row.get("key") or ""))
+
     def _panel_row_skill(self, row: dict | None) -> str | None:
         """The skill that taps this row's own arrow, or ``None`` when no skill names that row.
 
@@ -2189,6 +2253,13 @@ class RuleBrain:
             # action bar opened.  A row whose control was not found is not a row to tap: the estimate
             # is honest as a hint and worthless as a coordinate (operator: 未验证不等于可以点).
             and str(row.get("arrow_basis")) == QUICK_PANEL_ARROW_BASIS_SCAN
+            # ...and it must be a row the client drew an enter-arrow on.  Measured 2026-09-23: on some
+            # 已完成 rows the client draws its green tick *inside* the same blue button (16:41 射手,
+            # 22:02 我的奖励 -- both draw a tick and their arrow scan succeeds), so the arrow scan alone
+            # cannot tell "enter this task" from "collect what is done".  Tapping the middle of a
+            # collect-button while meaning to enter is the wrong action; the tick's row belongs to the
+            # collect path instead.
+            and str(row.get("control")) == QUICK_PANEL_CONTROL_ARROW
         ]
         if not candidates:
             return None
