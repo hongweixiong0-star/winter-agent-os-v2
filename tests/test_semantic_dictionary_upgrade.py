@@ -211,15 +211,30 @@ class PanelReadingTests(unittest.TestCase):
         self.assertAlmostEqual(rows["SHIELD_CAMP"]["y_norm"], 0.427, delta=0.02)
         self.assertAlmostEqual(rows["LANCER_CAMP"]["y_norm"], 0.484, delta=0.02)
         self.assertAlmostEqual(rows["MARKSMAN_CAMP"]["y_norm"], 0.541, delta=0.02)
-        # The arrow is the row's own blue button now.  Measured on the device 2026-09-22: the button
-        # spans x 0.539-0.749 while the old text-column estimate reported 0.4097 -- a tap that landed
-        # on the row's state word.  What must hold is that the point is *inside the box reported for
-        # that row*; the number itself is located per frame, which is the entire point.
-        for key in ("SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"):
-            box = rows[key].get("arrow_box_norm")
-            self.assertIsNotNone(box, f"{key}: a located button must report its own box")
-            self.assertGreaterEqual(rows[key]["arrow_norm"][0], box["x_norm"], key)
-            self.assertLessEqual(rows[key]["arrow_norm"][0], box["x_norm"] + box["w_norm"], key)
+        # On this capture the three barracks are 已完成, so the client draws its green tick where the
+        # enter-arrow otherwise is -- and the button is located by the white chevron it draws inside
+        # (see ocr._panel_button_chevron).  No chevron therefore means no point to hand an executor,
+        # which is the right answer for a finished row and is asserted below rather than assumed.
+        self.assertEqual({rows[k]["control"] for k in
+                          ("SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP")}, {"DONE"})
+        for key in ("SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP"):
+            with self.subTest(row=key):
+                self.assertIsNone(rows[key].get("arrow_box_norm"),
+                                  f"{key}: a 已完成 row draws no enter-arrow")
+                self.assertEqual(rows[key]["arrow_basis"], "PANEL_RELATIVE_ESTIMATE", key)
+        # 科技研究 is 空闲中 and does draw one.  Measured 2026-09-23 against this capture: the point
+        # 0.5618 is the button's own centre (its cyan spans x 384-425) and the box it reports is the
+        # button's own extent, 0.0569 of the frame wide -- 41 px.  Before the chevron locator the same
+        # reader reported 0.539-0.749 for it, a box two to seven times too wide and centre 0.644, both
+        # of which were the search band reaching 155 px of blue city past the panel's edge.
+        research = rows["RESEARCH"]
+        self.assertEqual(research["control"], "ARROW")
+        self.assertEqual(research["arrow_basis"], "ROW_BUTTON_SCAN")
+        box = research["arrow_box_norm"]
+        self.assertIsNotNone(box, "RESEARCH: a located button must report its own box")
+        self.assertLessEqual(box["w_norm"], 0.07, "one widget, one width")
+        self.assertGreaterEqual(research["arrow_norm"][0], box["x_norm"], "RESEARCH")
+        self.assertLessEqual(research["arrow_norm"][0], box["x_norm"] + box["w_norm"], "RESEARCH")
         for key, row in rows.items():
             self.assertEqual(row["arrow_norm"][1], row["y_norm"], key)
 

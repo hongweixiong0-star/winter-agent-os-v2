@@ -297,5 +297,94 @@ class QuickPanelGeometryTests(unittest.TestCase):
         self.assertLessEqual(bottom, QUICK_PANEL_ROI["y_norm"] + QUICK_PANEL_ROI["h_norm"])
 
 
+ROWS_ARCHIVE = ROOT / "dataset" / "truth_audit" / "quick_panel_row_20260923"
+#: 2026-09-22 19:31:04.  The four rows all draw an arrow, and two of them carry the client's dot.
+ROWS_WITH_BADGES = ROWS_ARCHIVE / "panel_rows_arrows_and_badges__live_20260922T1931.png"
+#: 2026-09-22 19:44:14.  Its 矛兵 row is 已完成, so the client draws its green tick there instead of a
+#: chevron -- the frame that pins "no chevron" as the client's own statement rather than a scan failure.
+ROWS_ONE_DONE = ROWS_ARCHIVE / "panel_rows_one_done__live_20260922T1944.png"
+
+
+class TheButtonIsLocatedByItsChevronTests(unittest.TestCase):
+    """A row's arrow point comes from the button, and the blue alone cannot say where the button is.
+
+    What was wrong, measured 2026-09-22/23.  The search band was (0.45, 0.80) -- x 324..576 on a
+    720-wide frame -- while the panel's own right edge is around x 476-484, so 155 px of blue city sat
+    inside it, and the blue was taken as min..max with the WIDEST scan line preferred, which actively
+    picks the contaminated line:
+
+        frame 19:31:04    reader reported 384-477, 384-498, 386-574, 401-494  (centres 0.5979-0.6667)
+                          the button's own cyan (76,198,244) spans          x 384-425
+
+    Those points are what the resolver taps, and the ledger shows the cost: 19:32:04 [448,804] left the
+    panel open with PANEL_ROW_RESEARCH_BAR_NOT_PROVEN, 17:16:14 [480,804] and 17:54:12 [448,804] failed
+    the same way, while 18:55:10 [404,804] -- inside the button -- succeeded.
+
+    The locator is now the white chevron the client draws inside the button: measured over ten live
+    panel frames (40 row-readings) it is a near-white run of exactly 20 px at x 396-416 on every hit,
+    centre 0.5639 with spread 0.0000, and the three misses are the 已完成 rows, whose button is replaced
+    by the green tick.  These tests pin the located point, the badge states that the same change had to
+    not disturb, and the done-row case.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.vision = production_vision()
+
+    def _rows(self, frame: Path):
+        world = self.vision.observe(frame)
+        rows = (world.quick_panel or {}).get("rows") or []
+        return {str(r.get("key")): r for r in rows}
+
+    def test_every_row_arrow_lands_on_the_button(self) -> None:
+        if not ROWS_WITH_BADGES.exists():
+            self.skipTest(f"evidence frame missing: {ROWS_WITH_BADGES}")
+        rows = self._rows(ROWS_WITH_BADGES)
+        self.assertEqual(set(rows), {"SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"})
+        for key, row in rows.items():
+            with self.subTest(row=key):
+                self.assertEqual(row["arrow_basis"], "ROW_BUTTON_SCAN", key)
+                # The button's own cyan spans x 384-425 on this frame; 0.5618 is its centre.  The old
+                # reading gave 0.5979-0.6667 per row, all of them off the button.
+                self.assertAlmostEqual(row["arrow_norm"][0], 0.5618, places=4)
+                box = row["arrow_box_norm"]
+                self.assertLessEqual(box["w_norm"], 0.07, f"{key}: one widget, one width")
+
+    def test_the_badge_states_are_the_measured_ones(self) -> None:
+        """The badge window moved to the button's right third; the verdicts must not move with it.
+
+        The dot is drawn at the button's top-right corner (412-420 inside 384-425).  The old window
+        looked at the LEFT third and only found it because the contaminated box had made the button
+        look about 50 px wider than it is.
+        """
+        if not ROWS_WITH_BADGES.exists():
+            self.skipTest(f"evidence frame missing: {ROWS_WITH_BADGES}")
+        rows = self._rows(ROWS_WITH_BADGES)
+        self.assertEqual(rows["SHIELD_CAMP"]["badge"], "PRESENT")
+        self.assertEqual(rows["RESEARCH"]["badge"], "PRESENT")
+        self.assertEqual(rows["LANCER_CAMP"]["badge"], "ABSENT")
+        self.assertEqual(rows["MARKSMAN_CAMP"]["badge"], "ABSENT")
+
+    def test_a_done_row_gets_no_arrow_point(self) -> None:
+        """No chevron means the client drew no enter-arrow, so there is no point to hand the executor.
+
+        On this frame the 矛兵 row is 已完成: the client draws its green tick where the arrow usually is.
+        The row falls back to the labelled text-column estimate, which the enter paths refuse, so the
+        row is left alone -- which is what makes "a done row is not an enter target" structural rather
+        than a hand-written condition.
+        """
+        if not ROWS_ONE_DONE.exists():
+            self.skipTest(f"evidence frame missing: {ROWS_ONE_DONE}")
+        rows = self._rows(ROWS_ONE_DONE)
+        done = rows["LANCER_CAMP"]
+        self.assertEqual(done["control"], "DONE")
+        self.assertEqual(done["arrow_basis"], "PANEL_RELATIVE_ESTIMATE")
+        for key in ("SHIELD_CAMP", "MARKSMAN_CAMP", "RESEARCH"):
+            with self.subTest(row=key):
+                self.assertEqual(rows[key]["control"], "ARROW")
+                self.assertEqual(rows[key]["arrow_basis"], "ROW_BUTTON_SCAN")
+                self.assertAlmostEqual(rows[key]["arrow_norm"][0], 0.5618, places=4)
+
+
 if __name__ == "__main__":
     unittest.main()

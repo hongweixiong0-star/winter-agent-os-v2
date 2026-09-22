@@ -300,18 +300,44 @@ QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技
 #: so it must not name a page.  The panel does draw it, though -- measured on the operator's frame
 #: 2026-09-22 21:50, 联盟捐献 可捐献25/25 和 英雄招募 免费招募 都在这块面板里，两个状态正是指令 §三
 #: 要读的东西.  Hence one list per job.
-#: The quick panel's row arrows, measured on real device frames 2026-09-22 (720x1280).
+#: The quick panel's row arrow buttons: how the button is LOCATED, and how its blue is read once it is.
 #:
-#: A row's arrow is the client's own blue rounded button, and it is found by its own pixels rather than
-#: from a stored position: a run of saturated blue right of the panel's text column, at that row's y,
-#: ~150 px wide on a 720 px frame.
+#: The locator is the white chevron the client draws inside the button, because the blue cannot say where
+#: the button *is* -- it says where blue is, and past the panel's edge the city is blue too.  Measured on
+#: ten live panel frames (40 row-readings): 37 give exactly x 396-416 (20 px wide, centre 0.5639,
+#: **spread 0.0000**), and the three misses are the 已完成 rows, whose button is replaced by the client's
+#: green tick -- i.e. the right answer, not a failure.
+#:
+#: This replaces a band of (0.45, 0.80), whose right edge is x 576 while the panel ends around 476-484:
+#: 155 px of city inside the search, taken as min..max with the WIDEST scan line preferred, which
+#: actively selected the contaminated line.  On 2026-09-22 19:31:04 the four rows read 384-477, 384-498,
+#: 386-574, 401-494 (centres 0.5979-0.6667, the last outside the panel) against a button whose own cyan
+#: (76,198,244) spans x 384-425.  Those points are what the resolver taps: the ledger has 19:32:04
+#: [448,804] leaving the panel open (PANEL_ROW_RESEARCH_BAR_NOT_PROVEN), 17:16:14 [480,804] and 17:54:12
+#: [448,804] failing the same way, and 18:55:10 [404,804] -- inside the button -- succeeding.
 QUICK_PANEL_ARROW_BLUE_MIN: int = 150
 QUICK_PANEL_ARROW_BLUE_OVER_RED: int = 35
-QUICK_PANEL_ARROW_BAND_X_NORM: tuple[float, float] = (0.45, 0.80)
 QUICK_PANEL_ARROW_MIN_RUN_PX: int = 40
 
-#: The client's unclaimed-task dot.  Measured: red pixels in the button's left part on the row's own y --
-#: present on 矛兵 空闲中 and 科技研究 空闲中, absent on the two training rows and on the finished one.
+#: The white chevron inside the button, and where it may be looked for.
+#:
+#: All three channels at 245 or above, because the panel dims the city behind it and the palest city
+#: pixel measured on those frames is 200-227 -- a threshold the city cannot pass.  The column starts
+#: right of the row's own text (a label would otherwise qualify) and stops short of the panel's edge.
+QUICK_PANEL_CHEVRON_MIN: int = 245
+QUICK_PANEL_CHEVRON_MIN_RUN_PX: int = 8
+QUICK_PANEL_BUTTON_COLUMN_X_NORM: tuple[float, float] = (0.38, 0.62)
+
+#: How far the button's blue reaches beyond the chevron -- measured on the same frame, chevron 396-416
+#: inside button 384-425, i.e. 12 px left and 9 px right.  12 is used on both sides.
+QUICK_PANEL_BUTTON_PAD_PX: int = 12
+
+#: The client's unclaimed-task dot, which is drawn at the button's TOP-RIGHT corner.
+#:
+#: The note here used to say "the button's left part" and quote the dot at x 0.569-0.589.  Both came from
+#: a box the contaminated scan had stretched to 0.539-0.644; on the button's true extent, measured
+#: x 384-425, the dot at 412-420 is its right end.  Measured on the 19:31:04 frame: 盾兵 空闲中 and
+#: 科技研究 空闲中 carry it, the two training rows and the finished one do not.
 QUICK_PANEL_BADGE_RED_MIN: int = 150
 QUICK_PANEL_BADGE_OVER_GREEN: int = 60
 QUICK_PANEL_BADGE_OVER_BLUE: int = 60
@@ -1503,6 +1529,52 @@ def _panel_done_marker(
     return centre, box
 
 
+def _panel_button_chevron(
+    pixels: list[list[tuple[int, int, int]]] | None, y: int, half: int, width: int
+) -> tuple[int, int] | None:
+    """The white chevron inside a row's own button: the button's locator, taken from the button itself.
+
+    Returns the widest near-white run in the button's column over the row's scan band, or ``None`` --
+    no pixels, no run wide enough to be a glyph -- which the caller reads as "this row carries no
+    enter-arrow".  That is not a failure: the client draws its green done tick on a finished row, and
+    those are exactly the three misses out of forty row-readings measured on live frames.
+
+    Why the chevron and not the blue: the blue rule cannot say where the button *is*, only where blue is,
+    and 155 px of blue city used to sit inside the search band past the panel's edge.
+    """
+    if not pixels or not pixels[0] or half < 1:
+        return None
+    height = len(pixels)
+    lo = max(0, int(QUICK_PANEL_BUTTON_COLUMN_X_NORM[0] * width))
+    hi = min(width, int(QUICK_PANEL_BUTTON_COLUMN_X_NORM[1] * width))
+    if hi - lo < QUICK_PANEL_CHEVRON_MIN_RUN_PX:
+        return None
+
+    def is_chevron(pixel: tuple[int, int, int]) -> bool:
+        return min(pixel) >= QUICK_PANEL_CHEVRON_MIN
+
+    best: tuple[int, int] | None = None
+    for scan_y in range(max(0, y - half), min(height, y + half + 1)):
+        xs = [x for x in range(lo, hi) if is_chevron(pixels[scan_y][x])]
+        if not xs:
+            continue
+        runs: list[tuple[int, int]] = []
+        start = previous = xs[0]
+        for x in xs[1:]:
+            if x - previous <= 4:
+                previous = x
+                continue
+            runs.append((start, previous))
+            start = previous = x
+        runs.append((start, previous))
+        for run in runs:
+            if run[1] - run[0] + 1 < QUICK_PANEL_CHEVRON_MIN_RUN_PX:
+                continue
+            if best is None or run[1] - run[0] > best[1] - best[0]:
+                best = run
+    return best
+
+
 def _panel_arrow_and_badge(
     pixels: list[list[tuple[int, int, int]]] | None, row_y_norm: float
 ) -> tuple[list[float] | None, str, dict | None]:
@@ -1512,14 +1584,15 @@ def _panel_arrow_and_badge(
     Returns the button's centre in normalised coordinates (or ``None``), the badge state
     (``PRESENT`` / ``ABSENT`` / ``UNKNOWN``) and the button's normalised box.
 
-    Two things the measurements forced, both from real frames:
+    The button is located by the white chevron inside it, and its blue is then read only in that
+    neighbourhood.  Two older notes here went with the box the old band had stretched into the city and
+    are corrected above rather than left standing: "the button's real centre is 0.644" (the button is
+    x 384-425 on the measured frame, centre 0.5618) and the claim that the search had to span several
+    rows because a one-line scan missed 射手 and 矛兵.  Scanning several rows is kept -- the button does
+    span both of the row's lines -- but it is no longer what keeps the scan off the wrong pixels.
 
-    * the button is scanned over **several rows** around the row's own y.  The row's name is its first
-      line while the button spans both lines, so the widest run is not always at the name's own y --
-      sampling one line made the scan fail on 射手 (21:28) and 矛兵 (21:50);
-    * blue runs separated by a small gap are **merged**.  The client draws a white chevron *inside* the
-      button, which splits one button into two blue runs: taking the longest run alone put the centre at
-      0.73 where the button's real centre is 0.644, i.e. a tap just outside it.
+    A row with no chevron gets no point: the client draws its green done tick there instead, and
+    "not enterable" is the true answer for such a row.
 
     The badge is only ever judged inside a button that was found.  No button means no place to look,
     which is UNKNOWN -- the operator's §四: UNKNOWN must never be read as ABSENT.
@@ -1532,9 +1605,14 @@ def _panel_arrow_and_badge(
     if not 0 <= y < height:
         return None, "UNKNOWN", None
     half = max(1, int(QUICK_PANEL_BADGE_HALF_HEIGHT * height))
-    gap_px = max(2, int(0.05 * width))
-    left_bound = int(QUICK_PANEL_ARROW_BAND_X_NORM[0] * width)
-    right_bound = min(int(QUICK_PANEL_ARROW_BAND_X_NORM[1] * width), width)
+    chevron = _panel_button_chevron(pixels, y, half, width)
+    if chevron is None:
+        # No chevron, no enter-arrow: see _panel_button_chevron.  None here means the caller falls back
+        # to the labelled text-column estimate, which the enter paths refuse -- so the row is left alone
+        # rather than tapped at a point nobody measured.
+        return None, "UNKNOWN", None
+    left_bound = max(0, chevron[0] - QUICK_PANEL_BUTTON_PAD_PX)
+    right_bound = min(width, chevron[1] + QUICK_PANEL_BUTTON_PAD_PX)
 
     def is_button(pixel: tuple[int, int, int]) -> bool:
         red, green, blue = pixel
@@ -1567,11 +1645,12 @@ def _panel_arrow_and_badge(
     left, right, button_y = best
     centre_x = (left + right) / 2
 
-    # The dot sits on the button's left end, so the window starts at the button's own left edge and
-    # reaches a third of the way in.  Measured: the dot occupies x 0.569-0.589 while the button starts
-    # at 0.539.
-    badge_left = max(0, left)
-    badge_right = min(width, left + max(8, (right - left) // 3))
+    # The dot is drawn at the button's top-right corner, so the window is the button's own RIGHT third.
+    # The note here used to say "left end" and the window looked there; on the button's true extent
+    # (measured x 384-425) the dot sits at 412-420, and a left-third window only ever found it because
+    # the contaminated box had made the button look about 50 px wider than it is.
+    badge_left = max(0, right - max(8, (right - left) // 3))
+    badge_right = min(width, right + 1)
     reds = 0
     for scan_y in range(max(0, button_y - half), min(height, button_y + half)):
         for scan_x in range(badge_left, badge_right):

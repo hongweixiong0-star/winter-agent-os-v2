@@ -1,0 +1,44 @@
+panel frames re-read with the chevron locator: 8
+
+--- 19:32:04  fter_refresh_2_20260922T193150332946.png
+    SHIELD_CAMP      status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.5979) badge=PRESENT
+    LANCER_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6125) badge=ABSENT
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6681) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6222) badge=PRESENT
+--- 19:32:34  tep_019_before_20260922T193205098060.png
+    SHIELD_CAMP      status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.5979) badge=PRESENT
+    LANCER_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6132) badge=ABSENT
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6681) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6222) badge=PRESENT
+--- 19:36:06  step_001_after_20260922T193552223606.png
+    SHIELD_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=ABSENT
+    LANCER_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=ABSENT
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=PRESENT
+--- 19:36:24  tep_002_before_20260922T193607144145.png
+    SHIELD_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=ABSENT
+    LANCER_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=ABSENT
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.666) badge=PRESENT
+--- 19:42:47  step_003_after_20260922T194233331385.png
+    SHIELD_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.5979) badge=ABSENT
+    LANCER_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6125) badge=ABSENT
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6681) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6222) badge=PRESENT
+--- 19:43:48  tep_004_before_20260922T194248155449.png
+    SHIELD_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.5979) badge=ABSENT
+    LANCER_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6125) badge=ABSENT
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6681) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6222) badge=PRESENT
+--- 19:43:48  fter_refresh_2_20260922T194333333867.png
+    SHIELD_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.5979) badge=ABSENT
+    LANCER_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6125) badge=ABSENT
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6681) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6222) badge=PRESENT
+--- 19:44:14  tep_005_before_20260922T194348434253.png
+    SHIELD_CAMP      status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.5979) badge=ABSENT
+    LANCER_CAMP      status=IDLE         control=DONE   basis=PANEL_REL arrow_x=0.4097 (was 0.4042) badge=UNKNOWN
+    MARKSMAN_CAMP    status=IN_PROGRESS  control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6681) badge=ABSENT
+    RESEARCH         status=IDLE         control=ARROW  basis=ROW_BUTTO arrow_x=0.5618 (was 0.6222) badge=PRESENT
+
+badge states changed by the fix: 0
