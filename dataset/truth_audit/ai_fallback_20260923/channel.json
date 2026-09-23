@@ -1,0 +1,114 @@
+{
+ "generated_at": "2026-09-23T12:14:21.996168+00:00",
+ "requests": [
+  {
+   "request_id": "unknown__control__b6546e80",
+   "page_key": "UNKNOWN::燃霜矿区",
+   "goal": "DAILY",
+   "asked_at": "2026-09-22T08:31:06.865220+00:00",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_163010_905874\\20260922_163010_905874_step_002_before_20260922T083049654040.png",
+   "answered": true,
+   "screen_created_at": "2026-09-22T08:31:07.016112+00:00",
+   "screen_last_seen_at": "2026-09-22T08:31:07.016112+00:00",
+   "screen_ever_revisited": false,
+   "screen_attempts": 0,
+   "answer": {
+    "proposed_action": "ORDINARY_CONTROL[奖励入口]",
+    "grounding_basis": "ANCHORED_TO_TEXT",
+    "action_level": null,
+    "target_anchor": {
+     "text": "奖励",
+     "dy_norm": -0.03,
+     "w_norm": 0.06,
+     "h_norm": 0.035
+    }
+   },
+   "answer_landed_at": "2026-09-22T10:12:39.717375+00:00",
+   "answer_minutes_after_question": 101.5
+  },
+  {
+   "request_id": "unknown__control__23759997",
+   "page_key": "UNKNOWN",
+   "goal": "TRAIN",
+   "asked_at": "2026-09-22T22:49:02.696636+00:00",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_064810_118970\\20260923_064810_118970_step_002_before_20260922T224849101558.png",
+   "answered": false,
+   "screen_created_at": "2026-09-22T08:10:41.473565+00:00",
+   "screen_last_seen_at": "2026-09-22T08:10:41.473565+00:00",
+   "screen_ever_revisited": false,
+   "screen_attempts": 0
+  },
+  {
+   "request_id": "unknown_12_6__control__cb5386d4",
+   "page_key": "UNKNOWN::-12.6℃",
+   "goal": "TRAIN",
+   "asked_at": "2026-09-22T22:54:32.191295+00:00",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_065408_042411\\20260923_065408_042411_step_001_before_20260922T225412616443.png",
+   "answered": false,
+   "screen_created_at": "2026-09-22T22:54:32.396473+00:00",
+   "screen_last_seen_at": "2026-09-22T22:54:32.396473+00:00",
+   "screen_ever_revisited": false,
+   "screen_attempts": 0
+  },
+  {
+   "request_id": "unknown_i__control__b860b24a",
+   "page_key": "UNKNOWN::跳过I",
+   "goal": "MAIL",
+   "asked_at": "2026-09-22T23:10:33.091697+00:00",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_071012_137755\\20260923_071012_137755_step_001_before_20260922T231016893235.png",
+   "answered": false,
+   "screen_created_at": "2026-09-22T23:10:33.238246+00:00",
+   "screen_last_seen_at": "2026-09-22T23:10:33.238246+00:00",
+   "screen_ever_revisited": false,
+   "screen_attempts": 0
+  },
+  {
+   "request_id": "unknown__control__b2e886bd",
+   "page_key": "UNKNOWN::探照灯升级",
+   "goal": "ALLIANCE",
+   "asked_at": "2026-09-23T00:52:10.212083+00:00",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_085020_436509\\20260923_085020_436509_step_005_before_20260923T005158809832.png",
+   "answered": false,
+   "screen_created_at": "2026-09-23T00:52:10.338326+00:00",
+   "screen_last_seen_at": "2026-09-23T00:52:10.338326+00:00",
+   "screen_ever_revisited": false,
+   "screen_attempts": 0
+  },
+  {
+   "request_id": "unknown__control__78694f1b",
+   "page_key": "UNKNOWN::对战",
+   "goal": "INTEL",
+   "asked_at": "2026-09-23T08:30:10.687010+00:00",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_162538_801064\\20260923_162538_801064_step_021_before_20260923T083000087061.png",
+   "answered": false,
+   "screen_created_at": "2026-09-22T09:15:20.287400+00:00",
+   "screen_last_seen_at": "2026-09-22T09:15:20.287400+00:00",
+   "screen_ever_revisited": false,
+   "screen_attempts": 0
+  },
+  {
+   "request_id": "unknown__control__1add7d8e",
+   "page_key": "UNKNOWN::欢迎回来",
+   "goal": "ALLIANCE",
+   "asked_at": "2026-09-23T09:36:19.029946+00:00",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_003_before_20260923T093607740986.png",
+   "answered": false,
+   "screen_created_at": "2026-09-23T09:36:07.506954+00:00",
+   "screen_last_seen_at": "2026-09-23T09:36:07.506954+00:00",
+   "screen_ever_revisited": false,
+   "screen_attempts": 0
+  }
+ ],
+ "dispatch": {
+  "events": 28,
+  "by_event": {
+   "submitted": 13,
+   "reconciled": 15
+  }
+ },
+ "consumption": {
+  "episodes": 7485,
+  "with_advice": 0,
+  "unknown_page_steps": 145
+ }
+}

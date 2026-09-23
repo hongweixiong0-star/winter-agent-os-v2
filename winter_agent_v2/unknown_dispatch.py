@@ -121,8 +121,31 @@ def _seconds_since(stamp: str) -> float:
     return (datetime.now(timezone.utc) - moment).total_seconds()
 
 
-#: The vocabulary the ledger's ``state`` field is read in: **both** spellings, lower-cased.
-#:
+def _asked_again(request: Any, record: "Dispatch") -> bool:
+    """Whether the runtime has asked this same question again since our last attempt ended.
+
+    The screen behind a question is often one the runtime stands on repeatedly -- measured
+    2026-09-23, ``UNKNOWN::对战`` was stood on **20 times in 23 hours** -- and every one of those
+    visits rewrites the request file through ``UnknownAdvisor.ask``.  Measured on
+    ``unknown__control__78694f1b``: both attempts were spent by ``2026-09-22T19:41``, and the question
+    was asked again at ``2026-09-23T08:30`` with no job possible, so the channel had quietly stopped
+    answering a question it was still being asked.
+
+    A re-ask is therefore the runtime saying the question is still open, and one more attempt per
+    re-ask is bounded by the runtime itself (``unknown_advisor.REQUEST_COOLDOWN_SECONDS``, one hour),
+    not by us.  ``request.created_at`` is refreshed by every ask, so a newer ``created_at`` than our
+    last ``updated_at`` is exactly "asked again since".
+    """
+    try:
+        asked = datetime.fromisoformat(str(request.created_at))
+    except (TypeError, ValueError):
+        return False
+    if asked.tzinfo is None:
+        asked = asked.replace(tzinfo=timezone.utc)
+    return _seconds_since(record.updated_at) > (datetime.now(timezone.utc) - asked).total_seconds()
+
+
+#: The vocabulary the ledger's ``state`` field is read in: **both** spellings, lower-cased.#:
 #: Measured on the channel's first live dispatch, and it cost a bound: ``dispatch`` writes the state
 #: it got from the submission (``working``) while the first version of ``reconcile`` wrote the
 #: bridge's *verdict* (``RUNNING``).  ``Dispatch.open`` then recognised only the first spelling, so
@@ -307,11 +330,34 @@ class UnknownDispatcher:
             if record is not None:
                 if record.open:
                     continue
-                if record.attempts >= self.max_attempts:
-                    continue
                 if _seconds_since(record.updated_at) < self.cooldown:
                     continue
+                # ``MAX_ATTEMPTS_PER_REQUEST`` bounds a *burst*; it must not orphan a question.
+                # Every visit to the screen rewrites the request file (``UnknownAdvisor.ask``), so a
+                # question the runtime is still standing on says so by being re-asked -- and that is
+                # the signal to spend one more job, not a lifetime limit (see ``_asked_again``).
+                if record.attempts >= self.max_attempts and not _asked_again(request, record):
+                    continue
             out.append((request, "pending" if record is None else f"retry {record.attempts + 1}"))
+        return out
+
+    def orphans(self) -> list[tuple[unknown_advisor.UnknownRequest, str]]:
+        """Pending questions that no job can ever be submitted for, and why.
+
+        The channel's own audit.  A question whose attempts are spent and whose screen has stopped
+        reappearing is waiting for a person, and saying so is the difference between "busy" and
+        "stuck": measured 2026-09-23, ``unknown__control__1add7d8e`` (屏幕 ``UNKNOWN::欢迎回来``)
+        spent both attempts within two hours and was then unreachable by the channel for ever.
+        """
+        folded = self.records()
+        out: list[tuple[unknown_advisor.UnknownRequest, str]] = []
+        for request in self.pending():
+            record = folded.get(request.request_id)
+            if record is None or record.open:
+                continue
+            if record.attempts >= self.max_attempts and not _asked_again(request, record):
+                out.append((request, f"attempts {record.attempts}/{self.max_attempts} spent; "
+                                     f"last at {record.updated_at}"))
         return out
 
     # ------------------------------------------------------------------ acts
@@ -351,6 +397,30 @@ class UnknownDispatcher:
             state = str(status.gateway_state or "").strip().lower() or "unknown"
             verdict = str(status.verdict or "UNKNOWN")
             if not status.terminal:
+                # The artefact outranks the transport, and *only* here.
+                #
+                # Measured 2026-09-22: job ``13ffdac6`` wrote
+                # ``answers/unknown__control__b6546e80.json`` at 10:12:39Z, and the ledger recorded
+                # it at 10:37:49Z as ``ABANDONED -- no result after 45 minutes`` and then cancelled
+                # it.  A background session that has finished its work is still reported ``working``
+                # until the gateway reaps it, so the age clock turned a job that had produced into a
+                # job that had produced nothing -- and the one outcome the model router most needs,
+                # the successful one, was never recorded.  A *terminal* job is left exactly as it was
+                # (the gateway has already answered, and the two words must not disagree); this
+                # branch is only for the case the clock would have got wrong.
+                if record.request_id in answered:
+                    report["done"] += 1
+                    self._append({
+                        "event": "reconciled",
+                        "request_id": record.request_id,
+                        "job_id": record.job_id,
+                        "state": "ANSWERED",
+                        "verdict": verdict,
+                        "note": "the answer is on disk, so the job did produce; not waiting for the "
+                                "gateway to reap a session whose work is finished",
+                    })
+                    self._record_model_outcome(record, success=True, state="ANSWERED")
+                    continue
                 stalled = self._job_abandoned(status)
                 if stalled:
                     # A job nobody can finish must not hold the slot: abandon it, and cancel it when

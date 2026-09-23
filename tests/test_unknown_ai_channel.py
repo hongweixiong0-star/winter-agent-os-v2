@@ -30,7 +30,7 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -284,6 +284,105 @@ class DispatchTests(unittest.TestCase):
         owed = [item[0].request_id for item in capped.candidates()]
         self.assertNotIn(submitted_id, owed, "two attempts is the cap")
         self.assertIn(waiting_id, owed, "and the question nobody has asked about yet is still owed")
+
+    def test_a_job_whose_answer_arrived_is_never_abandoned_and_never_cancelled(self):
+        """The measured case: work that is on disk is done, whatever the transport says.
+
+        Measured 2026-09-22, job ``13ffdac6`` wrote ``answers/unknown__control__b6546e80.json`` at
+        10:12:39Z and the ledger recorded it at 10:37:49Z as ``ABANDONED -- no result after 45
+        minutes``, then cancelled it.  A background session that has finished its work still reads
+        ``working`` until the gateway reaps it, so an age clock alone turns a job that produced into
+        a job that produced nothing.
+        """
+        bridge = _StubBridge()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.dispatch(limit=1)
+        answers = dispatcher.advisor.root / unknown_advisor.ANSWERS_DIR
+        answers.mkdir(parents=True, exist_ok=True)
+        (answers / f"{self.request.request_id}.json").write_text(
+            json.dumps(_answer(self.request.request_id), ensure_ascii=False), encoding="utf-8"
+        )
+        bridge.statuses["job01"] = {
+            "verdict": "RUNNING", "terminal": False, "state": "working",
+            "started_at": int((datetime.now(timezone.utc) - timedelta(hours=3)).timestamp() * 1000),
+        }
+        report = dispatcher.reconcile()
+        self.assertEqual(report["done"], 1)
+        self.assertEqual(report["abandoned"], 0)
+        self.assertEqual(bridge.cancelled, [], "a job that produced is not stopped")
+        row = [r for r in dispatcher.rows() if r["event"] == "reconciled"][-1]
+        self.assertEqual(row["state"], "ANSWERED")
+        self.assertIn("the answer is on disk", row["note"])
+
+    def test_a_stuck_job_that_produced_nothing_is_still_abandoned(self):
+        """The bound is unchanged -- the artefact decides, not the hope."""
+        bridge = _StubBridge()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.dispatch(limit=1)
+        bridge.statuses["job01"] = {
+            "verdict": "RUNNING", "terminal": False, "state": "working",
+            "started_at": int((datetime.now(timezone.utc) - timedelta(hours=3)).timestamp() * 1000),
+        }
+        report = dispatcher.reconcile()
+        self.assertEqual((report["abandoned"], report["done"]), (1, 0))
+        self.assertEqual(bridge.cancelled, ["job01"])
+
+    def test_a_question_the_runtime_asks_again_is_owed_one_more_job(self):
+        """The attempt cap bounds a burst; it must not orphan a question still being asked.
+
+        Measured on ``unknown__control__78694f1b`` (屏幕 ``UNKNOWN::对战``): both attempts were spent
+        by ``2026-09-22T19:41`` and the runtime asked the same question again at ``2026-09-23T08:30``
+        with no job possible, because ``ask`` refreshes the request file on every visit and the cap
+        was being read as a lifetime limit.  That screen was stood on **20 times in 23 hours**, so
+        the question was answerable -- the channel had just stopped asking it.
+        """
+        bridge = _StubBridge()
+        now = datetime.now(timezone.utc)
+        request_path = self.root / f"{self.request.request_id}.json"
+        ledger = unknown_dispatch.UnknownDispatcher(
+            root=self.root, bridge=bridge
+        ).ledger_path
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+
+        def spend_both_attempts(*, last_attempt_ago_hours: float) -> None:
+            last = (now - timedelta(hours=last_attempt_ago_hours)).isoformat()
+            ledger.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in (
+                {"at": last, "event": "submitted", "request_id": self.request.request_id,
+                 "job_id": "job01", "state": "working"},
+                {"at": last, "event": "reconciled", "request_id": self.request.request_id,
+                 "job_id": "job01", "state": "ABANDONED"},
+                {"at": last, "event": "submitted", "request_id": self.request.request_id,
+                 "job_id": "job02", "state": "working"},
+                {"at": last, "event": "reconciled", "request_id": self.request.request_id,
+                 "job_id": "job02", "state": "ABANDONED"},
+            )) + "\n", encoding="utf-8")
+
+        def the_request_was_asked(*, ago_hours: float) -> None:
+            payload = json.loads(request_path.read_text(encoding="utf-8"))
+            payload["created_at"] = (now - timedelta(hours=ago_hours)).isoformat()
+            request_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+        # Two attempts spent 17 hours ago, and the question was last asked *before* them.
+        spend_both_attempts(last_attempt_ago_hours=17)
+        the_request_was_asked(ago_hours=30)
+        capped = self._dispatcher(bridge, cooldown=0.0)
+        self.assertNotIn(
+            self.request.request_id, [row[0].request_id for row in capped.candidates()],
+            "two spent attempts and no new ask is the cap, and it still holds",
+        )
+        self.assertEqual(
+            [row[0].request_id for row in capped.orphans()], [self.request.request_id],
+            "and the channel says out loud that this question is waiting for a person",
+        )
+
+        # The runtime stands on that screen again four hours ago: ``ask`` rewrites the file.
+        the_request_was_asked(ago_hours=4)
+        again = self._dispatcher(bridge, cooldown=0.0)
+        self.assertIn(
+            self.request.request_id, [row[0].request_id for row in again.candidates()],
+            "a re-ask is the runtime saying the question is still open, so one more job is owed",
+        )
+        self.assertEqual(again.orphans(), [], "and it is not an orphan any more")
 
     def test_reconcile_records_what_became_of_each_job(self):
         bridge = _StubBridge()
