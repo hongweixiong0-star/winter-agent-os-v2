@@ -20,7 +20,11 @@ class GoalLibraryTests(unittest.TestCase):
         self.assertEqual(goals["CLEAR_INTEL"].status, GoalStatus.READY)
         self.assertEqual(goals["AVOID_STAMINA_WASTE"].status, GoalStatus.READY)
         self.assertEqual(goals["KEEP_TRAINING_PRODUCTIVE"].status, GoalStatus.READY)
-        self.assertEqual(goals["KEEP_RESEARCH_PRODUCTIVE"].status, GoalStatus.COMPLETE)
+        # ``research={"queue_available": False}`` is a *game condition*, not a completion: this read
+        # BLOCKED from 2026-09-23, when §一 separated WAITING_GAME_CONDITION from COMPLETED.  Both are
+        # unrankable, so the board's choice is unchanged; what the artifact now also carries is the
+        # reason, which is what §六 asks for.
+        self.assertEqual(goals["KEEP_RESEARCH_PRODUCTIVE"].status, GoalStatus.BLOCKED)
         self.assertEqual(goals["EVENT_MINIMUM_GUARANTEE"].evidence["points_missing"], 100)
         self.assertIn("CLAIM_FREE_VIP", goals)
 

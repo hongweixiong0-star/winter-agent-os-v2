@@ -4,6 +4,37 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：任务存在性 / 活动窗口 / 执行资格（2026-09-23 夜，issue #115）——**同一个函数里两处相反方向的混淆**
+
+`GoalLibrary.discover`。**(a) 存在性只从当前帧读出来**：`world.events` 只有一处写入（`ocr.py`，写当前页印的东西），
+7156 条 episode 里只有 4 条带任何事件读数、0 条带 `bear` ⇒ "没站在印它的那一屏" 与 "任务不存在" 是同一个世界状态。
+**(b) 执行资格无视窗口**：`bear_phase` 早已分出 SCHEDULED/PREPARING/READY/ACTIVE/FINISHED，而生成处把除 FINISHED 外
+全部写成 `READY` —— 两小时后开的巨熊 = `READY` priority **5000**（压过巡检票的 180），已结束 = `COMPLETE`。
+**(c) 等待被记成完成**：队列忙 / 兵营在训练 / 行军槽用尽都曾写 `COMPLETE`。
+
+改法四处（都改"是否允许生成并执行"，没有第二套任务系统）：`GoalStatus` 补 `SCHEDULED_NOT_OPEN` / `EXPIRED` 并把五个
+非可执行状态收进 `NOT_ACTIONABLE`；相位如实标注；`known_activities()` 读**既有**活动注册表并为已知活动留**计划票**
+（`available_skills=()`）；等待改 `BLOCKED` + `retry_after` + `evidence["condition"]`。
+
+**真机判据**（`python tools\measure_activity_windows.py` 一次给全部五问）：
+
+1. `learning/goal_state.json` 里应长期有 `SCHEDULED_BEAR_HUNT`（`priority=None`），**即使当前页与活动毫无关系**——
+   否则存在性又回到了"只从当前帧读"；13:57:21Z 站在 `MAIL` 页时已实测到它；
+2. 无红点巡检：`OPEN_MAIL` / `OPEN_ALLIANCE_GIFTS` 在无读数时应为 **0**（before 合计 176 次"无读数仍进页"）；
+3. 被拒之后 AUTO 继续做别的（训练 / 科研 / 采集 / 探索），**不是全局 SAFE_STOP**；
+4. **活动开放后多久开始首次有效操作 —— 目前无答案且不许编**：本项目从未在活动窗口内出现过。
+   窗口推进由**客户端自己的倒计时**驱动（`rally.bear_phase` 600s→PREPARING、120s→READY），
+   来自运行正站着的那一帧，所以第一个有效操作应在越过阈值后的第一帧。**下一次真实活动窗口要记这一条。**
+
+**不要重复**：不要用时钟代替客户端读数（`knowledge/events/event_registry.json` 的 `start`/`end` 是**故意为 null** 的
+——§二：时间不可靠就保留 UNKNOWN，不编造）；不要把 `DISCOVERED` gate 的活动做成计划（注册表自己的 policy 说了
+未复核的只是线索）；不要为了"让夹具确定"把生产项删掉——我试过摘掉 `ROUTES_PATH`，`history_bonus` 一没，
+`test_a_deferred_goal_does_not_displace_work_that_is_still_selectable` 立刻报出 `'OPEN_HOME' == 'OPEN_HOME'`（就是它守的那个 bug），
+说明那一项是承重的生产行为而不是机器噪声。
+
+**未做**：五个未读巡检票在裸 MAP 帧上**同价 180**，谁赢由学到的 `history_bonus`/公平账本分开 —— 这是设计弱点，已登记未改；
+`OPEN_POWER_DETAILS` 仍是 #113；`STATE_VS_STATE` 无下次开放时间，只能等真机。
+
 ## 手写：邮件 / 联盟宝箱改红点事件驱动（2026-09-23 晚，issue #114）——**两条断点不同**
 
 `e9c8bca`。断点一在 **Goal 层**（周期票：入口 ABSENT/UNKNOWN/缺账本都照样发 `MAIL_ROUTINE → OPEN_MAIL`，票值只随年龄变）；

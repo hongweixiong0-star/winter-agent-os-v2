@@ -117,7 +117,14 @@ class OneCampIsNotTheOtherTwoTests(unittest.TestCase):
     def test_a_busy_shield_camp_does_not_close_the_other_two(self):
         camps = observe_camps(page_is_training=True, training=SHIELD_BUSY)
         goals = self._goals(camps)
-        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.COMPLETE)
+        # BLOCKED, not COMPLETE: a camp the client is already training is §一's
+        # WAITING_GAME_CONDITION -- the work exists and the client is doing it -- while COMPLETE is
+        # "本次任务实际完成".  The two were the same record until 2026-09-23, and the cost is visible
+        # wherever someone asks why a barracks was not started.  Nothing about *selection* changed:
+        # both statuses are in ``NOT_ACTIONABLE``, so neither can be picked; the label is now true,
+        # and the camp's own countdown travels with it as ``retry_after``.
+        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.BLOCKED)
+        self.assertEqual(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].evidence["condition"], "camp_queue_busy")
         # The point of the whole module: these two are still work, not "done".
         self.assertIsNot(goals[CAMP_GOAL_FOR["LANCER_CAMP"]].status, GoalStatus.COMPLETE)
         self.assertIsNot(goals[CAMP_GOAL_FOR["MARKSMAN_CAMP"]].status, GoalStatus.COMPLETE)
@@ -156,7 +163,7 @@ class OneCampIsNotTheOtherTwoTests(unittest.TestCase):
             page_is_training=True, selected_camp="MARKSMAN_CAMP",
             training={"status": "AVAILABLE", "troop_type": "MARKSMAN"}))
         goals = self._goals(camps)
-        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.COMPLETE)
+        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.BLOCKED)
         self.assertIs(goals[CAMP_GOAL_FOR["LANCER_CAMP"]].status, GoalStatus.READY)
         self.assertIs(goals[CAMP_GOAL_FOR["MARKSMAN_CAMP"]].status, GoalStatus.READY)
 
@@ -267,7 +274,7 @@ class TheProductionEntryPointNamesTheSameCampTests(unittest.TestCase):
         goals = {goal.goal_id: goal for goal in GoalLibrary().discover(state)}
         for camp in CAMP_ORDER:
             self.assertIn(CAMP_GOAL_FOR[camp], goals, f"{camp} must have its own ticket")
-        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.COMPLETE)
+        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.BLOCKED)
         for camp in ("LANCER_CAMP", "MARKSMAN_CAMP"):
             self.assertIs(goals[CAMP_GOAL_FOR[camp]].status, GoalStatus.DISCOVERED)
             self.assertTrue(goals[CAMP_GOAL_FOR[camp]].available_skills,
@@ -284,7 +291,7 @@ class TheOldSingleReadingIsStillReportedTests(unittest.TestCase):
         )
         goals = {goal.goal_id: goal for goal in GoalLibrary().discover(world)}
         self.assertIn(CAMP_GOAL_FOR["SHIELD_CAMP"], goals)
-        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.COMPLETE)
+        self.assertIs(goals[CAMP_GOAL_FOR["SHIELD_CAMP"]].status, GoalStatus.BLOCKED)
 
     def test_an_unreadable_training_page_is_still_one_discovery_ticket(self):
         """Exactly one, not two: the camp branch and SWEEP_ROUTINES must not both emit it."""

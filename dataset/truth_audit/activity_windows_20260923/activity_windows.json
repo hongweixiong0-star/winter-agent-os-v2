@@ -1,0 +1,241 @@
+{
+ "generated_at": "2026-09-23T13:57:43.582489+00:00",
+ "corpus": {
+  "steps": 7158,
+  "from": "2026-09-12T11:05:39.915484+00:00",
+  "to": "2026-09-23T13:57:12.698816+00:00"
+ },
+ "split": "2026-09-23T13:42:36.848806+00:00",
+ "q1": {
+  "bear_active": [
+   {
+    "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLEAR_INTEL",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "DAILY_ACTIVITY_TARGET",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLAIM_EXPLORATION_IDLE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "PARTICIPATE_BEAR",
+    "status": "READY",
+    "priority": 16000.0
+   }
+  ],
+  "bear_in_two_hours": [
+   {
+    "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLEAR_INTEL",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "DAILY_ACTIVITY_TARGET",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLAIM_EXPLORATION_IDLE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "PARTICIPATE_BEAR",
+    "status": "SCHEDULED_NOT_OPEN",
+    "priority": null
+   }
+  ],
+  "bear_ended": [
+   {
+    "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLEAR_INTEL",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "DAILY_ACTIVITY_TARGET",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLAIM_EXPLORATION_IDLE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "PARTICIPATE_BEAR",
+    "status": "EXPIRED",
+    "priority": null
+   }
+  ],
+  "no_reading": [
+   {
+    "goal_id": "KEEP_TRAINING_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLEAR_INTEL",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "DAILY_ACTIVITY_TARGET",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "CLAIM_EXPLORATION_IDLE",
+    "status": "DISCOVERED",
+    "priority": 180.0
+   },
+   {
+    "goal_id": "SCHEDULED_BEAR_HUNT",
+    "status": "EXPIRED",
+    "priority": null
+   }
+  ],
+  "episodes": 7158,
+  "episodes_with_events": 4,
+  "episodes_with_bear": 0
+ },
+ "q2": {
+  "BEAR_HUNT": {
+   "name": "巨熊行动",
+   "gate": "REVIEWED",
+   "cadence": "RECURRING_COOLDOWN",
+   "window": "EXPIRED",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT",
+    "observed_at": "2026-09-09T21:15:37+08:00",
+    "state_at_observation": "ENDED_AND_COOLDOWN",
+    "printed_cooldown": "1天22:57:12",
+    "how_to_read_it": "the client prints the remaining cooldown on the 狩猎陷阱 page, and prints 距开始 there for an upcoming hunt",
+    "field": "world.events.bear.seconds_to_start",
+    "evidence": "knowledge/events/bear_hunt_live_2026-09-09.json"
+   },
+   "prepare": [
+    "keep one normal march slot free at the window; at capacity 3 the stamina reservation already owns one and the reservation, not the event, is what blocks (measured 2026-09-21)",
+    "have the leader and member troop presets saved before the rally opens, because the window is short",
+    "do not claim a rally succeeded without reading a battle report: result_verification is still PENDING_BATTLE_REPORT"
+   ],
+   "knowledge": [
+    "knowledge/events/bear_hunt_live_2026-09-09.json",
+    "knowledge/rally.json"
+   ],
+   "participation_conditions": [
+    "an alliance member (the hunt is reached through 联盟 -> 联盟领地 -> 特殊建筑 -> 狩猎陷阱)",
+    "a march slot that is not reserved for stamina (that reservation outranks this event; measured 2026-09-21)",
+    "the hunt must be in its window: the client draws its START_RALLY control only while it is open"
+   ],
+   "occurrence": {
+    "state": "EXPIRED",
+    "note": "the 2026-09-09 occurrence ended and went on cooldown; nothing about it may be replayed",
+    "reward_claimed": null,
+    "evidence": "knowledge/events/bear_hunt_live_2026-09-09.json"
+   },
+   "reliable_start": null,
+   "reliable_end": null
+  }
+ },
+ "q3": {
+  "activity_steps": 0,
+  "answer": "NOT_OBSERVED"
+ },
+ "q4": {
+  "BEFORE": {
+   "steps": 7129,
+   "from": "2026-09-12T11:05:39.915484+00:00",
+   "to": "2026-09-23T13:41:03.755503+00:00",
+   "OPEN_MAIL": {
+    "steps": 97,
+    "by_entry": {
+     "NO_READING": 83,
+     "PRESENT": 14
+    },
+    "without_a_reading": 83
+   },
+   "OPEN_ALLIANCE_GIFTS": {
+    "steps": 97,
+    "by_entry": {
+     "PRESENT": 4,
+     "ABSENT": 93
+    },
+    "without_a_reading": 93
+   },
+   "entry_gate_decisions": {
+    "mail_entry_has_a_badge": 1
+   }
+  },
+  "AFTER": {
+   "steps": 29,
+   "from": "2026-09-23T13:42:52.806497+00:00",
+   "to": "2026-09-23T13:57:12.698816+00:00",
+   "OPEN_MAIL": {
+    "steps": 0,
+    "by_entry": {},
+    "without_a_reading": 0
+   },
+   "OPEN_ALLIANCE_GIFTS": {
+    "steps": 0,
+    "by_entry": {},
+    "without_a_reading": 0
+   },
+   "entry_gate_decisions": {}
+  }
+ },
+ "q5": {
+  "steps": 29,
+  "refused": 0,
+  "after_refusal": {},
+  "by_goal": {
+   "AVOID_STAMINA_WASTE": 9,
+   "MAIL_ROUTINE": 9,
+   "CLAIM_EXPLORATION_IDLE": 6,
+   "KEEP_TRAINING_PRODUCTIVE": 3,
+   "KEEP_RESEARCH_PRODUCTIVE": 1,
+   "MAIL": 1
+  },
+  "runs": 2
+ }
+}

@@ -20,9 +20,9 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Mapping
 from typing import Mapping
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,9 +36,17 @@ from winter_agent_v2.models import Page, WorldState  # noqa: E402
 NOW = datetime(2026, 9, 19, 12, 0, 0, tzinfo=timezone.utc)
 MAIL = next(r for r in PANEL_ROUTINES if r.goal_id == "MAIL_ROUTINE")
 
+#: The mail entry read PRESENT, which since 2026-09-23 is the condition for ``MAIL_ROUTINE`` to exist
+#: at all (§一: 无红点，就没有这个 Goal).  A fixture about *freshness* has to state what the entry said,
+#: or it would be asserting the existence of a goal the rule deliberately withholds; the rule itself
+#: is tested in ``test_entry_badges.py``.  One place, so the two files that need it cannot drift.
+ENTRY_READABLE = {"BTN_OPEN_MAIL": {"state": "PRESENT", "goal": "MAIL_ROUTINE"}}
+
 
 def goals(world: WorldState, observations=None):
     """``observations`` accepts a bare reading for brevity and wraps it as a fresh record."""
+    if not world.red_dots:
+        world = replace(world, red_dots=dict(ENTRY_READABLE))
     shaped = None
     if observations is not None:
         shaped = {

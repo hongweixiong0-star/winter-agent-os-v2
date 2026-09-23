@@ -11,6 +11,7 @@ from pathlib import Path
 from .camp_training import CAMP_LABELS, CAMP_ORDER, TROOP_TO_CAMP
 from .models import WorldState
 from . import entry_badges
+from . import event_goal
 from . import goal_utility
 from .rally import BearPhase, bear_phase
 
@@ -117,12 +118,68 @@ def route_for(goal_id: str | None) -> str | None:
 
 
 class GoalStatus(str, Enum):
+    """Whether a task **exists** and whether it can be **acted on now** are two facts.
+
+    Operator directive 2026-09-23 §一 names six semantics and asks for them to be mapped onto what
+    this project already has rather than turned into a second task system.  The mapping, and where
+    each one is produced:
+
+    ==========================  ================  ==========================================
+    directive                   status here       produced by
+    ==========================  ================  ==========================================
+    CURRENTLY_ACTIONABLE        ``READY``         the frame's own reading (as before)
+    SCHEDULED_NOT_OPEN          same name         a known activity whose window has not opened
+    OPEN_BUT_NOT_READY          ``BLOCKED``       the capability gate / a queue that is busy
+    WAITING_GAME_CONDITION      ``BLOCKED``       ``retry_after`` + ``evidence["condition"]``
+    UNKNOWN_AVAILABILITY        ``UNKNOWN``       a page that could not be read
+    COMPLETED                   ``COMPLETE``      the work was done
+    EXPIRED                     same name         a limited-time window that closed
+    ==========================  ================  ==========================================
+
+    ``SCHEDULED_NOT_OPEN`` and ``EXPIRED`` are the two that had no home, and their absence was not
+    harmless.  Measured 2026-09-23 with the real library (``learning/_probe_existence.py``):
+
+    * a bear hunt opening in **two hours** was emitted as ``READY`` with ``priority 5000`` -- it
+      outbid the sweep tickets (ageing to 180) and sat level with ``CLEAR_INTEL`` (500), so "exists
+      but not open yet" was being treated as fully actionable;
+    * an **ended** hunt was emitted as ``COMPLETE``, which is the statement "本次任务实际完成" --
+      so a closed window and a finished task were the same record, and §五's "某次活动已经结束，
+      不等于以后不再有同类活动" had nowhere to live.
+
+    Both are excluded from ranking exactly like ``COMPLETE``/``BLOCKED``/``UNKNOWN`` -- see
+    ``NOT_ACTIONABLE`` -- so this is not a re-pricing, it is a change to what may be executed.
+    """
+
     DISCOVERED = "DISCOVERED"
     READY = "READY"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETE = "COMPLETE"
     BLOCKED = "BLOCKED"
     UNKNOWN = "UNKNOWN"
+    #: Known to exist, and its window has not opened yet.  Kept on the board so the plan and the
+    #: preparation survive the gap, and never selected: §二/§三 -- record it, do not go looking for
+    #: an entrance that is not there.
+    SCHEDULED_NOT_OPEN = "SCHEDULED_NOT_OPEN"
+    #: This occurrence's window closed.  Distinct from ``COMPLETE`` on purpose: the knowledge is
+    #: kept for the next occurrence (§三/§五), and no stale advice or coordinate may be replayed.
+    EXPIRED = "EXPIRED"
+
+
+#: The statuses that mean "not this frame", each for its own reason, in one place so a new status
+#: cannot be forgotten by the one comparison that decides executability (``GoalState.priority``).
+NOT_ACTIONABLE: frozenset[GoalStatus] = frozenset({
+    GoalStatus.COMPLETE, GoalStatus.BLOCKED, GoalStatus.UNKNOWN,
+    GoalStatus.SCHEDULED_NOT_OPEN, GoalStatus.EXPIRED,
+})
+
+#: An activity window, in this project's goal vocabulary.  One table, so a window state that is not
+#: listed is a ``KeyError`` at the only place that maps them rather than a silently wrong status.
+_WINDOW_STATUS: dict[event_goal.WindowState, GoalStatus] = {
+    event_goal.WindowState.OPEN: GoalStatus.READY,
+    event_goal.WindowState.SCHEDULED_NOT_OPEN: GoalStatus.SCHEDULED_NOT_OPEN,
+    event_goal.WindowState.EXPIRED: GoalStatus.EXPIRED,
+    event_goal.WindowState.UNKNOWN: GoalStatus.UNKNOWN,
+}
 
 
 @dataclass(frozen=True)
@@ -153,7 +210,7 @@ class GoalState:
 
     @property
     def priority(self) -> float:
-        if self.status in {GoalStatus.COMPLETE, GoalStatus.BLOCKED, GoalStatus.UNKNOWN}:
+        if self.status in NOT_ACTIONABLE:
             return float("-inf")
         deadline = deadline_pressure(self.remaining_seconds)
         return deadline + self.reward_value + self.daily_loss + self.event_synergy + self.development_value - self.resource_cost - self.risk
@@ -405,6 +462,26 @@ def _append_panel_routine(
         "overdue": bool(record.get("overdue", False)),
     }
 
+    # §一, and this is the whole of it: for the two entry-gated routines the entry's own badge decides
+    # whether the task **exists**, not how much it is worth.  So the gate is applied whenever the
+    # decision does NOT rest on a reading taken on this frame -- a *live* reading is not gated, because
+    # standing on the page with something claimable in front of us is stronger evidence than a badge
+    # drawn on another screen.
+    #
+    # Round 5 placed this inside the no-reading branch only, and the hole that left is measurable on
+    # the real library: with the entry badge ABSENT and a fresh stored ``{"status": "CLAIMABLE"}``, the
+    # routine still emitted ``MAIL_ROUTINE / READY`` with the claim skills.  The goal therefore existed,
+    # could win the board, and could not be carried out -- the run is not on that page, and the
+    # executor gate (§六) refuses to enter it -- so the cycle was spent one step at a time on a task
+    # that was never eligible.  Same rule, applied to the same readings, in one place instead of two.
+    gate: dict[str, Any] = {}
+    if routine.goal_id in entry_badges.ENTRY_GATED_GOALS and not live:
+        verdict, gated_on = entry_badges.entry_gate(routine.goal_id, red_dots)
+        if verdict != entry_badges.PRESENT:
+            return
+        gate = {"entry": verdict, "entry_on": list(gated_on)}
+    provenance = {**provenance, **gate}
+
     # "Not looked" is an *empty* reading, not a missing status word: the mail panel reports
     # unclaimed tabs as badges and often prints no status at all, and calling that "never
     # looked" would send the loop to re-open a page it has just read.
@@ -415,33 +492,13 @@ def _append_panel_routine(
                 routine.goal_id, GoalStatus.UNKNOWN, evidence=provenance, distance=1.0,
             ))
             return
-        # The periodic ticket, and the one place the operator's 2026-09-23 rule bites.
+        # The periodic ticket.  Whether the clock may create it at all is decided by the gate above,
+        # which is why nothing here looks at the entry again: the rule has one home.
         #
-        # For an **entry-gated** goal (``entry_badges.ENTRY_GATED_GOALS``: 邮件 and 联盟宝箱) the
-        # clock is not allowed to create the goal at all.  Measured before this guard, on the real
-        # library: with the entry badge ABSENT the routine still emitted ``MAIL_ROUTINE /
-        # DISCOVERED / available_skills=('OPEN_MAIL',)``, priced by age alone (180 for never-read,
-        # 155 for a reading 3x past its TTL) -- so a screen with nothing behind it outbid real work
-        # and the run ended in ``mail_entry_has_no_badge_this_frame``.  That is the operator's
-        # "红点不是加分项，而是有没有任务的准入信号": ABSENT removes the goal from the board.
-        #
-        # UNKNOWN emits nothing either, and that is §四 rather than an oversight: the entry is drawn
-        # on a screen the loop stands on constantly, so re-observing costs no step, while opening the
-        # page "to find out" spends one every round.  Nothing is lost by waiting for a real reading --
-        # the ticket is re-derived from scratch on the next frame that draws the entry.
-        #
-        # The cost of that is stated rather than hidden: while the loop is **not** on the screen that
-        # draws the entry, the goal does not exist.  That is the intended direction -- the entry is
-        # the only evidence that anything is behind it, and a run that cannot read it has no reason to
-        # go and look.  It is also why the layer has to be live: with no red-dot ledger at all
-        # (an older state file, a replay fixture) every gated goal stays off the board.  That is
-        # honest and it is checkable, and the alternative -- treating "unreadable" as "go and look" --
-        # is the periodic polling this rule exists to remove.
-        if routine.goal_id in entry_badges.ENTRY_GATED_GOALS:
-            verdict, gated_on = entry_badges.entry_gate(routine.goal_id, red_dots)
-            if verdict != entry_badges.PRESENT:
-                return
-            provenance = {**provenance, "entry": verdict, "entry_on": list(gated_on)}
+        # What is left to say is why an unread routine is still a ticket at all -- §二 of the earlier
+        # directive and this project's own §6: NOT_OBSERVED_YET is a state, and a routine nobody has
+        # read has to be *schedulable* or the loop never looks.  It is priced for that (180 for a
+        # never-read routine, aging down) and never above a real claim.
         goals.append(GoalState(
             routine.goal_id, GoalStatus.DISCOVERED,
             # Never read prices as "waited for ever"; read-and-stale prices by how stale.
@@ -602,27 +659,50 @@ class GoalLibrary:
         # letting the page's own branches start the queue item it can see.
         idle = _optional_int(world.idle_marches)
         if idle is not None:
+            # No free slot is a game condition, not a completion: the marches are out and will come
+            # back, which is §一's WAITING_GAME_CONDITION and §六's "记录具体恢复条件".  Written as
+            # COMPLETE until 2026-09-23, so "every march is busy" and "there is nothing to gather"
+            # were the same record.  The one measurable reason to care is the one the directive
+            # names: a task that reads as finished can never be woken, so the reason it was not run
+            # is lost exactly when someone asks why.
+            waiting = idle <= 0
             goals.append(GoalState(
                 "KEEP_MARCHES_PRODUCTIVE",
-                GoalStatus.READY if idle > 0 else GoalStatus.COMPLETE,
-                completion=0.0 if idle > 0 else 1.0,
+                GoalStatus.BLOCKED if waiting else GoalStatus.READY,
+                completion=0.0 if not waiting else 1.0,
                 development_value=70,
                 available_skills=("DISPATCH_MARCH", "SEARCH_RESOURCE"),
-                evidence={"idle_marches": idle, "march_max": world.march_max},
+                evidence={"idle_marches": idle, "march_max": world.march_max,
+                          "condition": "no_idle_march_slot" if waiting else ""},
                 distance=float(max(0, idle)),
             ))
         minimum = world.events.get("minimum_guarantee") if isinstance(world.events, dict) else None
         if isinstance(minimum, dict):
             missing = int(minimum.get("points_missing", 0))
             claimed = bool(minimum.get("all_target_rewards_claimed", False))
+            left = _optional_int(minimum.get("remaining_seconds"))
             complete = missing <= 0 and claimed
+            # A window that has closed is EXPIRED, not "ready at a negative deadline".  Measured
+            # 2026-09-23: ``deadline_pressure(0)`` is -100_000, which pushes such a goal down the
+            # board without ever taking it off -- so a closed event stayed selectable, and could
+            # still be picked on a frame where nothing else had a price.  EXPIRED is the same fact
+            # stated so that ranking excludes it (§一: EXPIRED vs COMPLETED are different records).
+            window_closed = left is not None and left <= 0
+            if complete:
+                status = GoalStatus.COMPLETE
+            elif window_closed:
+                status = GoalStatus.EXPIRED
+            else:
+                status = GoalStatus.READY
             goals.append(GoalState(
-                "EVENT_MINIMUM_GUARANTEE", GoalStatus.COMPLETE if complete else GoalStatus.READY,
+                "EVENT_MINIMUM_GUARANTEE", status,
                 completion=1.0 if complete else 0.0,
-                remaining_seconds=_optional_int(minimum.get("remaining_seconds")), reward_value=500,
+                remaining_seconds=left, reward_value=500,
                 event_synergy=500, resource_cost=float(minimum.get("estimated_cost", 0)),
                 available_skills=tuple(str(x) for x in minimum.get("available_skills", ())),
-                evidence={"points_missing": missing, "claimed": claimed},
+                evidence={"points_missing": missing, "claimed": claimed,
+                          "window_closed": window_closed,
+                          "event_id": minimum.get("event_id")},
                 distance=float(max(0, missing)),
             ))
         bear = world.events.get("bear") if isinstance(world.events, dict) else None
@@ -632,7 +712,27 @@ class GoalLibrary:
                 _optional_int(bear.get("seconds_to_start")),
                 _optional_int(bear.get("remaining_seconds")),
             )
-            finished = phase is BearPhase.FINISHED
+            # The phase already knows the window; this stops it being thrown away.  ``bear_phase``
+            # answers SCHEDULED / PREPARING / READY / ACTIVE / FINISHED / DISCOVERED and the previous
+            # expression collapsed every non-FINISHED one into ``READY``.  Measured 2026-09-23: a hunt
+            # opening in two hours therefore carried ``status=READY`` and ``priority=5000`` -- it
+            # outbid the sweep tickets that age to 180 and sat level with CLEAR_INTEL -- so "exists,
+            # not open yet" was priced and scheduled as work (§一, SCHEDULED_NOT_OPEN).
+            #
+            # The distinction is not cosmetic and it is not a re-pricing: both of the two statuses
+            # below are in ``NOT_ACTIONABLE``, so the goal leaves the board instead of merely losing
+            # an argument about its number.
+            if phase is BearPhase.FINISHED:
+                status = GoalStatus.EXPIRED
+            elif phase in {BearPhase.SCHEDULED, BearPhase.PREPARING}:
+                status = GoalStatus.SCHEDULED_NOT_OPEN
+            elif phase is BearPhase.DISCOVERED:
+                # Seen, with no countdown anywhere: real, and nothing says when.  UNKNOWN_AVAILABILITY
+                # -- §四, do not convert it into a visit in order to find out.
+                status = GoalStatus.UNKNOWN
+            else:
+                status = GoalStatus.READY
+            actionable = status is GoalStatus.READY
             skills: tuple[str, ...]
             if phase is BearPhase.ACTIVE:
                 skills = ("START_RALLY", "JOIN_RALLY")
@@ -641,16 +741,20 @@ class GoalLibrary:
             else:
                 skills = ("CHECK_ALLIANCE_EVENT", "READ_BEAR_TIMER")
             goals.append(GoalState(
-                "PARTICIPATE_BEAR", GoalStatus.COMPLETE if finished else GoalStatus.READY,
-                completion=1.0 if finished else 0.0,
+                "PARTICIPATE_BEAR", status,
+                completion=1.0 if status is GoalStatus.EXPIRED else 0.0,
                 remaining_seconds=_optional_int(bear.get("remaining_seconds") or bear.get("seconds_to_start")),
                 reward_value=1000, daily_loss=5000 if phase in {BearPhase.READY, BearPhase.ACTIVE} else 0,
                 available_skills=skills,
                 evidence={"phase":phase.value, "reserved_start_time":bear.get("reserved_start_time"),
                           "normal_idle_slots":world.idle_marches,
-                          "bear_rally_special_available":world.bear_rally_special_available},
-                distance=0.0 if finished else 1.0,
+                          "bear_rally_special_available":world.bear_rally_special_available,
+                          # Named, so the plan below is not duplicated for an event already on the
+                          # board with a live reading.
+                          "event_id": "BEAR_HUNT", "window_open": actionable},
+                distance=0.0 if status is GoalStatus.EXPIRED else 1.0,
             ))
+        self._append_known_activities(goals)
         for page in world.rewards.get("verified_claimable", ()):
             goals.append(GoalState(
                 f"CLAIM_FREE_{page}", GoalStatus.READY, reward_value=250, daily_loss=250,
@@ -662,13 +766,67 @@ class GoalLibrary:
         return tuple(goals)
 
     @staticmethod
+    def _append_known_activities(goals: list[GoalState]) -> None:
+        """Put the activities this project already knows about on the board, open or not (§二/§三).
+
+        Before this, an activity existed in the agent's world only as a field on a frame.  Measured
+        2026-09-23 over 7593 production episodes: 5 carried ``minimum_guarantee`` and none carried
+        ``bear``.  So a limited-time event that was not currently drawn on the screen **did not
+        exist** -- and the run could only notice it by happening to stand somewhere that prints it.
+        That is the conflation this function removes: 存在性不再只依赖当前帧.
+
+        What it emits is a *record*, not a task:
+
+        * ``available_skills=()``, so ``rank``/``best`` skip it (both require a skill to offer) and
+          it can never be selected.  §一: 尚未开放和暂时受阻的任务必须保留记录，但不得冒充当前可执行
+          任务参加普通排序.
+        * the status is the window's, so the artifact says which of the six semantics applies.
+        * ``evidence["prepare"]`` carries what §三 asks to have ready and ``evidence["knowledge"]``
+          the files it lives in.  Preparing is not a page entry, so it is not a skill.
+
+        An activity the live branches already reported is skipped: those tickets carry real readings
+        and are the ones that may act, and two records for one event would be two places for the
+        answer to disagree.
+        """
+        reported = {str((goal.evidence or {}).get("event_id") or "") for goal in goals}
+        for activity in event_goal.known_activities():
+            if not activity.event_id or activity.event_id in reported:
+                continue
+            window = activity.window()
+            goals.append(GoalState(
+                f"SCHEDULED_{activity.event_id}",
+                _WINDOW_STATUS[window],
+                completion=1.0 if window is event_goal.WindowState.EXPIRED else 0.0,
+                available_skills=(),
+                evidence={**activity.plan(), "window": window.value, "live_reading": False},
+                distance=1.0,
+            ))
+
+    @staticmethod
     def _append_queue_goal(goals: list[GoalState], goal_id: str, state: dict[str, Any], skills: tuple[str, ...], value: float) -> None:
+        """A queue goal, in the right one of §一's two semantics.
+
+        ``busy`` is a *game condition*, not a completion: the work still exists, the client is simply
+        not letting it be started yet.  Until 2026-09-23 this wrote ``COMPLETE`` -- which is §一's
+        "本次任务实际完成" -- so "the queue is full" and "there is nothing left to train" were the
+        same record, and §六's "记录具体恢复条件" had nothing to record against.
+
+        ``WAITING_GAME_CONDITION`` maps onto ``BLOCKED`` + ``retry_after`` (the queue's own timer,
+        when the frame printed one) rather than to a new status: both are already excluded from
+        ranking, so this is a change to what the artifact *says*, not to what gets executed.  The
+        ``completion``/``distance`` numbers are deliberately untouched for the same reason -- the
+        progress meter and the capability gate's streak read them, and this change is not about
+        either.
+        """
         if not state:
             return
         busy = state.get("queue_available") is False or state.get("status") == "IN_PROGRESS" or state.get("all_queues_busy") is True
-        goals.append(GoalState(goal_id, GoalStatus.COMPLETE if busy else GoalStatus.READY,
+        goals.append(GoalState(goal_id, GoalStatus.BLOCKED if busy else GoalStatus.READY,
                                completion=1.0 if busy else 0.0, development_value=value,
-                               available_skills=skills, evidence={"queue_busy": busy},
+                               available_skills=skills,
+                               retry_after=(str(state.get("timer") or "") or None) if busy else None,
+                               evidence={"queue_busy": busy,
+                                         "condition": "queue_busy" if busy else ""},
                                distance=0.0 if busy else 1.0))
 
     def _append_camp_training_goals(
@@ -694,8 +852,9 @@ class GoalLibrary:
         What each camp produces
         -----------------------
         * **positively free** (a trainable queue was read) -> READY, work to do now.
-        * **positively running** (a countdown was read) -> COMPLETE for that camp only.  The
-          other two camps are untouched by this, which is the whole point.
+        * **positively running** (a countdown was read) -> BLOCKED for that camp only, with the
+          countdown kept as its ``retry_after``: the work still exists and is being done by the
+          client.  The other two camps are untouched by this, which is the whole point.
         * **never read** (no frame has ever shown this camp) -> DISCOVERED, schedulable, so the
           loop goes and opens the tab.  This is the operator's "不得阻止检查另外两个兵营"
           expressed as a ticket rather than as a comment.  Two of the three camps have zero
@@ -741,10 +900,18 @@ class GoalLibrary:
                 "observed": observed,
             }
             if observed and busy is True:
+                # This camp is training: a game condition (§一, WAITING_GAME_CONDITION), not a
+                # completion.  Recorded as COMPLETE until 2026-09-23 -- §一's "本次任务实际完成" --
+                # which made "this barracks is busy" and "this barracks has nothing to train" the
+                # same record and left §六's "记录具体恢复条件" nowhere to live.  BLOCKED is the same
+                # fact stated so that it is not a finished task; like COMPLETE it carries no
+                # skills and no priority, so nothing about which camp gets worked changes.
                 goals.append(GoalState(
-                    goal_id, GoalStatus.COMPLETE, completion=1.0,
+                    goal_id, GoalStatus.BLOCKED, completion=1.0,
                     development_value=TRAINING_CAMP_VALUE, available_skills=(),
-                    evidence={**evidence, "reason": "this_camp_is_training"},
+                    retry_after=(str(state.get("timer") or "") or None),
+                    evidence={**evidence, "reason": "this_camp_is_training",
+                              "condition": "camp_queue_busy"},
                     distance=0.0,
                 ))
             elif observed and busy is False:

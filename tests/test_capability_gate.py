@@ -13,12 +13,14 @@ goal every 30 seconds.  These tests pin the three answers that were missing:
 
 import json
 import unittest
+from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
+from winter_agent_v2 import goal_utility
 from winter_agent_v2 import observation_store
 from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.capability_gate import (
@@ -128,7 +130,11 @@ class GoalProgressIsNotActionProgressTests(unittest.TestCase):
         busy = WorldState(page=Page.MAP, march_used=6, march_max=6, confidence=0.99)
         after = {state.goal_id: state for state in GoalLibrary().discover(busy)}
         self.assertEqual(after["KEEP_MARCHES_PRODUCTIVE"].distance, 0.0)
-        self.assertIs(after["KEEP_MARCHES_PRODUCTIVE"].status, GoalStatus.COMPLETE)
+        # Every march is out, so there is no slot to gather from -- §一's WAITING_GAME_CONDITION, not
+        # COMPLETED.  Same distance, same unrankability (both are in ``NOT_ACTIONABLE``), and the meter
+        # this test is about is untouched; the label stopped claiming the gathering was finished.
+        self.assertIs(after["KEEP_MARCHES_PRODUCTIVE"].status, GoalStatus.BLOCKED)
+        self.assertEqual(after["KEEP_MARCHES_PRODUCTIVE"].evidence["condition"], "no_idle_march_slot")
         self.assertIs(
             progress_moved({"KEEP_MARCHES_PRODUCTIVE": 4.0},
                            list(after.values()), "KEEP_MARCHES_PRODUCTIVE"),
@@ -476,8 +482,16 @@ class FakeMatch:
 
 
 class FakeSemantic:
+    #: ``BTN_OPEN_RESOURCE_SEARCH`` is part of the set for the same reason the other two are: it is
+    #: the target of the first step of the gather route on a MAP frame (measured 2026-09-23 with a
+    #: probe -- ``AVOID_STAMINA_WASTE`` and ``BEAST_HUNT`` both answer ``SEARCH_RESOURCE`` there,
+    #: ``beast_search_starts_by_opening_the_client_search`` / ``idle_march_available``).  A fixture
+    #: that cannot resolve it produces a step with no execution, which reads as "the run did nothing"
+    #: rather than as "the fixture is out of date".
     def find(self, _path, semantic):
-        return FakeMatch() if semantic in {"BTN_OPEN_HOME", "PAGE_MAP"} else None
+        return (FakeMatch()
+                if semantic in {"BTN_OPEN_HOME", "PAGE_MAP", "BTN_OPEN_RESOURCE_SEARCH"}
+                else None)
 
     semantic = property(lambda self: self)
     resource_tab_band = (0.0, 1.0)
@@ -547,6 +561,65 @@ GATHER_ROUTE = frozenset({
 })
 
 
+@contextmanager
+def offline_runtime_state(temp: Path, observations: dict | None = None):
+    """Point the run's two *machine-owned* inputs at files this test controls.
+
+    Both of these are rewritten by the running AUTO, and both feed the scheduler's ranking:
+
+    * ``observation_store.STATE_PATH`` decides how overdue each unread routine is, so a real
+      ``intel AVAILABLE`` reading makes ``CLEAR_INTEL`` worth 500 and it outranks a hop the test is
+      written around (measured 2026-09-21);
+    * ``goal_utility.STATE_PATH`` -- the fairness ledger -- supplies ``repeat_failure_penalty``, so
+      five unread sweep tickets that all price at exactly 180 on a bare MAP frame were being
+      separated by a number read off the live machine: ``chose CLEAR_INTEL (147; ... repeat-failure
+      -60.0)`` where these assertions are written around ``KEEP_TRAINING_PRODUCTIVE``.
+
+    ``observations`` is the other half of the same problem and the reason both were empty before this
+    was a knob.  An *empty* store means "nothing was ever read", which leaves five unread routines
+    tied at 180 -- so what wins is decided by learned knowledge rather than by the rule under test.
+    Passing readings lets a test say what is already known (a busy queue, an empty panel), which is
+    how a fixture becomes a statement about the scheduler instead of about this checkout.
+
+    ``ROUTES_PATH`` is deliberately **not** neutralised, and I tried it: with empty routes the learned
+    ``history_bonus`` goes away and the five-way tie falls back to board order --
+    ``test_a_deferred_goal_does_not_displace_work_that_is_still_selectable`` then fails with
+    ``'OPEN_HOME' == 'OPEN_HOME'``, the very bug it guards.  So that term is load-bearing production
+    behaviour, not machine noise, and deleting it to make a fixture deterministic would be fixing the
+    measurement by breaking what it measures.
+
+    Restored in a ``finally`` so a failing assertion cannot leak state.
+    """
+    empty = Path(temp) / "observations.json"
+    empty.write_text("{}", encoding="utf-8")
+    for domain, reading in (observations or {}).items():
+        observation_store.record(domain, reading, path=empty)
+    fairness = Path(temp) / "fairness.json"
+    fairness.write_text("{}", encoding="utf-8")
+    previous_store = observation_store.STATE_PATH
+    previous_fairness = goal_utility.STATE_PATH
+    observation_store.STATE_PATH = empty
+    goal_utility.STATE_PATH = fairness
+    try:
+        yield
+    finally:
+        observation_store.STATE_PATH = previous_store
+        goal_utility.STATE_PATH = previous_fairness
+
+
+#: Readings that leave exactly one kind of work on a MAP frame: everything else is known to be busy
+#: or empty, and 邮件 / 联盟宝箱 are entry-gated so an absent red-dot ledger already removes them.
+#: Used by the tests that are about *the deferral hop* rather than about which sweep ticket wins the
+#: five-way tie at 180 -- see ``offline_runtime_state``.
+NOTHING_ELSE_TO_DO = {
+    "intel": {"status": "NOT_AVAILABLE"},
+    "training": {"status": "IN_PROGRESS", "queue_available": False},
+    "research": {"status": "IN_PROGRESS", "queue_available": False},
+    "daily": {"status": "AVAILABLE", "claimable_count": 0},
+    "exploration": {"status": "NOT_AVAILABLE"},
+}
+
+
 class DeferredGoalSchedulingTests(unittest.TestCase):
     """The whole point: a deferred goal does not stop the run, and it is recorded."""
 
@@ -569,25 +642,19 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         base.update(kwargs)
         return CapabilityGate(**base)
 
-    def _run(self, states, gate, *, max_actions=1, allowed_skills=GATHER_ROUTE, **kwargs):
+    def _run(self, states, gate, *, max_actions=1, allowed_skills=GATHER_ROUTE,
+             observations=None, **kwargs):
         device = FakeDevice()
         with TemporaryDirectory() as temp:
             path = Path(temp) / "episodes.jsonl"
-            # The run reads the project's observation store to decide how overdue each unread
-            # routine is, and these tests are about the *scheduler*, not about what this
-            # checkout happens to have observed.  Left pointed at the live file, the assertions
-            # below depend on the machine: measured 2026-09-21, a real `intel AVAILABLE` reading
-            # makes CLEAR_INTEL worth 500 and it outranks the hop, so four of these tests failed
-            # on a store that any live run writes.  An empty store here means "nothing is
-            # overdue", which is the baseline the hop assertions were written against.
-            empty = Path(temp) / "observations.json"
-            empty.write_text("{}", encoding="utf-8")
-            previous = observation_store.STATE_PATH
-            observation_store.STATE_PATH = empty
-            try:
+            # Off the machine's own ledgers, for the two reasons ``offline_runtime_state`` records.
+            # ``StickyVision`` rather than ``FakeVision`` for the same class of reason: a run decides
+            # when to re-observe, so a fake that runs dry mid-run turns the loop's own behaviour into
+            # a StopIteration instead of an assertion.
+            with offline_runtime_state(Path(temp), observations):
                 run = LiveRuntime(
                     device=device,
-                    vision=FakeVision(states),
+                    vision=StickyVision(states),
                     semantic_vision=FakeSemantic(),
                     capture_dir=Path(temp) / "captures",
                     sleeper=lambda _seconds: None,
@@ -595,8 +662,6 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
                     capability_gate=gate,
                     **kwargs,
                 ).run(max_actions=max_actions, allowed_skills=allowed_skills)
-            finally:
-                observation_store.STATE_PATH = previous
             # A run that records no episode is a valid outcome (it may stop before
             # acting), so an absent file means "no episodes", not a broken test.
             rows = [
@@ -686,7 +751,7 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
             WorldState(page=Page.MAP, stamina={"current": 457}, confidence=0.99),
             WorldState(page=Page.HOME, confidence=0.99),
         ]
-        device, run, _rows = self._run(states, self._gate())
+        device, run, _rows = self._run(states, self._gate(), observations=NOTHING_ELSE_TO_DO)
         self.assertEqual(run.steps[0].decision.skill, "OPEN_HOME")
         self.assertEqual(len(device.taps), 1)
 
@@ -700,7 +765,7 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
         ]
-        _device, run, _rows = self._run(states, self._gate())
+        _device, run, _rows = self._run(states, self._gate(), observations=NOTHING_ELSE_TO_DO)
         self.assertEqual(len(run.deferrals), 1, "the beast goal is still reported as deferred")
         self.assertNotEqual(
             run.steps[0].decision.skill, "OPEN_HOME",
@@ -713,7 +778,7 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=2, march_max=6, confidence=0.99),
         ]
-        _device, run, _rows = self._run(states, self._gate())
+        _device, run, _rows = self._run(states, self._gate(), observations=NOTHING_ELSE_TO_DO)
         self.assertNotEqual(run.steps[0].decision.skill, "SCAN_MAP_FOR_BEAST")
         self.assertNotIn(run.stop_reason, {"verified_beast_target_not_visible", "SAFE_STOP"})
         self.assertIsNotNone(run.steps[0].execution, "a real action was issued instead of the blocked path")
@@ -724,9 +789,18 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
         ]
-        device, run, _rows = self._run(states, CapabilityGate.empty())
+        device, run, _rows = self._run(states, CapabilityGate.empty(), observations=NOTHING_ELSE_TO_DO)
         self.assertEqual(run.deferrals, ())
-        self.assertEqual(run.steps[0].decision.skill, "SCAN_MAP_FOR_BEAST")
+        # The assertion is that the gate left the goal alone, and the skill is the *first step of
+        # that goal's route* rather than one skill name.  ``SCAN_MAP_FOR_BEAST`` cannot be step one
+        # any more and that is not a regression: the beast route now begins by opening the client's
+        # own resource-search panel with the 野兽 tab chosen (``beast_search_starts_by_opening_the_client_search``),
+        # which the probe confirms for both ``AVOID_STAMINA_WASTE`` and ``BEAST_HUNT`` on a MAP frame
+        # with a free march slot.  Pinning the old name would have been asserting a route that no
+        # longer exists.
+        self.assertIn(run.steps[0].decision.skill, GATHER_ROUTE,
+                      "an allowed goal must take its own route's first step")
+        self.assertIsNotNone(run.steps[0].execution, "and it must really be issued")
 
     def test_a_deferral_is_narrated_once_per_reason_not_once_per_step(self):
         """A twelve-step run printed the identical line twelve times (2026-09-18)."""
@@ -744,13 +818,9 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
         with TemporaryDirectory() as temp:
             capture = io.StringIO()
             # Hermetic like ``DeferredGoalSchedulingTests._run``: the narration depends on how
-            # many steps the run takes, which depends on which goals the live observation store
-            # prices up.  An empty store makes the run deterministic instead of machine-shaped.
-            empty = Path(temp) / "observations.json"
-            empty.write_text("{}", encoding="utf-8")
-            previous = observation_store.STATE_PATH
-            observation_store.STATE_PATH = empty
-            try:
+            # many steps the run takes, which depends on which goals the machine's own ledgers
+            # price up.  Known-empty readings make the run deterministic instead of machine-shaped.
+            with offline_runtime_state(Path(temp), NOTHING_ELSE_TO_DO):
                 with contextlib.redirect_stdout(capture):
                     run = LiveRuntime(
                         device=device,
@@ -760,8 +830,6 @@ class DeferredGoalSchedulingTests(unittest.TestCase):
                         sleeper=lambda _seconds: None,
                         capability_gate=DeferredGoalSchedulingTests()._gate(),
                     ).run(max_actions=3, allowed_skills={"OPEN_HOME", "OPEN_MAP", "SCAN_MAP_FOR_BEAST"})
-            finally:
-                observation_store.STATE_PATH = previous
         self.assertGreaterEqual(len(run.steps), 2, "the run has to take more than one step")
         self.assertEqual(capture.getvalue().count("[schedule] deferred"), 1)
 
@@ -796,36 +864,43 @@ class EpisodeMeasurementTests(unittest.TestCase):
             from winter_agent_v2.runtime_snapshot import RuntimeSnapshotStore
 
             device = FakeDevice()
-            LiveRuntime(
-                device=device,
-                vision=FakeVision(states),
-                semantic_vision=FakeSemantic(),
-                capture_dir=Path(temp) / "captures",
-                sleeper=lambda _seconds: None,
-                runtime_store=RuntimeSnapshotStore(snapshot_path),
-                capability_gate=DeferredGoalSchedulingTests()._gate(),
-            ).run(max_actions=1, allowed_skills={"OPEN_HOME"})
+            with offline_runtime_state(Path(temp)):
+                LiveRuntime(
+                    device=device,
+                    vision=StickyVision(states),
+                    semantic_vision=FakeSemantic(),
+                    capture_dir=Path(temp) / "captures",
+                    sleeper=lambda _seconds: None,
+                    runtime_store=RuntimeSnapshotStore(snapshot_path),
+                    capability_gate=DeferredGoalSchedulingTests()._gate(),
+                ).run(max_actions=1, allowed_skills={"OPEN_HOME"})
             written = json.loads(snapshot_path.read_text(encoding="utf-8"))
         self.assertEqual(written["deferred_goals"][0]["goal_id"], "AVOID_STAMINA_WASTE")
         self.assertTrue(written["deferred_goals"][0]["reason"])
 
     def test_a_verifier_pass_without_goal_progress_is_recorded_as_such(self):
+        # The after-frame shows the search panel open, which is what ``SEARCH_RESOURCE``'s verifier
+        # reads -- that is the step this route really takes first on a MAP frame with a free march
+        # slot.  Stamina is unchanged, so the action lands and the goal does not move, which is the
+        # pair this test exists to keep apart.
         states = [
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
-            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
+            WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6,
+                       resource_search_open=True, confidence=0.99),
         ]
         device = FakeDevice()
         with TemporaryDirectory() as temp:
             path = Path(temp) / "episodes.jsonl"
-            LiveRuntime(
-                device=device,
-                vision=FakeVision(states),
-                semantic_vision=FakeSemantic(),
-                capture_dir=Path(temp) / "captures",
-                sleeper=lambda _seconds: None,
-                episode_store=EpisodeStore(path),
-                capability_gate=CapabilityGate.empty(),
-            ).run(max_actions=1, allowed_skills={"SCAN_MAP_FOR_BEAST"})
+            with offline_runtime_state(Path(temp), NOTHING_ELSE_TO_DO):
+                LiveRuntime(
+                    device=device,
+                    vision=StickyVision(states),
+                    semantic_vision=FakeSemantic(),
+                    capture_dir=Path(temp) / "captures",
+                    sleeper=lambda _seconds: None,
+                    episode_store=EpisodeStore(path),
+                    capability_gate=CapabilityGate.empty(),
+                ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
             row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
         self.assertIs(row["verifier_ok"], True, "the action itself landed")
         self.assertIs(row["goal_progress"], False, "...and the goal did not move")
@@ -834,20 +909,22 @@ class EpisodeMeasurementTests(unittest.TestCase):
     def test_a_goal_that_moved_is_recorded_as_progress(self):
         states = [
             WorldState(page=Page.MAP, stamina={"current": 457}, march_used=1, march_max=6, confidence=0.99),
-            WorldState(page=Page.MAP, stamina={"current": 437}, march_used=1, march_max=6, confidence=0.99),
+            WorldState(page=Page.MAP, stamina={"current": 437}, march_used=1, march_max=6,
+                       resource_search_open=True, confidence=0.99),
         ]
         device = FakeDevice()
         with TemporaryDirectory() as temp:
             path = Path(temp) / "episodes.jsonl"
-            LiveRuntime(
-                device=device,
-                vision=FakeVision(states),
-                semantic_vision=FakeSemantic(),
-                capture_dir=Path(temp) / "captures",
-                sleeper=lambda _seconds: None,
-                episode_store=EpisodeStore(path),
-                capability_gate=CapabilityGate.empty(),
-            ).run(max_actions=1, allowed_skills={"SCAN_MAP_FOR_BEAST"})
+            with offline_runtime_state(Path(temp), NOTHING_ELSE_TO_DO):
+                LiveRuntime(
+                    device=device,
+                    vision=StickyVision(states),
+                    semantic_vision=FakeSemantic(),
+                    capture_dir=Path(temp) / "captures",
+                    sleeper=lambda _seconds: None,
+                    episode_store=EpisodeStore(path),
+                    capability_gate=CapabilityGate.empty(),
+                ).run(max_actions=1, allowed_skills=GATHER_ROUTE)
             row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
         self.assertIs(row["goal_progress"], True)
 

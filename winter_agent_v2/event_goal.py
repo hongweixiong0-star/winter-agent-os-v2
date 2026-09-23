@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from enum import Enum
 from math import ceil
-from typing import Any
+from pathlib import Path
+from typing import Any, Mapping
 
 
 class DeadlineLevel(str, Enum):
@@ -158,3 +160,148 @@ def event_priority_modifier(events: dict[str, Any], skill_id: str) -> float:
         if isinstance(action, dict) and action.get("skill_id") == skill_id and action.get("allowed", True):
             best = max(best, float(action.get("event_value", action.get("points_per_unit", 0))))
     return best * deadline_weight
+
+
+# --------------------------------------------------------------- known activities
+#
+# Operator directive 2026-09-23 §二/§三: 知道未来有什么事 -- for a known periodic activity the plan
+# has to survive the gap between occurrences, without the agent navigating anywhere to find an
+# entrance that is not drawn yet, and without inventing a start time it never measured.
+#
+# This is a *reader*, not a second knowledge base.  ``knowledge/events/event_registry.json`` is the
+# project's existing activity registry (its own ``policy`` already defines what adding an entry
+# costs: a new or changed event enters at DISCOVERED and production requires VERIFIED).  What this
+# adds is the one thing the registry could not answer, because nothing was reading it: which of the
+# activities it names are real enough to hold a plan against, and what that plan is.
+#
+# Why it is needed at all is measurable.  Before this, an activity existed in the agent's world only
+# as a field on a frame: ``world.events`` is written in exactly one place (``ocr.py``, from what the
+# current page prints), and ``GoalLibrary`` emitted ``PARTICIPATE_BEAR``/``EVENT_MINIMUM_GUARANTEE``
+# only when that field was present.  Measured over the production corpus (2026-09-23): of 7593
+# episodes, 5 carried ``minimum_guarantee`` and **none** carried ``bear``.  So "we are not standing
+# on the page that prints it" and "this task does not exist" were the same state of the world, and
+# there was nothing to prepare for, nothing to wait for, and no record of a window closing.
+
+ACTIVITY_REGISTRY = Path(__file__).resolve().parents[1] / "knowledge/events/event_registry.json"
+
+#: Registry entries whose ``gate`` this project refuses to plan against.  A DISCOVERED entry is an
+#: unreviewed lead -- the registry's own policy says so -- and holding a plan on a lead would be
+#: exactly the invented schedule §二 forbids.  Kept as a set of the words the registry uses.
+_PLANNABLE_GATES = frozenset({"REVIEWED", "VERIFIED"})
+
+
+class WindowState(str, Enum):
+    """Whether an activity's window is open, and what is known about when it will be.
+
+    Deliberately four values and not two: ``UNKNOWN`` is the honest answer when the activity is
+    real but nothing readable says when it opens, and collapsing it into "not open" would make a
+    preparation plan look like a closed window.
+    """
+
+    OPEN = "OPEN"
+    SCHEDULED_NOT_OPEN = "SCHEDULED_NOT_OPEN"
+    EXPIRED = "EXPIRED"
+    UNKNOWN = "UNKNOWN"
+
+
+@dataclass(frozen=True)
+class Activity:
+    """One known periodic activity, with the plan that has to survive until it opens (§二)."""
+
+    event_id: str
+    name: str
+    gate: str
+    cadence: str
+    applies_to_roles: Mapping[str, Any]
+    next_open_condition: Mapping[str, Any]
+    participation_conditions: tuple[str, ...]
+    knowledge: tuple[str, ...]
+    prepare: tuple[str, ...]
+    occurrence: Mapping[str, Any]
+    start: str | None = None
+    end: str | None = None
+
+    @property
+    def time_is_known(self) -> bool:
+        """Whether a *reliable* start or end time is on file.
+
+        Both are null for every event this project has ever recorded, which is the point: §二 says
+        如果时间信息不可靠，保留 UNKNOWN，不编造活动时间.  So the window is answered by
+        ``next_open_condition`` -- what the game itself printed -- and never by the clock.
+        """
+        return bool(self.start or self.end)
+
+    def window(self) -> WindowState:
+        """The window **as the record knows it**, with no live reading in hand.
+
+        Deliberately takes no countdown.  When the client is printing one, ``rally.bear_phase``
+        already owns every threshold that turns it into a phase (120 s -> READY, 600 s -> PREPARING),
+        and a second copy of those numbers here is the "one table, two readers" mistake this project
+        has already paid for.  This answers the other question: standing anywhere else, what does
+        the record support?
+
+        * a recorded occurrence that ended -> ``EXPIRED``;
+        * a start or end time on file -> ``SCHEDULED_NOT_OPEN`` (the schedule is real, the window has
+          not arrived);
+        * nothing reliable on file -> ``UNKNOWN``.  §二: 如果时间信息不可靠，保留 UNKNOWN，不编造
+          活动时间.  ``UNKNOWN`` is not "not open" -- it is "we cannot say", and the plan is kept
+          either way.
+        """
+        if str(self.occurrence.get("state") or "").upper() == "EXPIRED" and not self.time_is_known:
+            return WindowState.EXPIRED
+        if not self.time_is_known:
+            return WindowState.UNKNOWN
+        return WindowState.SCHEDULED_NOT_OPEN
+
+    def plan(self) -> dict[str, Any]:
+        """The part of this record a run needs in order to prepare rather than to act."""
+        return {
+            "event_id": self.event_id,
+            "name": self.name,
+            "gate": self.gate,
+            "cadence": self.cadence,
+            "applies_to_roles": dict(self.applies_to_roles),
+            "next_open_condition": dict(self.next_open_condition),
+            "participation_conditions": list(self.participation_conditions),
+            "knowledge": list(self.knowledge),
+            "prepare": list(self.prepare),
+            "occurrence": dict(self.occurrence),
+            "reliable_start": self.start,
+            "reliable_end": self.end,
+        }
+
+
+def known_activities(path: Path | str | None = None) -> tuple[Activity, ...]:
+    """Every activity the registry vouches for, newest policy applied.
+
+    Unreadable or malformed registry -> no activities, never an exception: a knowledge file that a
+    run cannot parse is a gap in the plan, not a reason for the run to die.  Same trade the rest of
+    this project makes with the template manifest and the UI dictionary.
+    """
+    target = Path(path) if path is not None else ACTIVITY_REGISTRY
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ()
+    out: list[Activity] = []
+    for record in payload.get("events") or ():
+        if not isinstance(record, Mapping):
+            continue
+        gate = str(record.get("gate") or "DISCOVERED").upper()
+        if gate not in _PLANNABLE_GATES:
+            continue
+        out.append(Activity(
+            event_id=str(record.get("event_id") or ""),
+            name=str(record.get("name") or ""),
+            gate=gate,
+            cadence=str(record.get("cadence") or "UNKNOWN"),
+            applies_to_roles=record.get("applies_to_roles") or {},
+            next_open_condition=record.get("next_open_condition") or {},
+            participation_conditions=tuple(str(x) for x in (record.get("participation_conditions") or ())),
+            knowledge=tuple(str(x) for x in (record.get("knowledge") or ())),
+            prepare=tuple(str(x) for x in (record.get("prepare") or ())),
+            occurrence=record.get("occurrence") or {},
+            start=record.get("start"),
+            end=record.get("end"),
+        ))
+    return tuple(activity for activity in out if activity.event_id)

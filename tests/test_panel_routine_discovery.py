@@ -28,6 +28,8 @@ import sys
 import unittest
 from pathlib import Path
 
+from dataclasses import replace  # noqa: E402
+
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,8 +49,24 @@ from winter_agent_v2.skills import v2_registry  # noqa: E402
 
 ROUTINE_IDS = tuple(routine.goal_id for routine in PANEL_ROUTINES)
 
+#: 邮件 and 联盟宝箱 are **entry-gated** since 2026-09-23: §一 of that directive is that the entry's own
+#: badge decides whether the task exists at all, so ``GoalLibrary`` refuses to emit either goal
+#: unless the frame can show its entry reading PRESENT.  A fixture written before that rule therefore
+#: has to say the entry is readable, or it is testing "a goal that must not exist is missing".
+#:
+#: Kept in one place, and deliberately *not* "always PRESENT" as a behaviour: the gate itself, and the
+#: three verdicts it distinguishes, are tested in ``test_entry_badges.py``.  Here the readable entry is
+#: scenery -- these tests are about how a routine is *discovered and priced*, which is a different
+#: question from whether it is allowed to exist.
+ENTRY_READABLE = {
+    "BTN_OPEN_MAIL": {"state": "PRESENT", "goal": "MAIL_ROUTINE"},
+    "TILE_ALLIANCE_GIFTS": {"state": "PRESENT", "goal": "ALLIANCE_ROUTINE"},
+}
+
 
 def emitted(world: WorldState) -> dict[str, object]:
+    if not world.red_dots:
+        world = replace(world, red_dots=dict(ENTRY_READABLE))
     return {goal.goal_id: goal for goal in GoalLibrary().discover(world)}
 
 
@@ -123,7 +141,7 @@ def test_an_unread_routine_never_outranks_real_work():
     expressed through the priority the scheduler already uses instead of a second timer.
     """
     world = WorldState(page=Page.MAP, march_used=2, march_max=3, stamina={"current": 500})
-    goals = {goal.goal_id: goal for goal in GoalLibrary().discover(world)}
+    goals = emitted(world)
     chosen = GoalLibrary().best(goals.values())
     assert chosen is not None
     assert chosen.goal_id not in ROUTINE_IDS, (
@@ -177,13 +195,31 @@ class ConsecutiveSweepsMustHopBetweenPanels(unittest.TestCase):
             self.assertEqual(first.expected_result, "home_opened")
 
     def test_the_hop_happens_once_so_a_back_that_did_not_move_cannot_loop(self):
+        """One Back, and then a different recovery -- never the same Back again.
+
+        The assertion changed 2026-09-23 to match what the brain actually does, and the *rule* it
+        was written for is unchanged.  A Back that did not move the client used to fall through to
+        ``SAFE_STOP`` / ``goal_page_mismatch``; the brain now owns a second, stronger recovery for
+        exactly that case -- ``LEAVE_FOREIGN_LAYER``, which closes the layer the Back could not
+        (measured: ccoeff 1.000 on the layer's own X, against 0.432-0.580 for 24 frames without it).
+        So the sequence is BACK, then LEAVE_FOREIGN_LAYER, then the honest stop.
+
+        Asserting ``SAFE_STOP`` here would have been asserting that the second recovery does not
+        exist.  What the test exists for -- "must not Back twice" -- is asserted below, on the
+        sequence rather than on one step of it.
+        """
         registry = v2_registry()
         for goal, page in self.FOREIGN.items():
             brain = RuleBrain(current_goal=goal)
-            brain.decide(WorldState(page=page, confidence=0.99), registry)
-            second = brain.decide(WorldState(page=page, confidence=0.99), registry)
-            self.assertEqual(second.skill, "SAFE_STOP", f"{goal} must not Back twice")
-            self.assertEqual(second.reason, "goal_page_mismatch")
+            skills = []
+            for _ in range(3):
+                skills.append(brain.decide(WorldState(page=page, confidence=0.99), registry).skill)
+            with self.subTest(goal=goal, page=page.value):
+                self.assertEqual(skills[0], "BACK", f"{goal} must leave the foreign page")
+                self.assertEqual(skills.count("BACK"), 1, f"{goal} must not Back twice")
+                self.assertNotEqual(skills[1], "BACK", f"{goal} must try a different recovery")
+                self.assertEqual(skills[-1], "SAFE_STOP",
+                                 f"{goal} must end its own task once recovery is spent")
 
     def test_the_hop_uses_a_skill_that_can_actually_run(self):
         """A hop through an unregistered or unverified skill would die on live dispatch."""
@@ -192,13 +228,20 @@ class ConsecutiveSweepsMustHopBetweenPanels(unittest.TestCase):
         self.assertIn("BACK", LiveRuntime.VERIFIED_ATOMIC)
 
     def test_a_goal_on_its_own_page_still_does_its_work(self):
-        """The hop must not shadow the real routes: HOME still opens the panel it owns."""
+        """The hop must not shadow the real routes: HOME still opens the panel it owns.
+
+        With the entry readable, which is the condition the route is written for.  On HOME the mail
+        entry is drawn, so the badge reading is part of the frame -- and §一 of the 2026-09-23
+        directive is that ``OPEN_MAIL`` requires it: a bare HOME world (no ledger) now answers
+        SAFE_STOP ``mail_entry_badge_unknown_this_frame`` and hands the cycle to another goal, which
+        is exactly the "无红点就不进去" behaviour and is tested in ``test_entry_badges.py``.
+        """
         registry = v2_registry()
         for goal, open_skill in (("DAILY", "OPEN_DAILY"), ("MAIL", "OPEN_MAIL"),
                                  ("ALLIANCE", "OPEN_ALLIANCE"),
                                  ("EXPLORATION", "OPEN_EXPLORATION")):
             decision = RuleBrain(current_goal=goal).decide(
-                WorldState(page=Page.HOME, confidence=0.99), registry)
+                WorldState(page=Page.HOME, confidence=0.99, red_dots=dict(ENTRY_READABLE)), registry)
             self.assertEqual(decision.skill, open_skill, f"{goal} from HOME")
 
 
@@ -254,7 +297,13 @@ class DomainsThatOnlyExistedWhenRead(unittest.TestCase):
         assert live.available_skills == (
             "INTEL_CLAIM_REWARDS", "SELECT_INTEL_BEAST_MISSION", "SELECT_INTEL_RESCUE_SURVIVORS")
         busy = emitted(WorldState(page=Page.MAP, research={"queue_available": False}))
-        assert busy["KEEP_RESEARCH_PRODUCTIVE"].status is GoalStatus.COMPLETE
+        # A busy queue is §一's WAITING_GAME_CONDITION, not COMPLETED.  The label changed
+        # 2026-09-23 because "the client will not let this start yet" and "本次任务实际完成" were the
+        # same record; both statuses carry no skills and no priority, so nothing about scheduling
+        # changed -- what changed is that the reason is on file, with the queue's own timer in
+        # ``retry_after`` (§六: 记录具体恢复条件).
+        assert busy["KEEP_RESEARCH_PRODUCTIVE"].status is GoalStatus.BLOCKED
+        assert busy["KEEP_RESEARCH_PRODUCTIVE"].evidence["condition"] == "queue_busy"
 
     def test_building_stays_out_because_it_has_no_route_or_skill(self):
         registry = v2_registry()
@@ -279,8 +328,12 @@ class AStatusWordIsNotACount(unittest.TestCase):
     def _goal(goal_id, field, reading):
         """``emitted()`` in this file takes no observations, so build the record directly."""
         observations = {field: {"reading": reading, "overdue": False, "overdue_ratio": 0.2}}
+        # The entry is stated as readable for the same reason ``emitted`` states it: these readings
+        # are about a page that was *looked at*, and for 邮件 the entry's own badge is what allows the
+        # goal to exist at all (§一, 2026-09-23).  A reading reused from earlier does not lift that.
+        world = WorldState(page=Page.MAP, red_dots=dict(ENTRY_READABLE))
         goals = {g.goal_id: g for g in
-                 GoalLibrary().discover(WorldState(page=Page.MAP), observations=observations)}
+                 GoalLibrary().discover(world, observations=observations)}
         return goals[goal_id]
 
     def _daily(self, reading):

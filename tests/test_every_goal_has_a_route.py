@@ -59,12 +59,18 @@ PAGES = (
 )
 
 
-def _discoverable() -> set[str]:
+def _discoverable() -> dict[str, object]:
+    """Every goal the page sweep emits, by id, with the goal itself.
+
+    The goal objects are returned alongside the ids because "has a route" is only required of the
+    goals that can actually be selected -- see ``test_every_discoverable_goal_has_a_route``.
+    """
     library = GoalLibrary()
-    ids: set[str] = set()
+    found: dict[str, object] = {}
     for world in PAGES:
-        ids.update(goal.goal_id for goal in library.discover(world))
-    return ids
+        for goal in library.discover(world):
+            found[goal.goal_id] = goal
+    return found
 
 
 def test_the_enumeration_finds_the_goals_it_is_supposed_to():
@@ -93,10 +99,30 @@ def test_every_goal_the_capability_table_names_has_a_route():
 
 
 def test_every_discoverable_goal_has_a_route():
-    missing = sorted(g for g in _discoverable() if route_for(g) is None)
+    """Everything that can be *selected and executed* must have a route.
+
+    The scope is selectable goals, and it narrowed on 2026-09-23 for a measured reason rather than
+    to make the test pass: ``GoalLibrary`` now also emits **records** of tasks that exist and cannot
+    be run -- a known activity whose window is not open, a queue that is busy, a march whose slot is
+    out.  Those carry no skills and a ``-inf`` priority, so ``rank`` and ``best`` both skip them and
+    they can never be selected; the invariant this file exists for ("selected, then does nothing")
+    cannot bite.  They are on the board so the plan and the reason survive, which is the directive
+    that added them.
+
+    Checking the rule rather than the spelling: a goal is selectable exactly when it has a skill to
+    offer and a finite priority, which is the same pair of conditions ``best`` applies.
+    """
+    missing = sorted(
+        goal_id for goal_id, goal in _discoverable().items()
+        if goal.available_skills and goal.priority != float("-inf") and route_for(goal_id) is None
+    )
     assert not missing, (
         f"these would be selected and then do nothing: {missing}.  Add them to GOAL_ROUTES."
     )
+    # And the guard must not have gone vacuous: the sweep still has to reach real work.
+    selectable = [g for g, goal in _discoverable().items()
+                  if goal.available_skills and goal.priority != float("-inf")]
+    assert len(selectable) >= 5, f"the enumeration stopped finding selectable goals: {selectable}"
 
 
 def test_every_route_points_at_a_domain_the_runner_accepts():

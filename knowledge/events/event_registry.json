@@ -1,1 +1,157 @@
-{"schema_version":"1.0","policy":{"dynamic_add":true,"new_or_changed_event_gate":"DISCOVERED","production_requires":"VERIFIED"},"events":[{"event_id":"BEAR_HUNT","name":"巨熊行动","start":null,"end":null,"type":"ALLIANCE_PVE","entry":"ALLIANCE/EVENT","tasks":["JOIN_RALLY"],"rewards":"unknown","priority":"dynamic","strategy":"knowledge/strategy/event_priority.json","gate":"REVIEWED"},{"event_id":"STATE_VS_STATE","name":"最强王国","start":null,"end":null,"type":"CROSS_STATE","entry":"EVENT","tasks":[],"rewards":"unknown","priority":"dynamic","strategy":"knowledge/strategy/event_priority.json","gate":"DISCOVERED"}]}
+{
+ "schema_version": "1.1",
+ "policy": {
+  "dynamic_add": true,
+  "new_or_changed_event_gate": "DISCOVERED",
+  "production_requires": "VERIFIED"
+ },
+ "_read_me": [
+  "Operator directive 2026-09-23 §二: for a known periodic activity keep its identity, the roles it",
+  "applies to, reliable start/end times, the cadence or the next-open condition, the participation",
+  "conditions, the knowledge and the historically successful path, what to prepare in advance, and",
+  "this occurrence's completion and reward state.",
+  "",
+  "Two of those keep null and must stay null until the client is read again: 'start' and 'end' are",
+  "the minute a window opens and closes, and this project has never measured either one for any",
+  "event.  §二 is explicit -- 如果时间信息不可靠，保留 UNKNOWN，不编造活动时间 -- so the honest",
+  "answer is 'next_open_condition', which records what the game itself printed (a cooldown, a",
+  "countdown, a stage) instead of a wall-clock guess.",
+  "",
+  "'gate' is this project's own vocabulary: VERIFIED = a live client reading backs it, REVIEWED =",
+  "reviewed external sources, DISCOVERED = unreviewed."
+ ],
+ "events": [
+  {
+   "event_id": "BEAR_HUNT",
+   "name": "巨熊行动",
+   "start": null,
+   "end": null,
+   "type": "ALLIANCE_PVE",
+   "entry": "ALLIANCE/EVENT",
+   "tasks": [
+    "JOIN_RALLY"
+   ],
+   "rewards": "unknown",
+   "priority": "dynamic",
+   "strategy": "knowledge/strategy/event_priority.json",
+   "gate": "REVIEWED",
+   "applies_to_roles": {
+    "kind": "BOUND_ROLE",
+    "note": "an alliance PvE objective; no per-role gating was ever observed, and this corpus has one bound role",
+    "measured_roles": [
+     "1171757165"
+    ]
+   },
+   "cadence": "RECURRING_COOLDOWN",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT",
+    "observed_at": "2026-09-09T21:15:37+08:00",
+    "state_at_observation": "ENDED_AND_COOLDOWN",
+    "printed_cooldown": "1天22:57:12",
+    "how_to_read_it": "the client prints the remaining cooldown on the 狩猎陷阱 page, and prints 距开始 there for an upcoming hunt",
+    "field": "world.events.bear.seconds_to_start",
+    "evidence": "knowledge/events/bear_hunt_live_2026-09-09.json"
+   },
+   "participation_conditions": [
+    "an alliance member (the hunt is reached through 联盟 -> 联盟领地 -> 特殊建筑 -> 狩猎陷阱)",
+    "a march slot that is not reserved for stamina (that reservation outranks this event; measured 2026-09-21)",
+    "the hunt must be in its window: the client draws its START_RALLY control only while it is open"
+   ],
+   "knowledge": [
+    "knowledge/events/bear_hunt_live_2026-09-09.json",
+    "knowledge/rally.json"
+   ],
+   "verified_path": {
+    "entry": [
+     "联盟",
+     "联盟领地",
+     "特殊建筑",
+     "狩猎陷阱",
+     "前往"
+    ],
+    "leader_rally": "DISPATCH_VERIFIED",
+    "member_join": "MARCHING_VERIFIED",
+    "formed_presets": {
+     "leader": "full Bear leader preset",
+     "member": [
+      "杰西",
+      "书允",
+      "杰赛尔",
+      "NO_HERO"
+     ]
+    },
+    "result_verification": "PENDING_BATTLE_REPORT",
+    "evidence_root": "dataset/raw/bear_live_20260909"
+   },
+   "prepare": [
+    "keep one normal march slot free at the window; at capacity 3 the stamina reservation already owns one and the reservation, not the event, is what blocks (measured 2026-09-21)",
+    "have the leader and member troop presets saved before the rally opens, because the window is short",
+    "do not claim a rally succeeded without reading a battle report: result_verification is still PENDING_BATTLE_REPORT"
+   ],
+   "occurrence": {
+    "state": "EXPIRED",
+    "note": "the 2026-09-09 occurrence ended and went on cooldown; nothing about it may be replayed",
+    "reward_claimed": null,
+    "evidence": "knowledge/events/bear_hunt_live_2026-09-09.json"
+   }
+  },
+  {
+   "event_id": "STATE_VS_STATE",
+   "name": "最强王国",
+   "start": null,
+   "end": null,
+   "type": "CROSS_STATE",
+   "entry": "EVENT",
+   "tasks": [],
+   "rewards": "unknown",
+   "priority": "dynamic",
+   "strategy": "knowledge/strategy/event_priority.json",
+   "gate": "DISCOVERED",
+   "applies_to_roles": {
+    "kind": "BOUND_ROLE",
+    "measured_roles": [
+     "1171757165"
+    ]
+   },
+   "cadence": "UNKNOWN",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT",
+    "observed_at": "2026-09-09T11:55:00+08:00",
+    "state_at_observation": "SUB_STAGE_III_ACTIVE",
+    "printed_remaining": "12:03:29",
+    "note": "the client printed a per-stage countdown, not a schedule for the next occurrence, so no next-open time is claimed",
+    "field": "world.events.minimum_guarantee.remaining_seconds",
+    "evidence": "knowledge/events/kingdom_of_power_live_2026-09-09.json"
+   },
+   "participation_conditions": [
+    "the event page must be reachable (entry HOME/常规活动 -> EVENT)",
+    "for the minimum-guarantee goal: points_missing > 0, or a completed tier that is not claimed"
+   ],
+   "knowledge": [
+    "knowledge/events/kingdom_of_power_live_2026-09-09.json",
+    "knowledge/events/armament_competition_live_2026-09-05.json"
+   ],
+   "verified_path": {
+    "entry": [
+     "HOME",
+     "常规活动",
+     "EVENT"
+    ],
+    "scoring_stage_seen": "击败野兽",
+    "points_verified_gain": 11250,
+    "evidence_root": "learning/event_goal_state.json"
+   },
+   "prepare": [
+    "keep a scoring route that is verified on this client: 击败野兽 through Intel wild beasts measured 10-15 stamina per mission on this account",
+    "the first personal tier is 80,000 points and the 11,250 in the snapshot was a partial reading, so plan the remainder from a fresh reading rather than from that snapshot",
+    "do not replay the 2026-09-09 stage; its per-stage countdown had already elapsed"
+   ],
+   "occurrence": {
+    "state": "EXPIRED",
+    "note": "the 2026-09-09 occurrence was mid-stage when observed and its stage countdown has long elapsed",
+    "reward_claimed": false,
+    "evidence": "learning/event_goal_state.json"
+   }
+  }
+ ]
+}

@@ -65,6 +65,35 @@ def pytest_configure(config) -> None:  # noqa: ARG001 - pytest's hook signature
         SemanticROIVision.__init__ = without_the_band
         print(f"\nAB_CLOSE_BAND=off: {BAND_RECORD_ID} removed from the record list")
 
+    if os.environ.get("AB_WINDOW_STATUS", "") == "off":
+        from winter_agent_v2 import goal_library as gl
+
+        # This round's change, reverted at the module boundary: the five sites that now name a
+        # window or a game condition used to collapse it into READY/COMPLETE, and a known activity
+        # was not on the board at all unless the current frame printed it.
+        #
+        # The remap is exact rather than approximate, and that is checkable: before this round
+        # *nothing* in production set SCHEDULED_NOT_OPEN, EXPIRED or BLOCKED -- only tests
+        # constructed BLOCKED by hand -- so mapping those three back to the label each site used to
+        # write reproduces the old board rather than paraphrasing it.
+        gl.GoalLibrary._append_known_activities = staticmethod(lambda goals: None)  # noqa: ARG005
+        _legacy_names = {
+            gl.GoalStatus.SCHEDULED_NOT_OPEN: gl.GoalStatus.READY,
+            gl.GoalStatus.EXPIRED: gl.GoalStatus.COMPLETE,
+            gl.GoalStatus.BLOCKED: gl.GoalStatus.COMPLETE,
+        }
+        _real_goal_state = gl.GoalState
+
+        def _legacy_goal(*args, **kwargs):  # noqa: ANN002, ANN003
+            if "status" in kwargs:
+                kwargs["status"] = _legacy_names.get(kwargs["status"], kwargs["status"])
+            elif len(args) >= 2:
+                args = (args[0], _legacy_names.get(args[1], args[1]), *args[2:])
+            return _real_goal_state(*args, **kwargs)
+
+        gl.GoalState = _legacy_goal  # type: ignore[assignment]
+        print("\nAB_WINDOW_STATUS=off: a window or a game condition is labelled READY/COMPLETE again")
+
     if os.environ.get("AB_SCREEN_KEY", "") != "page":
         return
     from winter_agent_v2 import control_experience as ce
