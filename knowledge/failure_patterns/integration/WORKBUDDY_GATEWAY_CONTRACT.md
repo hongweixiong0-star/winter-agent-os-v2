@@ -328,3 +328,39 @@ threshold. The 52 targets were stale `~/.workbuddy/jobs/.locks/*` entries left b
 dead workers above — the same incident showing up a third time. The backlog collapsed to 3 by the
 next look, so it is a consequence of the worker deaths rather than an independent fault; it is
 recorded here because a 500 from `POST /jobs` will otherwise read as "the gateway is down".
+
+### 9.4 After the bundle is fixed: a forked worker starts and then never takes its turn
+
+With §9 and §9.3 applied, `POST /jobs` returns a job and the worker process **lives** -- the log
+carries only the harmless `no-orphans` warning and no `MODULE_NOT_FOUND`. It then stalls in the
+gateway's own first state and stays there:
+
+```
+state  : working      tempo: active      alive: true      detail: "starting…"   (never advances)
+pid    : 15028        cpu: ~10 s over 30 min             io: 0 B over 8 s
+sockets: 3 x ESTABLISHED 28.0.0.40:443   (control / notification streams; no model request)
+jobdir : state.json  tmp/                (no broker.json, no inbox/, no colleague-inbox/)
+```
+
+`detail` never reaches `requesting the model`, so **no model call is ever made** -- which is why no
+answer appears, and why "the model is slow" is the wrong reading of it. A bounded probe settles the
+question of blame: one tiny job whose whole prompt is `Reply with exactly: PROBE_OK` behaves
+identically (`_probe_channel.py`, cancelled after 200 s). So it is not this project's prompt, its
+screenshot or its payload.
+
+**And the history says the same thing.** Compared across `~/.codebuddy/jobs/*`, the presence of
+`broker.json` + `attachSocket` (i.e. a client joined the job in place, `becomeWorkerInPlace`)
+separates every job that ever ran from every job that did not:
+
+| job | broker.json | attachSocket | outcome |
+| --- | --- | --- | --- |
+| `13ffdac6` | yes | yes | wrote an answer after ~26 min (the only success) |
+| `06066de6` `64f2f709` `d1caa8e7` | yes | yes | `ABANDONED` at the 45-minute timebox, nothing produced |
+| `b25c1f12` `0c32a4bd` | no | no | died at start-up (§9) |
+| `a462d931` `9f3b53b8` | no | no | worker alive, stalled in `starting…` |
+
+So the remaining break is **"a purely forked worker never gets a turn"**, and it predates §9/§9.3
+-- the earlier `ABANDONED` rows were the same stall, read as "no result after 45 minutes". The next
+session's question is what the worker is waiting for in `starting…`
+(`CODEBUDDY_JOB_CONTROL_SOCKET` / the broker handshake / an attach), and why the desktop app only
+attaches to some jobs. Do not mistake a live worker for a working one.
