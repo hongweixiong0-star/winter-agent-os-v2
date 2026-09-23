@@ -90,6 +90,35 @@ before = library.rank(goals, replace(world, red_dots={}))        # 变量关掉
   另一次是 onnxruntime 在多线程下原生崩溃——环境问题，也要如实写进提交信息，不要冒充通过）。
   做法：`git stash push … && pytest …; git stash pop` 写成**一条命令**，且不与任何后台套件并行。
 
+### 3d. 当 `git stash` 本身就不可用时：运行时打补丁的 pytest 插件
+
+这棵树**长期有第二个写入方**（AUTO 周期 + 另一个开发作业），`.git/index.lock` 大部分时间被别人持有，
+`git stash` 会直接失败（本项目 `#109` 第一次 A/B 就这么废掉）。替代做法是把"回退"做在**模块边界**上：
+
+```python
+# learning/_ab_screen_key_plugin.py，用 -p 加载
+def pytest_configure(config):
+    if os.environ.get("AB_SCREEN_KEY") == "page":
+        ce.control_key = lambda page, control, screen="": f"{page}|{control}"   # 退化成旧键
+        ce.reusable_on_this_screen = lambda e, s: True
+    if os.environ.get("AB_CLOSE_BAND") == "off":
+        orig = SemanticROIVision.__init__
+        def patched(self, *a, **k):
+            orig(self, *a, **k)
+            self.records = [r for r in self.records if r.get("template_id") != BAND_ID]
+        SemanticROIVision.__init__ = patched
+```
+
+好处不止"绕开锁"：**不动磁盘、不动 git、不动清单**——清单在这个项目里是**运行中的进程会读**的文件，
+"临时把记录删掉再跑"是会污染真机行为的。两腿因此跑的是同一棵树、同一份清单、同一个运行器。
+
+**同一运行器是硬要求，不是讲究**：本项目同一个文件集在 pytest 与 unittest 下失败数不同
+（`test_live_runtime.py` 读 `knowledge/**`，AUTO 在改），拿 pytest 的一腿去比 unittest 的一腿，
+比的是**运行器**不是改动。两次都在同一运行器下跑，再 `diff` 失败清单。
+
+**判据**：基线多出的失败，应该**正好是**本轮新增的测试（它们无修时按设计失败）；
+若基线比本树**多**出别的名字 ⇒ 有回归，先查那些名字。
+
 ## 判据（本项目已付过代价的）
 
 - **一个新项必须有界，而且界要算出来**：`RED_DOT_BONUS = 60` 的依据是板上真实间隙
@@ -109,6 +138,17 @@ before = library.rank(goals, replace(world, red_dots={}))        # 变量关掉
   本项目真实缺陷：`_replan_attempted` 的注释自称防两页乒乓，实测只给双向环的**一侧**上界，
   环还在（18/75 个运行纯粹在 `OPEN_MAP` ↔ `OPEN_HOME` 之间来回）。
   **给环的一半加上界，环没有消失**；缺的往往不是第二个界，是**记忆**（哪一页已经看过且什么都没有）。
+- **存的记忆要按"它最小为真的范围"设键**。本项目真实缺陷（`#109`）：台账用
+  `(page, semantic)` 存坐标，而 `POPUP` 是**页面大类**——语料里它底下有 **22 种**叠层、
+  2717/2717 条读数都带着是哪一种，于是**退出确认弹窗上学到的 X 坐标被 8 轮以上花在加成总览上**
+  （点进面板自己的数字列），且**没有任何地方报错**（查询命中、照用）。全量 13883 条读数里
+  **25%** 的屏身份被丢弃。**先问：项目里是否已有正确概念、只是有第二处没跟上？**
+  （这里 `state_signature` 早就写明了"更窄会跨屏复用含义不同的控件"，而只有 L1 层在用。）
+- **"看起来像某个模板给了它"不等于它给的**。本项目 `#109` 的第一步就是这种巧合：落点 `[635,456]`
+  正好等于某模板记录的 roi 中心，于是像是模板给的；而**用生产的 `find()` 在同一帧上跑**返回 `None`
+  ⇒ 落点其实来自再往下的"记忆台账"层。**让真代码回答，不要停在像不像。**
+- **给出"找到的点"和"实际点的点"必须一致**：解析点 `(0.9236,0.1301)×(720,1280)=(665.0,166.5)`、
+  执行台账 `tap_point [665,167]`、帧上目视量到的 X —— 三者同一位置，这条链才算闭合。
 - **状态机式的桩要真的会变**：给整轮测试造设备/视觉桩时，让"视觉读到的页面"由**桩自己收到的点击**
   推出来（本项目 `test_no_repeated_look_around._TwoPageClient`）。忽略点击的桩会让运行因为
   **真实客户端给不出的理由**绕圈，于是测试在测一个不存在的世界。
