@@ -1,0 +1,277 @@
+{
+ "band": {
+  "x_norm": 0.8,
+  "y_norm": 0.07,
+  "w_norm": 0.2,
+  "h_norm": 0.36
+ },
+ "band_note": "x 0.80..1.00, y 0.07..0.43 -- the region the six measured X centres occupy, plus room for the 68x77 template at every scale",
+ "registrations": [
+  {
+   "template_id": "btn_close__purchase_popup_current__0",
+   "roi_center_px": [
+    612,
+    131
+   ],
+   "matcher": "phash",
+   "parent_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime\\step_001_before.png",
+   "parent_reads_as": null
+  },
+  {
+   "template_id": "btn_close__live_current__0",
+   "roi_center_px": [
+    613,
+    148
+   ],
+   "matcher": "phash",
+   "parent_frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_current.png",
+   "parent_reads_as": "POPUP|PURCHASE_POPUP"
+  },
+  {
+   "template_id": "btn_close__step_001_before__1",
+   "roi_center_px": [
+    635,
+    456
+   ],
+   "matcher": "phash",
+   "parent_frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime_home_map_retry\\step_001_before.png",
+   "parent_reads_as": "POPUP|EXIT_CONFIRM"
+  },
+  {
+   "template_id": "btn_close__alliance_chest_layer__0",
+   "roi_center_px": [
+    682,
+    38
+   ],
+   "matcher": "phash",
+   "parent_frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260921_142158_026793\\20260921_142158_026793_step_001_before_20260921T062201175425.png",
+   "parent_reads_as": "ALLIANCE|None"
+  }
+ ],
+ "screens": [
+  {
+   "popup": "DAILY_REWARD",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_171640_nav_01\\intel_pins_20260914_171640_nav_01_step_003_before_20260914T171836569388.png",
+   "best_score": 0.5797,
+   "distance": 27,
+   "centre": [
+    0.8889,
+    0.2313
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "DUPLICATE_TARGET",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260921T115555673312.png",
+   "best_score": 0.9986,
+   "distance": 0,
+   "centre": [
+    0.8819,
+    0.3559
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "EXIT_CONFIRM",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260917_124447_258260\\20260917_124447_258260_step_002_before_20260917T044503063902.png",
+   "best_score": 0.9984,
+   "distance": 0,
+   "centre": [
+    0.8819,
+    0.3559
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "EXPLORATION_IDLE_DIALOG",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_202634_966694\\20260922_202634_966694_step_002_before_20260922T122703396415.png",
+   "best_score": 0.9852,
+   "distance": 1,
+   "centre": [
+    0.8722,
+    0.2379
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "EXPLORATION_REWARD",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260915_022310_pin_00\\intel_pins_20260915_022310_pin_00_step_003_before_20260915T022717434394.png",
+   "best_score": 0.545,
+   "distance": 29,
+   "centre": [
+    0.8424,
+    0.1949
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "GENERIC_REWARD",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\live_intel_full_run8\\live_intel_full_run8_step_001_before_20260914T083415178489.png",
+   "best_score": 0.5748,
+   "distance": 27,
+   "centre": [
+    0.8903,
+    0.2305
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "GET_MORE_STAMINA",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\live_stamina_intel_run1\\live_stamina_intel_run1_step_001_before_20260914T061541387825.png",
+   "best_score": 0.9795,
+   "distance": 1,
+   "centre": [
+    0.9236,
+    0.1129
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "HERO_BATTLE_VICTORY",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\hero_live6_20260914\\hero_live6_20260914_step_002_before_20260914T141524393750.png",
+   "best_score": 0.6454,
+   "distance": 23,
+   "centre": [
+    0.9576,
+    0.3082
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "INTEL_BEAST_MISSION",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\live_stamina_intel_run2\\live_stamina_intel_run2_step_002_before_20260914T061805348092.png",
+   "best_score": 0.6457,
+   "distance": 23,
+   "centre": [
+    0.9,
+    0.1383
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "INTEL_HERO_JOURNEY",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_01\\intel_pins_20260914_094520_pin_01_step_001_before_20260914T094734148055.png",
+   "best_score": 0.6457,
+   "distance": 23,
+   "centre": [
+    0.9,
+    0.1383
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "INTEL_MASTER_BOUNTY",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_100302_pin_02\\intel_pins_20260914_100302_pin_02_step_001_before_20260914T100443498782.png",
+   "best_score": 0.6457,
+   "distance": 23,
+   "centre": [
+    0.9,
+    0.1383
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "INTEL_RESCUE_SURVIVORS_MISSION",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_100302_pin_06\\intel_pins_20260914_100302_pin_06_step_001_before_20260914T100715836859.png",
+   "best_score": 0.6518,
+   "distance": 22,
+   "centre": [
+    0.9,
+    0.1391
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "INTEL_REWARD",
+   "frame": "dataset\\raw\\control_panel\\runtime_auto\\intel_pins_20260914_094520_pin_01\\intel_pins_20260914_094520_pin_01_step_003_before_20260914T094747693673.png",
+   "best_score": 0.5751,
+   "distance": 27,
+   "centre": [
+    0.8903,
+    0.2305
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "MARCH_RECALL",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260918_125144_408660\\20260918_125144_408660_step_003_before_20260918T045238395166.png",
+   "best_score": 0.9989,
+   "distance": 0,
+   "centre": [
+    0.8819,
+    0.3559
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "POWER_DETAILS",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_003_before_20260916T234116510183.png",
+   "best_score": 0.9951,
+   "distance": 0,
+   "centre": [
+    0.9208,
+    0.2277
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "POWER_OVERVIEW",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_002_before_20260916T234113873998.png",
+   "best_score": 0.9924,
+   "distance": 0,
+   "centre": [
+    0.9236,
+    0.1301
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  },
+  {
+   "popup": "REAL_MONEY_OFFER",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260916T163250106664.png",
+   "best_score": 0.8946,
+   "distance": 7,
+   "centre": [
+    0.8458,
+    0.0977
+   ],
+   "template_id": "btn_close__alliance_chest_layer__0"
+  },
+  {
+   "popup": "WELCOME_BACK_OFFLINE",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260921_095040_726092\\20260921_095040_726092_step_002_before_20260921T015055980490.png",
+   "best_score": 0.9937,
+   "distance": 0,
+   "centre": [
+    0.9194,
+    0.2027
+   ],
+   "template_id": "btn_close__step_001_before__1"
+  }
+ ],
+ "separation": {
+  "positives": 9,
+  "positive_distances": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1,
+   1,
+   7
+  ],
+  "negatives": 9,
+  "negative_distances": [
+   22,
+   23,
+   23,
+   23,
+   23,
+   27,
+   27,
+   27,
+   29
+  ]
+ }
+}

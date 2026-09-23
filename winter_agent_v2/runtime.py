@@ -1117,10 +1117,13 @@ class LiveRuntime:
     ) -> None:
         """Record what the control that was aimed at actually did (operator §四/§六).
 
-        Keyed by ``(page, semantic)`` -- never by a coordinate.  The position is
-        stored **with the frame it was read from**, so a later reader can see that
-        it is a measurement off one picture and cannot be reused as if it were a
-        semantic fact (``00_MASTER_RULES.md`` §5).
+        Keyed by the **screen** and the semantic -- never by a coordinate, and no longer by the page
+        class alone: ``POPUP`` names 22 different overlays, so a key of ``(page, semantic)`` handed
+        one popup's coordinate to another (issue #109).  Where the page fully describes its screen
+        the key is unchanged to the byte, so only the entries the page cannot name move.  The
+        position is stored **with the frame it was read from and the screen it was measured on**, so
+        a later reader can see that it is a measurement off one picture and cannot be reused as if
+        it were a semantic fact (``00_MASTER_RULES.md`` §5).
 
         The decision's own ``expected_result`` goes in as a **hypothesis**, not as
         the outcome.  That is the point of the distinction: an expectation confirmed
@@ -1143,7 +1146,10 @@ class LiveRuntime:
                 refined = str(last.get("semantic") or "")
                 if refined:
                     semantic = refined
-        key = control_experience.control_key(page, semantic)
+        # The screen, not just the page: a coordinate learned on one overlay is not a coordinate on
+        # another, and the page cannot tell them apart (issue #109).
+        screen = control_experience.state_signature(before_state)
+        key = control_experience.control_key(page, semantic, screen)
         entry = self._control_ledger.get(key)
         if entry is None:
             entry = control_experience.ControlExperience(page=page, control=semantic)
@@ -1164,6 +1170,9 @@ class LiveRuntime:
         landed = execution.tap_point
         if landed is not None:
             entry.position_norm = (landed[0] / 720.0, landed[1] / 1280.0)
+            # Recorded in the same breath as the position: a stored coordinate without the screen
+            # it was measured on is a coordinate that will be handed to a different overlay.
+            entry.screen = screen
         if goal_id and observed_change not in ("NO_OP", "UNKNOWN"):
             entry.goal_help[goal_id] = observed_change
 
@@ -3696,7 +3705,9 @@ class LiveRuntime:
             if (page, word) in self._ordinary_tried:
                 continue
             semantic = f"ORDINARY_CONTROL[{word}]"
-            recorded = self._control_ledger.get(control_experience.control_key(page, semantic))
+            recorded = self._control_ledger.get(control_experience.control_key(
+                page, semantic, control_experience.state_signature(frame.to_dict()),
+            ))
             if recorded is not None and recorded.attempts >= 2 and not recorded.known_result:
                 # Twice with nothing to show is enough to stop repeating it here.
                 continue
@@ -3827,12 +3838,23 @@ class LiveRuntime:
         ``TARGET_INFANTRY_CAMP_HIGHLIGHTED`` hits for a different reason.  This is the
         read.
 
-        Four conditions, and each excludes a different way of being wrong:
+        Conditions, and each excludes a different way of being wrong:
 
-        * **the page must match**, because the key is ``(page, semantic)``.  This is the
-          same invariant the reviewed ``BTN_EXPLORATION_IDLE_CLAIM`` fallback above is
-          written under: a normalized point is only allowed behind an independent proof
-          of which page it is on.
+        * **the screen must match**, and it is the *screen* rather than the page because the page is
+          not always a screen.  Two mechanisms, and they are not the same one twice:
+
+          - the **key** carries the frame's ``state_signature`` (``POPUP|POWER_OVERVIEW|BTN_CLOSE``,
+            not ``POPUP|BTN_CLOSE``), so a coordinate measured on one overlay is simply not found
+            from another.  This is what fixes the live defect: the entry the runs were spending was
+            ``POPUP|BTN_CLOSE`` at (0.8819, 0.3563), measured on the 退出确认 dialog, and 加成总览
+            asks for a key nothing has ever written (issue #109).
+          - ``reusable_on_this_screen`` is the second line, reached when a key and a stored screen
+            disagree -- an entry that recorded a screen under a key that names none.  It keeps the
+            two from drifting apart rather than doing the everyday work.
+
+          The invariant is the one the reviewed ``BTN_EXPLORATION_IDLE_CLAIM`` fallback above is
+          written under: a normalized point is only allowed behind an independent proof of which
+          screen it is on.
         * **``resolved``**, i.e. at least one attempt produced an observed change.  A
           control whose only outcome was ``NO_OP`` or ``UNKNOWN`` has no known result and
           is not reused -- the operator's §四.7 forbids promoting UNKNOWN to known, and
@@ -3852,8 +3874,24 @@ class LiveRuntime:
         was written for.
         """
         page = control_experience.label(frame.page)
-        entry = self._control_ledger.get(control_experience.control_key(page, semantic))
+        screen = control_experience.state_signature(frame.to_dict())
+        entry = self._control_ledger.get(control_experience.control_key(page, semantic, screen))
         if entry is None:
+            return None
+        if not control_experience.reusable_on_this_screen(entry, screen):
+            # The point exists but belongs to another screen.  Measured 2026-09-23 (issue #109):
+            # ``POPUP|BTN_CLOSE`` held (0.8819, 0.3563), measured on the 退出确认 dialog, and eight
+            # consecutive runs spent it on 加成总览 -- where it is the panel's own number column.
+            # The refusal is the honest sentence: this frame does not draw the control where this
+            # project has measured it, so the step fails instead of tapping a remembered stranger's
+            # coordinate (operator §一: 不得把旧截图的点击坐标直接用于变化后的页面).
+            if str(screen) not in self._printed_screen_refusals:
+                self._printed_screen_refusals.add(str(screen))
+                print(
+                    f"[experience] {page}|{semantic} refused: the stored point was measured on "
+                    f"{entry.screen or '(an unnamed screen)'} and this frame is {screen or '(unnamed)'}",
+                    flush=True,
+                )
             return None
         if entry.position_norm is None or not entry.resolved:
             return None
@@ -4120,6 +4158,9 @@ class LiveRuntime:
         # read back later must not blur them.
         self._remembered_reuse: list[str] = []
         self._printed_remembered: set[str] = set()
+        #: Screens whose stored point was refused for belonging elsewhere, so the sentence is
+        #: printed once per screen per run rather than once per step.
+        self._printed_screen_refusals: set[str] = set()
         self._printed_reads: list[str] = []
         self._printed_printed: set[str] = set()
         # The generic ordinary-control attempt (operator directive 2026-09-22, third

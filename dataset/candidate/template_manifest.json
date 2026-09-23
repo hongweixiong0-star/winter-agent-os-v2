@@ -1,6 +1,6 @@
 {
- "count": 410,
- "generated_at": "2026-09-22T19:28:57.481493+00:00",
+ "count": 418,
+ "generated_at": "2026-09-22T22:48:48.718640+00:00",
  "records": [
   {
    "confidence": 0.99,
@@ -7356,6 +7356,126 @@
    "note": "The client's own navigation back arrow, top-left, drawn next to the page title. Measured 2026-09-22: identical (phash d=0) on the alliance page and the mail page, and different (d=32) on the city and the map, so it is one control rather than one screen's decoration. Registered because LEAVE_FOREIGN_LAYER taps BTN_CLOSE, which the alliance page does not draw -- the mismatch behind SAFE_BACK_NOT_PROVEN (20, all of them BACK from ALLIANCE to ALLIANCE) and 7 SEMANTIC_TARGET_NOT_VERIFIED for BTN_CLOSE on ALLIANCE."
   },
   {
+   "semantic": "ORDINARY_CONTROL[退出]",
+   "template_path": "dataset/candidate/auto_collected/auto__unknown_ordinary_control__12694fda2e.png",
+   "roi_norm": {
+    "x_norm": 0.2306,
+    "y_norm": 0.6148,
+    "w_norm": 0.1056,
+    "h_norm": 0.0344
+   },
+   "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_001_after_20260922T083033178832.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "AUTO_COLLECTION",
+   "confidence": 0.9993,
+   "status": "VERIFIED",
+   "template_id": "auto__unknown_ordinary_control__12694fda2e",
+   "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_163010_905874/20260922_163010_905874_step_001_after_20260922T083033178832.png",
+   "width": 76,
+   "height": 44,
+   "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page UNKNOWN (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+  },
+  {
+   "semantic": "ORDINARY_CONTROL[领取]",
+   "template_path": "dataset/candidate/auto_collected/auto__unknown_ordinary_control__5ba86ecd2a.png",
+   "roi_norm": {
+    "x_norm": 0.4472,
+    "y_norm": 0.7047,
+    "w_norm": 0.1083,
+    "h_norm": 0.0367
+   },
+   "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_190512_721467/20260922_190512_721467_step_002_after_20260922T110620270473.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "AUTO_COLLECTION",
+   "confidence": 0.9946,
+   "status": "VERIFIED",
+   "template_id": "auto__unknown_ordinary_control__5ba86ecd2a",
+   "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_190512_721467/20260922_190512_721467_step_002_after_20260922T110620270473.png",
+   "width": 78,
+   "height": 47,
+   "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page UNKNOWN (observed PAGE_CHANGED; frame 720x1280). Landed by OCR_WORD."
+  },
+  {
+   "semantic": "BTN_START_TRAINING",
+   "template_path": "dataset/candidate/auto_collected/auto__training_btn_start_training__a3fb714b35.png",
+   "roi_norm": {
+    "x_norm": 0.6958,
+    "y_norm": 0.8492,
+    "w_norm": 0.0806,
+    "h_norm": 0.0258
+   },
+   "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_205021_021360/20260922_205021_021360_step_014_after_20260922T125528463153.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "AUTO_COLLECTION",
+   "confidence": 0.9984,
+   "status": "VERIFIED",
+   "template_id": "auto__training_btn_start_training__a3fb714b35",
+   "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260922_205021_021360/20260922_205021_021360_step_014_after_20260922T125528463153.png",
+   "width": 58,
+   "height": 33,
+   "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page TRAINING (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+  },
+  {
+   "semantic": "QUICK_PANEL_ROW_LANCER_CAMP",
+   "template_path": "dataset/candidate/auto_collected/auto__home_quick_panel_row_lancer_camp__aacd39d123.png",
+   "roi_norm": {
+    "x_norm": 0.2792,
+    "y_norm": 0.4727,
+    "w_norm": 0.0667,
+    "h_norm": 0.0227
+   },
+   "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_001145_train/20260923_001145_train_step_003_after_20260922T161238492519.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "AUTO_COLLECTION",
+   "confidence": 0.9734,
+   "status": "VERIFIED",
+   "template_id": "auto__home_quick_panel_row_lancer_camp__aacd39d123",
+   "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_001145_train/20260923_001145_train_step_003_after_20260922T161238492519.png",
+   "width": 48,
+   "height": 29,
+   "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page HOME (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+  },
+  {
+   "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP",
+   "template_path": "dataset/candidate/auto_collected/auto__home_quick_panel_row_shield_camp__38e9838033.png",
+   "roi_norm": {
+    "x_norm": 0.2806,
+    "y_norm": 0.4164,
+    "w_norm": 0.0639,
+    "h_norm": 0.0203
+   },
+   "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_003144_278086/20260923_003144_278086_step_003_after_20260922T163312273596.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "AUTO_COLLECTION",
+   "confidence": 0.9986,
+   "status": "VERIFIED",
+   "template_id": "auto__home_quick_panel_row_shield_camp__38e9838033",
+   "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_003144_278086/20260923_003144_278086_step_003_after_20260922T163312273596.png",
+   "width": 46,
+   "height": 26,
+   "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page HOME (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+  },
+  {
+   "semantic": "QUICK_PANEL_ROW_RESEARCH",
+   "template_path": "dataset/candidate/auto_collected/auto__home_quick_panel_row_research__c92756a25d.png",
+   "roi_norm": {
+    "x_norm": 0.25,
+    "y_norm": 0.6172,
+    "w_norm": 0.1222,
+    "h_norm": 0.0234
+   },
+   "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_005100_research/20260923_005100_research_step_003_after_20260922T165154298669.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "AUTO_COLLECTION",
+   "confidence": 0.9987,
+   "status": "VERIFIED",
+   "template_id": "auto__home_quick_panel_row_research__c92756a25d",
+   "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_005100_research/20260923_005100_research_step_003_after_20260922T165154298669.png",
+   "width": 88,
+   "height": 30,
+   "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page HOME (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+  },
+  {
    "semantic": "TARGET_CAMP_ACTION_BAR",
    "template_path": "dataset/candidate/camp_action_bar_20260922/target_camp_action_bar__busy_bar_detail_glyph__20260922.png",
    "roi_norm": {
@@ -7374,6 +7494,52 @@
    "width": 44,
    "height": 44,
    "note": "The same gate for the OTHER rendering of the bar: a camp with a batch in training, which draws 详情 / 立即完成 / 加速 / 训练 and no 升级.  Cropped from the 详情 plate's document glyph, because it is the one control both renderings draw the same way -- cropping each layout's own 详情 glyph and scoring it on all three live frames gives IDLE 1.000 BUSY 0.969 BUSY 0.969 from the idle crop and IDLE 0.969 BUSY 1.000 BUSY 1.000 from the busy crop, i.e. distance <= 2 against the default 6, while the 升级 glyph above scores background (0.651, distance 22) on this layout and the 训练 glyph carries across neither (0.929 / 0.585).  Without it the reader is never called on a busy camp and a frame showing the client's own bar is recorded as having none."
+  },
+  {
+   "semantic": "ORDINARY_CONTROL[跳过]",
+   "template_path": "dataset/candidate/auto_collected/auto__unknown_ordinary_control__8c06c690c5.png",
+   "roi_norm": {
+    "x_norm": 0.8111,
+    "y_norm": 0.0633,
+    "w_norm": 0.1319,
+    "h_norm": 0.0266
+   },
+   "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_001_after_20260922T224834761933.png",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "AUTO_COLLECTION",
+   "confidence": 0.9992,
+   "status": "VERIFIED",
+   "template_id": "auto__unknown_ordinary_control__8c06c690c5",
+   "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_064810_118970/20260923_064810_118970_step_001_after_20260922T224834761933.png",
+   "width": 95,
+   "height": 34,
+   "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page UNKNOWN (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+  },
+  {
+   "semantic": "BTN_CLOSE",
+   "template_path": "dataset/candidate/templates/btn_close__step_001_before__1.png",
+   "roi_norm": {
+    "h_norm": 0.06,
+    "w_norm": 0.095,
+    "x_norm": 0.835,
+    "y_norm": 0.326
+   },
+   "search_band": {
+    "x_norm": 0.8,
+    "y_norm": 0.07,
+    "w_norm": 0.2,
+    "h_norm": 0.36
+   },
+   "matcher": "ccoeff",
+   "source": "LIVE_CLIENT",
+   "provenance": "LIVE_CLIENT",
+   "reviewed_from": "LIVE_CLIENT_REPLAY",
+   "confidence": 0.99,
+   "status": "CANDIDATE",
+   "template_id": "btn_close__popup_titlebar_band__0",
+   "width": 68,
+   "height": 77,
+   "note": "The popup's own close-X, searched in its title bar instead of being assumed at a registration. Measured 2026-09-23 over one frame per popup identity (tools/register_close_popup_band.py recomputes both halves): a reviewed X crop scores [0, 0, 0, 0, 0, 1, 1, 1] (distance) on the 8 popups that draw one and [23, 27, 27, 27, 27, 29, 29, 30, 32, 35] on the 10 that do not, so threshold 8 sits inside the gap. The four phash records are registrations on other screens -- PURCHASE_POPUP x2, EXIT_CONFIRM, an alliance chest layer -- and a registration cannot express a control that moves (issue #109)."
   }
  ],
  "schema_version": "1.0",

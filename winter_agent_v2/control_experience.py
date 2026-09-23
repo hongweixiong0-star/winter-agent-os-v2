@@ -125,13 +125,38 @@ def label(value: Any) -> str:
     return str(getattr(value, "value", value))
 
 
-def control_key(page: str, control: str) -> str:
-    """The ledger's key: the page plus the control, never a coordinate.
+def screen_is_narrower_than_its_page(screen: str) -> bool:
+    """Does this screen's signature name anything beyond the page?
 
-    Runs both halves through :func:`label`, so a caller may pass the ``Page`` enum or
-    the semantic's own string and get the same key either way.
+    ``state_signature`` is ``page|popup|...``, so ``"HOME"`` answers no and
+    ``"POPUP|POWER_OVERVIEW"`` answers yes.  The question matters because it decides whether the
+    *page* is a sufficient name for the screen, and the ledger stores coordinates: a coordinate is
+    a claim about one screen, and ``POPUP`` is not one -- the client draws 22 different overlays
+    under it.
     """
-    return f"{label(page) or '?'}|{label(control) or UNNAMED}"
+    return len([part for part in str(screen or "").split("|") if part]) > 1
+
+
+def control_key(page: str, control: str, screen: str = "") -> str:
+    """The ledger's key: the screen plus the control, never a coordinate.
+
+    ``screen`` is a :func:`state_signature`, and it is used in place of the bare page whenever it
+    names something beyond the page -- ``POPUP|POWER_OVERVIEW|BTN_CLOSE`` rather than
+    ``POPUP|BTN_CLOSE``.  The page alone was the key until 2026-09-23 and it cost a live defect:
+    the close-X of the 退出确认 dialog was learned at ``(0.8819, 0.3563)``, filed under
+    ``POPUP|BTN_CLOSE``, and handed to all 22 popups -- on 加成总览 (``POWER_OVERVIEW``) that point
+    is the middle of the panel's own number column, so eight consecutive runs tapped it, observed
+    nothing, and died (issue #109).
+
+    Callers that pass no ``screen`` keep the old key exactly, which is deliberate: every entry
+    whose page fully describes its screen -- 49 of the 57 with a stored position -- keeps working
+    unchanged, and only the entries on screens the page cannot name move.
+
+    Runs the parts through :func:`label`, so a caller may pass the ``Page`` enum or the semantic's
+    own string and get the same key either way.
+    """
+    where = label(screen) if screen_is_narrower_than_its_page(screen) else (label(page) or "?")
+    return f"{where}|{label(control) or UNNAMED}"
 
 
 def measured_on_a_real_frame(experience: "ControlExperience") -> bool:
@@ -272,6 +297,13 @@ class ControlExperience:
     label: str = ""                      # the control's own words, when OCR read them
     visual: str = ""                     # the semantic/template that located it
     position_norm: tuple[float, float] | None = None
+    #: The :func:`state_signature` of the frame ``position_norm`` was **measured on**, which is a
+    #: stricter claim than ``page`` and exists because the page is not always a screen: the client
+    #: draws 22 distinct overlays under ``POPUP``, and a point measured on one of them is not a
+    #: point on the others.  Written in the same expression as the position, so the two cannot
+    #: drift apart, and checked on reuse -- an entry that records no screen may only be reused on
+    #: a frame whose own signature is no narrower, i.e. one where the page really is the screen.
+    screen: str = ""
     read_from_frame: str = ""            # the frame the position was read from
     entry_path: tuple[str, ...] = ()     # how this page was reached, in order
     # -- §四 meaning --------------------------------------------------------
@@ -358,6 +390,7 @@ class ControlExperience:
             "label": self.label,
             "visual": self.visual,
             "position_norm": list(self.position_norm) if self.position_norm else None,
+            "screen": self.screen,
             "read_from_frame": self.read_from_frame,
             "entry_path": list(self.entry_path),
             "possible_actions": list(self.possible_actions),
@@ -394,6 +427,7 @@ class ControlExperience:
             visual=str(payload.get("visual") or ""),
             position_norm=(float(position[0]), float(position[1]))
             if isinstance(position, (list, tuple)) and len(position) == 2 else None,
+            screen=str(payload.get("screen") or ""),
             read_from_frame=str(payload.get("read_from_frame") or ""),
             entry_path=tuple(str(x) for x in (payload.get("entry_path") or ())),
             possible_actions=tuple(str(x) for x in (payload.get("possible_actions") or ())),
@@ -615,6 +649,36 @@ def state_signature(state: Mapping[str, Any] | None) -> str:
             if value:
                 parts.append(f"{holder}.{field_name}={label(value)}")
     return "|".join(part for part in parts if part)
+
+
+def reusable_on_this_screen(experience: "ControlExperience", screen: str) -> bool:
+    """May the coordinate in ``experience`` be handed to a frame with this ``screen``?
+
+    The stored point is a claim about the screen it was measured on, so the two have to agree.  The
+    comparison has to accept **both** spellings of "the page is the screen" -- an entry written
+    before this field existed records ``""``, and the writer records the signature, which for such a
+    page is the page's own name -- or every stored position would be refused the moment the field
+    started being written:
+
+    * the same string: the same screen, and the everyday case;
+    * this frame is **no narrower** than its page (``"HOME"``): the key already pinned that page, so
+      an entry that recorded nothing, or recorded that same page-only form, was measured under
+      exactly this condition.  An entry that recorded a *distinguished* screen was not, and is
+      refused;
+    * this frame names more than its page (``"POPUP|POWER_OVERVIEW"``): only an entry that recorded
+      that same signature is allowed.  Nothing recorded is refused, and that is the honest
+      direction -- it is a point measured on a screen nothing wrote down, and the alternative is
+      what issue #109 is: a coordinate measured on the 退出确认 dialog spent on 加成总览.  For the
+      same reason an entry measured on *some* popup is refused on a frame that reads ``POPUP``
+      without naming which one: that frame cannot claim to be the screen the point belongs to.
+    """
+    recorded = str(experience.screen or "")
+    now = str(screen or "")
+    if recorded == now:
+        return True
+    if screen_is_narrower_than_its_page(now):
+        return False
+    return not recorded or not screen_is_narrower_than_its_page(recorded)
 
 
 def visual_features(

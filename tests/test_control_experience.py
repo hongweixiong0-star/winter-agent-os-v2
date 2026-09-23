@@ -27,6 +27,7 @@ from winter_agent_v2.control_experience import (
     known_outcomes,
     load,
     record_outcome,
+    reusable_on_this_screen,
     save,
 )
 
@@ -255,3 +256,66 @@ def test_a_missing_or_broken_file_is_an_empty_store(tmp_path) -> None:
 
 def test_saving_never_raises_on_an_unwritable_path(tmp_path) -> None:
     save({}, tmp_path)  # a directory, not a file
+
+
+# ------------------------------------------------- the screen, not the page
+#
+# Measured 2026-09-23 (issue #109): the client draws 22 distinct overlays under ``POPUP``, and every
+# one of the 2717 ``POPUP`` readings in the corpus names which.  The ledger keyed them all as
+# ``POPUP|<control>``, so the close-X learned on the 退出确认 dialog at (0.8819, 0.3563) was handed
+# to 加成总览 -- where that point is the middle of the panel's own number column.  Eight consecutive
+# runs tapped it, observed nothing, and died.
+
+
+def test_a_page_that_names_its_screen_keeps_the_page_key() -> None:
+    """49 of the 57 stored positions are on pages the page fully describes; they must not move."""
+    assert control_key("HOME", "BTN_OPEN_MAIL", "HOME") == "HOME|BTN_OPEN_MAIL"
+    assert control_key("HOME", "BTN_OPEN_MAIL") == "HOME|BTN_OPEN_MAIL"
+    assert control_key("MAP", "BTN_OPEN_HOME", "") == "MAP|BTN_OPEN_HOME"
+
+
+def test_a_screen_the_page_cannot_name_goes_into_the_key() -> None:
+    assert (control_key("POPUP", "BTN_CLOSE", "POPUP|POWER_OVERVIEW")
+            == "POPUP|POWER_OVERVIEW|BTN_CLOSE")
+    # ...and so do the two sub-states the client switches inside one page, for the same reason.
+    assert (control_key("TRAINING", "BTN_START_TRAINING",
+                        "TRAINING|training.camp_open_label=盾兵营")
+            == "TRAINING|training.camp_open_label=盾兵营|BTN_START_TRAINING")
+
+
+def test_two_popups_do_not_share_a_key() -> None:
+    exit_confirm = control_key("POPUP", "BTN_CLOSE", "POPUP|EXIT_CONFIRM")
+    power = control_key("POPUP", "BTN_CLOSE", "POPUP|POWER_OVERVIEW")
+    assert exit_confirm != power
+
+
+def test_a_point_measured_on_one_popup_is_refused_on_another() -> None:
+    entry = ControlExperience(page="POPUP", control="BTN_CLOSE",
+                              position_norm=(0.8819, 0.3563), screen="POPUP|EXIT_CONFIRM")
+    assert reusable_on_this_screen(entry, "POPUP|EXIT_CONFIRM"), "the screen it was read on"
+    assert not reusable_on_this_screen(entry, "POPUP|POWER_OVERVIEW"), (
+        "and nothing else: this is the point that spent eight live runs on the wrong panel"
+    )
+    assert not reusable_on_this_screen(entry, "POPUP"), (
+        "a frame that cannot name its popup cannot claim the point either"
+    )
+
+
+def test_an_entry_that_recorded_no_screen_is_refused_a_screen_that_matters() -> None:
+    """The direction is strict on purpose: a point nothing wrote a screen for is not evidence."""
+    legacy = ControlExperience(page="HOME", control="BTN_OPEN_MAIL", position_norm=(0.0, 0.5))
+    assert reusable_on_this_screen(legacy, "HOME"), (
+        "on a page that is its own screen the key already pinned the page, so nothing changed"
+    )
+    assert not reusable_on_this_screen(legacy, "HOME|QUICK_PANEL_OPEN")
+    assert not reusable_on_this_screen(legacy, "POPUP|POWER_OVERVIEW")
+
+
+def test_the_screen_field_survives_a_round_trip(tmp_path) -> None:
+    path = tmp_path / "control_experience.json"
+    key = control_key("POPUP", "BTN_CLOSE", "POPUP|EXIT_CONFIRM")
+    entry = ControlExperience(page="POPUP", control="BTN_CLOSE", position_norm=(0.8819, 0.3563),
+                              screen="POPUP|EXIT_CONFIRM", read_from_frame="frame_b.png")
+    save({key: entry}, path)
+    assert load(path)[key].screen == "POPUP|EXIT_CONFIRM"
+    assert load(path)[key].position_norm == (0.8819, 0.3563)

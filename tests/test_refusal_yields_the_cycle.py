@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import sys
 import unittest
+from dataclasses import asdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -572,8 +573,17 @@ class AFailedStepHandsOverTheCycleTests(unittest.TestCase):
         """
         _device, _run_, ledger, _rows = self._run(goals=[ONLY_GOAL, self._second_goal()])
         self.assertTrue(ledger, "the run must have written the ledger")
-        entry = ledger[control_experience.control_key("ALLIANCE", self.CONTROL)]
+        # Keyed by the **screen**, not by the page class, and derived from the same factory the run
+        # observes so the expectation cannot drift from the frame: this is the alliance page with
+        # its 赠礼 section open, so the key carries that section.  The page alone stopped being
+        # enough on 2026-09-23 -- ``POPUP`` names 22 different overlays, and one of them spent
+        # another's coordinate (issue #109).
+        screen = control_experience.state_signature(asdict(has_something_to_claim()))
+        self.assertEqual(screen, "ALLIANCE|alliance.section=GIFTS")
+        entry = ledger[control_experience.control_key("ALLIANCE", self.CONTROL, screen)]
         self.assertEqual(entry.attempts, 1, "one tap, recorded once")
+        self.assertEqual(entry.screen, screen,
+                         "and the screen it was measured on is stored with the position")
         self.assertIn(entry.last_result, control_experience.CHANGE_KINDS)
         self.assertAlmostEqual(entry.position_norm[0], 0.84, places=3,
                                msg="the landing point is stored as a normalized position")

@@ -123,6 +123,7 @@ def _runtime_with(entries: dict) -> object:
     runtime._control_ledger = entries
     runtime._remembered_reuse = []
     runtime._printed_remembered = set()
+    runtime._printed_screen_refusals = set()
     return runtime
 
 
@@ -134,9 +135,78 @@ def test_a_measured_control_is_reused_where_its_template_no_longer_matches():
 
 
 def test_a_control_measured_on_a_different_page_is_not_reused():
-    """The key is (page, semantic); a point is only valid on the page it was read from."""
+    """The key is (screen, semantic); a point is only valid on the page it was read from."""
     runtime = _runtime_with({"HOME|PAGE_MAP": _entry()})
     assert runtime._remembered_control_center("PAGE_MAP", WorldState(page=Page.INTEL)) is None
+
+
+def test_a_popup_control_measured_on_another_popup_is_not_reused():
+    """Issue #109, at the level the tap actually travels through.
+
+    The client draws 22 overlays under ``POPUP``; the close-X of the 退出确认 dialog was learned at
+    (0.8819, 0.3563) and, keyed by the page class, was handed to 加成总览 -- where that point is the
+    middle of the panel's number column.  Eight consecutive live runs tapped it and observed nothing.
+    """
+    ledger = {"POPUP|EXIT_CONFIRM|BTN_CLOSE": _entry(
+        page="POPUP", control="BTN_CLOSE", position_norm=(0.8819, 0.3563),
+        screen="POPUP|EXIT_CONFIRM", known_result="POPUP_CLOSED", known_change="POPUP_CLOSED")}
+    runtime = _runtime_with(ledger)
+    dialog = WorldState(page=Page.POPUP, popup="EXIT_CONFIRM")
+    assert runtime._remembered_control_center("BTN_CLOSE", dialog) == (0.8819, 0.3563)
+    overview = WorldState(page=Page.POPUP, popup="POWER_OVERVIEW")
+    assert runtime._remembered_control_center("BTN_CLOSE", overview) is None
+    assert not runtime._printed_screen_refusals, (
+        "the key already separates the two screens, so there is nothing to refuse: the lookup simply "
+        "has no entry for 加成总览"
+    )
+
+
+def test_a_point_whose_screen_was_never_recorded_is_not_spent_on_a_named_screen():
+    """The shape the live ledger is actually in: ``POPUP|BTN_CLOSE`` with no screen on it.
+
+    This is the entry that spent eight runs on the wrong panel.  It is refused by the **key**, not
+    by a guard: 加成总览 asks for ``POPUP|POWER_OVERVIEW|BTN_CLOSE`` and there is no such entry, so
+    the lookup finds nothing and the step fails honestly rather than tapping a stranger's coordinate.
+    """
+    ledger = {"POPUP|BTN_CLOSE": _entry(
+        page="POPUP", control="BTN_CLOSE", position_norm=(0.8819, 0.3563),
+        known_result="NUMBER_CHANGED", known_change="NUMBER_CHANGED")}
+    runtime = _runtime_with(ledger)
+    overview = WorldState(page=Page.POPUP, popup="POWER_OVERVIEW")
+    assert runtime._remembered_control_center("BTN_CLOSE", overview) is None, (
+        "a coordinate measured on another overlay is not evidence on this one"
+    )
+    home = WorldState(page=Page.HOME)
+    assert runtime._remembered_control_center("BTN_CLOSE", home) is None
+    # A frame that reads POPUP without naming which one keeps the old behaviour: it cannot say it
+    # is a *different* screen, so the page-only entry is still the best this project knows.  Every
+    # one of the 2717 POPUP readings in the corpus names its popup, so this is the narrow case.
+    unnamed = WorldState(page=Page.POPUP)
+    assert runtime._remembered_control_center("BTN_CLOSE", unnamed) == (0.8819, 0.3563)
+
+
+def test_the_screen_guard_refuses_a_key_and_a_recorded_screen_that_disagree():
+    """The second line, exercised through the runtime rather than only in the unit above.
+
+    The key is what fixes #109; this guard is what keeps a key and a stored screen from drifting
+    apart, and it is reached exactly when they do -- an entry that says where it was measured
+    on a frame whose signature is that same screen is refused by neither.
+    """
+    runtime = _runtime_with({"POPUP|BTN_CLOSE": _entry(
+        page="POPUP", control="BTN_CLOSE", position_norm=(0.8819, 0.3563),
+        screen="POPUP|EXIT_CONFIRM",   # a screen, under a key that names none
+        known_result="POPUP_CLOSED", known_change="POPUP_CLOSED")})
+    assert runtime._remembered_control_center("BTN_CLOSE", WorldState(page=Page.POPUP)) is None
+    assert runtime._printed_screen_refusals, "and the refusal says which screen it belongs to"
+
+
+def test_the_page_key_still_works_for_pages_that_name_their_screen():
+    """The 49 of 57 stored positions on such pages must not lose their reuse."""
+    runtime = _runtime_with({"HOME|PAGE_MAP": _entry(screen="HOME")})
+    assert runtime._remembered_control_center("PAGE_MAP", WorldState(page=Page.HOME)) == (0.9236, 0.9539)
+    # ...and a position written before the field existed, which records nothing at all.
+    runtime = _runtime_with({"HOME|PAGE_MAP": _entry()})
+    assert runtime._remembered_control_center("PAGE_MAP", WorldState(page=Page.HOME)) == (0.9236, 0.9539)
 
 
 def test_an_unknown_outcome_is_not_reused():

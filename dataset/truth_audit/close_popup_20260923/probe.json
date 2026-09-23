@@ -1,0 +1,1162 @@
+{
+ "generated_at": "2026-09-23T06:03:49.398550+00:00",
+ "manifest": "dataset\\candidate\\template_manifest.json",
+ "threshold_for_BTN_CLOSE": 8,
+ "threshold_source": "semantic_max_distance has no BTN_CLOSE entry",
+ "frames": [
+  {
+   "recorded_at": "2026-09-23T06:00:57.665988+00:00",
+   "result": "FAILURE",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "goal": "CLAIM_EXPLORATION_IDLE",
+   "popup": "POWER_OVERVIEW",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140049_372605\\20260923_140049_372605_step_001_before_20260923T060054737025.png",
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_00_060057.png",
+   "winner_index": 0,
+   "winner_template_id": "btn_close__purchase_popup_current__0",
+   "winner_phash_distance": 28,
+   "winner_within_threshold": false,
+   "winner_roi_center_px": [
+    612,
+    131
+   ],
+   "tapped_point_norm": [
+    0.85,
+    0.1023
+   ],
+   "per_record": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "roi_norm": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "roi_center_px": [
+      612,
+      131
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 28
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "roi_norm": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "roi_center_px": [
+      613,
+      148
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "roi_norm": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "roi_center_px": [
+      635,
+      456
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 40
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "roi_norm": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "roi_center_px": [
+      682,
+      38
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    }
+   ],
+   "ccoeff": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "score": 0.3013,
+     "center_norm": [
+      0.8083,
+      0.1129
+     ],
+     "scale": 1.1,
+     "region": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "score": 0.3488,
+     "center_norm": [
+      0.8028,
+      0.1195
+     ],
+     "scale": 0.9,
+     "region": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "score": 0.3372,
+     "center_norm": [
+      0.8396,
+      0.3848
+     ],
+     "scale": 0.9,
+     "region": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "score": 0.5423,
+     "center_norm": [
+      0.9542,
+      0.0523
+     ],
+     "scale": 0.9,
+     "region": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "whole_frame": false
+    }
+   ],
+   "ccoeff_best": {
+    "template_id": "btn_close__alliance_chest_layer__0",
+    "score": 0.5423,
+    "center_norm": [
+     0.9542,
+     0.0523
+    ],
+    "scale": 0.9,
+    "region": [
+     0.9167,
+     0.0141,
+     0.0611,
+     0.0312
+    ],
+    "whole_frame": false
+   },
+   "ccoeff_whole_frame_best": {
+    "template_id": "btn_close__step_001_before__1",
+    "score": 0.9921,
+    "center_norm": [
+     0.9236,
+     0.1301
+    ],
+    "scale": 1.0,
+    "region": [
+     0.0,
+     0.0,
+     1.0,
+     1.0
+    ],
+    "whole_frame": true
+   }
+  },
+  {
+   "recorded_at": "2026-09-23T06:00:58.534503+00:00",
+   "result": "FAILURE",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "goal": "AUTO_DISCOVERY",
+   "popup": "POWER_OVERVIEW",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140049_372605\\20260923_140049_372605_step_002_before_20260923T060057921808.png",
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_01_060058.png",
+   "winner_index": 0,
+   "winner_template_id": "btn_close__purchase_popup_current__0",
+   "winner_phash_distance": 28,
+   "winner_within_threshold": false,
+   "winner_roi_center_px": [
+    612,
+    131
+   ],
+   "tapped_point_norm": [
+    0.85,
+    0.1023
+   ],
+   "per_record": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "roi_norm": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "roi_center_px": [
+      612,
+      131
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 28
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "roi_norm": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "roi_center_px": [
+      613,
+      148
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "roi_norm": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "roi_center_px": [
+      635,
+      456
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 40
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "roi_norm": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "roi_center_px": [
+      682,
+      38
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    }
+   ],
+   "ccoeff": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "score": 0.3013,
+     "center_norm": [
+      0.8083,
+      0.1129
+     ],
+     "scale": 1.1,
+     "region": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "score": 0.3488,
+     "center_norm": [
+      0.8028,
+      0.1195
+     ],
+     "scale": 0.9,
+     "region": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "score": 0.3372,
+     "center_norm": [
+      0.8396,
+      0.3848
+     ],
+     "scale": 0.9,
+     "region": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "score": 0.5423,
+     "center_norm": [
+      0.9542,
+      0.0523
+     ],
+     "scale": 0.9,
+     "region": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "whole_frame": false
+    }
+   ],
+   "ccoeff_best": {
+    "template_id": "btn_close__alliance_chest_layer__0",
+    "score": 0.5423,
+    "center_norm": [
+     0.9542,
+     0.0523
+    ],
+    "scale": 0.9,
+    "region": [
+     0.9167,
+     0.0141,
+     0.0611,
+     0.0312
+    ],
+    "whole_frame": false
+   },
+   "ccoeff_whole_frame_best": {
+    "template_id": "btn_close__step_001_before__1",
+    "score": 0.9921,
+    "center_norm": [
+     0.9236,
+     0.1301
+    ],
+    "scale": 1.0,
+    "region": [
+     0.0,
+     0.0,
+     1.0,
+     1.0
+    ],
+    "whole_frame": true
+   }
+  },
+  {
+   "recorded_at": "2026-09-23T06:01:31.550394+00:00",
+   "result": "FAILURE",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "goal": "AUTO_DISCOVERY",
+   "popup": "POWER_OVERVIEW",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140124_402983\\20260923_140124_402983_step_001_before_20260923T060128703278.png",
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_02_060131.png",
+   "winner_index": 0,
+   "winner_template_id": "btn_close__purchase_popup_current__0",
+   "winner_phash_distance": 28,
+   "winner_within_threshold": false,
+   "winner_roi_center_px": [
+    612,
+    131
+   ],
+   "tapped_point_norm": [
+    0.85,
+    0.1023
+   ],
+   "per_record": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "roi_norm": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "roi_center_px": [
+      612,
+      131
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 28
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "roi_norm": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "roi_center_px": [
+      613,
+      148
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "roi_norm": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "roi_center_px": [
+      635,
+      456
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 40
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "roi_norm": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "roi_center_px": [
+      682,
+      38
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    }
+   ],
+   "ccoeff": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "score": 0.3013,
+     "center_norm": [
+      0.8083,
+      0.1129
+     ],
+     "scale": 1.1,
+     "region": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "score": 0.3488,
+     "center_norm": [
+      0.8028,
+      0.1195
+     ],
+     "scale": 0.9,
+     "region": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "score": 0.3372,
+     "center_norm": [
+      0.8396,
+      0.3848
+     ],
+     "scale": 0.9,
+     "region": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "score": 0.5423,
+     "center_norm": [
+      0.9542,
+      0.0523
+     ],
+     "scale": 0.9,
+     "region": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "whole_frame": false
+    }
+   ],
+   "ccoeff_best": {
+    "template_id": "btn_close__alliance_chest_layer__0",
+    "score": 0.5423,
+    "center_norm": [
+     0.9542,
+     0.0523
+    ],
+    "scale": 0.9,
+    "region": [
+     0.9167,
+     0.0141,
+     0.0611,
+     0.0312
+    ],
+    "whole_frame": false
+   },
+   "ccoeff_whole_frame_best": {
+    "template_id": "btn_close__step_001_before__1",
+    "score": 0.9921,
+    "center_norm": [
+     0.9236,
+     0.1301
+    ],
+    "scale": 1.0,
+    "region": [
+     0.0,
+     0.0,
+     1.0,
+     1.0
+    ],
+    "whole_frame": true
+   }
+  },
+  {
+   "recorded_at": "2026-09-23T06:02:11.959121+00:00",
+   "result": "FAILURE",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "goal": "AUTO_DISCOVERY",
+   "popup": "POWER_OVERVIEW",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140204_170642\\20260923_140204_170642_step_001_before_20260923T060208869595.png",
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_03_060211.png",
+   "winner_index": 0,
+   "winner_template_id": "btn_close__purchase_popup_current__0",
+   "winner_phash_distance": 28,
+   "winner_within_threshold": false,
+   "winner_roi_center_px": [
+    612,
+    131
+   ],
+   "tapped_point_norm": [
+    0.85,
+    0.1023
+   ],
+   "per_record": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "roi_norm": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "roi_center_px": [
+      612,
+      131
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 28
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "roi_norm": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "roi_center_px": [
+      613,
+      148
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "roi_norm": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "roi_center_px": [
+      635,
+      456
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 40
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "roi_norm": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "roi_center_px": [
+      682,
+      38
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    }
+   ],
+   "ccoeff": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "score": 0.3013,
+     "center_norm": [
+      0.8083,
+      0.1129
+     ],
+     "scale": 1.1,
+     "region": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "score": 0.3488,
+     "center_norm": [
+      0.8028,
+      0.1195
+     ],
+     "scale": 0.9,
+     "region": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "score": 0.3372,
+     "center_norm": [
+      0.8396,
+      0.3848
+     ],
+     "scale": 0.9,
+     "region": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "score": 0.5423,
+     "center_norm": [
+      0.9542,
+      0.0523
+     ],
+     "scale": 0.9,
+     "region": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "whole_frame": false
+    }
+   ],
+   "ccoeff_best": {
+    "template_id": "btn_close__alliance_chest_layer__0",
+    "score": 0.5423,
+    "center_norm": [
+     0.9542,
+     0.0523
+    ],
+    "scale": 0.9,
+    "region": [
+     0.9167,
+     0.0141,
+     0.0611,
+     0.0312
+    ],
+    "whole_frame": false
+   },
+   "ccoeff_whole_frame_best": {
+    "template_id": "btn_close__step_001_before__1",
+    "score": 0.9921,
+    "center_norm": [
+     0.9236,
+     0.1301
+    ],
+    "scale": 1.0,
+    "region": [
+     0.0,
+     0.0,
+     1.0,
+     1.0
+    ],
+    "whole_frame": true
+   }
+  },
+  {
+   "recorded_at": "2026-09-23T06:02:52.001341+00:00",
+   "result": "FAILURE",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "goal": "AUTO_DISCOVERY",
+   "popup": "POWER_OVERVIEW",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140244_393602\\20260923_140244_393602_step_001_before_20260923T060249182887.png",
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_04_060252.png",
+   "winner_index": 0,
+   "winner_template_id": "btn_close__purchase_popup_current__0",
+   "winner_phash_distance": 28,
+   "winner_within_threshold": false,
+   "winner_roi_center_px": [
+    612,
+    131
+   ],
+   "tapped_point_norm": [
+    0.85,
+    0.1023
+   ],
+   "per_record": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "roi_norm": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "roi_center_px": [
+      612,
+      131
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 28
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "roi_norm": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "roi_center_px": [
+      613,
+      148
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "roi_norm": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "roi_center_px": [
+      635,
+      456
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 40
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "roi_norm": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "roi_center_px": [
+      682,
+      38
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    }
+   ],
+   "ccoeff": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "score": 0.3013,
+     "center_norm": [
+      0.8083,
+      0.1129
+     ],
+     "scale": 1.1,
+     "region": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "score": 0.3488,
+     "center_norm": [
+      0.8028,
+      0.1195
+     ],
+     "scale": 0.9,
+     "region": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "score": 0.3372,
+     "center_norm": [
+      0.8396,
+      0.3848
+     ],
+     "scale": 0.9,
+     "region": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "score": 0.5423,
+     "center_norm": [
+      0.9542,
+      0.0523
+     ],
+     "scale": 0.9,
+     "region": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "whole_frame": false
+    }
+   ],
+   "ccoeff_best": {
+    "template_id": "btn_close__alliance_chest_layer__0",
+    "score": 0.5423,
+    "center_norm": [
+     0.9542,
+     0.0523
+    ],
+    "scale": 0.9,
+    "region": [
+     0.9167,
+     0.0141,
+     0.0611,
+     0.0312
+    ],
+    "whole_frame": false
+   },
+   "ccoeff_whole_frame_best": {
+    "template_id": "btn_close__step_001_before__1",
+    "score": 0.9921,
+    "center_norm": [
+     0.9236,
+     0.1301
+    ],
+    "scale": 1.0,
+    "region": [
+     0.0,
+     0.0,
+     1.0,
+     1.0
+    ],
+    "whole_frame": true
+   }
+  },
+  {
+   "recorded_at": "2026-09-23T06:03:28.227605+00:00",
+   "result": "FAILURE",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "goal": "AUTO_DISCOVERY",
+   "popup": "POWER_OVERVIEW",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140321_207975\\20260923_140321_207975_step_001_before_20260923T060325459727.png",
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\close_popup_20260923\\review_05_060328.png",
+   "winner_index": 0,
+   "winner_template_id": "btn_close__purchase_popup_current__0",
+   "winner_phash_distance": 28,
+   "winner_within_threshold": false,
+   "winner_roi_center_px": [
+    612,
+    131
+   ],
+   "tapped_point_norm": [
+    0.85,
+    0.1023
+   ],
+   "per_record": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__0.png",
+     "roi_norm": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "roi_center_px": [
+      612,
+      131
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 28
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__live_current__0.png",
+     "roi_norm": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "roi_center_px": [
+      613,
+      148
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "template_path": "E:/无尽冬日智能体/dataset/candidate/templates/btn_close__step_001_before__1.png",
+     "roi_norm": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "roi_center_px": [
+      635,
+      456
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 40
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\btn_close__alliance_chest_layer__0.png",
+     "roi_norm": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "roi_center_px": [
+      682,
+      38
+     ],
+     "matcher": "phash",
+     "has_search_band": false,
+     "phash_distance": 34
+    }
+   ],
+   "ccoeff": [
+    {
+     "template_id": "btn_close__purchase_popup_current__0",
+     "score": 0.3013,
+     "center_norm": [
+      0.8083,
+      0.1129
+     ],
+     "scale": 1.1,
+     "region": [
+      0.805,
+      0.07,
+      0.09,
+      0.065
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__live_current__0",
+     "score": 0.3488,
+     "center_norm": [
+      0.8028,
+      0.1195
+     ],
+     "scale": 0.9,
+     "region": [
+      0.807,
+      0.079,
+      0.09,
+      0.073
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__step_001_before__1",
+     "score": 0.3372,
+     "center_norm": [
+      0.8396,
+      0.3848
+     ],
+     "scale": 0.9,
+     "region": [
+      0.835,
+      0.326,
+      0.095,
+      0.06
+     ],
+     "whole_frame": false
+    },
+    {
+     "template_id": "btn_close__alliance_chest_layer__0",
+     "score": 0.5423,
+     "center_norm": [
+      0.9542,
+      0.0523
+     ],
+     "scale": 0.9,
+     "region": [
+      0.9167,
+      0.0141,
+      0.0611,
+      0.0312
+     ],
+     "whole_frame": false
+    }
+   ],
+   "ccoeff_best": {
+    "template_id": "btn_close__alliance_chest_layer__0",
+    "score": 0.5423,
+    "center_norm": [
+     0.9542,
+     0.0523
+    ],
+    "scale": 0.9,
+    "region": [
+     0.9167,
+     0.0141,
+     0.0611,
+     0.0312
+    ],
+    "whole_frame": false
+   },
+   "ccoeff_whole_frame_best": {
+    "template_id": "btn_close__step_001_before__1",
+    "score": 0.9921,
+    "center_norm": [
+     0.9236,
+     0.1301
+    ],
+    "scale": 1.0,
+    "region": [
+     0.0,
+     0.0,
+     1.0,
+     1.0
+    ],
+    "whole_frame": true
+   }
+  }
+ ],
+ "summary": {
+  "frames_measured": 6,
+  "winners": {
+   "btn_close__purchase_popup_current__0": 6
+  },
+  "winner_distances": {
+   "28": 6
+  },
+  "winner_within_threshold": 0,
+  "frames_where_ccoeff_disagrees_with_the_tap_by_over_60px": 6,
+  "results": {
+   "FAILURE": 6
+  },
+  "failure_types": {
+   "SEMANTIC_TARGET_NOT_VERIFIED": 6
+  },
+  "popups": {
+   "POWER_OVERVIEW": 6
+  }
+ }
+}
