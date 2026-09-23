@@ -4,6 +4,24 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：邮件 / 联盟宝箱改红点事件驱动（2026-09-23 晚，issue #114）——**两条断点不同**
+
+`e9c8bca`。断点一在 **Goal 层**（周期票：入口 ABSENT/UNKNOWN/缺账本都照样发 `MAIL_ROUTINE → OPEN_MAIL`，票值只随年龄变）；
+断点二在 **Brain**（联盟页 `section==HOME` 无条件开宝箱，理由字符串声称有角标而没读）。三处门控 + §六 出口保护已落地。
+
+**真机判据（只看 `learning/episodes.jsonl` / `executor_backend.jsonl`，或跑 `tools\measure_red_dot_gating.py`）**：
+
+1. 没有红点时**不应再出现** `OPEN_MAIL` / `OPEN_ALLIANCE_GIFTS` 步（before：宝箱页 97 次进入里 **93 次**瓦片 ABSENT）；
+2. 被拒的步应为 `SAFE_STOP`，`decision_reason` 含 `entry_badge`（brain 侧）或 `refused_at_the_entry_gate`（出口保护侧）；
+3. 有红点时仍能及时处理（PRESENT → `OPEN_MAIL` / `OPEN_ALLIANCE_GIFTS` → 后帧变化）；
+4. AUTO 在被拒之后继续训练 / 科研 / 采集，不空转。
+
+**不要重复**：不要把 `TAB_ALLIANCE`（常量 26/26）当宝箱信号——联盟页按**瓦片**画角标，宝箱的信号是 `TILE_ALLIANCE_GIFTS`
+（316 帧 PRESENT 8 / ABSENT 308）；不要用"最像"的相似度注册定位器（本轮工具**不达标就拒绝写入**）；
+`AB_ENTRY_GATE=off` 是逐站点复现旧语义，不是"一律 PRESENT"的近似。
+
+**未做**：§五 的 `badge_generation`/`last_processed` 账本、§七 的显式休眠（当前靠"每帧读入口"自然达成）。
+
 ## 手写：AI 兜底与实力详情（2026-09-23 晚，issues #112 #113）——**两条都只差真机最后一步**
 
 ### #112 AI 兜底：**第一断点是"没有任何东西把答案送回被问到的那一屏"**（不是"答案没被采用"）
