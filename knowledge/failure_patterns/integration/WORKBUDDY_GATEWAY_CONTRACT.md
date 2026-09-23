@@ -432,3 +432,109 @@ a session's argv, or otherwise borrowing the app's credentials is **not** an acc
 not attempted. The honest options are (a) get a sanctioned service credential for this project, or
 (b) accept that answering stays session-driven — and say so, rather than dressing up a booting
 process as progress.
+
+## 10. The official API, re-measured at 2.147.0 (2026-09-24)
+
+The contract above was measured at **2.137.1** and one of its conclusions is now out of date in a way
+that matters: §3 says "There is no reachable OpenAPI document (`/openapi.json`, `/docs`,
+`/swagger.json` all 404), so the spec has to be read out of `dist/codebuddy.js`". At 2.147.0 the
+running gateway answers
+
+```
+GET /api/v1/info       -> {"version": "2.147.0", ...}
+GET /api/openapi.json  -> 117 paths
+GET /api/v1/auth/status -> {"authEnabled": true, "authenticated": true}
+```
+
+so **endpoint discovery no longer needs to read the bundle**: `GET /api/openapi.json` is the
+authoritative list for whatever version is installed, and it should be the first thing consulted
+before any guess about what this product can do.
+
+### 10.1 The endpoints that matter for handing work to an Agent
+
+| endpoint | what it is for |
+| --- | --- |
+| `POST /api/v1/runs` | 发起 Agent 执行. Body `{id, type:"message", text, payload:{text}, source:{...}}`; returns `{runId, status:"accepted"}`. Read it with `GET /api/v1/runs/{runId}` or `/stream`. |
+| `POST /api/v1/jobs` | 派发一个后台智能体实例 (what the escalation bridge uses). |
+| `POST /api/v1/jobs/{id}/reply` | **向智能体发送后续指令** -- body `{text, bash}`. The documented way to send a message to an instance that is *waiting for input*, which is exactly the state §9.5 measured our workers reaching. |
+| `GET /api/v1/jobs/{id}/transcript` | 一次性读取最近 1000 行 ACP replay. |
+| `GET /api/v1/jobs/{id}/stream` | SSE of the conversation output. |
+| `GET /api/v1/jobs/resumable`, `POST /api/v1/jobs/resume` | 从历史对话恢复为实例 (`{sessionId}`). |
+| `GET /api/v1/sessions/live` | 当前活会话与 writer 占用. |
+| `POST /api/v1/sessions/{id}/reply` | 向当前活会话投递回复（不占用 ACP writer）. |
+| `POST /api/v1/acp/connect`, `GET/POST/DELETE /api/v1/acp` | The raw Agent Client Protocol channel (JSON-RPC `initialize` / `session/load` / `session/prompt`). |
+| `GET/POST /api/v1/daemon/*` | The daemon that owns sessions and workers. |
+
+### 10.2 What authentication this API actually uses -- and what it is not
+
+**It is the local gateway password, and nothing else.** The product's own documentation says so
+plainly: `--serve` defaults to password auth, the password is generated on first run and written to
+the settings file, and it is carried as `Authorization: Bearer <password>`, `X-Access-Token`, or the
+`gateway_session` cookie. There is no cloud account credential, no API key and no OAuth in this API,
+and the docs mention no billing at all (only a `/api/v1/stats/session` cost figure).
+
+**So `CODEBUDDY_GATEWAY_PASSWORD` is a door key to a local process. It is not an account credential,
+and being able to reach the API proves nothing about model access.** This is worth stating because
+the two are easy to confuse: the gateway answers `health: ok`, `/api/v1/jobs` creates instances, and
+`POST /api/v1/runs` answers `202 accepted` -- **without any of that implying that a model can be
+reached**.
+
+### 10.3 Measured on this machine: accepted, and then nothing
+
+Against the project's own gateway (pid 25328, port 8080, 61 environment variables):
+
+```
+GET  /api/v1/sessions/live  -> {"sessionId": null, "writerOccupied": false}
+GET  /api/v1/daemon/status  -> {"status": "stopped"}
+POST /api/v1/runs {text: PROBE_OK...} -> 202 {"runId": "...", "status": "accepted"}
+GET  /api/v1/runs/{runId}   -> {"active": true}  ... for 210 s, then the probe gave up
+POST /api/v1/daemon/start   -> 200 {"status": "running", "pid": 26076, "endpoint": "http://127.0.0.1:9527"}
+POST /api/v1/runs {text: PROBE_OK...} -> again accepted, again nothing, 210 s
+GET  /api/v1/sessions/live  -> still {"sessionId": null}
+POST /api/v1/daemon/stop    -> back to stopped
+```
+
+**No live session, so there is nothing for a run or a job to execute against.** The gateway accepts
+the work and has no session and no daemon-owned executor to hand it to; starting the daemon from
+this gateway does not change that, because the daemon inherits the same environment.
+
+### 10.4 The first real difference between the two paths
+
+The desktop app and this project speak the same local API. What differs is *who owns the session*,
+and that is the whole of it:
+
+| | the app's path (works) | the project's path (accepted, never executes) |
+| --- | --- | --- |
+| launcher | `WorkBuddy.exe` | `GatewayService` (this project) |
+| shape | **one sidecar per conversation**: `--serve --port 0 --session-id <chat-session>` | one shared gateway: `--serve --port 8080 --session-id winter-agent-v2` |
+| extra argv | `--settings`, `--mcp-config`, `--prompt-vars-file`, `--allowedTools`, `--model`, `--permission-mode fullAccess` | none |
+| environment | 146 variables, including `CODEBUDDY_HOST=workbuddy-desktop`, `CODEBUDDY_HOST_CAPABILITIES`, the product-config spill, `WORKBUDDY_PAC_RPC_TOKEN`, `CODEBUDDY_CONFIG_DIR=~/.workbuddy` | 61 variables: the bundle selector, the gateway password, the internal-internet marker -- **and no model or host wiring** |
+| live session | yes -- it *is* the conversation you are talking to | `sessions/live` -> `null` |
+| daemon | running (the app's) | `stopped` |
+
+**The first actual different step is therefore not a flag, a model name, a prompt or a worker: it is
+that the app starts a session it is the host of, and this project starts a gateway nobody hosts.**
+Model access travels with the app-hosted session, not with the local API, so no amount of forking,
+attaching or retrying inside our own gateway can create it -- which is also why the §9.5 worker
+reaches `idle` and stops: it is a session with no host.
+
+### 10.5 The officially supported way for a third party to reach the user's Agent
+
+The WorkBuddy Open Platform (`https://open.workbuddy.cn/docs/openapi`) exists for exactly this case,
+and it is separate from the local gateway API:
+
+* **auth**: OAuth 2.1 authorization-code. A developer account and a registered third-party app
+  (hardware or Buddy app) give a `clientId`/`clientSecret`; the *user* then authorizes once on the
+  platform's own page, and the app exchanges the code for `access_token`/`refresh_token`.
+* **the endpoint for this use case**: `POST /openapi/v2/localassistant/message` with scope
+  `user.localassistant.invokable` -- "向 PC 端本地助理发送消息，触发助理执行任务" -- and
+  `GET /openapi/v2/localassistant/message?message_id=...` for the assistant's reply. That is the
+  user's own running desktop assistant, i.e. the thing that already has model access.
+* **credits**: the platform also documents a redemption-code endpoint ("通过兑换码或卡券为当前授权用户
+  发放积分"), which is consistent with calls being metered against the *user's* WorkBuddy account
+  rather than a separate API bill -- but the docs do not state the exact metering, so this remains to
+  be confirmed on the platform side rather than assumed here.
+* **nothing of this exists in this machine's configuration today**: neither the project nor the
+  settings files carry any Open Platform application, `clientId`, token or authorization. It has to
+  be created and consented to by the user; it cannot be derived from the gateway password, and it
+  must not be opened automatically.
