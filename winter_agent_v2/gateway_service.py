@@ -175,6 +175,51 @@ ENV_LOG_DIR = "WINTER_AGENT_GATEWAY_LOG_DIR"
 #: operator can set deliberately.
 ENV_CLI_OVERRIDE = "WINTER_AGENT_CODEBUDDY_CLI"
 
+#: Variables that mark "this process is inside an agent's tool call", which a *service* must not
+#: inherit from whatever shell happened to start it.
+#:
+#: Measured 2026-09-24, and it cost the whole channel its ability to create a job.  A gateway
+#: started from a WorkBuddy agent shell carries that shell's tool-harness environment, and
+#: ``forkBgSession`` passes ``{...process.env}`` of the gateway to every job worker -- so the
+#: worker's PowerShell sessions found ``CODEBUDDY_TOOL_CALL_ID`` and the safe-delete shim's own
+#: configuration and **armed the bulk-delete guard**:
+#:
+#:     POST /api/v1/jobs -> HTTP 500
+#:     {"code":"INTERNAL_ERROR","message":"[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]
+#:      {\"count\":89,\"threshold\":50,\"scope\":\"turn\",\"targets\":[\"…\\.locks\\…\"]}"}
+#:
+#: The 89 paths were the gateway's **own** stale job locks, which it garbage-collects at job
+#: creation.  Nothing about the request was wrong; the guard was armed by a variable that names a
+#: tool call from a completely different session -- the same class of leak the product itself
+#: scrubs with ``scrubRequestContextFromEnv`` before forking a long-lived process.
+#:
+#: The guard is the host's feature and stays armed for the host's interactive sessions; it is not
+#: this service's to inherit.  Named one by one rather than matched by a ``CODEBUDDY_`` prefix: the
+#: same environment legitimately carries settings the CLI reads (``CODEBUDDY_FORCE_*_BUNDLE``,
+#: ``CODEBUDDY_NODE_BIN``), and a prefix rule would take those with it.
+AGENT_SESSION_MARKERS: tuple[str, ...] = (
+    "CODEBUDDY_TOOL_CALL_ID",
+    "CODEBUDDY_CONVERSATION_REQUEST_ID",
+    "CODEBUDDY_CONVERSATION_MESSAGE_ID",
+    "CODEBUDDY_SAFE_DELETE_ENABLED",
+    "CODEBUDDY_SAFE_DELETE_BULK_GUARD",
+    "CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR",
+    "CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD",
+    "CODEBUDDY_SAFE_DELETE_BULK_REPLAY_FILE",
+)
+
+
+def service_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
+    """The launcher's environment with the agent-session markers removed.
+
+    Only removals -- every other variable is inherited exactly as it was, including the credential,
+    which is why the gateway is started with this rather than with a built-up environment.  See
+    :data:`AGENT_SESSION_MARKERS` for the measurement that made this necessary.
+    """
+    source = os.environ if env is None else env
+    blocked = {name.upper() for name in AGENT_SESSION_MARKERS}
+    return {key: value for key, value in source.items() if key.upper() not in blocked}
+
 
 def default_log_path() -> Path:
     """Where the gateway's stdout goes.  **Outside the repository, deliberately.**
@@ -611,7 +656,10 @@ class GatewayService:
     ) -> None:
         self.root = Path(root)
         self.port = int(port)
-        self.env = dict(env) if env is not None else dict(os.environ)
+        # Sanitised here, at the one place the service's environment is decided: everything the
+        # gateway launches -- including the job workers it forks with its own environment --
+        # inherits this, so a leak here is a leak into every answering job.
+        self.env = service_environment(env if env is not None else os.environ)
         self.state_path = Path(state_path) if state_path else (
             self.root / "learning/control_panel/gateway_service.json"
         )

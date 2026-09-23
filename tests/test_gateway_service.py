@@ -197,6 +197,47 @@ def test_the_plan_carries_the_bundle_selector_the_jobs_depend_on(tmp_path):
     assert list(seen["argv"])[2:] == ["--serve", "--port", "8080", "--session-id", gs.SESSION_ID]
 
 
+def test_a_service_is_not_started_inside_someone_elses_tool_call(tmp_path):
+    """Measured 2026-09-24: a leaked tool-call id armed the bulk-delete guard inside every job.
+
+    ``forkBgSession`` gives each job worker ``{...process.env}`` of the gateway, so whatever the
+    gateway inherited is what the worker runs with.  A gateway started from an agent shell therefore
+    handed the worker's PowerShell sessions a ``CODEBUDDY_TOOL_CALL_ID`` and the safe-delete shim's
+    configuration, and the shim then refused the gateway's own lock garbage collection:
+
+        POST /api/v1/jobs -> HTTP 500 [safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]
+        {"count":89,"threshold":50,"scope":"turn","targets":["…\\.locks\\…"]}
+
+    Everything else must survive, in particular the credential and the variables the CLI itself
+    reads -- which is why this is a named list and not a ``CODEBUDDY_`` prefix rule.
+    """
+    env = {
+        "CODEBUDDY_TOOL_CALL_ID": "call_00_from_another_session",
+        "CODEBUDDY_SAFE_DELETE_BULK_GUARD": "…/safe-delete-bulk-guard.cjs",
+        "CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD": "50",
+        "codebuddy_safe_delete_bulk_state_dir": "C:/tmp/x",  # Windows env is case-insensitive
+        "CODEBUDDY_GATEWAY_PASSWORD": "the-credential",
+        "CODEBUDDY_NODE_BIN": "node.exe",
+        "CODEBUDDY_FORCE_HEADLESS_BUNDLE": "1",
+        "PATH": "somewhere",
+    }
+    cleaned = gs.service_environment(env)
+    assert "CODEBUDDY_TOOL_CALL_ID" not in cleaned
+    assert "CODEBUDDY_SAFE_DELETE_BULK_GUARD" not in cleaned
+    assert "CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD" not in cleaned
+    assert "codebuddy_safe_delete_bulk_state_dir" not in cleaned
+    assert cleaned["CODEBUDDY_GATEWAY_PASSWORD"] == "the-credential"
+    assert cleaned["CODEBUDDY_NODE_BIN"] == "node.exe"
+    assert cleaned["CODEBUDDY_FORCE_HEADLESS_BUNDLE"] == "1"
+    assert cleaned["PATH"] == "somewhere"
+
+    # ...and the service applies it at the one place its environment is decided.
+    service = gs.GatewayService(tmp_path, env=env, spawn=lambda plan: 1,
+                                port_owner=lambda: (0, ""), alive=lambda pid: False)
+    assert "CODEBUDDY_TOOL_CALL_ID" not in service.env
+    assert service.env["CODEBUDDY_GATEWAY_PASSWORD"] == "the-credential"
+
+
 def test_no_cli_on_disk_is_a_refusal_that_says_what_it_tried(tmp_path):
     """When every link of the chain fails, the refusal names all of them.
 

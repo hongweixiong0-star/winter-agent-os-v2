@@ -38,11 +38,13 @@ def main() -> int:
     # ledger one tick later.  The registry value is the project's, so it is the one to launch with.
     from winter_agent_v2.workbuddy_bridge import ENV_PASSWORD, persisted_password
 
-    env = dict(os.environ)
+    env = gs.service_environment(os.environ)
     project_password = persisted_password()
     if project_password:
         env[ENV_PASSWORD] = project_password
     print(f"launch password: {'project value from HKCU\\\\Environment' if project_password else 'shell environment'}")
+    dropped = sorted(set(os.environ) - set(env))
+    print(f"agent-session markers dropped: {len(dropped)}")
 
     service = gs.GatewayService(ROOT, env=env)
     record = service.record()
