@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-22T23:38:46+00:00",
-  "count": 1618,
+  "generated_at": "2026-09-23T06:14:19+00:00",
+  "count": 1631,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -185,8 +185,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 357582,
-      "mtime": "2026-09-22T22:41:00+00:00"
+      "bytes": 358119,
+      "mtime": "2026-09-22T23:38:46+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -807,6 +807,18 @@
       "mtime": "2026-09-14T11:16:25+00:00"
     },
     {
+      "path": "dataset/truth_audit/advice_execution_20260923/README.md",
+      "kind": "fixture",
+      "bytes": 5904,
+      "mtime": "2026-09-23T03:46:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/advice_execution_20260923/replay.json",
+      "kind": "fixture",
+      "bytes": 1735,
+      "mtime": "2026-09-23T03:45:22+00:00"
+    },
+    {
       "path": "dataset/truth_audit/after_confirm.png",
       "kind": "fixture",
       "bytes": 1269639,
@@ -1363,6 +1375,72 @@
       "kind": "fixture",
       "bytes": 61210,
       "mtime": "2026-09-13T15:20:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/probe.json",
+      "kind": "fixture",
+      "bytes": 25674,
+      "mtime": "2026-09-23T06:03:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/README.md",
+      "kind": "fixture",
+      "bytes": 8454,
+      "mtime": "2026-09-23T06:11:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_00_053047.png",
+      "kind": "fixture",
+      "bytes": 163401,
+      "mtime": "2026-09-23T05:47:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_00_060057.png",
+      "kind": "fixture",
+      "bytes": 164610,
+      "mtime": "2026-09-23T06:03:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_01_054648.png",
+      "kind": "fixture",
+      "bytes": 163401,
+      "mtime": "2026-09-23T05:47:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_01_060058.png",
+      "kind": "fixture",
+      "bytes": 164610,
+      "mtime": "2026-09-23T06:03:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_02_060131.png",
+      "kind": "fixture",
+      "bytes": 164610,
+      "mtime": "2026-09-23T06:03:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_03_060211.png",
+      "kind": "fixture",
+      "bytes": 164610,
+      "mtime": "2026-09-23T06:03:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_04_060252.png",
+      "kind": "fixture",
+      "bytes": 164610,
+      "mtime": "2026-09-23T06:03:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/review_05_060328.png",
+      "kind": "fixture",
+      "bytes": 164610,
+      "mtime": "2026-09-23T06:03:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/close_popup_20260923/survey.json",
+      "kind": "fixture",
+      "bytes": 7976,
+      "mtime": "2026-09-23T06:03:41+00:00"
     },
     {
       "path": "dataset/truth_audit/daily_entry_template_20260916/00_live_home_20260916T131040Z.png",

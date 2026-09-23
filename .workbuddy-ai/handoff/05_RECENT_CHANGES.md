@@ -6,20 +6,20 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `42b3b29 2026-09-23T14:13:53+08:00 fix(ledger): a coordinate is a claim about one screen -- POPUP is 22 of them`
+- `5ce5f5a 2026-09-23T12:09:46+08:00 docs(handoff): the timed-event planner exists and nothing in the live path calls it -- issue #108`
+- `0dd3807 2026-09-23T12:08:44+08:00 feat(ai): entering a function is not doing it -- the four questions become fields, and the boundary is per level`
+- `664746a 2026-09-23T11:47:48+08:00 audit(ai): the one real answer is refused by no gate -- the first break point is that AUTO never went back`
+- `06aba19 2026-09-23T07:49:00+08:00 docs(memory): the missing edge is not the bottleneck -- discover() already covers 10 of 12 entries`
+- `667f4a1 2026-09-23T07:43:32+08:00 docs(handoff): red-dot status measured from the stream, and the two-vocabulary trap in goal_id`
+- `9d361a7 2026-09-23T07:40:55+08:00 docs(handoff): decision_reason has begun landing in the stream -- correct the stale claim`
+- `94f37d0 2026-09-23T07:40:21+08:00 docs(skill): whole-run replay, and the two A/B baseline traps that voided one`
+- `e0c15c4 2026-09-23T07:39:25+08:00 docs(handoff): the round's facts, and the two things a next session can check from episodes alone`
 - `b07b3f5 2026-09-23T07:38:25+08:00 fix(runtime): a run that has looked everywhere stops instead of walking back and forth`
 - `7da38a6 2026-09-23T06:41:16+08:00 docs(handoff): the eighth emitter, the false reasons, and a skill for finding them`
 - `c2d80de 2026-09-23T06:39:53+08:00 fix(home): the eighth OPEN_HOME emitter closes the search panel too -- six minutes of livelock, seven runs one step long`
-- `ad9df5b 2026-09-23T06:28:59+08:00 docs(handoff): the refusal now names its gate -- #103, and the three things it leaves open`
-- `ca5524f 2026-09-23T06:28:15+08:00 fix(runtime): a refusal names its gate -- 21 of TRY_ORDINARY_CONTROL's 32 failures said "the frame names no control"`
-- `de55d6a 2026-09-23T05:57:58+08:00 docs(memory): the expert package shipped a venv path that no longer exists -- 31 command lines fixed`
-- `556aaa8 2026-09-23T05:56:00+08:00 docs(handoff): the red dot is a priority signal now -- #102, and what §二③-⑥ still need`
-- `9496761 2026-09-23T05:54:57+08:00 feat(red-dot): the client's dot becomes a bounded priority signal, and a binding that named a route domain is fixed`
-- `c522bc9 2026-09-23T04:41:32+08:00 fix(home): close the resource-search panel before going home -- the guard three goals had and four did not`
-- `9640fcf 2026-09-23T04:31:04+08:00 docs(skill): when the probe aborts on a missing exit, check whether the runtime fails there too`
-- `02f87db 2026-09-23T04:30:48+08:00 feat(callout): the shape rule replaces a size floor the archive refutes, and a new defect gets its numbers`
-- `81cedc2 2026-09-23T04:21:52+08:00 docs(skill): a reader's tokens belong to the surface that drew them`
 
-Uncommitted changes: 514
+Uncommitted changes: 542
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
@@ -27,9 +27,7 @@ Uncommitted changes: 514
 - ` M .workbuddy/memory/2026-09-21.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
-- ` M dataset/candidate/template_manifest.json`
 - ` M docs/CAPABILITY_COVERAGE.md`
-- ` M evidence/INDEX.json`
 - ` M knowledge/game/capability_catalog.json`
 - ` M knowledge/goals/capability_skill_map.json`
 - ` M knowledge/goals/goal_capability_map.json`
@@ -40,6 +38,8 @@ Uncommitted changes: 514
 - ` M knowledge/preload/TROOP_SELECT.json`
 - ` M knowledge/ui/page_transitions.json`
 - ` M learning/candidate_attempt_pool.json`
+- ` M learning/control_panel/latest.log`
+- ` M learning/control_panel/panel.log`
 <!-- /AUTO:recent_commits -->
 
 ---

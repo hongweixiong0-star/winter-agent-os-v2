@@ -4,6 +4,28 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：弹窗关闭（2026-09-23 06:1x GMT+8，issue #109）——**一个坐标是关于一屏的**
+
+`42b3b29`。两半：台账改按"屏"存（`POPUP|POWER_OVERVIEW|BTN_CLOSE`，不是 `POPUP|BTN_CLOSE`），
+以及给 `BTN_CLOSE` 加一条 `ccoeff`+`search_band` 记录（X 会动）。
+
+**真机待验（只需看 `episodes.jsonl` / `executor_backend.jsonl`）**：
+
+1. 出现 `POWER_OVERVIEW` 时，`CLOSE_POPUP` 的 `tap_point` **不再**是 `[635, 456]`（那是退出确认弹窗的 X
+   位置，也是面板自己的数字列）；应当是约 **`[665, 167]`**（实测解析点 norm `(0.9236, 0.1301)`）。
+2. `CLOSE_POPUP` **成功**、且后帧 `popup` 不再是 `POWER_OVERVIEW`。**本轮只证到"给出的点是那个 X"，
+   没证到"弹窗真的关了"**，这是下一轮第一条要看的事。
+3. 台账里应出现 `POPUP|POWER_OVERVIEW|BTN_CLOSE` 且逐渐长出 `position_norm`；旧键 `POPUP|BTN_CLOSE`
+   仍在（`attempts≈97`）但**不再被任何命名弹窗的帧取用**（只能被"读了 POPUP 却说不出是哪种"的帧取用）。
+
+**不要重复**：不要把 `[635,456]` 或任何单一坐标当成"关闭按钮"；不要把 `POPUP` 当成一屏
+（语料里 22 种叠层、2717/2717 条读数都带着是哪一种）；不要为了 A/B 用 `git stash`（这棵树第二个写入方
+常持 index.lock，用 `learning/_ab_screen_key_plugin.py`）；**A/B 必须同一运行器**（`test_live_runtime.py`
+读 `knowledge/**`，AUTO 在改，pytest 与 unittest 结果不同）。
+
+**未做**：`POPUP|*` 下另外 7 条控件位置键变窄后不再跨屏误用，但没有各自的 band 记录；
+`05:54:23` 那次失败类型切换（有点击→无点击）比本轮第一处编辑落盘早 3 分钟，**成因未定，不认领**。
+
 ## 手写：两处**离线已证、真机待验**（2026-09-23 06:4x GMT+8，issue #104）
 
 两处的判据都只看 `learning/episodes.jsonl`，不需要额外设备时间：
@@ -1185,12 +1207,12 @@ CURRENT TASK: every highest-leverage missing skill is DESIGN-BLOCKED — no draf
 
 WHY: 3 goal(s) BLOCKED, 9 PARTIAL, mean implementation coverage 0.5713. The blocked goals share one small set of never-implemented skills, so one skill purchase can move several goals at once.
 
-CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 140 in the last 2 day(s), 379 all-time, last seen 2026-09-22T22:54:32.402635+00:00
+CURRENT ROOT CAUSE: SEMANTIC_TARGET_NOT_VERIFIED — 161 in the last 2 day(s), 405 all-time, last seen 2026-09-23T06:09:33.425381+00:00
 LAST GOOD COMMIT: e4fd245
-CURRENT DIRTY FILES: 514
-LAST PRODUCTION EPISODE: {"skill": "LEAVE_FOREIGN_LAYER", "result": "SUCCESS", "recorded_at": "2026-09-22T23:38:40.168239+00:00", "episode_id": "20260923_073725_909108", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_073725_909108\\20260923_073725_909108_step_002_before_20260922T233815596944.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_073725_909108\\20260923_073725_909108_step_002_after_20260922T233825857175.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 379, "recent": 140, "last_seen": "2026-09-22T22:54:32.402635+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 87}, "undated": 31, "top_skills": [["OPEN_HOME", 45], ["SELECT_RESOURCE", 44], ["DISMISS_MAIL_GENERIC_REWARD", 42]]}
-TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-20T23:38:40.168239+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
+CURRENT DIRTY FILES: 542
+LAST PRODUCTION EPISODE: {"skill": "BACK", "result": "SUCCESS", "recorded_at": "2026-09-23T06:13:04.059882+00:00", "episode_id": "20260923_140557_544859", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140557_544859\\20260923_140557_544859_step_023_before_20260923T061239409091.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140557_544859\\20260923_140557_544859_step_023_after_20260923T061250673181.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 405, "recent": 161, "last_seen": "2026-09-23T06:09:33.425381+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 87, "2026-09-23": 26}, "undated": 31, "top_skills": [["OPEN_HOME", 45], ["SELECT_RESOURCE", 44], ["DISMISS_MAIL_GENERIC_REWARD", 42]]}
+TOP FAILURE IS RANKED BY RECENT FIRST: read `recent` (last 2 day(s), floor 2026-09-21T06:13:04.059882+00:00) before `count` (all-time). A failure type with recent=0 is history, not a current defect.
 
 BLOCKED GOALS: ['ALLIANCE_TIMED_EVENTS', 'USE_FREE_ARENA_ATTEMPTS', 'LABYRINTH_DAILY']
 MISSING SKILLS BY LEVERAGE: [('CHECK_ALLIANCE_EVENT', 2), ('CLAIM_EVENT_TIER', 2), ('JOIN_RALLY', 2), ('READ_BEAR_TIMER', 2), ('READ_COUNTER', 2), ('READ_TIMER', 2), ('USE_ACTIVITY_ATTEMPT', 2), ('ALLIANCE_HELP', 1), ('ALLIANCE_TECH_CONTRIBUTE', 1), ('OPEN_ARENA', 1)]

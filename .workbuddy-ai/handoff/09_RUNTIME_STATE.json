@@ -1,33 +1,33 @@
 {
-  "generated_at": "2026-09-22T23:38:44+00:00",
+  "generated_at": "2026-09-23T06:14:17+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "b07b3f5",
+  "commit": "42b3b29",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
-    "agent_state": "GOAL_RUNNING",
+    "agent_state": "RECOVERING",
     "runtime_thread_alive": true,
-    "scheduler_loop_alive": true,
-    "last_tick_time": "2026-09-22T23:38:24.135665+00:00",
-    "last_action_time": "2026-09-22T23:38:24.354986+00:00",
-    "last_success_time": "2026-09-22T23:38:40.379267+00:00",
+    "scheduler_loop_alive": false,
+    "last_tick_time": "2026-09-23T06:13:16.516831+00:00",
+    "last_action_time": "2026-09-23T06:12:49.170470+00:00",
+    "last_success_time": "2026-09-23T06:13:04.297653+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 21,
     "unexpected_worker_exits": 15,
     "page": "HOME",
-    "current_goal": "MAIL_ROUTINE",
-    "current_skill": "LEAVE_FOREIGN_LAYER",
-    "reason": "mail_goal_closes_a_layer_a_back_did_not_move",
+    "current_goal": null,
+    "current_skill": null,
+    "reason": "启动并校准真实客户端",
     "preconditions": [],
-    "verifier": "PASS",
-    "next_action": "foreign_layer_left",
+    "verifier": null,
+    "next_action": "启动唯一 Scheduler",
     "risk": "UNKNOWN",
-    "confidence": 0.98,
+    "confidence": 1.0,
     "device": "UNKNOWN",
     "game": "UNKNOWN",
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_073725_909108\\20260923_073725_909108_step_002_after_20260922T233825857175.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_140557_544859\\20260923_140557_544859_step_024_before_20260923T061304300581.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -41,46 +41,35 @@
     "stop_reason": null,
     "deferred_goals": [
       {
-        "goal_id": "AVOID_STAMINA_WASTE",
-        "capability": "SPEND_STAMINA_ON_BEAST",
-        "state": "DEFERRED",
-        "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|ATTACK_BEAST_CARD",
-        "streak": 4,
-        "until": "",
-        "last_skill": "ATTACK_BEAST_CARD"
-      },
-      {
         "goal_id": "KEEP_TRAINING_PRODUCTIVE",
         "capability": "OPEN_TRAINING_PAGE",
         "state": "DEFERRED",
-        "reason": "4 consecutive production episodes advanced no part of this goal (3 passed their verifier, 0 were rejected by it, 1 issued no action)",
+        "reason": "5 consecutive production episodes advanced no part of this goal (2 passed their verifier, 3 were rejected by it, 0 issued no action)",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|BACK",
-        "streak": 4,
+        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|OPEN_POWER_DETAILS",
+        "streak": 5,
         "until": "",
-        "last_skill": "BACK"
+        "last_skill": "OPEN_POWER_DETAILS"
       },
       {
-        "goal_id": "CLEAR_INTEL",
-        "capability": "READ_INTEL_LIST",
+        "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
+        "capability": "OPEN_RESEARCH_PAGE",
         "state": "DEFERRED",
-        "reason": "4 consecutive production episodes advanced no part of this goal (2 passed their verifier, 2 were rejected by it, 0 issued no action)",
+        "reason": "5 consecutive production episodes advanced no part of this goal (2 passed their verifier, 3 were rejected by it, 0 issued no action)",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|BACK",
-        "streak": 4,
+        "failure_signature": "OPEN_RESEARCH_PAGE|NO_GOAL_PROGRESS|OPEN_POWER_DETAILS",
+        "streak": 5,
         "until": "",
-        "last_skill": "BACK"
+        "last_skill": "OPEN_POWER_DETAILS"
       }
     ],
-    "updated_at": "2026-09-22T23:38:40.379267+00:00"
+    "updated_at": "2026-09-23T06:14:14.320233+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-22T23:36:37+00:00",
-    "size_bytes": 9971,
-    "last_stop_reason": "alliance_state_unknown"
+    "modified_at": "2026-09-23T06:13:24+00:00",
+    "size_bytes": 210562,
+    "last_stop_reason": null
   },
   "recent_crash_reports": [
     {
