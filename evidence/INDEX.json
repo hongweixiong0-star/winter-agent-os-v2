@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-23T14:43:06+00:00",
+  "generated_at": "2026-09-23T18:35:21+00:00",
   "count": 1684,
   "entries": [
     {
@@ -179,14 +179,14 @@
     {
       "path": "evidence/gui_workbuddy_loop/latest.json",
       "kind": "evidence",
-      "bytes": 2525,
-      "mtime": "2026-09-22T23:20:19+00:00"
+      "bytes": 30038,
+      "mtime": "2026-09-23T18:06:27+00:00"
     },
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 370479,
-      "mtime": "2026-09-23T14:04:11+00:00"
+      "bytes": 370865,
+      "mtime": "2026-09-23T15:21:35+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",

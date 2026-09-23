@@ -7,36 +7,81 @@
 >
 > `AUTO:last_handoff` 由 `tools/update_workbuddy_handoff.py` 重写；手写块不会被覆盖。
 
-<!-- AUTO:last_handoff -->
-HANDOFF TIME: 2026-09-23T14:43:03+00:00
-LAST GOOD COMMIT: e4fd245
-WORKING TREE: 532 dirty file(s)
-  ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy/memory/2026-09-21.md', ' M config/control_panel_state.json', ' M config/policy_state.json', ' M dataset/truth_audit/advice_execution_20260923/replay.json', ' M docs/CAPABILITY_COVERAGE.md', ' M knowledge/game/capability_catalog.json']
+<!-- HANDWRITTEN:2026-09-24 unknown-answer-chain -->
+## 2026-09-24 手写交接 — UNKNOWN 作答链
 
-WHAT FINISHED (machine-visible): 20 skills live verified, 44 stable, 499 commit(s) in history
+**本轮做了什么**：查清 UNKNOWN 通道"能记问题但答不出来"的真实断点并修复。
+
+**第一个断点（已修，`ffb4502`）**：网关给每个 worker 进程派生子进程时用的是**网关自己的环境**
+（`forkBgSession` → `{...process.env}`），从不加 bundle flag。而从本机
+`cli/bin/codebuddy` 看，只有 `CODEBUDDY_FORCE_HEADLESS_BUNDLE=1` /
+`CODEBUDDY_FORCE_LITE_WB_BUNDLE=1` / argv 里带非交互 flag 三条路；都没有就会去
+`require('../dist/codebuddy')`，而本机 `dist/` **只有** `codebuddy-headless.js` 与
+`codebuddy-lite-wb.mjs` → `MODULE_NOT_FOUND` @ `bin/codebuddy:205`，worker 约 1 秒即死。
+网关的 `reapDeadJobs` 随后把该 job 记成 `failed / session ended — press enter to restart it`
+（**那句话指的是 worker 进程，不是聊天会话**，且是进程退出约 60 秒后才写，所以从不说原因）。
+修复：`gateway_service.build_plan()` 的 `LaunchPlan.env` 追加
+`CODEBUDDY_FORCE_HEADLESS_BUNDLE=1`（追加，不替换，凭据仍继承）。
+
+**第二个断点（本项目自己造成，已修 `d6d1a47`）**：用 agent shell 重启网关后，网关继承了该
+shell 的工具链环境（195 个变量，含 `CODEBUDDY_TOOL_CALL_ID`、`CODEBUDDY_SAFE_DELETE_BULK_*`），
+worker 再继承网关 → worker 的 shell 会话里武装了产品的批量删除保护 → 网关回收自己的陈旧
+job 锁被拒 → `POST /api/v1/jobs` HTTP 500。修复：`service_environment()` +
+`GatewayService.__init__` 净化（只删 `AGENT_SESSION_MARKERS` 那张具名清单，凭据等一律继承）。
+
+**第三个缺口（已补）**：`unknown_dispatch` 过去把所有失败都记成
+`note: "no answer written"`，无法区分"模型答不出来"与"worker 根本没起来"，于是 7 条 pending
+全部被 2 次尝试上限永久孤立。现在每次 reconcile 记 `failure_class`（`WORKER_DIED` 只在有
+正面证据时），两套预算分开，冷却按连续 worker 死亡数放大，连续 ≥2 次报 `DEGRADED`，
+帧文件已丢失的请求不再占槽位，记账行不再重置重试时钟。历史 18 条 job 中，
+**只有 2 条**有日志证据可改判（`tools/unknown_reclassify_failures.py`）。
+
+**未完成**：冷启动的端到端答案在本轮结束时**仍未落盘**——作业 `a462d931` 的 worker
+（pid 15028）**存活**、日志无 `MODULE_NOT_FOUND`、与模型服务保持 3 条 ESTABLISHED 连接，
+但 14 分钟未返回（对照：历史上唯一成功的一次 `13ffdac6` 用了约 26 分钟）。
+所以「job 真的能起来」已有真机证据，**「答案真的写出来 + 正式 AUTO 真的执行」尚未取得证据**，
+下一位接手请直接从这条链路继续，不要把它当成已完成。
+
+**下一步**：
+1. 继续等/查 `a462d931` 是否写出 `learning/unknown_requests/answers/unknown__control__23759997.json`；
+   若 45 分钟被 `ABANDONED`，看 `failure_class` 与 `~/.workbuddy/logs/job-a462d931.log`。
+2. 面板进程内存里仍是未净化的 `os.environ`（重启被安全点规则拒绝）。下次 AUTO 在安全点空闲时
+   跑 `tools/panel_restart.py --restart`，让面板与网关环境一致。
+3. 答案落盘后盯运行时能否在**同一 page_key + goal** 的当前帧上消费它
+   （`runtime._advised_control` → `advisor.take` → `advice_staleness` → 当前帧 grounding → MAA 执行 → Verifier）。
+
+<!-- /HANDWRITTEN:2026-09-24 -->
+
+<!-- AUTO:last_handoff -->
+HANDOFF TIME: 2026-09-23T18:35:19+00:00
+LAST GOOD COMMIT: e4fd245
+WORKING TREE: 598 dirty file(s)
+  ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/00_MASTER_RULES.md', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md', ' M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md', ' M .workbuddy-ai/handoff/03_NEXT_ACTION.md', ' M .workbuddy-ai/handoff/04_OPEN_ISSUES.md', ' M .workbuddy-ai/handoff/05_RECENT_CHANGES.md']
+
+WHAT FINISHED (machine-visible): 20 skills live verified, 44 stable, 502 commit(s) in history
 WHAT LIVE VERIFIED: see 01_CURRENT_TRUTH.md section D (skills with >=1 production success)
 WHAT NOT VERIFIED: 21 skills never executed, 11 never succeeded
 
 CURRENT TASK: see 03_NEXT_ACTION.md
-STOPPED AT: agent_state=IDLE stop_reason=mail_all_clear
-LAST PRODUCTION EPISODE: {"skill": "DISMISS_MAIL_GENERIC_REWARD", "result": "SUCCESS", "recorded_at": "2026-09-23T14:39:24.512990+00:00", "episode_id": "20260923_223730_155592", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_223730_155592\\20260923_223730_155592_step_005_before_20260923T143909372403.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_223730_155592\\20260923_223730_155592_step_005_after_20260923T143912840144.png"}
-TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 423, "recent": 155, "last_seen": "2026-09-23T14:00:32.817584+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 87, "2026-09-23": 44}, "undated": 31, "top_skills": [["TRY_ORDINARY_CONTROL", 47], ["OPEN_HOME", 45], ["SELECT_RESOURCE", 45]]}
+STOPPED AT: agent_state=RECOVERING stop_reason=None
+LAST PRODUCTION EPISODE: {"skill": "OPEN_HOME", "result": "SUCCESS", "recorded_at": "2026-09-23T18:34:17.663078+00:00", "episode_id": "20260924_023347_469892", "before_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_023347_469892\\20260924_023347_469892_step_001_before_20260923T183353118199.png", "after_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260924_023347_469892\\20260924_023347_469892_step_001_after_20260923T183408647188.png"}
+TOP FAILURE: {"failure_type": "SEMANTIC_TARGET_NOT_VERIFIED", "count": 429, "recent": 147, "last_seen": "2026-09-23T17:43:06.198521+00:00", "dates": {"2026-09-12": 36, "2026-09-13": 37, "2026-09-14": 8, "2026-09-15": 15, "2026-09-16": 2, "2026-09-17": 3, "2026-09-18": 2, "2026-09-19": 16, "2026-09-20": 89, "2026-09-21": 53, "2026-09-22": 87, "2026-09-23": 50}, "undated": 31, "top_skills": [["TRY_ORDINARY_CONTROL", 51], ["SELECT_RESOURCE", 47], ["OPEN_HOME", 45]]}
 NEXT EXACT STEP: Implement the highest-leverage missing skill listed in `highest_leverage` inside knowledge/goals/capability_skill_map.json, then REPLAY -> LIVE -> VERIFY -> EVIDENCE.
-DIRTY FILES: 532
+DIRTY FILES: 598
 TEST STATUS: not run by this script — run `python -m pytest tests -q`
 LIVE STATUS: PASS (unexpected_worker_exits=15)
 
 GIT SYNC (is the public mirror current?):
-SYNC STATE at 2026-09-23T14:43:03+00:00
+SYNC STATE at 2026-09-23T18:35:19+00:00
 remote            : https://github.com/hongweixiong0-star/winter-agent-os-v2.git
 branch            : main
-local_head        : 8e384d83babf14a1fdafbf8890c292f5b8a277a5
-remote_head       : 8e384d83babf14a1fdafbf8890c292f5b8a277a5   (local remote-tracking ref; run tools/git_sync.py status to refresh)
-unpushed_commits  : 0   (behind: 0)
-git_dirty         : True (532 path(s))
-last_push_at      : 2026-09-23T14:42:51.572949+00:00
+local_head        : d6d1a477b692c2eb6479632e47d3795fdc7dac17
+remote_head       : 63b17c31d4e1a1285985332bcf8b7fc42df3450d   (local remote-tracking ref; run tools/git_sync.py status to refresh)
+unpushed_commits  : 2   (behind: 0)
+git_dirty         : True (598 path(s))
+last_push_at      : 2026-09-23T14:43:30.540683+00:00
 last_push_status  : PUSHED
-verdict           : GitHub mirrors the local tree
+verdict           : LOCAL IS AHEAD by 2 commit(s) -- run `python tools/git_sync.py push`
 
 KNOWN RISKS:
 - Live Verified depends on screenshots that are NOT in git (see .gitignore); they are machine-local.

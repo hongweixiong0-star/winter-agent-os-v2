@@ -6,24 +6,24 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x423 all-time; recent=155 (last 2d), last seen 2026-09-23T14:00:32.817584+00:00 — TRY_ORDINARY_CONTROL(47), OPEN_HOME(45), SELECT_RESOURCE(45)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x429 all-time; recent=147 (last 2d), last seen 2026-09-23T17:43:06.198521+00:00 — TRY_ORDINARY_CONTROL(51), SELECT_RESOURCE(47), OPEN_HOME(45)
 - **POPUP_CLOSE_NOT_PROVEN** x89 all-time; recent=83 (last 2d), last seen 2026-09-23T09:36:07.512813+00:00 — CLOSE_POPUP(82), DISMISS_REAL_MONEY_OFFER(6), RECONNECT_SESSION(1)
-- **SAFE_BACK_NOT_PROVEN** x97 all-time; recent=72 (last 2d), last seen 2026-09-23T13:08:24.805139+00:00 — BACK(97)
-- **BEAST_DISPATCH_NOT_PROVEN** x52 all-time; recent=51 (last 2d), last seen 2026-09-23T14:22:05.766790+00:00 — DISPATCH_BEAST(52)
-- **NO_EXECUTION** x51 all-time; recent=42 (last 2d), last seen 2026-09-23T12:53:43.635831+00:00 — SAFE_STOP(51)
-- **EXPLORATION_IDLE_DIALOG_NOT_PROVEN** x39 all-time; recent=19 (last 2d), last seen 2026-09-22T11:21:51.270358+00:00 — EXPLORATION_IDLE_CLAIM(39)
+- **SAFE_BACK_NOT_PROVEN** x97 all-time; recent=68 (last 2d), last seen 2026-09-23T13:08:24.805139+00:00 — BACK(97)
+- **BEAST_DISPATCH_NOT_PROVEN** x58 all-time; recent=53 (last 2d), last seen 2026-09-23T18:11:34.567601+00:00 — DISPATCH_BEAST(58)
+- **NO_EXECUTION** x52 all-time; recent=43 (last 2d), last seen 2026-09-23T15:54:36.630527+00:00 — SAFE_STOP(52)
+- **POWER_DETAILS_NOT_PROVEN** x20 all-time; recent=20 (last 2d), last seen 2026-09-23T17:25:13.203862+00:00 — OPEN_POWER_DETAILS(20)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CANCEL_DUPLICATE_TARGET` never succeeded (attempts=1, failure=1)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
 - `OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN` never succeeded (attempts=1, failure=1)
 - `RESEARCH` never succeeded (attempts=1, failure=0)
-- `SAFE_STOP` never succeeded (attempts=51, failure=51)
+- `SAFE_STOP` never succeeded (attempts=52, failure=52)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=8, failure=8)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=3, failure=3)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 532 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy/memory/2026-09-21.md']
+- 598 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/00_MASTER_RULES.md']
 <!-- /AUTO:open_issues -->
 
 ---

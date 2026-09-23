@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `d6d1a47 2026-09-24T02:22:05+08:00 fix(gateway-service): a service must not be started inside someone else's tool call`
+- `ffb4502 2026-09-24T02:07:27+08:00 fix(unknown-channel): the gateway sets the bundle selector, so an answering job can start`
+- `63b17c3 2026-09-23T22:43:06+08:00 docs(handoff): refreshed, with the panel's state-source rule and its two remaining gaps pinned`
 - `8e384d8 2026-09-23T22:42:17+08:00 feat(quick-panel): the panel reads the city's state, and the city stopped asking twice`
 - `ef204e4 2026-09-23T22:04:37+08:00 docs(skill): a fixture's own learned inputs are variables too -- and do not delete a load-bearing term to make one deterministic`
 - `ed945c5 2026-09-23T22:04:11+08:00 docs(handoff): the AUTO refreshed, with the five questions and their judging criteria pinned`
@@ -15,31 +18,28 @@ Last 12 commits (newest first):
 - `afdb44c 2026-09-23T20:31:10+08:00 docs(memory): a field written at partial write-sites cannot prove absence; and a similarity score can run backwards`
 - `4c4ea94 2026-09-23T20:30:26+08:00 feat(truth_audit): 实力详情 landed on the real device -- the tap and the after-frame are both right`
 - `72c8e25 2026-09-23T20:25:31+08:00 docs(ai-channel): register the break, and a watcher that says when the two live questions land`
-- `3195af7 2026-09-23T20:23:36+08:00 fix(ai-channel): the answer was never lost -- nothing was sending it back to the screen`
-- `8e8489f 2026-09-23T18:00:36+08:00 docs(handoff+skills): the bound has to be movable, and a name can arrive inside a token`
-- `78bf834 2026-09-23T17:58:56+08:00 fix(popups): the client prints the icon with the name, and one popup is not one step per goal`
 
-Uncommitted changes: 532
+Uncommitted changes: 598
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
+- ` M .workbuddy-ai/handoff/00_MASTER_RULES.md`
+- ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
+- ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
+- ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
+- ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
+- ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
+- ` M .workbuddy-ai/handoff/07_EXTERNAL_REUSE.md`
+- ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
+- ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
+- ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
+- ` M .workbuddy-ai/memory/2026-09-23.md`
 - ` M .workbuddy/memory/2026-09-21.md`
+- ` M .workbuddy/memory/2026-09-23.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
-- ` M dataset/truth_audit/advice_execution_20260923/replay.json`
-- ` M docs/CAPABILITY_COVERAGE.md`
-- ` M knowledge/game/capability_catalog.json`
-- ` M knowledge/goals/capability_skill_map.json`
-- ` M knowledge/goals/goal_capability_map.json`
-- ` M knowledge/perception/candidates/INDEX.json`
-- ` M knowledge/perception/candidates/alliance__eca25dc9a7/metadata.yaml`
-- ` M knowledge/perception/pages/INDEX.json`
-- ` M knowledge/preload/INDEX.json`
-- ` M knowledge/preload/TROOP_SELECT.json`
-- ` M knowledge/ui/page_transitions.json`
-- ` M learning/candidate_attempt_pool.json`
-- ` M learning/control_panel/latest.log`
+- ` M dataset/candidate/template_manifest.json`
 <!-- /AUTO:recent_commits -->
 
 ---
