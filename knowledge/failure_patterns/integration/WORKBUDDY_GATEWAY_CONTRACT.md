@@ -364,3 +364,71 @@ So the remaining break is **"a purely forked worker never gets a turn"**, and it
 session's question is what the worker is waiting for in `starting…`
 (`CODEBUDDY_JOB_CONTROL_SOCKET` / the broker handshake / an attach), and why the desktop app only
 attaches to some jobs. Do not mistake a live worker for a working one.
+
+### 9.5 Where the fork path actually stops: the worker becomes an idle session and no turn is started
+
+Traced step by step on 2026-09-24 with `_probe_lifecycle.py` (0.25 s sampling of the job's own
+`state.json` plus the job directory). Job `7d253d09`, submitted to the panel-launched gateway whose
+config root is the CLI default (`~/.codebuddy`):
+
+```
+ 0.04s  submitted
+ 0.79s  worker pid recorded (procStart set)
+ 2.04s  broker.json appears          <- the worker announced its attach pipe
+ 3.05s  colleague-inbox/             <- the job store completed its directories
+ 3.30s  inbox/
+ 6.57s  detail -> 'preparing'
+ 8.34s  WORKER PROCESS GONE
+21.88s  gateway: failed / 'session ended — press enter to restart it'
+```
+
+Two things follow, and both are measurements rather than readings:
+
+* **the worker does get past start-up** in this configuration — it announces itself and reports
+  `preparing`, which the earlier `.workbuddy`-root jobs never did (they sat at `starting…` for the
+  full 45 minutes). The config root is therefore a real variable, not noise.
+* **it then exits silently**, with an empty log (183 bytes: only the harmless `no-orphans` warning),
+  and the gateway's reaper converts that into `session ended` 13 s later. There is no stack, no
+  error, and no model request at any point.
+
+**With a client attached it lives longer and gets one step further.** Running the product's own
+`codebuddy attach <pid>` while the job starts (`_probe_attach.py`, job `c0df8fa2`):
+
+```
+ 6.76s  detail -> 'preparing'
+ 8.27s  detail -> 'idle'          <- survives the 8 s point; becomes a listening session
+26.79s  failed / 'session ended'   result: ''
+```
+
+`idle` is the state of a background session that is **up and waiting for a message**. The worker is
+not failing to answer; it is waiting to be asked, and nothing ever asks. That is also what the
+history looks like from the other side: every job that ever ran has `broker.json` + `attachSocket`,
+i.e. a client on its pipe.
+
+### 9.6 The layer underneath: our gateway's environment carries no model access, and no host wiring
+
+`forkBgSession` gives each worker `{...process.env}` of the gateway, so what the gateway inherited is
+the worker's whole world. Measured on this machine (`psutil`, read-only):
+
+| | environment variables | of interest |
+| --- | --- | --- |
+| our gateway (port 8080) | 61 | `CODEBUDDY_FORCE_HEADLESS_BUNDLE`, `CODEBUDDY_GATEWAY_PASSWORD`, `CODEBUDDY_INTERNET_ENVIRONMENT` — **and no other `CODEBUDDY_*`** |
+| the app's per-session sidecar | 146 | 86 keys the gateway lacks: `CODEBUDDY_HOST=workbuddy-desktop`, `CODEBUDDY_HOST_CAPABILITIES`, `CODEBUDDY_CONFIG_DIR=~/.workbuddy`, `WORKBUDDY_PAC_RPC_TOKEN`, product-config spill paths, `--settings` / `--mcp-config` / `--prompt-vars-file` on argv |
+
+There is no model credential in either environment; the app grants model access to the CLI processes
+*it* spawns for a session, by handing them the host identity, the capabilities, the product config
+and the session token. A worker we fork ourselves gets none of it.
+
+Independent confirmation at the capability layer, no job machinery involved
+(`_probe_headless_turn.py`): one one-shot `cli/bin/codebuddy` turn, run under **the gateway's own
+environment**, with the bundle selector set and both config roots tried —
+`… PROBE_OK …` and `-p PROBE_OK` — **never returned** (150 s and 240 s windows, exit by timeout).
+
+**Consequence for the project, stated plainly.** Until a model access path exists that does not
+belong to a WorkBuddy session, the UNKNOWN channel cannot answer anything by itself: every job can
+now be created, and its worker can boot, announce itself and prepare — and then waits forever for a
+message that only a session-driven client would deliver. Copying `WORKBUDDY_PAC_RPC_TOKEN`, reusing
+a session's argv, or otherwise borrowing the app's credentials is **not** an acceptable fix and was
+not attempted. The honest options are (a) get a sanctioned service credential for this project, or
+(b) accept that answering stays session-driven — and say so, rather than dressing up a booting
+process as progress.

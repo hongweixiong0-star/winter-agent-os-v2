@@ -14,6 +14,7 @@ names, starts exactly one replacement, and prints the measured result.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -30,6 +31,11 @@ from winter_agent_v2.workbuddy_bridge import WorkBuddyBridge  # noqa: E402
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--drop", action="append", default=[],
+                        help="an extra environment variable to remove from the gateway (repeatable)")
+    args = parser.parse_args()
+
     # The credential the *panel* uses, not this shell's.  Measured 2026-09-24: this shell's
     # ``CODEBUDDY_GATEWAY_PASSWORD`` is the host's generated 43-char value while the panel (and
     # ``HKCU\\Environment``) carry the project's ``v2-bridge-dev-local-only``.  A gateway started
@@ -39,12 +45,16 @@ def main() -> int:
     from winter_agent_v2.workbuddy_bridge import ENV_PASSWORD, persisted_password
 
     env = gs.service_environment(os.environ)
+    for name in args.drop:
+        env.pop(name, None)
     project_password = persisted_password()
     if project_password:
         env[ENV_PASSWORD] = project_password
     print(f"launch password: {'project value from HKCU\\\\Environment' if project_password else 'shell environment'}")
     dropped = sorted(set(os.environ) - set(env))
-    print(f"agent-session markers dropped: {len(dropped)}")
+    print(f"agent-session markers dropped: {len(dropped)} {dropped}")
+    for name in args.drop:
+        print(f"  extra drop: {name} (was {os.environ.get(name)!r})")
 
     service = gs.GatewayService(ROOT, env=env)
     record = service.record()
