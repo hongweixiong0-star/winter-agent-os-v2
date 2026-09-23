@@ -1,0 +1,68 @@
+{
+ "generated_at": "2026-09-23T03:45:13.227893+00:00",
+ "answer_root": "E:\\无尽冬日智能体\\learning\\unknown_requests\\answers",
+ "cases": [
+  {
+   "request_id": "unknown__control__b6546e80",
+   "asked_on": "2026-09-22T08:31:06.865220+00:00",
+   "page_key": "UNKNOWN::燃霜矿区",
+   "goal_at_ask_time": "DAILY",
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260922_163010_905874\\20260922_163010_905874_step_002_before_20260922T083049654040.png",
+   "frame_exists": true,
+   "page_now": "UNKNOWN",
+   "title_now": "燃霜矿区",
+   "page_key_now": "UNKNOWN::燃霜矿区",
+   "request_id_now": "unknown__control__b6546e80",
+   "id_matches_the_answer": true,
+   "advice_taken": true,
+   "grounding_basis": "ANCHORED_TO_TEXT",
+   "target_anchor": {
+    "text": "奖励",
+    "dy_norm": -0.03,
+    "w_norm": 0.06,
+    "h_norm": 0.035
+   },
+   "proposed_action": "ORDINARY_CONTROL[奖励入口]",
+   "frame_regions": 17,
+   "frame_texts": 17,
+   "staleness": "",
+   "anchored_region": {
+    "box_norm": {
+     "x_norm": 0.8519,
+     "y_norm": 0.2733,
+     "w_norm": 0.06,
+     "h_norm": 0.035
+    },
+    "detail": {
+     "anchor_text": "奖励",
+     "anchor_box": {
+      "x_norm": 0.8486,
+      "y_norm": 0.3094,
+      "w_norm": 0.0667,
+      "h_norm": 0.0227
+     },
+     "offset": [
+      0.0,
+      -0.03
+     ]
+    }
+   },
+   "grounded_region": {
+    "box_norm": {
+     "x_norm": 0.8486,
+     "y_norm": 0.3094,
+     "w_norm": 0.0667,
+     "h_norm": 0.0227
+    },
+    "basis": "OCR_BOX",
+    "text": "奖励"
+   },
+   "risk_verdict": "",
+   "point": [
+    0.8819,
+    0.2908
+   ],
+   "last_advice_set": true
+  }
+ ]
+}
