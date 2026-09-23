@@ -237,6 +237,12 @@ class RuleBrain:
         # a tap the frame cannot name.
         self.ordinary_attempts = 0
         self.MAX_ORDINARY_ATTEMPTS = 2
+        #: How many times **one route** may ask for the panel handle before it stops asking.  Per route
+        #: rather than per run, because a different goal's failed tap must not deny this one the panel
+        #: (see the call site); one, because the second ask would be the same request on a panel that
+        #: did not move.
+        self.MAX_PANEL_OPEN_ATTEMPTS_PER_GOAL = 1
+        self._panel_open_attempts: dict[str, int] = {}
         # How many panel rows one run may be navigated through.  The panel is a task board -- three
         # barracks, the research lab, 联盟捐献, 英雄招募, 我的奖励 -- and the operator's §五 asks for
         # several in-city tasks handled in one pass, so a bound of two cut off the third barracks.
@@ -1150,11 +1156,36 @@ class RuleBrain:
                 handle = panel.get("handle") or {}
                 # Not open: ask for one ordinary control, which the runtime's dictionary tier resolves
                 # to a tap of the handle on this very frame (proved live 21:24:58, QUICK_PANEL_OPENED).
+                #
+                # Bounded **per goal**, not per run, and that is measured rather than tidy-minded.  Run
+                # ``20260923_223022_643420`` (one run, 2026-09-23):
+                #
+                #   14:32:40  TRY_ORDINARY_CONTROL  SUCCESS  KEEP_TRAINING_PRODUCTIVE   handle COLLAPSED
+                #   14:33:47  OPEN_MAP              SUCCESS  AUTO_DISCOVERY            panel OPEN, building + camps read
+                #   14:34:16  OPEN_HOME             SUCCESS  KEEP_TRAINING_PRODUCTIVE
+                #   14:34:30  TRY_ORDINARY_CONTROL  FAILURE  MAIL_ROUTINE              handle COLLAPSED
+                #   14:34:46  OPEN_POWER_OVERVIEW   SUCCESS  KEEP_TRAINING_PRODUCTIVE  handle COLLAPSED
+                #   14:35:29  OPEN_POWER_DETAILS    FAILURE  KEEP_TRAINING_PRODUCTIVE
+                #
+                # The run-level counter was spent by the *mail* goal's failed tap, so when the training
+                # goal asked -- with a readable collapsed handle, which is exactly §一.3's case -- there
+                # was no budget left and it took the proven route instead, which then failed at page
+                # recognition.  One goal's failure denying another goal the panel is not a guard against
+                # anything: what the ceiling exists for is "the same ask must not become a loop", and a
+                # per-goal ceiling of one does that on its own.  Each ask still costs a real step, and
+                # the run is bounded by ``max_actions`` either way.
+                #
+                # The handle is a *measured* control with its own basis (``HANDLE_TRIANGLE_SCAN``, with
+                # ``box_norm`` on this frame), not the "find something untried" scan that
+                # ``MAX_ORDINARY_ATTEMPTS`` is the budget for -- which is why it is charged to
+                # ``ordinary_attempts`` for the record but no longer gated on it.
+                route = str(self._goal_route() or "")
                 if (
                     str(handle.get("state") or "") == "COLLAPSED"
-                    and self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
+                    and self._panel_open_attempts.get(route, 0) < self.MAX_PANEL_OPEN_ATTEMPTS_PER_GOAL
                     and not self.ordinary_scan_exhausted
                 ):
+                    self._panel_open_attempts[route] = self._panel_open_attempts.get(route, 0) + 1
                     self.ordinary_attempts += 1
                     return Decision(
                         "TRY_ORDINARY_CONTROL",
@@ -1219,7 +1250,25 @@ class RuleBrain:
                 # why vision reports them separately.)
                 return Decision("SAFE_STOP", "research_queue_busy", 1.0, "switch_task")
             if world.page is Page.HOME:
-                return Decision("OPEN_POWER_OVERVIEW", "research_goal_requires_power_route", world.confidence, "power_overview_open")
+                # The 加成总览 route below exists to *learn* whether the lab's queue is free.  When the
+                # panel has already said (this function's sibling above returns its own decision in
+                # that case), the route would be a round trip to ask a question already answered --
+                # and it measured 100% failure while doing it.  §一.2: 直接复用.
+                if self._panel_answered_this_goals_state(world):
+                    return Decision(
+                        "SAFE_STOP",
+                        "quick_panel_already_read_this_lab_queue_so_the_power_route_is_not_a_refresh",
+                        1.0,
+                        "switch_task",
+                    )
+                # §一.6: the panel is not answering for this goal, so the proven route is the fallback
+                # -- and the reason now says which case this is instead of naming the route alone.
+                return Decision(
+                    "OPEN_POWER_OVERVIEW",
+                    "panel_did_not_serve_this_goal_so_the_power_route_is_the_fallback",
+                    world.confidence,
+                    "power_overview_open",
+                )
             if world.page is Page.MAP:
                 # The client's resting page is the map, and a named route goal used
                 # to stop here -- research_entry_not_verified / training_entry_not_verified
@@ -1352,22 +1401,27 @@ class RuleBrain:
             # `Page.RESEARCH` carrying a borrowed building-queue timer, so `training` was
             # empty and the route walked the power list to the research lab instead.
             #
-            # What the panel changes is the *diagnosis*, not the route: it proves a camp
-            # is idle, so the goal is known to be startable and the power route is the
-            # right way to reach the camp.  The panel's own 加号 is deliberately NOT
-            # tapped here -- its template was cut from the training page and does not
-            # match the panel (checked on the live panel frame), so a tap at that ROI
-            # would be an unproven coordinate.  The power route reaches the camp through
-            # controls that are proven.
-            #
             # It only fires when a camp is positively idle; a panel that was not read,
             # or whose rows were busy, leaves the route on its existing path.
             if world.page is Page.HOME and world.quick_panel.get("open"):
+                panel_camps = world.quick_panel.get("camps") or {}
+                own_camp = self._goal_camp()
+                # The goal's own barracks first.  A per-camp goal acts on its own row and only its
+                # row, which is operator §二 ("根据所属行分别解释") and §四 ("确定目标任务行"), and the
+                # measurement is that it was not: ``goal=LANCER_CAMP_TRAINING`` at 2026-09-23 13:59:41
+                # was answered with ``quick_panel_shield_camp_is_idle`` -- the *shield* camp's row,
+                # because this scan took the first idle entry in dict order.  Acting on a look-alike
+                # row is exactly the confusion the per-camp model exists to prevent.
+                order = ([own_camp] if own_camp else []) + [
+                    camp for camp in panel_camps if camp != own_camp
+                ]
                 idle_camp = next(
                     (
                         camp
-                        for camp, reading in (world.quick_panel.get("camps") or {}).items()
-                        if reading.get("queue_available") is True and reading.get("status") == "IDLE"
+                        for camp in order
+                        if isinstance(panel_camps.get(camp), dict)
+                        and panel_camps[camp].get("queue_available") is True
+                        and panel_camps[camp].get("status") == "IDLE"
                     ),
                     None,
                 )
@@ -1377,33 +1431,44 @@ class RuleBrain:
                     # page, and it can reach any of the three camps, where the power route reaches
                     # only the infantry one.  Preferred while the reading still carries the row --
                     # the resolver needs ``arrow_norm`` on THIS frame, so a row the panel no longer
-                    # draws falls through to the proven power route instead of tapping blind.
+                    # draws cannot be tapped blind.
                     #
                     # Bounded to two tries per run: a row arrow whose tap does not open the page
                     # must not become a loop on a panel that stays open.
                     # The same two guards the generic ``_actionable_panel_row`` applies, and for a
-                    # reason that is now measured live rather than argued: run 2026-09-23 18:54:27,
+                    # reason that is measured live rather than argued: run 2026-09-23 18:54:27,
                     # goal MAIL, the panel open -- the 盾兵 row read ``status=IDLE`` with
-                    # ``control=DONE`` (the client had drawn its green tick on that row) and this
-                    # branch, which only asked for ``arrow_norm``, tapped it as an *enter* target:
+                    # ``control=DONE`` (the client had drawn its tick on that row) and this branch,
+                    # which only asked for ``arrow_norm``, tapped it as an *enter* target:
                     # OPEN_TASK_FROM_QUICK_PANEL_SHIELD, FAILURE / PANEL_ROW_TASK_BAR_NOT_PROVEN, the
                     # panel closed behind it and no task bar appeared.
                     #
-                    # The tick means finished-and-waiting-to-be-collected, which is not an enter
-                    # arrow: a row the client marked done belongs to the collect path, and while that
-                    # path is withdrawn (issue #92) the honest answer is not to tap it at all.
+                    # The tick means the queue finished (a barracks reading 已完成 has no queue
+                    # running, so it is available), which is not an enter arrow: a row the client
+                    # marked that way draws no control this project has proven, and the tick's own
+                    # centre has been tapped and measured a dead end (``brain``'s
+                    # ``_QUICK_PANEL_ROW_CLAIM_SKILL`` records that measurement).
+                    #
+                    # The row is looked up by key **first** and filtered second, which is not a style
+                    # choice: an earlier version of this branch looked the row up *through* the
+                    # arrow test, so a tick row came back as ``None`` and the code below could not tell
+                    # "the panel drew a control I may not use" from "the panel drew nothing".  That is
+                    # the whole distinction §一.6 turns on, and two tests caught it.
                     row = next(
                         (
                             item
                             for item in (world.quick_panel.get("rows") or ())
                             if str(item.get("key")) == idle_camp
-                            and item.get("arrow_norm")
-                            and str(item.get("control")) == QUICK_PANEL_CONTROL_ARROW
-                            and str(item.get("arrow_basis")) == QUICK_PANEL_ARROW_BASIS_SCAN
                         ),
                         None,
                     )
-                    skill_id = self._panel_row_skill(row)
+                    usable = (
+                        row is not None
+                        and row.get("arrow_norm")
+                        and str(row.get("control")) == QUICK_PANEL_CONTROL_ARROW
+                        and str(row.get("arrow_basis")) == QUICK_PANEL_ARROW_BASIS_SCAN
+                    )
+                    skill_id = self._panel_row_skill(row) if usable else None
                     if skill_id is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
                         self._panel_row_attempts += 1
                         return Decision(
@@ -1412,16 +1477,26 @@ class RuleBrain:
                             world.confidence,
                             "task_page_open",
                         )
-                    return Decision(
-                        "OPEN_POWER_OVERVIEW",
-                        f"quick_panel_{idle_camp.lower()}_is_idle",
-                        world.confidence,
-                        "power_overview_open",
-                    )
+                    return self._without_an_enter_control(idle_camp, row, panel_camps, world)
             if world.page is Page.HOME and world.training.get("queue_available") is False:
                 return Decision("SAFE_STOP", "training_queue_busy", 1.0, "switch_task")
             if world.page is Page.HOME:
-                return Decision("OPEN_POWER_OVERVIEW", "training_goal_requires_power_route", world.confidence, "power_overview_open")
+                # Same rule as the lab above, and the same measurement: the panel described all three
+                # barracks in 56 of the 57 panel frames and the goal layer saw none of it, so this
+                # route was taken to ask again -- 100% failure, 20 of 20.
+                if self._panel_answered_this_goals_state(world):
+                    return Decision(
+                        "SAFE_STOP",
+                        "quick_panel_already_read_the_barracks_so_the_power_route_is_not_a_refresh",
+                        1.0,
+                        "switch_task",
+                    )
+                return Decision(
+                    "OPEN_POWER_OVERVIEW",
+                    "panel_did_not_serve_this_goal_so_the_power_route_is_the_fallback",
+                    world.confidence,
+                    "power_overview_open",
+                )
             if world.page is Page.MAP:
                 # See the research goal above: both route goals were missing the hop
                 # the other four have always had.
@@ -2299,9 +2374,91 @@ class RuleBrain:
             str(getattr(self, "goal_id", "") or "")
         )
 
+    def _without_an_enter_control(
+        self, camp: str, row: dict | None, panel_camps: dict | None, world: WorldState
+    ) -> Decision:
+        """What to do when the panel has this row and nothing this project may act on.
+
+        Three cases that look alike from the caller and are not the same thing.  §一.6 permits the
+        proven route when the panel is not serving the row -- so **no row drawn**, **nothing drawn in
+        the row's control slot**, and **I already tapped and the page did not open** all hand back to
+        it, unchanged.
+
+        What is *not* the same is a row on which the client drew a control that is a measured dead end:
+        a barracks reading 已完成 draws its tick exactly where the enter-arrow would go, and tapping
+        that point has been tried and collected nothing (``_QUICK_PANEL_ROW_CLAIM_SKILL``'s comment
+        records the measurement).  The row is not an enter target either, and the tick's meaning for a
+        *queue* row is that the queue finished -- so the barracks is available and there is simply
+        nothing this project has proven how to do about it from here.
+
+        For that case the old route is pure waste, and that is measured rather than argued:
+        ``quick_panel_<camp>_is_idle`` answered ``OPEN_POWER_OVERVIEW`` here on every such frame, the
+        follow-up ``train_goal_power_overview`` -> ``OPEN_POWER_DETAILS`` failed
+        ``POWER_DETAILS_NOT_PROVEN`` **every single time** (20 steps in the corpus, no exceptions), and
+        run ``20260923_215819_292688`` spent 4 of its 6 steps on that detour and its recovery -- while
+        all three camp rows and the research row had been read off the panel thirty seconds earlier.
+        §五: 周期到达只表示相关状态可能需要刷新，不代表必须进入具体功能页面.
+
+        A non-fatal SAFE_STOP is the honest answer: the goal steps aside so another selectable task
+        gets the cycle (§六 -- 某个兵营忙碌或某项任务没有 Skill，不得结束整轮 AUTO), and nothing in the
+        world was left unread by declining to look again.
+        """
+        drawn = str((row or {}).get("control") or "")
+        if drawn == QUICK_PANEL_CONTROL_DONE:
+            word = str(
+                (row or {}).get("source_word")
+                or ((panel_camps or {}).get(camp) or {}).get("source_word")
+                or "idle"
+            )
+            return Decision(
+                "SAFE_STOP",
+                f"quick_panel_row_{camp.lower()}_reads_{word}_and_draws_no_enter_control",
+                1.0,
+                "switch_task",
+            )
+        return Decision(
+            "OPEN_POWER_OVERVIEW",
+            f"quick_panel_has_no_usable_row_for_{camp.lower()}_"
+            f"({drawn.lower() or 'no_row'})_so_the_power_route_is_the_fallback",
+            world.confidence,
+            "power_overview_open",
+        )
+
     def _panel_rows_for_this_goal(self) -> tuple[str, ...]:
         """The panel row kinds the running goal works from; empty when the panel is not its board."""
         return self.PANEL_ROWS_FOR_ROUTE.get(str(self._goal_route() or ""), ())
+
+    def _panel_answered_this_goals_state(self, world: WorldState) -> bool:
+        """Did the panel's own reading, on this frame, already settle what this goal needs to know?
+
+        Operator §一.2 and §五, and the one question they turn on: the 加成总览 route exists to *learn*
+        a queue's state.  A state that is already on the frame cannot be learned by walking somewhere
+        else, so a goal whose queue the panel has just described must not take that route.
+
+        Measured 2026-09-23 across the 57 production frames with the panel open: the panel carried a
+        建筑队列 reading in 56 and a 科技研究 reading in 57, against an empty ``WorldState.building``
+        and ``WorldState.research`` in all 57, and the detour those goals then took
+        (``train_goal_power_overview`` / ``research_goal_power_overview`` -> ``OPEN_POWER_DETAILS``)
+        failed ``POWER_DETAILS_NOT_PROVEN`` **every time** -- 20 steps, no exceptions.
+
+        Deliberately a different question from "did the panel serve a row I can act on": this one is
+        only about knowledge, so a goal can be refused the detour even when it has no usable control.
+        That is §六's answer -- the task steps aside and the cycle goes to another one -- rather than
+        §一.6's fallback, which is for a panel that is *not there*.
+        """
+        panel = world.quick_panel or {}
+        if not panel.get("open"):
+            return False
+        kinds = self._panel_rows_for_this_goal()
+        if not kinds:
+            return False
+        #: kind -> "does this frame's reading carry that section".  A row kind this table cannot
+        #: answer says nothing, so it cannot be used to refuse anything.
+        carried = {
+            "CAMP": bool(panel.get("camps")),
+            "RESEARCH": isinstance(panel.get("research"), dict) and bool(panel.get("research")),
+        }
+        return any(carried.get(kind) for kind in kinds)
 
     def _claimable_panel_row(self, world: WorldState) -> dict | None:
         """The first row of a kind this goal works from whose done-marker the client drew.

@@ -4493,19 +4493,40 @@ class HybridVision:
 
     @staticmethod
     def _with_quick_panel(state: WorldState, quick_panel: dict) -> WorldState:
-        """Attach the 快捷面板 reading, and merge its camps into the per-camp model.
+        """Attach the 快捷面板 reading, and merge what the goal layer reads out of it.
 
         The panel's 部队训练 rows describe all three barracks in one frame, which is
         more than the training page can say at once (it draws one camp per visit, #86),
         so where the panel has an answer it is merged in.  The panel is the *overlay*
         and the page is the thing under it, so a page that positively read a camp wins:
         the merge is ``{**panel_camps, **page_camps}``.
+
+        The same rule now applies to the two other queue sections the panel draws, and it is
+        measured rather than tidy-minded (operator directive 2026-09-23 §一.2/§二: 如果 WorldState 已有
+        新鲜可信的状态，直接复用；快捷面板作为城内任务状态来源).  Across the 57 production frames on which
+        the panel was open, the panel carried a 建筑队列 reading in **56** of them and a 科技研究
+        reading in **57**, while ``WorldState.building`` and ``WorldState.research`` were **empty in
+        all 57** -- so the state the run needed was read off the frame and then dropped, and the goal
+        layer could not see it.  That is what sent the training and research goals down the
+        加成总览 -> 实力详情 route to ask a question the panel had already answered: 20 such steps in the
+        corpus, every one of them a FAILURE (``POWER_DETAILS_NOT_PROVEN``).
+
+        Only the two queue sections are merged, and only into an *empty* field, so a page that really
+        read the building or the lab still wins -- the panel is the overlay either way.  The panel's
+        remaining sections (联盟捐献, 英雄招募, 我的奖励) have their own fields on the reading and no
+        matching ``WorldState`` field yet, which is stated here instead of being half-wired.
         """
         if not quick_panel:
             return state
         camps = quick_panel.get("camps") or {}
-        return replace(
-            state,
-            quick_panel=quick_panel,
-            camps=merge_camps(camps, state.camps) if camps else state.camps,
-        )
+        updates: dict[str, object] = {
+            "quick_panel": quick_panel,
+            "camps": merge_camps(camps, state.camps) if camps else state.camps,
+        }
+        building = quick_panel.get("building")
+        if isinstance(building, dict) and building and not state.building:
+            updates["building"] = dict(building)
+        research = quick_panel.get("research")
+        if isinstance(research, dict) and research and not state.research:
+            updates["research"] = dict(research)
+        return replace(state, **updates)

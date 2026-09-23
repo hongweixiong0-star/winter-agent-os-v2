@@ -837,6 +837,11 @@ class TheTickRowIsNotAnEnterTargetTest(unittest.TestCase):
             "control": control,
             "arrow_norm": [0.7097, 0.4262],
             "arrow_basis": "ROW_BUTTON_SCAN",
+            # The client's own word for the row's state, as the reader records it: a barracks whose
+            # queue finished draws 已完成 where an available one draws 空闲中.  Set here because the
+            # reason names the word, and a fixture with no word would be testing a reading that cannot
+            # happen -- both words are in ``QUICK_PANEL_IDLE_WORDS``, so both mean the camp is free.
+            "source_word": "已完成" if control == "DONE" else "空闲中",
         }
         if control == "DONE":
             row["done_norm"] = [0.5618, 0.4344]
@@ -848,15 +853,35 @@ class TheTickRowIsNotAnEnterTargetTest(unittest.TestCase):
         )
 
     def test_a_done_row_is_not_entered(self):
+        """A row the client marked done is not an enter target -- and not a reason to go and look.
+
+        The second half changed 2026-09-23 (operator §五/§六).  What this test pinned before was that
+        the tick row is refused, which it still is; what it asserted *instead* was
+        ``OPEN_POWER_OVERVIEW`` with ``quick_panel_shield_camp_is_idle`` -- i.e. the refusal was
+        expressed as the 加成总览 detour, and that detour is measured 100% failure
+        (``POWER_DETAILS_NOT_PROVEN``, 20 of 20 in the corpus) while the panel had already said what
+        the barracks' state is.  So the refusal is now a non-fatal stop: the goal steps aside and
+        another selectable task gets the cycle.
+
+        Note which state this is: ``control=DONE`` means the client *did* draw something in the row's
+        control slot (its tick), which is why this is not the §一.6 fallback case.  A row the panel did
+        not draw at all, or one whose slot is empty (``control=NONE``), still hands back to the proven
+        route -- ``TheQuickPanelOpeningTests`` pins both of those.
+        """
         from winter_agent_v2.brain import RuleBrain
+        from winter_agent_v2.runtime_snapshot import is_fatal_stop
         from winter_agent_v2.skills import v2_registry
 
         brain = RuleBrain()
         brain.current_goal = "TRAIN"
         decision = brain.decide(self._state("DONE"), v2_registry())
         self.assertNotEqual(decision.skill, "OPEN_TASK_FROM_QUICK_PANEL_SHIELD")
-        self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW")
-        self.assertEqual(decision.reason, "quick_panel_shield_camp_is_idle")
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(
+            decision.reason,
+            "quick_panel_row_shield_camp_reads_已完成_and_draws_no_enter_control",
+        )
+        self.assertFalse(is_fatal_stop(decision.reason), "it steps aside, it does not end the batch")
 
     def test_a_row_with_a_located_arrow_is_still_entered(self):
         from winter_agent_v2.brain import RuleBrain

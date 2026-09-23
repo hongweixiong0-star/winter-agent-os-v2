@@ -1,0 +1,31 @@
+{
+ "generated_at": "2026-09-23T14:35:47.106825+00:00",
+ "split": "2026-09-23T14:25:41.046825+00:00",
+ "corpus": {
+  "steps": 7200,
+  "from": "2026-09-12T11:05:39.915484+00:00",
+  "to": "2026-09-23T14:35:29.288268+00:00"
+ },
+ "before": {
+  "steps": 7186,
+  "power_route": 270,
+  "state_query": 25,
+  "panel_entries": 35
+ },
+ "after": {
+  "steps": 14,
+  "power_route": 2,
+  "state_query": 1,
+  "panel_entries": 0
+ },
+ "enter_skills": [
+  "ALLIANCE_DONATION",
+  "HERO_RECRUIT",
+  "LANCER_CAMP",
+  "MARKSMAN_CAMP",
+  "MY_REWARDS",
+  "RESEARCH",
+  "SHIELD_CAMP"
+ ],
+ "claim_skills": []
+}

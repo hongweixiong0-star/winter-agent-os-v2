@@ -263,7 +263,19 @@ class PanelReachesTheTrainingDecisionTests(unittest.TestCase):
         self.assertEqual(brain.idle_camp_from_quick_panel, "SHIELD_CAMP")
 
     def test_a_busy_panel_leaves_the_route_on_its_own_path(self) -> None:
-        """Every camp busy means no idle-camp claim, so the existing route stands."""
+        """Every camp busy is an *answer*, not a reason to go and look again.
+
+        The assertion changed 2026-09-23 and the rule behind it is the operator's §二/§三/§五: the
+        panel reports 进行中 per barracks, and 兵营和科研已在进行中 means 记录预计结束时间，在需要重新
+        确认状态时再观察 -- 周期到达只表示相关状态可能需要刷新，不代表必须进入具体功能页面.
+
+        Before this the goal walked ``OPEN_POWER_OVERVIEW`` -> ``OPEN_POWER_DETAILS`` to ask the same
+        question: 20 such steps in the corpus, **every one of them a FAILURE**
+        (``POWER_DETAILS_NOT_PROVEN``).  So the earlier form of this test -- that the panel must not
+        appear in the reason at all -- was pinning the detour.  What it should pin is that a busy panel
+        does not send the run anywhere: the goal steps aside, non-fatally, and the cycle goes to
+        another selectable task (§六).
+        """
         decision = RuleBrain(current_goal="TRAIN").decide(
             WorldState(
                 page=Page.HOME,
@@ -276,7 +288,11 @@ class PanelReachesTheTrainingDecisionTests(unittest.TestCase):
             ),
             v2_registry(),
         )
-        self.assertNotIn("quick_panel", decision.reason)
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertIn("quick_panel", decision.reason, "the reason names the reading that decided it")
+        from winter_agent_v2.runtime_snapshot import is_fatal_stop
+
+        self.assertFalse(is_fatal_stop(decision.reason), "this must hand the cycle over, not end it")
 
 
 class QuickPanelGeometryTests(unittest.TestCase):

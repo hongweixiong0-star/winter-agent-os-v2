@@ -94,6 +94,49 @@ def pytest_configure(config) -> None:  # noqa: ARG001 - pytest's hook signature
         gl.GoalState = _legacy_goal  # type: ignore[assignment]
         print("\nAB_WINDOW_STATUS=off: a window or a game condition is labelled READY/COMPLETE again")
 
+    if os.environ.get("AB_QUICK_PANEL_STATE", "") == "off":
+        from winter_agent_v2.ocr import HybridVision
+        from winter_agent_v2.runtime import LiveRuntime  # noqa: F401 - imported for symmetry
+        from winter_agent_v2.brain import RuleBrain
+
+        # This round, reverted at the module boundary, site by site:
+        #
+        # 1. the panel's building / research readings did not reach the goal layer;
+        # 2. a row the panel drew a control on was refused by falling through to the 加成总览 detour;
+        # 3. the idle camp was the first one in dict order rather than the goal's own;
+        # 4. the route fallbacks fired whatever the panel had already said.
+        #
+        # Each patch is the *old* expression rather than an approximation of it: (2) restores the exact
+        # reason string the old branch wrote, which is what makes the A/B a comparison of behaviours
+        # rather than of spellings.
+        # ``_with_quick_panel`` is a staticmethod, so the class attribute is already the plain
+        # function -- there is no ``__func__`` to unwrap (the first version of this patch assumed
+        # there was and died in ``pytest_configure``, which is the kind of failure a switch has to
+        # have *before* it can be trusted as a baseline).
+        previous_attach = HybridVision.__dict__["_with_quick_panel"].__func__
+
+        def without_the_queue_sections(state, quick_panel):  # noqa: ANN001
+            trimmed = {k: v for k, v in (quick_panel or {}).items()
+                       if k not in ("building", "research")}
+            return previous_attach(state, trimmed)
+
+        HybridVision._with_quick_panel = staticmethod(without_the_queue_sections)
+
+        def always_the_power_route(self, camp, row, panel_camps, world):  # noqa: ANN001
+            from winter_agent_v2.models import Decision
+
+            return Decision(
+                "OPEN_POWER_OVERVIEW",
+                f"quick_panel_{camp.lower()}_is_idle",
+                world.confidence,
+                "power_overview_open",
+            )
+
+        RuleBrain._without_an_enter_control = always_the_power_route
+        RuleBrain._goal_camp = lambda self: None  # noqa: ARG005 - the camp-agnostic scan
+        RuleBrain._panel_answered_this_goals_state = lambda self, world: False  # noqa: ARG005
+        print("\nAB_QUICK_PANEL_STATE=off: the panel is a tap target, not a state source (pre-change)")
+
     if os.environ.get("AB_SCREEN_KEY", "") != "page":
         return
     from winter_agent_v2 import control_experience as ce

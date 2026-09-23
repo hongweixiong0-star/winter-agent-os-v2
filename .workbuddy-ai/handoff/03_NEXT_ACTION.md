@@ -4,6 +4,30 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：快捷面板作为城内状态源与入口（2026-09-23 深夜，issue #116）——**读到了却丢掉**
+
+两处断点，都在"读数到手又丢掉"这一族。① **状态丢弃**：`ocr.py::_with_quick_panel` 只并 `camps` —— 面板展开的 **57 帧**里
+`panel.building` 有读数 **56**、`panel.research` **57**，而 `WorldState.building`/`research` **全 0** ⇒ 目标层看不见，
+只能去加成总览问第二遍。② **那趟绕路**：`train_goal_power_overview` 10 步 + `research_goal_power_overview` 10 步
+**全部 FAILURE**（`POWER_DETAILS_NOT_PROVEN`），`OPEN_POWER_OVERVIEW`+`OPEN_POWER_DETAILS` 共 **270 步（3.77%）**。
+③ 顺带：`LANCER` 目标被回以 **盾兵**行（扫描取字典序第一个空闲兵营）。
+
+改法四处（状态并入 WorldState / 行身份 / 死点控件让位 / 状态已答不再绕路）。**绿勾不点** —— 其中心点过是死点
+（404,556，面板关了、无弹窗、重读仍 `已完成`），`_QUICK_PANEL_ROW_CLAIM_SKILL` 保持空集。
+
+**真机判据**（`python tools\measure_quick_panel_priority.py` 一次给六问）：
+
+1. `OPEN_POWER_OVERVIEW`/`OPEN_POWER_DETAILS` 里，理由为 `train_goal_power_overview` /
+   `research_goal_power_overview` 的步**应为 0**；新理由只有 `panel_did_not_serve_this_goal_...` 与
+   `quick_panel_has_no_usable_row_for_..._so_the_power_route_is_the_fallback`；
+2. 面板展开时 `state_before.building` / `state_before.research` **应不再为空**（改前 57 帧全空）；
+3. 面板行进入（`OPEN_TASK_FROM_QUICK_PANEL_*`）的到达面**是城内动作条**，不是训练/科研页——
+   判据写在 `verifier.verify_panel_row_task_bar_opened` 的 docstring 里；**别再用"落到训练页"当判据**（我错过一次）；
+4. 三兵营均忙碌时**不得**出现实力详情步，应是 `SAFE_STOP`（非致命）并继续别的任务。
+
+**未做**：§一.5/§八.6 **面板内部滚动**（既有探索滑 5 次读数相同，日志分不清"到底了"与"没滑动"，要设备测量）；
+联盟捐献 / 免费招募 / 我的奖励 三个区块**从未出现在可见窗口**，零次进入步可验；绿勾行仍无人能收。
+
 ## 手写：任务存在性 / 活动窗口 / 执行资格（2026-09-23 夜，issue #115）——**同一个函数里两处相反方向的混淆**
 
 `GoalLibrary.discover`。**(a) 存在性只从当前帧读出来**：`world.events` 只有一处写入（`ocr.py`，写当前页印的东西），
