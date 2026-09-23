@@ -6,6 +6,10 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `78bf834 2026-09-23T17:58:56+08:00 fix(popups): the client prints the icon with the name, and one popup is not one step per goal`
+- `b87f8eb 2026-09-23T14:17:10+08:00 docs(skill): when git stash is unavailable, revert at the module boundary -- and same runner or nothing`
+- `30fba9d 2026-09-23T14:16:32+08:00 feat(ledger): LIVE -- the band record closes 加成总览 31 s after it lands (first success on that popup)`
+- `a9f3f7b 2026-09-23T14:14:56+08:00 docs(handoff): the handoff refreshed, and the popup-close criteria pinned`
 - `42b3b29 2026-09-23T14:13:53+08:00 fix(ledger): a coordinate is a claim about one screen -- POPUP is 22 of them`
 - `5ce5f5a 2026-09-23T12:09:46+08:00 docs(handoff): the timed-event planner exists and nothing in the live path calls it -- issue #108`
 - `0dd3807 2026-09-23T12:08:44+08:00 feat(ai): entering a function is not doing it -- the four questions become fields, and the boundary is per level`
@@ -14,12 +18,8 @@ Last 12 commits (newest first):
 - `667f4a1 2026-09-23T07:43:32+08:00 docs(handoff): red-dot status measured from the stream, and the two-vocabulary trap in goal_id`
 - `9d361a7 2026-09-23T07:40:55+08:00 docs(handoff): decision_reason has begun landing in the stream -- correct the stale claim`
 - `94f37d0 2026-09-23T07:40:21+08:00 docs(skill): whole-run replay, and the two A/B baseline traps that voided one`
-- `e0c15c4 2026-09-23T07:39:25+08:00 docs(handoff): the round's facts, and the two things a next session can check from episodes alone`
-- `b07b3f5 2026-09-23T07:38:25+08:00 fix(runtime): a run that has looked everywhere stops instead of walking back and forth`
-- `7da38a6 2026-09-23T06:41:16+08:00 docs(handoff): the eighth emitter, the false reasons, and a skill for finding them`
-- `c2d80de 2026-09-23T06:39:53+08:00 fix(home): the eighth OPEN_HOME emitter closes the search panel too -- six minutes of livelock, seven runs one step long`
 
-Uncommitted changes: 542
+Uncommitted changes: 472
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
