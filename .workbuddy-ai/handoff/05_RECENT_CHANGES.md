@@ -6,6 +6,9 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `8e384d8 2026-09-23T22:42:17+08:00 feat(quick-panel): the panel reads the city's state, and the city stopped asking twice`
+- `ef204e4 2026-09-23T22:04:37+08:00 docs(skill): a fixture's own learned inputs are variables too -- and do not delete a load-bearing term to make one deterministic`
+- `ed945c5 2026-09-23T22:04:11+08:00 docs(handoff): the AUTO refreshed, with the five questions and their judging criteria pinned`
 - `f36ab20 2026-09-23T22:03:19+08:00 feat(goals): whether a task exists is not the same fact as whether it can be run`
 - `4132f7f 2026-09-23T21:29:18+08:00 docs(handoff): register #114 -- two faults, two different first breaks, and the judging criteria`
 - `e9c8bca 2026-09-23T21:28:06+08:00 feat(red-dot): the dot decides whether the task exists, not merely how it ranks`
@@ -15,11 +18,8 @@ Last 12 commits (newest first):
 - `3195af7 2026-09-23T20:23:36+08:00 fix(ai-channel): the answer was never lost -- nothing was sending it back to the screen`
 - `8e8489f 2026-09-23T18:00:36+08:00 docs(handoff+skills): the bound has to be movable, and a name can arrive inside a token`
 - `78bf834 2026-09-23T17:58:56+08:00 fix(popups): the client prints the icon with the name, and one popup is not one step per goal`
-- `b87f8eb 2026-09-23T14:17:10+08:00 docs(skill): when git stash is unavailable, revert at the module boundary -- and same runner or nothing`
-- `30fba9d 2026-09-23T14:16:32+08:00 feat(ledger): LIVE -- the band record closes 加成总览 31 s after it lands (first success on that popup)`
-- `a9f3f7b 2026-09-23T14:14:56+08:00 docs(handoff): the handoff refreshed, and the popup-close criteria pinned`
 
-Uncommitted changes: 521
+Uncommitted changes: 532
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
