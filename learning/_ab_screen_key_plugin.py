@@ -25,6 +25,14 @@ BAND_RECORD_ID = "btn_close__popup_titlebar_band__0"
 
 
 def pytest_configure(config) -> None:  # noqa: ARG001 - pytest's hook signature
+    if os.environ.get("AB_UNRESOLVED_GUARD", "") == "off":
+        from winter_agent_v2.runtime import LiveRuntime
+
+        # A bound out of reach makes the guard inert, which is the pre-change behaviour: the same
+        # control is re-derived for every goal until the board runs out of goals.
+        LiveRuntime.MAX_UNRESOLVED_ATTEMPTS = 10 ** 9
+        print("\nAB_UNRESOLVED_GUARD=off: a resolved-to-nothing control is re-derived as before")
+
     if os.environ.get("AB_CLOSE_BAND", "") == "off":
         from winter_agent_v2.vision import SemanticROIVision
 

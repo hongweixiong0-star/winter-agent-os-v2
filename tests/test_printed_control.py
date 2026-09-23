@@ -146,7 +146,8 @@ def _ledger_entry(page: str, control: str, point: tuple[float, float]):
 
 class VocabularyTests(unittest.TestCase):
     def test_a_declared_control_carries_the_client_words_and_the_pages(self):
-        self.assertEqual(_declared_record("BTN_OPEN_HOME"), (("MAP",), ("城镇", "City")))
+        self.assertEqual(
+            _declared_record("BTN_OPEN_HOME"), (("MAP",), ("城镇", "City"), False))
 
     def test_an_undeclared_name_says_nothing_rather_than_no(self):
         """``None`` means "not written down", which is what lets the next layer answer."""
@@ -155,9 +156,78 @@ class VocabularyTests(unittest.TestCase):
 
     def test_a_control_the_client_prints_no_word_on_declares_no_words(self):
         """``BTN_CLOSE`` is an icon; the dictionary says so instead of inventing a word."""
-        pages, words = _declared_record("BTN_CLOSE")
+        pages, words, merged = _declared_record("BTN_CLOSE")
         self.assertEqual(pages, ("POPUP",))
         self.assertEqual(words, ())
+        self.assertFalse(merged)
+
+    def test_only_a_record_whose_word_was_seen_merged_may_relax_the_exact_match(self):
+        """The flag is per record, and the default it does not touch is exact for a reason.
+
+        Measured 2026-09-23: the 实力详情 button is read as ``三实力详情`` -- the client draws the ≡
+        icon on the same pill -- so an exact match finds nothing and 14 live frames reported the
+        control was not on screen.  The reader's own default stays exact because a containment match
+        once answered with a *different* control's position (``城镇`` inside ``我的城镇``).
+        """
+        pages, words, merged = _declared_record("BTN_OPEN_POWER_DETAILS")
+        self.assertEqual(pages, ("POPUP",))
+        self.assertEqual(words, ("实力详情",))
+        self.assertTrue(merged, "the client draws the icon and the name as one token")
+        # ...and every other record still answers False, so nothing else was loosened with it.
+        for name in ("BTN_OPEN_HOME", "PAGE_MAP", "BTN_RESOURCE_SEARCH_SUBMIT"):
+            with self.subTest(name=name):
+                record = _declared_record(name)
+                self.assertIsNotNone(record)
+                self.assertFalse(record[2], f"{name} must keep the exact match")
+
+
+# ------------------------------------------- the client draws the name with its icon on one pill
+
+
+class MergedPrintedNameTests(unittest.TestCase):
+    """A name the client merged with an icon is still a reading of *this* frame.
+
+    Operator directive 2026-09-23 item 2: when a popup is up, locate its real control from the
+    current frame.  The strongest form of that is the word the client printed on the control, and
+    the layer that reads it runs before any remembered coordinate -- so the fix is to let one
+    measured record say its name arrives inside a longer token, not to add a template or a
+    threshold.  Item 4 is the other half: the word has to be on the frame, so a token that merely
+    looks close must not be accepted.
+    """
+
+    def _control(self, tokens, frame=MAP_FRAME, page=Page.POPUP, popup="POWER_OVERVIEW"):
+        runtime, fake = _runtime_with(tuple(tokens))
+        world = WorldState(page=page, popup=popup)
+        verdict, point = runtime._client_printed_control(
+            "BTN_OPEN_POWER_DETAILS", world, frame)
+        return runtime, fake, verdict, point
+
+    def test_the_merged_word_locates_the_control_at_the_tokens_own_centre(self):
+        # (360, 728) on a 720x1280 frame is where OCR reads the button on the live 加成总览 panel;
+        # the drawn button's own centre measured (357.5, 727.5), three pixels away.
+        runtime, _fake, verdict, point = self._control((token("三实力详情", (360, 728), 0.901),))
+        self.assertEqual(verdict, "FOUND")
+        self.assertAlmostEqual(point[0], 360 / 720, places=4)
+        self.assertAlmostEqual(point[1], 728 / 1280, places=4)
+        self.assertTrue(runtime._printed_reads, "the basis has to be visible to a reader")
+        self.assertIn("merged", str(runtime._printed_reads[-1]))
+
+    def test_a_token_that_does_not_carry_the_whole_name_is_not_the_control(self):
+        """Item 4: the most similar token is not the control.  部队实力 is a different row."""
+        for text in ("部队实力", "实力", "三部队实力", "科技实力"):
+            with self.subTest(text=text):
+                _runtime, _fake, verdict, point = self._control((token(text, (360, 728), 0.99),))
+                self.assertEqual(verdict, "ABSENT", f"{text!r} must not stand in for 实力详情")
+                self.assertIsNone(point)
+
+    def test_a_word_declared_without_the_flag_is_still_matched_exactly(self):
+        """The loosening is one record wide: a declared word inside a longer token stays ABSENT."""
+        runtime, fake = _runtime_with((token("请确认退出游戏吗？", (360, 640), 0.99),))
+        world = WorldState(page=Page.POPUP, popup="EXIT_CONFIRM")
+        verdict, point = runtime._client_printed_control("POPUP_EXIT_CONFIRM", world, MAP_FRAME)
+        self.assertEqual(verdict, "ABSENT")
+        self.assertIsNone(point)
+        self.assertTrue(fake.reads, "the reader ran; it simply did not accept a containment")
 
 
 # ------------------------------------------------------- matching the client's printed word

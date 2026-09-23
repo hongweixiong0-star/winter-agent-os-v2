@@ -1,0 +1,178 @@
+{
+ "words": [
+  "实力详情"
+ ],
+ "semantic": "",
+ "target": "",
+ "frames": [
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_165312_301555\\20260923_165312_301555_step_001_before_20260923T085316307925.png",
+   "recorded_at": "2026-09-23T08:53:59.027299+00:00",
+   "page": "ALLIANCE",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_00.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_170050_711040\\20260923_170050_711040_step_007_before_20260923T090218704027.png",
+   "recorded_at": "2026-09-23T09:02:24.273589+00:00",
+   "page": "BEAST",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_01.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_012_before_20260923T093900678736.png",
+   "recorded_at": "2026-09-23T09:39:24.973204+00:00",
+   "page": "DAILY",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_02.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_170050_711040\\20260923_170050_711040_step_014_before_20260923T090342414884.png",
+   "recorded_at": "2026-09-23T09:03:54.437045+00:00",
+   "page": "EXPLORATION",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_03.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_014_before_20260923T093937436704.png",
+   "recorded_at": "2026-09-23T09:40:06.338137+00:00",
+   "page": "HOME",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_04.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_170050_711040\\20260923_170050_711040_step_012_before_20260923T090323425986.png",
+   "recorded_at": "2026-09-23T09:03:36.919832+00:00",
+   "page": "INTEL",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_05.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_009_before_20260923T093754120740.png",
+   "recorded_at": "2026-09-23T09:38:17.074606+00:00",
+   "page": "MAIL",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_06.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_171020_913045\\20260923_171020_913045_step_001_before_20260923T091024990254.png",
+   "recorded_at": "2026-09-23T09:10:55.213402+00:00",
+   "page": "MAP",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_07.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_170050_711040\\20260923_170050_711040_step_015_before_20260923T090354681715.png",
+   "recorded_at": "2026-09-23T09:04:16.199776+00:00",
+   "page": "MARCH",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_08.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_155043_902287\\20260923_155043_902287_step_008_before_20260923T075329445218.png",
+   "recorded_at": "2026-09-23T07:53:42.821045+00:00",
+   "page": "POPUP",
+   "popup": "EXPLORATION_IDLE_DIALOG",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_09.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_007_before_20260923T093729931273.png",
+   "recorded_at": "2026-09-23T09:37:43.046866+00:00",
+   "page": "POPUP",
+   "popup": "GENERIC_REWARD",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_10.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_170050_711040\\20260923_170050_711040_step_017_before_20260923T090427105829.png",
+   "recorded_at": "2026-09-23T09:04:41.976906+00:00",
+   "page": "POPUP",
+   "popup": "HERO_BATTLE_VICTORY",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_11.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_170050_711040\\20260923_170050_711040_step_006_before_20260923T090213729993.png",
+   "recorded_at": "2026-09-23T09:02:18.495849+00:00",
+   "page": "POPUP",
+   "popup": "INTEL_BEAST_MISSION",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_12.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_155717_766523\\20260923_155717_766523_step_002_before_20260923T075738611523.png",
+   "recorded_at": "2026-09-23T07:57:50.031979+00:00",
+   "page": "POPUP",
+   "popup": "INTEL_MASTER_BOUNTY",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_13.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_170050_711040\\20260923_170050_711040_step_022_before_20260923T090522564734.png",
+   "recorded_at": "2026-09-23T09:05:35.741923+00:00",
+   "page": "POPUP",
+   "popup": "POWER_OVERVIEW",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_14.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_002_before_20260923T093515820347.png",
+   "recorded_at": "2026-09-23T09:36:07.512813+00:00",
+   "page": "POPUP",
+   "popup": "REAL_MONEY_OFFER",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_15.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_152250_655201\\20260923_152250_655201_step_023_before_20260923T072949236683.png",
+   "recorded_at": "2026-09-23T07:30:13.477517+00:00",
+   "page": "TRAINING",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_16.png"
+  },
+  {
+   "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_173311_668537\\20260923_173311_668537_step_003_before_20260923T093607740986.png",
+   "recorded_at": "2026-09-23T09:36:19.057526+00:00",
+   "page": "UNKNOWN",
+   "popup": "",
+   "kind": "negative",
+   "read": null,
+   "review_crop": "E:\\无尽冬日智能体\\dataset\\truth_audit\\power_details_entry_20260923\\read_negative_17.png"
+  }
+ ],
+ "summary": {
+  "failure_frames": 0,
+  "failure_frames_where_the_word_is_read": 0,
+  "negative_screens": 18,
+  "negative_screens_where_the_word_is_read": 0,
+  "negative_hits": {}
+ }
+}

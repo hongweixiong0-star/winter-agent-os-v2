@@ -128,13 +128,23 @@ UI_DICTIONARY_PATH = Path(__file__).resolve().parents[1] / "knowledge" / "ui" / 
 _UI_DICTIONARY: tuple[float, dict[str, tuple[tuple[str, ...], tuple[str, ...]]]] = (0.0, {})
 
 
-def _declared_record(semantic: str) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
-    """``(pages, the client's words)`` for one semantic, or ``None``.
+def _declared_record(semantic: str) -> tuple[tuple[str, ...], tuple[str, ...], bool] | None:
+    """``(pages, the client's words, whether the reading may contain the word)`` for one semantic.
 
     ``None`` means the dictionary says nothing about this name -- *not* that the control does
     not exist.  That distinction is load-bearing for the caller: an undeclared control must
     fall through to the layers that remember or derive a position, while a declared control
     whose words are missing from the frame is a control that is not on screen.
+
+    The third element is the record's own ``ocr_merged`` declaration: the client draws a control's
+    name together with its icon (``icon_semantic`` in the same dictionary is that fact stated as a
+    label), and OCR returns the two as **one token**.  Measured 2026-09-23 on the 加成总览 panel: the
+    实力详情 button is read as ``三实力详情`` at confidence 0.901 with its centre 3 px from the
+    button's own centre, so an exact match finds nothing and the route that needs that button
+    reports the control is not on screen -- 14 live frames, all on that popup.  The flag is **per
+    record** rather than a change to ``find_printed_words``' default, because that default is exact
+    for a measured reason (the ``城镇``/``我的城镇`` false positive its docstring records), and only a
+    control whose word has actually been observed merged may relax it.
     """
     global _UI_DICTIONARY
     stamp = None
@@ -143,7 +153,7 @@ def _declared_record(semantic: str) -> tuple[tuple[str, ...], tuple[str, ...]] |
     except OSError:
         return None
     if stamp != _UI_DICTIONARY[0]:
-        table: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {}
+        table: dict[str, tuple[tuple[str, ...], tuple[str, ...], bool]] = {}
         try:
             payload = json.loads(UI_DICTIONARY_PATH.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -157,6 +167,7 @@ def _declared_record(semantic: str) -> tuple[tuple[str, ...], tuple[str, ...]] |
             table[name] = (
                 tuple(str(page) for page in (record.get("pages") or ())),
                 tuple(str(word).strip() for word in (record.get("ocr") or ()) if str(word or "").strip()),
+                bool(record.get("ocr_merged", False)),
             )
         _UI_DICTIONARY = (stamp, table)
     return _UI_DICTIONARY[1].get(str(semantic))
@@ -1224,6 +1235,17 @@ class LiveRuntime:
             pass
 
     # ------------------------------------------------- automatic UI collection
+
+    def _decision_target(self, decision: "Decision") -> str:
+        """The control a decision aims at, or ``""``.
+
+        One place, because two guards need it: the one that refuses a control this run already
+        failed its verifier on, and the one that refuses to re-derive a control this run resolved
+        nothing for.  A decision whose skill is not registered aims at nothing and both guards stand
+        down, which is the honest answer -- there is no control to hold against it.
+        """
+        skill = self.registry.get(decision.skill)
+        return (skill.action.target or "") if skill is not None else ""
 
     def _failure_type_from(self, execution: "ExecutionResult | None") -> str:
         """The failure type a step that did not execute gets, with the runtime's refusals named.
@@ -2527,6 +2549,21 @@ class LiveRuntime:
     #: nothing there.  Not a refusal by a goal -- so not a reason to hand the cycle on, which is what
     #: ``NON_FATAL_STOPS`` is for -- and not a fault either: it is the answer to "what is left?".
     NOTHING_LEFT_TO_LOOK_AT = "every_page_this_run_was_fruitless"
+
+    #: How many times one run may ask for the same control and be handed no point before the attempt
+    #: is held against *that control* instead of being re-derived for the next goal.
+    #:
+    #: Two, and the second is not decoration: each attempt resolves against a freshly captured frame,
+    #: and the reader this project trusts most -- the client's own printed word -- is only ~94%
+    #: readable per frame (measured over 245 加成总览 frames: 231 read the 实力详情 label, 14 did not),
+    #: so a second attempt is a real second chance rather than a repeat.
+    #:
+    #: A **class** constant rather than a per-run assignment, and that is on purpose: it is
+    #: instrumentation as much as policy.  An attribute set inside ``run`` shadows anything a test or
+    #: an A/B sets beforehand -- measured the hard way on 2026-09-23, when a plugin that lifted this
+    #: bound to compare both behaviours in one tree silently changed nothing and the two legs came
+    #: back identical for a reason that had nothing to do with the change under test.
+    MAX_UNRESOLVED_ATTEMPTS = 2
 
     #: Words that refuse a candidate outright, wherever they appear on the frame: the
     #: real-money and irreversible boundary the directive restates ("保留真实货币、高代价
@@ -3968,7 +4005,7 @@ class LiveRuntime:
         page = control_experience.label(frame.page)
         declared = _declared_record(semantic)
         if declared is not None:
-            pages, words = declared
+            pages, words, merged = declared
             page_ok = not pages or "*" in pages or page in pages
             if not page_ok:
                 # The dictionary places this control on other pages, so what is on this screen
@@ -3982,13 +4019,17 @@ class LiveRuntime:
                 ocr = self._ocr_service()
                 if ocr is None:
                     return "UNDECLARED", None
-                hit = find_printed_words(frame_path, words, ocr)
+                # ``merged`` is the record's own ``ocr_merged``: the client drew this control's name
+                # together with its icon, so the token contains the name instead of equalling it.
+                # Still a reading of *this* frame -- the word has to be there -- and still scored
+                # against the record's declared words, not against every token on screen.
+                hit = find_printed_words(frame_path, words, ocr, allow_containment=merged)
                 if hit is not None:
                     point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
                     self._note_printed(
                         semantic,
                         page,
-                        f"the word {hit['word']!r}",
+                        f"the word {hit['word']!r}" + ("" if hit.get("exact", True) else " inside a merged token"),
                         point,
                         box_norm=hit.get("box_norm"),
                         text=str(hit.get("word") or ""),
@@ -4157,6 +4198,17 @@ class LiveRuntime:
         # earlier, the other is what the client states now -- and a run that has to be
         # read back later must not blur them.
         self._remembered_reuse: list[str] = []
+        #: Controls this run asked for and got **no point** for, by the resolver's own reason.
+        #:
+        #: Kept apart from ``_failed_controls`` on purpose: a control that failed its verifier was
+        #: tried and observed, while this one was never issued at all.  §6 forbids two root causes
+        #: sharing one name, and the two behave differently downstream -- the first has a verifier
+        #: verdict to report, the second has only the resolver's sentence.
+        self._unresolved_controls: dict[str, tuple[int, str]] = {}
+        #: Which of those have already been handed to another goal once.  The handover is offered
+        #: once because a screen-level decision is the same step for every goal (see the guard
+        #: before ``adb_executor``); a second handover would buy another identical non-attempt.
+        self._unresolved_handed_over: set[str] = set()
         self._printed_remembered: set[str] = set()
         #: Screens whose stored point was refused for belonging elsewhere, so the sentence is
         #: printed once per screen per run rather than once per step.
@@ -4624,10 +4676,7 @@ class LiveRuntime:
             # this run has already tried and failed.  Yielding first means the next goal
             # gets the cycle; when there is nobody to hand to, the run ends with the
             # verifier's own reason, so nothing new has to be classified downstream.
-            planned_target = ""
-            _planned_skill = self.registry.get(decision.skill)
-            if _planned_skill is not None:
-                planned_target = (_planned_skill.action.target or "")
+            planned_target = self._decision_target(decision)
             if planned_target and planned_target in self._failed_controls:
                 if index < max_actions and self._yield_to_next_goal(
                     best_goal,
@@ -4639,6 +4688,42 @@ class LiveRuntime:
                     continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 return finish(self._failed_controls[planned_target])
+            # The same refusal for a control that resolved to nothing -- no point, so nothing was
+            # ever tried and nothing ever ran a verifier.
+            #
+            # Measured 2026-09-23, run ``20260923_140514_506593``: five consecutive CLOSE_POPUP
+            # steps in three seconds, each for a *different* goal (CLEAR_INTEL, MAIL_ROUTINE,
+            # DAILY_ACTIVITY_TARGET, CLAIM_EXPLORATION_IDLE, AUTO_DISCOVERY) and each the same
+            # decision, because a named popup answers ``blocking_popup`` before every goal's own
+            # route (``brain.py``:777).  Yielding to another goal therefore produced the identical
+            # step once per goal, and the run ended only when there was no goal left to hand to.
+            #
+            # ``MAX_UNRESOLVED_ATTEMPTS`` is the bound, and it is not 1: each attempt resolves
+            # against a freshly captured frame, and the reader this project trusts most is only
+            # ~94% reliable per frame (measured on 245 加成总览 frames: 231 read the 实力详情 label,
+            # 14 did not), so a second attempt is a real second chance rather than a repeat.
+            if planned_target and planned_target in self._unresolved_controls:
+                attempts, reason = self._unresolved_controls[planned_target]
+                if attempts >= self.MAX_UNRESOLVED_ATTEMPTS:
+                    # The handover is offered **once** per control: if the goal that takes the cycle
+                    # asks for something else, the run continues with real work, which is why it is
+                    # kept at all.  A second handover would buy another identical non-attempt.
+                    if (
+                        planned_target not in self._unresolved_handed_over
+                        and index < max_actions
+                        and self._yield_to_next_goal(
+                            best_goal,
+                            deferrals,
+                            decision,
+                            f"{planned_target} resolved to nothing {attempts} time(s) in this run "
+                            f"({reason}); another goal gets the cycle once, and only if it asks for "
+                            f"something else",
+                        )
+                    ):
+                        self._unresolved_handed_over.add(planned_target)
+                        continue
+                    steps.append(LiveStep(index, decision, None, before, None, None))
+                    return finish(reason)
 
             adb_executor = Executor(
                 production=True,
@@ -4689,6 +4774,14 @@ class LiveRuntime:
                 )
                 steps.append(LiveStep(index, tick.decision, tick.execution, before, None, None))
                 reason = tick.execution.error if tick.execution else "NO_EXECUTION"
+                # Recorded so the guard before the executor can refuse a *second* derivation of the
+                # same control.  ``_failed_controls`` cannot serve here: nothing was tried, so no
+                # verifier produced a verdict, and the six refusals this runtime names itself
+                # (``_failure_type_from``) already show that "no point" and "failed" are two facts.
+                unresolved = self._decision_target(tick.decision)
+                if unresolved:
+                    attempts, _last = self._unresolved_controls.get(unresolved, (0, ""))
+                    self._unresolved_controls[unresolved] = (attempts + 1, str(reason))
                 # A step that issued no action has not failed the run -- it has failed to find
                 # work for the goal that was picked, and this branch is already exactly that
                 # class (``not tick.execution.executed``).  Ending the cycle here lets one

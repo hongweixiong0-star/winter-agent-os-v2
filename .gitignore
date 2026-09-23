@@ -275,6 +275,14 @@ tools/_pt_*/
 out.txt
 out_*.txt
 out_*.json
+# ...and the root's command-output scratch, ARCHIVED rather than deleted (operator directive
+# 2026-09-23 item 5).  `out_*.txt` above already covers the underscore-named majority at any depth,
+# but a probe that wrote `out110.txt` was never ignored, so moving it into the archive would only
+# have given it a longer path in `git status`.  The archive is machine-local, holds nothing a
+# checkout needs, and keeps an INDEX.json naming every moved file and where it came from, so the
+# move is reversible without git.  Nothing is deleted: the .gitignore block above records why this
+# class exists at all, and it says "ignored rather than deleted" for the sibling `out_*.png` rule.
+learning/archive/
 # MaaFramework's own logs and the per-run migration reports
 learning/maa_logs/
 learning/maa_migration/
