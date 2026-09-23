@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-23T09:59:59+00:00",
-  "count": 1677,
+  "generated_at": "2026-09-23T14:04:11+00:00",
+  "count": 1682,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -185,8 +185,8 @@
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 360527,
-      "mtime": "2026-09-23T06:14:19+00:00"
+      "bytes": 369573,
+      "mtime": "2026-09-23T09:59:59+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -807,6 +807,18 @@
       "mtime": "2026-09-14T11:16:25+00:00"
     },
     {
+      "path": "dataset/truth_audit/activity_windows_20260923/activity_windows.json",
+      "kind": "fixture",
+      "bytes": 5988,
+      "mtime": "2026-09-23T13:57:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/activity_windows_20260923/README.md",
+      "kind": "fixture",
+      "bytes": 9782,
+      "mtime": "2026-09-23T14:00:13+00:00"
+    },
+    {
       "path": "dataset/truth_audit/advice_execution_20260923/README.md",
       "kind": "fixture",
       "bytes": 5904,
@@ -816,13 +828,31 @@
       "path": "dataset/truth_audit/advice_execution_20260923/replay.json",
       "kind": "fixture",
       "bytes": 1735,
-      "mtime": "2026-09-23T03:45:22+00:00"
+      "mtime": "2026-09-23T12:09:44+00:00"
     },
     {
       "path": "dataset/truth_audit/after_confirm.png",
       "kind": "fixture",
       "bytes": 1269639,
       "mtime": "2026-09-14T01:14:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/ai_fallback_20260923/channel.json",
+      "kind": "fixture",
+      "bytes": 4530,
+      "mtime": "2026-09-23T12:14:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/ai_fallback_20260923/README.md",
+      "kind": "fixture",
+      "bytes": 8275,
+      "mtime": "2026-09-23T12:29:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/ai_fallback_20260923/replay.json",
+      "kind": "fixture",
+      "bytes": 917,
+      "mtime": "2026-09-23T12:22:54+00:00"
     },
     {
       "path": "dataset/truth_audit/alliance_gifts_chain_20260915/01_alliance_home_live_20260915.png",

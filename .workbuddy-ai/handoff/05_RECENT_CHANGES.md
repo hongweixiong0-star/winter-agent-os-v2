@@ -6,20 +6,20 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
+- `f36ab20 2026-09-23T22:03:19+08:00 feat(goals): whether a task exists is not the same fact as whether it can be run`
+- `4132f7f 2026-09-23T21:29:18+08:00 docs(handoff): register #114 -- two faults, two different first breaks, and the judging criteria`
+- `e9c8bca 2026-09-23T21:28:06+08:00 feat(red-dot): the dot decides whether the task exists, not merely how it ranks`
+- `afdb44c 2026-09-23T20:31:10+08:00 docs(memory): a field written at partial write-sites cannot prove absence; and a similarity score can run backwards`
+- `4c4ea94 2026-09-23T20:30:26+08:00 feat(truth_audit): 实力详情 landed on the real device -- the tap and the after-frame are both right`
+- `72c8e25 2026-09-23T20:25:31+08:00 docs(ai-channel): register the break, and a watcher that says when the two live questions land`
+- `3195af7 2026-09-23T20:23:36+08:00 fix(ai-channel): the answer was never lost -- nothing was sending it back to the screen`
+- `8e8489f 2026-09-23T18:00:36+08:00 docs(handoff+skills): the bound has to be movable, and a name can arrive inside a token`
 - `78bf834 2026-09-23T17:58:56+08:00 fix(popups): the client prints the icon with the name, and one popup is not one step per goal`
 - `b87f8eb 2026-09-23T14:17:10+08:00 docs(skill): when git stash is unavailable, revert at the module boundary -- and same runner or nothing`
 - `30fba9d 2026-09-23T14:16:32+08:00 feat(ledger): LIVE -- the band record closes 加成总览 31 s after it lands (first success on that popup)`
 - `a9f3f7b 2026-09-23T14:14:56+08:00 docs(handoff): the handoff refreshed, and the popup-close criteria pinned`
-- `42b3b29 2026-09-23T14:13:53+08:00 fix(ledger): a coordinate is a claim about one screen -- POPUP is 22 of them`
-- `5ce5f5a 2026-09-23T12:09:46+08:00 docs(handoff): the timed-event planner exists and nothing in the live path calls it -- issue #108`
-- `0dd3807 2026-09-23T12:08:44+08:00 feat(ai): entering a function is not doing it -- the four questions become fields, and the boundary is per level`
-- `664746a 2026-09-23T11:47:48+08:00 audit(ai): the one real answer is refused by no gate -- the first break point is that AUTO never went back`
-- `06aba19 2026-09-23T07:49:00+08:00 docs(memory): the missing edge is not the bottleneck -- discover() already covers 10 of 12 entries`
-- `667f4a1 2026-09-23T07:43:32+08:00 docs(handoff): red-dot status measured from the stream, and the two-vocabulary trap in goal_id`
-- `9d361a7 2026-09-23T07:40:55+08:00 docs(handoff): decision_reason has begun landing in the stream -- correct the stale claim`
-- `94f37d0 2026-09-23T07:40:21+08:00 docs(skill): whole-run replay, and the two A/B baseline traps that voided one`
 
-Uncommitted changes: 472
+Uncommitted changes: 521
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
@@ -27,6 +27,7 @@ Uncommitted changes: 472
 - ` M .workbuddy/memory/2026-09-21.md`
 - ` M config/control_panel_state.json`
 - ` M config/policy_state.json`
+- ` M dataset/truth_audit/advice_execution_20260923/replay.json`
 - ` M docs/CAPABILITY_COVERAGE.md`
 - ` M knowledge/game/capability_catalog.json`
 - ` M knowledge/goals/capability_skill_map.json`
@@ -39,7 +40,6 @@ Uncommitted changes: 472
 - ` M knowledge/ui/page_transitions.json`
 - ` M learning/candidate_attempt_pool.json`
 - ` M learning/control_panel/latest.log`
-- ` M learning/control_panel/panel.log`
 <!-- /AUTO:recent_commits -->
 
 ---

@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-09-23T09:59:57+00:00",
+  "generated_at": "2026-09-23T14:04:09+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "78bf834",
+  "commit": "f36ab20",
   "snapshot_path": "learning\\runtime_snapshot.json",
   "snapshot": {
-    "agent_state": "IDLE",
+    "agent_state": "DEGRADED",
     "runtime_thread_alive": false,
     "scheduler_loop_alive": false,
-    "last_tick_time": "2026-09-23T09:59:27.371550+00:00",
-    "last_action_time": "2026-09-23T09:53:52.192416+00:00",
-    "last_success_time": "2026-09-23T09:54:05.916194+00:00",
+    "last_tick_time": "2026-09-23T14:03:26.142190+00:00",
+    "last_action_time": "2026-09-23T14:03:00.451163+00:00",
+    "last_success_time": "2026-09-23T14:03:14.662888+00:00",
     "last_fatal_error": null,
     "watchdog_restart_count": 21,
     "unexpected_worker_exits": 15,
-    "page": "MAIL",
+    "page": "HOME",
     "current_goal": "AUTO_DISCOVERY",
     "current_skill": "SAFE_STOP",
-    "reason": "mail_all_clear",
+    "reason": "every_page_this_run_was_fruitless",
     "preconditions": [],
-    "verifier": null,
-    "next_action": "switch_task",
+    "verifier": "PASS",
+    "next_action": "no_action",
     "risk": "UNKNOWN",
     "confidence": 1.0,
     "device": "UNKNOWN",
@@ -27,7 +27,7 @@
     "mode": "AUTO",
     "qwen": "ON_DEMAND",
     "vision": "READY",
-    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_175909_495919\\20260923_175909_495919_step_001_before_20260923T095914084736.png",
+    "screenshot_path": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260923_220236_971486\\20260923_220236_971486_step_002_before_20260923T140314664995.png",
     "march_used": null,
     "march_max": null,
     "queues": {
@@ -38,71 +38,71 @@
       "alliance": {},
       "events": {}
     },
-    "stop_reason": "mail_all_clear",
+    "stop_reason": "every_page_this_run_was_fruitless",
     "deferred_goals": [
       {
         "goal_id": "AVOID_STAMINA_WASTE",
         "capability": "SPEND_STAMINA_ON_BEAST",
         "state": "DEFERRED",
-        "reason": "4 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "3 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|ATTACK_BEAST_CARD",
-        "streak": 4,
+        "failure_signature": "SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|BACK",
+        "streak": 3,
         "until": "",
-        "last_skill": "ATTACK_BEAST_CARD"
+        "last_skill": "BACK"
       },
       {
         "goal_id": "KEEP_TRAINING_PRODUCTIVE",
         "capability": "OPEN_TRAINING_PAGE",
         "state": "DEFERRED",
-        "reason": "5 consecutive production episodes advanced no part of this goal (4 passed their verifier, 1 were rejected by it, 0 issued no action)",
+        "reason": "3 consecutive production episodes advanced no part of this goal (2 passed their verifier, 1 were rejected by it, 0 issued no action)",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|DISMISS_REAL_MONEY_OFFER",
-        "streak": 5,
+        "failure_signature": "OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS|OPEN_POWER_DETAILS",
+        "streak": 3,
         "until": "",
-        "last_skill": "DISMISS_REAL_MONEY_OFFER"
+        "last_skill": "OPEN_POWER_DETAILS"
       },
       {
         "goal_id": "CLEAR_INTEL",
         "capability": "READ_INTEL_LIST",
         "state": "DEFERRED",
-        "reason": "5 consecutive production episodes passed their verifier and advanced no part of this goal",
+        "reason": "4 consecutive production episodes advanced no part of this goal (1 passed their verifier, 2 were rejected by it, 1 issued no action)",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|BACK",
-        "streak": 5,
+        "failure_signature": "READ_INTEL_LIST|NO_GOAL_PROGRESS|TRY_ORDINARY_CONTROL",
+        "streak": 4,
         "until": "",
-        "last_skill": "BACK"
+        "last_skill": "TRY_ORDINARY_CONTROL"
       },
       {
         "goal_id": "KEEP_RESEARCH_PRODUCTIVE",
         "capability": "OPEN_RESEARCH_PAGE",
         "state": "DEFERRED",
-        "reason": "5 consecutive production episodes advanced no part of this goal (4 passed their verifier, 0 were rejected by it, 1 issued no action)",
+        "reason": "5 consecutive production episodes passed their verifier and advanced no part of this goal",
         "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_RESEARCH_PAGE|NO_GOAL_PROGRESS|OPEN_RESEARCH",
+        "failure_signature": "OPEN_RESEARCH_PAGE|NO_GOAL_PROGRESS|BACK",
         "streak": 5,
         "until": "",
-        "last_skill": "OPEN_RESEARCH"
+        "last_skill": "BACK"
       },
       {
-        "goal_id": "ALLIANCE_ROUTINE",
-        "capability": "OPEN_ALLIANCE_PAGE",
-        "state": "DEFERRED",
-        "reason": "4 consecutive production episodes advanced no part of this goal (3 passed their verifier, 0 were rejected by it, 1 issued no action)",
-        "source": "NO_GOAL_PROGRESS",
-        "failure_signature": "OPEN_ALLIANCE_PAGE|NO_GOAL_PROGRESS|TRY_ORDINARY_CONTROL",
-        "streak": 4,
-        "until": "",
-        "last_skill": "TRY_ORDINARY_CONTROL"
+        "goal_id": "DAILY_ACTIVITY_TARGET",
+        "capability": "READ_DAILY_PROGRESS",
+        "state": "COOLDOWN",
+        "reason": "cooling down after 2 repair shot(s), outcome CODE_CHANGED",
+        "source": "ESCALATION_QUEUE",
+        "failure_signature": "",
+        "streak": 0,
+        "until": "2026-09-23T14:42:13.806048+00:00",
+        "last_skill": ""
       }
     ],
-    "updated_at": "2026-09-23T09:59:56.200478+00:00"
+    "updated_at": "2026-09-23T14:03:46.721546+00:00"
   },
   "latest_log": {
     "path": "E:\\无尽冬日智能体\\learning\\control_panel\\latest.log",
-    "modified_at": "2026-09-23T09:59:37+00:00",
-    "size_bytes": 11888,
-    "last_stop_reason": "mail_all_clear"
+    "modified_at": "2026-09-23T14:03:36+00:00",
+    "size_bytes": 23223,
+    "last_stop_reason": null
   },
   "recent_crash_reports": [
     {
