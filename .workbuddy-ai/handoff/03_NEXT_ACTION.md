@@ -4,6 +4,53 @@
 > `AUTO:next_action` 块由 `tools/update_workbuddy_handoff.py` 重写；
 > 其余手写内容不会被自动覆盖。
 
+## 手写：AI 兜底与实力详情（2026-09-23 晚，issues #112 #113）——**两条都只差真机最后一步**
+
+### #112 AI 兜底：**第一断点是"没有任何东西把答案送回被问到的那一屏"**（不是"答案没被采用"）
+
+实测三证（`tools/probe_unknown_channel.py --revisits`）：7 个提问的屏，答案落盘后 41 次 UNKNOWN 步里
+**被问的那一屏回来 0 次**；燃霜矿区答案晚到 **101.5 分钟**；**7485 条 episode 里带 `ai_advice` 的 0 条**。
+
+两处已修（`3195af7`）：`unknown_dispatch.reconcile` 改为**先在非终态分支看产物**（job `13ffdac6`
+已写出答案却被记成 `ABANDONED / no result after 45 minutes` 并被取消）；`candidates` 不再把
+`MAX_ATTEMPTS_PER_REQUEST` 当**终身**上限——**自我们上次放弃以来运行时又问过**就再给一次
+（`78694f1b` 两次额度 09-22T19:41 花光、09-23T08:30 仍在重问，却再也提交不了 job）。
+
+**真机判据（只需看 `learning/episodes.jsonl` / `executor_backend.jsonl`）**：
+
+1. `learning/unknown_requests/answers/` 出现**第 2 个**答案文件（`unknown__control__78694f1b.json`）；
+2. `episodes.jsonl` 出现**带 `ai_advice` 的步**——`runtime.py` 只在真的带着答案走到那一行时才填它；
+3. 该步的 `executor_backend.jsonl` 行 `executed=true`、`tap_point` 非空、`used_backend` 有值；
+4. 该步 `state_after` **与 before 不同**（弹窗关了 / 页面换了）。
+
+一条命令即可复算：`tools\probe_ai_execution.py`（`--watch N --stop-when-seen` 会一直等到上面第 1/2 条出现）。
+
+**验收目标**：`unknown__control__78694f1b`（屏 `UNKNOWN::对战`，goal `INTEL`，帧上只有
+`对战/53.6万/45.3万/自动/X2` 五个词）。job `06066de6` 于 `12:17:56Z` 提交、`tempo=active`。
+**燃霜矿区那条答案不强行执行**（该屏只出现过一次、领奖窗口已关）——知识留在盘上供下次活动。
+
+**注意**：`unknown_dispatch.py` **不在** `CONTROL_PLANE_PATHS` 里 ⇒ 本修复要等**窗口重启**才对
+**面板自己那一遍**生效；本轮是用 `tools/unknown_ai_worker.py --once` 走的一次合法手工 pass
+（台账 `reason: retry 3` 可见）。
+
+### #113 实力详情：**点击与后帧都对，新断点是"页面识别"**
+
+真机 `12:24:42Z` 执行台账 **`tap_point=[361,728]`** —— 上轮量到的按钮中心 `(357.5,727.5)`、
+OCR 标签中心 `(360,728)`，三者 ≤3.5 px。`12:25:24Z` 后帧**就是「实力详情」**页面。
+但它被读成 `page=UNKNOWN popup=None`，于是 `verify_power_details_open` 判 FAILURE。
+
+**新第一断点**：整面板 phash `popup_power_details__live_20260908_power_details__0` 在这帧 **d=10**
+（阈值 8，**差 2**）——该面板的读数每帧都变（`总实力 2,004,198`…）⇒ phash 每次都会偏。
+**标题栏 band 不能用**：真阳性 0.9764，而真负样本「欢迎回来」**0.8761（d=8）**、`加成总览` 0.8535（d=9）
+⇒ 照此注册会把**离线收益弹窗**认成实力详情。**所以本轮没有注册任何新仪器。**
+
+**下一轮**：用**可复核裁片**（只含标题字形，或"六行实力行"这一恒定结构）重测正负样本后再注册；
+判据照旧——正负样本必须有**看得见的空隙**，且注册工具自己重算、不达标拒绝写入。
+
+**不要重复**：不要动 `BTN_CLOSE` 的 band（已真机验证）；不要因为这一条就把 `OPEN_POWER_DETAILS`
+判成"又坏了"——**它现在点对了**；也不要用"搜索范围内最像"的分数当"控件存在"的证据（本轮实测
+整面板 ccoff 在真样本上 0.4933、在被误读那帧上 0.8551，**分数是反的**）。
+
 ## 手写：三条固定方向（2026-09-23 下午，issues #110 #111）
 
 1. **`BTN_OPEN_POWER_DETAILS`（`POWER_OVERVIEW` 的「实力详情」）** —— 客户端把 ≡ 图标与名字印成**一个 token**

@@ -152,7 +152,9 @@ def main() -> int:
     args = parser.parse_args()
 
     deadline = time.time() + max(0.0, args.watch) * 60.0
-    baseline_advised = len(look(verbose=args.verbose)["advised_steps"]) if args.stop_when_seen else 0
+    baseline = look(verbose=args.verbose) if args.stop_when_seen else None
+    baseline_advised = len(baseline["advised_steps"]) if baseline else 0
+    baseline_answers = len(baseline["answers"]) if baseline else 0
     while True:
         found = look(verbose=args.verbose)
         landed = len(found["answers"])
@@ -162,7 +164,7 @@ def main() -> int:
         print()
         print(f"[watch] answers={landed} advised_steps={adopted} power_details_since_fix={len(power)} "
               f"at {datetime.now(timezone.utc).isoformat()[11:19]}Z")
-        if args.stop_when_seen and (adopted > baseline_advised or power):
+        if args.stop_when_seen and (adopted > baseline_advised or landed > baseline_answers):
             print("[watch] the thing being waited for is on file; stopping so the caller can read it")
             return 0
         if time.time() >= deadline:
