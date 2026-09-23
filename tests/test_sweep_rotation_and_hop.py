@@ -96,6 +96,23 @@ def test_the_price_stays_below_anything_that_actually_pays():
     assert _sweep_value(10_000) < 250, "a claimable routine is worth 250"
 
 
+def _dotted_entries() -> dict:
+    """The two gated entries, dotted.
+
+    Since operator directive 2026-09-23 (``entry_badges.ENTRY_GATED_GOALS``) the 邮件 and 联盟宝箱
+    tickets only exist while the screen in front of us draws a dot on their own entry; the fixture
+    states that precondition rather than leaving it out, because a board with seven overdue tickets on
+    it is a board whose entries are all dotted.  That the same board has **five** tickets when they
+    are not is pinned in ``tests/test_entry_badges.py::TheGoalEligibilityTest``.
+    """
+    return {
+        "BTN_OPEN_MAIL": {"entry": "BTN_OPEN_MAIL", "state": "PRESENT", "goal": "MAIL_ROUTINE"},
+        "TILE_ALLIANCE_GIFTS": {
+            "entry": "TILE_ALLIANCE_GIFTS", "state": "PRESENT", "goal": "ALLIANCE_ROUTINE",
+        },
+    }
+
+
 def test_seven_overdue_tickets_are_ordered_by_how_long_they_have_waited():
     """The rotation, as the scheduler actually sees it."""
     ratios = {"intel": 6.0, "training": 5.0, "research": 4.0, "mail": 3.0,
@@ -103,8 +120,10 @@ def test_seven_overdue_tickets_are_ordered_by_how_long_they_have_waited():
     observations = {d: {"reading": {}, "overdue": True, "overdue_ratio": r}
                     for d, r in ratios.items()}
     library = GoalLibrary()
-    goals = library.discover(WorldState(page=Page.MAP, march_used=2, march_max=3),
-                             observations=observations)
+    goals = library.discover(
+        WorldState(page=Page.MAP, march_used=2, march_max=3, red_dots=_dotted_entries()),
+        observations=observations,
+    )
     by_id = {g.goal_id: g for g in goals}
     waiting = sorted((g for g in goals if g.status is GoalStatus.DISCOVERED),
                      key=lambda g: -g.priority)
@@ -153,7 +172,8 @@ def test_never_read_outranks_every_overdue_page():
     }
     library = GoalLibrary()
     goals = {g.goal_id: g for g in library.discover(
-        WorldState(page=Page.MAP, march_used=2, march_max=3), observations=observations)}
+        WorldState(page=Page.MAP, march_used=2, march_max=3, red_dots=_dotted_entries()),
+        observations=observations)}
     never_read = {g for g in ("KEEP_TRAINING_PRODUCTIVE", "KEEP_RESEARCH_PRODUCTIVE")}
     for goal_id in never_read:
         assert goals[goal_id].status is GoalStatus.DISCOVERED

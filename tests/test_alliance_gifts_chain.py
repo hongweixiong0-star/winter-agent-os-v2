@@ -192,11 +192,44 @@ class AllianceOcrMergeTests(unittest.TestCase):
 
 
 class AllianceBrainTests(unittest.TestCase):
-    def test_the_home_page_dispatches_open_alliance_gifts(self) -> None:
+    #: The alliance page's HOME section dispatch is decided by the 联盟宝箱 **tile's own** badge
+    #: (operator directive 2026-09-23 §三), so these cases are built on that page rather than on HOME:
+    #: the tile is drawn on the alliance page, and on any other screen the badge is UNKNOWN -- which
+    #: is a refusal, not permission.  Measured over the 97 production steps that entered the gifts
+    #: page before this rule: the tile's own badge was ABSENT in 93 of them.
+    @staticmethod
+    def _alliance_home(tile_state: str | None = None) -> WorldState:
+        red_dots = (
+            {} if tile_state is None
+            else {"TILE_ALLIANCE_GIFTS": {"entry": "TILE_ALLIANCE_GIFTS", "state": tile_state}}
+        )
+        return WorldState(
+            page=Page.ALLIANCE,
+            alliance={"section": "HOME"},
+            red_dots=red_dots,
+            confidence=0.99,
+        )
+
+    def test_the_alliance_home_dispatches_open_alliance_gifts_when_the_tile_is_dotted(self) -> None:
+        decision = RuleBrain(current_goal="ALLIANCE").decide(self._alliance_home("PRESENT"), v2_registry())
+        self.assertEqual(decision.skill, "OPEN_ALLIANCE_GIFTS")
+        self.assertIn("TILE_ALLIANCE_GIFTS", decision.reason)
+
+    def test_the_alliance_home_does_not_open_the_gifts_page_without_the_tile_s_badge(self) -> None:
+        """The reason string used to claim ``alliance_gifts_badge_visible`` while nothing was read."""
+        for tile_state in ("ABSENT", "UNKNOWN", None):
+            with self.subTest(tile=tile_state):
+                decision = RuleBrain(current_goal="ALLIANCE").decide(
+                    self._alliance_home(tile_state), v2_registry()
+                )
+                self.assertEqual(decision.skill, "SAFE_STOP")
+                self.assertNotIn("gifts_open", decision.expected_result)
+
+    def test_the_home_page_carries_no_evidence_about_the_gift_box(self) -> None:
+        """On HOME the tile is not on screen, so the badge reads UNKNOWN and nothing is entered."""
         state = _vision().observe(HOME_FRAME)
         decision = RuleBrain(current_goal="ALLIANCE").decide(state, v2_registry())
-        self.assertEqual(decision.skill, "OPEN_ALLIANCE_GIFTS")
-        self.assertEqual(decision.reason, "alliance_gifts_badge_visible")
+        self.assertEqual(decision.skill, "SAFE_STOP")
 
     def test_the_gifts_page_dispatches_the_claim_skill(self) -> None:
         state = _vision().observe(GIFTS_FRAME)

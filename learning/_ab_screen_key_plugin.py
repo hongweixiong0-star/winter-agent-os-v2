@@ -25,6 +25,26 @@ BAND_RECORD_ID = "btn_close__popup_titlebar_band__0"
 
 
 def pytest_configure(config) -> None:  # noqa: ARG001 - pytest's hook signature
+    if os.environ.get("AB_ENTRY_GATE", "") == "off":
+        from winter_agent_v2 import entry_badges as eb
+        from winter_agent_v2 import goal_library
+
+        # The pre-change semantics, stated site by site rather than approximated: the goal layer was
+        # not gated at all, the mail branch skipped only on a readable ABSENT, and the gifts branch
+        # opened the panel whatever the tile said.  A single "always PRESENT" patch would have
+        # reproduced neither (it would have broken the one mail case that already worked), and a
+        # baseline that is not the real baseline is worse than none.
+        goal_library.entry_badges.ENTRY_GATED_GOALS = {}
+
+        def _old_semantics(goal_id, red_dots):  # noqa: ANN001
+            if str(goal_id) == "MAIL_ROUTINE":
+                state = str(((red_dots or {}).get("BTN_OPEN_MAIL") or {}).get("state") or "")
+                return ("ABSENT", ()) if state == "ABSENT" else ("PRESENT", ())
+            return ("PRESENT", ())
+
+        eb.entry_gate = _old_semantics  # type: ignore[assignment]
+        print("\nAB_ENTRY_GATE=off: the entry badge decides nothing (pre-change behaviour)")
+
     if os.environ.get("AB_UNRESOLVED_GUARD", "") == "off":
         from winter_agent_v2.runtime import LiveRuntime
 

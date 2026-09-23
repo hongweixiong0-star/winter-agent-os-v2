@@ -77,10 +77,19 @@ class TheMeasuredEntriesTest(unittest.TestCase):
     def test_a_frame_that_was_not_given_is_unknown_not_absent(self):
         """With no frame there is nothing to look at, so every entry is UNKNOWN -- and the entries
         whose badge is not trusted say so instead, because that reason is the more useful one: it
-        stays true whatever frame arrives."""
+        stays true whatever frame arrives.
+
+        An entry that lives on **another page** answers its own third reason.  That is not cosmetic:
+        it is what makes ABSENT safe to refuse a goal with (2026-09-23, §一/§四), because an entry
+        that is not on this screen can never be reported as "no dot here".
+        """
         ledger = read_entry_badges(None, "HOME")
         for entry, badge in ledger.items():
             self.assertEqual(badge.state, UNKNOWN, entry)
+            page = str(entries()[entry].get("page") or "")
+            if page and page != "HOME":
+                self.assertEqual(badge.reason, f"entry_is_on_{page}_not_HOME", entry)
+                continue
             self.assertIn(
                 badge.reason,
                 ("no_frame_given", "badge_geometry_never_varies_so_it_may_be_artwork"),
@@ -191,7 +200,7 @@ class TheMailGoalTest(unittest.TestCase):
     def test_an_absent_badge_skips_the_mail_page(self):
         decision = self._decide({"BTN_OPEN_MAIL": {"state": ABSENT, "goal": "MAIL_ROUTINE"}})
         self.assertEqual(decision.skill, "SAFE_STOP")
-        self.assertEqual(decision.reason, "mail_entry_has_no_badge_this_frame")
+        self.assertEqual(decision.reason, "mail_entry_badge_absent_this_frame")
         from winter_agent_v2.runtime_snapshot import is_fatal_stop
 
         self.assertFalse(is_fatal_stop(decision.reason), "this must hand the cycle over, not end it")
@@ -200,12 +209,161 @@ class TheMailGoalTest(unittest.TestCase):
         decision = self._decide({"BTN_OPEN_MAIL": {"state": PRESENT, "goal": "MAIL_ROUTINE"}})
         self.assertEqual(decision.skill, "OPEN_MAIL")
 
-    def test_an_unknown_badge_still_opens_the_mail_page(self):
+    def test_an_unknown_badge_does_not_open_the_mail_page(self):
+        """Operator directive 2026-09-23 §四: UNKNOWN is not permission to go and look.
+
+        This used to open the page, on the reasoning that "unreadable" should not change behaviour.
+        For a task whose whole existence is the dot that reasoning is backwards: opening the page in
+        order to find out *is* the periodic visit under another name.  The entry is drawn on HOME,
+        which the loop stands on constantly, so the reading comes back for free.
+        """
         decision = self._decide({"BTN_OPEN_MAIL": {"state": UNKNOWN, "reason": "entry_is_on_MAP_not_HOME"}})
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(decision.reason, "mail_entry_badge_unknown_this_frame")
+        from winter_agent_v2.runtime_snapshot import is_fatal_stop
+
+        self.assertFalse(is_fatal_stop(decision.reason))
+
+    def test_a_state_with_no_ledger_at_all_does_not_open_the_mail_page(self):
+        """And the same rule for an older state file that predates the red-dot layer.
+
+        The price is stated rather than hidden: a tree whose ledger is missing gets no mail goal at
+        all.  That is the honest direction -- "I cannot read the entry" is not evidence that there is
+        something behind it -- and it is why the guard is only safe together with the layer being
+        live, which ``knowledge/ui/entry_badges.json`` is.
+        """
+        decision = self._decide({})
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(decision.reason, "mail_entry_badge_unknown_this_frame")
+
+
+class TheGoalEligibilityTest(unittest.TestCase):
+    """Operator directive 2026-09-23 §一/§二/§三: 红点不是加分项，是"有没有任务"的准入信号。
+
+    The distinction this class exists to pin down: before it, ABSENT and PRESENT produced the *same*
+    goal on the board and differed only by ``RED_DOT_BONUS``; and with no reading at all the goal was
+    still emitted, priced by age (measured: ``MAIL_ROUTINE / DISCOVERED / ('OPEN_MAIL',)`` at 180 for
+    never-read, 155 for a reading 3x past TTL).  So the clock, not the dot, decided that a mail page
+    with nothing behind it outbid real work.
+    """
+
+    def _board(self, **kwargs):
+        from winter_agent_v2.goal_library import GoalLibrary
+
+        world = WorldState(page=Page.HOME, confidence=0.99, **kwargs)
+        return {g.goal_id: g for g in GoalLibrary().discover(world, observations={})}
+
+    @staticmethod
+    def _dots(entry, state):
+        return {entry: {"entry": entry, "state": state, "goal": "x"}}
+
+    def test_mail_with_a_dot_is_a_ticket(self):
+        board = self._board(red_dots=self._dots("BTN_OPEN_MAIL", PRESENT))
+        self.assertIn("MAIL_ROUTINE", board)
+        self.assertEqual(board["MAIL_ROUTINE"].available_skills, ("OPEN_MAIL",))
+
+    def test_mail_without_a_dot_is_not_on_the_board(self):
+        """ABSENT removes the goal; it does not merely demote it."""
+        board = self._board(red_dots=self._dots("BTN_OPEN_MAIL", ABSENT))
+        self.assertNotIn("MAIL_ROUTINE", board)
+
+    def test_mail_with_an_unreadable_dot_is_not_on_the_board(self):
+        board = self._board(red_dots=self._dots("BTN_OPEN_MAIL", UNKNOWN))
+        self.assertNotIn("MAIL_ROUTINE", board)
+
+    def test_the_gifts_goal_is_decided_by_the_tile_and_not_by_the_alliance_entry(self):
+        """§三: 联盟总入口红点 != 联盟宝箱红点.
+
+        The alliance entry (``TAB_ALLIANCE``) is a constant -- the table already records it as present
+        in 26 of 26 frames -- so a dot there cannot say anything about the gift box.  What decides is
+        the 联盟宝箱 tile's own badge.
+        """
+        entry_only = self._board(red_dots=self._dots("TAB_ALLIANCE", PRESENT))
+        self.assertNotIn("ALLIANCE_ROUTINE", entry_only,
+                         "a dot on the alliance entry is not evidence about the gift box")
+        tile = self._board(red_dots=self._dots("TILE_ALLIANCE_GIFTS", PRESENT))
+        self.assertIn("ALLIANCE_ROUTINE", tile)
+        no_tile = self._board(red_dots=self._dots("TILE_ALLIANCE_GIFTS", ABSENT))
+        self.assertNotIn("ALLIANCE_ROUTINE", no_tile)
+
+    def test_a_goal_with_no_declared_entry_keeps_its_own_ticket(self):
+        """The gate is a list of two, not a new rule for the whole board.
+
+        Cleaned of the mail/daily/alliance goals, the other sweep tickets must still be emitted or the
+        change would have quietly removed the bounded observation sweep itself.
+        """
+        board = self._board(red_dots=self._dots("BTN_OPEN_MAIL", ABSENT))
+        self.assertIn("CLEAR_INTEL", board)
+        self.assertEqual(board["CLEAR_INTEL"].available_skills, ("OPEN_INTEL",))
+
+
+#: Counts executor calls, at module level because the wiring checker reads ``self._X()`` as a call to
+#: an undefined method when a test carries its own helper class.
+class _CountingExecutor:
+    calls = 0
+
+    def execute(self, action, skill_id=None):
+        type(self).calls += 1
+        return None
+
+
+class TheExecutorBackstopTest(unittest.TestCase):
+    """§六: 增加最后一道动作出口保护.
+
+    The goal layer and the brain both refuse without a dot now, but a decision made somewhere else --
+    or made while the entry was readable and executed after the client moved on -- still reaches the
+    executor.  ``Scheduler.tick`` is the one place every decision passes through, so the backstop
+    lives there, and this class pins that it refuses rather than corrects: the step is settled as
+    "nothing new here" and the cycle goes to another goal.
+    """
+
+    def setUp(self):
+        _CountingExecutor.calls = 0
+
+    def _tick(self, skill, state, entry, badge):
+        from winter_agent_v2.brain import RuleBrain
+        from winter_agent_v2.models import Decision
+        from winter_agent_v2.scheduler import Scheduler
+        from winter_agent_v2.skills import v2_registry
+
+        world = WorldState(
+            page=state,
+            confidence=0.99,
+            red_dots={} if badge is None else {entry: {"state": badge, "goal": "x"}},
+        )
+        scheduler = Scheduler(RuleBrain(), v2_registry(), _CountingExecutor())
+        before = _CountingExecutor.calls
+        result = scheduler.tick(world, Decision(skill, "forced_for_the_probe", 0.99, "x"))
+        return _CountingExecutor.calls > before, result.decision
+
+    def test_a_dotted_entry_still_reaches_the_executor(self):
+        executed, decision = self._tick("OPEN_MAIL", Page.HOME, "BTN_OPEN_MAIL", PRESENT)
+        self.assertTrue(executed)
         self.assertEqual(decision.skill, "OPEN_MAIL")
 
-    def test_a_state_with_no_ledger_at_all_still_opens_the_mail_page(self):
-        self.assertEqual(self._decide({}).skill, "OPEN_MAIL")
+    def test_the_executor_is_not_reached_without_the_dot(self):
+        for badge in (ABSENT, UNKNOWN, None):
+            with self.subTest(badge=badge):
+                executed, decision = self._tick("OPEN_MAIL", Page.HOME, "BTN_OPEN_MAIL", badge)
+                self.assertFalse(executed, "the page must not be entered")
+                self.assertEqual(decision.skill, "SAFE_STOP")
+                self.assertIn("refused_at_the_entry_gate", decision.reason)
+                from winter_agent_v2.runtime_snapshot import is_fatal_stop
+
+                self.assertFalse(is_fatal_stop(decision.reason), "and the cycle is handed on")
+
+    def test_the_gifts_page_is_refused_at_the_same_gate(self):
+        executed, decision = self._tick(
+            "OPEN_ALLIANCE_GIFTS", Page.ALLIANCE, "TILE_ALLIANCE_GIFTS", ABSENT
+        )
+        self.assertFalse(executed)
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertIn("ALLIANCE_ROUTINE_is_absent", decision.reason)
+
+    def test_an_ungated_skill_is_untouched(self):
+        executed, decision = self._tick("BACK", Page.ALLIANCE, "TILE_ALLIANCE_GIFTS", ABSENT)
+        self.assertTrue(executed, "the backstop is a list of two entries, not a new stage")
+        self.assertEqual(decision.skill, "BACK")
 
 
 if __name__ == "__main__":

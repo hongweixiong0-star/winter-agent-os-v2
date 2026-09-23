@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .camp_training import CAMP_LABELS, CAMP_ORDER, TROOP_TO_CAMP
 from .models import WorldState
+from . import entry_badges
 from . import goal_utility
 from .rally import BearPhase, bear_phase
 
@@ -358,6 +359,7 @@ def _append_panel_routine(
     routine: PanelRoutine,
     reading: Mapping[str, Any] | None,
     observation: Mapping[str, Any] | None = None,
+    red_dots: Mapping[str, Any] | None = None,
 ) -> None:
     """Emit one panel routine from its reading, or as a visit when it is due.
 
@@ -413,6 +415,33 @@ def _append_panel_routine(
                 routine.goal_id, GoalStatus.UNKNOWN, evidence=provenance, distance=1.0,
             ))
             return
+        # The periodic ticket, and the one place the operator's 2026-09-23 rule bites.
+        #
+        # For an **entry-gated** goal (``entry_badges.ENTRY_GATED_GOALS``: 邮件 and 联盟宝箱) the
+        # clock is not allowed to create the goal at all.  Measured before this guard, on the real
+        # library: with the entry badge ABSENT the routine still emitted ``MAIL_ROUTINE /
+        # DISCOVERED / available_skills=('OPEN_MAIL',)``, priced by age alone (180 for never-read,
+        # 155 for a reading 3x past its TTL) -- so a screen with nothing behind it outbid real work
+        # and the run ended in ``mail_entry_has_no_badge_this_frame``.  That is the operator's
+        # "红点不是加分项，而是有没有任务的准入信号": ABSENT removes the goal from the board.
+        #
+        # UNKNOWN emits nothing either, and that is §四 rather than an oversight: the entry is drawn
+        # on a screen the loop stands on constantly, so re-observing costs no step, while opening the
+        # page "to find out" spends one every round.  Nothing is lost by waiting for a real reading --
+        # the ticket is re-derived from scratch on the next frame that draws the entry.
+        #
+        # The cost of that is stated rather than hidden: while the loop is **not** on the screen that
+        # draws the entry, the goal does not exist.  That is the intended direction -- the entry is
+        # the only evidence that anything is behind it, and a run that cannot read it has no reason to
+        # go and look.  It is also why the layer has to be live: with no red-dot ledger at all
+        # (an older state file, a replay fixture) every gated goal stays off the board.  That is
+        # honest and it is checkable, and the alternative -- treating "unreadable" as "go and look" --
+        # is the periodic polling this rule exists to remove.
+        if routine.goal_id in entry_badges.ENTRY_GATED_GOALS:
+            verdict, gated_on = entry_badges.entry_gate(routine.goal_id, red_dots)
+            if verdict != entry_badges.PRESENT:
+                return
+            provenance = {**provenance, "entry": verdict, "entry_on": list(gated_on)}
         goals.append(GoalState(
             routine.goal_id, GoalStatus.DISCOVERED,
             # Never read prices as "waited for ever"; read-and-stale prices by how stale.
@@ -552,6 +581,9 @@ class GoalLibrary:
                 goals, routine,
                 getattr(world, routine.field, None),
                 (observations or {}).get(routine.field),
+                # The entry ledger travels with the world state, so gating a goal on its own entry's
+                # badge costs no extra look -- the reading was taken when the frame was.
+                getattr(world, "red_dots", None),
             )
         # GATHER, as the operator's goal list names it, in the runtime form the
         # project's own table already describes (KEEP_MARCHES_PRODUCTIVE).

@@ -10,6 +10,25 @@ from .event_goal import event_priority_modifier
 from .operations_policy import operational_priority
 from .goal_library import GoalLibrary
 from .candidate_policy import CandidateAttemptPool
+from . import entry_badges
+
+#: The two page entries a task may only be entered through because its own badge said so
+#: (operator directive 2026-09-23 §六: 增加最后一道动作出口保护).
+#:
+#: ``Scheduler.tick`` is the one place every decision passes through on its way to the executor --
+#: brain routes, page-driven branches, and anything a future caller adds -- so a check here cannot be
+#: bypassed by an older path that still believes a mail sweep is due.  Measured before it existed: a
+#: ``MAIL_ROUTINE`` goal opened the gifts page 9 times in the production corpus, which is exactly the
+#: kind of cross-path entry this backstop is for.
+#:
+#: The check is a *refusal*, not a correction: it does not rewrite the decision, it declines to run
+#: it and settles the step as "nothing new here", so the cycle goes to another goal.  And it refuses
+#: on UNKNOWN as well as ABSENT -- §四: an unreadable entry is not permission to open a page in order
+#: to find out.
+ENTRY_GATED_SKILLS: dict[str, str] = {
+    "OPEN_MAIL": "MAIL_ROUTINE",
+    "OPEN_ALLIANCE_GIFTS": "ALLIANCE_ROUTINE",
+}
 
 
 @dataclass(frozen=True)
@@ -65,6 +84,25 @@ class Scheduler:
             decision = self.brain.decide(world, self.registry)
         if decision.skill == "SAFE_STOP":
             return TickResult(decision, None)
+        # The last exit before the executor, and the backstop the directive asks for.  A page may not
+        # be entered unless the entry that leads to it carries a dot *on this frame*: the reading is
+        # taken from the same ``WorldState`` the decision was made on, so a decision that was made
+        # when the entry was readable cannot be executed after the client moved on either.
+        gated_goal = ENTRY_GATED_SKILLS.get(decision.skill)
+        if gated_goal is not None:
+            verdict, gated_on = entry_badges.entry_gate(gated_goal, getattr(world, "red_dots", None))
+            if verdict != entry_badges.PRESENT:
+                return TickResult(
+                    Decision(
+                        "SAFE_STOP",
+                        f"{decision.skill}_refused_at_the_entry_gate:"
+                        f"{gated_goal}_is_{verdict.lower()}"
+                        f"{'_on_' + '/'.join(gated_on) if gated_on else ''}",
+                        1.0,
+                        "switch_task",
+                    ),
+                    None,
+                )
         skill = self.registry.get(decision.skill)
         if skill is None or not skill.ready(world):
             return TickResult(Decision("SAFE_STOP", "skill_not_ready", 1.0, "no_action"), None)

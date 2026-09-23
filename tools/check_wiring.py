@@ -755,9 +755,20 @@ def main() -> int:
     # would look like work and displace an observation that has real work waiting.
     check("brain: with no goal the alliance panel is still a plain stop",
           RuleBrain().decide(alliance_home, registry).skill == "SAFE_STOP")
-    check("brain: the goal that owns the panel still opens its gifts hop",
-          RuleBrain(current_goal="ALLIANCE").decide(alliance_home, registry).skill
-          == "OPEN_ALLIANCE_GIFTS")
+    # The gifts hop is decided by the 联盟宝箱 tile's **own** badge (operator directive 2026-09-23 §三),
+    # and until that rule the check below pinned the opposite: the goal that owns the panel opened the
+    # gifts page whatever the tile said.  Measured over the 97 production steps that entered it: the
+    # tile's badge was ABSENT in 93.  ``alliance_home`` above carries no ledger, so the tile is
+    # UNKNOWN there and the honest answer is now a stop -- the pair below states both halves.
+    check("brain: the goal that owns the panel opens its gifts hop only with the tile's own badge",
+          RuleBrain(current_goal="ALLIANCE").decide(
+              WorldState(
+                  page=Page.ALLIANCE, alliance={"section": "HOME"}, confidence=0.98,
+                  red_dots={"TILE_ALLIANCE_GIFTS": {"state": "PRESENT"}},
+              ),
+              registry).skill == "OPEN_ALLIANCE_GIFTS")
+    check("brain: ...and does not enter the gifts page when that badge is not there",
+          RuleBrain(current_goal="ALLIANCE").decide(alliance_home, registry).skill == "SAFE_STOP")
     check("brain: an unreadable status on the owned panel is still reported, not papered over",
           RuleBrain(current_goal="ALLIANCE").decide(
               WorldState(page=Page.ALLIANCE, alliance={"section": "GIFTS", "status": "UNKNOWN"},

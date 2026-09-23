@@ -80,11 +80,19 @@ class TheNotificationLayerIsNotATargetTest(unittest.TestCase):
                         "and it is the scoring path, not a locator")
 
     def test_the_branch_on_the_notification_is_a_branch_not_a_tap(self):
-        """The mail entry's dot decides *whether to enter*, which is the directive's own split."""
+        """The mail entry's dot decides *whether to enter*, which is the directive's own split.
+
+        Read as source on purpose: the claim is about the *shape* of the branch -- a page decision
+        behind a badge test, and no coordinate anywhere near it -- and a behavioural test cannot show
+        the absence of a coordinate.  The badge test is now the three-state gate (§一/§四), so what is
+        pinned is that only PRESENT reaches the page decision.
+        """
         brain = (ROOT / "winter_agent_v2/brain.py").read_text(encoding="utf-8")
-        start = brain.index('mail_badge = str(((world.red_dots or {})')
-        window = brain[start:start + 700]
-        self.assertIn('Decision("SAFE_STOP", "mail_entry_has_no_badge_this_frame"', window)
+        start = brain.index('mail_gate = entry_badges.entry_gate("MAIL_ROUTINE"')
+        window = brain[start:start + 900]
+        self.assertIn("if mail_gate[0] != entry_badges.PRESENT:", window)
+        self.assertIn('"SAFE_STOP",', window)
+        self.assertIn('f"mail_entry_badge_{mail_gate[0].lower()}_this_frame"', window)
         self.assertIn('Decision("OPEN_MAIL"', window,
                       "the dot produces a page decision; the tap is OPEN_MAIL's own business")
         self.assertNotIn("tap(", window)

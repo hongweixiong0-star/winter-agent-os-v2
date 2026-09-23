@@ -244,6 +244,71 @@ def dot_varies(entry: str) -> bool:
     return bool(row.get("varies"))
 
 
+#: The goals whose **existence** is decided by their own entry's badge, and the entries that decide
+#: it.  Operator directive 2026-09-23 ("红点对邮件和联盟宝箱不是加分项，而是有没有任务的准入信号"):
+#: for these two, ABSENT means the goal does not exist this cycle -- it is not ranked lower, it is
+#: not on the board -- and UNKNOWN is not permission to go and look (§四: 不能为了消除 UNKNOWN
+#: 每轮打开页面).
+#:
+#: Why an entry and not a page reading: both entries are drawn on screens the loop already stands
+#: on (邮件的 in HOME, 联盟宝箱 on the alliance page's own tile grid), so the signal costs no step.
+#: ``BTN_OPEN_MAIL`` and ``TILE_ALLIANCE_GIFTS`` are both measured in the table; a goal whose entry
+#: is not in the table cannot be gated by it, which is the honest direction -- see :func:`entry_gate`.
+#:
+#: The 联盟 one is the **tile's own** badge, not the alliance entry's.  That distinction is the
+#: operator's §三 and it is not cosmetic: the alliance page's badges sit on individual tiles
+#: (联盟战争 / 联盟宝箱 / 联盟领地 / 联盟商店 ...), so "the alliance entry has a dot" says nothing
+#: about the gift box.  Measured over the 97 production steps that entered the gifts page: the tile's
+#: own badge was **ABSENT in 93 of them**, and the alliance page had reported no readable state at all
+#: in 96 of them.
+ENTRY_GATED_GOALS: dict[str, tuple[str, ...]] = {
+    "MAIL_ROUTINE": ("BTN_OPEN_MAIL",),
+    # The gifts goal is the 联盟宝箱 tile; ``ALLIANCE_ROUTINE`` is the goal id the goal layer emits
+    # for the alliance page (``goal_library.PANEL_ROUTINES`` / ``GOAL_ROUTES``), which is why the
+    # binding is on the routine rather than on a goal named after the tile.
+    "ALLIANCE_ROUTINE": ("TILE_ALLIANCE_GIFTS",),
+}
+
+
+def entry_gate(goal_id: str, red_dots: Any) -> tuple[str, tuple[str, ...]]:
+    """``(verdict, entries)`` -- may a goal that lives behind an entry exist on this frame?
+
+    Three answers, and each is a different decision rather than a different score:
+
+    * ``PRESENT`` -- the client drew a dot on this goal's own entry, so there is something behind it.
+      The caller may emit the goal and open the page.
+    * ``ABSENT`` -- the entry was **read on this screen** and carries no dot.  For a gated goal that
+      is a refusal: 无红点，就没有这个 Goal.  Note what makes this safe: ``read_entry_badges`` answers
+      UNKNOWN, never ABSENT, when the entry belongs to another page or when there is no frame, so an
+      ABSENT here means the entry really was looked at.
+    * ``UNKNOWN`` -- nothing readable.  Not permission: §四 says the answer is to re-observe, not to
+      open the page in order to find out.  The caller emits nothing; HOME frames are frequent, so the
+      entry is re-read for free on the next step that stands there.
+
+    A goal with no declared entry answers UNKNOWN, which is the same direction as
+    ``dots_pointing_at`` dropping an unbound entry: a goal does not become gated by being added to a
+    mapping, and an ungated goal keeps whatever behaviour it had.
+    """
+    wanted = ENTRY_GATED_GOALS.get(str(goal_id) or "")
+    if not wanted or not isinstance(red_dots, dict):
+        return UNKNOWN, ()
+    seen: list[str] = []
+    readable = False
+    for name in wanted:
+        record = red_dots.get(name)
+        if not isinstance(record, dict):
+            continue
+        state = str(record.get("state") or "")
+        if state == PRESENT:
+            seen.append(name)
+            readable = True
+        elif state == ABSENT:
+            readable = True
+    if seen:
+        return PRESENT, tuple(seen)
+    return (ABSENT if readable else UNKNOWN), ()
+
+
 def dots_pointing_at(red_dots: Any) -> dict[str, tuple[str, ...]]:
     """Which goals the client is currently pointing at, by drawing a dot on their entry.
 

@@ -172,6 +172,31 @@
    "behaviour": "present in 26 of 26 sampled frames with identical geometry AND identical size",
    "status": "SUSPECT_ARTWORK",
    "verification": "a notification has to be able to go away, and this one never varied across three hours, so a permanent badge and a fixed red element inside the button's artwork cannot be told apart with this sample.  Do not read it as PRESENT or ABSENT until a frame with an empty hero tab is available"
+  },
+  {
+   "entry": "TILE_ALLIANCE_GIFTS",
+   "label": "联盟宝箱",
+   "page": "ALLIANCE",
+   "goal": "ALLIANCE_ROUTINE",
+   "anchor": "the 联盟宝箱 tile's own top-right corner, on the alliance page's tile grid",
+   "search_window_norm": [
+    0.87,
+    0.455,
+    1.0,
+    0.545
+   ],
+   "measured_blob_norm": {
+    "pixels": [
+     70,
+     477
+    ]
+   },
+   "behaviour": "present in 8 of 316 production alliance frames, absent in 308 -- it comes and goes, so it can decide whether the goal exists",
+   "evidence_frames": [
+    "2026-09-15T02:12:22.447488+00:00 draws 477 red px on the tile",
+    "2026-09-15T02:12:51.067666+00:00 draws none"
+   ],
+   "verification": "the window is the already-reviewed RED_DOT_ALLIANCE_GIFTS_18 roi widened slightly; the control windows over the neighbouring tiles read different counts in the same loop, so this is the gifts tile's own badge and not 'a red thing on the right of the screen'"
   }
  ],
  "not_measured": [
@@ -183,6 +208,7 @@
  "dot_variability": {
   "measured_on": "2026-09-23",
   "reproduce_with": [
+   "tools/measure_alliance_tile_badge.py",
    "tools/measure_mail_dot_blind_window.py",
    "tools/measure_panel_row_badges.py"
   ],
@@ -266,6 +292,13 @@
     "unknown": 12,
     "varies": false,
     "evidence": "同上"
+   },
+   "TILE_ALLIANCE_GIFTS": {
+    "present": 8,
+    "absent": 308,
+    "no_reading": 0,
+    "varies": true,
+    "evidence": "316 production alliance frames, window [0.87, 0.455, 1.0, 0.545]; measured by tools/measure_alliance_tile_badge.py"
    }
   }
  }

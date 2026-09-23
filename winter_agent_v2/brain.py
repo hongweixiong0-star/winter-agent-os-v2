@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from .models import Decision, MarchState, Page, WorldState
 from .beast_targets import is_dispatchable, may_evaluate
 from .camp_training import CAMP_LABELS, CAMP_ORDER, LABEL_TO_CAMP
+from . import entry_badges
 from .skills import SkillRegistry
 
 #: Skills that leave a page or restore a known state instead of advancing whatever goal is being
@@ -801,17 +802,24 @@ class RuleBrain:
                 # read ABSENT does not open the page at all -- the repetition the directive asks to
                 # stop is exactly this screenshot-every-round of a mail page with nothing new.
                 #
-                # Only ABSENT skips.  UNKNOWN is not "nothing there": the reading reports UNKNOWN
-                # when the entry is not on this page, when no frame was given, or when the badge is
-                # still only suspected of being artwork, and in all three cases the honest action is
-                # the one the route already took.  A missing ledger (older state, replay fixture)
-                # behaves the same way, which is why the lookup falls through instead of asserting.
-                mail_badge = str(((world.red_dots or {}).get("BTN_OPEN_MAIL") or {}).get("state") or "")
-                if mail_badge == "ABSENT":
+                # §一/§四 of the same directive tightened it further, and this is the second half:
+                # only PRESENT opens the page.  UNKNOWN and a missing ledger used to fall through to
+                # OPEN_MAIL, on the reasoning that "unreadable" should not change behaviour -- but for
+                # a task whose whole existence is the dot, unreadable is not permission either, and
+                # opening the page in order to find out is the periodic visit again under another
+                # name.  The entry is drawn on HOME, which the loop stands on constantly, so the
+                # reading is re-taken for free; another goal gets this cycle instead.
+                mail_gate = entry_badges.entry_gate("MAIL_ROUTINE", getattr(world, "red_dots", None))
+                if mail_gate[0] != entry_badges.PRESENT:
                     # Not fatal: the mail goal having nothing to do says nothing about the others
                     # (§六 -- a task that cannot be handled is deferred, it never stops the sweep).
-                    return Decision("SAFE_STOP", "mail_entry_has_no_badge_this_frame", 1.0, "switch_task")
-                return Decision("OPEN_MAIL", "mail_sweep_goal", world.confidence, "mail_page_open")
+                    return Decision(
+                        "SAFE_STOP",
+                        f"mail_entry_badge_{mail_gate[0].lower()}_this_frame",
+                        1.0,
+                        "switch_task",
+                    )
+                return Decision("OPEN_MAIL", "mail_entry_has_a_badge", world.confidence, "mail_page_open")
             if world.page is Page.MAP:
                 if world.resource_search_open:
                     return Decision("BACK", "close_resource_search_for_mail_goal", world.confidence, "resource_search_closed")
@@ -1049,7 +1057,34 @@ class RuleBrain:
                     return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_alliance_route")
             if world.alliance.get("section") == "HOME":
-                return Decision("OPEN_ALLIANCE_GIFTS", "alliance_gifts_badge_visible", world.confidence, "alliance_gifts_open")
+                # The 联盟宝箱 tile's **own** badge, or nothing.
+                #
+                # Operator directive 2026-09-23 §三.  Until this gate, this line opened the gifts
+                # panel from the alliance page's HOME section unconditionally, with the reason string
+                # ``alliance_gifts_badge_visible`` -- which claimed a badge while nothing had been
+                # read at all.  Measured over the 97 production steps that entered the gifts page:
+                # the tile's own badge was **ABSENT in 93** of them, and the alliance reading said
+                # nothing usable in 96.  The alliance entry's dot is not evidence for this tile: the
+                # page draws its badges per tile (联盟战争 / 联盟宝箱 / 联盟领地 / 联盟商店 ...), so a
+                # dot up there can belong to any of them.
+                #
+                # UNKNOWN is not permission either (§四): the tile is drawn on the screen the run is
+                # already standing on, so the honest move is to let another goal have the cycle and
+                # read the tile again next time it is here -- not to open a page in order to find out.
+                gifts_entry = entry_badges.entry_gate("ALLIANCE_ROUTINE", getattr(world, "red_dots", None))
+                if gifts_entry[0] == entry_badges.PRESENT:
+                    return Decision(
+                        "OPEN_ALLIANCE_GIFTS",
+                        f"alliance_gifts_tile_has_a_badge{' on ' + '/'.join(gifts_entry[1]) if gifts_entry[1] else ''}",
+                        world.confidence,
+                        "alliance_gifts_open",
+                    )
+                return Decision(
+                    "SAFE_STOP",
+                    f"alliance_gifts_tile_badge_{gifts_entry[0].lower()}_this_frame",
+                    1.0,
+                    "switch_task",
+                )
         # ---- the 快捷面板 as the in-city task board (operator directive 2026-09-22 §一) -------------
         #
         # This used to live *inside* the TRAIN branch below, so only the TRAIN route could use the
