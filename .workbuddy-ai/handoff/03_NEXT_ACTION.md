@@ -11,12 +11,18 @@
 
 **真机待验（只需看 `episodes.jsonl` / `executor_backend.jsonl`）**：
 
-1. 出现 `POWER_OVERVIEW` 时，`CLOSE_POPUP` 的 `tap_point` **不再**是 `[635, 456]`（那是退出确认弹窗的 X
-   位置，也是面板自己的数字列）；应当是约 **`[665, 167]`**（实测解析点 norm `(0.9236, 0.1301)`）。
-2. `CLOSE_POPUP` **成功**、且后帧 `popup` 不再是 `POWER_OVERVIEW`。**本轮只证到"给出的点是那个 X"，
-   没证到"弹窗真的关了"**，这是下一轮第一条要看的事。
-3. 台账里应出现 `POPUP|POWER_OVERVIEW|BTN_CLOSE` 且逐渐长出 `position_norm`；旧键 `POPUP|BTN_CLOSE`
-   仍在（`attempts≈97`）但**不再被任何命名弹窗的帧取用**（只能被"读了 POPUP 却说不出是哪种"的帧取用）。
+1. ~~出现 `POWER_OVERVIEW` 时，`CLOSE_POPUP` 的 `tap_point` 不再是 `[635, 456]`~~ **已确认**：
+   `06:06:22` 该步 `tap_point = [665, 167]`（= 解析点 `(0.9236,0.1301)`，= 帧上目视量到的 X）。
+2. ~~`CLOSE_POPUP` 成功、后帧 `popup` 不再是 `POWER_OVERVIEW`~~ **已确认**：
+   `after_page=HOME`、`after_popup=null`，`verifier_evidence` 两者都写了；这是 `POWER_OVERVIEW` 上的
+   **首次**成功（此前 82 次失败，另 55 次成功全在 `EXIT_CONFIRM`）。记录落盘 `06:05:51` → 成功 `06:06:22`。
+3. 台账里应出现 `POPUP|POWER_OVERVIEW|BTN_CLOSE` 并逐渐长出 `position_norm`（`06:04:05` 时它还是
+   `attempts=0`）；旧键 `POPUP|BTN_CLOSE` 仍在（`attempts≈97`）但**不再被任何命名弹窗的帧取用**。
+
+**下一步（第一条，按价值）**：另外 21 种弹窗里的**大族群**（`GET_MORE_STAMINA` 289 帧、`GENERIC_REWARD` 281 帧、
+`POWER_DETAILS` 129 帧）**没有任何人见过 `CLOSE_POPUP` 成功**——用同一套办法（`--survey` 量出各自的 X 位置 →
+`register_close_popup_band.py` 的判据）逐族补 band 记录。**不要**把 `BTN_CLOSE` 的 band 直接当成通用关闭按钮：
+`POPUP|*` 下另外 7 条控件位置同样只有"不再跨屏误用"，没有各自的定位器。
 
 **不要重复**：不要把 `[635,456]` 或任何单一坐标当成"关闭按钮"；不要把 `POPUP` 当成一屏
 （语料里 22 种叠层、2717/2717 条读数都带着是哪一种）；不要为了 A/B 用 `git stash`（这棵树第二个写入方

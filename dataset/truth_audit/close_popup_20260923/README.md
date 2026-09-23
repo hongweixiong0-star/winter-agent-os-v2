@@ -115,18 +115,45 @@ HOME / MAP       -> None                      ← 无误触发（非弹窗页实
 
 剩 8 条：`test_refusal_yields_the_cycle.py` 2 条 + `test_live_runtime.py` 6 条，两侧都有。
 
+## 真机：记录落盘 **31 秒后**，这一屏第一次关掉了
+
+**这是本轮唯一一条真机证据，而且它同时验了两半。**
+
+```
+06:02:52  06:03:28  06:04:05  06:05:22×4   CLOSE_POPUP FAILURE  SEMANTIC_TARGET_NOT_VERIFIED
+                                            （修法一已在工作树里：不再有点击，剩诚实的"解析不到"）
+06:05:51                                   register_close_popup_band.py 写入新记录
+06:06:22   CLOSE_POPUP SUCCESS               ← 31 秒后
+```
+
+```
+tap_point          [665, 167]      ← 旧值一直是 [635, 456]（面板数字列）
+after_page         HOME
+after_popup        null
+verifier_evidence  {"before_popup":"POWER_OVERVIEW","after_page":"HOME","after_popup":null}
+```
+
+`(0.9236, 0.1301) × (720, 1280) = (665.0, 166.5)` —— 解析给出的点、实际点击的点、我在帧上目视量到的
+X，三者是同一个位置。
+
+**"第一次"是可核对的**：全部 56 次 `CLOSE_POPUP` 成功里，**55 次在退出确认弹窗**（`EXIT_CONFIRM`），
+`POWER_OVERVIEW` 上**此前 0 次**（82 次失败）。死循环（每 63 秒一轮、连死 8 轮以上）由此断掉。
+
+帧与记录归档在 `live_success_before_20260923T060602.png` / `live_success_after_...png` /
+`live_success.json`。该步记的 `repo_revision` 是 `5ce5f5ae…+86852481…`——**加号后是工作树的脏哈希**，
+即 AUTO 跑的确实是当时**尚未提交**的那版代码（所以"落盘时间"要按文件 mtime 算，不是按提交时间）。
+
 ## 还没做 / 不知道的
 
 * **05:54:23 的那次切换不是本轮的功劳**：失败类型从 `POPUP_CLOSE_NOT_PROVEN`（有点击）变成
   `SEMANTIC_TARGET_NOT_VERIFIED`（无点击）发生在 `05:54:23`，而本轮第一处编辑落盘在 `05:57:44`。
   台账条目现在仍在（`attempts=97`、`resolved`），按修复前的代码本应仍然给出那个点，所以这条
   **成因未定**，不认领。
-* **弹窗是否真被关掉，要真机**：本轮只证到"解析给出的点是那个 X"。库里最新几帧仍是
-  `SEMANTIC_TARGET_NOT_VERIFIED`（当时跑的是工作树里的半成品），下一轮真机应能看到
-  `CLOSE_POPUP` 成功、后帧不再是 `POPUP`。
 * 另外 21 种弹窗的同族问题：`POPUP|*` 下还有 7 条其它控件的位置（`BTN_OPEN_POWER_DETAILS`、
   `BTN_DISMISS_INTEL_REWARD`、`BTN_INTEL_VIEW_TARGET`…），它们的键本轮一并变窄了，但没有各自的
   band 记录——修法一让它们不再跨屏误用，修法二只补了 `BTN_CLOSE`。
+* 这次成功只覆盖**加成总览这一种**弹窗；`GET_MORE_STAMINA`（289 帧）、`GENERIC_REWARD`（281 帧）
+  等更大的族群还没有人看到 `CLOSE_POPUP` 成功过。
 
 ## 复算
 

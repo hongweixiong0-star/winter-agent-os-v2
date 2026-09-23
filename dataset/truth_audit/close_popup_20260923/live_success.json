@@ -1,0 +1,30 @@
+{
+ "step": "CLOSE_POPUP at 2026-09-23T06:06:22Z (executor 06:06:04)",
+ "revision": "5ce5f5ae52f348a97f0986a2e0f03cb5e213dc47+86852481b8ed4658",
+ "run": "20260923_140557_544859",
+ "action": {
+  "kind": "TAP_SEMANTIC",
+  "target": "BTN_CLOSE",
+  "payload": {}
+ },
+ "decision_reason": "blocking_popup",
+ "expected_result": "popup_closed",
+ "tap_point_px": [
+  665,
+  167
+ ],
+ "state_before": {
+  "page": "POPUP",
+  "popup": "POWER_OVERVIEW"
+ },
+ "state_after": {
+  "page": "HOME",
+  "popup": null
+ },
+ "verifier_evidence": {
+  "before_popup": "POWER_OVERVIEW",
+  "after_page": "HOME",
+  "after_popup": null
+ },
+ "registered_at": "06:05:51Z (the band record was written 31 s earlier)"
+}
