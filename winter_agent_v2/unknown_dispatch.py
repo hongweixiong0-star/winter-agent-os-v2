@@ -44,7 +44,7 @@ from __future__ import annotations
 import json
 import os
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -74,7 +74,42 @@ MAX_IN_FLIGHT = 1
 #: How many jobs one question may have.  Two, because the failure this guards against is a job that
 #: is *stopped* rather than answered (measured once: a job that never wrote anything and was
 #: reclaimed at the timebox) -- retrying that once is reasonable, retrying it forever is not.
+#:
+#: **This is the budget for failures the *question* is answerable for.**  A job whose own worker
+#: process never started is not the question's failure and is budgeted separately -- see
+#: ``MAX_WORKER_DEATH_ATTEMPTS``.  Conflating the two is what orphaned the whole channel on
+#: 2026-09-24: seven questions sat ``pending`` with ``no job``, every one of them capped at two
+#: attempts, while the two attempts each had been spent by an environment fault that no question
+#: could have caused.
 MAX_ATTEMPTS_PER_REQUEST = 2
+
+#: How many times one question may lose a job to a **worker that never ran** (see
+#: ``_classify_failure``).  Separate from ``MAX_ATTEMPTS_PER_REQUEST`` on purpose, and still
+#: bounded on purpose: a channel whose workers cannot start must not turn into a job generator, so
+#: this is a small finite number and the dispatch cooldown grows with each consecutive death.
+MAX_WORKER_DEATH_ATTEMPTS = 3
+
+#: Failure classes the ledger records, so "the job failed" stops being one undifferentiated fact.
+#:
+#: * ``WORKER_DIED`` -- the job's own process never ran the task.  Positive evidence only: the
+#:   gateway's sentence for a reaped worker (``session ended`` / ``parked``), or a job the gateway
+#:   no longer knows at all (``JOB_LOST``).  Nothing about the question can cause this and nothing
+#:   about the question can fix it, which is exactly why it must not consume the answer budget.
+#: * ``NO_ANSWER`` -- the job reached a terminal state and wrote nothing.  The agent ran and did not
+#:   produce, or the job was stopped.  This one counts against the question.
+FAILURE_WORKER_DIED = "WORKER_DIED"
+FAILURE_NO_ANSWER = "NO_ANSWER"
+
+#: The gateway's own wording for a worker whose process is gone, from ``reapDeadJobs`` in the
+#: shipped bundle (``ep="session ended \u2014 press enter to restart it"``,
+#: ``eh="parked \u2014 press enter to continue"``).  Matched by prefix so the trailing "press enter"
+#: hint can change without silently reclassifying every failure as the question's fault.
+WORKER_DEATH_DETAILS = ("session ended", "parked")
+
+#: How many consecutive ``WORKER_DIED`` reconciliations make the channel report itself DEGRADED.
+#: Two, because one is a hiccup and two in a row is a condition -- and a condition is what an
+#: operator needs to be told about rather than left to infer from a shrinking list of questions.
+DEGRADED_AFTER_WORKER_DEATHS = 2
 
 #: How long to wait before re-asking the same question after a job that produced nothing.  The
 #: question itself is already rate-limited by ``unknown_advisor.REQUEST_COOLDOWN_SECONDS``; this is
@@ -145,7 +180,7 @@ def _asked_again(request: Any, record: "Dispatch") -> bool:
     return _seconds_since(record.updated_at) > (datetime.now(timezone.utc) - asked).total_seconds()
 
 
-#: The vocabulary the ledger's ``state`` field is read in: **both** spellings, lower-cased.#:
+#: The vocabulary the ledger's ``state`` field is read in: **both** spellings, lower-cased.
 #: Measured on the channel's first live dispatch, and it cost a bound: ``dispatch`` writes the state
 #: it got from the submission (``working``) while the first version of ``reconcile`` wrote the
 #: bridge's *verdict* (``RUNNING``).  ``Dispatch.open`` then recognised only the first spelling, so
@@ -153,6 +188,75 @@ def _asked_again(request: Any, record: "Dispatch") -> bool:
 #: second job was submitted while the first was still working.  New rows all carry the gateway's own
 #: word, and both are accepted so a row written before that change still reads correctly.
 OPEN_STATES = frozenset({"submitted", "working", "queued", "running"})
+
+#: The ledger ``state`` words that mean "this attempt ended without an answer".  Kept as one set so
+#: the fold and the classifier cannot drift apart.
+FAILED_STATES = frozenset({"failed", "stopped", "abandoned", "job_lost"})
+
+#: The events that mean *an attempt happened*, and therefore the only ones allowed to move
+#: ``Dispatch.updated_at`` -- the clock the dispatch cooldown reads.
+#:
+#: Measured 2026-09-24, on this module's own repair: appending a ``reclassified`` row reset the
+#: clock, so a data correction about an old attempt silently bought that question another full
+#: cooldown (amplified by the worker-death back-off, 45 minutes in that case).  Bookkeeping is not
+#: an attempt; a correction must not be able to delay the retry it exists to enable.
+CLOCK_EVENTS = frozenset({"submitted", "reconciled", "submit_failed"})
+
+
+def _classify_failure(status: Any) -> str:
+    """Which budget a terminal job that wrote nothing should be charged to.
+
+    Only positive evidence counts.  ``WORKER_DIED`` is returned when the gateway says, in its own
+    words, that the job's process is gone -- the reaper's ``session ended`` / ``parked`` sentence --
+    because that is a statement about the worker, not about the question.  Everything else is
+    ``NO_ANSWER``: the job reached a terminal state and produced nothing, which is the outcome the
+    question's own attempt budget exists to bound.
+
+    Deliberately *not* inferred from "the job was fast" or "the answer never came": a rule that
+    guesses would move real failures onto the infrastructure budget and hand them unlimited
+    retries.  One sentence, quoted, or no reclassification.
+    """
+    detail = str(getattr(status, "detail", "") or "").strip().lower()
+    if any(detail.startswith(prefix) for prefix in WORKER_DEATH_DETAILS):
+        return FAILURE_WORKER_DIED
+    return FAILURE_NO_ANSWER
+
+
+#: The outcome of an attempt that produced its answer.  Not a failure class -- it exists so the
+#: health clock can see the one outcome that clears it.
+OUTCOME_ANSWERED = "ANSWERED"
+
+
+def _row_outcome(row: Mapping[str, Any]) -> str:
+    """What became of the attempt this row is about: a failure class, ``ANSWERED``, or ``""``.
+
+    Rows written before the failure vocabulary existed carry no ``failure_class``.  They are read by
+    the one fact they do carry: a ``JOB_LOST`` row is a worker that certainly never finished, so it
+    is ``WORKER_DIED``; any other terminal-without-answer row is charged as ``NO_ANSWER``.  That
+    default is the *conservative* one -- it charges the question rather than granting a retry on
+    evidence that was never recorded.
+
+    A ``reclassified`` row is authoritative and carries the evidence that justifies it (the job's
+    own log path).  It exists because the same conservative default is wrong in the other direction
+    when the proof is still on disk: see ``tools/unknown_reclassify_failures.py``.
+    """
+    event = str(row.get("event") or "")
+    state = str(row.get("state") or "").strip().upper()
+    if event == "reclassified":
+        explicit = str(row.get("failure_class") or "").strip().upper()
+        return explicit if explicit in (FAILURE_WORKER_DIED, FAILURE_NO_ANSWER) else ""
+    if event != "reconciled":
+        return ""
+    if state == "ANSWERED" or str(row.get("note") or "") == "answer written":
+        return OUTCOME_ANSWERED
+    explicit = str(row.get("failure_class") or "").strip().upper()
+    if explicit in (FAILURE_WORKER_DIED, FAILURE_NO_ANSWER):
+        return explicit
+    if state == "JOB_LOST":
+        return FAILURE_WORKER_DIED
+    if state in {value.upper() for value in FAILED_STATES}:
+        return FAILURE_NO_ANSWER
+    return ""
 
 
 def _pid_alive(pid: int) -> bool | None:
@@ -194,6 +298,13 @@ class Dispatch:
     submitted_at: str = ""
     updated_at: str = ""
     note: str = ""
+    #: How many of this request's attempts ended with a terminal job that wrote nothing, split by
+    #: *who* is answerable for it: the question (``answer_failures``) or the channel's own ability to
+    #: start a worker (``worker_deaths``).  Two counters rather than one, because the budgets and the
+    #: remedies are different -- see ``MAX_WORKER_DEATH_ATTEMPTS``.
+    answer_failures: int = 0
+    worker_deaths: int = 0
+    last_failure_class: str = ""
 
     @property
     def open(self) -> bool:
@@ -218,6 +329,7 @@ class UnknownDispatcher:
         router: Any | None = None,
         max_in_flight: int = MAX_IN_FLIGHT,
         max_attempts: int = MAX_ATTEMPTS_PER_REQUEST,
+        max_worker_deaths: int = MAX_WORKER_DEATH_ATTEMPTS,
         cooldown: float = DISPATCH_COOLDOWN_SECONDS,
     ) -> None:
         self.root = Path(root) if root else PROJECT_ROOT
@@ -226,6 +338,7 @@ class UnknownDispatcher:
         self.ledger_path = Path(ledger_path) if ledger_path else self.root / DISPATCH_LEDGER
         self.max_in_flight = int(max_in_flight)
         self.max_attempts = int(max_attempts)
+        self.max_worker_deaths = int(max_worker_deaths)
         self.cooldown = float(cooldown)
         # The task bucket is named once, before the router, so the two can never disagree about
         # what this work is (a screenshot question: ``TASK_UI_RECOGNITION``, vision-shaped).
@@ -256,6 +369,30 @@ class UnknownDispatcher:
                 out.append(row)
         return out
 
+    def job_outcomes(self) -> dict[tuple[str, str], str]:
+        """Every attempt's final outcome, keyed by ``(request_id, job_id)``, in ledger order.
+
+        Folded **per job** rather than accumulated, so a later row can correct an earlier one about
+        the same attempt -- that is what a ``reclassified`` row is, and a running count could only
+        add to the mistake it exists to fix.  An attempt that produced its answer keeps the entry
+        ``ANSWERED`` rather than dropping it, because the health clock needs to see the outcome that
+        clears it.
+
+        One reading for both consumers, on purpose.  ``records()`` counts the failures per question,
+        and ``consecutive_worker_deaths()`` reads the same sequence as the channel's health clock;
+        two folds that disagreed about what an attempt became would disagree about when to slow
+        down.
+        """
+        outcomes: dict[tuple[str, str], str] = {}
+        for row in self.rows():
+            job_id = str(row.get("job_id") or "")
+            if not job_id:
+                continue
+            outcome = _row_outcome(row)
+            if outcome:
+                outcomes[(str(row.get("request_id")), job_id)] = outcome
+        return outcomes
+
     def records(self) -> dict[str, Dispatch]:
         """Every request the ledger mentions, folded to its latest state."""
         folded: dict[str, Dispatch] = {}
@@ -266,6 +403,7 @@ class UnknownDispatcher:
                 1 if row.get("event") == "submitted" else 0
             )
             state = str(row.get("state") or (previous.state if previous else ""))
+            outcome = _row_outcome(row)
             folded[key] = Dispatch(
                 request_id=key,
                 attempts=attempts,
@@ -277,8 +415,30 @@ class UnknownDispatcher:
                     row.get("at") if row.get("event") == "submitted"
                     else (previous.submitted_at if previous else "")
                 ),
-                updated_at=str(row.get("at") or ""),
+                updated_at=(
+                    str(row.get("at") or "")
+                    if str(row.get("event") or "") in CLOCK_EVENTS
+                    else (previous.updated_at if previous else "")
+                ),
                 note=str(row.get("note") or (previous.note if previous else "")),
+                last_failure_class=(
+                    outcome
+                    if outcome in (FAILURE_WORKER_DIED, FAILURE_NO_ANSWER)
+                    else (previous.last_failure_class if previous else "")
+                ),
+            )
+        counts: dict[str, dict[str, int]] = {}
+        for (request_id, _job_id), outcome in self.job_outcomes().items():
+            if outcome == OUTCOME_ANSWERED:
+                continue
+            bucket = counts.setdefault(request_id, {FAILURE_NO_ANSWER: 0, FAILURE_WORKER_DIED: 0})
+            bucket[outcome] = bucket.get(outcome, 0) + 1
+        for request_id, record in folded.items():
+            bucket = counts.get(request_id) or {}
+            folded[request_id] = replace(
+                record,
+                answer_failures=int(bucket.get(FAILURE_NO_ANSWER, 0)),
+                worker_deaths=int(bucket.get(FAILURE_WORKER_DIED, 0)),
             )
         return folded
 
@@ -314,50 +474,155 @@ class UnknownDispatcher:
         """Questions with no answer yet -- newest first, as the advisor defines them."""
         return self.advisor.pending()
 
+    def frame_missing(self, request: unknown_advisor.UnknownRequest) -> bool:
+        """Whether the screenshot this question is about is no longer on disk.
+
+        A question is answerable *from its frame*, and nothing else: the job is told to look at one
+        picture.  A frame that has been pruned cannot be answered by any number of retries, so
+        spending the single in-flight slot on it is work nobody asked for -- measured 2026-09-24,
+        ``unknown_i__control__b860b24a`` had been kept alive for two days by a request whose frame
+        was gone.  Reported rather than deleted: the question is still knowledge, it is just not
+        answerable *now*.
+        """
+        frame = str(getattr(request, "frame_path", "") or "").strip()
+        if not frame:
+            return True
+        path = Path(frame)
+        if not path.is_absolute():
+            path = self.root / path
+        return not path.exists()
+
+    def consecutive_worker_deaths(self, *, window: int = 20) -> int:
+        """How many attempts in a row ended with a worker that never ran.
+
+        Read from the tail of the per-job fold, most recent first, and stopped at the first attempt
+        that did *not* die that way -- including a successful one, which is what lets the channel
+        stop calling itself degraded once it can answer again.  This is the channel's own health
+        clock and the multiplier on its back-off: nothing else in the project can tell "the model
+        could not answer" from "the channel could not start a job", and conflating those is how a
+        fixable environment fault looked like seven unanswerable questions for a day.
+        """
+        consecutive = 0
+        for outcome in reversed(list(self.job_outcomes().values())):
+            if outcome != FAILURE_WORKER_DIED:
+                break
+            consecutive += 1
+            if consecutive >= window:
+                break
+        return consecutive
+
+    def health(self) -> dict[str, Any]:
+        """Whether the channel can do its job, in words an operator can act on.
+
+        ``DEGRADED`` is reported when a worker has failed to start repeatedly -- once is a hiccup,
+        twice in a row is a condition.  It is deliberately a *statement*, not an action: the
+        dispatcher still obeys its own bounds, and nothing here retries harder because it is unhappy.
+        """
+        deaths = self.consecutive_worker_deaths()
+        if deaths >= DEGRADED_AFTER_WORKER_DEATHS:
+            return {
+                "state": "DEGRADED",
+                "reason": "WORKER_DIED",
+                "consecutive_worker_deaths": deaths,
+                "detail": (
+                    f"最近 {deaths} 次后台作答作业的 worker 根本没有启动"
+                    "（网关把作业判为 session ended / JOB_LOST）——这不是问题本身答不出来，"
+                    "而是作答通道起不来；重试间隔已按次数放大。"
+                ),
+            }
+        return {"state": "OK", "reason": "", "consecutive_worker_deaths": deaths, "detail": ""}
+
     def candidates(self) -> list[tuple[unknown_advisor.UnknownRequest, str]]:
         """Questions this dispatcher may submit now, each with why it qualifies.
 
         A refusal is returned with its reason rather than silently dropped: "the channel is
         automatic" is only true if the reason a question was *not* submitted is visible.
+
+        Two budgets, and a question is owed a job when **either** can pay:
+
+        * ``max_attempts`` bounds failures the question is answerable for (the agent ran and wrote
+          nothing).  A re-ask earns one more of these -- every visit to the screen rewrites the
+          request file, so a question the runtime is still standing on says so by being re-asked.
+        * ``MAX_WORKER_DEATH_ATTEMPTS`` bounds failures the *channel* is answerable for (a job whose
+          worker never started).  These are exempt from the answer budget because no question can
+          cause or fix them, and they carry their own back-off: the cooldown between attempts is
+          multiplied by how many have happened in a row.
+
+        Measured 2026-09-24, and this is the whole reason for the split: seven questions were
+        ``pending`` with ``no job``, every one capped at two attempts, and the attempts had been
+        spent by ``Cannot find module '../dist/codebuddy'`` -- an environment fault no question
+        could have caused.  One budget would have left all seven unreachable for ever.
         """
         folded = self.records()
         answered = self.answered_ids()
+        consecutive_deaths = self.consecutive_worker_deaths()
         out: list[tuple[unknown_advisor.UnknownRequest, str]] = []
         for request in self.pending():
             if request.request_id in answered:
+                continue
+            if self.frame_missing(request):
+                # Unanswerable, so it must not take the one in-flight slot.  It stays a question and
+                # is reported by ``orphans()`` with the reason; it is simply not work.
                 continue
             record = folded.get(request.request_id)
             if record is not None:
                 if record.open:
                     continue
-                if _seconds_since(record.updated_at) < self.cooldown:
+                # The back-off grows with consecutive worker deaths, so a channel whose workers
+                # cannot start slows itself down instead of generating doomed jobs.
+                if _seconds_since(record.updated_at) < self.cooldown * (1 + consecutive_deaths):
                     continue
-                # ``MAX_ATTEMPTS_PER_REQUEST`` bounds a *burst*; it must not orphan a question.
-                # Every visit to the screen rewrites the request file (``UnknownAdvisor.ask``), so a
-                # question the runtime is still standing on says so by being re-asked -- and that is
-                # the signal to spend one more job, not a lifetime limit (see ``_asked_again``).
-                if record.attempts >= self.max_attempts and not _asked_again(request, record):
+                if not self._owed_a_job(request, record):
                     continue
             out.append((request, "pending" if record is None else f"retry {record.attempts + 1}"))
         return out
 
+    def _owed_a_job(self, request: unknown_advisor.UnknownRequest, record: "Dispatch") -> bool:
+        """Whether either budget can still pay for one more job for this question.
+
+        The worker-death budget is not spare capacity for the *question's* failures -- it pays only
+        for the failure it exists for.  A question that has spent its answer budget on the agent's
+        own failures is closed, however many worker deaths are left unspent; a question whose most
+        recent attempt was lost to a worker that never started is still open, because that attempt
+        was never really made.
+        """
+        if record.worker_deaths >= self.max_worker_deaths:
+            return False
+        answer_budget = self.max_attempts + (1 if _asked_again(request, record) else 0)
+        if record.answer_failures < answer_budget:
+            return True
+        return record.last_failure_class == FAILURE_WORKER_DIED
+
     def orphans(self) -> list[tuple[unknown_advisor.UnknownRequest, str]]:
         """Pending questions that no job can ever be submitted for, and why.
 
-        The channel's own audit.  A question whose attempts are spent and whose screen has stopped
+        The channel's own audit.  A question whose budgets are spent and whose screen has stopped
         reappearing is waiting for a person, and saying so is the difference between "busy" and
         "stuck": measured 2026-09-23, ``unknown__control__1add7d8e`` (屏幕 ``UNKNOWN::欢迎回来``)
         spent both attempts within two hours and was then unreachable by the channel for ever.
+
+        A question that lost its job to a dead worker is *not* an orphan while the worker budget can
+        still pay -- and the reason line says which budget ran out, so "the model could not answer
+        this" and "the channel could not start a worker" are no longer the same sentence.
         """
         folded = self.records()
         out: list[tuple[unknown_advisor.UnknownRequest, str]] = []
         for request in self.pending():
+            if self.frame_missing(request):
+                out.append((request, "帧文件已不存在，无法作答（不再占用作答槽位）"))
+                continue
             record = folded.get(request.request_id)
             if record is None or record.open:
                 continue
-            if record.attempts >= self.max_attempts and not _asked_again(request, record):
-                out.append((request, f"attempts {record.attempts}/{self.max_attempts} spent; "
-                                     f"last at {record.updated_at}"))
+            if self._owed_a_job(request, record):
+                continue
+            out.append((
+                request,
+                f"attempts {record.attempts} spent "
+                f"(answer failures {record.answer_failures}/{self.max_attempts}, "
+                f"worker deaths {record.worker_deaths}/{self.max_worker_deaths}); "
+                f"last at {record.updated_at}",
+            ))
         return out
 
     # ------------------------------------------------------------------ acts
@@ -385,6 +650,7 @@ class UnknownDispatcher:
                     "request_id": record.request_id,
                     "job_id": record.job_id,
                     "state": "JOB_LOST",
+                    "failure_class": FAILURE_WORKER_DIED,
                     "note": str(exc)[:300],
                 })
                 continue
@@ -451,6 +717,11 @@ class UnknownDispatcher:
                 report["done"] += 1
             else:
                 report["failed"] += 1
+            # ``failure_class`` is recorded at the only moment the evidence exists: the gateway's
+            # own sentence about the job.  A row that says only "no answer written" is the shape
+            # that cost a day of debugging -- it cannot be told apart from "the worker never
+            # started", and the two need opposite responses.
+            failure_class = "" if produced else _classify_failure(status)
             self._append({
                 "event": "reconciled",
                 "request_id": record.request_id,
@@ -458,7 +729,12 @@ class UnknownDispatcher:
                 "state": state,
                 "verdict": verdict,
                 "note": "answer written" if produced else "no answer written",
+                "failure_class": failure_class,
             })
+            if not produced:
+                report.setdefault("failure_classes", {})[failure_class or "UNCLASSIFIED"] = (
+                    report.setdefault("failure_classes", {}).get(failure_class or "UNCLASSIFIED", 0) + 1
+                )
             self._record_model_outcome(record, success=produced, state=verdict)
         return report
 
@@ -656,12 +932,22 @@ class UnknownDispatcher:
             available = False
         folded = self.records()
         answered = self.answered_ids()
+        health = self.health()
         return {
             "gateway": available,
             "pending": len(self.pending()),
             "answered": len(answered),
             "in_flight": [record.job_id for record in self.in_flight(folded)],
             "attempts": {key: record.attempts for key, record in folded.items()},
+            # The two budgets, per question, so "no job" stops being a single undifferentiated
+            # fact: a question can be out of answer attempts, out of worker attempts, or both.
+            "budgets": {
+                key: {"answer": record.answer_failures, "worker": record.worker_deaths}
+                for key, record in folded.items()
+            },
+            "health": health["state"],
+            "health_detail": health["detail"],
+            "consecutive_worker_deaths": health["consecutive_worker_deaths"],
             "last": max((row.get("at") or "" for row in self.rows()), default=""),
         }
 

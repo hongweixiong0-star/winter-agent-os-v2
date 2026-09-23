@@ -230,3 +230,101 @@ adapter folds it to a terminal `FAILED` with `outcome = JOB_LOST`, and the slot 
 freed for the capability to be re-offered from its budget rather than silently
 duplicated (operator §六).
 
+
+## 9. Background jobs die at start-up when the bundle selector is absent (measured 2026-09-24)
+
+**Symptom, as seen from the project.** Every UNKNOWN question stayed `pending` with `no job`
+taken, `unknown_ai_worker.py --once` settled `0` and submitted `0`, and the gateway's own
+verdict on a job that *was* dispatched was:
+
+```
+state  : failed
+detail : session ended — press enter to restart it
+output : null        result: ""
+```
+
+That sentence names nothing useful, so it was traced to its source rather than inferred from.
+
+**What `session ended` actually means.** It is the gateway's message for a job whose **worker
+process is gone**, produced by `reapDeadJobs` in the shipped bundle (module `88381`):
+`ep="session ended — press enter to restart it"`, written with `state:"failed"` when the job's
+recorded `pid` is no longer alive, the job is not terminal, and it was not parked. The sentence
+comes **60 s after the process exits**, so it says "the worker died", never *why*. It has nothing
+to do with the WorkBuddy/CodeBuddy chat session, and nothing to do with this project's Python.
+
+**Why the worker died.** The job's own log is the evidence, and the gateway keeps one per job
+(`logPath` in `~/.codebuddy/jobs/<shortId>/state.json`, default `~/.codebuddy/logs/job-<shortId>.log`):
+
+```
+(node:21472) Warning: Windows no-orphans cleanup unavailable: ...
+Error: Cannot find module '../dist/codebuddy'
+    at ... cli/bin/codebuddy:205:13
+  code: 'MODULE_NOT_FOUND'
+```
+
+`cli/bin/codebuddy` picks one of three bundles, and there is no fourth branch:
+
+| condition | bundle |
+| --- | --- |
+| `CODEBUDDY_FORCE_LITE_WB_BUNDLE=1` | `dist/codebuddy-lite-wb.mjs` |
+| `CODEBUDDY_FORCE_HEADLESS_BUNDLE=1` | `dist/codebuddy-headless.js` |
+| neither, and no `--print`/`-p`/`--acp`/`--a2a`/`--bg`/`--help`/`--version` on argv | `dist/codebuddy.js` |
+
+This install ships **only** `codebuddy-headless.js` and `codebuddy-lite-wb.mjs`; `dist/codebuddy.js`
+does not exist. So a CLI process started without one of those two variables dies at
+`bin/codebuddy:205` about a second after it starts. Reproduced directly, same stack:
+
+```
+$ unset CODEBUDDY_FORCE_HEADLESS_BUNDLE CODEBUDDY_FORCE_LITE_WB_BUNDLE
+$ node bin/codebuddy --serve --port 18099 --session-id probe   -> MODULE_NOT_FOUND, exit 1
+$ CODEBUDDY_FORCE_HEADLESS_BUNDLE=1 node bin/codebuddy --serve -> boots, binds 18099
+```
+
+**Why this project has to set it, not just the desktop app.** The gateway forks each job as
+`node <cli>/bin/codebuddy <prompt> --session-id … --model … --permission-mode …` with
+`env = {...process.env}` of **the gateway** (`forkBgSession` → `forkDetached`); it adds only
+`CODEBUDDY_JOB_*` and never a bundle flag. So the bundle a worker loads is decided entirely by the
+gateway's environment -- and `GatewayService` starts the gateway with `{**self.env, **plan.env}`,
+i.e. the panel's environment. A gateway launched without the selector is a gateway that boots and
+whose **every** job dies before it can read a screenshot.
+
+**The fix, and where it lives.** `gateway_service.build_plan()` now returns
+`LaunchPlan.env = {CODEBUDDY_FORCE_HEADLESS_BUNDLE: "1"}`, an *addition* to the launcher's
+environment. Headless rather than lite-wb because a worker is a full non-TUI agent turn and
+`--print`/`--acp`/`--bg` all route to the headless bundle. Verified live: the restarted gateway's
+own environment carries the variable (`psutil`), and a dispatched job booted instead of dying.
+
+### 9.1 The same mystery, read from the ledger: seven questions and one undifferentiated "failed"
+
+The dispatch ledger recorded every failed attempt as `note: "no answer written"`. That sentence
+cannot distinguish *the agent ran and did not answer* from *the worker never started*, and the two
+need opposite responses. On this day all seven pending questions were capped at
+`MAX_ATTEMPTS_PER_REQUEST = 2` while the attempts had been spent by the environment fault above --
+so a fixable condition looked like seven unanswerable questions.
+
+`unknown_dispatch` now records a `failure_class` on every reconcile: `WORKER_DIED` **only** on
+positive evidence (the gateway's `session ended` / `parked` sentence, or `JOB_LOST`), `NO_ANSWER`
+otherwise, and the two are budgeted separately (`MAX_ATTEMPTS_PER_REQUEST` for the question,
+`MAX_WORKER_DEATH_ATTEMPTS` for the channel, with the cooldown multiplied by how many worker
+deaths happened in a row, and a `DEGRADED` health line once that reaches two). Attempts that
+predate the vocabulary are charged conservatively to the question, and can be moved only by a
+`reclassified` row that cites the job log that proves it
+(`tools/unknown_reclassify_failures.py`).
+
+### 9.2 Do not let a bookkeeping row move the retry clock
+
+Appending the `reclassified` row above moved `Dispatch.updated_at`, which restarted the dispatch
+cooldown from the correction — and with the worker-death multiplier that silently bought the
+question another 45 minutes. Only `submitted` / `reconciled` / `submit_failed` may move that clock.
+
+### 9.3 A second gate on job creation: the safe-delete bulk guard
+
+One dispatch attempt came back as `POST /api/v1/jobs -> HTTP 500
+{"code":"INTERNAL_ERROR","message":"[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]
+{\"count\":52,\"threshold\":50,...}"}`. The bulk-delete guard
+(`cli/vendor/shim/safe-delete-bulk-guard.cjs`, default threshold 20, overridable with
+`CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD`) refuses a single turn that would delete more files than the
+threshold. The 52 targets were stale `~/.workbuddy/jobs/.locks/*` entries left behind by the many
+dead workers above — the same incident showing up a third time. The backlog collapsed to 3 by the
+next look, so it is a consequence of the worker deaths rather than an independent fault; it is
+recorded here because a 500 from `POST /jobs` will otherwise read as "the gateway is down".

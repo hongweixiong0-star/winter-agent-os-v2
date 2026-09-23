@@ -170,7 +170,9 @@ class _StubBridge:
             # the first version of this stub silently made the timebox untestable.
             started_at=entry.get("started_at"),
             progress_at=entry.get("progress_at"),
-            detail="",
+            # The gateway's own sentence about the job.  It is the only positive evidence that a
+            # worker never started, so the stub has to be able to carry it (2026-09-24).
+            detail=entry.get("detail", ""),
             result="",
         )
 
@@ -383,6 +385,232 @@ class DispatchTests(unittest.TestCase):
             "a re-ask is the runtime saying the question is still open, so one more job is owed",
         )
         self.assertEqual(again.orphans(), [], "and it is not an orphan any more")
+
+    def test_a_worker_that_never_started_is_not_charged_to_the_question(self):
+        """Measured 2026-09-24: a job whose own process died before it read the screenshot.
+
+        The gateway reaps a worker whose process is gone and says so in its own words --
+        ``session ended — press enter to restart it``.  Nothing about the question can cause that
+        and nothing about the question can fix it, so it must not spend the question's attempt
+        budget; otherwise a single environment fault orphans every question in the channel, which
+        is exactly what happened: seven questions pending, ``no job``, every one capped at two.
+        """
+        bridge = _StubBridge()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.dispatch(limit=1)
+        bridge.statuses["job01"] = {
+            "verdict": "FAILED", "terminal": True, "state": "failed",
+            "detail": "session ended — press enter to restart it",
+        }
+        report = dispatcher.reconcile()
+        self.assertEqual(report["failed"], 1)
+        self.assertEqual(report.get("failure_classes"), {unknown_dispatch.FAILURE_WORKER_DIED: 1})
+        row = [r for r in dispatcher.rows() if r["event"] == "reconciled"][-1]
+        self.assertEqual(row["failure_class"], unknown_dispatch.FAILURE_WORKER_DIED)
+
+        record = dispatcher.records()[self.request.request_id]
+        self.assertEqual((record.answer_failures, record.worker_deaths), (0, 1))
+
+        # ...and the question is owed another job even though a *second* failure would have hit the
+        # answer cap: the answer budget has not been touched at all.
+        bridge.statuses["job01"] = {
+            "verdict": "FAILED", "terminal": True, "state": "failed",
+            "detail": "session ended — press enter to restart it",
+        }
+        owed = self._dispatcher(bridge, cooldown=0.0)
+        self.assertIn(
+            self.request.request_id, [row[0].request_id for row in owed.candidates()],
+            "a dead worker does not close a question",
+        )
+
+    def test_the_worker_death_budget_is_bounded_too(self):
+        """A channel that cannot start workers must not become a job generator."""
+        bridge = _StubBridge()
+        now = datetime.now(timezone.utc).isoformat()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for index in range(unknown_dispatch.MAX_WORKER_DEATH_ATTEMPTS):
+            job = f"job{index:02d}"
+            rows.append({"at": now, "event": "submitted", "request_id": self.request.request_id,
+                         "job_id": job, "state": "working"})
+            rows.append({"at": now, "event": "reconciled", "request_id": self.request.request_id,
+                         "job_id": job, "state": "failed",
+                         "failure_class": unknown_dispatch.FAILURE_WORKER_DIED})
+        dispatcher.ledger_path.write_text(
+            "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8"
+        )
+        capped = self._dispatcher(bridge, cooldown=0.0)
+        self.assertNotIn(
+            self.request.request_id, [row[0].request_id for row in capped.candidates()],
+            "the worker-death budget is finite",
+        )
+        reason = dict((r.request_id, why) for r, why in capped.orphans())[self.request.request_id]
+        self.assertIn("worker deaths", reason)
+
+    def test_the_channel_says_degraded_after_repeated_worker_deaths(self):
+        """A condition an operator must be told, not left to infer from a shrinking list."""
+        bridge = _StubBridge()
+        now = datetime.now(timezone.utc).isoformat()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for index in range(unknown_dispatch.DEGRADED_AFTER_WORKER_DEATHS):
+            job = f"job{index:02d}"
+            rows.append({"at": now, "event": "submitted", "request_id": self.request.request_id,
+                         "job_id": job, "state": "working"})
+            rows.append({"at": now, "event": "reconciled", "request_id": self.request.request_id,
+                         "job_id": job, "state": "failed",
+                         "failure_class": unknown_dispatch.FAILURE_WORKER_DIED})
+        dispatcher.ledger_path.write_text(
+            "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8"
+        )
+        health = dispatcher.health()
+        self.assertEqual(health["state"], "DEGRADED")
+        self.assertEqual(health["consecutive_worker_deaths"], unknown_dispatch.DEGRADED_AFTER_WORKER_DEATHS)
+        self.assertIn("worker", health["detail"])
+        self.assertEqual(dispatcher.state()["health"], "DEGRADED")
+
+        # One answer-shaped failure behind it and the "in a row" clock resets: the channel is not
+        # allowed to call itself degraded for ever because of one bad afternoon.
+        with dispatcher.ledger_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({
+                "at": now, "event": "reconciled", "request_id": "other",
+                "job_id": "job99", "state": "failed",
+                "failure_class": unknown_dispatch.FAILURE_NO_ANSWER,
+            }, ensure_ascii=False) + "\n")
+        self.assertEqual(dispatcher.consecutive_worker_deaths(), 0)
+        self.assertEqual(dispatcher.health()["state"], "OK")
+
+    def test_an_attempt_that_produced_clears_the_degraded_state(self):
+        """Otherwise the channel would call itself broken for ever after one bad afternoon.
+
+        The health clock reads the same per-job fold the budgets do, so the one outcome that
+        matters -- an attempt that produced an answer -- is also the one that clears it.
+        """
+        bridge = _StubBridge()
+        now = datetime.now(timezone.utc).isoformat()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for index in range(unknown_dispatch.DEGRADED_AFTER_WORKER_DEATHS):
+            job = f"job{index:02d}"
+            rows.append({"at": now, "event": "submitted", "request_id": self.request.request_id,
+                         "job_id": job, "state": "working"})
+            rows.append({"at": now, "event": "reconciled", "request_id": self.request.request_id,
+                         "job_id": job, "state": "failed",
+                         "failure_class": unknown_dispatch.FAILURE_WORKER_DIED})
+        rows.append({"at": now, "event": "submitted", "request_id": "other",
+                     "job_id": "job99", "state": "working"})
+        rows.append({"at": now, "event": "reconciled", "request_id": "other",
+                     "job_id": "job99", "state": "done", "note": "answer written"})
+        dispatcher.ledger_path.write_text(
+            "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8"
+        )
+        self.assertEqual(dispatcher.consecutive_worker_deaths(), 0)
+        self.assertEqual(dispatcher.health()["state"], "OK")
+
+    def test_a_reclassification_with_evidence_corrects_an_earlier_verdict(self):
+        """The conservative default charges the question; evidence may move the charge off it.
+
+        ``reconciled`` rows written before this vocabulary existed cannot tell "the agent could not
+        answer" from "the worker never started", so they are charged to the question.  Where the
+        proof is still on disk -- the job's own log -- a ``reclassified`` row carries it and the
+        question is owed the attempt back.  Folded per job, so a correction replaces a verdict
+        rather than adding to it.
+        """
+        bridge = _StubBridge()
+        now = datetime.now(timezone.utc).isoformat()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = [
+            {"at": now, "event": "submitted", "request_id": self.request.request_id,
+             "job_id": "job01", "state": "working"},
+            {"at": now, "event": "reconciled", "request_id": self.request.request_id,
+             "job_id": "job01", "state": "failed", "note": "no answer written"},
+            {"at": now, "event": "submitted", "request_id": self.request.request_id,
+             "job_id": "job02", "state": "working"},
+            {"at": now, "event": "reconciled", "request_id": self.request.request_id,
+             "job_id": "job02", "state": "failed", "note": "no answer written"},
+        ]
+        dispatcher.ledger_path.write_text(
+            "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8"
+        )
+        capped = self._dispatcher(bridge, cooldown=0.0)
+        self.assertNotIn(
+            self.request.request_id, [row[0].request_id for row in capped.candidates()],
+            "with no class recorded the question is charged, which is the conservative default",
+        )
+
+        with dispatcher.ledger_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({
+                "at": now, "event": "reclassified", "request_id": self.request.request_id,
+                "job_id": "job02", "failure_class": unknown_dispatch.FAILURE_WORKER_DIED,
+                "evidence": "C:/Users/xhw/.codebuddy/logs/job-job02.log",
+            }, ensure_ascii=False) + "\n")
+        corrected = self._dispatcher(bridge, cooldown=0.0)
+        record = corrected.records()[self.request.request_id]
+        self.assertEqual((record.answer_failures, record.worker_deaths), (1, 1))
+        self.assertIn(
+            self.request.request_id, [row[0].request_id for row in corrected.candidates()],
+            "the correction is what makes the retry earned rather than merely hoped for",
+        )
+
+    def test_a_question_whose_frame_is_gone_does_not_take_the_slot(self):
+        """A question is answerable from its frame and nothing else.
+
+        Measured 2026-09-24: ``unknown_i__control__b860b24a`` had been pending for two days with a
+        screenshot that no longer exists.  No number of retries can answer it, so it must not spend
+        the single in-flight slot -- but it is reported, not deleted.
+        """
+        ghost = unknown_advisor.build_request(
+            unknown_type=unknown_advisor.UNKNOWN_CONTROL,
+            page_label="UNKNOWN",
+            page_key="UNKNOWN::跳过I",
+            frame_path=self.root / "no-such-frame.png",
+            goal="MAIL",
+        )
+        unknown_advisor.UnknownAdvisor(root=self.root).ask(ghost, force=True)
+        dispatcher = self._dispatcher(_StubBridge())
+        self.assertTrue(dispatcher.frame_missing(ghost))
+        self.assertNotIn(ghost.request_id, [row[0].request_id for row in dispatcher.candidates()])
+        self.assertIn(
+            ghost.request_id,
+            dict((r.request_id, why) for r, why in dispatcher.orphans()),
+            "and the channel says so out loud instead of quietly retrying it for ever",
+        )
+
+    def test_a_correction_does_not_buy_the_question_another_cooldown(self):
+        """Measured on this module's own repair, 2026-09-24.
+
+        Appending the ``reclassified`` row moved ``updated_at``, so the dispatch cooldown restarted
+        from the correction -- and because the worker-death back-off multiplies it, a data fix about
+        an old attempt silently bought the question another 45 minutes of silence.  Only an attempt
+        may move that clock; bookkeeping must not delay the retry it exists to enable.
+        """
+        bridge = _StubBridge()
+        attempt_at = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+        dispatcher = self._dispatcher(bridge)
+        dispatcher.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = [
+            {"at": attempt_at, "event": "submitted", "request_id": self.request.request_id,
+             "job_id": "job01", "state": "working"},
+            {"at": attempt_at, "event": "reconciled", "request_id": self.request.request_id,
+             "job_id": "job01", "state": "failed", "note": "no answer written"},
+            {"at": datetime.now(timezone.utc).isoformat(), "event": "reclassified",
+             "request_id": self.request.request_id, "job_id": "job01",
+             "failure_class": unknown_dispatch.FAILURE_WORKER_DIED, "evidence": "log"},
+        ]
+        dispatcher.ledger_path.write_text(
+            "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8"
+        )
+        record = dispatcher.records()[self.request.request_id]
+        self.assertEqual(record.updated_at, attempt_at)
+        self.assertEqual(record.worker_deaths, 1)
+        self.assertIn(
+            self.request.request_id, [row[0].request_id for row in dispatcher.candidates()],
+            "the retry the correction earns must not be delayed by the correction itself",
+        )
 
     def test_reconcile_records_what_became_of_each_job(self):
         bridge = _StubBridge()

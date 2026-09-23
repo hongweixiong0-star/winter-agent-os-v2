@@ -115,6 +115,45 @@ ENV_PASSWORD = "CODEBUDDY_GATEWAY_PASSWORD"
 ENV_NODE = "CODEBUDDY_NODE_BIN"
 ENV_APP_PATH = "WORKBUDDY_APP_PATH"
 
+#: The bundle selector the WorkBuddy host sets on every CLI child it spawns.
+#:
+#: ``cli/bin/codebuddy`` routes to one of three bundles, and the routing is decided by argv
+#: **or** by this environment variable -- there is no fourth branch:
+#:
+#:     CODEBUDDY_FORCE_LITE_WB_BUNDLE=1   -> dist/codebuddy-lite-wb.mjs  (ESM)
+#:     CODEBUDDY_FORCE_HEADLESS_BUNDLE=1  -> dist/codebuddy-headless.js
+#:     neither, and no --print/-p/--acp/--bg/--help on argv
+#:                                        -> dist/codebuddy.js   <-- **does not ship in this
+#:                                                                   install**
+#:
+#: Re-measured 2026-09-24 against 2.137.1, ``app.asar.unpacked/cli/dist`` holds exactly
+#: ``codebuddy-headless.js`` and ``codebuddy-lite-wb.mjs``; there is no ``codebuddy.js``.  The
+#: last branch therefore ends in ``MODULE_NOT_FOUND`` at ``bin/codebuddy:205`` and the process
+#: exits in about a second.  Reproduced directly on this machine:
+#:
+#:     $ unset CODEBUDDY_FORCE_HEADLESS_BUNDLE CODEBUDDY_FORCE_LITE_WB_BUNDLE
+#:     $ node bin/codebuddy --serve --port 18099 --session-id probe
+#:     Error: Cannot find module '../dist/codebuddy'   ... bin/codebuddy:205:13   exit 1
+#:     $ CODEBUDDY_FORCE_HEADLESS_BUNDLE=1 node bin/codebuddy --serve ...   -> boots, binds
+#:
+#: **Why this project, and not only the desktop, has to set it.**  The gateway forks every
+#: background job as ``node <cli>/bin/codebuddy <prompt> --session-id … --model …`` with
+#: ``env = {...process.env}`` (``forkBgSession`` -> ``forkDetached``), and it adds only
+#: ``CODEBUDDY_JOB_*``; it never adds a bundle flag.  So the bundle a job worker loads is
+#: decided entirely by the *gateway's* environment -- which is *this* launcher's environment,
+#: because :meth:`GatewayService._spawn` starts the gateway with ``{**self.env, **plan.env}``.
+#: A gateway started without this variable is a gateway that boots (nothing selected it) and
+#: whose every job dies before it can read a screenshot: the reaper then reports the job as
+#: ``failed / session ended — press enter to restart it``, which says nothing about the real
+#: cause.  That was the measured state of the UNKNOWN channel on 2026-09-24: 7 questions
+#: pending, every one of them ``no job``, and three job logs on disk carrying the same
+#: ``Cannot find module '../dist/codebuddy'``.
+#:
+#: Headless rather than lite-wb on purpose: a job worker is a full non-TUI agent turn, and
+#: ``--print`` / ``--acp`` / ``--bg`` all route to the headless bundle, so it is the one this
+#: role's own argv would have chosen.  Both are verified to boot ``--serve`` on this machine.
+ENV_FORCE_HEADLESS_BUNDLE = "CODEBUDDY_FORCE_HEADLESS_BUNDLE"
+
 #: Where the CLI lives inside the desktop application bundle.  Recorded in
 #: ``knowledge/failure_patterns/integration/WORKBUDDY_GATEWAY_CONTRACT.md`` §1, which is
 #: where the measurement that ``which codebuddy`` fails on this machine comes from.
@@ -335,7 +374,14 @@ def build_plan(root: Path, *, port: int = DEFAULT_PORT, log_path: Path,
     argv = (node, str(cli), "--serve", "--port", str(int(port)),
             "--session-id", SESSION_ID)
     return LaunchPlan(argv=argv, cwd=Path(root), log_path=Path(log_path),
-                      cli=str(cli), cli_source=source)
+                      cli=str(cli), cli_source=source,
+                      # An *addition* to the launcher's environment, never a replacement, and
+                      # deliberately unconditional: the variable selects a bundle that exists
+                      # (``dist/codebuddy-headless.js``) instead of the one that does not
+                      # (``dist/codebuddy.js``).  It is also the only thing that makes the job
+                      # workers this gateway forks survive their own start-up -- see
+                      # ``ENV_FORCE_HEADLESS_BUNDLE``.  The credential stays inherited.
+                      env={ENV_FORCE_HEADLESS_BUNDLE: "1"})
 
 
 # --------------------------------------------------------------------- the decision

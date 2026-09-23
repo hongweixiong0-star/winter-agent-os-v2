@@ -158,6 +158,45 @@ def test_the_plan_never_pins_a_model_and_never_disables_auth(tmp_path):
     assert "--auth" not in argv
 
 
+def test_the_plan_carries_the_bundle_selector_the_jobs_depend_on(tmp_path):
+    """Measured 2026-09-24: without it, every background job dies before it can read a screenshot.
+
+    ``cli/bin/codebuddy`` has three bundle branches and this install ships only two of the three
+    files (``codebuddy-headless.js``, ``codebuddy-lite-wb.mjs``); the third branch --
+    ``require('../dist/codebuddy')``, taken when neither ``CODEBUDDY_FORCE_*_BUNDLE`` is set and
+    argv says nothing about being non-interactive -- raises ``MODULE_NOT_FOUND`` at
+    ``bin/codebuddy:205``.  The gateway forks every job with ``{...process.env}`` of *itself* and
+    never adds a bundle flag, so this variable on the gateway is the only thing that decides
+    whether a job worker starts at all.
+
+    The assertion is on the whole mapping rather than just the key: ``LaunchPlan.env`` is documented
+    as *additions* to the launcher's environment, and a plan that replaced it would drop the
+    credential the gateway authenticates with.
+    """
+    cli = tmp_path / "cli" / "bin" / "codebuddy"
+    cli.parent.mkdir(parents=True)
+    cli.write_text("#!/usr/bin/env node\n", encoding="utf-8")
+    env = {gs.ENV_CLI_OVERRIDE: str(cli), gs.ENV_NODE: "node.exe"}
+
+    plan = gs.build_plan(tmp_path, port=8080, log_path=tmp_path / "gw.log", env=env)
+    assert dict(plan.env) == {gs.ENV_FORCE_HEADLESS_BUNDLE: "1"}
+
+    # ...and the spawn path merges it into the launcher's own environment rather than replacing it.
+    service = gs.GatewayService(tmp_path, env={"KEEP": "me"}, spawn=lambda plan: 4242,
+                                port_owner=lambda: (0, ""), alive=lambda pid: False)
+    seen: dict[str, object] = {}
+
+    def _capture(plan):
+        seen["env"] = plan.env
+        seen["argv"] = plan.argv
+        return 4242
+
+    service._spawn = _capture
+    service.start(record={}, now=0.0)
+    assert seen["env"] == {gs.ENV_FORCE_HEADLESS_BUNDLE: "1"}
+    assert list(seen["argv"])[2:] == ["--serve", "--port", "8080", "--session-id", gs.SESSION_ID]
+
+
 def test_no_cli_on_disk_is_a_refusal_that_says_what_it_tried(tmp_path):
     """When every link of the chain fails, the refusal names all of them.
 
