@@ -659,12 +659,34 @@ C. **a temporary ordinary-action candidate that is locatable on this very screen
 **Never invent a coordinate.** If you cannot ground a point, answer with no `target_point` and say
 in `uncertainty` what is missing; a refusal is a valid, useful answer.
 
-## Boundary (directive §五)
+## Answer four separate questions, in four separate fields (directive 2026-09-23)
+A red dot, a badge or a highlight is a **notification**, not a button: it is not a click target, and
+it does not mean the task is runnable or the reward claimable. So say which of the four you are
+answering, and do not let one stand in for another:
+
+    notification        what notification you saw, and on which entry or task row (e.g.
+                        "礼盒图标右上带未领红点，位于 奖励 标签上方")
+    entry               which function that entry leads into (e.g. "燃霜矿区活动奖励页")
+    proposed_action /   **the real control to press to get in** -- written C above.  An entry is not
+    target_semantics    the task: pressing 招募 to open the recruit page spends nothing.
+    action_level        `ENTRY_CONTROL` when you are only opening a function; `TASK_ACTION` when you
+                        are acting on what a page shows once inside.  **Say which.**  An answer that
+                        does not say is read as `TASK_ACTION`, i.e. strictly.
+    expected_result     what to observe or do once inside
+
+## Boundary (directive §五, and the levels above)
 You may freely *describe* a page that sells things -- gems, speed-ups, packs -- and your `note`,
 `uncertainty` and `expected_result` may name them. What you may not propose is *pressing* such a
 thing: an action whose own target is a purchase, a recharge, a currency spend, or an irreversible
-or high-value operation is refused outright. Low-risk actions (close / back / view / claim) are
-allowed **even on a page that offers purchases**, and that is exactly the judgement being asked for.
+or high-value operation is refused outright, **at every level**. Low-risk actions (close / back /
+view / claim) are allowed **even on a page that offers purchases**, and that is exactly the judgement
+being asked for.
+
+Because entering is not acting, `action_level: "ENTRY_CONTROL"` is screened against the
+money/irreversibility list alone -- so pressing 免费招募 or 礼包 to *open* the function is allowed,
+and whether the page then charges for it is the page's business, decided after you are inside.
+Never propose a `TASK_ACTION` (claim / donate / recruit / buy) that the page in front of you does not
+itself show as available and free.
 
 ## The answer (these keys exactly; the runtime rejects anything else)
     unknown_type        "CONTROL"
@@ -675,7 +697,8 @@ allowed **even on a page that offers purchases**, and that is exactly the judgem
 optional: `target_point` `[x, y]` · `target_bbox` `{{x_norm,y_norm,w_norm,h_norm}}` ·
 `target_anchor` · `action_kind` (`SKILL` | `L1` | `ORDINARY_CONTROL`) · `target_semantics` ·
 `grounding_basis` (`OCR_BOX` | `TEMPLATE` | `ANCHORED_TO_TEXT` | `EXPERIENCE`) · `grounding_ref` ·
-`alternative_actions` · `note`
+`alternative_actions` · `note` · `notification` · `entry` · `action_level`
+(`ENTRY_CONTROL` | `TASK_ACTION`)
 
 ## Writing it (one command only -- it validates with the runtime's own parser)
 1. write your JSON to a scratch file, e.g. `{root}\\learning\\_answer.json`;

@@ -3096,6 +3096,13 @@ class LiveRuntime:
             "basis_detail": dict(region.get("detail") or {}),
             "box_norm": box_norm,
             "source": advice.source,
+            # The directive's four questions, kept apart in the record as they are in the answer:
+            # what notification was seen, which function that is, which control is being pressed,
+            # and what to observe or do once inside.  ``level`` is the one the boundary was applied
+            # at -- recorded, not recomputed, so the audit reads what actually happened.
+            "notification": advice.notification,
+            "entry": advice.entry,
+            "action_level": unknown_advisor.advice_level(advice),
         }
         self._ordinary_tried.add((page, semantic))
         self._ordinary_attempts += 1
@@ -3216,7 +3223,16 @@ class LiveRuntime:
         gem offer is refused, which is the distinction the directive asks for.  Real-money payment
         and unauthorised high-value or irreversible operations stay refused outright, and nothing
         here reaches the device lease, the page check or the executor's bounds.
+
+        Levels (operator directive 2026-09-23).  The boundary is applied **per level**, because
+        entering a function and acting inside it are different things: an ``ENTRY_CONTROL`` answer is
+        screened against the money/irreversibility list alone, while a ``TASK_ACTION`` answer -- and
+        any answer that does not declare a level, including every answer written before the levels
+        existed -- is screened against the whole list, exactly as it was before.  That is what makes
+        "不要求先写完整招募 Skill 才能首次免费招募" possible without loosening anything: the first
+        free attempt is an *entry*, and whether the page charges for it is decided by the page.
         """
+        level = unknown_advisor.advice_level(advice)
         identity = " ".join(
             [
                 str(region.get("text") or ""),
@@ -3224,9 +3240,9 @@ class LiveRuntime:
                 str(advice.grounding_ref or ""),
             ]
         ).lower()
-        for word in unknown_advisor.REFUSED_WORDS:
+        for word in unknown_advisor.words_refused_at(level):
             if word.lower() in identity:
-                return f"the candidate itself is {word!r}"
+                return f"the candidate itself is {word!r} at level {level}"
         return ""
 
     def _advice_semantic(self, advice, region: Mapping[str, Any]) -> str:

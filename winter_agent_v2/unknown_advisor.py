@@ -110,6 +110,25 @@ OPTIONAL_ANSWER_FIELDS = (
     # basis actually justified the point, and files *that* one.
     "grounding_basis",
     "grounding_ref",
+    # --- the directive's four questions, as fields (operator 2026-09-23) --------------------------
+    #
+    # ``notification``  what notification was seen, and on which entry or task row
+    # ``entry``         which function that entry leads into
+    # ``target_semantics`` / ``proposed_action``  which real control to press   (above)
+    # ``expected_result``          what to observe or do once inside            (above)
+    #
+    # The first two are new because the old contract could not tell "there is a gift icon with a dot"
+    # from "press the gift icon": both had to be said in ``proposed_action``, and a reader of the
+    # answer had no way to check that the *entry* was entered before anything was claimed.  Optional
+    # rather than required, because requiring them would invalidate every answer already on disk --
+    # including the one real answer this project has (``unknown__control__b6546e80``), which was
+    # written before the split existed and is still perfectly usable.
+    "notification",
+    "entry",
+    # Which of ``ACTION_LEVELS`` this answer is asking for.  Absent means TASK_ACTION, i.e. the
+    # stricter reading: an answer that does not say it is only entering a page does not get to be
+    # treated as if it had.
+    "action_level",
 )
 
 #: The three shapes an answer's action may take (directive §二).  Before this, only the first was
@@ -130,30 +149,78 @@ ACTION_IDENTITY_FIELDS = ("proposed_action", "candidate_semantics", "target_sema
 #: is not applied here: an answer may say "this page sells gems; the low-risk action is 关闭".
 COMMENTARY_FIELDS = ("note", "uncertainty", "expected_result", "alternative_actions")
 
-#: The boundary the ordinary-control resolver draws, restated here so a *reasoner* cannot be the
-#: way around it.  It is applied to the action's own identity -- what is being pressed -- and never
-#: to the answer's commentary (``COMMENTARY_FIELDS``), because understanding a page that sells
-#: things is not the same as buying from it (directive §五).
-REFUSED_WORDS: tuple[str, ...] = (
+#: The two levels of *acting* that an answer may ask for (operator directive 2026-09-23).
+#:
+#: The directive separates three things a screenshot makes look like one -- the notification, the
+#: control that enters the function, and the action taken once inside -- and it is explicit that the
+#: dot is only the first of them: "红点不等于按钮，不等于点击目标，也不等于任务可执行或奖励可领取".
+#:
+#: ``ENTRY_CONTROL``  press a control that opens a function.  Nothing is claimed, spent or donated by
+#:                    entering, so the boundary for it is the money/irreversibility list alone.
+#: ``TASK_ACTION``    act on what the page shows once inside (claim / train / donate / recruit).  The
+#:                    full boundary applies, unchanged from before this split.
+#:
+#: The third thing the directive names -- the notification -- is not an action at all, which is why
+#: it is a field (``Advice.notification``) and not a level.
+LEVEL_ENTRY = "ENTRY_CONTROL"
+LEVEL_TASK = "TASK_ACTION"
+ACTION_LEVELS: tuple[str, ...] = (LEVEL_ENTRY, LEVEL_TASK)
+
+#: Words that must never be proposed at *any* level: real money, and irreversible spend.
+SPEND_WORDS: tuple[str, ...] = (
     "充值",
     "购买",
     "支付",
     "钻石",
-    "礼包",
     "特惠",
     "首充",
     "月卡",
     "基金",
-    "招募",
-    "加速",
     "花费",
     "消费",
-    "立即完成",
     "buy",
     "purchase",
     "pay",
     "gems",
 )
+
+#: Words whose risk depends on the level.  Each of these *names a function* and, acted on, can cost
+#: something: 招募 / 礼包 / 加速 / 立即完成.  Entering the function is not doing it, so at
+#: ``ENTRY_CONTROL`` these are allowed and at ``TASK_ACTION`` they are not -- which is what makes the
+#: directive's own example possible: "不要求先写完整招募 Skill 才能首次免费招募".  The first free
+#: attempt is an entry; whether anything is spent is decided from the page it lands on, by the chain
+#: that already reads pages, and never from the notification.
+CONTEXT_WORDS: tuple[str, ...] = (
+    "礼包",
+    "招募",
+    "加速",
+    "立即完成",
+)
+
+#: The boundary the ordinary-control resolver draws, restated here so a *reasoner* cannot be the
+#: way around it.  It is applied to the action's own identity -- what is being pressed -- and never
+#: to the answer's commentary (``COMMENTARY_FIELDS``), because understanding a page that sells
+#: things is not the same as buying from it (directive §五).
+#:
+#: Kept as the union of the two groups above so the TASK_ACTION reading -- and every answer that does
+#: not declare a level -- is judged by exactly the list it was judged by before the levels existed.
+REFUSED_WORDS: tuple[str, ...] = SPEND_WORDS + CONTEXT_WORDS
+
+
+def words_refused_at(level: str | None) -> tuple[str, ...]:
+    """The boundary for one level.  ``None``/unknown levels get the strict list, never the loose one."""
+    return SPEND_WORDS if str(level or "").strip().upper() == LEVEL_ENTRY else REFUSED_WORDS
+
+
+def advice_level(advice: Any) -> str:
+    """The level an answer is asking for, with the conservative default applied.
+
+    An answer written before the levels existed, or one that simply does not say, is a
+    ``TASK_ACTION``: it does not get the entry-level boundary by accident.
+    """
+    level = str(getattr(advice, "action_level", "") or "").strip().upper()
+    return level if level in ACTION_LEVELS else LEVEL_TASK
+
 
 #: How far a point may sit outside the OCR box it claims, as a fraction of the frame.  A reasoner
 #: reading a 720x1280 screenshot usually lands near the control rather than on its exact centre, and
@@ -266,6 +333,15 @@ class Advice:
     #: basis it actually measured instead.
     grounding_basis: str = ""
     grounding_ref: str = ""
+    #: The directive's four questions, in the answer's own words.  ``notification`` is what was seen
+    #: and where; ``entry`` is which function that is; ``target_semantics``/``proposed_action`` is
+    #: the control to press; ``expected_result`` is what to observe or do once inside.  Empty when the
+    #: answer predates the split -- recorded as empty rather than inferred, so a reader can tell
+    #: "the reasoner said this is only an entry" from "nobody said".
+    notification: str = ""
+    entry: str = ""
+    #: One of ``ACTION_LEVELS``, or ``""`` for an answer that did not say (judged as ``TASK_ACTION``).
+    action_level: str = ""
 
     def as_row(self) -> dict[str, Any]:
         return asdict(self)
@@ -307,18 +383,27 @@ def parse_advice(payload: Mapping[str, Any], *, request_id: str = "", registry: 
         raise AdviceRejected("REJECT: empty proposed_action")
     target_semantics = str(payload.get("target_semantics") or "").strip()
 
+    # Which level this answer is asking for (operator directive 2026-09-23).  Read before the
+    # boundary, because the boundary is applied *per level*: entering a function is not doing it.
+    level = str(payload.get("action_level") or "").strip().upper()
+    if level and level not in ACTION_LEVELS:
+        raise AdviceRejected(f"REJECT: action_level {level!r} is not one of {ACTION_LEVELS}")
+
     # The boundary, applied to the action's own identity (directive §五).  ``note``/``uncertainty``
     # /``expected_result`` are deliberately not screened: an answer has to be able to say that the
     # page in front of it offers gems in order to explain why it is *not* pressing them.
     identity = " ".join(
         [str(payload.get(name) or "") for name in ACTION_IDENTITY_FIELDS]
     ).lower()
-    for word in REFUSED_WORDS:
+    for word in words_refused_at(level):
         if word.lower() in identity:
             raise AdviceRejected(
-                f"REJECT: the proposed action itself involves {word!r}.  An answer may *describe* a "
-                "page that offers it -- note/uncertainty/expected_result are not screened -- but it "
-                "may not propose pressing it"
+                f"REJECT: the proposed action itself involves {word!r}"
+                + ("" if level == LEVEL_ENTRY else
+                   " -- and this answer does not declare itself an entry (ACTION_LEVEL="
+                   f"{LEVEL_ENTRY}), so it is read as acting on the page")
+                + ".  An answer may *describe* a page that offers it -- note/uncertainty/"
+                  "expected_result are not screened -- but it may not propose pressing it"
             )
 
     # Which of the three shapes this is (§二).  Inferred when absent, so an answer written against
@@ -388,6 +473,9 @@ def parse_advice(payload: Mapping[str, Any], *, request_id: str = "", registry: 
         target_anchor=anchor,
         grounding_basis=str(payload.get("grounding_basis") or ""),
         grounding_ref=str(payload.get("grounding_ref") or ""),
+        notification=str(payload.get("notification") or "").strip(),
+        entry=str(payload.get("entry") or "").strip(),
+        action_level=level,
     )
 
 

@@ -157,5 +157,116 @@ class TheEntryControlLayerTest(unittest.TestCase):
                       "lets a goal act on when the dot is UNKNOWN")
 
 
+class TheAdviceLevelsTest(unittest.TestCase):
+    """The AI's four questions, as fields -- and the boundary applied *per level*.
+
+    The directive allows a first-time free attempt at a function nobody has a skill for
+    ("不要求先写完整招募 Skill 才能首次免费招募"), and forbids acting on a page without the page
+    saying so.  Both are satisfied by separating *entering* from *acting*: an ``ENTRY_CONTROL``
+    answer is screened against the money list alone, a ``TASK_ACTION`` answer -- and every answer
+    written before the levels existed -- against the whole list, exactly as before.
+    """
+
+    def test_the_task_boundary_did_not_move(self):
+        from winter_agent_v2 import unknown_advisor as ua
+
+        self.assertEqual(tuple(ua.SPEND_WORDS) + tuple(ua.CONTEXT_WORDS), tuple(ua.REFUSED_WORDS),
+                         "the two groups must partition the old list: splitting it is the whole "
+                         "change, and the TASK_ACTION reading has to be judged by the same words")
+        self.assertEqual(ua.words_refused_at(None), tuple(ua.REFUSED_WORDS))
+        self.assertEqual(ua.words_refused_at(""), tuple(ua.REFUSED_WORDS))
+        self.assertEqual(ua.words_refused_at("NONSENSE"), tuple(ua.REFUSED_WORDS),
+                         "an unknown level is not a licence: it reads as TASK_ACTION")
+        self.assertEqual(ua.words_refused_at(ua.LEVEL_ENTRY), tuple(ua.SPEND_WORDS))
+        for word in ("钻石", "购买", "充值", "pay", "gems"):
+            self.assertIn(word, ua.SPEND_WORDS, f"{word} must be refused even when only entering")
+
+    def test_an_answer_that_does_not_say_is_read_strictly(self):
+        from winter_agent_v2 import unknown_advisor as ua
+
+        for missing in ("", None, "whatever"):
+            advice = ua.Advice(request_id="x", unknown_type="CONTROL", candidate_semantics=(),
+                               proposed_action="ORDINARY_CONTROL[招募]",
+                               expected_result="", uncertainty="", action_level=missing or "")
+            with self.subTest(level=missing):
+                self.assertEqual(ua.advice_level(advice), ua.LEVEL_TASK)
+
+    def _answer(self, **overrides) -> dict:
+        payload = {
+            "unknown_type": "CONTROL",
+            "candidate_semantics": ["免费招募入口"],
+            "proposed_action": "ORDINARY_CONTROL[免费招募]",
+            "expected_result": "招募页打开",
+            "uncertainty": "medium",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_entering_a_function_may_name_the_function(self):
+        """`免费招募` as an *entry* is allowed; the same word as a page action is not."""
+        from winter_agent_v2 import unknown_advisor as ua
+
+        entry = ua.parse_advice(self._answer(action_level="ENTRY_CONTROL",
+                                             notification="英雄招募行的 免费 字样",
+                                             entry="英雄招募"))
+        self.assertEqual(entry.action_level, ua.LEVEL_ENTRY)
+        self.assertEqual(entry.notification, "英雄招募行的 免费 字样")
+        self.assertEqual(entry.entry, "英雄招募")
+        self.assertEqual(entry.target_semantics, "")
+        with self.assertRaises(ua.AdviceRejected) as ctx:
+            ua.parse_advice(self._answer())
+        self.assertIn("招募", str(ctx.exception))
+        self.assertIn("ENTRY_CONTROL", str(ctx.exception),
+                      "the refusal has to say how to ask for it legitimately")
+
+    def test_money_is_refused_at_both_levels(self):
+        from winter_agent_v2 import unknown_advisor as ua
+
+        for level in ("", ua.LEVEL_ENTRY, ua.LEVEL_TASK):
+            with self.subTest(level=level or "(unstated)"):
+                with self.assertRaises(ua.AdviceRejected):
+                    ua.parse_advice(self._answer(proposed_action="ORDINARY_CONTROL[钻石招募]",
+                                                 action_level=level))
+
+    def test_the_real_answer_on_disk_still_parses_and_is_judged_as_before(self):
+        """The one answer this project has was written before the levels existed.
+
+        It must keep working, and it must keep being judged by the full boundary -- a regression here
+        would either break the only usable answer or silently loosen what it is allowed to do.
+        """
+        import json
+
+        from winter_agent_v2 import unknown_advisor as ua
+
+        path = ROOT / "learning/unknown_requests" / ua.ANSWERS_DIR / "unknown__control__b6546e80.json"
+        if not path.exists():  # pragma: no cover - the file is part of the working tree
+            self.skipTest("the recorded answer is not in this checkout")
+        advice = ua.parse_advice(json.loads(path.read_text(encoding="utf-8")),
+                                 request_id="unknown__control__b6546e80")
+        self.assertEqual(ua.advice_level(advice), ua.LEVEL_TASK)
+        self.assertEqual(advice.notification, "", "recorded empty, not invented")
+        self.assertEqual(advice.action_level, "")
+        self.assertEqual(advice.proposed_action, "ORDINARY_CONTROL[奖励入口]")
+
+    def test_the_risk_gate_uses_the_level_it_was_given(self):
+        """``_advice_risk`` is the runtime's half of the same rule, and it reads the level."""
+        from winter_agent_v2 import unknown_advisor as ua
+        from winter_agent_v2.runtime import LiveRuntime
+
+        runtime = object.__new__(LiveRuntime)
+        region = {"text": "免费招募"}
+        for level, expected in ((ua.LEVEL_ENTRY, ""), (ua.LEVEL_TASK, "招募"), ("", "招募")):
+            with self.subTest(level=level or "(unstated)"):
+                advice = ua.Advice(request_id="x", unknown_type="CONTROL", candidate_semantics=(),
+                                   proposed_action="ORDINARY_CONTROL[免费招募]",
+                                   expected_result="", uncertainty="", action_level=level)
+                verdict = runtime._advice_risk(advice, region)
+                if expected:
+                    self.assertIn(expected, verdict)
+                    self.assertIn(ua.LEVEL_TASK, verdict, "and it names the level it judged at")
+                else:
+                    self.assertEqual(verdict, "")
+
+
 if __name__ == "__main__":
     unittest.main()
