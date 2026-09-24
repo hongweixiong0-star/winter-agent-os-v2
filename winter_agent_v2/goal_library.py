@@ -929,17 +929,16 @@ class GoalLibrary:
                 "observed": observed,
             }
             if observed and status == "COMPLETED":
-                # A finished batch is not an idle queue. Keep it actionable only for
-                # a navigation-only inspection of that exact barracks; the skill does
-                # not claim the batch or start training. This lets AUTO discover the
-                # in-page collection control without repeating the disproven quick-
-                # panel claim assumption.
+                # A finished batch is not an idle queue. The quick-panel done marker has
+                # been tapped on-device and did not collect the batch; the row label also
+                # failed to open the camp. Keep this exact camp visible as blocked until a
+                # real collection control is identified, so AUTO can work other queues
+                # instead of redispatching the same unverified tap every cycle.
                 goals.append(GoalState(
-                    goal_id, GoalStatus.READY, completion=0.0,
-                    development_value=TRAINING_CAMP_VALUE,
-                    available_skills=(f"OPEN_COMPLETED_TRAINING_CAMP_{camp.removesuffix('_CAMP')}",),
+                    goal_id, GoalStatus.BLOCKED, completion=0.0,
+                    development_value=TRAINING_CAMP_VALUE, available_skills=(),
                     evidence={**evidence, "reason": "training_completed_collection_path_unverified",
-                              "condition": "inspect_exact_camp_before_collect_or_restart",
+                              "condition": "finished_batch_waiting_for_verified_collection",
                               "collection_verified": False},
                     distance=1.0,
                 ))

@@ -746,12 +746,14 @@ class TheDoneMarkerTests(unittest.TestCase):
         self.assertTrue(controls)
         self.assertNotIn("DONE", {control for _, control in controls})
 
-    def test_the_done_marker_has_a_separate_navigation_only_candidate(self):
-        """The marker may open the camp surface, but can never count as collecting."""
+    def test_the_done_marker_is_not_redispatched_without_a_verified_action(self):
+        """Production showed this marker and the row label do not open or collect a camp."""
         decision = _brain("SHIELD_CAMP_TRAINING", "TRAIN").decide(self.state, v2_registry())
-        self.assertEqual(decision.skill, "OPEN_COMPLETED_TRAINING_CAMP_SHIELD")
-        self.assertNotIn("OPEN_TASK_FROM_QUICK_PANEL", decision.skill)
-        self.assertIn("inspect_", decision.reason)
+        self.assertEqual(decision.skill, "SAFE_STOP")
+        self.assertEqual(
+            decision.reason,
+            "quick_panel_already_read_the_barracks_so_the_power_route_is_not_a_refresh",
+        )
         self.assertNotEqual(decision.skill, "COLLECT_FINISHED_TRAINING_SHIELD")
 
     def test_the_collect_target_is_the_tick_itself(self):

@@ -13,7 +13,7 @@ def test_queue_word_mapping_keeps_completed_idle_busy_and_unknown_distinct():
     assert _quick_panel_queue_state("unknown") == ("UNKNOWN", None)
 
 
-def test_completed_camps_offer_only_identity_checked_navigation():
+def test_completed_camps_wait_for_a_verified_collection_control():
     camps = {
         camp: {
             "status": "COMPLETED",
@@ -30,9 +30,9 @@ def test_completed_camps_offer_only_identity_checked_navigation():
     for goal_id in ("SHIELD_CAMP_TRAINING", "LANCER_CAMP_TRAINING", "MARKSMAN_CAMP_TRAINING"):
         goal = by_id[goal_id]
         camp = goal_id.removesuffix("_TRAINING")
-        assert goal.status is GoalStatus.READY
-        assert goal.available_skills == (f"OPEN_COMPLETED_TRAINING_CAMP_{camp.removesuffix('_CAMP')}",)
-        assert goal.evidence["condition"] == "inspect_exact_camp_before_collect_or_restart"
+        assert goal.status is GoalStatus.BLOCKED
+        assert goal.available_skills == ()
+        assert goal.evidence["condition"] == "finished_batch_waiting_for_verified_collection"
         assert goal.evidence["source_word"] == "已完成"
         assert goal.evidence["badge"] == "PRESENT"
 
@@ -47,13 +47,13 @@ def test_idle_camp_remains_independently_trainable_next_to_completed_camps():
         WorldState(page=Page.HOME, camps=camps), observations={}
     )}
 
-    assert goals["SHIELD_CAMP_TRAINING"].status is GoalStatus.READY
+    assert goals["SHIELD_CAMP_TRAINING"].status is GoalStatus.BLOCKED
     assert goals["LANCER_CAMP_TRAINING"].status is GoalStatus.READY
     assert goals["LANCER_CAMP_TRAINING"].available_skills == ("TRAIN_TROOPS",)
-    assert goals["MARKSMAN_CAMP_TRAINING"].status is GoalStatus.READY
+    assert goals["MARKSMAN_CAMP_TRAINING"].status is GoalStatus.BLOCKED
 
 
-def test_completed_camp_marker_routes_to_inspection_not_collection():
+def test_completed_camp_marker_does_not_repeat_the_disproved_tap():
     world = WorldState(
         page=Page.HOME,
         quick_panel={
@@ -67,8 +67,8 @@ def test_completed_camp_marker_routes_to_inspection_not_collection():
 
     decision = brain.decide(world, v2_registry())
 
-    assert decision.skill == "OPEN_COMPLETED_TRAINING_CAMP_SHIELD"
-    assert "inspect_" in decision.reason
+    assert decision.skill == "SAFE_STOP"
+    assert decision.reason == "quick_panel_already_read_the_barracks_so_the_power_route_is_not_a_refresh"
     assert decision.skill != "COLLECT_FINISHED_TRAINING_SHIELD"
 
 
