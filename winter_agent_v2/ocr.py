@@ -1486,8 +1486,23 @@ RESOURCE_TAB_LABEL_TO_KIND: dict[str, str] = {
 # headers rather than by absolute positions because the panel is draggable and its
 # rows are scrolled, and a reading pinned to y would be wrong the moment it moved.
 #: The state words the panel prints under a row's name.
-QUICK_PANEL_IDLE_WORDS: tuple[str, ...] = ("已完成", "空闲中")
+QUICK_PANEL_IDLE_WORDS: tuple[str, ...] = ("空闲中",)
+QUICK_PANEL_COMPLETED_WORDS: tuple[str, ...] = ("已完成",)
 QUICK_PANEL_BUSY_WORDS: tuple[str, ...] = ("训练中", "升级中", "研究中", "进行中")
+
+
+def _quick_panel_queue_state(word: str) -> tuple[str, bool | None]:
+    """Map a client-drawn queue word without conflating finished and idle states."""
+    value = str(word or "").strip()
+    if value in QUICK_PANEL_COMPLETED_WORDS:
+        return "COMPLETED", False
+    if value in QUICK_PANEL_IDLE_WORDS:
+        return "IDLE", True
+    if value in QUICK_PANEL_BUSY_WORDS:
+        return "IN_PROGRESS", False
+    if re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", value):
+        return "IN_PROGRESS", False
+    return "UNKNOWN", None
 
 #: How far below a row's name its state line is drawn.  Measured at 30px on a
 #: 720x1280 frame; the band is generous because the two lines are separate OCR
@@ -1903,7 +1918,8 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
             if not 4.0 <= offset <= QUICK_PANEL_STATE_OFFSET_PX * 1.6:
                 continue
             text = token.text.strip()
-            if text in QUICK_PANEL_IDLE_WORDS or text in QUICK_PANEL_BUSY_WORDS:
+            if (text in QUICK_PANEL_IDLE_WORDS or text in QUICK_PANEL_COMPLETED_WORDS
+                    or text in QUICK_PANEL_BUSY_WORDS):
                 return text
             # The 联盟捐献 row and the 英雄招募 row state themselves in their own words
             # (可捐献25/25, 免费招募) rather than with 空闲中: measured on the operator's frame
@@ -1961,11 +1977,12 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 )
                 if re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state):
                     running = True
+                completed = state in QUICK_PANEL_COMPLETED_WORDS
                 panel["building"] = {
                     "name": name,
-                    "timer": None if running and state in QUICK_PANEL_IDLE_WORDS else state,
-                    "status": "IN_PROGRESS" if running else "IDLE",
-                    "queue_available": not running,
+                    "timer": state if running and re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state) else None,
+                    "status": "IN_PROGRESS" if running else "COMPLETED" if completed else "IDLE",
+                    "queue_available": not running and not completed,
                     "source_word": state,
                 }
                 break
@@ -1979,11 +1996,12 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 state = state_below(name_y)
                 if state is None:
                     continue
+                queue_status, queue_available = _quick_panel_queue_state(state)
                 camps[camp] = {
                     "troop_type": TITLE_TO_TROOP[name],
                     "label": name,
-                    "status": "IDLE" if state in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
-                    "queue_available": state in QUICK_PANEL_IDLE_WORDS,
+                    "status": queue_status,
+                    "queue_available": queue_available,
                     "source_word": state,
                 }
             if camps:
@@ -2034,10 +2052,11 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 state = state_below(name_y)
                 if state is None:
                     continue
+                queue_status, queue_available = _quick_panel_queue_state(state)
                 panel["research"] = {
                     "name": name,
-                    "status": "IDLE" if state in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
-                    "queue_available": state in QUICK_PANEL_IDLE_WORDS,
+                    "status": queue_status,
+                    "queue_available": queue_available,
                     "source_word": state,
                 }
                 break
@@ -2064,11 +2083,12 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
         state = state_below(token.centre[1])
         if state is None:
             continue
+        queue_status, queue_available = _quick_panel_queue_state(state)
         camps_panel_wide[camp] = {
             "troop_type": troop,
             "label": name,
-            "status": "IDLE" if state in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
-            "queue_available": state in QUICK_PANEL_IDLE_WORDS,
+            "status": queue_status,
+            "queue_available": queue_available,
             "source_word": state,
         }
         section_rows.append(("部队训练", name, token.centre[1]))
@@ -2142,6 +2162,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 # whose blue scan finds nothing).  The tick is what says the row is waiting to be
                 # collected, so it decides the row's identity and the arrow is the alternative.
                 done_norm, done_box = _panel_done_marker(frame_pixels, name_y / height)
+                queue_status, _queue_available = _quick_panel_queue_state(state_word)
                 record = {
                     # The kind is the row's own identity, not a two-way guess: a consumer matches it
                     # against the row kinds its goal works from, so labelling 联盟捐献 as RESEARCH
@@ -2150,7 +2171,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     "key": key,
                     "label": name,
                     "y_norm": round(name_y / height, 4),
-                    "status": "IDLE" if state_word in QUICK_PANEL_IDLE_WORDS else "IN_PROGRESS",
+                    "status": queue_status,
                     "source_word": state_word,
                     # The row's own button when this frame draws it; the old text-column estimate only
                     # as a labelled fallback, because a tap from it lands on the row's state word
@@ -2178,6 +2199,11 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 if done_box is not None:
                     record["done_box_norm"] = done_box
                 out_rows.append(record)
+                # Bind the badge to this camp identity as well as retaining the
+                # row record. Goal discovery can then carry the same-frame badge
+                # alongside queue state without treating it as action authority.
+                if camp and camp in camps_panel_wide:
+                    camps_panel_wide[camp]["badge"] = badge
             if out_rows:
                 panel["rows"] = out_rows
             # Where the handle actually is, measured, with the panel-relative estimate kept only as

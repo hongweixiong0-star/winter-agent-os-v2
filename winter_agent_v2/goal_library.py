@@ -898,8 +898,25 @@ class GoalLibrary:
         for camp in CAMP_ORDER:
             state = dict(camps.get(camp) or {})
             goal_id = CAMP_GOAL_FOR[camp]
+            status = str(state.get("status") or "").upper()
+            queue_available = state.get("queue_available")
+            # The HOME quick panel is a real observation of each barracks, but its reader uses
+            # ``status``/``queue_available`` and does not attach the page reader's ``observed``
+            # marker.  Treating that vocabulary as unread made all three visible idle camps
+            # DISCOVERED, so AUTO kept scheduling an observation instead of the actual training
+            # goal.  Derive only from explicit queue facts or an unambiguous queue status; leave
+            # missing/unknown readings DISCOVERED rather than guessing.
+            observed = (
+                state.get("observed") is True
+                or isinstance(queue_available, bool)
+                or status in {"IDLE", "AVAILABLE", "COMPLETED", "IN_PROGRESS", "BUSY", "TRAINING"}
+            )
             busy = state.get("busy")
-            observed = state.get("observed") is True
+            if not isinstance(busy, bool):
+                if queue_available is False or status in {"IN_PROGRESS", "BUSY", "TRAINING"}:
+                    busy = True
+                elif queue_available is True or status in {"IDLE", "AVAILABLE"}:
+                    busy = False
             evidence = {
                 "camp": camp,
                 "label": CAMP_LABELS[camp],
@@ -907,9 +924,23 @@ class GoalLibrary:
                 "timer": state.get("timer"),
                 "batch_count": state.get("batch_count"),
                 "source": state.get("source"),
+                "source_word": state.get("source_word"),
+                "badge": state.get("badge", "UNKNOWN"),
                 "observed": observed,
             }
-            if observed and busy is True:
+            if observed and status == "COMPLETED":
+                # The client distinguishes a finished batch from an empty queue.
+                # The quick-panel tick has been measured as non-collecting, so keep
+                # the task visible but blocked until a collection path is verified;
+                # never offer TRAIN_TROOPS against a batch still awaiting handling.
+                goals.append(GoalState(
+                    goal_id, GoalStatus.BLOCKED, completion=0.0,
+                    development_value=TRAINING_CAMP_VALUE, available_skills=(),
+                    evidence={**evidence, "reason": "training_completed_collection_path_unverified",
+                              "condition": "finished_batch_waiting_for_verified_collection"},
+                    distance=1.0,
+                ))
+            elif observed and busy is True:
                 # This camp is training: a game condition (§一, WAITING_GAME_CONDITION), not a
                 # completion.  Recorded as COMPLETE until 2026-09-23 -- §一's "本次任务实际完成" --
                 # which made "this barracks is busy" and "this barracks has nothing to train" the
