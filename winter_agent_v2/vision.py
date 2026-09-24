@@ -2301,6 +2301,13 @@ class SemanticWorldVision:
                 events={
                     "hub": "SUPER_ACTIVITY",
                     "panel": "LOGIN_GIFT" if match("PAGE_LOGIN_GIFT") else "SUPER_ACTIVITY",
+                    # Whether the client is drawing its *highlighted* day node -- the tile with the
+                    # gold ring around it.  This is the one signal the claim verifier is built on,
+                    # and it belongs here rather than in the verifier for the usual reason: the
+                    # verifier reads two ``WorldState``s, and only the frame reader sees pixels.
+                    # Measured 2026-09-24: ``True`` on the panel before the tap (crop distance 4),
+                    # ``False`` from 0.5 s after it, on a frame whose page was still EVENT.
+                    "day_claim_visible": match("LOGIN_GIFT_DAY_CLAIM") is not None,
                 },
                 confidence=0.99,
             )

@@ -135,6 +135,45 @@ def verify_free_stamina_claimed(before: WorldState, after: WorldState) -> Verifi
     )
 
 
+def verify_login_gift_claimed(before: WorldState, after: WorldState) -> VerificationResult:
+    """Claiming the 登录好礼 day reward is proven by the client's own two marks.
+
+    Measured live 2026-09-24T14:31 (+08:00) on the 超值活动 / 登录好礼 panel, 免费 tab.  The client
+    draws two visibly different states for one day node and the pair is what the proof is built
+    from:
+
+        highlighted   the tile *plus* the gold ring the client draws around the current day's node
+                      -- present on the frame before the tap (registered crop ``LOGIN_GIFT_DAY_CLAIM``
+                      matched at distance 4)
+        claimed       the same slot drawn grey with the client's own green tick -- what day 1 already
+                      showed before the tap, and what the tapped row showed 0.5 s after it
+
+    So the verifier is "the frame drew the highlighted node, and it is no longer drawn", with the
+    panel still the panel.  It never infers a claim from a caption, a reward count, or the absence of
+    an error -- measured on the same run, the frame's OCR tokens changed only by OCR noise.
+
+    The 0.5 s is not a tolerance the caller may shorten: measured over this run's twelve 0.25 s frames,
+    ``claim_after_00`` still carried the tile (distance 3) and ``claim_after_01`` onward did not, which
+    is the same "the client's response is about three quarters of a second long" this project already
+    measured for another control.
+    """
+    was_drawn = (before.events or {}).get("day_claim_visible") is True
+    still_drawn = (after.events or {}).get("day_claim_visible") is True
+    panel_held = after.known and after.page is Page.EVENT
+    ok = was_drawn and not still_drawn and panel_held
+    return VerificationResult(
+        ok,
+        "OK" if ok else "LOGIN_GIFT_CLAIM_NOT_PROVEN",
+        {
+            "highlighted_node_before": was_drawn,
+            "highlighted_node_after": still_drawn,
+            "panel_held": panel_held,
+            "before_page": before.page.value,
+            "after_page": after.page.value,
+        },
+    )
+
+
 def verify_popup_closed(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.POPUP and bool(before.popup)
     closed = after.known and after.page is not Page.POPUP and after.popup is None

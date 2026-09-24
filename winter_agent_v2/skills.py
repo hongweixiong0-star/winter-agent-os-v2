@@ -419,6 +419,28 @@ def v2_registry() -> SkillRegistry:
               vision_evidence=("panel_title", "free_claim_control_state"),
               unknown_policy="Any control with a price is not this skill's target and blocks",
               ui_change_tolerance=("reward_quantity", "position", "resolution", "skin")),
+        # Region-gated: the 超值活动 / 登录好礼 panel is opened by a person at the city HUD and no
+        # goal owns it, so this skill runs only on the page it belongs to.  Its target is the tile
+        # the client *itself* highlights (``LOGIN_GIFT_DAY_CLAIM``, registered from a live frame
+        # with a bounded search band), never a stored position: measured 2026-09-24, the tap that
+        # succeeded was located by matching the frame in front of it.
+        #
+        # ``CANDIDATE`` deliberately, and the same call the neighbouring ``CLAIM_FREE_STAMINA``
+        # makes: this project's ``SkillState`` has no per-trial rung, and promotion to ``VERIFIED``
+        # is earned by production evidence, not by one experiment.  What this skill has today is one
+        # real run with a passing verifier (2026-09-24T14:31+08:00, episode recorded in
+        # ``dataset/truth_audit/live_ops/20260924_claim_live``); it is not yet driven by AUTO.
+        Skill("CLAIM_LOGIN_GIFT", "Claim the day's highlighted free 登录好礼 reward", Page.EVENT,
+              Action("TAP_SEMANTIC", "LOGIN_GIFT_DAY_CLAIM"),
+              state=SkillState.CANDIDATE, latency_class=LatencyClass.FAST,
+              verifier="LOGIN_GIFT_CLAIMED", recovery=("REFRESH_STATE",),
+              semantic_goal="Claim the current day's free login gift, which costs nothing",
+              parameters=(), context=("REWARD",),
+              semantic_requirements=("free", "no_real_money_cost", "no_game_resource_cost"),
+              vision_evidence=("panel_title", "highlighted_day_node"),
+              unknown_policy="A panel that draws no highlighted day node blocks; a priced node blocks",
+              ui_change_tolerance=("reward_icon", "reward_quantity", "number", "position",
+                                   "resolution", "skin")),
         Skill("SELECT_MARCH_TO_RECALL", "Open the recall dialog for an active gathering march", Page.MAP,
               Action("TAP_SEMANTIC", "MARCH_ROW_1"),
               state=SkillState.CANDIDATE, latency_class=LatencyClass.FAST,

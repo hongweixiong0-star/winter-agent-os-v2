@@ -1,0 +1,725 @@
+{
+ "steps": [
+  {
+   "step": "observe_city",
+   "utc": "2026-09-24T06:35:39.296339+00:00",
+   "ms": 9965.6,
+   "attempt": 0,
+   "page": "EVENT",
+   "city_hud": true,
+   "conf": 0.99,
+   "dialog": false
+  },
+  {
+   "step": "tap_login_gift_entry",
+   "utc": "2026-09-24T06:35:39.356346+00:00",
+   "ms": 10026.4,
+   "ok": false,
+   "reason": "no executable element named 登录好礼 on this frame"
+  },
+  {
+   "step": "panel_opened",
+   "utc": "2026-09-24T06:35:48.182192+00:00",
+   "ms": 18852.4,
+   "page": "EVENT",
+   "events": {
+    "hub": "SUPER_ACTIVITY",
+    "panel": "LOGIN_GIFT"
+   },
+   "texts": [
+    "超值活动",
+    "充",
+    "登录好礼",
+    "5226%",
+    "每日登录游戏，即可领取大量奖励！",
+    "￥6.00",
+    "天数",
+    "免费",
+    "史诗8",
+    "3",
+    "5分钟",
+    "小时",
+    "2",
+    "12"
+   ]
+  },
+  {
+   "step": "panel_element_table",
+   "utc": "2026-09-24T06:35:48.231317+00:00",
+   "ms": 18901.5,
+   "elements": 26,
+   "executable": [
+    [
+     "E1",
+     "INTERACTIVE_CONTROL",
+     "天数"
+    ],
+    [
+     "E2",
+     "INTERACTIVE_CONTROL",
+     "免费"
+    ],
+    [
+     "E9",
+     "TEXT_LABEL",
+     "天数"
+    ],
+    [
+     "E10",
+     "TEXT_LABEL",
+     "免费"
+    ]
+   ]
+  },
+  {
+   "step": "tap_free_tab",
+   "utc": "2026-09-24T06:35:48.470083+00:00",
+   "ms": 19139.6,
+   "ok": true,
+   "element_id": "E2",
+   "kind": "INTERACTIVE_CONTROL",
+   "semantic": "TAB[免费]",
+   "basis": "TEMPLATE_LABEL_ON_CONTROL",
+   "score": 1.0,
+   "box_norm": {
+    "x_norm": 0.125,
+    "y_norm": 0.3523,
+    "w_norm": 0.1264,
+    "h_norm": 0.043
+   },
+   "point": [
+    0.1882,
+    0.3738
+   ],
+   "executed": true,
+   "tap_point": [
+    136,
+    478
+   ],
+   "latency_ms": 51.48,
+   "error": null
+  },
+  {
+   "step": "free_tab_read",
+   "utc": "2026-09-24T06:35:57.151160+00:00",
+   "ms": 27820.4,
+   "page": "EVENT",
+   "texts": [
+    "超值活动",
+    "充",
+    "登录好礼",
+    "5226%",
+    "每日登录游戏，即可领取大量奖励！",
+    "￥6.00",
+    "天数",
+    "免费",
+    "史诗8",
+    "3",
+    "5分钟",
+    "小时",
+    "2",
+    "12",
+    "5分钟",
+    "1小时",
+    "1小时",
+    "3",
+    "5000",
+    "4",
+    "5分钟",
+    "1小时",
+    "1小时",
+    "5"
+   ]
+  },
+  {
+   "step": "claim_controls",
+   "utc": "2026-09-24T06:35:57.151160+00:00",
+   "ms": 27820.5,
+   "words": [
+    "每日登录游戏，即可领取大量奖励！"
+   ]
+  },
+  {
+   "step": "tap_claim_node",
+   "utc": "2026-09-24T06:35:57.236184+00:00",
+   "ms": 27905.7,
+   "ok": true,
+   "semantic": "LOGIN_GIFT_DAY_CLAIM",
+   "distance": 4,
+   "box_norm": null,
+   "point": [
+    0.1951,
+    0.6477
+   ],
+   "executed": true,
+   "tap_point": [
+    140,
+    829
+   ],
+   "latency_ms": 51.22,
+   "error": null
+  },
+  {
+   "step": "claim_delta",
+   "utc": "2026-09-24T06:37:25.374488+00:00",
+   "ms": 116044.0,
+   "whole_max": 0.013,
+   "node_max": 0,
+   "first": {
+    "i": 0,
+    "ms": 35490.2,
+    "whole": 0.0008,
+    "node": null
+   },
+   "last": {
+    "i": 11,
+    "ms": 116024.6,
+    "whole": 0.0125,
+    "node": null
+   }
+  },
+  {
+   "step": "claim_final",
+   "utc": "2026-09-24T06:37:32.417345+00:00",
+   "ms": 123087.4,
+   "page": "EVENT",
+   "events": {
+    "hub": "SUPER_ACTIVITY",
+    "panel": "LOGIN_GIFT"
+   },
+   "texts": [
+    "超值活动",
+    "充",
+    "登录好礼",
+    "5226%",
+    "每日登录游戏，即可领取大量奖励！",
+    "￥6.00",
+    "天数",
+    "免费",
+    "史诗8",
+    "3",
+    "5分钟",
+    "小时",
+    "小时",
+    "3",
+    "5000",
+    "4",
+    "5分钟",
+    "1小时",
+    "1小时",
+    "5分钟",
+    "1小时",
+    "小时",
+    "6"
+   ]
+  }
+ ],
+ "op_id": "20260924_claim_live",
+ "lease": {
+  "acquired": true,
+  "refusal": "acquired"
+ },
+ "panel": {
+  "panel_page": "EVENT",
+  "panel_events": {
+   "hub": "SUPER_ACTIVITY",
+   "panel": "LOGIN_GIFT"
+  },
+  "panel_texts": [
+   "超值活动",
+   "充",
+   "登录好礼",
+   "5226%",
+   "每日登录游戏，即可领取大量奖励！",
+   "￥6.00",
+   "天数",
+   "免费",
+   "史诗8",
+   "3",
+   "5分钟",
+   "小时",
+   "2",
+   "12",
+   "5分钟",
+   "1小时",
+   "1小时",
+   "3",
+   "5000",
+   "4",
+   "5分钟",
+   "1小时",
+   "1小时",
+   "5"
+  ]
+ },
+ "panel_elements": [
+  {
+   "id": "E1",
+   "kind": "INTERACTIVE_CONTROL",
+   "text": "天数",
+   "executable": true,
+   "box_norm": {
+    "x_norm": 0.3611,
+    "y_norm": 0.3406,
+    "w_norm": 0.1111,
+    "h_norm": 0.0375
+   }
+  },
+  {
+   "id": "E2",
+   "kind": "INTERACTIVE_CONTROL",
+   "text": "免费",
+   "executable": true,
+   "box_norm": {
+    "x_norm": 0.125,
+    "y_norm": 0.3523,
+    "w_norm": 0.1264,
+    "h_norm": 0.043
+   }
+  },
+  {
+   "id": "E3",
+   "kind": "TEXT_LABEL",
+   "text": "超值活动",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.1306,
+    "y_norm": 0.018,
+    "w_norm": 0.1889,
+    "h_norm": 0.0289
+   }
+  },
+  {
+   "id": "E4",
+   "kind": "TEXT_LABEL",
+   "text": "充",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.7778,
+    "y_norm": 0.1273,
+    "w_norm": 0.025,
+    "h_norm": 0.0133
+   }
+  },
+  {
+   "id": "E5",
+   "kind": "TEXT_LABEL",
+   "text": "登录好礼",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.0542,
+    "y_norm": 0.1656,
+    "w_norm": 0.2417,
+    "h_norm": 0.0367
+   }
+  },
+  {
+   "id": "E6",
+   "kind": "TEXT_LABEL",
+   "text": "5226%",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.8514,
+    "y_norm": 0.1891,
+    "w_norm": 0.1014,
+    "h_norm": 0.0391
+   }
+  },
+  {
+   "id": "E7",
+   "kind": "TEXT_LABEL",
+   "text": "每日登录游戏，即可领取大量奖励！",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.0569,
+    "y_norm": 0.2828,
+    "w_norm": 0.5722,
+    "h_norm": 0.0219
+   }
+  },
+  {
+   "id": "E8",
+   "kind": "TEXT_LABEL",
+   "text": "￥6.00",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.7708,
+    "y_norm": 0.2812,
+    "w_norm": 0.1306,
+    "h_norm": 0.0266
+   }
+  },
+  {
+   "id": "E9",
+   "kind": "TEXT_LABEL",
+   "text": "天数",
+   "executable": true,
+   "box_norm": {
+    "x_norm": 0.3722,
+    "y_norm": 0.3453,
+    "w_norm": 0.0889,
+    "h_norm": 0.0281
+   }
+  },
+  {
+   "id": "E10",
+   "kind": "TEXT_LABEL",
+   "text": "免费",
+   "executable": true,
+   "box_norm": {
+    "x_norm": 0.1361,
+    "y_norm": 0.357,
+    "w_norm": 0.1042,
+    "h_norm": 0.0336
+   }
+  },
+  {
+   "id": "E11",
+   "kind": "TEXT_LABEL",
+   "text": "史诗8",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.6569,
+    "y_norm": 0.3547,
+    "w_norm": 0.15,
+    "h_norm": 0.0352
+   }
+  },
+  {
+   "id": "E12",
+   "kind": "TEXT_LABEL",
+   "text": "3",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.3917,
+    "y_norm": 0.3773,
+    "w_norm": 0.0486,
+    "h_norm": 0.0352
+   }
+  },
+  {
+   "id": "E13",
+   "kind": "TEXT_LABEL",
+   "text": "5分钟",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.1569,
+    "y_norm": 0.4602,
+    "w_norm": 0.0722,
+    "h_norm": 0.0219
+   }
+  },
+  {
+   "id": "E14",
+   "kind": "TEXT_LABEL",
+   "text": "小时",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.7806,
+    "y_norm": 0.4625,
+    "w_norm": 0.0667,
+    "h_norm": 0.0195
+   }
+  },
+  {
+   "id": "E15",
+   "kind": "TEXT_LABEL",
+   "text": "2",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.3986,
+    "y_norm": 0.4859,
+    "w_norm": 0.0389,
+    "h_norm": 0.0273
+   }
+  },
+  {
+   "id": "E16",
+   "kind": "TEXT_LABEL",
+   "text": "12",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.6667,
+    "y_norm": 0.5133,
+    "w_norm": 0.025,
+    "h_norm": 0.0117
+   }
+  },
+  {
+   "id": "E17",
+   "kind": "TEXT_LABEL",
+   "text": "5分钟",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.1583,
+    "y_norm": 0.6148,
+    "w_norm": 0.0681,
+    "h_norm": 0.0172
+   }
+  },
+  {
+   "id": "E18",
+   "kind": "TEXT_LABEL",
+   "text": "1小时",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.6028,
+    "y_norm": 0.6133,
+    "w_norm": 0.0667,
+    "h_norm": 0.0195
+   }
+  },
+  {
+   "id": "E19",
+   "kind": "TEXT_LABEL",
+   "text": "1小时",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.7806,
+    "y_norm": 0.6133,
+    "w_norm": 0.0653,
+    "h_norm": 0.0195
+   }
+  },
+  {
+   "id": "E20",
+   "kind": "TEXT_LABEL",
+   "text": "3",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.4042,
+    "y_norm": 0.6422,
+    "w_norm": 0.0264,
+    "h_norm": 0.018
+   }
+  },
+  {
+   "id": "E21",
+   "kind": "TEXT_LABEL",
+   "text": "5000",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.1597,
+    "y_norm": 0.7656,
+    "w_norm": 0.0681,
+    "h_norm": 0.0164
+   }
+  },
+  {
+   "id": "E22",
+   "kind": "TEXT_LABEL",
+   "text": "4",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.4042,
+    "y_norm": 0.793,
+    "w_norm": 0.0306,
+    "h_norm": 0.018
+   }
+  },
+  {
+   "id": "E23",
+   "kind": "TEXT_LABEL",
+   "text": "5分钟",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.1583,
+    "y_norm": 0.9164,
+    "w_norm": 0.0708,
+    "h_norm": 0.0187
+   }
+  },
+  {
+   "id": "E24",
+   "kind": "TEXT_LABEL",
+   "text": "1小时",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.6042,
+    "y_norm": 0.9164,
+    "w_norm": 0.0639,
+    "h_norm": 0.0187
+   }
+  },
+  {
+   "id": "E25",
+   "kind": "TEXT_LABEL",
+   "text": "1小时",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.7806,
+    "y_norm": 0.9164,
+    "w_norm": 0.0653,
+    "h_norm": 0.0187
+   }
+  },
+  {
+   "id": "E26",
+   "kind": "TEXT_LABEL",
+   "text": "5",
+   "executable": false,
+   "box_norm": {
+    "x_norm": 0.4,
+    "y_norm": 0.9414,
+    "w_norm": 0.0347,
+    "h_norm": 0.0234
+   }
+  }
+ ],
+ "free_tab": {
+  "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_ops\\20260924_claim_live\\free_tab.png",
+  "texts": [
+   "超值活动",
+   "充",
+   "登录好礼",
+   "5226%",
+   "每日登录游戏，即可领取大量奖励！",
+   "￥6.00",
+   "天数",
+   "免费",
+   "史诗8",
+   "3",
+   "5分钟",
+   "小时",
+   "2",
+   "12",
+   "5分钟",
+   "1小时",
+   "1小时",
+   "3",
+   "5000",
+   "4",
+   "5分钟",
+   "1小时",
+   "1小时",
+   "5"
+  ],
+  "page": "EVENT"
+ },
+ "claim_words": [
+  "每日登录游戏，即可领取大量奖励！"
+ ],
+ "claim_tap": {
+  "semantic": "LOGIN_GIFT_DAY_CLAIM",
+  "distance": 4,
+  "box_norm": null,
+  "point": [
+   0.1951,
+   0.6477
+  ],
+  "executed": true,
+  "tap_point": [
+   140,
+   829
+  ],
+  "latency_ms": 51.22,
+  "error": null
+ },
+ "claim_deltas": [
+  {
+   "i": 0,
+   "ms": 35490.2,
+   "whole": 0.0008,
+   "node": null
+  },
+  {
+   "i": 1,
+   "ms": 43169.0,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 2,
+   "ms": 50953.0,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 3,
+   "ms": 58316.6,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 4,
+   "ms": 65284.6,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 5,
+   "ms": 72427.7,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 6,
+   "ms": 79617.1,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 7,
+   "ms": 87228.4,
+   "whole": 0.0126,
+   "node": null
+  },
+  {
+   "i": 8,
+   "ms": 94383.2,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 9,
+   "ms": 102053.8,
+   "whole": 0.013,
+   "node": null
+  },
+  {
+   "i": 10,
+   "ms": 108983.1,
+   "whole": 0.0125,
+   "node": null
+  },
+  {
+   "i": 11,
+   "ms": 116024.6,
+   "whole": 0.0125,
+   "node": null
+  }
+ ],
+ "claim_final": {
+  "frame": "E:\\无尽冬日智能体\\dataset\\truth_audit\\live_ops\\20260924_claim_live\\claim_final.png",
+  "page": "EVENT",
+  "events": {
+   "hub": "SUPER_ACTIVITY",
+   "panel": "LOGIN_GIFT"
+  },
+  "texts": [
+   "超值活动",
+   "充",
+   "登录好礼",
+   "5226%",
+   "每日登录游戏，即可领取大量奖励！",
+   "￥6.00",
+   "天数",
+   "免费",
+   "史诗8",
+   "3",
+   "5分钟",
+   "小时",
+   "小时",
+   "3",
+   "5000",
+   "4",
+   "5分钟",
+   "1小时",
+   "1小时",
+   "5分钟",
+   "1小时",
+   "小时",
+   "6"
+  ]
+ }
+}

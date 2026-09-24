@@ -229,6 +229,7 @@ dataset/external/repositories/
 # against them.  All three are 盾兵营/IN_PROGRESS; 矛兵营 and 射手营 have never appeared.
 !dataset/truth_audit/training_three_barracks_20260921/key/**/*.png
 !dataset/truth_audit/login_gift_entry_20260924/key/**/*.png
+!dataset/truth_audit/login_gift_claim_20260924/key/**/*.png
 
 # learning/RUNTIME_RELOAD_REQUIRED.json is a live marker: written the moment a
 # development agent touches the tree, cleared when the next cycle has started on

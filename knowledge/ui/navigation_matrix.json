@@ -3,12 +3,12 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 112,
-    "schedulable": 98,
+    "skills": 113,
+    "schedulable": 99,
     "navigation_like_entries": 50,
     "schedulable_navigation_entries": 48,
-    "distinct_targets": 89,
-    "semantics_with_templates": 264,
+    "distinct_targets": 90,
+    "semantics_with_templates": 265,
     "semantics_with_templates_and_no_skill": 200
   },
   "operator_functions": [
@@ -486,6 +486,17 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_free_stamina_claimed",
+      "visual_evidence": 1,
+      "navigation_like": false
+    },
+    {
+      "skill": "CLAIM_LOGIN_GIFT",
+      "source_page": "EVENT",
+      "action": "TAP_SEMANTIC:LOGIN_GIFT_DAY_CLAIM",
+      "target": "LOGIN_GIFT_DAY_CLAIM",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_login_gift_claimed",
       "visual_evidence": 1,
       "navigation_like": false
     },
