@@ -849,6 +849,40 @@ class LiveRuntime:
         for goal in goals or ():
             self._goal_meters[goal.goal_id] = goal.distance
 
+    def _sync_brain_goal(self, best_goal, gate) -> None:
+        """Keep the brain's route and task identity aligned with this scheduler tick.
+
+        The board is re-ranked after every action. Keeping the first selected route for the
+        whole bounded run lets a later Goal inherit the previous task's page logic (for
+        example, a training Goal opening the research row). The concrete goal id is the
+        authority for row ownership; clear both fields when the board has no runnable Goal.
+        """
+        if best_goal is None:
+            changed = self.brain.current_goal is not None or bool(getattr(self.brain, "goal_id", ""))
+            self.brain.current_goal = None
+            self.brain.goal_id = ""
+            if changed:
+                self.brain.terminal_page_left = False
+            return
+
+        route = route_for(best_goal.goal_id)
+        if best_goal.goal_id == "AVOID_STAMINA_WASTE":
+            # This Goal can use the Intel route only while the beast capability is blocked.
+            beast = (gate.capabilities.get("SPEND_STAMINA_ON_BEAST") or (None,))[0]
+            if beast in {"BLOCKED", "COOLDOWN", "DEFERRED", "DEVELOPMENT_PENDING"}:
+                route = "SPEND_STAMINA"
+
+        changed = (
+            self.brain.current_goal != route
+            or str(getattr(self.brain, "goal_id", "") or "") != str(best_goal.goal_id)
+        )
+        self.brain.current_goal = route
+        self.brain.goal_id = best_goal.goal_id
+        if changed:
+            # A terminal-page refusal belongs to the previous task instance. It must not
+            # prevent a newly selected Goal from trying its own measured route.
+            self.brain.terminal_page_left = False
+
     def _step_goal(self, best_goal) -> str:
         """The goal an episode is recorded under.
 
@@ -4627,36 +4661,7 @@ class LiveRuntime:
                         continue
                     self._printed_deferrals.add(item.describe())
                     print(f"[schedule] deferred {item.describe()}", flush=True)
-            if self.brain.current_goal is None and best_goal is not None:
-                # The one place a goal id becomes a brain route.  A goal that is missing here
-                # is not "handled elsewhere" -- it is scheduled, given no route, and quietly
-                # does nothing, which is how four panel routines stayed invisible while their
-                # capabilities worked.
-                #
-                # The table itself now lives in ``goal_library`` (``GOAL_ROUTES``): the panel's
-                # Development Validation cycle needs the same translation to build a command
-                # line, and a second copy drifted the moment a goal was added -- measured
-                # 2026-09-21, every calibration run died on argparse with EXIT_2 while the map
-                # here was correct.  One table, two readers.
-                route = route_for(best_goal.goal_id)
-                if best_goal.goal_id == "AVOID_STAMINA_WASTE":
-                    # The goal declares three ways to spend stamina and the beast one is the
-                    # blocked one, so routing it to BEAST_HUNT would send the run down the path
-                    # that cannot run: five pans, no target, stop -- and the operator's standing
-                    # requirement is that stamina stays under 30.  The intel missions spend the
-                    # same stamina through a route that is LIVE_VERIFIED, measured live at 10-15
-                    # per mission, so the goal rides that one while the beast path is off.
-                    beast = (gate.capabilities.get("SPEND_STAMINA_ON_BEAST") or (None,))[0]
-                    if beast in {"BLOCKED", "COOLDOWN", "DEFERRED", "DEVELOPMENT_PENDING"}:
-                        # Its own route name, not "INTEL": the two share the intel flow but are
-                        # different goals, and the spend goal must not claim free stamina (which
-                        # raises the number it exists to lower).  See `RuleBrain._intel_like`.
-                        route = "SPEND_STAMINA"
-                self.brain.current_goal = route
-                # The route name does not say which goal chose it, and one decision
-                # downstream needs exactly that: only the spend goal may hand over to the
-                # intel flow when no beast is in view.
-                self.brain.goal_id = best_goal.goal_id
+            self._sync_brain_goal(best_goal, gate)
             if before.page in {Page.MAINTENANCE, Page.LOADING}:
                 # Environmental states resolve on the game's own schedule. The
                 # worker must hold, not exit: an exit here was counted as an
