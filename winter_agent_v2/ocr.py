@@ -1077,7 +1077,7 @@ class OCRPageClassifier:
                         # separate from generic tree/template node labels.
                         active = min(
                             active_labels,
-                            key=lambda candidate: abs(token.centre[1] - candidate.centre[1]),
+                            key=lambda candidate: abs(centre - candidate.centre[1]),
                         )
                         research.update({
                             "active_node": active.text.strip(),
