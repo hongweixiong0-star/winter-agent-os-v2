@@ -470,11 +470,18 @@ class BrainReachabilityTests(unittest.TestCase):
     Measured before this was added: every known page has at least one ready skill, so the generic
     attempt could only ever fire on an unnamed screen -- a new panel drawn over a page the model
     *can* name would never be tried at all.
+
+    The fixture is ``Page.MARCH_QUEUE``: a known page with **no branch of its own**, so the only
+    thing the registry can offer is the generic BACK.  It used to be ``Page.EVENT``, which served
+    purely as "some page with nothing to do" -- but EVENT acquired a declared behaviour of its own
+    on 2026-09-24 (a just-opened 活动面板 is observed before any flow leaves it, pinned in
+    ``tests/test_event_panel_observation.py``), so it is no longer an anonymous page and can no
+    longer stand for one.  The property under test is unchanged; only its fixture moved.
     """
 
     def test_a_page_with_only_a_way_out_prefers_one_ordinary_attempt(self):
         brain = RuleBrain(current_goal="CLEAR_INTEL")
-        decision = brain.decide(WorldState(page=Page.EVENT), v2_registry())
+        decision = brain.decide(WorldState(page=Page.MARCH_QUEUE), v2_registry())
         self.assertEqual(decision.skill, "TRY_ORDINARY_CONTROL")
         self.assertIn("only_BACK_left", decision.reason)
 
@@ -485,7 +492,7 @@ class BrainReachabilityTests(unittest.TestCase):
     def test_the_attempt_is_bounded_and_then_the_page_is_left(self):
         brain = RuleBrain(current_goal="CLEAR_INTEL")
         decisions = [
-            brain.decide(WorldState(page=Page.EVENT), v2_registry()).skill for _ in range(3)
+            brain.decide(WorldState(page=Page.MARCH_QUEUE), v2_registry()).skill for _ in range(3)
         ]
         self.assertEqual(decisions[:2], ["TRY_ORDINARY_CONTROL"] * 2)
         self.assertEqual(decisions[2], "BACK", "budget spent -> the page is left exactly as before")
@@ -493,7 +500,7 @@ class BrainReachabilityTests(unittest.TestCase):
     def test_a_frame_that_offers_nothing_stops_asking(self):
         brain = RuleBrain(current_goal="CLEAR_INTEL")
         brain.ordinary_scan_exhausted = True
-        self.assertEqual(brain.decide(WorldState(page=Page.EVENT), v2_registry()).skill, "BACK")
+        self.assertEqual(brain.decide(WorldState(page=Page.MARCH_QUEUE), v2_registry()).skill, "BACK")
 
 
 class WhitelistTierTests(unittest.TestCase):

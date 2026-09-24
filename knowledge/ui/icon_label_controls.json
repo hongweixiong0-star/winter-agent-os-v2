@@ -5,20 +5,91 @@
   "登录好礼": {
    "label": "登录好礼",
    "semantic": "CONTROL[登录好礼]",
-   "pages": ["MAP", "HOME"],
+   "pages": [
+    "MAP",
+    "HOME"
+   ],
    "relation": "control_directly_above_label",
    "template_path": "knowledge/ui/icon_templates/登录好礼.png",
    "source": "REGISTERED_TEMPLATE",
    "evidence": {
     "verified_by": "human_review_of_extracted_crop",
     "extracted_from": "dataset/raw/control_panel/runtime_auto/20260924_101003_761338/20260924_101003_761338_step_001_after_20260924T021024299127.png",
-    "template_size_px": [56, 55],
+    "template_size_px": [
+     56,
+     55
+    ],
     "positive_frames": 80,
     "positive_corpus": "dataset/truth_audit/icon_label_controls/samples.json",
     "what_the_crop_is": "the whole 登录好礼 calendar button (blue header with rings, cream body with a brown 7)",
     "registered_at": "2026-09-25",
     "next_reuse_path": "every frame matches this crop inside a window derived from the label's own box, so the control is located where it is now"
    }
+  },
+  "免费": {
+   "label": "免费",
+   "semantic": "TAB[免费]",
+   "pages": [
+    "EVENT"
+   ],
+   "relation": "label_is_the_control",
+   "template_path": "knowledge\\ui\\icon_templates\\免费__super_activity_tab.png",
+   "source": "REGISTERED_TEMPLATE",
+   "evidence": {
+    "verified_by": "human_review_of_extracted_crop",
+    "extracted_from": "dataset\\truth_audit\\live_ops\\20260924T053234_登录好礼\\after_23_frame.png",
+    "label_box_px": [
+     98,
+     457,
+     173,
+     500
+    ],
+    "crop_box_px": [
+     90,
+     451,
+     181,
+     506
+    ],
+    "template_size_px": [
+     91,
+     55
+    ],
+    "what_the_crop_is": "the client's own 免费 tab caption with the edge of its pill, so the words pin the match to the pill they are drawn on",
+    "registered_at": "2026-09-24"
+   }
+  },
+  "天数": {
+   "label": "天数",
+   "semantic": "TAB[天数]",
+   "pages": [
+    "EVENT"
+   ],
+   "relation": "label_is_the_control",
+   "template_path": "knowledge\\ui\\icon_templates\\天数__super_activity_tab.png",
+   "source": "REGISTERED_TEMPLATE",
+   "evidence": {
+    "verified_by": "human_review_of_extracted_crop",
+    "extracted_from": "dataset\\truth_audit\\live_ops\\20260924T053234_登录好礼\\after_23_frame.png",
+    "label_box_px": [
+     268,
+     442,
+     332,
+     478
+    ],
+    "crop_box_px": [
+     260,
+     436,
+     340,
+     484
+    ],
+    "template_size_px": [
+     80,
+     48
+    ],
+    "what_the_crop_is": "the client's own 天数 tab caption with the edge of its pill, so the words pin the match to the pill they are drawn on",
+    "registered_at": "2026-09-24"
+   }
   }
- }
+ },
+ "updated_at": "2026-09-24T05:57:55.736591+00:00"
 }

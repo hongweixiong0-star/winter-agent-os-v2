@@ -2261,6 +2261,49 @@ class SemanticWorldVision:
                 daily={"status": "AVAILABLE", "task_id": "HERO_RECRUIT_1", "progress": 0, "target": 1, "activity": 270},
                 confidence=0.99,
             )
+        # The 超值活动 hub and the 登录好礼 panel it carries (registered 2026-09-24).
+        #
+        # Measured before this branch existed, live, on the panel the city HUD's 登录好礼 entry
+        # opens: the production recogniser called it ``ALLIANCE`` at confidence 0.98 on every frame
+        # of a six-second burst, and ``tools/diagnose_page_match.py`` named the culprit --
+        # ``PAGE_ALLIANCE_TECH``, a *title strip*, matching this panel's own header band at
+        # distance 8, exactly at the threshold, while the panel's real content matched nothing.
+        #
+        # That misreading was not cosmetic.  ``brain`` answers ``<goal>_leaves_a_panel_it_does_not
+        # _own`` with ``BACK`` for a page the current goal does not own -- this project's own
+        # episode stream holds 91 such steps, including 2026-09-24T03:29:15Z with
+        # ``state_before.page=ALLIANCE, state_after.page=HOME`` -- so the running AUTO closed a
+        # panel it had never identified, on the strength of a fiction.  With the panel named
+        # instead, the screen is observable and the planner can be asked about it.
+        #
+        # Ordering is the fix: this sits **before** the ALLIANCE strips, because a title strip that
+        # matched at the threshold must not outrank the panel's own written name at distance 0.
+        #
+        # Why a pair of anchors rather than one.  ``PAGE_SUPER_ACTIVITY`` is the hub header (the
+        # back arrow *together with* the client's 超值活动 heading -- the arrow alone matches every
+        # overlay in the corpus); ``PAGE_LOGIN_GIFT`` is the 登录好礼 title box.  Registering both
+        # lets the panel be named without inventing a second page for the hub, and measured on the
+        # burst and on the previous round's frame both match at distance 0 while the MAP frame and
+        # the city frame are rejected outright.
+        #
+        # The two negatives are the project's own map/city discriminator, reused rather than
+        # re-invented: the world map draws the return-to-city control (``BTN_OPEN_HOME``) where the
+        # city draws the map button (``PAGE_MAP``), so the two are mutually exclusive and neither
+        # can be on screen while this panel is.  Requiring them absent is what stops a
+        # header-shaped crop from ever claiming the city or the map.
+        if (
+            match("PAGE_SUPER_ACTIVITY")
+            and match("BTN_OPEN_HOME") is None
+            and match("PAGE_MAP") is None
+        ):
+            return WorldState(
+                page=Page.EVENT,
+                events={
+                    "hub": "SUPER_ACTIVITY",
+                    "panel": "LOGIN_GIFT" if match("PAGE_LOGIN_GIFT") else "SUPER_ACTIVITY",
+                },
+                confidence=0.99,
+            )
         if match("STATUS_ALLIANCE_TECH_CONTRIBUTION_RESULT"):
             return WorldState(
                 page=Page.ALLIANCE,

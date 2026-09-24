@@ -3,13 +3,13 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 101,
-    "schedulable": 85,
-    "navigation_like_entries": 43,
-    "schedulable_navigation_entries": 41,
-    "distinct_targets": 76,
-    "semantics_with_templates": 236,
-    "semantics_with_templates_and_no_skill": 177
+    "skills": 112,
+    "schedulable": 98,
+    "navigation_like_entries": 50,
+    "schedulable_navigation_entries": 48,
+    "distinct_targets": 89,
+    "semantics_with_templates": 264,
+    "semantics_with_templates_and_no_skill": 200
   },
   "operator_functions": [
     {
@@ -220,11 +220,24 @@
     },
     {
       "function": "巨兽/自动加入",
-      "registered_entry_skills": [],
-      "schedulable_entry_skills": [],
-      "path_count": 0,
-      "semantics_with_templates": 0,
-      "semantics_with_templates_and_no_skill": []
+      "registered_entry_skills": [
+        "JOIN_RALLY",
+        "START_RALLY"
+      ],
+      "schedulable_entry_skills": [
+        "JOIN_RALLY",
+        "START_RALLY"
+      ],
+      "path_count": 2,
+      "semantics_with_templates": 8,
+      "semantics_with_templates_and_no_skill": [
+        "BTN_AUTO_JOIN",
+        "BTN_CONFIRM_START_RALLY",
+        "POPUP_TITLE_START_RALLY",
+        "STATUS_RALLY_COUNTDOWN",
+        "STATUS_RALLY_JOINED",
+        "TAB_RALLY_LIST"
+      ]
     },
     {
       "function": "采集点/资源详情",
@@ -313,7 +326,7 @@
         "SELECT_DAILY_TAB"
       ],
       "path_count": 4,
-      "semantics_with_templates": 23,
+      "semantics_with_templates": 24,
       "semantics_with_templates_and_no_skill": [
         "ALLIANCE_GIFTS_DAILY_COUNTER",
         "DAILY_ACTIVITY_270",
@@ -327,6 +340,7 @@
         "DAILY_MULTI_REWARD_ITEMS",
         "DAILY_REWARD_ITEMS",
         "PAGE_DAILY",
+        "PAGE_SUPER_ACTIVITY",
         "POPUP_DAILY_REWARD",
         "STATUS_DAILY_ALLIANCE_CLAIMABLE",
         "STATUS_DAILY_MULTI_CLAIMABLE",
@@ -505,7 +519,51 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_popup_closed",
-      "visual_evidence": 4,
+      "visual_evidence": 5,
+      "navigation_like": false
+    },
+    {
+      "skill": "COLLECT_FINISHED_TRAINING_LANCER",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_LANCER_CAMP_DONE",
+      "target": "QUICK_PANEL_ROW_LANCER_CAMP_DONE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "COLLECT_FINISHED_TRAINING_MARKSMAN",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_MARKSMAN_CAMP_DONE",
+      "target": "QUICK_PANEL_ROW_MARKSMAN_CAMP_DONE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "COLLECT_FINISHED_TRAINING_SHIELD",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_SHIELD_CAMP_DONE",
+      "target": "QUICK_PANEL_ROW_SHIELD_CAMP_DONE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": false
+    },
+    {
+      "skill": "COLLECT_MY_REWARDS_ROW",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_MY_REWARDS_DONE",
+      "target": "QUICK_PANEL_ROW_MY_REWARDS_DONE",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
       "navigation_like": false
     },
     {
@@ -797,12 +855,12 @@
     {
       "skill": "JOIN_RALLY",
       "source_page": "UNKNOWN",
-      "action": "JOIN_RALLY",
-      "target": "UNKNOWN",
+      "action": "TAP_SEMANTIC:BTN_JOIN_ROW",
+      "target": "BTN_JOIN_ROW",
       "destination_page": "UNKNOWN",
-      "schedulable": false,
-      "verifier": "UNKNOWN",
-      "visual_evidence": 0,
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
       "navigation_like": false
     },
     {
@@ -1045,6 +1103,83 @@
       "schedulable": true,
       "verifier": "verify_stamina_sources_open",
       "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_ALLIANCE_DONATION",
+      "target": "QUICK_PANEL_ROW_ALLIANCE_DONATION",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_ordinary_control_tried",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_HERO_RECRUIT",
+      "target": "QUICK_PANEL_ROW_HERO_RECRUIT",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_ordinary_control_tried",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_LANCER_CAMP",
+      "target": "QUICK_PANEL_ROW_LANCER_CAMP",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_MARKSMAN_CAMP",
+      "target": "QUICK_PANEL_ROW_MARKSMAN_CAMP",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_MY_REWARDS",
+      "target": "QUICK_PANEL_ROW_MY_REWARDS",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_ordinary_control_tried",
+      "visual_evidence": "DYNAMIC_RESOLVER",
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_RESEARCH",
+      "target": "QUICK_PANEL_ROW_RESEARCH",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_panel_row_research_bar_opened",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:QUICK_PANEL_ROW_SHIELD_CAMP",
+      "target": "QUICK_PANEL_ROW_SHIELD_CAMP",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
       "navigation_like": true
     },
     {
@@ -1369,12 +1504,12 @@
     {
       "skill": "START_RALLY",
       "source_page": "UNKNOWN",
-      "action": "START_RALLY",
-      "target": "UNKNOWN",
+      "action": "TAP_SEMANTIC:BTN_START_RALLY",
+      "target": "BTN_START_RALLY",
       "destination_page": "UNKNOWN",
-      "schedulable": false,
-      "verifier": "UNKNOWN",
-      "visual_evidence": 0,
+      "schedulable": true,
+      "verifier": "<lambda>",
+      "visual_evidence": 1,
       "navigation_like": false
     },
     {
@@ -1407,7 +1542,7 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "<lambda>",
-      "visual_evidence": 1,
+      "visual_evidence": 2,
       "navigation_like": false
     },
     {
@@ -1616,11 +1751,31 @@
       "templates": 1
     },
     {
+      "semantic": "BTN_ALLIANCE_WAR",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_AUTO_JOIN",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_BEAR_GO",
+      "templates": 1
+    },
+    {
       "semantic": "BTN_CANCEL",
       "templates": 1
     },
     {
       "semantic": "BTN_CLOSE_BATTLE_VICTORY",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_CONFIRM_MARCH",
+      "templates": 1
+    },
+    {
+      "semantic": "BTN_CONFIRM_START_RALLY",
       "templates": 1
     },
     {
@@ -1844,7 +1999,15 @@
       "templates": 4
     },
     {
+      "semantic": "ORDINARY_CONTROL[跳过]",
+      "templates": 1
+    },
+    {
       "semantic": "ORDINARY_CONTROL[退出]",
+      "templates": 1
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[领取]",
       "templates": 1
     },
     {
@@ -1884,6 +2047,10 @@
       "templates": 4
     },
     {
+      "semantic": "PAGE_LOGIN_GIFT",
+      "templates": 1
+    },
+    {
       "semantic": "PAGE_MAIL",
       "templates": 3
     },
@@ -1894,6 +2061,14 @@
     {
       "semantic": "PAGE_RESEARCH",
       "templates": 2
+    },
+    {
+      "semantic": "PAGE_SUPER_ACTIVITY",
+      "templates": 1
+    },
+    {
+      "semantic": "PAGE_TITLE_MARCH",
+      "templates": 1
     },
     {
       "semantic": "PAGE_TRAINING_INFANTRY",
@@ -2000,6 +2175,10 @@
       "templates": 1
     },
     {
+      "semantic": "POPUP_TITLE_START_RALLY",
+      "templates": 1
+    },
+    {
       "semantic": "POPUP_WELCOME_BACK_OFFLINE",
       "templates": 1
     },
@@ -2080,6 +2259,10 @@
       "templates": 2
     },
     {
+      "semantic": "ROW_TARGET_BEAR_COLUMN",
+      "templates": 1
+    },
+    {
       "semantic": "SEARCH_BEAST_LEVEL_5_SELECTED",
       "templates": 1
     },
@@ -2113,6 +2296,10 @@
     },
     {
       "semantic": "STATUS_ALLY_GIFT_INLINE_REWARD",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_BEAR_WINDOW",
       "templates": 1
     },
     {
@@ -2184,6 +2371,18 @@
       "templates": 6
     },
     {
+      "semantic": "STATUS_MARCH_GATHERING",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_RALLY_COUNTDOWN",
+      "templates": 1
+    },
+    {
+      "semantic": "STATUS_RALLY_JOINED",
+      "templates": 1
+    },
+    {
       "semantic": "STATUS_RESEARCH_IN_PROGRESS",
       "templates": 2
     },
@@ -2194,6 +2393,10 @@
     {
       "semantic": "STATUS_TRAINING_IN_PROGRESS",
       "templates": 4
+    },
+    {
+      "semantic": "STATUS_TROOP_CAPACITY",
+      "templates": 1
     },
     {
       "semantic": "STATUS_VICTORY_ASSURED",
@@ -2228,6 +2431,10 @@
       "templates": 1
     },
     {
+      "semantic": "TAB_RALLY_LIST",
+      "templates": 1
+    },
+    {
       "semantic": "TAB_TRAINING_INFANTRY",
       "templates": 1
     },
@@ -2240,8 +2447,16 @@
       "templates": 1
     },
     {
-      "semantic": "TARGET_CAMP_ACTION_BAR",
+      "semantic": "TAB_TROOP_PRESET_STRIP",
       "templates": 1
+    },
+    {
+      "semantic": "TARGET_BEAR_TRAP",
+      "templates": 1
+    },
+    {
+      "semantic": "TARGET_CAMP_ACTION_BAR",
+      "templates": 2
     },
     {
       "semantic": "TARGET_INFANTRY_CAMP_HIGHLIGHTED",
@@ -2253,6 +2468,18 @@
     },
     {
       "semantic": "TARGET_LIGHTHOUSE_BUILDING",
+      "templates": 1
+    },
+    {
+      "semantic": "TARGET_TROOP_ROW_INFANTRY",
+      "templates": 1
+    },
+    {
+      "semantic": "TARGET_TROOP_ROW_LANCER",
+      "templates": 1
+    },
+    {
+      "semantic": "TARGET_TROOP_ROW_MARKSMAN",
       "templates": 1
     },
     {

@@ -202,6 +202,24 @@ class RuleBrain:
         # a close) that did not move the client is not repeated.  Two, because a layer can ignore
         # a Back and still answer its own close button -- see ``_leave_foreign_page_once``.
         self.foreign_page_steps = 0
+        # Whether this run has already looked at an unclaimed 活动面板 (``Page.EVENT``).
+        #
+        # Measured, live, 2026-09-24T06:01:18Z, in the AUTO's own episode stream:
+        #
+        #     skill BACK   EVENT -> HOME   reason first_ready_p0_skill
+        #
+        # ``before.page`` is EVENT, i.e. the page model had *correctly* named the 超值活动 panel --
+        # so this is not a misreading and the fix below is not the earlier one.  What happens is
+        # that ``registry.ready()`` offers the generic BACK for any page, it wins as "first ready
+        # P0 skill", and the panel closes one step after it opens.  Operator directive §三 is
+        # explicit: a screen that has just appeared is observed before any flow changes it, and an
+        # unclaimed screen is handed to the frame's own controls rather than to a Back.
+        #
+        # Its own flag rather than the ordinary-control budget, because that budget is shared with
+        # the in-city task board and on the measured run it had already been spent by the time this
+        # panel was opened -- which is exactly why the generic Back won.  One observation per run
+        # is a bound, not a loop: a panel with nothing to act on still leaves on the next step.
+        self.activity_panel_observed = False
         # Consecutive Stage A re-observations in this run.  Measured 2026-09-17:
         # the highlighted-camp state is NOT a transient animation -- seven waits in a
         # row all reported ``menu_drawn: false`` and ended with MAX_ACTIONS_REACHED,
@@ -602,6 +620,44 @@ class RuleBrain:
                     "ordinary_control_observed",
                 )
             return Decision("SAFE_STOP", "unknown_page", 1.0, "no_action")
+        # The 活动面板 (``Page.EVENT``) is the one *named* screen no goal owns: the 超值活动 hub
+        # and the reward panels it opens (登录好礼 and the like) are opened by a person at the
+        # city HUD, and nothing in the goal library claims them -- ``route_for`` answers ``None``
+        # for every goal on this page and no branch above names ``Page.EVENT`` at all.
+        #
+        # Measured, live, 2026-09-24T06:01:18Z, in the AUTO's own episode stream:
+        #
+        #     skill BACK   EVENT -> HOME   reason first_ready_p0_skill
+        #
+        # ``before.page`` is EVENT -- so the page model had *correctly* named the panel and this
+        # is not a misreading.  What happens is that ``registry.ready()`` offers the generic BACK
+        # for any page, it wins as "first ready P0 skill", and the panel closes one step after it
+        # opens.  Operator directive §三 is explicit: a screen that has just appeared is observed
+        # and verified before any flow is allowed to change it, and an unclaimed screen is handed
+        # to the frame's own controls rather than to a Back.
+        #
+        # Hence this sits at the *top* of the named-page dispatch rather than just before the
+        # generic fallback: the same panel was also being closed by a committed goal's own
+        # "leaves a panel it does not own" branch (measured here with ``current_goal="MAIL"`` ->
+        # ``BACK / mail_goal_leaves_a_panel_it_does_not_own``).  A just-opened screen must be
+        # observed first whoever happens to hold the cycle, so the guard cannot live inside one
+        # goal's branch.  The observation is handed to ``TRY_ORDINARY_CONTROL`` so the project's
+        # own planner can be asked about it (§三: 在任务预算内交给 Qwen 分析).
+        #
+        # ``activity_panel_observed`` is its own per-run flag rather than the ordinary-control
+        # budget, because that budget is shared with the in-city task board and on the measured
+        # run it had already been spent by the time this panel was opened -- which is exactly why
+        # the generic Back won.  One observation per run is a bound, not a loop: nothing here
+        # clicks by itself, and a panel with nothing to act on is left by the ordinary flow on
+        # the very next step.
+        if world.page is Page.EVENT and not self.activity_panel_observed:
+            self.activity_panel_observed = True
+            return Decision(
+                "TRY_ORDINARY_CONTROL",
+                "unclaimed_activity_panel_is_observed_before_any_flow_leaves_it",
+                world.confidence,
+                "ordinary_control_observed",
+            )
         # Maintenance and loading are environmental states.  Nothing in the
         # game can be acted on, and tapping would only restart the client, so
         # the loop waits instead of burning actions or exiting the worker.

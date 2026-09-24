@@ -1469,7 +1469,20 @@ EXECUTABLE_ELEMENT_KINDS = frozenset({ELEMENT_INTERACTIVE_CONTROL, ELEMENT_COMPO
 #: drawn block, which is exactly what the original basis could not promise (see its own note on the
 #: 燃霜矿区 gap between two rows of icons).
 BASIS_TEMPLATE_LABEL = "TEMPLATE_LABEL"
+BASIS_LABEL_ON_CONTROL = "TEMPLATE_LABEL_ON_CONTROL"
 BASIS_VERIFIED_ANCHOR = "ANCHORED_TO_TEXT_VERIFIED"
+
+#: The two label->control relations this project knows, as recorded in the registry's ``relation``.
+#:
+#: ``control_directly_above_label`` is the city-HUD shape: an icon with its name printed beneath,
+#: which is why the control's region is searched *above* the words.
+#:
+#: ``label_is_the_control`` is the tab shape: the client prints the word **on** the pill it is the
+#: name of, so the control is searched *around* the words.  Added 2026-09-24 after measuring that
+#: the 登录好礼 panel offered no executable element at all -- its 免费 / 天数 tabs were read as
+#: labels and nothing else, so the panel could be identified but not operated.
+RELATION_ABOVE = "control_directly_above_label"
+RELATION_SELF = "label_is_the_control"
 
 #: Where the label→control relation is kept between runs.
 ICON_CONTROL_REGISTRY = Path("knowledge/ui/icon_label_controls.json")
@@ -1480,6 +1493,12 @@ BAND_HEIGHT_RATIO = 1.6
 BAND_HEIGHT_MAX_NORM = 0.075
 BAND_WIDTH_PAD_RATIO = 0.18
 BAND_MIN_SIDE_PX = 14
+
+#: How far around a label the search window reaches when the control *is* the label's own pill,
+#: as fractions of the label's own width/height.  A bound, not a position.
+AROUND_SIDE_RATIO = 0.55
+AROUND_ABOVE_RATIO = 0.60
+AROUND_BELOW_RATIO = 0.55
 
 #: --- the gate -------------------------------------------------------------------------------
 #:
@@ -1830,6 +1849,110 @@ def search_region_above_label(
     }
 
 
+def search_region_around_label(
+    box_norm: Mapping[str, float], frame: tuple[int, int]
+) -> dict[str, float] | None:
+    """The bounded window around a label in which a control it names *on itself* is looked for.
+
+    The mirror of ``search_region_above_label``, and bounded for the same reason: §24.3 permits a
+    bounded search region, and a window that is anchored to the label's own measured box is what
+    keeps the match on the frame in front of the run rather than on a remembered position.  Sized to
+    cover a tab pill drawn around its own caption, and no larger.
+    """
+    try:
+        width, height = int(frame[0]), int(frame[1])
+        x = float(box_norm["x_norm"])
+        y = float(box_norm["y_norm"])
+        w = float(box_norm["w_norm"])
+        h = float(box_norm["h_norm"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if width <= 0 or height <= 0 or w <= 0 or h <= 0:
+        return None
+    left = max(0.0, x - w * AROUND_SIDE_RATIO)
+    right = min(1.0, x + w * (1.0 + AROUND_SIDE_RATIO))
+    top = max(0.0, y - h * AROUND_ABOVE_RATIO)
+    bottom = min(1.0, y + h * (1.0 + AROUND_BELOW_RATIO))
+    if right - left <= 0 or bottom - top <= 0:
+        return None
+    return {
+        "x_norm": round(left, 4),
+        "y_norm": round(top, 4),
+        "w_norm": round(right - left, 4),
+        "h_norm": round(bottom - top, 4),
+    }
+
+
+def registered_control_region(
+    frame_path: Path | str,
+    label_box: Mapping[str, float],
+    *,
+    template_path: Path | str,
+    relation: str = RELATION_ABOVE,
+    frame: tuple[int, int] | None = None,
+    min_score: float = MIN_TEMPLATE_SCORE,
+    min_contrast: float = MIN_TEMPLATE_CONTRAST,
+) -> dict[str, Any] | None:
+    """Locate a registered control's crop on this frame, by the relation its record declares.
+
+    One entry point for both shapes so a caller cannot pick the wrong window: the relation travels
+    with the record, and the record is what named the control in the first place.
+    """
+    from .ocr import read_frame_size
+
+    frame_path = Path(frame_path)
+    size = frame if frame else read_frame_size(frame_path)
+    if not size:
+        return None
+    template = Path(template_path)
+    if not template.is_file():
+        return None
+    try:
+        with Image.open(template) as handle:
+            if _contrast(handle) < min_contrast:
+                return None
+    except (OSError, ValueError):
+        return None
+    if str(relation) == RELATION_SELF:
+        roi = search_region_around_label(label_box, size)
+        basis = BASIS_LABEL_ON_CONTROL
+    else:
+        roi = search_region_above_label(label_box, size)
+        basis = BASIS_TEMPLATE_LABEL
+    if roi is None:
+        return None
+    try:
+        found = _match_ccoeff_anywhere(frame_path, template, roi)
+    except Exception:  # noqa: BLE001 - an unusable template must not fail a step
+        return None
+    if found is None or float(found.score) < float(min_score):
+        return None
+    bx, by, bw, bh = found.bounds
+    frame_w, frame_h = int(size[0]), int(size[1])
+    if bw <= 0 or bh <= 0:
+        return None
+    box_norm = {
+        "x_norm": round(bx / frame_w, 4),
+        "y_norm": round(by / frame_h, 4),
+        "w_norm": round(bw / frame_w, 4),
+        "h_norm": round(bh / frame_h, 4),
+    }
+    return {
+        "box_norm": box_norm,
+        "icon_box_norm": box_norm,
+        "label_box_norm": {key: round(float(label_box[key]), 4) for key in
+                           ("x_norm", "y_norm", "w_norm", "h_norm")},
+        "basis": basis,
+        "confidence": round(float(found.score), 4),
+        "detail": {
+            "relation": str(relation),
+            "template": str(template.name),
+            "score": round(float(found.score), 4),
+            "search_region": roi,
+        },
+    }
+
+
 def registered_icon_region(
     frame_path: Path | str,
     label_box: Mapping[str, float],
@@ -1986,14 +2109,15 @@ def composite_controls(
             # A registered crop is the strongest evidence and is tried first: a match *is* the
             # control.  Only when the record carries no template does the measured-block gate run,
             # and that path is explicitly marked on the element so a reader can tell the two apart.
+            relation = str(record.get("relation") or RELATION_ABOVE)
             measured = None
             template_path = record.get("template_path")
             if template_path:
                 resolved = Path(str(template_path))
                 if not resolved.is_absolute():
                     resolved = Path(PROJECT_ROOT) / resolved
-                measured = registered_icon_region(
-                    frame_path, label_box, template_path=resolved, frame=size
+                measured = registered_control_region(
+                    frame_path, label_box, template_path=resolved, relation=relation, frame=size
                 )
             if measured is None and record.get("allow_measured_block", False):
                 measured = control_block_above_label(
@@ -2005,7 +2129,14 @@ def composite_controls(
                 "label": text,
                 "text": text,
                 "semantic": str(record.get("semantic") or f"CONTROL[{text}]"),
-                "kind": ELEMENT_COMPOSITE_CONTROL,
+                # The kind follows the relation: a control that is the label's own pill is an
+                # INTERACTIVE_CONTROL, not a composite of two drawn things.  The distinction is
+                # reported rather than flattened, because a reader asking "why is this executable"
+                # gets a different answer for each.
+                "kind": (
+                    ELEMENT_INTERACTIVE_CONTROL if relation == RELATION_SELF
+                    else ELEMENT_COMPOSITE_CONTROL
+                ),
                 "box_norm": measured["box_norm"],
                 "icon_box_norm": measured["icon_box_norm"],
                 "label_box_norm": measured["label_box_norm"],
@@ -2053,7 +2184,10 @@ def build_element_table(
     ):
         entries.append({
             "id": "",
-            "kind": ELEMENT_COMPOSITE_CONTROL,
+            # The kind comes from the record's own relation rather than being assumed here: a
+            # control that is its label's own pill is an INTERACTIVE_CONTROL, and flattening the
+            # two would erase the distinction the registry went to the trouble of recording.
+            "kind": str(control.get("kind") or ELEMENT_COMPOSITE_CONTROL),
             "text": control["text"],
             "semantic": control["semantic"],
             "box_norm": control["box_norm"],
