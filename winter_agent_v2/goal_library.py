@@ -39,10 +39,12 @@ CAMP_GOAL_FOR: dict[str, str] = {
     "MARKSMAN_CAMP": "MARKSMAN_CAMP_TRAINING",
 }
 
-#: What a camp's training is worth when it has work, matching the old single goal's 90 so
-#: the change is about *which camp* and not about re-pricing training against everything
-#: else on the board.
-TRAINING_CAMP_VALUE = 90.0
+#: Training queues are the first productive-work objective: a never-read camp must be
+#: inspected, and an idle camp must claim/restart before lower-value exploration consumes
+#: the cycle. Time-critical event deadlines still outrank this ordinary development value.
+TRAINING_CAMP_VALUE = 1200.0
+RESEARCH_PRODUCTIVE_VALUE = 1100.0
+BUILDING_PRODUCTIVE_VALUE = 1050.0
 
 #: The goal id -> brain route translation, in one place.
 #:
@@ -381,6 +383,7 @@ SWEEP_ROUTINES: tuple[PanelRoutine, ...] = (
         work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
         work_skills=("RESEARCH",),
         entry_skill="OPEN_RESEARCH",
+        discovery_value=RESEARCH_PRODUCTIVE_VALUE,
     ),
 )
 
@@ -391,6 +394,7 @@ TRAINING_SWEEP = PanelRoutine(
     work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
     work_skills=("TRAIN_TROOPS",),
     entry_skill="OPEN_POWER_OVERVIEW",
+    discovery_value=TRAINING_CAMP_VALUE,
 )
 
 
@@ -620,8 +624,14 @@ class GoalLibrary:
                 distance=float(max(0, stamina - STAMINA_FLOOR + 1)),
             ))
         self._append_camp_training_goals(goals, world, observations)
-        self._append_queue_goal(goals, "KEEP_RESEARCH_PRODUCTIVE", world.research, ("RESEARCH",), 80)
-        self._append_queue_goal(goals, "KEEP_BUILDING_PRODUCTIVE", world.building, ("BUILDING_UPGRADE",), 80)
+        self._append_queue_goal(
+            goals, "KEEP_RESEARCH_PRODUCTIVE", world.research,
+            ("RESEARCH",), RESEARCH_PRODUCTIVE_VALUE,
+        )
+        self._append_queue_goal(
+            goals, "KEEP_BUILDING_PRODUCTIVE", world.building,
+            ("BUILDING_UPGRADE",), BUILDING_PRODUCTIVE_VALUE,
+        )
         # Domains whose goal is emitted only from a reading (see SWEEP_ROUTINES).  With a
         # reading the branches above already work; this fills the case where there is none, so
         # "we have never looked at the intel page" stops meaning "there is no intel work".
