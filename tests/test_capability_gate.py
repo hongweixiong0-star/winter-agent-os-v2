@@ -58,14 +58,17 @@ def goal(goal_id, distance=0.0, skills=("SKILL",)):
     return GoalState(goal_id, GoalStatus.READY, available_skills=tuple(skills), distance=distance)
 
 
-def episode(stamp, goal_id, *, skill="SKILL", progress=None, run_id="run"):
-    return {
+def episode(stamp, goal_id, *, skill="SKILL", progress=None, run_id="run", revision=""):
+    row = {
         "recorded_at": stamp.isoformat(),
         "episode_id": run_id,
         "goal_id": goal_id,
         "skill": skill,
         "goal_progress": progress,
     }
+    if revision:
+        row["repo_revision"] = revision
+    return row
 
 
 class GoalProgressIsNotActionProgressTests(unittest.TestCase):
@@ -275,6 +278,26 @@ class GateRuleTests(unittest.TestCase):
         lapsed = gate.blocks(goal("ANY"), now=NOW + timedelta(minutes=BLOCKED_PROBE_MINUTES + 1))
         self.assertIsNone(lapsed, "after the probe window the path must be reachable again")
 
+    def test_a_new_code_version_can_probe_an_expired_block_without_a_new_episode(self):
+        """A version boundary clears old episodes, but must not make an expired block permanent."""
+        until = NOW - timedelta(minutes=BLOCKED_PROBE_MINUTES + 1)
+        gate = self._gate(
+            capabilities={"A": (BLOCKED, "repair budget exhausted", until)},
+            streaks={"SEQ": (0, None, "", None)},
+        )
+        self.assertIsNone(gate.blocks(goal("SEQ"), now=NOW))
+
+    def test_an_expired_block_waits_for_a_new_version_probe_window_after_failure(self):
+        """Once the new version has produced an episode, that attempt becomes the clock anchor."""
+        gate = self._gate(
+            capabilities={"A": (BLOCKED, "repair budget exhausted", NOW - timedelta(hours=8))},
+            streaks={"SEQ": (1, NOW - timedelta(minutes=5), "SKILL", (0, 0, 1))},
+        )
+        self.assertIsNotNone(gate.blocks(goal("SEQ"), now=NOW))
+        self.assertIsNone(gate.blocks(
+            goal("SEQ"), now=NOW + timedelta(minutes=BLOCKED_PROBE_MINUTES + 1),
+        ))
+
     def test_no_progress_steps_aside_and_comes_back_on_a_probe_window(self):
         gate = self._gate(
             streaks={"ANY": (5, NOW - timedelta(minutes=2), "EAT")},
@@ -382,6 +405,37 @@ class StreakCountingTests(unittest.TestCase):
         found = gate.blocks(goal("G"), now=NOW)
         self.assertIsNotNone(found)
         self.assertEqual(found.streak, 3)
+
+    def test_a_new_loaded_code_revision_gets_one_fresh_goal_probe(self):
+        rows = [
+            episode(NOW - timedelta(minutes=30), "G", progress=False, run_id="r1", revision="old"),
+            episode(NOW - timedelta(minutes=20), "G", progress=False, run_id="r2", revision="old"),
+            episode(NOW - timedelta(minutes=10), "G", progress=False, run_id="r3", revision="old"),
+        ]
+        changed = CapabilityGate.load(
+            ROOT, snapshot=fold([]), episodes=rows, no_progress_threshold=3,
+            active_revision="new",
+        )
+        self.assertIsNone(changed.blocks(goal("G"), now=NOW))
+
+        still_same_code = CapabilityGate.load(
+            ROOT, snapshot=fold([]), episodes=rows, no_progress_threshold=3,
+            active_revision="old",
+        )
+        self.assertIsNotNone(still_same_code.blocks(goal("G"), now=NOW))
+
+    def test_a_failed_probe_on_the_new_revision_starts_a_new_streak(self):
+        rows = [
+            episode(NOW - timedelta(minutes=30), "G", progress=False, run_id="r1", revision="old"),
+            episode(NOW - timedelta(minutes=20), "G", progress=False, run_id="r2", revision="old"),
+            episode(NOW - timedelta(minutes=10), "G", progress=False, run_id="r3", revision="new"),
+        ]
+        gate = CapabilityGate.load(
+            ROOT, snapshot=fold([]), episodes=rows, no_progress_threshold=1,
+            active_revision="new",
+        )
+        self.assertIsNotNone(gate.blocks(goal("G"), now=NOW))
+        self.assertEqual(gate.blocks(goal("G"), now=NOW).streak, 1)
 
     def test_a_run_that_advanced_the_goal_resets_the_streak(self):
         rows = [

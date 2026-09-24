@@ -432,6 +432,7 @@ class CapabilityGate:
         no_progress_threshold: int = NO_PROGRESS_STREAK,
         no_progress_probe_minutes: int = NO_PROGRESS_PROBE_MINUTES,
         blocked_probe_minutes: int = BLOCKED_PROBE_MINUTES,
+        active_revision: str = "",
     ) -> "CapabilityGate":
         """Read the two existing artifacts and project them into a gate.
 
@@ -457,6 +458,31 @@ class CapabilityGate:
         rows: Sequence[Mapping[str, Any]] = (
             list(episodes) if episodes is not None else _episode_tail(base / "learning/episodes.jsonl")
         )
+
+        # A no-progress cooldown describes one version of the code. If the live
+        # process is now running a different frozen version, give each affected
+        # goal one probe on that version before carrying the old streak forward.
+        # The boundary is per goal, based on its newest actual production episode;
+        # unrelated goals keep their own history and one failed probe on the new
+        # version immediately starts a fresh streak.
+        revision_tails: dict[str, tuple[datetime, str, datetime | None]] = {}
+        ordered_rows = sorted(
+            (row for row in rows if _moment(row.get("recorded_at")) is not None),
+            key=lambda row: _moment(row.get("recorded_at")) or _EPOCH,
+        )
+        for row in ordered_rows:
+            goal_id = str(row.get("goal_id") or "")
+            stamp = _moment(row.get("recorded_at"))
+            revision = str(row.get("repo_revision") or "")
+            if not goal_id or stamp is None or not revision:
+                continue
+            previous = revision_tails.get(goal_id)
+            active_start = (
+                (previous[2] if previous and previous[1] == active_revision else stamp)
+                if active_revision and revision == active_revision
+                else None
+            )
+            revision_tails[goal_id] = (stamp, revision, active_start)
 
         # Goal -> the skills production really used for it.  This is what makes
         # "the same failing path" measurable instead of assumed.
@@ -488,6 +514,18 @@ class CapabilityGate:
                     continue
                 if record.capability in touched or record.skill in touched:
                     boundaries[goal_id] = max(boundaries.get(goal_id, _EPOCH), record.settled_at)
+
+            newest = revision_tails.get(goal_id)
+            if active_revision and newest is not None:
+                if newest[1] != active_revision:
+                    # No production episode has yet tried this loaded version.
+                    boundaries[goal_id] = max(boundaries.get(goal_id, _EPOCH), moment)
+                elif newest[2] is not None:
+                    # Keep only the consecutive tail that ran this exact version.
+                    # One microsecond before its first episode makes that episode
+                    # count while ending the old-version streak immediately before it.
+                    version_start = newest[2] - timedelta(microseconds=1)
+                    boundaries[goal_id] = max(boundaries.get(goal_id, _EPOCH), version_start)
 
         streaks = {
             goal_id: _streak_and_last(grouped, goal_id, since=boundaries.get(goal_id))
@@ -564,17 +602,27 @@ class CapabilityGate:
             return None
         return max(blocked, key=lambda item: _severity(item.state))
 
-    def _probe_lapsed(self, goal_id: str, now: datetime, window_minutes: int) -> bool:
+    def _probe_lapsed(
+        self,
+        goal_id: str,
+        now: datetime,
+        window_minutes: int,
+        *,
+        fallback_anchor: datetime | None = None,
+    ) -> bool:
         """Has this path's probe window expired?
 
-        A goal with no recorded attempt does *not* lapse: the capability is blocked at
-        the development level and there is nothing to probe for.  Only a goal that the
-        device has actually tried, longer ago than the window, is offered one more run.
+        A no-progress deferral with no recorded attempt does not lapse: nothing has
+        been measured. For a capability blocked by an exhausted repair budget, use the
+        ledger's cooldown or settlement deadline until the current code version has its
+        first production attempt. Otherwise a version change can erase the current
+        episode tail and leave an expired blocker permanent.
         """
         _streak, last, _skill, _evidence = _streak_record(self.streaks.get(goal_id, ()))
-        if last is None:
+        anchor = last or fallback_anchor
+        if anchor is None:
             return False
-        return (now - last).total_seconds() / 60.0 >= window_minutes
+        return (now - anchor).total_seconds() / 60.0 >= window_minutes
 
     def _no_progress_deferral(self, goal: GoalState, now: datetime) -> Deferral | None:
         goal_id = goal.goal_id
@@ -688,7 +736,12 @@ class CapabilityGate:
             if found.state == COOLDOWN and not self.reload_pending:
                 return found
             window = self.blocked_probe_minutes
-        if not self.reload_pending and self._probe_lapsed(goal.goal_id, moment, window):
+        if not self.reload_pending and self._probe_lapsed(
+            goal.goal_id,
+            moment,
+            window,
+            fallback_anchor=found.until if found else None,
+        ):
             return None
         if self.reload_pending:
             found = Deferral(
