@@ -291,12 +291,20 @@ class GateRuleTests(unittest.TestCase):
         """Once the new version has produced an episode, that attempt becomes the clock anchor."""
         gate = self._gate(
             capabilities={"A": (BLOCKED, "repair budget exhausted", NOW - timedelta(hours=8))},
-            streaks={"SEQ": (1, NOW - timedelta(minutes=5), "SKILL", (0, 0, 1))},
+            streaks={"SEQ": (1, NOW - timedelta(minutes=5), "A", (0, 0, 1))},
         )
         self.assertIsNotNone(gate.blocks(goal("SEQ"), now=NOW))
         self.assertIsNone(gate.blocks(
             goal("SEQ"), now=NOW + timedelta(minutes=BLOCKED_PROBE_MINUTES + 1),
         ))
+
+    def test_unrelated_navigation_does_not_reset_an_exhausted_capability_probe_window(self):
+        gate = self._gate(
+            capabilities={"A": (BLOCKED, "repair budget exhausted", NOW - timedelta(hours=8))},
+            streaks={"SEQ": (1, NOW - timedelta(minutes=5), "BACK", (1, 0, 0))},
+        )
+
+        self.assertIsNone(gate.blocks(goal("SEQ"), now=NOW))
 
     def test_no_progress_steps_aside_and_comes_back_on_a_probe_window(self):
         gate = self._gate(

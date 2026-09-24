@@ -609,6 +609,7 @@ class CapabilityGate:
         window_minutes: int,
         *,
         fallback_anchor: datetime | None = None,
+        capability_scope: frozenset[str] = frozenset(),
     ) -> bool:
         """Has this path's probe window expired?
 
@@ -618,8 +619,17 @@ class CapabilityGate:
         first production attempt. Otherwise a version change can erase the current
         episode tail and leave an expired blocker permanent.
         """
-        _streak, last, _skill, _evidence = _streak_record(self.streaks.get(goal_id, ()))
+        _streak, last, last_skill, _evidence = _streak_record(self.streaks.get(goal_id, ()))
         anchor = last or fallback_anchor
+        if fallback_anchor is not None and capability_scope and last is not None and last_skill:
+            # Goal episodes also contain navigation, safe stops, and actions taken before
+            # reaching the blocked capability. Those steps do not restart that capability's
+            # probe timer. Keep the goal-level timestamp only when the last step actually
+            # touched one of this goal's mapped capabilities; otherwise use the escalation's
+            # own cooldown/settlement deadline.
+            last_capability = self._capability_of_skill(last_skill)
+            if last_capability not in capability_scope:
+                anchor = fallback_anchor
         if anchor is None:
             return False
         return (now - anchor).total_seconds() / 60.0 >= window_minutes
@@ -741,6 +751,12 @@ class CapabilityGate:
             moment,
             window,
             fallback_anchor=found.until if found else None,
+            capability_scope=(
+                frozenset(self.compositions.get(goal.goal_id).capabilities)
+                if found is not None and found.source == SOURCE_QUEUE
+                and self.compositions.get(goal.goal_id) is not None
+                else frozenset()
+            ),
         ):
             return None
         if self.reload_pending:
