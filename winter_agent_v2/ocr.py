@@ -608,6 +608,18 @@ class OCRPageClassifier:
         )
         if research_detail:
             found.append(Page.RESEARCH)
+        research_tree = (
+            {"发展", "经济", "战斗"}.issubset(exact_texts)
+            and len(_read_research_node_candidates(eligible, frame_size)) >= 2
+        )
+        if research_tree:
+            # The technology tree has a stable three-tab header and progress
+            # pills beside several named nodes. This is distinct from the HOME
+            # quick panel, which can also print 科技研究 but has neither shape.
+            # The running queue also exposes a generic 联盟互助 action at the
+            # bottom of this page; it must not overrule the tree's page identity.
+            found = [candidate for candidate in found if candidate is not Page.ALLIANCE]
+            found.append(Page.RESEARCH)
         if "训练中" in exact_texts and any(text in exact_texts for text in ("盾兵营", "矛兵营", "射手营")):
             found.append(Page.TRAINING)
         # The second render of the same page, measured live 2026-09-22.
@@ -1047,6 +1059,31 @@ class OCRPageClassifier:
                     "status": "IN_PROGRESS",
                     "queue_available": False,
                 })
+                if frame_size and frame_size[1] > 0:
+                    visible_node_names = {
+                        str(node.get("name") or "")
+                        for node in research.get("node_candidates") or ()
+                        if isinstance(node, dict)
+                    }
+                    active_labels = [
+                        token for token in eligible
+                        if token.text.strip() in visible_node_names
+                        and token.centre[1] / frame_size[1] >= 0.87
+                        and 0.0 <= token.centre[0] / frame_size[0] <= 0.65
+                    ]
+                    if active_labels:
+                        # The active research row names its project immediately
+                        # above the row's countdown. Keep that live queue identity
+                        # separate from generic tree/template node labels.
+                        active = min(
+                            active_labels,
+                            key=lambda candidate: abs(token.centre[1] - candidate.centre[1]),
+                        )
+                        research.update({
+                            "active_node": active.text.strip(),
+                            "node": active.text.strip(),
+                            "name": active.text.strip(),
+                        })
                 break
             if "queue_available" not in research and "空闲中" in exact_texts:
                 research.update({"status": "IDLE", "queue_available": True})
@@ -4766,7 +4803,7 @@ class HybridVision:
                     research = dict(primary.research)
                     for key in (
                         "node_candidates", "selected_node", "selected_node_name",
-                        "node_detail_visible", "research_control_norm", "node", "name",
+                        "node_detail_visible", "research_control_norm", "node", "name", "active_node",
                         "branch", "level_progress",
                     ):
                         if key in secondary.research:
@@ -4774,9 +4811,14 @@ class HybridVision:
                     if secondary.research.get("status") == "IN_PROGRESS":
                         research.update({
                             key: secondary.research[key]
-                            for key in ("status", "queue_available", "timer")
+                            for key in ("status", "queue_available", "timer", "active_node")
                             if key in secondary.research
                         })
+                        if secondary.research.get("active_node"):
+                            # Current-frame queue OCR outranks a stale template
+                            # label for which technology is running.
+                            research["node"] = secondary.research["active_node"]
+                            research["name"] = secondary.research["active_node"]
                     elif (
                         secondary.research.get("status") == "IDLE"
                         and research.get("queue_available") is not False

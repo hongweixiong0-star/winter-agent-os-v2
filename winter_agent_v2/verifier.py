@@ -1587,13 +1587,20 @@ def verify_research_node_inspected(before: WorldState, after: WorldState) -> Ver
 
 def verify_research_started(before: WorldState, after: WorldState, research_id: str) -> VerificationResult:
     was_available = before.research.get("queue_available") is True
-    target_ok = after.research.get("node") == research_id
+    active_node = after.research.get("active_node")
+    target_ok = after.research.get("node") == research_id or active_node == research_id
     queue = verify_research_queue(after)
     ok = was_available and target_ok and queue.ok
     return VerificationResult(
         ok,
         "OK" if ok else "RESEARCH_START_NOT_PROVEN",
-        {"was_available": was_available, "target_ok": target_ok, "queue": queue.evidence},
+        {
+            "was_available": was_available,
+            "target_ok": target_ok,
+            "after_node": after.research.get("node"),
+            "active_node": active_node,
+            "queue": queue.evidence,
+        },
     )
 
 

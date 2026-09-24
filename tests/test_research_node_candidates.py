@@ -6,7 +6,7 @@ from winter_agent_v2.ocr import OCRPageClassifier, OCRResult, OCRToken
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.skills import v2_registry
-from winter_agent_v2.verifier import verify_research_node_inspected
+from winter_agent_v2.verifier import verify_research_node_inspected, verify_research_started
 
 
 def _token(text, x, y, confidence=0.99):
@@ -114,6 +114,40 @@ def test_research_start_stays_blocked_when_cost_is_short_or_duration_is_missing(
     assert no_duration.research["costs_affordable"] is True
     assert no_duration.research["start_control_present"] is False
     assert no_duration.research["researchable"] is False
+
+
+def test_research_tree_and_active_queue_are_read_from_one_current_frame():
+    tokens = (
+        _token("科技研究", 162, 42),
+        _token("发展", 135, 118), _token("经济", 361, 123), _token("战斗", 586, 123),
+        _token("1/3", 358, 429), _token("工具改良IV", 361, 461),
+        _token("1/3", 136, 699), _token("病房扩建IV", 140, 732),
+        _token("1/3", 579, 699), _token("兵营扩建IV", 582, 732),
+        _token("0/3", 360, 968), _token("器材优化IV", 361, 1002),
+        _token("工具改良IV", 236, 1172), _token("02:53:00", 333, 1220),
+    )
+    state = OCRPageClassifier().classify(OCRResult(tokens, "test"), frame_size=(720, 1280))
+
+    assert state.page is Page.RESEARCH
+    assert state.research["status"] == "IN_PROGRESS"
+    assert state.research["queue_available"] is False
+    assert state.research["active_node"] == "工具改良IV"
+    assert state.research["node"] == "工具改良IV"
+
+
+def test_research_start_verifier_uses_the_active_queue_label_when_template_node_is_stale():
+    before = WorldState(page=Page.RESEARCH, research={
+        "node": "工具改良IV", "selected_node": "工具改良IV", "queue_available": True,
+    })
+    after = WorldState(page=Page.RESEARCH, research={
+        "node": "WARD_EXPANSION_VII", "active_node": "工具改良IV",
+        "status": "IN_PROGRESS", "timer": "02:53:00", "queue_available": False,
+    })
+
+    result = verify_research_started(before, after, "工具改良IV")
+    assert result.ok
+    assert result.evidence["after_node"] == "WARD_EXPANSION_VII"
+    assert result.evidence["active_node"] == "工具改良IV"
 
 
 def test_a_generic_research_label_without_the_detail_sheet_evidence_stays_unknown():
