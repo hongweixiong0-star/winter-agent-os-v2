@@ -201,7 +201,7 @@ class PanelReadingTests(unittest.TestCase):
         self.assertEqual(self.panel["handle"]["basis"], "HANDLE_TRIANGLE_SCAN")
         self.assertAlmostEqual(self.panel["handle"]["point_norm"][0], 0.6431, places=3)
         keys = [row["key"] for row in self.panel["rows"]]
-        self.assertEqual(keys, ["SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"])
+        self.assertEqual(keys, ["BUILDING", "SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP", "RESEARCH"])
         # The three bottom-navigation words must not have become research rows (measured failure).
         self.assertNotIn("野外", [row["label"] for row in self.panel["rows"]])
         self.assertNotIn("英雄", [row["label"] for row in self.panel["rows"]])
@@ -308,23 +308,12 @@ class DictionaryConsumerTests(unittest.TestCase):
         )
         self.assertTrue([row for row in with_hints if row["goal_relevant"]])
 
-    def test_position_hint_locates_the_row_asked_for_and_no_other(self):
+    def test_done_camp_rows_do_not_fall_back_to_their_text_labels(self):
         runtime = _runtime(ocr=self.ocr_service)
         spearman = runtime._dictionary_hint("QUICK_PANEL_ROW_LANCER_CAMP", self.world, PANEL_FRAME)
         archer = runtime._dictionary_hint("QUICK_PANEL_ROW_MARKSMAN_CAMP", self.world, PANEL_FRAME)
-        self.assertIsNotNone(spearman)
-        self.assertIsNotNone(archer)
-        self.assertAlmostEqual(spearman[1], 0.4836, delta=0.02)
-        self.assertAlmostEqual(archer[1], 0.541, delta=0.02)
-        self.assertNotAlmostEqual(spearman[1], archer[1], places=2)
-        # Each row's arrow is located from that row's own button, so the two need not share an exact x.
-        # What they must share is the panel's button column: measured on the device the button spans
-        # x 0.539-0.749 on every row, and the located centres differ by <=0.03.
-        self.assertLess(abs(spearman[0] - archer[0]), 0.06, "both arrows live in the panel's own column")
-        self.assertTrue(
-            [line for line in runtime._printed_reads if "ROW_RELATIVE" in line],
-            "the basis has to be visible in the run, like every other read",
-        )
+        self.assertIsNone(spearman)
+        self.assertIsNone(archer)
 
     def test_a_range_hint_resolves_to_its_centre(self):
         runtime = _runtime(ocr=self.ocr_service)
