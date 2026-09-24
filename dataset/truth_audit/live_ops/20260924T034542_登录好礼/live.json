@@ -1,0 +1,93 @@
+{
+ "op_id": "20260924T034542_登录好礼",
+ "label": "登录好礼",
+ "goal": "DAILY_ROUTINE",
+ "template": "E:\\无尽冬日智能体\\knowledge\\ui\\icon_templates\\登录好礼.png",
+ "started": {
+  "utc": "2026-09-24T03:45:42.293934+00:00",
+  "ms_since_start": 0.0
+ },
+ "steps": [],
+ "drift": [
+  {
+   "index": 0,
+   "utc": "2026-09-24T03:45:46.146035+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 1,
+   "utc": "2026-09-24T03:45:55.312991+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 2,
+   "utc": "2026-09-24T03:46:02.324678+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 3,
+   "utc": "2026-09-24T03:46:09.010663+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 4,
+   "utc": "2026-09-24T03:46:15.833369+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 5,
+   "utc": "2026-09-24T03:46:22.695287+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 6,
+   "utc": "2026-09-24T03:46:29.742828+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 7,
+   "utc": "2026-09-24T03:46:36.920045+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 8,
+   "utc": "2026-09-24T03:46:44.308181+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  },
+  {
+   "index": 9,
+   "utc": "2026-09-24T03:46:51.627346+00:00",
+   "label_box": null,
+   "icon_box": null,
+   "score": null,
+   "page": "MAIL"
+  }
+ ]
+}
