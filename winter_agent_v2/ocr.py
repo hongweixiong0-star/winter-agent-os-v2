@@ -929,17 +929,15 @@ class OCRPageClassifier:
             and 0.32 <= (rect[1] + rect[3]) / 2 <= 0.72
             for text, rect in placed
         )
-        cost = any(
-            re.fullmatch(r"\d+(?:\.\d+)?\s*万\s*/\s*\d+", text)
-            and (rect[0] + rect[2]) / 2 >= 0.70
-            and 0.43 <= (rect[1] + rect[3]) / 2 <= 0.62
-            for text, rect in placed
-        )
+        # The cost is often partly covered by the tutorial hand on a newly selected
+        # building.  It is useful corroboration when readable, but page identity only
+        # needs the distinctive two-column upgrade sheet.  This fallback proves
+        # navigation only; it never identifies the building or authorizes spending.
         return (
             has("时间", x=(0.04, 0.24), y=(0.56, 0.66))
             and has("属性", x=(0.04, 0.24), y=(0.60, 0.72))
             and has("升级", x=(0.72, 0.96), y=(0.46, 0.56))
-            and duration and attribute and cost
+            and duration and attribute
         )
 
 

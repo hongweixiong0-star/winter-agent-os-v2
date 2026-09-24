@@ -34,6 +34,22 @@ def test_unknown_template_frame_recognizes_building_upgrade_sheet_without_author
     assert "upgradeable" not in state.building
 
 
+def test_tutorial_overlay_may_hide_cost_without_hiding_building_sheet_identity():
+    # Replayed from AUTO step 1, where the tutorial hand obscured the cost label. The
+    # two-column duration/attribute layout still proves the detail sheet was reached.
+    tokens = tuple(item for item in upgrade_sheet_tokens()
+                   if not item.text.startswith("1606.6万"))
+    state = OCRPageClassifier().classify(
+        OCRResult(tokens, "production-tutorial-overlay-replay"),
+        frame_size=(720, 1280),
+    )
+
+    assert state.page is Page.BUILDING
+    assert state.building["upgrade_dialog_visible"] is True
+    assert state.building["identity"] == "UNKNOWN"
+    assert "upgradeable" not in state.building
+
+
 def test_generic_upgrade_word_and_cost_without_layout_stay_unknown():
     state = OCRPageClassifier().classify(
         OCRResult((token("升级", (581, 632, 641, 668)),
