@@ -866,6 +866,17 @@ def v2_registry() -> SkillRegistry:
     # Declared on ``Page.HOME`` because that is where the panel is read and where the handle lives
     # (the dictionary's own ``pages``); declared CANDIDATE because the tap is not proved yet, and the
     # step's verifier is what will prove it.
+    skills.append(
+        Skill(
+            "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
+            "Open the idle building queue's upgrade surface from its quick panel row",
+            Page.HOME,
+            Action("TAP_SEMANTIC", "QUICK_PANEL_ROW_BUILDING"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
     for _row, _label in (("SHIELD", "盾兵"), ("LANCER", "矛兵"), ("MARKSMAN", "射手")):
         skills.append(
             Skill(

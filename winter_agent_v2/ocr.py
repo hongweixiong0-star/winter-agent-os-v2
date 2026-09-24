@@ -351,6 +351,7 @@ QUICK_PANEL_BADGE_HALF_HEIGHT: float = 0.013
 #: sub-rows (部队训练 -> 盾兵/矛兵/射手, 英雄招募 -> 高级招募/史诗招募) is not here: those rows are named
 #: by their own words and resolved through ``TROOP_TO_CAMP`` or the section's own branch.
 SECTION_ROW_KEYS: dict[str, str] = {
+    "建筑队列": "BUILDING",
     "科技研究": "RESEARCH",
     "联盟捐献": "ALLIANCE_DONATION",
     "英雄招募": "HERO_RECRUIT",

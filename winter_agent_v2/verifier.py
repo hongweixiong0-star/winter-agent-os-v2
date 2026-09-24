@@ -1435,6 +1435,45 @@ def verify_building_upgrade(before: WorldState, after: WorldState, building_id: 
     )
 
 
+def verify_panel_building_queue_opened(
+    before: WorldState, after: WorldState
+) -> VerificationResult:
+    """Prove an idle quick-panel building row opened a selected building surface."""
+    row = next(
+        (item for item in (before.quick_panel.get("rows") or ())
+         if str(item.get("key") or "") == "BUILDING"),
+        {},
+    )
+    row_ok = (
+        before.page is Page.HOME
+        and (before.building or {}).get("queue_available") is True
+        and row.get("status") == "IDLE"
+        and row.get("control") == "ARROW"
+        and row.get("arrow_basis") == "ROW_BUTTON_SCAN"
+    )
+    identity = ((after.building or {}).get("id") or (after.building or {}).get("name")
+                or (after.building or {}).get("selected_name"))
+    action_control = (after.building or {}).get("upgrade_tap_norm")
+    selected_action_bar = (
+        after.page is Page.HOME
+        and bool(identity)
+        and isinstance(action_control, (tuple, list))
+        and len(action_control) == 2
+    )
+    building_dialog = after.page is Page.BUILDING and bool(identity)
+    ok = row_ok and (selected_action_bar or building_dialog)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "PANEL_BUILDING_QUEUE_NOT_PROVEN",
+        {
+            "row_ok": row_ok,
+            "selected_action_bar": selected_action_bar,
+            "building_dialog": building_dialog,
+            "building_identity": identity,
+            "after_page": after.page.value,
+        },
+    )
+
 def verify_research_queue(state: WorldState) -> VerificationResult:
     status_ok = state.research.get("status") == "IN_PROGRESS"
     timer = state.research.get("timer")

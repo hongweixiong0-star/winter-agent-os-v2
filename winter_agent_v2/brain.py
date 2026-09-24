@@ -24,6 +24,7 @@ GENERIC_READY_SKILLS: frozenset[str] = frozenset({"BACK", "NAVIGATE_TO", "RECOVE
 #: ``..._SHIELD`` -- a real action pointing at the 盾兵 row.  There is no default any more (see
 #: ``_panel_row_skill``): a row this table cannot name is a row this brain does not tap.
 _QUICK_PANEL_ROW_SKILL: dict[str, str] = {
+    "BUILDING": "OPEN_TASK_FROM_QUICK_PANEL_BUILDING",
     "SHIELD_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
     "LANCER_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
     "MARKSMAN_CAMP": "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN",
@@ -2473,6 +2474,7 @@ class RuleBrain:
     #: Which panel row kinds each route works from.  Keyed by the goal layer's own route names, so a
     #: goal nobody has a row kind for is simply not served by the panel -- and no goal id is named here.
     PANEL_ROWS_FOR_ROUTE: dict[str, tuple[str, ...]] = {
+        "BUILDING": ("BUILDING",),
         "TRAIN": ("CAMP",),
         "RESEARCH": ("RESEARCH",),
         # 联盟捐献 lives on the alliance route; 我的奖励 is where the daily/goal rewards are collected.
