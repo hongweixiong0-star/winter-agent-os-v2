@@ -82,6 +82,38 @@ def find_label(ocr, frame_path: Path, label: str) -> dict | None:
     return None
 
 
+def _delta(before: Path, after: Path, box: dict | None) -> dict:
+    """How much the frame changed, overall and inside the target region."""
+    import numpy as np
+    from PIL import Image
+
+    try:
+        a = np.asarray(Image.open(before).convert("L"), dtype=np.float32)
+        b = np.asarray(Image.open(after).convert("L"), dtype=np.float32)
+    except (OSError, ValueError):
+        return {"frame_mean_abs": 0.0, "region_mean_abs": 0.0, "region_px": 0}
+    whole = float(np.abs(a - b).mean())
+    region = 0.0
+    region_px = 0
+    if box:
+        height, width = a.shape[:2]
+        x0 = int(float(box["x_norm"]) * width)
+        y0 = int(float(box["y_norm"]) * height)
+        x1 = int((float(box["x_norm"]) + float(box["w_norm"])) * width)
+        y1 = int((float(box["y_norm"]) + float(box["h_norm"])) * height)
+        x0, y0 = max(0, x0 - 10), max(0, y0 - 10)
+        x1, y1 = min(width, x1 + 10), min(height, y1 + 10)
+        if x1 > x0 and y1 > y0:
+            region = float(np.abs(a[y0:y1, x0:x1] - b[y0:y1, x0:x1]).mean())
+            region_px = int((np.abs(a[y0:y1, x0:x1] - b[y0:y1, x0:x1]) > 15).sum())
+    return {
+        "frame_mean_abs": round(whole, 2),
+        "frame_px_over_15": int((np.abs(a - b) > 15).sum()),
+        "region_mean_abs": round(region, 2),
+        "region_px_over_15": region_px,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--goal", default="DAILY_ROUTINE")
@@ -91,6 +123,8 @@ def main() -> int:
     parser.add_argument("--frames", type=int, default=6)
     parser.add_argument("--every", type=float, default=0.35)
     parser.add_argument("--settle", type=float, default=1.6)
+    parser.add_argument("--burst", type=int, default=8, help="post-tap frames")
+    parser.add_argument("--burst-every", type=float, default=0.3, help="seconds between burst frames")
     parser.add_argument("--execute", action="store_true", help="actually tap")
     parser.add_argument("--config", default=str(ROOT / "config/v2.json"))
     args = parser.parse_args()
@@ -270,8 +304,24 @@ def main() -> int:
                latency_ms=result.latency_ms)
         print(f"   tap {point} -> executed={result.executed} px={result.tap_point}")
 
-        after0 = shoot("after_0_frame")
-        record("after_0_frame", frame=str(after0), page=page_of(after0))
+        # A burst, not a before/after pair.  The controlled click on a bottom-nav entry produced
+        # EXPLORATION at +0.35 s and MAP again by +1.2 s -- a response that short is invisible to
+        # "capture once, then again after a settle", which is how the previous rounds concluded
+        # "nothing happened".  So the frames come fast, and each one is compared against the frame
+        # the tap was actually sent from.
+        burst: list[dict] = []
+        for index in range(max(1, args.burst)):
+            if index:
+                time.sleep(max(0.0, args.burst_every))
+            shot = shoot(f"after_{index:02d}_frame")
+            page = page_of(shot)
+            delta = _delta(pre_path, shot, box)
+            burst.append({"index": index, "frame": str(shot), "page": page, "delta": delta})
+            record(f"after_{index:02d}", page=page["page"], **delta)
+            print(f"   +{index * args.burst_every:.2f}s page={page['page']} "
+                  f"frame_delta={delta['frame_mean_abs']} region_delta={delta['region_mean_abs']}")
+        report["burst"] = burst
+        after0 = shot
         time.sleep(max(0.0, args.settle))
         after1 = shoot("after_1_frame")
         record("after_1_frame", frame=str(after1), page=page_of(after1))
@@ -281,9 +331,10 @@ def main() -> int:
         verifier = LiveRuntime.VERIFIED_ATOMIC.get("TRY_ORDINARY_CONTROL")
         if verifier is not None:
             verdict = verifier(vision.observe(plan_path), vision.observe(after1))
-            record("verifier", name=getattr(verifier, "__name__", "?"),
+            record("verifier", verifier=getattr(verifier, "__name__", "?"),
                    ok=bool(getattr(verdict, "ok", verdict)),
-                   reason=str(getattr(verdict, "reason", "") or ""))
+                   reason=str(getattr(verdict, "reason", "") or ""),
+                   pages=[s.get("page") for s in report["burst"]] if report.get("burst") else [])
             print(f"   verifier ok={getattr(verdict, 'ok', verdict)}")
         print(f"   page {page_of(plan_path)['page']} -> {page_of(after0)['page']} "
               f"-> {page_of(after1)['page']}")
