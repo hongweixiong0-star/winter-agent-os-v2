@@ -62,6 +62,11 @@ CHANGE_KINDS: tuple[str, ...] = (
     "UNKNOWN",
 )
 
+# A run step can be replayed while recovering a worker. Keep a small recent window per
+# control so folding the same persisted step twice does not inflate attempts or replace
+# a verified result with a duplicate observation.
+OPERATION_ID_HISTORY = 64
+
 #: Risks an ordinary exploratory tap may carry.  Everything with a real,
 #: possibly-irreversible price is outside this set by construction, so "was this
 #: control allowed to be tried" stays a property of the risk table rather than a
@@ -354,6 +359,9 @@ class ControlExperience:
     #: The expected result and the effect that actually followed, side by side and never merged.
     expected_effect: str = ""
     observed_effect: str = ""
+    #: Recent production step IDs already folded into this record. IDs are run-local
+    #: (episode id + step id), so retries are idempotent without unbounded history.
+    operation_ids: tuple[str, ...] = ()
 
     # -- reading ------------------------------------------------------------
 
@@ -414,6 +422,7 @@ class ControlExperience:
             "action": dict(self.action),
             "expected_effect": self.expected_effect,
             "observed_effect": self.observed_effect,
+            "operation_ids": list(self.operation_ids[-OPERATION_ID_HISTORY:]),
         }
         return payload
 
@@ -451,6 +460,10 @@ class ControlExperience:
             action=dict(payload.get("action") or {}),
             expected_effect=str(payload.get("expected_effect") or ""),
             observed_effect=str(payload.get("observed_effect") or ""),
+            operation_ids=tuple(
+                str(value) for value in (payload.get("operation_ids") or ())
+                if str(value)
+            )[-OPERATION_ID_HISTORY:],
         )
 
 
@@ -518,8 +531,13 @@ def _merge(
         if current is None:
             merged[key] = record
             continue
-        if (record.attempts, record.last_at) >= (current.attempts, current.last_at):
-            merged[key] = record
+        selected = record if (record.attempts, record.last_at) >= (current.attempts, current.last_at) else current
+        operation_ids = tuple(dict.fromkeys((*current.operation_ids, *record.operation_ids)))[-OPERATION_ID_HISTORY:]
+        if selected.operation_ids != operation_ids:
+            # Clone the winner so merging does not mutate either caller's in-memory copy.
+            selected = ControlExperience.from_json(selected.as_json())
+            selected.operation_ids = operation_ids
+        merged[key] = selected
     return merged
 
 
@@ -580,6 +598,7 @@ def record_outcome(
     clicked: bool = True,
     now: datetime | None = None,
     frame: str = "",
+    operation_id: str = "",
 ) -> ControlExperience:
     """Apply §六 to one control: did it work, what did it cost, what is it worth.
 
@@ -596,6 +615,11 @@ def record_outcome(
     "times we looked at it".
     """
     moment = now or datetime.now(timezone.utc)
+    operation_id = str(operation_id or "").strip()
+    if operation_id and operation_id in experience.operation_ids:
+        return experience
+    if operation_id:
+        experience.operation_ids = (*experience.operation_ids, operation_id)[-OPERATION_ID_HISTORY:]
     kind = change if change in CHANGE_KINDS else "UNKNOWN"
     if clicked:
         experience.attempts += 1

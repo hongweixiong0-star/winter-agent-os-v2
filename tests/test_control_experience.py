@@ -169,6 +169,39 @@ def test_a_spend_is_recorded_with_its_before_and_after() -> None:
     assert control.cost_seen["current"] == {"amount": 15, "before": 410, "after": 395}
 
 
+def test_replaying_the_same_runtime_step_is_idempotent() -> None:
+    control = _control()
+    record_outcome(
+        control, change="PAGE_CHANGED", result_name="OPEN_ALLIANCE",
+        now=NOW, operation_id="run-17:3",
+    )
+    record_outcome(
+        control, change="NO_OP", now=NOW + timedelta(seconds=2),
+        operation_id="run-17:3",
+    )
+    assert control.attempts == 1
+    assert control.last_result == "PAGE_CHANGED"
+    assert control.last_at == NOW.isoformat()
+
+
+def test_operation_id_survives_round_trip_and_concurrent_union(tmp_path) -> None:
+    from winter_agent_v2.control_experience import _merge
+
+    path = tmp_path / "control_experience.json"
+    left = _control()
+    right = _control()
+    record_outcome(left, change="PAGE_CHANGED", now=NOW, operation_id="run-a:1")
+    record_outcome(right, change="POPUP_OPENED", now=NOW + timedelta(seconds=1),
+                   operation_id="run-b:1")
+    merged = _merge({"key": left}, {"key": right})
+    save(merged, path)
+    restored = load(path)["key"]
+    before_attempts = restored.attempts
+    record_outcome(restored, change="NO_OP", operation_id="run-a:1")
+    assert set(restored.operation_ids) == {"run-a:1", "run-b:1"}
+    assert restored.attempts == before_attempts
+
+
 def test_an_unrecognised_change_string_is_unknown() -> None:
     control = _control()
     record_outcome(control, change="SOMETHING_ELSE", now=NOW)

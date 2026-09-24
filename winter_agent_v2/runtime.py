@@ -1079,6 +1079,10 @@ class LiveRuntime:
             goal_id=goal_id,
             frame=after_screenshot or before_screenshot,
             verification_ok=bool(verification.ok) if verification is not None else False,
+            operation_id=(
+                f"{getattr(getattr(self, 'capture_dir', None), 'name', '')}:{int(step_id)}"
+                if getattr(getattr(self, "capture_dir", None), "name", "") else ""
+            ),
         )
         # The automatic UI collector reads the same evidence, one step later (operator
         # 2026-09-22): the frame this step already captured, the name it was aiming at, and the
@@ -1221,6 +1225,7 @@ class LiveRuntime:
         goal_id: str = "",
         frame: Path | None = None,
         verification_ok: bool = False,
+        operation_id: str = "",
     ) -> None:
         """Record what the control that was aimed at actually did (operator §四/§六).
 
@@ -1273,6 +1278,7 @@ class LiveRuntime:
             after=after_state,
             clicked=bool(execution.executed),
             frame=str(frame) if frame else "",
+            operation_id=operation_id,
         )
         landed = execution.tap_point
         if landed is not None:
