@@ -2514,21 +2514,8 @@ def _widest(runs: list[tuple[int, int]]) -> tuple[int, int]:
     return best
 
 
-def _handle_triangle(per_row: dict[int, list[tuple[int, int]]], seed_rows: list[int]) -> dict | None:
-    """The triangle a band of seed rows belongs to, or ``None`` when they describe something else.
-
-    ``seed_rows`` are the rows that carry a run at least ``QUICK_PANEL_HANDLE_SELECT_MIN_PX`` wide --
-    only the triangle can produce those, because the tab's outline bar is 5-6 px (measured).  The
-    seed is then **grown** along the base edge, because the triangle's own tips are narrower than the
-    seed threshold: taking the seed rows alone truncates the shape and its width variation measures
-    5 px instead of 11, which is the mistake the first version made and it rejected every real
-    handle.  Growing stops when the run from the base edge is gone, which is the triangle's tip.
-
-    A triangle has exactly one flat vertical edge -- its base -- and one that travels out to the apex
-    and back.  That, plus unimodality and a minimum apex travel, is the whole test; it is what keeps
-    this from being the generic "something is drawn here" detector this project measured and threw
-    away.  It recognises **one named control's own shape**, in the strip the operator pointed at.
-    """
+def _handle_triangle_legacy(per_row: dict[int, list[tuple[int, int]]], seed_rows: list[int]) -> dict | None:
+    """Keep the established single-run detector as the first choice."""
     if len(seed_rows) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
         return None
     seed_runs = [_widest(per_row[y]) for y in seed_rows]
@@ -2552,23 +2539,18 @@ def _handle_triangle(per_row: dict[int, list[tuple[int, int]]], seed_rows: list[
         top -= 1
     while bottom + 1 in per_row and matches(bottom + 1) is not None:
         bottom += 1
-    profile: list[tuple[int, int, int]] = []
-    for y in range(top, bottom + 1):
-        run = matches(y)
-        if run is not None:
-            profile.append((y, run[0], run[1]))
+    profile = [(y, *run) for y in range(top, bottom + 1) if (run := matches(y)) is not None]
     if len(profile) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
         return None
-    widths = [row[2] - row[1] + 1 for row in profile]
-    travel = max(widths) - min(widths)
-    if travel < QUICK_PANEL_HANDLE_TRIANGLE_MIN_PX + 1:
+    widths = [right - left + 1 for _, left, right in profile]
+    if max(widths) - min(widths) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_PX + 1:
         return None
     peak = widths.index(max(widths))
     if peak == 0 or peak == len(widths) - 1:
         return None
-    left = widths[:peak + 1]
-    right = widths[peak:]
-    if any(b < a for a, b in zip(left, left[1:])) or any(b > a for a, b in zip(right, right[1:])):
+    if any(b < a for a, b in zip(widths[:peak + 1], widths[1:peak + 1])):
+        return None
+    if any(b > a for a, b in zip(widths[peak:], widths[peak + 1:])):
         return None
     if max(widths) < QUICK_PANEL_HANDLE_SELECT_MIN_PX:
         return None
@@ -2576,11 +2558,114 @@ def _handle_triangle(per_row: dict[int, list[tuple[int, int]]], seed_rows: list[
         "direction": "RIGHT" if start_flat else "LEFT",
         "rows": len(profile),
         "width_px": max(widths),
-        "x0": min(row[1] for row in profile),
-        "x1": max(row[2] for row in profile),
+        "x0": min(left for _, left, _ in profile),
+        "x1": max(right for _, _, right in profile),
         "y0": profile[0][0],
         "y1": profile[-1][0],
     }
+
+
+def _handle_triangle_tracked(per_row: dict[int, list[tuple[int, int]]], seed_rows: list[int]) -> dict | None:
+    """The triangle a band of seed rows belongs to, or ``None`` when they describe something else.
+
+    ``seed_rows`` are the rows that carry a run at least ``QUICK_PANEL_HANDLE_SELECT_MIN_PX`` wide --
+    only the triangle can produce those, because the tab's outline bar is 5-6 px (measured).  The
+    seed is then **grown** along the base edge, because the triangle's own tips are narrower than the
+    seed threshold: taking the seed rows alone truncates the shape and its width variation measures
+    5 px instead of 11, which is the mistake the first version made and it rejected every real
+    handle.  Growing stops when the run from the base edge is gone, which is the triangle's tip.
+
+    A triangle has exactly one flat vertical edge -- its base -- and one that travels out to the apex
+    and back.  That, plus unimodality and a minimum apex travel, is the whole test; it is what keeps
+    this from being the generic "something is drawn here" detector this project measured and threw
+    away.  It recognises **one named control's own shape**, in the strip the operator pointed at.
+    """
+    if len(seed_rows) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
+        return None
+    # The tab is drawn beside game art, so the brightest run in a scan row may belong to that
+    # neighbouring art.  Track each plausible vertical edge independently instead of assuming the
+    # widest run is the triangle.  The latter merged the arrow at x~6 with adjacent white art at
+    # x~28 on the current production HOME frame and made both edges appear non-flat.
+    candidates = {
+        (edge, run[edge])
+        for y in seed_rows
+        for run in per_row[y]
+        if run[1] - run[0] + 1 >= QUICK_PANEL_HANDLE_SELECT_MIN_PX
+        for edge in (0, 1)
+    }
+
+    def check(base_edge: int, base_x: int) -> dict | None:
+        def matches(y: int) -> tuple[int, int] | None:
+            nearby = [
+                run for run in per_row.get(y, ())
+                if abs(run[base_edge] - base_x) <= QUICK_PANEL_HANDLE_EDGE_FLAT_PX
+            ]
+            if not nearby:
+                return None
+            return min(nearby, key=lambda run: (abs(run[base_edge] - base_x), -(run[1] - run[0])))
+
+        matched = [y for y in seed_rows if matches(y) is not None]
+        if len(matched) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
+            return None
+        # Isolate the longest locally continuous portion; unrelated bright rows can be present in
+        # the same coarse seed band.
+        groups: list[list[int]] = []
+        group: list[int] = []
+        for y in matched:
+            if group and y - group[-1] > 2:
+                groups.append(group)
+                group = []
+            group.append(y)
+        if group:
+            groups.append(group)
+        seed_group = max(groups, key=len)
+        if len(seed_group) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
+            return None
+
+        top, bottom = seed_group[0], seed_group[-1]
+        while top - 1 in per_row and matches(top - 1) is not None:
+            top -= 1
+        while bottom + 1 in per_row and matches(bottom + 1) is not None:
+            bottom += 1
+        profile: list[tuple[int, int, int]] = []
+        for y in range(top, bottom + 1):
+            run = matches(y)
+            if run is not None:
+                profile.append((y, run[0], run[1]))
+        if len(profile) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_ROWS:
+            return None
+        widths = [row[2] - row[1] + 1 for row in profile]
+        if max(widths) - min(widths) < QUICK_PANEL_HANDLE_TRIANGLE_MIN_PX + 1:
+            return None
+        peak = widths.index(max(widths))
+        if peak == 0 or peak == len(widths) - 1:
+            return None
+        if any(b < a for a, b in zip(widths[:peak + 1], widths[1:peak + 1])):
+            return None
+        if any(b > a for a, b in zip(widths[peak:], widths[peak + 1:])):
+            return None
+        if max(widths) < QUICK_PANEL_HANDLE_SELECT_MIN_PX:
+            return None
+        return {
+            "direction": "RIGHT" if base_edge == 0 else "LEFT",
+            "rows": len(profile),
+            "width_px": max(widths),
+            "x0": min(row[1] for row in profile),
+            "x1": max(row[2] for row in profile),
+            "y0": profile[0][0],
+            "y1": profile[-1][0],
+        }
+
+    for base_edge, base_x in sorted(candidates):
+        triangle = check(base_edge, base_x)
+        if triangle is not None:
+            return triangle
+    return None
+
+
+def _handle_triangle(per_row: dict[int, list[tuple[int, int]]], seed_rows: list[int]) -> dict | None:
+    """Use the established detector first, then track edges when nearby art merged its scan runs."""
+    return _handle_triangle_legacy(per_row, seed_rows) or _handle_triangle_tracked(per_row, seed_rows)
 
 
 def _handle_drawn_on_the_tab(array, triangle: dict) -> bool:

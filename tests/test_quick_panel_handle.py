@@ -22,6 +22,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
+from PIL import Image, ImageDraw
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -133,6 +135,24 @@ class TheLocatorTests(unittest.TestCase):
         viewport_x = (found["point_norm"][0] * 739 - 49) / 690
         self.assertAlmostEqual(viewport_x, 0.0181, delta=0.006)
         self.assertAlmostEqual(found["point_norm"][1], 0.4301, delta=0.006)
+
+    def test_collapsed_handle_survives_adjacent_bright_game_art(self):
+        """A nearby bright shape must not merge with the handle's widest scan runs."""
+        frame = Image.new("RGB", (720, 1280), (25, 35, 45))
+        draw = ImageDraw.Draw(frame)
+        draw.rectangle((0, 520, 48, 582), fill=(55, 110, 155))
+        draw.polygon([(6, 536), (20, 551), (6, 566)], fill=(250, 250, 250))
+        draw.rectangle((28, 538, 33, 564), fill=(250, 250, 250))
+        # Production screenshot: city art runs beside the tab and contaminates the widest run.
+        draw.rectangle((25, 558, 45, 566), fill=(250, 250, 250))
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "bright-neighbour.png"
+            frame.save(path)
+            found = find_quick_panel_handle(path, panel_open=False)
+        self.assertIsNotNone(found)
+        self.assertEqual(found["state"], "COLLAPSED")
+        self.assertAlmostEqual(found["point_norm"][0], 0.0181, places=3)
+        self.assertAlmostEqual(found["point_norm"][1], 0.4305, places=3)
 
     def test_a_white_card_is_not_a_handle(self):
         """The one real false positive found while writing this, pinned.
