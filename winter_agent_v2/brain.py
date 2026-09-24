@@ -1292,7 +1292,6 @@ class RuleBrain:
                 if (
                     str(handle.get("state") or "") == "COLLAPSED"
                     and self._panel_open_attempts.get(route, 0) < self.MAX_PANEL_OPEN_ATTEMPTS_PER_GOAL
-                    and not self.ordinary_scan_exhausted
                 ):
                     self._panel_open_attempts[route] = self._panel_open_attempts.get(route, 0) + 1
                     self.ordinary_attempts += 1
