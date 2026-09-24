@@ -66,6 +66,53 @@ def test_research_detail_sheet_remains_identifiable_when_its_tree_header_is_dimm
     assert state.research["selected_node"] == "工具改良IV"
 
 
+def test_research_start_requires_readable_affordable_costs_and_current_duration():
+    tokens = (
+        _token("工具改良IV", 355, 256),
+        _token("研究消耗", 135, 679),
+        _token("1000/500", 210, 744), _token("2000/1500", 500, 744),
+        _token("357.7万/69，000", 210, 794), _token("4000/3500", 500, 794),
+        _token("5000/4400", 210, 844),
+        _token("研究", 510, 972), _token("002:53:09", 511, 1005),
+    )
+    state = OCRPageClassifier().classify(OCRResult(tokens, "test"), frame_size=(720, 1280))
+
+    assert state.page is Page.RESEARCH
+    assert state.research["node"] == "工具改良IV"
+    assert state.research["costs_readable"] is True
+    assert state.research["costs_affordable"] is True
+    assert len(state.research["cost_rows"]) == 5
+    assert state.research["cost_rows"][2] == {
+        "current": 3577000.0, "required": 69000.0, "affordable": True,
+    }
+    assert state.research["start_control_present"] is True
+    assert state.research["researchable"] is True
+    assert state.research["research_control_norm"] == [0.7083, 0.7594]
+
+
+def test_research_start_stays_blocked_when_cost_is_short_or_duration_is_missing():
+    affordable = (
+        _token("工具改良IV", 355, 256), _token("研究消耗", 135, 679),
+        _token("1000/500", 210, 744), _token("2000/1500", 500, 744),
+        _token("3000/2500", 210, 794), _token("4000/3500", 500, 794),
+        _token("研究", 510, 972),
+    )
+    classifier = OCRPageClassifier()
+    unaffordable = classifier.classify(
+        OCRResult(affordable[:3] + (_token("400/1500", 500, 744),) + affordable[4:]
+                  + (_token("002:53:09", 511, 1005),), "test"),
+        frame_size=(720, 1280),
+    )
+    no_duration = classifier.classify(OCRResult(affordable, "test"), frame_size=(720, 1280))
+
+    assert unaffordable.research["costs_readable"] is True
+    assert unaffordable.research["costs_affordable"] is False
+    assert unaffordable.research["researchable"] is False
+    assert no_duration.research["costs_affordable"] is True
+    assert no_duration.research["start_control_present"] is False
+    assert no_duration.research["researchable"] is False
+
+
 def test_a_generic_research_label_without_the_detail_sheet_evidence_stays_unknown():
     result = OCRResult((
         _token("工具改良IV", 355, 256),
@@ -112,3 +159,27 @@ def test_idle_research_goal_inspects_a_live_unfinished_node_without_claiming_aff
     assert point == (0.5, 0.42)
     assert verification.ok
     assert "researchable" not in after.research
+
+
+def test_idle_research_goal_uses_only_the_verified_current_frame_start_control():
+    state = WorldState(page=Page.RESEARCH, confidence=0.99, research={
+        "status": "IDLE", "queue_available": True, "node": "工具改良IV",
+        "node_detail_visible": True, "selected_node": "工具改良IV",
+        "researchable": True, "costs_readable": True, "costs_affordable": True,
+        "start_control_present": True, "research_control_norm": [0.7083, 0.7594],
+    })
+    brain = RuleBrain(current_goal="RESEARCH")
+    brain.goal_id = "KEEP_RESEARCH_PRODUCTIVE"
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    decision = brain.decide(state, v2_registry())
+
+    assert decision.skill == "RESEARCH"
+    assert runtime._resolve_semantic_target("BTN_START_RESEARCH", state) == (0.7083, 0.7594)
+    assert runtime._resolve_semantic_target("BTN_START_RESEARCH", replace(
+        state, research={**state.research, "costs_affordable": False}
+    )) is None
+    assert runtime._resolve_semantic_target("BTN_START_RESEARCH", replace(
+        state, research={**state.research, "queue_available": False}
+    )) is None
+    skill = v2_registry().get("RESEARCH")
+    assert skill is not None and skill.semantic_contract_complete

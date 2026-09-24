@@ -552,7 +552,19 @@ def v2_registry() -> SkillRegistry:
             Action("TAP_SEMANTIC", "BTN_START_RESEARCH"),
             timeout=30.0,
             risk="MEDIUM_RESOURCE_SPEND",
-            state=SkillState.BLOCKED,
+            state=SkillState.CANDIDATE,
+            verifier="RESEARCH_STARTED",
+            recovery=("BACK",),
+            semantic_goal="Start the selected affordable technology in the idle research queue",
+            parameters=(),
+            context=("RESEARCH_DETAIL",),
+            semantic_requirements=(
+                "research_queue_available", "selected_node_details_visible",
+                "research_costs_readable_and_affordable", "current_frame_start_duration_visible",
+            ),
+            vision_evidence=("research_detail_sheet", "research_cost_rows", "research_start_control"),
+            unknown_policy="Missing or ambiguous node, cost, duration, or queue state blocks the tap",
+            ui_change_tolerance=("number", "position", "resolution"),
         )
     )
     skills.append(

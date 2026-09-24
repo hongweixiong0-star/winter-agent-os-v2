@@ -2210,6 +2210,31 @@ class LiveRuntime:
             except (TypeError, ValueError):
                 return None
             return point if all(0.0 <= coordinate <= 1.0 for coordinate in point) else None
+        if semantic == "BTN_START_RESEARCH":
+            # This is a resource-spending action. Resolve it only from the current
+            # research detail frame after OCR proved the selected node, idle queue,
+            # readable affordable costs, and the duration printed on the start
+            # control. Never fall back to a stored/template coordinate here.
+            research = frame.research or {}
+            if (
+                frame.page is not Page.RESEARCH
+                or research.get("queue_available") is not True
+                or research.get("node_detail_visible") is not True
+                or not research.get("node")
+                or research.get("researchable") is not True
+                or research.get("costs_readable") is not True
+                or research.get("costs_affordable") is not True
+                or research.get("start_control_present") is not True
+            ):
+                return None
+            point = research.get("research_control_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
         if semantic == "BEAST_SEARCH_TAB":
             # The 野兽 tab, tapped where this frame's own OCR read its printed label
             # (see ``ocr.read_resource_tab_labels``).

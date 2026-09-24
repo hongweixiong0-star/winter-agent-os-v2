@@ -933,6 +933,52 @@ class OCRPageClassifier:
                     research["research_control_norm"] = _token_centre_norm(
                         control.text.strip(), eligible, frame_size
                     )
+                    # The detail sheet prints each current/required resource pair and
+                    # places the projected duration inside the blue 研究 control. A
+                    # visible node alone is not enough: require readable affordable
+                    # costs plus that current-frame action caption before exposing the
+                    # existing RESEARCH skill to the scheduler.
+                    cost_rows = []
+                    cost_tokens = []
+                    if frame_size and frame_size[1] > 0:
+                        quantity = r"([\d,]+(?:\.\d+)?)\s*(万)?"
+                        cost_pattern = re.compile(rf"^\s*{quantity}\s*/\s*{quantity}\s*$")
+                        for token in eligible:
+                            if not token.box or not 0.50 <= token.centre[1] / frame_size[1] <= 0.74:
+                                continue
+                            raw_cost = token.text.strip()
+                            if "/" not in raw_cost:
+                                continue
+                            cost_tokens.append(raw_cost)
+                            normalized_cost = raw_cost.replace("，", ",")
+                            normalized_cost = re.sub(r"(?<=\d)万(?=\d{3}(?:/|$))", "", normalized_cost)
+                            match = cost_pattern.fullmatch(normalized_cost)
+                            if not match:
+                                continue
+                            current, current_wan, required, required_wan = match.groups()
+                            current_value = float(current.replace(",", "")) * (10000 if current_wan else 1)
+                            required_value = float(required.replace(",", "")) * (10000 if required_wan else 1)
+                            cost_rows.append({
+                                "current": current_value,
+                                "required": required_value,
+                                "affordable": current_value >= required_value,
+                            })
+                    duration_caption = any(
+                        token.box
+                        and re.fullmatch(r"\d{2,3}:\d{2}:\d{2}", token.text.strip())
+                        and 0.74 <= token.centre[1] / frame_size[1] <= 0.85
+                        and token.centre[0] / frame_size[0] >= 0.50
+                        for token in eligible
+                    ) if frame_size and frame_size[0] > 0 and frame_size[1] > 0 else False
+                    research.update({
+                        "cost_rows": cost_rows,
+                        "costs_readable": len(cost_rows) >= 2 and len(cost_rows) == len(cost_tokens),
+                        "costs_affordable": bool(cost_rows) and all(row["affordable"] for row in cost_rows),
+                        "start_control_present": duration_caption,
+                        "researchable": len(cost_rows) >= 2 and len(cost_rows) == len(cost_tokens)
+                        and all(row["affordable"] for row in cost_rows)
+                        and duration_caption,
+                    })
             if "病房扩建VII" in exact_texts:
                 research.update({"node":"WARD_EXPANSION_VII", "name":"病房扩建VII", "branch":"GROWTH"})
                 if "2/3" in exact_texts:
