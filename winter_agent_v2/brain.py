@@ -1369,6 +1369,13 @@ class RuleBrain:
                         1.0,
                         "switch_task",
                     )
+                if self.goal_id == "KEEP_RESEARCH_PRODUCTIVE":
+                    return Decision(
+                        "SAFE_STOP",
+                        "research_quick_panel_entry_not_observed_so_the_known_failing_power_detour_is_skipped",
+                        1.0,
+                        "switch_task",
+                    )
                 # §一.6: the panel is not answering for this goal, so the proven route is the fallback
                 # -- and the reason now says which case this is instead of naming the route alone.
                 return Decision(
@@ -1596,6 +1603,18 @@ class RuleBrain:
                     return Decision(
                         "SAFE_STOP",
                         "quick_panel_already_read_the_barracks_so_the_power_route_is_not_a_refresh",
+                        1.0,
+                        "switch_task",
+                    )
+                if self.goal_id in {
+                    "KEEP_TRAINING_PRODUCTIVE",
+                    "SHIELD_CAMP_TRAINING",
+                    "LANCER_CAMP_TRAINING",
+                    "MARKSMAN_CAMP_TRAINING",
+                }:
+                    return Decision(
+                        "SAFE_STOP",
+                        "training_quick_panel_entry_not_observed_so_the_known_failing_power_detour_is_skipped",
                         1.0,
                         "switch_task",
                     )

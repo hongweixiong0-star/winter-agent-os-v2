@@ -106,8 +106,10 @@ class UnrelatedPageStillStopsTest(unittest.TestCase):
             self.assertEqual(first.skill, "BACK", page)
             self.assertIn("panel_it_does_not_own", first.reason, page)
             second = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
-            self.assertEqual(second.skill, "SAFE_STOP", page)
-            self.assertEqual(second.reason, "training_entry_not_verified", page)
+            self.assertEqual(second.skill, "LEAVE_FOREIGN_LAYER", page)
+            third = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+            self.assertEqual(third.skill, "SAFE_STOP", page)
+            self.assertEqual(third.reason, "training_entry_not_verified", page)
 
     def test_research_on_an_unrelated_page_leaves_it_once_then_stops_named(self):
         for page in (Page.MAIL, Page.INTEL, Page.DAILY, Page.EXPLORATION):
@@ -116,8 +118,10 @@ class UnrelatedPageStillStopsTest(unittest.TestCase):
             self.assertEqual(first.skill, "BACK", page)
             self.assertIn("panel_it_does_not_own", first.reason, page)
             second = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
-            self.assertEqual(second.skill, "SAFE_STOP", page)
-            self.assertEqual(second.reason, "research_entry_not_verified", page)
+            self.assertEqual(second.skill, "LEAVE_FOREIGN_LAYER", page)
+            third = brain.decide(WorldState(page=page, confidence=0.99), v2_registry())
+            self.assertEqual(third.skill, "SAFE_STOP", page)
+            self.assertEqual(third.reason, "research_entry_not_verified", page)
 
 
 class HomeBehaviourUnchangedTest(unittest.TestCase):
@@ -126,7 +130,7 @@ class HomeBehaviourUnchangedTest(unittest.TestCase):
     def test_train_on_home_starts_the_power_route(self):
         decision = decide("TRAIN", WorldState(page=Page.HOME, confidence=0.99))
         self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW")
-        self.assertEqual(decision.reason, "training_goal_requires_power_route")
+        self.assertEqual(decision.reason, "panel_did_not_serve_this_goal_so_the_power_route_is_the_fallback")
 
     def test_train_on_home_with_a_busy_queue_stops(self):
         world = WorldState(page=Page.HOME, training={"queue_available": False}, confidence=0.99)
@@ -142,7 +146,7 @@ class HomeBehaviourUnchangedTest(unittest.TestCase):
     def test_research_on_home_starts_the_power_route(self):
         decision = decide("RESEARCH", WorldState(page=Page.HOME, confidence=0.99))
         self.assertEqual(decision.skill, "OPEN_POWER_OVERVIEW")
-        self.assertEqual(decision.reason, "research_goal_requires_power_route")
+        self.assertEqual(decision.reason, "panel_did_not_serve_this_goal_so_the_power_route_is_the_fallback")
 
     def test_research_on_home_with_a_busy_queue_stops(self):
         world = WorldState(page=Page.HOME, research={"queue_available": False}, confidence=0.99)
