@@ -293,7 +293,25 @@ def v2_registry() -> SkillRegistry:
     skills.extend([
         Skill(
             "START_RALLY", "Start a parameterized rally for Bear, Polar Terror, Fortress, or another verified target",
-            None, Action("START_RALLY", payload={"target":"FROM_GOAL", "context":"FROM_WORLD_STATE"}),
+            # CHANGED 2026-09-24 from ``Action("START_RALLY", payload=...)``.
+            #
+            # The old form was undeliverable twice over, and neither half was visible from
+            # the registry.  ``Executor.execute`` implements exactly four kinds --
+            # ``TAP_SEMANTIC``, ``PRESS_BACK``, ``SWIPE``, ``OBSERVE`` -- and anything else
+            # falls through to ``DEVICE_ADAPTER_NOT_CONNECTED``.  So the action could not
+            # have been carried out even if the runtime had been willing to dispatch it.
+            #
+            # The fix is not a new kind.  Constitutional rule §二 forbids a second execution
+            # chain, and the project already has exactly one tap path: a semantic name that
+            # the resolver turns into a point **on the current frame**.  ``BTN_START_RALLY``
+            # is that name -- the orange 集结 control on the bear panel, registered
+            # 2026-09-24 from the live frame and replay-verified to resolve only there.
+            #
+            # The target/context the payload used to carry now live where they belong: the
+            # goal selects *whether* to start a rally (``rally.choose_bear_operation``), the
+            # frame decides *where* the button is, and the bound verifier decides whether it
+            # worked.  Nothing reads the payload, which is why dropping it loses no behaviour.
+            None, Action("TAP_SEMANTIC", "BTN_START_RALLY"),
             timeout=30.0, risk="MEDIUM_COMBAT", state=SkillState.CANDIDATE, latency_class=LatencyClass.FAST,
             semantic_goal="Create a rally against the goal-selected target",
             parameters=("target", "context", "formation"), context=("RALLY_LEADER",),
@@ -305,7 +323,23 @@ def v2_registry() -> SkillRegistry:
         ),
         Skill(
             "JOIN_RALLY", "Join a parameterized rally using a normal march slot and the context troop policy",
-            None, Action("JOIN_RALLY", payload={"target":"FROM_GOAL", "context":"FROM_WORLD_STATE"}),
+            # CHANGED 2026-09-24 for the same two reasons as START_RALLY above: the old
+            # ``Action("JOIN_RALLY", ...)`` kind is not one ``Executor`` implements, and the
+            # constitution requires the tap to come from the current frame rather than from a
+            # separate code path.
+            #
+            # ``BTN_JOIN_ROW`` is the green + drawn on a rally row -- registered from the live
+            # panel and replay-verified.  That the template is of the **green** affordance and
+            # not of a generic "+" is what carries the joinable/full distinction: on
+            # ``join_list_after_detail.png``, whose first row's + is grey, the template does
+            # not resolve at all, so a full rally yields no tap instead of a wrong one.
+            #
+            # Known limit, recorded rather than hidden: this locates *a* joinable rally, not
+            # the fastest of several.  Picking between two simultaneously-green rows needs a
+            # rally-list reader that does not exist yet (the task book's J05/J06), and
+            # ``rally.fastest_joinable_bear`` already states the policy -- it just has no
+            # frame reading to consume.  Registered as a gap, not faked here.
+            None, Action("TAP_SEMANTIC", "BTN_JOIN_ROW"),
             timeout=8.0, risk="MEDIUM_COMBAT", state=SkillState.CANDIDATE, latency_class=LatencyClass.REALTIME,
             semantic_goal="Join an eligible rally matching goal policy",
             parameters=("target", "filter", "formation"), context=("RALLY_JOINER",),
