@@ -124,3 +124,48 @@ $PY tools/probe_planner_live.py --goal DAILY_ROUTINE --execute   # + MAA 执行 
 
 每次规划步骤都会落盘：`learning/local_planner_steps.jsonl`（decision / action / element /
 reason，含全部拒绝原因），模型调用与延迟落 `learning/local_qwen_calls.jsonl`。
+
+
+---
+
+## 6. 补遗（同日，修完两处后复验）
+
+### 6.1 两处由"跑"发现的缺陷
+
+**（a）`run()` 里抛 `NameError` —— 注入参数其实没接上。**
+第一版把 `advisor=None` 加进了 `__init__`，却在 `run()` 里写 `self._advisor = advisor or ...`。
+`self._advisor` 是在 **`run()`** 里创建的（run-scoped，因为 advisor 带 `max_steps_per_run`），
+`run()` 里没有那个参数名 → **每一次运行都 `NameError`**。
+`tools/check_wiring.py` 看不到（它从不调用 `run`），
+`tests/test_refusal_yields_the_cycle.py` 看到了：13 个失败。
+现在的形状：`__init__` 只存 `self._advisor_factory`，`run()` 里
+`factory = self._advisor_factory` → `callable` 则调用（每次运行拿到新的、预算干净的 advisor），
+否则用实例，都没有则用原来的答案文件 reader。`tools/run_live.py` 因此传的是**工厂**。
+修完：同一组测试 13 失败 → **2 失败**，且这 2 个用 HEAD 版 `skills.py` 复现确认是**既有**的
+（失败信息里直接点名 `LEAVE_FOREIGN_LAYER`，来自工作树里既有的未提交改动）。
+
+**（b）`COMPLETE` 被误用成 `DEFER`。**
+真机上 client 停在 INTEL 页而 goal 是 DAILY_ROUTINE、页面上没有相关控件时，模型答 `COMPLETE`。
+安全上没出事（`COMPLETE` 只落一条 `COMPLETE_CLAIM / verified=false`，不点任何东西），
+但**分类错了**。prompt 的 §5 因此写清：`COMPLETE` 只在"目标自己的结果就在屏上"时用，
+"这屏不属于这个 goal"要答 `DEFER`。复验（离线 MAP + 真机 INTEL 各一次）**两次都答 DEFER**。
+
+### 6.2 §10 场景 D 的实测证据
+
+```
+page : INTEL  goal : DAILY_ROUTINE  elements : 4
+plan : {"decision":"DEFER","reason":"The current screen is the Intel page, which does not contain
+        controls for daily routine tasks; the scheduler needs to switch to the correct page."}
+结果为：没有任何点击，没有虚构按钮，占用槽位不消耗。
+```
+
+### 6.3 回归范围（本轮实测）
+
+| 测试文件 | 结果 |
+| --- | --- |
+| `test_local_planner.py` / `test_qwen_decoupling.py` | 全绿 |
+| `test_unknown_ai_channel.py` | 42 passed |
+| `test_refusal_yields_the_cycle.py` | 2 失败，**均为既有** |
+| `test_control_panel.py` | 2 失败，**均为既有** |
+| `test_unknown_advisor.py` / `test_gateway_service.py` | 全绿 |
+| `tools/check_wiring.py` | `problems: 8`，与开工前完全相同 |

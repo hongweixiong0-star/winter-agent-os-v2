@@ -113,9 +113,15 @@ Hard rules:
    - EXECUTE: carry out the action now; target_element_id must name an element.
    - OBSERVE: the screen is not readable enough yet; tap nothing.
    - REPLAN: your previous step cannot work from here; tap nothing.
-   - COMPLETE: you believe the goal is finished; a separate verifier will check.
-   - DEFER: this task cannot be advanced right now; the scheduler will switch.
+   - COMPLETE: the goal's own result is visible on this screen -- you can see that it is done.
+     This is a claim; a separate verifier checks it. Do NOT use it just because you see nothing
+     useful here.
+   - DEFER: this screen is not the goal's screen, or the goal cannot be advanced from here.
+     Use this when the page does not belong to the goal. The scheduler will switch tasks.
    - BLOCKED: the needed capability does not exist. State the gap in "reason".
+   Measured 2026-09-25: asked for DAILY_ROUTINE while the client stood on the INTEL page with no
+   relevant control, the model answered COMPLETE. The right answer was DEFER, and COMPLETE-vs-DEFER
+   is decided by whether the goal's own result is on screen -- not by the absence of anything to do.
 6. Prefer an element whose printed text directly names the action the goal needs. Prefer a
    low-risk control (close, back, confirm-free, claim-free) over anything that spends.
 7. Never propose an element whose text implies spending money, gems, or an irreversible

@@ -413,9 +413,17 @@ class LiveRuntime:
         #:
         #: Injected rather than built here for the same reason ``maa_adapter`` and ``routing``
         #: are: the runtime has no config dict, and the choice between "the retired
-        #: answer-file channel" and "the local Qwen planner" is a deployment decision that
-        #: belongs where the config is read.  ``None`` keeps the pre-existing advisor, so a
-        #: caller that knows nothing about planners behaves exactly as before.
+        #: answer-file channel" and "the local planner" is a deployment decision that
+        #: belongs where the config is read.
+        #:
+        #: A **factory** (zero-argument callable), or an instance, or ``None``.  The advisor is
+        #: created inside ``run()`` -- not here -- because it is run-scoped: the answer-file
+        #: reader and the planner both carry per-run budgets (``max_steps_per_run``), and an
+        #: advisor reused across runs would hand the second run a spent budget.  Passing a
+        #: factory is therefore the form that means what the parameter name suggests.
+        #:
+        #: ``None`` keeps the pre-existing advisor, so a caller that knows nothing about
+        #: planners behaves exactly as before.
         advisor=None,
     ) -> None:
         self.device = device
@@ -433,6 +441,14 @@ class LiveRuntime:
         self.semantic_vision = semantic_vision
         self.capture_dir = capture_dir
         self.registry = registry or v2_registry()
+        #: Kept, not consumed here: ``run()`` builds the advisor because it is run-scoped.
+        #: Held under its own name so the parameter and the live attribute cannot be confused --
+        #: the first version of this injection set ``self._advisor`` from ``__init__``'s
+        #: parameter *inside* ``run()``, where that parameter does not exist, and every run
+        #: raised ``NameError``.  ``check_wiring`` did not catch it (it never calls ``run``);
+        #: ``tests/test_refusal_yields_the_cycle.py`` did, which is why that file is in the
+        #: regression set for anything that touches the runtime's entry point.
+        self._advisor_factory = advisor
         self.brain = brain or RuleBrain()
         # The goal this run has already committed to.  See ``_step_goal``: it is the
         # label an episode gets for a step taken on a page whose own discovery finds
@@ -4441,7 +4457,15 @@ class LiveRuntime:
         # over budget or answering with a refusal returns no advice, and the cycle proceeds
         # on the paths that already work.  ``_last_advice`` is the answer this step used, and
         # ``_last_attempt_summary`` is the evidence handed over with a question.
-        self._advisor = advisor or unknown_advisor.UnknownAdvisor()
+        #
+        # Built **here**, per run, from what ``__init__`` was given: a factory (called for a fresh
+        # advisor with fresh per-run budgets), an instance, or nothing at all.  The default is the
+        # pre-existing reader, so a caller that knows no planner exists behaves exactly as before.
+        factory = getattr(self, "_advisor_factory", None)
+        if callable(factory):
+            self._advisor = factory()
+        else:
+            self._advisor = factory if factory is not None else unknown_advisor.UnknownAdvisor()
         self._last_advice: dict[str, Any] | None = None
         self._last_attempt_summary: dict[str, Any] = {}
         # Utility inputs (operator §四).  All three are loaded once per run: the route

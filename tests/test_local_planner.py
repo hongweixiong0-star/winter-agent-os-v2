@@ -304,5 +304,53 @@ class _StubClient:
         )
 
 
+class TheRuntimeTakesTheAdvisorWithoutLearningWhatItIsTest(unittest.TestCase):
+    """The injection point, pinned where it actually broke.
+
+    The first version of this added ``advisor=None`` to ``__init__`` and then set
+    ``self._advisor = advisor or UnknownAdvisor()`` -- but ``self._advisor`` is assigned inside
+    ``run()``, not ``__init__``, so the parameter was not in scope there and **every run** raised
+    ``NameError``.  ``tools/check_wiring.py`` cannot see it (it never calls ``run``); the
+    neighbourhood tests that do call it can, which is why they are the regression set for anything
+    touching the runtime's entry point.
+
+    Behavioural coverage of ``run()`` lives in ``tests/test_refusal_yields_the_cycle.py``.  These
+    are the cheap structural assertions that catch the same scope mistake immediately.
+    """
+
+    def _runtime(self, **kwargs):
+        from types import SimpleNamespace
+
+        from winter_agent_v2.runtime import LiveRuntime
+
+        return LiveRuntime(
+            device=SimpleNamespace(), vision=None, semantic_vision=SimpleNamespace(),
+            capture_dir=ROOT / "learning" / "_tmp_runtime_advisor", **kwargs
+        )
+
+    def test_the_factory_is_stored_under_its_own_name(self):
+        def factory():
+            return "an advisor"
+
+        runtime = self._runtime(advisor=factory)
+        self.assertIs(runtime._advisor_factory, factory)
+
+    def test_an_instance_is_accepted_too(self):
+        runtime = self._runtime(advisor="an advisor")
+        self.assertEqual(runtime._advisor_factory, "an advisor")
+
+    def test_the_default_is_the_pre_existing_reader(self):
+        runtime = self._runtime()
+        self.assertIsNone(runtime._advisor_factory)
+
+    def test_run_builds_the_advisor_from_the_factory(self):
+        source = (ROOT / "winter_agent_v2" / "runtime.py").read_text(encoding="utf-8")
+        # The exact line that raised NameError.  It must not come back: a bare ``advisor``
+        # identifier is only valid where the parameter exists, which is ``__init__``.
+        self.assertNotIn("self._advisor = advisor or", source)
+        self.assertIn("_advisor_factory", source)
+        self.assertIn("self._advisor = factory()", source)
+
+
 if __name__ == "__main__":
     unittest.main()

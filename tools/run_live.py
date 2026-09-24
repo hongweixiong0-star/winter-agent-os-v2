@@ -339,13 +339,19 @@ def main() -> int:
     # (the default when the section is off) restores the previous behaviour exactly.
     from winter_agent_v2 import ui_planner
 
-    planner_advisor = ui_planner.from_config(config, root=ROOT)
-    if planner_advisor is None:
-        print("[planner] local Qwen planning disabled (local_planner.enabled=false)", flush=True)
+    # A **factory**, not an instance: the advisor is run-scoped (``max_steps_per_run``), so each
+    # run must build its own or the second run inherits a spent budget.  ``None`` (the default when
+    # the section is off) restores the previous behaviour exactly.
+    def _advisor_factory():
+        return ui_planner.from_config(config, root=ROOT)
+
+    preview = _advisor_factory()
+    if preview is None:
+        print("[planner] local planning disabled (local_planner.enabled=false)", flush=True)
     else:
-        reachable, reason = planner_advisor.client.available()
+        reachable, reason = preview.client.available()
         print(
-            f"[planner] {planner_advisor.client.model} at {planner_advisor.client.endpoint} "
+            f"[planner] {preview.client.model} at {preview.client.endpoint} "
             f"-> {'reachable' if reachable else reason}",
             flush=True,
         )
@@ -353,7 +359,7 @@ def main() -> int:
         device=observation_device,
         adb_device=device,
         maa_adapter=maa_adapter,
-        advisor=planner_advisor,
+        advisor=_advisor_factory,
         vision=vision,
         semantic_vision=template.semantic,
         capture_dir=args.capture_dir,
