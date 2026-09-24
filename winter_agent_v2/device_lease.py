@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -55,6 +56,7 @@ class LeaseRecord:
     released_at: datetime | None = None
     result: str = ""
     process: int = 0
+    lease_id: str = ""
 
     def expired(self, now: datetime | None = None) -> bool:
         """Has this lease's window passed *while it was still held*?
@@ -83,6 +85,7 @@ class LeaseRecord:
             "released_at": self.released_at.isoformat() if self.released_at else "",
             "result": self.result,
             "process": self.process,
+            "lease_id": self.lease_id,
         }
 
 
@@ -103,6 +106,7 @@ class DeviceLease:
         self.root = Path(root) if root else Path(__file__).resolve().parents[1]
         self.path = self.root / LEASE_FILE
         self.ttl_seconds = float(ttl_seconds)
+        self._lease_id = ""
 
     # -- read -------------------------------------------------------------
 
@@ -239,7 +243,11 @@ class DeviceLease:
         if current is not None and current.owner != owner:
             return None, f"{current.owner} holds it: {current.reason or current.capability_id}"
         if current is not None and current.owner == owner:
-            return current, "already held by the same owner"
+            if current.lease_id and self._lease_id == current.lease_id:
+                return current, "already held by this lease"
+            if not current.lease_id and current.process == os.getpid():
+                return current, "already held by this legacy process"
+            return None, f"{current.owner} holds another lease: {current.capability_id or current.job_id}"
         ttl = self.ttl_seconds if ttl_seconds is None else float(ttl_seconds)
         record = LeaseRecord(
             owner=owner,
@@ -250,11 +258,16 @@ class DeviceLease:
             acquired_at=moment,
             expires_at=moment + timedelta(seconds=ttl),
             process=os.getpid(),
+            lease_id=uuid.uuid4().hex,
         )
+        self._lease_id = record.lease_id
         self._write(record, event="acquired")
         return record, "acquired"
 
-    def release(self, *, result: str, reason: str = "", now: datetime | None = None) -> bool:
+    def release(
+        self, *, result: str, reason: str = "", expect_lease_id: str = "",
+        now: datetime | None = None,
+    ) -> bool:
         """Give the device back.  Idempotent, and never raises.
 
         §15: the release happens regardless of PASS / FAIL / BLOCKED, so the caller is
@@ -266,11 +279,27 @@ class DeviceLease:
         if record is None or record.released_at is not None:
             self._append({"event": "release_noop", "reason": reason, "result": result})
             return False
+        expected = expect_lease_id or self._lease_id
+        if record.lease_id:
+            if not expected or record.lease_id != expected:
+                self._append({
+                    "event": "release_refused", "reason": reason, "result": result,
+                    "expected_lease_id": expected, "current_lease_id": record.lease_id,
+                    "current_job_id": record.job_id, "current_capability_id": record.capability_id,
+                })
+                return False
+        elif record.process and record.process != os.getpid():
+            # Legacy records have no token. Only their creating process may release them;
+            # a delayed callback from another job cannot release a newer lease.
+            self._append({"event": "release_refused", "reason": reason, "result": result,
+                          "current_job_id": record.job_id, "current_capability_id": record.capability_id})
+            return False
         released = LeaseRecord(
             owner=record.owner, trace_id=record.trace_id, job_id=record.job_id,
             capability_id=record.capability_id, reason=record.reason,
             acquired_at=record.acquired_at, expires_at=record.expires_at,
             released_at=moment, result=result, process=record.process,
+            lease_id=record.lease_id,
         )
         self._write(released, event="released")
         return True
@@ -279,6 +308,10 @@ class DeviceLease:
         """Push the expiry out for a validation that is still legitimately running."""
         record = self._read()
         if record is None:
+            return False
+        if record.lease_id and record.lease_id != self._lease_id:
+            return False
+        if not record.lease_id and record.process and record.process != os.getpid():
             return False
         moment = now or datetime.now(timezone.utc)
         # The lease keeps the duration it was granted with, so renewing a short
@@ -292,6 +325,7 @@ class DeviceLease:
             acquired_at=record.acquired_at,
             expires_at=moment + span,
             released_at=record.released_at, result=record.result, process=record.process,
+            lease_id=record.lease_id,
         )
         self._write(renewed, event="renewed")
         return True
@@ -316,6 +350,7 @@ class DeviceLease:
             released_at=_moment(payload.get("released_at")),
             result=str(payload.get("result") or ""),
             process=int(payload.get("process") or 0),
+            lease_id=str(payload.get("lease_id") or ""),
         )
 
     def _write(self, record: LeaseRecord, *, event: str) -> None:

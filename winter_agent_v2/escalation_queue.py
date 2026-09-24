@@ -2446,9 +2446,24 @@ class EscalationQueueAdapter:
             # Nothing is waiting.  If a validation still holds the device, give it back
             # rather than leaving gameplay frozen for a version nobody has to examine.
             holder = lease.holder(now=moment)
-            if holder is not None and holder.owner == OWNER_DEVELOPMENT_VALIDATION:
-                lease.release(result="NO_WAITING_VERSION",
-                              reason="no LIVE_VERIFY_PENDING record left to examine", now=moment)
+            # This queue may release only a lease it can tie back to one of its own
+            # ledger jobs. A development lease can also belong to Codex's live work;
+            # owner type alone is not authority to release it. In particular, a slow
+            # pump can reach this branch after a newer lease replaced the one it saw.
+            record = self.ledger.snapshot().get(holder.trace_id) if holder and holder.trace_id else None
+            if (
+                holder is not None
+                and holder.owner == OWNER_DEVELOPMENT_VALIDATION
+                and record is not None
+                and record.job_id == holder.job_id
+                and holder.lease_id
+            ):
+                lease.release(
+                    result="NO_WAITING_VERSION",
+                    reason="no LIVE_VERIFY_PENDING record left to examine",
+                    expect_lease_id=holder.lease_id,
+                    now=moment,
+                )
                 self.ledger.append({
                     "source": "queue", "event": "validation_lease_released",
                     "key": target.key if target else "",
@@ -2511,9 +2526,14 @@ class EscalationQueueAdapter:
         holder = lease.holder(now=moment)
         if holder is None or holder.owner != OWNER_DEVELOPMENT_VALIDATION:
             return False
-        if expect_key and holder.trace_id and holder.trace_id != expect_key:
+        if not expect_key or holder.trace_id != expect_key or not holder.lease_id:
             return False
-        released = lease.release(result=result, reason=reason, now=moment)
+        record = self.ledger.snapshot().get(expect_key)
+        if record is None or record.job_id != holder.job_id:
+            return False
+        released = lease.release(
+            result=result, reason=reason, expect_lease_id=holder.lease_id, now=moment,
+        )
         if released:
             self.ledger.append({
                 "source": "queue", "event": "validation_lease_released",

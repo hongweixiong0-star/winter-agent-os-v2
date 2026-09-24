@@ -99,7 +99,10 @@ class _Lease:
     def holder(self, **_kwargs):
         if self._owner is None:
             return None
-        return type("Held", (), {"owner": self._owner, "capability_id": self._capability_id})()
+        return type("Held", (), {
+            "owner": self._owner, "capability_id": self._capability_id,
+            "lease_id": "lease-1", "trace_id": "trace-1", "job_id": "job-1",
+        })()
 
 
 def _runtime(*, execution_mode: str, lease_owner: str | None) -> LiveRuntime:
@@ -112,6 +115,8 @@ def _runtime(*, execution_mode: str, lease_owner: str | None) -> LiveRuntime:
         sleeper=lambda _seconds: None,
         device_lease=_Lease(lease_owner),
         execution_mode=execution_mode,
+        expected_lease_id="lease-1", trace_id="trace-1", job_id="job-1",
+        capability="OPEN_TRAINING_PAGE",
     )
 
 
@@ -187,7 +192,10 @@ class TheDecisionIsTheTwoHalvesItClaimsTests(unittest.TestCase):
     """``_owns_the_lease`` in isolation, so each half is pinned rather than inferred."""
 
     def setUp(self) -> None:
-        self.held = type("Held", (), {"owner": OWNER_DEVELOPMENT_VALIDATION, "capability_id": "x"})()
+        self.held = type("Held", (), {
+            "owner": OWNER_DEVELOPMENT_VALIDATION, "capability_id": "OPEN_TRAINING_PAGE",
+            "lease_id": "lease-1", "trace_id": "trace-1", "job_id": "job-1",
+        })()
 
     def test_both_halves_present_is_own(self):
         runtime = _runtime(
@@ -211,6 +219,16 @@ class TheDecisionIsTheTwoHalvesItClaimsTests(unittest.TestCase):
             execution_mode=OWNER_DEVELOPMENT_VALIDATION, lease_owner=OWNER_DEVELOPMENT_VALIDATION,
         )
         self.assertFalse(runtime._owns_the_lease(object()))
+
+    def test_another_development_lease_is_not_ours(self):
+        runtime = _runtime(
+            execution_mode=OWNER_DEVELOPMENT_VALIDATION, lease_owner=OWNER_DEVELOPMENT_VALIDATION,
+        )
+        other = type("Held", (), {
+            "owner": OWNER_DEVELOPMENT_VALIDATION, "capability_id": "OPEN_TRAINING_PAGE",
+            "lease_id": "other", "trace_id": "trace-1", "job_id": "job-1",
+        })()
+        self.assertFalse(runtime._owns_the_lease(other))
 
 
 if __name__ == "__main__":

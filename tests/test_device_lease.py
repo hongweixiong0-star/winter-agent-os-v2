@@ -93,6 +93,19 @@ class LeaseTest(unittest.TestCase):
         self.assertEqual(events.count("release_noop"), 2)
         self.assertEqual(events.count("released"), 1)
 
+    def test_a_delayed_release_cannot_release_a_newer_development_lease(self):
+        old_owner = dl.DeviceLease(self.root)
+        old_owner.acquire(owner=dl.OWNER_DEVELOPMENT_VALIDATION, job_id="old", now=NOW)
+        old_id = old_owner.holder(now=NOW).lease_id
+        self.assertTrue(old_owner.release(result="old finished", now=NOW))
+
+        new_owner = dl.DeviceLease(self.root)
+        current, _ = new_owner.acquire(
+            owner=dl.OWNER_DEVELOPMENT_VALIDATION, job_id="codex", now=NOW + timedelta(seconds=1))
+        self.assertNotEqual(current.lease_id, old_id)
+        self.assertFalse(old_owner.release(result="late callback", now=NOW + timedelta(seconds=2)))
+        self.assertEqual(dl.DeviceLease(self.root).holder(now=NOW).job_id, "codex")
+
     def test_an_expired_owner_does_not_own_the_device(self):
         """§11: a crashed validator must not hold MuMu forever."""
         self.lease.acquire(owner=dl.OWNER_DEVELOPMENT_VALIDATION, capability_id="X",
@@ -133,6 +146,7 @@ class LeaseTest(unittest.TestCase):
         self.assertEqual(other.state(now=NOW), dl.DEVICE_VALIDATING)
         payload = json.loads((self.root / dl.LEASE_FILE).read_text(encoding="utf-8"))
         self.assertEqual(payload["owner"], dl.OWNER_DEVELOPMENT_VALIDATION)
+        self.assertTrue(payload["lease_id"])
 
 
 class RuntimeYieldsTest(unittest.TestCase):
@@ -233,7 +247,7 @@ def _as_row(record) -> dict:
         "acquired_at": record.acquired_at.isoformat() if record.acquired_at else "",
         "expires_at": record.expires_at.isoformat() if record.expires_at else "",
         "released_at": record.released_at.isoformat() if record.released_at else "",
-        "result": record.result, "process": record.process,
+        "result": record.result, "process": record.process, "lease_id": record.lease_id,
     }
 
 

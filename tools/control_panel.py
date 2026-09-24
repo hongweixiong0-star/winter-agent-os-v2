@@ -68,7 +68,8 @@ RUNTIME_PATH = ROOT / "tools/run_live.py"
 VALIDATION_MODE = "DEVELOPMENT_VALIDATION"
 
 
-def validation_command(record: Mapping[str, Any], *, capture_dir: str, serial: str) -> list[str]:
+def validation_command(record: Mapping[str, Any], *, capture_dir: str, serial: str,
+                      lease_id: str = "") -> list[str]:
     """The unified executor's command line for one Development Validation cycle.
 
     Built here, as a pure function, for two reasons: the five validation fields have to be
@@ -111,6 +112,7 @@ def validation_command(record: Mapping[str, Any], *, capture_dir: str, serial: s
         "--trace-id", str(record.get("key") or ""),
         "--job-id", str(record.get("job_id") or ""),
         "--capability", str(record.get("capability") or ""),
+        "--lease-id", str(lease_id or ""),
         # What this cycle must be running for its evidence to be creditable.  run_live refuses
         # before the first device action when it does not match (operator §3).
         "--expected-after-version", str(record.get("after_version") or ""),
@@ -4776,11 +4778,13 @@ class ControlPanel:
         if not goal:
             # Nothing to aim a run at: hand the device straight back rather than leave
             # gameplay frozen waiting for a validation that cannot be pointed anywhere.
-            self._release_validation_lease("NO_GOAL", "the pending record names no goal")
+            self._release_validation_lease(
+                "NO_GOAL", "the pending record names no goal", expect_key=holder.trace_id,
+            )
             return
         self.validating = True
         threading.Thread(target=self._run_validation_worker,
-                         args=(goal, holder.trace_id or ""), daemon=True).start()
+                         args=(goal, holder.trace_id or "", holder.lease_id or ""), daemon=True).start()
 
     def _pending_validation_record(self, key: str) -> dict[str, Any]:
         """The record a validation cycle is about to examine, by trace where one is known.
@@ -4822,17 +4826,17 @@ class ControlPanel:
         """The goal the pending version was produced for, read from the one ledger."""
         return str(self._pending_validation_record(key).get("goal") or "")
 
-    def _release_validation_lease(self, result: str, reason: str) -> None:
+    def _release_validation_lease(self, result: str, reason: str, *, expect_key: str = "") -> None:
         try:
             from winter_agent_v2.escalation_queue import EscalationLedger, EscalationQueueAdapter
 
             EscalationQueueAdapter(
                 root=ROOT, ledger=EscalationLedger(Path(_ESCALATION_LEDGER_PATH))
-            ).release_validation_lease(result=result, reason=reason)
+            ).release_validation_lease(result=result, reason=reason, expect_key=expect_key)
         except Exception as exc:  # noqa: BLE001 - the device must be returned, not reported
             self.events.put(("note", f"真机校准：释放租约失败（{type(exc).__name__}），TTL 到期后自动归还。"))
 
-    def _run_validation_worker(self, goal: str, key: str) -> None:
+    def _run_validation_worker(self, goal: str, key: str, lease_id: str = "") -> None:
         """One bounded run of the unified executor, aimed at the pending capability.
 
         Bounded (``VALIDATION_MAX_ACTIONS``) on purpose: a calibration is an examination,
@@ -4861,6 +4865,7 @@ class ControlPanel:
                 record,
                 capture_dir=str(CAPTURE_ROOT / "validation" / stamp),
                 serial=self.device.serial,
+                lease_id=lease_id,
             )
             process = _background_popen(command, cwd=str(ROOT), stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, text=True,
@@ -4882,7 +4887,9 @@ class ControlPanel:
         finally:
             self.validating = False
             # §15: the device goes back whatever the outcome was.
-            self._release_validation_lease(result, f"validation run for {key or goal} finished")
+            self._release_validation_lease(
+                result, f"validation run for {key or goal} finished", expect_key=key,
+            )
 
     def _run_unified_worker(self) -> None:
         """Lifecycle adapter only; it never selects a Goal or Skill."""

@@ -125,6 +125,8 @@ def main() -> int:
     parser.add_argument("--job-id", default="", help="The development job id (validation only)")
     parser.add_argument("--capability", default="",
                         help="The capability under examination (validation only)")
+    parser.add_argument("--lease-id", default="",
+                        help="Exact development device lease this validation owns")
     parser.add_argument(
         "--expected-after-version", default="",
         help="The version this cycle must be running for its evidence to count.  Checked "
@@ -396,6 +398,7 @@ def main() -> int:
         trace_id=args.trace_id,
         job_id=args.job_id,
         capability=args.capability,
+        expected_lease_id=args.lease_id,
         expected_after_version=args.expected_after_version,
         # The single-UI-owner lock.  Gameplay holds the device by default; a development
         # validation takes it, and this run yields at the next atomic boundary rather

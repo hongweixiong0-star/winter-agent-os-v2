@@ -27,7 +27,7 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -660,6 +660,22 @@ class ValidationLease(unittest.TestCase):
         })
         adapter.pump(now=NOW)
         self.assertIsNone(self._holder())
+
+    def test_a_no_waiting_validation_callback_does_not_release_codex_lease(self):
+        from winter_agent_v2.device_lease import DeviceLease
+
+        external = DeviceLease(self.tmp, ttl_seconds=600)
+        record, _ = external.request(
+            capability_id="TRAINING_CAMP_LOOP", job_id="codex-training",
+            trace_id="codex-winter-v2", reason="Codex live development", now=NOW,
+        )
+        self.assertIsNotNone(record)
+        result = self._adapter().service_validation_lease(now=NOW + timedelta(seconds=10))
+        self.assertEqual(result, "")
+        current = DeviceLease(self.tmp).holder(now=NOW + timedelta(seconds=10))
+        self.assertIsNotNone(current)
+        self.assertEqual(current.lease_id, record.lease_id)
+        self.assertEqual(current.job_id, "codex-training")
 
     def test_the_runtime_is_told_who_owns_the_device_by_the_lease_file(self):
         """No second channel: the runtime reads the same lock everyone else does."""

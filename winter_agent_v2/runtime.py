@@ -420,6 +420,7 @@ class LiveRuntime:
         trace_id: str = "",
         job_id: str = "",
         capability: str = "",
+        expected_lease_id: str = "",
         expected_after_version: str = "",
         #: Who answers the on-demand question for a screen no skill can advance.
         #:
@@ -540,6 +541,7 @@ class LiveRuntime:
         self.trace_id = str(trace_id or "")
         self.job_id = str(job_id or "")
         self.capability = str(capability or "")
+        self.expected_lease_id = str(expected_lease_id or "")
         self.expected_after_version = str(expected_after_version or "")
         # The single-UI-owner lock (operator §8/§19).  Injectable so a test can hold it
         # without touching the real file; ``None`` means "no lease file exists", which is
@@ -575,7 +577,18 @@ class LiveRuntime:
         """
         if self.execution_mode != OWNER_DEVELOPMENT_VALIDATION:
             return False
-        return str(getattr(held, "owner", "") or "") == OWNER_DEVELOPMENT_VALIDATION
+        if str(getattr(held, "owner", "") or "") != OWNER_DEVELOPMENT_VALIDATION:
+            return False
+        # A validation subprocess may act only under the exact lease requested for its
+        # trace/job/capability. Owner type alone would let a second development process
+        # share Codex's device lease and send concurrent input.
+        return bool(
+            self.expected_lease_id
+            and str(getattr(held, "lease_id", "") or "") == self.expected_lease_id
+            and str(getattr(held, "trace_id", "") or "") == self.trace_id
+            and str(getattr(held, "job_id", "") or "") == self.job_id
+            and str(getattr(held, "capability_id", "") or "") == self.capability
+        )
 
     @property
     def _semantic(self):

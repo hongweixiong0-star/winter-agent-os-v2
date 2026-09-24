@@ -47,6 +47,12 @@ def test_the_command_carries_all_five_validation_fields():
     assert _pair(command, "--job-id") == "5b525aa4"
     assert _pair(command, "--capability") == "SPEND_STAMINA_ON_BEAST"
     assert _pair(command, "--expected-after-version") == "b" * 40
+    assert _pair(command, "--lease-id") == ""
+
+
+def test_validation_command_carries_the_exact_lease_identity():
+    command = cp.validation_command(RECORD, capture_dir="cap", serial="s", lease_id="lease-uuid")
+    assert _pair(command, "--lease-id") == "lease-uuid"
 
 
 def test_the_run_still_goes_through_the_one_executor():
