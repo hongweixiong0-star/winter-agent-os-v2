@@ -626,7 +626,7 @@ class GoalLibrary:
         self._append_camp_training_goals(goals, world, observations)
         self._append_queue_goal(
             goals, "KEEP_RESEARCH_PRODUCTIVE", world.research,
-            ("RESEARCH",), RESEARCH_PRODUCTIVE_VALUE,
+            ("SELECT_RESEARCH_NODE", "RESEARCH"), RESEARCH_PRODUCTIVE_VALUE,
         )
         self._append_queue_goal(
             goals, "KEEP_BUILDING_PRODUCTIVE", world.building,

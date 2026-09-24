@@ -31,6 +31,7 @@ from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
 from .intel_pins import intel_pin_centers
+from .verifier import verify_research_node_inspected
 
 
 @dataclass(frozen=True)
@@ -367,6 +368,7 @@ class LiveRuntime:
         "TRY_ORDINARY_CONTROL": verify_ordinary_control_tried,
         "NAVIGATE_RESEARCH_LAB": verify_research_lab_focused,
         "OPEN_RESEARCH": verify_research_page_open,
+        "SELECT_RESEARCH_NODE": verify_research_node_inspected,
     }
 
     def __init__(
@@ -2176,6 +2178,29 @@ class LiveRuntime:
             # cell is off-screen: the loop scrolls the strip instead of
             # guessing a coordinate.
             return self._semantic.resource_cell_center_norm(resource)
+        if semantic == "RESEARCH_NODE_NEXT":
+            # Inspect one unfinished technology node at the location OCR read from
+            # this exact research frame.  The guard makes the operation navigation
+            # only: a named, progressed node is required;
+            # this semantic never resolves the resource-spending 研究 control.
+            if frame.page is not Page.RESEARCH:
+                return None
+            candidate = next((
+                node for node in (frame.research.get("node_candidates") or ())
+                if isinstance(node, Mapping)
+                and node.get("status") == "UNFINISHED"
+                and int(node.get("level") or 0) > 0
+                and int(node.get("level_max") or 0) > int(node.get("level") or 0)
+                and isinstance(node.get("tap_norm"), (tuple, list))
+                and len(node.get("tap_norm")) == 2
+            ), None)
+            if candidate is None:
+                return None
+            try:
+                point = (float(candidate["tap_norm"][0]), float(candidate["tap_norm"][1]))
+            except (TypeError, ValueError):
+                return None
+            return point if all(0.0 <= coordinate <= 1.0 for coordinate in point) else None
         if semantic == "BEAST_SEARCH_TAB":
             # The 野兽 tab, tapped where this frame's own OCR read its printed label
             # (see ``ocr.read_resource_tab_labels``).

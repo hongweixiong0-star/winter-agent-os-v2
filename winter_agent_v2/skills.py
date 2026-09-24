@@ -535,6 +535,17 @@ def v2_registry() -> SkillRegistry:
     )
     skills.append(
         Skill(
+            "SELECT_RESEARCH_NODE",
+            "Open the detail panel for a current-frame unfinished research node",
+            Page.RESEARCH,
+            Action("TAP_SEMANTIC", "RESEARCH_NODE_NEXT"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
+    skills.append(
+        Skill(
             "RESEARCH",
             "Start one Whiteout Survival technology when the research queue is available",
             Page.RESEARCH,

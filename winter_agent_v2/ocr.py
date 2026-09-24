@@ -369,6 +369,56 @@ QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
 )
 
 
+def _read_research_node_candidates(tokens, frame_size: tuple[int, int] | None) -> list[dict]:
+    """Read named, leveled research nodes and their current-frame tap points.
+
+    A technology is only a *candidate* here.  The progress pill identifies which
+    name belongs to a node, and the label's own OCR box supplies the location; no
+    remembered screen coordinates or readiness-to-spend claim is produced.
+    """
+    if not frame_size or frame_size[0] <= 0 or frame_size[1] <= 0:
+        return []
+    width, height = frame_size
+    positioned = [token for token in tokens if token.box and token.confidence >= 0.88]
+    progress = []
+    for token in positioned:
+        match = re.fullmatch(r"\s*(\d+)\s*/\s*(\d+)\s*", token.text)
+        if match and int(match.group(2)) > 0:
+            progress.append((token, int(match.group(1)), int(match.group(2))))
+    labels = [
+        token for token in positioned
+        if re.fullmatch(r"[\u4e00-\u9fffA-Za-z·]+(?:[IVXLCDM]+|\d+)", token.text.strip())
+    ]
+    rows: list[dict] = []
+    used_progress: set[int] = set()
+    for label in sorted(labels, key=lambda token: (token.centre[1], token.centre[0])):
+        x, y = label.centre
+        nearby = [
+            (abs(x - pill.centre[0]) + abs(y - pill.centre[1]) * 0.6, index, pill, current, total)
+            for index, (pill, current, total) in enumerate(progress)
+            if index not in used_progress
+            and 0 < y - pill.centre[1] <= 110
+            and abs(x - pill.centre[0]) <= 110
+        ]
+        if not nearby:
+            continue
+        _, index, pill, current, total = min(nearby, key=lambda row: row[0])
+        used_progress.add(index)
+        node_name = label.text.strip()
+        rows.append({
+            "node_id": node_name,
+            "name": node_name,
+            "level": current,
+            "level_max": total,
+            "progress": f"{current}/{total}",
+            "status": "MAXED" if current >= total else "UNFINISHED",
+            "tap_norm": [round(x / width, 5), round(y / height, 5)],
+            "confidence": round(min(label.confidence, pill.confidence), 4),
+            "source": "CURRENT_FRAME_OCR",
+        })
+    return rows
+
+
 class OCRPageClassifier:
     """Conservative exact-keyword fallback; ambiguous OCR stays UNKNOWN.
 
@@ -825,6 +875,41 @@ class OCRPageClassifier:
             # turn the tab's name into a pixel.
         if page is Page.RESEARCH:
             texts = [token.text.strip() for token in eligible]
+            # The tech tree does not print a generic "researchable" state.  Its current
+            # nodes are the live evidence: each node has a name, a progress pill and a
+            # position on this frame.  Keep those observations separate from the
+            # permission to spend resources; RuleBrain may use them to inspect a node,
+            # but the presence of an unfinished node alone never enables RESEARCH.
+            research["node_candidates"] = _read_research_node_candidates(eligible, frame_size)
+            # On the detail sheet the node is named again beside its own 研究 control.
+            # The tree header 科技研究 must not count as that control.
+            detail_controls = [
+                token for token in eligible
+                if token.text.strip() in {"研究", "开始研究"}
+            ]
+            if detail_controls:
+                candidates = research["node_candidates"]
+                label_tokens = [
+                    token for token in eligible
+                    if re.fullmatch(r"[\u4e00-\u9fffA-Za-z·]+(?:[IVXLCDM]+|\d+)", token.text.strip())
+                ]
+                visible_names = {token.text.strip() for token in label_tokens}
+                named = [item for item in candidates if item["name"] in visible_names]
+                if len(visible_names) == 1:
+                    selected_name = next(iter(visible_names))
+                elif named:
+                    selectable = [item for item in named if item["level"] > 0 and item["status"] == "UNFINISHED"]
+                    selected_name = min(selectable or named, key=lambda item: item["tap_norm"][1])["name"]
+                else:
+                    selected_name = ""
+                if selected_name:
+                    research["selected_node"] = selected_name
+                    research["selected_node_name"] = selected_name
+                    research["node_detail_visible"] = True
+                    control = max(detail_controls, key=lambda token: token.confidence)
+                    research["research_control_norm"] = _token_centre_norm(
+                        control.text.strip(), eligible, frame_size
+                    )
             if "病房扩建VII" in exact_texts:
                 research.update({"node":"WARD_EXPANSION_VII", "name":"病房扩建VII", "branch":"GROWTH"})
                 if "2/3" in exact_texts:
@@ -4491,6 +4576,40 @@ class HybridVision:
                         elif has_header:
                             intel.update({"status": "NOT_AVAILABLE", "available_count": 0, "list_read": True})
                 return replace(primary, intel=intel)
+            if primary.page is Page.RESEARCH:
+                # A reviewed page template answers that the technology tree is open, but
+                # not which nodes, levels, or detail controls are visible.  Read those
+                # values from the same current screenshot so Goal/MAA can inspect the
+                # actual tree instead of leaving an idle queue as an unstructured UNKNOWN.
+                # Only OCR-derived node/detail facts are merged here; a stronger queue
+                # state already supplied by the template reader keeps precedence.
+                result = self.ocr.recognize(image_path)
+                secondary = self.classifier.classify(result, frame_size=frame_size)
+                if secondary.page is Page.RESEARCH:
+                    research = dict(primary.research)
+                    for key in (
+                        "node_candidates", "selected_node", "selected_node_name",
+                        "node_detail_visible", "research_control_norm", "node", "name",
+                        "branch", "level_progress",
+                    ):
+                        if key in secondary.research:
+                            research[key] = secondary.research[key]
+                    if secondary.research.get("status") == "IN_PROGRESS":
+                        research.update({
+                            key: secondary.research[key]
+                            for key in ("status", "queue_available", "timer")
+                            if key in secondary.research
+                        })
+                    elif (
+                        secondary.research.get("status") == "IDLE"
+                        and research.get("queue_available") is not False
+                    ):
+                        research.update({
+                            key: secondary.research[key]
+                            for key in ("status", "queue_available")
+                            if key in secondary.research
+                        })
+                    return replace(primary, research=research)
             if primary.page is Page.MARCH:
                 # The formation page's 出征 control states both the price and, in
                 # colour, whether the account can pay it.  Recording that verdict

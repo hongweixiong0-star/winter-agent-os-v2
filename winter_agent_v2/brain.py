@@ -1699,10 +1699,31 @@ class RuleBrain:
                 return self._leave_or_stop(world, "research_queue_busy", "switch_task")
             if world.research.get("researchable"):
                 return Decision("RESEARCH", "research_queue_available", world.confidence, "research_queue_started")
+            candidates = world.research.get("node_candidates") or ()
+            inspectable = next((
+                node for node in candidates
+                if isinstance(node, dict)
+                and node.get("status") == "UNFINISHED"
+                and int(node.get("level") or 0) > 0
+                and int(node.get("level_max") or 0) > int(node.get("level") or 0)
+                and isinstance(node.get("tap_norm"), (list, tuple))
+            ), None)
+            if inspectable and not world.research.get("node_detail_visible"):
+                # Opening a technology node is a reversible observation step.  Its
+                # label and progress come from the current OCR frame; this does not
+                # claim that the node is affordable or authorize the 研究 action.
+                return Decision(
+                    "SELECT_RESEARCH_NODE",
+                    f"inspect_current_unfinished_research_node:{inspectable.get('name', '')}",
+                    min(world.confidence, float(inspectable.get("confidence") or 0.0)),
+                    "research_node_details_opened",
+                )
             # Nothing on the page says a node can be started.  Until the node/cost
             # reading exists this is the honest stop, and naming it keeps the goal
             # from looking like it silently did nothing (the previous code fell
             # through every later branch to the same stop with no reason).
+            if world.research.get("node_detail_visible"):
+                return self._leave_or_stop(world, "research_node_details_need_affordability_and_strategy", "switch_task")
             return self._leave_or_stop(world, "research_page_no_startable_node", "switch_task")
         if world.page is Page.TRAINING:
             # Which barracks is open, and which one this goal is for.  The page draws all three tab

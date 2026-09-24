@@ -1522,6 +1522,26 @@ def verify_research_queue(state: WorldState) -> VerificationResult:
     )
 
 
+def verify_research_node_inspected(before: WorldState, after: WorldState) -> VerificationResult:
+    candidates = before.research.get("node_candidates") or ()
+    expected = next((
+        str(node.get("name") or node.get("node_id") or "")
+        for node in candidates
+        if isinstance(node, dict)
+        and node.get("status") == "UNFINISHED"
+        and int(node.get("level") or 0) > 0
+        and int(node.get("level_max") or 0) > int(node.get("level") or 0)
+    ), "")
+    selected = str(after.research.get("selected_node") or "")
+    detail_visible = after.research.get("node_detail_visible") is True
+    ok = bool(expected) and after.page is Page.RESEARCH and detail_visible and selected == expected
+    return VerificationResult(
+        ok,
+        "OK" if ok else "RESEARCH_NODE_DETAIL_NOT_PROVEN",
+        {"expected_node": expected, "selected_node": selected, "detail_visible": detail_visible},
+    )
+
+
 def verify_research_started(before: WorldState, after: WorldState, research_id: str) -> VerificationResult:
     was_available = before.research.get("queue_available") is True
     target_ok = after.research.get("node") == research_id
