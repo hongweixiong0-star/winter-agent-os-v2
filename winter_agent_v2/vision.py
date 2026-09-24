@@ -2531,7 +2531,20 @@ class SemanticWorldVision:
                 confidence=0.99,
             )
         if match("PAGE_MAP"):
-            return WorldState(page=Page.HOME, confidence=0.98)
+            # The city HUD's 登录好礼 entry, read on THIS frame.  Measured
+            # 2026-09-24: the control sits at the same centre on the city and the
+            # world map (the element table's pages are ["MAP", "HOME"]), the
+            # open panel draws no entry at all, and the brain uses this flag to
+            # open the panel at most once per run -- so a frame that does not
+            # draw the entry must say False, not None.
+            return WorldState(
+                page=Page.HOME,
+                events={
+                    "login_gift_entry_visible":
+                        match("CONTROL[登录好礼]") is not None,
+                },
+                confidence=0.98,
+            )
         return WorldState(page=Page.UNKNOWN, confidence=0.0)
 
 

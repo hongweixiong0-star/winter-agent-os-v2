@@ -3,12 +3,12 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 113,
-    "schedulable": 99,
-    "navigation_like_entries": 50,
-    "schedulable_navigation_entries": 48,
-    "distinct_targets": 90,
-    "semantics_with_templates": 265,
+    "skills": 114,
+    "schedulable": 100,
+    "navigation_like_entries": 51,
+    "schedulable_navigation_entries": 49,
+    "distinct_targets": 91,
+    "semantics_with_templates": 266,
     "semantics_with_templates_and_no_skill": 200
   },
   "operator_functions": [
@@ -1047,6 +1047,17 @@
       "destination_page": "UNKNOWN",
       "schedulable": true,
       "verifier": "verify_intel_rescue_target_open",
+      "visual_evidence": 1,
+      "navigation_like": true
+    },
+    {
+      "skill": "OPEN_LOGIN_GIFT",
+      "source_page": "HOME",
+      "action": "TAP_SEMANTIC:CONTROL[登录好礼]",
+      "target": "CONTROL[登录好礼]",
+      "destination_page": "UNKNOWN",
+      "schedulable": true,
+      "verifier": "verify_login_gift_panel_open",
       "visual_evidence": 1,
       "navigation_like": true
     },

@@ -1,6 +1,6 @@
 {
-  "count": 442,
-  "generated_at": "2026-09-24T06:34:16.426855+00:00",
+  "count": 443,
+  "generated_at": "2026-09-24T09:39:04.539221+00:00",
   "records": [
     {
       "confidence": 0.99,
@@ -8068,6 +8068,34 @@
       "width": 97,
       "height": 98,
       "note": "the 免费 tab's highlighted reward node -- the tile plus the gold ring the client drew around it.  A tap CANDIDATE: the picture is measured, what the tile does when tapped is what the closure probe measures."
+    },
+    {
+      "semantic": "CONTROL[登录好礼]",
+      "template_path": "knowledge\\ui\\icon_templates\\登录好礼.png",
+      "matcher": "ccoeff",
+      "matcher_note": "search-based: the HUD stack can shift, so the match reports the bounds it found inside the band rather than the registration box",
+      "roi_norm": {
+        "x_norm": 0.730556,
+        "y_norm": 0.096875,
+        "w_norm": 0.077778,
+        "h_norm": 0.042969
+      },
+      "search_band": {
+        "x_norm": 0.659722,
+        "y_norm": 0.05,
+        "w_norm": 0.220833,
+        "h_norm": 0.15
+      },
+      "max_distance": 16,
+      "source": "live_20260924T093904Z/city HUD 登录好礼 entry",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "login_gift_city_entry_20260924",
+      "parent_screenshot": "dataset\\raw\\control_panel\\runtime_auto\\20260924_101003_761338\\20260924_101003_761338_step_001_after_20260924T021024299127.png",
+      "width": 56,
+      "height": 55,
+      "note": "the city HUD's 登录好礼 calendar entry -- the control the element table already taps by hand.  Navigation CANDIDATE: opening the panel is all it does; what the panel offers is decided after the page is verified."
     }
   ],
   "schema_version": "1.0",

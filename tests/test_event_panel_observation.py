@@ -108,14 +108,43 @@ class ThePanelHasItsOwnIdentity(unittest.TestCase):
 
 
 class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
-    """Defect 2: the first step on the panel is an observation, whoever holds the cycle."""
+    """Defect 2: the first step on the panel is an observation, whoever holds the cycle.
+
+    2026-09-24 refinement, measured on the same client: the observation is not the
+    *end* of the story, it is the front of it.  A panel the client marks with its
+    gold claim ring is free to act on -- the first answer is the claim skill, for
+    every goal, exactly as the observation guard intended ("observed and verified
+    before any flow is allowed to change it", and then acted on).  The property
+    below therefore runs on BOTH panel states: the claimable one, and the claimed
+    one (04_claim_final, ring gone) which has nothing to act on and must be
+    observed and left, never tapped a second time.
+    """
+
+    CLAIMED_FRAME = (
+        ROOT / "dataset/truth_audit/login_gift_claim_20260924/key/04_claim_final.png"
+    )
 
     @classmethod
     def setUpClass(cls) -> None:
-        _require(*PANEL_FRAMES)
+        _require(*PANEL_FRAMES, cls.CLAIMED_FRAME)
         vision = _vision()
         cls.panel = vision.observe(PANEL_FRAMES[0])
         assert cls.panel.page is Page.EVENT, "the identity test above must pass first"
+        assert dict(cls.panel.events or {}).get("day_claim_visible") is True, (
+            "the claimable fixture must carry the client's own claim ring; if this frame "
+            "no longer draws one, the fixture frame is stale and must be re-measured"
+        )
+        cls.claimed_panel = vision.observe(cls.CLAIMED_FRAME)
+        assert cls.claimed_panel.page is Page.EVENT
+        assert dict(cls.claimed_panel.events or {}).get("day_claim_visible") is False, (
+            "the claimed fixture must NOT draw the ring; the day was claimed 2026-09-24"
+        )
+
+    def test_a_claimable_panel_is_claimed_by_whatever_holds_the_cycle(self) -> None:
+        for goal in (None, "MAIL", "DAILY_ACTIVITY_TARGET", "ALLIANCE_ROUTINE", "TRAIN"):
+            with self.subTest(goal=goal):
+                decision = _decide(goal, self.panel)
+                self.assertEqual(decision.skill, "CLAIM_LOGIN_GIFT", f"goal={goal}")
 
     def test_no_goal_may_leave_the_panel_on_the_first_step(self) -> None:
         """The measured production failure -- and the committed-goal variant of it.
@@ -123,11 +152,12 @@ class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
         The episode that produced this file carried ``reason=first_ready_p0_skill``, i.e. the
         goal-less fallback.  The same panel is also closed by a *committed* goal's own branch
         (measured here: ``BACK / mail_goal_leaves_a_panel_it_does_not_own``), so the guard has to
-        answer for every goal rather than for the fallback alone.
+        answer for every goal rather than for the fallback alone.  Run on the CLAIMED panel:
+        a panel with nothing to claim is the one the guard exists for.
         """
         for goal in (None, "MAIL", "DAILY_ACTIVITY_TARGET", "ALLIANCE_ROUTINE", "TRAIN"):
             with self.subTest(goal=goal):
-                decision = _decide(goal, self.panel)
+                decision = _decide(goal, self.claimed_panel)
                 self.assertEqual(
                     decision.skill,
                     "TRY_ORDINARY_CONTROL",
@@ -144,18 +174,27 @@ class AJustOpenedPanelIsObservedFirst(unittest.TestCase):
         ever on a panel that has nothing to act on.
         """
         brain = RuleBrain(current_goal=None)
-        first = brain.decide(self.panel, v2_registry())
-        second = brain.decide(self.panel, v2_registry())
-        third = brain.decide(self.panel, v2_registry())
+        first = brain.decide(self.claimed_panel, v2_registry())
+        second = brain.decide(self.claimed_panel, v2_registry())
+        third = brain.decide(self.claimed_panel, v2_registry())
         self.assertEqual(first.reason, OBSERVATION_REASON)
         self.assertNotEqual(second.reason, OBSERVATION_REASON, "the observation repeated")
         self.assertEqual(second.reason, third.reason, "the flow settled differently each step")
         self.assertEqual(second.skill, "BACK")
 
+    def test_the_claim_is_also_bounded_to_one_step_per_run(self) -> None:
+        """A claimable panel is claimed once; the flag is consumed either way."""
+        brain = RuleBrain(current_goal=None)
+        first = brain.decide(self.panel, v2_registry())
+        second = brain.decide(self.panel, v2_registry())
+        self.assertEqual(first.skill, "CLAIM_LOGIN_GIFT")
+        self.assertNotEqual(second.skill, "CLAIM_LOGIN_GIFT",
+                            "the claim repeated on the same run")
+
     def test_a_fresh_run_observes_again(self) -> None:
         """The flag is per run, so the next AUTO round still looks before it leaves."""
-        self.assertEqual(_decide(None, self.panel).reason, OBSERVATION_REASON)
-        self.assertEqual(_decide(None, self.panel).reason, OBSERVATION_REASON)
+        self.assertEqual(_decide(None, self.claimed_panel).reason, OBSERVATION_REASON)
+        self.assertEqual(_decide(None, self.claimed_panel).reason, OBSERVATION_REASON)
 
     def test_the_guard_does_not_touch_a_page_no_one_opened(self) -> None:
         """``Page.EVENT`` is the trigger; every other page keeps its own answer."""

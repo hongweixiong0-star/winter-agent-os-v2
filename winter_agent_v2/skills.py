@@ -441,6 +441,29 @@ def v2_registry() -> SkillRegistry:
               unknown_policy="A panel that draws no highlighted day node blocks; a priced node blocks",
               ui_change_tolerance=("reward_icon", "reward_quantity", "number", "position",
                                    "resolution", "skin")),
+        # The navigation half of the pair above.  The entry is the city HUD's
+        # 登录好礼 calendar control, registered in the template manifest as
+        # ``CONTROL[登录好礼]`` (ccoeff + bounded search band) -- the same control
+        # the element table already taps by hand, and the same one a development
+        # probe tapped to open this panel twice on 2026-09-24.  Before this
+        # skill existed the ordinary AUTO could never open the panel: the
+        # resolver consulted by ``TAP_SEMANTIC`` never read the element table,
+        # so the target answered ``SEMANTIC_TARGET_NOT_VERIFIED`` -- which is
+        # the measured reason the panel only ever opened from a tool.
+        #
+        # ``CANDIDATE`` for the same call the claim skill makes: one live open
+        # with a passing verifier is evidence, not promotion.
+        Skill("OPEN_LOGIN_GIFT", "Open the 登录好礼 panel from the city HUD", Page.HOME,
+              Action("TAP_SEMANTIC", "CONTROL[登录好礼]"),
+              state=SkillState.CANDIDATE, latency_class=LatencyClass.FAST,
+              verifier="LOGIN_GIFT_PANEL_OPEN", recovery=("REFRESH_STATE",),
+              semantic_goal="Open the login gift panel to check the day's free reward",
+              parameters=(), context=("REWARD",),
+              semantic_requirements=("free", "no_real_money_cost"),
+              vision_evidence=("entry_control", "panel_title"),
+              unknown_policy=("A frame that does not draw the entry answers None and the step "
+                              "fails honestly; the resolver never invents a point"),
+              ui_change_tolerance=("position", "resolution", "skin")),
         Skill("SELECT_MARCH_TO_RECALL", "Open the recall dialog for an active gathering march", Page.MAP,
               Action("TAP_SEMANTIC", "MARCH_ROW_1"),
               state=SkillState.CANDIDATE, latency_class=LatencyClass.FAST,

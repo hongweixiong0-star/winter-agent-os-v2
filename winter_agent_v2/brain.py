@@ -220,6 +220,14 @@ class RuleBrain:
         # panel was opened -- which is exactly why the generic Back won.  One observation per run
         # is a bound, not a loop: a panel with nothing to act on still leaves on the next step.
         self.activity_panel_observed = False
+        # The 登录好礼 check, once per run.  When the city HUD draws its entry the
+        # brain may open the panel, read the day node, claim it if the client
+        # highlights it as free, and otherwise leave -- and then NOT open it
+        # again this run, whatever the panel answered.  Set on the decision
+        # opportunity itself rather than on a successful open: a run that never
+        # sees the entry (world map, mid-flow) should not spend every later HOME
+        # step re-asking.
+        self.login_gift_checked = False
         # Consecutive Stage A re-observations in this run.  Measured 2026-09-17:
         # the highlighted-camp state is NOT a transient animation -- seven waits in a
         # row all reported ``menu_drawn: false`` and ended with MAX_ACTIONS_REACHED,
@@ -652,12 +660,52 @@ class RuleBrain:
         # the very next step.
         if world.page is Page.EVENT and not self.activity_panel_observed:
             self.activity_panel_observed = True
+            events = world.events or {}
+            # The one thing this panel is FOR.  The client itself draws a gold
+            # ring around the day node that is free to claim; that ring is what
+            # ``day_claim_visible`` reads (registered template, bounded band, so
+            # the claimed panel -- measured 2026-09-24 to draw NO ring after the
+            # claim -- answers False).  Only a drawn ring authorises the claim
+            # skill: a panel without it is either already claimed today or not
+            # yet unlocked, and this run cannot tell those two apart -- so it
+            # does not tap, it observes and leaves, which is the honest answer.
+            # The paid offer (￥6.00) is never a target: the ring template does
+            # not match it and no branch here reads a price as consent.
+            if (
+                events.get("panel") == "LOGIN_GIFT"
+                and events.get("day_claim_visible") is True
+            ):
+                return Decision(
+                    "CLAIM_LOGIN_GIFT",
+                    "login_gift_day_node_is_free_to_claim",
+                    world.confidence,
+                    "login_gift_claimed",
+                )
             return Decision(
                 "TRY_ORDINARY_CONTROL",
                 "unclaimed_activity_panel_is_observed_before_any_flow_leaves_it",
                 world.confidence,
                 "ordinary_control_observed",
             )
+        # The 登录好礼 check: once per run, only when the city HUD actually draws
+        # the entry.  This is the route that was missing -- the panel used to
+        # open only from development tools because no skill could resolve
+        # ``CONTROL[登录好礼]``; the template is registered now, and the bound
+        # verifier reads the panel's own identity afterwards.  The flag is set
+        # on the opportunity (not on a successful open) so a run whose HOME
+        # frames never show the entry stops asking instead of re-asking on
+        # every later HOME step, and a claimed/unclaimable panel costs the
+        # ordinary flow at most two steps -- open, read, leave -- before the
+        # scheduler moves on (§四: 一个任务的等待不阻塞其他任务).
+        if world.page is Page.HOME and not self.login_gift_checked:
+            self.login_gift_checked = True
+            if (world.events or {}).get("login_gift_entry_visible") is True:
+                return Decision(
+                    "OPEN_LOGIN_GIFT",
+                    "login_gift_entry_on_the_city_hud_checked_once_per_run",
+                    world.confidence,
+                    "login_gift_panel_open",
+                )
         # Maintenance and loading are environmental states.  Nothing in the
         # game can be acted on, and tapping would only restart the client, so
         # the loop waits instead of burning actions or exiting the worker.

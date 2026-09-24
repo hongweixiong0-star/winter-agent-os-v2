@@ -174,6 +174,44 @@ def verify_login_gift_claimed(before: WorldState, after: WorldState) -> Verifica
     )
 
 
+def verify_login_gift_panel_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """The 登录好礼 entry tap opened the panel the city HUD promised.
+
+    Proof is the panel's own identity, not the tap's return value: the run was
+    on the city (``Page.HOME`` -- the page the entry is registered for), and the
+    frame AFTER the tap reads ``Page.EVENT`` with the hub's 超值活动 anchors and
+    the 登录好礼 title box (``events.panel == "LOGIN_GIFT"``), which is the same
+    double-anchor naming that fixed the ALLIANCE misread.  A frame that still
+    says HOME means the tap landed on nothing; a frame that says EVENT without
+    the panel marker means some other activity screen opened -- both are
+    failures, and this verifier refuses to grade either as a success.
+
+    Deliberately NOT checked here: what the panel offers.  Whether the day's
+    node is claimable, already claimed or locked is read on the panel itself
+    (``day_claim_visible``), and grading that is ``verify_login_gift_claimed``'s
+    job, one step later.  Measured 2026-09-24: the claimed panel reads
+    ``day_claim_visible=False`` and still counts as *opened*.
+    """
+    from_city = before.known and before.page is Page.HOME
+    panel_open = (
+        after.known
+        and after.page is Page.EVENT
+        and (after.events or {}).get("panel") == "LOGIN_GIFT"
+    )
+    ok = from_city and panel_open
+    return VerificationResult(
+        ok,
+        "OK" if ok else "LOGIN_GIFT_PANEL_NOT_PROVEN",
+        {
+            "from_city": from_city,
+            "panel_open": panel_open,
+            "before_page": before.page.value,
+            "after_page": after.page.value,
+            "after_panel": (after.events or {}).get("panel"),
+        },
+    )
+
+
 def verify_popup_closed(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.POPUP and bool(before.popup)
     closed = after.known and after.page is not Page.POPUP and after.popup is None
