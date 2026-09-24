@@ -570,12 +570,25 @@ class OCRPageClassifier:
             and any(troop_from_title(text) for text in exact_texts)
         ):
             found.append(Page.TRAINING)
+        # A tutorial hand can obscure a selected building's upgrade sheet and
+        # defeat the template page detector. Require its own two-column layout
+        # and several independent values. This proves only that navigation
+        # reached the sheet; it never sets ``upgradeable`` or permits spending.
+        building_sheet = self._building_upgrade_sheet_evidence(
+            eligible, frame_size=frame_size
+        )
+        if building_sheet:
+            found.append(Page.BUILDING)
         if len(set(found)) != 1:
             return WorldState(page=Page.UNKNOWN, confidence=0.0)
         page = found[0]
         confidence = max(token.confidence for token in eligible)
         alliance: dict[str, object] = {}
         daily: dict[str, object] = {}
+        building: dict[str, object] = (
+            {"upgrade_dialog_visible": True, "identity": "UNKNOWN"}
+            if page is Page.BUILDING and building_sheet else {}
+        )
         research: dict[str, object] = {}
         training: dict[str, object] = {}
         events: dict[str, object] = {}
@@ -854,12 +867,17 @@ class OCRPageClassifier:
                     if centre - self.OWNER_LOOKUP_PX <= other.centre[1] < centre
                 ]
                 # The 快捷面板 repeats the section header above each of its rows, so a
-                # countdown whose header reads 建筑队列 belongs to the building queue and is
-                # skipped rather than borrowed.  A countdown with no such owner word above it
-                # is taken, including one with nothing above it at all (an older fixture, a
-                # cropped read): the cost of taking it is one queue read as busy, while the
-                # cost of dropping it is a queue with work never being started.
-                if any("建筑队列" in text or "升级中" in text for text in above):
+                # countdown whose header reads 建筑队列 belongs to the building queue. Keep
+                # that reading on its own queue instead of borrowing it for research (the old
+                # bug) or dropping it (which made an occupied builder look unobserved).
+                building_owner = any("建筑队列" in text or "升级中" in text for text in above)
+                if building_owner:
+                    building.update({
+                        "timer": f"{timer.group(1)}d{timer.group(2)}" if timer.group(1) else timer.group(2),
+                        "status": "UPGRADING",
+                        "queue_available": False,
+                        "source": "LIVE_CLIENT_OCR",
+                    })
                     continue
                 research.update({
                     "timer": f"{timer.group(1)}d{timer.group(2)}" if timer.group(1) else timer.group(2),
@@ -869,7 +887,60 @@ class OCRPageClassifier:
                 break
             if "queue_available" not in research and "空闲中" in exact_texts:
                 research.update({"status": "IDLE", "queue_available": True})
-        return WorldState(page=page, alliance=alliance, daily=daily, research=research, training=training, events=events, confidence=confidence)
+            if (
+                building.get("queue_available") is not False
+                and any("建筑队列" in text for text in exact_texts)
+                and "空闲中" in exact_texts
+            ):
+                building.update({"status": "IDLE", "queue_available": True, "source": "LIVE_CLIENT_OCR"})
+        return WorldState(page=page, alliance=alliance, daily=daily, building=building,
+                          research=research, training=training, events=events, confidence=confidence)
+
+    @staticmethod
+    def _building_upgrade_sheet_evidence(tokens, *, frame_size: tuple[int, int] | None) -> bool:
+        """Recognize the upgrade sheet from positioned OCR, without guessing its identity."""
+        if not frame_size or frame_size[0] <= 0 or frame_size[1] <= 0:
+            return False
+        placed = []
+        for token in tokens:
+            if not token.box:
+                continue
+            xs = [point[0] for point in token.box]
+            ys = [point[1] for point in token.box]
+            rect = (min(xs) / frame_size[0], min(ys) / frame_size[1],
+                    max(xs) / frame_size[0], max(ys) / frame_size[1])
+            placed.append((token.text.strip(), rect))
+
+        def has(text: str, *, x=None, y=None) -> bool:
+            return any(
+                value == text
+                and (x is None or x[0] <= (rect[0] + rect[2]) / 2 <= x[1])
+                and (y is None or y[0] <= (rect[1] + rect[3]) / 2 <= y[1])
+                for value, rect in placed
+            )
+
+        duration = any(
+            re.fullmatch(r"\d{1,3}\s*秒", text)
+            and 0.28 <= (rect[1] + rect[3]) / 2 <= 0.67
+            for text, rect in placed
+        )
+        attribute = any(
+            re.fullmatch(r"\d+(?:\.\d+)?\s*\+\s*\d+(?:\.\d+)?", text)
+            and 0.32 <= (rect[1] + rect[3]) / 2 <= 0.72
+            for text, rect in placed
+        )
+        cost = any(
+            re.fullmatch(r"\d+(?:\.\d+)?\s*万\s*/\s*\d+", text)
+            and (rect[0] + rect[2]) / 2 >= 0.70
+            and 0.43 <= (rect[1] + rect[3]) / 2 <= 0.62
+            for text, rect in placed
+        )
+        return (
+            has("时间", x=(0.04, 0.24), y=(0.56, 0.66))
+            and has("属性", x=(0.04, 0.24), y=(0.60, 0.72))
+            and has("升级", x=(0.72, 0.96), y=(0.46, 0.56))
+            and duration and attribute and cost
+        )
 
 
 # --- world-map HUD stamina gauge -------------------------------------------
@@ -3715,6 +3786,17 @@ class HybridVision:
                 state[key] = value
         state["identity_confidence"] = read["identity_confidence"]
         state["identity_source"] = read["identity_source"]
+        # The selected-building action bar is rendered on HOME, before the upgrade
+        # dialog.  Read its "升级" label from this same screenshot so the entry
+        # action can use a current-frame location rather than a remembered offset.
+        if primary.page is Page.HOME:
+            actions = read_building_action_tokens(tokens, read_frame_size(image_path))
+            upgrade = actions.get("actions", {}).get("升级")
+            if upgrade is not None:
+                state["upgrade_tap_norm"] = list(upgrade)
+            if actions.get("name"):
+                state["selected_name"] = actions["name"]
+                state["selected_name_norm"] = list(actions["name_norm"] or ())
         return replace(primary, building=state)
 
     def observe(self, image_path: Path) -> WorldState:
@@ -3831,6 +3913,13 @@ class HybridVision:
                     ),
                     quick_panel,
                 )
+            if classified.page is Page.BUILDING and classified.building.get("upgrade_dialog_visible"):
+                # Keep the navigation proof and the building identity separate.
+                # The second read may resolve a catalogued identity, but an
+                # unrecognized building remains UNKNOWN and cannot be upgraded.
+                identified = self._read_building_identity(image_path, classified)
+                if identified is not None:
+                    classified = identified
             return self._with_quick_panel(classified, quick_panel)
         if primary.known:
             # The march counter is drawn on the map HUD and stays drawn under map

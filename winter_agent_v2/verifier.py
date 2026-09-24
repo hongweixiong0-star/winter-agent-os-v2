@@ -1435,6 +1435,35 @@ def verify_building_upgrade(before: WorldState, after: WorldState, building_id: 
     )
 
 
+def verify_selected_building_upgrade_panel_opened(
+    before: WorldState, after: WorldState
+) -> VerificationResult:
+    """Prove the current selected building's non-spending upgrade panel opened."""
+    point = before.building.get("upgrade_tap_norm")
+    had_control = isinstance(point, (tuple, list)) and len(point) == 2
+    before_id = before.building.get("id")
+    after_id = after.building.get("id")
+    before_name = before.building.get("name") or before.building.get("selected_name")
+    after_name = after.building.get("name") or after.building.get("selected_name")
+    identity_known = bool(before_id or before_name)
+    identity_same = (
+        (bool(before_id) and before_id == after_id)
+        or (bool(before_name) and before_name == after_name)
+    )
+    ok = before.page is Page.HOME and had_control and after.page is Page.BUILDING \
+        and identity_known and identity_same
+    return VerificationResult(ok, "OK" if ok else "BUILDING_UPGRADE_PANEL_NOT_PROVEN", {
+        "had_current_frame_control": had_control,
+        "identity_known": identity_known,
+        "identity_same": identity_same,
+        "before_id": before_id,
+        "after_id": after_id,
+        "before_name": before_name,
+        "after_name": after_name,
+        "after_page": after.page.value,
+    })
+
+
 def verify_panel_building_queue_opened(
     before: WorldState, after: WorldState
 ) -> VerificationResult:
@@ -1451,8 +1480,8 @@ def verify_panel_building_queue_opened(
         and row.get("control") == "ARROW"
         and row.get("arrow_basis") == "ROW_BUTTON_SCAN"
     )
-    identity = ((after.building or {}).get("id") or (after.building or {}).get("name")
-                or (after.building or {}).get("selected_name"))
+    identity = (after.building or {}).get("id") or (after.building or {}).get("name") \
+        or (after.building or {}).get("selected_name")
     action_control = (after.building or {}).get("upgrade_tap_norm")
     selected_action_bar = (
         after.page is Page.HOME
@@ -1460,7 +1489,12 @@ def verify_panel_building_queue_opened(
         and isinstance(action_control, (tuple, list))
         and len(action_control) == 2
     )
-    building_dialog = after.page is Page.BUILDING and bool(identity)
+    # The selected row's tap is successful once the client's upgrade sheet is
+    # positively recognized, even when that building is not yet in the identity
+    # catalog. Identity/cost checks still gate the separate BUILDING_UPGRADE action.
+    building_dialog = after.page is Page.BUILDING and (
+        bool(identity) or after.building.get("upgrade_dialog_visible") is True
+    )
     ok = row_ok and (selected_action_bar or building_dialog)
     return VerificationResult(
         ok,
@@ -1473,6 +1507,7 @@ def verify_panel_building_queue_opened(
             "after_page": after.page.value,
         },
     )
+
 
 def verify_research_queue(state: WorldState) -> VerificationResult:
     status_ok = state.research.get("status") == "IN_PROGRESS"

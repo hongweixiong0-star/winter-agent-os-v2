@@ -1326,6 +1326,48 @@ class RuleBrain:
                         world.confidence,
                         "task_page_open",
                     )
+        if self._goal_route() == "BUILDING":
+            if world.page not in {Page.HOME, Page.MAP, Page.BUILDING}:
+                leave = self._leave_foreign_page_once(world, owner="BUILDING")
+                if leave is not None:
+                    return leave
+                return Decision("SAFE_STOP", "building_entry_not_verified", 1.0, "switch_task")
+            if self.terminal_page_left:
+                return Decision("SAFE_STOP", "building_page_already_read_not_actionable", 1.0, "switch_task")
+            if (
+                world.page is Page.BUILDING
+                and world.building.get("upgrade_dialog_visible") is True
+                and not world.building.get("upgradeable")
+            ):
+                # Reaching an unfamiliar upgrade sheet verifies navigation only.
+                # Do not let generic exploration tap its spend control when the
+                # building identity, cost, or strategy checks are still unknown.
+                return Decision(
+                    "SAFE_STOP",
+                    "building_identity_or_upgrade_conditions_unknown",
+                    1.0,
+                    "switch_task",
+                )
+            if world.page is Page.MAP:
+                return Decision("OPEN_HOME", "building_goal_requires_home", world.confidence, "home_opened")
+            if world.page is Page.HOME:
+                point = (world.building or {}).get("upgrade_tap_norm")
+                if isinstance(point, (tuple, list)) and len(point) == 2:
+                    return Decision(
+                        "OPEN_BUILDING_UPGRADE",
+                        "selected_building_upgrade_label_read_from_current_frame",
+                        world.confidence,
+                        "building_upgrade_panel_opened",
+                    )
+                if self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS and not self.ordinary_scan_exhausted:
+                    self.ordinary_attempts += 1
+                    return Decision(
+                        "TRY_ORDINARY_CONTROL",
+                        "building_goal_uses_bounded_current_frame_exploration_until_a_building_is_selected",
+                        world.confidence,
+                        "ordinary_control_observed",
+                    )
+                return Decision("SAFE_STOP", "no_selected_building_upgrade_control", 1.0, "switch_task")
         if self.current_goal == "RESEARCH":
             # Same route shape as the training goal below, one category row across:
             # 加成总览 -> 实力详情 -> 科技实力 提升 -> the 科研所's 研究 button.
