@@ -1,5 +1,6 @@
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.models import Page, WorldState
+from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.skills import v2_registry
 from winter_agent_v2.verifier import verify_panel_building_queue_opened
 
@@ -43,6 +44,21 @@ def test_building_row_does_not_use_an_estimated_arrow():
     decision = brain.decide(panel_state(arrow=False), v2_registry())
 
     assert decision.skill != "OPEN_TASK_FROM_QUICK_PANEL_BUILDING"
+
+
+def test_building_row_target_comes_from_the_current_frame_arrow_scan():
+    runtime = object.__new__(LiveRuntime)
+    runtime._control_ledger = {}
+    runtime._semantic_records_cache = None
+    runtime._printed_reads = []
+    runtime._printed_printed = set()
+    runtime._printed_boxes = {}
+
+    point = runtime._resolve_semantic_target(
+        "QUICK_PANEL_ROW_BUILDING", panel_state()
+    )
+
+    assert point == (0.5618, 0.2812)
 
 
 def test_building_row_arrival_requires_a_live_building_action_surface():

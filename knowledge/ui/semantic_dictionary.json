@@ -2477,6 +2477,52 @@
    "notes": "The row is located by its own measured y and the arrow is the panel's right-hand column on that same row, so a task's navigation entry can never be confused with another row's. The arrow's presence is never evidence that the row is idle -- the state word under the row is."
   },
   {
+   "id": "QUICK_PANEL_ROW_BUILDING",
+   "type": "ROW",
+   "cn": "建筑队列",
+   "en_aliases": [],
+   "ocr": [
+    "队列1",
+    "建筑队列"
+   ],
+   "icon_semantic": "panel.row",
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "target_state": "BUILDING_QUEUE_ROW",
+   "actions": [
+    "OPEN_TASK"
+   ],
+   "status": "CANDIDATE",
+   "source": "live AUTO panel capture 20260925_010635_432367 step 006",
+   "last_verified": "",
+   "visual_features": {
+    "row_y_norm": 0.281,
+    "state_word": "空闲中",
+    "control": "current-frame scanned arrow"
+   },
+   "position_hint": {
+    "basis": "ROW_RELATIVE",
+    "anchor": "quick_panel_row",
+    "y": "current-frame building queue row",
+    "x": "current-frame scanned arrow column"
+   },
+   "preconditions": [
+    "quick_panel_open",
+    "building_queue_idle",
+    "row_button_scan_found"
+   ],
+   "expected_transition": "BUILDING_ACTION_SURFACE_OPENED",
+   "verification": {
+    "required": "selected building identity and current-frame upgrade control or building dialog"
+   },
+   "related_goals": [
+    "KEEP_BUILDING_PRODUCTIVE"
+   ],
+   "notes": "The live panel capture reads the queue as idle and scans its blue row arrow. Execution uses the current-frame arrow scan, never descriptive coordinates or a remembered point."
+  },
+  {
    "id": "QUICK_PANEL_ROW_RESEARCH",
    "type": "ROW",
    "cn": "科技研究",
