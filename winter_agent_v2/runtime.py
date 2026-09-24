@@ -3377,18 +3377,42 @@ class LiveRuntime:
         note = ""
         if ocr is not None:
             try:
-                regions = ui_collection.grounding_regions(frame_path, ocr)
-                texts = tuple(
-                    str(region.get("text") or "") for region in regions if region.get("text")
-                )
+                # One build, used for both consumers.  ``build_element_table`` is the same function
+                # the planner's element table comes from, so the region an answer is grounded on and
+                # the element the answer named cannot be two different readings of one frame --
+                # which is the property that stops a tap landing where a control used to be.
+                #
+                # Ordering is load-bearing: composite controls come first, so a reasoner that names
+                # the control by its printed word (``AI_ADVICE[登录好礼]``) grounds on the control's
+                # own region rather than on the label's text box.  Measured 2026-09-25: before this,
+                # the same answer resolved to the label and the tap landed on the words.
+                table = ui_collection.build_element_table(frame_path, ocr, page=page)
+                regions = [
+                    {
+                        "text": str(entry.get("text") or ""),
+                        "box_norm": dict(entry.get("box_norm") or {}),
+                        "basis": str(entry.get("basis") or ""),
+                        "score": float(entry.get("confidence") or 0.0),
+                        "detail": dict(entry.get("detail") or {}),
+                    }
+                    for entry in table
+                    if entry.get("text")
+                ]
+                texts = tuple(str(region.get("text") or "") for region in regions)
                 boxes = [
                     {
-                        "text": str(region.get("text") or ""),
-                        "confidence": float(region.get("score") or 0.0),
-                        **dict(region.get("box_norm") or {}),
+                        "text": str(entry.get("text") or ""),
+                        "confidence": float(entry.get("confidence") or 0.0),
+                        # The typed identity travels with the box, so the planner can offer a
+                        # control for a click and refuse to offer a town name -- §2's requirement
+                        # that an element with no reliable interactive region is not a CLICK target.
+                        "element_kind": str(entry.get("kind") or ""),
+                        "element_semantic": str(entry.get("semantic") or ""),
+                        "element_executable": bool(entry.get("executable")),
+                        **dict(entry.get("box_norm") or {}),
                     }
-                    for region in regions
-                    if region.get("text")
+                    for entry in table
+                    if entry.get("text")
                 ]
             except (OSError, ValueError, AttributeError):
                 regions, boxes, texts = [], [], ()

@@ -96,14 +96,18 @@ You will be given, for ONE game screen:
 - goal: the task the scheduler has already decided to pursue. You do NOT choose goals.
 - current_page: what the page model read this screen as.
 - available_elements: the UI elements that were ACTUALLY measured on this screen right now.
-  Each has an id, the text the client itself printed on it, and a coarse vertical area.
+  Each has an id, the text the client itself printed on it, and a coarse vertical area.  When a
+  "kind" is present it says what the element is: COMPOSITE_CONTROL is a control drawn as an icon
+  with its name printed underneath (the id names the icon, which is what you would press);
+  TEXT_LABEL is printed information -- a town name, a resource count -- and is NOT a button.
 - available_actions: the action types you are allowed to return. Nothing else is legal.
 
 Choose the single next UI action toward the goal.
 
 Hard rules:
 1. You may only name an id that appears in available_elements. Never invent an element.
-2. You may only use an action from available_actions.
+2. You may only use an action from available_actions, and you may only CLICK an element whose
+   "executable" is not false. A TEXT_LABEL is a name, not a control.
 3. NEVER output coordinates, pixels, screen positions or tap points. You cannot see the
    screen; positions are produced later by the client-side locator.
 4. Reply with JSON only, exactly this shape:
@@ -213,11 +217,20 @@ def elements_from_request(request: Any) -> list[dict[str, Any]]:
         if isinstance(box, Mapping) and box.get("text"):
             # Some callers store the text inside the box record instead of beside it.
             text = str(box.get("text") or text).strip() or text
-        elements.append({
+        entry = {
             "id": f"E{len(elements) + 1}",
             "text": text,
             "area": _area_of(box),
-        })
+        }
+        # The identity travels with the element when the frame measured one.  ``kind`` is the whole
+        # point of §2: ``COMPOSITE_CONTROL`` is an icon whose meaning is its printed label and whose
+        # region is that icon; ``TEXT_LABEL`` is information.  Only the former may be clicked.
+        kind = str(box.get("element_kind") or "") if isinstance(box, Mapping) else ""
+        if kind:
+            entry["kind"] = kind
+            entry["semantic"] = str(box.get("element_semantic") or "")
+            entry["executable"] = bool(box.get("element_executable"))
+        elements.append(entry)
     return elements
 
 
@@ -344,6 +357,14 @@ def parse_plan(raw: str, *, elements: list[dict[str, Any]],
         return PlanParse(error=f"PLAN_TARGET_NOT_ON_THIS_SCREEN: {target_id[:40]!r}",
                          raw=text[:400])
     element = by_id[target_id]
+    if element.get("executable") is False:
+        # §2: "不存在可靠交互区域时，该元素不得作为可执行 CLICK 目标提供给 Qwen".  Measured
+        # 2026-09-25: this is the guard that would have refused the failing step outright -- the model
+        # named 登录好礼 and the element it reached was the printed label, not the control.
+        return PlanParse(
+            error=f"PLAN_TARGET_IS_NOT_A_CONTROL: {target_id} is {element.get('kind', '?')}",
+            raw=text[:400],
+        )
     target_text = str(element.get("text") or "").strip()
     if not target_text:
         # Every offered element carries the client's own printed words, so this can only

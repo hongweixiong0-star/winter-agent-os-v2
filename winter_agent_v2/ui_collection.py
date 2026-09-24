@@ -1404,3 +1404,688 @@ class UiCandidateStore:
         for key in dropped:
             self._records.pop(key, None)
         return dropped
+
+
+# 
+
+# ---------------------------------------------------------------------------------------------
+# Element identities, and the icon+label control (operator directive 2026-09-25)
+#
+# The break this section fixes, measured on the city HUD: the client draws an activity icon with
+# its name printed **underneath**.  The element table was built from OCR text boxes, so the label
+# box became the element and the tap landed on the text instead of on the control above it
+# (``SEMANTIC_TARGET_IS_A_LABEL_NOT_A_CONTROL``).  The model had chosen the right semantic; the
+# geometry was wrong, and the geometry is this module's job.
+#
+# Constitution B §25.1 gives the four identities, and §25.2 requires a state to be derived from
+# elements **and their relations**.  An icon and the label under it are exactly such a relation, so
+# the control is *one* element with *one* semantic id -- not two boxes and a guess.
+#
+# What the gate measures, and why it is not a colour test
+# ------------------------------------------------------
+# The first version of this gate asked whether the band above a label was "vivid", i.e. saturated.
+# Measured on 80 real frames it *failed on its own positive*: the 登录好礼 control is a white-and-blue
+# calendar, so `sat_delta` came out at -0.01 while a red gift icon scored +0.31.  Colourfulness is a
+# property of one icon, not of controls.  Two other framings were rejected the same way:
+#
+#   * raw edge strength -- the band scored *below* the terrain beside it (edge_ratio 0.68), because
+#     map artwork is textured everywhere and a flat icon interior is smooth;
+#   * an absolute whole-frame blob test -- this module already records why that failed (the volcanic
+#     artwork behind a panel is as textured as the icons; 138 of 289 grid points reported).
+#
+# What is left is the shape relation, which is what a control actually is: **a compact block that
+# differs from the background of its own label's row, is centred on the label, and sits directly
+# above it.**  Everything is measured against the label's own surroundings on the *same* frame, so
+# terrain, lighting and artwork cancel out; and "compact + centred + adjacent" is precisely what
+# separates an icon from a town name's terrain.
+#
+# What is measured and what is knowledge
+# --------------------------------------
+# The clickable region is always measured on the **current** frame (constitution A §24).  The
+# registry stores the *relation* -- "this printed word names a control, and the control is a compact
+# block directly above it" -- plus the identity.  A stored offset would be the forbidden thing; a
+# stored relation is what §24.4 allows long-term knowledge to keep.
+# ---------------------------------------------------------------------------------------------
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+#: §25.1's four identities.  ``TEXT_LABEL`` is what the client printed; ``ICON`` is artwork with no
+#: words; ``INTERACTIVE_CONTROL`` is a drawn control carrying its own words (a 领取 button);
+#: ``COMPOSITE_CONTROL`` is an icon whose meaning is its label -- the case this section adds.
+ELEMENT_TEXT_LABEL = "TEXT_LABEL"
+ELEMENT_ICON = "ICON"
+ELEMENT_INTERACTIVE_CONTROL = "INTERACTIVE_CONTROL"
+ELEMENT_COMPOSITE_CONTROL = "COMPOSITE_CONTROL"
+
+#: Only these may be offered to a planner as a ``CLICK_ELEMENT`` target.  A ``TEXT_LABEL`` is
+#: information -- a town name, a resource count -- and offering it as a button is the failure this
+#: section exists to prevent.
+EXECUTABLE_ELEMENT_KINDS = frozenset({ELEMENT_INTERACTIVE_CONTROL, ELEMENT_COMPOSITE_CONTROL})
+
+#: Two more bases, so a reader can tell how a point was justified.
+#: ``TEMPLATE_LABEL`` is the strongest: this project's own crop was found on this frame *and* the
+#: label that names it is here.  ``ANCHORED_TO_TEXT_VERIFIED`` is the upgrade of ``BASIS_ANCHOR``:
+#: the bounded neighbourhood an anchor declares was additionally *measured* to contain a compact
+#: drawn block, which is exactly what the original basis could not promise (see its own note on the
+#: 燃霜矿区 gap between two rows of icons).
+BASIS_TEMPLATE_LABEL = "TEMPLATE_LABEL"
+BASIS_VERIFIED_ANCHOR = "ANCHORED_TO_TEXT_VERIFIED"
+
+#: Where the label→control relation is kept between runs.
+ICON_CONTROL_REGISTRY = Path("knowledge/ui/icon_label_controls.json")
+
+#: The band searched above a label: this many label-heights tall (capped), padded sideways by this
+#: fraction of the label's width.  A bound, not a position -- it names the control's own row.
+BAND_HEIGHT_RATIO = 1.6
+BAND_HEIGHT_MAX_NORM = 0.075
+BAND_WIDTH_PAD_RATIO = 0.18
+BAND_MIN_SIDE_PX = 14
+
+#: --- the gate -------------------------------------------------------------------------------
+#:
+#: ``MARGIN_FRACTION`` picks the band's own left/right margins as the background reference: they are
+#: the same rows as the block, so lighting and terrain are shared.
+MARGIN_FRACTION = 0.14
+#: A pixel belongs to the block when its colour is this far from that reference, as a fraction of
+#: the largest possible RGB distance.  The threshold is relative (median + a share of the range) with
+#: an absolute floor, so a flat band cannot manufacture a block out of its own noise.
+CONTROL_DIST_FLOOR = 0.10
+CONTROL_DIST_RELATIVE = 0.45
+#: The block's own shape, all measured against the label it belongs to.
+CONTROL_PROFILE_FLOOR = 0.25          # a column/row joins the block at a quarter of its peak
+CONTROL_MIN_BLOCK_FILL = 0.40         # a solid block, not scattered texture
+CONTROL_MIN_WIDTH_RATIO = 0.30        # of the label's width
+CONTROL_MAX_WIDTH_RATIO = 2.20        # of the label's width -- wider means terrain, not a control
+CONTROL_MAX_CENTER_OFFSET = 0.60      # of the label's width, block centre vs label centre
+CONTROL_MAX_GAP_RATIO = 1.40          # of the label's height, block bottom to label top
+CONTROL_BOX_MAX_AREA_NORM = 0.045     # of the frame
+#: How much of the recovered block may sit on words some other label printed.  A control is
+#: artwork; ``_overlaps_text`` records the countdown row this refuses.
+TEXT_OVERLAP_MAX = 0.25
+
+
+def band_above_label(
+    box_norm: Mapping[str, float], frame: tuple[int, int]
+) -> tuple[int, int, int, int] | None:
+    """The pixel rect above a label box, bounded to the control's own row (see the constants)."""
+    try:
+        width, height = int(frame[0]), int(frame[1])
+        x = float(box_norm["x_norm"])
+        y = float(box_norm["y_norm"])
+        w = float(box_norm["w_norm"])
+        h = float(box_norm["h_norm"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if width <= 0 or height <= 0 or w <= 0 or h <= 0:
+        return None
+    pad = w * BAND_WIDTH_PAD_RATIO
+    band_h_norm = min(max(h * BAND_HEIGHT_RATIO, 0.028), BAND_HEIGHT_MAX_NORM)
+    left = int(round(max(0.0, x - pad) * width))
+    right = int(round(min(1.0, x + w + pad) * width))
+    top = int(round(max(0.0, y - band_h_norm) * height))
+    bottom = int(round(max(0.0, y - 0.002) * height))
+    if right - left < BAND_MIN_SIDE_PX or bottom - top < BAND_MIN_SIDE_PX:
+        return None
+    return left, top, right, bottom
+
+
+def region_structure(image: "Image.Image", rect: Sequence[int]) -> dict[str, float]:
+    """Four descriptive terms for a region -- recorded as evidence, never used as the gate.
+
+    ``edge``, ``sat``, ``vivid`` and ``contrast``.  They travel in the element's ``detail`` so a
+    later reader (and the calibration probe) can see *why* a band was accepted or refused, and they
+    are deliberately **not** what decides: this module's own measurement showed a saturation gate
+    refusing its own positive.
+    """
+    try:
+        import numpy as np
+        from PIL import ImageFilter
+
+        left, top, right, bottom = (int(value) for value in rect)
+        if right - left < 1 or bottom - top < 1:
+            return {"edge": 0.0, "sat": 0.0, "vivid": 0.0, "contrast": 0.0}
+        patch = image.crop((left, top, right, bottom)).convert("RGB")
+        gray = np.asarray(patch.convert("L"), dtype=np.float32)
+        edge = np.asarray(patch.convert("L").filter(ImageFilter.FIND_EDGES), dtype=np.float32)
+        rgb = np.asarray(patch, dtype=np.float32) / 255.0
+        biggest = rgb.max(axis=2)
+        smallest = rgb.min(axis=2)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            sat = np.where(biggest > 0.0, (biggest - smallest) / np.maximum(biggest, 1e-6), 0.0)
+        return {
+            "edge": round(float(edge.mean()) / 255.0, 4),
+            "sat": round(float(sat.mean()), 4),
+            "vivid": round(float((sat > 0.66).mean()), 4),
+            "contrast": round(float(gray.std()) / 255.0, 4),
+        }
+    except Exception:  # noqa: BLE001 - a picture that cannot be measured is not evidence
+        return {"edge": 0.0, "sat": 0.0, "vivid": 0.0, "contrast": 0.0}
+
+
+def _longest_run(profile: Any, floor: float) -> tuple[int, int]:
+    """The longest contiguous run of ``profile`` at or above ``floor``, as ``(lo, hi)``."""
+    values = [float(value) for value in profile]
+    best = (0, 0)
+    start: int | None = None
+    for index, value in enumerate(values):
+        if value >= floor and start is None:
+            start = index
+        elif value < floor and start is not None:
+            if index - start > best[1] - best[0]:
+                best = (start, index)
+            start = None
+    if start is not None and len(values) - start > best[1] - best[0]:
+        best = (start, len(values))
+    return best
+
+
+def _row_background(
+    image: "Image.Image", span: tuple[int, int], label_row: tuple[int, int] | None
+) -> "Any":
+    """The dominant colour of the label's own row beside its text, used as the band's reference."""
+    import numpy as np
+
+    left, right = int(span[0]), int(span[1])
+    if label_row is None:
+        return np.array([0.0, 0.0, 0.0], dtype=np.float32)
+    top, bottom = int(label_row[0]), int(label_row[1])
+    top = max(0, min(top, image.size[1] - 1))
+    bottom = max(top + 1, min(bottom, image.size[1]))
+    strip = np.asarray(image.crop((left, top, right, bottom)).convert("RGB"), dtype=np.float32)
+    if strip.size == 0:
+        return np.array([0.0, 0.0, 0.0], dtype=np.float32)
+    width = strip.shape[1]
+    margin = max(2, int(width * MARGIN_FRACTION))
+    sides = np.concatenate([strip[:, :margin], strip[:, width - margin:]], axis=1).reshape(-1, 3)
+    return np.median(sides, axis=0)
+
+
+def _overlaps_text(box_norm: Mapping[str, float], text_boxes: Iterable[Mapping[str, Any]]) -> str:
+    """A printed word the block sits on, other than the label that named it, or ``""``.
+
+    This refuses "text above text".  Measured: a countdown row (``13:03:32``) has its own HUD title
+    printed directly above it, so the block recovered from that band *was* the title -- a perfectly
+    compact block, and not a control.  A control is artwork; if the region a tap would land on is
+    something OCR read as words, it is a label and it is refused.
+    """
+    x, y = float(box_norm["x_norm"]), float(box_norm["y_norm"])
+    w, h = float(box_norm["w_norm"]), float(box_norm["h_norm"])
+    area = max(w * h, 1e-9)
+    for other in text_boxes:
+        ox, oy = float(other.get("x_norm", 0.0)), float(other.get("y_norm", 0.0))
+        ow, oh = float(other.get("w_norm", 0.0)), float(other.get("h_norm", 0.0))
+        overlap_w = max(0.0, min(x + w, ox + ow) - max(x, ox))
+        overlap_h = max(0.0, min(y + h, oy + oh) - max(y, oy))
+        if overlap_w * overlap_h / area > TEXT_OVERLAP_MAX:
+            return str(other.get("text") or "")
+    return ""
+
+
+def _block_in_band(
+    image: "Image.Image",
+    rect: Sequence[int],
+    *,
+    label_row: tuple[int, int] | None = None,
+) -> tuple[dict[str, float], dict[str, Any]] | None:
+    """The compact block that differs from its own row's background, or ``None``.
+
+    Returns the block as ``(box_norm, detail)``.  The background reference is the band's own left
+    and right margins -- same rows, same lighting -- so the comparison cannot be fooled by the map
+    behind it, which is what sank both the saturation gate and the whole-frame blob test.
+    """
+    try:
+        import numpy as np
+
+        left, top, right, bottom = (int(value) for value in rect)
+        width, height = right - left, bottom - top
+        if width < BAND_MIN_SIDE_PX or height < BAND_MIN_SIDE_PX:
+            return None
+        patch = np.asarray(image.crop((left, top, right, bottom)).convert("RGB"), dtype=np.float32)
+        # The background reference is the **label's own row**, not this band's margins, and the
+        # difference is not cosmetic -- it was why the first version missed its own positives.
+        # Measured on the 登录好礼 control: the icon is *wider* than the label under it, so a margin
+        # taken inside the band lands on the icon itself, the reference becomes the icon's colour,
+        # and only the outline and the digits differ from it -- the recovered block came out
+        # narrower than its own label (25 of 80 frames refused BLOCK_NARROWER_THAN_A_CONTROL).
+        # The row a control sits directly above cannot contain the control, shares its lighting, and
+        # is exactly the comparison a person makes when they say "the icon above the word".
+        reference = _row_background(image, (left, right), label_row)
+        distance = np.linalg.norm(patch - reference, axis=2) / (255.0 * 3.0 ** 0.5)
+        median = float(np.median(distance))
+        peak = float(np.percentile(distance, 99.0))
+        threshold = max(CONTROL_DIST_FLOOR, median + CONTROL_DIST_RELATIVE * (peak - median))
+        mask = distance >= threshold
+        if not bool(mask.any()):
+            return None
+        cols = mask.mean(axis=0)
+        rows = mask.mean(axis=1)
+        col_lo, col_hi = _longest_run(cols, CONTROL_PROFILE_FLOOR * float(cols.max()))
+        row_lo, row_hi = _longest_run(rows, CONTROL_PROFILE_FLOOR * float(rows.max()))
+        if col_hi - col_lo < 2 or row_hi - row_lo < 2:
+            return None
+        block = mask[row_lo:row_hi, col_lo:col_hi]
+        fill = float(block.mean()) if block.size else 0.0
+        frame_w, frame_h = image.size
+        box_norm = {
+            "x_norm": round((left + col_lo) / frame_w, 4),
+            "y_norm": round((top + row_lo) / frame_h, 4),
+            "w_norm": round((col_hi - col_lo) / frame_w, 4),
+            "h_norm": round((row_hi - row_lo) / frame_h, 4),
+        }
+        detail = {
+            "block_px": [left + col_lo, top + row_lo, left + col_hi, top + row_hi],
+            "band_px": [left, top, right, bottom],
+            "threshold": round(threshold, 4),
+            "distance_median": round(median, 4),
+            "distance_p99": round(peak, 4),
+            "block_fill": round(fill, 4),
+            "band": region_structure(image, rect),
+        }
+        return box_norm, detail
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def control_block_above_label(
+    frame_path: Path | str,
+    label_box: Mapping[str, float],
+    *,
+    label: str = "",
+    frame: tuple[int, int] | None = None,
+    image: "Image.Image | None" = None,
+    text_boxes: Iterable[Mapping[str, Any]] = (),
+) -> dict[str, Any] | None:
+    """The measured clickable region of the control named by a printed label, or ``None``.
+
+    ``None`` is a real answer and the important one: a town name, a resource count and a caption all
+    have terrain above them, and each of those must stay a ``TEXT_LABEL`` rather than become a
+    button.  The refusals are the mechanism -- without them a bounded offset would be a plausible
+    guess dressed up as a measurement, which is what the previous round's failure actually was.
+
+    Every requirement is a relation between the block and the label it belongs to (compact, about
+    the label's width, centred on it, just above it).  None of them is a position on the screen.
+    """
+    from .ocr import read_frame_size
+
+    frame_path = Path(frame_path)
+    size = frame if frame else read_frame_size(frame_path)
+    if not size:
+        return None
+    rect = band_above_label(label_box, size)
+    if rect is None:
+        return None
+    opened = image
+    owns = False
+    try:
+        if opened is None:
+            with Image.open(frame_path) as handle:
+                opened = handle.convert("RGB")
+            owns = True
+        label_row = (
+            int(round(float(label_box["y_norm"]) * int(size[1]))),
+            int(round((float(label_box["y_norm"]) + float(label_box["h_norm"])) * int(size[1]))),
+        )
+        found = _block_in_band(opened, rect, label_row=label_row)
+        if found is None:
+            return None
+        box_norm, detail = found
+        overlapping = _overlaps_text(box_norm, text_boxes)
+        frame_w, frame_h = int(size[0]), int(size[1])
+        label_w = float(label_box["w_norm"]) * frame_w
+        label_h = float(label_box["h_norm"]) * frame_h
+        label_cx = (float(label_box["x_norm"]) + float(label_box["w_norm"]) / 2) * frame_w
+        label_top = float(label_box["y_norm"]) * frame_h
+        block_w = box_norm["w_norm"] * frame_w
+        block_h = box_norm["h_norm"] * frame_h
+        block_cx = (box_norm["x_norm"] + box_norm["w_norm"] / 2) * frame_w
+        block_bottom = (box_norm["y_norm"] + box_norm["h_norm"]) * frame_h
+        checks = {
+            "fill": detail["block_fill"],
+            "width_ratio": block_w / max(label_w, 1e-6),
+            "center_offset_ratio": abs(block_cx - label_cx) / max(label_w, 1e-6),
+            "gap_ratio": max(0.0, label_top - block_bottom) / max(label_h, 1e-6),
+            "area_norm": box_norm["w_norm"] * box_norm["h_norm"],
+            "min_side_px": min(block_w, block_h),
+        }
+        refusals: list[str] = []
+        if checks["min_side_px"] < MIN_ELEMENT_SIDE_PX:
+            refusals.append("BLOCK_TOO_SMALL")
+        if checks["fill"] < CONTROL_MIN_BLOCK_FILL:
+            refusals.append("BLOCK_NOT_SOLID")
+        if checks["width_ratio"] < CONTROL_MIN_WIDTH_RATIO:
+            refusals.append("BLOCK_NARROWER_THAN_A_CONTROL")
+        if checks["width_ratio"] > CONTROL_MAX_WIDTH_RATIO:
+            refusals.append("BLOCK_WIDER_THAN_A_CONTROL")
+        if checks["center_offset_ratio"] > CONTROL_MAX_CENTER_OFFSET:
+            refusals.append("BLOCK_NOT_CENTRED_ON_LABEL")
+        if checks["gap_ratio"] > CONTROL_MAX_GAP_RATIO:
+            refusals.append("BLOCK_NOT_ADJACENT_TO_LABEL")
+        if checks["area_norm"] > CONTROL_BOX_MAX_AREA_NORM:
+            refusals.append("BLOCK_TOO_LARGE_TO_BE_A_CONTROL")
+        if overlapping:
+            refusals.append(f"BLOCK_IS_PRINTED_TEXT:{overlapping}")
+        detail["checks"] = {key: round(float(value), 4) for key, value in checks.items()}
+        if refusals:
+            detail["refused"] = refusals
+            return None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    finally:
+        if owns and opened is not None:
+            try:
+                opened.close()
+            except Exception:  # noqa: BLE001
+                pass
+    return {
+        "box_norm": box_norm,
+        "icon_box_norm": box_norm,
+        "label_box_norm": {
+            key: round(float(label_box[key]), 4)
+            for key in ("x_norm", "y_norm", "w_norm", "h_norm")
+            if key in label_box
+        },
+        "basis": BASIS_VERIFIED_ANCHOR,
+        "confidence": round(
+            min(1.0, 0.5 + 0.5 * min(1.0, detail["checks"]["fill"] / max(CONTROL_MIN_BLOCK_FILL, 1e-6))),
+            4,
+        ),
+        "detail": detail,
+    }
+
+
+#: How the search window above a label is derived from the label's own box: this many label-widths
+#: either side, and this many label-heights above.  A **search region**, never a click target --
+#: §24.3 allows a bounded area to make recognition cheap and forbids treating that area as the
+#: thing to click.  The tap comes from where the matcher finds the crop, which is why this window
+#: may be generous.
+SEARCH_SIDE_RATIO = 0.35
+SEARCH_ABOVE_RATIO = 3.2
+
+
+def search_region_above_label(
+    box_norm: Mapping[str, float], frame: tuple[int, int]
+) -> dict[str, float] | None:
+    """The bounded window above a label in which this project looks for its control's crop."""
+    try:
+        width, height = int(frame[0]), int(frame[1])
+        x = float(box_norm["x_norm"])
+        y = float(box_norm["y_norm"])
+        w = float(box_norm["w_norm"])
+        h = float(box_norm["h_norm"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if width <= 0 or height <= 0 or w <= 0 or h <= 0:
+        return None
+    left = max(0.0, x - w * SEARCH_SIDE_RATIO)
+    right = min(1.0, x + w + w * SEARCH_SIDE_RATIO)
+    top = max(0.0, y - h * SEARCH_ABOVE_RATIO)
+    bottom = min(1.0, y + h)
+    if right - left <= 0 or bottom - top <= 0:
+        return None
+    return {
+        "x_norm": round(left, 4),
+        "y_norm": round(top, 4),
+        "w_norm": round(right - left, 4),
+        "h_norm": round(bottom - top, 4),
+    }
+
+
+def registered_icon_region(
+    frame_path: Path | str,
+    label_box: Mapping[str, float],
+    *,
+    template_path: Path | str,
+    frame: tuple[int, int] | None = None,
+    min_score: float = MIN_TEMPLATE_SCORE,
+    min_contrast: float = MIN_TEMPLATE_CONTRAST,
+) -> dict[str, Any] | None:
+    """Where this project's own crop for a control is drawn on the **current** frame, or ``None``.
+
+    This is the project's documented way to locate an icon -- "a registered crop plus a matcher,
+    never a pixel heuristic" (see the note above ``template_regions``) -- and it is what replaced the
+    geometric gate for registered controls.  Why it had to: the gate was calibrated against 136 real
+    positives and 1832 real negatives and **could not separate them** (37% of positives accepted,
+    39% of negatives accepted; the full measurement is in
+    ``dataset/truth_audit/icon_label_controls/samples.json`` and the calibration tool prints it).
+    A gate like that would have produced buttons out of terrain.
+
+    What the matcher guarantees and the geometry did not: the template is a crop of the real control
+    taken from a real frame, so a match *is* the control, and `cv2.TM_CCOEFF_NORMED` plus a contrast
+    floor is this project's already-used calibration.  The stored artifact is a **picture**, not a
+    coordinate -- the position still comes from matching the frame in front of the run.
+    """
+    from .ocr import read_frame_size
+
+    frame_path = Path(frame_path)
+    size = frame if frame else read_frame_size(frame_path)
+    if not size:
+        return None
+    template = Path(template_path)
+    if not template.is_file():
+        return None
+    try:
+        with Image.open(template) as handle:
+            if _contrast(handle) < min_contrast:
+                # A crop with nothing in it scores high on flat pictures and identifies nothing.
+                return None
+    except (OSError, ValueError):
+        return None
+    roi = search_region_above_label(label_box, size)
+    if roi is None:
+        return None
+    try:
+        found = _match_ccoeff_anywhere(frame_path, template, roi)
+    except Exception:  # noqa: BLE001 - an unusable template must not fail a step
+        return None
+    if found is None or float(found.score) < float(min_score):
+        return None
+    bx, by, bw, bh = found.bounds
+    frame_w, frame_h = int(size[0]), int(size[1])
+    if bw <= 0 or bh <= 0:
+        return None
+    box_norm = {
+        "x_norm": round(bx / frame_w, 4),
+        "y_norm": round(by / frame_h, 4),
+        "w_norm": round(bw / frame_w, 4),
+        "h_norm": round(bh / frame_h, 4),
+    }
+    return {
+        "box_norm": box_norm,
+        "icon_box_norm": box_norm,
+        "label_box_norm": {
+            key: round(float(label_box[key]), 4)
+            for key in ("x_norm", "y_norm", "w_norm", "h_norm")
+            if key in label_box
+        },
+        "basis": BASIS_TEMPLATE_LABEL,
+        "confidence": round(float(found.score), 4),
+        "detail": {
+            "matched_by": "TEMPLATE",
+            "template_path": str(template),
+            "score": round(float(found.score), 4),
+            "search_roi_norm": roi,
+            "matched_px": [int(bx), int(by), int(bw), int(bh)],
+        },
+    }
+
+
+def load_control_registry(root: Path | str | None = None) -> dict[str, dict[str, Any]]:
+    """The labels known to name a control that sits directly above them, by printed word.
+
+    **Identity and relation, never a coordinate.**  Each record says which printed word names a
+    control, which semantic id it gets, which pages it is drawn on, and where the control sits *in
+    relation to* the label.  The tap position is measured on the frame in front of the run, every
+    run -- §24.2 forbids the alternative, and §24.4 is explicit that long-term knowledge may hold
+    relations but not click targets.
+    """
+    base = Path(root) if root else PROJECT_ROOT
+    path = base / ICON_CONTROL_REGISTRY
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    controls = payload.get("controls")
+    if not isinstance(controls, Mapping):
+        return {}
+    return {
+        str(label): dict(record)
+        for label, record in controls.items()
+        if isinstance(record, Mapping)
+    }
+
+
+def composite_controls(
+    frame_path: Path | str,
+    ocr,
+    *,
+    page: str = "",
+    skip_words: Iterable[str] = (),
+    registry: Mapping[str, Mapping[str, Any]] | None = None,
+    limit: int = 12,
+) -> list[dict[str, Any]]:
+    """Every icon+label control this frame draws, one element per printed function name.
+
+    Only labels the record knows are considered, which keeps the gate from becoming a general
+    "guess a button" search: a name has to be on record as one that names a control, and then the
+    *geometry* is measured here.  A label the record does not list is still reported by
+    ``build_element_table`` -- as a ``TEXT_LABEL``, which is what a town name is.
+    """
+    from .ocr import read_frame_size
+
+    frame_path = Path(frame_path)
+    size = read_frame_size(frame_path)
+    if not size:
+        return []
+    known = dict(registry) if registry is not None else load_control_registry()
+    if not known:
+        return []
+    skip = {str(word).strip() for word in skip_words if str(word or "").strip()}
+    out: list[dict[str, Any]] = []
+    try:
+        with Image.open(frame_path) as handle:
+            image = handle.convert("RGB")
+    except (OSError, ValueError):
+        return []
+    try:
+        regions = grounding_regions(frame_path, ocr)
+        text_boxes = [
+            {"text": str(r.get("text") or ""), **dict(r.get("box_norm") or {})} for r in regions
+        ]
+        for region in regions:
+            text = str(region.get("text") or "").strip()
+            if not text or text in skip:
+                continue
+            record = known.get(text)
+            if record is None:
+                continue
+            pages = record.get("pages")
+            if isinstance(pages, (list, tuple)) and pages and page and page not in pages:
+                continue
+            label_box = dict(region.get("box_norm") or {})
+            others = [box for box in text_boxes if box.get("text") != text]
+            # A registered crop is the strongest evidence and is tried first: a match *is* the
+            # control.  Only when the record carries no template does the measured-block gate run,
+            # and that path is explicitly marked on the element so a reader can tell the two apart.
+            measured = None
+            template_path = record.get("template_path")
+            if template_path:
+                resolved = Path(str(template_path))
+                if not resolved.is_absolute():
+                    resolved = Path(PROJECT_ROOT) / resolved
+                measured = registered_icon_region(
+                    frame_path, label_box, template_path=resolved, frame=size
+                )
+            if measured is None and record.get("allow_measured_block", False):
+                measured = control_block_above_label(
+                    frame_path, label_box, label=text, frame=size, image=image, text_boxes=others
+                )
+            if measured is None:
+                continue
+            out.append({
+                "label": text,
+                "text": text,
+                "semantic": str(record.get("semantic") or f"CONTROL[{text}]"),
+                "kind": ELEMENT_COMPOSITE_CONTROL,
+                "box_norm": measured["box_norm"],
+                "icon_box_norm": measured["icon_box_norm"],
+                "label_box_norm": measured["label_box_norm"],
+                "basis": measured["basis"],
+                "confidence": measured["confidence"],
+                "detail": measured["detail"],
+                "source": str(record.get("source") or "REGISTRY"),
+            })
+            if len(out) >= limit:
+                break
+    finally:
+        image.close()
+    return out
+
+
+def build_element_table(
+    frame_path: Path | str,
+    ocr,
+    *,
+    page: str = "",
+    skip_words: Iterable[str] = (),
+    registry: Mapping[str, Mapping[str, Any]] | None = None,
+    limit: int = 40,
+) -> list[dict[str, Any]]:
+    """This frame's elements, typed, with the region a tap must use.
+
+    One function for both consumers, deliberately: the planner chooses an ``id`` from this table and
+    the executor resolves that same ``id`` against the *same* table, so "the model and the executor
+    use one frame" is a property of the code rather than a hope.  A table built twice could drift,
+    and a drift here is a tap on a stale position.
+
+    Ordering is significant: composite controls come **first**, so a caller that grounds an answer by
+    the label's own words resolves them to the control's region rather than to the label's text box.
+    That ordering is the fix for ``SEMANTIC_TARGET_IS_A_LABEL_NOT_A_CONTROL``.
+    """
+    frame_path = Path(frame_path)
+    from .ocr import read_frame_size
+
+    if not read_frame_size(frame_path):
+        return []
+    skip = {str(word).strip() for word in skip_words if str(word or "").strip()}
+    entries: list[dict[str, Any]] = []
+    for control in composite_controls(
+        frame_path, ocr, page=page, skip_words=skip, registry=registry
+    ):
+        entries.append({
+            "id": "",
+            "kind": ELEMENT_COMPOSITE_CONTROL,
+            "text": control["text"],
+            "semantic": control["semantic"],
+            "box_norm": control["box_norm"],
+            "icon_box_norm": control.get("icon_box_norm"),
+            "label_box_norm": control.get("label_box_norm"),
+            "basis": control["basis"],
+            "confidence": control["confidence"],
+            "detail": control.get("detail") or {},
+            "executable": True,
+            "expected": "",
+        })
+    control_labels = {entry["text"] for entry in entries}
+    for region in grounding_regions(frame_path, ocr, skip_words=skip):
+        text = str(region.get("text") or "").strip()
+        if not text:
+            continue
+        entries.append({
+            "id": "",
+            "kind": ELEMENT_TEXT_LABEL,
+            "text": text,
+            "semantic": f"TEXT[{text}]",
+            "box_norm": dict(region.get("box_norm") or {}),
+            "icon_box_norm": None,
+            "label_box_norm": None,
+            "basis": str(region.get("basis") or BASIS_OCR_BOX),
+            "confidence": float(region.get("score") or 0.0),
+            "detail": dict(region.get("detail") or {}),
+            # A printed word is information.  It is executable only when this frame also measured a
+            # control for it, which is exactly what ``control_labels`` records.
+            "executable": text in control_labels,
+            "expected": "",
+        })
+    for index, entry in enumerate(entries[:limit]):
+        entry["id"] = f"E{index + 1}"
+    return entries[:limit]

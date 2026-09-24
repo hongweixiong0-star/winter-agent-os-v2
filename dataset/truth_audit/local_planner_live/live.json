@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-24T02:26:36.273352+00:00",
+ "generated_at": "2026-09-24T03:28:07.283548+00:00",
  "goal": "DAILY_ROUTINE",
  "execute_requested": true,
  "model": "qwen3635bagent-q3:latest",
@@ -13,41 +13,41 @@
   "foreground": "com.gof.china"
  },
  "page": {
-  "label": "MAP",
+  "label": "HOME",
   "title": "",
-  "confidence": 0.99
+  "confidence": 0.98
  },
  "frame_elements": {
-  "regions": 40,
-  "texts": 40,
+  "regions": 29,
+  "texts": 29,
   "sample": [
-   "09-2410:26:39",
-   "224.1万",
+   "登录好礼",
+   "09:57",
+   "32/32",
+   "225.4万",
    "21,294",
    "2,698,680",
    "-12.6℃",
    "统帅4",
+   "画",
+   "23",
    "100",
-   "玉魄流光礼包",
-   "登录好礼",
-   "常规活动",
-   "未驻防",
-   "[ioi]联盟旗帜"
+   "玉魄流光礼包"
   ]
  },
  "plan": {
   "decision": "EXECUTE",
   "action_type": "CLICK_ELEMENT",
-  "target_element_id": "E9",
+  "target_element_id": "E1",
   "target_text": "登录好礼",
-  "reason": "The goal is to perform the daily routine, and '登录好礼' (Login Gifts) is the standard entry point for claiming daily login rewards."
+  "reason": "The element '登录好礼' (Login Rewards) is the standard entry point for claiming daily login bonuses, which is a core part of the daily routine."
  },
  "point": [
-  0.7708,
-  0.1484
+  0.7695,
+  0.1184
  ],
  "advice_used": {
-  "request_id": "map__control__4cf644d7",
+  "request_id": "home__control__36e65c39",
   "unknown_type": "CONTROL",
   "candidate_semantics": [
    "登录好礼"
@@ -55,21 +55,21 @@
   "proposed_action": "登录好礼",
   "action_kind": "ORDINARY_CONTROL",
   "target_semantics": "登录好礼",
-  "expected_result": "LOGIN_REWARDS",
+  "expected_result": "LOGIN_REWARD_POPUP",
   "uncertainty": "LOCAL_QWEN",
-  "note": "The goal is to perform the daily routine, and '登录好礼' (Login Gifts) is the standard entry point for claiming daily login rewards.",
+  "note": "The element '登录好礼' (Login Rewards) is the standard entry point for claiming daily login bonuses, which is a core part of the daily routine.",
   "target_point": [
-   0.7708,
-   0.1484
+   0.7695,
+   0.1184
   ],
   "basis": "ANCHORED_TO_TEXT",
   "basis_detail": {
    "anchor_text": "登录好礼",
    "anchor_box": {
-    "x_norm": 0.7222,
-    "y_norm": 0.1383,
-    "w_norm": 0.0972,
-    "h_norm": 0.0203
+    "x_norm": 0.7306,
+    "y_norm": 0.0969,
+    "w_norm": 0.0778,
+    "h_norm": 0.043
    },
    "offset": [
     0.0,
@@ -77,10 +77,10 @@
    ]
   },
   "box_norm": {
-   "x_norm": 0.7222,
-   "y_norm": 0.1383,
-   "w_norm": 0.0972,
-   "h_norm": 0.0203
+   "x_norm": 0.7306,
+   "y_norm": 0.0969,
+   "w_norm": 0.0778,
+   "h_norm": 0.043
   },
   "source": "LOCAL_QWEN",
   "notification": "",
@@ -96,16 +96,16 @@
   "backend": "MAA",
   "error": null,
   "tap_point": [
-   555,
-   190
+   554,
+   152
   ],
-  "latency_ms": 51.34
+  "latency_ms": 51.56
  },
  "maa_execution_pass": true,
  "after": {
-  "page_before": "MAP",
-  "page_after": "MAP",
-  "confidence_after": 0.99
+  "page_before": "HOME",
+  "page_after": "HOME",
+  "confidence_after": 0.98
  },
  "verifier": {
   "name": "verify_ordinary_control_tried",

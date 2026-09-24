@@ -1,0 +1,24 @@
+{
+ "version": 1,
+ "note": "Printed words that name a control drawn directly above them, and how to locate that control on the current frame. This file holds IDENTITY and a RELATION, never a click position: 'template_path' is a picture of the control, matched on the frame in front of the run, and the tap target is wherever the match IS. Constitution A §24.2 forbids a stored coordinate as a tap target and §24.4 forbids reading a historical position to click; §24.3 explicitly allows a bounded search region, which is what 'search' records. A record may also carry 'allow_measured_block': true, which lets the measured-block gate run when no crop exists yet -- it is off by default because that gate failed its own calibration (see docs/LOCAL_PLANNER_ACCEPTANCE.md §7).",
+ "controls": {
+  "登录好礼": {
+   "label": "登录好礼",
+   "semantic": "CONTROL[登录好礼]",
+   "pages": ["MAP", "HOME"],
+   "relation": "control_directly_above_label",
+   "template_path": "knowledge/ui/icon_templates/登录好礼.png",
+   "source": "REGISTERED_TEMPLATE",
+   "evidence": {
+    "verified_by": "human_review_of_extracted_crop",
+    "extracted_from": "dataset/raw/control_panel/runtime_auto/20260924_101003_761338/20260924_101003_761338_step_001_after_20260924T021024299127.png",
+    "template_size_px": [56, 55],
+    "positive_frames": 80,
+    "positive_corpus": "dataset/truth_audit/icon_label_controls/samples.json",
+    "what_the_crop_is": "the whole 登录好礼 calendar button (blue header with rings, cream body with a brown 7)",
+    "registered_at": "2026-09-25",
+    "next_reuse_path": "every frame matches this crop inside a window derived from the label's own box, so the control is located where it is now"
+   }
+  }
+ }
+}

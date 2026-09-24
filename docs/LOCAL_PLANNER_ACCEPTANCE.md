@@ -169,3 +169,69 @@ plan : {"decision":"DEFER","reason":"The current screen is the Intel page, which
 | `test_control_panel.py` | 2 失败，**均为既有** |
 | `test_unknown_advisor.py` / `test_gateway_service.py` | 全绿 |
 | `tools/check_wiring.py` | `problems: 8`，与开工前完全相同 |
+---
+
+## 7. 元素身份、图标+标签控件，与判据的真实标定（2026-09-25 第二轮）
+
+### 7.1 做了什么
+
+`ui_collection` 新增元素身份（宪法 B §25.1）与图标+标签控件：
+
+| 身份 | 含义 | 可作为 CLICK 目标 |
+| --- | --- | --- |
+| `TEXT_LABEL` | 客户端印的字（城镇名、资源数、说明） | **否** |
+| `ICON` | 无字图形 | — |
+| `INTERACTIVE_CONTROL` | 自带文字的画出来的控件（领取按钮） | 是 |
+| `COMPOSITE_CONTROL` | 图标 + 其下方标签，**一个语义 ID、一个真实可点区域** | 是 |
+
+- `build_element_table()`：**一帧只建一次表**，规划器从这个表选 `id`，执行器从**同一个表**解析 `id` —— "模型与执行器同帧同表"是代码性质而不是希望。
+- 表内**复合控件排在最前**，所以按标签文字 ground 的答案会落到**控件的区域**而不是标签框。这就是 `SEMANTIC_TARGET_IS_A_LABEL_NOT_A_CONTROL` 的修复点。
+- `ui_planner.parse_plan` 新增拒绝：命名 `executable=false` 的元素 → `PLAN_TARGET_IS_NOT_A_CONTROL`（§2 的硬要求）。
+- 注册表 `knowledge/ui/icon_label_controls.json` 只存**身份 + 关系 + 裁片**，不存点击坐标；点击位置永远来自当前帧匹配（宪法 A §24.2/§24.4，§24.3 允许有界搜索区）。
+
+### 7.2 两条判据的实测：一条被否定，一条通过
+
+**（a）几何判据 —— 被自己的标定否定。**
+`dataset/truth_audit/icon_label_controls/samples.json`：从生产帧挖出 **136 个正样本**（登录好礼/常规活动/超值活动/明月的盛典）与 **1832 个负样本**（同帧的其他印字）。
+
+```
+$ python tools/calibrate_icon_label_gate.py
+positives: 50/136 accepted = 36.76%   (want high)
+negatives: 722/1832 accepted = 39.41% (want low)
+```
+
+**正负样本完全不可分。** 更早的两版判据同样被否定并留下了原因：饱和度判据在自己的正样本上失败（`登录好礼` 是蓝白日历，`sat_delta≈-0.01`，而红色礼盒 +0.31）；边缘强度判据在正样本上低于旁边的地形（`edge_ratio` 最小 0.16，负样本最大 1.71）。**结论：像素几何不是这个问题的可解判据，因此它没有被接入生产**（`allow_measured_block` 默认 false）。
+
+**（b）注册裁片 + 匹配器 —— 通过。**
+这正是本项目文档里一贯的做法（"how is a textless icon located: a registered crop plus a matcher, never a pixel heuristic"）。
+
+```
+$ python tools/validate_icon_template.py --label 登录好礼
+RECALL  : matched 36/37 = 97.3%
+score   : min/median/max = 0.955/0.992/1.000      (阈值 0.7)
+specificity: 整帧搜索的最高匹配落在 x=0.731 y=0.097 —— 就是图标本身
+```
+
+裁片 `knowledge/ui/icon_templates/登录好礼.png`（56×55）从真实帧 `20260924_101003_761338` 提取，**经过目视确认**（整个日历按钮：蓝色头部含挂环 + 米色主体含棕色 7）。
+
+### 7.3 真机结果
+
+```
+page      : HOME (conf 0.98)
+anchor '登录好礼' is on this frame -> {'y_norm': 0.0969, 'h_norm': 0.043}   <- 图标框
+（修复前同一步:                         {'y_norm': 0.1383, 'h_norm': 0.0203}  = 标签框）
+tap       : (554, 152)   ← 修复前 (555, 190)，高了 38 px，落在图标上
+executed  : executed=True backend=MAA latency=51.56ms
+verifier  : verify_ordinary_control_tried ok=True
+page      : HOME -> HOME          <- 仍未变化
+```
+
+- `STRUCTURED_OUTPUT_PASS` ✅  `MAA_EXECUTION_PASS` ✅（MAA 真的发了点击）
+- `GOAL_VERIFIED` ❌  `SKILL_REUSABLE` ❌
+
+**第一个真实断点已经换了**：不再是"点标签"，而是**解析到执行之间画面变了**。后帧显示 HUD 活动列**会移动**——同一时刻日历图标在前帧 x≈0.73、在后帧 x≈0.64，且镜头被拉近。也就是说：在一帧上测出的位置，到点击落地时可能已经过期，或命中了相邻的另一个入口。
+
+下一步（具体动作）：
+1. 解析与执行之间不得插入另一次取帧/等待；`TAP_SEMANTIC` 应在**同一帧**上完成匹配与点击（现在的探针里 settle 1.5 s + 独立截图，间隔正是问题所在）。
+2. 或者点击前**再匹配一次**并比对：若匹配位置相对解析时偏移超过阈值，则放弃本次点击并按 `REPLAN` 处理，而不是点击过期位置。
+3. HUD 动画需要在多帧上量出位移幅度，再决定阈值（现在只有一帧的证据）。
