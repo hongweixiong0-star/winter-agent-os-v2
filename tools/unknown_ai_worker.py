@@ -116,6 +116,8 @@ def _once(dispatcher: UnknownDispatcher, *, submit: bool = True) -> int:
             "note        : answers are planned locally, inside the cycle "
             "(winter_agent_v2/ui_planner.py); this pass only reconciled."
         )
+    for retired in [dispatch.get("retired")] if dispatch.get("retired") else []:
+        print(f"retired     : {retired}")
     print(
         "reconciled  : "
         f"checked={reconcile.get('checked', 0)} done={reconcile.get('done', 0)} "

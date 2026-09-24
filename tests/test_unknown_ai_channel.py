@@ -1196,5 +1196,60 @@ class AdvisedTapTests(unittest.TestCase):
         self.assertEqual(self.runtime._ordinary_last["semantic"], "ORDINARY_CONTROL[已完成本期挑战]")
 
 
+class RetiredChannelReportShapeTest(unittest.TestCase):
+    """``submit=False`` must reconcile and keep the report's documented shape.
+
+    Operator directive 2026-09-25 section 1 retires the automatic WorkBuddy call.  The panel and
+    ``tools/unknown_ai_worker.py`` both read this report, so the retirement is expressed as an
+    extra key rather than by changing what an existing key means.
+
+    Written because the first version got exactly that wrong: it put the marker into
+    ``dispatch["skipped"]``, which is a **list of per-request records**, and the console tool's own
+    loop over it raised ``TypeError: string indices must be integers`` one line later.  The
+    dispatcher's report looked right; only running the tool showed it.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _dispatcher(self):
+        return unknown_dispatch.UnknownDispatcher(
+            root=self.root,
+            advisor=unknown_advisor.UnknownAdvisor(root=self.root),
+            bridge=_StubBridge(),
+        )
+
+    def test_submit_false_reports_a_list_where_a_list_is_documented(self):
+        dispatcher = self._dispatcher()
+        result = dispatcher.worker(submit=False)
+        dispatch = result["dispatch"]
+        self.assertIsInstance(dispatch["skipped"], list, "callers iterate this as records")
+        self.assertEqual(dispatch["skipped"], [])
+        self.assertEqual(dispatch["submitted"], [])
+        self.assertEqual(dispatch["retired"], "WORKBUDDY_CHANNEL_RETIRED")
+
+    def test_submit_false_places_no_job(self):
+        bridge = _StubBridge()
+        dispatcher = unknown_dispatch.UnknownDispatcher(
+            root=self.root,
+            advisor=unknown_advisor.UnknownAdvisor(root=self.root),
+            bridge=bridge,
+        )
+        _seed_question(self.root, key="q", goal="DAILY", frame=EVENT_FRAME)
+        dispatcher.worker(submit=False)
+        self.assertEqual(bridge.submitted, [], "the retired channel must submit nothing")
+
+    def test_submit_true_is_still_the_default(self):
+        """A caller that knows nothing about the switch keeps the old behaviour."""
+        import inspect
+
+        signature = inspect.signature(unknown_dispatch.UnknownDispatcher.worker)
+        self.assertIs(signature.parameters["submit"].default, True)
+
+
 if __name__ == "__main__":
     unittest.main()

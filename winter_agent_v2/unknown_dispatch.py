@@ -851,7 +851,16 @@ class UnknownDispatcher:
         """
         out: dict[str, Any] = {"reconcile": {}, "dispatch": {}, "lock": ""}
         if not submit:
-            out["dispatch"] = {"skipped": "WORKBUDDY_CHANNEL_RETIRED", "submitted": []}
+            # ``skipped`` keeps its shape -- a list of per-request records -- because
+            # ``tools/unknown_ai_worker`` iterates it as such.  Measured the hard way: putting a
+            # string there looked right in the caller and raised
+            # ``TypeError: string indices must be integers`` on the console one line later.  The
+            # retirement gets its own key instead.
+            out["dispatch"] = {
+                "retired": "WORKBUDDY_CHANNEL_RETIRED",
+                "submitted": [],
+                "skipped": [],
+            }
         with self._pass_lock() as held:
             if not held:
                 out["lock"] = "another consumer is running a pass"
