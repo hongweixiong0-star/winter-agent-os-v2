@@ -25,7 +25,10 @@ from winter_agent_v2.control_experience import (
     control_key,
     explorable_risk,
     known_outcomes,
+    l1_for,
+    l1_reusable,
     load,
+    register_l1,
     record_outcome,
     reusable_on_this_screen,
     save,
@@ -231,6 +234,46 @@ def test_known_outcomes_can_be_narrowed_to_one_goal() -> None:
     ledger[control_key("HOME", "B")].last_result = "PAGE_CHANGED"
     assert {item.control for item in known_outcomes(ledger, "HOME")} == {"A", "B"}
     assert {item.control for item in known_outcomes(ledger, "HOME", goal_id="ALLIANCE_ROUTINE")} == {"A"}
+
+
+def _verified_l1(**overrides: object) -> ControlExperience:
+    entry = _control(control="BTN_OPEN_ALLIANCE")
+    record_outcome(entry, change="PAGE_CHANGED", result_name="OPEN_ALLIANCE", now=NOW)
+    register_l1(
+        entry,
+        goal="ALLIANCE_ROUTINE",
+        state="HOME|IDLE",
+        features={"text": "联盟"},
+        action={"kind": "TAP_SEMANTIC", "target": "BTN_OPEN_ALLIANCE"},
+        expected_effect="alliance_page_open",
+        observed_effect="PAGE_CHANGED",
+        now=NOW,
+    )
+    for key, value in overrides.items():
+        setattr(entry, key, value)
+    return entry
+
+
+def test_l1_reuse_requires_expected_observed_and_matching_action_evidence() -> None:
+    valid = _verified_l1()
+    assert l1_reusable(valid, now=NOW)
+    assert l1_for(
+        {control_key(valid.page, valid.control): valid},
+        page="HOME", goal="ALLIANCE_ROUTINE", state="HOME|IDLE",
+        present_words=("联盟",), now=NOW,
+    ) is valid
+
+    for invalid in (
+        _verified_l1(expected_effect=""),
+        _verified_l1(observed_effect=""),
+        _verified_l1(action={"kind": "TAP_SEMANTIC", "target": "BTN_OPEN_MAIL"}),
+    ):
+        assert not l1_reusable(invalid, now=NOW)
+        assert l1_for(
+            {control_key(invalid.page, invalid.control): invalid},
+            page="HOME", goal="ALLIANCE_ROUTINE", state="HOME|IDLE",
+            present_words=("联盟",), now=NOW,
+        ) is None
 
 
 # ----------------------------------------------------------------- store

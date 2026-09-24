@@ -780,6 +780,16 @@ def l1_reusable(experience: ControlExperience, *, now: datetime | None = None) -
         return False
     if experience.last_result in ("", "NO_OP", "UNKNOWN"):
         return False
+    # L1 is a verified step, not a remembered tap. Older or partial records can have a
+    # successful-looking change without retaining what the step expected, what actually
+    # followed, or which semantic target the executor pressed. Such a record remains useful
+    # history, but it cannot authorize replay under §19.3–19.4.
+    if not str(experience.expected_effect or "").strip():
+        return False
+    if not str(experience.observed_effect or "").strip():
+        return False
+    if str(experience.action.get("target") or "").strip() != str(experience.control or "").strip():
+        return False
     return experience.cooldown_remaining(now) == 0
 
 
