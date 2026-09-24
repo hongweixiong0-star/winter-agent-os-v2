@@ -11,6 +11,14 @@ from .operations_policy import operational_priority
 from .goal_library import GoalLibrary
 from .candidate_policy import CandidateAttemptPool
 from . import entry_badges
+from . import event_schedule
+
+#: The goal whose skills a time-based readiness boost may promote.
+#:
+#: Named once, and the *skills* are read from the goal library rather than listed here, so the
+#: two cannot drift: a skill added to ``PARTICIPATE_BEAR`` is promoted automatically, and one
+#: removed stops being promoted.
+BEAR_GOAL_ID = "PARTICIPATE_BEAR"
 
 #: The two page entries a task may only be entered through because its own badge said so
 #: (operator directive 2026-09-23 §六: 增加最后一道动作出口保护).
@@ -54,6 +62,91 @@ class Scheduler:
         self.executor = executor
         self.goals = GoalLibrary()
         self.candidate_pool = candidate_pool
+        #: The per-role timed-event schedule, loaded once.  ``None`` means "not loaded yet";
+        #: a run is one process, so loading on first use is both correct and free.
+        self._schedule: dict[str, event_schedule.RoleSchedule] | None = None
+        self._announced_readiness: tuple[str, str] | None = None
+
+    # ------------------------------------------------------------------ readiness
+    #
+    # Task book §五: 巨熊唤醒不得依赖下一次普通 AUTO 周期、普通任务优先级评分或人工再次发送指令。
+    #
+    # Nothing here is a second scheduler and nothing here runs on a clock thread.  Each AUTO
+    # cycle already asks this Scheduler to rank goals; the only thing that was missing is that
+    # the ranking had **no input that survives without a frame**.  ``_deadline_active`` reads the
+    # bear out of the picture, so it can only fire once the event is already on screen -- by
+    # which time the preparation window the book describes (T-30/15/5/1) has been missed.
+    #
+    # So this adds one term to the existing sum: when a role's *reserved* start says we are
+    # inside the readiness ladder, the bear goal's skills get a dominant bonus.  The clock is
+    # the input; the Scheduler is still the only thing that decides.
+    #
+    # What it deliberately does NOT do is guess a time.  With no reservation read, every role's
+    # phase is IDLE and the bonus is 0.0 -- the runtime behaves exactly as before, which is the
+    # right behaviour for a project that has never observed a bear start minute.
+
+    def schedule(self) -> dict[str, event_schedule.RoleSchedule]:
+        if self._schedule is None:
+            self._schedule = event_schedule.load()
+        return self._schedule
+
+    def reload_schedule(self) -> dict[str, event_schedule.RoleSchedule]:
+        """Re-read the file.  For the panel/CLI to call after writing a reservation."""
+        self._schedule = event_schedule.load()
+        return self._schedule
+
+    def readiness(self, now=None) -> tuple[float, event_schedule.ReadinessPhase, object | None]:
+        """The bonus, the phase, and the role it came from.
+
+        Multi-role arbitration is the ``soonest`` rule the book asks for: with two roles on one
+        device the one about to miss its first participation is the one to serve, so the phase is
+        the closest role's, not the first one in the file.
+        """
+        schedules = self.schedule()
+        if not schedules:
+            return 0.0, event_schedule.ReadinessPhase.IDLE, None
+        role = event_schedule.soonest(schedules, now)
+        if role is None:
+            return 0.0, event_schedule.ReadinessPhase.IDLE, None
+        phase = role.phase_at(now)
+        return event_schedule.PHASE_PRIORITY[phase], phase, role
+
+    def _bear_goal_skills(self, world: WorldState) -> set[str]:
+        """The skills ``PARTICIPATE_BEAR`` can emit on this frame, from the library itself."""
+        try:
+            for goal in self.goals.discover(world):
+                if getattr(goal, "id", None) == BEAR_GOAL_ID:
+                    return set(getattr(goal, "available_skills", ()) or ())
+        except Exception:
+            # A goal library that cannot answer must not take the cycle down; an empty set
+            # simply means no promotion this tick, which is the pre-existing behaviour.
+            return set()
+        return set()
+
+    def _announce_readiness(self, phase, role, bear_skills) -> None:
+        """Print the readiness rung once per change, so a run shows why the bear won.
+
+        Once per change rather than once per tick: the runtime makes thousands of selections and
+        a line on every one would bury the transition this exists to make visible.  A phase
+        change is also the only moment at which the answer differs from the previous tick.
+        """
+        key = (getattr(phase, "value", str(phase)), getattr(role, "role_id", "") or "")
+        if key == self._announced_readiness:
+            return
+        self._announced_readiness = key
+        if not bear_skills:
+            return
+        if getattr(phase, "value", "") == event_schedule.ReadinessPhase.IDLE.value:
+            return
+        role_id = getattr(role, "role_id", "?")
+        minutes = role.minutes_to_start()
+        print(
+            f"[readiness] {phase.value} for role {role_id}"
+            f"{f' in {minutes:.1f} min' if minutes is not None else ''}"
+            f" -> {event_schedule.phase_instruction(phase)}"
+            f" (promoting {len(bear_skills)} bear skills)",
+            flush=True,
+        )
 
     def tick(self, world: WorldState, decision: Decision | None = None) -> TickResult:
         """Execute one action for ``world``.
@@ -121,6 +214,20 @@ class Scheduler:
         """
         skipped: list[Decision] = []
         candidates: list[tuple[float, int, Decision]] = []
+        # Computed once per selection, not per observation: the readiness clock is a property of
+        # "now", not of the frame being ranked.
+        readiness_bonus, readiness_phase, readiness_role = self.readiness()
+        # The bear skill set is the UNION across the frames being ranked, and the union is the
+        # right answer rather than a convenience.  ``PARTICIPATE_BEAR`` offers different skills
+        # per bear phase -- ("START_RALLY","JOIN_RALLY") when ACTIVE, ("CHECK_MARCH",
+        # "SELECT_TROOP_PRESET") when PREPARING/READY, discovery skills otherwise -- so asking a
+        # single frame would promote the participation skills on exactly the frames that do not
+        # offer them and miss them on the frames that do.
+        bear_skills: set[str] = set()
+        if readiness_bonus:
+            for world in observations:
+                bear_skills |= self._bear_goal_skills(world)
+        self._announce_readiness(readiness_phase, readiness_role, bear_skills)
         for index, world in enumerate(observations):
             decision = self.brain.decide(world, self.registry)
             if decision.skill != "SAFE_STOP":
@@ -134,6 +241,12 @@ class Scheduler:
                     priority += 10_000_000.0
                 if self.candidate_pool and self.candidate_pool.starved(skill):
                     priority += 1_000_000.0
+                # Time-based readiness (task book §五).  Added *after* the frame-based REALTIME
+                # term and outside it, because its whole purpose is to fire when the frame has
+                # nothing to say -- if a reservation is live, the bear goal outranks ordinary
+                # work even though no bear UI is on screen yet.
+                if readiness_bonus and decision.skill in bear_skills:
+                    priority += readiness_bonus
                 candidates.append((priority, index, decision))
             else:
                 skipped.append(decision)

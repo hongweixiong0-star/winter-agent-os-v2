@@ -1,0 +1,169 @@
+{
+  "schema_version": "1.0",
+  "entity_class": "TIMED_EVENT_READINESS",
+  "purpose": "限时活动提前准备台账。活动未开放时完成可完成的准备；开放后直接执行；结束后保存新知识。",
+  "canonical_registry": "knowledge/events/event_registry.json",
+  "time_rule": {
+    "start": null,
+    "end": null,
+    "policy": "本项目从未实测过任何活动的 start/end 分钟。start/end 保持 null 直到客户端真的读到；用 next_open_condition 记录游戏自己打印的冷却/倒计时/阶段。时间不可靠时保留 UNKNOWN，不编造活动时间。"
+  },
+  "last_reviewed": "2026-09-24",
+  "events": [
+    {
+      "event_id": "BEAR_HUNT",
+      "name": "巨熊行动 / 狩猎陷阱",
+      "applicable_roles": "TBD_NEEDS_CONFIG",
+      "expected_window": "UNKNOWN",
+      "start": null,
+      "end": null,
+      "next_open_condition": "上次实例于 2026-09-09T21:15:37+08:00 观察到 ENDED_AND_COOLDOWN，游戏打印 cooldown_after_event=1天22:57:12。下次开放需重新读取客户端冷却或倒计时。",
+      "open_criterion": "联盟/联盟领地/特殊建筑/狩猎陷阱 页面显示开放；或联盟集结列表出现等级1变异巨熊目标",
+      "close_criterion": "UNKNOWN — 未捕获结束态 UI",
+      "entry_navigation": [
+        "联盟",
+        "联盟领地",
+        "特殊建筑",
+        "狩猎陷阱",
+        "前往"
+      ],
+      "navigation_status": "VERIFIED_LIVE_NAVIGATION",
+      "required_resources": [
+        "车头/车身编队预设",
+        "可用行军队列",
+        "联盟集结资格"
+      ],
+      "ui_template_pack": "knowledge/combat/bear_ui_checklist.json",
+      "main_flow": {
+        "member": "bear-hunt-operation §3 J01-J14",
+        "leader": "bear-hunt-operation §4 H01-H10"
+      },
+      "reward_condition": "UNKNOWN — 战斗报告/伤害结果未验收（PENDING_BATTLE_REPORT）",
+      "historical_success": [
+        "dataset/raw/bear_live_20260909/special_buildings.png",
+        "dataset/raw/bear_live_20260909/bear_trap_detail.png",
+        "dataset/raw/bear_live_20260909/bear_dispatched.png",
+        "dataset/raw/bear_live_20260909/joined_bear_2.png",
+        "dataset/raw/bear_live_20260909/auto_join_final.png",
+        "dataset/raw/bear_live_20260909/bear_result_check.png"
+      ],
+      "exception_recovery": "bear-hunt-operation §5（17 项）",
+      "readiness": {
+        "预约核实": false,
+        "角色职责明确": false,
+        "编队准备": "PARTIAL — 出征页模板已入库（兵力/预设条/三兵种行），英雄选择与预设选中态仍缺帧",
+        "队列条件明确": true,
+        "入口路线准备": true,
+        "集结列表识别准备": true,
+        "发起与加入流程准备": true,
+        "外部UI实际导入": false,
+        "MAA可读取相关模板": "YES — 21 个巨熊模板已进 template_manifest，离线回放全部解析成功",
+        "时间独立唤醒": "WIRED — event_schedule + Scheduler.readiness 已接线并有 29 项测试；但 reserved_start 仍为 null（从未读到客户端预约），故实际相位恒为 IDLE",
+        "普通AUTO安全让位": "WIRED — T5/T1/OPEN 时 Scheduler 对 PARTICIPATE_BEAR 的技能加 2000/4000 分；未在真实窗口验证"
+      },
+      "readiness_evidence": {
+        "集结列表识别准备": "winter_agent_v2/rally.py::read_rally_list + tests/test_rally_list_reader.py（10 项，四张真机帧）；每行的加入按钮落在该行自己的带内，选择按剩余时间而非行号",
+        "MAA可读取相关模板": "tools/register_bear_rally_templates.py（14）+ tools/register_bear_formation_templates.py（7）；tools/verify_bear_templates_replay.py 与 tools/verify_bear_formation_templates.py",
+        "时间独立唤醒": "winter_agent_v2/event_schedule.py + winter_agent_v2/scheduler.py::Scheduler.readiness；tests/test_event_readiness_wake.py（29 项）；tools/probe_readiness_phase.py 逐级校验",
+        "发起与加入流程准备": "JOIN_RALLY/START_RALLY 已在 VERIFIED_ATOMIC（98）且动作为 TAP_SEMANTIC/BTN_JOIN_ROW|BTN_START_RALLY；tests/test_bear_rally_dispatch.py（12 项）"
+      },
+      "still_needs_live_verification": [
+        "巨熊『预约』界面 —— 从未见到，UNKNOWN",
+        "车头发起成功 —— 没有任何真机帧",
+        "实际攻击与战斗结果 —— PENDING_BATTLE_REPORT",
+        "集结列表滚动 —— 容器已可从帧推导，但滚动手势未在真机执行过",
+        "T5/T1 让位 —— 机制已接线，从未在真实窗口触发"
+      ],
+      "source": [
+        "LIVE_CLIENT",
+        "KNOWLEDGE_DERIVED"
+      ],
+      "confidence": 0.95,
+      "status": "PREPARED_PENDING_LIVE",
+      "last_reviewed": "2026-09-24"
+    },
+    {
+      "event_id": "ARMAMENT_COMPETITION",
+      "name": "军备竞赛",
+      "applicable_roles": "TBD_NEEDS_CONFIG",
+      "expected_window": "UNKNOWN",
+      "start": null,
+      "end": null,
+      "next_open_condition": "UNKNOWN — 仅有 2026-09-05 单次观察记录",
+      "open_criterion": "UNKNOWN",
+      "close_criterion": "UNKNOWN",
+      "entry_navigation": "UNKNOWN",
+      "navigation_status": "OBSERVED_ONCE",
+      "required_resources": "UNKNOWN",
+      "ui_template_pack": null,
+      "main_flow": null,
+      "reward_condition": "UNKNOWN",
+      "historical_success": [
+        "knowledge/events/armament_competition_live_2026-09-05.json"
+      ],
+      "exception_recovery": null,
+      "readiness": {
+        "预约核实": false,
+        "入口路线准备": false,
+        "主要流程准备": false
+      },
+      "source": [
+        "LIVE_CLIENT"
+      ],
+      "confidence": 0.5,
+      "status": "DISCOVERED"
+    },
+    {
+      "event_id": "KINGDOM_OF_POWER",
+      "name": "强国之争 / Kingdom of Power",
+      "applicable_roles": "TBD_NEEDS_CONFIG",
+      "expected_window": "UNKNOWN",
+      "start": null,
+      "end": null,
+      "next_open_condition": "UNKNOWN — 仅有 2026-09-09 单次观察记录",
+      "open_criterion": "UNKNOWN",
+      "close_criterion": "UNKNOWN",
+      "entry_navigation": "UNKNOWN",
+      "navigation_status": "OBSERVED_ONCE",
+      "required_resources": "UNKNOWN",
+      "ui_template_pack": null,
+      "main_flow": null,
+      "reward_condition": "UNKNOWN",
+      "historical_success": [
+        "knowledge/events/kingdom_of_power_live_2026-09-09.json"
+      ],
+      "exception_recovery": null,
+      "readiness": {
+        "预约核实": false,
+        "入口路线准备": false,
+        "主要流程准备": false
+      },
+      "source": [
+        "LIVE_CLIENT"
+      ],
+      "confidence": 0.5,
+      "status": "DISCOVERED"
+    }
+  ],
+  "preparation_timeline": {
+    "T-30m": "确认预约、设备、角色、预设、队列和执行链",
+    "T-15m": "提前处理必要队列，检查导航及角色切换",
+    "T-5m": "正确角色 READY，普通任务安全让位",
+    "T-1m": "轻量观察倒计时，禁止长时间开发与巡检",
+    "OPEN": "立即进入车头或车身执行链",
+    "DURING": "持续参与或按队伍状态等待下一次机会",
+    "END": "停止本次执行，保存结果并恢复日常"
+  },
+  "multi_role_arbitration": [
+    "角色 A 已成功参战、角色 B 即将错过首次参与 → 优先保障角色 B 首次参与",
+    "角色 A 等待集结出发或部队返回 → 符合切换条件时可安排角色 B",
+    "两窗口真实重叠 → 按真实可操作时间安排，不得假装同一设备能同时执行两个账号"
+  ],
+  "never_invent": [
+    "不得用推算或社区资料填写 start/end",
+    "不得把『当前看不到入口』理解为『未来没有这个任务』",
+    "不得把 readiness 的 false 写成 true"
+  ],
+  "source": "KNOWLEDGE_DERIVED",
+  "confidence": 0.9
+}
