@@ -50,6 +50,33 @@ def test_research_detail_requires_a_current_node_and_exact_research_control():
     assert detail.research["research_control_norm"] == [0.8361, 0.8125]
 
 
+def test_research_detail_sheet_remains_identifiable_when_its_tree_header_is_dimmed():
+    # Live screenshot 20260925_041205_184877 step 5: tapping a node opens this sheet,
+    # but the dimmed 科技研究 header is no longer legible and the template page is lost.
+    result = OCRResult((
+        _token("工具改良IV", 355, 256),
+        _token("研究消耗", 135, 679),
+        _token("研究", 510, 972),
+    ), "test")
+
+    state = OCRPageClassifier().classify(result, frame_size=(720, 1280))
+
+    assert state.page is Page.RESEARCH
+    assert state.research["node_detail_visible"] is True
+    assert state.research["selected_node"] == "工具改良IV"
+
+
+def test_a_generic_research_label_without_the_detail_sheet_evidence_stays_unknown():
+    result = OCRResult((
+        _token("工具改良IV", 355, 256),
+        _token("研究", 510, 972),
+    ), "test")
+
+    state = OCRPageClassifier().classify(result, frame_size=(720, 1280))
+
+    assert state.page is Page.UNKNOWN
+
+
 def test_research_nodes_without_positions_are_not_action_targets():
     result = OCRResult((
         OCRToken("科技研究", 0.99), OCRToken("1/3", 0.99), OCRToken("工具改良IV", 0.99),

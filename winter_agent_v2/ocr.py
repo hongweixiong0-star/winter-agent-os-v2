@@ -594,6 +594,20 @@ class OCRPageClassifier:
         for page, alternatives in self.RULES:
             if any(keyword in exact_texts for keyword in alternatives):
                 found.append(page)
+        # The node detail sheet dims the tree header enough that the page template and
+        # OCR title can both disappear. Its own structure is still distinctive: a
+        # technology-node title, the dedicated 研究 action, and the 研究消耗 section.
+        # This names only the page; affordability and permission to spend remain separate.
+        research_detail = (
+            any(token.text.strip() in {"研究", "开始研究"} for token in eligible)
+            and any("研究消耗" in token.text.strip() for token in eligible)
+            and any(
+                re.fullmatch(r"[\u4e00-\u9fffA-Za-z·]+(?:[IVXLCDM]+|\d+)", token.text.strip())
+                for token in eligible
+            )
+        )
+        if research_detail:
+            found.append(Page.RESEARCH)
         if "训练中" in exact_texts and any(text in exact_texts for text in ("盾兵营", "矛兵营", "射手营")):
             found.append(Page.TRAINING)
         # The second render of the same page, measured live 2026-09-22.
@@ -895,7 +909,16 @@ class OCRPageClassifier:
                 ]
                 visible_names = {token.text.strip() for token in label_tokens}
                 named = [item for item in candidates if item["name"] in visible_names]
-                if len(visible_names) == 1:
+                sheet_titles = [
+                    token for token in label_tokens
+                    if frame_size and frame_size[1] > 0
+                    and 0.12 <= token.centre[1] / float(frame_size[1]) <= 0.35
+                ]
+                if research_detail and len(sheet_titles) == 1:
+                    # Tree labels can remain faintly visible behind the sheet; its own
+                    # title band is the current selected node and must take precedence.
+                    selected_name = sheet_titles[0].text.strip()
+                elif len(visible_names) == 1:
                     selected_name = next(iter(visible_names))
                 elif named:
                     selectable = [item for item in named if item["level"] > 0 and item["status"] == "UNFINISHED"]
