@@ -73,7 +73,7 @@ def test_research_start_requires_readable_affordable_costs_and_current_duration(
         _token("1000/500", 210, 744), _token("2000/1500", 500, 744),
         _token("357.7万/69，000", 210, 794), _token("4000/3500", 500, 794),
         _token("5000/4400", 210, 844),
-        _token("研究", 510, 972), _token("002:53:09", 511, 1005),
+        _token("研究", 510, 972), _token("02:53:09", 511, 1005),
     )
     state = OCRPageClassifier().classify(OCRResult(tokens, "test"), frame_size=(720, 1280))
 
@@ -87,6 +87,9 @@ def test_research_start_requires_readable_affordable_costs_and_current_duration(
     }
     assert state.research["start_control_present"] is True
     assert state.research["researchable"] is True
+    assert state.research["queue_available"] is True
+    assert state.research["status"] == "IDLE"
+    assert state.research["queue_source"] == "CURRENT_FRAME_RESEARCH_START_CONTROL"
     assert state.research["research_control_norm"] == [0.7083, 0.7594]
 
 
@@ -100,7 +103,7 @@ def test_research_start_stays_blocked_when_cost_is_short_or_duration_is_missing(
     classifier = OCRPageClassifier()
     unaffordable = classifier.classify(
         OCRResult(affordable[:3] + (_token("400/1500", 500, 744),) + affordable[4:]
-                  + (_token("002:53:09", 511, 1005),), "test"),
+                  + (_token("02:53:09", 511, 1005),), "test"),
         frame_size=(720, 1280),
     )
     no_duration = classifier.classify(OCRResult(affordable, "test"), frame_size=(720, 1280))

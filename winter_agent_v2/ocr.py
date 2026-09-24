@@ -1014,6 +1014,15 @@ class OCRPageClassifier:
                 timer = re.fullmatch(r"(?:(\d+)天)?(\d{1,2}:\d{2}:\d{2})", token.text.strip())
                 if not timer:
                     continue
+                if (
+                    frame_size and frame_size[0] > 0 and frame_size[1] > 0
+                    and research.get("node_detail_visible") is True
+                    and token.centre[0] / frame_size[0] >= 0.50
+                    and 0.74 <= token.centre[1] / frame_size[1] <= 0.85
+                ):
+                    # The current detail sheet prints its projected duration in the
+                    # blue research control; it is not a running queue countdown.
+                    continue
                 centre = token.centre[1]
                 above = [
                     other.text.strip()
@@ -1041,6 +1050,20 @@ class OCRPageClassifier:
                 break
             if "queue_available" not in research and "空闲中" in exact_texts:
                 research.update({"status": "IDLE", "queue_available": True})
+            if (
+                "queue_available" not in research
+                and research.get("node_detail_visible") is True
+                and research.get("researchable") is True
+                and research.get("start_control_present") is True
+            ):
+                # The underlying idle row is covered by this modal. Its active
+                # start control, current costs, and projected duration are the
+                # live evidence that the research slot is available.
+                research.update({
+                    "status": "IDLE",
+                    "queue_available": True,
+                    "queue_source": "CURRENT_FRAME_RESEARCH_START_CONTROL",
+                })
             if (
                 building.get("queue_available") is not False
                 and any("建筑队列" in text for text in exact_texts)
