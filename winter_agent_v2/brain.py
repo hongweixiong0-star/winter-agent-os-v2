@@ -2245,9 +2245,28 @@ class RuleBrain:
                         #   gets on a panel whose tab was never confirmed.
                         if "GIANT_BEAST" in world.resource_tab_kinds:
                             return Decision("SAFE_STOP", "only_the_rally_beast_tab_is_offered_no_solo_attack_entry", 1.0, "switch_task")
-                        # Neither monster tab read: leave ``beast_search_used`` alone and let the
-                        # pan budget below run.  A later frame may still read the strip.
-                        pass
+                        # The current frame did not identify either monster tab.  Do not
+                        # pan while this panel is open: the swipe dismisses it, so the next
+                        # map frame reopens the same default resource panel and repeats the
+                        # same two-step loop without ever spending a confirmed beast search.
+                        # Hand the stamina goal to its already measured Intel route after
+                        # closing the panel.  A future AUTO cycle gets a fresh frame and may
+                        # retry the beast tab if the UI becomes readable.
+                        if self.goal_id == "AVOID_STAMINA_WASTE" and not self.spend_route_switched:
+                            self.spend_route_switched = True
+                            self.current_goal = "SPEND_STAMINA"
+                            return Decision(
+                                "BACK",
+                                "unreadable_beast_tabs_close_panel_and_switch_to_intel",
+                                world.confidence,
+                                "resource_search_closed",
+                            )
+                        return Decision(
+                            "SAFE_STOP",
+                            "beast_search_tabs_unreadable_without_stamina_handoff",
+                            1.0,
+                            "switch_task",
+                        )
                     else:
                         # ``BEAST`` is drawn and something else is anchored -- the measured
                         # live state, where the panel opens on 生肉.  Switch to it.

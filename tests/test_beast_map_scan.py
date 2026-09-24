@@ -371,6 +371,30 @@ class OnlyTheOrdinaryBeastTabIsSearchedTests(unittest.TestCase):
             "switching tabs is not searching: spending the ticket here would forbid the search",
         )
 
+    def test_unreadable_beast_tabs_close_the_panel_and_handoff_instead_of_looping(self):
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        brain.goal_id = "AVOID_STAMINA_WASTE"
+        unreadable = WorldState(
+            page=Page.MAP,
+            march_used=0,
+            resource_search_open=True,
+            resource_selected="COAL",
+            resource_selected_tab="COAL",
+            resource_tab_kinds=("COAL", "IRON", "MEAT", "WOOD"),
+            confidence=0.99,
+        )
+
+        close = brain.decide(unreadable, v2_registry())
+        self.assertEqual(close.skill, "BACK")
+        self.assertEqual(
+            close.reason,
+            "unreadable_beast_tabs_close_panel_and_switch_to_intel",
+        )
+        self.assertEqual(brain.current_goal, "SPEND_STAMINA")
+
+        handoff = brain.decide(replace(unreadable, resource_search_open=False), v2_registry())
+        self.assertEqual(handoff.skill, "OPEN_INTEL")
+
     def test_a_panel_already_anchored_on_the_beast_tab_does_not_switch(self):
         """The other half: when the anchor is already 野兽 the route must submit directly.
 
