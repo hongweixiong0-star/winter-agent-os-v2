@@ -198,10 +198,11 @@ class RuleBrain:
         # afterwards, so leaving is verifiable rather than hopeful.  The flag is
         # what stops a Back that did not move the client from being repeated.
         self.terminal_page_left = False
-        # How many exits this run has already tried on a panel another goal owned, so a Back (or
-        # a close) that did not move the client is not repeated.  Two, because a layer can ignore
-        # a Back and still answer its own close button -- see ``_leave_foreign_page_once``.
+        # Exits tried per route on a panel another goal owned. One route gets at most a Back
+        # and the layer's own close; another route in the same AUTO cycle still gets its own
+        # bounded chance to leave the page it does not own.
         self.foreign_page_steps = 0
+        self._foreign_page_steps_by_owner: dict[str, int] = {}
         # Whether this run has already looked at an unclaimed 活动面板 (``Page.EVENT``).
         #
         # Measured, live, 2026-09-24T06:01:18Z, in the AUTO's own episode stream:
@@ -412,10 +413,14 @@ class RuleBrain:
         steps per run, not a loop: the flag still ends the sequence, so a layer that answers
         neither exit still falls through to the caller's honest stop.
         """
-        if self.foreign_page_steps >= 2:
+        route = str(owner or "UNKNOWN").strip().upper()
+        attempts = self._foreign_page_steps_by_owner.get(route, 0)
+        if attempts >= 2:
             return None
+        attempts += 1
+        self._foreign_page_steps_by_owner[route] = attempts
         self.foreign_page_steps += 1
-        if self.foreign_page_steps == 1:
+        if attempts == 1:
             return Decision(
                 "BACK",
                 f"{owner.lower()}_goal_leaves_a_panel_it_does_not_own",

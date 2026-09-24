@@ -91,6 +91,18 @@ class ThePairIsOrderedAndBounded(unittest.TestCase):
         self.assertIn("train", first.reason)
         self.assertIn("train", second.reason)
 
+    def test_a_different_route_gets_its_own_bounded_exit_pair(self) -> None:
+        """An earlier goal's Back must not strand training on a foreign page."""
+        brain = RuleBrain(current_goal="BEAST_HUNT")
+        world = _alliance_layer()
+        self.assertEqual(brain._leave_foreign_page_once(world, owner="BEAST_HUNT").skill, "BACK")
+        self.assertEqual(brain._leave_foreign_page_once(world, owner="TRAIN").skill, "BACK")
+        self.assertEqual(
+            brain._leave_foreign_page_once(world, owner="TRAIN").skill,
+            "LEAVE_FOREIGN_LAYER",
+        )
+        self.assertIsNone(brain._leave_foreign_page_once(world, owner="TRAIN"))
+
 
 class TheVerifierJudgesTheRightThing(unittest.TestCase):
     def test_leaving_the_layer_is_proven_by_a_different_known_page(self) -> None:
