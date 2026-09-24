@@ -746,10 +746,12 @@ class TheDoneMarkerTests(unittest.TestCase):
         self.assertTrue(controls)
         self.assertNotIn("DONE", {control for _, control in controls})
 
-    def test_the_enter_path_never_taps_the_tick(self):
-        """Whatever else happens, a tick is not an enter-arrow: this is the wrong-action guard."""
-        decision = _brain("SHIELD_CAMP_TRAINING").decide(self.state, v2_registry())
+    def test_the_done_marker_has_a_separate_navigation_only_candidate(self):
+        """The marker may open the camp surface, but can never count as collecting."""
+        decision = _brain("SHIELD_CAMP_TRAINING", "TRAIN").decide(self.state, v2_registry())
+        self.assertEqual(decision.skill, "OPEN_COMPLETED_TRAINING_CAMP_SHIELD")
         self.assertNotIn("OPEN_TASK_FROM_QUICK_PANEL", decision.skill)
+        self.assertIn("inspect_", decision.reason)
         self.assertNotEqual(decision.skill, "COLLECT_FINISHED_TRAINING_SHIELD")
 
     def test_the_collect_target_is_the_tick_itself(self):

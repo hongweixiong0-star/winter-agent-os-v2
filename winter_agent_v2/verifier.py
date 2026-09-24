@@ -1435,6 +1435,49 @@ def verify_building_upgrade(before: WorldState, after: WorldState, building_id: 
     )
 
 
+def verify_completed_training_camp_inspected(
+    before: WorldState, after: WorldState, *, camp: str
+) -> VerificationResult:
+    """Accept only arrival at the same camp, never infer that its batch was collected.
+
+    The quick-panel completion marker has previously been shown to navigate/select a camp
+    without collecting troops. This verifier intentionally accepts that partial navigation
+    result (or the camp's named action bar/training page) and records the marker as still
+    uncollected. A changed page alone is not enough: the selected camp must match the goal.
+    """
+    key = f"{camp}_CAMP"
+    before_rows = [
+        row for row in ((before.quick_panel or {}).get("rows") or ())
+        if str(row.get("key") or "") == key
+    ]
+    marker_seen = any(
+        str(row.get("control") or "") == "DONE" and bool(row.get("done_norm"))
+        for row in before_rows
+    )
+    troop = {"SHIELD": "INFANTRY", "LANCER": "LANCER", "MARKSMAN": "MARKSMAN"}.get(camp, "")
+    training = after.training or {}
+    named = str(training.get("camp") or training.get("camp_open_label") or "").upper()
+    named_match = named in {key, camp, troop}
+    page_match = after.page is Page.TRAINING and str(training.get("troop_type") or "").upper() == troop
+    highlight_match = camp == "SHIELD" and training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED"
+    bar_match = after.page is Page.HOME and training.get("menu_open") is True and named_match
+    arrived = marker_seen and (named_match or page_match or highlight_match or bar_match)
+    return VerificationResult(
+        arrived,
+        "OK" if arrived else "COMPLETED_CAMP_INSPECTION_NOT_PROVEN",
+        {
+            "camp": camp,
+            "completion_marker_seen_before": marker_seen,
+            "named_camp_after": named,
+            "page_after": after.page.value,
+            "page_match": page_match,
+            "highlight_match": highlight_match,
+            "action_bar_match": bar_match,
+            "collection_verified": False,
+        },
+    )
+
+
 def verify_selected_building_upgrade_panel_opened(
     before: WorldState, after: WorldState
 ) -> VerificationResult:

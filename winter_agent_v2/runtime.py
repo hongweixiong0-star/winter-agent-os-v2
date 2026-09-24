@@ -31,7 +31,7 @@ from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
 from .intel_pins import intel_pin_centers
-from .verifier import verify_research_node_inspected
+from .verifier import verify_research_node_inspected, verify_completed_training_camp_inspected
 
 
 @dataclass(frozen=True)
@@ -352,6 +352,9 @@ class LiveRuntime:
         "COLLECT_FINISHED_TRAINING_SHIELD": lambda b, a: verify_panel_row_done_collected(b, a, row_key="SHIELD_CAMP"),
         "COLLECT_FINISHED_TRAINING_LANCER": lambda b, a: verify_panel_row_done_collected(b, a, row_key="LANCER_CAMP"),
         "COLLECT_FINISHED_TRAINING_MARKSMAN": lambda b, a: verify_panel_row_done_collected(b, a, row_key="MARKSMAN_CAMP"),
+        "OPEN_COMPLETED_TRAINING_CAMP_SHIELD": lambda b, a: verify_completed_training_camp_inspected(b, a, camp="SHIELD"),
+        "OPEN_COMPLETED_TRAINING_CAMP_LANCER": lambda b, a: verify_completed_training_camp_inspected(b, a, camp="LANCER"),
+        "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN": lambda b, a: verify_completed_training_camp_inspected(b, a, camp="MARKSMAN"),
         "COLLECT_MY_REWARDS_ROW": lambda b, a: verify_panel_row_done_collected(b, a, row_key="MY_REWARDS"),
         "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION": verify_ordinary_control_tried,
         "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": verify_ordinary_control_tried,

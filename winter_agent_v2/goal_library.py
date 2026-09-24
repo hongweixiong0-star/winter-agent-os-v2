@@ -929,15 +929,18 @@ class GoalLibrary:
                 "observed": observed,
             }
             if observed and status == "COMPLETED":
-                # The client distinguishes a finished batch from an empty queue.
-                # The quick-panel tick has been measured as non-collecting, so keep
-                # the task visible but blocked until a collection path is verified;
-                # never offer TRAIN_TROOPS against a batch still awaiting handling.
+                # A finished batch is not an idle queue. Keep it actionable only for
+                # a navigation-only inspection of that exact barracks; the skill does
+                # not claim the batch or start training. This lets AUTO discover the
+                # in-page collection control without repeating the disproven quick-
+                # panel claim assumption.
                 goals.append(GoalState(
-                    goal_id, GoalStatus.BLOCKED, completion=0.0,
-                    development_value=TRAINING_CAMP_VALUE, available_skills=(),
+                    goal_id, GoalStatus.READY, completion=0.0,
+                    development_value=TRAINING_CAMP_VALUE,
+                    available_skills=(f"OPEN_COMPLETED_TRAINING_CAMP_{camp.removesuffix('_CAMP')}",),
                     evidence={**evidence, "reason": "training_completed_collection_path_unverified",
-                              "condition": "finished_batch_waiting_for_verified_collection"},
+                              "condition": "inspect_exact_camp_before_collect_or_restart",
+                              "collection_verified": False},
                     distance=1.0,
                 ))
             elif observed and busy is True:

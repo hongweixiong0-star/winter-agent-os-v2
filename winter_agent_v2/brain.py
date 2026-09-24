@@ -1564,6 +1564,35 @@ class RuleBrain:
             if world.page is Page.HOME and world.quick_panel.get("open"):
                 panel_camps = world.quick_panel.get("camps") or {}
                 own_camp = self._goal_camp()
+                rows_by_key = {
+                    str(item.get("key") or ""): item
+                    for item in (world.quick_panel.get("rows") or ())
+                }
+                completed_camps = [own_camp] if own_camp else list(CAMP_ORDER)
+                completed_camps = [
+                    camp for camp in completed_camps
+                    if camp
+                    and str((panel_camps.get(camp) or {}).get("status") or "").upper() == "COMPLETED"
+                    and str((rows_by_key.get(camp) or {}).get("control") or "") == "DONE"
+                    and (rows_by_key.get(camp) or {}).get("done_norm")
+                ]
+                # An aggregate/legacy training route has no named camp. Prefer a row
+                # with a current red badge, then the stable left-to-right camp order.
+                completed_camps.sort(
+                    key=lambda camp: 0 if str((panel_camps.get(camp) or {}).get("badge") or "") == "PRESENT" else 1
+                )
+                if completed_camps:
+                    camp = completed_camps[0]
+                    skill_id = f"OPEN_COMPLETED_TRAINING_CAMP_{camp.removesuffix('_CAMP')}"
+                    if (registry.get(skill_id) is not None
+                            and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN):
+                        self._panel_row_attempts += 1
+                        return Decision(
+                            skill_id,
+                            f"inspect_{camp.lower()}_completion_before_any_collect_or_restart",
+                            world.confidence,
+                            "same_camp_surface_opened",
+                        )
                 # The goal's own barracks first.  A per-camp goal acts on its own row and only its
                 # row, which is operator §二 ("根据所属行分别解释") and §四 ("确定目标任务行"), and the
                 # measurement is that it was not: ``goal=LANCER_CAMP_TRAINING`` at 2026-09-23 13:59:41
