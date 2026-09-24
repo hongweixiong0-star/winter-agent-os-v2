@@ -24,6 +24,17 @@ What it will not do
 It does not answer anything itself, and it does not relax any bound: one job per question, at most
 ``MAX_IN_FLIGHT`` at a time, at most two attempts per question, and a cooldown between attempts.
 ``--dry-run`` prints the exact prompt and submits nothing.
+
+Retired as an automatic model call (operator directive 2026-09-25)
+-----------------------------------------------------------------
+Placing a WorkBuddy job by itself is switched off.  ``config/v2.json ->
+workbuddy_channel.enabled`` is false, so this tool reconciles and submits nothing, and the
+answering half now runs **in the cycle**: the local Qwen plans the UI action inside the same step
+that asks for it (``winter_agent_v2/ui_planner.py``), so there is no job and no waiting.  The code
+is kept rather than deleted -- a job placed before the directive may still be in flight, and the
+failure record lives in
+``knowledge/failure_patterns/integration/WORKBUDDY_CHANNEL_RETIRED.md`` so the next account does
+not re-attempt the route.
 """
 
 from __future__ import annotations
@@ -84,8 +95,8 @@ def _print_dry_run(dispatcher: UnknownDispatcher, limit: int) -> int:
     return 0
 
 
-def _once(dispatcher: UnknownDispatcher) -> int:
-    result = dispatcher.worker()
+def _once(dispatcher: UnknownDispatcher, *, submit: bool = True) -> int:
+    result = dispatcher.worker(submit=submit)
     reconcile = result.get("reconcile") or {}
     dispatch = result.get("dispatch") or {}
     if result.get("lock"):
@@ -94,6 +105,17 @@ def _once(dispatcher: UnknownDispatcher) -> int:
         # jobs waited to be reconciled -- the quietest possible way for a channel to stop.
         print(f"skipped     : {result['lock']}")
         return 0
+    if not submit:
+        # Operator directive 2026-09-25: this channel no longer places jobs by itself.  Saying so
+        # here rather than printing "submitted 0" is the difference between a retired channel and a
+        # broken one -- and this tool is exactly what a later reader will run to find out which.
+        print(
+            "submitted   : 0 (WORKBUDDY_CHANNEL_RETIRED -- config/v2.json workbuddy_channel.enabled=false)"
+        )
+        print(
+            "note        : answers are planned locally, inside the cycle "
+            "(winter_agent_v2/ui_planner.py); this pass only reconciled."
+        )
     print(
         "reconciled  : "
         f"checked={reconcile.get('checked', 0)} done={reconcile.get('done', 0)} "
@@ -103,7 +125,8 @@ def _once(dispatcher: UnknownDispatcher) -> int:
     for error in list(reconcile.get("errors") or []) + list(dispatch.get("errors") or []):
         print(f"  error     : {error}")
     submitted = dispatch.get("submitted") or []
-    print(f"submitted   : {len(submitted)}")
+    if submit:
+        print(f"submitted   : {len(submitted)}")
     for item in submitted:
         print(f"  {item['request_id']:34} job={item.get('job_id', '')} model={item.get('model', '')}")
     for item in dispatch.get("skipped") or []:
@@ -111,6 +134,23 @@ def _once(dispatcher: UnknownDispatcher) -> int:
     if not submitted and not (reconcile.get("checked") or 0):
         print("nothing to do")
     return 0
+
+
+def _channel_enabled(root: str | Path | None) -> bool:
+    """Whether this channel may still place a WorkBuddy job by itself.
+
+    Operator directive 2026-09-25: it may not.  The switch is ``config/v2.json ->
+    workbuddy_channel.enabled``; an unreadable config resolves to the retired behaviour, because
+    "I could not read the switch" must never mean "submit a job".  Reconciling still runs, so a
+    job placed before the directive is settled rather than left holding the in-flight slot.
+    """
+    try:
+        base = Path(root) if root else Path(__file__).resolve().parents[1]
+        payload = json.loads((base / "config/v2.json").read_text(encoding="utf-8"))
+        section = payload.get("workbuddy_channel")
+        return bool(section.get("enabled", False)) if isinstance(section, dict) else False
+    except (OSError, json.JSONDecodeError, TypeError):
+        return False
 
 
 def main() -> int:
@@ -125,15 +165,16 @@ def main() -> int:
     args = parser.parse_args()
 
     dispatcher = UnknownDispatcher(root=args.root or None)
+    submit = _channel_enabled(args.root or None)
 
     if args.state or not (args.dry_run or args.once or args.loop):
         return _print_state(dispatcher)
     if args.dry_run:
         return _print_dry_run(dispatcher, args.limit)
     if args.once:
-        return _once(dispatcher)
+        return _once(dispatcher, submit=submit)
     while True:
-        _once(dispatcher)
+        _once(dispatcher, submit=submit)
         print(f"-- sleeping {args.interval:.0f}s --", flush=True)
         time.sleep(max(5.0, float(args.interval)))
 

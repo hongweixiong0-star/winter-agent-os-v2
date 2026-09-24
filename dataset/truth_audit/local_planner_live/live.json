@@ -1,0 +1,116 @@
+{
+ "generated_at": "2026-09-24T02:26:36.273352+00:00",
+ "goal": "DAILY_ROUTINE",
+ "execute_requested": true,
+ "model": "qwen3635bagent-q3:latest",
+ "model_reachable": true,
+ "device": {
+  "connected": true,
+  "resolution": [
+   720,
+   1280
+  ],
+  "foreground": "com.gof.china"
+ },
+ "page": {
+  "label": "MAP",
+  "title": "",
+  "confidence": 0.99
+ },
+ "frame_elements": {
+  "regions": 40,
+  "texts": 40,
+  "sample": [
+   "09-2410:26:39",
+   "224.1万",
+   "21,294",
+   "2,698,680",
+   "-12.6℃",
+   "统帅4",
+   "100",
+   "玉魄流光礼包",
+   "登录好礼",
+   "常规活动",
+   "未驻防",
+   "[ioi]联盟旗帜"
+  ]
+ },
+ "plan": {
+  "decision": "EXECUTE",
+  "action_type": "CLICK_ELEMENT",
+  "target_element_id": "E9",
+  "target_text": "登录好礼",
+  "reason": "The goal is to perform the daily routine, and '登录好礼' (Login Gifts) is the standard entry point for claiming daily login rewards."
+ },
+ "point": [
+  0.7708,
+  0.1484
+ ],
+ "advice_used": {
+  "request_id": "map__control__4cf644d7",
+  "unknown_type": "CONTROL",
+  "candidate_semantics": [
+   "登录好礼"
+  ],
+  "proposed_action": "登录好礼",
+  "action_kind": "ORDINARY_CONTROL",
+  "target_semantics": "登录好礼",
+  "expected_result": "LOGIN_REWARDS",
+  "uncertainty": "LOCAL_QWEN",
+  "note": "The goal is to perform the daily routine, and '登录好礼' (Login Gifts) is the standard entry point for claiming daily login rewards.",
+  "target_point": [
+   0.7708,
+   0.1484
+  ],
+  "basis": "ANCHORED_TO_TEXT",
+  "basis_detail": {
+   "anchor_text": "登录好礼",
+   "anchor_box": {
+    "x_norm": 0.7222,
+    "y_norm": 0.1383,
+    "w_norm": 0.0972,
+    "h_norm": 0.0203
+   },
+   "offset": [
+    0.0,
+    0.0
+   ]
+  },
+  "box_norm": {
+   "x_norm": 0.7222,
+   "y_norm": 0.1383,
+   "w_norm": 0.0972,
+   "h_norm": 0.0203
+  },
+  "source": "LOCAL_QWEN",
+  "notification": "",
+  "entry": "",
+  "action_level": "ENTRY_CONTROL"
+ },
+ "semantic": "AI_ADVICE[登录好礼]",
+ "basis": "AI_ADVICE/ANCHORED_TO_TEXT",
+ "structured_output_pass": true,
+ "maa_located_on_current_frame": true,
+ "execution": {
+  "executed": true,
+  "backend": "MAA",
+  "error": null,
+  "tap_point": [
+   555,
+   190
+  ],
+  "latency_ms": 51.34
+ },
+ "maa_execution_pass": true,
+ "after": {
+  "page_before": "MAP",
+  "page_after": "MAP",
+  "confidence_after": 0.99
+ },
+ "verifier": {
+  "name": "verify_ordinary_control_tried",
+  "ok": true,
+  "reason": ""
+ },
+ "state_changed_and_verified": true
+}

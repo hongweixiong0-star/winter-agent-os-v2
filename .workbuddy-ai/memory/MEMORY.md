@@ -2072,3 +2072,39 @@ X 坐标被 8 轮以上花在加成总览上**（点进面板自己的数字列�
 
 第四个：**写工具的时候，空边界要显式处理**。`stamp < ""` 对任何非空时间戳都是 False，于是"到结束为止"
 静默变成"什么都没有"，AFTER 窗口读成 0 —— 正是本轮在打击的那类"静默为零的测量"。跑一次就发现了。
+
+
+---
+
+## 2026-09-25 · 运行模型边界：本地 Qwen 规划器，WorkBuddy 通道退役
+
+**操作者定规（长期有效）**：V2 **不得**再自行调用 WorkBuddy 桌面端模型（网关 / 开放平台 /
+OAuth / 会话桥接一律停止）。WorkBuddy = 人工驱动的开发工具。运行时需要一个模型时，用的是
+**本机已部署的本地 Qwen**（Ollama，本机 :11434）。
+
+**边界怎么落的（新增能力只能照这个形状扩）**：
+
+- `winter_agent_v2/local_qwen.py` 是**全项目唯一**知道端点与模型 tag 的文件。
+  `tests/test_qwen_decoupling.py` 扫包强制这条；`brain/scheduler/skills/verifier/
+  goal_library/executor/executor_router/maa_executor` 一律不得 import 它或 planner。
+- `winter_agent_v2/ui_planner.py` 是**唯一**把回复变成动作的文件：6 个 decision
+  （EXECUTE/OBSERVE/REPLAN/COMPLETE/DEFER/BLOCKED）+ 动作类型白名单 + 递归拒绝几何键。
+- **不建第二套协议**：plan 被翻译成项目**已有的** `unknown_advisor.Advice`
+  （`action_kind=ACTION_ORDINARY`，`target_anchor={"text": 客户端自己印的字}`），
+  于是 grounding / 消耗风控 / 语义命名 / 执行 / verifier / 知识归档全部复用。
+  `ui_planner.ManagedAdvisor` 是与旧 advisor 同形的 drop-in。
+- **坐标永不经过模型**：packet 只有 `id / text / area`；落点由 `grounded_region` 在**同一帧**
+  上算出。`COMPLETE` 只是 claim，只有 verifier 能确认目标完成。
+
+**开关（部署决定，不在 `if` 里）**：`config/v2.json -> local_planner.enabled` 与
+`workbuddy_channel.enabled`（当前 false）。`enabled=false` 时行为与引入前完全一致。
+
+**当前真实状态（不要读成"已解决"）**：
+`STRUCTURED_OUTPUT_PASS` ✅ / `MAA_EXECUTION_PASS` ✅（真机 MAA 点击 51 ms）/
+`GOAL_VERIFIED` ❌。第一个真实断点是 `SEMANTIC_TARGET_IS_A_LABEL_NOT_A_CONTROL`：
+模型选对了 `登录好礼`，但项目把**图标下方的文字标签框**当成了可点控件，点击落在标签上，
+页面 MAP→MAP 未变。修的是**元素表**（图标+标签合成一个控件盒子），
+**禁止**在点击处加偏移 / 按比例放大标签框 / 历史坐标兜底（宪法 A §二）。
+
+证据与复现：`docs/LOCAL_PLANNER_ACCEPTANCE.md`、
+`knowledge/failure_patterns/integration/WORKBUDDY_CHANNEL_RETIRED.md`。

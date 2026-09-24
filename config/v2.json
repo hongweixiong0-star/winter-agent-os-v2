@@ -109,6 +109,26 @@
       }
     }
   },
+  "local_planner": {
+    "enabled": true,
+    "note": "Operator directive 2026-09-25 section 4: when no registered skill can advance a goal, the local Qwen plans the next UI action. It names an element id and an action type and never a coordinate. Set enabled=false and the runtime behaves exactly as it did before this existed -- the rules and the registry keep deciding, and a screen no skill can advance simply gets no advice.",
+    "endpoint": "http://127.0.0.1:11434",
+    "model": "qwen3635bagent-q3:latest",
+    "num_ctx": 8192,
+    "timeout_s": 45.0,
+    "max_steps_per_run": 12,
+    "max_steps_per_screen": 2,
+    "ledger": "learning/local_qwen_calls.jsonl",
+    "plan_ledger": "learning/local_planner_steps.jsonl"
+  },
+  "workbuddy_channel": {
+    "enabled": false,
+    "note": "Operator directive 2026-09-25 section 1: the automatic WorkBuddy model-call channel is retired from the production chain. WorkBuddy stays a tool a person drives by hand. The code is kept (workbuddy_bridge / unknown_dispatch / gateway_service and their tests) because it is a public component other paths import, and the failure record is kept in knowledge/failure_patterns/integration/WORKBUDDY_CHANNEL_RETIRED.md so the next account does not re-attempt it. Nothing here stops the desktop console or the game runtime: the gateway is still used as a transport for development jobs when a person starts one deliberately.",
+    "retired_at": "2026-09-25",
+    "auto_submit_jobs": false,
+    "auto_escalate": false,
+    "answer_production": "LOCAL_QWEN"
+  },
   "retention": {
     "max_screenshots": 500,
     "screenshot_ttl_days": 14,

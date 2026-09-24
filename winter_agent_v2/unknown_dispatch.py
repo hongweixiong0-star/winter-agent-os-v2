@@ -833,7 +833,7 @@ class UnknownDispatcher:
             })
         return report
 
-    def worker(self) -> dict[str, Any]:
+    def worker(self, *, submit: bool = True) -> dict[str, Any]:
         """One full pass: reconcile what is open, then submit what is pending.  Never raises.
 
         Guards against a second consumer with a lock file, because there can legitimately be two: the
@@ -842,8 +842,16 @@ class UnknownDispatcher:
         decide a question has no job and both submit one -- and that costs a real job each time.  A
         pass that cannot take the lock simply reports so and returns; the other consumer is already
         doing this work.
+
+        ``submit=False`` reconciles and stops there.  Operator directive 2026-09-25: V2 no longer
+        places WorkBuddy jobs on its own, and the answers are planned locally inside the cycle
+        (``ui_planner``).  Reconciling anyway is not leftover work: a job from before the
+        directive may still be in flight, and abandoning the ledger would leave the in-flight
+        slot occupied for ever.
         """
         out: dict[str, Any] = {"reconcile": {}, "dispatch": {}, "lock": ""}
+        if not submit:
+            out["dispatch"] = {"skipped": "WORKBUDDY_CHANNEL_RETIRED", "submitted": []}
         with self._pass_lock() as held:
             if not held:
                 out["lock"] = "another consumer is running a pass"
@@ -852,6 +860,8 @@ class UnknownDispatcher:
                 out["reconcile"] = self.reconcile()
             except Exception as exc:  # noqa: BLE001
                 out["reconcile"] = {"errors": [f"{type(exc).__name__}: {exc}"]}
+            if not submit:
+                return out
             try:
                 out["dispatch"] = self.dispatch(limit=max(1, self.max_in_flight))
             except Exception as exc:  # noqa: BLE001

@@ -331,10 +331,29 @@ def main() -> int:
     role_id = role.role_id if role is not None else ""
     role_scope = role.status if role is not None else ""
     print(f"[role] {role_id or 'unscoped'} ({role_scope or 'UNKNOWN'})", flush=True)
+    # Who plans the next UI action on a screen no registered skill can advance.
+    #
+    # Operator directive 2026-09-25: the local Qwen, not a WorkBuddy background job.  Built
+    # here rather than inside the runtime for the same reason ``maa_adapter`` is: this is the
+    # one place that has the config, and the runtime stays deployment-agnostic.  ``None``
+    # (the default when the section is off) restores the previous behaviour exactly.
+    from winter_agent_v2 import ui_planner
+
+    planner_advisor = ui_planner.from_config(config, root=ROOT)
+    if planner_advisor is None:
+        print("[planner] local Qwen planning disabled (local_planner.enabled=false)", flush=True)
+    else:
+        reachable, reason = planner_advisor.client.available()
+        print(
+            f"[planner] {planner_advisor.client.model} at {planner_advisor.client.endpoint} "
+            f"-> {'reachable' if reachable else reason}",
+            flush=True,
+        )
     result = LiveRuntime(
         device=observation_device,
         adb_device=device,
         maa_adapter=maa_adapter,
+        advisor=planner_advisor,
         vision=vision,
         semantic_vision=template.semantic,
         capture_dir=args.capture_dir,

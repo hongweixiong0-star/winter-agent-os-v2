@@ -2501,6 +2501,30 @@ class PanelProbes:
             self._device = state
 
 
+def _workbuddy_channel_enabled(root: str | Path | None) -> bool:
+    """Whether V2 may still place a WorkBuddy job by itself.
+
+    Operator directive 2026-09-25 section 1: it may not.  The switch lives in
+    ``config/v2.json -> workbuddy_channel.enabled`` because "V2 does not call the desktop model
+    on its own" is a deployment decision, and a decision that only exists inside an ``if``
+    cannot be audited.  Read fresh each pass -- the file is 5 kB and the pass runs every
+    ``UNKNOWN_EVERY`` ticks -- so flipping it takes effect without restarting the window.
+
+    Default is **False**: the retired behaviour.  A missing or unreadable config resolves to
+    the safe answer rather than to the old one, because "I could not read the switch" must not
+    mean "submit a job".
+    """
+    try:
+        path = Path(root) / "config/v2.json" if root else Path(__file__).resolve().parents[1] / "config/v2.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        section = payload.get("workbuddy_channel")
+        if isinstance(section, dict):
+            return bool(section.get("enabled", False))
+        return False
+    except (OSError, json.JSONDecodeError, TypeError):
+        return False
+
+
 class QueuePump:
     """The escalation queue's clock.
 
@@ -2685,13 +2709,24 @@ class QueuePump:
                 self._state["preload_last"] = datetime.now().strftime("%H:%M:%S")
 
     def _unknown_tick(self) -> None:
-        """Answer the AUTO's UNKNOWN questions without an operator (winter_agent_v2/unknown_dispatch).
+        """Reconcile the UNKNOWN question channel; submitting is retired (config-gated).
 
         This is the consumer the channel never had: ``unknown_advisor`` writes a question and reads
         an answer if one is there, and until this ran the only thing that ever wrote one was a person
         at a terminal.  Each pass reconciles the jobs already dispatched, then submits at most one new
         one -- so the AUTO keeps playing throughout and a screen that has generated no question costs
         nothing beyond a directory listing.
+
+        **Retired as an automatic model call, 2026-09-25.**  The operator's directive is that V2 no
+        longer tries to reach the WorkBuddy desktop model by itself, and WorkBuddy goes back to being
+        a tool a person drives.  The answering half moved *into* the cycle: the local planner decides
+        the action in the same step it is asked, inside the runtime (``ui_planner``), so there is no
+        job to dispatch and no answer to wait for.  ``config/v2.json -> workbuddy_channel.enabled``
+        is the switch; while it is false this tick keeps reconciling anything already in flight (so no
+        job is left dangling) and submits nothing.
+
+        The model is deliberately not named here: ``tests/test_control_panel.py`` pins that this
+        layer names none, so that the console keeps working when the planner is swapped or absent.
 
         Never raises: a gateway that is down, a ledger that cannot be read or a request that turns out
         to be malformed is reported in the heartbeat and left for the next tick.  The channel must not
@@ -2707,7 +2742,7 @@ class QueuePump:
             from winter_agent_v2.unknown_dispatch import UnknownDispatcher
 
             dispatcher = UnknownDispatcher(root=self._root_path or None)
-            result = dispatcher.worker()
+            result = dispatcher.worker(submit=_workbuddy_channel_enabled(self._root_path))
             snapshot = dispatcher.state()
             reconcile = result.get("reconcile") or {}
             dispatch = result.get("dispatch") or {}
@@ -2723,23 +2758,31 @@ class QueuePump:
                     self._state.get("unknown_submitted") or 0
                 ) + len(submitted)
                 if submitted:
-                    self._state["unknown_note"] = "submitted " + ", ".join(
+                    note = "submitted " + ", ".join(
                         f"{item['request_id']}->{item.get('job_id', '?')}" for item in submitted
                     )
                 elif reconcile.get("done") or reconcile.get("failed"):
-                    self._state["unknown_note"] = (
+                    note = (
                         f"reconciled: done={reconcile.get('done', 0)} "
                         f"failed={reconcile.get('failed', 0)} lost={reconcile.get('lost', 0)}"
                     )
                 elif errors:
-                    self._state["unknown_note"] = errors[-1][:200]
+                    note = errors[-1][:200]
                 elif snapshot.get("pending"):
-                    self._state["unknown_note"] = (
+                    note = (
                         f"{snapshot['pending']} question(s) waiting, "
                         f"{len(snapshot.get('in_flight') or [])} in flight"
                     )
                 else:
-                    self._state["unknown_note"] = "nothing pending"
+                    note = "nothing pending"
+                if not _workbuddy_channel_enabled(self._root_path):
+                    # Not an error and not a backlog: the answer is produced locally, inside the
+                    # cycle, so "nothing was submitted" is the configured behaviour.  Prefixed to
+                    # the real reading rather than replacing it -- the window still needs to know
+                    # what the reconcile pass found, and "retired" alone would hide a job that is
+                    # still in flight from before the directive.
+                    note = f"channel retired (local planner answers in-cycle); {note}"
+                self._state["unknown_note"] = note
                 self._state["unknown_last"] = datetime.now().strftime("%H:%M:%S")
         except Exception as exc:  # noqa: BLE001 - a background pass, not a critical path
             with self._lock:

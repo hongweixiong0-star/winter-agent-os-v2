@@ -836,7 +836,13 @@ class PanelClockTests(unittest.TestCase):
             def __init__(self, root=None):
                 seen["root"] = root
 
-            def worker(self):
+            def worker(self, *, submit: bool = True):
+                # ``submit`` mirrors the real dispatcher's signature: the panel asks it to
+                # reconcile without placing a job while the WorkBuddy channel is retired
+                # (operator directive 2026-09-25).  A stub that omitted it would make this test
+                # pass while the production call raised TypeError inside the panel's try/except --
+                # i.e. a green test over a silently dead channel.
+                seen["submit"] = submit
                 return {"reconcile": {"checked": 1, "done": 1}, "dispatch": {"submitted": []}}
 
             def state(self):
@@ -863,7 +869,7 @@ class PanelClockTests(unittest.TestCase):
             def __init__(self, root=None):
                 pass
 
-            def worker(self):
+            def worker(self, *, submit: bool = True):
                 raise RuntimeError("gateway went away")
 
             def state(self):

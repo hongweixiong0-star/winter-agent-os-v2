@@ -26,7 +26,7 @@ from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLe
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
-from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_done_collected, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
+from .verifier import verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_done_collected, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_rally_created, verify_rally_joined, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
@@ -273,6 +273,32 @@ class LiveRuntime:
         "OPEN_MAIL": verify_open_mail,
         "OPEN_ALLIANCE": verify_open_alliance,
         "OPEN_EXPLORATION": verify_open_exploration,
+        # ------------------------------------------------------------------
+        # Bear rally: the two skills the 30-minute window depends on.
+        #
+        # ADDED 2026-09-24.  Both were registered (``skills.v2_registry``) and both carried
+        # a verifier *name* (``RALLY_JOINED`` / ``RALLY_CREATED``) that had **no entry
+        # here**, so ``run`` refused them at ``decision.skill not in self.VERIFIED_ATOMIC``
+        # and ended the step with ``SKILL_NOT_ENABLED_FOR_LIVE_LOOP``.  The class comment
+        # states the rule plainly -- "Only skills with an explicit post-action verifier may
+        # execute" -- and this is that rule applied to the one activity with a deadline.
+        #
+        # The binding is a ``lambda`` because the verifiers take a third argument: they are
+        # generic over the rally target, and ``Verifier`` here is the two-argument contract
+        # ``Callable[[WorldState, WorldState], VerificationResult]``.  ``runtime`` calls
+        # ``VERIFIED_ATOMIC[skill](before, after)``.
+        #
+        # Why ``"BEAR"`` and why that is not a shortcut: both verifiers compute
+        # ``identity_ok = str(rally.get("target_type", target)).upper() == target.upper()``.
+        # Passing "BEAR" means a frame that reports *any other* target type fails the check
+        # -- so this cannot certify a 普通集结, a 玩家攻击 or a 野怪 as a bear rally.  The
+        # target comes from the frame's own reading, not from this literal.
+        #
+        # Not claimed: that either has ever run.  They are now *dispatchable*; the first
+        # real dispatch needs the client to open the window.
+        # ------------------------------------------------------------------
+        "JOIN_RALLY": lambda before, after: verify_rally_joined(before, after, "BEAR"),
+        "START_RALLY": lambda before, after: verify_rally_created(before, after, "BEAR"),
         "SELECT_MAIL_ALLIANCE_TAB": verify_mail_alliance_tab_selected,
         "SELECT_DAILY_TAB": verify_daily_tab_selected,
         "SELECT_MAIL_SYSTEM_TAB": verify_mail_system_tab_selected,
@@ -383,6 +409,14 @@ class LiveRuntime:
         job_id: str = "",
         capability: str = "",
         expected_after_version: str = "",
+        #: Who answers the on-demand question for a screen no skill can advance.
+        #:
+        #: Injected rather than built here for the same reason ``maa_adapter`` and ``routing``
+        #: are: the runtime has no config dict, and the choice between "the retired
+        #: answer-file channel" and "the local Qwen planner" is a deployment decision that
+        #: belongs where the config is read.  ``None`` keeps the pre-existing advisor, so a
+        #: caller that knows nothing about planners behaves exactly as before.
+        advisor=None,
     ) -> None:
         self.device = device
         # The ADB device behind the fallback executor.  When MAA observation is
@@ -2402,11 +2436,39 @@ class LiveRuntime:
         match = self._semantic.find(frame_path, semantic) if frame_path is not None else None
         if match:
             return match.center_norm
-        # The Exploration chest is animated and its perceptual hash
-        # varies between frames. A reviewed normalized fallback is
-        # allowed only after independent page + green-state proof.
-        if semantic == "BTN_EXPLORATION_IDLE_CLAIM" and frame.page.value == "EXPLORATION" and frame.exploration.get("status") == "CLAIMABLE":
-            return (0.86, 0.68)
+        # ------------------------------------------------------------------
+        # REMOVED 2026-09-24: a literal (0.86, 0.68) for BTN_EXPLORATION_IDLE_CLAIM.
+        #
+        # It returned a *written-down* point gated only by "this frame says the chest
+        # is CLAIMABLE".  That is a fixed screen percentage deciding a click target,
+        # which the constitutional amendment forbids outright and -- explicitly --
+        # does not allow as a fallback when the template misses:
+        #
+        #   §一.2  固定屏幕百分比点击
+        #   §一.5  模板、OCR 或语义识别失败后，回退到历史坐标
+        #   §二   本约束不设置生产点击例外
+        #
+        # It was not theoretical.  Measured over the real executor ledger
+        # (``learning/executor_backend.jsonl``), BTN_EXPLORATION_IDLE_CLAIM tapped
+        # **10/10 times at exactly (0.86, 0.68)** -- every single tap this target ever
+        # made came from the constant, never from the frame.
+        #
+        # Why it existed: the chest is animated, so its perceptual hash varies between
+        # frames and no template can match it.  That is a true statement about the
+        # template tier; it is not a licence to write down a coordinate.  The
+        # constitutional answer is the same for every control that cannot be located:
+        # ``None``, and the step ends honestly instead of tapping an invented point
+        # (§五: 模板未命中、目标身份不明确或页面状态不符合预期时，不生成点击动作).
+        #
+        # The claim is not lost.  The verified dialog route is untouched: the idle
+        # dialog declares its own controls (``BTN_EXPLORATION_IDLE_CONFIRM``,
+        # ``POPUP_EXPLORATION_REWARD``), both located from the frame.  What is missing
+        # is a *current-frame* locator for the chest itself (a detector over the frame,
+        # which §五 explicitly permits as a recognition method) -- registered as a
+        # capability gap rather than papered over with a constant.
+        # ------------------------------------------------------------------
+        if semantic == "BTN_EXPLORATION_IDLE_CLAIM":
+            return None
         if semantic == "BTN_START_TRAINING":
             # The training page's own 训练 button, located from that frame's reading.
             #
@@ -2459,7 +2521,7 @@ class LiveRuntime:
         # stronger than a coordinate remembered from an earlier frame, so it must not be behind the
         # ledger either.
         if semantic.startswith("QUICK_PANEL_ROW_"):
-            row_point = self._dictionary_hint(semantic, frame, frame_path)
+            row_point = self._dictionary_hint(semantic, frame, frame_path, frame_derived_only=True)
             if row_point is not None:
                 return row_point
         verdict, printed = self._client_printed_control(semantic, frame, frame_path)
@@ -2467,19 +2529,51 @@ class LiveRuntime:
             return printed
         if verdict == "ABSENT":
             return None
-        remembered = self._remembered_control_center(semantic, frame)
-        if remembered is not None:
-            return remembered
-        # The weakest layer of all, and the only one that reads the semantic dictionary's own
-        # ``position_hint`` (operator directive 2026-09-22 item 一: a field added to the file has to
-        # have a reader).  A control the project has declared but cannot find -- no template yet, no
-        # ledger entry, no printed word, no answer -- is still reachable, with the basis it was
-        # located by recorded in ``_printed_reads`` so nobody can mistake a declared hint for a
-        # measurement.  ``ABSENT``, the spend blacklist and the page gate all still apply.
-        hinted = self._dictionary_hint(semantic, frame, frame_path)
+        # ------------------------------------------------------------------
+        # REMOVED 2026-09-24: the remembered-coordinate tier
+        # (``self._remembered_control_center(semantic, frame)``).
+        #
+        # It handed the executor a point measured on an *earlier* frame, gated by
+        # page/screen agreement, ``resolved``, not-``sterile`` and a cooldown.  Those
+        # guards were good ones and they are why this tier is removed *last* rather
+        # than first -- but no arrangement of guards makes a stored coordinate a
+        # reading of the current frame.  The amendment names this exact pattern:
+        #
+        #   §一.3  复用历史截图或历史操作中的点击坐标
+        #   §一.5  模板、OCR 或语义识别失败后，回退到历史坐标
+        #   §一.6  根据某类页面的历史坐标记忆，直接生成当前页面的点击位置
+        #   §六   现有坐标台账如仍承担生产点击定位，应停止其直接输出点击目标的能力
+        #
+        # Measured over the real runtime logs before removal: the tier printed
+        # ``[experience] ... reusing a measured position`` **21 times** -- 21 production
+        # taps whose target was a coordinate, not a control.  It refused 8 more
+        # (``refused: the stored point``), which is the tier's own record that it was
+        # already reaching for a screen it did not belong to.
+        #
+        # NOT deleted, deliberately: ``_remembered_control_center`` and the ledger stay,
+        # because §六 keeps positions for *audit and failure reproduction*
+        # ("历史 Episode 可以保存实际点击位置用于审计和故障复现").  What stops is the
+        # only thing the amendment forbids -- its output reaching a tap.  The method is
+        # now called by nothing in the tap chain; it answers questions, not clicks.
+        #
+        # Consequence, stated rather than hidden: a control that has a template but is
+        # missed on this frame no longer gets a second chance from the ledger.  It must
+        # be located on the frame (template, printed word, or a detector) or not tapped
+        # -- §二: 即使按钮外观、页面类型或任务完全相同，也不得跳过当前 UI 识别.
+        # ------------------------------------------------------------------
+        # The weakest layer: the semantic dictionary's DECLARED point.
+        #
+        # Only the frame-derived branches may answer.  The else-branch of
+        # ``_dictionary_hint`` parses ``position_hint.x`` / ``.y`` -- a constant typed
+        # into a JSON file -- and a constant in a config file is still a constant
+        # (§一.2, and §八: 将坐标移入配置文件同样属于违规).  ``_dictionary_hint`` is
+        # therefore asked only for the two branches that read the frame in hand
+        # (``QUICK_PANEL_ROW_*`` from ``row.arrow_norm``/``done_norm``, and
+        # ``QUICK_PANEL_HANDLE`` from ``handle.point_norm``); it refuses everything else
+        # itself.  See its docstring for the guard.
+        hinted = self._dictionary_hint(semantic, frame, frame_path, frame_derived_only=True)
         if hinted is not None:
             return hinted
-        return None
         return None
 
     #: The ordinary actions this layer may try without a registered skill, in the
@@ -2632,7 +2726,8 @@ class LiveRuntime:
         return declared or default
 
     def _dictionary_hint(
-        self, semantic: str, frame: "WorldState", frame_path: "Path | None"
+        self, semantic: str, frame: "WorldState", frame_path: "Path | None",
+        *, frame_derived_only: bool = True,
     ) -> tuple[float, float] | None:
         """Where the dictionary says this control is, or ``None`` (directive item 一 / item 四).
 
@@ -2650,6 +2745,22 @@ class LiveRuntime:
         A hint whose basis is a single-frame measurement is used as-is and labelled as such.  No
         hint is ever consulted for a semantic the dictionary does not declare, and a page gate that
         excludes the current page is honoured.
+
+        ``frame_derived_only`` (default ``True``, added 2026-09-24)
+        ----------------------------------------------------------
+        The third branch below parses ``position_hint.x`` / ``position_hint.y`` -- literals typed
+        into ``semantic_dictionary.json``.  That is a constant, and a constant in a config file is
+        still a constant: the constitutional amendment forbids it by name and refuses to let it be
+        a fallback (``§一.2`` 固定屏幕百分比点击, ``§八`` 将坐标移入配置文件同样属于违规,
+        ``§二`` 本约束不设置生产点击例外).
+
+        So with the default the declared branch is **refused**, and only the two branches that read
+        the frame in hand may answer.  Measured before the change: only two semantics ever carried a
+        numeric ``x``/``y`` (``QUICK_PANEL_TAB_CITY``, ``QUICK_PANEL_TAB_WILDERNESS``, both
+        ``MEASURED_ON_ONE_FRAME`` ranges), and the runtime log shows this tier located a control
+        exactly **once** in the project's history.  Both tabs are still reachable the constitutional
+        way -- by reading the strip on the current frame -- which is the capability gap this refusal
+        records rather than hides.
         """
         record = self._semantic_records().get(semantic)
         if not record:
@@ -2705,6 +2816,32 @@ class LiveRuntime:
             if len(point) != 2:
                 return None
         else:
+            # A DECLARED point -- ``position_hint.x`` / ``.y`` read as literals.  Refused under
+            # the constitutional amendment (see the docstring's ``frame_derived_only`` note):
+            # nothing here is a reading of the frame in hand, so nothing here may become a tap.
+            #
+            # Kept as an explicit refusal rather than deleted, so the record stays visible as a
+            # *declaration* while being denied its ability to output a click target -- the
+            # amendment's §六 sentence about the coordinate ledger, applied to the dictionary.
+            if frame_derived_only:
+                if hint.get("x") is not None and hint.get("y") is not None:
+                    # ``getattr`` because harnesses construct ``LiveRuntime`` with
+                    # ``object.__new__`` to exercise one method without a run, and a refusal
+                    # message must never be the thing that raises: the refusal itself is the
+                    # safety property, the print is only bookkeeping.
+                    refusals = getattr(self, "_printed_declared_refusals", None)
+                    if refusals is None:
+                        refusals = set()
+                        self._printed_declared_refusals = refusals
+                    if str(semantic) not in refusals:
+                        refusals.add(str(semantic))
+                        print(
+                            f"[hint] {semantic} refused: it carries only a declared position_hint "
+                            f"({basis or 'no basis'}), which is a constant and not a reading of this "
+                            f"frame (constitution §一.2/§一.5)",
+                            flush=True,
+                        )
+                return None
             values: list[float] = []
             for axis in ("x", "y"):
                 raw = str(hint.get(axis) or "").strip()
@@ -3050,7 +3187,18 @@ class LiveRuntime:
                 "相关的普通低风险控件在哪里？请给出定位依据与 proposed_action。"
             ),
         )
-        advice = advisor.take(request.request_id, registry=self.registry)
+        # The question travels to whoever is answering it, not just its id.  A local planner
+        # plans from the question's own evidence (the page, the goal, the OCR this frame
+        # produced), so it needs the record; the retired answer-file reader was happy with the
+        # key alone.  Detected rather than passed, so the runtime does not have to know which
+        # kind of advisor it was given -- the same ``getattr`` capability check the rest of
+        # this class uses for optional collaborators.
+        take_with_request = getattr(advisor, "take_request", None)
+        advice = (
+            take_with_request(request, registry=self.registry)
+            if callable(take_with_request)
+            else advisor.take(request.request_id, registry=self.registry)
+        )
         if advice is None:
             if advisor.ask(request) and unnamed:
                 print(
@@ -3866,7 +4014,39 @@ class LiveRuntime:
             pass
 
     def _remembered_control_center(self, semantic: str, frame: "WorldState"):
-        """Where this device last saw ``semantic``, when the template can no longer find it.
+        """Where this device last saw ``semantic`` -- **diagnostic only, never a tap**.
+
+        ⚠ 2026-09-24 — READ THIS BEFORE CALLING IT.
+
+        This method is **no longer wired into ``_resolve_semantic_target``** and must not
+        be re-wired.  The constitutional amendment (禁止坐标硬编码, 优先级最高) forbids a
+        production click whose target is a stored coordinate:
+
+            §一.3  复用历史截图或历史操作中的点击坐标
+            §一.5  模板、OCR 或语义识别失败后，回退到历史坐标
+            §一.6  根据某类页面的历史坐标记忆，直接生成当前页面的点击位置
+            §二   本约束不设置生产点击例外
+            §六   现有坐标台账如仍承担生产点击定位，应停止其直接输出点击目标的能力
+
+        It is kept because §六 keeps positions for **audit and failure reproduction**
+        ("历史 Episode 可以保存实际点击位置用于审计和故障复现"): ``tools/frame_owner.py``,
+        ``probe_experience_reuse.py`` and incident analysis all read the ledger, and deleting
+        the reader would delete that ability.  What ended is the one thing the amendment
+        names -- its output reaching a tap.
+
+        Measured before removal, from the real runtime logs: the tier that called this
+        printed ``reusing a measured position`` **21 times** -- 21 production taps pointed at
+        a coordinate rather than at a control -- and it refused 8 more, which is its own
+        record that it was already reaching for screens it did not belong to.
+
+        So: the conditions below are still correct and still enforced (so that a *diagnostic*
+        answer is not a misleading one), but satisfying all of them no longer makes the point
+        tappable.  Any future caller must be outside the tap path.
+
+        ---
+        (original docstring, kept because the conditions are the diagnostic contract)
+
+        Where this device last saw ``semantic``, when the template can no longer find it.
 
         Operator §四.1/§四.3: "已知成功操作优先复用", "已知页面跳转结果用于规划导航".
         Until now the ledger was written on every step and read by nobody, so a control
@@ -3889,9 +4069,9 @@ class LiveRuntime:
             disagree -- an entry that recorded a screen under a key that names none.  It keeps the
             two from drifting apart rather than doing the everyday work.
 
-          The invariant is the one the reviewed ``BTN_EXPLORATION_IDLE_CLAIM`` fallback above is
-          written under: a normalized point is only allowed behind an independent proof of which
-          screen it is on.
+          (The old text here said a normalized point is "only allowed behind an independent proof of
+          which screen it is on".  That was this project's own rule and it was a good one; the
+          amendment supersedes it with a stronger one -- no stored point at all.)
         * **``resolved``**, i.e. at least one attempt produced an observed change.  A
           control whose only outcome was ``NO_OP`` or ``UNKNOWN`` has no known result and
           is not reused -- the operator's §四.7 forbids promoting UNKNOWN to known, and
@@ -4213,6 +4393,13 @@ class LiveRuntime:
         #: Screens whose stored point was refused for belonging elsewhere, so the sentence is
         #: printed once per screen per run rather than once per step.
         self._printed_screen_refusals: set[str] = set()
+        #: Semantics refused for carrying only a *declared* ``position_hint`` (a constant in the
+        #: dictionary) rather than a reading of the frame in hand.  Printed once per semantic per
+        #: run for the same reason as ``_printed_screen_refusals``: the refusal is a property of the
+        #: record, not of the step, so repeating it per step would bury the run's real log.
+        #: Constitutional basis §一.2 / §一.5 / §八 (a coordinate moved into a config file is still
+        #: a coordinate); see ``_dictionary_hint``'s ``frame_derived_only`` note.
+        self._printed_declared_refusals: set[str] = set()
         self._printed_reads: list[str] = []
         self._printed_printed: set[str] = set()
         # The generic ordinary-control attempt (operator directive 2026-09-22, third
@@ -4243,11 +4430,18 @@ class LiveRuntime:
         # The last page this run could *name*, so a screen reached from another unnamed screen
         # still records what it was entered from (operator §四: "进入前的页面及触发动作").
         self._last_known_label = ""
-        # On-demand UNKNOWN analysis (operator 2026-09-22).  The advisor writes questions and reads
-        # answers; it has no client, so nothing here can block a cycle.  ``_last_advice`` is the
-        # answer this step used, and ``_last_attempt_summary`` is the evidence §二 asks to hand over
-        # with a question -- what was last tried here, what it was expected to do, what was seen.
-        self._advisor = unknown_advisor.UnknownAdvisor()
+        # On-demand analysis (operator 2026-09-22; re-based 2026-09-25).  The advisor answers
+        # a question about a screen no registered skill can advance.  It used to be answered
+        # by a WorkBuddy background job; from 2026-09-25 the answer is planned **locally** by
+        # the Qwen on this machine (``ui_planner.ManagedAdvisor``), which is why the abstract
+        # four-method interface below is unchanged -- see
+        # ``knowledge/failure_patterns/integration/WORKBUDDY_CHANNEL_RETIRED.md``.
+        #
+        # Either way it has no client and cannot block: a planner that is off, unreachable,
+        # over budget or answering with a refusal returns no advice, and the cycle proceeds
+        # on the paths that already work.  ``_last_advice`` is the answer this step used, and
+        # ``_last_attempt_summary`` is the evidence handed over with a question.
+        self._advisor = advisor or unknown_advisor.UnknownAdvisor()
         self._last_advice: dict[str, Any] | None = None
         self._last_attempt_summary: dict[str, Any] = {}
         # Utility inputs (operator §四).  All three are loaded once per run: the route
