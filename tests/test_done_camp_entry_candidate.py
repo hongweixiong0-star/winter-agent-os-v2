@@ -32,14 +32,14 @@ def done_panel_state():
     )
 
 
-def test_done_camp_row_is_yielded_instead_of_clicked_as_an_entry():
+def test_done_camp_row_uses_power_route_without_tapping_the_marker():
     brain = RuleBrain(current_goal="TRAIN")
     brain.goal_id = "SHIELD_CAMP_TRAINING"
 
     decision = brain.decide(done_panel_state(), v2_registry())
 
-    assert decision.skill == "SAFE_STOP"
-    assert "draws_no_enter_control" in decision.reason
+    assert decision.skill == "OPEN_POWER_OVERVIEW"
+    assert "uses_power_route_to_reach_camp" in decision.reason
 
 
 def test_done_camp_label_cannot_fall_through_to_a_click_target():

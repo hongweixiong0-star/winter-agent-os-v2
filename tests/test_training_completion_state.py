@@ -13,7 +13,7 @@ def test_queue_word_mapping_keeps_completed_idle_busy_and_unknown_distinct():
     assert _quick_panel_queue_state("unknown") == ("UNKNOWN", None)
 
 
-def test_completed_camps_wait_for_a_verified_collection_control():
+def test_completed_camps_are_schedulable_for_live_collection_or_restart_inspection():
     camps = {
         camp: {
             "status": "COMPLETED",
@@ -30,9 +30,9 @@ def test_completed_camps_wait_for_a_verified_collection_control():
     for goal_id in ("SHIELD_CAMP_TRAINING", "LANCER_CAMP_TRAINING", "MARKSMAN_CAMP_TRAINING"):
         goal = by_id[goal_id]
         camp = goal_id.removesuffix("_TRAINING")
-        assert goal.status is GoalStatus.BLOCKED
-        assert goal.available_skills == ()
-        assert goal.evidence["condition"] == "finished_batch_waiting_for_verified_collection"
+        assert goal.status is GoalStatus.READY
+        assert goal.available_skills == ("TRAIN_TROOPS",)
+        assert goal.evidence["condition"] == "finished_batch_collection_or_restart_due"
         assert goal.evidence["source_word"] == "已完成"
         assert goal.evidence["badge"] == "PRESENT"
 
@@ -47,10 +47,10 @@ def test_idle_camp_remains_independently_trainable_next_to_completed_camps():
         WorldState(page=Page.HOME, camps=camps), observations={}
     )}
 
-    assert goals["SHIELD_CAMP_TRAINING"].status is GoalStatus.BLOCKED
+    assert goals["SHIELD_CAMP_TRAINING"].status is GoalStatus.READY
     assert goals["LANCER_CAMP_TRAINING"].status is GoalStatus.READY
     assert goals["LANCER_CAMP_TRAINING"].available_skills == ("TRAIN_TROOPS",)
-    assert goals["MARKSMAN_CAMP_TRAINING"].status is GoalStatus.BLOCKED
+    assert goals["MARKSMAN_CAMP_TRAINING"].status is GoalStatus.READY
 
 
 def test_completed_camp_marker_does_not_repeat_the_disproved_tap():
@@ -67,8 +67,8 @@ def test_completed_camp_marker_does_not_repeat_the_disproved_tap():
 
     decision = brain.decide(world, v2_registry())
 
-    assert decision.skill == "SAFE_STOP"
-    assert decision.reason == "quick_panel_already_read_the_barracks_so_the_power_route_is_not_a_refresh"
+    assert decision.skill == "OPEN_POWER_OVERVIEW"
+    assert "uses_existing_camp_navigation_without_tapping_done_marker" in decision.reason
     assert decision.skill != "COLLECT_FINISHED_TRAINING_SHIELD"
 
 

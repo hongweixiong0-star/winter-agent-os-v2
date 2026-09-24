@@ -17,7 +17,10 @@ from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
-from .ocr import find_printed_words, find_quick_panel_handle, read_tap_anywhere_instruction
+from .ocr import (
+    find_printed_words, find_quick_panel_handle, read_frame_size,
+    read_power_details_action_tokens, read_tap_anywhere_instruction,
+)
 from .camp_training import CAMP_LABELS, CAMP_ORDER
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
@@ -2191,6 +2194,12 @@ class LiveRuntime:
         invented point.  Every guard below exists because a real frame made the
         guess wrong at least once.
         """
+        if semantic.startswith("QUICK_PANEL_ROW_") and semantic.endswith("_DONE"):
+            # This green marker was tapped on the live client and closed the panel
+            # without collecting the batch. It is a state indicator, not a control.
+            # Keep the candidate in the evidence catalog, but never let an L1 or Qwen
+            # action turn that disproved target back into a production tap.
+            return None
         if semantic == "RESOURCE_DYNAMIC":
             # The strip scrolls, so the tap target is derived from the
             # bracket anchor observed on the current frame (see
@@ -2248,6 +2257,30 @@ class LiveRuntime:
             except (TypeError, ValueError):
                 return None
             return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
+        if semantic in {"BTN_POWER_TROOP_IMPROVE", "BTN_POWER_RESEARCH_IMPROVE"}:
+            # Category rows move as an account unlocks more systems. Resolve only the
+            # current screenshot's row label + adjacent 提升 control; never fall back
+            # to a candidate crop from a different progression stage.
+            if (frame.page is not Page.POPUP or frame.popup != "POWER_DETAILS"
+                    or frame_path is None):
+                return None
+            category = (
+                "部队实力" if semantic == "BTN_POWER_TROOP_IMPROVE" else "科技实力"
+            )
+            ocr = self._ocr_service()
+            if ocr is None:
+                return None
+            try:
+                reading = ocr.recognize(frame_path)
+                located = read_power_details_action_tokens(
+                    reading.tokens, read_frame_size(frame_path)
+                )
+            except Exception:
+                return None
+            point = (located.get("actions") or {}).get(category)
+            if not located.get("recognized") or not point:
+                return None
+            return point
         if semantic == "BEAST_SEARCH_TAB":
             # The 野兽 tab, tapped where this frame's own OCR read its printed label
             # (see ``ocr.read_resource_tab_labels``).

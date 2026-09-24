@@ -3048,6 +3048,90 @@ SELECTED_BUILDING_NAME_BAND = (0.39, 0.46)
 #: would hand the route a tap on a paid control the moment some goal asked the bar for anything.
 BUILDING_ACTION_LABELS: tuple[str, ...] = ("详情", "升级", "训练")
 
+# The power-details page can add or remove categories as an account grows.  Its blue
+# "提升" controls therefore move vertically; category name and button label must be
+# read together from the current frame instead of tapping a template from another stage.
+POWER_DETAIL_CATEGORIES: tuple[str, ...] = (
+    "建筑实力", "部队实力", "英雄实力", "英雄装备实力", "科技实力", "宠物实力",
+)
+
+
+def read_power_details_action_tokens(
+    tokens,
+    frame_size: tuple[int, int] | None,
+    *,
+    min_confidence: float = 0.85,
+) -> dict:
+    """Identify the power-details page and locate its category-specific 提升 buttons.
+
+    This page is not a generic popup.  The top title must say 实力详情 in its own title
+    band, and at least three known category labels must each have a same-row 提升 control
+    to their right.  The 加成总览 page also prints 实力详情, but only as one button and
+    has no category rows, so it cannot pass this structural check.
+    """
+    empty = {"recognized": False, "actions": {}, "categories": [], "confidence": 0.0}
+    if not frame_size:
+        return empty
+    width, height = int(frame_size[0]), int(frame_size[1])
+    if width <= 0 or height <= 0:
+        return empty
+
+    def centre(token):
+        if not token.box:
+            return None
+        xs = [float(point[0]) for point in token.box]
+        ys = [float(point[1]) for point in token.box]
+        if not xs or not ys:
+            return None
+        return ((min(xs) + max(xs)) / 2.0 / width,
+                (min(ys) + max(ys)) / 2.0 / height)
+
+    eligible = []
+    title_seen = False
+    for token in tokens:
+        if token.confidence < min_confidence:
+            continue
+        point = centre(token)
+        if point is None:
+            continue
+        text = token.text.strip()
+        eligible.append((token, point, text))
+        if text == "实力详情" and 0.10 <= point[1] <= 0.22 and 0.35 <= point[0] <= 0.65:
+            title_seen = True
+    if not title_seen:
+        return empty
+
+    labels: dict[str, tuple[float, float]] = {}
+    for _token, point, text in eligible:
+        label = text.rstrip("：:")
+        if label in POWER_DETAIL_CATEGORIES and point[0] <= 0.42:
+            labels.setdefault(label, point)
+
+    upgrades = [point for _token, point, text in eligible
+                if text == "提升" and point[0] >= 0.65]
+    actions: dict[str, tuple[float, float]] = {}
+    for label, label_point in labels.items():
+        candidates = [point for point in upgrades
+                      if 0.0 < point[1] - label_point[1] <= 0.065]
+        if not candidates:
+            continue
+        point = min(candidates, key=lambda candidate: candidate[1] - label_point[1])
+        actions[label] = (round(point[0], 4), round(point[1], 4))
+
+    # Three distinct category/button pairs are enough to identify this page while
+    # tolerating stages that have not unlocked every category yet.
+    recognized = len(actions) >= 3
+    return {
+        "recognized": recognized,
+        "actions": actions if recognized else {},
+        "categories": sorted(actions) if recognized else [],
+        "confidence": min(
+            (token.confidence for token, _point, text in eligible
+             if text == "实力详情" or text.rstrip("：:") in actions or text == "提升"),
+            default=0.0,
+        ) if recognized else 0.0,
+    }
+
 
 def read_selected_building_actions(
     image_path,
@@ -4204,6 +4288,19 @@ class HybridVision:
             # page question, so it costs no extra OCR pass.  A page the template layer
             # resolves is left untouched, which is this module's long-standing contract.
             quick_panel = read_quick_panel(image_path, self.ocr, result=result)
+            power_details = read_power_details_action_tokens(result.tokens, frame_size)
+            if power_details.get("recognized"):
+                # Current accounts expose a different number of power categories, so the
+                # archived full-panel template can miss even though the title and category
+                # rows are plainly present.  The title plus three row-labelled controls is
+                # specific to this page; the overview's single 实力详情 button cannot pass.
+                details = replace(
+                    primary,
+                    page=Page.POPUP,
+                    popup="POWER_DETAILS",
+                    confidence=max(primary.confidence, float(power_details.get("confidence") or 0.0)),
+                )
+                return self._with_quick_panel(details, quick_panel)
             classified = self.classifier.classify(
                 result, frame_size=frame_size
             )

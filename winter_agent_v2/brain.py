@@ -1639,6 +1639,41 @@ class RuleBrain:
             if world.page is Page.HOME and world.training.get("queue_available") is False:
                 return Decision("SAFE_STOP", "training_queue_busy", 1.0, "switch_task")
             if world.page is Page.HOME:
+                own_camp = self._goal_camp()
+                done_rows = [
+                    row for row in (world.quick_panel.get("rows") or ())
+                    if str(row.get("kind") or "") in {"", "CAMP"}
+                    and str(row.get("key") or "") in _QUICK_PANEL_ROW_SKILL
+                    and str(row.get("control") or "") == QUICK_PANEL_CONTROL_DONE
+                    and (
+                        str(row.get("source_word") or "") == "已完成"
+                        or str(((world.quick_panel.get("camps") or {}).get(
+                            str(row.get("key") or ""), {}
+                        ) or {}).get("status") or "").upper() == "COMPLETED"
+                    )
+                    and (
+                        str(((world.quick_panel.get("camps") or {}).get(
+                            str(row.get("key") or ""), {}
+                        ) or {}).get("source_word") or "") == "已完成"
+                        or str(((world.quick_panel.get("camps") or {}).get(
+                            str(row.get("key") or ""), {}
+                        ) or {}).get("status") or "").upper() == "COMPLETED"
+                    )
+                ]
+                done_row = next(
+                    (row for row in done_rows if str(row.get("key")) == own_camp), None
+                ) if own_camp else (done_rows[0] if done_rows else None)
+                if done_row is not None:
+                    # The green marker is a state indicator, not a collection button.
+                    # The goal remains schedulable and reaches the selected barracks by
+                    # the existing power-navigation route, where current-frame controls
+                    # decide whether to collect or start the next batch.
+                    return Decision(
+                        "OPEN_POWER_OVERVIEW",
+                        f"completed_{str(done_row.get('key')).lower()}_uses_existing_camp_navigation_without_tapping_done_marker",
+                        world.confidence,
+                        "power_overview_open",
+                    )
                 # Same rule as the lab above, and the same measurement: the panel described all three
                 # barracks in 56 of the 57 panel frames and the goal layer saw none of it, so this
                 # route was taken to ask again -- 100% failure, 20 of 20.
@@ -2595,24 +2630,9 @@ class RuleBrain:
         the row's control slot**, and **I already tapped and the page did not open** all hand back to
         it, unchanged.
 
-        What is *not* the same is a row on which the client drew a control that is a measured dead end:
-        a barracks reading 已完成 draws its tick exactly where the enter-arrow would go, and tapping
-        that point has been tried and collected nothing (``_QUICK_PANEL_ROW_CLAIM_SKILL``'s comment
-        records the measurement).  The row is not an enter target either, and the tick's meaning for a
-        *queue* row is that the queue finished -- so the barracks is available and there is simply
-        nothing this project has proven how to do about it from here.
-
-        For that case the old route is pure waste, and that is measured rather than argued:
-        ``quick_panel_<camp>_is_idle`` answered ``OPEN_POWER_OVERVIEW`` here on every such frame, the
-        follow-up ``train_goal_power_overview`` -> ``OPEN_POWER_DETAILS`` failed
-        ``POWER_DETAILS_NOT_PROVEN`` **every single time** (20 steps in the corpus, no exceptions), and
-        run ``20260923_215819_292688`` spent 4 of its 6 steps on that detour and its recovery -- while
-        all three camp rows and the research row had been read off the panel thirty seconds earlier.
-        §五: 周期到达只表示相关状态可能需要刷新，不代表必须进入具体功能页面.
-
-        A non-fatal SAFE_STOP is the honest answer: the goal steps aside so another selectable task
-        gets the cycle (§六 -- 某个兵营忙碌或某项任务没有 Skill，不得结束整轮 AUTO), and nothing in the
-        world was left unread by declining to look again.
+        A completed row has no safe entry control, and tapping its green marker was disproved.
+        The supported route to the camp is the existing power-details navigation chain. Use that
+        route to reach the selected building and its OCR-read 训练 control; never tap the marker.
         """
         drawn = str((row or {}).get("control") or "")
         if drawn == QUICK_PANEL_CONTROL_DONE:
@@ -2622,10 +2642,10 @@ class RuleBrain:
                 or "idle"
             )
             return Decision(
-                "SAFE_STOP",
-                f"quick_panel_row_{camp.lower()}_reads_{word}_and_draws_no_enter_control",
-                1.0,
-                "switch_task",
+                "OPEN_POWER_OVERVIEW",
+                f"quick_panel_row_{camp.lower()}_reads_{word}_and_uses_power_route_to_reach_camp",
+                world.confidence,
+                "power_overview_open",
             )
         return Decision(
             "OPEN_POWER_OVERVIEW",
