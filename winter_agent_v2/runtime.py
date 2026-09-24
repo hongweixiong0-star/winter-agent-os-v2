@@ -2577,6 +2577,20 @@ class LiveRuntime:
         # stronger than a coordinate remembered from an earlier frame, so it must not be behind the
         # ledger either.
         if semantic.startswith("QUICK_PANEL_ROW_"):
+            panel = getattr(frame, "quick_panel", None) or {}
+            row_key = semantic[len("QUICK_PANEL_ROW_"):]
+            if row_key.endswith("_DONE"):
+                row_key = row_key[:-len("_DONE")]
+            if row_key in {"SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP"}:
+                if any(
+                    str(row.get("key")) == row_key
+                    and str(row.get("control") or "") == "DONE"
+                    for row in panel.get("rows") or ()
+                ) and not semantic.endswith("_DONE"):
+                    # A production tap on the OCR label closed the panel without opening the
+                    # camp task page. Do not let the printed-word fallback turn that failed
+                    # candidate into another executable target.
+                    return None
             row_point = self._dictionary_hint(semantic, frame, frame_path, frame_derived_only=True)
             if row_point is not None:
                 return row_point
@@ -2844,6 +2858,14 @@ class LiveRuntime:
                     continue
                 if want_done:
                     point = row.get("done_norm")
+                elif (
+                    str(row.get("control") or "") == "DONE"
+                    and key in {"SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP"}
+                ):
+                    # The label entry candidate was disproved in production: the panel closed
+                    # without opening a camp page. Only the explicit done-marker semantic may
+                    # target this row; the generic row semantic must not fall back to its label.
+                    point = None
                 else:
                     point = row.get("arrow_norm")
                 if isinstance(point, (tuple, list)) and len(point) == 2 and point:
