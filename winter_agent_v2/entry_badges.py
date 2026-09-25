@@ -125,6 +125,7 @@ def read_entry_badges(
     *,
     observed_at: str = "",
     task_states: dict[str, str] | None = None,
+    section: str | None = None,
 ) -> dict[str, EntryBadge]:
     """Every entry in the measured table, each with PRESENT / ABSENT / UNKNOWN and its reason.
 
@@ -144,6 +145,13 @@ def read_entry_badges(
             answer[entry] = EntryBadge(
                 entry, page, UNKNOWN, observed_at, goal, task_state,
                 reason=f"entry_is_on_{entry_page}_not_{page}",
+            )
+            continue
+        entry_section = str(row.get("section") or "")
+        if entry_section and entry_section != str(section or ""):
+            answer[entry] = EntryBadge(
+                entry, page, UNKNOWN, observed_at, goal, task_state,
+                reason=f"entry_is_on_{entry_section}_not_{section or 'unknown_section'}",
             )
             continue
         if row.get("status") == "SUSPECT_ARTWORK":
@@ -267,6 +275,7 @@ ENTRY_GATED_GOALS: dict[str, tuple[str, ...]] = {
     # for the alliance page (``goal_library.PANEL_ROUTINES`` / ``GOAL_ROUTES``), which is why the
     # binding is on the routine rather than on a goal named after the tile.
     "ALLIANCE_ROUTINE": ("TILE_ALLIANCE_GIFTS",),
+    "DISCOVER_BEAR_RALLY_LIST": ("BTN_ALLIANCE_WAR",),
 }
 
 
@@ -377,7 +386,8 @@ def quick_panel_badges(state: Any) -> dict[str, EntryBadge]:
 def read_all(state: Any, frame: Path | None = None, *, observed_at: str = "") -> dict[str, EntryBadge]:
     """The whole ledger for one observation: measured entries plus the panel's own rows."""
     page = getattr(getattr(state, "page", None), "value", str(getattr(state, "page", "")))
-    ledger = read_entry_badges(frame, page, observed_at=observed_at)
+    section = str((getattr(state, "alliance", None) or {}).get("section") or "")
+    ledger = read_entry_badges(frame, page, observed_at=observed_at, section=section)
     ledger.update(quick_panel_badges(state))
     return ledger
 

@@ -84,6 +84,10 @@ GOAL_ROUTES: dict[str, str] = {
     "MAIL_ROUTINE": "MAIL",
     "DAILY_ACTIVITY_TARGET": "DAILY",
     "ALLIANCE_ROUTINE": "ALLIANCE",
+    # A badge on the current Alliance HOME tile licenses only a zero-cost visit to
+    # the live rally list. Participation still needs fresh role and queue evidence.
+    "DISCOVER_BEAR_RALLY_LIST": "ALLIANCE",
+    "PARTICIPATE_BEAR": "ALLIANCE",
     "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
     # Measured 2026-09-21: this one was missing, and it was the only goal ``discover`` can
     # emit that ``route_for`` answered ``None`` for.  It still worked -- ``RuleBrain`` with
@@ -781,7 +785,7 @@ class GoalLibrary:
             actionable = status is GoalStatus.READY
             skills: tuple[str, ...]
             if phase is BearPhase.ACTIVE:
-                skills = ("START_RALLY", "JOIN_RALLY")
+                skills = ("OPEN_BEAR_RALLY_LIST", "START_RALLY", "JOIN_RALLY")
             elif phase in {BearPhase.PREPARING, BearPhase.READY}:
                 skills = ("CHECK_MARCH", "SELECT_TROOP_PRESET")
             else:
@@ -801,6 +805,30 @@ class GoalLibrary:
                 distance=0.0 if status is GoalStatus.EXPIRED else 1.0,
             ))
         self._append_known_activities(goals)
+        if (
+            world.page is Page.ALLIANCE
+            and world.alliance.get("section") == "HOME"
+            and world.alliance.get("bear_entry_visible") is True
+            and entry_badges.entry_gate(
+                "DISCOVER_BEAR_RALLY_LIST", world.red_dots
+            )[0] == entry_badges.PRESENT
+            and not any(goal.goal_id == "PARTICIPATE_BEAR" for goal in goals)
+        ):
+            # This read-only discovery hop is not evidence that the event is open.
+            # The destination reader must identify a live Bear row before any
+            # march action can be offered.
+            goals.append(GoalState(
+                "DISCOVER_BEAR_RALLY_LIST", GoalStatus.READY,
+                reward_value=100, available_skills=("OPEN_BEAR_RALLY_LIST",),
+                evidence={
+                    "event_id": "BEAR_HUNT",
+                    "operation": "READ_CURRENT_RALLY_LIST",
+                    "window": "UNKNOWN",
+                    "live_entry_visible": True,
+                    "participation_allowed": False,
+                },
+                distance=1.0,
+            ))
         for page in world.rewards.get("verified_claimable", ()):
             goals.append(GoalState(
                 f"CLAIM_FREE_{page}", GoalStatus.READY, reward_value=250, daily_loss=250,

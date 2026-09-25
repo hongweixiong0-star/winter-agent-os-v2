@@ -2369,14 +2369,33 @@ class SemanticWorldVision:
         # tiles sit at distance 24-34.  Requiring the title strip AND an entry
         # tile therefore changes no page identity at all (0 of 2757 frames) and
         # only corrects the section on the home page itself (16 of 2757).
-        if match("PAGE_ALLIANCE") and (match("BTN_OPEN_ALLIANCE_GIFTS") or match("BTN_ALLIANCE_HELP")):
-            return WorldState(page=Page.ALLIANCE, alliance={"section": "HOME"}, confidence=0.98)
+        if match("TAB_RALLY_LIST"):
+            return WorldState(
+                page=Page.ALLIANCE,
+                alliance={"section": "RALLY_LIST", "rally_list_visible": True},
+                confidence=0.98,
+            )
+        bear_entry_visible = match("BTN_ALLIANCE_WAR") is not None
+        if match("PAGE_ALLIANCE") and (
+            match("BTN_OPEN_ALLIANCE_GIFTS")
+            or match("BTN_ALLIANCE_HELP")
+            or bear_entry_visible
+        ):
+            return WorldState(
+                page=Page.ALLIANCE,
+                alliance={"section": "HOME", "bear_entry_visible": bear_entry_visible},
+                confidence=0.98,
+            )
         if match("PAGE_ALLIANCE_GIFTS"):
             return WorldState(page=Page.ALLIANCE, alliance={"section":"GIFTS", "status":"UNKNOWN"}, confidence=0.98)
         if match("PAGE_ALLIANCE_TECH"):
             return WorldState(page=Page.ALLIANCE, alliance={"section": "TECHNOLOGY", "status": "UNKNOWN"}, confidence=0.98)
         if match("PAGE_ALLIANCE"):
-            return WorldState(page=Page.ALLIANCE, alliance={"section": "HOME"}, confidence=0.98)
+            return WorldState(
+                page=Page.ALLIANCE,
+                alliance={"section": "HOME", "bear_entry_visible": bear_entry_visible},
+                confidence=0.98,
+            )
         # PAGE_MAIL is the stable page identity. Badge state is deliberately
         # derived later by the lightweight red-badge detector because old
         # state templates can resemble a newly cleared list.

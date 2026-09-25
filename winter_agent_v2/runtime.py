@@ -8,6 +8,7 @@ import json
 from typing import Any, Callable, Iterable, Mapping
 
 from .brain import RuleBrain
+from .verifier import verify_bear_rally_list_open
 from . import control_experience
 from . import goal_utility
 from . import ui_collection
@@ -283,6 +284,7 @@ class LiveRuntime:
         "EXECUTE_INTEL_RESCUE_SURVIVORS": verify_intel_rescue_started,
         "OPEN_MAIL": verify_open_mail,
         "OPEN_ALLIANCE": verify_open_alliance,
+        "OPEN_BEAR_RALLY_LIST": verify_bear_rally_list_open,
         "OPEN_EXPLORATION": verify_open_exploration,
         # ------------------------------------------------------------------
         # Bear rally: the two skills the 30-minute window depends on.

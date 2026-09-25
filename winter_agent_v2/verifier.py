@@ -2038,6 +2038,26 @@ def verify_open_alliance(before: WorldState, after: WorldState) -> VerificationR
     return VerificationResult(ok, "OK" if ok else "OPEN_ALLIANCE_NOT_PROVEN", {"before_home":before.page is Page.HOME, "after_alliance":after.page is Page.ALLIANCE})
 
 
+def verify_bear_rally_list_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """Prove the Alliance War entry opened the rally list, not just another Alliance page."""
+    before_home = (
+        before.page is Page.ALLIANCE
+        and (before.alliance or {}).get("section") == "HOME"
+        and (before.alliance or {}).get("bear_entry_visible") is True
+    )
+    after_list = (
+        after.page is Page.ALLIANCE
+        and (after.alliance or {}).get("section") == "RALLY_LIST"
+        and (after.alliance or {}).get("rally_list_visible") is True
+    )
+    ok = before_home and after_list
+    return VerificationResult(
+        ok,
+        "OK" if ok else "BEAR_RALLY_LIST_NOT_PROVEN",
+        {"before_home_entry": before_home, "after_rally_list": after_list},
+    )
+
+
 def verify_open_exploration(before: WorldState, after: WorldState) -> VerificationResult:
     ok = before.page is Page.HOME and after.page is Page.EXPLORATION
     return VerificationResult(ok, "OK" if ok else "OPEN_EXPLORATION_NOT_PROVEN", {"before_home":before.page is Page.HOME, "after_exploration":after.page is Page.EXPLORATION})

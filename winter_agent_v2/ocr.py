@@ -3881,6 +3881,63 @@ class HybridVision:
         self.ocr = ocr
         self.classifier = classifier or OCRPageClassifier()
 
+    def _read_rally_list_state(self, image_path: Path, primary: WorldState, result=None) -> WorldState:
+        """Attach row-to-button rally evidence to the same Alliance frame.
+
+        The list reader is a passive observer.  It never selects a row or authorizes a
+        march; those decisions still require fresh role and normal-queue state in the
+        execution route.
+        """
+        from .rally import RallyTarget, read_rally_list
+
+        try:
+            reading = read_rally_list(image_path, self.ocr, result=result)
+        except Exception:  # noqa: BLE001 - a list-reading miss must not break other AUTO work
+            return primary
+        rows = [
+            {
+                "row_index": row.row_index,
+                "target_text": row.target_text,
+                "target_type": row.target_type.value,
+                "leader": row.leader,
+                "remaining_seconds": row.remaining_seconds,
+                "capacity_used": row.capacity_used,
+                "capacity_max": row.capacity_max,
+                "joinable": row.joinable,
+                "join_norm": row.join_norm,
+                "join_box_norm": row.join_box_norm,
+                "state": row.state.value,
+            }
+            for row in reading.rows
+        ]
+        rally = {
+            "rows": rows,
+            "container_norm": reading.container_norm,
+            "frame_size": reading.frame_size,
+            "evidence": dict(reading.evidence),
+            "source": "LIVE_CLIENT_RALLY_LIST",
+        }
+        alliance = dict(primary.alliance)
+        alliance["section"] = "RALLY_LIST"
+        alliance["rally_list_visible"] = True
+        alliance["rally"] = rally
+        events = dict(primary.events)
+        live_bear = [
+            row for row in reading.rows
+            if row.target_type is RallyTarget.BEAR
+            and isinstance(row.remaining_seconds, int)
+            and row.remaining_seconds > 0
+        ]
+        if live_bear:
+            events["bear"] = {
+                "event_id": "BEAR_HUNT",
+                "name": "巨熊行动",
+                "status": "ACTIVE",
+                "remaining_seconds": min(row.remaining_seconds for row in live_bear),
+                "source": "LIVE_CLIENT_RALLY_ROW",
+            }
+        return replace(primary, alliance=alliance, rally=rally, events=events)
+
     def _semantic_roi(self, semantic: str) -> dict[str, float] | None:
         """Return the ROI the manifest registered for ``semantic``, or ``None``.
 
@@ -4733,8 +4790,9 @@ class HybridVision:
                         stamina["cost_verdict_source"] = "BUTTON_COST_COLOUR"
                         primary = replace(primary, stamina=stamina)
             if primary.page is Page.ALLIANCE:
+                ocr_result = self.ocr.recognize(image_path)
                 secondary = self.classifier.classify(
-                    self.ocr.recognize(image_path), frame_size=frame_size
+                    ocr_result, frame_size=frame_size
                 )
                 if secondary.page is primary.page and secondary.alliance:
                     alliance = {**primary.alliance, **secondary.alliance}
@@ -4782,7 +4840,12 @@ class HybridVision:
                             alliance["badge_count"] = digit
                         elif alliance.get("status") == "CLAIMED" and int(alliance.get("visible_claim_buttons", 0)) == 0:
                             alliance["badge_count"] = 0
-                    return replace(primary, alliance=alliance)
+                    observed = replace(primary, alliance=alliance)
+                    if alliance.get("section") == "RALLY_LIST":
+                        return self._read_rally_list_state(image_path, observed, ocr_result)
+                    return observed
+                if primary.alliance.get("section") == "RALLY_LIST":
+                    return self._read_rally_list_state(image_path, primary, ocr_result)
             if primary.page is Page.DAILY:
                 secondary = self.classifier.classify(
                     self.ocr.recognize(image_path), frame_size=frame_size

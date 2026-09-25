@@ -1172,6 +1172,27 @@ class RuleBrain:
                 if leave is not None:
                     return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_alliance_route")
+            if self.goal_id in {"DISCOVER_BEAR_RALLY_LIST", "PARTICIPATE_BEAR"}:
+                if (
+                    world.alliance.get("section") == "HOME"
+                    and world.alliance.get("bear_entry_visible") is True
+                    and entry_badges.entry_gate(
+                        "DISCOVER_BEAR_RALLY_LIST", world.red_dots
+                    )[0] == entry_badges.PRESENT
+                ):
+                    return Decision(
+                        "OPEN_BEAR_RALLY_LIST",
+                        "current_alliance_war_entry_allows_live_rally_list_discovery_only",
+                        world.confidence,
+                        "bear_rally_list_observed",
+                    )
+                if world.alliance.get("section") == "RALLY_LIST":
+                    return Decision(
+                        "SAFE_STOP",
+                        "bear_rally_list_observed_participation_requires_live_role_queue_and_join_dispatch_flow",
+                        1.0,
+                        "switch_task",
+                    )
             if world.alliance.get("section") == "HOME":
                 # The 联盟宝箱 tile's **own** badge, or nothing.
                 #
