@@ -204,3 +204,71 @@ def test_autogen_keeps_the_generated_pipeline_json_and_wires_the_same_recognitio
     assert json.loads(artifact.read_text(encoding="utf-8")) == node.pipeline_node
     written = RoutingTable.load(routing_path)
     assert written.recognition_node("OPEN_SAMPLE", "BTN_SAMPLE") == node.routing_node
+
+
+def test_runtime_autogen_retains_tool_ocr_and_uses_maafriendly_template(tmp_path, routing, monkeypatch):
+    """Keep the Skill output while routing a node the configured MAA can execute."""
+    captured = tmp_path / "frame.png"
+    captured.write_bytes(b"png")
+    harness = _HookHarness(tmp_path, routing, "联盟科技", _node(kind="OCR"), captured)
+    requested = []
+    gen = harness._make_gen()
+
+    def record_request(request, **kwargs):
+        from winter_agent_v2.pipeline_autogen import GeneratedNode
+
+        requested.append(request.want)
+        return GeneratedNode(
+            semantic=request.semantic, skill_id=request.skill_id, kind="OCR",
+            routing_node={"kind": "OCR", "expected": [request.cn_text], "roi": [80, 180, 70, 60]},
+            pipeline_node={"recognition": "OCR", "expected": [request.cn_text], "roi": [80, 180, 70, 60]},
+        )
+
+    gen.generate.side_effect = record_request
+    monkeypatch.setattr("winter_agent_v2.pipeline_autogen.PipelineAutoGen", lambda **kw: gen)
+
+    harness._maybe_autogen_node("BTN_ALLIANCE_TECH", "OPEN_ALLIANCE_TECH_FROM_HOME", 0,
+                                "SEMANTIC_TARGET_NOT_VERIFIED")
+
+    assert requested == ["auto"]
+    assert harness._wire_calls == [("BTN_ALLIANCE_TECH", "OPEN_ALLIANCE_TECH_FROM_HOME")]
+
+
+def test_runtime_button_semantic_can_reuse_matching_page_label():
+    from winter_agent_v2.runtime import LiveRuntime
+
+    assert LiveRuntime._semantic_cn_text(object(), "BTN_ALLIANCE_TECH") == "联盟科技"
+
+
+def test_wire_keeps_tool_ocr_candidate_separate_from_active_template(tmp_path):
+    from winter_agent_v2.pipeline_autogen import GeneratedNode, PipelineAutoGen
+
+    routing_path = tmp_path / "backend_routing.json"
+    generator = PipelineAutoGen(project_root=tmp_path, routing_path=routing_path)
+    tool_node = {
+        "recognition": "OCR", "expected": ["联盟科技"], "roi": [500, 890, 170, 95],
+        "action": "Click", "post_delay": 500, "timeout": 2000,
+    }
+    active_node = {
+        "recognition": "TemplateMatch", "template": ["BTN_ALLIANCE_TECH"],
+        "roi": [500, 890, 170, 95], "threshold": [0.7],
+    }
+    node = GeneratedNode(
+        semantic="BTN_ALLIANCE_TECH", skill_id="OPEN_ALLIANCE_TECH_FROM_HOME",
+        kind="TEMPLATE",
+        routing_node={"kind": "TEMPLATE", "template": "BTN_ALLIANCE_TECH",
+                      "source_template": "dataset/candidate/autogen/btn_alliance_tech.png"},
+        pipeline_node=active_node,
+        evidence={"tool_generated_node": tool_node, "active_node_source": "V2_NATIVE_TEMPLATE"},
+    )
+
+    ok, verdict = generator.wire(node)
+
+    assert ok and verdict == "CREATED"
+    tool_artifact = tmp_path / node.evidence["tool_candidate_path"]
+    active_artifact = tmp_path / node.evidence["pipeline_node_path"]
+    assert json.loads(tool_artifact.read_text(encoding="utf-8")) == tool_node
+    assert json.loads(active_artifact.read_text(encoding="utf-8")) == active_node
+    assert RoutingTable.load(routing_path).recognition_node(
+        "OPEN_ALLIANCE_TECH_FROM_HOME", "BTN_ALLIANCE_TECH"
+    ) == node.routing_node

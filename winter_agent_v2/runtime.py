@@ -1475,7 +1475,7 @@ class LiveRuntime:
             if captured is None:
                 return
             node = gen.generate(GenerationRequest(semantic=semantic, cn_text=text,
-                                                  skill_id=skill_id or semantic))
+                                                  skill_id=skill_id or semantic, want="auto"))
             if node is None:
                 # The text was not on the current screen. That is a fact worth keeping,
                 # not an error worth raising: the control may simply be off-page.
@@ -1505,6 +1505,9 @@ class LiveRuntime:
         second, privately parsed copy of the dictionary is how the two drift apart.
         """
         record = _declared_record(semantic)
+        # Reuse a reviewed page label when a button semantic lacks its own OCR label.
+        if record is None and semantic.startswith("BTN_"):
+            record = _declared_record(f"PAGE_{semantic[4:]}")
         if record is None:
             return ""
         _pages, words, _merged = record

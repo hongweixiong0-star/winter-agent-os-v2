@@ -445,6 +445,15 @@ class PipelineAutoGen:
                 if tool_node is not None else
                 "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)"
             ),
+            # Keep the generator's exact OCR output even when V2 chooses a
+            # TemplateMatch route that the installed MAA runtime can execute.
+            # This separates the tool-produced candidate from the active node.
+            "tool_generated_node": tool_node,
+            "active_node_source": (
+                "INSTALLED_TOOL_OCR" if want == "ocr" and tool_node is not None
+                else "V2_NATIVE_TEMPLATE" if want != "ocr" and tool_node is not None
+                else "V2_NATIVE_FALLBACK"
+            ),
             "generator_tool": str(self.generator_script_path) if tool_node is not None else "",
             "frame": str(frame),
             "observed_text": observed,
@@ -577,6 +586,28 @@ class PipelineAutoGen:
             return False, f"PIPELINE_NODE_ARTIFACT_WRITE_FAILED:{type(exc).__name__}:{exc}"
         node.evidence["pipeline_node_path"] = _relative(pipeline_path, self.project_root)
         node.evidence["pipeline_node_sha1"] = digest
+
+        # The installed helper produces OCR nodes only. Preserve that exact
+        # output as a separate artifact when the active V2 node is a
+        # TemplateMatch fallback, so a reviewer can see both the source-tool
+        # result and the node the current MAA configuration will execute.
+        tool_node = node.evidence.get("tool_generated_node")
+        if isinstance(tool_node, dict):
+            if tool_node == node.pipeline_node:
+                node.evidence["tool_candidate_path"] = _relative(pipeline_path, self.project_root)
+                node.evidence["tool_candidate_sha1"] = digest
+            else:
+                tool_payload = json.dumps(tool_node, ensure_ascii=False, indent=2) + "\n"
+                tool_digest = sha1(tool_payload.encode("utf-8")).hexdigest()[:10]
+                tool_path = pipeline_dir / f"{safe_semantic.lower()}__tool_ocr__{tool_digest}.json"
+                try:
+                    temporary = tool_path.with_name(f".{tool_path.name}.{os.getpid()}.tmp")
+                    temporary.write_text(tool_payload, encoding="utf-8")
+                    os.replace(temporary, tool_path)
+                except OSError as exc:
+                    return False, f"TOOL_NODE_ARTIFACT_WRITE_FAILED:{type(exc).__name__}:{exc}"
+                node.evidence["tool_candidate_path"] = _relative(tool_path, self.project_root)
+                node.evidence["tool_candidate_sha1"] = tool_digest
         evidence = dict(entry.get("evidence", {}) or {})
         evidence.update({k: v for k, v in node.evidence.items()})
         evidence["autogen_node_count"] = len(recognition)

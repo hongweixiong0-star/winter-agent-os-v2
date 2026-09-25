@@ -1,0 +1,15 @@
+{
+  "recognition": "OCR",
+  "expected": [
+    "联盟科技"
+  ],
+  "roi": [
+    507,
+    900,
+    156,
+    77
+  ],
+  "action": "Click",
+  "post_delay": 500,
+  "timeout": 2000
+}

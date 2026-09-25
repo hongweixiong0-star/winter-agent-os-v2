@@ -566,6 +566,69 @@
         "autogen_note": "harvested+validated"
       },
       "promoted": false
+    },
+    "OPEN_ALLIANCE_TECH_FROM_HOME": {
+      "recognition": {
+        "BTN_ALLIANCE_TECH": {
+          "kind": "TEMPLATE",
+          "template": "BTN_ALLIANCE_TECH",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_alliance_tech__autogen_c0164b15.png",
+          "roi": [
+            507,
+            900,
+            156,
+            77
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-25T22:08:56.615435+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "联盟科技"
+          ],
+          "roi": [
+            507,
+            900,
+            156,
+            77
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_220855.png",
+        "observed_text": "联盟科技",
+        "observed_box": [
+          527,
+          920,
+          116,
+          37
+        ],
+        "ocr_score": 0.9997,
+        "expand": 20,
+        "validation": "GENERATED_ONLY",
+        "trigger": "runtime unresolved after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED (controlled live pipeline gap probe)",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_alliance_tech__3d78427ed2.json",
+        "pipeline_node_sha1": "3d78427ed2",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_alliance_tech__tool_ocr__cda50ad3ac.json",
+        "tool_candidate_sha1": "cda50ad3ac",
+        "autogen_node_count": 1,
+        "autogen_note": "runtime-derived from an unresolved control"
+      }
     }
   },
   "not_migrated": {
