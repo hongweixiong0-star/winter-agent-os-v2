@@ -12,7 +12,7 @@
     "live_window_source": "CURRENT_ROLE_CLIENT_OBSERVATION",
     "policy": "本项目从未实测过任何活动的 start/end 分钟。start/end 保持 null 直到客户端真的读到；用 next_open_condition 记录游戏自己打印的冷却/倒计时/阶段。时间不可靠时保留 UNKNOWN，不编造活动时间。"
   },
-  "last_reviewed": "2026-09-25",
+  "last_reviewed": "2026-09-26",
   "latest_offline_ocr_replay": {
     "mode": "OFFLINE_SCREENSHOT_REPLAY",
     "date": "2026-09-25",
@@ -46,11 +46,11 @@
   },
   "production_path_audit": {
     "ranker": "winter_agent_v2/runtime.py::LiveRuntime.run calls GoalLibrary.rank for production goal selection",
-    "clock_priority": "LiveRuntime passes per-role event readiness bonuses into GoalLibrary.rank only for a live actionable goal with a matching event_id, this runtime's role_id, and an existing RuleBrain route; PARTICIPATE_BEAR still lacks that route and is not promoted as executable",
-    "current_result": "Production rank integration is present in source. No learning/timed_event_schedule.json exists, so it has no live reservation to act on; no activity window or real-world promotion is claimed",
+    "clock_priority": "LiveRuntime passes per-role event readiness bonuses into GoalLibrary.rank for a live actionable goal with a matching event_id, this runtime's role_id, and an existing RuleBrain route. CORRECTED 2026-09-26: the earlier note that PARTICIPATE_BEAR 'still lacks that route' was an inference -- measured now, goal_library.route_for('PARTICIPATE_BEAR') == 'ALLIANCE', so the route exists. Unverified is participation itself, not the route.",
+    "current_result": "Production rank integration is present in source. CORRECTED 2026-09-26: learning/timed_event_schedule.json now carries one real reservation read from the client itself (role 1171757165, event BEAR_HUNT, reserved_start=2026-09-27T12:59:58.525380+00:00, source=LIVE_CLIENT_COOLDOWN), so event_schedule.load() sees it and seconds_until_next_transition returns a bounded sleep instead of defaulting to IDLE. No Bear participation has been executed on the live client, and none is claimed.",
     "generic_event_fallback": "A live, identified minimum-guarantee event on Page.EVENT with no dedicated skill is now ranked onto route EVENT, which reuses TRY_ORDINARY_CONTROL with its existing current-frame target screening and two-attempt run bound; this does not prove scoring progress or reward claims",
     "pre_open_gate": "A positive LIVE_CLIENT seconds_to_start keeps EVENT_MINIMUM_GUARANTEE at SCHEDULED_NOT_OPEN and suppresses TRY_ORDINARY_CONTROL, including for a newly observed event id",
-    "reservation_and_window_state": "预约时钟(reserved_start)与实时窗口(live_window_state)分开；正向客户端距开始倒计时可更新预约；当前画面无可读倒计时只将本角色 live_window_state 更新为 UNKNOWN，不删除其他可信预约，也不推断活动已开放。到点唤醒后仍需当前客户端窗口证据才可派发活动动作。",
+    "reservation_and_window_state": "预约时钟(reserved_start)与实时窗口(live_window_state)分开；正向客户端距开始倒计时可更新预约；当前画面无可读倒计时只将本角色 live_window_state 更新为 UNKNOWN，不删除其他可信预约，也不推断活动已开放。到点唤醒后仍需当前客户端窗口证据才可派发活动动作。 CORRECTED 2026-09-26: 'it has no live reservation to act on' no longer holds -- one exists for role 1171757165, read from the client's own 冷却中 countdown.",
     "offline_test_evidence": "247 passed and 24 subtests passed across the focused event, runtime handoff, GoalLibrary, ranking, page-exit, and control-panel regression set; this is offline evidence, not live activity execution",
     "control_panel_reload": "learning/CONTROL_PLANE_RELOAD_REQUIRED.json requests a safe reload; AUTO was active during this audit, so no reload was attempted"
   },
@@ -62,7 +62,7 @@
       "expected_window": "UNKNOWN",
       "start": null,
       "end": null,
-      "next_open_condition": "上次实例于 2026-09-09T21:15:37+08:00 观察到 ENDED_AND_COOLDOWN，游戏打印 cooldown_after_event=1天22:57:12。下次开放需重新读取客户端冷却或倒计时。",
+      "next_open_condition": "LIVE READ 2026-09-25T17:33:16.525380+00:00: the 特殊建筑 list printed '冷却中：1天19:26:42'. reserved_start recorded in learning/timed_event_schedule.json as 2026-09-27T12:59:58.525380+00:00 (2026-09-27T20:59:58.525380+08:00 +08:00). This is the trap cooldown and not a published start time; re-read the client before acting.",
       "open_criterion": "联盟/联盟领地/特殊建筑/狩猎陷阱 页面显示开放；或联盟集结列表出现等级1变异巨熊目标",
       "close_criterion": "UNKNOWN — 未捕获结束态 UI",
       "entry_navigation": [
@@ -94,7 +94,7 @@
       ],
       "exception_recovery": "bear-hunt-operation §5（17 项）",
       "readiness": {
-        "预约核实": false,
+        "预约核实": true,
         "角色职责明确": false,
         "编队准备": "PARTIAL — 出征页模板已入库（兵力/预设条/三兵种行），英雄选择与预设选中态仍缺帧",
         "队列条件明确": true,
@@ -102,9 +102,9 @@
         "集结列表识别准备": true,
         "发起与加入流程准备": true,
         "外部UI实际导入": false,
-        "MAA可读取相关模板": "YES — 21 个巨熊模板已进 template_manifest，离线回放全部解析成功",
-        "时间独立唤醒": "PARTIAL — event_schedule + control-panel boundary delay exist in source; production OCR records only an explicit client 距开始 countdown. No live reservation exists, and the running panel still needs safe reload.",
-        "普通AUTO安全让位": "PARTIAL_SOURCE_WIRED — LiveRuntime supplies the active role's matching live-event readiness bonus only when that live goal has a RuleBrain route. Generic EVENT_MINIMUM_GUARANTEE is covered; PARTICIPATE_BEAR has no route, no timed reservation exists, and no live-window trigger is verified"
+        "MAA可读取相关模板": "YES — 21 个巨熊模板已进 template_manifest，离线回放全部解析成功 (re-confirmed 2026-09-26 unchanged)",
+        "时间独立唤醒": "WIRED_SOURCE_WITH_LIVE_RESERVATION - RoleSchedule exists (source LIVE_CLIENT_COOLDOWN), event_schedule.load() reads it and returns a bounded sleep; T-30..OPEN bonuses can now fire. No live execution has been observed.",
+        "普通AUTO安全让位": "PARTIAL_SOURCE_WIRED -> source complete, live unproven. LiveRuntime supplies the active role's matching live-event readiness bonus only when that live goal has a RuleBrain route; PARTICIPATE_BEAR has one ('ALLIANCE', measured 2026-09-26) and now has a client-read reservation, so the ranking path can run at T-30 and later. What remains unproven is that this produces a real rally join/start during a live window."
       },
       "readiness_evidence": {
         "集结列表识别准备": "winter_agent_v2/rally.py::read_rally_list + tests/test_rally_list_reader.py（10 项，四张真机帧）；每行的加入按钮落在该行自己的带内，选择按剩余时间而非行号",
@@ -117,15 +117,16 @@
         "车头发起成功 —— 没有任何真机帧",
         "实际攻击与战斗结果 —— PENDING_BATTLE_REPORT",
         "集结列表滚动 —— 容器已可从帧推导，但滚动手势未在真机执行过",
-        "T5/T1 生产排序接线 —— 离线测试通过，尚无有效角色预约和真实活动窗口，未取得真机触发证据"
+        "真机预约已建立，但尚未经历一次真实开放窗口",
+        "T5/T1 生产排序接线 — 路由已实测为 'ALLIANCE'（2026-09-26），剩余缺口仅为真实开放窗口内的执行证据"
       ],
       "source": [
         "LIVE_CLIENT",
         "KNOWLEDGE_DERIVED"
       ],
       "confidence": 0.95,
-      "status": "PREPARED_PENDING_LIVE",
-      "last_reviewed": "2026-09-24"
+      "status": "PREPARED_RESERVED_PENDING_LIVE_EXECUTION",
+      "last_reviewed": "2026-09-26"
     },
     {
       "event_id": "ARMAMENT_COMPETITION",
@@ -207,7 +208,11 @@
       "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
       "generic_flow": "registered for future live identity/rules/progress reading; event-specific actions remain unwired",
       "blocker": "only a navigation tab is seen in the Armament screenshot; the active client page, timer, eligibility, task-state verifier, and safe event-specific flow remain unverified",
-      "evidence": ["knowledge/game/alliance.json", "knowledge/game/workflow_priors.json", "dataset/raw/event_minimum_guarantee/event_entry.png"],
+      "evidence": [
+        "knowledge/game/alliance.json",
+        "knowledge/game/workflow_priors.json",
+        "dataset/raw/event_minimum_guarantee/event_entry.png"
+      ],
       "status": "REGISTERED_AWAITING_LIVE_WINDOW"
     },
     {
@@ -222,7 +227,10 @@
       "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
       "generic_flow": "registered rotating-event discovery prior; no action is enabled before localized live identity/rules/cost are read",
       "blocker": "no localized client capture, scoring rules, safe action mapping, or verifier is recorded",
-      "evidence": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+      "evidence": [
+        "knowledge/game/capability_catalog.json",
+        "knowledge/game/workflow_priors.json"
+      ],
       "status": "REGISTERED_AWAITING_LIVE_WINDOW"
     },
     {
@@ -237,7 +245,10 @@
       "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
       "generic_flow": "registered rotating-event discovery prior; no action is enabled before localized live identity/rules/cost are read",
       "blocker": "no localized client capture, scoring rules, safe action mapping, or verifier is recorded",
-      "evidence": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+      "evidence": [
+        "knowledge/game/capability_catalog.json",
+        "knowledge/game/workflow_priors.json"
+      ],
       "status": "REGISTERED_AWAITING_LIVE_WINDOW"
     },
     {
@@ -252,7 +263,10 @@
       "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
       "generic_flow": "registered rotating-event discovery prior; no action is enabled before localized live identity/rules/cost are read",
       "blocker": "no localized client capture, scoring rules, safe action mapping, or verifier is recorded",
-      "evidence": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+      "evidence": [
+        "knowledge/game/capability_catalog.json",
+        "knowledge/game/workflow_priors.json"
+      ],
       "status": "REGISTERED_AWAITING_LIVE_WINDOW"
     }
   ],
@@ -276,5 +290,6 @@
     "不得把 readiness 的 false 写成 true"
   ],
   "source": "KNOWLEDGE_DERIVED",
-  "confidence": 0.9
+  "confidence": 0.9,
+  "_correction_note_2026_09_26": "Replaced two inferred statements with measurements: PARTICIPATE_BEAR does have a RuleBrain route ('ALLIANCE'), and a live client-read reservation now exists. No execution evidence was added."
 }
