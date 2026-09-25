@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import queue
@@ -19,6 +20,14 @@ from typing import Any, Mapping
 from PIL import Image, ImageDraw, ImageTk
 
 ROOT = Path(__file__).resolve().parents[1]
+# Freeze a content identity for the control plane itself.  The shared runtime revision
+# intentionally excludes this GUI module, so the queue heartbeat records this hash
+# alongside the frozen runtime token instead of implying that one identifies both.
+try:
+    CONTROL_PLANE_SOURCE_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+except OSError:
+    CONTROL_PLANE_SOURCE_SHA256 = ""
+
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -2582,6 +2591,16 @@ class QueuePump:
             "unknown_in_flight": [], "unknown_submitted": 0, "unknown_attempts": {},
             "unknown_every": self.UNKNOWN_EVERY if unknown_every is None else int(unknown_every),
         }
+        try:
+            from winter_agent_v2.version_identity import process_revision
+
+            loaded = process_revision()
+            self._state["runtime_loaded_revision"] = loaded.token if loaded is not None else ""
+            self._state["runtime_loaded_at"] = datetime.now(timezone.utc).isoformat()
+        except Exception:  # noqa: BLE001 - missing telemetry must not stop the controller
+            self._state["runtime_loaded_revision"] = ""
+            self._state["runtime_loaded_at"] = ""
+        self._state["control_plane_loaded_sha256"] = CONTROL_PLANE_SOURCE_SHA256
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._adapter: Any = None

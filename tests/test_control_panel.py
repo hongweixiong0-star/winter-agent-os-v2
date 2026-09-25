@@ -138,6 +138,20 @@ class SwitchSemantics(unittest.TestCase):
 
 
 class ControlPanelTests(unittest.TestCase):
+    def test_pump_persists_the_frozen_runtime_and_control_plane_build_identities(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / "pump.json"
+            frozen = SimpleNamespace(token="14a5644+runtime-digest")
+            with patch.object(cp, "PUMP_STATE_PATH", path), \
+                 patch.object(cp, "CONTROL_PLANE_SOURCE_SHA256", "panel-source-sha256"), \
+                 patch("winter_agent_v2.version_identity.process_revision", return_value=frozen):
+                pump = cp.QueuePump(interval=60)
+                pump._persist()
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(payload["runtime_loaded_revision"], frozen.token)
+        self.assertTrue(payload["runtime_loaded_at"])
+        self.assertEqual(payload["control_plane_loaded_sha256"], "panel-source-sha256")
+
     def test_parse_runtime_result_uses_final_json_line(self):
         output = '启动中\n{"steps": [], "stop_reason": "no_idle_march"}\n'
         self.assertEqual(parse_runtime_result(output)["stop_reason"], "no_idle_march")
