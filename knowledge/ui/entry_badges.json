@@ -310,12 +310,26 @@
     "varies": false,
     "evidence": "同上；且该行绑定的 HERO_RECRUIT 目前不是板上的目标（见 #100）"
    },
+   "QUICK_PANEL_ROW_HERO_RECRUIT_EPIC": {
+    "present": 1,
+    "absent": 5,
+    "unknown": 9,
+    "varies": true,
+    "evidence": "tools/measure_panel_row_badges.py 对 167 个生产面板帧统计：该行 15 次可读，其中 PRESENT 1、ABSENT 5、UNKNOWN 9；可见红点有变化"
+   },
    "QUICK_PANEL_ROW_MY_REWARDS": {
     "present": 0,
     "absent": 0,
     "unknown": 12,
     "varies": false,
     "evidence": "同上"
+   },
+   "QUICK_PANEL_ROW_PET_TREASURE": {
+    "present": 5,
+    "absent": 0,
+    "unknown": 10,
+    "varies": false,
+    "evidence": "tools/measure_panel_row_badges.py 对 167 个生产面板帧统计：该行 15 次可读，其中 PRESENT 5、ABSENT 0、UNKNOWN 10；尚无红点消失证据，不参与优先级"
    },
    "TILE_ALLIANCE_GIFTS": {
     "present": 8,
