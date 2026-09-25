@@ -1,0 +1,16 @@
+{
+  "recognition": "TemplateMatch",
+  "template": [
+    "BTN_JOIN_ROW"
+  ],
+  "roi": [
+    580,
+    300,
+    110,
+    780
+  ],
+  "threshold": [
+    0.82,
+    0.85
+  ]
+}

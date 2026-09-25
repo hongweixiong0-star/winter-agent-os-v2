@@ -1,0 +1,16 @@
+{
+  "recognition": "TemplateMatch",
+  "template": [
+    "BTN_START_RALLY"
+  ],
+  "roi": [
+    348,
+    962,
+    236,
+    98
+  ],
+  "threshold": [
+    0.8,
+    0.82
+  ]
+}

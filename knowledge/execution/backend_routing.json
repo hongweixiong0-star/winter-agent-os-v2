@@ -629,6 +629,104 @@
         "autogen_node_count": 1,
         "autogen_note": "runtime-derived from an unresolved control"
       }
+    },
+    "START_RALLY": {
+      "recognition": {
+        "BTN_START_RALLY": {
+          "kind": "TEMPLATE",
+          "template": "BTN_START_RALLY",
+          "source_template": "dataset/candidate/bear_rally/btn_start_rally__bear_trap_detail__9db2cb89__0.png",
+          "threshold": [
+            0.8,
+            0.82
+          ],
+          "roi": [
+            348,
+            962,
+            236,
+            98
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26",
+        "source": "V2_NATIVE_TEMPLATE_FROM_HISTORICAL_LIVE_CLIENT_CANDIDATE",
+        "frame": "LOCAL_ONLY: dataset/raw/bear_live_20260909/bear_trap_detail.png",
+        "frame_retained_in_repository": false,
+        "source_template": "dataset/candidate/bear_rally/btn_start_rally__bear_trap_detail__9db2cb89__0.png",
+        "validation": "HISTORICAL_FRAME_REPLAY_ONLY",
+        "observed_score": 0.9863,
+        "negative_max_score": 0.662,
+        "threshold": [
+          0.8,
+          0.82
+        ],
+        "roi": [
+          348,
+          962,
+          236,
+          98
+        ],
+        "note": "Historical bear-trap detail positive; no above-threshold match in the other 27 saved bear frames with this detail-page ROI. Candidate remains unpromoted.",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_start_rally__4e9d13a6d6.json",
+        "pipeline_node_sha1": "4e9d13a6d6",
+        "autogen_node_count": 1,
+        "autogen_note": "bear rally candidate wired to MAA; historical frame replay only"
+      }
+    },
+    "JOIN_RALLY": {
+      "recognition": {
+        "BTN_JOIN_ROW": {
+          "kind": "TEMPLATE",
+          "template": "BTN_JOIN_ROW",
+          "source_template": "dataset/candidate/bear_rally/btn_join_row__bear_rally_panel__ba0c11fc__0.png",
+          "threshold": [
+            0.82,
+            0.85
+          ],
+          "roi": [
+            580,
+            300,
+            110,
+            780
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26",
+        "source": "V2_NATIVE_TEMPLATE_FROM_HISTORICAL_LIVE_CLIENT_CANDIDATE",
+        "frame": "LOCAL_ONLY: dataset/raw/bear_live_20260909/join_list_now.png",
+        "frame_retained_in_repository": false,
+        "source_template": "dataset/candidate/bear_rally/btn_join_row__bear_rally_panel__ba0c11fc__0.png",
+        "validation": "HISTORICAL_FRAME_REPLAY_ONLY",
+        "observed_score": 0.9932,
+        "negative_max_score": 0.624,
+        "threshold": [
+          0.82,
+          0.85
+        ],
+        "roi": [
+          580,
+          300,
+          110,
+          780
+        ],
+        "note": "Historical rally-list green plus positive; other non-list bear frames maxed at 0.624 in the list-row ROI. Candidate remains unpromoted.",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_join_row__3b8e37aafa.json",
+        "pipeline_node_sha1": "3b8e37aafa",
+        "autogen_node_count": 1,
+        "autogen_note": "bear rally candidate wired to MAA; historical frame replay only"
+      }
     }
   },
   "not_migrated": {
