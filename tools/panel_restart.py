@@ -181,6 +181,11 @@ def current_worker(pid: int | None = None) -> list[str]:
     return [row for row in rows if str(pid) in row.split("|")[:2]]
 
 
+def panel_workers(pids: list[int]) -> list[str]:
+    """Only workers owned by the recorded panel may block or attest its safe stop."""
+    return [row for pid in pids for row in current_worker(pid)]
+
+
 def runtime_observation() -> str:
     """What the runtime snapshot says -- including "too stale to judge".
 
@@ -256,7 +261,7 @@ def cmd_status() -> int:
     _emit(f"runtime     : {claim or runtime_observation() or 'no run in flight'}")
     if not claim:
         _emit("              (no claim: stopping is safe, whatever the snapshot age)")
-    workers = current_worker()
+    workers = panel_workers(pids)
     _emit(f"workers     : {len(workers)}")
     for row in workers:
         _emit(f"    {row[:150]}")
@@ -269,7 +274,7 @@ def cmd_stop(force: bool = False) -> int:
         _emit("nothing to stop: no live panel pid on record and no fresh heartbeat")
         PID_PATH.unlink(missing_ok=True)
         return 0
-    workers = current_worker()
+    workers = panel_workers(pids)
     claim = runtime_claim()
     if (workers or claim) and not force:
         _emit("refusing to stop: a run is in flight, and killing the panel kills its worker")
@@ -290,7 +295,7 @@ def cmd_stop(force: bool = False) -> int:
         done = winproc.run(["taskkill", "/PID", str(pid), "/T", "/F"], timeout=60)
         _emit((done.stdout or "").strip() or (done.stderr or "").strip())
     time.sleep(2)
-    left = current_worker()
+    left = panel_workers(pids)
     _emit(f"workers left after the kill: {len(left)}")
     still = live_pids()
     _emit(f"panel pids still alive: {still if still else 'none'}")
