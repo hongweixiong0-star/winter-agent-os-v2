@@ -12,6 +12,7 @@ from . import control_experience
 from . import goal_utility
 from . import ui_collection
 from . import page_knowledge
+from . import event_schedule
 from . import unknown_advisor
 from .executor import Executor
 from .executor_router import BackendLedger, RoutingTable, build_router
@@ -870,6 +871,61 @@ class LiveRuntime:
         """
         for goal in goals or ():
             self._goal_meters[goal.goal_id] = goal.distance
+
+    def _event_readiness_for_goals(self, goals, *, now=None) -> dict[str, float]:
+        """Apply live countdown priority only to this runtime's observed role.
+
+        The readiness file is a role-scoped clock, not a second activity calendar.  A saved
+        reservation may affect ranking only when this role has a currently actionable goal
+        whose own live evidence names the same event.  It cannot synthesize a goal, open a
+        page, or transfer one account's event window to another account.
+        """
+        role_id = str(getattr(self, "role_id", "") or "")
+        if not role_id:
+            return {}
+        try:
+            schedules = event_schedule.load()
+        except Exception:  # noqa: BLE001 -- an unreadable clock must leave normal ranking intact
+            return {}
+        if not schedules:
+            return {}
+        moment = now or datetime.now(timezone.utc)
+        out: dict[str, float] = {}
+        for goal in goals or ():
+            if not getattr(goal, "available_skills", ()) or goal.priority == float("-inf"):
+                continue
+            if route_for(str(getattr(goal, "goal_id", "") or "")) is None:
+                # Readiness cannot rescue a goal that the live brain has no route for.
+                # In particular, BEAR_HUNT remains recorded but must not be promoted as
+                # runnable until its alliance navigation/decision path is connected.
+                continue
+            evidence = getattr(goal, "evidence", None)
+            event_id = str(evidence.get("event_id") or "") if isinstance(evidence, Mapping) else ""
+            if not event_id:
+                continue
+            schedule = schedules.get(f"{role_id}|{event_id}")
+            if schedule is None or schedule.role_id != role_id or schedule.event_id != event_id:
+                continue
+            phase = schedule.phase_at(moment)
+            # The clock can wake this runtime at the reservation boundary, but it cannot
+            # prove that the event is actually open. A past reservation stays useful as
+            # evidence and for audit; only a fresh same-role client observation may grant
+            # the OPEN production bonus.
+            if phase is event_schedule.ReadinessPhase.OPEN:
+                if schedule.live_window_state != event_schedule.LiveWindowState.OPEN.value:
+                    continue
+                try:
+                    seen = datetime.fromisoformat(str(schedule.live_window_observed_at or ""))
+                    if seen.tzinfo is None:
+                        seen = seen.replace(tzinfo=timezone.utc)
+                    if (moment - seen).total_seconds() > 15 * 60:
+                        continue
+                except (TypeError, ValueError):
+                    continue
+            bonus = event_schedule.PHASE_PRIORITY[phase]
+            if bonus > 0:
+                out[str(goal.goal_id)] = bonus
+        return out
 
     def _sync_brain_goal(self, best_goal, gate) -> None:
         """Keep the brain's route and task identity aligned with this scheduler tick.
@@ -2078,7 +2134,9 @@ class LiveRuntime:
         vision = self.vision
         focus = getattr(vision, "focus", None)
         if focus is None:
-            return vision.observe(frame_path)
+            state = vision.observe(frame_path)
+            self._record_live_event_reservation(state)
+            return state
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         page_hint = str(getattr(self, "_last_known_label", "") or "")
 
@@ -2108,7 +2166,92 @@ class LiveRuntime:
                 flush=True,
             )
             state = look(widen=True, reason="widening after an unnamed frame")
+        self._record_live_event_reservation(state)
         return state
+
+    def _record_live_event_reservation(self, world: WorldState) -> None:
+        """Persist or clear role-scoped event reservations from current client evidence."""
+        if not self.role_id:
+            return
+        events = world.events if isinstance(world.events, Mapping) else {}
+        def event_seconds(value: object) -> int | None:
+            try:
+                return int(value) if value is not None else None
+            except (TypeError, ValueError):
+                return None
+
+        observations: list[tuple[str, int | None, str, str, str | None]] = []
+        bear = events.get("bear")
+        if isinstance(bear, Mapping):
+            bear_status = str(bear.get("status") or "").upper()
+            bear_seconds = event_seconds(bear.get("seconds_to_start"))
+            if bear_seconds is not None and bear_seconds > 0:
+                window_state = event_schedule.LiveWindowState.SCHEDULED_NOT_OPEN.value
+            elif bear_status == "ACTIVE" or bear_seconds == 0:
+                window_state = event_schedule.LiveWindowState.OPEN.value
+            elif bear_status in {"FINISHED", "COOLDOWN"}:
+                window_state = event_schedule.LiveWindowState.EXPIRED.value
+            else:
+                window_state = event_schedule.LiveWindowState.UNKNOWN.value
+            observations.append((
+                "BEAR_HUNT", bear_seconds, window_state,
+                str(bear.get("role") or "AUTO"),
+                str(bear.get("alliance")) if bear.get("alliance") else None,
+            ))
+        minimum = events.get("minimum_guarantee")
+        if isinstance(minimum, Mapping):
+            raw_event_id = str(minimum.get("event_id") or "")
+            if raw_event_id:
+                from .event_goal import known_activities
+
+                activity = next((
+                    item for item in known_activities()
+                    if raw_event_id == item.event_id or raw_event_id in item.aliases
+                ), None)
+                if activity is not None:
+                    seconds = event_seconds(minimum.get("seconds_to_start"))
+                    remaining = event_seconds(minimum.get("remaining_seconds"))
+                    if seconds is not None and seconds > 0:
+                        window_state = event_schedule.LiveWindowState.SCHEDULED_NOT_OPEN.value
+                    elif seconds == 0 or (remaining is not None and remaining > 0):
+                        window_state = event_schedule.LiveWindowState.OPEN.value
+                    elif remaining is not None and remaining <= 0:
+                        window_state = event_schedule.LiveWindowState.EXPIRED.value
+                    else:
+                        window_state = event_schedule.LiveWindowState.UNKNOWN.value
+                    observations.append((
+                        activity.event_id, seconds, window_state, "AUTO", None,
+                    ))
+        if not observations:
+            return
+        try:
+            observed = datetime.fromisoformat(str(world.timestamp))
+        except (TypeError, ValueError):
+            observed = datetime.now(timezone.utc)
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=timezone.utc)
+        try:
+            schedules = event_schedule.load()
+            for event_id, seconds, window_state, role, alliance in observations:
+                if seconds is not None and seconds > 0:
+                    event_schedule.record_live_countdown(
+                        schedules,
+                        role_id=self.role_id,
+                        event_id=event_id,
+                        seconds_to_start=seconds,
+                        source="LIVE_CLIENT_EXPLICIT_START_COUNTDOWN",
+                        role=role,
+                        alliance=alliance,
+                        now=observed,
+                    )
+                event_schedule.record_live_window_observation(
+                    schedules, role_id=self.role_id, event_id=event_id,
+                    state=window_state, source="LIVE_CLIENT_EVENT_WINDOW_OBSERVATION",
+                    role=role, alliance=alliance, now=observed,
+                )
+            event_schedule.save(schedules)
+        except Exception:  # noqa: BLE001 -- event-clock persistence must never block AUTO
+            return
 
     def _device_lost(self, call, *args) -> bool:
         """Run one device call; answer True if the DEVICE left rather than the goal failing.
@@ -4765,11 +4908,13 @@ class LiveRuntime:
             # frame we are standing on -- not once per run.  ``rank`` returns the whole
             # board with each term, and ``best`` is the same ordering, so the choice and
             # the explanation can never disagree.
+            selectable_goals = self._selectable(goals, deferrals)
             board = self.goal_library.rank(
-                self._selectable(goals, deferrals),
+                selectable_goals,
                 before,
                 fairness=self._fairness,
                 routes=self._routes,
+                event_readiness=self._event_readiness_for_goals(selectable_goals),
             )
             best_goal = board[0][0] if board else None
             self._note_the_choice(board, before)

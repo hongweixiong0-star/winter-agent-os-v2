@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
+from functools import lru_cache
 from math import ceil
 from pathlib import Path
 from typing import Any, Mapping
@@ -184,10 +186,12 @@ def event_priority_modifier(events: dict[str, Any], skill_id: str) -> float:
 
 ACTIVITY_REGISTRY = Path(__file__).resolve().parents[1] / "knowledge/events/event_registry.json"
 
-#: Registry entries whose ``gate`` this project refuses to plan against.  A DISCOVERED entry is an
-#: unreviewed lead -- the registry's own policy says so -- and holding a plan on a lead would be
-#: exactly the invented schedule §二 forbids.  Kept as a set of the words the registry uses.
-_PLANNABLE_GATES = frozenset({"REVIEWED", "VERIFIED"})
+#: Registry entries that have an identity in the canonical event catalog.  Registration is not
+#: approval to act: DISCOVERED items stay UNKNOWN until the current client supplies an event page,
+#: timer, or other positive condition.  Filtering them out here made "not yet verified" look like
+#: "does not exist", which prevented the already-registered generic flow/Qwen fallback from ever
+#: seeing a newly discovered event.
+_KNOWN_GATES = frozenset({"DISCOVERED", "REVIEWED", "VERIFIED"})
 
 
 class WindowState(str, Enum):
@@ -211,10 +215,12 @@ class Activity:
     event_id: str
     name: str
     gate: str
+    aliases: tuple[str, ...]
     cadence: str
     applies_to_roles: Mapping[str, Any]
     next_open_condition: Mapping[str, Any]
     participation_conditions: tuple[str, ...]
+    unwired_steps: tuple[str, ...]
     knowledge: tuple[str, ...]
     prepare: tuple[str, ...]
     occurrence: Mapping[str, Any]
@@ -231,7 +237,7 @@ class Activity:
         """
         return bool(self.start or self.end)
 
-    def window(self) -> WindowState:
+    def window(self, now: datetime | None = None) -> WindowState:
         """The window **as the record knows it**, with no live reading in hand.
 
         Deliberately takes no countdown.  When the client is printing one, ``rally.bear_phase``
@@ -240,18 +246,38 @@ class Activity:
         has already paid for.  This answers the other question: standing anywhere else, what does
         the record support?
 
-        * a recorded occurrence that ended -> ``EXPIRED``;
-        * a start or end time on file -> ``SCHEDULED_NOT_OPEN`` (the schedule is real, the window has
-          not arrived);
+        * no trustworthy current-occurrence timer -> ``UNKNOWN``.  The registry's ``occurrence`` is
+          historical evidence; an expired past instance does not prove today's recurring event is
+          closed;
+        * a future, timezone-aware start -> ``SCHEDULED_NOT_OPEN``;
+        * a reached start with no reached end -> ``OPEN``;
+        * a reached end -> ``EXPIRED``;
         * nothing reliable on file -> ``UNKNOWN``.  §二: 如果时间信息不可靠，保留 UNKNOWN，不编造
           活动时间.  ``UNKNOWN`` is not "not open" -- it is "we cannot say", and the plan is kept
           either way.
         """
-        if str(self.occurrence.get("state") or "").upper() == "EXPIRED" and not self.time_is_known:
+        def instant(value: str | None) -> datetime | None:
+            if not value:
+                return None
+            try:
+                parsed = datetime.fromisoformat(str(value))
+            except ValueError:
+                return None
+            # A local timestamp without an offset cannot drive an unattended wake safely.
+            return parsed if parsed.tzinfo is not None else None
+
+        start = instant(self.start)
+        end = instant(self.end)
+        moment = now or datetime.now(timezone.utc)
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+        if end is not None and moment >= end:
             return WindowState.EXPIRED
+        if start is not None:
+            return WindowState.OPEN if moment >= start else WindowState.SCHEDULED_NOT_OPEN
         if not self.time_is_known:
             return WindowState.UNKNOWN
-        return WindowState.SCHEDULED_NOT_OPEN
+        return WindowState.UNKNOWN
 
     def plan(self) -> dict[str, Any]:
         """The part of this record a run needs in order to prepare rather than to act."""
@@ -259,10 +285,15 @@ class Activity:
             "event_id": self.event_id,
             "name": self.name,
             "gate": self.gate,
+            "aliases": list(self.aliases),
+            "registration_state": "REGISTERED",
+            "current_occurrence_state": "UNKNOWN",
+            "execution_readiness": "AWAITING_LIVE_CLIENT_READING",
             "cadence": self.cadence,
             "applies_to_roles": dict(self.applies_to_roles),
             "next_open_condition": dict(self.next_open_condition),
             "participation_conditions": list(self.participation_conditions),
+            "unwired_steps": list(self.unwired_steps),
             "knowledge": list(self.knowledge),
             "prepare": list(self.prepare),
             "occurrence": dict(self.occurrence),
@@ -272,7 +303,7 @@ class Activity:
 
 
 def known_activities(path: Path | str | None = None) -> tuple[Activity, ...]:
-    """Every activity the registry vouches for, newest policy applied.
+    """Every named activity in the canonical registry, including DISCOVERED candidates.
 
     Unreadable or malformed registry -> no activities, never an exception: a knowledge file that a
     run cannot parse is a gap in the plan, not a reason for the run to die.  Same trade the rest of
@@ -288,16 +319,18 @@ def known_activities(path: Path | str | None = None) -> tuple[Activity, ...]:
         if not isinstance(record, Mapping):
             continue
         gate = str(record.get("gate") or "DISCOVERED").upper()
-        if gate not in _PLANNABLE_GATES:
+        if gate not in _KNOWN_GATES:
             continue
         out.append(Activity(
             event_id=str(record.get("event_id") or ""),
             name=str(record.get("name") or ""),
             gate=gate,
+            aliases=tuple(str(x) for x in (record.get("aliases") or ())),
             cadence=str(record.get("cadence") or "UNKNOWN"),
             applies_to_roles=record.get("applies_to_roles") or {},
             next_open_condition=record.get("next_open_condition") or {},
             participation_conditions=tuple(str(x) for x in (record.get("participation_conditions") or ())),
+            unwired_steps=tuple(str(x) for x in (record.get("unwired_steps") or ())),
             knowledge=tuple(str(x) for x in (record.get("knowledge") or ())),
             prepare=tuple(str(x) for x in (record.get("prepare") or ())),
             occurrence=record.get("occurrence") or {},
@@ -305,3 +338,26 @@ def known_activities(path: Path | str | None = None) -> tuple[Activity, ...]:
             end=record.get("end"),
         ))
     return tuple(activity for activity in out if activity.event_id)
+
+
+@lru_cache(maxsize=1)
+def _event_label_index() -> dict[str, str]:
+    """Index exact client title aliases from the canonical activity registry.
+
+    OCR must not carry a second, hand-maintained event-name list.  The registry is loaded once
+    per process; changes to it already require the normal safe runtime reload before production
+    can use the new code/data revision.
+    """
+    labels: dict[str, str] = {}
+    for activity in known_activities():
+        for label in (activity.name, *activity.aliases):
+            key = " ".join(str(label).strip().casefold().split())
+            if key:
+                labels[key] = activity.event_id
+    return labels
+
+
+def event_id_for_label(label: object) -> str | None:
+    """Resolve an exact known event heading; unknown text stays unknown."""
+    key = " ".join(str(label or "").strip().casefold().split())
+    return _event_label_index().get(key) if key else None

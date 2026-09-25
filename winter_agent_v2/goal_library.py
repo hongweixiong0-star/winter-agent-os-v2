@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .camp_training import CAMP_LABELS, CAMP_ORDER, TROOP_TO_CAMP
-from .models import WorldState
+from .models import Page, WorldState
 from . import entry_badges
 from . import event_goal
 from . import goal_utility
@@ -69,6 +69,12 @@ GOAL_ROUTES: dict[str, str] = {
     "AVOID_STAMINA_WASTE": "BEAST_HUNT",
     "KEEP_TRAINING_PRODUCTIVE": "TRAIN",
     "KEEP_RESEARCH_PRODUCTIVE": "RESEARCH",
+    # A live event with a current UI reading uses the same bounded ordinary-control
+    # path as the EVENT page itself; no calendar guess or event-specific click is implied.
+    "EVENT_MINIMUM_GUARANTEE": "EVENT",
+    # Building upgrades already have a page-local action and verifier; they were unreachable because
+    # the queue goal had no route and no selected-building entry step.
+    "KEEP_BUILDING_PRODUCTIVE": "BUILDING",
     # The three camps are three goals and share the one route: the route is the training
     # *page*, and which camp it opens is the brain's decision driven by ``goal_id``.  A
     # second route name would be a second implementation of the same page.
@@ -95,7 +101,7 @@ GOAL_ROUTES: dict[str, str] = {
 #: is one of these -- a route ``run_live`` cannot accept is the EXIT_2 bug above.
 ROUTE_DOMAINS: tuple[str, ...] = (
     "HOME", "GATHER_RESOURCE", "BEAST_HUNT", "INTEL", "MAIL",
-    "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN",
+    "EXPLORATION", "DAILY", "ALLIANCE", "RESEARCH", "TRAIN", "BUILDING", "EVENT",
 )
 
 
@@ -691,6 +697,7 @@ class GoalLibrary:
             missing = int(minimum.get("points_missing", 0))
             claimed = bool(minimum.get("all_target_rewards_claimed", False))
             left = _optional_int(minimum.get("remaining_seconds"))
+            until_start = _optional_int(minimum.get("seconds_to_start"))
             complete = missing <= 0 and claimed
             # A window that has closed is EXPIRED, not "ready at a negative deadline".  Measured
             # 2026-09-23: ``deadline_pressure(0)`` is -100_000, which pushes such a goal down the
@@ -698,21 +705,50 @@ class GoalLibrary:
             # still be picked on a frame where nothing else had a price.  EXPIRED is the same fact
             # stated so that ranking excludes it (§一: EXPIRED vs COMPLETED are different records).
             window_closed = left is not None and left <= 0
-            if complete:
+            # The EVENT page can be visible before the scoring window. Its explicit
+            # "distance to start" countdown is stronger than a missing points field:
+            # retain the task, but never send the generic live fallback before opening.
+            scheduled_not_open = until_start is not None and until_start > 0
+            if scheduled_not_open:
+                status = GoalStatus.SCHEDULED_NOT_OPEN
+            elif complete:
                 status = GoalStatus.COMPLETE
             elif window_closed:
                 status = GoalStatus.EXPIRED
-            else:
+            elif left is not None and left > 0:
+                # A positive scoring-stage timer is current client evidence that this
+                # occurrence is open. The event title or a saved appointment alone is not.
                 status = GoalStatus.READY
+            else:
+                # No trustworthy open/close timer: retain the discovered goal, but do not
+                # infer that it is actionable from the page title or missing countdown.
+                status = GoalStatus.UNKNOWN
+            event_id = str(minimum.get("event_id") or "")
+            skills = tuple(str(x) for x in minimum.get("available_skills", ()))
+            if status is GoalStatus.UNKNOWN:
+                skills = ()
+            generic_live_fallback = (
+                world.page is Page.EVENT
+                and bool(event_id)
+                and status is GoalStatus.READY
+                and not skills
+            )
+            if generic_live_fallback:
+                # User directive: a recognized live event with no dedicated action must
+                # enter the existing bounded, spend-screened current-UI control path.  It
+                # cannot run away from Page.EVENT or make a waiting/unknown event actionable.
+                skills = ("TRY_ORDINARY_CONTROL",)
             goals.append(GoalState(
                 "EVENT_MINIMUM_GUARANTEE", status,
                 completion=1.0 if complete else 0.0,
                 remaining_seconds=left, reward_value=500,
                 event_synergy=500, resource_cost=float(minimum.get("estimated_cost", 0)),
-                available_skills=tuple(str(x) for x in minimum.get("available_skills", ())),
+                available_skills=skills,
                 evidence={"points_missing": missing, "claimed": claimed,
                           "window_closed": window_closed,
-                          "event_id": minimum.get("event_id")},
+                          "seconds_to_start": until_start,
+                          "event_id": event_id,
+                          "generic_live_fallback": generic_live_fallback},
                 distance=float(max(0, missing)),
             ))
         bear = world.events.get("bear") if isinstance(world.events, dict) else None
@@ -800,7 +836,8 @@ class GoalLibrary:
         """
         reported = {str((goal.evidence or {}).get("event_id") or "") for goal in goals}
         for activity in event_goal.known_activities():
-            if not activity.event_id or activity.event_id in reported:
+            current_ids = {activity.event_id, *activity.aliases}
+            if not activity.event_id or current_ids.intersection(reported):
                 continue
             window = activity.window()
             goals.append(GoalState(
@@ -808,7 +845,14 @@ class GoalLibrary:
                 _WINDOW_STATUS[window],
                 completion=1.0 if window is event_goal.WindowState.EXPIRED else 0.0,
                 available_skills=(),
-                evidence={**activity.plan(), "window": window.value, "live_reading": False},
+                evidence={
+                    **activity.plan(),
+                    "window": window.value,
+                    "live_reading": False,
+                    "availability_state": "AWAITING_LIVE_CLIENT_READING",
+                    "dispatch_rule": "use the registered event flow only after the current client identifies the event and its live conditions",
+                    "fallback": "match a registered generic event flow, then use the current UI planner when a step is missing",
+                },
                 distance=1.0,
             ))
 
@@ -991,6 +1035,7 @@ class GoalLibrary:
         *,
         fairness: Mapping[str, goal_utility.GoalFairness] | None = None,
         routes: Iterable[goal_utility.RouteFact] | None = None,
+        event_readiness: Mapping[str, float] | None = None,
         now: datetime | None = None,
     ) -> tuple[tuple[GoalState, goal_utility.UtilityBreakdown], ...]:
         """The whole board, best first, with every term of each goal's utility (§九).
@@ -1000,7 +1045,8 @@ class GoalLibrary:
         can never disagree with the choice it is describing.
         """
         return goal_utility.rank(
-            goals, world=world, facts=routes or (), ledger=fairness, now=now
+            goals, world=world, facts=routes or (), ledger=fairness,
+            event_readiness=event_readiness, now=now
         )
 
     def best(

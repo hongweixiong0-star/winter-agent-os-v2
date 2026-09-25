@@ -55,6 +55,15 @@ class ReadinessPhase(str, Enum):
     OPEN = "OPEN"
 
 
+class LiveWindowState(str, Enum):
+    """What the current role actually observed in the client, independent of its clock."""
+
+    UNKNOWN = "UNKNOWN"
+    SCHEDULED_NOT_OPEN = "SCHEDULED_NOT_OPEN"
+    OPEN = "OPEN"
+    EXPIRED = "EXPIRED"
+
+
 #: The ladder from the task book §七.2, as machine values.  ``T-30`` is the first rung because
 #: that is the earliest preparation the book asks for; the numbers are minutes *before* the
 #: reserved start.
@@ -108,6 +117,10 @@ class RoleSchedule:
     alliance: str | None = None
     source: str = "UNKNOWN"
     observed_at: str | None = None
+    live_window_state: str = LiveWindowState.UNKNOWN.value
+    live_window_observed_at: str | None = None
+    live_window_source: str = "UNKNOWN"
+    time_zone: str | None = None
     lead_overrides: dict[str, int] = field(default_factory=dict)
     notes: str = ""
 
@@ -141,6 +154,10 @@ class RoleSchedule:
             "alliance": self.alliance,
             "source": self.source,
             "observed_at": self.observed_at,
+            "live_window_state": self.live_window_state,
+            "live_window_observed_at": self.live_window_observed_at,
+            "live_window_source": self.live_window_source,
+            "time_zone": self.time_zone,
             "lead_overrides": dict(self.lead_overrides),
             "notes": self.notes,
         }
@@ -157,6 +174,11 @@ class RoleSchedule:
             alliance=(str(payload["alliance"]) if payload.get("alliance") else None),
             source=str(payload.get("source") or "UNKNOWN"),
             observed_at=(str(payload["observed_at"]) if payload.get("observed_at") else None),
+            live_window_state=str(payload.get("live_window_state") or LiveWindowState.UNKNOWN.value),
+            live_window_observed_at=(str(payload["live_window_observed_at"])
+                                     if payload.get("live_window_observed_at") else None),
+            live_window_source=str(payload.get("live_window_source") or "UNKNOWN"),
+            time_zone=(str(payload["time_zone"]) if payload.get("time_zone") else None),
             lead_overrides={str(k): int(v) for k, v in (overrides or {}).items()},
             notes=str(payload.get("notes") or ""),
         )
@@ -203,6 +225,47 @@ def soonest(schedules: Mapping[str, RoleSchedule], now: datetime | None = None) 
     return min(dated, key=lambda s: s.start_datetime() or datetime.max.replace(tzinfo=timezone.utc))
 
 
+def seconds_until_next_transition(
+    schedules: Mapping[str, RoleSchedule], now: datetime | None = None
+) -> float | None:
+    """Seconds until the next real event-readiness boundary across all roles.
+
+    The single AUTO loop normally sleeps between runs.  A reservation already recorded from a
+    live client countdown must shorten that sleep to the next T-30/T-15/T-5/T-1/open boundary;
+    otherwise its priority bonus is only discovered at the next ordinary poll.  Unknown or
+    expired reservations produce no wake.  The thresholds are the same ladder consumed by
+    ``readiness_phase`` and ``Scheduler.readiness``.
+    """
+    moment = now or datetime.now(timezone.utc)
+    thresholds = (30 * 60, 15 * 60, 5 * 60, 60, 0)
+    candidates: list[float] = []
+    for schedule in schedules.values():
+        start = schedule.start_datetime()
+        if start is None:
+            continue
+        remaining = (start - moment).total_seconds()
+        # Once open, the ordinary AUTO polling cadence owns retries during the window.  This
+        # prevents a persisted reservation from creating a zero-delay restart loop.
+        if remaining <= 0:
+            continue
+        future_boundaries = [remaining - threshold for threshold in thresholds
+                             if remaining - threshold > 0]
+        if future_boundaries:
+            candidates.append(min(future_boundaries))
+    return min(candidates) if candidates else None
+
+
+def bounded_poll_delay_seconds(
+    ordinary_delay_seconds: float,
+    schedules: Mapping[str, RoleSchedule],
+    now: datetime | None = None,
+) -> float:
+    """Keep the ordinary loop delay unless a known event boundary arrives sooner."""
+    base = max(0.0, float(ordinary_delay_seconds))
+    wake = seconds_until_next_transition(schedules, now)
+    return min(base, wake) if wake is not None else base
+
+
 def load(path: Path | str | None = None) -> dict[str, RoleSchedule]:
     """Read the schedule file.  A missing or unreadable file is an empty schedule, not an error.
 
@@ -234,10 +297,10 @@ def save(schedules: Mapping[str, RoleSchedule], path: Path | str | None = None) 
     target = Path(path) if path is not None else STATE_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "_read_me": (
-            "按角色的限时活动预约。reserved_start 只有在客户端真的读到倒计时/冷却后才允许写入"
-            "（source 必须写明来源）。为 null 时 phase_at() 返回 IDLE —— 不许推算时间。"
+            "按角色的活动预约时钟与实时开放观测分开保存。reserved_start 仅来自可信时间来源；"
+            "live_window_state 仅来自该角色当前客户端观测。未知当前倒计时不得清除预约或推断开放。"
         ),
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "roles": [schedule.as_json() for schedule in schedules.values()],
@@ -276,5 +339,88 @@ def record_reservation(
     schedule.role = role
     if alliance is not None:
         schedule.alliance = alliance
+    schedules[key] = schedule
+    return schedule
+
+
+def record_live_countdown(
+    schedules: dict[str, RoleSchedule],
+    *,
+    role_id: str,
+    event_id: str,
+    seconds_to_start: int,
+    source: str,
+    role: str = "AUTO",
+    alliance: str | None = None,
+    now: datetime | None = None,
+) -> RoleSchedule:
+    """Turn a positive client countdown into a role-scoped absolute reservation.
+
+    The absolute time is derived only from a live countdown and its observation timestamp.  This
+    is not a recurring-calendar prediction; a later client observation replaces or clears it.
+    """
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    start = moment + timedelta(seconds=max(0, int(seconds_to_start)))
+    schedule = record_reservation(
+        schedules,
+        role_id=role_id,
+        event_id=event_id,
+        reserved_start=start.isoformat(),
+        source=source,
+        role=role,
+        alliance=alliance,
+        now=moment,
+    )
+    schedule.live_window_state = (
+        LiveWindowState.SCHEDULED_NOT_OPEN.value if int(seconds_to_start) > 0
+        else LiveWindowState.OPEN.value
+    )
+    schedule.live_window_observed_at = moment.isoformat()
+    schedule.live_window_source = source
+    schedule.time_zone = _time_zone_label(moment)
+    return schedule
+
+
+def _time_zone_label(moment: datetime) -> str:
+    """Record the observed offset without inventing an IANA zone from an offset alone."""
+    offset = moment.utcoffset()
+    if offset is None:
+        return "UTC"
+    seconds = int(offset.total_seconds())
+    sign = "+" if seconds >= 0 else "-"
+    seconds = abs(seconds)
+    return f"UTC{sign}{seconds // 3600:02d}:{(seconds % 3600) // 60:02d}"
+
+
+def record_live_window_observation(
+    schedules: dict[str, RoleSchedule],
+    *,
+    role_id: str,
+    event_id: str,
+    state: LiveWindowState | str,
+    source: str,
+    role: str = "AUTO",
+    alliance: str | None = None,
+    now: datetime | None = None,
+) -> RoleSchedule:
+    """Update current client evidence without changing a trusted reservation clock."""
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    state_value = state.value if isinstance(state, LiveWindowState) else str(state).upper()
+    if state_value not in {item.value for item in LiveWindowState}:
+        state_value = LiveWindowState.UNKNOWN.value
+    key = f"{role_id}|{event_id}"
+    schedule = schedules.get(key) or RoleSchedule(role_id=role_id, event_id=event_id)
+    schedule.live_window_state = state_value
+    schedule.live_window_observed_at = moment.isoformat()
+    schedule.live_window_source = source
+    schedule.role = role
+    if alliance is not None:
+        schedule.alliance = alliance
+    if schedule.time_zone is None:
+        schedule.time_zone = _time_zone_label(moment)
     schedules[key] = schedule
     return schedule

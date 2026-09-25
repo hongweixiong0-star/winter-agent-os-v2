@@ -1,14 +1,59 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "entity_class": "TIMED_EVENT_READINESS",
   "purpose": "限时活动提前准备台账。活动未开放时完成可完成的准备；开放后直接执行；结束后保存新知识。",
   "canonical_registry": "knowledge/events/event_registry.json",
   "time_rule": {
     "start": null,
     "end": null,
+    "reservation_scope": "PER_ROLE",
+    "timezone_policy": "保存观测时间戳中的明确 UTC offset；只有来源明确给出 IANA 时区时才记录命名时区，不从电脑时区推断游戏时区。",
+    "live_window_state": "UNKNOWN",
+    "live_window_source": "CURRENT_ROLE_CLIENT_OBSERVATION",
     "policy": "本项目从未实测过任何活动的 start/end 分钟。start/end 保持 null 直到客户端真的读到；用 next_open_condition 记录游戏自己打印的冷却/倒计时/阶段。时间不可靠时保留 UNKNOWN，不编造活动时间。"
   },
-  "last_reviewed": "2026-09-24",
+  "last_reviewed": "2026-09-25",
+  "latest_offline_ocr_replay": {
+    "mode": "OFFLINE_SCREENSHOT_REPLAY",
+    "date": "2026-09-25",
+    "results": [
+      {
+        "event_id": "STATE_VS_STATE",
+        "image": "dataset/raw/event_calibration/regular_event.png",
+        "page": "EVENT",
+        "remaining_seconds": 43409,
+        "seconds_to_start": null,
+        "interpretation": "击败野兽阶段剩余时间；不是下一次活动开场时间"
+      },
+      {
+        "event_id": "ARMAMENT_COMPETITION",
+        "image": "dataset/raw/event_minimum_guarantee/event_entry.png",
+        "page": "EVENT",
+        "remaining_seconds": 2320,
+        "seconds_to_start": null,
+        "active_heading": "军备竞演",
+        "navigation_tab_also_visible": "联盟总动员",
+        "interpretation": "按正文标题识别为军备竞赛；00:38:40 是当前阶段剩余时间，不是距开始读数"
+      },
+      {
+        "event_id": "BEAR_HUNT",
+        "image": "dataset/raw/bear_live_20260909/special_buildings.png",
+        "page": "ALLIANCE",
+        "seconds_to_start": null,
+        "interpretation": "历史帧没有明确距开始倒计时，不能创建时间预约"
+      }
+    ]
+  },
+  "production_path_audit": {
+    "ranker": "winter_agent_v2/runtime.py::LiveRuntime.run calls GoalLibrary.rank for production goal selection",
+    "clock_priority": "LiveRuntime passes per-role event readiness bonuses into GoalLibrary.rank only for a live actionable goal with a matching event_id, this runtime's role_id, and an existing RuleBrain route; PARTICIPATE_BEAR still lacks that route and is not promoted as executable",
+    "current_result": "Production rank integration is present in source. No learning/timed_event_schedule.json exists, so it has no live reservation to act on; no activity window or real-world promotion is claimed",
+    "generic_event_fallback": "A live, identified minimum-guarantee event on Page.EVENT with no dedicated skill is now ranked onto route EVENT, which reuses TRY_ORDINARY_CONTROL with its existing current-frame target screening and two-attempt run bound; this does not prove scoring progress or reward claims",
+    "pre_open_gate": "A positive LIVE_CLIENT seconds_to_start keeps EVENT_MINIMUM_GUARANTEE at SCHEDULED_NOT_OPEN and suppresses TRY_ORDINARY_CONTROL, including for a newly observed event id",
+    "reservation_and_window_state": "预约时钟(reserved_start)与实时窗口(live_window_state)分开；正向客户端距开始倒计时可更新预约；当前画面无可读倒计时只将本角色 live_window_state 更新为 UNKNOWN，不删除其他可信预约，也不推断活动已开放。到点唤醒后仍需当前客户端窗口证据才可派发活动动作。",
+    "offline_test_evidence": "247 passed and 24 subtests passed across the focused event, runtime handoff, GoalLibrary, ranking, page-exit, and control-panel regression set; this is offline evidence, not live activity execution",
+    "control_panel_reload": "learning/CONTROL_PLANE_RELOAD_REQUIRED.json requests a safe reload; AUTO was active during this audit, so no reload was attempted"
+  },
   "events": [
     {
       "event_id": "BEAR_HUNT",
@@ -58,13 +103,13 @@
         "发起与加入流程准备": true,
         "外部UI实际导入": false,
         "MAA可读取相关模板": "YES — 21 个巨熊模板已进 template_manifest，离线回放全部解析成功",
-        "时间独立唤醒": "WIRED — event_schedule + Scheduler.readiness 已接线并有 29 项测试；但 reserved_start 仍为 null（从未读到客户端预约），故实际相位恒为 IDLE",
-        "普通AUTO安全让位": "WIRED — T5/T1/OPEN 时 Scheduler 对 PARTICIPATE_BEAR 的技能加 2000/4000 分；未在真实窗口验证"
+        "时间独立唤醒": "PARTIAL — event_schedule + control-panel boundary delay exist in source; production OCR records only an explicit client 距开始 countdown. No live reservation exists, and the running panel still needs safe reload.",
+        "普通AUTO安全让位": "PARTIAL_SOURCE_WIRED — LiveRuntime supplies the active role's matching live-event readiness bonus only when that live goal has a RuleBrain route. Generic EVENT_MINIMUM_GUARANTEE is covered; PARTICIPATE_BEAR has no route, no timed reservation exists, and no live-window trigger is verified"
       },
       "readiness_evidence": {
         "集结列表识别准备": "winter_agent_v2/rally.py::read_rally_list + tests/test_rally_list_reader.py（10 项，四张真机帧）；每行的加入按钮落在该行自己的带内，选择按剩余时间而非行号",
         "MAA可读取相关模板": "tools/register_bear_rally_templates.py（14）+ tools/register_bear_formation_templates.py（7）；tools/verify_bear_templates_replay.py 与 tools/verify_bear_formation_templates.py",
-        "时间独立唤醒": "winter_agent_v2/event_schedule.py + winter_agent_v2/scheduler.py::Scheduler.readiness；tests/test_event_readiness_wake.py（29 项）；tools/probe_readiness_phase.py 逐级校验",
+        "时间独立唤醒": "winter_agent_v2/event_schedule.py + tools/control_panel.py boundary-delay source; tests/test_event_readiness_wake.py covers boundary timing and the LiveRuntime -> GoalLibrary.rank role-scoped path",
         "发起与加入流程准备": "JOIN_RALLY/START_RALLY 已在 VERIFIED_ATOMIC（98）且动作为 TAP_SEMANTIC/BTN_JOIN_ROW|BTN_START_RALLY；tests/test_bear_rally_dispatch.py（12 项）"
       },
       "still_needs_live_verification": [
@@ -72,7 +117,7 @@
         "车头发起成功 —— 没有任何真机帧",
         "实际攻击与战斗结果 —— PENDING_BATTLE_REPORT",
         "集结列表滚动 —— 容器已可从帧推导，但滚动手势未在真机执行过",
-        "T5/T1 让位 —— 机制已接线，从未在真实窗口触发"
+        "T5/T1 生产排序接线 —— 离线测试通过，尚无有效角色预约和真实活动窗口，未取得真机触发证据"
       ],
       "source": [
         "LIVE_CLIENT",
@@ -111,7 +156,10 @@
         "LIVE_CLIENT"
       ],
       "confidence": 0.5,
-      "status": "DISCOVERED"
+      "production_registration": "REGISTERED_SCHEDULED_ARMAMENT_COMPETITION",
+      "generic_flow": "registered EVENT_MINIMUM_GUARANTEE record plus current-page bounded UI planner; event-specific skill selection and verifier-bound reward claims remain unwired, and scoring needs fresh rules/costs/policy checks",
+      "time_wake": "NOT_ACTIVE — no reliable next-open countdown was recorded; start/end remain null",
+      "status": "REGISTERED_AWAITING_LIVE_WINDOW"
     },
     {
       "event_id": "KINGDOM_OF_POWER",
@@ -142,7 +190,70 @@
         "LIVE_CLIENT"
       ],
       "confidence": 0.5,
-      "status": "DISCOVERED"
+      "production_registration": "REGISTERED_SCHEDULED_STATE_VS_STATE",
+      "generic_flow": "registered EVENT_MINIMUM_GUARANTEE record plus current-page bounded UI planner; event-specific skill selection and verifier-bound reward claims remain unwired, and the page must identify the current occurrence",
+      "time_wake": "NOT_ACTIVE — the historical timer was a sub-stage countdown, not a next-open schedule; start/end remain null",
+      "status": "REGISTERED_AWAITING_LIVE_WINDOW"
+    },
+    {
+      "event_id": "ALLIANCE_MOBILIZATION",
+      "name": "联盟总动员",
+      "registration_state": "REGISTERED_DISCOVERED_CANDIDATE",
+      "current_occurrence_state": "UNKNOWN",
+      "applicable_roles": "UNKNOWN — active role must be read from the client",
+      "start": null,
+      "end": null,
+      "cadence": "UNKNOWN",
+      "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
+      "generic_flow": "registered for future live identity/rules/progress reading; event-specific actions remain unwired",
+      "blocker": "only a navigation tab is seen in the Armament screenshot; the active client page, timer, eligibility, task-state verifier, and safe event-specific flow remain unverified",
+      "evidence": ["knowledge/game/alliance.json", "knowledge/game/workflow_priors.json", "dataset/raw/event_minimum_guarantee/event_entry.png"],
+      "status": "REGISTERED_AWAITING_LIVE_WINDOW"
+    },
+    {
+      "event_id": "OFFICER_PROJECT",
+      "name": "Officer Project",
+      "registration_state": "REGISTERED_DISCOVERED_CANDIDATE",
+      "current_occurrence_state": "UNKNOWN",
+      "applicable_roles": "UNKNOWN — active role must be read from the client",
+      "start": null,
+      "end": null,
+      "cadence": "UNKNOWN",
+      "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
+      "generic_flow": "registered rotating-event discovery prior; no action is enabled before localized live identity/rules/cost are read",
+      "blocker": "no localized client capture, scoring rules, safe action mapping, or verifier is recorded",
+      "evidence": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+      "status": "REGISTERED_AWAITING_LIVE_WINDOW"
+    },
+    {
+      "event_id": "DEFEAT_NEARBY_BEASTS",
+      "name": "Defeat Nearby Beasts",
+      "registration_state": "REGISTERED_DISCOVERED_CANDIDATE",
+      "current_occurrence_state": "UNKNOWN",
+      "applicable_roles": "UNKNOWN — active role must be read from the client",
+      "start": null,
+      "end": null,
+      "cadence": "UNKNOWN",
+      "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
+      "generic_flow": "registered rotating-event discovery prior; no action is enabled before localized live identity/rules/cost are read",
+      "blocker": "no localized client capture, scoring rules, safe action mapping, or verifier is recorded",
+      "evidence": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+      "status": "REGISTERED_AWAITING_LIVE_WINDOW"
+    },
+    {
+      "event_id": "BROTHERS_IN_ARMS",
+      "name": "Brothers in Arms",
+      "registration_state": "REGISTERED_DISCOVERED_CANDIDATE",
+      "current_occurrence_state": "UNKNOWN",
+      "applicable_roles": "UNKNOWN — active role must be read from the client",
+      "start": null,
+      "end": null,
+      "cadence": "UNKNOWN",
+      "time_wake": "NOT_ACTIVE — no live countdown or reliable schedule is recorded",
+      "generic_flow": "registered rotating-event discovery prior; no action is enabled before localized live identity/rules/cost are read",
+      "blocker": "no localized client capture, scoring rules, safe action mapping, or verifier is recorded",
+      "evidence": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+      "status": "REGISTERED_AWAITING_LIVE_WINDOW"
     }
   ],
   "preparation_timeline": {

@@ -139,6 +139,33 @@ def test_soonest_is_none_when_nobody_has_a_reservation():
     assert es.soonest({}, NOW) is None
 
 
+@pytest.mark.parametrize("minutes,expected_seconds", [
+    (60, 30 * 60),       # T-30
+    (30, 15 * 60),       # T-15
+    (20, 5 * 60),        # T-15 boundary is already behind us
+    (15, 10 * 60),       # T-5
+    (7, 2 * 60),          # T-5 boundary is already behind us
+    (5, 4 * 60),          # T-1
+    (2, 60),              # T-1 boundary is already behind us
+    (0.5, 30),            # OPEN
+])
+def test_auto_wakes_at_the_next_readiness_boundary(minutes, expected_seconds):
+    schedule = _schedule(minutes)
+    assert es.seconds_until_next_transition({"role|BEAR_HUNT": schedule}, NOW) == expected_seconds
+
+
+def test_event_wake_shortens_but_never_extends_ordinary_polling():
+    schedule = _schedule(20)
+    assert es.bounded_poll_delay_seconds(600, {"role|BEAR_HUNT": schedule}, NOW) == 300
+    assert es.bounded_poll_delay_seconds(120, {"role|BEAR_HUNT": schedule}, NOW) == 120
+
+
+def test_no_or_already_open_reservation_keeps_the_ordinary_poll():
+    assert es.bounded_poll_delay_seconds(600, {}, NOW) == 600
+    assert es.seconds_until_next_transition({"role|BEAR_HUNT": _schedule(None)}, NOW) is None
+    assert es.seconds_until_next_transition({"role|BEAR_HUNT": _schedule(-2)}, NOW) is None
+
+
 # ----------------------------------------------------------------------- persistence
 
 
@@ -173,6 +200,19 @@ def test_clearing_a_reservation_is_first_class(tmp_path):
     es.save(schedules, path)
     assert es.load(path)["r|BEAR_HUNT"].reserved_start is None
     assert es.load(path)["r|BEAR_HUNT"].phase_at(NOW) is es.ReadinessPhase.IDLE
+
+
+def test_live_countdown_becomes_a_role_scoped_reservation():
+    schedules: dict[str, es.RoleSchedule] = {}
+    row = es.record_live_countdown(
+        schedules, role_id="roleB", event_id="BEAR_HUNT", seconds_to_start=90,
+        source="LIVE_CLIENT_COUNTDOWN", role="JOINER", now=NOW,
+    )
+    assert row.role_id == "roleB"
+    assert row.role == "JOINER"
+    assert row.source == "LIVE_CLIENT_COUNTDOWN"
+    assert row.start_datetime() == NOW + timedelta(seconds=90)
+    assert row.phase_at(NOW) is es.ReadinessPhase.T5
 
 
 # ------------------------------------------------------------ the Scheduler integration
@@ -231,3 +271,76 @@ def test_the_scheduler_reads_the_bear_skills_from_the_goal_library():
     # failure -- what must hold is that whatever it offers comes from the goal, not from here.
     assert isinstance(skills, set)
     assert all(isinstance(name, str) for name in skills)
+
+
+def test_live_goal_ranking_consumes_only_the_active_roles_reservation(monkeypatch):
+    """The production runtime ranks via GoalLibrary, so the clock must reach that seam.
+
+    A reservation for another role must not promote this role's event, and a matching
+    reservation may promote only a live, actionable event goal.
+    """
+    from winter_agent_v2.goal_library import GoalLibrary, GoalState, GoalStatus
+    from winter_agent_v2.runtime import LiveRuntime
+
+    goal = GoalState(
+        "EVENT_MINIMUM_GUARANTEE", GoalStatus.READY, reward_value=1000,
+        available_skills=("TRY_ORDINARY_CONTROL",), evidence={"event_id": "ARMAMENT_COMPETITION"},
+    )
+    ordinary = GoalState(
+        "CLAIM_FREE_MAIL", GoalStatus.READY, reward_value=250,
+        available_skills=("MAIL_CLAIM_REWARDS",),
+    )
+    runtime = object.__new__(LiveRuntime)
+    runtime.role_id = "roleA"
+    monkeypatch.setattr(es, "load", lambda: {
+        "roleB|ARMAMENT_COMPETITION": _schedule(3, role_id="roleB", event="ARMAMENT_COMPETITION")
+    })
+
+    other_role = runtime._event_readiness_for_goals((goal, ordinary), now=NOW)
+    assert other_role == {}
+
+    monkeypatch.setattr(es, "load", lambda: {
+        "roleA|ARMAMENT_COMPETITION": _schedule(3, role_id="roleA", event="ARMAMENT_COMPETITION")
+    })
+    matching = runtime._event_readiness_for_goals((goal, ordinary), now=NOW)
+    assert matching == {"EVENT_MINIMUM_GUARANTEE": es.PHASE_PRIORITY[es.ReadinessPhase.T5]}
+    ranked = GoalLibrary().rank((goal, ordinary), event_readiness=matching, now=NOW)
+    assert ranked[0][0].goal_id == "EVENT_MINIMUM_GUARANTEE"
+    assert ranked[0][1].as_row()["event_readiness"] == 2000.0
+
+
+def test_readiness_does_not_make_a_waiting_or_skillless_goal_runnable(monkeypatch):
+    from winter_agent_v2.goal_library import GoalState, GoalStatus
+    from winter_agent_v2.runtime import LiveRuntime
+
+    runtime = object.__new__(LiveRuntime)
+    runtime.role_id = "roleA"
+    monkeypatch.setattr(es, "load", lambda: {"roleA|BEAR_HUNT": _schedule(3)})
+    waiting = GoalState(
+        "SCHEDULED_BEAR_HUNT", GoalStatus.SCHEDULED_NOT_OPEN,
+        available_skills=(), evidence={"event_id": "BEAR_HUNT"},
+    )
+    assert runtime._event_readiness_for_goals((waiting,), now=NOW) == {}
+
+
+def test_past_reservation_wakes_but_does_not_prove_live_window_open(monkeypatch):
+    from winter_agent_v2.goal_library import GoalState, GoalStatus
+    from winter_agent_v2.runtime import LiveRuntime
+
+    runtime = object.__new__(LiveRuntime)
+    runtime.role_id = "roleA"
+    goal = GoalState(
+        "EVENT_MINIMUM_GUARANTEE", GoalStatus.READY, reward_value=100,
+        available_skills=("TRY_ORDINARY_CONTROL",), evidence={"event_id": "ARMAMENT_COMPETITION"},
+    )
+    unverified = _schedule(-1, role_id="roleA", event="ARMAMENT_COMPETITION")
+    monkeypatch.setattr(es, "load", lambda: {"roleA|ARMAMENT_COMPETITION": unverified})
+    assert runtime._event_readiness_for_goals((goal,), now=NOW) == {}
+
+    opened = _schedule(-1, role_id="roleA", event="ARMAMENT_COMPETITION")
+    opened.live_window_state = es.LiveWindowState.OPEN.value
+    opened.live_window_observed_at = NOW.isoformat()
+    monkeypatch.setattr(es, "load", lambda: {"roleA|ARMAMENT_COMPETITION": opened})
+    assert runtime._event_readiness_for_goals((goal,), now=NOW) == {
+        "EVENT_MINIMUM_GUARANTEE": es.PHASE_PRIORITY[es.ReadinessPhase.OPEN]
+    }

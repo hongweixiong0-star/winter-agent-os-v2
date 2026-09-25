@@ -98,15 +98,17 @@
   {
    "event_id": "STATE_VS_STATE",
    "name": "最强王国",
+   "aliases": ["最强王国", "KINGDOM_OF_POWER", "KINGDOM_OF_POWER_CURRENT", "State of Power"],
    "start": null,
    "end": null,
    "type": "CROSS_STATE",
    "entry": "EVENT",
-   "tasks": [],
+   "tasks": ["EVENT_MINIMUM_GUARANTEE"],
+   "unwired_steps": ["specific EVENT_MINIMUM_GUARANTEE skill selection and verifier-bound reward-tier claim; use only live UI planner fallback until connected"],
    "rewards": "unknown",
    "priority": "dynamic",
    "strategy": "knowledge/strategy/event_priority.json",
-   "gate": "DISCOVERED",
+   "gate": "VERIFIED",
    "applies_to_roles": {
     "kind": "BOUND_ROLE",
     "measured_roles": [
@@ -152,6 +154,160 @@
     "reward_claimed": false,
     "evidence": "learning/event_goal_state.json"
    }
+  },
+  {
+   "event_id": "ARMAMENT_COMPETITION",
+   "name": "军备竞赛",
+   "aliases": ["军备竞赛", "军备竞演", "ARMAMENT_COMPETITION_CURRENT"],
+   "start": null,
+   "end": null,
+   "type": "PERIODIC_SCORING_EVENT",
+   "entry": "HOME/常规活动 -> EVENT",
+   "tasks": ["EVENT_MINIMUM_GUARANTEE"],
+   "unwired_steps": ["event-specific scoring skill selection and verifier-bound reward-tier claim; require fresh client rules and current policy before implementation"],
+   "rewards": "live_page_claim_state_required",
+   "priority": "dynamic",
+   "strategy": "knowledge/strategy/event_priority.json",
+   "gate": "VERIFIED",
+   "applies_to_roles": {
+    "kind": "OBSERVED_ROLE_UNSCOPED",
+    "note": "historical live capture does not identify a reusable role scope; re-read the active role before acting",
+    "measured_roles": []
+   },
+   "cadence": "UNKNOWN",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT",
+    "observed_at": "2026-09-05T23:52:00+08:00",
+    "state_at_observation": "MINIMUM_GUARANTEE_COMPLETE",
+    "note": "one historical occurrence is verified; its stage timer and next-open cadence were not recorded",
+    "evidence": "knowledge/events/armament_competition_live_2026-09-05.json"
+   },
+   "participation_conditions": [
+    "the current client page must identify this event and its scoring stage",
+    "re-read points, eligible scoring actions, costs, role and remaining event time before planning",
+    "any resource or item spend must pass the current resource policy and cumulative budget"
+   ],
+   "knowledge": ["knowledge/events/armament_competition_live_2026-09-05.json"],
+   "verified_path": {
+    "entry": ["HOME", "常规活动", "EVENT"],
+    "minimum_guarantee": "historical live episode verified the selected action and points increase",
+    "evidence_root": "dataset/raw/event_minimum_guarantee"
+   },
+   "prepare": [
+    "pre-register the generic live event reader and minimum-guarantee goal",
+    "do not replay the 2026-09-05 resource plan; choose only from a fresh client reading"
+   ],
+   "occurrence": {
+    "state": "EXPIRED",
+    "note": "the observed 2026-09-05 occurrence is historical; current occurrence state is unknown",
+    "reward_claimed": true,
+    "evidence": "knowledge/events/armament_competition_live_2026-09-05.json"
+   }
+  },
+  {
+   "event_id": "ALLIANCE_MOBILIZATION",
+   "name": "联盟总动员",
+   "aliases": ["联盟总动员", "ALLIANCE_MOBILIZATION"],
+   "start": null,
+   "end": null,
+   "type": "ALLIANCE_EVENT",
+   "entry": "ALLIANCE/EVENT",
+   "tasks": [],
+   "unwired_steps": ["production event identity, live timer, eligibility, task-state verifier, and a safe event-specific flow are not connected"],
+   "rewards": "unknown",
+   "priority": "dynamic",
+   "gate": "DISCOVERED",
+   "applies_to_roles": {"kind": "UNKNOWN", "note": "must be observed on the active role"},
+   "cadence": "UNKNOWN",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT_REQUIRED",
+    "note": "no current client timer or occurrence has been recorded; read the event identity and timer before scheduling",
+    "evidence": ["knowledge/game/alliance.json", "dataset/raw/event_minimum_guarantee/event_entry.png"]
+   },
+   "observed_ui_labels": [{"text": "联盟总动员", "role": "navigation_tab_only", "evidence": "dataset/raw/event_minimum_guarantee/event_entry.png"}],
+   "participation_conditions": ["the current client must identify the event and its task state", "role eligibility and any costs must be read from the client"],
+   "knowledge": ["knowledge/game/alliance.json", "knowledge/game/workflow_priors.json"],
+   "generic_flow": "EVENT_DISCOVER -> READ_RULES -> READ_PROGRESS -> MAP_SCORE_ACTION_TO_EXISTING_SKILL -> EXECUTE -> VERIFY_POINTS -> CLAIM",
+   "prepare": ["keep the candidate registered without guessed times", "on a live encounter, capture the active role, timer, task state, costs, and result before enabling actions"],
+   "occurrence": {"state": "UNKNOWN", "reward_claimed": null, "evidence": "knowledge/game/alliance.json"}
+  },
+  {
+   "event_id": "OFFICER_PROJECT",
+   "name": "Officer Project",
+   "aliases": ["Officer Project", "OFFICER_PROJECT"],
+   "start": null,
+   "end": null,
+   "type": "ROTATING_GROWTH_EVENT",
+   "entry": "UNKNOWN",
+   "tasks": [],
+   "unwired_steps": ["localized client identity, current window, scoring rules, safe action mapping, and verifier are not observed"],
+   "rewards": "unknown",
+   "priority": "dynamic",
+   "gate": "DISCOVERED",
+   "applies_to_roles": {"kind": "UNKNOWN", "note": "must be observed on the active role"},
+   "cadence": "UNKNOWN",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT_REQUIRED",
+    "note": "catalogued as a rotating event family; no current client timer or occurrence has been recorded",
+    "evidence": "knowledge/game/capability_catalog.json"
+   },
+   "participation_conditions": ["require exact current client identity, timer, eligibility, progress, and cost before action"],
+   "knowledge": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+   "generic_flow": "EVENT_DISCOVER -> READ_RULES -> READ_PROGRESS -> MAP_SCORE_ACTION_TO_EXISTING_SKILL -> EXECUTE -> VERIFY_POINTS -> CLAIM",
+   "prepare": ["keep the candidate registered without guessed times", "observe the localized title and map actions to existing skills only after live rules and policy checks"],
+   "occurrence": {"state": "UNKNOWN", "reward_claimed": null, "evidence": "knowledge/game/capability_catalog.json"}
+  },
+  {
+   "event_id": "DEFEAT_NEARBY_BEASTS",
+   "name": "Defeat Nearby Beasts",
+   "aliases": ["Defeat Nearby Beasts", "DEFEAT_NEARBY_BEASTS"],
+   "start": null,
+   "end": null,
+   "type": "ROTATING_GROWTH_EVENT",
+   "entry": "UNKNOWN",
+   "tasks": [],
+   "unwired_steps": ["localized client identity, current window, scoring rules, safe action mapping, and verifier are not observed"],
+   "rewards": "unknown",
+   "priority": "dynamic",
+   "gate": "DISCOVERED",
+   "applies_to_roles": {"kind": "UNKNOWN", "note": "must be observed on the active role"},
+   "cadence": "UNKNOWN",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT_REQUIRED",
+    "note": "catalogued as a rotating event family; no current client timer or occurrence has been recorded",
+    "evidence": "knowledge/game/capability_catalog.json"
+   },
+   "participation_conditions": ["require exact current client identity, timer, eligibility, progress, and cost before action"],
+   "knowledge": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+   "generic_flow": "EVENT_DISCOVER -> READ_RULES -> READ_PROGRESS -> MAP_SCORE_ACTION_TO_EXISTING_SKILL -> EXECUTE -> VERIFY_POINTS -> CLAIM",
+   "prepare": ["keep the candidate registered without guessed times", "observe the localized title and map actions to existing skills only after live rules and policy checks"],
+   "occurrence": {"state": "UNKNOWN", "reward_claimed": null, "evidence": "knowledge/game/capability_catalog.json"}
+  },
+  {
+   "event_id": "BROTHERS_IN_ARMS",
+   "name": "Brothers in Arms",
+   "aliases": ["Brothers in Arms", "BROTHERS_IN_ARMS"],
+   "start": null,
+   "end": null,
+   "type": "ROTATING_GROWTH_EVENT",
+   "entry": "UNKNOWN",
+   "tasks": [],
+   "unwired_steps": ["localized client identity, current window, scoring rules, safe action mapping, and verifier are not observed"],
+   "rewards": "unknown",
+   "priority": "dynamic",
+   "gate": "DISCOVERED",
+   "applies_to_roles": {"kind": "UNKNOWN", "note": "must be observed on the active role"},
+   "cadence": "UNKNOWN",
+   "next_open_condition": {
+    "source": "LIVE_CLIENT_REQUIRED",
+    "note": "catalogued as a rotating event family; no current client timer or occurrence has been recorded",
+    "evidence": "knowledge/game/capability_catalog.json"
+   },
+   "participation_conditions": ["require exact current client identity, timer, eligibility, progress, and cost before action"],
+   "knowledge": ["knowledge/game/capability_catalog.json", "knowledge/game/workflow_priors.json"],
+   "generic_flow": "EVENT_DISCOVER -> READ_RULES -> READ_PROGRESS -> MAP_SCORE_ACTION_TO_EXISTING_SKILL -> EXECUTE -> VERIFY_POINTS -> CLAIM",
+   "prepare": ["keep the candidate registered without guessed times", "observe the localized title and map actions to existing skills only after live rules and policy checks"],
+   "occurrence": {"state": "UNKNOWN", "reward_claimed": null, "evidence": "knowledge/game/capability_catalog.json"}
   }
  ]
 }

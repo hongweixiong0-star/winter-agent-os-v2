@@ -24,6 +24,7 @@ if str(ROOT) not in sys.path:
 
 from winter_agent_v2 import runtime_env
 from winter_agent_v2 import winproc
+from winter_agent_v2 import event_schedule
 from winter_agent_v2.device import ADBDevice
 from winter_agent_v2.escalation_queue import (
     AUTO_ESCALATION_CONDITIONS,
@@ -5385,7 +5386,16 @@ class ControlPanel:
             full_queue = summary["reason"] in {"no_idle_march", "reserved_march_for_stamina"}
             immediate = no_progress_stall or spent_its_budget
             delay_ms = 0 if immediate else (600000 if full_queue else 30000)
+            if delay_ms > 0:
+                try:
+                    delay_ms = int(event_schedule.bounded_poll_delay_seconds(
+                        delay_ms / 1000.0, event_schedule.load()
+                    ) * 1000)
+                except Exception:  # noqa: BLE001 -- an unreadable event clock keeps ordinary polling
+                    pass
             delay_text = "立即" if immediate else ("10 分钟" if full_queue else "30 秒")
+            if not immediate and delay_ms < (600000 if full_queue else 30000):
+                delay_text = f"活动节点前 {max(1, delay_ms // 1000)} 秒"
             self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
