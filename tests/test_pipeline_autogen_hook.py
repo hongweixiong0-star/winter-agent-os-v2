@@ -163,3 +163,44 @@ def test_disabled_hook_never_generates(tmp_path, routing):
 
     assert harness._wire_calls == []
     assert harness.recently_autogen == []
+
+
+def test_v2_calls_the_installed_pipeline_generator_without_second_device_or_file_write():
+    """The real Skill CLI emits the node while V2 retains leased capture and registry writes."""
+    from winter_agent_v2.pipeline_autogen import PipelineAutoGen
+
+    generator = PipelineAutoGen(project_root=ROOT)
+    generated, roi = generator._tool_node_config("训练", [100, 200, 30, 20], 0.99, 20)
+
+    assert generated == {
+        "recognition": "OCR",
+        "expected": ["训练"],
+        "roi": [80, 180, 70, 60],
+        "action": "Click",
+        "post_delay": 500,
+        "timeout": 2000,
+    }
+    assert roi == generated["roi"]
+
+
+def test_autogen_keeps_the_generated_pipeline_json_and_wires_the_same_recognition_node(tmp_path):
+    from winter_agent_v2.pipeline_autogen import GeneratedNode, PipelineAutoGen
+
+    routing_path = tmp_path / "backend_routing.json"
+    generator = PipelineAutoGen(project_root=tmp_path, routing_path=routing_path)
+    node = GeneratedNode(
+        semantic="BTN_SAMPLE",
+        skill_id="OPEN_SAMPLE",
+        kind="OCR",
+        routing_node={"kind": "OCR", "expected": ["训练"], "roi": [80, 180, 70, 60]},
+        pipeline_node={"recognition": "OCR", "expected": ["训练"], "roi": [80, 180, 70, 60],
+                       "action": "Click", "post_delay": 500, "timeout": 2000},
+    )
+
+    ok, verdict = generator.wire(node)
+
+    assert ok and verdict == "CREATED"
+    artifact = tmp_path / node.evidence["pipeline_node_path"]
+    assert json.loads(artifact.read_text(encoding="utf-8")) == node.pipeline_node
+    written = RoutingTable.load(routing_path)
+    assert written.recognition_node("OPEN_SAMPLE", "BTN_SAMPLE") == node.routing_node

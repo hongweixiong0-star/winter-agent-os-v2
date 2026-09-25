@@ -40,7 +40,12 @@ collision this designs against.
 from __future__ import annotations
 
 import io
+import importlib.util
 import json
+import os
+import re
+import sys
+from contextlib import redirect_stdout
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from hashlib import sha1
@@ -248,13 +253,100 @@ class PipelineAutoGen:
                  project_root: Path = PROJECT_ROOT,
                  routing_path: Path = DEFAULT_ROUTING_PATH,
                  template_dir: Path = DEFAULT_TEMPLATE_DIR,
+                 generator_script_path: Path | None = None,
                  screen: tuple[int, int] = DEFAULT_SCREEN) -> None:
         self.device = device
         self.ocr_service = ocr_service
         self.project_root = Path(project_root)
         self.routing_path = Path(routing_path)
         self.template_dir = Path(template_dir)
+        self.generator_script_path = Path(generator_script_path) if generator_script_path else (
+            self.project_root / ".agents" / "skills" / "maa-pipeline-generate"
+            / "scripts" / "generate_node.py"
+        )
+        self._generator_module: Any = None
         self.screen = screen
+
+    def _tool_node_config(self, text: str, box: Sequence[int], score: float,
+                          expand: int) -> tuple[dict[str, Any], list[int]] | None:
+        """Call the installed Skill's actual CLI flow without a second device client.
+
+        Its command-line entry point owns its own MaaMCP connection, which V2 must not start
+        while AUTO owns the device. V2 injects the box and score obtained from its leased
+        capture, captures the node the CLI would merge, and keeps execution, validation, and
+        registry writes in the existing runtime.
+        """
+        script = self.generator_script_path
+        if not script.is_file():
+            return None
+        if self._generator_module is None:
+            module_name = "winter_agent_v2_installed_maa_pipeline_generate"
+            module_dir = str(script.parent)
+            added = module_dir not in sys.path
+            if added:
+                sys.path.insert(0, module_dir)
+            try:
+                spec = importlib.util.spec_from_file_location(module_name, script)
+                if spec is None or spec.loader is None:
+                    return None
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = module
+                spec.loader.exec_module(module)
+                self._generator_module = module
+            finally:
+                if added:
+                    try:
+                        sys.path.remove(module_dir)
+                    except ValueError:
+                        pass
+        compute_roi = getattr(self._generator_module, "compute_roi", None)
+        cli_main = getattr(self._generator_module, "main", None)
+        if not callable(cli_main):
+            return None
+        captured: dict[str, Any] = {}
+        old_argv = sys.argv
+        originals = {
+            "connect_device": self._generator_module.connect_device,
+            "find_target_box": self._generator_module.find_target_box,
+            "merge_into_pipeline": self._generator_module.merge_into_pipeline,
+            "resolve_pipeline_path": self._generator_module.resolve_pipeline_path,
+        }
+        self._generator_module.connect_device = lambda: "V2_CURRENT_DEVICE_LEASE"
+        self._generator_module.find_target_box = lambda _controller, _text: (list(box), float(score))
+        # The Skill's path helper requires a MaaHub Interface file, while V2 routes nodes
+        # through its own existing registry. Resolve the inert capture path locally; the
+        # actual generator still builds the node and the capture callback prevents a write.
+        self._generator_module.resolve_pipeline_path = lambda path: Path(path)
+
+        def capture_node(_path, _name, node_config, _overwrite):
+            captured.update(node_config)
+            return "V2_RUNTIME_GENERATED_NODE"
+
+        self._generator_module.merge_into_pipeline = capture_node
+        temp_pipeline = self.project_root / "dataset" / "raw" / "autogen" / "runtime_tool_capture.json"
+        sys.argv = [
+            str(self.generator_script_path), text, "V2RuntimeGeneratedNode", str(temp_pipeline),
+            "--expand", str(int(expand)), "--screen-width", str(self.screen[0]),
+            "--screen-height", str(self.screen[1]), "--overwrite",
+        ]
+        try:
+            # Call the installed generator's own CLI workflow with V2-supplied OCR and a
+            # captured write callback. This runs its argument handling, ROI code, node
+            # construction and merge stage, while its MaaMCP device/OCR calls are replaced by
+            # V2's already leased frame. The actual pipeline write remains V2's atomic router
+            # and Skill Registry update in wire().
+            with redirect_stdout(io.StringIO()):
+                cli_main()
+        except Exception:  # noqa: BLE001 - generator errors fall back without stopping AUTO
+            return None
+        finally:
+            sys.argv = old_argv
+            for name, value in originals.items():
+                setattr(self._generator_module, name, value)
+        roi = captured.get("roi")
+        if not isinstance(roi, list) or len(roi) != 4:
+            return None
+        return captured, [int(value) for value in roi]
 
     # ---------------------------------------------------------------- inputs
     def ocr(self) -> Any:
@@ -336,6 +428,10 @@ class PipelineAutoGen:
             return None
         box, score, observed = found
         roi = compute_roi(box, request.expand, self.screen)
+        tool_result = self._tool_node_config(request.cn_text, box, score, request.expand)
+        tool_node = tool_result[0] if tool_result is not None else None
+        if tool_result is not None:
+            roi = tool_result[1]
 
         warnings: list[str] = []
         if score < 0.9:
@@ -344,7 +440,12 @@ class PipelineAutoGen:
         want = request.want
         evidence = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "source": "winter_agent_v2.pipeline_autogen (TOOL_SHAPED OCR node + V2_NATIVE template)",
+            "source": (
+                "installed maa-pipeline-generate CLI + V2 runtime wiring"
+                if tool_node is not None else
+                "winter_agent_v2.pipeline_autogen V2_NATIVE fallback (generator unavailable)"
+            ),
+            "generator_tool": str(self.generator_script_path) if tool_node is not None else "",
             "frame": str(frame),
             "observed_text": observed,
             "observed_box": box,
@@ -357,7 +458,9 @@ class PipelineAutoGen:
             routing = build_routing_ocr_node(request.cn_text, roi)
             return GeneratedNode(
                 semantic=request.semantic, skill_id=request.skill_id, kind="OCR",
-                routing_node=routing, pipeline_node=build_ocr_pipeline_node(request.cn_text, roi),
+                routing_node=routing, pipeline_node=(
+                    tool_node or build_ocr_pipeline_node(request.cn_text, roi)
+                ),
                 observed_text=observed, observed_score=score, expansion=request.expand,
                 frame=Path(frame), evidence=evidence, warnings=warnings,
             )
@@ -370,7 +473,9 @@ class PipelineAutoGen:
             routing = build_routing_ocr_node(request.cn_text, roi)
             return GeneratedNode(
                 semantic=request.semantic, skill_id=request.skill_id, kind="OCR",
-                routing_node=routing, pipeline_node=build_ocr_pipeline_node(request.cn_text, roi),
+                routing_node=routing, pipeline_node=(
+                    tool_node or build_ocr_pipeline_node(request.cn_text, roi)
+                ),
                 observed_text=observed, observed_score=score, expansion=request.expand,
                 frame=Path(frame), evidence=evidence, warnings=warnings,
             )
@@ -454,6 +559,24 @@ class PipelineAutoGen:
             # promotion the evidence does not carry.
             entry["migration_priority"] = "P1"
 
+        # Keep the exact MaaFramework node emitted by the installed Skill as an auditable
+        # candidate artifact. Runtime execution still uses this same node's V2 routing form,
+        # which is what the existing MAA resolver loads; a file's existence alone is never
+        # treated as a successful match or a verified Goal.
+        pipeline_payload = json.dumps(node.pipeline_node, ensure_ascii=False, indent=2) + "\n"
+        digest = sha1(pipeline_payload.encode("utf-8")).hexdigest()[:10]
+        pipeline_dir = self.project_root / "dataset" / "raw" / "autogen" / "pipeline_nodes"
+        safe_semantic = re.sub(r"[^a-zA-Z0-9_.-]+", "_", node.semantic).strip("._") or "node"
+        pipeline_path = pipeline_dir / f"{safe_semantic.lower()}__{digest}.json"
+        try:
+            pipeline_dir.mkdir(parents=True, exist_ok=True)
+            temporary = pipeline_path.with_name(f".{pipeline_path.name}.{os.getpid()}.tmp")
+            temporary.write_text(pipeline_payload, encoding="utf-8")
+            os.replace(temporary, pipeline_path)
+        except OSError as exc:
+            return False, f"PIPELINE_NODE_ARTIFACT_WRITE_FAILED:{type(exc).__name__}:{exc}"
+        node.evidence["pipeline_node_path"] = _relative(pipeline_path, self.project_root)
+        node.evidence["pipeline_node_sha1"] = digest
         evidence = dict(entry.get("evidence", {}) or {})
         evidence.update({k: v for k, v in node.evidence.items()})
         evidence["autogen_node_count"] = len(recognition)
