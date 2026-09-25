@@ -70,7 +70,7 @@ class RoutingTableTests(unittest.TestCase):
     def test_promoted_skills_route_to_maa_with_adb_fallback(self) -> None:
         table = RoutingTable.load()
         promoted = {sid: entry for sid, entry in table.skills.items()
-                    if entry.get("preferred") == MAA}
+                    if entry.get("preferred") == MAA and entry.get("promoted", True)}
         # The operator asked for at least five high-frequency skills.
         self.assertGreaterEqual(len(promoted), 5, sorted(promoted))
         for skill_id, entry in promoted.items():
@@ -79,6 +79,31 @@ class RoutingTableTests(unittest.TestCase):
             # A promoted skill must carry its evidence, so it cannot be promoted
             # by accident or by optimism.
             self.assertTrue(entry.get("evidence"), skill_id)
+
+    def test_autogen_nodes_are_wired_but_never_promoted(self) -> None:
+        """Runtime-derived nodes sit in their own tier with their own invariants.
+
+        ``pipeline_autogen`` writes nodes that are harvest-validated, not
+        corpus-measured, so they carry ``promoted: false`` and must never claim
+        P0 -- the letter that tells the operator this went through the full
+        measurement gate. The flag exists because otherwise "preferred MAA" is
+        the only signal, and a generated node would read as promoted.
+        """
+        table = RoutingTable.load()
+        autogen = {sid: entry for sid, entry in table.skills.items()
+                   if entry.get("preferred") == MAA and entry.get("promoted") is False}
+        for skill_id, entry in autogen.items():
+            self.assertEqual(entry.get("fallback"), ADB, skill_id)
+            self.assertNotEqual(entry.get("migration_priority"), "P0", skill_id)
+            self.assertTrue(entry.get("evidence"), skill_id)
+            # Every autogen entry must say so explicitly -- an unmarked one is
+            # indistinguishable from a promoted node and the tier collapses.
+            evidence = entry.get("evidence") or {}
+            self.assertTrue(
+                any("autogen" in str(k) for k in evidence)
+                or any("autogen" in str(v)[:160] for v in evidence.values() if isinstance(v, str)),
+                skill_id,
+            )
 
     def test_battle_button_node_threshold_is_declared(self) -> None:
         table = RoutingTable.load()

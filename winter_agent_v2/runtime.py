@@ -16,7 +16,7 @@ from . import page_knowledge
 from . import event_schedule
 from . import unknown_advisor
 from .executor import Executor
-from .executor_router import BackendLedger, RoutingTable, build_router
+from .executor_router import DEFAULT_ROUTING_PATH, BackendLedger, RoutingTable, build_router
 from .learning import Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
 from .ocr import (
@@ -1422,6 +1422,93 @@ class LiveRuntime:
         """
         skill = self.registry.get(decision.skill)
         return (skill.action.target or "") if skill is not None else ""
+
+
+    # ------------------------------------------------- runtime pipeline self-generation
+    def _maybe_autogen_node(self, semantic: str, skill_id: str, attempts: int, reason: str) -> None:
+        """Generate and wire a recognition node for a control this run could not find.
+
+        This is the runtime half of ``winter_agent_v2.pipeline_autogen``: the derivation a
+        missing control always waited on a person for. The whole thing is best-effort and
+        must never change what the surrounding step does -- its only effect is that a later
+        step resolving the same semantic may now find something.
+
+        Guarded three ways, each for something that was learned the hard way:
+
+        * once per semantic per run, because deriving twice either repeats the node or
+          overwrites a good crop with a worse one;
+        * only when the failure really is "nothing was located" -- a run blocked for
+          another reason (dry run, device busy) has no frame worth reading and would
+          produce a node from the wrong screen;
+        * only when the semantic has known Chinese text, since the OCR node is built
+          from what the control says, not from guesswork about its appearance.
+
+        The node goes through ``PipelineAutoGen.wire``, which writes via ``RoutingTable``,
+        so ``policy`` / ``device`` / ``not_migrated`` in that file survive -- the mistake
+        that cost an afternoon when the semantic dictionary was rewritten wholesale.
+        """
+        if attempts != 0 or not semantic or not self._autogen_enabled:
+            return
+        if semantic in self._autogen_attempted:
+            return
+        self._autogen_attempted.add(semantic)
+        if "SEMANTIC_TARGET_NOT_VERIFIED" not in str(reason):
+            return
+        if self.routing is not None and self.routing.recognition_node(skill_id, semantic) is not None:
+            # There already is a node for this control, so the failure is drift rather
+            # than absence. Re-deriving here would hide a node that is quietly decaying.
+            return
+
+        text = self._semantic_cn_text(semantic)
+        if not text:
+            return
+
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+            from winter_agent_v2.pipeline_autogen import GenerationRequest, PipelineAutoGen
+
+            stamp = _dt.now(_tz.utc).strftime("%Y%m%d_%H%M%S")
+            frame = Path(self.capture_dir) / "autogen" / f"{stamp}_{semantic}.png"
+            gen = PipelineAutoGen(device=self.adb_device,
+                                  routing_path=Path(self.routing.path or DEFAULT_ROUTING_PATH))
+            captured = gen.capture(frame)
+            if captured is None:
+                return
+            node = gen.generate(GenerationRequest(semantic=semantic, cn_text=text,
+                                                  skill_id=skill_id or semantic))
+            if node is None:
+                # The text was not on the current screen. That is a fact worth keeping,
+                # not an error worth raising: the control may simply be off-page.
+                return
+            node.evidence["trigger"] = f"runtime unresolved after {attempts + 1} attempt(s): {reason}"
+            node.evidence["validation"] = "GENERATED_ONLY"
+            ok, verdict = gen.wire(node, note="runtime-derived from an unresolved control")
+            if ok:
+                self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
+                                              "kind": node.kind, "verdict": verdict,
+                                              "frame": str(captured)})
+        except Exception as exc:  # noqa: BLE001 - a heuristic must not stop a production run
+            # A derivation that fails must never end a real run, but "silently
+            # nothing happened" is its own failure mode: the first version of this
+            # hook swallowed a missing import here and every test had to guess.
+            # The record below is the whole audit trail; the run continues either way.
+            self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
+                                          "kind": "ERROR", "verdict": f"{type(exc).__name__}: {exc}",
+                                          "frame": ""})
+
+    def _semantic_cn_text(self, semantic: str) -> str:
+        """The client's own label for a semantic, or ``""`` when nothing is declared.
+
+        Reuses the module's declared-record loader rather than re-reading the JSON,
+        so this inherits its mtime cache and, more importantly, agrees with what the
+        reading layer already believes the control says. Building a node from a
+        second, privately parsed copy of the dictionary is how the two drift apart.
+        """
+        record = _declared_record(semantic)
+        if record is None:
+            return ""
+        _pages, words, _merged = record
+        return str(words[0]) if words else ""
 
     def _failure_type_from(self, execution: "ExecutionResult | None") -> str:
         """The failure type a step that did not execute gets, with the runtime's refusals named.
@@ -4669,6 +4756,7 @@ class LiveRuntime:
         max_actions: int = 10,
         allowed_skills: set[str] | None = None,
         stop_after_skill: str | None = None,
+        autogen_enabled: bool = True,
     ) -> LiveRun:
         if max_actions < 1:
             raise ValueError("max_actions must be positive")
@@ -4743,6 +4831,13 @@ class LiveRuntime:
         #: before ``adb_executor``); a second handover would buy another identical non-attempt.
         self._unresolved_handed_over: set[str] = set()
         self._printed_remembered: set[str] = set()
+        # Runtime self-generation: one derivation attempt per control per run, and a
+        # record of what was derived so the run report can name it rather than let it
+        # look like pre-existing knowledge. Off entirely when disabled, because a
+        # hands-off run must stay hands-off.
+        self._autogen_enabled: bool = bool(autogen_enabled)
+        self._autogen_attempted: set[str] = set()
+        self.recently_autogen: list[dict[str, str]] = []
         #: Screens whose stored point was refused for belonging elsewhere, so the sentence is
         #: printed once per screen per run rather than once per step.
         self._printed_screen_refusals: set[str] = set()
@@ -5310,6 +5405,12 @@ class LiveRuntime:
                 if unresolved:
                     attempts, _last = self._unresolved_controls.get(unresolved, (0, ""))
                     self._unresolved_controls[unresolved] = (attempts + 1, str(reason))
+                    # Derive the node the missing control needs, instead of waiting for a
+                    # human to hand-write it. Only ever on the first failure: a second
+                    # derivation would either repeat the same node or overwrite a good
+                    # one with a worse crop, and neither is recoverable inside a run.
+                    self._maybe_autogen_node(unresolved, str(tick.decision.skill or ""),
+                                             attempts, reason)
                 # A step that issued no action has not failed the run -- it has failed to find
                 # work for the goal that was picked, and this branch is already exactly that
                 # class (``not tick.execution.executed``).  Ending the cycle here lets one

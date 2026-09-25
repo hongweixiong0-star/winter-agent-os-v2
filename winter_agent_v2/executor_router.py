@@ -139,15 +139,31 @@ class RoutingTable:
     def save(self) -> None:
         if self.path is None:
             return
-        payload = {
+        # Update in place rather than write a fresh document. This table also
+        # carries ``not_migrated`` -- rejections with their reasons, some earned
+        # through live regressions -- and an earlier version of this method built
+        # a brand-new payload containing only the keys it knew, which silently
+        # deleted every one of those records on the first autogen write. Any key
+        # this class does not model must survive a save untouched.
+        existing: dict[str, Any] = {}
+        if self.path.is_file():
+            try:
+                loaded = json.loads(self.path.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    existing = loaded
+            except (OSError, json.JSONDecodeError):
+                existing = {}
+        existing.update({
             "version": 1,
             "policy": {
                 "default_preferred": self.default_preferred,
                 "default_fallback": self.default_fallback,
-                "note": (
-                    "A skill absent from `skills` keeps its historical ADB path. "
-                    "MAA is only promoted per skill after an A/B shows it is not worse."
-                ),
+                # The note is documentation that has been edited in the file itself
+                # (the checked-in one is longer than this default); an update must
+                # not quietly shorten it back.
+                "note": (existing.get("policy") or {}).get("note")
+                or "A skill absent from `skills` keeps its historical ADB path. "
+                   "MAA is only promoted per skill after an A/B shows it is not worse.",
             },
             "device": {
                 "preferred": self.device_preferred,
@@ -155,9 +171,9 @@ class RoutingTable:
                 "evidence": self.device_evidence,
             },
             "skills": self.skills,
-        }
+        })
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        self.path.write_text(json.dumps(existing, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 @dataclass
@@ -266,6 +282,9 @@ class ExecutorRouter:
         self.ledger = ledger or BackendLedger()
         self.adb_resolver = adb_resolver
         self.last_outcome: RecognitionOutcome | None = None
+        #: Set when a node of another recognition kind was asked to fail informatively:
+        #: it distinguishes "the control is absent" from "this node kind is misrouted".
+        self.last_recognition_error: str | None = None
 
     # -------------------------------------------------------------- resolution
     def maa_resolver(self, semantic: str, skill_id: str | None) -> tuple[float, float] | None:
@@ -294,6 +313,55 @@ class ExecutorRouter:
         frame = adapter.frame()
         if frame is None:
             return None
+
+        # A node may recognise text rather than pixels. Dispatched here instead of
+        # inside ``find`` because ``find`` is the template entry point and its
+        # callers rely on that; routing the two apart at the top keeps one node
+        # shape meaning one thing.
+        #
+        # Without this branch a generated OCR node falls into the template path
+        # below, which looks for ``<template_dir>/<semantic>.png``, fails, and
+        # reports SEMANTIC_TARGET_NOT_VERIFIED -- reading as "the control is not
+        # on screen" when the truth is "this node is of the other kind".
+        # Added for winter_agent_v2.pipeline_autogen, whose OCR nodes are shaped
+        # like maa-pipeline-generate's output.
+        from winter_agent_v2.pipeline_autogen import dispatch_hint
+
+        if dispatch_hint(node) == "OCR":
+            expected = list(node.get("expected") or [])
+            roi = tuple(node["roi"]) if node.get("roi") else None
+            results, error = adapter.ocr(
+                frame, expected=expected, roi=roi,
+                threshold=float(node.get("score_threshold", 0.3)),
+            )
+            if error:
+                self.last_outcome = None
+                self.last_recognition_error = f"MAA_OCR:{error}"
+                return None
+            if not results:
+                self.last_outcome = None
+                self.last_recognition_error = "MAA_OCR:NO_TEXT"
+                return None
+            best = max(results, key=lambda r: float(r.get("score", 0.0) or 0.0))
+            box = best.get("box") or ()
+            if len(box) != 4:
+                self.last_outcome = None
+                self.last_recognition_error = "MAA_OCR:BAD_BOX"
+                return None
+            x, y, w, h = (int(v) for v in box)
+            size = adapter.last_frame
+            if size is None or getattr(size, "shape", None) is None:
+                self.last_outcome = None
+                self.last_recognition_error = "MAA_OCR:NO_SIZE"
+                return None
+            height, width = int(size.shape[0]), int(size.shape[1])
+            if width <= 0 or height <= 0:
+                self.last_outcome = None
+                self.last_recognition_error = "MAA_OCR:BAD_SIZE"
+                return None
+            self.last_recognition_error = None
+            return ((x + w / 2.0) / width, (y + h / 2.0) / height)
+
         template_name = str(node.get("template", semantic))
         # A node names its template semantically, but the file is named for its
         # provenance and usually lives outside ``template_dir``.  Registering
