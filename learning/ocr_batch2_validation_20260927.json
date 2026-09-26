@@ -1,0 +1,61 @@
+{
+ "generated_at": "2026-09-27",
+ "nodes": {
+  "PAGE_MAP": {
+   "kind": "OCR (rejected)",
+   "roi": [
+    560,
+    1210,
+    180,
+    90
+   ],
+   "expected": [
+    "野外"
+   ],
+   "verdict": "REJECTED_VALIDATION",
+   "reason": "RapidOCR read the bottom-right view chip in only 3/6 frames (2x 城镇, 1x 野外, 3 empty); wiring it would make MAA authoritative for OPEN_MAP and regress the working legacy path. Reclassify: two-state TEMPLATE (城镇/野外 crops of the same button) is the right kind, deferred until a city-frame crop batch."
+  },
+  "BTN_OPEN_RESOURCE_SEARCH": {
+   "kind": "TEMPLATE",
+   "threshold": 0.78,
+   "positive_frames": {
+    "dataset/evidence/device_l4_session/dispatch_01_start.png": {
+     "hit": true,
+     "score": 0.845,
+     "loc": [
+      9,
+      840
+     ]
+    }
+   },
+   "negative_frames": {
+    "dataset/raw/autogen/20260925_182249_home.png": {
+     "hit": false,
+     "score": 0.341,
+     "loc": [
+      434,
+      160
+     ]
+    },
+    "dataset/raw/control_panel/runtime_auto/20260926_233019_274984/20260926_233019_274984_step_008_after_20260926T153328788098.png": {
+     "hit": false,
+     "score": 0.394,
+     "loc": [
+      433,
+      242
+     ]
+    },
+    "dataset/raw/control_panel/runtime_auto/20260926_203129_111901/20260926_203129_111901_step_015_after_20260926T123730329502.png": {
+     "hit": false,
+     "score": 0.364,
+     "loc": [
+      433,
+      242
+     ]
+    }
+   },
+   "positive_hits": 1,
+   "negative_false_hits": 0
+  }
+ }
+}

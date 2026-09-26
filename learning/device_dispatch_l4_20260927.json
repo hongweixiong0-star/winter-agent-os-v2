@@ -1,0 +1,90 @@
+{
+ "session_started_at": "2026-09-26T17:17:53.662236+00:00",
+ "steps": [
+  {
+   "tag": "01_start",
+   "frame": "dataset\\evidence\\device_l4_session\\dispatch_01_start.png"
+  },
+  {
+   "tag": "03_search_panel_0",
+   "frame": "dataset\\evidence\\device_l4_session\\dispatch_03_search_panel_0.png"
+  },
+  {
+   "tag": "04_after_submit",
+   "frame": "dataset\\evidence\\device_l4_session\\dispatch_04_after_submit.png"
+  },
+  {
+   "tag": "05_formation_before",
+   "frame": "dataset\\evidence\\device_l4_session\\dispatch_05_formation_before.png"
+  },
+  {
+   "tag": "06_after_dispatch",
+   "frame": "dataset\\evidence\\device_l4_session\\dispatch_06_after_dispatch.png"
+  }
+ ],
+ "page_text_head": "09-2701:18:01 175.1万 10,217 3,847,708 -12.5c 统帅4 曲 51 [zoe]亮争者 明月的盛典 常规活动 27（zoe小7的蜗居 饰包 超值活动 02:14:12 [zoe]大型养殖场 鱼锦标赛 首充 19 我的城镇 开 #4298(822,858) 生防 系统消息：其实我不胖加入了我们的联盟， 欢迎 系统消息：其实我不胖退出了联盟 24 探险 英雄 背包",
+ "start_is_home": true,
+ "open_map_resolver": "NONE:None",
+ "wild_chip": [],
+ "map_text_head": "09-2701:18:01 175.1万 10,217 3,847,708 -12.5c 统帅4 曲 51 [zoe]亮争者 明月的盛典 常规活动 27（zoe小7的蜗居 饰包 超值活动 02:14:12 [zoe]大型养殖场 鱼锦标赛 首充 19 我的城镇 开 #4298(822,858) 生防 系统消息：其实我不胖",
+ "search_button_0": {
+  "score": 0.845,
+  "name": "btn_open_resource_search__legacy_wilderness__1.png",
+  "box": [
+   9,
+   840,
+   75,
+   90
+  ]
+ },
+ "search_panel_open": true,
+ "submit_button": {
+  "score": 1.0,
+  "name": "btn_resource_search_submit__live_executor_search_open__2.png",
+  "box": [
+   203,
+   1172,
+   316,
+   86
+  ]
+ },
+ "gather_button": {
+  "score": 1.0,
+  "name": "btn_gather__live_resource_attempt6__1.png",
+  "box": [
+   267,
+   604,
+   187,
+   56
+  ]
+ },
+ "formation": {
+  "is_formation": true,
+  "confirm": "出征",
+  "troop_rows": [
+   "见习盾兵",
+   "见习矛兵",
+   "见习射手"
+  ],
+  "hero_slots": 3
+ },
+ "dispatch_resolver": {
+  "tap": [
+   551,
+   1213
+  ],
+  "in_bottom_band": true
+ },
+ "dispatch_clicked": true,
+ "after_text_head": "09-2701:18:22 175.1万 10,217 3,847,708 -12.5c 统帅4 画 51 17公里 明月的盛典 常规活动 行军 1/4 (812,842) 未驻防 》 超值活动 00:00:49 [zoe]联盟旗帜 增加行军队列 钓鱼锦标赛 首充 玉魄流光礼包 登录好礼 [KGQ]联盟木材场 开 未驻防 [KGQ]联盟旗帜 9 #4298（813,843) 系统消息：其实我不胖加入了我们的联盟，欢迎 系统消息：其实我不胖退出了联盟 24 探险 英雄 背包 商",
+ "formation_after": {
+  "is_formation": false
+ },
+ "march_words": [
+  "行军",
+  "增加行军队列"
+ ],
+ "level": "L4_DISPATCH_TAPPED_PAGE_LEFT",
+ "recalled": false,
+ "finished_at": "2026-09-26T17:18:29.436967+00:00"
+}

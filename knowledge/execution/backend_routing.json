@@ -201,7 +201,21 @@
    "evidence": {
     "measured_at": "2026-09-14T13:15:00Z",
     "source": "docs/EXECUTOR_REALITY_AUDIT.md (historical record: 75 attempts, 55% success)",
-    "note": "Device axis only. Its recognition is V2 semantic state (does the search panel exist), which MAA template matching does not improve on its own. Promoted because it is a high-frequency failure family and 55% success is worth the 36x faster frame and native input even before the recognition axis moves."
+    "note": "Device axis only. Its recognition is V2 semantic state (does the search panel exist), which MAA template matching does not improve on its own. Promoted because it is a high-frequency failure family and 55% success is worth the 36x faster frame and native input even before the recognition axis moves.",
+    "node_20260927": {
+     "source": "template matched 0.845 on the live L4-dispatch session frame (dispatch_01_start.png); the tap it produced opened the real resource-search panel",
+     "promoted_from": "gap queue P1 BTN_OPEN_RESOURCE_SEARCH (467 attempts, generator_ready)"
+    }
+   },
+   "recognition": {
+    "BTN_OPEN_RESOURCE_SEARCH": {
+     "template": "BTN_OPEN_RESOURCE_SEARCH",
+     "threshold": [
+      0.78,
+      0.82
+     ],
+     "source_template": "dataset/candidate/templates/btn_open_resource_search__legacy_wilderness__1.png"
+    }
    }
   },
   "START_GATHER": {
@@ -2030,6 +2044,34 @@
       60,
       35
      ]
+    },
+    "l4_live_proof_20260927": {
+     "level": "L4",
+     "verified_at": "2026-09-26T17:19:38.927849+00:00",
+     "chain": "wild-chip map -> resource search (template btn_open_resource_search 0.845) -> submit (template 1.0) -> 采集 (template btn_gather 1.0) -> formation page -> PRODUCTION resolver BTN_DISPATCH tap (551,1213) in_bottom_band=True -> MAA click",
+     "formation_before": {
+      "is_formation": true,
+      "confirm": "出征",
+      "troop_rows": [
+       "见习盾兵",
+       "见习矛兵",
+       "见习射手"
+      ],
+      "hero_slots": 3
+     },
+     "after": {
+      "page_left_formation": true,
+      "march_indicator": "行军 1/4",
+      "march_target": "(812,842) 17公里",
+      "march_countdown_seen": "00:00:49"
+     },
+     "evidence_frames": [
+      "dataset/evidence/device_l4_session/dispatch_05_formation_before.png",
+      "dataset/evidence/device_l4_session/dispatch_06_after_dispatch.png"
+     ],
+     "session_tool": "tools/device_dispatch_l4.py",
+     "ledger": "learning/device_dispatch_l4_20260927.json",
+     "note": "ordinary resource gather, no stamina; the march was left running productively (1/4 queues); recall before bear T-5 if the queue is needed"
     }
    }
   },
