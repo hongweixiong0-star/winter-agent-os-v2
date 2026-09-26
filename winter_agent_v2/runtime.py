@@ -1475,7 +1475,8 @@ class LiveRuntime:
             if captured is None:
                 return
             node = gen.generate(GenerationRequest(semantic=semantic, cn_text=text,
-                                                  skill_id=skill_id or semantic, want="auto"))
+                                                  skill_id=skill_id or semantic, want="auto"),
+                                frame=captured)
             if node is None:
                 # The text was not on the current screen. That is a fact worth keeping,
                 # not an error worth raising: the control may simply be off-page.

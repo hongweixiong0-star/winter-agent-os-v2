@@ -212,12 +212,14 @@ def test_runtime_autogen_retains_tool_ocr_and_uses_maafriendly_template(tmp_path
     captured.write_bytes(b"png")
     harness = _HookHarness(tmp_path, routing, "联盟科技", _node(kind="OCR"), captured)
     requested = []
+    generated_from = []
     gen = harness._make_gen()
 
     def record_request(request, **kwargs):
         from winter_agent_v2.pipeline_autogen import GeneratedNode
 
         requested.append(request.want)
+        generated_from.append(kwargs.get("frame"))
         return GeneratedNode(
             semantic=request.semantic, skill_id=request.skill_id, kind="OCR",
             routing_node={"kind": "OCR", "expected": [request.cn_text], "roi": [80, 180, 70, 60]},
@@ -231,6 +233,7 @@ def test_runtime_autogen_retains_tool_ocr_and_uses_maafriendly_template(tmp_path
                                 "SEMANTIC_TARGET_NOT_VERIFIED")
 
     assert requested == ["auto"]
+    assert generated_from == [captured]
     assert harness._wire_calls == [("BTN_ALLIANCE_TECH", "OPEN_ALLIANCE_TECH_FROM_HOME")]
 
 
