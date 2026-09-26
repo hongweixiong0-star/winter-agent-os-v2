@@ -16,7 +16,8 @@ GENERIC_READY_SKILLS: frozenset[str] = frozenset({"BACK", "NAVIGATE_TO", "RECOVE
 
 #: Which quick-panel row skill enters which camp's task page.  The panel keys the reading by the same
 #: camp names ``WorldState.camps`` uses (``SHIELD_CAMP`` ...), so no second vocabulary is introduced.
-#: Every panel row the reader can name, and the skill that taps *that* row's own arrow.
+#: Every panel row the reader can name, and the skill that taps *that* row's own blue entry-button tile.
+#: The chevron is only the visual locator; the saved point is the centre of the full button tile.
 #:
 #: The keys are the row keys ``read_quick_panel`` produces, spelled once here so the two cannot drift.
 #: An incomplete table is not a cosmetic problem: on 2026-09-23 00:42:30 the research row was offered
@@ -31,19 +32,29 @@ _QUICK_PANEL_ROW_SKILL: dict[str, str] = {
     "RESEARCH": "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH",
     "ALLIANCE_DONATION": "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION",
     "HERO_RECRUIT": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+    "HERO_RECRUIT_EPIC": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC",
     "MY_REWARDS": "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS",
+    "PET_TREASURE": "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE",
+}
+
+# A completed row's green tile enters its barracks; collection itself is handled
+# on the training page after opening the camp's 详情 / 升级 / 训练 menu.
+_QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL: dict[str, str] = {
+    "SHIELD_CAMP": "OPEN_COMPLETED_TRAINING_CAMP_SHIELD",
+    "LANCER_CAMP": "OPEN_COMPLETED_TRAINING_CAMP_LANCER",
+    "MARKSMAN_CAMP": "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN",
 }
 
 
 from .ocr import QUICK_PANEL_ARROW_BASIS_SCAN, QUICK_PANEL_CONTROL_ARROW, QUICK_PANEL_CONTROL_DONE
 
 
-#: The rows whose done-marker this project acts on, and the skill that collects each.
+#: The rows whose done-marker this project can directly collect, and the skill for each.
 #:
 #: Separate from ``_QUICK_PANEL_ROW_SKILL`` on purpose: that table enters a task's page, this one takes
 #: what the client says is finished.  A row appears in both only by accident of the client's drawing,
 #: and ``_actionable_panel_row`` refuses a row whose tick is drawn, so the two can never both answer.
-#: EMPTY ON PURPOSE, and the reason is measured rather than cautious.
+#: EMPTY ON PURPOSE: the green tile enters the barracks; collection happens on its training page.
 #:
 #: The row reading, the four collect skills, their verifier and their dictionary records all exist
 #: (``test_last_step_expert``... see ``TheDoneMarkerTests``); what does not exist yet is a control that
@@ -57,9 +68,8 @@ from .ocr import QUICK_PANEL_ARROW_BASIS_SCAN, QUICK_PANEL_CONTROL_ARROW, QUICK_
 #: DEFER the whole training goal (``OPEN_TRAINING_PAGE|NO_GOAL_PROGRESS``), which costs far more than
 #: the collect it was trying to win.  An empty table is the honest state: nothing is claimable yet.
 #:
-#: To fill it: find what actually collects a finished batch (the row's own page, reached through its
-#: enter-arrow, is the untried candidate -- 已完成 rows draw no arrow, so that path needs the row's box
-#: or a re-render), measure it, then add the row key here.
+#: Do not populate this with the row tile. That tile is used by
+#: ``_QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL`` to open the named barracks menu.
 _QUICK_PANEL_ROW_CLAIM_SKILL: dict[str, str] = {}
 
 
@@ -204,6 +214,7 @@ class RuleBrain:
         # bounded chance to leave the page it does not own.
         self.foreign_page_steps = 0
         self._foreign_page_steps_by_owner: dict[str, int] = {}
+        self._foreign_page_origin_by_owner: dict[str, Page] = {}
         # Whether this run has already looked at an unclaimed 活动面板 (``Page.EVENT``).
         #
         # Measured, live, 2026-09-24T06:01:18Z, in the AUTO's own episode stream:
@@ -418,16 +429,24 @@ class RuleBrain:
         attempts = self._foreign_page_steps_by_owner.get(route, 0)
         if attempts >= 2:
             return None
-        attempts += 1
-        self._foreign_page_steps_by_owner[route] = attempts
-        self.foreign_page_steps += 1
-        if attempts == 1:
+        if attempts == 0:
+            self._foreign_page_origin_by_owner[route] = world.page
+            self._foreign_page_steps_by_owner[route] = 1
+            self.foreign_page_steps += 1
             return Decision(
                 "BACK",
                 f"{owner.lower()}_goal_leaves_a_panel_it_does_not_own",
                 world.confidence,
                 "home_opened",
             )
+        # This control is declared only on the Alliance layer. A second sight of a different
+        # foreign page does not prove that Back failed on that layer; offering it there creates
+        # a registered-but-not-ready action which the runtime cannot execute. Keep the fallback
+        # for the measured Alliance sub-layer only, and let every other route stop honestly.
+        if self._foreign_page_origin_by_owner.get(route) is not Page.ALLIANCE or world.page is not Page.ALLIANCE:
+            return None
+        self._foreign_page_steps_by_owner[route] = 2
+        self.foreign_page_steps += 1
         return Decision(
             "LEAVE_FOREIGN_LAYER",
             f"{owner.lower()}_goal_closes_a_layer_a_back_did_not_move",
@@ -591,6 +610,50 @@ class RuleBrain:
         return max(0, min(self.reserve_marches, capacity - 2))
 
     def decide(self, world: WorldState, registry: SkillRegistry) -> Decision:
+        if getattr(self, "goal_id", "") == "DISCOVER_EVENT_CALENDAR":
+            events = world.events if isinstance(world.events, dict) else {}
+            calendar = events.get("calendar") if isinstance(events.get("calendar"), dict) else {}
+            detail = events.get("calendar_detail") if isinstance(events.get("calendar_detail"), dict) else {}
+            entry = events.get("calendar_entry") if isinstance(events.get("calendar_entry"), dict) else {}
+            if world.page is Page.UNKNOWN and events.get("calendar_detail_return_pending") is True:
+                return Decision(
+                    "SAFE_STOP", "unknown_page", world.confidence,
+                    "bounded_back_then_resume_calendar_scan",
+                )
+            if world.page is Page.EVENT and detail.get("recognized") is True:
+                skill = (
+                    "RETURN_EVENT_CALENDAR"
+                    if detail.get("calendar_origin") == "GRID_ENTRY"
+                    else "OPEN_EVENT_CALENDAR_TAB"
+                )
+                return Decision(
+                    skill, "regular_events_activity_detail_select_calendar_tab_or_return_to_grid",
+                    world.confidence, "event_calendar_tab_opened" if skill == "OPEN_EVENT_CALENDAR_TAB" else "event_calendar_returned",
+                )
+            if world.page is Page.EVENT and calendar.get("recognized") is True:
+                return Decision(
+                    "OPEN_EVENT_CALENDAR_DETAIL", "open_next_uninspected_visible_calendar_entry",
+                    world.confidence, "event_calendar_detail_open",
+                )
+            if world.page is Page.HOME and entry.get("visible") is True:
+                return Decision(
+                    "OPEN_EVENT_CALENDAR_FROM_HOME", "calendar_scan_due_and_entry_seen_on_current_home_frame",
+                    world.confidence, "event_calendar_open",
+                )
+            if world.page is Page.MAP and entry.get("visible") is True:
+                return Decision(
+                    "OPEN_EVENT_CALENDAR_FROM_MAP", "calendar_scan_due_and_entry_seen_on_current_map_frame",
+                    world.confidence, "event_calendar_open",
+                )
+            if world.page is Page.MAP:
+                return Decision(
+                    "OPEN_HOME", "calendar_scan_due_but_entry_not_visible_on_map_return_to_city",
+                    world.confidence, "home_opened",
+                )
+            return Decision(
+                "SAFE_STOP", "calendar_entry_or_calendar_structure_not_observed", 1.0,
+                "switch_task",
+            )
         if not world.known:
             # A screen the page model cannot name used to end the task here: ``SAFE_STOP
             # unknown_page``, nothing clicked, and -- because the runtime then backed out --
@@ -666,6 +729,8 @@ class RuleBrain:
         # the very next step.
         if world.page is Page.EVENT and not self.activity_panel_observed:
             self.activity_panel_observed = True
+            if self.current_goal == "EVENT":
+                self.ordinary_attempts += 1
             events = world.events or {}
             # The one thing this panel is FOR.  The client itself draws a gold
             # ring around the day node that is free to claim; that ring is what
@@ -693,6 +758,23 @@ class RuleBrain:
                 world.confidence,
                 "ordinary_control_observed",
             )
+        if world.page is Page.EVENT and self.current_goal == "EVENT":
+            # Once the page has been observed, keep a live minimum-guarantee goal on this
+            # screen for the remaining bounded ordinary-control budget. The resolver still
+            # chooses only a current-frame, spend-screened target; no event coordinate is
+            # guessed here. When the budget is spent, hand the cycle back to the scheduler.
+            if (
+                self.ordinary_attempts < self.MAX_ORDINARY_ATTEMPTS
+                and not self.ordinary_scan_exhausted
+            ):
+                self.ordinary_attempts += 1
+                return Decision(
+                    "TRY_ORDINARY_CONTROL",
+                    "live_event_goal_uses_bounded_current_ui_fallback",
+                    world.confidence,
+                    "event_control_observed",
+                )
+            return Decision("SAFE_STOP", "live_event_fallback_budget_exhausted", 1.0, "switch_task")
         # The 登录好礼 check: once per run, only when the city HUD actually draws
         # the entry.  This is the route that was missing -- the panel used to
         # open only from development tools because no skill could resolve
@@ -744,6 +826,13 @@ class RuleBrain:
                 "new_troop_reveal_declares_its_own_exit",
                 world.confidence,
                 "underlying_page_restored",
+            )
+        if world.page is Page.POPUP and world.popup == "HERO_RECRUIT_REWARD":
+            return Decision(
+                "DISMISS_SHARED_REWARD",
+                "free_recruit_reward_feedback",
+                world.confidence,
+                "hero_recruit_page_restored",
             )
         # A duplicate-target question means another of our teams already holds
         # the node this search produced.  Sending anyway burns a march on a
@@ -1134,7 +1223,77 @@ class RuleBrain:
                     return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_exploration_route")
         if self.current_goal == "DAILY":
+            if self.goal_id == "PET_TREASURE_RETURN" and world.page is Page.PET_TREASURE:
+                return Decision(
+                    "BACK", "pet_treasure_page_observed_no_verified_claim_target_return_safely",
+                    world.confidence, "home_restored",
+                )
+            if world.page is Page.HERO:
+                recruit_goal = self.goal_id
+                if recruit_goal in {"HERO_RECRUIT_ADVANCED", "HERO_RECRUIT_EPIC"}:
+                    row = next((item for item in (world.rewards or {}).get("hero_recruit_rows", ())
+                                if isinstance(item, dict) and item.get("key") == recruit_goal), None)
+                    if row and row.get("free_available") is True:
+                        return Decision(
+                            f"FREE_{recruit_goal}",
+                            f"live_{recruit_goal.lower()}_free_count_and_button_confirmed",
+                            world.confidence,
+                            "hero_recruit_reward_feedback",
+                        )
+                if recruit_goal == "HERO_RECRUIT_RETURN" or recruit_goal in {
+                    "HERO_RECRUIT_ADVANCED", "HERO_RECRUIT_EPIC",
+                }:
+                    return Decision("BACK", "no_current_free_draw_for_this_recruit_goal",
+                                    world.confidence, "quick_panel_restored")
             if world.page is Page.HOME:
+                if self.goal_id == "DISCOVER_QUICK_PANEL_TASKS":
+                    if not world.quick_panel.get("open"):
+                        return Decision(
+                            "OPEN_QUICK_PANEL",
+                            "collapsed_quick_panel_handle_and_pending_daily_board_scan",
+                            world.confidence,
+                            "quick_panel_open",
+                        )
+                    return Decision("SAFE_STOP", "quick_panel_already_open_and_ready_for_goal_discovery",
+                                    world.confidence, "switch_task")
+                if self.goal_id == "SCROLL_QUICK_PANEL_TASKS" and world.quick_panel.get("open"):
+                    return Decision(
+                        "SCROLL_QUICK_PANEL_TASKS",
+                        "current_frame_contains_a_scrollable_quick_panel_row_band",
+                        world.confidence,
+                        "quick_panel_lower_rows_observed",
+                    )
+                if self.goal_id in {
+                    "HERO_RECRUIT_ADVANCED", "HERO_RECRUIT_EPIC", "MY_REWARDS", "PET_TREASURE",
+                }:
+                    if not world.quick_panel.get("open"):
+                        return Decision(
+                            "OPEN_QUICK_PANEL",
+                            "open_quick_panel_for_the_current_daily_row",
+                            world.confidence,
+                            "quick_panel_open",
+                        )
+                    if self.goal_id == "MY_REWARDS":
+                        return Decision(
+                            "COLLECT_MY_REWARDS_ROW",
+                            "my_rewards_done_marker_and_badge_are_visible_on_the_current_panel",
+                            world.confidence,
+                            "my_rewards_collected",
+                        )
+                    row_key = {
+                        "HERO_RECRUIT_ADVANCED": "HERO_RECRUIT",
+                        "HERO_RECRUIT_EPIC": "HERO_RECRUIT_EPIC",
+                        "PET_TREASURE": "PET_TREASURE",
+                    }[self.goal_id]
+                    skill_id = _QUICK_PANEL_ROW_SKILL.get(row_key)
+                    if skill_id:
+                        return Decision(
+                            skill_id,
+                            f"quick_panel_{row_key.lower()}_row_is_the_current_daily_goal",
+                            world.confidence,
+                            "daily_task_page_open",
+                        )
+                    return Decision("SAFE_STOP", "daily_quick_panel_row_has_no_registered_skill", 1.0, "switch_task")
                 # Do not re-open a panel this run has already read and found
                 # empty: the Back below would otherwise send the loop round
                 # HOME -> panel -> Back forever.
@@ -1162,6 +1321,13 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "daily_no_claimable_rewards", 1.0, "switch_task")
         if self.current_goal == "ALLIANCE":
             if world.page is Page.HOME:
+                if self.goal_id == "ALLIANCE_DONATION":
+                    return Decision(
+                        "OPEN_ALLIANCE",
+                        "quick_panel_confirms_donation_available_use_bottom_alliance_navigation",
+                        world.confidence,
+                        "alliance_open",
+                    )
                 return Decision("OPEN_ALLIANCE", "alliance_goal", world.confidence, "alliance_open")
             if world.page is Page.MAP:
                 if world.resource_search_open:
@@ -1193,6 +1359,32 @@ class RuleBrain:
                         1.0,
                         "switch_task",
                     )
+            if self.goal_id == "ALLIANCE_DONATION":
+                if world.alliance.get("section") == "HOME":
+                    return Decision(
+                        "OPEN_ALLIANCE_TECH_FROM_HOME",
+                        "alliance_donation_goal_requires_live_technology_entry",
+                        world.confidence,
+                        "alliance_technology_open",
+                    )
+                if world.alliance.get("section") == "TECHNOLOGY":
+                    if (
+                        world.alliance.get("status") == "AVAILABLE"
+                        and world.alliance.get("resource") == "MEAT"
+                        and int(world.alliance.get("cost") or 0) == 10000
+                        and int(world.alliance.get("attempts_remaining") or 0) > 0
+                    ):
+                        return Decision(
+                            "ALLIANCE_TECH_CONTRIBUTE",
+                            "current_technology_page_proves_10000_meat_contribution_available",
+                            world.confidence,
+                            "alliance_contribution_verified",
+                        )
+                    if world.alliance.get("status") == "CONTRIBUTED":
+                        return Decision("SAFE_STOP", "alliance_contribution_already_completed_this_visit",
+                                        world.confidence, "switch_task")
+                    return Decision("SAFE_STOP", "alliance_technology_contribution_state_unknown",
+                                    1.0, "switch_task")
             if world.alliance.get("section") == "HOME":
                 # The 联盟宝箱 tile's **own** badge, or nothing.
                 #
@@ -1275,14 +1467,50 @@ class RuleBrain:
             # nothing from us, and entering the page to confirm that is a wasted round trip.
             and world.research.get("queue_available") is not False
         ):
+            # The lab bar's own 研究 control, when this frame draws it, is the real
+            # hop to the tech tree: the quick-panel anchor OPEN_RESEARCH resolves is
+            # not on this render (measured 2026-09-26 15:28:03Z -- the anchor was
+            # gone, the step FAILED, and the open bar was abandoned).
+            if isinstance(world.research.get("research_action_tap_norm"), (list, tuple)):
+                return Decision(
+                    "OPEN_TECH_TREE",
+                    "lab_bar_research_control_opens_the_tree",
+                    world.confidence,
+                    "research_page_open",
+                )
             return Decision(
                 "OPEN_RESEARCH",
                 "an_opened_lab_bar_is_the_page_this_goal_came_for",
                 world.confidence,
                 "research_page_open",
             )
+        if (
+            world.page is Page.HOME
+            and self._goal_route() == "BUILDING"
+            and (world.building or {}).get("upgrade_tap_norm")
+        ):
+            # A selected 科研所 reached through a research prerequisite has a live
+            # 详情 / 升级 / 研究 action bar. Use its current-frame 升级 label before
+            # the generic quick-panel building row, which can open an unrelated house.
+            return Decision(
+                "OPEN_BUILDING_UPGRADE",
+                "selected_building_upgrade_control_precedes_generic_panel_entry",
+                world.confidence,
+                "building_upgrade_panel_opened",
+            )
         panel = world.quick_panel or {}
-        if world.page is Page.HOME and self._panel_rows_for_this_goal():
+        # Training has a page-local route that understands the distinct DONE state and
+        # must prioritize a completed batch over a different idle camp. Letting this
+        # generic panel shortcut run first used to open the lancer IDLE arrow while a
+        # marksman DONE batch was waiting, bypassing the route's camp-specific decision.
+        if (
+            world.page is Page.HOME
+            and self._panel_rows_for_this_goal()
+            and not (
+                self._goal_route() == "TRAIN"
+                and world.training.get("navigation") == "PANEL_CAMP_FOCUSED"
+            )
+        ):
             if not panel.get("open"):
                 handle = panel.get("handle") or {}
                 # Not open: ask for one ordinary control, which the runtime's dictionary tier resolves
@@ -1318,12 +1546,38 @@ class RuleBrain:
                     self._panel_open_attempts[route] = self._panel_open_attempts.get(route, 0) + 1
                     self.ordinary_attempts += 1
                     return Decision(
-                        "TRY_ORDINARY_CONTROL",
+                        "OPEN_QUICK_PANEL",
                         "quick_panel_is_the_in_city_task_board_for_this_goal",
                         world.confidence,
-                        "ordinary_control_observed",
+                        "quick_panel_open",
                     )
             else:
+                if self._goal_route() == "TRAIN":
+                    # The general panel shortcut normally advances the first idle row. For
+                    # training, first open a verified finished camp so it can be claimed and
+                    # restarted before a different idle camp takes the turn. DONE is an entry
+                    # target here, never proof that troops were collected.
+                    camps = world.quick_panel.get("camps") or {}
+                    completed = [
+                        row for row in (world.quick_panel.get("rows") or ())
+                        if str(row.get("kind") or "") in {"", "CAMP"}
+                        and str(row.get("key") or "") in _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL
+                        and str(row.get("control") or "") == QUICK_PANEL_CONTROL_DONE
+                        and str((camps.get(str(row.get("key") or "")) or {}).get(
+                            "status") or "").upper() == "COMPLETED"
+                    ]
+                    own_camp = self._goal_camp()
+                    completed_row = next(
+                        (row for row in completed if str(row.get("key")) == own_camp), None
+                    ) if own_camp else (completed[0] if completed else None)
+                    if completed_row is not None:
+                        camp = str(completed_row.get("key") or "")
+                        return Decision(
+                            _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL[camp],
+                            f"completed_{camp.lower()}_entry_opens_its_barracks_before_claim_or_restart",
+                            world.confidence,
+                            "camp_action_bar_open",
+                        )
                 # A row the client has marked done comes first: its only valid action is to collect
                 # what is finished, and _actionable_panel_row refuses it, so the two never compete.
                 claimed = self._panel_row_claim_skill(self._claimable_panel_row(world))
@@ -1475,6 +1729,21 @@ class RuleBrain:
                 return Decision("SAFE_STOP", "training_entry_not_verified", 1.0, "bootstrap_to_training_route")
             if self.terminal_page_left:
                 return Decision("SAFE_STOP", "training_page_already_read_not_actionable", 1.0, "switch_task")
+            if world.page is Page.HOME and world.training.get("navigation") == "PANEL_CAMP_FOCUSED":
+                # A completed panel tile first focuses the named barracks in the city; the
+                # client does not open its action bar until the building itself is tapped.
+                # Keep this hop separate from the old power-route tutorial-ring state, whose
+                # target and failure history are different. The row that brought us here is
+                # already bound to this Goal's camp, so all three camps share one action path.
+                own_camp = self._goal_camp()
+                suffix = own_camp.removesuffix("_CAMP") if own_camp else ""
+                if suffix in {"SHIELD", "LANCER", "MARKSMAN"}:
+                    return Decision(
+                        f"TAP_FOCUSED_TRAINING_CAMP_{suffix}",
+                        f"completed_{suffix.lower()}_row_focused_its_barracks_then_tap_building_for_actions",
+                        world.confidence,
+                        "camp_action_bar_open",
+                    )
             if world.page is Page.HOME and world.training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED":
                 # Stage A (#28, and this is the third position the route has taken on it).
                 #
@@ -1594,6 +1863,30 @@ class RuleBrain:
                 order = ([own_camp] if own_camp else []) + [
                     camp for camp in panel_camps if camp != own_camp
                 ]
+                # Finished batches must be opened before we start an otherwise idle camp.
+                # The old order picked the first IDLE row (矛兵) and never reached the
+                # completed 射手 row below, leaving its reward waiting while another queue
+                # started. A per-camp goal is restricted to its own row; generic training
+                # discovery takes the first current-frame DONE row.
+                completed_rows = [
+                    row for row in (world.quick_panel.get("rows") or ())
+                    if str(row.get("kind") or "") in {"", "CAMP"}
+                    and str(row.get("key") or "") in _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL
+                    and str(row.get("control") or "") == QUICK_PANEL_CONTROL_DONE
+                    and str((panel_camps.get(str(row.get("key") or "")) or {}).get(
+                        "status") or "").upper() == "COMPLETED"
+                ]
+                completed_row = next(
+                    (row for row in completed_rows if str(row.get("key")) == own_camp), None
+                ) if own_camp else (completed_rows[0] if completed_rows else None)
+                if completed_row is not None:
+                    camp = str(completed_row.get("key") or "")
+                    return Decision(
+                        _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL[camp],
+                        f"completed_{camp.lower()}_entry_opens_its_barracks_before_claim_or_restart",
+                        world.confidence,
+                        "camp_action_bar_open",
+                    )
                 idle_camp = next(
                     (
                         camp
@@ -1606,8 +1899,8 @@ class RuleBrain:
                 )
                 if idle_camp is not None:
                     self.idle_camp_from_quick_panel = idle_camp
-                    # The row's own arrow is the shortcut (operator §五): one tap onto that task's
-                    # page, and it can reach any of the three camps, where the power route reaches
+                    # The row's own blue entry-button tile is the shortcut (operator §五): one tap
+                    # onto that task's page, and it can reach any of the three camps, where the power route reaches
                     # only the infantry one.  Preferred while the reading still carries the row --
                     # the resolver needs ``arrow_norm`` on THIS frame, so a row the panel no longer
                     # draws cannot be tapped blind.
@@ -1650,9 +1943,10 @@ class RuleBrain:
                     skill_id = self._panel_row_skill(row) if usable else None
                     if skill_id is not None and self._panel_row_attempts < self.MAX_PANEL_ROW_ATTEMPTS_PER_RUN:
                         self._panel_row_attempts += 1
+                        reason = f"quick_panel_{idle_camp.lower()}_row_arrow_enters_its_own_task_page"
                         return Decision(
                             skill_id,
-                            f"quick_panel_{idle_camp.lower()}_row_arrow_enters_its_own_task_page",
+                            reason,
                             world.confidence,
                             "task_page_open",
                         )
@@ -1664,7 +1958,7 @@ class RuleBrain:
                 done_rows = [
                     row for row in (world.quick_panel.get("rows") or ())
                     if str(row.get("kind") or "") in {"", "CAMP"}
-                    and str(row.get("key") or "") in _QUICK_PANEL_ROW_SKILL
+                    and str(row.get("key") or "") in _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL
                     and str(row.get("control") or "") == QUICK_PANEL_CONTROL_DONE
                     and (
                         str(row.get("source_word") or "") == "已完成"
@@ -1685,15 +1979,16 @@ class RuleBrain:
                     (row for row in done_rows if str(row.get("key")) == own_camp), None
                 ) if own_camp else (done_rows[0] if done_rows else None)
                 if done_row is not None:
-                    # The green marker is a state indicator, not a collection button.
-                    # The goal remains schedulable and reaches the selected barracks by
-                    # the existing power-navigation route, where current-frame controls
-                    # decide whether to collect or start the next batch.
+                    # The completed row's green tile is the barracks entry button. It opens
+                    # the named camp's action bar; the next step chooses 训练, then the
+                    # training-page reader decides whether to collect a finished batch or
+                    # start a new one. This tap is navigation, never proof of collection.
+                    camp = str(done_row.get("key") or "")
                     return Decision(
-                        "OPEN_POWER_OVERVIEW",
-                        f"completed_{str(done_row.get('key')).lower()}_uses_existing_camp_navigation_without_tapping_done_marker",
+                        _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL[camp],
+                        f"completed_{camp.lower()}_entry_opens_its_barracks_before_claim_or_restart",
                         world.confidence,
-                        "power_overview_open",
+                        "camp_action_bar_open",
                     )
                 # Same rule as the lab above, and the same measurement: the panel described all three
                 # barracks in 56 of the 57 panel frames and the goal layer saw none of it, so this
@@ -1800,6 +2095,13 @@ class RuleBrain:
                         "goal_camp_open",
                     )
                 return self._leave_or_stop(world, "goal_camp_not_open_and_cannot_switch", "switch_task")
+            if world.training.get("claimable") is True and world.training.get("claim_button_norm"):
+                return Decision(
+                    "COLLECT_TRAINING_BATCH",
+                    "finished_training_batch_is_claimable_then_refresh_queue_before_restart",
+                    world.confidence,
+                    "training_batch_claimed",
+                )
             if world.training.get("all_queues_busy"):
                 return self._leave_or_stop(world, "all_training_queues_busy", "switch_task")
             if world.training.get("queue_available") is False:
@@ -1852,7 +2154,13 @@ class RuleBrain:
                 return Decision("BACK", "free_stamina_gift_is_due_go_to_the_map", world.confidence, "map_opened")
             if status == "AVAILABLE" and int(world.intel.get("pins") or 0) > 0 and not world.intel.get("mission_type"):
                 if world.intel.get("untried_pins") == 0:
-                    return Decision("SAFE_STOP", "intel_no_untried_pins", 1.0, "switch_task")
+                    # Exhaustion applies to the Intel board, not to the AUTO cycle.
+                    # Leaving through the already measured INTEL -> MAP Back route lets
+                    # the same Scheduler discover ordinary beasts and other map work.
+                    # Returning SAFE_STOP here can spend the remaining goal-yield budget
+                    # on the Intel page and end the whole production run without checking
+                    # those tasks.
+                    return Decision("BACK", "intel_board_exhausted_return_to_map", world.confidence, "map_opened")
                 # The board is a pin map: pins are sighted but no card is open,
                 # so the mission type cannot be known yet - the card only exists
                 # after a pin is tapped.  Tap one to find out; whatever opens

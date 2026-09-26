@@ -279,6 +279,14 @@ def p0_registry() -> SkillRegistry:
         # 研究 button.  See tools/register_research_route_templates.py.
         Skill("NAVIGATE_RESEARCH_LAB", "Use Technology Power improvement to highlight the 科研所", Page.POPUP, Action("TAP_SEMANTIC", "BTN_POWER_RESEARCH_IMPROVE"), state=SkillState.CANDIDATE),
         Skill("OPEN_RESEARCH", "Open 科技研究 from the focused 科研所", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_RESEARCH"), state=SkillState.CANDIDATE),
+        # The selected lab's radial menu (详情 / 升级 / 研究) is a different render
+        # from the quick-panel entry: its 研究 control opens the tech tree, and the
+        # quick-panel anchor BTN_OPEN_RESEARCH is not drawn there.  Measured
+        # 2026-09-26 15:28:03Z: the lab bar was open, the route answered
+        # OPEN_RESEARCH, the anchor was gone, and the step FAILED -- the hop this
+        # skill supplies.  The tap point comes from the current frame's OCR read
+        # (research.research_action_tap_norm), never a stored coordinate.
+        Skill("OPEN_TECH_TREE", "Open the tech tree from the selected 科研所's 研究 control", Page.HOME, Action("TAP_SEMANTIC", "BTN_LAB_RESEARCH"), state=SkillState.CANDIDATE, verifier="RESEARCH_PAGE_OPEN", recovery=("BACK",)),
         Skill("DISMISS_DAILY_REWARD", "Advance one verified Daily reward overlay", Page.POPUP, Action("TAP_SEMANTIC", "POPUP_DAILY_REWARD_CURRENT"), state=SkillState.CANDIDATE),
         Skill("SELECT_MAIL_ALLIANCE_TAB", "Open the Alliance mail category", Page.MAIL, Action("TAP_SEMANTIC", "BTN_MAIL_TAB_ALLIANCE"), state=SkillState.VERIFIED),
         Skill("SELECT_MAIL_SYSTEM_TAB", "Open the System mail category", Page.MAIL, Action("TAP_SEMANTIC", "BTN_MAIL_TAB_SYSTEM"), state=SkillState.VERIFIED),

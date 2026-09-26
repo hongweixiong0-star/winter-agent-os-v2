@@ -72,6 +72,7 @@ GOAL_ROUTES: dict[str, str] = {
     # A live event with a current UI reading uses the same bounded ordinary-control
     # path as the EVENT page itself; no calendar guess or event-specific click is implied.
     "EVENT_MINIMUM_GUARANTEE": "EVENT",
+    "DISCOVER_EVENT_CALENDAR": "EVENT",
     # Building upgrades already have a page-local action and verifier; they were unreachable because
     # the queue goal had no route and no selected-building entry step.
     "KEEP_BUILDING_PRODUCTIVE": "BUILDING",
@@ -83,7 +84,17 @@ GOAL_ROUTES: dict[str, str] = {
     "MARKSMAN_CAMP_TRAINING": "TRAIN",
     "MAIL_ROUTINE": "MAIL",
     "DAILY_ACTIVITY_TARGET": "DAILY",
+    "HERO_RECRUIT_ADVANCED": "DAILY",
+    "HERO_RECRUIT_EPIC": "DAILY",
+    "HERO_RECRUIT_FEEDBACK": "DAILY",
+    "HERO_RECRUIT_RETURN": "DAILY",
+    "DISCOVER_QUICK_PANEL_TASKS": "DAILY",
+    "SCROLL_QUICK_PANEL_TASKS": "DAILY",
+    "MY_REWARDS": "DAILY",
+    "PET_TREASURE": "DAILY",
+    "PET_TREASURE_RETURN": "DAILY",
     "ALLIANCE_ROUTINE": "ALLIANCE",
+    "ALLIANCE_DONATION": "ALLIANCE",
     # A badge on the current Alliance HOME tile licenses only a zero-cost visit to
     # the live rally list. Participation still needs fresh role and queue evidence.
     "DISCOVER_BEAR_RALLY_LIST": "ALLIANCE",
@@ -194,6 +205,95 @@ _WINDOW_STATUS: dict[event_goal.WindowState, GoalStatus] = {
 }
 
 
+def _registered_activity_flow(activity: event_goal.Activity) -> dict[str, Any]:
+    """Resolve an activity definition to existing Goal/Skill IDs without making it runnable.
+
+    The event registry already carries task IDs and, for some event families, a generic flow.
+    Preserve those bindings on the single activity Goal so calendar discovery, live state, and
+    red-dot discoveries can converge on the same existing execution Goal. This is metadata only:
+    the enclosing activity remains UNKNOWN until its current client conditions are observed.
+    """
+    from .skill_factory import GOAL_REQUIREMENTS
+    from .skills import v2_registry
+
+    registry = v2_registry()
+    goal_ids: list[str] = ["DISCOVER_EVENT_CALENDAR"]
+    skill_ids: list[str] = []
+    missing_skill_ids: list[str] = []
+    tasks = list(activity.tasks)
+    if activity.generic_flow:
+        generic_goal = (
+            "ALLIANCE_TIMED_EVENTS"
+            if "ALLIANCE" in str(activity.event_type or "").upper()
+            else "EVENT_MINIMUM_GUARANTEE"
+        )
+        tasks.append(generic_goal)
+        # Unknown live event controls use the existing bounded current-frame/Qwen path.
+        tasks.append("TRY_ORDINARY_CONTROL")
+    for task in tasks:
+        task_id = str(task or "").strip()
+        if not task_id:
+            continue
+        if task_id in GOAL_REQUIREMENTS:
+            goal_ids.append(task_id)
+            required = list(GOAL_REQUIREMENTS[task_id])
+            if task_id == "EVENT_MINIMUM_GUARANTEE":
+                # This current-page fallback is the existing executable path for a newly read
+                # event; dedicated rule/progress/tier skills remain visible as actual gaps.
+                required.append("TRY_ORDINARY_CONTROL")
+            for skill_id in required:
+                (skill_ids if registry.get(skill_id) is not None else missing_skill_ids).append(skill_id)
+        elif registry.get(task_id) is not None:
+            skill_ids.append(task_id)
+        else:
+            missing_skill_ids.append(task_id)
+    for skill_id in GOAL_REQUIREMENTS.get("DISCOVER_EVENT_CALENDAR", ()):
+        (skill_ids if registry.get(skill_id) is not None else missing_skill_ids).append(skill_id)
+    registered_skills = list(dict.fromkeys(
+        skill_ids
+    ))
+    missing_skills = list(dict.fromkeys(missing_skill_ids))
+    return {
+        "activity_goal_id": f"SCHEDULED_{activity.event_id}",
+        "registered_goal_ids": list(dict.fromkeys(goal_ids)),
+        "registered_skill_ids": registered_skills,
+        "unregistered_skill_ids": missing_skills,
+        "flow_registration_state": (
+            "PARTIAL_GENERIC_FALLBACK_REGISTERED_WAITING_FOR_LIVE_CONDITIONS"
+            if missing_skills else "REGISTERED_WAITING_FOR_LIVE_CONDITIONS"
+        ),
+    }
+
+
+def _registered_event_candidate_skills() -> list[str]:
+    """Existing generic event route offered to a calendar-only candidate after live reading."""
+    from .skill_factory import GOAL_REQUIREMENTS
+    from .skills import v2_registry
+
+    registry = v2_registry()
+    candidates = [
+        *GOAL_REQUIREMENTS.get("DISCOVER_EVENT_CALENDAR", ()),
+        *GOAL_REQUIREMENTS.get("EVENT_MINIMUM_GUARANTEE", ()),
+        "TRY_ORDINARY_CONTROL",
+    ]
+    return list(dict.fromkeys(
+        skill_id for skill_id in candidates
+        if skill_id == "TRY_ORDINARY_CONTROL" or registry.get(skill_id) is not None
+    ))
+
+
+def _unregistered_event_candidate_skills() -> list[str]:
+    """Existing event-goal requirements that still lack a production Skill implementation."""
+    from .skill_factory import GOAL_REQUIREMENTS
+    from .skills import v2_registry
+
+    registry = v2_registry()
+    return list(dict.fromkeys(
+        skill_id for skill_id in GOAL_REQUIREMENTS.get("EVENT_MINIMUM_GUARANTEE", ())
+        if registry.get(skill_id) is None
+    ))
+
+
 @dataclass(frozen=True)
 class GoalState:
     goal_id: str
@@ -267,12 +367,10 @@ class PanelRoutine:
     done: tuple[str, ...]
     work_skills: tuple[str, ...]
     entry_skill: str
-    #: Small on purpose.  An unread routine must be *schedulable* (so it gets looked at) but
-    #: must never outrank real work: measured 2615 for the stamina goal and 70 for gathering,
-    #: against this 20.  So it is picked when nothing better is owed -- which is exactly the
-    #: bounded observation sweep the operator asked for, expressed as priority rather than as
-    #: a second scheduler.
-    discovery_value: float = 20.0
+    #: Discovery opportunities can be priced by the route. Queue reads with no evidence yet
+    #: must not outrank currently executable work; the established panel sweep keeps its
+    #: higher value so unread routines continue to rotate.
+    discovery_value: float = 180.0
 
 
 PANEL_ROUTINES: tuple[PanelRoutine, ...] = (
@@ -374,9 +472,8 @@ def _sweep_value(overdue_ratio: float) -> float:
 #: same store, same TTL reuse, same bounded age-scaled value, and their own entry skill (each of
 #: which is registered and verifier-bound, which is what makes the ticket runnable).
 #:
-#: ``KEEP_BUILDING_PRODUCTIVE`` is deliberately **not** here: ``OPEN_BUILDING`` is not registered
-#: and ``RuleBrain`` has no BUILD route, so a ticket for it would be a ticket to nowhere.  It
-#: needs a skill and a route first, and that is a different piece of work from this one.
+#: Building queues are emitted from a current reading and use the existing selected-building reader,
+#: upgrade skill, resource policy and verifier.  The BUILDING route owns the minimal navigation glue.
 SWEEP_ROUTINES: tuple[PanelRoutine, ...] = (
     PanelRoutine(
         "CLEAR_INTEL", "intel",
@@ -393,7 +490,22 @@ SWEEP_ROUTINES: tuple[PanelRoutine, ...] = (
         work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
         work_skills=("RESEARCH",),
         entry_skill="OPEN_RESEARCH",
-        discovery_value=RESEARCH_PRODUCTIVE_VALUE,
+        # An unread panel is only an observation ticket. Once a live queue reading
+        # confirms available work, _append_queue_goal assigns RESEARCH_PRODUCTIVE_VALUE.
+        discovery_value=SWEEP_NEVER_VALUE,
+    ),
+    PanelRoutine(
+        "KEEP_BUILDING_PRODUCTIVE", "building",
+        work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "UPGRADING", "QUEUE_FULL"),
+        work_skills=("OPEN_BUILDING_UPGRADE", "BUILDING_UPGRADE", "TRY_ORDINARY_CONTROL"),
+        # A safe, bounded observation step. The BUILDING route only spends once
+        # a selected building and its current-frame upgrade control are identified.
+        entry_skill="TRY_ORDINARY_CONTROL",
+        # A live idle queue is emitted by _append_queue_goal at productive-work priority.
+        # A safe, bounded observation step. The BUILDING route only spends once
+        # a selected building and its current-frame upgrade control are identified.
+        # Until then, it must not pull AUTO home while an already executable task is available.
+        discovery_value=20.0,
     ),
 )
 
@@ -403,8 +515,10 @@ TRAINING_SWEEP = PanelRoutine(
     "KEEP_TRAINING_PRODUCTIVE", "training",
     work=("IDLE", "AVAILABLE"), done=("IN_PROGRESS", "QUEUE_FULL"),
     work_skills=("TRAIN_TROOPS",),
-    entry_skill="OPEN_POWER_OVERVIEW",
-    discovery_value=TRAINING_CAMP_VALUE,
+    entry_skill="TRY_ORDINARY_CONTROL",
+    # Keep the unobserved-page visit in the sweep rotation. A live free/finished
+    # camp still gets TRAINING_CAMP_VALUE in _append_camp_training_goals.
+    discovery_value=SWEEP_NEVER_VALUE,
 )
 
 
@@ -458,6 +572,22 @@ def _append_panel_routine(
     reused = not live and fresh and stored is not None
     effective = live or (stored if fresh else {}) or {}
     status = str(effective.get("status") or "").strip().upper()
+    # A queue-page action bar is not a queue reading. Older observations often
+    # contain only ``menu_open`` / building identity; treating that as a fresh
+    # UNKNOWN suppressed the next research/building inspection indefinitely.
+    # Keep the record as provenance, but schedule a fresh observation until the
+    # client supplies an actual queue state or availability bit.
+    incomplete_queue_reading = (
+        routine.field in {"research", "building"}
+        and bool(effective)
+        and not status
+        and not isinstance(effective.get("queue_available"), bool)
+        and not isinstance(effective.get("all_queues_busy"), bool)
+    )
+    if incomplete_queue_reading:
+        effective = {}
+        fresh = False
+        reused = False
     badge = _badge_present(effective)
     # Numeric evidence of something actually waiting, checked before any status word.  A status
     # word says what kind of page this is; a count says whether anything is on it.  Measured
@@ -474,6 +604,7 @@ def _append_panel_routine(
         "reading": dict(live or stored or {}),
         "age_minutes": record.get("age_minutes"),
         "overdue": bool(record.get("overdue", False)),
+        "incomplete_queue_observation": incomplete_queue_reading,
     }
 
     # §一, and this is the whole of it: for the two entry-gated routines the entry's own badge decides
@@ -517,7 +648,7 @@ def _append_panel_routine(
             routine.goal_id, GoalStatus.DISCOVERED,
             # Never read prices as "waited for ever"; read-and-stale prices by how stale.
             development_value=(
-                SWEEP_NEVER_VALUE if not record
+                routine.discovery_value if not record
                 else _sweep_value(record.get("overdue_ratio", 0.0))
             ),
             available_skills=(routine.entry_skill,),
@@ -558,6 +689,142 @@ def _append_panel_routine(
     ))
 
 
+def _append_quick_panel_task_goals(goals: list[GoalState], world: WorldState) -> None:
+    """Promote currently visible quick-panel errands into the shared Goal board."""
+    if world.page is Page.POPUP and world.popup == "HERO_RECRUIT_REWARD":
+        goals.append(GoalState(
+            "HERO_RECRUIT_FEEDBACK", GoalStatus.READY, reward_value=20,
+            available_skills=("DISMISS_SHARED_REWARD",),
+            evidence={"source": "LIVE_RECRUIT_REWARD_POPUP", "popup": world.popup},
+            distance=0.0,
+        ))
+        return
+    if world.page is Page.HERO:
+        rows = [dict(row) for row in (world.rewards or {}).get("hero_recruit_rows", ())
+                if isinstance(row, Mapping)]
+        available = {str(row.get("key") or ""): row for row in rows
+                     if row.get("free_available") is True}
+        for key, goal_id in (
+            ("HERO_RECRUIT_ADVANCED", "HERO_RECRUIT_ADVANCED"),
+            ("HERO_RECRUIT_EPIC", "HERO_RECRUIT_EPIC"),
+        ):
+            row = available.get(key)
+            if row is not None:
+                goals.append(GoalState(
+                    goal_id, GoalStatus.READY, reward_value=250,
+                    available_skills=(f"FREE_{key}",),
+                    evidence={"source": "LIVE_HERO_RECRUIT_PAGE",
+                              "free_remaining": row.get("free_remaining"),
+                              "source_word": row.get("free_source_word")},
+                    distance=1.0,
+                ))
+        if not available:
+            # The goal is a one-time errand per panel row, not a loop that spends every
+            # remaining daily free draw. Once the requested free recruit is gone, return
+            # to the panel so its other rows can be read and scheduled.
+            goals.append(GoalState(
+                "HERO_RECRUIT_RETURN", GoalStatus.READY, reward_value=10,
+                available_skills=("BACK",),
+                evidence={"source": "LIVE_HERO_RECRUIT_PAGE",
+                          "hero_recruit_rows": rows},
+                distance=1.0,
+            ))
+        return
+    panel = world.quick_panel or {}
+    if world.page is Page.HOME and panel.get("open") is False:
+        handle = panel.get("handle") or {}
+        if (isinstance(handle, Mapping) and handle.get("state") == "COLLAPSED"
+                and isinstance(handle.get("point_norm"), (list, tuple))):
+            goals.append(GoalState(
+                "DISCOVER_QUICK_PANEL_TASKS", GoalStatus.READY, reward_value=260,
+                available_skills=("OPEN_QUICK_PANEL",),
+                evidence={"source": "LIVE_QUICK_PANEL_HANDLE",
+                          "handle_state": handle.get("state"),
+                          "basis": handle.get("basis")},
+                distance=0.5,
+            ))
+        return
+    if world.page is not Page.HOME or panel.get("open") is not True:
+        return
+    rows = [dict(row) for row in (panel.get("rows") or ()) if isinstance(row, Mapping)]
+    by_key = {str(row.get("key") or ""): row for row in rows}
+    lower_rows = {"ALLIANCE_DONATION", "HERO_RECRUIT", "HERO_RECRUIT_EPIC",
+                  "MY_REWARDS", "PET_TREASURE"}
+    if (isinstance(panel.get("scroll_swipe_norm"), (list, tuple))
+            and not lower_rows.issubset(set(by_key))):
+        goals.append(GoalState(
+            "SCROLL_QUICK_PANEL_TASKS", GoalStatus.READY, reward_value=100,
+            available_skills=("SCROLL_QUICK_PANEL_TASKS",),
+            evidence={"source": "LIVE_QUICK_PANEL_ROWS",
+                      "visible_rows": sorted(by_key),
+                      "remaining_rows": sorted(lower_rows - set(by_key))},
+            distance=0.75,
+        ))
+
+    donation = panel.get("alliance_donation") or {}
+    donation_row = by_key.get("ALLIANCE_DONATION", {})
+    if (str(donation.get("status") or "").upper() == "AVAILABLE"
+            and int(donation.get("available") or 0) > 0
+            and donation_row.get("badge") == entry_badges.PRESENT):
+        goals.append(GoalState(
+            "ALLIANCE_DONATION", GoalStatus.READY, reward_value=240,
+            available_skills=("OPEN_ALLIANCE", "OPEN_ALLIANCE_TECH_FROM_HOME",
+                              "ALLIANCE_TECH_CONTRIBUTE"),
+            evidence={"source": "QUICK_PANEL", "available": donation.get("available"),
+                      "total": donation.get("total"), "source_word": donation.get("source_word")},
+            distance=1.0,
+        ))
+
+    recruit_rows = [dict(row) for row in (panel.get("hero_recruit_rows") or ())
+                    if isinstance(row, Mapping)]
+    for row_key, goal_id in (("HERO_RECRUIT", "HERO_RECRUIT_ADVANCED"),
+                             ("HERO_RECRUIT_EPIC", "HERO_RECRUIT_EPIC")):
+        panel_row = by_key.get(row_key, {})
+        recruit = next((item for item in recruit_rows
+                        if str(item.get("key") or "") == row_key), None)
+        if recruit is None and row_key == "HERO_RECRUIT":
+            recruit = panel.get("hero_recruit") or {}
+        if (panel_row.get("badge") == entry_badges.PRESENT
+                and isinstance(recruit, Mapping)
+                and str(recruit.get("status") or "").upper() == "AVAILABLE"
+                and "免费" in str(recruit.get("source_word") or "")):
+            skill = ("OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT"
+                     if row_key == "HERO_RECRUIT"
+                     else "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC")
+            goals.append(GoalState(
+                goal_id, GoalStatus.READY, reward_value=250,
+                available_skills=(skill, "FREE_HERO_RECRUIT_ADVANCED"
+                                  if row_key == "HERO_RECRUIT"
+                                  else "FREE_HERO_RECRUIT_EPIC"),
+                evidence={"source": "QUICK_PANEL", "row": row_key,
+                          "state_word": recruit.get("source_word")}, distance=1.0,
+            ))
+
+    rewards = by_key.get("MY_REWARDS", {})
+    # The green check is a completion marker, not enough by itself to license a
+    # second claim attempt. A separate badge must be read on the same row; the
+    # live tap history showed that the check can simply close the panel.
+    if rewards.get("control") == "DONE" and rewards.get("badge") == entry_badges.PRESENT:
+        goals.append(GoalState(
+            "MY_REWARDS", GoalStatus.READY, reward_value=250,
+            available_skills=("COLLECT_MY_REWARDS_ROW",),
+            evidence={"source": "QUICK_PANEL", "state_word": rewards.get("source_word"),
+                      "badge": rewards.get("badge", "UNKNOWN")},
+            distance=1.0,
+        ))
+
+    pet = by_key.get("PET_TREASURE", {})
+    if pet.get("badge") == entry_badges.PRESENT and pet.get("control") in {"ARROW", "DONE"}:
+        skill = ("OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE"
+                 if pet.get("control") == "ARROW" else "COLLECT_PET_TREASURE_ROW")
+        goals.append(GoalState(
+            "PET_TREASURE", GoalStatus.READY, reward_value=250,
+            available_skills=(skill,),
+            evidence={"source": "QUICK_PANEL", "state_word": pet.get("source_word"),
+                      "control": pet.get("control")}, distance=1.0,
+        ))
+
+
 class GoalLibrary:
     """Turns observed state into goals. It is knowledge, not another scheduler."""
 
@@ -566,6 +833,10 @@ class GoalLibrary:
         world: WorldState,
         *,
         observations: Mapping[str, Mapping[str, Any]] | None = None,
+        training_continuation_goal_id: str = "",
+        alliance_continuation_goal_id: str = "",
+        role_id: str = "",
+        calendar_snapshot: Mapping[str, Any] | None = None,
     ) -> tuple[GoalState, ...]:
         """Every goal the engine can see from this world, plus what is still worth looking at.
 
@@ -575,6 +846,50 @@ class GoalLibrary:
         have one is not silently treated as having looked recently.
         """
         goals: list[GoalState] = []
+        if world.page is Page.PET_TREASURE:
+            # Navigation only: return to Home after safely reading this screen.
+            # This does not claim a hunt or reward was completed.
+            goals.append(GoalState(
+                "PET_TREASURE_RETURN", GoalStatus.READY, reward_value=1,
+                available_skills=("BACK",),
+                evidence={"source": "LIVE_PET_TREASURE_PAGE",
+                          "remaining_attempts": (world.beast.get("pet_treasure") or {}).get("remaining_attempts"),
+                          "operation": "RETURN_TO_HOME_ONLY"},
+                distance=0.25,
+            ))
+        if (world.page is Page.ALLIANCE
+                and world.alliance.get("section") in {"HOME", "TECHNOLOGY"}):
+            section = world.alliance.get("section")
+            status = str(world.alliance.get("status") or "UNKNOWN").upper()
+            if section == "HOME" and alliance_continuation_goal_id == "ALLIANCE_DONATION":
+                # Keep the task discovered from the quick panel alive across
+                # the Home -> Alliance navigation hop. The technology screen
+                # is re-read before any resource action is offered.
+                goals.append(GoalState(
+                    "ALLIANCE_DONATION", GoalStatus.READY, reward_value=240,
+                    available_skills=("OPEN_ALLIANCE_TECH_FROM_HOME",),
+                    evidence={"source": "LIVE_ALLIANCE_HOME_CONTINUATION",
+                              "operation": "READ_TECHNOLOGY_DONATION_STATE"},
+                    distance=0.5,
+                ))
+            elif status == "AVAILABLE":
+                goals.append(GoalState(
+                    "ALLIANCE_DONATION", GoalStatus.READY, reward_value=240,
+                    available_skills=("ALLIANCE_TECH_CONTRIBUTE",),
+                    evidence={"source": "LIVE_ALLIANCE_TECHNOLOGY",
+                              "resource": world.alliance.get("resource"),
+                              "cost": world.alliance.get("cost"),
+                              "attempts_remaining": world.alliance.get("attempts_remaining")},
+                    distance=0.25,
+                ))
+            elif status == "CONTRIBUTED":
+                goals.append(GoalState(
+                    "ALLIANCE_DONATION", GoalStatus.COMPLETE, completion=1.0,
+                    evidence={"source": "LIVE_ALLIANCE_TECHNOLOGY",
+                              "status": status,
+                              "attempts_remaining": world.alliance.get("attempts_remaining")},
+                    distance=0.0,
+                ))
         intel_status = str(world.intel.get("status", "UNKNOWN"))
         if intel_status != "UNKNOWN":
             complete = intel_status in {"NOT_AVAILABLE", "EXPIRED"}
@@ -634,13 +949,15 @@ class GoalLibrary:
                 distance=float(max(0, stamina - STAMINA_FLOOR + 1)),
             ))
         self._append_camp_training_goals(goals, world, observations)
+        self._append_training_continuation(goals, world, training_continuation_goal_id)
         self._append_queue_goal(
             goals, "KEEP_RESEARCH_PRODUCTIVE", world.research,
-            ("SELECT_RESEARCH_NODE", "RESEARCH"), RESEARCH_PRODUCTIVE_VALUE,
+            ("SELECT_RESEARCH_NODE", "RESEARCH", "OPEN_TECH_TREE"), RESEARCH_PRODUCTIVE_VALUE,
         )
         self._append_queue_goal(
             goals, "KEEP_BUILDING_PRODUCTIVE", world.building,
-            ("BUILDING_UPGRADE",), BUILDING_PRODUCTIVE_VALUE,
+            ("OPEN_BUILDING_UPGRADE", "BUILDING_UPGRADE", "TRY_ORDINARY_CONTROL"),
+            BUILDING_PRODUCTIVE_VALUE,
         )
         # Domains whose goal is emitted only from a reading (see SWEEP_ROUTINES).  With a
         # reading the branches above already work; this fills the case where there is none, so
@@ -662,6 +979,11 @@ class GoalLibrary:
                 # badge costs no extra look -- the reading was taken when the frame was.
                 getattr(world, "red_dots", None),
             )
+        # The Alliance bottom-tab badge was present in every sampled HOME frame.
+        # It therefore carries no information about Bear availability and must not
+        # manufacture a Bear discovery goal.  Bear discovery is emitted below only
+        # from the specific live Alliance War tile on Alliance HOME.
+        _append_quick_panel_task_goals(goals, world)
         # GATHER, as the operator's goal list names it, in the runtime form the
         # project's own table already describes (KEEP_MARCHES_PRODUCTIVE).
         #
@@ -804,7 +1126,10 @@ class GoalLibrary:
                           "event_id": "BEAR_HUNT", "window_open": actionable},
                 distance=0.0 if status is GoalStatus.EXPIRED else 1.0,
             ))
-        self._append_known_activities(goals)
+        self._append_event_calendar_goal(
+            goals, world, role_id=role_id, calendar_snapshot=calendar_snapshot
+        )
+        self._append_known_activities(goals, calendar_snapshot=calendar_snapshot)
         if (
             world.page is Page.ALLIANCE
             and world.alliance.get("section") == "HOME"
@@ -829,6 +1154,7 @@ class GoalLibrary:
                 },
                 distance=1.0,
             ))
+        self._append_prepared_workflows(goals)
         for page in world.rewards.get("verified_claimable", ()):
             goals.append(GoalState(
                 f"CLAIM_FREE_{page}", GoalStatus.READY, reward_value=250, daily_loss=250,
@@ -840,7 +1166,220 @@ class GoalLibrary:
         return tuple(goals)
 
     @staticmethod
-    def _append_known_activities(goals: list[GoalState]) -> None:
+    def _append_prepared_workflows(goals: list[GoalState]) -> None:
+        """Keep mapped workflows visible until a live observation can make them actionable.
+
+        These records deliberately have no skills. The map currently lacks a production reader
+        for attempt counters and alliance event windows, so registering the workflow must not
+        invite the scheduler to navigate by guessed controls or prior-only data.
+        """
+        prepared = (
+            ("USE_FREE_ARENA_ATTEMPTS", "world.attempts", "free arena attempts counter"),
+            ("LABYRINTH_DAILY", "world.attempts", "Labyrinth attempts counter"),
+            ("ALLIANCE_TIMED_EVENTS", "alliance/event producer", "event identity and live timer"),
+        )
+        existing = {goal.goal_id for goal in goals}
+        for goal_id, missing_source, required_observation in prepared:
+            if goal_id in existing:
+                continue
+            goals.append(GoalState(
+                goal_id, GoalStatus.UNKNOWN, available_skills=(),
+                evidence={
+                    "prepared_only": True,
+                    "availability": "AWAITING_LIVE",
+                    "blocker": f"missing production observation: {missing_source}",
+                    "required_observation": required_observation,
+                    "live_verified": False,
+                },
+                distance=1.0,
+            ))
+
+    @staticmethod
+    def _append_event_calendar_goal(
+        goals: list[GoalState], world: WorldState, *, role_id: str,
+        calendar_snapshot: Mapping[str, Any] | None = None,
+    ) -> None:
+        """Schedule a bounded read once per day in the fresh role or unscoped-client bucket."""
+        scope = "ROLE" if role_id else "UNSCOPED_CLIENT"
+        scoped_role_id = role_id or None
+        events = world.events if isinstance(world.events, Mapping) else {}
+        if world.page is Page.UNKNOWN and events.get("calendar_detail_return_pending") is True:
+            goals.append(GoalState(
+                "DISCOVER_EVENT_CALENDAR", GoalStatus.READY,
+                reward_value=1200, daily_loss=1200, development_value=1200,
+                available_skills=("BACK",),
+                evidence={
+                    "role_id": scoped_role_id,
+                    "scope": scope,
+                    "operation": "BOUNDED_BACK_FROM_UNNAMED_PAGE_TO_RESUME_CALENDAR_SCAN",
+                    "calendar_detail_return_pending": True,
+                    "no_arbitrary_control": True,
+                },
+                distance=0.0,
+            ))
+            return
+        detail = events.get("calendar_detail")
+        if isinstance(detail, Mapping) and detail.get("recognized") is True:
+            detail_event_id = str(detail.get("event_id") or "")
+            saved_entries = [
+                row for row in ((calendar_snapshot or {}).get("entries") or ())
+                if isinstance(row, Mapping)
+            ]
+            from_grid = detail.get("calendar_origin") == "GRID_ENTRY" or any(
+                str(row.get("event_id") or "") == detail_event_id
+                and row.get("details_observed") is not True
+                for row in saved_entries
+            )
+            next_skill = "RETURN_EVENT_CALENDAR" if from_grid else "OPEN_EVENT_CALENDAR_TAB"
+            goals.append(GoalState(
+                "DISCOVER_EVENT_CALENDAR", GoalStatus.READY,
+                reward_value=300, daily_loss=450, development_value=250,
+                available_skills=(next_skill,),
+                evidence={
+                    "role_id": scoped_role_id,
+                    "scope": scope,
+                    "operation": (
+                        "RETURN_TO_GRID_AFTER_EVENT_DETAIL" if from_grid
+                        else "OPEN_CALENDAR_TAB_FROM_REGULAR_EVENTS"
+                    ),
+                    "event_id": detail.get("event_id"),
+                    "event_name": detail.get("display_name"),
+                    "activity_open_window": [detail.get("activity_open_start_raw"), detail.get("activity_open_end_raw")],
+                    "registration_window": [detail.get("registration_start_raw"), detail.get("registration_end_raw")],
+                    "battle_window": [detail.get("battle_start_raw"), detail.get("battle_end_raw")],
+                    "countdown_raw": detail.get("countdown_raw"),
+                    "current_open_state": detail.get("current_open_state", "UNKNOWN"),
+                    "time_zone": detail.get("time_zone"),
+                },
+                distance=1.0,
+            ))
+            return
+        calendar = events.get("calendar")
+        if isinstance(calendar, Mapping) and calendar.get("recognized") is True:
+            entries = [dict(row) for row in (calendar.get("entries") or ()) if isinstance(row, Mapping)]
+            saved_entries = [
+                row for row in ((calendar_snapshot or {}).get("entries") or ())
+                if isinstance(row, Mapping)
+            ]
+            saved_by_key = {
+                str(row.get("occurrence_key") or f"{row.get('event_id')}|{row.get('calendar_date_raw') or 'UNKNOWN_DATE'}"): row
+                for row in saved_entries
+            }
+            for row in entries:
+                key = str(row.get("occurrence_key") or f"{row.get('event_id')}|{row.get('calendar_date_raw') or 'UNKNOWN_DATE'}")
+                saved = saved_by_key.get(key)
+                if isinstance(saved, Mapping):
+                    row.update({name: saved[name] for name in (
+                        "details_observed", "details_observed_at", "detail_evidence_ref", "detail_observation"
+                    ) if name in saved})
+            pending = [row for row in entries if row.get("details_observed") is not True and row.get("tap_norm")]
+            if pending:
+                status = GoalStatus.READY
+                skills = ("OPEN_EVENT_CALENDAR_DETAIL",)
+                completion = 0.0
+            else:
+                status = GoalStatus.COMPLETE
+                skills = ()
+                completion = 1.0
+            goals.append(GoalState(
+                "DISCOVER_EVENT_CALENDAR", status,
+                completion=completion, available_skills=skills,
+                reward_value=300 if status is GoalStatus.READY else 0,
+                daily_loss=450 if status is GoalStatus.READY else 0,
+                development_value=250 if status is GoalStatus.READY else 0,
+                evidence={
+                    "source": calendar.get("source", "LIVE_CLIENT_OCR"),
+                    "scope": scope,
+                    "role_id": scoped_role_id,
+                    "entry_count": len(entries),
+                    "details_observed_count": sum(row.get("details_observed") is True for row in entries),
+                    "details_pending_count": len(pending),
+                    "details_unavailable_count": sum(not row.get("tap_norm") for row in entries),
+                    "next_event_id": pending[0].get("event_id") if pending else None,
+                    "event_ids": [str(row.get("event_id")) for row in entries
+                                  if isinstance(row, Mapping) and row.get("event_id")],
+                    "visible_dates_raw": list(calendar.get("visible_dates_raw") or ()),
+                    "calendar_read_in_current_frame": True,
+                    "calendar_details_are_separate_from_battle_time": True,
+                    "activity_times_are_previews": True,
+                },
+                distance=0.0,
+            ))
+            return
+        if world.page not in {Page.HOME, Page.MAP}:
+            return
+        try:
+            from .event_schedule import calendar_scan_due
+
+            due = calendar_scan_due(role_id)
+        except Exception:  # noqa: BLE001 -- calendar maintenance must never stop AUTO
+            due = False
+        if not due:
+            return
+        entry_reading = (world.events or {}).get("calendar_entry") if isinstance(world.events, Mapping) else None
+        entry_visible = isinstance(entry_reading, Mapping) and entry_reading.get("visible") is True
+        if not entry_visible:
+            if world.page is Page.MAP:
+                goals.append(GoalState(
+                    "DISCOVER_EVENT_CALENDAR", GoalStatus.READY,
+                    # A due calendar read must be allowed to reach the city HUD even when the
+                    # current map frame cannot see its entry. Otherwise unrelated map work can
+                    # permanently win the board before the calendar is ever inspected.
+                    reward_value=300, daily_loss=450, development_value=250,
+                    available_skills=("OPEN_HOME",),
+                    evidence={
+                        "role_id": scoped_role_id,
+                        "scope": scope,
+                        "scan_due": True,
+                        "page": world.page.value,
+                        "operation": "RETURN_TO_CITY_TO_FIND_CALENDAR_ENTRY",
+                        "entry_visible": False,
+                        "no_event_time_inferred": True,
+                    },
+                    distance=1.0,
+                ))
+                return
+            goals.append(GoalState(
+                "DISCOVER_EVENT_CALENDAR", GoalStatus.UNKNOWN,
+                available_skills=(),
+                evidence={
+                    "role_id": scoped_role_id,
+                    "scope": scope,
+                    "scan_due": True,
+                    "page": world.page.value,
+                    "blocker": "current-frame 常规活动 entry not recognized",
+                    "no_event_time_inferred": True,
+                },
+                distance=1.0,
+            ))
+            return
+        skill = (
+            "OPEN_EVENT_CALENDAR_FROM_HOME" if world.page is Page.HOME
+            else "OPEN_EVENT_CALENDAR_FROM_MAP"
+        )
+        goals.append(GoalState(
+            "DISCOVER_EVENT_CALENDAR", GoalStatus.READY,
+            # This is a daily maintenance read for future activities. It should win over
+            # background resource work once when due, then disappear for the rest of the day.
+            reward_value=300, daily_loss=450, development_value=250,
+            available_skills=(skill,),
+            evidence={
+                "role_id": scoped_role_id,
+                "scope": scope,
+                "operation": "READ_CURRENT_AND_VISIBLE_FUTURE_EVENT_DATES",
+                "scan_due": True,
+                "page": world.page.value,
+                "entry_visible": entry_visible,
+                "activity_times_are_previews": True,
+                "no_event_time_inferred": True,
+            },
+            distance=1.0,
+        ))
+
+    @staticmethod
+    def _append_known_activities(
+        goals: list[GoalState], *, calendar_snapshot: Mapping[str, Any] | None = None
+    ) -> None:
         """Put the activities this project already knows about on the board, open or not (§二/§三).
 
         Before this, an activity existed in the agent's world only as a field on a frame.  Measured
@@ -849,11 +1388,16 @@ class GoalLibrary:
         exist** -- and the run could only notice it by happening to stand somewhere that prints it.
         That is the conflation this function removes: 存在性不再只依赖当前帧.
 
-        What it emits is a *record*, not a task:
+        What it emits is a *registered record*, not currently actionable work:
 
-        * ``available_skills=()``, so ``rank``/``best`` skip it (both require a skill to offer) and
-          it can never be selected.  §一: 尚未开放和暂时受阻的任务必须保留记录，但不得冒充当前可执行
-          任务参加普通排序.
+        * The existing goal and skill IDs are copied into ``registered_goal_ids`` and
+          ``registered_skill_ids``. The activity remains ``UNKNOWN``/``SCHEDULED_NOT_OPEN`` until
+          the current client supplies its live conditions; no historical verification gate is
+          added, and no calendar preview is promoted to an opening or battle clock.
+        * ``available_skills=()`` keeps the dormant record out of ordinary dispatch. When a live
+          page makes the event actionable, its existing task goal (for example
+          ``EVENT_MINIMUM_GUARANTEE`` or ``PARTICIPATE_BEAR``) owns execution and de-duplicates
+          this registration by ``event_id``.
         * the status is the window's, so the artifact says which of the six semantics applies.
         * ``evidence["prepare"]`` carries what §三 asks to have ready and ``evidence["knowledge"]``
           the files it lives in.  Preparing is not a page entry, so it is not a skill.
@@ -863,11 +1407,16 @@ class GoalLibrary:
         answer to disagree.
         """
         reported = {str((goal.evidence or {}).get("event_id") or "") for goal in goals}
+        snapshot = calendar_snapshot if isinstance(calendar_snapshot, Mapping) else {}
+        calendar_rows = [row for row in (snapshot.get("entries") or ()) if isinstance(row, Mapping)]
+        observed_ids = {str(row.get("event_id") or "") for row in calendar_rows}
+        static_ids = {activity.event_id for activity in event_goal.known_activities()}
         for activity in event_goal.known_activities():
             current_ids = {activity.event_id, *activity.aliases}
             if not activity.event_id or current_ids.intersection(reported):
                 continue
             window = activity.window()
+            registered = _registered_activity_flow(activity)
             goals.append(GoalState(
                 f"SCHEDULED_{activity.event_id}",
                 _WINDOW_STATUS[window],
@@ -875,11 +1424,45 @@ class GoalLibrary:
                 available_skills=(),
                 evidence={
                     **activity.plan(),
+                    **registered,
+                    "calendar_observation": next((dict(row) for row in calendar_rows
+                                                   if str(row.get("event_id") or "") == activity.event_id), None),
+                    "calendar_observed_at": snapshot.get("observed_at"),
+                    "calendar_role_id": snapshot.get("role_id"),
                     "window": window.value,
                     "live_reading": False,
                     "availability_state": "AWAITING_LIVE_CLIENT_READING",
                     "dispatch_rule": "use the registered event flow only after the current client identifies the event and its live conditions",
                     "fallback": "match a registered generic event flow, then use the current UI planner when a step is missing",
+                },
+                distance=1.0,
+            ))
+        # New localized names discovered in a calendar remain visible as role-scoped candidates.
+        # They carry no guessed mechanics, timing or executable action until a live page supplies
+        # those facts; exact IDs are deduplicated with any live event goal already on the board.
+        for row in calendar_rows:
+            event_id = str(row.get("event_id") or "")
+            if not event_id or event_id in static_ids or event_id in reported:
+                continue
+            goals.append(GoalState(
+                f"SCHEDULED_{event_id}", GoalStatus.UNKNOWN,
+                available_skills=(),
+                evidence={
+                    "event_id": event_id,
+                    "name": row.get("display_name"),
+                    "activity_goal_id": f"SCHEDULED_{event_id}",
+                    "registered_goal_ids": ["DISCOVER_EVENT_CALENDAR", "EVENT_MINIMUM_GUARANTEE"],
+                    "registered_skill_ids": _registered_event_candidate_skills(),
+                    "unregistered_skill_ids": _unregistered_event_candidate_skills(),
+                    "flow_registration_state": "PARTIAL_GENERIC_FALLBACK_REGISTERED_WAITING_FOR_LIVE_CONDITIONS",
+                    "calendar_observation": dict(row),
+                    "calendar_observed_at": snapshot.get("observed_at"),
+                    "calendar_role_id": snapshot.get("role_id"),
+                    "availability_state": "CALENDAR_PREVIEW_ONLY",
+                    "start": None,
+                    "end": None,
+                    "participation_conditions": "UNKNOWN",
+                    "fallback": "match a registered generic event flow after live page and conditions are observed",
                 },
                 distance=1.0,
             ))
@@ -951,17 +1534,32 @@ class GoalLibrary:
         camps = world.camps or {}
         troop = str((world.training or {}).get("troop_type") or "").upper()
         legacy_camp = TROOP_TO_CAMP.get(troop) if troop else None
+        if legacy_camp is None:
+            camp_key = str((world.training or {}).get("camp") or "").upper()
+            camp_label = str((world.training or {}).get("camp_label") or "")
+            if camp_key in CAMP_GOAL_FOR:
+                legacy_camp = camp_key
+            elif camp_label:
+                legacy_camp = next((key for key, label in CAMP_LABELS.items() if label == camp_label), None)
 
         if not camps:
             # No per-camp model yet.  Keep the old single reading as one ticket, but name the
             # camp it belongs to when the troop type identifies one, so the board shows
             # SHIELD_CAMP rather than an anonymous "training".
-            if world.training:
+            training_reading = world.training or {}
+            has_queue_or_camp_fact = any(
+                key in training_reading
+                for key in (
+                    "status", "queue_available", "trainable", "claimable", "troop_type",
+                    "camp", "camp_label", "menu_open", "all_queues_busy",
+                )
+            )
+            if has_queue_or_camp_fact:
                 self._append_queue_goal(
                     goals, CAMP_GOAL_FOR.get(legacy_camp, "KEEP_TRAINING_PRODUCTIVE"),
-                    world.training, ("TRAIN_TROOPS",), TRAINING_CAMP_VALUE,
+                    training_reading, ("TRAIN_TROOPS",), TRAINING_CAMP_VALUE,
                 )
-            else:
+            elif not world.training:
                 # Never read: a sweep ticket, priced like the other unread routines.
                 _append_panel_routine(goals, TRAINING_SWEEP, None,
                                       (observations or {}).get("training"))
@@ -1055,6 +1653,59 @@ class GoalLibrary:
         if legacy_camp is None and world.training and world.training.get("status"):
             self._append_queue_goal(goals, "KEEP_TRAINING_PRODUCTIVE", world.training,
                                     ("TRAIN_TROOPS",), TRAINING_CAMP_VALUE)
+
+    @staticmethod
+    def _append_training_continuation(
+        goals: list[GoalState], world: WorldState, goal_id: str
+    ) -> None:
+        """Keep a selected barracks task schedulable across its two UI-only steps.
+
+        A completed quick-panel row closes the panel and leaves HOME on a focused-barracks
+        frame. That frame no longer contains the panel's three queue readings, so ordinary
+        discovery used to drop the just-selected camp and let an unrelated goal take over
+        before the action bar could open. The committed goal identity comes from the row the
+        Scheduler selected; the current-frame halo only authorizes this bounded navigation
+        continuation. Reward feedback is also an intermediate state after collecting a batch.
+        This appends to the existing Goal board and still lets the same Scheduler rank it.
+        """
+        camp = next((key for key, value in CAMP_GOAL_FOR.items() if value == str(goal_id)), None)
+        if camp is None:
+            return
+        training = world.training or {}
+        focused = (
+            world.page is Page.HOME
+            and training.get("navigation") == "PANEL_CAMP_FOCUSED"
+            and isinstance(training.get("camp_focus_tap_norm"), (tuple, list))
+            and len(training.get("camp_focus_tap_norm")) == 2
+        )
+        reward_feedback = world.page is Page.POPUP and world.popup == "GENERIC_REWARD"
+        if not (focused or reward_feedback):
+            return
+        existing_index = next(
+            (index for index, item in enumerate(goals) if item.goal_id == goal_id),
+            None,
+        )
+        if existing_index is not None and goals[existing_index].evidence.get("continuation") is True:
+            return
+        continuation = GoalState(
+            goal_id, GoalStatus.READY, completion=0.0,
+            development_value=TRAINING_CAMP_VALUE,
+            available_skills=("TRAIN_TROOPS",),
+            evidence={
+                "camp": camp,
+                "continuation": True,
+                "intermediate_state": "PANEL_CAMP_FOCUSED" if focused else "TRAINING_REWARD_FEEDBACK",
+                "source": "CURRENT_GOAL_AND_CURRENT_FRAME",
+            },
+            distance=1.0,
+        )
+        if existing_index is None:
+            goals.append(continuation)
+        else:
+            # The current screen is authoritative for this short handoff. A stale
+            # DISCOVERED/BLOCKED queue reading must not erase the selected camp task
+            # between its quick-panel entry, focus tap, and training page.
+            goals[existing_index] = continuation
 
     def rank(
         self,

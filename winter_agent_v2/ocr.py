@@ -15,7 +15,10 @@ from .building_identity import UNKNOWN as UNKNOWN_IDENTITY
 from .building_identity import read_building_identity
 from .camp_training import CAMP_LABELS, LABEL_TO_CAMP, TROOP_TO_CAMP
 from .camp_training import camp_from_selected_label, merge_camps, observe_camps
+from .camp_ring import focused_camp_body_tap_norm
 from .entry_badges import read_all
+from . import event_goal
+from . import event_calendar
 
 def _frame_stamp(frame: Path) -> str:
     """When this frame was written, taken from the file itself.
@@ -291,7 +294,7 @@ class OCRService:
 #: research lab's own header.  Both the page classifier below and
 #: ``read_quick_panel`` are built on this list, so the two can never disagree about
 #: what the panel says.
-QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技研究")
+QUICK_PANEL_SECTIONS: tuple[str, ...] = ("建筑队列", "部队训练", "科技研究", "英雄招募")
 
 #: The sections the **panel reader** accepts and reads, in the client's own order.
 #:
@@ -356,6 +359,7 @@ SECTION_ROW_KEYS: dict[str, str] = {
     "联盟捐献": "ALLIANCE_DONATION",
     "英雄招募": "HERO_RECRUIT",
     "我的奖励": "MY_REWARDS",
+    "宠物寻宝": "PET_TREASURE",
 }
 
 QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
@@ -365,6 +369,7 @@ QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
     "联盟捐献",
     "英雄招募",
     "我的奖励",
+    "宠物寻宝",
     "市场切换",
 )
 
@@ -435,8 +440,12 @@ class OCRPageClassifier:
     player is *not* on that page, it cannot identify the page.
     """
 
+    # Exact event titles proven on the page may identify it without geometry. Newly registered
+    # aliases need a heading-sized box so a small navigation tab cannot impersonate the open event.
+    EVENT_PAGE_TITLE_LABELS = frozenset({"最强王国", "军备竞赛", "军备竞演"})
+
     RULES: tuple[tuple[Page, tuple[str, ...]], ...] = (
-        (Page.EVENT, ("最强王国",)),
+        (Page.EVENT, ("最强王国", "军备竞赛", "军备竞演")),
         (Page.ALLIANCE, ("联盟科技", "联盟互助", "联盟永续", "联盟宝箱")),
         # ``科技研究`` was removed from this list, for the reason the docstring
         # above already states.  The left triangle opens the 城镇/野外 快捷面板,
@@ -490,6 +499,49 @@ class OCRPageClassifier:
     # 29px gap), so this reaches past a same-row band while staying short of the next
     # section's rows, which are a full row height away.
     OWNER_LOOKUP_PX: float = 36.0
+
+    _TIMER_RE = re.compile(r"(?:(?P<days>\d+)天)?(?P<hours>\d{1,3}):(?P<minutes>\d{2}):(?P<seconds>\d{2})")
+
+    @classmethod
+    def _explicit_start_seconds(cls, tokens: list[OCRToken]) -> int | None:
+        """Read only a timer explicitly labeled 距开始/距离开始.
+
+        Stage timers (for example ``击败野兽 12:03:29``) are deadlines, not start times.
+        They must never seed an event reservation. OCR can return the label and value in
+        one token or as adjacent same-line tokens; when boxes are present, relative geometry
+        must also show that the value belongs to the label.
+        """
+        texts = [str(token.text or "").strip() for token in tokens]
+        labels = ("距开始", "距离开始")
+        for index, token in enumerate(tokens):
+            text = texts[index]
+            if not any(label in text for label in labels):
+                continue
+            match = cls._TIMER_RE.search(text)
+            if match is None:
+                for next_index in range(index + 1, min(index + 3, len(tokens))):
+                    candidate = cls._TIMER_RE.fullmatch(texts[next_index])
+                    if candidate is None:
+                        continue
+                    label_centre = token.centre if token.box else None
+                    value_token = tokens[next_index]
+                    if label_centre is not None and value_token.box:
+                        value_centre = value_token.centre
+                        if abs(label_centre[1] - value_centre[1]) > 36 or value_centre[0] < label_centre[0]:
+                            continue
+                    elif next_index != index + 1:
+                        continue
+                    match = candidate
+                    break
+            if match is None:
+                continue
+            return (
+                int(match.group("days") or 0) * 86400
+                + int(match.group("hours")) * 3600
+                + int(match.group("minutes")) * 60
+                + int(match.group("seconds"))
+            )
+        return None
 
     def __init__(self, minimum_confidence: float = 0.88) -> None:
         self.minimum_confidence = minimum_confidence
@@ -590,10 +642,98 @@ class OCRPageClassifier:
                 exploration={"status": "CLAIMABLE", "idle_dialog": True},
                 confidence=max(token.confidence for token in eligible),
             )
+        if (
+            "奖励" in exact_texts
+            and any(re.fullmatch(r"招募\s*1\s*次", text) for text in exact_texts)
+            and any(re.search(r"今日剩余招募次数[：:]\s*[0-9,，]+", text) for text in exact_texts)
+            and any(phrase in text for text in exact_texts for phrase in CLIENT_TAP_ANYWHERE_PHRASES)
+        ):
+            return WorldState(page=Page.POPUP, popup="HERO_RECRUIT_REWARD",
+                              daily={"task_action_feedback": True},
+                              confidence=max(token.confidence for token in eligible))
         found: list[Page] = []
+        # The live recruit screen draws its title as two OCR boxes (英雄, 招募), then
+        # two distinct cards with 高级招募 / 史诗招募, each carrying its own
+        # 今日免费招募剩余 count. The quick panel can show the same card names, but
+        # never those in-page counts and two full card headings together. Require that
+        # structure before naming Page.HERO; a lone “免费招募” label is not page identity.
+        recruit_headings = [
+            token for token in eligible
+            if token.text.strip() in {"高级招募", "史诗招募"}
+        ]
+        recruit_free_counts = [
+            token for token in eligible
+            if re.search(r"今日免费招募剩余[：:]\s*\d+\s*次", token.text.strip())
+        ]
+        hero_card_layout = (
+            "招募预览" in exact_texts
+            and "积分宝箱" in exact_texts
+            and any(re.fullmatch(r"招募\s*1\s*次", text) for text in exact_texts)
+        )
+        hero_recruit_page = (
+            {"英雄", "招募"}.issubset(exact_texts)
+            and {token.text.strip() for token in recruit_headings}
+            == {"高级招募", "史诗招募"}
+            and (bool(recruit_free_counts) or hero_card_layout)
+        )
+        if hero_recruit_page:
+            found.append(Page.HERO)
         for page, alternatives in self.RULES:
             if any(keyword in exact_texts for keyword in alternatives):
                 found.append(page)
+        # 宠物寻宝 is also a section label in the HOME quick panel, so the title
+        # alone cannot identify this page. Require the page's own daily-attempt
+        # counter and its distinct 联盟宝藏 entry as corroborating structure.
+        pet_attempt_token = next((
+            token for token in eligible
+            if re.search(r"今日剩余寻宝次数[：:]\s*\d+", token.text.strip())
+        ), None)
+        pet_treasure_page = (
+            "宠物寻宝" in exact_texts
+            and "联盟宝藏" in exact_texts
+            and pet_attempt_token is not None
+        )
+        if pet_treasure_page:
+            found.append(Page.PET_TREASURE)
+        # The canonical event registry owns exact title aliases. A discovered alias is page identity
+        # only when the frame draws it at heading scale; small event tabs are navigation, not the
+        # active event. The real event hub can draw 联盟总动员 as a tab while its open content is 军备竞演.
+        event_title_tokens = []
+        for token in eligible:
+            label = token.text.strip()
+            if not event_goal.event_id_for_label(label):
+                continue
+            height = 0.0
+            if token.box:
+                ys = [point[1] for point in token.box]
+                height = max(ys) - min(ys)
+            is_title = label in self.EVENT_PAGE_TITLE_LABELS
+            if frame_size and frame_size[1] > 0:
+                is_title = is_title or height / float(frame_size[1]) >= 0.03
+            if is_title:
+                event_title_tokens.append(token)
+        if event_title_tokens:
+            found.append(Page.EVENT)
+        calendar_reading = event_calendar.read_event_calendar(
+            eligible, frame_size=frame_size
+        )
+        if calendar_reading.get("recognized") is True:
+            # A calendar page needs its heading, several visible date anchors and event-like
+            # entries together. The small Home/Map rail label alone cannot name this page.
+            found.append(Page.EVENT)
+        event_detail_label = max(
+            event_title_tokens,
+            key=lambda token: max((point[1] for point in token.box), default=0.0)
+            - min((point[1] for point in token.box), default=0.0),
+            default=None,
+        )
+        calendar_detail_reading = event_calendar.read_event_detail(
+            eligible,
+            event_label=event_detail_label.text.strip() if event_detail_label else None,
+            frame_size=frame_size,
+        )
+        if calendar_detail_reading.get("recognized") is True:
+            found.append(Page.EVENT)
         # The node detail sheet dims the tree header enough that the page template and
         # OCR title can both disappear. Its own structure is still distinctive: a
         # technology-node title, the dedicated 研究 action, and the 研究消耗 section.
@@ -653,59 +793,185 @@ class OCRPageClassifier:
         building_sheet = self._building_upgrade_sheet_evidence(
             eligible, frame_size=frame_size
         )
-        if building_sheet:
+        research_lab_sheet = self._research_lab_upgrade_sheet_evidence(
+            eligible, frame_size=frame_size
+        )
+        if building_sheet or research_lab_sheet:
             found.append(Page.BUILDING)
+        bear_trap_detail = (
+            "狩猎陷阱" in exact_texts
+            and any(
+                marker in text
+                for text in exact_texts
+                for marker in ("前往", "距开始", "距离开始", "狩猎陷阱详情")
+            )
+        )
+        if bear_trap_detail:
+            found.append(Page.ALLIANCE)
+        calendar_entry = event_calendar.read_calendar_entry(eligible, frame_size=frame_size)
         if len(set(found)) != 1:
-            return WorldState(page=Page.UNKNOWN, confidence=0.0)
+            # Hybrid vision may already have a reliable Home/Map page template even when this
+            # text-only classifier cannot name that page. Preserve the label's current-frame
+            # point as evidence for that fusion; the runtime resolver still checks the fused
+            # page and refuses every page except HOME/MAP.
+            return WorldState(
+                page=Page.UNKNOWN,
+                events={"calendar_entry": calendar_entry} if calendar_entry else {},
+                confidence=0.0,
+            )
         page = found[0]
         confidence = max(token.confidence for token in eligible)
         alliance: dict[str, object] = {}
         daily: dict[str, object] = {}
         building: dict[str, object] = (
             {"upgrade_dialog_visible": True, "identity": "UNKNOWN"}
-            if page is Page.BUILDING and building_sheet else {}
+            if page is Page.BUILDING and (building_sheet or research_lab_sheet) else {}
         )
+        if page is Page.BUILDING and research_lab_sheet:
+            # This title and panel structure identify the Research Institute's
+            # upgrade sheet. They do not establish level, affordability, or
+            # permission to spend; those remain separately observed facts.
+            building.update({
+                "id": "RESEARCH_CENTER",
+                "name": "科研所",
+                "identity": "RESEARCH_CENTER",
+                "identity_source": "CURRENT_FRAME_OCR_TITLE",
+            })
         research: dict[str, object] = {}
         training: dict[str, object] = {}
         events: dict[str, object] = {}
-        if page is Page.EVENT:
+        rewards: dict[str, object] = {}
+        beast: dict[str, object] = {}
+        if page is Page.PET_TREASURE and pet_attempt_token is not None:
+            match = re.search(r"今日剩余寻宝次数[：:]\s*(\d+)", pet_attempt_token.text.strip())
+            beast["pet_treasure"] = {
+                "remaining_attempts": int(match.group(1)) if match else None,
+                "alliance_treasure_entry_visible": "联盟宝藏" in exact_texts,
+                "source": "LIVE_CLIENT_OCR",
+            }
+        if page is Page.HERO and hero_recruit_page:
+            # Associate each explicit free-count and the client's own “免费” button
+            # with the card heading immediately above it. Coordinates are normalized
+            # from this screenshot only; the executor refuses the action if the
+            # matching card or its free label is absent on the current frame.
+            heading_rows = sorted(
+                ((token.text.strip(), token.centre[1]) for token in recruit_headings
+                 if token.box),
+                key=lambda item: item[1],
+            )
+            rows: list[dict[str, object]] = []
+            if frame_size and frame_size[0] > 0 and frame_size[1] > 0:
+                for index, (heading, top_y) in enumerate(heading_rows):
+                    bottom_y = (heading_rows[index + 1][1]
+                                if index + 1 < len(heading_rows) else float(frame_size[1]))
+                    count_matches: list[tuple[OCRToken, int]] = []
+                    for token in recruit_free_counts:
+                        if not token.box or not top_y < token.centre[1] < bottom_y:
+                            continue
+                        match = re.search(
+                            r"今日免费招募剩余[：:]\s*(\d+)\s*次", token.text.strip()
+                        )
+                        if match:
+                            count_matches.append((token, int(match.group(1))))
+                    if not count_matches:
+                        continue
+                    count_token, remaining = min(
+                        count_matches, key=lambda pair: pair[0].centre[1]
+                    )
+                    free_token = next((
+                        token for token in eligible
+                        if token.text.strip() == "免费" and token.box
+                        and count_token.centre[1] < token.centre[1] < bottom_y
+                    ), None)
+                    row_key = (
+                        "HERO_RECRUIT_ADVANCED" if heading == "高级招募"
+                        else "HERO_RECRUIT_EPIC"
+                    )
+                    rows.append({
+                        "key": row_key,
+                        "name": heading,
+                        "free_remaining": remaining,
+                        "free_available": remaining > 0 and free_token is not None,
+                        "free_source_word": count_token.text.strip(),
+                        "free_button_norm": (
+                            [round(free_token.centre[0] / frame_size[0], 4),
+                             round(free_token.centre[1] / frame_size[1], 4)]
+                            if free_token is not None else None
+                        ),
+                        "source": "LIVE_CLIENT_OCR",
+                    })
+            rewards = {"hero_recruit_rows": rows}
+        if (
+            page is Page.EVENT
+            and calendar_reading.get("recognized") is not True
+            and calendar_detail_reading.get("recognized") is not True
+        ):
             texts = [token.text.strip() for token in eligible]
-            event_name = next((text for text in texts if text not in {"常规活动", "排行榜", "本期英雄", "备战阶段", "子阶段目标", "勋章奖励", "奖励详情"} and text in {"最强王国", "军备竞赛"}), None)
+            event_title = event_detail_label
+            event_name = (
+                event_title.text.strip() if event_title is not None
+                else calendar_detail_reading.get("display_name")
+            )
             current_points = None
             remaining_seconds = None
+            seconds_to_start = self._explicit_start_seconds(eligible)
             reward_tiers: list[int] = []
             scoring_stage = None
             for text in texts:
                 current = re.search(r"我的积分[：:]\s*([0-9,]+)", text)
                 if current: current_points = int(current.group(1).replace(",", ""))
                 timer = re.search(r"(.+?)\s*(\d{1,2}):(\d{2}):(\d{2})$", text)
-                if timer:
+                if timer and not any(label in timer.group(1) for label in ("距开始", "距离开始")):
                     scoring_stage = timer.group(1).strip()
                     remaining_seconds = int(timer.group(2)) * 3600 + int(timer.group(3)) * 60 + int(timer.group(4))
                 if re.fullmatch(r"[0-9]{1,3}(?:,[0-9]{3})+", text):
                     value = int(text.replace(",", ""))
                     if value <= 10_000_000:
                         reward_tiers.append(value)
+            canonical_event_id = (
+                event_goal.event_id_for_label(event_name)
+                or (calendar_detail_reading.get("event_id") if calendar_detail_reading.get("recognized") is True else None)
+                or event_name or "CURRENT_EVENT"
+            )
             # The largest visible personal milestone is only a candidate
             # target. Goal planning may choose a lower F2P tier after costs
             # are known; alliance totals are excluded by UI ordering/scale.
             personal_tiers = tuple(sorted(set(reward_tiers[:3])))
             next_tier = next((tier for tier in personal_tiers if current_points is not None and tier > current_points), None)
             minimum = {
-                "event_id": event_name or "CURRENT_EVENT",
+                "event_id": canonical_event_id,
                 "name": event_name or "CURRENT_EVENT",
                 "current_points": current_points,
                 "reward_tiers": personal_tiers,
                 "target_points": next_tier,
                 "points_missing": max(0, next_tier - current_points) if next_tier is not None and current_points is not None else 0,
                 "remaining_seconds": remaining_seconds,
+                "seconds_to_start": seconds_to_start,
                 "scoring_stage": scoring_stage,
                 "all_target_rewards_claimed": False,
                 "source": "LIVE_CLIENT_OCR",
             }
             events = {"active_event": event_name, "minimum_guarantee": minimum}
+        elif calendar_detail_reading.get("recognized") is True:
+            # A current calendar detail panel is an observation target. Its score buttons
+            # are not permission to execute the activity; the discovery Goal returns to the
+            # calendar before the normal Scheduler considers other tasks.
+            events["calendar_detail"] = calendar_detail_reading
+        if calendar_reading.get("recognized") is True:
+            # A future listing is not a live scoring window. Keeping it separate prevents a
+            # preview title from creating an actionable minimum-guarantee goal.
+            events["calendar"] = calendar_reading
         if page is Page.ALLIANCE:
             texts = [token.text for token in eligible]
+            if bear_trap_detail:
+                seconds_to_start = self._explicit_start_seconds(eligible)
+                events["bear"] = {
+                    "event_id": "BEAR_HUNT",
+                    "name": "巨熊行动",
+                    "status": "SCHEDULED" if seconds_to_start is not None else None,
+                    "seconds_to_start": seconds_to_start,
+                    "source": "LIVE_CLIENT_OCR_EXPLICIT_START_LABEL",
+                }
             alliance["section"] = "TECHNOLOGY" if any("联盟科技" in text for text in texts) else "HELP"
             if any("联盟永续" in text for text in texts):
                 alliance["section"] = "TECHNOLOGY"
@@ -769,6 +1035,7 @@ class OCRPageClassifier:
             batch_count: int | None = None
             queue_timer: str | None = None
             has_train_button = False
+            claim_button_norm: list[float] | None = None
             button_caption: str | None = None
             train_button_norm: list[float] | None = None
             caption_norm: list[float] | None = None
@@ -832,6 +1099,14 @@ class OCRPageClassifier:
                 if text == TRAINING_BUTTON_LABEL:
                     has_train_button = True
                     train_button_norm = _token_centre_norm(text, eligible, frame_size)
+                if text in {"领取", "领取训练", "领取奖励"} and frame_size and token.box:
+                    # On the training page, an earned completed batch exposes its own
+                    # bottom action. A same-named control elsewhere cannot get here because
+                    # the page classifier has already identified TRAINING, and the lower-band
+                    # gate keeps a narrative/task label from becoming an input target.
+                    token_y = token.centre[1] / float(frame_size[1])
+                    if token_y >= 0.78:
+                        claim_button_norm = _token_centre_norm(text, eligible, frame_size)
             # Which barracks this page *is*.
             #
             # The page title names the troop (英勇盾兵 / 刚毅矛兵 / 刚毅射手), and that is the
@@ -856,7 +1131,10 @@ class OCRPageClassifier:
             # be started, which is the state ``trainable`` names and the one this project kept
             # failing to reach.  With neither, the honest reading is UNKNOWN -- and no
             # ``queue_available`` at all, so a page nobody could read is not mistaken for a busy one.
-            if batch_count is not None or queue_timer is not None:
+            if claim_button_norm is not None:
+                training.update({"status": "COMPLETED", "queue_available": False, "claimable": True})
+                training["claim_button_norm"] = claim_button_norm
+            elif batch_count is not None or queue_timer is not None:
                 training.update({"status": "IN_PROGRESS", "queue_available": False})
             elif has_train_button or button_caption is not None:
                 # Two ways of seeing the same button: its label, or the projected duration printed
@@ -940,6 +1218,8 @@ class OCRPageClassifier:
                 if selected_name:
                     research["selected_node"] = selected_name
                     research["selected_node_name"] = selected_name
+                    research["node"] = selected_name
+                    research["name"] = selected_name
                     research["node_detail_visible"] = True
                     control = max(detail_controls, key=lambda token: token.confidence)
                     research["research_control_norm"] = _token_centre_norm(
@@ -962,6 +1242,11 @@ class OCRPageClassifier:
                             if "/" not in raw_cost:
                                 continue
                             cost_tokens.append(raw_cost)
+                            # RapidOCR sometimes reads the thousands separator in
+                            # 69,000 as 万 (the production detail sheet produced
+                            # ``69万000``). Inside a slash-delimited cost pair,
+                            # remove that spurious unit before parsing while
+                            # preserving a real trailing 万, e.g. ``34万``.
                             normalized_cost = raw_cost.replace("，", ",")
                             normalized_cost = re.sub(r"(?<=\d)万(?=\d{3}(?:/|$))", "", normalized_cost)
                             match = cost_pattern.fullmatch(normalized_cost)
@@ -1028,7 +1313,8 @@ class OCRPageClassifier:
                     continue
                 if (
                     frame_size and frame_size[0] > 0 and frame_size[1] > 0
-                    and research.get("node_detail_visible") is True
+                    and
+                    research.get("node_detail_visible") is True
                     and token.centre[0] / frame_size[0] >= 0.50
                     and 0.74 <= token.centre[1] / frame_size[1] <= 0.85
                 ):
@@ -1107,8 +1393,13 @@ class OCRPageClassifier:
                 and "空闲中" in exact_texts
             ):
                 building.update({"status": "IDLE", "queue_available": True, "source": "LIVE_CLIENT_OCR"})
+        if page in {Page.HOME, Page.MAP} and calendar_entry:
+            # Navigation is allowed only from a known Home/Map page and the target is read from
+            # this exact OCR box. A small rail label never becomes Page.EVENT identity.
+            events["calendar_entry"] = calendar_entry
         return WorldState(page=page, alliance=alliance, daily=daily, building=building,
-                          research=research, training=training, events=events, confidence=confidence)
+                          research=research, training=training, events=events,
+                          rewards=rewards, beast=beast, confidence=confidence)
 
     @staticmethod
     def _building_upgrade_sheet_evidence(tokens, *, frame_size: tuple[int, int] | None) -> bool:
@@ -1152,6 +1443,45 @@ class OCRPageClassifier:
             and has("属性", x=(0.04, 0.24), y=(0.60, 0.72))
             and has("升级", x=(0.72, 0.96), y=(0.46, 0.56))
             and duration and attribute
+        )
+
+    @staticmethod
+    def _research_lab_upgrade_sheet_evidence(tokens, *, frame_size: tuple[int, int] | None) -> bool:
+        """Recognize the live Research Institute upgrade panel by its own layout.
+
+        The client uses a different upgrade sheet for the Research Institute:
+        title, 升级效果, 需要条件, and the furnace prerequisite. This proves
+        page and building identity only. In particular it does not infer that
+        the upgrade button is enabled or that resource policy permits it.
+        """
+        if not frame_size or frame_size[0] <= 0 or frame_size[1] <= 0:
+            return False
+        placed = []
+        for token in tokens:
+            if not token.box:
+                continue
+            xs = [point[0] for point in token.box]
+            ys = [point[1] for point in token.box]
+            rect = (min(xs) / frame_size[0], min(ys) / frame_size[1],
+                    max(xs) / frame_size[0], max(ys) / frame_size[1])
+            placed.append((token.text.strip(), rect))
+
+        def has(text: str, *, x=None, y=None) -> bool:
+            return any(
+                value == text
+                and (x is None or x[0] <= (rect[0] + rect[2]) / 2 <= x[1])
+                and (y is None or y[0] <= (rect[1] + rect[3]) / 2 <= y[1])
+                for value, rect in placed
+            )
+
+        return (
+            has("科研所", x=(0.35, 0.65), y=(0.10, 0.20))
+            and has("升级效果", x=(0.35, 0.65), y=(0.18, 0.28))
+            and has("需要条件", x=(0.35, 0.65), y=(0.38, 0.50))
+            and any("大熔炉" in text and "等级" in text
+                    and 0.42 <= (rect[1] + rect[3]) / 2 <= 0.54
+                    for text, rect in placed)
+            and has("升级", x=(0.60, 0.90), y=(0.75, 0.84))
         )
 
 
@@ -1964,7 +2294,12 @@ def _panel_arrow_and_badge(
         "w_norm": round((right - left) / width, 4),
         "h_norm": round((2 * half) / height, 4),
     }
-    centre = [round(centre_x / width, 4), round(row_y_norm, 4)]
+    # The row label/state baseline is not the button's vertical centre. Returning
+    # ``row_y_norm`` made arrow taps land above the visible button and let the
+    # click pass through to the city underneath. The scan row is measured from
+    # the current frame's chevron and blue button pixels, so use it for both
+    # axes of the live target.
+    centre = [round(centre_x / width, 4), round(button_y / height, 4)]
     return centre, ("PRESENT" if reds >= QUICK_PANEL_BADGE_MIN_PX else "ABSENT"), box
 
 
@@ -2249,8 +2584,14 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 if state is None:
                     continue
                 running = bool(re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state))
+                recruit_key = (
+                    "HERO_RECRUIT_EPIC" if "史诗" in name
+                    else "HERO_RECRUIT" if "高级" in name
+                    else ""
+                )
                 recruit_rows.append({
                     "name": name,
+                    "key": recruit_key,
                     "status": "IN_PROGRESS" if running else ("AVAILABLE" if ("免费" in state or "可" in state) else "UNKNOWN"),
                     "timer": state if running else None,
                     "source_word": state,
@@ -2360,7 +2701,16 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 key = camp
                 if key is None:
                     section_key = SECTION_ROW_KEYS.get(section)
-                    if section_key and section not in keyed_sections:
+                    if section == "英雄招募":
+                        # The section has two independently actionable rows. Keep both
+                        # identities so the free advanced and epic entries cannot collapse
+                        # into one goal or one click target.
+                        if "史诗" in name:
+                            key = "HERO_RECRUIT_EPIC"
+                        elif section not in keyed_sections:
+                            key = "HERO_RECRUIT"
+                            keyed_sections.add(section)
+                    elif section_key and section not in keyed_sections:
                         key = section_key
                         keyed_sections.add(section)
                 if key is None:
@@ -2382,12 +2732,19 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     "kind": "CAMP" if camp else key,
                     "key": key,
                     "label": name,
+                    # A DONE marker occupies the same control slot as the arrow, so it cannot be
+                    # used as an entry action (the device measurement confirms it is inert).  Keep
+                    # the current-frame OCR location of the row's own label as a separate, lower
+                    # confidence exploration target.  AUTO may try it once and only accepts it when
+                    # the verifier sees this camp's action bar or training page.
+                    "label_norm": _token_centre_norm(name, tokens, size),
                     "y_norm": round(name_y / height, 4),
                     "status": queue_status,
                     "source_word": state_word,
-                    # The row's own button when this frame draws it; the old text-column estimate only
-                    # as a labelled fallback, because a tap from it lands on the row's state word
-                    # (measured: 0.4097 against a button at 0.539-0.749).
+            # The row's own blue entry-button tile when this frame draws it; the chevron is only
+            # the locator and ``arrow_norm`` is the centre of the complete clickable tile. The old
+            # text-column estimate is retained only as a labelled fallback, because tapping it can
+            # land on the row's state word (measured: 0.4097 against a button at 0.539-0.749).
                     "arrow_norm": located if located else [round(arrow_x, 4), round(name_y / height, 4)],
                     "arrow_basis": (
                         QUICK_PANEL_ARROW_BASIS_SCAN if located else QUICK_PANEL_ARROW_BASIS_ESTIMATE
@@ -2436,6 +2793,23 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     ],
                     "basis": "PANEL_RELATIVE_ESTIMATE",
                 }
+    # A scroll gesture is derived from this frame's visible row band. It stays inside
+    # the list column, between the first and last row centers; no button coordinate or
+    # remembered screenshot position is reused.
+    visible_rows = [row for row in (panel.get("rows") or ())
+                    if isinstance(row, dict) and isinstance(row.get("y_norm"), (int, float))]
+    if panel.get("open") is True and len(visible_rows) >= 3:
+        y_values = [float(row["y_norm"]) for row in visible_rows]
+        label_x = [float(row["label_norm"][0]) for row in visible_rows
+                   if isinstance(row.get("label_norm"), (list, tuple)) and len(row["label_norm"]) == 2]
+        arrow_x = [float(row["arrow_norm"][0]) for row in visible_rows
+                   if isinstance(row.get("arrow_norm"), (list, tuple)) and len(row["arrow_norm"]) == 2]
+        if max(y_values) - min(y_values) >= 0.12 and label_x and arrow_x:
+            x = round((sum(label_x) / len(label_x) + sum(arrow_x) / len(arrow_x)) / 2.0, 4)
+            y_start = round(min(0.78, max(y_values) + 0.05), 4)
+            y_end = round(max(0.24, min(y_values) + 0.04), 4)
+            if 0.0 <= x <= 1.0 and y_start > y_end + 0.10:
+                panel["scroll_swipe_norm"] = [x, y_start, x, y_end]
     return panel
 
 
@@ -3046,7 +3420,12 @@ SELECTED_BUILDING_NAME_BAND = (0.39, 0.46)
 #: measured frame -- and this whitelist is what turns a word into a point the executor may tap, so a
 #: control that spends must not become readable by accident.  A reader that silently learned them
 #: would hand the route a tap on a paid control the moment some goal asked the bar for anything.
-BUILDING_ACTION_LABELS: tuple[str, ...] = ("详情", "升级", "训练")
+BUILDING_ACTION_LABELS: tuple[str, ...] = ("详情", "升级", "训练", "研究")
+#: The 科研所's radial menu reads 详情 / 升级 / 研究 -- 研究 opens the tech tree
+#: (Page.RESEARCH).  Added 2026-09-26: without it the lab bar was read but the
+#: one control that reaches the tech tree was invisible, so the research goal
+#: opened the bar and then tapped the quick-panel anchor again (measured
+#: 15:28:03Z FAILURE ``an_opened_lab_bar_is_the_page_this_goal_came_for``).
 
 # The power-details page can add or remove categories as an account grows.  Its blue
 # "提升" controls therefore move vertically; category name and button label must be
@@ -4175,12 +4554,55 @@ class HybridVision:
         # the loop pays for an OCR pass.  ``TARGET_CAMP_ACTION_BAR`` is the bar's own
         # control, so a frame without a selected building never reaches the OCR call.
         semantic = getattr(self.template_vision, "semantic", None)
-        if semantic is None or semantic.find(image_path, CAMP_ACTION_BAR_GATE) is None:
+        if semantic is None:
+            return None
+        is_camp_action_bar = semantic.find(image_path, CAMP_ACTION_BAR_GATE) is not None
+        is_research_lab_action_bar = (
+            (primary.research or {}).get("building") == "RESEARCH_LAB"
+            and (primary.research or {}).get("menu_open") is True
+        )
+        if not is_camp_action_bar and not is_research_lab_action_bar:
             return None
         reading = read_selected_building_actions(image_path, self.ocr)
         actions = reading.get("actions") or {}
         camp = str(reading.get("camp") or "")
         train_norm = actions.get("训练")
+        if is_research_lab_action_bar:
+            upgrade_norm = actions.get("升级")
+            research_norm = actions.get("研究")
+            if isinstance(research_norm, (tuple, list)) and len(research_norm) == 2:
+                # The lab bar's own 研究 control, read from this exact frame.  It is
+                # the one hop from the selected lab to the tech tree; the quick-panel
+                # anchor that OPEN_RESEARCH uses is not drawn on this render.
+                research = dict(primary.research or {})
+                research["research_action_tap_norm"] = [
+                    float(research_norm[0]), float(research_norm[1])]
+                research["research_action_source"] = "CURRENT_FRAME_OCR"
+                if isinstance(upgrade_norm, (tuple, list)) and len(upgrade_norm) == 2:
+                    building = dict(primary.building or {})
+                    building.update({
+                        "id": "RESEARCH_LAB",
+                        "name": "科研所",
+                        "selected_name": "科研所",
+                        "upgrade_tap_norm": [float(upgrade_norm[0]), float(upgrade_norm[1])],
+                        "upgrade_control_source": "CURRENT_FRAME_OCR",
+                    })
+                    return replace(primary, building=building, research=research)
+                return replace(primary, research=research)
+            if isinstance(upgrade_norm, (tuple, list)) and len(upgrade_norm) == 2:
+                # BTN_OPEN_RESEARCH is the selected 科研所's own radial-menu control;
+                # pair that page-specific identity with the 〈升级〉 label read from
+                # this exact frame. This lets the BUILDING goal inspect the prerequisite
+                # level without opening a different building from the quick panel.
+                building = dict(primary.building or {})
+                building.update({
+                    "id": "RESEARCH_LAB",
+                    "name": "科研所",
+                    "selected_name": "科研所",
+                    "upgrade_tap_norm": [float(upgrade_norm[0]), float(upgrade_norm[1])],
+                    "upgrade_control_source": "CURRENT_FRAME_OCR",
+                })
+                return replace(primary, building=building)
         if train_norm is None or not camp:
             return None
         training = dict(primary.training)
@@ -4190,6 +4612,37 @@ class HybridVision:
             "camp_label": str(reading.get("name") or ""),
             "train_tap_norm": train_norm,
             "source": "ACTION_BAR",
+        })
+        return replace(primary, training=training)
+
+    def _read_focused_camp_after_panel_entry(self, image_path: Path, primary: WorldState) -> WorldState | None:
+        """Read the centered focus halo as the intermediate step after a DONE-row entry.
+
+        The green panel tile first jumps to/focuses its barracks. It does not open the three
+        building actions and does not collect troops. The focus halo is the visual state between
+        that entry and tapping the camp body; ``focused_camp_body_tap_norm`` returns a measured
+        current-frame body point, not the halo centre or a remembered screen coordinate.
+        """
+        if primary.page is not Page.HOME:
+            return None
+        # The same broad gold selection treatment can appear around a non-training
+        # building.  The completed quick-panel row transition is an intermediate
+        # focus state only when the generic selected-building action bar is absent;
+        # if that bar is present, this frame belongs to the selected-building reader
+        # above (which will attribute it only when it can read an actual barracks).
+        # This guard is intentionally conservative: an ambiguous selected building
+        # must never become a guessed training target.
+        semantic = getattr(self.template_vision, "semantic", None)
+        if semantic is not None and semantic.find(image_path, CAMP_ACTION_BAR_GATE) is not None:
+            return None
+        point = focused_camp_body_tap_norm(image_path)
+        if point is None:
+            return None
+        training = dict(primary.training)
+        training.update({
+            "navigation": "PANEL_CAMP_FOCUSED",
+            "camp_focus_tap_norm": list(point),
+            "camp_focus_source": "CURRENT_FRAME_SELECTION_HALO",
         })
         return replace(primary, training=training)
 
@@ -4250,6 +4703,10 @@ class HybridVision:
                 state[key] = value
         state["identity_confidence"] = read["identity_confidence"]
         state["identity_source"] = read["identity_source"]
+        if is_dialog and state.get("id") == "RESEARCH_CENTER":
+            upgrade_control = self._read_research_lab_upgrade_control(image_path, tokens)
+            if upgrade_control is not None:
+                state.update(upgrade_control)
         # The selected-building action bar is rendered on HOME, before the upgrade
         # dialog.  Read its "升级" label from this same screenshot so the entry
         # action can use a current-frame location rather than a remembered offset.
@@ -4262,6 +4719,80 @@ class HybridVision:
                 state["selected_name"] = actions["name"]
                 state["selected_name_norm"] = list(actions["name_norm"] or ())
         return replace(primary, building=state)
+
+    @staticmethod
+    def _read_research_lab_upgrade_control(
+        image_path: Path, tokens: list[OCRToken]
+    ) -> dict[str, object] | None:
+        """Authorize the normal lab upgrade only from this frame's enabled UI.
+
+        The lab panel visibly lists its furnace prerequisite and four resource
+        costs. This accepts the action only when every row carries the client's
+        green check and the normal (blue) 升级 button is enabled. The nearby
+        yellow diamond finish control is never a target. Coordinates come from
+        the current OCR token, not a stored screen position.
+        """
+        width, height = read_frame_size(image_path)
+        if width <= 0 or height <= 0:
+            return None
+        control = next((
+            token for token in tokens
+            if token.text.strip() == "升级" and token.confidence >= 0.88 and token.box
+            and 0.60 <= token.centre[0] / width <= 0.90
+            and 0.75 <= token.centre[1] / height <= 0.85
+        ), None)
+        prerequisite = next((
+            token for token in tokens
+            if "大熔炉" in token.text and "等级" in token.text and token.box
+            and 0.40 <= token.centre[1] / height <= 0.55
+        ), None)
+        resource_rows = [
+            token for token in tokens
+            if token.box and "/" in token.text
+            and re.search(r"\d[\d,.]*", token.text)
+            and 0.50 <= token.centre[1] / height <= 0.76
+        ]
+        if control is None or prerequisite is None or len(resource_rows) < 4:
+            return None
+
+        def green_check(y: float) -> bool:
+            x = round(width * 0.665)
+            cy = round(y)
+            with Image.open(image_path) as source:
+                frame = source.convert("RGB")
+                points = [
+                    frame.getpixel((px, py))
+                    for px in range(max(0, x - 4), min(width, x + 5))
+                    for py in range(max(0, cy - 4), min(height, cy + 5))
+                ]
+            return sum(
+                green > red + 30 and green > blue + 20 and green > 110
+                for red, green, blue in points
+            ) >= 4
+
+        if not green_check(prerequisite.centre[1]):
+            return None
+        if not all(green_check(row.centre[1]) for row in resource_rows[:4]):
+            return None
+
+        # The active normal upgrade button is blue. Probe both sides of the
+        # current OCR label to avoid sampling its white glyphs; disabled grey
+        # controls do not pass this check.
+        cx, cy = control.centre
+        with Image.open(image_path) as source:
+            frame = source.convert("RGB")
+            side_points = (
+                frame.getpixel((max(0, round(cx - width * 0.12)), round(cy))),
+                frame.getpixel((min(width - 1, round(cx + width * 0.12)), round(cy))),
+            )
+        if not all(blue > 160 and blue > green * 1.2 and blue > red * 1.4
+                   for red, green, blue in side_points):
+            return None
+        return {
+            "upgradeable": True,
+            "upgrade_button_norm": [round(cx / width, 5), round(cy / height, 5)],
+            "upgradeability_basis": "CURRENT_FRAME_GREEN_REQUIREMENTS_AND_BLUE_BUTTON",
+        }
 
     def observe(self, image_path: Path) -> WorldState:
         """The frame's world, with the entry badges read onto it.
@@ -4467,6 +4998,10 @@ class HybridVision:
             selected_state = self._read_selected_building(image_path, primary)
             if selected_state is not None:
                 return selected_state
+            if not panel_drawn:
+                focused_camp = self._read_focused_camp_after_panel_entry(image_path, primary)
+                if focused_camp is not None:
+                    return focused_camp
             building_state = self._read_building_identity(image_path, primary)
             if building_state is not None:
                 return building_state

@@ -1,0 +1,17 @@
+{
+ "event": "BEAR_HUNT (冰原巨兽/变异巨熊 via 联盟→联盟领地→特殊建筑→狩猎陷阱)",
+ "role_id": "1171757165",
+ "role_name": "[zoe]xhw小号",
+ "alliance": "zoe",
+ "kingdom": "4298",
+ "page": "联盟领地-特殊建筑-狩猎陷阱",
+ "activity_name": "冰原巨兽（狩猎陷阱 冷却中）",
+ "ocr_original": "狩猎陷阱 | 冷却中：1天19:26:42 | 前往",
+ "screenshot": "dataset/raw/explore/20260925_173316_bear_cooldown.png",
+ "observed_at": "2026-09-25T17:33:16+08:00",
+ "countdown_raw": "1天19:26:42",
+ "start_time": "2026-09-27T12:59:58+08:00",
+ "derivation": "observed_at + countdown (17:33:16 + 1d19:26:42)",
+ "attribution": "the trap building is the bear-hunt entry per knowledge/events/bear_hunt_live_2026-09-09.json and SCHEDULED_BEAR_HUNT goal evidence",
+ "freshness_caveat": "single read, ~31h old at write time; the wake MUST re-read the trap page at T-30min and invalidate this reservation if the client disagrees"
+}

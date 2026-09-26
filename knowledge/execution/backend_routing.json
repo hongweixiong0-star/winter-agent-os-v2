@@ -1975,10 +1975,10 @@
       "出征"
      ],
      "roi": [
-      240,
-      590,
-      230,
-      100
+      440,
+      1120,
+      260,
+      120
      ],
      "score_threshold": 0.3
     }
@@ -2018,7 +2018,19 @@
      "errors": [],
      "corpus_sufficient": false
     },
-    "validation_store": "learning/ocr_batch1_validation_20260926.json"
+    "validation_store": "learning/ocr_batch1_validation_20260926.json",
+    "roi_fix_20260926": {
+     "reason": "old roi [240,590,230,100] covered the advice line 本次出征胜券在握 (substring 出征 false positive at y594-624); the formation page 出征 button sits bottom-right ~[399,1108]-[703,1181]",
+     "frame": "dataset/raw/control_panel/runtime_auto/20260926_055529_646039/20260926_055529_646039_step_004_after_20260925T215703933109.png",
+     "matcher_fix": "_rapid_ocr_results exact-label preference added same day",
+     "likely_rootcause_of": "DISPATCH_NOT_PROVEN x28",
+     "measured_button_box": [
+      521,
+      1178,
+      60,
+      35
+     ]
+    }
    }
   },
   "RESEARCH": {

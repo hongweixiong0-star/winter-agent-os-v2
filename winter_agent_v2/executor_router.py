@@ -276,7 +276,19 @@ def _rapid_ocr_results(frame: Any, roi: tuple[int, int, int, int] | None,
         ox, oy = int(roi[0]), int(roi[1])
         image = image.crop((ox, oy, ox + int(roi[2]), oy + int(roi[3])))
     results = []
-    for token in RapidOCRBackend().recognize(image):
+    tokens = list(RapidOCRBackend().recognize(image))
+    # Exact label match outranks substring containment.  Measured 2026-09-26: the
+    # march confirm dialog prints the advice line 本次出征胜券在握 inside
+    # BTN_DISPATCH's own ROI, and plain ``in`` matching resolved the advice text
+    # (score 0.998) as the 出征 button -- a wrong tap target on a resource-spending
+    # action.  When the exact word is present, substring tokens are dropped; the
+    # substring branch stays only as the fallback for OCR that splits a label
+    # across tokens, so no working node loses its match.
+    exact = [token for token in tokens
+             if expected and token.text.strip() in expected and token.box]
+    if expected and exact:
+        tokens = exact
+    for token in tokens:
         text = token.text
         if expected and not any(w in text for w in expected):
             continue

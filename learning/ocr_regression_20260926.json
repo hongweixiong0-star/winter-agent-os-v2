@@ -1,0 +1,111 @@
+{
+ "positive": [
+  {
+   "semantic": "BTN_DISPATCH",
+   "skill": "DISPATCH_MARCH",
+   "kind": "OCR",
+   "roi": [
+    440,
+    1120,
+    260,
+    120
+   ],
+   "frame": "dataset/raw/control_panel/runtime_auto/20260926_055529_646039/20260926_055529_646039_step_004_after_20260925T215703933109.png",
+   "hit": true,
+   "text": "出征",
+   "bbox": [
+    521,
+    1178,
+    60,
+    35
+   ],
+   "score": 0.999,
+   "tokens_in_roi": 1,
+   "result": "RESOLVED"
+  },
+  {
+   "semantic": "BTN_START_RESEARCH",
+   "skill": "RESEARCH",
+   "kind": "OCR",
+   "roi": [
+    400,
+    860,
+    240,
+    120
+   ],
+   "frame": "dataset/raw/control_panel/runtime_auto/20260926_203129_111901/20260926_203129_111901_step_015_after_20260926T123730329502.png",
+   "hit": true,
+   "text": "研究",
+   "bbox": [
+    460,
+    899,
+    49,
+    28
+   ],
+   "score": 0.997,
+   "tokens_in_roi": 1,
+   "result": "RESOLVED"
+  },
+  {
+   "semantic": "BTN_WAR_TAB_RALLY",
+   "skill": "OPEN_BEAR_RALLY_LIST",
+   "kind": "OCR",
+   "roi": [
+    40,
+    95,
+    240,
+    70
+   ],
+   "frame": "dataset/raw/autogen/r14_war.png",
+   "hit": true,
+   "text": "集结",
+   "bbox": [
+    100,
+    106,
+    66,
+    39
+   ],
+   "score": 0.999,
+   "tokens_in_roi": 1,
+   "result": "RESOLVED"
+  }
+ ],
+ "negative": [
+  {
+   "frame": "dataset/raw/autogen/20260925_182249_home.png",
+   "semantic": "BTN_DISPATCH",
+   "expected": "出征",
+   "word_on_negative_page": false
+  },
+  {
+   "frame": "dataset/raw/autogen/20260925_182249_home.png",
+   "semantic": "BTN_START_RESEARCH",
+   "expected": "研究",
+   "word_on_negative_page": false
+  },
+  {
+   "frame": "dataset/raw/autogen/20260925_182249_home.png",
+   "semantic": "BTN_WAR_TAB_RALLY",
+   "expected": "集结",
+   "word_on_negative_page": false
+  },
+  {
+   "frame": "dataset/raw/control_panel/runtime_auto/20260926_233019_274984/20260926_233019_274984_step_022_after_20260926T153755459479.png",
+   "semantic": "BTN_DISPATCH",
+   "expected": "出征",
+   "word_on_negative_page": false
+  },
+  {
+   "frame": "dataset/raw/control_panel/runtime_auto/20260926_233019_274984/20260926_233019_274984_step_022_after_20260926T153755459479.png",
+   "semantic": "BTN_START_RESEARCH",
+   "expected": "研究",
+   "word_on_negative_page": false
+  },
+  {
+   "frame": "dataset/raw/control_panel/runtime_auto/20260926_233019_274984/20260926_233019_274984_step_022_after_20260926T153755459479.png",
+   "semantic": "BTN_WAR_TAB_RALLY",
+   "expected": "集结",
+   "word_on_negative_page": false
+  }
+ ]
+}
