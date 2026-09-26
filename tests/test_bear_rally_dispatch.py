@@ -44,7 +44,17 @@ BEAR_SKILLS = ("JOIN_RALLY", "START_RALLY")
 #: The semantic each bear skill must tap.  Named here as data so the test states the
 #: expected control rather than restating the implementation.
 EXPECTED_TARGET = {
-    "JOIN_RALLY": "BTN_JOIN_ROW",
+    # CHANGED 2026-09-27 from "BTN_JOIN_ROW".  That name stood for a picture of the
+    # green +, and a picture of a plus cannot say which rally it belongs to, so two
+    # joinable rows on one frame were indistinguishable and the first won regardless
+    # of its countdown -- the limit the skill's own comment used to record.  The rally
+    # reader now exists (rally.read_rally_list_image, replayed on four archived live
+    # frames), so the semantic names the LIST the tap is chosen from.
+    #
+    # BTN_JOIN_ROW is not gone: it is the node's ``fallback_semantic`` and answers when
+    # the frame carries no 集结中 header, so the tap is still a single TAP_SEMANTIC
+    # through the one executor either way -- which is what this test is about.
+    "JOIN_RALLY": "RALLY_ROW_JOIN_BUTTON",
     "START_RALLY": "BTN_START_RALLY",
 }
 
