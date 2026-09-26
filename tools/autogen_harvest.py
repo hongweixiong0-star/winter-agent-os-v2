@@ -60,6 +60,14 @@ def declared_labels() -> list[tuple[str, str, list[str]]]:
     for record in payload.get("records") or ():
         if not (isinstance(record, dict) and record.get("id")):
             continue
+        # A page/popup title can carry the same text as an action, but clicking
+        # its OCR box is not an action. Only explicit interactive UI records may
+        # become click nodes.
+        if str(record.get("type", "")).upper() not in {
+            "BUTTON", "TAB", "ROW", "ROW_CONTROL", "INTERACTIVE_CONTROL",
+            "NAVIGATION", "CONTROL", "CARD",
+        }:
+            continue
         semantic = str(record["id"])
         # The ``cn`` field is a display name ("领取挂机收益") that no OCR token ever
         # contains -- the client draws the words separately, which is exactly why the
@@ -205,7 +213,9 @@ def main() -> int:
             hits = []
             for page, tokens in token_cache.items():
                 located = gen.locate_in_tokens(tokens, cn)
-                if located and located[1] >= args.min_score:
+                # Substring OCR hits are useful for discovery but unsafe for
+                # clicking: 出征 inside 本次出征胜券在握 is descriptive text.
+                if located and located[1] >= args.min_score and located[2].strip() == cn.strip():
                     hits.append((page, located))
             if not hits:
                 absent += 1
@@ -228,7 +238,8 @@ def main() -> int:
             # criterion that matches what the node is actually claiming.
             negatives = [frames[p] for p in frames
                          if not (gen.locate_in_tokens(token_cache[p], cn)
-                                 and gen.locate_in_tokens(token_cache[p], cn)[1] >= args.min_score)]
+                                 and gen.locate_in_tokens(token_cache[p], cn)[1] >= args.min_score
+                                 and gen.locate_in_tokens(token_cache[p], cn)[2].strip() == cn.strip())]
 
             for skill_id in skill_ids:
                 if has_node(skill_id, semantic):

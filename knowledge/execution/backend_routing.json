@@ -891,6 +891,463 @@
         "autogen_node_count": 1,
         "autogen_note": "harvested+validated"
       }
+    },
+    "SUBMIT_RESOURCE_SEARCH": {
+      "recognition": {
+        "BTN_RESOURCE_SEARCH_SUBMIT": {
+          "kind": "TEMPLATE",
+          "template": "BTN_RESOURCE_SEARCH_SUBMIT",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_resource_search_submit__autogen_32a4ed2a.png",
+          "roi": [
+            301,
+            1171,
+            120,
+            88
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T03:28:21.396047+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "搜索"
+          ],
+          "roi": [
+            301,
+            1171,
+            120,
+            88
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+        "observed_text": "搜索",
+        "observed_box": [
+          323,
+          1193,
+          76,
+          44
+        ],
+        "ocr_score": 0.9993,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "MAP",
+        "harvest_score": 0.9993,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_RESOURCE_SEARCH_SUBMIT",
+          "skill_id": "SUBMIT_RESOURCE_SEARCH",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 9,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_resource_search_submit__99360ea2c4.json",
+        "pipeline_node_sha1": "99360ea2c4",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_resource_search_submit__tool_ocr__ecbf374feb.json",
+        "tool_candidate_sha1": "ecbf374feb",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
+    },
+    "SUBMIT_BEAST_SEARCH": {
+      "recognition": {
+        "BTN_RESOURCE_SEARCH_SUBMIT": {
+          "kind": "TEMPLATE",
+          "template": "BTN_RESOURCE_SEARCH_SUBMIT",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_resource_search_submit__autogen_32a4ed2a.png",
+          "roi": [
+            301,
+            1171,
+            120,
+            88
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T03:28:21.622825+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "搜索"
+          ],
+          "roi": [
+            301,
+            1171,
+            120,
+            88
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+        "observed_text": "搜索",
+        "observed_box": [
+          323,
+          1193,
+          76,
+          44
+        ],
+        "ocr_score": 0.9993,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "MAP",
+        "harvest_score": 0.9993,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_RESOURCE_SEARCH_SUBMIT",
+          "skill_id": "SUBMIT_BEAST_SEARCH",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 9,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_resource_search_submit__99360ea2c4.json",
+        "pipeline_node_sha1": "99360ea2c4",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_resource_search_submit__tool_ocr__ecbf374feb.json",
+        "tool_candidate_sha1": "ecbf374feb",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
+    },
+    "MAIL_CLAIM_REWARDS": {
+      "recognition": {
+        "BTN_MAIL_CLAIM_ALL": {
+          "kind": "TEMPLATE",
+          "template": "BTN_MAIL_CLAIM_ALL",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_mail_claim_all__autogen_120df124.png",
+          "roi": [
+            466,
+            1206,
+            211,
+            71
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T03:28:21.856082+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "一键已读&领取"
+          ],
+          "roi": [
+            466,
+            1206,
+            211,
+            71
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+        "observed_text": "一键已读&领取",
+        "observed_box": [
+          488,
+          1228,
+          167,
+          27
+        ],
+        "ocr_score": 0.9889,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "MAIL",
+        "harvest_score": 0.9889,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_MAIL_CLAIM_ALL",
+          "skill_id": "MAIL_CLAIM_REWARDS",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 9,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_claim_all__312d395553.json",
+        "pipeline_node_sha1": "312d395553",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_claim_all__tool_ocr__7319fd840b.json",
+        "tool_candidate_sha1": "7319fd840b",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
+    },
+    "SELECT_MAIL_REPORT_TAB": {
+      "recognition": {
+        "BTN_MAIL_TAB_REPORT": {
+          "kind": "TEMPLATE",
+          "template": "BTN_MAIL_TAB_REPORT",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_mail_tab_report__autogen_b0b7f109.png",
+          "roi": [
+            443,
+            80,
+            107,
+            81
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T03:28:22.083173+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "报告"
+          ],
+          "roi": [
+            443,
+            80,
+            107,
+            81
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+        "observed_text": "报告",
+        "observed_box": [
+          465,
+          102,
+          63,
+          37
+        ],
+        "ocr_score": 0.9999,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "MAIL",
+        "harvest_score": 0.9999,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_003_before_20260926T032621591940.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_MAIL_TAB_REPORT",
+          "skill_id": "SELECT_MAIL_REPORT_TAB",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 9,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_report__5c73e148f6.json",
+        "pipeline_node_sha1": "5c73e148f6",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_report__tool_ocr__91d0345226.json",
+        "tool_candidate_sha1": "91d0345226",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
+    },
+    "SELECT_MAIL_SYSTEM_TAB": {
+      "recognition": {
+        "BTN_MAIL_TAB_SYSTEM": {
+          "kind": "TEMPLATE",
+          "template": "BTN_MAIL_TAB_SYSTEM",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_mail_tab_system__autogen_225d13b1.png",
+          "roi": [
+            309,
+            83,
+            105,
+            81
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T03:33:20.803137+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "系统"
+          ],
+          "roi": [
+            309,
+            83,
+            105,
+            81
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+        "observed_text": "系统",
+        "observed_box": [
+          331,
+          105,
+          61,
+          37
+        ],
+        "ocr_score": 0.998,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "MAIL",
+        "harvest_score": 0.998,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_013_before_20260926T033132118533.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_101454_299811\\20260925_101454_299811_step_021_before_20260925T021937501401.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_012_before_20260926T033112659243.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_002_before_20260926T031502766350.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_022_before_20260926T031320955902.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_112510_412658\\20260926_112510_412658_step_008_before_20260926T032915451126.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_110555_209254\\20260926_110555_209254_step_015_before_20260926T031135370721.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_111429_782110\\20260926_111429_782110_step_021_before_20260926T032321084094.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_092329_143762\\20260926_092329_143762_step_024_before_20260926T013147370018.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_016_before_20260926T022026979915.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_003_before_20260926T024518560097.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_101351_126595\\20260926_101351_126595_step_009_before_20260926T021755541401.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_071747_695235\\20260926_071747_695235_step_023_before_20260925T232806741418.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_094354_532072\\20260926_094354_532072_step_009_before_20260926T014710149242.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\live_runtime\\live_runtime_step_001_before_20260925T130038234454.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260925_222116_370434\\20260925_222116_370434_step_001_before_20260925T142123726292.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_MAIL_TAB_SYSTEM",
+          "skill_id": "SELECT_MAIL_SYSTEM_TAB",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 16,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_system__7b301c644a.json",
+        "pipeline_node_sha1": "7b301c644a",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_system__tool_ocr__2ee95d3f1e.json",
+        "tool_candidate_sha1": "2ee95d3f1e",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
     }
   },
   "not_migrated": {
