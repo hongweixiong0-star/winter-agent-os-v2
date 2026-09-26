@@ -1,0 +1,201 @@
+{
+ "session_started_at": "2026-09-26T17:49:39.308044+00:00",
+ "purpose": "AUTO_JOIN capability boundary, client-stated only",
+ "questions": {
+  "uses_preset_heroes": {
+   "answer": null,
+   "status": "NOT_STATED",
+   "client_text": null
+  },
+  "uses_preset_troops": {
+   "answer": null,
+   "status": "NOT_STATED",
+   "client_text": null
+  },
+  "occupies_normal_march_queue": {
+   "answer": null,
+   "status": "NOT_STATED",
+   "client_text": null
+  },
+  "stays_enabled": {
+   "answer": null,
+   "status": "NOT_STATED",
+   "client_text": null
+  },
+  "targets_bear_only": {
+   "answer": true,
+   "status": "CLIENT_STATED",
+   "client_text": "开启后自动加入冰原巨兽集结"
+  },
+  "switches_when_full": {
+   "answer": null,
+   "status": "NOT_STATED",
+   "client_text": null
+  },
+  "has_join_delay": {
+   "answer": null,
+   "status": "NOT_STATED",
+   "client_text": null
+  },
+  "only_after_event_start": {
+   "answer": true,
+   "status": "CLIENT_STATED",
+   "client_text": "开启后自动加入冰原巨兽集结"
+  },
+  "per_role": {
+   "answer": true,
+   "status": "CLIENT_STATED",
+   "client_text": "toggle read OFF on this role's own war page"
+  },
+  "has_failure_notice": {
+   "answer": null,
+   "status": "NOT_STATED",
+   "client_text": null
+  }
+ },
+ "steps": [
+  {
+   "tag": "01_home",
+   "frame": "dataset\\evidence\\autojoin_boundary_20260927\\autojoin_01_home.png"
+  },
+  {
+   "tag": "02_after_BTN_OPEN_ALLIANCE",
+   "frame": "dataset\\evidence\\autojoin_boundary_20260927\\autojoin_02_after_BTN_OPEN_ALLIANCE.png"
+  },
+  {
+   "tag": "02_after_BTN_ALLIANCE_WAR",
+   "frame": "dataset\\evidence\\autojoin_boundary_20260927\\autojoin_02_after_BTN_ALLIANCE_WAR.png"
+  },
+  {
+   "tag": "03_rally_tab",
+   "frame": "dataset\\evidence\\autojoin_boundary_20260927\\autojoin_03_rally_tab.png"
+  },
+  {
+   "tag": "04_final_page",
+   "frame": "dataset\\evidence\\autojoin_boundary_20260927\\autojoin_04_final_page.png"
+  }
+ ],
+ "home_confirmed": true,
+ "navigation": [
+  {
+   "semantic": "BTN_OPEN_ALLIANCE",
+   "resolved": true,
+   "error": null
+  },
+  {
+   "semantic": "BTN_ALLIANCE_WAR",
+   "resolved": true,
+   "error": null
+  }
+ ],
+ "war_page_text": "联盟战争 集结 单人 活动 当前暂无战事 开启后自动加入冰原巨兽集结 自动加入",
+ "rally_tab_resolved": true,
+ "rally_tab_text": "联盟战争 集结 单人 活动 当前暂无战事 开启后自动加入冰原巨兽集结 自动加入",
+ "page_tokens": [
+  {
+   "text": "联盟战争",
+   "box": [
+    93,
+    20,
+    138,
+    40
+   ],
+   "score": 0.997693657875061
+  },
+  {
+   "text": "集结",
+   "box": [
+    100,
+    106,
+    65,
+    40
+   ],
+   "score": 0.9985685050487518
+  },
+  {
+   "text": "单人",
+   "box": [
+    331,
+    114,
+    60,
+    37
+   ],
+   "score": 0.9999852776527405
+  },
+  {
+   "text": "活动",
+   "box": [
+    557,
+    114,
+    62,
+    37
+   ],
+   "score": 0.9987823367118835
+  },
+  {
+   "text": "当前暂无战事",
+   "box": [
+    285,
+    636,
+    152,
+    31
+   ],
+   "score": 0.9891388813654581
+  },
+  {
+   "text": "开启后自动加入冰原巨兽集结",
+   "box": [
+    199,
+    1145,
+    322,
+    29
+   ],
+   "score": 0.9969309476705698
+  },
+  {
+   "text": "自动加入",
+   "box": [
+    292,
+    1204,
+    136,
+    41
+   ],
+   "score": 0.9992407709360123
+  }
+ ],
+ "auto_join_state": {
+  "state": "OFF",
+  "reason": "red badge dot present in dot ROI (191 red px)",
+  "red_pixels": 191,
+  "dot_box": [
+   468,
+   1170,
+   512,
+   1212
+  ],
+  "context_text": "开启后自动加入冰原巨兽集结自动加入",
+  "context_hit": true,
+  "dot_red_min": 8
+ },
+ "rally_rows_live": [],
+ "rally_rows_evidence": {
+  "reason": "no_rally_row_header_on_this_frame",
+  "tokens": 7
+ },
+ "hint_lines": [
+  "集结",
+  "活动",
+  "开启后自动加入冰原巨兽集结",
+  "自动加入"
+ ],
+ "answered": 3,
+ "unknown": [
+  "uses_preset_heroes",
+  "uses_preset_troops",
+  "occupies_normal_march_queue",
+  "stays_enabled",
+  "switches_when_full",
+  "has_join_delay",
+  "has_failure_notice"
+ ]
+}

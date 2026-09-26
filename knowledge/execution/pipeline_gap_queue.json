@@ -1829,13 +1829,27 @@
    "semantic": "RALLY_LIST_OPEN",
    "family": "NAV",
    "pages": [
-    "ALLIANCE"
+    "ALLIANCE_WAR"
    ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "open the alliance rally/war rally list",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "OPEN_BEAR_RALLY_LIST"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "STRUCTURE",
+    "basis": "OPEN_BEAR_RALLY_LIST taps BTN_ALLIANCE_WAR then BTN_WAR_TAB_RALLY (both wired), and SemanticWorldVision sets alliance.rally_list_visible / section=RALLY_LIST from the live frame (ocr.py:4299)",
+    "classified_at_source": "production_path_reconciled"
+   },
+   "generator_ready": false,
+   "next_step": "Covered end to end: tap path wired, list presence read off the frame. Live-confirmed 2026-09-27 01:49Z on the real war page (frames dataset/evidence/autojoin_boundary_20260927).",
+   "reconciled_at": "2026-09-27T02:00:00+08:00"
   },
   {
    "semantic": "RALLY_LIST_ROW_TARGET",
@@ -1918,22 +1932,48 @@
   {
    "semantic": "START_RALLY_BUTTON",
    "family": "NAV",
-   "pages": [],
+   "pages": [
+    "BEAR_TRAP_DETAIL"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "initiate a rally on a selected bear target",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "START_RALLY"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "TEMPLATE",
+    "basis": "the same control as BTN_START_RALLY, already wired under START_RALLY (routing: dataset/candidate/bear_rally/btn_start_rally__bear_trap_detail__9db2cb89__0.png, observed 0.9863)",
+    "classified_at_source": "duplicate_semantic_reconciled"
+   },
+   "generator_ready": false,
+   "next_step": "No separate node: START_RALLY already taps it. Kept as its own semantic only so the goal can name the action; do not generate a second template for one control.",
+   "reconciled_at": "2026-09-27T02:00:00+08:00"
   },
   {
    "semantic": "JOIN_RALLY_CONFIRM",
    "family": "POPUP",
-   "pages": [],
+   "pages": [
+    "ALLIANCE_WAR"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "confirm join with current preset troop",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "JOIN_RALLY"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "next_step": "Needs a live war frame. The post-join dialog (troop selection / 加入 confirm) is drawn only after a tap on a real rally; the client prints 当前暂无战事 today, so no candidate can be validated. Deferred to 2026-09-28, not guessed.",
+   "reconciled_at": "2026-09-27T02:00:00+08:00"
   },
   {
    "semantic": "RALLY_HERO_SELECT",
@@ -2032,32 +2072,59 @@
    ],
    "recognition": {
     "method": "LIST_DYNAMIC",
-    "basis": "tools/bear_joined_state.py reads JOINED/NOT_JOINED/UNKNOWN from the current frame; the rally reader additionally reports a row as no-longer-joinable once this role is in it",
-    "classified_at_source": "live_frame_replay"
+    "basis": "verify_rally_joined(before, after, 'BEAR') is bound to JOIN_RALLY in runtime.VERIFIED_ATOMIC (runtime.py:335) -- success is a joined-state reading, never a click; tools/bear_joined_state.py reads JOINED/NOT_JOINED/UNKNOWN from the frame",
+    "classified_at_source": "production_path_reconciled"
    },
    "generator_ready": false,
-   "next_step": "JOINED_STATE_VERIFIER_READY=true (no live war right now -> NOT_JOINED is the honest reading). L4 needs the 2026-09-28 war.",
-   "wired_at": "2026-09-27T01:40:00+08:00"
+   "next_step": "Covered. L4 needs the 2026-09-28 war: with no war the frame prints 当前暂无战事 and NOT_JOINED is the only honest reading.",
+   "wired_at": "2026-09-27T01:40:00+08:00",
+   "reconciled_at": "2026-09-27T02:00:00+08:00"
   },
   {
    "semantic": "RALLY_BATTLE_REPORT",
    "family": "STATUS",
-   "pages": [],
+   "pages": [
+    "ALLIANCE_WAR"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "battle report entry proving participation result",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "JOIN_RALLY"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "next_step": "Needs a battle-report frame, which only exists after a bear battle. Deferred to 2026-09-28; nothing is claimed about it now.",
+   "reconciled_at": "2026-09-27T02:00:00+08:00"
   },
   {
    "semantic": "RALLY_EVENT_ACTIVE_STATE",
    "family": "STATUS",
-   "pages": [],
+   "pages": [
+    "ALLIANCE_WAR"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "event page state proving bear hunt window is open",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "OPEN_BEAR_RALLY_LIST"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "LIST_DYNAMIC",
+    "basis": "SemanticWorldVision reads live bear rally rows and writes events['bear'] = {'status': 'ACTIVE', 'remaining_seconds': min(row.remaining_seconds)} (ocr.py:4304-4317); goal_library.bear_phase turns that into BearPhase.ACTIVE",
+    "classified_at_source": "production_path_reconciled"
+   },
+   "generator_ready": false,
+   "next_step": "Covered: ACTIVE is derived from the rows themselves, so 'the event is live' and 'a row can be joined' cannot disagree. Today's live frame reads 当前暂无战事 -> not active, which is the honest answer.",
+   "reconciled_at": "2026-09-27T02:00:00+08:00"
   },
   {
    "semantic": "BTN_EXPLORATION_IDLE_CLAIM",

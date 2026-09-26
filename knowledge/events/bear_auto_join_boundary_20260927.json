@@ -1,0 +1,62 @@
+{
+ "capability": "BEAR_AUTO_JOIN",
+ "purpose": "AUTO_JOIN capability boundary, read off the live client (round brief §19: 不要猜)",
+ "measured_at": "2026-09-27T01:49:39+08:00",
+ "session_tool": "tools/device_autojoin_boundary.py",
+ "ledger": "learning/autojoin_boundary_20260927.json",
+ "device": "MuMu 12, 720x1280, com.gof.china, production adapter",
+ "page_path": "HOME -> 联盟 -> 联盟战争 -> 集结",
+ "frames": [
+  "dataset/evidence/autojoin_boundary_20260927/autojoin_01_home.png",
+  "dataset/evidence/autojoin_boundary_20260927/autojoin_02_after_BTN_OPEN_ALLIANCE.png",
+  "dataset/evidence/autojoin_boundary_20260927/autojoin_02_after_BTN_ALLIANCE_WAR.png",
+  "dataset/evidence/autojoin_boundary_20260927/autojoin_03_rally_tab.png",
+  "dataset/evidence/autojoin_boundary_20260927/autojoin_04_final_page.png"
+ ],
+ "client_text_verbatim": [
+  "联盟战争",
+  "集结",
+  "单人",
+  "活动",
+  "当前暂无战事",
+  "开启后自动加入冰原巨兽集结",
+  "自动加入"
+ ],
+ "toggle_state_this_role": {
+  "state": "OFF",
+  "evidence": "red badge dot in the calibrated dot ROI [468,1170,512,1212]: 191 red px",
+  "reader": "winter_agent_v2.bear_state.read_state_from_image",
+  "note": "read, never tapped: §18 reserves the click for when auto-join is actually wanted"
+ },
+ "rally_rows_live": [],
+ "rally_rows_reason": "no 集结中 row header on the frame; the client prints 当前暂无战事, so rows=[] is the correct reading",
+ "answers": {
+  "targets_bear_only": {
+   "status": "CLIENT_STATED",
+   "answer": true,
+   "client_text": "开启后自动加入冰原巨兽集结"
+  },
+  "only_after_event_start": {
+   "status": "CLIENT_STATED",
+   "answer": true,
+   "client_text": "开启后自动加入冰原巨兽集结",
+   "meaning": "开启后 = after the switch is enabled, not before the event opens"
+  },
+  "per_role": {
+   "status": "CLIENT_STATED",
+   "answer": true,
+   "client_text": "toggle read OFF on this role's own war page",
+   "meaning": "the switch lives on the role's own alliance-war page and is always re-read per role; never copied across characters"
+  },
+  "uses_preset_heroes": {"status": "NOT_STATED", "answer": null, "how_to_learn": "the join dialog at 20:00 on 2026-09-28"},
+  "uses_preset_troops": {"status": "NOT_STATED", "answer": null, "how_to_learn": "the join dialog at 20:00 on 2026-09-28"},
+  "occupies_normal_march_queue": {"status": "NOT_STATED", "answer": null, "how_to_learn": "compare march_used before and after the first auto-join"},
+  "stays_enabled": {"status": "NOT_STATED", "answer": null, "how_to_learn": "re-read the toggle after the event"},
+  "switches_when_full": {"status": "NOT_STATED", "answer": null, "how_to_learn": "observe whether a second row is joined during a live war"},
+  "has_join_delay": {"status": "NOT_STATED", "answer": null, "note": "a prior session recorded 停止开后发起集结后，1分钟后可自动加入 on a different page state; not reproduced on this frame, so it is not claimed here"},
+  "has_failure_notice": {"status": "NOT_STATED", "answer": null, "how_to_learn": "a live war where a join fails"}
+ },
+ "answered": 3,
+ "unknown": 7,
+ "rule": "a NOT_STATED answer is a result, not a gap to fill in by inference -- nothing here is inferred from another game, a wiki or a guess"
+}
