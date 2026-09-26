@@ -1965,6 +1965,44 @@
       },
       "note": "failing control of CLAIM_EXPLORATION_IDLE (SEMANTIC_TARGET_NOT_VERIFIED at 2026-09-26T03:05Z); words taken from the dictionary's real-client record of the same panel, not invented",
       "source": "repair-path data fix 2026-09-26"
+    },
+    {
+      "semantic": "BTN_BEAR_AUTO_JOIN",
+      "family": "NAV",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [
+        "自动加入"
+      ],
+      "record_type": "BUTTON",
+      "priority": "P0",
+      "recognition": {
+        "method": "OCR",
+        "basis": "live frame r14_war: blue button 自动加入 with red dot at bottom of alliance-war rally tab (observed 2026-09-26)",
+        "classified_at_source": "live_frame_token"
+      },
+      "note": "auto-join the ice giant (bear) rally; toggle state visible as red dot",
+      "source": "bear-hunt prep r14/r17 2026-09-26"
+    },
+    {
+      "semantic": "STATUS_WAR_NO_WAR",
+      "family": "STATUS",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [
+        "当前暂无战事"
+      ],
+      "record_type": "STATUS",
+      "priority": "P1",
+      "recognition": {
+        "method": "OCR",
+        "basis": "live frames r16/r17: empty rally list prints 当前暂无战事",
+        "classified_at_source": "live_frame_token"
+      },
+      "note": "empty-state marker of the rally list; absence of this text = rally exists",
+      "source": "bear-hunt prep r16 2026-09-26"
     }
   ]
 }
