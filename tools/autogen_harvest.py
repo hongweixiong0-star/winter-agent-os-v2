@@ -85,7 +85,61 @@ def declared_labels() -> list[tuple[str, str, list[str]]]:
             if key not in seen:
                 seen.add(key)
                 out.append((semantic, word, pages))
+    # The gap queue is the other declared source: it names every skill-target
+    # semantic that still lacks a node and the words the client prints there.
+    # Measured 2026-09-26, the dictionary declares none of the 81 gap semantics,
+    # so a dictionary-only scan never sees the harvest's actual work list.
+    from winter_agent_v2.pipeline_autogen import DEFAULT_GAP_QUEUE_PATH
+
+    try:
+        gap_payload = json.loads(DEFAULT_GAP_QUEUE_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        gap_payload = {}
+    for item in gap_payload.get("queue") or ():
+        if not isinstance(item, dict) or not item.get("semantic"):
+            continue
+        if str(item.get("record_type", "")).upper() not in {"BUTTON", "TAB", "CONTROL"}:
+            continue
+        semantic = str(item["semantic"])
+        pages = [str(p).upper() for p in (item.get("pages") or [])]
+        for word in item.get("visible_words") or ():
+            text = str(word).strip()
+            if not text or not any("\u4e00" <= ch <= "\u9fff" for ch in text):
+                continue
+            key = (semantic, text)
+            if key not in seen:
+                seen.add(key)
+                out.append((semantic, text, pages))
     return out
+
+
+def _field(token: object, name: str):
+    """Read a field from either an OCRToken dataclass or a plain dict."""
+    if isinstance(token, dict):
+        return token.get(name)
+    return getattr(token, name, None)
+
+
+def _template_hit(adapter, root: Path, routing: dict, frame: Path) -> bool:
+    """Does the template node find its control on this frame? Real matcher only."""
+    try:
+        import numpy as np
+        from PIL import Image
+        with Image.open(frame) as im:
+            image = np.asarray(im.convert("RGB"))
+        src = Path(str(routing.get("source_template", "")))
+        if not src.is_absolute():
+            src = root / src
+        out = adapter.find(
+            image, str(routing.get("template", "")),
+            template=str(routing.get("template", "")),
+            roi=tuple(routing.get("roi", ())) or None,
+            threshold=routing.get("threshold", 0.7),
+            images={str(routing.get("template", "")): src} if src.is_file() else None,
+        )
+        return bool(out.hit)
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def owning_skills() -> dict[str, list[str]]:
@@ -110,6 +164,9 @@ def main() -> int:
     ap.add_argument("--want", default="template", choices=("auto", "ocr", "template"))
     ap.add_argument("--min-score", type=float, default=0.90,
                     help="minimum OCR confidence for a label to count as present")
+    ap.add_argument("--template-roi", action="append", default=[],
+                    help="SEMANTIC=x,y,w[h] — crop a TEMPLATE-method gap control from its "
+                         "page frame at this rect and validate the template node")
     ap.add_argument("--apply", action="store_true",
                     help="write nodes that pass validation (default: report only)")
     args = ap.parse_args()
@@ -304,9 +361,120 @@ def main() -> int:
                   f" p={row['positive_hits']}/{row['positives']} n={row['negative_hits']}/{row['negatives']}"
                   f" score={row['score']}")
 
+        # ---------------------------------------------------------- method paths
+        # Gap entries without CJK visible_words are classified (real UI features)
+        # into OCR / TEMPLATE / COLOR / STRUCTURE / LIST_DYNAMIC and take the
+        # generation path their type allows — no invented Chinese labels.
+        method_rows: list[dict[str, object]] = []
+        gap_payload = json.loads(
+            (ROOT / "knowledge" / "execution" / "pipeline_gap_queue.json").read_text(encoding="utf-8"))
+        rect_overrides: dict[str, tuple[int, int, int, int]] = {}
+        for spec in args.template_roi:
+            name, _, rect = spec.partition("=")
+            parts = [int(v) for v in rect.replace(":", ",").split(",")]
+            while len(parts) < 4:
+                parts.append(0)
+            rect_overrides[name.strip()] = tuple(parts[:4])  # type: ignore[assignment]
+        for item in gap_payload.get("queue") or ():
+            if not isinstance(item, dict):
+                continue
+            semantic = str(item.get("semantic", ""))
+            method = str((item.get("recognition") or {}).get("method", "")).upper()
+            skill_ids = owners.get(semantic, [])
+            if not method or not skill_ids or all(has_node(s, semantic) for s in skill_ids):
+                continue
+            pages = [str(p).upper() for p in item.get("pages") or []]
+            page_frames = [frames[p] for p in frames
+                           if not pages or str(p).partition("#")[0].upper() in pages]
+            if not page_frames:
+                method_rows.append({"semantic": semantic, "method": method, "verdict": "NO_FRAME_FOR_PAGE"})
+                continue
+
+            if method == "OCR":
+                # The control prints text we have not recorded. Read the live
+                # frame's CJK tokens and file them as observed_words — real
+                # readings, attachable to the queue, never invented labels.
+                from winter_agent_v2.pipeline_autogen import gap_recognition_method  # noqa: F401
+                tokens = gen.tokens_for(page_frames[0])
+                seen_cjk = []
+                for token in tokens:
+                    text = str(_field(token, "text") or "").strip()
+                    if text and any("\u4e00" <= ch <= "\u9fff" for ch in text) and text not in seen_cjk:
+                        seen_cjk.append(text)
+                method_rows.append({"semantic": semantic, "method": method,
+                                    "verdict": "OCR_DISCOVERY", "observed_cjk_tokens": seen_cjk[:40]})
+                continue
+
+            if method == "TEMPLATE":
+                rect = rect_overrides.get(semantic)
+                if rect is None:
+                    method_rows.append({"semantic": semantic, "method": method,
+                                        "verdict": "NEEDS_TEMPLATE_RECT"})
+                    continue
+                from winter_agent_v2.pipeline_autogen import build_routing_template_node
+                import hashlib
+                frame = page_frames[0]
+                from PIL import Image
+                digest = hashlib.sha1(f"{semantic}|{rect}".encode()).hexdigest()[:8]
+                tpl_dir = ROOT / "dataset" / "candidate" / "autogen"
+                tpl_dir.mkdir(parents=True, exist_ok=True)
+                tpl = tpl_dir / f"{semantic.lower()}__rect_{digest}.png"
+                with Image.open(frame) as im:
+                    im.convert("RGB").crop(rect).save(tpl, "PNG")
+                rel = tpl.resolve().relative_to(ROOT.resolve()).as_posix()
+                for skill_id in skill_ids:
+                    if has_node(skill_id, semantic):
+                        continue
+                    routing = build_routing_template_node(semantic, rel, roi=list(rect))
+                    # Validation: the template must hit its own page frame and
+                    # miss every other captured frame (icon sprites are page-bound).
+                    positives, negatives = page_frames, [f for p, f in frames.items()
+                                                         if f not in page_frames]
+                    hit_pos = sum(1 for f in positives if _template_hit(adapter, ROOT, routing, f))
+                    hit_neg = sum(1 for f in negatives if _template_hit(adapter, ROOT, routing, f))
+                    ok = positives and hit_pos == len(positives) and hit_neg == 0 and negatives
+                    verdict = "VALIDATED_CANDIDATE" if ok else "REJECTED_VALIDATION"
+                    if ok and args.apply:
+                        from winter_agent_v2.pipeline_autogen import GeneratedNode
+                        node = GeneratedNode(semantic=semantic, skill_id=skill_id, kind="TEMPLATE",
+                                             routing_node=routing,
+                                             pipeline_node={"recognition": "TemplateMatch",
+                                                            "template": [semantic], "roi": list(rect),
+                                                            "threshold": [0.7]},
+                                             template_path=tpl, frame=frame)
+                        node.evidence = {"source": "harvest rect template", "rect": list(rect),
+                                         "frame": str(frame), "validation": "PENDING_RECORD"}
+                        _ok, verdict = gen.wire(node, note="harvest rect template")
+                        if _ok:
+                            wired += 1
+                            validated += 1
+                        method_rows.append({"semantic": semantic, "method": method,
+                                            "skill_id": skill_id, "verdict": verdict})
+                        continue
+                    method_rows.append({"semantic": semantic, "method": method,
+                                        "skill_id": skill_id, "verdict": verdict,
+                                        "positive_hits": hit_pos, "positives": len(positives),
+                                        "negative_hits": hit_neg, "negatives": len(negatives)})
+                continue
+
+            # COLOR / STRUCTURE / LIST_DYNAMIC: candidate-only until their
+            # adapters exist — reported, never wired.
+            method_rows.append({"semantic": semantic, "method": method,
+                                "verdict": "CANDIDATE_ONLY_NO_ADAPTER"})
+
+        print()
+        print(f"method-path rows      : {len(method_rows)}")
+        for row in method_rows:
+            print(f"  [{row.get('method', '?'):12}] {row.get('semantic', '?')[:34]:34} {row.get('verdict')}")
+        for page, tokens in token_cache.items():
+            cjk = sorted({str(_field(t, 'text') or '').strip() for t in tokens
+                          if _field(t, 'text') and any('\u4e00' <= ch <= '\u9fff' for ch in str(_field(t, 'text')))})
+            print(f"[page-tokens] {page}: {len(cjk)} cjk tokens")
+
         manifest = FRAMES / f"{stamp}_harvest_manifest.json"
         manifest.write_text(json.dumps({"frames": {k: str(v) for k, v in frames.items()},
-                                        "rows": results}, ensure_ascii=False, indent=2),
+                                        "rows": results, "method_rows": method_rows},
+                                       ensure_ascii=False, indent=2),
                            encoding="utf-8")
         print(f"\nmanifest -> {manifest}")
         if lease is not None:

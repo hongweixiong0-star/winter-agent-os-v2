@@ -101,7 +101,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
@@ -139,7 +144,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_OPEN_ALLIANCE_GIFTS",
@@ -158,7 +168,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_BEAST_CARD_ATTACK",
@@ -177,7 +192,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_BEAST_START_MARCH",
@@ -198,7 +218,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_BUILD_UPGRADE",
@@ -218,7 +243,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_DAILY_GO_HERO_RECRUIT",
@@ -235,7 +265,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_DAILY_TAB_TASKS",
@@ -252,7 +287,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "LOGIN_GIFT_DAY_CLAIM",
@@ -269,7 +309,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_OPEN_EXPLORATION",
@@ -288,7 +333,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_OPEN_POWER_OVERVIEW_ICON",
@@ -307,7 +357,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_OPEN_TRAINING_FROM_CAMP",
@@ -326,7 +381,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_SELECTED_BUILDING_UPGRADE",
@@ -343,7 +403,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "TRAINING_CAMP_IN_RING",
@@ -362,7 +427,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_OPEN_RESEARCH",
@@ -381,7 +451,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "QUICK_PANEL_ROW_MY_REWARDS",
@@ -525,7 +600,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "TARGET_INTEL_FIREBEAST_MISSION",
@@ -563,7 +643,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "TARGET_INTEL_RESCUE_SURVIVORS",
@@ -603,7 +688,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "TARGET_BEAST_MUSK_OX_9",
@@ -622,7 +712,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_INTEL_RESCUE_SURVIVORS",
@@ -662,7 +757,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "RESOURCE_DYNAMIC",
@@ -681,7 +781,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BEAST_SEARCH_TAB",
@@ -698,7 +803,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_OPEN_RESOURCE_SEARCH",
@@ -739,7 +849,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_BEAST_DISPATCH_MUSK_OX_9",
@@ -758,7 +873,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_CLAIM_FREE_STAMINA",
@@ -775,7 +895,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_CLAIM_OFFLINE_REWARDS",
@@ -794,7 +919,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_DISMISS_INTEL_REWARD",
@@ -823,7 +953,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "POPUP_DAILY_REWARD_CURRENT",
@@ -842,7 +977,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "POPUP_EXPLORATION_REWARD",
@@ -903,7 +1043,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_INTEL_VIEW_TARGET",
@@ -925,7 +1070,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_OPEN_POWER_DETAILS",
@@ -965,7 +1115,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_POWER_RESEARCH_IMPROVE",
@@ -982,7 +1137,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_START_RESEARCH",
@@ -1002,7 +1162,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "RESEARCH_NODE_NEXT",
@@ -1019,7 +1184,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_START_TRAINING",
@@ -1056,7 +1226,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_BACK_ARROW",
@@ -1073,7 +1248,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "EVENT_CALENDAR_NEXT_DETAIL",
@@ -1090,7 +1270,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "EVENT_CALENDAR_TAB",
@@ -1126,7 +1311,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_FREE_RECRUIT_EPIC",
@@ -1143,7 +1333,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "QUICK_PANEL_ROW_HERO_RECRUIT_EPIC",
@@ -1160,7 +1355,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY",
@@ -1215,7 +1415,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP_ENTRY",
@@ -1251,7 +1456,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "TRAINING_CAMP_BODY_FROM_FOCUS",
@@ -1429,7 +1639,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "MARCH_ROW_1",
@@ -1446,7 +1661,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "HUD_STAMINA_GAUGE",
@@ -1463,7 +1683,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "COLOR",
+        "basis": "gauge/bar: state is a colour ratio inside a fixed track",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "RESOURCE_LEVEL_MINUS",
@@ -1480,7 +1705,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_CONFIRM_RECALL",
@@ -1497,7 +1727,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_DUPLICATE_TARGET_CANCEL",
@@ -1514,7 +1749,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_RECONNECT_SESSION",
@@ -1531,7 +1771,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
     },
     {
       "semantic": "BTN_CLOSE",
@@ -1567,7 +1812,12 @@
       "record_type": null,
       "visible_words": [],
       "generator_ready": false,
-      "next_step": "observe clickable control and record its true bounds"
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
     }
   ]
 }

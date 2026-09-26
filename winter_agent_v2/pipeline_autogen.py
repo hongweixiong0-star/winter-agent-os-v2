@@ -731,6 +731,40 @@ def declared_gap_words(semantic: str, *,
     return ()
 
 
+#: Recognition paths the gap queue's ``recognition.method`` field may declare.
+#: OCR and TEMPLATE have real generation paths; COLOR / STRUCTURE / LIST_DYNAMIC
+#: are reported as candidates until their executor adapters exist — a declared
+#: method without a path is never silently downgraded to a text guess.
+GAP_RECOGNITION_METHODS = ("OCR", "TEMPLATE", "COLOR", "STRUCTURE", "LIST_DYNAMIC")
+
+
+def gap_recognition_method(semantic: str, *,
+                           queue_path: Path | None = None) -> str:
+    """How the client draws this control, as classified from real UI features.
+
+    Written by ``tools/classify_gap_recognition.py`` into the gap queue. Returns
+    ``""`` when the queue says nothing, so callers keep their existing behaviour
+    instead of guessing a method.
+    """
+    path = queue_path or DEFAULT_GAP_QUEUE_PATH
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    for item in payload.get("queue") or []:
+        if not (isinstance(item, dict) and item.get("semantic") == semantic):
+            continue
+        method = str((item.get("recognition") or {}).get("method", "")).upper()
+        return method if method in GAP_RECOGNITION_METHODS else ""
+    return ""
+
+
+def build_color_pipeline_node(roi: Sequence[int]) -> dict[str, Any]:
+    """MAA ColorMatch node shape — V2_NATIVE, candidate-only until an adapter runs it."""
+    return {"recognition": "ColorMatch", "roi": [int(v) for v in roi],
+            "order": 0, "action": "Click"}
+
+
 def _relative(path: Path, root: Path) -> str:
     try:
         return str(Path(path).resolve().relative_to(Path(root).resolve())).replace("\\", "/")
