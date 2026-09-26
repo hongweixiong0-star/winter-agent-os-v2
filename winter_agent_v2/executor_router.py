@@ -443,6 +443,55 @@ class ExecutorRouter:
             self.last_recognition_error = None
             return (tap_x / width, tap_y / height)
 
+        # LIST_DYNAMIC reads the live list as objects -- each row, its identity,
+        # its capacity and THAT row's own control -- instead of matching a picture
+        # of one control.  A picture of a green + can say "a joinable rally is drawn
+        # here"; it cannot say WHICH rally, so two green rows on one frame were
+        # indistinguishable and the first one won regardless of its countdown.
+        # ``rally.read_rally_list_image`` supplies the missing half and was proved
+        # on four archived live frames (2026-09-09): two joinable rows told apart
+        # by their own leader/capacity/countdown, and the already-joined frame
+        # offering nothing at all.
+        #
+        # Node shape:
+        #   {"kind": "LIST_DYNAMIC", "reader": "rally_list",
+        #    "field": "join_button", "fallback_semantic": "BTN_JOIN_ROW"}
+        # The fallback exists because this replaces a path that already worked: if
+        # the frame is not a rally list (no 集结中 header), the reader honestly
+        # reports no rows and the tap falls back to the previously used template
+        # node instead of failing the skill.
+        if dispatch_hint(node) == "LIST_DYNAMIC":
+            reader = str(node.get("reader", "")).lower()
+            field = str(node.get("field", "join_button")).lower()
+            if reader == "rally_list" and field == "join_button":
+                from PIL import Image as _Image
+                from .ocr import RapidOCRBackend as _Rapid
+                from .rally import read_rally_list_image as _read_rows
+
+                tokens = list(_Rapid().recognize(_Image.fromarray(frame)))
+                reading = _read_rows(frame, tokens)
+                best = reading.best_joinable()
+                if best is None or best.join_norm is None:
+                    self.last_outcome = None
+                    if not reading.has_rows:
+                        # No 集结中 header: this frame is not a rally list at all, so the
+                        # reader has nothing to say about it and the previously working
+                        # template node is what answers.  This is the only case that falls
+                        # back -- see the case below for why.
+                        self.last_recognition_error = "LIST_DYNAMIC:NO_ROWS"
+                        fallback = node.get("fallback_semantic")
+                        if fallback and str(fallback) != semantic:
+                            return self.maa_resolver(str(fallback), skill_id)
+                        return None
+                    # Rows were read and none is joinable (every one is full, expired, or
+                    # this role is already in one).  That is an answer, not a miss: falling
+                    # back to the green + template here is exactly the failure the reader
+                    # exists to prevent, because a + drawn on a non-bear row would then win.
+                    self.last_recognition_error = "LIST_DYNAMIC:NO_JOINABLE_ROW"
+                    return None
+                self.last_recognition_error = None
+                return (float(best.join_norm[0]), float(best.join_norm[1]))
+
         template_name = str(node.get("template", semantic))
         # A node names its template semantically, but the file is named for its
         # provenance and usually lives outside ``template_dir``.  Registering

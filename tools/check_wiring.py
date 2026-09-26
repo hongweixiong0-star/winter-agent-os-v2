@@ -692,10 +692,17 @@ def main() -> int:
     # frame's own words, not a template.  It stands for "the ordinary control this frame
     # named", so by construction nothing in the manifest can resolve it -- the same reason
     # ``INTEL_PIN`` is here.
+    # RALLY_ROW_JOIN_BUTTON joined 2026-09-27 and is the LIST_DYNAMIC member of this family:
+    # the tap point is the join affordance of the ONE row the reader selected on this frame
+    # (joinable bear rally with the least time left), so no template can pin it -- a picture of
+    # a green + says "a joinable rally is drawn here", never WHICH one.  The reader
+    # (rally.read_rally_list_image) was replayed on four archived live frames; when the frame
+    # carries no 集结中 row the node falls back to the manifest template BTN_JOIN_ROW, which is
+    # still wired, so the previously working path is not what is being replaced here.
     _derived_targets = {"RESOURCE_DYNAMIC", "HUD_STAMINA_GAUGE", "MARCH_ROW_1",
                         "RESOURCE_LEVEL_MINUS", "INTEL_PIN", "BTN_EXPLORATION_IDLE_CLAIM",
                         "BEAST_ON_MAP", "TRAINING_CAMP_IN_RING", "BEAST_SEARCH_TAB",
-                        "TRAINING_CAMP_NEXT", "ORDINARY_CONTROL"}
+                        "TRAINING_CAMP_NEXT", "ORDINARY_CONTROL", "RALLY_ROW_JOIN_BUTTON"}
     # ``QUICK_PANEL_ROW_*`` is the same category, and it is the largest family of them: the
     # 快捷面板 draws its rows at coordinates that depend on which rows the client chose to show
     # and on the list's own scroll, so no template can pin one.  What the resolver acts on is the

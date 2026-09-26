@@ -1840,32 +1840,80 @@
   {
    "semantic": "RALLY_LIST_ROW_TARGET",
    "family": "LIST",
-   "pages": [],
+   "pages": [
+    "ALLIANCE_WAR"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "a rally row: target icon, initiator, troop count, countdown",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "JOIN_RALLY"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "LIST_DYNAMIC",
+    "basis": "same reader: per-row target text classified against 变异巨熊/冰原巨兽/巨熊; a row matching none is UNKNOWN and never joined",
+    "classified_at_source": "live_frame_replay"
+   },
+   "generator_ready": false,
+   "next_step": "Covered by RALLY_ROW_JOIN_BUTTON's row reading (field 'target'); joinable already requires target_type BEAR.",
+   "wired_at": "2026-09-27T01:40:00+08:00"
   },
   {
    "semantic": "RALLY_ROW_JOIN_BUTTON",
    "family": "LIST",
-   "pages": [],
+   "pages": [
+    "ALLIANCE_WAR"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "join button on a rally row with free slots",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "JOIN_RALLY"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "LIST_DYNAMIC",
+    "basis": "rally.read_rally_list_image: row identity/leader/members/capacity/timer + that row's own green button, replayed on four archived live frames",
+    "classified_at_source": "live_frame_replay"
+   },
+   "generator_ready": false,
+   "next_step": "L2 wired 2026-09-27 (LIST_DYNAMIC, fallback BTN_JOIN_ROW). L3 arrives with the first production join; L4 needs a live joined-state verifier pass.",
+   "wired_at": "2026-09-27T01:40:00+08:00"
   },
   {
    "semantic": "RALLY_ROW_FULL",
    "family": "LIST",
-   "pages": [],
+   "pages": [
+    "ALLIANCE_WAR"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "full marker on a rally row; triggers switch to next target",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "JOIN_RALLY"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "LIST_DYNAMIC",
+    "basis": "same reader: members >= capacity -> full; unreadable capacity stays null, never full",
+    "classified_at_source": "live_frame_replay"
+   },
+   "generator_ready": false,
+   "next_step": "Covered by RALLY_ROW_JOIN_BUTTON's row reading (field 'full'); kept as its own semantic so a policy can ask about capacity without asking for a tap.",
+   "wired_at": "2026-09-27T01:40:00+08:00"
   },
   {
    "semantic": "START_RALLY_BUTTON",
@@ -1890,42 +1938,106 @@
   {
    "semantic": "RALLY_HERO_SELECT",
    "family": "LIST",
-   "pages": [],
+   "pages": [
+    "MARCH"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "hero picker inside rally preparation",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "DISPATCH_MARCH"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "STRUCTURE",
+    "basis": "winter_agent_v2.formation.read_formation_state_tokens reads the three hero slots from the current frame on both an ordinary march and the 2026-09-09 bear auto-join hero page",
+    "classified_at_source": "live_frame_replay"
+   },
+   "generator_ready": false,
+   "next_step": "COMMON_READY (slot geometry from the current frame, no stored coordinates). BEAR_LIVE_VERIFIED waits for the live bear formation page.",
+   "wired_at": "2026-09-27T01:40:00+08:00"
   },
   {
    "semantic": "RALLY_TROOP_SELECT",
    "family": "LIST",
-   "pages": [],
+   "pages": [
+    "MARCH"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "troop formation picker inside rally preparation",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "DISPATCH_MARCH"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "STRUCTURE",
+    "basis": "same reader: troop rows of the current formation page",
+    "classified_at_source": "live_frame_replay"
+   },
+   "generator_ready": false,
+   "next_step": "COMMON_READY, same basis as RALLY_HERO_SELECT.",
+   "wired_at": "2026-09-27T01:40:00+08:00"
   },
   {
    "semantic": "RALLY_DISPATCH_CONFIRM",
    "family": "POPUP",
-   "pages": [],
+   "pages": [
+    "MARCH"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "final dispatch confirmation",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "DISPATCH_MARCH"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "OCR",
+    "basis": "formation confirm button 出征/储存 read by winter_agent_v2.formation; BTN_DISPATCH is L4-proved on a real formation page 2026-09-27",
+    "classified_at_source": "live_proof"
+   },
+   "generator_ready": false,
+   "next_step": "COMMON_READY via BTN_DISPATCH (L4 2026-09-27). Bear-specific wording, if any, is confirmed when the bear formation page is live.",
+   "wired_at": "2026-09-27T01:40:00+08:00"
   },
   {
    "semantic": "RALLY_JOINED_STATE",
    "family": "STATUS",
-   "pages": [],
+   "pages": [
+    "ALLIANCE_WAR"
+   ],
    "visible_words": [],
    "record_type": "CONTROL",
    "priority": "P0",
    "note": "joined badge / own troop shown in rally detail",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+   "skills": [
+    "JOIN_RALLY"
+   ],
+   "goals": [
+    "PARTICIPATE_BEAR"
+   ],
+   "recognition": {
+    "method": "LIST_DYNAMIC",
+    "basis": "tools/bear_joined_state.py reads JOINED/NOT_JOINED/UNKNOWN from the current frame; the rally reader additionally reports a row as no-longer-joinable once this role is in it",
+    "classified_at_source": "live_frame_replay"
+   },
+   "generator_ready": false,
+   "next_step": "JOINED_STATE_VERIFIER_READY=true (no live war right now -> NOT_JOINED is the honest reading). L4 needs the 2026-09-28 war.",
+   "wired_at": "2026-09-27T01:40:00+08:00"
   },
   {
    "semantic": "RALLY_BATTLE_REPORT",

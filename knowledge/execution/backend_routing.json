@@ -709,6 +709,42 @@
       110,
       780
      ]
+    },
+    "RALLY_ROW_JOIN_BUTTON": {
+     "kind": "LIST_DYNAMIC",
+     "reader": "rally_list",
+     "field": "join_button",
+     "fallback_semantic": "BTN_JOIN_ROW",
+     "evidence": {
+      "measured_at": "2026-09-27T01:40:00+08:00",
+      "source": "winter_agent_v2.rally.read_rally_list_image on four archived live frames",
+      "validation": "ARCHIVED_LIVE_FRAME_REPLAY",
+      "positive_frames": [
+       "dataset/raw/bear_live_20260909/join_list_now.png",
+       "dataset/raw/bear_live_20260909/join_list_after_detail.png",
+       "dataset/raw/bear_live_20260909/bear_rally_panel.png"
+      ],
+      "negative_frames": [
+       "dataset/raw/bear_live_20260909/joined_with_jesse.png (rows read, no joinable row)",
+       "dataset/raw/bear_live_20260909/special_buildings.png (not a rally list, no rows)"
+      ],
+      "measured_join_points_norm": {
+       "join_list_now.png": [
+        0.8889,
+        0.3051
+       ],
+       "join_list_after_detail.png": [
+        0.8889,
+        0.4801
+       ],
+       "bear_rally_panel.png": [
+        0.8889,
+        0.3051
+       ]
+      },
+      "note": "Two joinable rows on one frame are told apart by their own leader / capacity / countdown and the button of each is found inside that row's own band; the already-joined frame offers no joinable row. The BTN_JOIN_ROW template stays wired as fallback_semantic and is used only when this frame carries no 集结中 row header, so the previously working path is not removed.",
+      "latency_note": "full-frame RapidOCR 0.7-1.2 s on 720x1280; row grouping 10-20 ms"
+     }
     }
    },
    "preferred": "MAA",

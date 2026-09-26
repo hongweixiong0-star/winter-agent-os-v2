@@ -152,6 +152,32 @@ class RallyRowReading:
     join_norm: tuple[float, float] | None
     join_box_norm: tuple[float, float, float, float] | None
     state: RallyRowState
+    # -- the LIST_DYNAMIC field set (round brief §九) --------------------------
+    # These are the same facts as above, spelled the way a list consumer asks for
+    # them, because a caller that wants "is this row full" should not have to know
+    # that capacity lives in two fields and that ``None`` means unread.  Every one
+    # of them is derived from THIS frame; none is a stored coordinate.
+    #: Identity carried by the row's own content, so a row that moved because the
+    #: list scrolled keeps its id while a row whose leader changed does not.
+    #: Two rows with identical content are told apart by the ``#2`` suffix rather
+    #: than by silently sharing one id.
+    row_id: str = ""
+    #: ``8/15`` -> members 8.  ``None`` means the client did not print a count the
+    #: reader could read -- never 0, which would be a claim about the rally.
+    members: int | None = None
+    capacity: int | None = None
+    #: ``None`` when the capacity was not readable: "I could not read it" is not
+    #: "it is full", and collapsing the two is how a joinable rally gets skipped.
+    full: bool | None = None
+    #: True only when this row itself draws a join affordance inside its own band.
+    join_available: bool = False
+    #: Seconds left on the row's countdown, when the client printed one.
+    timer: int | None = None
+    #: (x0, y0, x1, y1) normalized -- y from the row's band, x from the union of
+    #: the tokens the client drew inside it.  ``None`` when no token carried a box.
+    row_bbox: tuple[float, float, float, float] | None = None
+    #: (x0, y0, x1, y1) normalized, of THIS row's join control.
+    join_button_bbox: tuple[float, float, float, float] | None = None
 
     @property
     def joinable(self) -> bool:
@@ -166,6 +192,30 @@ class RallyRowReading:
             and capacity
             and self.join_norm is not None
         )
+
+    def to_dict(self) -> dict[str, object]:
+        """The LIST_DYNAMIC row, as the round brief names its fields.
+
+        Every coordinate in here is valid for the frame it was read from and only
+        that frame.  Refresh, scroll or page change means read again -- the brief
+        forbids reusing historical absolute coordinates, and this dict is shaped so
+        a caller cannot mistake it for a storable target.
+        """
+        return {
+            "row_id": self.row_id,
+            "row_index": self.row_index,
+            "leader": self.leader,
+            "target": self.target_text,
+            "target_type": self.target_type.value,
+            "members": self.members,
+            "capacity": self.capacity,
+            "full": self.full,
+            "join_available": self.join_available,
+            "timer": self.timer,
+            "row_bbox": list(self.row_bbox) if self.row_bbox else None,
+            "join_button_bbox": list(self.join_button_bbox) if self.join_button_bbox else None,
+            "state": self.state.value,
+        }
 
     def to_row(self, *, width: int, height: int) -> RallyRow:
         """The scheduler-facing row.  ``join_point`` is in pixels **for this frame only**."""
@@ -220,8 +270,25 @@ class RallyListReading:
         )
 
 
+def _as_rgb(image: Any):
+    """A PIL RGB image from a path, an ndarray or an already-open image.
+
+    The production resolver holds a frame in memory (MAA hands back an ndarray) and
+    must not pay for a disk round-trip to read the list it is looking at; the
+    archived-frame callers hold a path.  Both reach the same pixels.
+    """
+    from PIL import Image
+
+    if isinstance(image, Image.Image):
+        return image.convert("RGB")
+    if isinstance(image, (str, Path)):
+        with Image.open(image) as opened:
+            return opened.convert("RGB")
+    return Image.fromarray(image).convert("RGB")
+
+
 def _green_boxes(
-    image_path: Path,
+    image: Any,
     *,
     min_pixels: int = GREEN_MIN_PIXELS,
     min_width: int = GREEN_MIN_WIDTH,
@@ -233,10 +300,7 @@ def _green_boxes(
     back to the same connected-component walk in pure Python otherwise.  Both paths apply the
     identical threshold, so a machine without numpy reads the same list, slower.
     """
-    from PIL import Image
-
-    with Image.open(image_path) as opened:
-        rgb = opened.convert("RGB")
+    rgb = _as_rgb(image)
     width, height = rgb.size
 
     try:
@@ -351,11 +415,24 @@ def read_rally_list(
     if result is None:
         result = ocr.recognize(image_path)
     tokens = [t for t in getattr(result, "tokens", ()) if getattr(t, "text", "").strip()]
+    return read_rally_list_image(image_path, tokens)
 
-    from PIL import Image
 
-    with Image.open(image_path) as opened:
-        width, height = opened.size
+def read_rally_list_image(image: Any, tokens: Iterable[Any]) -> RallyListReading:
+    """The same reading, from pixels already in memory.
+
+    The production resolver already holds the frame MAA just captured; asking it to
+    write a PNG and re-open it would add a disk round-trip to the one path where
+    latency is the scarce resource (joining a rally before it fills).  The archived
+    frames and the tests go through ``read_rally_list`` above and this function, so
+    both spellings read identically.
+
+    ``tokens`` are ``ocr.OCRToken``s for this frame.  Nothing here runs OCR by
+    itself: this module imports no OCR backend, and the caller owns the pass.
+    """
+    tokens = [t for t in tokens if getattr(t, "text", "").strip()]
+    rgb = _as_rgb(image)
+    width, height = rgb.size
 
     # ---- 1. row anchors: the client's own 集结中 headers ---------------------
     anchors: list[tuple[float, str]] = []
@@ -387,9 +464,10 @@ def read_rally_list(
         if token.text.strip().startswith(("开启后自动加入", "自动加入")):
             footer_y = min(footer_y, token.centre[1]) if footer_y else token.centre[1]
 
-    green_boxes = _green_boxes(image_path)
+    green_boxes = _green_boxes(rgb)
 
     rows: list[RallyRowReading] = []
+    used_ids: dict[str, int] = {}
     for index, (header_y, header_text) in enumerate(anchors):
         if index + 1 < len(anchors):
             band_top = header_y - (header_y - (anchors[index - 1][0] if index else header_y - 40)) * 0.25
@@ -454,6 +532,7 @@ def read_rally_list(
         # ---- 3. THIS row's join button, found inside THIS row's band ---------
         join_norm = None
         join_box = None
+        join_button_bbox = None
         for x0, y0, x1, y1, pixels in green_boxes:
             centre_y = (y0 + y1) / 2.0
             if not (band_top <= centre_y < band_bottom):
@@ -461,6 +540,8 @@ def read_rally_list(
             join_norm = (round(((x0 + x1) / 2.0) / width, 4), round(centre_y / height, 4))
             join_box = (round(x0 / width, 4), round(y0 / height, 4),
                         round((x1 - x0) / width, 4), round((y1 - y0) / height, 4))
+            join_button_bbox = (round(x0 / width, 4), round(y0 / height, 4),
+                                round(x1 / width, 4), round(y1 / height, 4))
             break
 
         if join_norm is not None:
@@ -471,6 +552,35 @@ def read_rally_list(
             # A row with no green affordance and no readable full count is *unknown*, not full.
             # Collapsing the two would let "I could not read it" become "it is not available".
             state = RallyRowState.UNKNOWN
+
+        # ---- 3b. the row's own rectangle -------------------------------------
+        # y comes from the band (the client's own headers bound it, never a pitch);
+        # x comes from the union of the boxes the client drew inside it, so a row
+        # whose content is narrower than the panel is not reported as full width.
+        # No token carried a box -> no rectangle, and that is reported as None
+        # rather than as the frame, which would be a guess dressed as a reading.
+        row_boxes = [
+            point
+            for token in in_band
+            if getattr(token, "box", None)
+            for point in token.box
+        ]
+        row_bbox = None
+        if row_boxes:
+            xs = [point[0] for point in row_boxes]
+            row_bbox = (
+                round(max(0.0, min(xs)) / width, 4),
+                round(band_top / height, 4),
+                round(min(float(width), max(xs)) / width, 4),
+                round(band_bottom / height, 4),
+            )
+
+        # Content identity, so the same rally keeps its id when the list scrolls
+        # and loses it when the leader or target changes under it.
+        identity = f"{target_text or 'UNKNOWN_TARGET'}@{leader or 'UNKNOWN_LEADER'}"
+        seen = used_ids.get(identity, 0) + 1
+        used_ids[identity] = seen
+        row_id = identity if seen == 1 else f"{identity}#{seen}"
 
         rows.append(RallyRowReading(
             row_index=index,
@@ -485,6 +595,15 @@ def read_rally_list(
             join_norm=join_norm,
             join_box_norm=join_box,
             state=state,
+            row_id=row_id,
+            members=capacity_used,
+            capacity=capacity_max,
+            full=(None if (capacity_used is None or capacity_max is None)
+                  else capacity_used >= capacity_max),
+            join_available=join_norm is not None,
+            timer=remaining,
+            row_bbox=row_bbox,
+            join_button_bbox=join_button_bbox,
         ))
 
     # ---- 4. the scroll container, derived from the rows themselves -----------

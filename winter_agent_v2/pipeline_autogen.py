@@ -192,6 +192,11 @@ def dispatch_hint(node: dict[str, Any]) -> str:
         return "OCR"
     if kind == "STRUCTURE":
         return "STRUCTURE"
+    # LIST_DYNAMIC reads a whole live list -- rows, their identity and each row's
+    # own control -- instead of matching one picture.  It has no template file,
+    # so sending it down the template path would report the control as absent.
+    if kind == "LIST_DYNAMIC":
+        return "LIST_DYNAMIC"
     return "TEMPLATE"
 
 

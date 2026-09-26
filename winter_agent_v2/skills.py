@@ -375,12 +375,19 @@ def v2_registry() -> SkillRegistry:
             # ``join_list_after_detail.png``, whose first row's + is grey, the template does
             # not resolve at all, so a full rally yields no tap instead of a wrong one.
             #
-            # Known limit, recorded rather than hidden: this locates *a* joinable rally, not
-            # the fastest of several.  Picking between two simultaneously-green rows needs a
-            # rally-list reader that does not exist yet (the task book's J05/J06), and
-            # ``rally.fastest_joinable_bear`` already states the policy -- it just has no
-            # frame reading to consume.  Registered as a gap, not faked here.
-            None, Action("TAP_SEMANTIC", "BTN_JOIN_ROW"),
+            # The limit this skill used to carry is now closed.  It read: "this locates
+            # *a* joinable rally, not the fastest of several ... needs a rally-list reader
+            # that does not exist yet".  The reader exists -- ``rally.read_rally_list`` /
+            # ``read_rally_list_image``, replayed on four archived live frames -- so the
+            # semantic now names the LIST the tap is chosen from instead of a picture of a
+            # plus: RALLY_ROW_JOIN_BUTTON resolves the joinable BEAR row with the least time
+            # left and taps THAT row's own affordance.
+            #
+            # BTN_JOIN_ROW is not deleted.  It stays wired as the node's
+            # ``fallback_semantic`` and is used when this frame carries no 集结中 row header
+            # (i.e. the page is not a rally list), so the path that already worked keeps
+            # working and a reader miss costs a fallback rather than a lost rally.
+            None, Action("TAP_SEMANTIC", "RALLY_ROW_JOIN_BUTTON"),
             timeout=8.0, risk="MEDIUM_COMBAT", state=SkillState.CANDIDATE, latency_class=LatencyClass.REALTIME,
             semantic_goal="Join an eligible rally matching goal policy",
             parameters=("target", "filter", "formation"), context=("RALLY_JOINER",),
