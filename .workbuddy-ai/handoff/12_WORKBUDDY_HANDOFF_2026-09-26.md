@@ -143,3 +143,14 @@
    生成后必须补正负帧验证，验证不过的不要 wire。
 6. **（Codex 先做）提交你自己在 `winter_agent_v2/runtime.py` 的 745 行未提交工作**——
    本轮已刻意绕过它，但它现在只存在于工作区，任何 `git checkout` 都会毁掉它。
+
+---
+
+## 附记（09-26 上午，WorkBuddy 接管段，HEAD `3bc6714`）
+
+1. **闭环已证**：`OPEN_ALLIANCE_TECH_FROM_HOME` 由 AUTO 运行时钩子生成（trigger 存于路由表 evidence），06:41–07:09 六步经 MAA 执行且 Verifier 通过。发现→生成→注册→执行→验证 全链活体证据齐全。
+2. **采集器修复**（`03b49fd`）：按字典 ocr 词表逐词定位 + 两道接线闸（无负帧不接线 / 命中页必须在声明 pages 内）。两处错接线（邮件页签、联盟宝箱领取）已被回滚，未进过任何运行。
+3. **新接线**：`DAILY_CLAIM_REWARDS`、`EXPLORATION_IDLE_CLAIM`（promoted:false/P3）。MAA 真节点 4→14。
+4. **新页面**：地心探险（大地之心）——即台账 `LABYRINTH_DAILY` 的实体页，DISCOVERED，帧在 dataset/raw/autogen/20260926_002647_help.png。
+5. **需要操作者动作**：面板自置位 RUNTIME_RELOAD_REQUIRED（加载的 8a42332 已被 b5c2c51+ 取代）并暂停——请双击 Start-Winter-Agent-V2.cmd 重载。重载后 DEFERRED 的 READ_MAIL_TABS / READ_DAILY_PROGRESS / CLAIM_IDLE_INCOME 应吃到新节点。
+6. **巨熊**：预约不变（09-27 20:59:58 +08），唤醒链路 36.6h 实测可达；JOIN 决策链已离线回放固化（tests/test_bear_join_decision_replay.py）。仍欠真机窗口执行。
