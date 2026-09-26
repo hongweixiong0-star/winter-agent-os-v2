@@ -1,14 +1,11 @@
-"""Classify every V2 goal and skill into A/B/C/D pipeline readiness.
+"""Audit V2 Pipeline readiness from the local registry, routes and production evidence.
 
 Run:  python tools/pipeline_coverage.py [--json]
 
-The four classes the operator brief asks for, applied honestly to what V2
-actually has:
-
-  A  a MAA node exists **and** the goal is routable, so AUTO can schedule it
-  B  a MAA node exists but the goal cannot be reached by AUTO
-  C  the control or page is known to knowledge, but no MAA node exists yet
-  D  neither a node nor usable UI knowledge exists
+Skill classes: A/B have a MAA node, C has UI knowledge but no node, D has
+neither. STATE_ONLY and COMPOSITE do not need their own recognition node.
+Goal classes use the canonical capability map's alternatives, not the old
+GOAL_REQUIREMENTS strings, which do not match the live registry vocabulary.
 
 "Has a pipeline" is judged by one thing only: whether
 ``knowledge/execution/backend_routing.json`` carries a recognition node for that
@@ -33,11 +30,36 @@ sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.executor_router import RoutingTable  # noqa: E402
 from winter_agent_v2.goal_library import GOAL_ROUTES  # noqa: E402
-from winter_agent_v2.skill_factory import GOAL_REQUIREMENTS  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
 
 SEMANTIC_DICT = ROOT / "knowledge" / "ui" / "semantic_dictionary.json"
 L1 = ROOT / "learning" / "l1_experiences.jsonl"
+GOAL_MAP = ROOT / "knowledge" / "goals" / "goal_capability_map.json"
+EPISODES = ROOT / "learning" / "episodes.jsonl"
+
+
+def production_evidence() -> dict[str, dict[str, int]]:
+    """Count distinct skills at each live evidence level, from production only."""
+    counts: dict[str, dict[str, int]] = {}
+    if not EPISODES.is_file():
+        return counts
+    with EPISODES.open(encoding="utf-8") as stream:
+        for line in stream:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get("mode") != "PRODUCTION" or not row.get("skill"):
+                continue
+            item = counts.setdefault(str(row["skill"]), {"maa_executed": 0, "verifier_passed": 0, "goal_completed": 0})
+            if row.get("recognition_backend") != "MAA" or row.get("action_backend") != "MAA":
+                continue
+            item["maa_executed"] += 1
+            if row.get("verifier_ok") is True:
+                item["verifier_passed"] += 1
+                if row.get("goal_progress") is True:
+                    item["goal_completed"] += 1
+    return counts
 
 
 def load_semantics() -> set[str]:
@@ -81,14 +103,29 @@ def build() -> dict:
     registry = v2_registry()
     semantics = load_semantics()
     l1 = load_l1_semantics()
+    evidence = production_evidence()
+    goal_map = json.loads(GOAL_MAP.read_text(encoding="utf-8"))["goals"]
+    routable_skills = {str(alt) for goal_id, definition in goal_map.items()
+                       if goal_id in GOAL_ROUTES for cap in definition.get("capabilities", [])
+                       for alt in cap.get("alternatives", [])}
 
     skills_report: list[dict] = []
     for skill in registry.all():
         semantic = str(skill.action.target or "")
         node = node_for(table, skill.id, semantic)
         has_node = node is not None
+        kind = str(skill.action.kind)
+        if kind == "OBSERVE" or kind in {"READ_TIMER", "READ_COUNTER"}:
+            cls = "STATE_ONLY"
+        elif kind in {"TAP_SEMANTIC", "SWIPE"}:
+            cls = ("A" if skill.id in routable_skills else "B") if has_node else (
+                "C" if semantic in semantics or semantic in l1 else "D")
+        else:
+            cls = "COMPOSITE"
         skills_report.append({
             "skill_id": skill.id,
+            "class": cls,
+            "action_kind": kind,
             "semantic": semantic,
             "has_maa_node": has_node,
             "node_kind": (node or {}).get("kind") or ("TEMPLATE" if (node or {}).get("template") else None),
@@ -96,29 +133,38 @@ def build() -> dict:
             "has_l1_experience": semantic in l1,
             "skill_state": str(getattr(skill.state, "value", skill.state)),
             "required_page": str(getattr(skill.required_page, "value", skill.required_page) or ""),
+            "production": evidence.get(skill.id, {"maa_executed": 0, "verifier_passed": 0, "goal_completed": 0}),
         })
 
     by_id = {row["skill_id"]: row for row in skills_report}
 
     goals: list[dict] = []
-    for goal_id, required in GOAL_REQUIREMENTS.items():
+    for goal_id, definition in goal_map.items():
+        capabilities = definition.get("capabilities", [])
+        required = list(dict.fromkeys(str(alt) for cap in capabilities for alt in cap.get("alternatives", [])))
         routable = goal_id in GOAL_ROUTES
         rows = [by_id.get(r) for r in required]
         present = [r for r in rows if r is not None]
         with_node = [r for r in present if r["has_maa_node"]]
         known = [r for r in present if r["in_semantic_dict"] or r["has_l1_experience"]]
 
-        if present and with_node and routable and len(with_node) == len(present):
+        actionable = [r for r in present if r["class"] not in {"STATE_ONLY", "COMPOSITE"}]
+        capability_gaps = [str(cap.get("capability")) for cap in capabilities
+                           if not any(by_id.get(str(alt)) for alt in cap.get("alternatives", []))]
+        pipeline_gaps = [str(cap.get("capability")) for cap in capabilities
+                         if not any(by_id.get(str(alt)) and by_id[str(alt)]["class"] in {"A", "STATE_ONLY", "COMPOSITE"}
+                                    for alt in cap.get("alternatives", []))]
+        if routable and not pipeline_gaps and not capability_gaps:
             cls = "A"
         elif with_node and not routable:
             cls = "B"
-        elif known or present:
+        elif known or any(r["has_maa_node"] for r in present):
             cls = "C"
         else:
             cls = "D"
 
-        missing_nodes = [r["skill_id"] for r in present if not r["has_maa_node"]]
         missing_skills = [r for r in required if r not in by_id]
+        missing_nodes = [r["skill_id"] for r in actionable if not r["has_maa_node"]]
 
         goals.append({
             "goal": goal_id,
@@ -130,6 +176,8 @@ def build() -> dict:
             "skills_with_knowledge": len(known),
             "missing_nodes": missing_nodes,
             "missing_skills": missing_skills,
+            "capability_gaps": capability_gaps,
+            "pipeline_gaps": pipeline_gaps,
         })
 
     goals.sort(key=lambda g: (g["class"], -g["skills_with_node"], g["goal"]))
@@ -141,6 +189,11 @@ def build() -> dict:
             "goals": len(goals),
             "skills_defined": len(skills_report),
             "skills_with_maa_node": sum(1 for r in skills_report if r["has_maa_node"]),
+            "skills_requiring_pipeline": sum(1 for r in skills_report if r["action_kind"] == "TAP_SEMANTIC"),
+            "skills_missing_pipeline": sum(1 for r in skills_report if r["action_kind"] == "TAP_SEMANTIC" and not r["has_maa_node"]),
+            "maa_executed_skills": sum(1 for r in skills_report if r["production"]["maa_executed"]),
+            "maa_verifier_passed_skills": sum(1 for r in skills_report if r["production"]["verifier_passed"]),
+            "maa_goal_completed_skills": sum(1 for r in skills_report if r["production"]["goal_completed"]),
         },
         "goals": goals,
         "skills": skills_report,
@@ -166,11 +219,14 @@ def main() -> int:
 
     t = report["totals"]
     print(f"skills defined          : {t['skills_defined']}")
-    print(f"skills with a MAA node  : {t['skills_with_maa_node']}  <- these are the real pipelines")
+    print(f"tap skills needing node : {t['skills_requiring_pipeline']}")
+    print(f"skills with a MAA node  : {t['skills_with_maa_node']}")
+    print(f"tap skills missing node : {t['skills_missing_pipeline']}")
+    print(f"MAA executed / verified / goal progress skills: {t['maa_executed_skills']} / {t['maa_verifier_passed_skills']} / {t['maa_goal_completed_skills']}")
     print(f"goals                   : {t['goals']}")
     print("class counts            : " + ", ".join(f"{k}={v}" for k, v in report["counts_by_class"].items()))
     print()
-    print("A = node + routable | B = node, not routable | C = knowledge, no node | D = unknown")
+    print("Goal A = every capability has a registered node or needs no node; B = node but no AUTO route; C = known UI gap; D = UI unknown")
     print()
     print(f"{'goal':32} cls routable defined/node  missing-nodes")
     print("-" * 92)

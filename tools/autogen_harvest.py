@@ -93,6 +93,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--visit", action="append", default=[],
                     help="page_name[:x,y] — navigate (optional) then capture")
+    ap.add_argument("--frame", action="append", default=[],
+                    help="page_name:path — use an archived real frame without taking the device lease")
     ap.add_argument("--back-before", type=int, default=2, metavar="N",
                     help="press BACK this many times before each visit, so a previous "
                          "visit's full-screen page cannot swallow the next tap")
@@ -103,25 +105,29 @@ def main() -> int:
     ap.add_argument("--apply", action="store_true",
                     help="write nodes that pass validation (default: report only)")
     args = ap.parse_args()
-    if not args.visit:
+    if not args.visit and not args.frame:
         args.visit = ["current"]
+    if args.visit and args.frame:
+        ap.error("--visit and --frame cannot be combined")
 
-    lease = DeviceLease()
-    record, reason = lease.request(
-        capability_id="PIPELINE_AUTOGEN", trace_id="WORKBUDDY_AUTOGEN_HARVEST",
-        reason=f"harvest+validate recognition nodes across {len(args.visit)} page(s)",
-    )
-    if record is None:
-        print(f"[BLOCKED] lease unavailable: {reason}")
-        return 2
-    print(f"lease {record.lease_id} until {record.expires_at}")
-
-    device = ADBDevice(ADB, SERIAL, production=True)
-    status = device.status()
-    print(f"device: connected={status.connected} resolution={status.resolution}")
-    if not status.connected:
-        lease.release(result="failed", reason="device not connected")
-        return 3
+    lease = None
+    device = None
+    if args.visit:
+        lease = DeviceLease()
+        record, reason = lease.request(
+            capability_id="PIPELINE_AUTOGEN", trace_id="WORKBUDDY_AUTOGEN_HARVEST",
+            reason=f"harvest+validate recognition nodes across {len(args.visit)} page(s)",
+        )
+        if record is None:
+            print(f"[BLOCKED] lease unavailable: {reason}")
+            return 2
+        print(f"lease {record.lease_id} until {record.expires_at}")
+        device = ADBDevice(ADB, SERIAL, production=True)
+        status = device.status()
+        print(f"device: connected={status.connected} resolution={status.resolution}")
+        if not status.connected:
+            lease.release(result="failed", reason="device not connected")
+            return 3
 
     try:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -130,8 +136,19 @@ def main() -> int:
         token_cache: dict[str, list] = {}
 
         # ---------------------------------------------------------- phase 1
-        for index, visit in enumerate(args.visit):
-            page, _, coord = visit.partition(":")
+        sources = [(item.partition(":")[0], item.partition(":")[2], True)
+                   for item in args.frame] if args.frame else [
+                       (item.partition(":")[0], item.partition(":")[2], False)
+                       for item in args.visit]
+        for index, (page, coord, archived) in enumerate(sources):
+            if archived:
+                path = Path(coord).resolve()
+                if not path.is_file():
+                    raise FileNotFoundError(path)
+                frames[page] = path
+                token_cache[page] = gen.tokens_for(path)
+                print(f"[frame] {page:20} -> {path.name}  tokens={len(token_cache[page])}")
+                continue
             # A full-screen page (hero training, an event) hides the bottom nav, so
             # the next visit's coordinate would land on that page's own UI and go
             # somewhere unplanned. Backing out first keeps every visit starting from
@@ -278,10 +295,12 @@ def main() -> int:
                                         "rows": results}, ensure_ascii=False, indent=2),
                            encoding="utf-8")
         print(f"\nmanifest -> {manifest}")
-        lease.release(result="ok", reason="harvest complete")
+        if lease is not None:
+            lease.release(result="ok", reason="harvest complete")
         return 0
     except Exception as exc:  # noqa: BLE001
-        lease.release(result="failed", reason=str(exc))
+        if lease is not None:
+            lease.release(result="failed", reason=str(exc))
         raise
 
 
