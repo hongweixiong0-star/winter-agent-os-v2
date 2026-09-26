@@ -1,0 +1,77 @@
+{
+ "event": "AUTOREPAIR_L4_FIRST_SUCCESS",
+ "goal_id": "MAIL_ROUTINE",
+ "page": "MAIL",
+ "chain": [
+  {
+   "step": 1,
+   "what": "original production failure",
+   "skill": "SELECT_MAIL_REPORT_TAB",
+   "recorded_at": "2026-09-26T09:26:30Z",
+   "result": "FAILURE",
+   "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+   "semantic": "BTN_MAIL_TAB_REPORT"
+  },
+  {
+   "step": 2,
+   "what": "AutoRepair ENTER",
+   "recorded_at": "2026-09-26T09:26:32Z",
+   "attempts": 1,
+   "declared_text": "报告",
+   "source": "sibling-recorded words"
+  },
+  {
+   "step": 3,
+   "what": "candidate generated",
+   "kind": "TEMPLATE",
+   "frame": "20260926_092630_repair_BTN_MAIL_TAB_REPORT.png",
+   "note": "48px TEMPLATE_ROI_EXPAND + forced template re-registration (stale-cache fix)"
+  },
+  {
+   "step": 4,
+   "what": "matcher validation",
+   "positives": 1,
+   "positive_hits": 1,
+   "negatives": 1,
+   "negative_hits": 0,
+   "errors": []
+  },
+  {
+   "step": 5,
+   "what": "WIRED",
+   "recorded_at": "2026-09-26T09:26:32Z",
+   "verdict": "OVERWROTE",
+   "node_written_to_routing": true
+  },
+  {
+   "step": 6,
+   "what": "MAA retry with repaired node",
+   "skill": "SELECT_MAIL_REPORT_TAB",
+   "recorded_at": "2026-09-26T09:35:27Z",
+   "result": "SUCCESS",
+   "backend": "MAA",
+   "control": "BTN_MAIL_TAB_REPORT"
+  },
+  {
+   "step": 7,
+   "what": "Verifier",
+   "verifier_ok": true,
+   "evidence": {
+    "badge_visible": true,
+    "active_tab": "REPORT",
+    "expected_tab": "REPORT"
+   },
+   "after_state": {
+    "mail.active_tab": "REPORT",
+    "page": "MAIL"
+   }
+  }
+ ],
+ "fixes_that_made_it_possible": [
+  "e7a88c1 live adapter",
+  "201de22 frame_errors",
+  "443d85f 48px ROI expand",
+  "8a3d9a3 forced template re-registration"
+ ],
+ "recorded_at": "2026-09-26T09:36:35.380575+00:00"
+}
