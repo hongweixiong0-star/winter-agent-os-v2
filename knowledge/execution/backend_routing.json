@@ -2122,9 +2122,11 @@
       400,
       860,
       240,
-      120
+      190
      ],
-     "score_threshold": 0.3
+     "score_threshold": 0.3,
+     "roi_updated": "2026-09-27",
+     "roi_reason": "sheet layout moved: the blue 研究 button now carries the projected duration on a second line (00:10:02), so the text sat at y 954-990 while the old ROI stopped at y 980 and the token straddled the edge -> MAA_OCR:NO_TEXT on every detail sheet since 2026-09-26 evening"
     }
    },
    "preferred": "MAA",
@@ -2161,7 +2163,30 @@
      "errors": [],
      "corpus_sufficient": false
     },
-    "validation_store": "learning/ocr_batch1_validation_20260926.json"
+    "validation_store": "learning/ocr_batch1_validation_20260926.json",
+    "autorepair_roi_20260927": {
+     "semantic": "BTN_START_RESEARCH",
+     "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
+     "root_cause": "OCR node ROI measured on the old sheet layout (研究 at y 899-927); the current sheet prints the duration inside the button, pushing 研究 to y 954-990, outside the old ROI bottom edge (y<=980)",
+     "fix": "roi [400,860,240,120] -> [400,860,240,190]; x band unchanged so 研究消耗 (x 83-186) stays outside",
+     "positive_frames": [
+      "dataset/raw/control_panel/runtime_auto/20260926_203129_111901/20260926_203129_111901_step_015_after_20260926T123730329502.png",
+      "dataset/raw/control_panel/runtime_auto/20260927_032033_209332/20260927_032033_209332_step_009_after_20260926T192348175603.png",
+      "dataset/raw/control_panel/runtime_auto/20260927_033037_133961/20260927_033037_133961_step_012_after_20260926T193445808266.png",
+      "dataset/raw/control_panel/runtime_auto/20260927_034035_885179/20260927_034035_885179_step_010_before_20260926T194403483929.png"
+     ],
+     "positive_hits": 4,
+     "negative_frames": [
+      "dataset/raw/autogen/r2_home.png",
+      "dataset/raw/autogen/20260925_182419_map.png",
+      "dataset/raw/autogen/20260925_182419_bag.png",
+      "dataset/raw/control_panel/runtime_auto/20260927_034035_885179/20260927_034035_885179_step_008_after_20260926T194326478192.png",
+      "dataset/raw/control_panel/runtime_auto/20260927_034035_885179/20260927_034035_885179_step_011_after_20260926T194429032102.png",
+      "dataset/raw/control_panel/runtime_auto/20260927_034035_885179/20260927_034035_885179_step_013_after_20260926T194527901368.png"
+     ],
+     "negative_hits": 0,
+     "recorded_at": "2026-09-26T23:30:00+00:00"
+    }
    }
   }
  },

@@ -35,12 +35,18 @@ itself in this round" are different claims.
 Nothing here invents a level: a semantic is L4 only when a proof artifact with
 a timestamp says so, and the timestamp is what decides CURRENT vs HISTORICAL.
 
-Usage
------
-    python -u tools/pipeline_metrics.py                # human report
-    python -u tools/pipeline_metrics.py --json         # machine report
-    python -u tools/pipeline_metrics.py --json --out out/pipeline_metrics.json
+Levels are reported as ``NAME = <absolute>   delta_NAME = <+/-n>`` because the two
+questions are different: "how many are there" and "what did this round add".  A
+bare "L2 -> 7" answers neither, since it is ambiguous between absolute and
+new-since-last-round -- exactly the ambiguity the round brief §1 calls out.
+
+The delta baseline is a snapshot file, not a value remembered in chat:
+``--save-baseline`` writes one at the start of a round (default
+``out/pipeline_metrics_baseline.json``) and every later run subtracts it.  With
+no snapshot on disk the tool prints ``delta = n/a (no baseline)`` and refuses to
+invent a zero.
 """
+
 
 from __future__ import annotations
 
@@ -58,7 +64,11 @@ CATALOG = ROOT / "knowledge" / "game" / "capability_catalog.json"
 L5_LEDGER = ROOT / "learning" / "goal_l5_evidence.jsonl"
 EPISODES = ROOT / "learning" / "episodes.jsonl"
 
+DEFAULT_BASELINE = ROOT / "out" / "pipeline_metrics_baseline.json"
+HISTORY = ROOT / "out" / "pipeline_metrics_history.jsonl"
+
 KINDS = ("OCR", "TEMPLATE", "STRUCTURE", "COLOR", "LIST_DYNAMIC", "OTHER")
+LEVELS = ("MISSING", "PREPARED", "L1", "L2", "L3", "L4")
 
 
 def _load_json(path: Path) -> dict:
@@ -312,13 +322,32 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
 
     levels = Counter(item["level"] for item in items)
     kinds = Counter(item["kind"] for item in items if item["level"] in {"L1", "L2", "L3", "L4"})
+    rejections = gap.get("honest_rejections") or []
+
+    # Per-kind ladder. This is the answer to "is the OCR path actually advancing, or is the
+    # headline number moving because TEMPLATE shipped another batch?" -- one total cannot say.
+    # generated = L1+ (a node exists), wired = L2+ (AUTO can resolve it).
+    level_by_semantic = {item["semantic"]: item for item in items}
+    kind_matrix: dict[str, dict[str, int]] = {}
+    for kind in KINDS:
+        row = {level: 0 for level in LEVELS}
+        for item in items:
+            if item["kind"] == kind:
+                row[item["level"]] += 1
+        row["generated"] = row["L1"] + row["L2"] + row["L3"] + row["L4"]
+        row["wired"] = row["L2"] + row["L3"] + row["L4"]
+        row["rejected"] = sum(
+            1
+            for entry in rejections
+            if (level_by_semantic.get(entry.get("semantic")) or {}).get("kind") == kind
+        )
+        kind_matrix[kind] = row
 
     catalog_lifecycle = Counter(
         (cap.get("lifecycle") or "MISSING")
         for cap in (catalog.get("capabilities") or [])
     )
 
-    rejections = gap.get("honest_rejections") or []
     return {
         "generated_at": now.isoformat(),
         "definitions": {
@@ -355,6 +384,7 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
             ],
         },
         "kinds": {kind: kinds.get(kind, 0) for kind in KINDS},
+        "kind_matrix": kind_matrix,
         "capability_lifecycle": dict(catalog_lifecycle),
         "autorepair": {
             "ledgers": sorted(path.name for path in (ROOT / "learning").glob("autorepair*l4*.json")),
@@ -372,34 +402,102 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
     }
 
 
-def render(report: dict) -> str:
+def load_baseline(path: Path) -> dict | None:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+
+
+def _snapshot(report: dict) -> dict[str, int]:
+    """The handful of counters a round is judged on, flattened for subtraction."""
+    flat = {
+        "TOTAL_REQUIRED": report["total_required"],
+        "PREPARED": report["levels"]["PREPARED"],
+        "L1": report["levels"]["L1"],
+        "L2": report["levels"]["L2"],
+        "L3": report["levels"]["L3"],
+        "L4_CURRENT_HEAD": report["l4_split"]["L4_CURRENT"],
+        "L4_HISTORICAL_TOTAL": report["l4_split"]["L4_HISTORICAL"],
+        "MISSING": report["levels"]["MISSING"],
+        "L5_OCCURRENCES": report["l5"]["occurrences"],
+        "REJECTED_VALIDATION": len(report["rejected_validation"]),
+        "AUTOREPAIR_L4": len(report["autorepair"]["l4_semantics"]),
+    }
+    for kind, row in (report.get("kind_matrix") or {}).items():
+        flat[f"{kind}_generated"] = row["generated"]
+        flat[f"{kind}_wired"] = row["wired"]
+    return flat
+
+
+def deltas(report: dict, baseline: dict | None) -> dict[str, str]:
+    """Current minus baseline, rendered as signed strings; ``n/a`` with no baseline."""
+    current = _snapshot(report)
+    if baseline is None:
+        return {key: "n/a (no baseline)" for key in current}
+    before = _snapshot(baseline)
+    return {
+        key: f"{value - before.get(key, 0):+d}" if key in before else "n/a (not in baseline)"
+        for key, value in current.items()
+    }
+
+
+def to_baseline(report: dict, *, baseline_path: Path) -> None:
+    """Write the start-of-round snapshot and append one line to the round history."""
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    baseline_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    entry = {"recorded_at": report["generated_at"], **_snapshot(report)}
+    with HISTORY.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def render(report: dict, delta_map: dict[str, str] | None = None) -> str:
     levels = report["levels"]
     kinds = report["kinds"]
+    delta = delta_map or {key: "n/a (no baseline)" for key in _snapshot(report)}
+
+    def line(name: str, value: int, note: str = "") -> str:
+        step = delta.get(name, "n/a")
+        return f"{name:<22} = {value:<5} delta_{name:<22} = {step}{note}"
+
     lines = [
         "PIPELINE METRICS",
         f"generated_at : {report['generated_at']}",
+        "Every level is ABSOLUTE (count of nodes at that level right now);",
+        "every delta_* is signed change against the round baseline on disk.",
         "",
-        f"TOTAL_REQUIRED  : {report['total_required']}",
-        f"PREPARED        : {levels['PREPARED']}",
-        f"L1 (generated)  : {levels['L1']}",
-        f"L2 (wired)      : {levels['L2']}",
-        f"L3 (prod+verif) : {levels['L3']}",
-        f"L4 (live proof) : {levels['L4']}"
-        f"   [current {report['l4_split']['L4_CURRENT']} / historical {report['l4_split']['L4_HISTORICAL']}]",
-        f"MISSING         : {levels['MISSING']}",
+        line("TOTAL_REQUIRED", report["total_required"]),
+        line("PREPARED", levels["PREPARED"]),
+        line("MISSING", levels["MISSING"]),
         "",
-        f"L5 occurrences  : {report['l5']['occurrences']} "
-        + ", ".join(
-            f"{entry['goal']}@{entry['recorded_at']}"
-            for entry in report["l5"]["goals"]
-            if entry["goal"]
-        ),
+        line("L1", levels["L1"], "   # generated, not wired"),
+        line("L2", levels["L2"], "   # wired in backend_routing"),
+        line("L3", levels["L3"], "   # wired + verified production episode"),
+        line("L4_CURRENT_HEAD", report["l4_split"]["L4_CURRENT"],
+             f"   # proved live in last {report['l4_split']['recent_days']}d"),
+        line("L4_HISTORICAL_TOTAL", report["l4_split"]["L4_HISTORICAL"],
+             f"   # proved live before those {report['l4_split']['recent_days']}d"),
+        line("L5_OCCURRENCES", report["l5"]["occurrences"]),
         "",
-        "by kind         : "
-        + "  ".join(f"{kind}={count}" for kind, count in kinds.items() if count),
+        "by kind (absolute counts per level):",
+    ]
+    header = f"  {'KIND':<14}{'PREPARED':>9}{'generated':>10}{'wired':>7}{'L1':>5}{'L2':>5}{'L3':>5}{'L4':>5}{'MISSING':>9}{'rejected':>10}"
+    lines.append(header)
+    for kind, row in report["kind_matrix"].items():
+        total_row = sum(row[lv] for lv in LEVELS)
+        if not total_row and not row["rejected"]:
+            continue
+        lines.append(
+            f"  {kind:<14}{row['PREPARED']:>9}{row['generated']:>10}{row['wired']:>7}"
+            f"{row['L1']:>5}{row['L2']:>5}{row['L3']:>5}{row['L4']:>5}{row['MISSING']:>9}{row['rejected']:>10}"
+        )
+    lines += [
         "",
-        "capability lifecycle : "
-        + "  ".join(f"{key}={value}" for key, value in sorted(report["capability_lifecycle"].items())),
+        "  (kinds above are the level LOCATION of each node; "
+        f"the flat wire count by kind is {'  '.join(f'{k}={c}' for k, c in kinds.items() if c)})",
         "",
         f"wired nodes    : {report['wired_node_count']}",
         f"AutoRepair L4  : {len(report['autorepair']['l4_semantics'])} -> "
@@ -409,8 +507,12 @@ def render(report: dict) -> str:
             f"{entry['semantic']}" for entry in report["rejected_validation"] if entry["semantic"]
         ),
         "",
-        "definitions:",
+        "L5 goal occurrences:",
     ]
+    for entry in report["l5"]["goals"]:
+        lines.append(f"  {entry['goal']} @ {entry['recorded_at']}")
+    lines += ["", "capability lifecycle : " + "  ".join(
+        f"{key}={value}" for key, value in sorted(report["capability_lifecycle"].items())), "", "definitions:"]
     for key, text in report["definitions"].items():
         lines.append(f"  {key:<9} {text}")
     return "\n".join(lines)
@@ -422,10 +524,27 @@ def main() -> None:
     parser.add_argument("--out", type=Path, help="write the report to this path")
     parser.add_argument("--recent-days", type=int, default=3, help="window for L4_CURRENT")
     parser.add_argument("--production-days", type=int, default=7, help="window for L3 production evidence")
+    parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE,
+                        help="round baseline snapshot the deltas are measured against")
+    parser.add_argument("--save-baseline", action="store_true",
+                        help="write this run as the round baseline (call once, at round start)")
     args = parser.parse_args()
 
     report = build(recent_days=args.recent_days, production_days=args.production_days)
-    payload = render(report) if not args.json else json.dumps(report, ensure_ascii=False, indent=2)
+    if args.save_baseline:
+        to_baseline(report, baseline_path=args.baseline)
+        print(f"baseline written: {args.baseline}")
+        print(render(report, {key: "baseline (n/a)" for key in _snapshot(report)}))
+        return
+
+    baseline = load_baseline(args.baseline)
+    delta_map = deltas(report, baseline)
+    report["baseline_path"] = str(args.baseline) if baseline else None
+    report["deltas"] = delta_map
+    payload = (
+        render(report, delta_map) if not args.json
+        else json.dumps(report, ensure_ascii=False, indent=2)
+    )
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(payload, encoding="utf-8")
