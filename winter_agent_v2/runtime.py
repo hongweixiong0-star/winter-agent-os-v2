@@ -1453,7 +1453,11 @@ class LiveRuntime:
             return
         if self.routing is not None and self.routing.recognition_node(skill_id, semantic) is not None:
             # There already is a node for this control, so the failure is drift rather
-            # than absence. Re-deriving here would hide a node that is quietly decaying.
+            # than absence. That is AutoRepair's input, not AutoGen's: bounded, once per
+            # semantic per run, re-crop the node's template from the current frame and
+            # wire it only when a negative frame proves the crop is page-specific --
+            # the same no-negative-frame guard the harvest tool learned the hard way.
+            self._maybe_repair_node(semantic, skill_id, attempts, str(reason))
             return
 
         text = self._semantic_cn_text(semantic)
@@ -1513,9 +1517,92 @@ class LiveRuntime:
         if record is None and semantic.startswith("BTN_"):
             record = _declared_record(f"PAGE_{semantic[4:]}")
         if record is None:
-            return ""
+            # Skill-target semantics (OPEN_INTEL, SELECT_BEAST_TARGET_MAMMOTH, ...)
+            # are declared by the gap queue, not by the dictionary -- measured
+            # 2026-09-26, the dictionary declared none of the 81 gap semantics and
+            # that empty string is why the hook never fired. The gap queue's
+            # visible_words are reviewed declarations of what the control prints,
+            # so falling back to them is still "what was declared", not guessing.
+            from winter_agent_v2.pipeline_autogen import declared_gap_words
+
+            words = declared_gap_words(semantic)
+            return str(words[0]) if words else ""
         _pages, words, _merged = record
         return str(words[0]) if words else ""
+
+    def _maybe_repair_node(self, semantic: str, skill_id: str, attempts: int,
+                           reason: str) -> None:
+        """One bounded repair attempt for a node that exists but no longer finds.
+
+        The chain the operator named -- MAA/verifier failure, classify, re-observe,
+        adjust the crop, update the candidate, re-execute -- starts here: the run
+        already classified the failure (``SEMANTIC_TARGET_NOT_VERIFIED``) and this
+        runs only after a first failure of a node-owning control, once per semantic
+        per run. The repaired crop must beat the old one honestly: it has to hit
+        the current frame AND miss a recent frame that is not this page -- without
+        that negative the harvest tool wired 联盟 in a map nav bar as a mail tab,
+        so a repair without one is not a repair, it is a second way to lie.
+        """
+        if semantic in self._autogen_repaired:
+            return
+        self._autogen_repaired.add(semantic)
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+
+            from winter_agent_v2.pipeline_autogen import (GenerationRequest,
+                                                          PipelineAutoGen)
+
+            stamp = _dt.now(_tz.utc).strftime("%Y%m%d_%H%M%S")
+            frame = Path(self.capture_dir) / "autogen" / f"{stamp}_repair_{semantic}.png"
+            gen = PipelineAutoGen(device=self.adb_device,
+                                  routing_path=Path(self.routing.path or DEFAULT_ROUTING_PATH))
+            captured = gen.capture(frame)
+            if captured is None:
+                self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
+                                              "kind": "REPAIR", "verdict": "NO_FRAME",
+                                              "frame": ""})
+                return
+            text = self._semantic_cn_text(semantic)
+            if not text:
+                return
+            node = gen.generate(GenerationRequest(semantic=semantic, cn_text=text,
+                                                  skill_id=skill_id or semantic, want="auto"),
+                                frame=captured)
+            if node is None:
+                self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
+                                              "kind": "REPAIR", "verdict": "TEXT_NOT_ON_FRAME",
+                                              "frame": str(captured)})
+                return
+            # Negative frames: recent autogen captures that are not this capture --
+            # whatever pages the run passed through on its way here. A template that
+            # also "hits" one of those describes a word common to many pages, and a
+            # node built from it would fire everywhere.
+            negatives = sorted(
+                (p for p in (Path(self.capture_dir) / "autogen").glob("*.png")
+                 if p != captured),
+                key=lambda p: p.stat().st_mtime, reverse=True,
+            )[:3]
+            report = gen.validate(node, positives=[captured], negatives=negatives,
+                                  adapter=None)
+            node.evidence["repair"] = (f"runtime repair after {attempts + 1} attempt(s): "
+                                       f"{reason}")
+            node.evidence["validation_report"] = report
+            ok = (report.get("positive_hits") == report.get("positives")
+                  and report.get("negative_hits") == 0
+                  and report.get("positives", 0) >= 1)
+            if ok and negatives:
+                wired, verdict = gen.wire(node, note="runtime-repaired from a failing node")
+            else:
+                wired, verdict = False, "REJECTED_NO_NEGATIVE_OR_MISMATCH"
+            self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
+                                          "kind": "REPAIR",
+                                          "verdict": verdict if wired else f"{verdict} (not wired)",
+                                          "frame": str(captured)})
+        except Exception as exc:  # noqa: BLE001 - a repair must never stop a production run
+            self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
+                                          "kind": "REPAIR_ERROR",
+                                          "verdict": f"{type(exc).__name__}: {exc}",
+                                          "frame": ""})
 
     def _failure_type_from(self, execution: "ExecutionResult | None") -> str:
         """The failure type a step that did not execute gets, with the runtime's refusals named.
@@ -4844,6 +4931,8 @@ class LiveRuntime:
         # hands-off run must stay hands-off.
         self._autogen_enabled: bool = bool(autogen_enabled)
         self._autogen_attempted: set[str] = set()
+        # Bounded repair: one re-derivation per node-owning semantic per run.
+        self._autogen_repaired: set[str] = set()
         self.recently_autogen: list[dict[str, str]] = []
         #: Screens whose stored point was refused for belonging elsewhere, so the sentence is
         #: printed once per screen per run rather than once per step.

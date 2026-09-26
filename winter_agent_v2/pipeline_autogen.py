@@ -55,6 +55,7 @@ from typing import Any, Sequence
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ROUTING_PATH = PROJECT_ROOT / "knowledge" / "execution" / "backend_routing.json"
 DEFAULT_TEMPLATE_DIR = PROJECT_ROOT / "dataset" / "candidate" / "autogen"
+DEFAULT_GAP_QUEUE_PATH = PROJECT_ROOT / "knowledge" / "execution" / "pipeline_gap_queue.json"
 
 #: MuMu instance V2 actually runs on. Kept as a default only — every caller that
 #: already carries a device passes it in, and nothing here dials out on its own.
@@ -693,6 +694,41 @@ class PipelineAutoGen:
                 return np.asarray(im.convert("RGB"))
         except Exception:
             return None
+
+
+def declared_gap_words(semantic: str, *,
+                       queue_path: Path | None = None) -> tuple[str, ...]:
+    """The Chinese words the gap queue declares a missing control prints.
+
+    ``knowledge/execution/pipeline_gap_queue.json`` is the reviewed inventory of
+    every semantic target that still lacks a recognition node, and each entry
+    carries ``visible_words`` -- what the client actually draws there. The
+    runtime hook needs exactly that: a *declared* label source for skill-target
+    semantics, because the semantic dictionary is keyed by UI-element ids
+    (``BTN_*`` / ``PAGE_*``) and -- measured 2026-09-26 -- declares none of the
+    81 gap semantics, which is why ``_semantic_cn_text`` returned ``""`` for
+    every one of them and the hook never fired (AutoGen = 0 for a whole round).
+    This reads the same reviewed words; it invents nothing.
+
+    Only CJK words are returned: the OCR node is built from what OCR can find,
+    and the queue's English glosses ("Deploy", "March") are not tokens the
+    client's Chinese UI prints as separate text.
+    """
+    path = queue_path or DEFAULT_GAP_QUEUE_PATH
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ()
+    for item in payload.get("queue") or []:
+        if not (isinstance(item, dict) and item.get("semantic") == semantic):
+            continue
+        words = []
+        for word in item.get("visible_words") or ():
+            text = str(word).strip()
+            if text and any("\u4e00" <= ch <= "\u9fff" for ch in text) and text not in words:
+                words.append(text)
+        return tuple(words)
+    return ()
 
 
 def _relative(path: Path, root: Path) -> str:

@@ -30,6 +30,7 @@ class _HookHarness:
 
         self._autogen_enabled = True
         self._autogen_attempted = set()
+        self._autogen_repaired = set()
         self.recently_autogen = []
         self.capture_dir = tmp_path / "capture"
         self.capture_dir.mkdir(exist_ok=True)
@@ -41,6 +42,7 @@ class _HookHarness:
         self._captured = captured
         self._wire_calls: list[tuple[str, str]] = []
         self._maybe_autogen_node = LiveRuntime._maybe_autogen_node.__get__(self)
+        self._maybe_repair_node = LiveRuntime._maybe_repair_node.__get__(self)
         self._semantic_cn_text = lambda semantic: self._cn or ""
 
     def _make_gen(self, **_kwargs):
@@ -66,6 +68,8 @@ class _HookHarness:
             return True, "CREATED"
 
         gen.wire.side_effect = _wire
+        gen.validate.return_value = {"positive_hits": 1, "positives": 1,
+                                     "negative_hits": 0}
         return gen
 
 
@@ -142,19 +146,67 @@ def test_later_real_missing_control_can_generate_after_other_refusal(tmp_path, r
     assert harness._wire_calls == [("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP")]
 
 
-def test_existing_node_is_not_replaced(tmp_path, routing, monkeypatch):
-    """A node that exists but missed is drift, not absence -- never re-derived."""
+def test_existing_node_goes_to_repair_not_regeneration(tmp_path, routing, monkeypatch):
+    """A node that exists but missed is drift -- AutoRepair's input, bounded once."""
     entry = {"recognition": {"BTN_ALLIANCE_SHOP": {"kind": "TEMPLATE",
                                                    "template": "BTN_ALLIANCE_SHOP"}}}
     routing.skills["OPEN_ALLIANCE_SHOP"] = entry
-    harness = _HookHarness(tmp_path, routing, "联盟商店", _node(), None)
+    captured = tmp_path / "frame.png"
+    captured.write_bytes(b"png")
+    harness = _HookHarness(tmp_path, routing, "联盟商店", _node(), captured)
+    # One earlier capture: without a negative on disk the repair refuses to wire.
+    autogen_dir = harness.capture_dir / "autogen"
+    autogen_dir.mkdir(parents=True, exist_ok=True)
+    (autogen_dir / "earlier_other_page.png").write_bytes(b"png")
     monkeypatch.setattr("winter_agent_v2.pipeline_autogen.PipelineAutoGen",
                         lambda **kw: harness._make_gen())
 
     harness._maybe_autogen_node("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP", 0,
                                 "SEMANTIC_TARGET_NOT_VERIFIED")
 
+    # The repair re-cropped and re-wired the same semantic once.
+    assert harness._wire_calls == [("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP")]
+    assert harness.recently_autogen[0]["kind"] == "REPAIR"
+
+    # ...and a second failure in the same run is refused: repairs are bounded.
+    harness._maybe_autogen_node("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP", 1,
+                                "SEMANTIC_TARGET_NOT_VERIFIED")
+    assert harness._wire_calls == [("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP")]
+
+
+def test_repair_without_negative_frame_is_not_wired(tmp_path, routing, monkeypatch):
+    """The harvest lesson as a repair guard: no negative frame, no wiring."""
+    entry = {"recognition": {"BTN_ALLIANCE_SHOP": {"kind": "TEMPLATE",
+                                                   "template": "BTN_ALLIANCE_SHOP"}}}
+    routing.skills["OPEN_ALLIANCE_SHOP"] = entry
+    captured = tmp_path / "frame.png"
+    captured.write_bytes(b"png")
+    harness = _HookHarness(tmp_path, routing, "联盟商店", _node(), captured)
+    gen = harness._make_gen()
+    gen.validate.return_value = {"positive_hits": 1, "positives": 1,
+                                 "negative_hits": 0}
+    # No other capture on disk: the glob finds zero negatives, so the report says
+    # nothing about page identity and the repair must stop at a candidate.
+    monkeypatch.setattr("winter_agent_v2.pipeline_autogen.PipelineAutoGen",
+                        lambda **kw: gen)
+
+    harness._maybe_repair_node("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP", 0,
+                               "SEMANTIC_TARGET_NOT_VERIFIED")
+
     assert harness._wire_calls == []
+    assert harness.recently_autogen[0]["kind"] == "REPAIR"
+    assert "not wired" in harness.recently_autogen[0]["verdict"]
+
+
+def test_gap_queue_words_are_a_declared_label_source():
+    """The 2026-09-26 diagnosis: the dictionary declared none of the 81 gaps."""
+    from winter_agent_v2.pipeline_autogen import declared_gap_words
+
+    words = declared_gap_words("BTN_DISPATCH")
+    assert "出征" in words
+    # English glosses are not OCR tokens; only CJK words are declared sources.
+    assert all(any("\u4e00" <= ch <= "\u9fff" for ch in w) for w in words)
+    assert declared_gap_words("NOT_IN_ANY_QUEUE") == ()
 
 
 def test_undeclared_semantic_is_skipped(tmp_path, routing, monkeypatch):
