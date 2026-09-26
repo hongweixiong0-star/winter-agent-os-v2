@@ -45,8 +45,15 @@ def audit() -> dict:
         sched = {}
     result["EVENT_TIME_CONFIRMED"] = bool(sched.get("reserved_start"))
 
-    # ROLE_CONFIRMED: needs a live role-identity read (device side, not yet run)
+    # ROLE_CONFIRMED: a role identity must be stored from a real 领主档案 read
+    role_path = ROOT / "learning" / "bear_role.json"
     result["ROLE_CONFIRMED"] = False
+    if role_path.is_file():
+        try:
+            role = json.loads(role_path.read_text(encoding="utf-8"))
+            result["ROLE_CONFIRMED"] = bool(role.get("role_name"))
+        except (OSError, json.JSONDecodeError):
+            pass
 
     # DEVICE_HANDOFF_READY: the lease mechanism must exist, the store must be
     # readable, and the current lease must not be stuck (released or expired).

@@ -258,6 +258,41 @@ def build_router(
     return router
 
 
+def _rapid_ocr_results(frame: Any, roi: tuple[int, int, int, int] | None,
+                       expected: list[str]) -> list[dict[str, Any]]:
+    """Text recognition through the project's own RapidOCR engine.
+
+    The MAA resource carries no OCR model (post_ocr_model is never called
+    anywhere), so MAA text recognition always comes back empty and every
+    OCR-kind node read as "anchor not found".  Doctrine is text -> RapidOCR;
+    boxes are converted to absolute device pixels so callers keep the same
+    shape ``adapter.ocr`` used to return.
+    """
+    from PIL import Image as _PILImage
+    from .ocr import RapidOCRBackend
+    image = _PILImage.fromarray(frame)
+    ox, oy = 0, 0
+    if roi:
+        ox, oy = int(roi[0]), int(roi[1])
+        image = image.crop((ox, oy, ox + int(roi[2]), oy + int(roi[3])))
+    results = []
+    for token in RapidOCRBackend().recognize(image):
+        text = token.text
+        if expected and not any(w in text for w in expected):
+            continue
+        if not token.box:
+            continue
+        xs = [p[0] for p in token.box]
+        ys = [p[1] for p in token.box]
+        results.append({
+            "text": text,
+            "box": [round(min(xs) + ox), round(min(ys) + oy),
+                    round(max(xs) - min(xs)), round(max(ys) - min(ys))],
+            "score": float(token.confidence),
+        })
+    return results
+
+
 class ExecutorRouter:
     """Single executor entry point that picks a backend per skill.
 
@@ -330,14 +365,7 @@ class ExecutorRouter:
         if dispatch_hint(node) == "OCR":
             expected = list(node.get("expected") or [])
             roi = tuple(node["roi"]) if node.get("roi") else None
-            results, error = adapter.ocr(
-                frame, expected=expected, roi=roi,
-                threshold=float(node.get("score_threshold", 0.3)),
-            )
-            if error:
-                self.last_outcome = None
-                self.last_recognition_error = f"MAA_OCR:{error}"
-                return None
+            results = _rapid_ocr_results(frame, roi, expected)
             if not results:
                 self.last_outcome = None
                 self.last_recognition_error = "MAA_OCR:NO_TEXT"
@@ -380,13 +408,7 @@ class ExecutorRouter:
             if not expected:
                 self.last_recognition_error = "STRUCTURE:NO_ANCHOR"
                 return None
-            results, error = adapter.ocr(
-                frame, expected=expected, roi=roi,
-                threshold=float(anchor.get("score_threshold", 0.3)),
-            )
-            if error:
-                self.last_recognition_error = f"STRUCTURE_OCR:{error}"
-                return None
+            results = _rapid_ocr_results(frame, roi, expected)
             if not results:
                 self.last_recognition_error = "STRUCTURE:ANCHOR_NOT_FOUND"
                 return None
@@ -440,6 +462,48 @@ class ExecutorRouter:
         return outcome.center_norm()
 
     # -------------------------------------------------------------- dispatch
+    def _bear_auto_join_guard(self, action: Action, skill_id: str | None) -> ExecutionResult | None:
+        """Production state guard for BEAR_AUTO_JOIN (2026-09-26 directive #4).
+
+        The auto-join switch is a toggle: clicking an already-ON switch turns
+        it OFF.  Before any production tap of BTN_BEAR_AUTO_JOIN the switch
+        state is read from the live frame:
+
+          ON      -> SUCCESS / NOOP, no click issued
+          UNKNOWN -> action refused (NOT_EXECUTABLE), no click issued
+          OFF     -> click allowed; the verifier reads OFF -> ON
+
+        The reader never caches, so the state is inherently per-role.
+        """
+        if skill_id != "BEAR_AUTO_JOIN":
+            return None
+        if str(getattr(action, "kind", "")).upper() != "TAP_SEMANTIC":
+            return None
+        if str(getattr(action, "target", "")).upper() != "BTN_BEAR_AUTO_JOIN":
+            return None
+        if self.maa_adapter is None:
+            return None
+        from .bear_state import read_state_from_image
+        frame = self.maa_adapter.frame()
+        if frame is None:
+            return None
+        from PIL import Image
+        state = read_state_from_image(Image.fromarray(frame))["state"]
+        if state == "ON":
+            self._stat("bear_guard").record(True, 0.0, "NOOP_ALREADY_ON")
+            return ExecutionResult(executed=True, dry_run=False, action=action,
+                                   backend=MAA, capture_backend="MAA_MUMU_EXTRAS",
+                                   recognition_backend="MAA",
+                                   detail={"guard": "NOOP_ALREADY_ON"})
+        if state == "UNKNOWN":
+            self._stat("bear_guard").record(False, 0.0, "BLOCKED_UNKNOWN_STATE")
+            return ExecutionResult(executed=False, dry_run=False, action=action,
+                                   backend=MAA, error="BEAR_TOGGLE_STATE_UNKNOWN",
+                                   capture_backend="MAA_MUMU_EXTRAS",
+                                   recognition_backend="MAA",
+                                   detail={"guard": "BLOCKED_UNKNOWN_STATE"})
+        return None  # OFF: proceed with the normal dispatch path
+
     def available_backends(self) -> dict[str, bool]:
         maa_ok = False
         if self.maa_adapter is not None:
@@ -450,6 +514,9 @@ class ExecutorRouter:
         return self.routing.route(skill_id)
 
     def execute(self, action: Action, skill_id: str | None = None) -> ExecutionResult:
+        guard = self._bear_auto_join_guard(action, skill_id)
+        if guard is not None:
+            return guard
         route = self.routing.route(skill_id)
         available = self.available_backends()
         order = [route.preferred, route.fallback]

@@ -24,6 +24,7 @@ class Page(str, Enum):
     MAIL = "MAIL"
     EXPLORATION = "EXPLORATION"
     HERO = "HERO"
+    PET_TREASURE = "PET_TREASURE"
     EVENT = "EVENT"
     POPUP = "POPUP"
     UNKNOWN = "UNKNOWN"
@@ -311,6 +312,10 @@ class ExecutionResult:
     # project whose rule is that a claim must be provable from its artifacts, a tap that did nothing
     # has to carry where it went.  None for actions that have no point (BACK, OBSERVE, refusals).
     tap_point: tuple[int, int] | None = None
+    # Optional guard/policy context for results that were decided before any
+    # backend dispatch (e.g. the BEAR_AUTO_JOIN toggle-state guard).  Never
+    # required; purely evidence-carrying.
+    detail: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
