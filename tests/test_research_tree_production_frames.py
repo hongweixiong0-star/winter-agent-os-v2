@@ -96,3 +96,37 @@ def test_the_unicode_roman_suffix_is_what_the_reader_now_knows():
     assert not RESEARCH_NODE_NAME_RE.fullmatch("发展")
     assert not RESEARCH_NODE_NAME_RE.fullmatch("木")
     assert not RESEARCH_NODE_NAME_RE.fullmatch("研究")
+
+
+def test_the_sheet_title_matches_its_tree_candidate_despite_suffix_spelling():
+    """The exact pair that failed two production episodes must now verify.
+
+    2026-09-26T18:14Z / 18:25Z: the tree named the candidate '防御特训', the
+    sheet it opened titled itself '防御特训！' -- the same node, one Unicode Ⅰ
+    read once and dropped once -- and RESEARCH_NODE_DETAIL_NOT_PROVEN failed a
+    correctly opened, completely read sheet.
+    """
+    from dataclasses import replace as _replace
+
+    from winter_agent_v2.models import Page, WorldState
+    from winter_agent_v2.verifier import verify_research_node_inspected
+
+    candidate = {
+        "node_id": "防御特训", "name": "防御特训", "level": 2, "level_max": 3,
+        "status": "UNFINISHED", "tap_norm": [0.5, 0.41], "confidence": 0.99,
+        "source": "CURRENT_FRAME_OCR",
+    }
+    before = WorldState(page=Page.RESEARCH, research={"node_candidates": [candidate]})
+    after = WorldState(page=Page.RESEARCH, research={
+        "selected_node": "防御特训！", "selected_node_name": "防御特训！",
+        "node": "防御特训！", "node_detail_visible": True,
+        "research_control_norm": [0.709, 0.7594],
+    })
+
+    result = verify_research_node_inspected(before, after)
+    assert result.ok, result.evidence
+    assert result.evidence["expected_base"] == result.evidence["selected_base"]
+
+    # And a genuinely different node still fails: normalisation must not erase identity.
+    wrong = _replace(after, research={**after.research, "selected_node": "编制扩展！"})
+    assert not verify_research_node_inspected(before, wrong).ok

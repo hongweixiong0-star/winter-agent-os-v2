@@ -388,6 +388,23 @@ RESEARCH_NODE_NAME_RE = re.compile(
 )
 
 
+def research_node_base_name(name: str) -> str:
+    """The node's name with its level suffix normalised away.
+
+    The same node arrives under different suffix spellings on different pages:
+    the tree read '防御特训' while the detail sheet it opened titled itself
+    '防御特训！' (the same Unicode Ⅰ, read once and dropped once -- measured
+    2026-09-27, two production episodes failed RESEARCH_NODE_DETAIL_NOT_PROVEN
+    on exactly that pair).  Comparing raw strings would call a correctly opened
+    sheet unproven, so identity comparisons go through here.
+    """
+    text = str(name or "").strip()
+    stripped = re.sub(
+        r"(?:\s*[IVXLCDMivxlcdm]+|\s*[\u2160-\u216f]+|\s*\d+|\s*[！！!])+$", "", text
+    )
+    return stripped or text
+
+
 def _read_research_node_candidates(tokens, frame_size: tuple[int, int] | None) -> list[dict]:
     """Read named, leveled research nodes and their current-frame tap points.
 

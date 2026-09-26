@@ -1460,12 +1460,13 @@ def verify_building_upgrade(before: WorldState, after: WorldState, building_id: 
 def verify_completed_training_camp_inspected(
     before: WorldState, after: WorldState, *, camp: str
 ) -> VerificationResult:
-    """Accept only arrival at the same camp, never infer that its batch was collected.
+    """Accept the completed-row entry into its barracks, never infer collection.
 
     The quick-panel completion marker has previously been shown to navigate/select a camp
-    without collecting troops. This verifier intentionally accepts that partial navigation
-    result (or the camp's named action bar/training page) and records the marker as still
-    uncollected. A changed page alone is not enough: the selected camp must match the goal.
+    without collecting troops. The current client path has an intermediate focus screen: the
+    row closes the panel and centers the named barracks, then a second tap opens its action bar.
+    This verifier accepts that focused-halo state (or the camp's named action bar/training page)
+    and records the marker as still uncollected. A page change alone is not enough.
     """
     key = f"{camp}_CAMP"
     before_rows = [
@@ -1483,7 +1484,13 @@ def verify_completed_training_camp_inspected(
     page_match = after.page is Page.TRAINING and str(training.get("troop_type") or "").upper() == troop
     highlight_match = camp == "SHIELD" and training.get("navigation") == "INFANTRY_CAMP_HIGHLIGHTED"
     bar_match = after.page is Page.HOME and training.get("menu_open") is True and named_match
-    arrived = marker_seen and (named_match or page_match or highlight_match or bar_match)
+    focused_match = (
+        after.page is Page.HOME
+        and training.get("navigation") == "PANEL_CAMP_FOCUSED"
+        and isinstance(training.get("camp_focus_tap_norm"), (list, tuple))
+        and len(training.get("camp_focus_tap_norm")) == 2
+    )
+    arrived = marker_seen and (named_match or page_match or highlight_match or bar_match or focused_match)
     return VerificationResult(
         arrived,
         "OK" if arrived else "COMPLETED_CAMP_INSPECTION_NOT_PROVEN",
@@ -1495,8 +1502,35 @@ def verify_completed_training_camp_inspected(
             "page_match": page_match,
             "highlight_match": highlight_match,
             "action_bar_match": bar_match,
+            "focused_camp_match": focused_match,
             "collection_verified": False,
         },
+    )
+
+
+def verify_focused_training_camp_action_bar_opened(
+    before: WorldState, after: WorldState, *, camp: str
+) -> VerificationResult:
+    """Prove the second tap opened the named barracks' own 详情 / 升级 / 训练 bar."""
+    expected = f"{camp}_CAMP"
+    focused = (
+        before.page is Page.HOME
+        and before.training.get("navigation") == "PANEL_CAMP_FOCUSED"
+        and isinstance(before.training.get("camp_focus_tap_norm"), (list, tuple))
+        and len(before.training.get("camp_focus_tap_norm")) == 2
+    )
+    actual = str((after.training or {}).get("camp") or "").upper()
+    bar = (
+        after.page is Page.HOME
+        and after.training.get("menu_open") is True
+        and bool(after.training.get("train_tap_norm"))
+        and actual == expected
+    )
+    ok = focused and bar
+    return VerificationResult(
+        ok,
+        "OK" if ok else "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN",
+        {"focus_before": focused, "action_bar_after": bar, "camp_expected": expected, "camp_after": actual},
     )
 
 
@@ -1527,6 +1561,116 @@ def verify_selected_building_upgrade_panel_opened(
         "after_name": after_name,
         "after_page": after.page.value,
     })
+
+
+def verify_event_calendar_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """The regular-events entry succeeds only when its actual client page is observed."""
+    calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
+    detail = (after.events or {}).get("calendar_detail") if isinstance(after.events, dict) else None
+    grid_recognized = isinstance(calendar, dict) and calendar.get("recognized") is True
+    detail_recognized = isinstance(detail, dict) and detail.get("recognized") is True
+    recognized = grid_recognized or detail_recognized
+    ok = before.page in {Page.HOME, Page.MAP} and after.page is Page.EVENT and recognized
+    return VerificationResult(
+        ok,
+        "OK" if ok else "EVENT_CALENDAR_NOT_OPEN",
+        {
+            "page_before": before.page.value,
+            "page_after": after.page.value,
+            "calendar_recognized": recognized,
+            "calendar_grid_recognized": grid_recognized,
+            "calendar_detail_recognized": detail_recognized,
+            "visible_dates": list((calendar or {}).get("visible_dates_raw") or ()),
+            "entry_count": len((calendar or {}).get("entries") or ()),
+            "detail_event_id": (detail or {}).get("event_id"),
+        },
+    )
+
+
+def verify_event_calendar_tab_open(before: WorldState, after: WorldState) -> VerificationResult:
+    """Prove the calendar tab was selected from the regular-events activity panel."""
+    before_detail = (before.events or {}).get("calendar_detail") if isinstance(before.events, dict) else None
+    calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
+    recognized = isinstance(calendar, dict) and calendar.get("recognized") is True
+    ok = (
+        before.page is Page.EVENT and after.page is Page.EVENT
+        and isinstance(before_detail, dict) and before_detail.get("recognized") is True
+        and recognized
+    )
+    return VerificationResult(
+        ok,
+        "OK" if ok else "EVENT_CALENDAR_TAB_NOT_OPEN",
+        {"detail_recognized_before": isinstance(before_detail, dict) and before_detail.get("recognized") is True,
+         "calendar_grid_recognized_after": recognized,
+         "visible_dates": list((calendar or {}).get("visible_dates_raw") or ()),
+         "entry_count": len((calendar or {}).get("entries") or ())},
+    )
+
+
+def verify_event_calendar_read(before: WorldState, after: WorldState) -> VerificationResult:
+    """A no-input calendar observation passes only with page, date and entry structure."""
+    calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
+    recognized = isinstance(calendar, dict) and calendar.get("recognized") is True
+    dates = list((calendar or {}).get("visible_dates_raw") or ())
+    entries = list((calendar or {}).get("entries") or ())
+    ok = after.page is Page.EVENT and recognized and len(set(dates)) >= 2 and bool(entries)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "EVENT_CALENDAR_READ_NOT_PROVEN",
+        {"calendar_recognized": recognized, "visible_dates": dates, "entry_count": len(entries)},
+    )
+
+
+def verify_event_calendar_detail_open(before: WorldState, after: WorldState) -> VerificationResult:
+    calendar = (before.events or {}).get("calendar") if isinstance(before.events, dict) else None
+    detail = (after.events or {}).get("calendar_detail") if isinstance(after.events, dict) else None
+    expected = None
+    expected_occurrence = None
+    if isinstance(calendar, dict):
+        expected = str(calendar.get("next_detail_event_id") or "") or None
+        expected_occurrence = str(calendar.get("next_detail_occurrence_key") or "") or None
+        if expected is None:
+            expected = next((
+                str(row.get("event_id") or "") for row in calendar.get("entries", ())
+                if isinstance(row, dict) and row.get("tap_norm") and row.get("details_observed") is not True
+            ), None)
+    actual = str(detail.get("event_id") or "") if isinstance(detail, dict) else ""
+    attributed = str(detail.get("matched_event_id") or "") if isinstance(detail, dict) else ""
+    actual_occurrence = str(detail.get("matched_occurrence_key") or "") if isinstance(detail, dict) else ""
+    identity_matches = bool(expected) and (
+        actual == expected or attributed == expected
+        or (expected_occurrence is not None and actual_occurrence == expected_occurrence)
+    )
+    ok = (
+        before.page is Page.EVENT and after.page is Page.EVENT
+        and isinstance(calendar, dict) and calendar.get("recognized") is True
+        and isinstance(detail, dict) and detail.get("recognized") is True
+        and identity_matches
+    )
+    return VerificationResult(
+        ok, "OK" if ok else "EVENT_CALENDAR_DETAIL_NOT_PROVEN",
+        {"expected_event_id": expected, "actual_event_id": actual,
+         "attributed_event_id": attributed, "expected_occurrence_key": expected_occurrence,
+         "actual_occurrence_key": actual_occurrence,
+         "attribution_method": detail.get("attribution_method") if isinstance(detail, dict) else None,
+         "attribution_confidence": detail.get("attribution_confidence") if isinstance(detail, dict) else None,
+         "detail_recognized": isinstance(detail, dict) and detail.get("recognized") is True},
+    )
+
+
+def verify_event_calendar_returned(before: WorldState, after: WorldState) -> VerificationResult:
+    before_detail = (before.events or {}).get("calendar_detail") if isinstance(before.events, dict) else None
+    after_calendar = (after.events or {}).get("calendar") if isinstance(after.events, dict) else None
+    ok = (
+        before.page is Page.EVENT and after.page is Page.EVENT
+        and isinstance(before_detail, dict) and before_detail.get("recognized") is True
+        and isinstance(after_calendar, dict) and after_calendar.get("recognized") is True
+    )
+    return VerificationResult(
+        ok, "OK" if ok else "EVENT_CALENDAR_RETURN_NOT_PROVEN",
+        {"detail_recognized_before": isinstance(before_detail, dict) and before_detail.get("recognized") is True,
+         "calendar_recognized_after": isinstance(after_calendar, dict) and after_calendar.get("recognized") is True},
+    )
 
 
 def verify_panel_building_queue_opened(
@@ -1599,18 +1743,38 @@ def verify_research_node_inspected(before: WorldState, after: WorldState) -> Ver
     ), "")
     selected = str(after.research.get("selected_node") or "")
     detail_visible = after.research.get("node_detail_visible") is True
-    ok = bool(expected) and after.page is Page.RESEARCH and detail_visible and selected == expected
+    # Identity is compared on the base name: the same node's level suffix arrives
+    # in different spellings from the tree ('防御特训') and from the sheet it
+    # opens ('防御特训！') because the client renders Unicode Roman numerals and
+    # OCR reads them inconsistently.  A raw-string comparison failed two real
+    # episodes (RESEARCH_NODE_DETAIL_NOT_PROVEN, 2026-09-26T18:14Z / 18:25Z) on a
+    # sheet that had opened correctly and been read completely.
+    from .ocr import research_node_base_name
+
+    name_ok = bool(expected) and bool(selected) \
+        and research_node_base_name(selected) == research_node_base_name(expected)
+    ok = name_ok and after.page is Page.RESEARCH and detail_visible
     return VerificationResult(
         ok,
         "OK" if ok else "RESEARCH_NODE_DETAIL_NOT_PROVEN",
-        {"expected_node": expected, "selected_node": selected, "detail_visible": detail_visible},
+        {"expected_node": expected, "selected_node": selected, "detail_visible": detail_visible,
+         "name_ok": name_ok,
+         "expected_base": research_node_base_name(expected), "selected_base": research_node_base_name(selected)},
     )
 
 
 def verify_research_started(before: WorldState, after: WorldState, research_id: str) -> VerificationResult:
     was_available = before.research.get("queue_available") is True
     active_node = after.research.get("active_node")
-    target_ok = after.research.get("node") == research_id or active_node == research_id
+    # Same suffix-normalisation as verify_research_node_inspected: the started
+    # node is named by the tree on one side and by the running queue on the
+    # other, and the two spellings of the same Unicode Roman numeral must not
+    # fail an otherwise proven start.
+    from .ocr import research_node_base_name
+
+    target = research_node_base_name(research_id)
+    target_ok = research_node_base_name(str(after.research.get("node") or "")) == target \
+        or research_node_base_name(str(active_node or "")) == target
     queue = verify_research_queue(after)
     ok = was_available and target_ok and queue.ok
     return VerificationResult(
@@ -1659,6 +1823,28 @@ def verify_training_started(before: WorldState, after: WorldState, troop_type: s
         ok,
         "OK" if ok else "TRAINING_START_NOT_PROVEN",
         {"was_available": was_available, "queue": queue.evidence},
+    )
+
+
+def verify_training_batch_claimed(before: WorldState, after: WorldState) -> VerificationResult:
+    """Require an earned-reward response or a fresh available queue after collection."""
+    claimable = (
+        before.page is Page.TRAINING
+        and before.training.get("claimable") is True
+        and isinstance(before.training.get("claim_button_norm"), (tuple, list))
+    )
+    reward_feedback = after.page is Page.POPUP and after.popup == "GENERIC_REWARD"
+    queue_available = (
+        after.page is Page.TRAINING
+        and after.training.get("claimable") is not True
+        and after.training.get("queue_available") is True
+        and after.training.get("trainable") is True
+    )
+    ok = claimable and (reward_feedback or queue_available)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "TRAINING_BATCH_CLAIM_NOT_PROVEN",
+        {"claimable_before": claimable, "reward_feedback": reward_feedback, "queue_available_after": queue_available},
     )
 
 
@@ -1850,6 +2036,113 @@ def verify_daily_hero_recruit(
     )
 
 
+def verify_free_hero_recruit(before: WorldState, after: WorldState, row_key: str) -> VerificationResult:
+    """Prove one free single draw from the named card, never a paid/multi draw."""
+    before_row = next((row for row in (before.rewards or {}).get("hero_recruit_rows", ())
+                       if isinstance(row, dict) and row.get("key") == row_key), None)
+    after_row = next((row for row in (after.rewards or {}).get("hero_recruit_rows", ())
+                      if isinstance(row, dict) and row.get("key") == row_key), None)
+    before_count = int(before_row.get("free_remaining") or 0) if before_row else 0
+    after_count = int(after_row.get("free_remaining") or 0) if after_row else 0
+    reward_opened = after.page is Page.POPUP and after.popup == "HERO_RECRUIT_REWARD"
+    count_decreased = after.page is Page.HERO and after_row is not None and after_count < before_count
+    before_valid = (before.page is Page.HERO and before_row is not None
+                    and before_row.get("free_available") is True and before_count > 0)
+    ok = before_valid and (reward_opened or count_decreased)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "FREE_HERO_RECRUIT_NOT_PROVEN",
+        {"row_key": row_key, "before_free_remaining": before_count,
+         "after_free_remaining": after_count, "before_valid": before_valid,
+         "reward_opened": reward_opened, "count_decreased": count_decreased},
+    )
+
+
+def verify_quick_panel_scrolled(before: WorldState, after: WorldState) -> VerificationResult:
+    """Require a visible, measurable change in the open quick-panel list."""
+    before_panel = before.quick_panel or {}
+    after_panel = after.quick_panel or {}
+    before_rows = {
+        str(row.get("key")): float(row["y_norm"])
+        for row in (before_panel.get("rows") or ())
+        if isinstance(row, dict) and row.get("key") and isinstance(row.get("y_norm"), (int, float))
+    }
+    after_rows = {
+        str(row.get("key")): float(row["y_norm"])
+        for row in (after_panel.get("rows") or ())
+        if isinstance(row, dict) and row.get("key") and isinstance(row.get("y_norm"), (int, float))
+    }
+    added = sorted(set(after_rows) - set(before_rows))
+    moved = {
+        key: round(after_rows[key] - before_rows[key], 4)
+        for key in set(before_rows) & set(after_rows)
+        if abs(after_rows[key] - before_rows[key]) >= 0.04
+    }
+    valid_surfaces = (
+        before.page is Page.HOME and after.page is Page.HOME
+        and before_panel.get("open") is True and after_panel.get("open") is True
+    )
+    ok = valid_surfaces and bool(added or moved)
+    return VerificationResult(
+        ok,
+        "OK" if ok else "QUICK_PANEL_SCROLL_NOT_PROVEN",
+        {"valid_surfaces": valid_surfaces, "new_rows": added, "moved_rows": moved,
+         "before_rows": sorted(before_rows), "after_rows": sorted(after_rows)},
+    )
+
+
+def verify_alliance_donation_entry_opened(before: WorldState, after: WorldState) -> VerificationResult:
+    """A donation-row tap counts only when it leaves the city for Alliance."""
+    panel = before.quick_panel or {}
+    row = next((item for item in (panel.get("rows") or ())
+                if isinstance(item, dict) and item.get("key") == "ALLIANCE_DONATION"), {})
+    donation = panel.get("alliance_donation") or {}
+    before_valid = (
+        before.page is Page.HOME and panel.get("open") is True
+        and str(donation.get("status") or "").upper() == "AVAILABLE"
+        and int(donation.get("available") or 0) > 0
+        and row.get("control") == "ARROW"
+        and row.get("arrow_basis") == "ROW_BUTTON_SCAN"
+    )
+    after_alliance = after.page is Page.ALLIANCE
+    ok = before_valid and after_alliance
+    return VerificationResult(
+        ok, "OK" if ok else "ALLIANCE_DONATION_ENTRY_NOT_PROVEN",
+        {"before_valid": before_valid, "after_alliance": after_alliance,
+         "after_section": (after.alliance or {}).get("section"),
+         "after_page": after.page.value},
+    )
+
+
+def verify_alliance_tech_opened(before: WorldState, after: WorldState) -> VerificationResult:
+    before_home = before.page is Page.ALLIANCE and before.alliance.get("section") == "HOME"
+    after_technology = after.page is Page.ALLIANCE and after.alliance.get("section") == "TECHNOLOGY"
+    ok = before_home and after_technology
+    return VerificationResult(
+        ok, "OK" if ok else "ALLIANCE_TECH_PAGE_NOT_PROVEN",
+        {"before_home": before_home, "after_technology": after_technology,
+         "after_section": after.alliance.get("section"), "after_page": after.page.value},
+    )
+
+
+def verify_quick_panel_pet_entry_opened(before: WorldState, after: WorldState) -> VerificationResult:
+    """Require the pet-row action to leave the home overlay before accepting it."""
+    panel = before.quick_panel or {}
+    row = next((item for item in (panel.get("rows") or ())
+                if isinstance(item, dict) and item.get("key") == "PET_TREASURE"), {})
+    before_valid = (
+        before.page is Page.HOME and panel.get("open") is True
+        and row.get("control") == "ARROW"
+        and row.get("arrow_basis") == "ROW_BUTTON_SCAN"
+        and row.get("badge") == "PRESENT"
+    )
+    left_home = after.page is not Page.HOME and (after.quick_panel or {}).get("open") is not True
+    ok = before_valid and left_home
+    return VerificationResult(
+        ok, "OK" if ok else "PET_TREASURE_ENTRY_NOT_PROVEN",
+        {"before_valid": before_valid, "left_home": left_home,
+         "after_page": after.page.value, "after_panel_open": (after.quick_panel or {}).get("open")},
+    )
 def verify_daily_claim(before: WorldState, reward: WorldState, after: WorldState) -> VerificationResult:
     claimable_before = before.page is Page.DAILY and before.daily.get("status") == "CLAIMABLE" and int(before.daily.get("claimable_count", 0)) > 0
     reward_ok = reward.page is Page.POPUP and reward.popup == "DAILY_REWARD" and reward.daily.get("claim_feedback") is True
