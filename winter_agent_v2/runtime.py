@@ -1544,13 +1544,26 @@ class LiveRuntime:
         so a repair without one is not a repair, it is a second way to lie.
         """
         if semantic in self._autogen_repaired:
+            from winter_agent_v2.pipeline_autogen import record_repair_event
+            record_repair_event(semantic, skill_id, stage="SKIP",
+                                detail="ALREADY_ATTEMPTED_THIS_ROUND",
+                                page=str(getattr(self, "page", "")),
+                                failure_type=str(reason))
             return
         self._autogen_repaired.add(semantic)
         try:
             from datetime import datetime as _dt, timezone as _tz
 
             from winter_agent_v2.pipeline_autogen import (GenerationRequest,
-                                                          PipelineAutoGen)
+                                                          PipelineAutoGen,
+                                                          record_repair_event)
+
+            def _log(stage: str, detail: str = "", **extra: object) -> None:
+                record_repair_event(semantic, skill_id, stage=stage, detail=detail,
+                                    page=str(getattr(self, "page", "")),
+                                    failure_type=str(reason), extra=dict(extra))
+
+            _log("ENTER", f"attempts={attempts + 1}")
 
             stamp = _dt.now(_tz.utc).strftime("%Y%m%d_%H%M%S")
             frame = Path(self.capture_dir) / "autogen" / f"{stamp}_repair_{semantic}.png"
@@ -1561,9 +1574,11 @@ class LiveRuntime:
                 self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
                                               "kind": "REPAIR", "verdict": "NO_FRAME",
                                               "frame": ""})
+                _log("SKIP", "NO_FRAME")
                 return
             text = self._semantic_cn_text(semantic)
             if not text:
+                _log("SKIP", "NO_DECLARED_TEXT")
                 return
             node = gen.generate(GenerationRequest(semantic=semantic, cn_text=text,
                                                   skill_id=skill_id or semantic, want="auto"),
@@ -1572,6 +1587,7 @@ class LiveRuntime:
                 self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
                                               "kind": "REPAIR", "verdict": "TEXT_NOT_ON_FRAME",
                                               "frame": str(captured)})
+                _log("SKIP", "TEXT_NOT_ON_FRAME", declared_text=text, frame=str(captured))
                 return
             # Negative frames: recent autogen captures that are not this capture --
             # whatever pages the run passed through on its way here. A template that
@@ -1582,8 +1598,11 @@ class LiveRuntime:
                  if p != captured),
                 key=lambda p: p.stat().st_mtime, reverse=True,
             )[:3]
+            # The same live MAA adapter the executor runs — validation without a
+            # real matcher always answered NO_ADAPTER and rejected every repair
+            # (measured 2026-09-26T07:50Z on BTN_EXPLORATION_IDLE_CLAIM).
             report = gen.validate(node, positives=[captured], negatives=negatives,
-                                  adapter=None)
+                                  adapter=getattr(self, "maa_adapter", None))
             node.evidence["repair"] = (f"runtime repair after {attempts + 1} attempt(s): "
                                        f"{reason}")
             node.evidence["validation_report"] = report
@@ -1594,11 +1613,21 @@ class LiveRuntime:
                 wired, verdict = gen.wire(node, note="runtime-repaired from a failing node")
             else:
                 wired, verdict = False, "REJECTED_NO_NEGATIVE_OR_MISMATCH"
+            _log("WIRED" if wired else "SKIP", verdict,
+                 declared_text=text, validation=report, frame=str(captured),
+                 negatives=[str(p) for p in negatives])
             self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
                                           "kind": "REPAIR",
                                           "verdict": verdict if wired else f"{verdict} (not wired)",
                                           "frame": str(captured)})
         except Exception as exc:  # noqa: BLE001 - a repair must never stop a production run
+            try:
+                from winter_agent_v2.pipeline_autogen import record_repair_event as _rre
+                _rre(semantic, skill_id, stage="ERROR",
+                     detail=f"{type(exc).__name__}: {exc}",
+                     page=str(getattr(self, "page", "")), failure_type=str(reason))
+            except Exception:  # noqa: BLE001
+                pass
             self.recently_autogen.append({"semantic": semantic, "skill_id": skill_id,
                                           "kind": "REPAIR_ERROR",
                                           "verdict": f"{type(exc).__name__}: {exc}",
