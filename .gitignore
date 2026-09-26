@@ -398,3 +398,16 @@ learning/control_panel/gateway.log
 learning/control_panel/gateway.json
 learning/control_panel/gateway_service.json
 learning/control_panel/live_gateway_proof.json
+
+# Third-party agent skills installed by npx (vendor artifact, MIT).
+# Kept locally only - must never be pushed to the public mirror.
+.codebuddy/
+.agents/
+
+# --- 2026-09-26 workspace triage: regenerable probe/scratch files (TEMP) ---
+/.probe_*
+/.fail_list.txt
+/.final_failures.txt
+/.full_*.txt
+/.acceptance_frames.json
+/tools/_*.py
