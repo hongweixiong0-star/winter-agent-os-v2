@@ -457,10 +457,11 @@
       "generator_ready": false,
       "next_step": "observe clickable control and record its true bounds",
       "recognition": {
-        "method": "TEMPLATE",
-        "basis": "HUD icon button observed without caption text on its recorded page",
-        "classified_at_source": "rule_table_v1"
-      }
+        "method": "STRUCTURE",
+        "basis": "blue arrow sprite identical to building-upgrade arrow; rejected by negative-frame validation 2026-09-26 — must be located relative to the 科技研究 text row, not by sprite",
+        "classified_at_source": "negative_frame_rejection"
+      },
+      "note": "locate via parent row of text 科技研究 (row at y~790 on HOME) then offset to right arrow"
     },
     {
       "semantic": "QUICK_PANEL_ROW_MY_REWARDS",

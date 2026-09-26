@@ -412,6 +412,8 @@ def main() -> int:
                                         "verdict": "NEEDS_TEMPLATE_RECT"})
                     continue
                 from winter_agent_v2.pipeline_autogen import build_routing_template_node
+                from winter_agent_v2.pipeline_autogen import (TEMPLATE_ROI_EXPAND,
+                                                              compute_roi)
                 import hashlib
                 frame = page_frames[0]
                 from PIL import Image
@@ -422,10 +424,15 @@ def main() -> int:
                 with Image.open(frame) as im:
                     im.convert("RGB").crop(rect).save(tpl, "PNG")
                 rel = tpl.resolve().relative_to(ROOT.resolve()).as_posix()
+                # crop stays exact; the SEARCH roi gets the same drift margin
+                # every other TEMPLATE path uses (measured 30px live drift)
+                screen = Image.open(frame).size  # (w, h)
+                search_roi = compute_roi(rect, TEMPLATE_ROI_EXPAND,
+                                         screen=(screen[0], screen[1]))
                 for skill_id in skill_ids:
                     if has_node(skill_id, semantic):
                         continue
-                    routing = build_routing_template_node(semantic, rel, roi=list(rect))
+                    routing = build_routing_template_node(semantic, rel, roi=list(search_roi))
                     # Validation: the template must hit its own page frame and
                     # miss every other captured frame (icon sprites are page-bound).
                     positives, negatives = page_frames, [f for p, f in frames.items()
@@ -439,7 +446,7 @@ def main() -> int:
                         node = GeneratedNode(semantic=semantic, skill_id=skill_id, kind="TEMPLATE",
                                              routing_node=routing,
                                              pipeline_node={"recognition": "TemplateMatch",
-                                                            "template": [semantic], "roi": list(rect),
+                                                            "template": [semantic], "roi": list(search_roi),
                                                             "threshold": [0.7]},
                                              template_path=tpl, frame=frame)
                         node.evidence = {"source": "harvest rect template", "rect": list(rect),

@@ -1171,12 +1171,12 @@
             0.7,
             0.75
           ],
-          "source_template": "dataset/candidate/autogen/btn_mail_tab_report__autogen_b0b7f109.png",
+          "source_template": "dataset/candidate/autogen/btn_mail_tab_report__autogen_6800ebf2.png",
           "roi": [
-            443,
-            80,
-            107,
-            81
+            397,
+            37,
+            199,
+            173
           ]
         }
       },
@@ -1186,7 +1186,7 @@
       "promoted": false,
       "migration_priority": "P3",
       "evidence": {
-        "generated_at": "2026-09-26T03:28:22.083173+00:00",
+        "generated_at": "2026-09-26T09:26:32.231970+00:00",
         "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
         "tool_generated_node": {
           "recognition": "OCR",
@@ -1194,10 +1194,10 @@
             "报告"
           ],
           "roi": [
-            443,
-            80,
-            107,
-            81
+            445,
+            85,
+            103,
+            77
           ],
           "action": "Click",
           "post_delay": 500,
@@ -1205,16 +1205,16 @@
         },
         "active_node_source": "V2_NATIVE_TEMPLATE",
         "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
-        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_104433_773691\\20260926_104433_773691_step_022_before_20260926T025259264978.png",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260926_172519_179740\\autogen\\20260926_092630_repair_BTN_MAIL_TAB_REPORT.png",
         "observed_text": "报告",
         "observed_box": [
           465,
-          102,
+          105,
           63,
           37
         ],
-        "ocr_score": 0.9999,
-        "expand": 22,
+        "ocr_score": 0.999,
+        "expand": 20,
         "validation": "NONE",
         "harvest_page": "MAIL",
         "harvest_score": 0.9999,
@@ -1238,18 +1238,20 @@
           "skill_id": "SELECT_MAIL_REPORT_TAB",
           "kind": "TEMPLATE",
           "positives": 1,
-          "negatives": 9,
+          "negatives": 1,
           "positive_hits": 1,
           "negative_hits": 0,
           "errors": [],
           "corpus_sufficient": false
         },
-        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_report__5c73e148f6.json",
-        "pipeline_node_sha1": "5c73e148f6",
-        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_report__tool_ocr__91d0345226.json",
-        "tool_candidate_sha1": "91d0345226",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_report__15bc9fb15a.json",
+        "pipeline_node_sha1": "15bc9fb15a",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_mail_tab_report__tool_ocr__cbde4cee8f.json",
+        "tool_candidate_sha1": "cbde4cee8f",
         "autogen_node_count": 1,
-        "autogen_note": "harvested+validated"
+        "autogen_note": "runtime-repaired from a failing node",
+        "repair": "runtime repair after 1 attempt(s): SEMANTIC_TARGET_NOT_VERIFIED",
+        "autogen_overwritten_at": "2026-09-26T09:26:32.231970+00:00"
       }
     },
     "SELECT_MAIL_SYSTEM_TAB": {
@@ -1690,6 +1692,123 @@
         "tool_candidate_sha1": "73798d6940",
         "autogen_node_count": 1,
         "autogen_note": "harvested+validated"
+      }
+    },
+    "OPEN_EXPLORATION": {
+      "recognition": {
+        "BTN_OPEN_EXPLORATION": {
+          "kind": "TEMPLATE",
+          "template": "BTN_OPEN_EXPLORATION",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_open_exploration__rect_5b7dd675.png",
+          "roi": [
+            0,
+            1127,
+            206,
+            153
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "source": "harvest rect template",
+        "rect": [
+          25,
+          1175,
+          110,
+          1275
+        ],
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+        "validation": "PENDING_RECORD",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_exploration__e9fcf4a95f.json",
+        "pipeline_node_sha1": "e9fcf4a95f",
+        "autogen_node_count": 1,
+        "autogen_note": "harvest rect template"
+      }
+    },
+    "OPEN_POWER_OVERVIEW": {
+      "recognition": {
+        "BTN_OPEN_POWER_OVERVIEW_ICON": {
+          "kind": "TEMPLATE",
+          "template": "BTN_OPEN_POWER_OVERVIEW_ICON",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_open_power_overview_icon__rect_40623d4b.png",
+          "roi": [
+            578,
+            873,
+            142,
+            407
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "source": "harvest rect template",
+        "rect": [
+          626,
+          921,
+          700,
+          995
+        ],
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+        "validation": "PENDING_RECORD",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_power_overview_icon__2481f14e32.json",
+        "pipeline_node_sha1": "2481f14e32",
+        "autogen_node_count": 1,
+        "autogen_note": "harvest rect template"
+      }
+    },
+    "OPEN_BUILDING_UPGRADE": {
+      "recognition": {
+        "BTN_SELECTED_BUILDING_UPGRADE": {
+          "kind": "TEMPLATE",
+          "template": "BTN_SELECTED_BUILDING_UPGRADE",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_selected_building_upgrade__rect_300f6cc7.png",
+          "roi": [
+            335,
+            288,
+            385,
+            480
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "source": "harvest rect template",
+        "rect": [
+          383,
+          336,
+          435,
+          384
+        ],
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+        "validation": "PENDING_RECORD",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_selected_building_upgrade__61aba95981.json",
+        "pipeline_node_sha1": "61aba95981",
+        "autogen_node_count": 1,
+        "autogen_note": "harvest rect template"
       }
     }
   },
