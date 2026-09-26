@@ -493,6 +493,15 @@ class PipelineAutoGen:
         routing = build_routing_template_node(
             request.semantic, _relative(template_path, self.project_root), roi=roi,
         )
+        # The template was cropped at exactly this ROI. Matching inside a
+        # zero-margin ROI breaks the moment the control drifts a few pixels —
+        # measured live: the exploration claim button moved ~30px between
+        # 08:01Z and 08:22Z (chest glow animation) and the repair candidate
+        # graded NO_MATCH on a frame where the button was plainly visible.
+        # Search a generous neighbourhood instead; negative-frame validation
+        # guards the extra area against false positives.
+        roi = compute_roi(roi, TEMPLATE_ROI_EXPAND, self.screen)
+        routing["roi"] = list(roi)
         return GeneratedNode(
             semantic=request.semantic, skill_id=request.skill_id, kind="TEMPLATE",
             routing_node=routing,
@@ -750,6 +759,11 @@ def declared_gap_words(semantic: str, *,
 #: OCR and TEMPLATE have real generation paths; COLOR / STRUCTURE / LIST_DYNAMIC
 #: are reported as candidates until their executor adapters exist — a declared
 #: method without a path is never silently downgraded to a text guess.
+#: Extra search margin (pixels) around a template crop. UI controls drift
+#: a few dozen px between screens (animated decorations push layouts); a
+#: zero-margin ROI turns that drift into a guaranteed NO_MATCH.
+TEMPLATE_ROI_EXPAND = 48
+
 GAP_RECOGNITION_METHODS = ("OCR", "TEMPLATE", "COLOR", "STRUCTURE", "LIST_DYNAMIC")
 
 
