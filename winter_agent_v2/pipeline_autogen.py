@@ -635,12 +635,27 @@ class PipelineAutoGen:
         if adapter is None:
             report["errors"].append("NO_ADAPTER")
             return report
+        # Per-frame matcher errors must survive into the report: a repair that
+        # graded 0/1 because the adapter was busy or unready used to look
+        # identical to a genuine "template not on frame" (measured on
+        # BTN_EXPLORATION_IDLE_CLAIM 2026-09-26T08:01Z).
+        frame_errors: list[str] = []
         for frame in positives:
-            hit, _err = self._try_match(adapter, node, Path(frame), expect_hit=True)
+            hit, err = self._try_match(adapter, node, Path(frame), expect_hit=True)
             report["positive_hits"] += int(hit)
+            if err:
+                frame_errors.append(f"positive:{Path(frame).name}:{err}")
         for frame in negatives:
-            hit, _err = self._try_match(adapter, node, Path(frame), expect_hit=False)
+            hit, err = self._try_match(adapter, node, Path(frame), expect_hit=False)
             report["negative_hits"] += int(hit)
+            if err and err != "NO_MATCH":
+                # a negative frame answering NO_MATCH is the desired outcome,
+                # not a matcher failure
+                frame_errors.append(f"negative:{Path(frame).name}:{err}")
+        if frame_errors:
+            report["frame_errors"] = frame_errors
+            report["errors"].extend(
+                sorted({e.split(":", 2)[2] for e in frame_errors}))
         report["corpus_sufficient"] = (
             len(positives) >= 3 and report["positive_hits"] == len(positives)
             and len(negatives) >= 3 and report["negative_hits"] == 0
