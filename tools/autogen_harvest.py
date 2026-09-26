@@ -60,11 +60,11 @@ def declared_labels() -> list[tuple[str, str, list[str]]]:
     for record in payload.get("records") or ():
         if not (isinstance(record, dict) and record.get("id")):
             continue
-        # A page/popup title can carry the same text as an action, but clicking
-        # its OCR box is not an action. Only explicit interactive UI records may
-        # become click nodes.
+        # Page/popup titles are not actions. ROW/ROW_CONTROL labels are also
+        # excluded: on the quick panel the actual control is the arrow to the
+        # right, and clicking the row label does not enter the task.
         if str(record.get("type", "")).upper() not in {
-            "BUTTON", "TAB", "ROW", "ROW_CONTROL", "INTERACTIVE_CONTROL",
+            "BUTTON", "TAB", "INTERACTIVE_CONTROL",
             "NAVIGATION", "CONTROL", "CARD",
         }:
             continue
@@ -102,7 +102,7 @@ def main() -> int:
     ap.add_argument("--visit", action="append", default=[],
                     help="page_name[:x,y] — navigate (optional) then capture")
     ap.add_argument("--frame", action="append", default=[],
-                    help="page_name:path — use an archived real frame without taking the device lease")
+                    help="page_name[#sample]:path — use archived real frames without taking the device lease")
     ap.add_argument("--back-before", type=int, default=2, metavar="N",
                     help="press BACK this many times before each visit, so a previous "
                          "visit's full-screen page cannot swallow the next tap")
@@ -228,7 +228,7 @@ def main() -> int:
             # check the exploration page's claim button was filed as the alliance-gift
             # claim, because both say 领取 and both validate against a text-absent
             # negative. A record with no declared pages keeps the old behaviour.
-            if declared_pages and str(page).upper() not in declared_pages:
+            if declared_pages and str(page).partition("#")[0].upper() not in declared_pages:
                 continue
             positives = [frames[p] for p, _ in hits]
             # A negative is a frame where the label's own text is absent — not merely
