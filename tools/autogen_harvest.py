@@ -202,7 +202,7 @@ def main() -> int:
             return table.recognition_node(skill_id, semantic) is not None
 
         results: list[dict[str, object]] = []
-        wired = rejected = absent = 0
+        validated = wired = rejected = absent = 0
         for semantic, cn, declared_pages in labels:
             skill_ids = owners.get(semantic, [])
             if not skill_ids:
@@ -274,13 +274,15 @@ def main() -> int:
                     and report["positives"] >= 1
                     and context_ok
                 )
-                verdict = "WIRED" if ok else (
+                verdict = "VALIDATED_CANDIDATE" if ok else (
                     "REJECTED_NO_NEGATIVE_CONTEXT" if not context_ok else "REJECTED_VALIDATION")
+                if ok:
+                    validated += 1
                 if ok and args.apply:
                     _wired, verdict = gen.wire(node, note="harvested+validated")
-                if ok:
-                    wired += 1
-                else:
+                    if _wired:
+                        wired += 1
+                if not ok:
                     rejected += 1
                 results.append({
                     "semantic": semantic, "skill_id": skill_id, "kind": node.kind,
@@ -294,6 +296,7 @@ def main() -> int:
         print(f"labels scanned        : {len(labels)}")
         print(f"executable semantics  : {len([1 for s, _, _ in labels if s in owners])}")
         print(f"not on any frame      : {absent}")
+        print(f"validated candidates  : {validated}")
         print(f"nodes wired           : {wired}   (apply={args.apply})")
         print(f"rejected by validation: {rejected}")
         for row in results:
