@@ -1525,6 +1525,172 @@
         "autogen_node_count": 1,
         "autogen_note": "reviewed manifest template; 3/3 INTEL and 0/15 other pages"
       }
+    },
+    "OPEN_BEAR_RALLY_LIST": {
+      "recognition": {
+        "BTN_ALLIANCE_WAR": {
+          "kind": "TEMPLATE",
+          "template": "BTN_ALLIANCE_WAR",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_alliance_war__autogen_1409b53e.png",
+          "roi": [
+            167,
+            629,
+            158,
+            81
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T07:15:12.731818+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "联盟战争"
+          ],
+          "roi": [
+            167,
+            629,
+            158,
+            81
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png",
+        "observed_text": "联盟战争",
+        "observed_box": [
+          189,
+          651,
+          114,
+          37
+        ],
+        "ocr_score": 0.9968,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "ALLIANCE",
+        "harvest_score": 0.9968,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_event_hub.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_ALLIANCE_WAR",
+          "skill_id": "OPEN_BEAR_RALLY_LIST",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 2,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_alliance_war__734b1ee803.json",
+        "pipeline_node_sha1": "734b1ee803",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_alliance_war__tool_ocr__034b9fcf42.json",
+        "tool_candidate_sha1": "034b9fcf42",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
+    },
+    "OPEN_ALLIANCE_GIFTS": {
+      "recognition": {
+        "BTN_OPEN_ALLIANCE_GIFTS": {
+          "kind": "TEMPLATE",
+          "template": "BTN_OPEN_ALLIANCE_GIFTS",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_open_alliance_gifts__autogen_11c92358.png",
+          "roi": [
+            505,
+            631,
+            158,
+            78
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T07:15:12.837718+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "联盟宝箱"
+          ],
+          "roi": [
+            505,
+            631,
+            158,
+            78
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png",
+        "observed_text": "联盟宝箱",
+        "observed_box": [
+          527,
+          653,
+          114,
+          34
+        ],
+        "ocr_score": 0.9991,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "ALLIANCE",
+        "harvest_score": 0.9991,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_alliance.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_event_hub.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_OPEN_ALLIANCE_GIFTS",
+          "skill_id": "OPEN_ALLIANCE_GIFTS",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 2,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_alliance_gifts__c6301ee340.json",
+        "pipeline_node_sha1": "c6301ee340",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_open_alliance_gifts__tool_ocr__73798d6940.json",
+        "tool_candidate_sha1": "73798d6940",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
     }
   },
   "not_migrated": {

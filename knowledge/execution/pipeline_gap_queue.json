@@ -141,14 +141,16 @@
       "production_attempts": 0,
       "family": "NAV",
       "priority": "P1",
-      "record_type": null,
-      "visible_words": [],
+      "record_type": "BUTTON",
+      "visible_words": [
+        "联盟战争"
+      ],
       "generator_ready": false,
       "next_step": "observe clickable control and record its true bounds",
       "recognition": {
-        "method": "TEMPLATE",
-        "basis": "HUD icon button observed without caption text on its recorded page",
-        "classified_at_source": "rule_table_v1"
+        "method": "OCR",
+        "basis": "live frame r2_alliance prints 联盟战争 as button caption (observed 2026-09-26)",
+        "classified_at_source": "live_frame_token"
       }
     },
     {
@@ -165,14 +167,16 @@
       "production_attempts": 97,
       "family": "NAV",
       "priority": "P1",
-      "record_type": null,
-      "visible_words": [],
+      "record_type": "BUTTON",
+      "visible_words": [
+        "联盟宝箱"
+      ],
       "generator_ready": false,
       "next_step": "observe clickable control and record its true bounds",
       "recognition": {
-        "method": "TEMPLATE",
-        "basis": "HUD icon button observed without caption text on its recorded page",
-        "classified_at_source": "rule_table_v1"
+        "method": "OCR",
+        "basis": "live frame r2_alliance prints 联盟宝箱; gifts popup reached via this button earlier today",
+        "classified_at_source": "live_frame_token"
       }
     },
     {

@@ -765,6 +765,36 @@ def build_color_pipeline_node(roi: Sequence[int]) -> dict[str, Any]:
             "order": 0, "action": "Click"}
 
 
+DEFAULT_REPAIR_EVENTS_PATH = PROJECT_ROOT / "learning" / "autogen_repair_events.jsonl"
+
+
+def record_repair_event(semantic: str, skill_id: str, *, stage: str, detail: str = "",
+                        page: str = "", failure_type: str = "",
+                        extra: dict[str, Any] | None = None) -> None:
+    """Append one AutoRepair lifecycle event, skips included.
+
+    The repair hook is bounded and conditional, so "AutoRepair = 0" can mean
+    five different things. Every skip reason (NO_DECLARED_TEXT, NO_FRAME,
+    ALREADY_ATTEMPTED_THIS_ROUND, ...) is recorded here so the next diagnosis
+    reads one jsonl instead of re-deriving the branch conditions. A record
+    failure must never break a production run.
+    """
+    try:
+        record = {
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "semantic": semantic, "skill_id": skill_id, "stage": stage,
+            "detail": detail, "page": page, "failure_type": failure_type,
+        }
+        if extra:
+            record.update(extra)
+        path = Path(os.environ.get("WINTER_REPAIR_EVENTS_PATH", DEFAULT_REPAIR_EVENTS_PATH))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001 - observability must never stop AUTO
+        pass
+
+
 def _relative(path: Path, root: Path) -> str:
     try:
         return str(Path(path).resolve().relative_to(Path(root).resolve())).replace("\\", "/")
