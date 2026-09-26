@@ -222,8 +222,30 @@ def p0_registry() -> SkillRegistry:
         Skill("DISPATCH_MARCH", "Dispatch selected march", Page.MARCH, Action("TAP_SEMANTIC", "BTN_DISPATCH"), state=SkillState.VERIFIED),
         Skill("VERIFY_GATHERING", "Verify gathering state", Page.RESOURCE_DETAIL, Action("OBSERVE", "STATUS_GATHERING"), state=SkillState.VERIFIED),
         Skill("BACK", "Return one game-navigation level", None, Action("PRESS_BACK"), state=SkillState.VERIFIED),
+        Skill(
+            "OPEN_QUICK_PANEL",
+            "Open the measured city task panel from its current collapsed handle",
+            Page.HOME,
+            Action("TAP_SEMANTIC", "QUICK_PANEL_HANDLE"),
+            state=SkillState.CANDIDATE,
+            verifier="QUICK_PANEL_OPENED",
+            recovery=("REFRESH_STATE",),
+            semantic_goal="Open the city task board without spending unknown-control exploration budget",
+            context=("HOME",),
+            semantic_requirements=("quick_panel_collapsed", "measured_handle"),
+            vision_evidence=("HANDLE_TRIANGLE_SCAN", "handle_point_norm"),
+            unknown_policy="A missing or already-expanded handle blocks without tapping",
+            ui_change_tolerance=("position", "resolution", "panel_rows"),
+        ),
         Skill("OPEN_MAIL", "Open Mail from the current-client Home sidebar", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_MAIL"), state=SkillState.VERIFIED),
+        Skill("OPEN_EVENT_CALENDAR_FROM_HOME", "Open the regular-event calendar from a current Home-frame label", Page.HOME, Action("TAP_SEMANTIC", "REGULAR_EVENT_ENTRY"), state=SkillState.CANDIDATE, verifier="EVENT_CALENDAR_OPEN", recovery=("BACK",), context=("EVENT",), vision_evidence=("current_frame_event_entry", "calendar_date_columns"), unknown_policy="No current-frame 常规活动 entry box or no calendar structure means no tap"),
+        Skill("OPEN_EVENT_CALENDAR_FROM_MAP", "Open the regular-event calendar from a current Map-frame label", Page.MAP, Action("TAP_SEMANTIC", "REGULAR_EVENT_ENTRY"), state=SkillState.CANDIDATE, verifier="EVENT_CALENDAR_OPEN", recovery=("BACK",), context=("EVENT",), vision_evidence=("current_frame_event_entry", "calendar_date_columns"), unknown_policy="No current-frame 常规活动 entry box or no calendar structure means no tap"),
+        Skill("OPEN_EVENT_CALENDAR_TAB", "Select the live 日历 tab from the regular-events activity panel using its current template match", Page.EVENT, Action("TAP_SEMANTIC", "EVENT_CALENDAR_TAB"), state=SkillState.CANDIDATE, verifier="EVENT_CALENDAR_TAB_OPEN", recovery=("REFRESH_STATE",), context=("EVENT",), vision_evidence=("regular_events_detail_panel", "current_frame_calendar_tab_template"), unknown_policy="No current-frame calendar tab template match means no tap"),
+        Skill("READ_EVENT_CALENDAR", "Observe all event entries and date anchors visible on the current calendar frame", Page.EVENT, Action("OBSERVE", "EVENT_CALENDAR"), state=SkillState.CANDIDATE, verifier="EVENT_CALENDAR_READ", recovery=("BACK",), context=("EVENT",), vision_evidence=("calendar_heading", "multiple_date_anchors", "event_entries"), unknown_policy="Unrecognized calendar structure leaves all schedule fields unknown"),
+        Skill("OPEN_EVENT_CALENDAR_DETAIL", "Open the first uninspected visible calendar item using its current OCR box", Page.EVENT, Action("TAP_SEMANTIC", "EVENT_CALENDAR_NEXT_DETAIL"), state=SkillState.CANDIDATE, verifier="EVENT_CALENDAR_DETAIL_OPEN", recovery=("BACK",), context=("EVENT",), vision_evidence=("calendar_entry_identity", "current_frame_entry_box"), unknown_policy="No uninspected event title box means no tap"),
+        Skill("RETURN_EVENT_CALENDAR", "Return from a recognized event detail to the calendar", Page.EVENT, Action("PRESS_BACK"), state=SkillState.CANDIDATE, verifier="EVENT_CALENDAR_RETURNED", recovery=("REFRESH_STATE",), context=("EVENT",), vision_evidence=("event_detail_page", "calendar_grid_after_back"), unknown_policy="A non-detail page is not backed out by this skill"),
         Skill("OPEN_ALLIANCE", "Open Alliance from the current-client Home bottom navigation", Page.HOME, Action("TAP_SEMANTIC", "BTN_OPEN_ALLIANCE"), state=SkillState.VERIFIED),
+        Skill("OPEN_ALLIANCE_TECH_FROM_HOME", "Open Alliance Technology from the live Alliance home page", Page.ALLIANCE, Action("TAP_SEMANTIC", "BTN_ALLIANCE_TECH"), state=SkillState.CANDIDATE),
         Skill(
             "OPEN_BEAR_RALLY_LIST",
             "Open the current Alliance War entry to read its live rally list",
@@ -359,6 +381,30 @@ def v2_registry() -> SkillRegistry:
             verifier="RALLY_JOINED", recovery=("TRY_NEXT_JOINABLE", "REFRESH_RALLY_LIST"),
             unknown_policy="Full or expired is environment race lost; unknown action blocks; unavailable body hero falls back to no hero",
             ui_change_tolerance=("icon", "number", "list_order", "position", "resolution", "skin"),
+        ),
+        Skill(
+            "BEAR_AUTO_JOIN", "Toggle auto-join for the ice-giant (bear) rally on the alliance war rally tab",
+            # Registered 2026-09-26 from live client evidence (r14_war.png): the
+            # alliance war page's 集结 tab prints 「开启后自动加入冰原巨兽集结」
+            # above a blue 自动加入 button (red dot = not enabled).  The skill
+            # taps that button through the one constitutional tap path.
+            #
+            # The verifier must read the toggle STATE CHANGE on the page, not
+            # the click result: a tap that lands on an already-enabled toggle
+            # would turn it OFF.  Until that state reader exists this skill
+            # stays CANDIDATE and the button node carries the L1/L2 evidence.
+            #
+            # Per-character state: the auto-join switch is per role; never
+            # copy its on/off reading across characters.
+            Page.ALLIANCE, Action("TAP_SEMANTIC", "BTN_BEAR_AUTO_JOIN"),
+            timeout=8.0, risk="MEDIUM_COMBAT", state=SkillState.CANDIDATE, latency_class=LatencyClass.FAST,
+            semantic_goal="Enable (or intentionally disable) auto-join for the bear rally",
+            context=("RALLY_JOINER",),
+            semantic_requirements=("rally_tab_open", "auto_join_button_present", "toggle_state_known_before_tap"),
+            vision_evidence=("auto_join_button_state_before", "auto_join_button_state_after"),
+            verifier="BEAR_AUTO_JOIN_TOGGLED", recovery=("REFRESH_WAR_PAGE", "READ_TOGGLE_STATE"),
+            unknown_policy="Unknown toggle state before the tap blocks: without a before-reading the action could invert the setting",
+            ui_change_tolerance=("icon", "position", "resolution", "skin"),
         ),
     ])
     skills.extend([
@@ -531,6 +577,17 @@ def v2_registry() -> SkillRegistry:
             timeout=900.0,
             risk="LOW",
             state=SkillState.VERIFIED,
+        )
+    )
+    skills.append(
+        Skill(
+            "OPEN_BUILDING_UPGRADE",
+            "Open the selected building's upgrade panel without starting the upgrade",
+            Page.HOME,
+            Action("TAP_SEMANTIC", "BTN_SELECTED_BUILDING_UPGRADE"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
         )
     )
     skills.append(
@@ -911,6 +968,28 @@ def v2_registry() -> SkillRegistry:
             state=SkillState.CANDIDATE,
         )
     )
+    skills.append(
+        Skill(
+            "SCROLL_QUICK_PANEL_TASKS",
+            "Reveal additional quick-panel rows with a swipe derived from the visible list on this frame",
+            Page.HOME,
+            Action("SWIPE", "QUICK_PANEL_SCROLL_CURRENT", payload={"duration_ms": 450}),
+            timeout=15.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
+    skills.append(
+        Skill(
+            "COLLECT_TRAINING_BATCH",
+            "Collect the already-earned completed batch, then re-read the queue before starting again",
+            Page.TRAINING,
+            Action("TAP_SEMANTIC", "BTN_CLAIM_TRAINING_BATCH"),
+            timeout=25.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        )
+    )
     for _row, _label in (("SHIELD", "盾兵"), ("LANCER", "矛兵"), ("MARKSMAN", "射手")):
         skills.append(
             Skill(
@@ -947,33 +1026,82 @@ def v2_registry() -> SkillRegistry:
             state=SkillState.CANDIDATE,
         )
     )
-    # The client's own green tick on a barracks row: its batch is finished and the troops are waiting
-    # to be collected.  A separate skill from the row's enter-arrow because it is a separate control
-    # with a separate outcome -- measured 2026-09-23, the tick shares the arrow's slot (x 0.533-0.590)
-    # but is what the client draws for 已完成, and the operator's §四 is that 已完成 is not 已领取.
+    # A completed green row tile enters the named barracks; it does not collect the batch. The
+    # old direct-collect actions remain registered but BLOCKED so neither AUTO nor Qwen can mistake
+    # the entry tap for collection. The entry skill is followed by the shared action-bar -> training
+    # page flow, where the client exposes the actual collect/start control.
     for _row, _label in (("SHIELD", "盾兵"), ("LANCER", "矛兵"), ("MARKSMAN", "射手")):
         skills.append(
             Skill(
                 f"COLLECT_FINISHED_TRAINING_{_row}",
-                f"Collect the finished batch of the {_label}营 from the quick panel's own done-marker",
+                f"Disabled direct quick-panel collection for the {_label}营; use its training page",
                 Page.HOME,
                 Action("TAP_SEMANTIC", f"QUICK_PANEL_ROW_{_row}_CAMP_DONE"),
                 timeout=20.0,
                 risk="LOW",
-                state=SkillState.CANDIDATE,
+                state=SkillState.BLOCKED,
             )
         )
         skills.append(
             Skill(
                 f"OPEN_COMPLETED_TRAINING_CAMP_{_row}",
-                f"Inspect the {_label}营 task surface without collecting or starting training",
+                f"Enter the completed {_label}营 through its full quick-panel row tile",
                 Page.HOME,
-                Action("TAP_SEMANTIC", f"QUICK_PANEL_ROW_{_row}_CAMP_DONE"),
+                Action("TAP_SEMANTIC", f"QUICK_PANEL_ROW_{_row}_CAMP_ENTRY"),
                 timeout=20.0,
                 risk="LOW",
                 state=SkillState.CANDIDATE,
             )
         )
+        skills.append(
+            Skill(
+                f"TAP_FOCUSED_TRAINING_CAMP_{_row}",
+                f"Tap the currently focused {_label}营 building to open its action choices",
+                Page.HOME,
+                Action("TAP_SEMANTIC", "TRAINING_CAMP_BODY_FROM_FOCUS"),
+                timeout=20.0,
+                risk="LOW",
+                state=SkillState.CANDIDATE,
+            )
+        )
+    skills.extend([
+        Skill(
+            "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC",
+            "Enter the epic recruit screen from its own quick-panel row",
+            Page.HOME,
+            Action("TAP_SEMANTIC", "QUICK_PANEL_ROW_HERO_RECRUIT_EPIC"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
+        Skill(
+            "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE",
+            "Enter pet treasure from its own quick-panel row",
+            Page.HOME,
+            Action("TAP_SEMANTIC", "QUICK_PANEL_ROW_PET_TREASURE"),
+            timeout=20.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
+        Skill(
+            "FREE_HERO_RECRUIT_ADVANCED",
+            "Use only the live-observed free single draw on the advanced recruit card",
+            Page.HERO,
+            Action("TAP_SEMANTIC", "BTN_FREE_RECRUIT_ADVANCED"),
+            timeout=25.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
+        Skill(
+            "FREE_HERO_RECRUIT_EPIC",
+            "Use only the live-observed free single draw on the epic recruit card",
+            Page.HERO,
+            Action("TAP_SEMANTIC", "BTN_FREE_RECRUIT_EPIC"),
+            timeout=25.0,
+            risk="LOW",
+            state=SkillState.CANDIDATE,
+        ),
+    ])
     # 我的奖励's own row, which draws the same tick (measured 22:02: 仓库补给 已完成, ~1276 green px at
     # x 0.533-0.590).  The operator's §四 names this row: 已完成 must not be read as 已领取, and the
     # way to tell them apart is to take it and watch what the client answers.

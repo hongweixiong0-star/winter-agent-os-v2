@@ -1810,6 +1810,92 @@
         "autogen_node_count": 1,
         "autogen_note": "harvest rect template"
       }
+    },
+    "BEAR_AUTO_JOIN": {
+      "recognition": {
+        "BTN_BEAR_AUTO_JOIN": {
+          "kind": "TEMPLATE",
+          "template": "BTN_BEAR_AUTO_JOIN",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/autogen/btn_bear_auto_join__autogen_1b783d1a.png",
+          "roi": [
+            222,
+            1134,
+            276,
+            146
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P3",
+      "evidence": {
+        "generated_at": "2026-09-26T10:20:31.923895+00:00",
+        "source": "installed maa-pipeline-generate CLI + V2 runtime wiring",
+        "tool_generated_node": {
+          "recognition": "OCR",
+          "expected": [
+            "自动加入"
+          ],
+          "roi": [
+            270,
+            1182,
+            180,
+            85
+          ],
+          "action": "Click",
+          "post_delay": 500,
+          "timeout": 2000
+        },
+        "active_node_source": "V2_NATIVE_TEMPLATE",
+        "generator_tool": "E:\\无尽冬日智能体\\.agents\\skills\\maa-pipeline-generate\\scripts\\generate_node.py",
+        "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r14_war.png",
+        "observed_text": "自动加入",
+        "observed_box": [
+          292,
+          1204,
+          136,
+          41
+        ],
+        "ocr_score": 0.9992,
+        "expand": 22,
+        "validation": "NONE",
+        "harvest_page": "ALLIANCE_WAR",
+        "harvest_score": 0.9992,
+        "positive_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r14_war.png"
+        ],
+        "negative_frames": [
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182419_map.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182419_shop.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\20260925_182419_bag.png",
+          "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_event_hub.png"
+        ],
+        "negative_rule": "frames whose OCR does not show the label text",
+        "validation_report": {
+          "semantic": "BTN_BEAR_AUTO_JOIN",
+          "skill_id": "BEAR_AUTO_JOIN",
+          "kind": "TEMPLATE",
+          "positives": 1,
+          "negatives": 5,
+          "positive_hits": 1,
+          "negative_hits": 0,
+          "errors": [],
+          "corpus_sufficient": false
+        },
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_bear_auto_join__d94c84dc40.json",
+        "pipeline_node_sha1": "d94c84dc40",
+        "tool_candidate_path": "dataset/raw/autogen/pipeline_nodes/btn_bear_auto_join__tool_ocr__ca26d01cb7.json",
+        "tool_candidate_sha1": "ca26d01cb7",
+        "autogen_node_count": 1,
+        "autogen_note": "harvested+validated"
+      }
     }
   },
   "not_migrated": {
