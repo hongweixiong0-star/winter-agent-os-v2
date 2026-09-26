@@ -362,6 +362,53 @@ class ExecutorRouter:
             self.last_recognition_error = None
             return ((x + w / 2.0) / width, (y + h / 2.0) / height)
 
+        # STRUCTURE nodes find a stable text anchor inside a parent semantic
+        # row, then tap a child region at a fixed offset relative to that
+        # anchor (e.g. the research-queue arrow right of the 「科技研究」
+        # label).  This replaces the rejected full-screen blue-arrow TEMPLATE,
+        # which also matched arrows on unrelated rows.  Node shape:
+        #   {"kind": "STRUCTURE",
+        #    "anchor": {"expected": ["科技研究"], "roi": [x, y, w, h]},
+        #    "offset": {"dx": 136, "dy": 5}}
+        # dx/dy are measured from the anchor box's right edge / vertical
+        # centre, calibrated on a real frame and recorded in evidence.
+        if dispatch_hint(node) == "STRUCTURE":
+            anchor = dict(node.get("anchor") or {})
+            offset = dict(node.get("offset") or {})
+            expected = list(anchor.get("expected") or [])
+            roi = tuple(anchor["roi"]) if anchor.get("roi") else None
+            if not expected:
+                self.last_recognition_error = "STRUCTURE:NO_ANCHOR"
+                return None
+            results, error = adapter.ocr(
+                frame, expected=expected, roi=roi,
+                threshold=float(anchor.get("score_threshold", 0.3)),
+            )
+            if error:
+                self.last_recognition_error = f"STRUCTURE_OCR:{error}"
+                return None
+            if not results:
+                self.last_recognition_error = "STRUCTURE:ANCHOR_NOT_FOUND"
+                return None
+            best = max(results, key=lambda r: float(r.get("score", 0.0) or 0.0))
+            box = best.get("box") or ()
+            if len(box) != 4:
+                self.last_recognition_error = "STRUCTURE:BAD_BOX"
+                return None
+            x, y, w, h = (int(v) for v in box)
+            size = adapter.last_frame
+            if size is None or getattr(size, "shape", None) is None:
+                self.last_recognition_error = "STRUCTURE:NO_SIZE"
+                return None
+            height, width = int(size.shape[0]), int(size.shape[1])
+            if width <= 0 or height <= 0:
+                self.last_recognition_error = "STRUCTURE:BAD_SIZE"
+                return None
+            tap_x = x + w + float(offset.get("dx", 0.0))
+            tap_y = y + h / 2.0 + float(offset.get("dy", 0.0))
+            self.last_recognition_error = None
+            return (tap_x / width, tap_y / height)
+
         template_name = str(node.get("template", semantic))
         # A node names its template semantically, but the file is named for its
         # provenance and usually lives outside ``template_dir``.  Registering

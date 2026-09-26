@@ -190,6 +190,8 @@ def dispatch_hint(node: dict[str, Any]) -> str:
     kind = str(node.get("kind", "")).upper()
     if kind == "OCR" or str(node.get("recognition", "")).upper() == "OCR":
         return "OCR"
+    if kind == "STRUCTURE":
+        return "STRUCTURE"
     return "TEMPLATE"
 
 
