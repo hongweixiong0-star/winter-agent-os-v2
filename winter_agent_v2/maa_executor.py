@@ -207,6 +207,9 @@ class MaaExecutorAdapter:
         self._ready = False
         self._unavailable_reason: str | None = None
         self._loaded_templates: set[str] = set()
+        #: name -> (path, mtime) for file-backed registrations, so a replaced
+        #: PNG under the same name is re-registered instead of served stale
+        self._template_mtimes: dict[str, tuple[Path, float]] = {}
         self._last_frame: np.ndarray | None = None
         self._last_frame_at: float = 0.0
         self._screencap_methods: int | None = None
@@ -532,7 +535,19 @@ class MaaExecutorAdapter:
         # registered under that name — measured 08:22Z where the fresh
         # candidate graded NO_MATCH against a 21-minute-old template.
         if name in self._loaded_templates and image is None:
-            return True
+            # file-backed fast path — but only while the file itself is
+            # unchanged: a replaced PNG under the same name must re-register.
+            # Names registered before this mtime ledger existed (or registered
+            # from raw arrays) keep the original cache behaviour.
+            if name not in self._template_mtimes:
+                return True
+            path, mtime = self._template_mtimes[name]
+            try:
+                if path.is_file() and path.stat().st_mtime == mtime:
+                    return True
+            except OSError:
+                return True
+            self._loaded_templates.discard(name)
         if image is None:
             if self.template_dir is None:
                 return False
@@ -542,6 +557,7 @@ class MaaExecutorAdapter:
                     break
             if image is None:
                 return False
+        source_path = image if isinstance(image, Path) else None
         try:
             array = (np.array(Image.open(image).convert("RGB")) if isinstance(image, (str, Path))
                      else np.asarray(image))
@@ -550,6 +566,11 @@ class MaaExecutorAdapter:
         ok = bool(self._resource.override_image(name, array))
         if ok:
             self._loaded_templates.add(name)
+            if source_path is not None:
+                try:
+                    self._template_mtimes[name] = (source_path, source_path.stat().st_mtime)
+                except OSError:
+                    pass
         return ok
 
     @staticmethod
