@@ -1,0 +1,750 @@
+{
+ "generated_at": "2026-09-26T12:41:06.049664+00:00",
+ "expand_px": 48,
+ "template_nodes": 29,
+ "rows": [
+  {
+   "skill": "BEAR_AUTO_JOIN",
+   "semantic": "BTN_BEAR_AUTO_JOIN",
+   "roi": [
+    222,
+    1134,
+    276,
+    146
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    174,
+    1086,
+    372,
+    242
+   ],
+   "template_size": [
+    180,
+    85
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 5,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "COLLECT_TRAINING_BATCH",
+   "semantic": "BTN_CLAIM_TRAINING_BATCH",
+   "roi": [
+    563,
+    826,
+    109,
+    81
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    515,
+    778,
+    205,
+    177
+   ],
+   "template_size": [
+    109,
+    81
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 5,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "DAILY_CLAIM_REWARDS",
+   "semantic": "BTN_DAILY_CLAIM_ALL",
+   "roi": [
+    281,
+    990,
+    160,
+    81
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    233,
+    942,
+    256,
+    177
+   ],
+   "template_size": [
+    160,
+    81
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 1,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "EXPLORATION_IDLE_CLAIM",
+   "semantic": "BTN_EXPLORATION_IDLE_CLAIM",
+   "roi": [
+    563,
+    826,
+    109,
+    81
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    515,
+    778,
+    205,
+    177
+   ],
+   "template_size": [
+    109,
+    81
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 1,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "INTEL_CLAIM_REWARDS",
+   "semantic": "BTN_INTEL_CLAIM_ALL",
+   "roi": [
+    179,
+    1064,
+    361,
+    127
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    131,
+    1016,
+    457,
+    223
+   ],
+   "template_size": [
+    321,
+    87
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "INTEL_HERO_DISPATCH",
+   "semantic": "BTN_HERO_FIGHT",
+   "roi": null,
+   "expand": 48,
+   "expanded_roi": null,
+   "template_size": [
+    305,
+    72
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "INTEL_HERO_START_MARCH",
+   "semantic": "BTN_HERO_CAMP_FIGHT",
+   "roi": null,
+   "expand": 48,
+   "expanded_roi": null,
+   "template_size": [
+    215,
+    77
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "JOIN_RALLY",
+   "semantic": "BTN_JOIN_ROW",
+   "roi": [
+    580,
+    300,
+    110,
+    780
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    532,
+    252,
+    206,
+    876
+   ],
+   "template_size": [
+    62,
+    74
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "MAIL_CLAIM_REWARDS",
+   "semantic": "BTN_MAIL_CLAIM_ALL",
+   "roi": [
+    466,
+    1206,
+    211,
+    71
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    418,
+    1158,
+    307,
+    167
+   ],
+   "template_size": [
+    211,
+    71
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 9,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_ALLIANCE",
+   "semantic": "BTN_OPEN_ALLIANCE",
+   "roi": [
+    489,
+    1221,
+    94,
+    59
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    441,
+    1173,
+    190,
+    155
+   ],
+   "template_size": [
+    94,
+    59
+   ],
+   "positive_hits": 6,
+   "negative_hits": 0,
+   "positives": 6,
+   "negatives": 0,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_ALLIANCE_GIFTS",
+   "semantic": "BTN_OPEN_ALLIANCE_GIFTS",
+   "roi": [
+    505,
+    631,
+    158,
+    78
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    457,
+    583,
+    254,
+    174
+   ],
+   "template_size": [
+    158,
+    78
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 2,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_ALLIANCE_TECH_FROM_HOME",
+   "semantic": "BTN_ALLIANCE_TECH",
+   "roi": [
+    507,
+    900,
+    156,
+    77
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    459,
+    852,
+    252,
+    173
+   ],
+   "template_size": [
+    156,
+    77
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_BEAR_RALLY_LIST",
+   "semantic": "BTN_ALLIANCE_WAR",
+   "roi": [
+    167,
+    629,
+    158,
+    81
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    119,
+    581,
+    254,
+    177
+   ],
+   "template_size": [
+    158,
+    81
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 2,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_BUILDING_UPGRADE",
+   "semantic": "BTN_SELECTED_BUILDING_UPGRADE",
+   "roi": [
+    335,
+    288,
+    148,
+    144
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    287,
+    240,
+    244,
+    240
+   ],
+   "template_size": [
+    52,
+    48
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_DAILY",
+   "semantic": "BTN_OPEN_DAILY",
+   "roi": [
+    0,
+    995,
+    115,
+    120
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    0,
+    947,
+    211,
+    216
+   ],
+   "template_size": [
+    38,
+    58
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_EVENT_CALENDAR_FROM_HOME",
+   "semantic": "REGULAR_EVENT_ENTRY",
+   "roi": [
+    611,
+    157,
+    109,
+    67
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    563,
+    109,
+    205,
+    163
+   ],
+   "template_size": [
+    109,
+    67
+   ],
+   "positive_hits": 6,
+   "negative_hits": 0,
+   "positives": 6,
+   "negatives": 0,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_EVENT_CALENDAR_FROM_MAP",
+   "semantic": "REGULAR_EVENT_ENTRY",
+   "roi": [
+    611,
+    157,
+    109,
+    67
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    563,
+    109,
+    205,
+    163
+   ],
+   "template_size": [
+    109,
+    67
+   ],
+   "positive_hits": 6,
+   "negative_hits": 0,
+   "positives": 6,
+   "negatives": 0,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_EXPLORATION",
+   "semantic": "BTN_OPEN_EXPLORATION",
+   "roi": [
+    0,
+    1127,
+    181,
+    153
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    0,
+    1079,
+    277,
+    249
+   ],
+   "template_size": [
+    85,
+    100
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_HOME",
+   "semantic": "BTN_OPEN_HOME",
+   "roi": null,
+   "expand": 48,
+   "expanded_roi": null,
+   "template_size": [
+    107,
+    113
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_MAIL",
+   "semantic": "BTN_OPEN_MAIL",
+   "roi": [
+    600,
+    985,
+    115,
+    135
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    552,
+    937,
+    211,
+    231
+   ],
+   "template_size": [
+    72,
+    64
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_POWER_OVERVIEW",
+   "semantic": "BTN_OPEN_POWER_OVERVIEW_ICON",
+   "roi": [
+    578,
+    873,
+    142,
+    170
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    530,
+    825,
+    238,
+    266
+   ],
+   "template_size": [
+    74,
+    74
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT",
+   "semantic": "QUICK_PANEL_ROW_HERO_RECRUIT",
+   "roi": [
+    442,
+    1169,
+    186,
+    87
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    394,
+    1121,
+    282,
+    183
+   ],
+   "template_size": [
+    186,
+    87
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 5,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "SELECT_MAIL_ALLIANCE_TAB",
+   "semantic": "BTN_MAIL_TAB_ALLIANCE",
+   "roi": [
+    193,
+    105,
+    62,
+    36
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    145,
+    57,
+    158,
+    132
+   ],
+   "template_size": [
+    62,
+    36
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "SELECT_MAIL_REPORT_TAB",
+   "semantic": "BTN_MAIL_TAB_REPORT",
+   "roi": [
+    397,
+    37,
+    199,
+    173
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    349,
+    0,
+    295,
+    269
+   ],
+   "template_size": [
+    103,
+    77
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 1,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "SELECT_MAIL_SYSTEM_TAB",
+   "semantic": "BTN_MAIL_TAB_SYSTEM",
+   "roi": [
+    309,
+    83,
+    105,
+    81
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    261,
+    35,
+    201,
+    177
+   ],
+   "template_size": [
+    105,
+    81
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 16,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "START_GATHER",
+   "semantic": "BTN_GATHER",
+   "roi": null,
+   "expand": 48,
+   "expanded_roi": null,
+   "template_size": [
+    187,
+    56
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "START_RALLY",
+   "semantic": "BTN_START_RALLY",
+   "roi": [
+    348,
+    962,
+    236,
+    98
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    300,
+    914,
+    332,
+    194
+   ],
+   "template_size": [
+    196,
+    58
+   ],
+   "positive_hits": null,
+   "negative_hits": null,
+   "positives": null,
+   "negatives": null,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "SUBMIT_BEAST_SEARCH",
+   "semantic": "BTN_RESOURCE_SEARCH_SUBMIT",
+   "roi": [
+    301,
+    1171,
+    120,
+    88
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    253,
+    1123,
+    216,
+    184
+   ],
+   "template_size": [
+    120,
+    88
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 9,
+   "matcher_score": null,
+   "observed_drift": null
+  },
+  {
+   "skill": "SUBMIT_RESOURCE_SEARCH",
+   "semantic": "BTN_RESOURCE_SEARCH_SUBMIT",
+   "roi": [
+    301,
+    1171,
+    120,
+    88
+   ],
+   "expand": 48,
+   "expanded_roi": [
+    253,
+    1123,
+    216,
+    184
+   ],
+   "template_size": [
+    120,
+    88
+   ],
+   "positive_hits": 1,
+   "negative_hits": 0,
+   "positives": 1,
+   "negatives": 9,
+   "matcher_score": null,
+   "observed_drift": null
+  }
+ ]
+}

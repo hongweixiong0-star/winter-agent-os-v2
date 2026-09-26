@@ -1,0 +1,47 @@
+{
+ "BTN_DISPATCH": {
+  "positives": 1,
+  "positive_hits": 1,
+  "negatives": 4,
+  "negative_hits": 0,
+  "errors": [],
+  "boxes": [
+   [
+    340,
+    603,
+    43,
+    24
+   ]
+  ]
+ },
+ "BTN_START_RESEARCH": {
+  "positives": 1,
+  "positive_hits": 1,
+  "negatives": 3,
+  "negative_hits": 0,
+  "errors": [],
+  "boxes": [
+   [
+    460,
+    899,
+    49,
+    28
+   ]
+  ]
+ },
+ "BTN_WAR_TAB_RALLY": {
+  "positives": 1,
+  "positive_hits": 1,
+  "negatives": 4,
+  "negative_hits": 0,
+  "errors": [],
+  "boxes": [
+   [
+    100,
+    106,
+    66,
+    39
+   ]
+  ]
+ }
+}
