@@ -60,7 +60,7 @@
         "一键领取"
       ],
       "generator_ready": true,
-      "next_step": "find real page frame and validate MAA candidate"
+      "next_step": "LIVE 2026-09-26: gifts popup shows 前往/无盟友赠礼 -- 一键领取 renders only when a gift exists; harvest again with a gift on the test account"
     },
     {
       "semantic": "BTN_ALLY_GIFT_CLAIM",
@@ -82,7 +82,7 @@
         "领取"
       ],
       "generator_ready": true,
-      "next_step": "find real page frame and validate MAA candidate"
+      "next_step": "LIVE 2026-09-26: same popup state, no claim button rendered without gifts"
     },
     {
       "semantic": "BTN_ALLIANCE_HELP_ALL",
@@ -122,7 +122,7 @@
         "捐献"
       ],
       "generator_ready": true,
-      "next_step": "find real page frame and validate MAA candidate"
+      "next_step": "LIVE 2026-09-26: tech page shows 您的捐献：23,280 as one token; the 捐献 button appears after selecting a tech item, harvest needs that intermediate tap"
     },
     {
       "semantic": "BTN_ALLIANCE_WAR",
