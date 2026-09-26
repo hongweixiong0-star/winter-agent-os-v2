@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.executor_router import RoutingTable  # noqa: E402
 from winter_agent_v2.goal_library import GOAL_ROUTES  # noqa: E402
+from winter_agent_v2.runtime import LiveRuntime  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
 
 SEMANTIC_DICT = ROOT / "knowledge" / "ui" / "semantic_dictionary.json"
@@ -105,9 +106,7 @@ def build() -> dict:
     l1 = load_l1_semantics()
     evidence = production_evidence()
     goal_map = json.loads(GOAL_MAP.read_text(encoding="utf-8"))["goals"]
-    routable_skills = {str(alt) for goal_id, definition in goal_map.items()
-                       if goal_id in GOAL_ROUTES for cap in definition.get("capabilities", [])
-                       for alt in cap.get("alternatives", [])}
+    routable_skills = set(LiveRuntime.VERIFIED_ATOMIC)
 
     skills_report: list[dict] = []
     for skill in registry.all():
@@ -125,6 +124,7 @@ def build() -> dict:
         skills_report.append({
             "skill_id": skill.id,
             "class": cls,
+            "auto_registered": skill.id in routable_skills,
             "action_kind": kind,
             "semantic": semantic,
             "has_maa_node": has_node,
@@ -189,6 +189,7 @@ def build() -> dict:
             "goals": len(goals),
             "skills_defined": len(skills_report),
             "skills_with_maa_node": sum(1 for r in skills_report if r["has_maa_node"]),
+            "skills_with_node_and_auto": sum(1 for r in skills_report if r["class"] == "A"),
             "skills_requiring_pipeline": sum(1 for r in skills_report if r["action_kind"] == "TAP_SEMANTIC"),
             "skills_missing_pipeline": sum(1 for r in skills_report if r["action_kind"] == "TAP_SEMANTIC" and not r["has_maa_node"]),
             "maa_executed_skills": sum(1 for r in skills_report if r["production"]["maa_executed"]),
