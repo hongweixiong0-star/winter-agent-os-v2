@@ -391,8 +391,16 @@ def v2_registry() -> SkillRegistry:
             #
             # The verifier must read the toggle STATE CHANGE on the page, not
             # the click result: a tap that lands on an already-enabled toggle
-            # would turn it OFF.  Until that state reader exists this skill
-            # stays CANDIDATE and the button node carries the L1/L2 evidence.
+            # would turn it OFF.  The state reader now exists:
+            #   tools/bear_auto_join_state.py -> BEAR_AUTO_JOIN_STATE
+            # reads the red badge dot (calibrated bbox x[468..512] y[1170..1212],
+            # red dot == OFF, validated on r14_war.png: 191 red px) plus the
+            # 「自动加入」context text via RapidOCR.  Returns ON / OFF / UNKNOWN.
+            #
+            # Policy:
+            #   OFF     -> click BTN_BEAR_AUTO_JOIN, verifier expects OFF -> ON
+            #   ON      -> SUCCESS / NOOP, NEVER click again (would turn it off)
+            #   UNKNOWN -> never click
             #
             # Per-character state: the auto-join switch is per role; never
             # copy its on/off reading across characters.
