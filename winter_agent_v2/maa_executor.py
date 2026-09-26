@@ -526,7 +526,12 @@ class MaaExecutorAdapter:
         depends on a stale PNG on disk; the file-backed bundle stays as the
         debugger/repro path.
         """
-        if name in self._loaded_templates:
+        # An explicitly supplied image must always (re)register: a long-lived
+        # adapter caches by name, so a repair that crops a FRESH template from
+        # a new frame would silently match against the first crop ever
+        # registered under that name — measured 08:22Z where the fresh
+        # candidate graded NO_MATCH against a 21-minute-old template.
+        if name in self._loaded_templates and image is None:
             return True
         if image is None:
             if self.template_dir is None:
