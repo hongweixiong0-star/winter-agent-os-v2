@@ -1348,6 +1348,80 @@
         "autogen_node_count": 1,
         "autogen_note": "harvested+validated"
       }
+    },
+    "OPEN_MAIL": {
+      "recognition": {
+        "BTN_OPEN_MAIL": {
+          "kind": "TEMPLATE",
+          "template": "BTN_OPEN_MAIL",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/mail_current_layout/btn_open_mail__step_001_before__0.png",
+          "roi": [
+            600,
+            985,
+            115,
+            135
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P1",
+      "evidence": {
+        "source": "EXISTING_HUMAN_REVIEWED_MANIFEST_TEMPLATE",
+        "validation": "OFFLINE_MAA_REPLAY",
+        "positive_hits": 3,
+        "positives": 3,
+        "negative_hits": 0,
+        "negatives": 9,
+        "note": "awaiting live AUTO verifier",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_mail__bdd1409751.json",
+        "pipeline_node_sha1": "bdd1409751",
+        "autogen_node_count": 1,
+        "autogen_note": "reviewed manifest template; 3/3 HOME and 0/9 other pages"
+      }
+    },
+    "OPEN_DAILY": {
+      "recognition": {
+        "BTN_OPEN_DAILY": {
+          "kind": "TEMPLATE",
+          "template": "BTN_OPEN_DAILY",
+          "threshold": [
+            0.7,
+            0.75
+          ],
+          "source_template": "dataset/candidate/daily_entry_20260916/btn_open_daily__live_20260916_home.png",
+          "roi": [
+            0,
+            995,
+            115,
+            120
+          ]
+        }
+      },
+      "preferred": "MAA",
+      "fallback": "ADB",
+      "recognition_backend": "MAA",
+      "promoted": false,
+      "migration_priority": "P1",
+      "evidence": {
+        "source": "EXISTING_HUMAN_REVIEWED_MANIFEST_TEMPLATE",
+        "validation": "OFFLINE_MAA_REPLAY",
+        "positive_hits": 3,
+        "positives": 3,
+        "negative_hits": 0,
+        "negatives": 9,
+        "note": "awaiting live AUTO verifier",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_daily__9cb9f320ea.json",
+        "pipeline_node_sha1": "9cb9f320ea",
+        "autogen_node_count": 1,
+        "autogen_note": "reviewed manifest template; 3/3 HOME and 0/9 other pages"
+      }
     }
   },
   "not_migrated": {
