@@ -1,0 +1,22 @@
+{
+ "panel_open": true,
+ "resolver": "OK",
+ "tap": [
+  404,
+  808
+ ],
+ "clicked": true,
+ "research_page": true,
+ "level": "L4",
+ "BTN_START_RESEARCH": {
+  "hit": true,
+  "boxes": [
+   [
+    457,
+    899,
+    54,
+    32
+   ]
+  ]
+ }
+}

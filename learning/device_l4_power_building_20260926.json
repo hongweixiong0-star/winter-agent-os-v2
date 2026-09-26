@@ -1,0 +1,13 @@
+{
+ "power_resolver": "NONE:None",
+ "building_resolver": "OK",
+ "building_tap": [
+  409,
+  360
+ ],
+ "building_clicked": true,
+ "building_popup_text": "返回设量 374,400+57,400 23:47:14",
+ "building_level": "L4",
+ "building_verifier_note": "v4_building_after.png shows 大熔炉19级 detail page: 升级效果/实力 374,400+57,400/升级中 23:47:14/建造加速 — the upgrade detail page WAS reached via resolver tap (409,360). The scripted word-region check used wrong x-range; visual evidence confirms PAGE_REACHED. Furnace was already upgrading (started by AUTO earlier) — no unintended action.",
+ "power_note": "BTN_OPEN_POWER_OVERVIEW_ICON template not present on the current city view; the control lives elsewhere (harvest context had roi [578,873,142,170]). Honest L2; needs page-context discovery before L4."
+}

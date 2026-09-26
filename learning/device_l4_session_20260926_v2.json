@@ -1,0 +1,67 @@
+{
+ "started_at": "2026-09-26T15:06:32.458109+00:00",
+ "tests": {
+  "ROLE": {
+   "page": "PROFILE",
+   "role_name": "[zoe]xhw小号",
+   "alliance": "联盟：zoe",
+   "verifier": "ROLE_STORED",
+   "level": "ROLE_CONFIRMED"
+  },
+  "OPEN_RESEARCH": {
+   "frame_before": "research_before",
+   "node_kind": "STRUCTURE",
+   "resolver": "NONE:STRUCTURE:ANCHOR_NOT_FOUND",
+   "level": "FAIL"
+  },
+  "BEAR_AUTO_JOIN": {
+   "state_machine": [
+    "OFF",
+    "ON"
+   ],
+   "tapped_alliance_bar": true,
+   "state_before": {
+    "state": "OFF",
+    "reason": "red badge dot present in dot ROI (191 red px)",
+    "red_pixels": 191,
+    "dot_box": [
+     468,
+     1170,
+     512,
+     1212
+    ],
+    "context_text": "开启后自动加入冰原巨兽集结自动加入",
+    "context_hit": true,
+    "dot_red_min": 8
+   },
+   "resolver": "OK",
+   "state_after": {
+    "state": "ON",
+    "reason": "button present with zero red pixels in dot ROI",
+    "red_pixels": 0,
+    "dot_box": [
+     468,
+     1170,
+     512,
+     1212
+    ],
+    "context_text": "停止开后发起集结后，1分钟后可自动加入",
+    "context_hit": true,
+    "dot_red_min": 8
+   },
+   "verifier": "TOGGLED_OFF_TO_ON",
+   "level": "L4",
+   "BTN_WAR_TAB_RALLY": {
+    "hit": false,
+    "level": "L3_FAIL"
+   }
+  }
+ },
+ "lease_id": "3acf38e7b32f4971be27c411d08b1745",
+ "maa_ready": {
+  "ok": true,
+  "reason": ""
+ },
+ "city_view": true,
+ "finished_at": "2026-09-26T15:07:21.085281+00:00"
+}
