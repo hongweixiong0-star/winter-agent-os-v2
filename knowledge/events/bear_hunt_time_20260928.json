@@ -1,0 +1,39 @@
+{
+ "schema_version": "1.0",
+ "entity_class": "TIMED_EVENT_SCHEDULE",
+ "event_id": "BEAR_HUNT",
+ "activity_name": "巨熊行动",
+ "page": "常规活动 → 巨熊行动",
+ "activity_name_source": "CLIENT_PAGE_TITLE",
+ "scheduled_start": "2026-09-28T20:00:00+08:00",
+ "client_raw": "预约自动开启：2026-09-28 20:00",
+ "source_type": "CLIENT_DIRECT_SCHEDULE",
+ "confidence": "CONFIRMED",
+ "observed_at": "2026-09-27T01:01:00+08:00",
+ "observed_by": "OPERATOR_ON_LIVE_CLIENT",
+ "time_zone": "+08:00",
+ "wake_ladder": {
+  "T-30": "2026-09-28T19:30:00+08:00",
+  "T-15": "2026-09-28T19:45:00+08:00",
+  "T-5": "2026-09-28T19:55:00+08:00",
+  "T-1": "2026-09-28T19:59:00+08:00",
+  "OPEN": "2026-09-28T20:00:00+08:00"
+ },
+ "supersedes": {
+  "file": "knowledge/events/bear_hunt_time_20260926.json",
+  "start_time": "2026-09-27T12:59:58+08:00",
+  "source_type": "COOLDOWN_END_DERIVED",
+  "status": "INVALIDATED"
+ },
+ "t30_recheck_rule": "at 2026-09-28T19:30:00+08:00 re-enter 常规活动 → 巨熊行动 and re-read 活动名称 / 预约自动开启时间 / 当前状态 / 按钮状态 / 倒计时. If the time changed, update reserved_start and recompute the whole ladder. T-30 checks for drift, it does NOT reset EVENT_TIME_CONFIRMED to false unless the client disagrees.",
+ "role_scope": {
+  "role_id": "1171757165",
+  "role_name": "[zoe]xhw小号",
+  "alliance": "zoe",
+  "kingdom": "4298"
+ },
+ "evidence_class": "OPERATOR_REPORTED_CLIENT_READ",
+ "independent_live_verification_pending": true,
+ "note": "this record rests on the operator's live-client read, not on an automated capture by this agent; the next Pipeline device window should navigate 常规活动 → 巨熊行动 and capture the frame so the same fact carries an agent-captured screenshot too",
+ "recorded_at": "2026-09-26T17:01:57.576010+00:00"
+}

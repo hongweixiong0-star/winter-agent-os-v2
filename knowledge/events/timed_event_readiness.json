@@ -12,7 +12,7 @@
     "live_window_source": "CURRENT_ROLE_CLIENT_OBSERVATION",
     "policy": "本项目从未实测过任何活动的 start/end 分钟。start/end 保持 null 直到客户端真的读到；用 next_open_condition 记录游戏自己打印的冷却/倒计时/阶段。时间不可靠时保留 UNKNOWN，不编造活动时间。"
   },
-  "last_reviewed": "2026-09-26",
+  "last_reviewed": "2026-09-27",
   "latest_offline_ocr_replay": {
     "mode": "OFFLINE_SCREENSHOT_REPLAY",
     "date": "2026-09-25",
@@ -62,7 +62,7 @@
       "expected_window": "UNKNOWN",
       "start": null,
       "end": null,
-      "next_open_condition": "LIVE READ 2026-09-25T17:33:16.525380+00:00: the 特殊建筑 list printed '冷却中：1天19:26:42'. reserved_start recorded in learning/timed_event_schedule.json as 2026-09-27T12:59:58.525380+00:00 (2026-09-27T20:59:58.525380+08:00 +08:00). This is the trap cooldown and not a published start time; re-read the client before acting.",
+      "next_open_condition": "CLIENT DIRECT SCHEDULE 2026-09-27T01:01+08:00: 常规活动 → 巨熊行动 prints '预约自动开启：2026-09-28 20:00'. reserved_start in learning/timed_event_schedule.json updated to 2026-09-28T20:00:00+08:00 with source=CLIENT_DIRECT_SCHEDULE (confidence CONFIRMED). The previous cooldown-derived value 2026-09-27T12:59:58+08:00 is INVALIDATED/COOLDOWN_END_DERIVED and must not be used by the Scheduler. Evidence: knowledge/events/bear_hunt_time_20260928.json (supersedes bear_hunt_time_20260926.json). T-30 re-read required; it checks for drift, it does not reset confirmation unless the client disagrees.",
       "open_criterion": "联盟/联盟领地/特殊建筑/狩猎陷阱 页面显示开放；或联盟集结列表出现等级1变异巨熊目标",
       "close_criterion": "UNKNOWN — 未捕获结束态 UI",
       "entry_navigation": [
@@ -126,7 +126,9 @@
       ],
       "confidence": 0.95,
       "status": "PREPARED_RESERVED_PENDING_LIVE_EXECUTION",
-      "last_reviewed": "2026-09-26"
+      "last_reviewed": "2026-09-26",
+      "scheduled_start": "2026-09-28T20:00:00+08:00",
+      "source_type": "CLIENT_DIRECT_SCHEDULE"
     },
     {
       "event_id": "ARMAMENT_COMPETITION",

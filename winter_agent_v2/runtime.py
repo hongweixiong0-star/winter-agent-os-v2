@@ -377,6 +377,9 @@ class LiveRuntime:
         "TRY_ORDINARY_CONTROL": verify_ordinary_control_tried,
         "NAVIGATE_RESEARCH_LAB": verify_research_lab_focused,
         "OPEN_RESEARCH": verify_research_page_open,
+        # The lab radial-menu 研究 control opens the tech tree; the proof is the
+        # same arrival state OPEN_RESEARCH is judged by (Page.RESEARCH observed).
+        "OPEN_TECH_TREE": verify_research_page_open,
         "SELECT_RESEARCH_NODE": verify_research_node_inspected,
     }
 
@@ -2555,6 +2558,23 @@ class LiveRuntime:
             # Keep the candidate in the evidence catalog, but never let an L1 or Qwen
             # action turn that disproved target back into a production tap.
             return None
+        if semantic == "BTN_LAB_RESEARCH":
+            # The selected 科研所's radial-menu 研究 control: the one hop from the
+            # lab bar to the tech tree.  Navigation only (the tree itself spends
+            # nothing); resolved exclusively from the current frame's OCR read of
+            # that control -- never a stored coordinate, because the menu position
+            # depends on where the lab sits in the city.
+            research = frame.research or {}
+            if frame.page is not Page.HOME or research.get("menu_open") is not True:
+                return None
+            point = research.get("research_action_tap_norm")
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
         if semantic == "RESOURCE_DYNAMIC":
             # The strip scrolls, so the tap target is derived from the
             # bracket anchor observed on the current frame (see

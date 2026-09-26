@@ -18364,20 +18364,22 @@
   }
  ],
  "schema_version": "1.2",
- "updated_at": "2026-09-26T09:33:14.724766+00:00",
+ "updated_at": "2026-09-26T17:01:26.791352+00:00",
  "roles": [
   {
    "role_id": "1171757165",
    "event_id": "BEAR_HUNT",
-   "reserved_start": "2026-09-27T12:59:58+08:00",
+   "reserved_start": "2026-09-28T20:00:00+08:00",
    "role": "AUTO",
    "alliance": "zoe",
-   "source": "LIVE_CLIENT_OCR_COOLDOWN",
-   "observed_at": "2026-09-25T17:33:16+08:00",
-   "live_window_state": "UNKNOWN",
-   "live_window_source": "UNKNOWN",
+   "source": "CLIENT_DIRECT_SCHEDULE",
+   "observed_at": "2026-09-26T17:01:26.786059+00:00",
+   "live_window_state": "SCHEDULED_NOT_OPEN",
+   "live_window_observed_at": "2026-09-26T17:01:26.786059+00:00",
+   "live_window_source": "CLIENT_DIRECT_SCHEDULE",
    "time_zone": "+08:00",
-   "notes": "from 冷却中：1天19:26:42 read 2026-09-25 17:33; re-read trap page at T-30 and invalidate on mismatch; evidence knowledge/events/bear_hunt_time_20260926.json"
+   "lead_overrides": {},
+   "notes": "client direct schedule: 常规活动→巨熊行动 shows 预约自动开启 2026-09-28 20:00 (operator-read on the live client 2026-09-27 ~01:00+08:00). Replaces the earlier COOLDOWN_END_DERIVED reservation (2026-09-27T12:59:58+08:00, INVALIDATED). Wake ladder T30=19:30 T15=19:45 T5=19:55 T1=19:59 OPEN=20:00 +08:00. T-30 must re-enter 常规活动→巨熊行动 and re-read 预约自动开启; on mismatch re-run this update."
   }
  ],
  "calendar_latest_by_role": {
@@ -19607,6 +19609,37 @@
    "cleared_at": "2026-09-25T09:09:05+00:00",
    "reason": "fresh live MAP frame after one bounded unknown-page Back; activity participation screen not entered",
    "evidence_ref": "dataset/raw/event_calendar_live_20260925/navigation_recovery_retry/navigation_recovery_retry_step_001_after_unknown_page_back_1_20260925T090905559928.png"
+  },
+  {
+   "kind": "RESERVATION_INVALIDATED",
+   "scope_key": "1171757165",
+   "event_id": "BEAR_HUNT",
+   "corrected_at": "2026-09-26T17:01:26.786059+00:00",
+   "reason": "previous reserved_start 2026-09-27T12:59:58+08:00 was derived from the 狩猎陷阱 cooldown end (source LIVE_CLIENT_OCR_COOLDOWN, observed 2026-09-25 17:33); the client's own 巨熊行动 schedule page states 预约自动开启 2026-09-28 20:00, which supersedes a cooldown-derived estimate",
+   "previous_assertion": {
+    "role_id": "1171757165",
+    "event_id": "BEAR_HUNT",
+    "reserved_start": "2026-09-27T12:59:58+08:00",
+    "role": "AUTO",
+    "alliance": "zoe",
+    "source": "LIVE_CLIENT_OCR_COOLDOWN",
+    "observed_at": "2026-09-25T17:33:16+08:00",
+    "live_window_state": "UNKNOWN",
+    "live_window_observed_at": null,
+    "live_window_source": "UNKNOWN",
+    "time_zone": "+08:00",
+    "lead_overrides": {},
+    "notes": "from 冷却中：1天19:26:42 read 2026-09-25 17:33; re-read trap page at T-30 and invalidate on mismatch; evidence knowledge/events/bear_hunt_time_20260926.json"
+   },
+   "replacement": {
+    "reserved_start": "2026-09-28T20:00:00+08:00",
+    "source": "CLIENT_DIRECT_SCHEDULE",
+    "confidence": "CONFIRMED"
+   },
+   "status": "INVALIDATED",
+   "replaced_by_source_type": "COOLDOWN_END_DERIVED -> CLIENT_DIRECT_SCHEDULE",
+   "operator_rule": "Scheduler must not use the old time"
   }
- ]
+ ],
+ "_read_me": "按角色保存活动预约、实时开放状态和日历观察。日历预告仅用于发现与准备，不自动写入 reserved_start；未知时间不得推断开放。"
 }

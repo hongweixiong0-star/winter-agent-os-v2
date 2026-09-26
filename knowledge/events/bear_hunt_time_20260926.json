@@ -13,5 +13,11 @@
  "start_time": "2026-09-27T12:59:58+08:00",
  "derivation": "observed_at + countdown (17:33:16 + 1d19:26:42)",
  "attribution": "the trap building is the bear-hunt entry per knowledge/events/bear_hunt_live_2026-09-09.json and SCHEDULED_BEAR_HUNT goal evidence",
- "freshness_caveat": "single read, ~31h old at write time; the wake MUST re-read the trap page at T-30min and invalidate this reservation if the client disagrees"
+ "freshness_caveat": "single read, ~31h old at write time; the wake MUST re-read the trap page at T-30min and invalidate this reservation if the client disagrees",
+ "status": "INVALIDATED",
+ "invalidated_at": "2026-09-26T17:01:57.575000+00:00",
+ "invalidated_reason": "superseded by the client's own 巨熊行动 schedule page: 预约自动开启 2026-09-28 20:00 (source_type CLIENT_DIRECT_SCHEDULE, confidence CONFIRMED). The cooldown-derived value must not be used by the Scheduler.",
+ "invalidated_by": "knowledge/events/bear_hunt_time_20260928.json",
+ "source_type": "COOLDOWN_END_DERIVED",
+ "do_not_use": true
 }
