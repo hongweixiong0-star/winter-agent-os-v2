@@ -1447,11 +1447,8 @@ class LiveRuntime:
         so ``policy`` / ``device`` / ``not_migrated`` in that file survive -- the mistake
         that cost an afternoon when the semantic dictionary was rewritten wholesale.
         """
-        if attempts != 0 or not semantic or not self._autogen_enabled:
+        if not semantic or not self._autogen_enabled:
             return
-        if semantic in self._autogen_attempted:
-            return
-        self._autogen_attempted.add(semantic)
         if "SEMANTIC_TARGET_NOT_VERIFIED" not in str(reason):
             return
         if self.routing is not None and self.routing.recognition_node(skill_id, semantic) is not None:
@@ -1462,6 +1459,12 @@ class LiveRuntime:
         text = self._semantic_cn_text(semantic)
         if not text:
             return
+        if semantic in self._autogen_attempted:
+            return
+        # A different refusal can precede a genuine missing-control failure in
+        # the same run. Spend the one-shot budget only after all eligibility
+        # checks pass, regardless of the earlier refusal count.
+        self._autogen_attempted.add(semantic)
 
         try:
             from datetime import datetime as _dt, timezone as _tz

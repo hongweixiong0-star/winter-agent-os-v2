@@ -128,6 +128,20 @@ def test_non_resolution_failure_is_ignored(tmp_path, routing, monkeypatch):
     assert harness._wire_calls == []
 
 
+def test_later_real_missing_control_can_generate_after_other_refusal(tmp_path, routing, monkeypatch):
+    captured = tmp_path / "frame.png"
+    captured.write_bytes(b"png")
+    harness = _HookHarness(tmp_path, routing, "联盟商店", _node(), captured)
+    monkeypatch.setattr("winter_agent_v2.pipeline_autogen.PipelineAutoGen",
+                        lambda **kw: harness._make_gen())
+
+    harness._maybe_autogen_node("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP", 0, "DEVICE_BUSY")
+    harness._maybe_autogen_node("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP", 1,
+                                "SEMANTIC_TARGET_NOT_VERIFIED")
+
+    assert harness._wire_calls == [("BTN_ALLIANCE_SHOP", "OPEN_ALLIANCE_SHOP")]
+
+
 def test_existing_node_is_not_replaced(tmp_path, routing, monkeypatch):
     """A node that exists but missed is drift, not absence -- never re-derived."""
     entry = {"recognition": {"BTN_ALLIANCE_SHOP": {"kind": "TEMPLATE",
