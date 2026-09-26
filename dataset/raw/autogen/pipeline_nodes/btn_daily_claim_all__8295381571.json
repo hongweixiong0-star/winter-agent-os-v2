@@ -1,0 +1,15 @@
+{
+  "recognition": "TemplateMatch",
+  "template": [
+    "BTN_DAILY_CLAIM_ALL"
+  ],
+  "roi": [
+    281,
+    990,
+    160,
+    81
+  ],
+  "threshold": [
+    0.7
+  ]
+}

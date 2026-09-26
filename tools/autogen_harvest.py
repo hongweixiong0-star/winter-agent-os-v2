@@ -53,12 +53,30 @@ SEMANTIC_DICT = ROOT / "knowledge" / "ui" / "semantic_dictionary.json"
 FRAMES = ROOT / "dataset" / "raw" / "autogen"
 
 
-def declared_labels() -> list[tuple[str, str]]:
+def declared_labels() -> list[tuple[str, str, list[str]]]:
     payload = json.loads(SEMANTIC_DICT.read_text(encoding="utf-8"))
-    out: list[tuple[str, str]] = []
+    out: list[tuple[str, str, list[str]]] = []
+    seen: set[tuple[str, str]] = set()
     for record in payload.get("records") or ():
-        if isinstance(record, dict) and record.get("id") and record.get("cn"):
-            out.append((str(record["id"]), str(record["cn"])))
+        if not (isinstance(record, dict) and record.get("id")):
+            continue
+        semantic = str(record["id"])
+        # The ``cn`` field is a display name ("领取挂机收益") that no OCR token ever
+        # contains -- the client draws the words separately, which is exactly why the
+        # dictionary also carries an ``ocr`` word list. Locating by the compound name
+        # is why the first pass scanned 45 executable semantics and hit none. Each
+        # declared word is its own chance to find the control; the compound name is
+        # the fallback for records that never split their words.
+        words = [str(w) for w in (record.get("ocr") or []) if str(w).strip()]
+        cn = str(record.get("cn") or "")
+        if cn and cn not in words:
+            words.append(cn)
+        pages = [str(p).upper() for p in (record.get("pages") or [])]
+        for word in words:
+            key = (semantic, word)
+            if key not in seen:
+                seen.add(key)
+                out.append((semantic, word, pages))
     return out
 
 
@@ -160,7 +178,7 @@ def main() -> int:
 
         results: list[dict[str, object]] = []
         wired = rejected = absent = 0
-        for semantic, cn in labels:
+        for semantic, cn, declared_pages in labels:
             skill_ids = owners.get(semantic, [])
             if not skill_ids:
                 continue
@@ -177,6 +195,14 @@ def main() -> int:
                 continue
 
             page, (box, score, observed) = hits[0]
+            # Page membership: the dictionary declares which pages a control lives on,
+            # and the visit name is the page this frame claims to be. A generic word
+            # ("领取") is owned by several semantics on several pages -- without this
+            # check the exploration page's claim button was filed as the alliance-gift
+            # claim, because both say 领取 and both validate against a text-absent
+            # negative. A record with no declared pages keeps the old behaviour.
+            if declared_pages and str(page).upper() not in declared_pages:
+                continue
             positives = [frames[p] for p, _ in hits]
             # A negative is a frame where the label's own text is absent — not merely
             # "another page". Bottom-nav and top-bar controls persist across pages, so
@@ -207,12 +233,21 @@ def main() -> int:
                 report = gen.validate(node, positives=positives, negatives=negatives,
                                       adapter=adapter)
                 node.evidence["validation_report"] = report
+                # Wiring needs a frame that does NOT show the label: without one, a
+                # pass whose every frame contains the word (a bottom-nav label, 系统消息,
+                # any persistent text) validates trivially and files a node under the
+                # wrong page's context -- measured live: mail-tab nodes were "validated"
+                # 3/3 against three frames of the kingdom map, because 联盟 is drawn in
+                # its navigation bar. No negative context, no wiring.
+                context_ok = len(negatives) >= 1
                 ok = (
                     report["positive_hits"] == report["positives"]
                     and report["negative_hits"] == 0
                     and report["positives"] >= 1
+                    and context_ok
                 )
-                verdict = "WIRED" if ok else "REJECTED_VALIDATION"
+                verdict = "WIRED" if ok else (
+                    "REJECTED_NO_NEGATIVE_CONTEXT" if not context_ok else "REJECTED_VALIDATION")
                 if ok and args.apply:
                     _wired, verdict = gen.wire(node, note="harvested+validated")
                 if ok:
@@ -229,7 +264,7 @@ def main() -> int:
 
         print()
         print(f"labels scanned        : {len(labels)}")
-        print(f"executable semantics  : {len([1 for s, _ in labels if s in owners])}")
+        print(f"executable semantics  : {len([1 for s, _, _ in labels if s in owners])}")
         print(f"not on any frame      : {absent}")
         print(f"nodes wired           : {wired}   (apply={args.apply})")
         print(f"rejected by validation: {rejected}")

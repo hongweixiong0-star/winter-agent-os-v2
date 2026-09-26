@@ -1,0 +1,15 @@
+{
+  "recognition": "TemplateMatch",
+  "template": [
+    "BTN_EXPLORATION_IDLE_CLAIM"
+  ],
+  "roi": [
+    563,
+    826,
+    109,
+    81
+  ],
+  "threshold": [
+    0.7
+  ]
+}
