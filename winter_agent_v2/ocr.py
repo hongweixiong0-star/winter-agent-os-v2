@@ -374,6 +374,20 @@ QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
 )
 
 
+#: What a technology node's own name looks like after OCR.
+#:
+#: The client renders the level suffix as a Roman numeral, and on the live client
+#: those glyphs are the Unicode forms Ⅰ-Ⅻ (U+2160..) -- which RapidOCR reads as
+#: '！' about as often as the numeral itself.  Measured 2026-09-27 on three
+#: production tech-tree frames (KEEP_RESEARCH_PRODUCTIVE reached the tree and
+#: stopped): '生存特训Ⅰ' arrived as '生存特训！', and the ASCII-only pattern
+#: below read every real tree as ``node_candidates=[]``, so the chain ended at
+#: "research_page_no_startable_node" on a page that draws four unfinished nodes.
+RESEARCH_NODE_NAME_RE = re.compile(
+    r"[\u4e00-\u9fffA-Za-z·]+(?:[IVXLCDM]+|[\u2160-\u216f]|\d+|[！！!])"
+)
+
+
 def _read_research_node_candidates(tokens, frame_size: tuple[int, int] | None) -> list[dict]:
     """Read named, leveled research nodes and their current-frame tap points.
 
@@ -390,35 +404,84 @@ def _read_research_node_candidates(tokens, frame_size: tuple[int, int] | None) -
         match = re.fullmatch(r"\s*(\d+)\s*/\s*(\d+)\s*", token.text)
         if match and int(match.group(2)) > 0:
             progress.append((token, int(match.group(1)), int(match.group(2))))
+    # A node label is either the full pattern (Chinese name + level suffix) or a
+    # plain 2-9 character Chinese label -- the suffix is what OCR drops most
+    # often ('生存特训Ⅰ' arrived as both '生存特训！' and bare '生存特训' on the
+    # same three frames).  A bare label is only ever promoted to a node by a
+    # nearby progress pill or 满级 marker below, so a loose label set cannot
+    # invent nodes on a page that has no level markers; it only reads the ones
+    # it has.  The stop-list is the page's own furniture, not node names.
+    generic = re.compile(r"[\u4e00-\u9fff·]{2,9}")
+    stopwords = {"满级", "研究", "开始研究", "科技研究", "发展", "经济", "战斗",
+                 "目标", "距离", "集结", "发起者"}
     labels = [
         token for token in positioned
-        if re.fullmatch(r"[\u4e00-\u9fffA-Za-z·]+(?:[IVXLCDM]+|\d+)", token.text.strip())
+        if RESEARCH_NODE_NAME_RE.fullmatch(token.text.strip())
+        or (generic.fullmatch(token.text.strip())
+            and token.text.strip() not in stopwords)
+    ]
+    # 满级 marks a finished node the same way a pill marks an unfinished one: the
+    # client stops printing N/M once the node is maxed.  A tree that draws only
+    # maxed nodes must still be *read* -- otherwise the reader answers "no nodes"
+    # for a page that clearly shows three, and "I could not read it" and "there
+    # is nothing here" are different answers.
+    maxed = [
+        token for token in positioned
+        if token.text.strip() == "满级"
     ]
     rows: list[dict] = []
-    used_progress: set[int] = set()
+    # Two independent consumed-sets: a pill index and a 满级 index are different
+    # lists, and one shared set would let the third maxed row mark the second
+    # row's pill as taken (measured 2026-09-27 first run: exactly that, and two
+    # unfinished nodes vanished from the reading).
+    used_pills: set[int] = set()
+    used_maxed: set[int] = set()
     for label in sorted(labels, key=lambda token: (token.centre[1], token.centre[0])):
         x, y = label.centre
         nearby = [
             (abs(x - pill.centre[0]) + abs(y - pill.centre[1]) * 0.6, index, pill, current, total)
             for index, (pill, current, total) in enumerate(progress)
-            if index not in used_progress
+            if index not in used_pills
             and 0 < y - pill.centre[1] <= 110
             and abs(x - pill.centre[0]) <= 110
         ]
-        if not nearby:
+        if nearby:
+            _, index, pill, current, total = min(nearby, key=lambda row: row[0])
+            used_pills.add(index)
+            node_name = label.text.strip()
+            rows.append({
+                "node_id": node_name,
+                "name": node_name,
+                "level": current,
+                "level_max": total,
+                "progress": f"{current}/{total}",
+                "status": "MAXED" if current >= total else "UNFINISHED",
+                "tap_norm": [round(x / width, 5), round(y / height, 5)],
+                "confidence": round(min(label.confidence, pill.confidence), 4),
+                "source": "CURRENT_FRAME_OCR",
+            })
             continue
-        _, index, pill, current, total = min(nearby, key=lambda row: row[0])
-        used_progress.add(index)
+        finished = [
+            (abs(x - mark.centre[0]) + abs(y - mark.centre[1]) * 0.6, index)
+            for index, mark in enumerate(maxed)
+            if index not in used_maxed
+            and 0 < y - mark.centre[1] <= 110
+            and abs(x - mark.centre[0]) <= 110
+        ]
+        if not finished:
+            continue
+        _, index = min(finished)
+        used_maxed.add(index)
         node_name = label.text.strip()
         rows.append({
             "node_id": node_name,
             "name": node_name,
-            "level": current,
-            "level_max": total,
-            "progress": f"{current}/{total}",
-            "status": "MAXED" if current >= total else "UNFINISHED",
+            "level": None,
+            "level_max": None,
+            "progress": "满级",
+            "status": "MAXED",
             "tap_norm": [round(x / width, 5), round(y / height, 5)],
-            "confidence": round(min(label.confidence, pill.confidence), 4),
+            "confidence": round(min(label.confidence, maxed[index].confidence), 4),
             "source": "CURRENT_FRAME_OCR",
         })
     return rows
@@ -742,14 +805,22 @@ class OCRPageClassifier:
             any(token.text.strip() in {"研究", "开始研究"} for token in eligible)
             and any("研究消耗" in token.text.strip() for token in eligible)
             and any(
-                re.fullmatch(r"[\u4e00-\u9fffA-Za-z·]+(?:[IVXLCDM]+|\d+)", token.text.strip())
+                RESEARCH_NODE_NAME_RE.fullmatch(token.text.strip())
                 for token in eligible
             )
         )
         if research_detail:
             found.append(Page.RESEARCH)
+        # Two of the three tab words, not all three.  Measured 2026-09-27 on the
+        # production tree (KEEP_RESEARCH_PRODUCTIVE, three independent frames): the
+        # client draws 发展 / 经济 / 战斗 and RapidOCR read the third tab as '木'
+        # (conf 0.63) on every one of them, so the all-three rule failed exactly
+        # when the page was real.  The tabs alone are still not the page -- the
+        # two-node candidate requirement below is what keeps the HOME quick panel
+        # (which prints 科技研究 as a row label but draws no 发展/经济 tabs and no
+        # progress pills) from being classified as the tree.
         research_tree = (
-            {"发展", "经济", "战斗"}.issubset(exact_texts)
+            {"发展", "经济"}.issubset(exact_texts)
             and len(_read_research_node_candidates(eligible, frame_size)) >= 2
         )
         if research_tree:
@@ -1195,7 +1266,7 @@ class OCRPageClassifier:
                 candidates = research["node_candidates"]
                 label_tokens = [
                     token for token in eligible
-                    if re.fullmatch(r"[\u4e00-\u9fffA-Za-z·]+(?:[IVXLCDM]+|\d+)", token.text.strip())
+                    if RESEARCH_NODE_NAME_RE.fullmatch(token.text.strip())
                 ]
                 visible_names = {token.text.strip() for token in label_tokens}
                 named = [item for item in candidates if item["name"] in visible_names]
