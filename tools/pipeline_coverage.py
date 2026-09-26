@@ -182,6 +182,9 @@ def build() -> dict:
 
     goals.sort(key=lambda g: (g["class"], -g["skills_with_node"], g["goal"]))
     counts = {c: sum(1 for g in goals if g["class"] == c) for c in "ABCD"}
+    tap_skills = [r for r in skills_report if r["action_kind"] == "TAP_SEMANTIC"]
+    tap_targets = {r["semantic"] for r in tap_skills}
+    covered_targets = {r["semantic"] for r in tap_skills if r["has_maa_node"]}
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "counts_by_class": counts,
@@ -190,8 +193,11 @@ def build() -> dict:
             "skills_defined": len(skills_report),
             "skills_with_maa_node": sum(1 for r in skills_report if r["has_maa_node"]),
             "skills_with_node_and_auto": sum(1 for r in skills_report if r["class"] == "A"),
-            "skills_requiring_pipeline": sum(1 for r in skills_report if r["action_kind"] == "TAP_SEMANTIC"),
-            "skills_missing_pipeline": sum(1 for r in skills_report if r["action_kind"] == "TAP_SEMANTIC" and not r["has_maa_node"]),
+            "skills_requiring_pipeline": len(tap_skills),
+            "skills_missing_pipeline": sum(1 for r in tap_skills if not r["has_maa_node"]),
+            "semantic_targets_requiring_pipeline": len(tap_targets),
+            "semantic_targets_with_node": len(covered_targets),
+            "semantic_targets_missing_node": len(tap_targets - covered_targets),
             "maa_executed_skills": sum(1 for r in skills_report if r["production"]["maa_executed"]),
             "maa_verifier_passed_skills": sum(1 for r in skills_report if r["production"]["verifier_passed"]),
             "maa_goal_completed_skills": sum(1 for r in skills_report if r["production"]["goal_completed"]),
@@ -220,9 +226,9 @@ def main() -> int:
 
     t = report["totals"]
     print(f"skills defined          : {t['skills_defined']}")
-    print(f"tap skills needing node : {t['skills_requiring_pipeline']}")
-    print(f"skills with a MAA node  : {t['skills_with_maa_node']}")
-    print(f"tap skills missing node : {t['skills_missing_pipeline']}")
+    print(f"unique tap targets      : {t['semantic_targets_requiring_pipeline']}")
+    print(f"targets with / missing MAA node: {t['semantic_targets_with_node']} / {t['semantic_targets_missing_node']}")
+    print(f"tap skill routes with / missing node: {t['skills_with_maa_node']} / {t['skills_missing_pipeline']}")
     print(f"MAA executed / verified / goal progress skills: {t['maa_executed_skills']} / {t['maa_verifier_passed_skills']} / {t['maa_goal_completed_skills']}")
     print(f"goals                   : {t['goals']}")
     print("class counts            : " + ", ".join(f"{k}={v}" for k, v in report["counts_by_class"].items()))
