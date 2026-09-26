@@ -1707,7 +1707,7 @@
           "roi": [
             0,
             1127,
-            206,
+            181,
             153
           ]
         }
@@ -1727,8 +1727,8 @@
         ],
         "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
         "validation": "PENDING_RECORD",
-        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_exploration__e9fcf4a95f.json",
-        "pipeline_node_sha1": "e9fcf4a95f",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_exploration__4445c71d03.json",
+        "pipeline_node_sha1": "4445c71d03",
         "autogen_node_count": 1,
         "autogen_note": "harvest rect template"
       }
@@ -1747,7 +1747,7 @@
             578,
             873,
             142,
-            407
+            170
           ]
         }
       },
@@ -1766,8 +1766,8 @@
         ],
         "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
         "validation": "PENDING_RECORD",
-        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_power_overview_icon__2481f14e32.json",
-        "pipeline_node_sha1": "2481f14e32",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_open_power_overview_icon__ceed6a4eb4.json",
+        "pipeline_node_sha1": "ceed6a4eb4",
         "autogen_node_count": 1,
         "autogen_note": "harvest rect template"
       }
@@ -1785,8 +1785,8 @@
           "roi": [
             335,
             288,
-            385,
-            480
+            148,
+            144
           ]
         }
       },
@@ -1805,8 +1805,8 @@
         ],
         "frame": "E:\\无尽冬日智能体\\dataset\\raw\\autogen\\r2_home.png",
         "validation": "PENDING_RECORD",
-        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_selected_building_upgrade__61aba95981.json",
-        "pipeline_node_sha1": "61aba95981",
+        "pipeline_node_path": "dataset/raw/autogen/pipeline_nodes/btn_selected_building_upgrade__5963d61279.json",
+        "pipeline_node_sha1": "5963d61279",
         "autogen_node_count": 1,
         "autogen_note": "harvest rect template"
       }

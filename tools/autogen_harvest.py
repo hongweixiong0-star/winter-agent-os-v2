@@ -425,9 +425,14 @@ def main() -> int:
                     im.convert("RGB").crop(rect).save(tpl, "PNG")
                 rel = tpl.resolve().relative_to(ROOT.resolve()).as_posix()
                 # crop stays exact; the SEARCH roi gets the same drift margin
-                # every other TEMPLATE path uses (measured 30px live drift)
+                # every other TEMPLATE path uses (measured 30px live drift).
+                # rect_overrides are PIL boxes (x1,y1,x2,y2) for cropping;
+                # compute_roi wants x,y,w,h — convert explicitly.
+                from PIL import Image
                 screen = Image.open(frame).size  # (w, h)
-                search_roi = compute_roi(rect, TEMPLATE_ROI_EXPAND,
+                bx, by, bx2, by2 = rect
+                search_roi = compute_roi((bx, by, bx2 - bx, by2 - by),
+                                         TEMPLATE_ROI_EXPAND,
                                          screen=(screen[0], screen[1]))
                 for skill_id in skill_ids:
                     if has_node(skill_id, semantic):
