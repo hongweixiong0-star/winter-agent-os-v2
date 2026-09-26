@@ -401,8 +401,30 @@ def verify_safe_back(before: WorldState, after: WorldState) -> VerificationResul
     search_closed = before.page is Page.MAP and before.resource_search_open and after.page is Page.MAP and not after.resource_search_open
     page_returned = before.page not in {Page.MAP, Page.POPUP} and after.page is not before.page and after.known
     popup_closed = before.page is Page.POPUP and after.page is not Page.POPUP
-    ok = search_closed or page_returned or popup_closed
-    return VerificationResult(ok, "OK" if ok else "SAFE_BACK_NOT_PROVEN", {"search_closed":search_closed, "page_returned":page_returned, "popup_closed":popup_closed, "before_page":before.page.value, "after_page":after.page.value})
+    before_alliance_section = str((before.alliance or {}).get("section") or "")
+    after_alliance_section = str((after.alliance or {}).get("section") or "")
+    alliance_section_returned = (
+        before.page is Page.ALLIANCE
+        and after.page is Page.ALLIANCE
+        and bool(before_alliance_section)
+        and bool(after_alliance_section)
+        and before_alliance_section != after_alliance_section
+    )
+    ok = search_closed or page_returned or popup_closed or alliance_section_returned
+    return VerificationResult(
+        ok,
+        "OK" if ok else "SAFE_BACK_NOT_PROVEN",
+        {
+            "search_closed": search_closed,
+            "page_returned": page_returned,
+            "popup_closed": popup_closed,
+            "alliance_section_returned": alliance_section_returned,
+            "before_page": before.page.value,
+            "after_page": after.page.value,
+            "before_alliance_section": before_alliance_section,
+            "after_alliance_section": after_alliance_section,
+        },
+    )
 
 
 def verify_left_foreign_layer(before: WorldState, after: WorldState) -> VerificationResult:

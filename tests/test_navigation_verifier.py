@@ -38,6 +38,23 @@ class NavigationVerifierTests(unittest.TestCase):
         self.assertTrue(verify_safe_back(before, after).ok)
         self.assertFalse(verify_safe_back(after, after).ok)
 
+    def test_safe_back_accepts_alliance_subpage_return(self):
+        before = WorldState(
+            page=Page.ALLIANCE,
+            alliance={"section": "TECHNOLOGY"},
+            confidence=0.99,
+        )
+        after = WorldState(
+            page=Page.ALLIANCE,
+            alliance={"section": "HOME"},
+            confidence=0.99,
+        )
+
+        result = verify_safe_back(before, after)
+
+        self.assertTrue(result.ok)
+        self.assertTrue(result.evidence["alliance_section_returned"])
+
     def test_wood_selection_transition(self):
         replay = ReplayVision(ROOT / "tests/replay/labels.json")
         before = replay.observe(ROOT / "dataset/raw/live_runtime_search_open/step_001_after.png")
