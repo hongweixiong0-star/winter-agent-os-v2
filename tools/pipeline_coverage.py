@@ -53,7 +53,7 @@ def production_evidence() -> dict[str, dict[str, int]]:
             if row.get("mode") != "PRODUCTION" or not row.get("skill"):
                 continue
             item = counts.setdefault(str(row["skill"]), {"live_executed": 0, "maa_executed": 0,
-                                                         "verifier_passed": 0, "goal_completed": 0})
+                                                         "verifier_passed": 0, "goal_progress": 0})
             if row.get("action_backend") in {"ADB", "MAA"}:
                 item["live_executed"] += 1
             if row.get("recognition_backend") != "MAA" or row.get("action_backend") != "MAA":
@@ -62,7 +62,7 @@ def production_evidence() -> dict[str, dict[str, int]]:
             if row.get("verifier_ok") is True:
                 item["verifier_passed"] += 1
                 if row.get("goal_progress") is True:
-                    item["goal_completed"] += 1
+                    item["goal_progress"] += 1
     return counts
 
 
@@ -154,7 +154,7 @@ def build() -> dict:
             "skill_state": str(getattr(skill.state, "value", skill.state)),
             "required_page": str(getattr(skill.required_page, "value", skill.required_page) or ""),
             "production": evidence.get(skill.id, {"live_executed": 0, "maa_executed": 0,
-                                                   "verifier_passed": 0, "goal_completed": 0}),
+                                                   "verifier_passed": 0, "goal_progress": 0}),
         })
 
     by_id = {row["skill_id"]: row for row in skills_report}
@@ -221,7 +221,7 @@ def build() -> dict:
             "semantic_targets_missing_node": len(tap_targets - covered_targets),
             "maa_executed_skills": sum(1 for r in skills_report if r["production"]["maa_executed"]),
             "maa_verifier_passed_skills": sum(1 for r in skills_report if r["production"]["verifier_passed"]),
-            "maa_goal_completed_skills": sum(1 for r in skills_report if r["production"]["goal_completed"]),
+            "maa_goal_progress_skills": sum(1 for r in skills_report if r["production"]["goal_progress"]),
         },
         "goals": goals,
         "skills": skills_report,
@@ -250,7 +250,7 @@ def main() -> int:
     print(f"unique tap targets      : {t['semantic_targets_requiring_pipeline']}")
     print(f"targets with / missing MAA node: {t['semantic_targets_with_node']} / {t['semantic_targets_missing_node']}")
     print(f"tap skill routes with / missing node: {t['skills_with_maa_node']} / {t['skills_missing_pipeline']}")
-    print(f"MAA executed / verified / goal progress skills: {t['maa_executed_skills']} / {t['maa_verifier_passed_skills']} / {t['maa_goal_completed_skills']}")
+    print(f"MAA executed / verified / goal progress skills: {t['maa_executed_skills']} / {t['maa_verifier_passed_skills']} / {t['maa_goal_progress_skills']}")
     print(f"goals                   : {t['goals']}")
     print("class counts            : " + ", ".join(f"{k}={v}" for k, v in report["counts_by_class"].items()))
     print()
