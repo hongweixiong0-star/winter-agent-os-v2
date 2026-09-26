@@ -1818,6 +1818,128 @@
         "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
         "classified_at_source": "rule_table_v1"
       }
+    },
+    {
+      "semantic": "RALLY_LIST_OPEN",
+      "family": "NAV",
+      "pages": [
+        "ALLIANCE"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "open the alliance rally/war rally list",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_LIST_ROW_TARGET",
+      "family": "LIST",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "a rally row: target icon, initiator, troop count, countdown",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_ROW_JOIN_BUTTON",
+      "family": "LIST",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "join button on a rally row with free slots",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_ROW_FULL",
+      "family": "LIST",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "full marker on a rally row; triggers switch to next target",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "START_RALLY_BUTTON",
+      "family": "NAV",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "initiate a rally on a selected bear target",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "JOIN_RALLY_CONFIRM",
+      "family": "POPUP",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "confirm join with current preset troop",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_HERO_SELECT",
+      "family": "LIST",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "hero picker inside rally preparation",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_TROOP_SELECT",
+      "family": "LIST",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "troop formation picker inside rally preparation",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_DISPATCH_CONFIRM",
+      "family": "POPUP",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "final dispatch confirmation",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_JOINED_STATE",
+      "family": "STATUS",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "joined badge / own troop shown in rally detail",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_BATTLE_REPORT",
+      "family": "STATUS",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "battle report entry proving participation result",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
+    },
+    {
+      "semantic": "RALLY_EVENT_ACTIVE_STATE",
+      "family": "STATUS",
+      "pages": [],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "event page state proving bear hunt window is open",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI"
     }
   ]
 }
