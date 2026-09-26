@@ -52,7 +52,10 @@ def production_evidence() -> dict[str, dict[str, int]]:
                 continue
             if row.get("mode") != "PRODUCTION" or not row.get("skill"):
                 continue
-            item = counts.setdefault(str(row["skill"]), {"maa_executed": 0, "verifier_passed": 0, "goal_completed": 0})
+            item = counts.setdefault(str(row["skill"]), {"live_executed": 0, "maa_executed": 0,
+                                                         "verifier_passed": 0, "goal_completed": 0})
+            if row.get("action_backend") in {"ADB", "MAA"}:
+                item["live_executed"] += 1
             if row.get("recognition_backend") != "MAA" or row.get("action_backend") != "MAA":
                 continue
             item["maa_executed"] += 1
@@ -61,6 +64,22 @@ def production_evidence() -> dict[str, dict[str, int]]:
                 if row.get("goal_progress") is True:
                     item["goal_completed"] += 1
     return counts
+
+
+def observed_goals() -> set[str]:
+    """Goals seen taking an action in production, including renamed skill variants."""
+    found: set[str] = set()
+    if not EPISODES.is_file():
+        return found
+    with EPISODES.open(encoding="utf-8") as stream:
+        for line in stream:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get("mode") == "PRODUCTION" and row.get("goal_id") and row.get("action_backend") in {"ADB", "MAA"}:
+                found.add(str(row["goal_id"]))
+    return found
 
 
 def load_semantics() -> set[str]:
@@ -105,6 +124,7 @@ def build() -> dict:
     semantics = load_semantics()
     l1 = load_l1_semantics()
     evidence = production_evidence()
+    live_goals = observed_goals()
     goal_map = json.loads(GOAL_MAP.read_text(encoding="utf-8"))["goals"]
     routable_skills = set(LiveRuntime.VERIFIED_ATOMIC)
 
@@ -118,7 +138,7 @@ def build() -> dict:
             cls = "STATE_ONLY"
         elif kind in {"TAP_SEMANTIC", "SWIPE"}:
             cls = ("A" if skill.id in routable_skills else "B") if has_node else (
-                "C" if semantic in semantics or semantic in l1 else "D")
+                "C" if semantic in semantics or semantic in l1 or evidence.get(skill.id, {}).get("live_executed", 0) else "D")
         else:
             cls = "COMPOSITE"
         skills_report.append({
@@ -133,7 +153,8 @@ def build() -> dict:
             "has_l1_experience": semantic in l1,
             "skill_state": str(getattr(skill.state, "value", skill.state)),
             "required_page": str(getattr(skill.required_page, "value", skill.required_page) or ""),
-            "production": evidence.get(skill.id, {"maa_executed": 0, "verifier_passed": 0, "goal_completed": 0}),
+            "production": evidence.get(skill.id, {"live_executed": 0, "maa_executed": 0,
+                                                   "verifier_passed": 0, "goal_completed": 0}),
         })
 
     by_id = {row["skill_id"]: row for row in skills_report}
@@ -146,7 +167,7 @@ def build() -> dict:
         rows = [by_id.get(r) for r in required]
         present = [r for r in rows if r is not None]
         with_node = [r for r in present if r["has_maa_node"]]
-        known = [r for r in present if r["in_semantic_dict"] or r["has_l1_experience"]]
+        known = [r for r in present if r["class"] in {"A", "B", "C"}]
 
         actionable = [r for r in present if r["class"] not in {"STATE_ONLY", "COMPOSITE"}]
         capability_gaps = [str(cap.get("capability")) for cap in capabilities
@@ -158,7 +179,7 @@ def build() -> dict:
             cls = "A"
         elif with_node and not routable:
             cls = "B"
-        elif known or any(r["has_maa_node"] for r in present):
+        elif known or any(r["has_maa_node"] for r in present) or goal_id in live_goals:
             cls = "C"
         else:
             cls = "D"
