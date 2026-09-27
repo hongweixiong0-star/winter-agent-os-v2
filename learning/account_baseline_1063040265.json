@@ -1,0 +1,81 @@
+{
+ "schema_version": "1.0",
+ "account_id": "1063040265",
+ "account_scope": {
+  "shared": [
+   "pipeline",
+   "skills",
+   "ui_semantics",
+   "templates",
+   "navigation_knowledge",
+   "generic_verifiers",
+   "game_mechanics"
+  ],
+  "isolated_per_role": [
+   "role_id",
+   "role_name",
+   "alliance",
+   "kingdom",
+   "page",
+   "resources",
+   "march_queues",
+   "research_state",
+   "building_state",
+   "activity_state",
+   "auto_join",
+   "bear_reservation",
+   "daily_progress"
+  ]
+ },
+ "roles": {
+  "1063040265_role_A": {
+   "role_id": null,
+   "name": "[ioi]零氪纯盾流",
+   "alliance": "ioi",
+   "kingdom": "4298",
+   "account_id": "1063040265",
+   "auto_join": "ON",
+   "auto_join_evidence": "toggled OFF->ON 2026-09-27T10:12Z, re-read: 0 red px + client text 停止开后发起集结后，1分钟后可自动加入",
+   "march_queues": {
+    "observed": "4/6 行军, multiple 返回中/采集中",
+    "read_at": "2026-09-27T09:41Z",
+    "state": "PARTIALLY_OBSERVED"
+   },
+   "bear_start_time": "2026-09-27T20:30:00+08:00",
+   "time_confirmed": true,
+   "role_name_source": "领主档案 live OCR 2026-09-27T09:41Z",
+   "role_id_source": "领主档案 账号 field 1063040265 (账号级, role_id 待区分)",
+   "time_source": "CLIENT 预约自动开启 (pass11, tpl 0.9991)",
+   "role_key": "ACCT1063040265-ROLEA",
+   "join_delay_client_stated": "1分钟后可自动加入"
+  },
+  "role_02": {
+   "role_id": "1061663148",
+   "name": "[DIW]xhw",
+   "alliance": "DIW",
+   "kingdom": "4298",
+   "auto_join": "UNKNOWN",
+   "bear_start_time": "2026-09-27T21:00:00+08:00",
+   "time_confirmed": true,
+   "note": "角色管理页读到名字与王国；巨熊上下文今晚未读",
+   "time_source": "CLIENT 预约自动开启 2026-09-27 21:00 (bear_baseline_roleB session, tab tpl 0.9968)",
+   "auto_join_note": "rally page occupied by live DIW rally; toggle not read; recheck at role B T-30 (20:30)",
+   "march_queues": {
+    "observed": "队列1 空闲中; 部队训练已完成; march rows not fully read",
+    "state": "PARTIALLY_OBSERVED"
+   },
+   "profile_evidence": "领主档案 [DIW]xhw 账号：1061663148 联盟：DIW 王国 4298",
+   "role_name_source": "角色管理页 + 领主档案 2026-09-27T10:2xZ"
+  }
+ },
+ "note": "old account 1171757165/[zoe]xhw小号/zoe/09-28 20:00 kept as history in timed_event_schedule roles[]; never drives this account",
+ "bear_time_account_level": null,
+ "dual_role_plan": {
+  "ROLE_A_START": "2026-09-27T20:30:00+08:00",
+  "ROLE_B_START": "2026-09-27T21:00:00+08:00",
+  "TIME_CONFLICT": false,
+  "gap_minutes": 30,
+  "EXECUTION_ORDER": "A first (AUTO_JOIN already ON, 20:30 open) -> B at its own T-30 (20:30 role-B recheck during A trap window) -> switch device to B ~20:55 for B's 21:00 open",
+  "ROLE_SWITCH_TRIGGER": "role A JOINED_STATE confirmed OR 20:55 (whichever first); if A not joined by 20:55, keep A until JOINED then switch immediately"
+ }
+}
