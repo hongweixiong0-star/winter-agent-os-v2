@@ -2186,6 +2186,38 @@
      ],
      "negative_hits": 0,
      "recorded_at": "2026-09-26T23:30:00+00:00"
+    },
+    "l4_live_proof_20260927": {
+     "semantic": "BTN_START_RESEARCH",
+     "proved_at": "2026-09-27T00:21:03Z",
+     "chain": "HOME -> quick panel 科技研究 -> OPEN_TECH_TREE -> node sheet -> BTN_START_RESEARCH -> MAA tap -> research queue BUSY",
+     "maa_action": {
+      "kind": "TAP_SEMANTIC",
+      "target": "BTN_START_RESEARCH"
+     },
+     "selected_node_sheet_title": "生存特训！",
+     "selected_node_normalized": "生存特训",
+     "verifier": "verify_research_started",
+     "verifier_evidence": {
+      "was_available": true,
+      "target_ok": true,
+      "after_node": "生存特训",
+      "active_node": "生存特训",
+      "queue": {
+       "status_ok": true,
+       "timer_ok": true,
+       "queue_busy": true,
+       "timer": "00:10:01"
+      }
+     },
+     "countdown_decrease": "00:10:01 -> 00:09:58 across two consecutive frames; IDLE again at 00:31:58Z when the 10-minute research finished",
+     "frames": [
+      "dataset/evidence/research_l5_20260927/research_sheet_before_start.png",
+      "dataset/evidence/research_l5_20260927/research_queue_busy_after.png"
+     ],
+     "episode_dir": "dataset/raw/control_panel/runtime_auto/20260927_081444_449707",
+     "goal_evidence": "KEEP_RESEARCH_PRODUCTIVE L5 occurrence recorded in learning/goal_l5_evidence.jsonl (cycle 2026-09-27)",
+     "note": "the tap that had failed SEMANTIC_TARGET_NOT_VERIFIED on every sheet since 2026-09-26 evening succeeded on the first sheet after the ROI AutoRepair; same node, same verifier, no architecture change"
     }
    }
   }

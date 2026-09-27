@@ -368,10 +368,22 @@ QUICK_PANEL_READ_SECTIONS: tuple[str, ...] = (
     "科技研究",
     "联盟捐献",
     "英雄招募",
-    "我的奖励",
     "宠物寻宝",
+    "我的奖励",
+    "地心探险",
     "市场切换",
 )
+# Section ORDER is part of the "panel is open" proof, so the tuple above must match the
+# client's own top-to-bottom order.  Measured 2026-09-26 23:24 on a live scrolled frame
+# (runtime_auto/20260927_071653_484155 step_016 after_refresh_2): the panel drew
+# 联盟捐献 / 英雄招募 / 宠物寻宝 / 我的奖励 / 地心探险 in exactly that order -- 宠物寻宝
+# BEFORE 我的奖励, the reverse of what this tuple claimed until now, and 地心探险 (row
+# 大地之心) was a section the reader had never named.  The wrong order made every scrolled
+# panel fail the order check, ``read_quick_panel`` return {} for a frame whose whole left
+# column is the panel, and SCROLL_QUICK_PANEL_TASKS report QUICK_PANEL_SCROLL_NOT_PROVEN
+# three times in half an hour (22:52 / 23:07 / 23:14) -- after a swipe that visibly
+# scrolled the panel.  地心探险 is listed (header only, no row key) so its rows cannot be
+# misattributed to 我的奖励, the last known section above it.
 
 
 #: What a technology node's own name looks like after OCR.
