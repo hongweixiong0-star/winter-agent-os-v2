@@ -677,6 +677,74 @@ def fastest_joinable_bear(rows: Iterable[RallyRow]) -> RallyRow | None:
     return min(eligible, key=lambda row: row.remaining_seconds if row.remaining_seconds is not None else 10**9, default=None)
 
 
+# ---------------------------------------------------------------------------
+# Selection policy & stale-frame guard (round brief 2026-09-27 §十三 / §十四)
+# ---------------------------------------------------------------------------
+#
+# The bear rally list mutates fast: rows fill, targets change, rows vanish.
+# These two helpers codify the policy so a caller cannot silently skip a rule.
+
+#: How long a rally-list reading stays authoritative.  Past this age the list is
+#: re-observed before any click -- "identified not-full, clicked full" is a lost
+#: race this guard exists to prevent.
+FRAME_MAX_AGE_SECONDS = 3.0
+
+#: Click outcomes that void the current reading and demand a re-observe.
+ROW_VOID_REASONS = ("FULL", "TARGET_CHANGED", "ROW_GONE")
+
+
+def select_join_candidates(
+    reading: "RallyListReading",
+) -> tuple["RallyRowReading", ...]:
+    """Every LEGAL join row, ordered by the brief's own priority.
+
+    A row is legal only when ALL of these hold (§十三):
+      * its target matches the bear/giant-beast context (target_type BEAR);
+      * ``join_available`` is true -- the row itself draws an affordance;
+      * ``full`` is not True (unread capacity is *unknown*, not full);
+      * its join button belongs to its own band (that is how join_available
+        was read, so the pairing is structural, not a convention).
+
+    Order: shortest joinable countdown first; rows with no readable timer
+    fall behind every timed row and keep drawing order among themselves.
+    Callers re-frame and re-run this when candidates change -- stored rows
+    are void by construction.
+    """
+    legal = [
+        row
+        for row in reading.rows
+        if row.target_type is RallyTarget.BEAR
+        and row.join_available
+        and row.full is not True
+        and row.join_button_bbox is not None
+    ]
+    return tuple(sorted(
+        legal,
+        key=lambda row: (row.timer if row.timer is not None else 10**9, row.row_index),
+    ))
+
+
+def stale_frame_reason(
+    *,
+    read_monotonic: float | None,
+    now_monotonic: float,
+    max_age_seconds: float = FRAME_MAX_AGE_SECONDS,
+    list_changed: bool = False,
+) -> str | None:
+    """Why the current rally-list reading must NOT be clicked on, or None.
+
+    Two independent void conditions (§十四): the reading is older than the
+    short validity window, or the list visibly refreshed since it was read.
+    """
+    if list_changed:
+        return "LIST_REFRESHED"
+    if read_monotonic is None:
+        return "NO_READ_TIMESTAMP"
+    if now_monotonic - read_monotonic > max_age_seconds:
+        return "FRAME_STALE"
+    return None
+
+
 def body_hero_order(available: Iterable[str]) -> tuple[str, ...]:
     available_set = {str(name).upper() for name in available}
     preferred = ("JESSIE", "SEO_YOON", "JASSER")

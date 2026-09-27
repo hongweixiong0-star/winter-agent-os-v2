@@ -1,0 +1,72 @@
+{
+ "_comment": "Bear execution playbook -- the round brief 2026-09-27 §§九-二十, codified so T-30/T-15/T-5/T-1/OPEN each have a machine-checkable script. Times are Asia/Shanghai (UTC+8).",
+ "event_id": "BEAR_HUNT",
+ "event_date": "2026-09-28",
+ "open_time_local": "20:00",
+ "t_minus_schedule": {
+  "T-30": {
+   "local_time": "19:30",
+   "actions": [
+    "open 常规活动 -> 巨熊行动",
+    "re-read 预约自动开启 client time",
+    "expect 2026-09-28 20:00; on match set TIME_RECHECK_PASS=true",
+    "on change: update event_schedule, recompute T15/T5/T1/OPEN",
+    "on page anomaly: find another direct client source; cooling-based estimation is NEVER the first source"
+   ],
+   "pass_record": "learning/bear_t30_recheck.json"
+  },
+  "T-15": {
+   "local_time": "19:45",
+   "actions": [
+    "stop all non-bear live-device capture; offline pipeline work continues"
+   ]
+  },
+  "T-5": {
+   "local_time": "19:55",
+   "actions": [
+    "device serves bear only",
+    "confirm: role identity, march queue (P0 may use the reserved stamina queue -- never 'keep one free' against the bear), AUTO_JOIN state, event status, device lease"
+   ]
+  },
+  "T-1": {
+   "local_time": "19:59",
+   "actions": [
+    "all development control stops; MuMu fully handed to V2 AUTO"
+   ]
+  },
+  "OPEN": {
+   "local_time": "20:00",
+   "order": ["EVENT_ACTIVE", "ROLE_CONFIRMED", "march queue", "AUTO_JOIN state"]
+  }
+ },
+ "execution_priority": {
+  "auto_join_on": "observe first; JOINED -> verifier PASS directly; else LIST_DYNAMIC -> select legal row -> JOIN_RALLY",
+  "unknown_confirm_after_join": "triggers JOIN_RALLY_CONFIRM P0 LIVE_EVENT_GAP capture-first channel",
+  "leader": "START_RALLY -> HERO -> TROOP -> DISPATCH",
+  "row_failure": "FULL/TARGET_CHANGED/ROW_GONE -> reobserve -> next legal row; a stuck role waits a short window or runs non-conflicting tasks; roles stay isolated; one blocked role never freezes the system",
+  "row_selection": "rally.select_join_candidates: target=BEAR, join_available, full!=True, same-row button, shortest timer first",
+  "stale_frame_guard": "rally.stale_frame_reason: 3.0s validity + LIST_REFRESHED voids the reading before any click"
+ },
+ "success_contract": {
+  "participation_L4": "real JOIN or START of a bear rally + JOINED_STATE verifier PASS (click alone is never success)",
+  "goal_L5": "BEAR Goal predicates: participation + battle happened + reward/result state; opening the battle report is NOT required unless the Goal contract says so",
+  "dispatch_base": "DISPATCH_COMMON=L4 locked from ordinary-dispatch live proof; the event only validates BEAR_CONTEXT_DISPATCH"
+ },
+ "live_event_gaps": {
+  "JOIN_RALLY_CONFIRM": "P0; contract pre-agreed in pipeline_gap_queue; direct join -> NOT_REQUIRED_FOR_THIS_FLOW",
+  "RALLY_BATTLE_REPORT": "P0; captured on first post-battle frame; result-read verifier; never blocks Goal L5"
+ },
+ "post_event": {
+  "actions": [
+   "every new page/popup/state of the day enters Gap Queue + Knowledge + UI semantics + Verifier evidence",
+   "resume normal TEMPLATE/OCR/STRUCTURE/LIST_DYNAMIC/AutoGen/AutoRepair exploration of un-covered E-class events"
+  ]
+ },
+ "frozen_chains": {
+  "KEEP_RESEARCH_PRODUCTIVE": "L5 banked 2026-09-27; AutoRepair/real-regression fixes ONLY; no rewrites of Unicode-roman, tab or node-selection logic without new production evidence"
+ },
+ "quality_watch": {
+  "fake_success_scan": "SUCCESS with unchanged after-state / executed MAA with weak verifier / high-score OCR on long sentences / TEMPLATE hit with wrong page semantics -> QUALITY_GAP -> AutoRepair or verifier strengthening",
+  "metrics_focus_shift": "from L1 count to L3/L4/L5 share; prefer L2 + frequently-triggered + no-L4 candidates promoted by natural AUTO execution"
+ }
+}

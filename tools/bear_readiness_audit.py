@@ -162,8 +162,33 @@ def audit() -> dict:
         result["JOINED_STATE_VERIFIER_READY"] = False
 
     missing = [k for k in CHECKS if not result.get(k)]
+
+    # Dual-layer readiness (round brief 2026-09-27 §六): the core checks stand on
+    # evidence already collected; the live-event gaps can ONLY be calibrated by
+    # the first real activity UI, so they are listed, not hidden -- and they do
+    # not flip READY_TO_EXECUTE to false while the现场 capture-first channel
+    # exists to patch them in seconds.
+    live_event_gaps: list[str] = []
+    try:
+        gap_queue = json.loads((ROOT / "knowledge/execution/pipeline_gap_queue.json")
+                               .read_text(encoding="utf-8"))
+        live_event_gaps = sorted(
+            item.get("semantic") or ""
+            for item in (gap_queue.get("queue") or [])
+            if item.get("gap_class") == "LIVE_EVENT_GAP"
+            and item.get("semantic") not in {s.get("semantic") for s in gap_queue.get("honest_rejections") or []}
+        )
+    except (OSError, json.JSONDecodeError):
+        live_event_gaps = ["<gap queue unreadable>"]
+
     return {
         "READY_TO_EXECUTE": not missing,
+        "CORE_READY": not missing,
+        "LIVE_EVENT_GAPS": live_event_gaps,
+        "ready_note": (
+            "READY_TO_EXECUTE == CORE_READY: the listed LIVE_EVENT_GAPS are calibrated by the "
+            "first real activity frame via the capture-first fast channel and never block execution"
+        ) if not missing else "core gaps remain; see missing[]",
         "checks": result,
         "missing": missing,
     }

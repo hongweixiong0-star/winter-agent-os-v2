@@ -1058,7 +1058,24 @@
     "获得奖励"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "capture-first: production AUTO saves the real popup frame on first appearance; then AutoGen from evidence.",
+   "gap_class": "CAPTURE_FIRST_POPUP",
+   "capture_first": true,
+   "capture_contract": {
+    "trigger": "popup with 获得奖励 semantics appears during production AUTO",
+    "capture": [
+     "current frame",
+     "page",
+     "OCR tokens",
+     "popup bbox",
+     "previous action",
+     "next action",
+     "semantic candidates"
+    ],
+    "route": "Gap Queue -> AutoGen -> validation -> routing -> L1/L2",
+    "reuse_rule": "if the control is generic CLAIM/CLOSE/CONFIRM, reuse the existing generic node; do NOT mint a dedicated skill",
+    "forbidden": "do not guess ROI offline"
+   }
   },
   {
    "semantic": "POPUP_MAIL_REWARD",
@@ -1079,7 +1096,24 @@
     "获得奖励"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "capture-first: production AUTO saves the real popup frame on first appearance; then AutoGen from evidence.",
+   "gap_class": "CAPTURE_FIRST_POPUP",
+   "capture_first": true,
+   "capture_contract": {
+    "trigger": "popup with 获得奖励 semantics appears during production AUTO",
+    "capture": [
+     "current frame",
+     "page",
+     "OCR tokens",
+     "popup bbox",
+     "previous action",
+     "next action",
+     "semantic candidates"
+    ],
+    "route": "Gap Queue -> AutoGen -> validation -> routing -> L1/L2",
+    "reuse_rule": "if the control is generic CLAIM/CLOSE/CONFIRM, reuse the existing generic node; do NOT mint a dedicated skill",
+    "forbidden": "do not guess ROI offline"
+   }
   },
   {
    "semantic": "BTN_EXPLORATION_IDLE_CONFIRM",
@@ -2102,8 +2136,25 @@
    "goals": [
     "PARTICIPATE_BEAR"
    ],
-   "next_step": "Needs a live war frame. The post-join dialog (troop selection / 加入 confirm) is drawn only after a tap on a real rally; the client prints 当前暂无战事 today, so no candidate can be validated. Deferred to 2026-09-28, not guessed.",
-   "reconciled_at": "2026-09-27T02:00:00+08:00"
+   "next_step": "P0 live gap: first real rally UI occurrence triggers capture-first fast channel; contract above is pre-agreed, recognition method is calibrated on the live frame only.",
+   "reconciled_at": "2026-09-27T02:00:00+08:00",
+   "gap_class": "LIVE_EVENT_GAP",
+   "capture_first": true,
+   "candidate_contract": {
+    "precondition": [
+     "legal rally row selected in LIST_DYNAMIC",
+     "JOIN_RALLY executed on that row"
+    ],
+    "expected_page_or_state": [
+     "confirm dialog",
+     "troop/formation page",
+     "direct join (no dialog)"
+    ],
+    "action": "execute ONLY when confirm semantics are explicit on the live frame (button token like 确认/加入)",
+    "verifier": "JOINED_STATE (joined flag / in-rally roster), never the click itself",
+    "if_no_confirm_dialog": "auto-mark NOT_REQUIRED_FOR_THIS_FLOW and pass through JOINED_STATE verifier; do NOT hunt for a nonexistent button",
+    "fast_channel": "capture frame -> OCR -> classify -> detect confirm action -> AutoGen -> validate -> MAA -> Verifier (seconds-scale local patch, not a fresh study)"
+   }
   },
   {
    "semantic": "RALLY_HERO_SELECT",
@@ -2227,8 +2278,29 @@
    "goals": [
     "PARTICIPATE_BEAR"
    ],
-   "next_step": "Needs a battle-report frame, which only exists after a bear battle. Deferred to 2026-09-28; nothing is claimed about it now.",
-   "reconciled_at": "2026-09-27T02:00:00+08:00"
+   "next_step": "P0 live gap: first post-battle frame triggers capture-first; generate from the captured frame, not guessed.",
+   "reconciled_at": "2026-09-27T02:00:00+08:00",
+   "gap_class": "LIVE_EVENT_GAP",
+   "capture_first": true,
+   "candidate_contract": {
+    "precondition": [
+     "bear battle resolved (rally completed)"
+    ],
+    "expected_page_or_state": [
+     "battle report page/popup with damage/rewards/result"
+    ],
+    "capture": [
+     "page",
+     "ocr tokens",
+     "rewards",
+     "damage",
+     "report entry",
+     "close button",
+     "back entry"
+    ],
+    "verifier": "battle RESULT read (text/numbers present), NOT \"report button clicked\"",
+    "blocking_rule": "knowledge-closure only: must never block BEAR Goal L5 unless the Goal contract explicitly requires the report"
+   }
   },
   {
    "semantic": "RALLY_EVENT_ACTIVE_STATE",
@@ -2396,5 +2468,6 @@
    "frame": "dataset/raw/autogen/r2_home3.png",
    "reason": "OCR batch-1 scan hit 确定 on the EXIT GAME confirm dialog (确认退出游戏吗？). Wiring a generic OK tap risks confirming destructive dialogs. Rejected; requires a page-scoped context rule."
   }
- ]
+ ],
+ "reconciled_at": "2026-09-27T11:20:00+08:00"
 }

@@ -371,6 +371,25 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
         for cap in (catalog.get("capabilities") or [])
     )
 
+    # Two counting conventions, never mixed again (round brief 2026-09-27 #1):
+    # EXACT      -- the bucket a node currently sits in; buckets are disjoint.
+    # CUMULATIVE -- "has reached at least this level"; nested by construction
+    #               (L1 >= L2 >= L3 >= L4), L5 stays goal-occurrence-scoped.
+    exact = {
+        "L1": levels.get("L1", 0),
+        "L2": levels.get("L2", 0),
+        "L3": levels.get("L3", 0),
+        "L4": levels.get("L4", 0),
+        "L5": len(l5_goals),
+    }
+    cumulative = {
+        "L1": exact["L1"] + exact["L2"] + exact["L3"] + exact["L4"],
+        "L2": exact["L2"] + exact["L3"] + exact["L4"],
+        "L3": exact["L3"] + exact["L4"],
+        "L4": exact["L4"],
+        "L5": len(l5_goals),
+    }
+
     return {
         "generated_at": now.isoformat(),
         "definitions": {
@@ -394,6 +413,8 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
             "MISSING": levels.get("MISSING", 0),
             "SUPERSEDED": levels.get("SUPERSEDED", 0),
         },
+        "exact": exact,
+        "cumulative": cumulative,
         "l4_split": {
             "L4_CURRENT": sum(1 for item in items if item["level"] == "L4" and item["l4_current"]),
             "L4_HISTORICAL": sum(1 for item in items if item["level"] == "L4" and not item["l4_current"]),
@@ -452,6 +473,10 @@ def _snapshot(report: dict) -> dict[str, int]:
         "REJECTED_VALIDATION": len(report["rejected_validation"]),
         "AUTOREPAIR_L4": len(report["autorepair"]["l4_semantics"]),
     }
+    for prefix, bucket in (("EXACT", report.get("exact") or {}),
+                           ("CUMULATIVE", report.get("cumulative") or {})):
+        for level in ("L1", "L2", "L3", "L4", "L5"):
+            flat[f"{prefix}_{level}"] = bucket.get(level, 0)
     for kind, row in (report.get("kind_matrix") or {}).items():
         flat[f"{kind}_generated"] = row["generated"]
         flat[f"{kind}_wired"] = row["wired"]
@@ -509,6 +534,19 @@ def render(report: dict, delta_map: dict[str, str] | None = None) -> str:
         line("L4_HISTORICAL_TOTAL", report["l4_split"]["L4_HISTORICAL"],
              f"   # proved live before those {report['l4_split']['recent_days']}d"),
         line("L5_OCCURRENCES", report["l5"]["occurrences"]),
+        "",
+        "counting conventions (EXACT = disjoint bucket, CUMULATIVE = reached at least this level):",
+    ]
+    for level in ("L1", "L2", "L3", "L4", "L5"):
+        ex = report["exact"][level]
+        cum = report["cumulative"][level]
+        d_ex = delta.get(f"EXACT_{level}", "n/a")
+        d_cum = delta.get(f"CUMULATIVE_{level}", "n/a")
+        lines.append(
+            f"  EXACT_{level:<3} = {ex:<5} delta_EXACT_{level:<3} = {d_ex:<24}"
+            f"CUMULATIVE_{level:<3} = {cum:<5} delta_CUMULATIVE_{level:<3} = {d_cum}"
+        )
+    lines += [
         "",
         "by kind (absolute counts per level):",
     ]
