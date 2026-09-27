@@ -1,0 +1,352 @@
+{
+  "roi": [
+    570,
+    1190,
+    150,
+    90
+  ],
+  "buckets": {
+    "城镇": [
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_001_after_20260926T231718125654.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_007_before_20260926T231948797343.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_075029_354027/20260927_075029_354027_step_012_after_20260926T235517423538.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_008_before_20260927T000316872157.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_015_before_20260927T000448685876.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080751_933493/20260927_080751_933493_step_001_after_20260927T000802471846.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080751_933493/20260927_080751_933493_step_009_after_20260927T001023861800.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_081444_449707/20260927_081444_449707_step_001_after_20260927T001455461773.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_081444_449707/20260927_081444_449707_step_008_after_refresh_2_20260927T001647681083.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_082322_629728/20260927_082322_629728_step_009_after_20260927T002550599880.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_085335_931836/20260927_085335_931836_step_004_before_20260927T005501792049.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_090440_949837/20260927_090440_949837_step_001_after_20260927T010504074724.png",
+        "score": 0.999
+      }
+    ],
+    "野外": [
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_006_after_20260926T231142410317.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_011_after_20260926T231323466843.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_012_before_20260926T231336791109.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_013_before_20260926T232205125914.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_016_after_refresh_1_20260926T232355003189.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_072710_188682/20260927_072710_188682_step_013_after_refresh_1_20260926T233228095118.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_072710_188682/20260927_072710_188682_step_015_before_20260926T233328074278.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_073906_112036/20260927_073906_112036_step_005_before_20260926T234059099713.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_073906_112036/20260927_073906_112036_step_013_after_refresh_1_20260926T234435461806.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_075029_354027/20260927_075029_354027_step_001_after_20260926T235055329475.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_075029_354027/20260927_075029_354027_step_015_before_20260926T235627211758.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_081444_449707/20260927_081444_449707_step_016_before_20260927T001949604134.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_082322_629728/20260927_082322_629728_step_001_after_20260927T002344179980.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_082322_629728/20260927_082322_629728_step_017_after_20260927T002806405188.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_082322_629728/20260927_082322_629728_step_020_after_20260927T002954981785.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_083248_560913/20260927_083248_560913_step_001_after_20260927T003312856042.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_083248_560913/20260927_083248_560913_step_011_before_20260927T003703525922.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_083248_560913/20260927_083248_560913_step_018_before_20260927T003918160153.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_084229_583954/20260927_084229_583954_step_007_before_20260927T004508235945.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_085335_931836/20260927_085335_931836_step_008_after_20260927T005637771941.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_090440_949837/20260927_090440_949837_step_008_after_20260927T010749024544.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_090440_949837/20260927_090440_949837_step_011_before_20260927T010854865746.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_090440_949837/20260927_090440_949837_step_015_after_20260927T011057992666.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_091452_450204/20260927_091452_450204_step_008_after_20260927T011812894781.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_091452_450204/20260927_091452_450204_step_012_after_20260927T011950860838.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_091452_450204/20260927_091452_450204_step_016_after_20260927T012125515673.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_091452_450204/20260927_091452_450204_step_019_before_20260927T012239704832.png",
+        "score": 0.998
+      }
+    ],
+    "NONE": [
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_001_after_20260926T230956533141.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_003_before_20260926T231021619785.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_008_before_20260926T231220182646.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_004_after_20260926T231849648611.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_010_before_20260926T232041815730.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_072710_188682/20260927_072710_188682_step_001_after_20260926T232737931567.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_072710_188682/20260927_072710_188682_step_005_before_20260926T232910190247.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_072710_188682/20260927_072710_188682_step_009_before_20260926T233037513738.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_072710_188682/20260927_072710_188682_step_019_before_20260926T233556426150.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_073906_112036/20260927_073906_112036_step_001_after_20260926T233932359014.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_073906_112036/20260927_073906_112036_step_009_before_20260926T234220285065.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_073906_112036/20260927_073906_112036_step_017_after_20260926T234623166185.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_073906_112036/20260927_073906_112036_step_021_after_20260926T234811147595.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_075029_354027/20260927_075029_354027_step_004_before_20260926T235203025128.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_075029_354027/20260927_075029_354027_step_008_before_20260926T235341308910.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_075029_354027/20260927_075029_354027_step_019_before_20260926T235730647502.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_001_after_20260927T000101536413.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_005_after_20260927T000245054749.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_012_after_20260927T000417326492.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_019_after_20260927T000605328497.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080751_933493/20260927_080751_933493_step_005_after_20260927T000926237002.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080751_933493/20260927_080751_933493_step_013_after_20260927T001141826668.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080751_933493/20260927_080751_933493_step_017_after_20260927T001238115987.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_080751_933493/20260927_080751_933493_step_021_after_20260927T001325428358.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_081444_449707/20260927_081444_449707_step_005_after_20260927T001605341601.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_081444_449707/20260927_081444_449707_step_012_before_20260927T001754558119.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_081444_449707/20260927_081444_449707_step_020_before_20260927T002104367094.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_082322_629728/20260927_082322_629728_step_005_after_20260927T002454980820.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_082322_629728/20260927_082322_629728_step_013_after_20260927T002641922165.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_083248_560913/20260927_083248_560913_step_004_before_20260927T003420874024.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_083248_560913/20260927_083248_560913_step_008_after_20260927T003559073257.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_083248_560913/20260927_083248_560913_step_015_after_20260927T003816496136.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_084229_583954/20260927_084229_583954_step_001_after_20260927T004254510543.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_084229_583954/20260927_084229_583954_step_004_after_20260927T004403785195.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_084229_583954/20260927_084229_583954_step_011_before_20260927T004646142923.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_084229_583954/20260927_084229_583954_step_015_before_20260927T004835033037.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_084229_583954/20260927_084229_583954_step_019_after_20260927T005021562910.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_085335_931836/20260927_085335_931836_step_001_after_20260927T005357562298.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_085335_931836/20260927_085335_931836_step_011_before_20260927T005744680037.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_085335_931836/20260927_085335_931836_step_015_before_20260927T005933112181.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_085335_931836/20260927_085335_931836_step_019_after_20260927T010121474847.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_090440_949837/20260927_090440_949837_step_004_before_20260927T010558945178.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_090440_949837/20260927_090440_949837_step_018_before_20260927T011159190864.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_091452_450204/20260927_091452_450204_step_001_after_20260927T011516580789.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/control_panel/runtime_auto/20260927_091452_450204/20260927_091452_450204_step_004_before_20260927T011610902340.png",
+        "score": null
+      }
+    ]
+  }
+}

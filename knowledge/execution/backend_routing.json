@@ -2220,6 +2220,71 @@
      "note": "the tap that had failed SEMANTIC_TARGET_NOT_VERIFIED on every sheet since 2026-09-26 evening succeeded on the first sheet after the ROI AutoRepair; same node, same verifier, no architecture change"
     }
    }
+  },
+  "OPEN_MAP": {
+   "recognition": {
+    "STATE_CITY_VIEW": {
+     "kind": "TEMPLATE",
+     "template": "STATE_CITY_VIEW.png",
+     "roi": [
+      613,
+      1234,
+      687,
+      1280
+     ],
+     "threshold": 0.8,
+     "tap_allowed": false,
+     "purpose": "STATE_DETECTION",
+     "state_meaning": "matching means the client is in the CITY view"
+    },
+    "STATE_WILDERNESS_VIEW": {
+     "kind": "TEMPLATE",
+     "template": "STATE_WILDERNESS_VIEW.png",
+     "roi": [
+      613,
+      1234,
+      687,
+      1280
+     ],
+     "threshold": 0.8,
+     "tap_allowed": false,
+     "purpose": "STATE_DETECTION",
+     "state_meaning": "matching means the client is in the WILDERNESS view"
+    }
+   },
+   "evidence": {
+    "state_template_state_city_view_20260927": {
+     "semantic": "STATE_CITY_VIEW",
+     "chip_word": "野外",
+     "template": "dataset/candidate/templates/STATE_CITY_VIEW.png",
+     "source_frame": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_006_after_20260926T231142410317.png",
+     "positive_frames": 27,
+     "positive_min_score": 0.9994,
+     "negative_frames": 12,
+     "negative_max_score": 0.4754,
+     "separation": 0.524,
+     "ocr_recovered_frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_001_after_20260927T000101536413.png",
+     "ocr_recovered_score": 0.9786,
+     "recorded_at": "2026-09-27T01:40:00+00:00",
+     "note": "corpus: 39 chip-bearing production frames (12 wilderness-state, 27 city-state) + 45 no-chip frames; the no-chip scan found one frame whose washed-out chip RapidOCR could not read and this template could"
+    },
+    "state_template_state_wilderness_view_20260927": {
+     "semantic": "STATE_WILDERNESS_VIEW",
+     "chip_word": "城镇",
+     "template": "dataset/candidate/templates/STATE_WILDERNESS_VIEW.png",
+     "source_frame": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_001_after_20260926T231718125654.png",
+     "positive_frames": 12,
+     "positive_min_score": 0.9994,
+     "negative_frames": 27,
+     "negative_max_score": 0.4862,
+     "separation": 0.5132,
+     "ocr_recovered_frame": "dataset/raw/control_panel/runtime_auto/20260927_080038_529060/20260927_080038_529060_step_001_after_20260927T000101536413.png",
+     "ocr_recovered_score": 0.9786,
+     "recorded_at": "2026-09-27T01:40:00+00:00",
+     "note": "corpus: 39 chip-bearing production frames (12 wilderness-state, 27 city-state) + 45 no-chip frames; the no-chip scan found one frame whose washed-out chip RapidOCR could not read and this template could"
+    }
+   },
+   "note": "OPEN_MAP's own tap resolves through the legacy vision path (manifest PAGE_MAP crops), not tier-1 routing -- deliberate, see gap queue PAGE_MAP.next_step"
   }
  },
  "not_migrated": {

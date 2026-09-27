@@ -1,6 +1,6 @@
 {
-  "count": 443,
-  "generated_at": "2026-09-24T09:39:04.539221+00:00",
+  "count": 452,
+  "generated_at": "2026-09-27T01:27:25.614715+00:00",
   "records": [
     {
       "confidence": 0.99,
@@ -8096,6 +8096,192 @@
       "width": 56,
       "height": 55,
       "note": "the city HUD's 登录好礼 calendar entry -- the control the element table already taps by hand.  Navigation CANDIDATE: opening the panel is all it does; what the panel offers is decided after the page is verified."
+    },
+    {
+      "semantic": "BTN_OPEN_POWER_DETAILS",
+      "template_path": "dataset/candidate/auto_collected/auto__popup_btn_open_power_details__112d0258c2.png",
+      "roi_norm": {
+        "x_norm": 0.3847,
+        "y_norm": 0.5531,
+        "w_norm": 0.2319,
+        "h_norm": 0.0305
+      },
+      "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260925_063318_637642/20260925_063318_637642_step_004_after_20260924T223436326027.png",
+      "provenance": "LIVE_CLIENT",
+      "reviewed_from": "AUTO_COLLECTION",
+      "confidence": 0.9012,
+      "status": "VERIFIED",
+      "template_id": "auto__popup_btn_open_power_details__112d0258c2",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260925_063318_637642/20260925_063318_637642_step_004_after_20260924T223436326027.png",
+      "width": 167,
+      "height": 39,
+      "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page POPUP (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[前往]",
+      "template_path": "dataset/candidate/auto_collected/auto__unknown_ordinary_control__62cf3abd35.png",
+      "roi_norm": {
+        "x_norm": 0.7542,
+        "y_norm": 0.6711,
+        "w_norm": 0.0875,
+        "h_norm": 0.0281
+      },
+      "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260925_080135_800570/20260925_080135_800570_step_007_after_20260925T000318207009.png",
+      "provenance": "LIVE_CLIENT",
+      "reviewed_from": "AUTO_COLLECTION",
+      "confidence": 0.9854,
+      "status": "VERIFIED",
+      "template_id": "auto__unknown_ordinary_control__62cf3abd35",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260925_080135_800570/20260925_080135_800570_step_007_after_20260925T000318207009.png",
+      "width": 63,
+      "height": 36,
+      "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page UNKNOWN (observed PAGE_CHANGED; frame 720x1280). Landed by OCR_WORD."
+    },
+    {
+      "semantic": "EVENT_CALENDAR_TAB",
+      "template_path": "E:/无尽冬日智能体/knowledge/perception/candidates/event_calendar_tab_icon__20260925/element.png",
+      "roi_norm": {
+        "x_norm": 0.0,
+        "y_norm": 0.075,
+        "w_norm": 1.0,
+        "h_norm": 0.075
+      },
+      "search_band": {
+        "x_norm": 0.0,
+        "y_norm": 0.075,
+        "w_norm": 1.0,
+        "h_norm": 0.075
+      },
+      "matcher": "ccoeff",
+      "source": "LIVE_CLIENT_CANDIDATE",
+      "provenance": "CURRENT_GAME_SCREEN",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "event_calendar_tab_icon_live_20260925",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/event_calendar_live_20260925/runtime/runtime_step_001_after_refresh_2_20260925T075810605576.png",
+      "width": 72,
+      "height": 52,
+      "note": "Live screenshot crop of the calendar icon on the regular-events tab strip; match current frame within strip band and tap found center. Candidate only; verifier decides whether the expected calendar grid opened."
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP",
+      "template_path": "dataset/candidate/auto_collected/auto__home_quick_panel_row_marksman_camp__235dd94dd3.png",
+      "roi_norm": {
+        "x_norm": 0.2792,
+        "y_norm": 0.5312,
+        "w_norm": 0.0653,
+        "h_norm": 0.0195
+      },
+      "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_004135_392101/20260923_004135_392101_step_001_after_refresh_2_20260922T164233571669.png",
+      "provenance": "LIVE_CLIENT",
+      "reviewed_from": "AUTO_COLLECTION",
+      "confidence": 0.9995,
+      "status": "VERIFIED",
+      "template_id": "auto__home_quick_panel_row_marksman_camp__235dd94dd3",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_004135_392101/20260923_004135_392101_step_001_after_refresh_2_20260922T164233571669.png",
+      "width": 47,
+      "height": 25,
+      "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page HOME (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+    },
+    {
+      "semantic": "BTN_OPEN_ALLIANCE",
+      "template_path": "dataset/candidate/auto_collected/auto__home_btn_open_alliance__b2401c07b3.png",
+      "roi_norm": {
+        "x_norm": 0.7097,
+        "y_norm": 0.9711,
+        "w_norm": 0.0694,
+        "h_norm": 0.0219
+      },
+      "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_010010_469521/20260926_010010_469521_step_012_after_20260925T170331661812.png",
+      "provenance": "LIVE_CLIENT",
+      "reviewed_from": "AUTO_COLLECTION",
+      "confidence": 0.9996,
+      "status": "VERIFIED",
+      "template_id": "auto__home_btn_open_alliance__b2401c07b3",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_010010_469521/20260926_010010_469521_step_012_after_20260925T170331661812.png",
+      "width": 50,
+      "height": 28,
+      "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page HOME (observed PAGE_CHANGED; frame 720x1280). Landed by OCR_WORD."
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[部队]",
+      "template_path": "dataset/candidate/auto_collected/auto__unknown_ordinary_control__4110deb717.png",
+      "roi_norm": {
+        "x_norm": 0.3375,
+        "y_norm": 0.9656,
+        "w_norm": 0.0778,
+        "h_norm": 0.025
+      },
+      "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_015_after_20260926T150354151910.png",
+      "provenance": "LIVE_CLIENT",
+      "reviewed_from": "AUTO_COLLECTION",
+      "confidence": 0.9928,
+      "status": "VERIFIED",
+      "template_id": "auto__unknown_ordinary_control__4110deb717",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_015_after_20260926T150354151910.png",
+      "width": 56,
+      "height": 32,
+      "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page UNKNOWN (observed NUMBER_CHANGED; frame 720x1280). Landed by OCR_WORD."
+    },
+    {
+      "semantic": "ORDINARY_CONTROL[部队编组]",
+      "template_path": "dataset/candidate/auto_collected/auto__unknown_ordinary_control__86708d5bd5.png",
+      "roi_norm": {
+        "x_norm": 0.4014,
+        "y_norm": 0.9242,
+        "w_norm": 0.1958,
+        "h_norm": 0.0359
+      },
+      "source": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_016_after_20260926T150420093160.png",
+      "provenance": "LIVE_CLIENT",
+      "reviewed_from": "AUTO_COLLECTION",
+      "confidence": 0.9971,
+      "status": "VERIFIED",
+      "template_id": "auto__unknown_ordinary_control__86708d5bd5",
+      "parent_screenshot": "E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260926_225839_963609/20260926_225839_963609_step_016_after_20260926T150420093160.png",
+      "width": 141,
+      "height": 46,
+      "note": "Collected automatically from a live frame: this element's declared effect was proven by the step's own verifier on page UNKNOWN (observed PAGE_CHANGED; frame 720x1280). Landed by OCR_WORD."
+    },
+    {
+      "semantic": "STATE_CITY_VIEW",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\STATE_CITY_VIEW.png",
+      "roi_norm": {
+        "x_norm": 0.851389,
+        "y_norm": 0.964063,
+        "w_norm": 0.102778,
+        "h_norm": 0.035937
+      },
+      "source": "pagestate_20260927",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "state_city_view__live_20260927",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260927_070930_599921\\20260927_070930_599921_step_006_after_20260926T231142410317.png",
+      "width": 74,
+      "height": 46,
+      "note": "two-state view detector. The chip at (613, 1234, 687, 1280) is an ACTION label, not a state label: this frame (the city) draws 野外 ('go to the other view'). Cut with the plate and icon because RapidOCR read this chip on only 3 of 6 frames. Validated bidirectionally: 27/27 own-state frames hit, 0/12 opposite-state frames hit, worst positive 0.9994 vs best opposite-state 0.4754.",
+      "evidence": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_006_after_20260926T231142410317.png"
+    },
+    {
+      "semantic": "STATE_WILDERNESS_VIEW",
+      "template_path": "E:\\无尽冬日智能体\\dataset\\candidate\\templates\\STATE_WILDERNESS_VIEW.png",
+      "roi_norm": {
+        "x_norm": 0.851389,
+        "y_norm": 0.964063,
+        "w_norm": 0.102778,
+        "h_norm": 0.035937
+      },
+      "source": "pagestate_20260927",
+      "provenance": "LIVE_CLIENT",
+      "confidence": 0.99,
+      "status": "CANDIDATE",
+      "template_id": "state_wilderness_view__live_20260927",
+      "parent_screenshot": "E:\\无尽冬日智能体\\dataset\\raw\\control_panel\\runtime_auto\\20260927_071653_484155\\20260927_071653_484155_step_001_after_20260926T231718125654.png",
+      "width": 74,
+      "height": 46,
+      "note": "two-state view detector. The chip at (613, 1234, 687, 1280) is an ACTION label, not a state label: this frame (the wilderness) draws 城镇 ('go to the other view'). Cut with the plate and icon because RapidOCR read this chip on only 3 of 6 frames. Validated bidirectionally: 12/12 own-state frames hit, 0/27 opposite-state frames hit, worst positive 0.9994 vs best opposite-state 0.4862.",
+      "evidence": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_001_after_20260926T231718125654.png"
     }
   ],
   "schema_version": "1.0",

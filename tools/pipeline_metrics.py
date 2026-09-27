@@ -182,17 +182,34 @@ def collect_live_proofs(learning_dir: Path) -> dict[str, datetime]:
 
 
 def collect_routing_proofs(routing: dict) -> dict[str, datetime]:
-    """Semantic -> date, from ``l4_*`` evidence keys inside routing entries."""
+    """Semantic -> date, from ``l4_*`` evidence keys inside routing entries.
+
+    Reads two shapes, because both are in use: node-level
+    (``recognition[<semantic>].evidence.l4_*``) and skill-level
+    (``skills[<skill>].evidence.l4_*`` whose payload names the semantic it
+    proves -- how BTN_START_RESEARCH's live proof was recorded).
+    """
     proofs: dict[str, datetime] = {}
+
+    def _scan(semantic_hint: str | None, evidence: dict) -> None:
+        for key, value in (evidence or {}).items():
+            if not str(key).lower().startswith("l4"):
+                continue
+            payload = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+            stamp = _ts_near(payload) or _ts_near(str(key))
+            semantic = None
+            if isinstance(value, dict) and isinstance(value.get("semantic"), str):
+                semantic = value["semantic"]
+            semantic = semantic or semantic_hint
+            if not semantic:
+                continue
+            if semantic not in proofs or (stamp and stamp > (proofs[semantic] or stamp)):
+                proofs[semantic] = stamp or proofs.get(semantic)
+
     for _skill, body in (routing.get("skills") or {}).items():
+        _scan(None, body.get("evidence") or {})
         for semantic, recognition in (body.get("recognition") or {}).items():
-            evidence = recognition.get("evidence") or {}
-            for key, value in evidence.items():
-                if not str(key).lower().startswith("l4"):
-                    continue
-                stamp = _ts_near(json.dumps(value, ensure_ascii=False)) or _ts_near(str(key))
-                if semantic not in proofs or (stamp and stamp > (proofs[semantic] or stamp)):
-                    proofs[semantic] = stamp or proofs.get(semantic)
+            _scan(semantic, recognition.get("evidence") or {})
     return proofs
 
 
@@ -304,6 +321,12 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
             level = "L1"
         elif generator_ready:
             level = "PREPARED"
+        elif gap_item.get("superseded_by"):
+            # A gap whose need was met by other nodes -- e.g. PAGE_MAP's chip OCR
+            # was rejected, and the state it tried to read is now two validated
+            # STATE_* templates.  Counting it MISSING forever would inflate the
+            # denominator with work that must never be redone as written.
+            level = "SUPERSEDED"
 
         kind = node["kind"] if node else _kind_of(gap_item.get("recognition") or {})
         items.append(
@@ -333,7 +356,7 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
         row = {level: 0 for level in LEVELS}
         for item in items:
             if item["kind"] == kind:
-                row[item["level"]] += 1
+                row[item["level"]] = row.get(item["level"], 0) + 1
         row["generated"] = row["L1"] + row["L2"] + row["L3"] + row["L4"]
         row["wired"] = row["L2"] + row["L3"] + row["L4"]
         row["rejected"] = sum(
@@ -358,6 +381,8 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
                   f"(last {production_days}d)",
             "L4": "explicit live proof: l4_* routing evidence / l4_proven_at / learning/*l4*.json",
             "L5": "goal-level completion occurrence (goal_l5_evidence.jsonl)",
+            "SUPERSEDED": "gap whose need was met by other nodes (gap item names "
+                          "superseded_by); excluded from MISSING by definition",
         },
         "total_required": len(items),
         "levels": {
@@ -367,6 +392,7 @@ def build(*, recent_days: int = 3, production_days: int = 7) -> dict:
             "L3": levels.get("L3", 0),
             "L4": levels.get("L4", 0),
             "MISSING": levels.get("MISSING", 0),
+            "SUPERSEDED": levels.get("SUPERSEDED", 0),
         },
         "l4_split": {
             "L4_CURRENT": sum(1 for item in items if item["level"] == "L4" and item["l4_current"]),
@@ -472,6 +498,8 @@ def render(report: dict, delta_map: dict[str, str] | None = None) -> str:
         line("TOTAL_REQUIRED", report["total_required"]),
         line("PREPARED", levels["PREPARED"]),
         line("MISSING", levels["MISSING"]),
+        line("SUPERSEDED", report["levels"].get("SUPERSEDED", 0),
+             "   # need met by other nodes, excluded from MISSING"),
         "",
         line("L1", levels["L1"], "   # generated, not wired"),
         line("L2", levels["L2"], "   # wired in backend_routing"),

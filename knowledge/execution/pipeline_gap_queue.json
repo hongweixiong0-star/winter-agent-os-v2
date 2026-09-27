@@ -483,7 +483,16 @@
     "仓库补给"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- reader proven on the scrolled frame (20260927_071653_484155 step_016).  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "我的奖励",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_MY_REWARDS_DONE",
@@ -503,7 +512,16 @@
     "仓库补给"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- reader proven: 仓库补给 row read control=DONE with done_norm.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row_done",
+    "row_label": "我的奖励",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_ALLIANCE_DONATION",
@@ -523,7 +541,16 @@
     "联盟捐献"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-27T00:52:19Z alliance-donation walk SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "联盟捐献",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_BUILDING",
@@ -544,7 +571,16 @@
     "建筑队列"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-26+.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "建筑队列",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "PAGE_MAP",
@@ -567,7 +603,11 @@
     "地图"
    ],
    "generator_ready": false,
-   "next_step": "REJECTED_VALIDATION 2026-09-27: chip OCR unreadable 3/6 frames by RapidOCR; reclassify as two-state TEMPLATE (城镇/野外 crops of the same button)."
+   "next_step": "RESOLVED 2026-09-27: the chip is an ACTION label (city view draws 野外, wilderness draws 城镇), so a single '城镇/野外' OCR node can never name a state.  Replaced by two bidirectionally validated state templates (STATE_CITY_VIEW / STATE_WILDERNESS_VIEW, see their queue items); the tap itself stays on the legacy vision path that already works (2026-09-27 00:43 OPEN_MAP SUCCESS) because the router's miss-stays-a-miss rule would turn every panel-covered chip into an OPEN_MAP failure.",
+   "superseded_by": [
+    "STATE_CITY_VIEW",
+    "STATE_WILDERNESS_VIEW"
+   ]
   },
   {
    "semantic": "QUICK_PANEL_ROW_RESEARCH",
@@ -587,7 +627,16 @@
     "科技研究"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-27T00:20:06Z OPEN_TASK_FROM_QUICK_PANEL_RESEARCH SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "科技研究",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "TARGET_INTEL_BEAST_MISSION",
@@ -1385,7 +1434,16 @@
     "矛兵"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "枪兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP_ENTRY",
@@ -1404,7 +1462,16 @@
     "射手"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN 2026-09-27T00:28:47Z SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "弓兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_PET_TREASURE",
@@ -1445,7 +1512,16 @@
     "盾兵"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "盾兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "CONTROL[登录好礼]",
@@ -1508,7 +1584,16 @@
     "矛兵"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_TASK_FROM_QUICK_PANEL_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "枪兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_LANCER_CAMP_DONE",
@@ -1528,7 +1613,16 @@
     "矛兵营"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row_done",
+    "row_label": "枪兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP",
@@ -1548,7 +1642,16 @@
     "射手"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "弓兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP_DONE",
@@ -1568,7 +1671,16 @@
     "射手营"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_MARKSMAN production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row_done",
+    "row_label": "弓兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP",
@@ -1588,7 +1700,16 @@
     "盾兵"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row",
+    "row_label": "盾兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP_DONE",
@@ -1608,7 +1729,16 @@
     "盾兵营"
    ],
    "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds"
+   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+   "recognition": {
+    "kind": "LIST_DYNAMIC",
+    "reader": "quick_panel",
+    "field": "row_done",
+    "row_label": "盾兵营",
+    "tap_allowed": false,
+    "purpose": "PRODUCTION_READER_RECONCILIATION",
+    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+   }
   },
   {
    "semantic": "QUICK_PANEL_HANDLE",
@@ -2184,6 +2314,78 @@
    },
    "note": "empty-state marker of the rally list; absence of this text = rally exists",
    "source": "bear-hunt prep r16 2026-09-26"
+  },
+  {
+   "semantic": "STATE_CITY_VIEW",
+   "skills": [
+    "OPEN_MAP"
+   ],
+   "goals": [
+    "KEEP_MARCHES_PRODUCTIVE"
+   ],
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "family": "NAV",
+   "priority": "P1",
+   "record_type": "STATE",
+   "visible_words": [
+    "野外"
+   ],
+   "generator_ready": true,
+   "recognition": {
+    "kind": "TEMPLATE",
+    "template": "STATE_CITY_VIEW.png",
+    "roi": [
+     613,
+     1234,
+     687,
+     1280
+    ],
+    "threshold": 0.8,
+    "tap_allowed": false,
+    "purpose": "STATE_DETECTION",
+    "state_meaning": "this template matching means the client is in the CITY view",
+    "note": "the chip is an action label: CITY view draws 野外, WILDERNESS draws 城镇"
+   },
+   "next_step": "wired 2026-09-27; bidirectional validation 27/27 own-state frames hit (worst 0.9994), 0/12 opposite-state frames hit (best 0.4754), separation 0.524; one OCR-unreadable wilderness frame (chip washed out, RapidOCR NONE) was recovered by the template at 0.9786 -- the exact case that motivated leaving OCR for templates"
+  },
+  {
+   "semantic": "STATE_WILDERNESS_VIEW",
+   "skills": [
+    "OPEN_MAP"
+   ],
+   "goals": [
+    "KEEP_MARCHES_PRODUCTIVE"
+   ],
+   "pages": [
+    "HOME",
+    "MAP"
+   ],
+   "family": "NAV",
+   "priority": "P1",
+   "record_type": "STATE",
+   "visible_words": [
+    "城镇"
+   ],
+   "generator_ready": true,
+   "recognition": {
+    "kind": "TEMPLATE",
+    "template": "STATE_WILDERNESS_VIEW.png",
+    "roi": [
+     613,
+     1234,
+     687,
+     1280
+    ],
+    "threshold": 0.8,
+    "tap_allowed": false,
+    "purpose": "STATE_DETECTION",
+    "state_meaning": "this template matching means the client is in the WILDERNESS view",
+    "note": "the chip is an action label: CITY view draws 野外, WILDERNESS draws 城镇"
+   },
+   "next_step": "wired 2026-09-27; bidirectional validation 12/12 own-state frames hit (worst 0.9994), 0/27 opposite-state frames hit (best 0.4862), separation 0.5132; one OCR-unreadable wilderness frame (chip washed out, RapidOCR NONE) was recovered by the template at 0.9786 -- the exact case that motivated leaving OCR for templates"
   }
  ],
  "honest_rejections": [

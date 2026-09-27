@@ -1,0 +1,43 @@
+{
+  "chip_box": [
+    613,
+    1234,
+    687,
+    1280
+  ],
+  "roi_norm": {
+    "x_norm": 0.851389,
+    "y_norm": 0.964063,
+    "w_norm": 0.102778,
+    "h_norm": 0.035937
+  },
+  "search_margin_px": 48,
+  "report": {
+    "STATE_CITY_VIEW": {
+      "source": "dataset/raw/control_panel/runtime_auto/20260927_070930_599921/20260927_070930_599921_step_006_after_20260926T231142410317.png",
+      "chip_word": "野外",
+      "template": "dataset/candidate/templates/STATE_CITY_VIEW.png",
+      "positives": 27,
+      "positive_min": 0.9994,
+      "positive_max": 1.0,
+      "positive_hits_at_0_80": 27,
+      "negatives": 12,
+      "negative_max": 0.4754,
+      "negative_hits_at_0_80": 0,
+      "separation": 0.524
+    },
+    "STATE_WILDERNESS_VIEW": {
+      "source": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_001_after_20260926T231718125654.png",
+      "chip_word": "城镇",
+      "template": "dataset/candidate/templates/STATE_WILDERNESS_VIEW.png",
+      "positives": 12,
+      "positive_min": 0.9994,
+      "positive_max": 1.0,
+      "positive_hits_at_0_80": 12,
+      "negatives": 27,
+      "negative_max": 0.4862,
+      "negative_hits_at_0_80": 0,
+      "separation": 0.5132
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "roi": [
+    570,
+    1190,
+    150,
+    90
+  ],
+  "found": {
+    "城镇": [
+      {
+        "frame": "dataset/raw/legacy_wilderness.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/live_map_p0_before.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/live_multitask_gather_map_ready.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/live_intel_map_entry_scan.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/live_attempt8_marching.png",
+        "score": 0.999
+      }
+    ],
+    "野外": [
+      {
+        "frame": "dataset/raw/legacy_home.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/live_intel_city_scan1.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/live_beast_city_return.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/live_back_safe_home.png",
+        "score": 0.998
+      },
+      {
+        "frame": "dataset/raw/live_home_after_bootstrap.png",
+        "score": 0.999
+      },
+      {
+        "frame": "dataset/raw/live_research_recheck_home.png",
+        "score": 0.999
+      }
+    ],
+    "NONE": [
+      {
+        "frame": "dataset/raw/live_multitask_gather_map.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/live_resource_rotation_map_20260913.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/live_attempt8_resource.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/live_current.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/live_now.png",
+        "score": null
+      },
+      {
+        "frame": "dataset/raw/live_research_recheck_start.png",
+        "score": null
+      }
+    ]
+  }
+}
