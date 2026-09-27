@@ -1,0 +1,24 @@
+{
+ "session_started_at": "2026-09-27T11:39:16.476174+00:00",
+ "current_role": "[ioi]零氪纯盾流",
+ "roleB_verified": "[DIW]xhw",
+ "attempts": [
+  {
+   "attempt": 0,
+   "state": "UNKNOWN",
+   "head": "联盟战争 集结 目标 队长: [DIW]掏剩最后一个炉子 队伍： 7/15 坐标： (547,474) 集结中：00:00:59 等级7霜鳞避役 距离22公里 队伍：714,464/1,030,710 [DIW]掏剩最后一个炉子 138,710 80级 80级 80级 已抵达 [DIW]帕特里克 863,241 80级",
+   "departs_in_s": 59,
+   "sleep_s": 69
+  },
+  {
+   "attempt": 1,
+   "state": "OFF",
+   "head": "联盟战争 集结 单人 活动 当前暂无战事 开启后自动加入冰原巨兽集结 自动加入"
+  }
+ ],
+ "toggled": true,
+ "autojoin_roleB": "ON",
+ "join_method_tonight": "AUTO_JOIN=ON",
+ "switched_back": true,
+ "roleA_verified": "[ioi]零氪纯盾流"
+}

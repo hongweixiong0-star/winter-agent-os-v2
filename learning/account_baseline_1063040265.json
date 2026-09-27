@@ -54,18 +54,22 @@
    "name": "[DIW]xhw",
    "alliance": "DIW",
    "kingdom": "4298",
-   "auto_join": "UNKNOWN",
+   "auto_join": "ON",
    "bear_start_time": "2026-09-27T21:00:00+08:00",
    "time_confirmed": true,
    "note": "角色管理页读到名字与王国；巨熊上下文今晚未读",
    "time_source": "CLIENT 预约自动开启 2026-09-27 21:00 (bear_baseline_roleB session, tab tpl 0.9968)",
-   "auto_join_note": "rally page occupied by live DIW rally; toggle not read; recheck at role B T-30 (20:30)",
+   "auto_join_note": "toggle only renders when rally page shows 当前暂无战事; DIW alliance chain-starts rallies (two observed back-to-back), so a bounded poller (tools/bear_roleB_autojoin_poll.py, 12min budget) waits for a gap",
    "march_queues": {
     "observed": "队列1 空闲中; 部队训练已完成; march rows not fully read",
     "state": "PARTIALLY_OBSERVED"
    },
    "profile_evidence": "领主档案 [DIW]xhw 账号：1061663148 联盟：DIW 王国 4298",
-   "role_name_source": "角色管理页 + 领主档案 2026-09-27T10:2xZ"
+   "role_name_source": "角色管理页 + 领主档案 2026-09-27T10:2xZ",
+   "id_note": "role_id 1061663148 = character id, not a separate login",
+   "auto_join_evidence": "gap between DIW rallies caught 2026-09-27T11:41Z: 当前暂无战事 state, toggled OFF->ON, re-read ON (tools/bear_roleB_final.py attempt 1)",
+   "ready": true,
+   "join_method": "AUTO_JOIN=ON + JOIN_RALLY fallback"
   }
  },
  "note": "old account 1171757165/[zoe]xhw小号/zoe/09-28 20:00 kept as history in timed_event_schedule roles[]; never drives this account",
@@ -76,6 +80,18 @@
   "TIME_CONFLICT": false,
   "gap_minutes": 30,
   "EXECUTION_ORDER": "A first (AUTO_JOIN already ON, 20:30 open) -> B at its own T-30 (20:30 role-B recheck during A trap window) -> switch device to B ~20:55 for B's 21:00 open",
-  "ROLE_SWITCH_TRIGGER": "role A JOINED_STATE confirmed OR 20:55 (whichever first); if A not joined by 20:55, keep A until JOINED then switch immediately"
+  "ROLE_SWITCH_TRIGGER": "role A JOINED_STATE confirmed OR 20:55 (whichever first); if A not joined by 20:55, keep A until JOINED then switch immediately",
+  "ROLE_B_EARLY_PRECHECK": "2026-09-27T20:00-20:15+08:00 (before A OPEN)",
+  "active_at_20_30": "ROLE_A",
+  "switch_to_B_trigger": "ROLE_A JOINED_STATE=true (expected 20:31-20:40); hard backstop 20:45 = role B T-15",
+  "B_ready_before_A_open": true,
+  "role_B_no_forced_T30_switch": true,
+  "role_B_next_device_check": "20:45 (its T-15) or earlier once A JOINED"
+ },
+ "id_semantics": {
+  "login_account": "one game account (operator confirmed)",
+  "1063040265": "role_id of [ioi]零氪纯盾流 (client profile field 账号 shows per-role id)",
+  "1061663148": "role_id of [DIW]xhw",
+  "never_treat_as": "two separate login accounts"
  }
 }

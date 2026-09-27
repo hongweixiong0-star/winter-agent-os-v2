@@ -19626,7 +19626,7 @@
   }
  ],
  "schema_version": "1.2",
- "updated_at": "2026-09-27T10:40:00+00:00",
+ "updated_at": "2026-09-27T11:43:00+00:00",
  "roles": [
   {
    "role_id": "1171757165",
@@ -19679,8 +19679,8 @@
     "T-1": "2026-09-27T20:59:00+08:00",
     "OPEN": "2026-09-27T21:00:00+08:00"
    },
-   "auto_join_state": "UNKNOWN",
-   "notes": "role B independent read; trap opens 21:00. AUTO_JOIN recheck at 20:30 role-B T-30 (device may be busy with role A's open at that moment - schedule B recheck 20:35-20:45)."
+   "auto_join_state": "ON",
+   "notes": "AUTO_JOIN toggled ON 2026-09-27T11:41Z in a rally gap (verified re-read). EARLY_PRECHECK completed before role A open. B next device check: after A JOINED or 20:45."
   }
  ],
  "calendar_latest_by_role": {

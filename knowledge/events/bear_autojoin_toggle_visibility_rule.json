@@ -1,0 +1,19 @@
+{
+ "schema_version": "1.0",
+ "recorded_at": "2026-09-27T11:25:00+00:00",
+ "rule": "BEAR auto-join toggle (开启后自动加入冰原巨兽集结 / 自动加入) renders on 联盟战争→集结 ONLY in the 当前暂无战事 empty state",
+ "evidence": [
+  {
+   "state": "rally in progress (集结中 countdown, join rows visible)",
+   "toggle": "ABSENT",
+   "frames": "dataset/evidence/bear_roleB_complete_20260927T111650Z/rally_scroll_*.png, bear_roleB_autojoin_retry_20260927T112207Z/rally_now.png"
+  },
+  {
+   "state": "当前暂无战事",
+   "toggle": "PRESENT (bottom center, roi [222,1134,276,146])",
+   "frames": "role A dry-run 2026-09-27, bear_fast_dry_run after-frames"
+  }
+ ],
+ "implication": "read/toggle AUTO_JOIN only in the gap after a rally departs; a live rally HIDES the toggle - absence is not OFF",
+ "consumer": "bear_state.read_state_from_image returns UNKNOWN (not OFF) in this case - correct behavior"
+}
