@@ -1,0 +1,48 @@
+{
+ "schema_version": "1.0",
+ "entity_class": "TIMED_EVENT_SCHEDULE",
+ "event_id": "BEAR_HUNT",
+ "activity_name": "巨熊行动",
+ "page": "常规活动 → 巨熊行动(tab strip 横向滑动第2屏)",
+ "scheduled_start": "2026-09-27T20:30:00+08:00",
+ "client_raw": "预约自动开启： 2026-09-2720:30",
+ "extra_client_text": [
+  "陷阱可持续30分钟",
+  "联盟开启陷阱捕获 【变异巨熊】",
+  "等级5 开启",
+  "狩猎成就"
+ ],
+ "source_type": "CLIENT_DIRECT_SCHEDULE",
+ "confidence": "CONFIRMED",
+ "observed_at": "2026-09-27T10:01:48.634886+00:00",
+ "observed_by": "V2_AUTO_SESSION tools/bear_new_account_baseline_pass11.py",
+ "template_match_score": 0.9991,
+ "evidence_dir": "dataset/evidence/bear_baseline_newaccount_20260927T100038Z",
+ "time_zone": "+08:00",
+ "wake_ladder": {
+  "T-30": "2026-09-27T20:00:00+08:00",
+  "T-15": "2026-09-27T20:15:00+08:00",
+  "T-5": "2026-09-27T20:25:00+08:00",
+  "T-1": "2026-09-27T20:29:00+08:00",
+  "OPEN": "2026-09-27T20:30:00+08:00"
+ },
+ "role_scope": {
+  "account_id": "1063040265",
+  "role_name": "[ioi]零氪纯盾流",
+  "alliance": "ioi",
+  "kingdom": "4298",
+  "sibling_roles": [
+   {
+    "name": "[DIW]xhw",
+    "state": "NOT_READ_IN_DETAIL",
+    "note": "角色管理页可见；其巨熊上下文今晚未读取"
+   }
+  ]
+ },
+ "supersedes_for_this_account": {
+  "old_account_role_id": "1171757165",
+  "old_start": "2026-09-28T20:00:00+08:00",
+  "status": "OLD_ACCOUNT_HISTORY_ONLY"
+ },
+ "note": "陷阱是联盟建筑: 开启后联盟可打变异巨熊30分钟。旧账号 09-28 20:00 保留为历史，绝不驱动本账号。"
+}
