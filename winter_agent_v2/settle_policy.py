@@ -20,6 +20,7 @@ SAME_PAGE_FAST = SettlePolicy("SAME_PAGE_FAST", 0.10, 0.25)
 PAGE_TRANSITION = SettlePolicy("PAGE_TRANSITION", 0.15, 0.40)
 NETWORK_ACTION = SettlePolicy("NETWORK_ACTION", 0.20, 0.50)
 ANIMATION_HEAVY = SettlePolicy("ANIMATION_HEAVY", 0.30, 0.60)
+P0_EVENT_FAST_MODE = SettlePolicy("P0_EVENT_FAST_MODE", 0.10, 0.20)
 
 
 class FrameChangeProbe:
@@ -59,11 +60,27 @@ _NETWORK = frozenset({
     "DISPATCH_MARCH", "CLAIM_TRAINING", "CLAIM_FREE_STAMINA",
 })
 _ANIMATION = frozenset({"ATTACK_BEAST", "START_BATTLE", "EXECUTE_INTEL_RESCUE_SURVIVORS"})
+_BEAR_FAST = frozenset({
+    "OPEN_BEAR_RALLY_LIST", "JOIN_RALLY", "START_RALLY", "BEAR_AUTO_JOIN",
+    "REFRESH_RALLY_LIST", "SELECT_TROOP_PRESET", "DISPATCH_MARCH",
+})
 
 
-def choose(skill: str) -> SettlePolicy:
+def choose(
+    skill: str,
+    *,
+    goal: str = "",
+    bear_status: str = "",
+    rally_list_visible: bool = False,
+) -> SettlePolicy:
     """Pick a bounded cadence without changing verifier or action semantics."""
     skill = str(skill or "").upper()
+    if (
+        str(goal or "").upper() == "PARTICIPATE_BEAR"
+        and skill in _BEAR_FAST
+        and (str(bear_status or "").upper() in {"ACTIVE", "OPEN"} or rally_list_visible)
+    ):
+        return P0_EVENT_FAST_MODE
     if skill in _ANIMATION:
         return ANIMATION_HEAVY
     if skill in _NETWORK or skill.startswith("CLAIM_") or skill.startswith("SUBMIT_"):

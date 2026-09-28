@@ -5704,9 +5704,27 @@ class LiveRuntime:
                               last_fatal_error=reason if is_fatal_stop(reason) else None)
                 return finish(tick.execution.error if tick.execution else "NO_EXECUTION")
 
-            settle_policy = choose_settle_policy(decision.skill)
-            settle_first_wait = min(max(0.0, settle_policy.first_wait_s), max(0.0, self.settle_seconds))
-            settle_retry_wait = min(max(0.0, settle_policy.retry_wait_s), max(0.0, self.settle_seconds))
+            bear_reading = before.events.get("bear") if isinstance(before.events, dict) else None
+            settle_policy = choose_settle_policy(
+                decision.skill,
+                goal=self._step_goal(best_goal) or "",
+                bear_status=(
+                    str(bear_reading.get("status") or "")
+                    if isinstance(bear_reading, dict) else ""
+                ),
+                rally_list_visible=(
+                    before.page is Page.ALLIANCE
+                    and str(before.alliance.get("section") or "") == "RALLY_LIST"
+                    and bool(before.alliance.get("rally_rows") or before.rally.get("rows"))
+                ),
+            )
+            settle_limit = (
+                min(max(0.0, self.settle_seconds), 0.75)
+                if settle_policy.name == "P0_EVENT_FAST_MODE"
+                else max(0.0, self.settle_seconds)
+            )
+            settle_first_wait = min(settle_policy.first_wait_s, settle_limit)
+            settle_retry_wait = min(settle_policy.retry_wait_s, settle_limit)
             phase_started = time.monotonic()
             self.sleeper(settle_first_wait)
             latency["settle_first_wait_ms"] = (time.monotonic() - phase_started) * 1000
@@ -5744,7 +5762,9 @@ class LiveRuntime:
                 if after.page.value != "POPUP" or after.popup not in {"REAL_MONEY_OFFER", "PURCHASE_POPUP"}:
                     break
                 self.device.press_back()
+                phase_started = time.monotonic()
                 self.sleeper(settle_retry_wait)
+                latency["post_action_wait_ms"] += (time.monotonic() - phase_started) * 1000
                 recovery_path = self._capture_path(index, "after", suffix=f"payment_offer_closed_{offer_recovery}")
                 if self._device_lost(self.device.screenshot, recovery_path):
                     return finish(self._device_stop_reason)
@@ -5764,7 +5784,9 @@ class LiveRuntime:
                 # delayed. This handles slow MAP -> RESOURCE_DETAIL transitions.
                 if verification.ok:
                     break
+                phase_started = time.monotonic()
                 self.sleeper(settle_retry_wait)
+                latency["post_action_wait_ms"] += (time.monotonic() - phase_started) * 1000
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
                 if self._device_lost(self.device.screenshot, refresh_path):
                     return finish(self._device_stop_reason)
