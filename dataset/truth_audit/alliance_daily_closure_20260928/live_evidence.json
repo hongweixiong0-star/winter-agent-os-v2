@@ -1,0 +1,86 @@
+{
+  "date": "2026-09-28",
+  "timezone": "Asia/Shanghai",
+  "role_id": "not refreshed in the saved evidence; runtime must re-read role",
+  "items": [
+    {
+      "source": "dataset/raw/live_alliance_tech_page.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_alliance_tech_page.png",
+      "sha256": "e0b5445d0cd9289dc27497026ae806a7fbc9dc51aa063147524a43ed2f9d4206",
+      "bytes": 293739
+    },
+    {
+      "source": "dataset/raw/live_cycle2_alliance_tech.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_cycle2_alliance_tech.png",
+      "sha256": "f1166dfa84bfa434cb781a1ddd2b088c129512a5cb031e9b54d4a41d2b678df9",
+      "bytes": 317657
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/daily_alliance_donation_live_closure/daily_alliance_donation_live_closure_step_002_after_20260928T071151777098.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/daily_alliance_donation_live_closure_step_002_after_20260928T071151777098.png",
+      "sha256": "052ef83b3954f820dd377d9abd95406c96ca96af45a365ba416f27bca6846f09",
+      "bytes": 230875
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_551_ALLIANCE_TECH_FINAL_NODE.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_551_ALLIANCE_TECH_FINAL_NODE.png",
+      "sha256": "b3ca4cfa50247d742f4330cb2af4e31f95c7f4f51096f1a3319aeb51010b8a43",
+      "bytes": 215010
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_552_ALLIANCE_TECH_MEAT_DONATED.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_552_ALLIANCE_TECH_MEAT_DONATED.png",
+      "sha256": "d3719a13a1301808af1b6ee9a83c7468e6d85b4f820c9a04a2100dba302831ea",
+      "bytes": 256058
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_635_DAILY_HERO_RECRUIT_GO_BEFORE.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_635_DAILY_HERO_RECRUIT_GO_BEFORE.png",
+      "sha256": "e55328d7db5d362d15f8b3d0635a5fbdd7e87d14a57a8ece64592135ca275c61",
+      "bytes": 567690
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_636_DAILY_HERO_RECRUIT_GO_RESULT.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_636_DAILY_HERO_RECRUIT_GO_RESULT.png",
+      "sha256": "1fc66c60e0846741e53f6a6ff8831805d191de7358b5883f43126e5f553a49cc",
+      "bytes": 567629
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_637_DAILY_ALLIANCE_GO_BEFORE.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_637_DAILY_ALLIANCE_GO_BEFORE.png",
+      "sha256": "db23444a3605924c9e43513feb509897f3382ae8816a3d8ca4dc0d0705df1ce0",
+      "bytes": 807448
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_825_BEFORE_TASK_BOARD.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_825_BEFORE_TASK_BOARD.png",
+      "sha256": "b5f0b9fb28c18f19b6759302a02d3686d848633888875e249ffbcdca0915f32c",
+      "bytes": 1135485
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_826_AFTER_TASK_BOARD.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_826_AFTER_TASK_BOARD.png",
+      "sha256": "fa56ac2496b00adeaf1ac21454f0ccc50d24f36d0821ad5fe7738fe4a26b611c",
+      "bytes": 402446
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_827_AFTER_DAILY_TAB_RESELECT.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_827_AFTER_DAILY_TAB_RESELECT.png",
+      "sha256": "a0c6ebe2283669aeafd796dc8cf6992c15e1d99353a7c6ed8940a967d78569fb",
+      "bytes": 565345
+    },
+    {
+      "source": "dataset/raw/ui_exploration/20260928/frame_828_LIVE_DAILY_RECHECK.png",
+      "curated": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_828_LIVE_DAILY_RECHECK.png",
+      "sha256": "e81ec6a25849bd1b0b966df83840620f8c8b1d2fd9dd6d3121cb8dfce6541a77",
+      "bytes": 566793
+    }
+  ],
+  "missing_source_refs": [
+    "dataset/raw/ui_exploration/20260928/frame_814_AFTER_DAILY_TAB.png"
+  ],
+  "verification_limits": [
+    "Alliance frames show the recommended node and post-contribution detail dialog, not a full task completion by themselves.",
+    "Daily claim episode proves the reward popup; the activity total after claim was not captured in that episode."
+  ]
+}

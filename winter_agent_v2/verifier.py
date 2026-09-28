@@ -480,8 +480,9 @@ def verify_offline_rewards_claimed(before: WorldState, after: WorldState) -> Ver
 
 
 def verify_open_daily(before: WorldState, after: WorldState) -> VerificationResult:
-    ok = before.page is Page.HOME and after.page is Page.DAILY
-    return VerificationResult(ok, "OK" if ok else "OPEN_DAILY_NOT_PROVEN", {"before_home": before.page is Page.HOME, "after_daily": after.page is Page.DAILY})
+    task_board_pages = {Page.GROWTH_TASKS, Page.DAILY}
+    ok = before.page is Page.HOME and after.page in task_board_pages
+    return VerificationResult(ok, "OK" if ok else "OPEN_DAILY_NOT_PROVEN", {"before_home": before.page is Page.HOME, "after_task_board": after.page in task_board_pages})
 
 
 def verify_daily_tab_selected(before: WorldState, after: WorldState) -> VerificationResult:
@@ -494,12 +495,53 @@ def verify_daily_tab_selected(before: WorldState, after: WorldState) -> Verifica
     they match 4 and 1 frames, all of them live panel frames from 2026-09-16), so this is
     an independent observation of the client rather than a restatement of the action.
     """
-    before_ok = before.page is Page.DAILY and before.daily.get("tab") == "NOT_TASKS"
+    before_ok = before.page is Page.GROWTH_TASKS and before.daily.get("tab") == "NOT_TASKS"
     after_ok = after.page is Page.DAILY and after.daily.get("tab") == "TASKS"
     ok = before_ok and after_ok
     return VerificationResult(ok, "OK" if ok else "DAILY_TAB_NOT_SELECTED",
                               {"before_on_another_tab": before_ok, "after_on_daily_tab": after_ok,
                                "before_tab": before.daily.get("tab"), "after_tab": after.daily.get("tab")})
+
+
+def verify_daily_task_followed(before: WorldState, after: WorldState) -> VerificationResult:
+    """Verify that a live 前往 tap left the daily task list for a known destination.
+
+    This proves navigation only. Completion of the underlying Alliance, Intel, training,
+    gathering, research, or building Goal remains governed by that feature's own verifier.
+    """
+    button_rows = [
+        row for row in (before.daily or {}).get("tasks", ())
+        if isinstance(row, dict)
+        and str(row.get("state") or "").upper() == "AVAILABLE"
+        and isinstance(row.get("action_button"), dict)
+        and row["action_button"].get("semantic_id") == "BTN_DAILY_TASK_GO"
+    ]
+    source_page = before.page is Page.DAILY and bool(button_rows)
+    moved = after.page not in {Page.DAILY, Page.GROWTH_TASKS, Page.UNKNOWN}
+    before_progress = {
+        str(row.get("task_id")): (row.get("progress"), row.get("state"))
+        for row in button_rows
+    }
+    after_progress = {
+        str(row.get("task_id")): (row.get("progress"), row.get("state"))
+        for row in (after.daily or {}).get("tasks", ())
+        if isinstance(row, dict) and row.get("task_id")
+    }
+    row_changed = after.page is Page.DAILY and any(
+        after_progress.get(task_id) != value for task_id, value in before_progress.items()
+    )
+    confidence = after.confidence >= 0.65
+    destination_proven = moved or (after.page is Page.DAILY and row_changed)
+    ok = source_page and destination_proven and confidence
+    return VerificationResult(
+        ok, "OK" if ok else "DAILY_TASK_DESTINATION_NOT_PROVEN",
+        {"actionable_daily_row_before": source_page,
+         "after_page": after.page.value,
+         "left_daily_task_board": moved,
+         "task_row_state_changed": row_changed,
+         "destination_confident": confidence,
+         "navigation_only": True},
+    )
 
 
 def verify_open_alliance_gifts(before: WorldState, after: WorldState) -> VerificationResult:
@@ -2125,6 +2167,55 @@ def verify_alliance_tech_opened(before: WorldState, after: WorldState) -> Verifi
     )
 
 
+def verify_alliance_tech_node_opened(before: WorldState, after: WorldState) -> VerificationResult:
+    """Opening the recommended node must reveal its live normal-resource option."""
+    before_valid = (
+        before.page is Page.ALLIANCE
+        and before.alliance.get("section") == "TECHNOLOGY"
+        and before.alliance.get("recommended_tech_visible") is True
+        and before.alliance.get("status") == "UNKNOWN"
+    )
+    after_valid = (
+        after.page is Page.ALLIANCE
+        and after.alliance.get("section") == "TECHNOLOGY"
+        and after.alliance.get("status") == "AVAILABLE"
+        and after.alliance.get("resource") == "MEAT"
+        and int(after.alliance.get("cost") or 0) == 10000
+        and int(after.alliance.get("attempts_remaining") or 0) > 0
+    )
+    ok = before_valid and after_valid
+    return VerificationResult(
+        ok,
+        "OK" if ok else "ALLIANCE_TECH_DONATION_DETAILS_NOT_PROVEN",
+        {"before_valid": before_valid, "after_valid": after_valid,
+         "after_status": after.alliance.get("status"),
+         "after_resource": after.alliance.get("resource"),
+         "after_cost": after.alliance.get("cost"),
+         "attempts_remaining": after.alliance.get("attempts_remaining")},
+    )
+
+
+def verify_alliance_tech_details_closed(before: WorldState, after: WorldState) -> VerificationResult:
+    before_valid = (
+        before.page is Page.ALLIANCE
+        and before.alliance.get("section") == "TECHNOLOGY"
+        and before.alliance.get("donation_detail_open") is True
+    )
+    after_valid = (
+        after.page is Page.ALLIANCE
+        and after.alliance.get("section") == "TECHNOLOGY"
+        and after.alliance.get("donation_detail_open") is not True
+        and after.alliance.get("recommended_tech_visible") is True
+    )
+    ok = before_valid and after_valid
+    return VerificationResult(
+        ok, "OK" if ok else "ALLIANCE_TECH_DETAILS_STILL_OPEN",
+        {"before_valid": before_valid, "after_valid": after_valid,
+         "after_status": after.alliance.get("status"),
+         "recommended_node_visible": after.alliance.get("recommended_tech_visible")},
+    )
+
+
 def verify_quick_panel_pet_entry_opened(before: WorldState, after: WorldState) -> VerificationResult:
     """Require the pet-row action to leave the home overlay before accepting it."""
     panel = before.quick_panel or {}
@@ -2219,16 +2310,34 @@ def verify_alliance_tech_contribution(before: WorldState, result: WorldState, af
     attempts_after = int(result.alliance.get("attempts_remaining", -1))
     result_ok = result.page is Page.ALLIANCE and result.alliance.get("status") == "CONTRIBUTED" and attempts_after == attempts_before - 1
     contribution_before = int(before.alliance.get("personal_contribution", 0))
-    contribution_after = int(after.alliance.get("personal_contribution", 0))
+    contribution_after = int(after.alliance.get("personal_contribution", contribution_before))
     delta = contribution_after - contribution_before
     result_reward = int(result.alliance.get("contribution", 0))
     reward_ok = result_reward in {120, 240}
-    after_ok = after.page is Page.ALLIANCE and after.alliance.get("section") == "TECHNOLOGY" and reward_ok and delta == result_reward
+    same_screen = after.page is Page.ALLIANCE and after.alliance.get("section") == "TECHNOLOGY"
+    attempts_still_consumed = int(after.alliance.get("attempts_remaining", -1)) == attempts_after
+    # The client's personal-contribution header uses a different score scale from
+    # the one-time reward printed beside the node. A live normal donation can show
+    # reward=120 while the header advances by 600; require a positive delta at least
+    # as large as the printed reward, not numerical equality between unlike fields.
+    contribution_refreshed = delta >= result_reward
+    # The live donation sheet updates its contribution result and attempt counter
+    # immediately, while the personal-contribution header can lag until the next
+    # page refresh. The consumed attempt plus the client's CONTRIBUTED result and
+    # printed reward prove the transaction during that short UI lag.
+    contribution_header_lagged = (
+        delta == 0
+        and result_ok
+        and attempts_still_consumed
+        and result.alliance.get("status") == "CONTRIBUTED"
+        and after.alliance.get("status") in {"CONTRIBUTED", "AVAILABLE"}
+    )
+    after_ok = same_screen and attempts_still_consumed and reward_ok and (contribution_refreshed or contribution_header_lagged)
     ok = available and cost_ok and result_ok and after_ok
     return VerificationResult(
         ok,
         "OK" if ok else "ALLIANCE_TECH_CONTRIBUTION_NOT_PROVEN",
-        {"available": available, "cost_ok": cost_ok, "attempt_delta": attempts_after - attempts_before, "result_reward": result_reward, "contribution_delta": delta, "reward_ok": reward_ok, "after_ok": after_ok},
+        {"available": available, "cost_ok": cost_ok, "attempt_delta": attempts_after - attempts_before, "attempts_still_consumed": attempts_still_consumed, "result_reward": result_reward, "contribution_delta": delta, "contribution_header_lagged": contribution_header_lagged, "reward_ok": reward_ok, "after_ok": after_ok},
     )
 
 

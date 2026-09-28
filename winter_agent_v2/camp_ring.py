@@ -40,6 +40,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import cv2
 from PIL import Image
 
 #: The ring's own colours, read off the pixels of the 46 measured frames.  Saturated warm
@@ -143,3 +144,77 @@ def ring_centre_norm(
     if not (0.0 <= cx <= width and 0.0 <= cy <= height):
         return None
     return (round(cx / width, 4), round(cy / height, 4))
+
+
+def focused_camp_body_tap_norm(image_path: Path) -> tuple[float, float] | None:
+    """Locate the barracks body after a completed quick-panel row focused it.
+
+    The completed green tile is an entry, not a collect button. On the live 2026-09-25
+    route it closes the panel and centers the city view on that camp, with a warm selection
+    halo. The next tap belongs on the camp itself to open its 详情 / 升级 / 训练 actions.
+    The tutorial hand is also warm-coloured and was previously selected as the largest
+    component. The live frame at 14:32:31 has a 2100-pixel hand above a 747-pixel
+    horizontal halo; the former produced a tap at (426, 533) and no action bar. Pick the
+    current halo itself and tap inside its measured bounds. No reconstructed width or
+    remembered offset is used.
+
+    The search is limited to the centered city area where the panel's row-entry transition
+    places the selected camp. It requires a large, near-round warm component and refuses
+    ambiguous/missing matches. This prevents the many small gold HUD/activity icons around
+    the frame from becoming a tap target. The ring is a focus marker, not the building's hit
+    area: live MAA exploration on 射手营 and 矛兵营 showed a tap on the building body opens
+    the action bar, while a tap on the ring only dismisses the tutorial hand. The body target
+    is measured relative to the current-frame ring, so camera movement is followed.
+    """
+    with Image.open(image_path) as source:
+        rgb = np.asarray(source.convert("RGB"))
+    height, width = rgb.shape[:2]
+    if width <= 0 or height <= 0:
+        return None
+
+    hue, saturation, value = _hsv(rgb)
+    # The selection halo is translucent in the current client, so its saturation is lower
+    # than the older solid-gold ring. The central crop excludes the gold event rail and the
+    # upper HUD; the size/shape gates below reject unrelated central artwork.
+    x0, x1 = int(width * 0.35), int(width * 0.65)
+    y0, y1 = int(height * 0.40), int(height * 0.72)
+    mask = (
+        (hue[y0:y1, x0:x1] >= 20)
+        & (hue[y0:y1, x0:x1] <= 70)
+        & (saturation[y0:y1, x0:x1] >= 30)
+        & (value[y0:y1, x0:x1] >= 160)
+    ).astype(np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(mask, 8)
+    candidates: list[tuple[float, float, float, float]] = []
+    for index in range(1, count):
+        bx, by, box_w, box_h, area = (int(value) for value in stats[index])
+        aspect = box_w / max(1, box_h)
+        if (
+            area < 350 or area > 1500
+            or box_w < width * 0.09
+            or box_h < height * 0.04
+            or not 0.75 <= aspect <= 2.4
+        ):
+            continue
+        cx = x0 + bx + box_w / 2.0
+        cy = y0 + by + box_h / 2.0
+        candidates.append((float(area), cx, cy, float(box_w)))
+    if not candidates:
+        return None
+
+    # There must be one plausible focus halo. If two similarly large components compete,
+    # refuse instead of tapping an arbitrary building.
+    candidates.sort(reverse=True)
+    if len(candidates) > 1 and candidates[1][0] >= candidates[0][0] * 0.75:
+        return None
+    _area, ring_x, ring_y, _observed_width = candidates[0]
+    # The live Lancer route on 2026-09-26 disproved the old down-left offset: it landed on
+    # the lower roof, dismissed the tutorial hand, and did not open the building action bar.
+    # The halo itself is centred on the selected building's interactive body. Use that
+    # current-frame measurement directly instead of carrying a layout-specific displacement.
+    tap_x = ring_x
+    tap_y = ring_y
+    if not (0.0 <= tap_x < width and 0.0 <= tap_y < height):
+        return None
+    return (round(tap_x / width, 4), round(tap_y / height, 4))

@@ -2246,7 +2246,7 @@ class SemanticWorldVision:
         if match("TAB_DAILY_TASKS_SELECTED"):
             return WorldState(page=Page.DAILY, daily={"tab": "TASKS"}, confidence=0.99)
         if match("BTN_DAILY_TAB_TASKS"):
-            return WorldState(page=Page.DAILY, daily={"tab": "NOT_TASKS"}, confidence=0.99)
+            return WorldState(page=Page.GROWTH_TASKS, daily={"tab": "NOT_TASKS"}, confidence=0.99)
         if match("BTN_DAILY_CLAIM_ALL"):
             return WorldState(
                 page=Page.DAILY,
@@ -2320,7 +2320,8 @@ class SemanticWorldVision:
         if match("BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT"):
             return WorldState(
                 page=Page.ALLIANCE,
-                alliance={"section": "TECHNOLOGY", "status": "AVAILABLE", "attempts_remaining": 25, "resource": "MEAT", "cost": 10000},
+                alliance={"section": "TECHNOLOGY", "status": "AVAILABLE", "attempts_remaining": 25, "resource": "MEAT", "cost": 10000,
+                          "donation_detail_open": match("DIALOG_ALLIANCE_TECH") is not None},
                 confidence=0.99,
             )
         if match("STATUS_ALLIANCE_AUTO_HELP_ACTIVE"):
@@ -2389,7 +2390,20 @@ class SemanticWorldVision:
         if match("PAGE_ALLIANCE_GIFTS"):
             return WorldState(page=Page.ALLIANCE, alliance={"section":"GIFTS", "status":"UNKNOWN"}, confidence=0.98)
         if match("PAGE_ALLIANCE_TECH"):
-            return WorldState(page=Page.ALLIANCE, alliance={"section": "TECHNOLOGY", "status": "UNKNOWN"}, confidence=0.98)
+            # The recommended unfinished node is an actionable navigation target:
+            # opening it reveals the normal-resource contribution option. Keep its
+            # visibility separate from contribution availability; the latter is only
+            # proven on the detail dialog by BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT.
+            recommended_node = match("BTN_ALLIANCE_TECH_RECOMMENDED_NODE")
+            return WorldState(
+                page=Page.ALLIANCE,
+                alliance={
+                    "section": "TECHNOLOGY",
+                    "status": "UNKNOWN",
+                    "recommended_tech_visible": recommended_node is not None,
+                },
+                confidence=0.98,
+            )
         if match("PAGE_ALLIANCE"):
             return WorldState(
                 page=Page.ALLIANCE,

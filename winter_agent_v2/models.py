@@ -20,6 +20,7 @@ class Page(str, Enum):
     INTEL = "INTEL"
     BEAST = "BEAST"
     DAILY = "DAILY"
+    GROWTH_TASKS = "GROWTH_TASKS"
     ALLIANCE = "ALLIANCE"
     MAIL = "MAIL"
     EXPLORATION = "EXPLORATION"

@@ -214,9 +214,12 @@ class Activity:
 
     event_id: str
     name: str
+    event_type: str
     gate: str
     aliases: tuple[str, ...]
     cadence: str
+    tasks: tuple[str, ...]
+    generic_flow: str | None
     applies_to_roles: Mapping[str, Any]
     next_open_condition: Mapping[str, Any]
     participation_conditions: tuple[str, ...]
@@ -284,9 +287,12 @@ class Activity:
         return {
             "event_id": self.event_id,
             "name": self.name,
+            "event_type": self.event_type,
             "gate": self.gate,
             "aliases": list(self.aliases),
             "registration_state": "REGISTERED",
+            "registered_tasks": list(self.tasks),
+            "generic_flow": self.generic_flow,
             "current_occurrence_state": "UNKNOWN",
             "execution_readiness": "AWAITING_LIVE_CLIENT_READING",
             "cadence": self.cadence,
@@ -324,9 +330,12 @@ def known_activities(path: Path | str | None = None) -> tuple[Activity, ...]:
         out.append(Activity(
             event_id=str(record.get("event_id") or ""),
             name=str(record.get("name") or ""),
+            event_type=str(record.get("type") or "UNKNOWN"),
             gate=gate,
             aliases=tuple(str(x) for x in (record.get("aliases") or ())),
             cadence=str(record.get("cadence") or "UNKNOWN"),
+            tasks=tuple(str(x) for x in (record.get("tasks") or ())),
+            generic_flow=(str(record["generic_flow"]) if record.get("generic_flow") else None),
             applies_to_roles=record.get("applies_to_roles") or {},
             next_open_condition=record.get("next_open_condition") or {},
             participation_conditions=tuple(str(x) for x in (record.get("participation_conditions") or ())),

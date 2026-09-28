@@ -33,6 +33,9 @@ from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
 from .verifier import verify_panel_building_queue_opened, verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_login_gift_claimed, verify_login_gift_panel_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_done_collected, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_rally_created, verify_rally_joined, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
 from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
+from .verifier import (verify_alliance_tech_opened, verify_alliance_tech_node_opened,
+                     verify_alliance_tech_details_closed, verify_alliance_tech_contribution,
+                     verify_daily_task_followed)
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
 from .intel_pins import intel_pin_centers
@@ -212,6 +215,7 @@ class LiveRuntime:
         "DISMISS_REAL_MONEY_OFFER": verify_popup_closed,
         "CLAIM_OFFLINE_REWARDS": verify_offline_rewards_claimed,
         "OPEN_DAILY": verify_open_daily,
+        "FOLLOW_DAILY_TASK": verify_daily_task_followed,
         "DAILY_CLAIM_REWARDS": verify_daily_claim_feedback,
         "DISMISS_DAILY_REWARD": verify_daily_reward_advanced,
         "BACK": verify_safe_back,
@@ -284,6 +288,10 @@ class LiveRuntime:
         "EXECUTE_INTEL_RESCUE_SURVIVORS": verify_intel_rescue_started,
         "OPEN_MAIL": verify_open_mail,
         "OPEN_ALLIANCE": verify_open_alliance,
+        "OPEN_ALLIANCE_TECH_FROM_HOME": verify_alliance_tech_opened,
+        "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE": verify_alliance_tech_node_opened,
+        "CLOSE_ALLIANCE_TECH_DONATION_DETAILS": verify_alliance_tech_details_closed,
+        "ALLIANCE_TECH_CONTRIBUTE": lambda b, a: verify_alliance_tech_contribution(b, a, a),
         "OPEN_BEAR_RALLY_LIST": verify_bear_rally_list_open,
         "OPEN_EXPLORATION": verify_open_exploration,
         # ------------------------------------------------------------------
@@ -944,6 +952,7 @@ class LiveRuntime:
             changed = self.brain.current_goal is not None or bool(getattr(self.brain, "goal_id", ""))
             self.brain.current_goal = None
             self.brain.goal_id = ""
+            self.brain.daily_task_id = ""
             if changed:
                 self.brain.terminal_page_left = False
             return
@@ -961,6 +970,7 @@ class LiveRuntime:
         )
         self.brain.current_goal = route
         self.brain.goal_id = best_goal.goal_id
+        self.brain.daily_task_id = str((getattr(best_goal, "evidence", {}) or {}).get("daily_task_id") or "")
         if changed:
             # A terminal-page refusal belongs to the previous task instance. It must not
             # prevent a newly selected Goal from trying its own measured route.
@@ -2552,6 +2562,81 @@ class LiveRuntime:
         invented point.  Every guard below exists because a real frame made the
         guess wrong at least once.
         """
+        if semantic == "BTN_DAILY_TASK_GO":
+            # The task row and its adjacent 前往 control are read from this exact
+            # screenshot. A cached row, unpositioned OCR result, or different task
+            # is never allowed to supply the tap target.
+            if frame.page is not Page.DAILY or frame_path is None:
+                return None
+            target_task_id = str(getattr(getattr(self, "brain", None), "daily_task_id", "") or "")
+            if not target_task_id:
+                return None
+            try:
+                current_frame = Path(frame_path).resolve()
+            except (OSError, TypeError, ValueError):
+                return None
+            row = next((
+                item for item in (frame.daily or {}).get("tasks", ())
+                if isinstance(item, Mapping)
+                and item.get("task_id") == target_task_id
+                and str(item.get("state") or "").upper() == "AVAILABLE"
+                and item.get("source_frame")
+                and Path(str(item.get("source_frame"))).resolve() == current_frame
+                and isinstance(item.get("action_button"), Mapping)
+                and item["action_button"].get("semantic_id") == semantic
+                and item["action_button"].get("basis") == "CURRENT_FRAME_OCR_BOX_AND_ADJACENT_TASK_ROW"
+            ), None)
+            if row is None:
+                return None
+            box = row["action_button"].get("bbox_norm")
+            if not isinstance(box, (tuple, list)) or len(box) != 4:
+                return None
+            try:
+                x, y, width, height = (float(value) for value in box)
+            except (TypeError, ValueError):
+                return None
+            if width <= 0 or height <= 0 or x < 0 or y < 0 or x + width > 1 or y + height > 1:
+                return None
+            return (x + width / 2.0, y + height / 2.0)
+        if semantic == "BTN_ALLIANCE_TECH_RECOMMENDED_NODE":
+            # This tap only opens the currently recommended unfinished Alliance
+            # Technology node. Resolve its box from the exact live screenshot and
+            # require the page classifier to have seen the same actionable node.
+            # The contribution button in the detail dialog remains a separate step.
+            if (frame.page is not Page.ALLIANCE
+                    or frame.alliance.get("section") != "TECHNOLOGY"
+                    or frame.alliance.get("recommended_tech_visible") is not True
+                    or frame.alliance.get("status") != "UNKNOWN"
+                    or frame_path is None):
+                return None
+            hit = self._semantic.find(Path(frame_path), semantic)
+            if hit is None or hit.distance > 8:
+                return None
+            point = hit.center_norm
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
+        if semantic == "BTN_ALLIANCE_TECH_DETAILS_CLOSE":
+            if (frame.page is not Page.ALLIANCE
+                    or frame.alliance.get("section") != "TECHNOLOGY"
+                    or frame.alliance.get("donation_detail_open") is not True
+                    or frame_path is None):
+                return None
+            hit = self._semantic.find(Path(frame_path), semantic)
+            if hit is None or hit.distance > 8:
+                return None
+            point = hit.center_norm
+            if not (isinstance(point, (tuple, list)) and len(point) == 2):
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
         if semantic.startswith("QUICK_PANEL_ROW_") and semantic.endswith("_DONE"):
             # This green marker was tapped on the live client and closed the panel
             # without collecting the batch. It is a state indicator, not a control.

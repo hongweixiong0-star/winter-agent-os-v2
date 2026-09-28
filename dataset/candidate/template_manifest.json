@@ -1,5 +1,5 @@
 {
-  "count": 452,
+  "count": 455,
   "generated_at": "2026-09-27T01:27:25.614715+00:00",
   "records": [
     {
@@ -8282,6 +8282,60 @@
       "height": 46,
       "note": "two-state view detector. The chip at (613, 1234, 687, 1280) is an ACTION label, not a state label: this frame (the wilderness) draws 城镇 ('go to the other view'). Cut with the plate and icon because RapidOCR read this chip on only 3 of 6 frames. Validated bidirectionally: 12/12 own-state frames hit, 0/27 opposite-state frames hit, worst positive 0.9994 vs best opposite-state 0.4862.",
       "evidence": "dataset/raw/control_panel/runtime_auto/20260927_071653_484155/20260927_071653_484155_step_001_after_20260926T231718125654.png"
+    },
+    {
+      "confidence": 0.99,
+      "height": 205,
+      "parent_screenshot": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_alliance_tech_page.png",
+      "parent_sha256": "e0b5445d0cd9289dc27497026ae806a7fbc9dc51aa063147524a43ed2f9d4206",
+      "roi_norm": {
+        "h_norm": 0.16,
+        "w_norm": 0.195,
+        "x_norm": 0.405,
+        "y_norm": 0.755
+      },
+      "semantic": "BTN_ALLIANCE_TECH_RECOMMENDED_NODE",
+      "source": "REPLAY_HUMAN_REVIEWED_INTERACTIVE_NODE_CANDIDATE",
+      "status": "CANDIDATE",
+      "template_id": "alliance_tech_recommended_node_1",
+      "template_path": "dataset/candidate/templates/alliance_tech_recommended__live_alliance_tech_page__1.png",
+      "width": 140
+    },
+    {
+      "confidence": 0.99,
+      "height": 205,
+      "parent_screenshot": "dataset/truth_audit/alliance_daily_closure_20260928/frames/live_cycle2_alliance_tech.png",
+      "parent_sha256": "f1166dfa84bfa434cb781a1ddd2b088c129512a5cb031e9b54d4a41d2b678df9",
+      "roi_norm": {
+        "h_norm": 0.16,
+        "w_norm": 0.195,
+        "x_norm": 0.405,
+        "y_norm": 0.755
+      },
+      "semantic": "BTN_ALLIANCE_TECH_RECOMMENDED_NODE",
+      "source": "REPLAY_HUMAN_REVIEWED_INTERACTIVE_NODE_CANDIDATE",
+      "status": "CANDIDATE",
+      "template_id": "alliance_tech_recommended_node_2",
+      "template_path": "dataset/candidate/templates/alliance_tech_recommended__live_cycle2_alliance_tech__2.png",
+      "width": 140
+    },
+    {
+      "confidence": 0.99,
+      "height": 77,
+      "parent_screenshot": "dataset/truth_audit/alliance_daily_closure_20260928/frames/daily_alliance_donation_live_closure_step_002_after_20260928T071151777098.png",
+      "parent_sha256": "052ef83b3954f820dd377d9abd95406c96ca96af45a365ba416f27bca6846f09",
+      "roi_norm": {
+        "x_norm": 0.8389,
+        "y_norm": 0.1313,
+        "w_norm": 0.0944,
+        "h_norm": 0.0602
+      },
+      "semantic": "BTN_ALLIANCE_TECH_DETAILS_CLOSE",
+      "source": "LIVE_CLIENT_CAPTURE_CANDIDATE",
+      "status": "CANDIDATE",
+      "template_id": "btn_alliance_tech_details_close_live_20260928",
+      "template_path": "dataset/candidate/auto_collected/btn_alliance_tech_details_close__20260928.png",
+      "width": 68
     }
   ],
   "schema_version": "1.0",

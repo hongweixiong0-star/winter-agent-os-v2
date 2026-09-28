@@ -1198,9 +1198,20 @@
    ],
    "status": "VERIFIED",
    "source": "LIVE_CLIENT",
-   "last_verified": "2026-09-04",
+   "last_verified": "2026-09-28",
    "ocr_dynamic": [
     "10,000"
+   ],
+   "preconditions": [
+    "alliance technology contribution modal open",
+    "meat contribution option visible",
+    "daily contribution quota positive"
+   ],
+   "expected_transition": "meat decreases by 10000 and contribution count decreases by 1; alliance contribution reward appears",
+   "verification": "one 10000-meat contribution was executed; daily quota 25 to 24; alliance coins 268519 to 268759 (+240); diamonds unchanged",
+   "evidence_refs": [
+    "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_551_ALLIANCE_TECH_FINAL_NODE.png",
+    "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_552_ALLIANCE_TECH_MEAT_DONATED.png"
    ]
   },
   {
@@ -3004,8 +3015,271 @@
     "why_no_template_can_hold_it": "the panel's vertical offset varies and the button moves with it: the two reviewed phash registrations sit at y 636..685 and y 762..832, while the button is drawn at y ~692..765 -- in the gap between them (distance 36 and 33 against a threshold of 8).  The template tier therefore answers nothing on all 14 frames, and the remembered-coordinate ledger has no entry for this screen either."
    },
    "notes": "Only ever asked on the 加成总览 popup: both brain branches that emit OPEN_POWER_DETAILS are gated on world.popup == POWER_OVERVIEW, so POPUP is as narrow as pages can express here.  Resolved by _client_printed_control, which runs before the remembered ledger."
+  },
+  {
+   "id": "PAGE_DAILY",
+   "type": "PAGE",
+   "cn": "每日任务",
+   "en_aliases": [
+    "Daily Tasks"
+   ],
+   "ocr": [
+    "每日任务"
+   ],
+   "pages": [
+    "DAILY"
+   ],
+   "target_state": "DAILY_TASKS_PAGE",
+   "actions": [
+    "INSPECT",
+    "SELECT_CATEGORY",
+    "BACK"
+   ],
+   "status": "VERIFIED",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "preconditions": [
+    "daily_task_title_visible"
+   ],
+   "expected_transition": "DAILY_TASK_LIST",
+   "verification": {
+    "evidence_refs": [
+     "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_828_LIVE_DAILY_RECHECK.png"
+    ],
+    "observed": "Top heading 每日任务 identifies the daily tab; the inactive 成长任务 tab remains visible at the bottom."
+   }
+  },
+  {
+   "id": "PAGE_GROWTH_TASKS",
+   "type": "PAGE",
+   "cn": "成长任务",
+   "en_aliases": [
+    "Growth Tasks",
+    "Task Board"
+   ],
+   "ocr": [
+    "成长任务"
+   ],
+   "pages": [
+    "GROWTH_TASKS"
+   ],
+   "target_state": "GROWTH_TASKS_PAGE",
+   "actions": [
+    "INSPECT",
+    "SELECT_CATEGORY",
+    "BACK"
+   ],
+   "status": "LIVE_OBSERVED",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "preconditions": [
+    "task_board_title_visible_in_top_heading_band"
+   ],
+   "expected_transition": "GROWTH_TASK_LIST",
+   "verification": {
+    "evidence_refs": [
+     "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_826_AFTER_TASK_BOARD.png"
+    ],
+    "observed": "Top heading 成长任务 while inactive 每日任务 tab is visible along bottom."
+   }
+  },
+  {
+   "id": "BTN_DAILY_TASK_GO",
+   "type": "INTERACTIVE_CONTROL",
+   "cn": "前往",
+   "en_aliases": [
+    "Go to task"
+   ],
+   "ocr": [
+    "前往"
+   ],
+   "icon_semantic": "daily.task.navigate",
+   "pages": [
+    "DAILY"
+   ],
+   "target_state": "LINKED_DAILY_TASK_PAGE",
+   "actions": [
+    "NAVIGATE"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "parent": "PAGE_DAILY_TASK_LIST",
+   "visual_features": [
+    "rounded blue button with white 前往 text at the right side of an incomplete task card"
+   ],
+   "position_hint": {
+    "basis": "current-frame OCR box associated with the nearest task title before the next visible title boundary",
+    "dynamic": true
+   },
+   "preconditions": [
+    "PAGE_DAILY",
+    "task title and 前往 control belong to the same visible row",
+    "task is not already complete"
+   ],
+   "expected_transition": "linked feature page opens or the selected task state changes; navigation alone does not complete the task",
+   "verification": {
+    "status": "NAVIGATION_OBSERVED_ADB_CURRENT_FRAME_OCR",
+    "before_frame": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_635_DAILY_HERO_RECRUIT_GO_BEFORE.png",
+    "intermediate_frame": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_636_DAILY_HERO_RECRUIT_GO_RESULT.png",
+    "after_frame": "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_637_DAILY_ALLIANCE_GO_BEFORE.png",
+    "observed": "The current-frame 前往 box for 完成3次英雄招募 (2/3) eventually navigated from DAILY to HERO. The first immediate frame remained DAILY, so callers must reobserve rather than assume a synchronous page change."
+   },
+   "recovery": "reobserve the page and task row; never repeat a navigation tap from a stale frame",
+   "template_candidate": null,
+   "role_id": null,
+   "role_scope": "ROLE_ID_NOT_REFRESHED",
+   "last_seen": "2026-09-28",
+   "verifier": "verify_daily_task_followed",
+   "runtime_binding": "FOLLOW_DAILY_TASK -> existing feature Goal"
+  },
+  {
+   "id": "BTN_OPEN_DAILY",
+   "type": "BUTTON",
+   "cn": "任务面板入口",
+   "en_aliases": [
+    "Daily Tasks",
+    "Task Board"
+   ],
+   "ocr": [],
+   "icon_semantic": "navigation.daily_tasks",
+   "pages": [
+    "HOME"
+   ],
+   "target_state": "TASK_BOARD",
+   "actions": [
+    "OPEN"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "",
+   "preconditions": [
+    "PAGE_HOME_CONFIRMED_CURRENT_FRAME",
+    "CURRENT_FRAME_TEMPLATE_MATCH"
+   ],
+   "expected_transition": "GROWTH_TASKS_OR_DAILY",
+   "template_candidate": "dataset/candidate/daily_task/btn_open_daily__frame_772__no_badge.png",
+   "visual_features": {
+    "shape": "scroll/parchment sheet with pencil; variable red badge/count excluded from portrait crop"
+   },
+   "bbox_norm": {
+    "x_norm": 0.0111,
+    "y_norm": 0.8,
+    "w_norm": 0.0917,
+    "h_norm": 0.0539
+   },
+   "position_hint": {
+    "basis": "CURRENT_FRAME_TEMPLATE_SEARCH_BAND",
+    "search_band": [
+     0.0,
+     0.78,
+     0.14,
+     0.11
+    ]
+   },
+   "verification": {
+    "observed": "Opening from Home reveals the task board, initially on Growth Tasks in the current live client.",
+    "evidence_refs": [
+     "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_825_BEFORE_TASK_BOARD.png",
+     "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_826_AFTER_TASK_BOARD.png"
+    ]
+   },
+   "notes": "Template crop excludes notification badge/count; row/task content must be read after opening."
+  },
+  {
+   "id": "BTN_DAILY_TAB_TASKS",
+   "type": "BUTTON",
+   "cn": "每日任务",
+   "en_aliases": [
+    "Daily Tasks tab"
+   ],
+   "ocr": [
+    "每日任务"
+   ],
+   "pages": [
+    "GROWTH_TASKS"
+   ],
+   "target_state": "DAILY",
+   "actions": [
+    "SELECT"
+   ],
+   "status": "LIVE_OBSERVED",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "preconditions": [
+    "PAGE_GROWTH_TASKS_CONFIRMED"
+   ],
+   "expected_transition": "PAGE_DAILY",
+   "template_candidate": "dataset/candidate/daily_tab_20260916/btn_daily_tab_tasks__live_20260916.png",
+   "verification": {
+    "evidence_refs": [
+     "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_826_AFTER_TASK_BOARD.png",
+     "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_827_AFTER_DAILY_TAB_RESELECT.png"
+    ],
+    "observed": "Current-frame tab OCR target opened the Daily Tasks page."
+   }
+  },
+  {
+   "id": "BTN_ALLIANCE_TECH_RECOMMENDED_NODE",
+   "type": "BUTTON",
+   "cn": "联盟科技推荐未完成节点",
+   "en_aliases": [
+    "Recommended unfinished Alliance Technology node"
+   ],
+   "ocr": [
+    "联盟永续"
+   ],
+   "icon_semantic": "alliance.technology.recommended_node",
+   "pages": [
+    "ALLIANCE"
+   ],
+   "target_state": "ALLIANCE_TECH_DONATION_DETAILS_OPEN",
+   "actions": [
+    "TAP"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_CLIENT_CANDIDATE",
+   "preconditions": [
+    "Alliance Technology page is current",
+    "Current-frame recommended node template matches",
+    "node detail has not already opened"
+   ],
+   "expected_transition": "recommended unfinished node detail opens and exposes current contribution choices",
+   "verification": "awaiting current production step; must read node detail and 10000-meat contribution option before any donation action",
+   "evidence_refs": [
+    "dataset/truth_audit/alliance_daily_closure_20260928/recommended_node_before.png",
+    "dataset/truth_audit/alliance_daily_closure_20260928/frames/frame_551_ALLIANCE_TECH_FINAL_NODE.png"
+   ]
+  },
+  {
+   "id": "BTN_ALLIANCE_TECH_DETAILS_CLOSE",
+   "type": "BUTTON",
+   "cn": "Alliance Technology donation details close button",
+   "en_aliases": [
+    "Alliance Technology donation dialog close"
+   ],
+   "ocr": [],
+   "icon_semantic": "alliance.technology.details_close",
+   "pages": [
+    "ALLIANCE"
+   ],
+   "target_state": "ALLIANCE_TECH_DETAILS_CLOSED",
+   "actions": [
+    "TAP"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_CLIENT_CAPTURE_CANDIDATE",
+   "preconditions": [
+    "Alliance Technology donation dialog is open",
+    "the contribution result is confirmed"
+   ],
+   "expected_transition": "the donation detail dialog closes and the Technology tree is visible",
+   "verification": "alliance section remains TECHNOLOGY and the current-frame dialog anchor is gone",
+   "evidence_refs": [
+    "dataset/truth_audit/alliance_daily_closure_20260928/donation_detail_after.png"
+   ]
   }
  ],
  "notes": "OCR strings are candidates until observed in current CN/EN clients. Icon semantics are labels, not production templates.",
- "schema_note": "Optional fields (operator directive 2026-09-22): visual_features (what the control looks like, measured), position_hint (where it sits, always with its basis, never treated as a template), preconditions (what must hold before acting), states (the named states the control or the surface it belongs to can be in), expected_transition (what acting on it should change), verification (how far the record is actually verified -- MEASURED_* is a reading, UNVERIFIED is a hypothesis), related_goals (the goals it serves). Every field is optional and every existing record stays valid without them.  Additional field: ocr_dynamic holds the values a control was seen printing -- a countdown, a cost, a count -- which are read by the state readers and are deliberately NOT part of the control's identity, because a value changes and an identity does not. Additional field: ocr_merged marks a control whose printed name the client draws together with its icon, so that OCR returns one token containing the name instead of equalling it (measured: the 实力详情 button is read as 三实力详情).  It is declared per record and only that record's reading is relaxed; find_printed_words keeps its exact-match default, which exists because a containment match once answered with a different control's position (城镇 inside 我的城镇)."
+ "schema_note": "Optional fields (operator directive 2026-09-22): visual_features (what the control looks like, measured), position_hint (where it sits, always with its basis, never treated as a template), preconditions (what must hold before acting), states (the named states the control or the surface it belongs to can be in), expected_transition (what acting on it should change), verification (how far the record is actually verified -- MEASURED_* is a reading, UNVERIFIED is a hypothesis), related_goals (the goals it serves). Every field is optional and every existing record stays valid without them.  Additional field: ocr_dynamic holds the values a control was seen printing -- a countdown, a cost, a count -- which are read by the state readers and are deliberately NOT part of the control's identity, because a value changes and an identity does not. Additional field: ocr_merged marks a control whose printed name the client draws together with its icon, so that OCR returns one token containing the name instead of equalling it (measured: the 实力详情 button is read as 三实力详情).  It is declared per record and only that record's reading is relaxed; find_printed_words keeps its exact-match default, which exists because a containment match once answered with a different control's position (城镇 inside 我的城镇).",
+ "count": 121
 }

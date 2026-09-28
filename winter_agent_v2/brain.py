@@ -189,6 +189,9 @@ class RuleBrain:
         # indistinguishable from inside the brain, and only one of them may hand over to
         # the intel flow.  Set by the runtime when it derives the route from a goal.
         self.goal_id = ""
+        # Concrete daily row selected by Goal discovery. The runtime refreshes this
+        # from the selected Goal's current-frame evidence on every scheduler pass.
+        self.daily_task_id = ""
         self.max_beast_scans = 5
         # Same reasoning for the tabbed 任务 panel that ``OPEN_DAILY`` opens.
         # Measured live 2026-09-16: the panel lands on its 章节任务 tab and the
@@ -982,6 +985,33 @@ class RuleBrain:
             return Decision("CLOSE_POPUP", "exit_confirm_closed_via_its_close_button", world.confidence, "popup_closed")
         if world.page is Page.POPUP and world.popup:
             return Decision("CLOSE_POPUP", "blocking_popup", world.confidence, "popup_closed")
+        # A completed daily row can be claimable while a different actionable row is
+        # also present. Collect the reward first; otherwise the selected row's Go
+        # button can send the client away from the board and strand the completed
+        # reward for another AUTO cycle.
+        if (world.page is Page.DAILY
+                and (world.daily or {}).get("tab") == "TASKS"
+                and (world.daily or {}).get("status") == "CLAIMABLE"):
+            return Decision("DAILY_CLAIM_REWARDS", "daily_task_claimable", world.confidence,
+                            "daily_activity_increased")
+        if world.page is Page.DAILY and self.daily_task_id:
+            row = next((
+                item for item in (world.daily or {}).get("tasks", ())
+                if isinstance(item, dict)
+                and item.get("task_id") == self.daily_task_id
+                and str(item.get("state") or "").upper() == "AVAILABLE"
+                and isinstance(item.get("action_button"), dict)
+                and item["action_button"].get("semantic_id") == "BTN_DAILY_TASK_GO"
+            ), None)
+            if row is not None:
+                return Decision(
+                    "FOLLOW_DAILY_TASK",
+                    "scheduler_selected_live_incomplete_daily_row_with_current_go_control",
+                    world.confidence,
+                    "daily_task_destination_open",
+                )
+            return Decision("SAFE_STOP", "selected_daily_task_row_not_currently_actionable", 1.0,
+                            "refresh_state_or_switch_task")
         # A previous run can finish on the training or the 科技研究 page, which are
         # leaves.  A *named* goal that cannot work on such a page would otherwise
         # answer ``goal_page_mismatch`` within one step and leave the client exactly
@@ -1223,6 +1253,15 @@ class RuleBrain:
                     return leave
                 return Decision("SAFE_STOP", "goal_page_mismatch", 1.0, "bootstrap_to_exploration_route")
         if self.current_goal == "DAILY":
+            if (world.page is Page.ALLIANCE
+                    and world.alliance.get("section") == "TECHNOLOGY"
+                    and world.alliance.get("donation_detail_open") is True):
+                return Decision(
+                    "CLOSE_ALLIANCE_TECH_DONATION_DETAILS",
+                    "close_completed_donation_details_before_resuming_daily_board",
+                    world.confidence,
+                    "alliance_technology_tree_restored",
+                )
             if self.goal_id == "PET_TREASURE_RETURN" and world.page is Page.PET_TREASURE:
                 return Decision(
                     "BACK", "pet_treasure_page_observed_no_verified_claim_target_return_safely",
@@ -1306,6 +1345,12 @@ class RuleBrain:
                 if world.resource_search_open:
                     return Decision("BACK", "close_resource_search_for_daily_goal", world.confidence, "resource_search_closed")
                 return Decision("OPEN_HOME", "daily_goal_requires_home", world.confidence, "home_opened")
+            if world.page is Page.GROWTH_TASKS:
+                select_tab = self._select_daily_tab_once(world)
+                if select_tab is not None:
+                    return select_tab
+                return Decision("SAFE_STOP", "daily_tab_not_confirmed_after_task_board", 1.0,
+                                "refresh_state_or_switch_task")
             if world.page is not Page.DAILY:
                 leave = self._leave_foreign_page_once(world, owner="DAILY")
                 if leave is not None:
@@ -1379,6 +1424,14 @@ class RuleBrain:
                             "current_technology_page_proves_10000_meat_contribution_available",
                             world.confidence,
                             "alliance_contribution_verified",
+                        )
+                    if (world.alliance.get("status") == "UNKNOWN"
+                            and world.alliance.get("recommended_tech_visible") is True):
+                        return Decision(
+                            "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
+                            "live_recommended_unfinished_alliance_tech_node_opens_donation_details",
+                            world.confidence,
+                            "alliance_tech_donation_details_open",
                         )
                     if world.alliance.get("status") == "CONTRIBUTED":
                         return Decision("SAFE_STOP", "alliance_contribution_already_completed_this_visit",
@@ -2293,6 +2346,12 @@ class RuleBrain:
                 self.beast_card_not_actionable_left = True
                 return Decision("BACK", "beast_card_not_actionable_leaving_the_page", world.confidence, "map_opened")
             return Decision("SAFE_STOP", "beast_not_actionable", 1.0, "switch_task")
+        if world.page is Page.GROWTH_TASKS:
+            select_tab = self._select_daily_tab_once(world)
+            if select_tab is not None:
+                return select_tab
+            return Decision("SAFE_STOP", "task_board_tab_unknown", 1.0,
+                            "refresh_state_or_switch_task")
         if world.page is Page.DAILY:
             select_tab = self._select_daily_tab_once(world)
             if select_tab is not None:

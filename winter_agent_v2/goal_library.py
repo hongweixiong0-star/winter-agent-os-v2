@@ -595,6 +595,17 @@ def _append_panel_routine(
     # work re-opened the panel every run until the count was consulted.
     counts = [effective.get("claimable_count"), effective.get("badge_count")]
     waiting = badge or any(isinstance(c, int) and c > 0 for c in counts)
+    actionable_daily_rows = (
+        routine.field == "daily"
+        and any(
+            isinstance(row, Mapping)
+            and str(row.get("state") or "").upper() == "AVAILABLE"
+            and isinstance(row.get("action_button"), Mapping)
+            and row.get("action_button", {}).get("semantic_id") == "BTN_DAILY_TASK_GO"
+            for row in effective.get("tasks", ())
+        )
+    )
+    waiting = waiting or actionable_daily_rows
     provenance = {
         "observed": bool(effective) or (fresh and stored is not None),
         "reused": reused,
@@ -605,6 +616,7 @@ def _append_panel_routine(
         "age_minutes": record.get("age_minutes"),
         "overdue": bool(record.get("overdue", False)),
         "incomplete_queue_observation": incomplete_queue_reading,
+        "has_actionable_daily_task_rows": actionable_daily_rows,
     }
 
     # §一, and this is the whole of it: for the two entry-gated routines the entry's own badge decides
@@ -657,10 +669,15 @@ def _append_panel_routine(
         ))
         return
     if waiting:
+        work_skills = routine.work_skills
+        if actionable_daily_rows:
+            work_skills = tuple(dict.fromkeys((
+                "OPEN_DAILY", "SELECT_DAILY_TAB", "FOLLOW_DAILY_TASK", *work_skills,
+            )))
         goals.append(GoalState(
             routine.goal_id, GoalStatus.READY,
             reward_value=250.0, daily_loss=250.0,
-            available_skills=routine.work_skills,
+            available_skills=work_skills,
             evidence={**provenance, "status": status, "badge": badge}, distance=1.0,
         ))
         return
@@ -769,6 +786,7 @@ def _append_quick_panel_task_goals(goals: list[GoalState], world: WorldState) ->
         goals.append(GoalState(
             "ALLIANCE_DONATION", GoalStatus.READY, reward_value=240,
             available_skills=("OPEN_ALLIANCE", "OPEN_ALLIANCE_TECH_FROM_HOME",
+                              "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
                               "ALLIANCE_TECH_CONTRIBUTE"),
             evidence={"source": "QUICK_PANEL", "available": donation.get("available"),
                       "total": donation.get("total"), "source_word": donation.get("source_word")},
@@ -857,6 +875,19 @@ class GoalLibrary:
                           "operation": "RETURN_TO_HOME_ONLY"},
                 distance=0.25,
             ))
+        if (world.page is Page.HOME
+                and alliance_continuation_goal_id == "ALLIANCE_DONATION"):
+            # The daily task row's 前往 control returns to the city and highlights
+            # 联盟; preserve the selected donation Goal across that measured hop.
+            # Once on Alliance HOME, the existing branch below continues into its
+            # technology node, and the live contribution reader remains the action gate.
+            goals.append(GoalState(
+                "ALLIANCE_DONATION", GoalStatus.READY, reward_value=240,
+                available_skills=("OPEN_ALLIANCE",),
+                evidence={"source": "LIVE_DAILY_TASK_CONTINUATION",
+                          "operation": "OPEN_ALLIANCE_AFTER_TASK_ROW_NAVIGATION"},
+                distance=0.5,
+            ))
         if (world.page is Page.ALLIANCE
                 and world.alliance.get("section") in {"HOME", "TECHNOLOGY"}):
             section = world.alliance.get("section")
@@ -880,6 +911,15 @@ class GoalLibrary:
                               "resource": world.alliance.get("resource"),
                               "cost": world.alliance.get("cost"),
                               "attempts_remaining": world.alliance.get("attempts_remaining")},
+                    distance=0.25,
+                ))
+            elif (status == "UNKNOWN"
+                    and world.alliance.get("recommended_tech_visible") is True):
+                goals.append(GoalState(
+                    "ALLIANCE_DONATION", GoalStatus.READY, reward_value=240,
+                    available_skills=("OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",),
+                    evidence={"source": "LIVE_ALLIANCE_RECOMMENDED_TECH_NODE",
+                              "operation": "OPEN_NODE_TO_READ_DONATION_OPTIONS"},
                     distance=0.25,
                 ))
             elif status == "CONTRIBUTED":
@@ -984,6 +1024,21 @@ class GoalLibrary:
         # manufacture a Bear discovery goal.  Bear discovery is emitted below only
         # from the specific live Alliance War tile on Alliance HOME.
         _append_quick_panel_task_goals(goals, world)
+        if (world.page is Page.ALLIANCE
+                and world.alliance.get("section") == "TECHNOLOGY"
+                and world.alliance.get("donation_detail_open") is True):
+            # Keep the existing daily board Goal alive long enough to close the
+            # completed contribution detail and return to the task board. Replace
+            # any stale daily visit ticket instead of creating a parallel Goal.
+            goals[:] = [goal for goal in goals if goal.goal_id != "DAILY_ACTIVITY_TARGET"]
+            goals.append(GoalState(
+                "DAILY_ACTIVITY_TARGET", GoalStatus.READY,
+                reward_value=500.0, daily_loss=500.0,
+                available_skills=("CLOSE_ALLIANCE_TECH_DONATION_DETAILS",),
+                evidence={"source": "LIVE_DAILY_TASK_CONTINUATION",
+                          "operation": "CLOSE_COMPLETED_DONATION_AND_RETURN_TO_TASK_BOARD"},
+                distance=0.5,
+            ))
         # GATHER, as the operator's goal list names it, in the runtime form the
         # project's own table already describes (KEEP_MARCHES_PRODUCTIVE).
         #
@@ -1018,6 +1073,7 @@ class GoalLibrary:
                           "condition": "no_idle_march_slot" if waiting else ""},
                 distance=float(max(0, idle)),
             ))
+        _append_daily_task_goals(goals, world)
         minimum = world.events.get("minimum_guarantee") if isinstance(world.events, dict) else None
         if isinstance(minimum, dict):
             missing = int(minimum.get("points_missing", 0))
@@ -1890,3 +1946,89 @@ class GoalStateStore:
         value["status"] = goal.status.value
         value["priority"] = None if goal.priority == float("-inf") else goal.priority
         return value
+
+
+_DAILY_ROW_GOAL_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("DAILY_ALLIANCE_CONTRIBUTE", "ALLIANCE_DONATION"),
+    ("DAILY_INTEL_CLUES", "CLEAR_INTEL"),
+    ("DAILY_TRAIN_SHIELD", "SHIELD_CAMP_TRAINING"),
+    ("DAILY_TRAIN_LANCER", "LANCER_CAMP_TRAINING"),
+    ("DAILY_TRAIN_MARKSMAN", "MARKSMAN_CAMP_TRAINING"),
+    ("DAILY_GATHER_", "KEEP_MARCHES_PRODUCTIVE"),
+    ("DAILY_RESEARCH", "KEEP_RESEARCH_PRODUCTIVE"),
+    ("DAILY_BUILD", "KEEP_BUILDING_PRODUCTIVE"),
+)
+
+
+def _append_daily_task_goals(goals: list[GoalState], world: WorldState) -> None:
+    """Turn one live, incomplete daily row into its existing task Goal.
+
+    The task board's 前往 control is the current-frame bridge from a row to its feature.
+    OCR could read the rows while the scheduler had no corresponding Goal, so AUTO returned
+    RUNNABLE=0 on an actionable board. Reuse feature Goal identities so task-board, red-dot,
+    and live-state discoveries converge rather than creating parallel tasks.
+    """
+    if world.page is not Page.DAILY:
+        return
+    rows = [
+        row for row in (world.daily or {}).get("tasks", ())
+        if isinstance(row, Mapping)
+        and str(row.get("state") or "").upper() == "AVAILABLE"
+        and isinstance(row.get("action_button"), Mapping)
+        and row.get("action_button", {}).get("semantic_id") == "BTN_DAILY_TASK_GO"
+    ]
+    if not rows:
+        return
+
+    # Prefer the most progressed actionable task and keep a stable current-frame order
+    # for ties. This makes the same near-finished task win across repeated reads.
+    rows.sort(key=lambda row: (
+        -float((row.get("progress") or {}).get("current", 0) or 0)
+        / max(1.0, float((row.get("progress") or {}).get("target", 0) or 0)),
+        int(row.get("row_order_on_frame", 0) or 0),
+    ))
+    by_goal = {goal.goal_id: index for index, goal in enumerate(goals)}
+    for row in rows:
+        task_id = str(row.get("task_id") or "")
+        goal_id = next((goal for prefix, goal in _DAILY_ROW_GOAL_PREFIXES if task_id.startswith(prefix)), "")
+        if not goal_id:
+            continue
+        progress = row.get("progress") if isinstance(row.get("progress"), Mapping) else {}
+        current = int(progress.get("current", 0) or 0)
+        target = int(progress.get("target", 0) or 0)
+        if target > 0 and current >= target:
+            continue
+        evidence = {"daily_task_id": task_id, "daily_task_row": dict(row),
+                    "source": "LIVE_DAILY_TASK_ROW"}
+        existing_index = by_goal.get(goal_id)
+        if existing_index is not None:
+            previous = goals[existing_index]
+            goals[existing_index] = GoalState(
+                goal_id=previous.goal_id,
+                status=GoalStatus.READY,
+                completion=previous.completion,
+                remaining_seconds=previous.remaining_seconds,
+                reward_value=max(previous.reward_value, 500.0),
+                daily_loss=max(previous.daily_loss, 500.0),
+                event_synergy=previous.event_synergy,
+                development_value=previous.development_value,
+                resource_cost=previous.resource_cost,
+                risk=previous.risk,
+                available_skills=tuple(dict.fromkeys(("FOLLOW_DAILY_TASK", *previous.available_skills))),
+                retry_after=None,
+                evidence={**previous.evidence, **evidence},
+                distance=float(max(0, target - current)) if target else max(previous.distance, 1.0),
+            )
+        else:
+            goals.append(GoalState(
+                goal_id=goal_id,
+                status=GoalStatus.READY,
+                reward_value=500.0,
+                daily_loss=500.0,
+                available_skills=("FOLLOW_DAILY_TASK",),
+                evidence=evidence,
+                distance=float(max(0, target - current)) if target else 1.0,
+            ))
+            by_goal[goal_id] = len(goals) - 1
+        # One selected row per discovery frame avoids multiple simultaneous task instances.
+        break

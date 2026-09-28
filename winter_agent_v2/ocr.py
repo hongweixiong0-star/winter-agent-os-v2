@@ -4,6 +4,7 @@ import hashlib
 import re
 import sys
 import time
+import unicodedata
 from dataclasses import dataclass
 from dataclasses import replace
 from pathlib import Path
@@ -33,6 +34,26 @@ def _frame_stamp(frame: Path) -> str:
         return datetime.fromtimestamp(frame.stat().st_mtime, timezone.utc).isoformat()
     except OSError:
         return ""
+
+
+def _stamp_daily_task_evidence(state: WorldState, image_path: Path) -> WorldState:
+    """Attach per-frame provenance after the dynamic daily rows are OCR-read."""
+    if state.page is not Page.DAILY or not state.daily.get("tasks"):
+        return state
+    frame = Path(image_path)
+    try:
+        source_frame = frame.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except (OSError, ValueError):
+        source_frame = frame.as_posix()
+    observed_at = _frame_stamp(frame)
+    daily = dict(state.daily)
+    daily["source_frame"] = source_frame
+    daily["observed_at"] = observed_at
+    daily["tasks"] = [
+        {**dict(row), "source_frame": source_frame, "timestamp": observed_at}
+        for row in daily["tasks"] if isinstance(row, dict)
+    ]
+    return replace(state, daily=daily)
 
 from .models import MarchState, Page, RoleIdentity, WorldState
 
@@ -594,6 +615,158 @@ class OCRPageClassifier:
 
     _TIMER_RE = re.compile(r"(?:(?P<days>\d+)天)?(?P<hours>\d{1,3}):(?P<minutes>\d{2}):(?P<seconds>\d{2})")
 
+    _DAILY_PROGRESS_RE = re.compile(
+        r"[（(]\s*(?P<current>[\d,]+)\s*/\s*(?P<target>[\d,]+)\s*[）)]"
+    )
+    _DAILY_TASK_ID_RULES: tuple[tuple[str, str], ...] = (
+        ("治疗", "DAILY_TREAT_WOUNDED"),
+        ("完成联盟捐献", "DAILY_ALLIANCE_CONTRIBUTE"),
+        ("英雄招募", "DAILY_HERO_RECRUIT"),
+        ("情报线索", "DAILY_INTEL_CLUES"),
+        ("仓库领取", "DAILY_WAREHOUSE_SUPPLY"),
+        ("冰原巨兽", "DAILY_DEFEAT_BEAST"),
+        ("竞技场挑战", "DAILY_ARENA_CHALLENGE"),
+        ("分享", "DAILY_EXTERNAL_SHARE"),
+        ("探险挑战", "DAILY_EXPLORATION_CHALLENGE"),
+        ("研究", "DAILY_RESEARCH"),
+        ("每日登录", "DAILY_LOGIN"),
+        ("联盟互助", "DAILY_ALLIANCE_HELP"),
+    )
+
+    @classmethod
+    def _read_daily_task_rows(
+        cls,
+        tokens: tuple[OCRToken, ...] | list[OCRToken],
+        frame_size: tuple[int, int] | None,
+    ) -> list[dict[str, object]]:
+        """Read visible task cards from current-frame text and geometry.
+
+        Each title is discovered from its own progress token. A nearby 前往 OCR box is
+        assigned only when it falls below that title and before the midpoint to the next
+        discovered title. This uses the rows actually visible on the frame; it does not
+        assume a fixed list length, fixed row pitch, or saved screen coordinates.
+        """
+        if not frame_size or frame_size[0] <= 0 or frame_size[1] <= 0:
+            return []
+        width, height = frame_size
+
+        def rect(token: OCRToken) -> tuple[float, float, float, float] | None:
+            if not token.box:
+                return None
+            xs = [point[0] for point in token.box]
+            ys = [point[1] for point in token.box]
+            left, top, right, bottom = min(xs), min(ys), max(xs), max(ys)
+            if right <= left or bottom <= top:
+                return None
+            return left, top, right, bottom
+
+        title_rows: list[tuple[OCRToken, str, int, int]] = []
+        go_tokens: list[OCRToken] = []
+        for token in tokens:
+            if token.confidence < 0.72 or not token.box:
+                continue
+            raw = unicodedata.normalize("NFKC", str(token.text or "")).strip()
+            if raw == "前往":
+                go_tokens.append(token)
+                continue
+            match = cls._DAILY_PROGRESS_RE.search(raw)
+            if not match:
+                continue
+            title = cls._DAILY_PROGRESS_RE.sub("", raw).strip(" \t:：-—")
+            if len(title) < 2 or not any("一" <= char <= "龥" for char in title):
+                continue
+            current = int(match.group("current").replace(",", ""))
+            target = int(match.group("target").replace(",", ""))
+            if target <= 0:
+                continue
+            title_rows.append((token, title, current, target))
+
+        title_rows.sort(key=lambda item: item[0].centre[1])
+        records: list[dict[str, object]] = []
+        for index, (token, title, current, target) in enumerate(title_rows):
+            title_rect = rect(token)
+            if title_rect is None:
+                continue
+            _, title_top, _, title_bottom = title_rect
+            title_y = token.centre[1]
+            if index + 1 < len(title_rows):
+                next_y = title_rows[index + 1][0].centre[1]
+                row_bottom = min(title_y + 140.0, (title_y + next_y) / 2.0)
+            else:
+                row_bottom = min(title_y + 140.0, height * 0.88)
+            button = next((
+                candidate for candidate in sorted(
+                    go_tokens, key=lambda item: abs(item.centre[1] - (title_y + 70.0))
+                )
+                if title_bottom <= candidate.centre[1] <= row_bottom
+            ), None)
+
+            normalized_title = unicodedata.normalize("NFKC", title).strip()
+            if "训练" in normalized_title and "盾兵" in normalized_title:
+                task_id = "DAILY_TRAIN_SHIELD"
+            elif "训练" in normalized_title and "矛兵" in normalized_title:
+                task_id = "DAILY_TRAIN_LANCER"
+            elif "训练" in normalized_title and "射手" in normalized_title:
+                task_id = "DAILY_TRAIN_MARKSMAN"
+            elif "采集" in normalized_title and "生肉" in normalized_title:
+                task_id = "DAILY_GATHER_MEAT"
+            elif "采集" in normalized_title and "木材" in normalized_title:
+                task_id = "DAILY_GATHER_WOOD"
+            elif "采集" in normalized_title and "煤炭" in normalized_title:
+                task_id = "DAILY_GATHER_COAL"
+            elif "采集" in normalized_title and "铁矿" in normalized_title:
+                task_id = "DAILY_GATHER_IRON"
+            elif "采集" in normalized_title:
+                task_id = "DAILY_GATHER"
+            else:
+                task_id = next((
+                    semantic_id for marker, semantic_id in cls._DAILY_TASK_ID_RULES
+                    if marker in normalized_title
+                ), "")
+            if not task_id:
+                digest = hashlib.sha1(normalized_title.encode("utf-8")).hexdigest()[:10].upper()
+                task_id = f"DAILY_TASK_{digest}"
+            status = "COMPLETED" if current >= target else "AVAILABLE" if button else "UNKNOWN"
+            left, top, right, bottom = title_rect
+            row: dict[str, object] = {
+                "semantic_id": task_id if task_id.startswith("DAILY_TASK_") else f"DAILY_TASK_{task_id.removeprefix('DAILY_')}",
+                "task_id": task_id,
+                "page": Page.DAILY.value,
+                "label": normalized_title,
+                "ocr_text": str(token.text or "").strip(),
+                "parent": "PAGE_DAILY_TASK_LIST",
+                "state": status,
+                "progress": {"current": current, "target": target},
+                "bbox_norm": [
+                    round(left / width, 5), round(top / height, 5),
+                    round((right - left) / width, 5), round((bottom - top) / height, 5),
+                ],
+                "row_order_on_frame": index,
+                "action_type": "CLICK" if button else "NONE",
+                "preconditions": ["page==DAILY", "target_row_seen_in_current_frame"],
+                "expected_result": "linked_task_page_or_state_change" if button else "none",
+                "verifier": "current_frame_page_or_task_progress_change",
+                "recovery": "reobserve_current_page_before_any_retry",
+                "template_candidate": None,
+                "role_id": None,
+                "role_scope": "ROLE_ID_NOT_REFRESHED",
+            }
+            if button is not None:
+                button_rect = rect(button)
+                if button_rect is not None:
+                    bx0, by0, bx1, by1 = button_rect
+                    row["action_button"] = {
+                        "semantic_id": "BTN_DAILY_TASK_GO",
+                        "label": "前往",
+                        "bbox_norm": [
+                            round(bx0 / width, 5), round(by0 / height, 5),
+                            round((bx1 - bx0) / width, 5), round((by1 - by0) / height, 5),
+                        ],
+                        "basis": "CURRENT_FRAME_OCR_BOX_AND_ADJACENT_TASK_ROW",
+                    }
+            records.append(row)
+        return records
+
     @classmethod
     def _explicit_start_seconds(cls, tokens: list[OCRToken]) -> int | None:
         """Read only a timer explicitly labeled 距开始/距离开始.
@@ -676,6 +849,32 @@ class OCRPageClassifier:
             for token in eligible
             if _is_quick_panel_section(token)
         }
+        # The task board has two different page identities with tabs along its
+        # bottom edge. The inactive tab label is always visible, so only the
+        # centered heading in the top band can identify the current page.
+        # Older geometry-free fixtures retain an exact-text compatibility path.
+        task_heading_tokens = [
+            token for token in eligible
+            if token.text.strip() in {"成长任务", "每日任务"}
+        ]
+        task_headings = set()
+        task_page = None
+        positioned_task_heading = False
+        if frame_size and frame_size[0] > 0 and frame_size[1] > 0:
+            for token in task_heading_tokens:
+                if not token.box:
+                    continue
+                positioned_task_heading = True
+                cx, cy = token.centre
+                if 0.22 <= cx / frame_size[0] <= 0.78 and cy / frame_size[1] <= 0.16:
+                    task_headings.add(token.text.strip())
+        if len(task_headings) == 1:
+            task_page = Page.GROWTH_TASKS if "成长任务" in task_headings else Page.DAILY
+        elif not positioned_task_heading and not any(token.box for token in task_heading_tokens):
+            if "成长任务" in exact_texts:
+                task_page = Page.GROWTH_TASKS
+            elif "每日任务" in exact_texts:
+                task_page = Page.DAILY
         # Current-client shop skins vary, while the real-currency price is the
         # stable action semantic. OCR may replace the currency glyph under a
         # legacy locale, but a high-confidence decimal price remains intact.
@@ -744,6 +943,8 @@ class OCRPageClassifier:
                               daily={"task_action_feedback": True},
                               confidence=max(token.confidence for token in eligible))
         found: list[Page] = []
+        if task_page is not None:
+            found.append(task_page)
         # The live recruit screen draws its title as two OCR boxes (英雄, 招募), then
         # two distinct cards with 高级招募 / 史诗招募, each carrying its own
         # 今日免费招募剩余 count. The quick panel can show the same card names, but
@@ -922,7 +1123,11 @@ class OCRPageClassifier:
         page = found[0]
         confidence = max(token.confidence for token in eligible)
         alliance: dict[str, object] = {}
-        daily: dict[str, object] = {}
+        daily: dict[str, object] = (
+            {"tab": "TASKS"} if page is Page.DAILY
+            else {"tab": "NOT_TASKS"} if page is Page.GROWTH_TASKS
+            else {}
+        )
         building: dict[str, object] = (
             {"upgrade_dialog_visible": True, "identity": "UNKNOWN"}
             if page is Page.BUILDING and (building_sheet or research_lab_sheet) else {}
@@ -1113,6 +1318,9 @@ class OCRPageClassifier:
             if task:
                 goal = int(task.group(1))
                 daily.update({"task_id":f"ALLIANCE_CONTRIBUTE_{goal}", "progress":int(task.group(2)), "goal":int(task.group(3))})
+            daily_tasks = self._read_daily_task_rows(result.tokens, frame_size)
+            daily["tasks"] = daily_tasks
+            daily["visible_task_count"] = len(daily_tasks)
             milestone_end = next((index for index, text in enumerate(texts) if text == "325"), -1)
             if milestone_end >= 0:
                 activity = next((int(text) for text in texts[milestone_end + 1:] if re.fullmatch(r"\d{1,3}", text)), None)
@@ -4992,6 +5200,9 @@ class HybridVision:
             classified = self.classifier.classify(
                 result, frame_size=frame_size
             )
+            if classified.page is Page.DAILY and classified.daily:
+                classified = self._read_daily_activity_badge(image_path, classified)
+                classified = _stamp_daily_task_evidence(classified, image_path)
             if classified.page is Page.TRAINING and classified.training:
                 # Where the three tabs are drawn, read now: this branch RETURNS, so a fold
                 # placed with the other per-page reads (further down, in the known-page chain)
