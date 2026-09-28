@@ -68,6 +68,7 @@ from winter_agent_v2.runtime_snapshot import (
     counts_as_unexpected_worker_exit,
     is_fatal_stop,
 )
+from winter_agent_v2.worker_recovery import RecoveryOutcome, retry_until_ready
 
 CONFIG_PATH = ROOT / "config/v2.json"
 PANEL_STATE_PATH = ROOT / "config/control_panel_state.json"
@@ -475,7 +476,9 @@ def await_worker(
 # counted as an unexpected worker exit.  Anything else that escapes the worker
 # thread is a real crash and is counted, with a full report.
 ENVIRONMENT_FAILURES = (
-    "DEVICE_NOT_CONNECTED", "DEVICE_AMBIGUOUS", "ADB_DISCOVERY_FAILED", "ADB_FAILED",
+    "DEVICE_NOT_CONNECTED", "DEVICE_AMBIGUOUS", "DEVICE_CONNECT_TIMEOUT",
+    "ADB_DISCOVERY_FAILED", "ADB_COMMAND_TIMEOUT", "ADB_FAILED",
+    "MUMU_LAUNCHER_NOT_FOUND", "MUMU_LAUNCH_FAILED",
     "MuMu 未连接", "MuMu 实例启动失败", "等待 MuMu 连接超时", "用户已停止",
     "SCREENSHOT_NOT_PNG", "SCREENSHOT_DAMAGED", RUNTIME_ENV_STOP_REASON,
 )
@@ -2919,6 +2922,9 @@ class ControlPanel:
         self.starting = False
         self.refreshing = False
         self.stop_requested = self.paused = False
+        self._device_launch_requested = False
+        self._device_recovery_started_at = ""
+        self._worker_thread: threading.Thread | None = None
         self.repeat_after_id: str | None = None
         self.latest_world: WorldState | None = None
         self.latest_image_path: Path | None = None
@@ -4602,6 +4608,16 @@ class ControlPanel:
         self.start()
 
     def start(self) -> None:
+        worker = self._worker_thread
+        if worker is not None and worker.is_alive():
+            # A stopped worker may still be finishing one bounded ADB call.  Do
+            # not create a second device owner; defer an explicit restart until
+            # the previous thread has returned.
+            if self.stop_requested or self.paused:
+                if not self.repeat_after_id:
+                    self.repeat_after_id = self.root.after(250, self.start)
+            return
+        self._worker_thread = None
         if self.process is not None or self.starting: return
         blocker = runtime_env_blocker()
         if blocker is not None:
@@ -4641,7 +4657,7 @@ class ControlPanel:
         self.starting = True
         self._append(f"运行环境预检通过：{runtime_python_path()}")
         if self.repeat_after_id: self.root.after_cancel(self.repeat_after_id); self.repeat_after_id = None
-        self.stop_requested = self.paused = False; self._running_buttons()
+        self.stop_requested = self.paused = False; self._device_launch_requested = False; self._running_buttons()
         # An explicit 开始 (or an allowed auto-start) is the operator saying
         # "run": that is what clears a remembered stop.
         self.operator_intent = save_operator_intent(PANEL_STATE_PATH, "RUNNING", "started")
@@ -4650,7 +4666,8 @@ class ControlPanel:
                                   current_goal=None, current_skill=None, reason="启动并校准真实客户端",
                                   verifier=None, next_action="启动唯一 Scheduler")
         self._append("自动运行已启动：Goal 与 Universal Skill 由唯一 Scheduler 决定。")
-        threading.Thread(target=self._run_unified_worker, daemon=True).start()
+        self._worker_thread = threading.Thread(target=self._run_unified_worker, name="unified-auto-worker", daemon=True)
+        self._worker_thread.start()
 
     def _check_control_plane_reload(self) -> None:
         """Is this window running code that is no longer on disk?
@@ -4918,8 +4935,22 @@ class ControlPanel:
             if blocker is not None:
                 raise RuntimeError(f"{RUNTIME_ENV_STOP_REASON}: {blocker}")
             self.active_panel_task = "AUTO"
-            self._ensure_device()
-            if self.stop_requested: return
+            recovery_started_at = datetime.now(timezone.utc).isoformat()
+            self._device_recovery_started_at = recovery_started_at
+            recovery = retry_until_ready(
+                self._ensure_device,
+                should_stop=lambda: self.stop_requested or self.paused,
+                wait=self._wait_for_worker_retry,
+                is_recoverable=lambda exc: classify_worker_failure(str(exc)) == "ENVIRONMENT",
+                on_retry=self._record_device_recovery_retry,
+                initial_delay_seconds=5.0,
+                max_delay_seconds=60.0,
+            )
+            if not recovery.ready:
+                return
+            if recovery.retries:
+                self._record_device_recovered(recovery, recovery_started_at)
+            if self.stop_requested or self.paused: return
             LOG_ROOT.mkdir(parents=True, exist_ok=True); CAPTURE_ROOT.mkdir(parents=True, exist_ok=True)
             stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             command = [runtime_python_path(), str(RUNTIME_PATH), "--max-actions", "24",
@@ -4948,50 +4979,175 @@ class ControlPanel:
             }))
         finally:
             self.process = None; self.starting = False
+            if self._worker_thread is threading.current_thread():
+                self._worker_thread = None
+
+    def _wait_for_worker_retry(self, delay_seconds: float) -> bool:
+        """Wait interruptibly so Stop/Pause does not strand a recovery worker."""
+        deadline = time.monotonic() + max(0.0, delay_seconds)
+        while True:
+            if self.stop_requested or self.paused:
+                return True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            threading.Event().wait(min(0.25, remaining))
+
+    def _append_device_recovery_event(self, row: dict[str, Any]) -> None:
+        """Persist device recovery evidence without letting logging kill AUTO."""
+        try:
+            LOG_ROOT.mkdir(parents=True, exist_ok=True)
+            snapshot = self.runtime_store.read()
+            role_id = None
+            role_observed_at = None
+            try:
+                identity = json.loads((ROOT / "learning/role_identity.json").read_text(encoding="utf-8"))
+                if isinstance(identity, dict):
+                    role_id = identity.get("role_id") or identity.get("role")
+                    role_observed_at = identity.get("observed_at") or identity.get("updated_at")
+            except (OSError, json.JSONDecodeError, TypeError):
+                pass
+            record = {
+                "at": datetime.now(timezone.utc).isoformat(),
+                "event": row.get("event"),
+                "role_id_last_observed": role_id,
+                "role_observed_at": role_observed_at,
+                "current_goal": snapshot.current_goal,
+                "current_skill": snapshot.current_skill,
+                "last_page": snapshot.page,
+                "exception": row.get("exception"),
+                "device_state": row.get("device_state", "UNKNOWN"),
+                "maa_state": "NOT_STARTED",
+                "adb_state": row.get("adb_state", "UNKNOWN"),
+                "retry_count": row.get("retry_count", 0),
+                "planned_backoff_seconds": row.get("planned_backoff_seconds"),
+                "recovery_result": row.get("recovery_result"),
+                "restart_latency_ms": row.get("restart_latency_ms"),
+                "recovery_started_at": row.get("recovery_started_at") or self._device_recovery_started_at or None,
+            }
+            with (LOG_ROOT / "worker_recovery.jsonl").open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+                stream.flush()
+        except Exception:  # noqa: BLE001 - diagnostics may never stop recovery
+            return
+
+    def _record_device_recovery_retry(self, exc: Exception, retry_count: int,
+                                      delay_seconds: float, elapsed_seconds: float) -> None:
+        message = str(exc) or type(exc).__name__
+        try:
+            self.runtime_store.update(
+                agent_state=AgentState.RECOVERING.value,
+                runtime_thread_alive=True,
+                scheduler_loop_alive=False,
+                stop_reason=message,
+                reason="device_reconnect_wait",
+                next_action="bounded_device_reconnect_retry",
+                device="DISCONNECTED",
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        self._append_device_recovery_event({
+            "event": "DEVICE_RECOVERY_RETRY",
+            "exception": f"{type(exc).__name__}: {message}",
+            "adb_state": message,
+            "device_state": "DISCONNECTED",
+            "retry_count": retry_count,
+            "planned_backoff_seconds": delay_seconds,
+            "recovery_result": "ENVIRONMENT_BLOCKED",
+        })
+        self.events.put(("note", f"MuMu/ADB 暂不可用；worker 保持运行，{delay_seconds:.0f}s 后重试（第 {retry_count} 次）。"))
+
+    def _record_device_recovered(self, outcome: RecoveryOutcome, started_at: str) -> None:
+        latency_ms = round(outcome.elapsed_seconds * 1000.0, 1)
+        self._append_device_recovery_event({
+            "event": "DEVICE_RECOVERED",
+            "adb_state": "ONLINE",
+            "device_state": "CONNECTED",
+            "retry_count": outcome.retries,
+            "recovery_result": "RECOVERED",
+            "restart_latency_ms": latency_ms,
+            "recovery_started_at": started_at,
+        })
+        if not self.stop_requested and not self.paused:
+            try:
+                self.runtime_store.update(
+                    agent_state=AgentState.RECOVERING.value,
+                    runtime_thread_alive=True,
+                    scheduler_loop_alive=False,
+                    stop_reason=None,
+                    reason="device_reconnected",
+                    next_action="resume_auto_cycle",
+                    device="CONNECTED",
+                )
+            except Exception:  # noqa: BLE001
+                pass
 
     def _ensure_device(self) -> None:
-        if self.stop_requested:
+        if self.stop_requested or self.paused:
             raise RuntimeError("用户已停止")
-        # A running MuMuNxMain.exe only proves that the multi-instance shell is
-        # open.  It does not prove that Android instance 0 is booted or attached
-        # to ADB.  First reconnect the configured endpoint, then launch the
-        # actual VM through MuMuManager when discovery still fails.
-        _background_run([str(self.device.adb_path), "connect", self.device.serial],
-                        capture_output=True, text=True, timeout=10, check=False)
+        # Keep every ADB probe under one 120-second deadline.  The old nested
+        # 60x retry loop could multiply per-command timeouts into many minutes.
+        deadline = time.monotonic() + 120.0
+        def remaining(cap: float) -> float:
+            return max(0.0, min(cap, deadline - time.monotonic()))
+        def connect_adb() -> None:
+            timeout = remaining(5.0)
+            if timeout <= 0:
+                raise RuntimeError("DEVICE_CONNECT_TIMEOUT")
+            _background_run([str(self.device.adb_path), "connect", self.device.serial],
+                            capture_output=True, text=True, timeout=timeout, check=False)
+        retryable = {"DEVICE_NOT_CONNECTED", "ADB_COMMAND_TIMEOUT", "ADB_DISCOVERY_FAILED", "ADB_FAILED"}
+        connect_adb()
         try:
-            self.device.resolve_connection()
+            self.device.resolve_connection(timeout_s=remaining(5.0))
         except RuntimeError as exc:
             if str(exc) != "DEVICE_NOT_CONNECTED":
                 raise
-            if not MUMU_MANAGER_PATH.exists() and not MUMU_PATH.exists():
-                raise RuntimeError("MuMu 未连接且启动程序不存在")
-            if MUMU_MANAGER_PATH.exists():
-                launch = _background_run(
-                    [str(MUMU_MANAGER_PATH), "control", "-v", MUMU_VM_INDEX,
-                     "launch", "-pkg", self.config["device"]["package_name"]],
-                    capture_output=True, text=True, timeout=30, check=False,
-                )
-                if launch.returncode != 0:
-                    raise RuntimeError(f"MuMu 实例启动失败：{launch.stderr.strip() or launch.stdout.strip()}")
-            else:
-                _background_popen([str(MUMU_PATH)])
-            for _ in range(60):
-                if self.stop_requested: raise RuntimeError("用户已停止")
-                threading.Event().wait(2)
-                _background_run([str(self.device.adb_path), "connect", self.device.serial],
-                                capture_output=True, text=True, timeout=10, check=False)
+            if not self._device_launch_requested:
+                self._device_launch_requested = True
+                if not MUMU_MANAGER_PATH.exists() and not MUMU_PATH.exists():
+                    self._device_launch_requested = False
+                    raise RuntimeError("MUMU_LAUNCHER_NOT_FOUND") from exc
+                if MUMU_MANAGER_PATH.exists():
+                    timeout = remaining(30.0)
+                    if timeout <= 0:
+                        raise RuntimeError("DEVICE_CONNECT_TIMEOUT") from exc
+                    launch = _background_run(
+                        [str(MUMU_MANAGER_PATH), "control", "-v", MUMU_VM_INDEX,
+                         "launch", "-pkg", self.config["device"]["package_name"]],
+                        capture_output=True, text=True, timeout=timeout, check=False,
+                    )
+                    if launch.returncode != 0:
+                        self._device_launch_requested = False
+                        raise RuntimeError(f"MUMU_LAUNCH_FAILED:{launch.stderr.strip() or launch.stdout.strip()}")
+                else:
+                    try:
+                        _background_popen([str(MUMU_PATH)])
+                    except OSError as launch_error:
+                        raise RuntimeError(f"MUMU_LAUNCH_FAILED:{launch_error}") from launch_error
+            attempt = 0
+            while remaining(0.05) > 0:
+                if self.stop_requested or self.paused:
+                    raise RuntimeError("用户已停止")
+                connect_adb()
                 try:
-                    self.device.resolve_connection()
+                    self.device.resolve_connection(timeout_s=remaining(5.0))
                     break
-                except RuntimeError as exc:
-                    if str(exc) != "DEVICE_NOT_CONNECTED":
+                except RuntimeError as retry_error:
+                    if str(retry_error) not in retryable:
                         raise
-            else: raise RuntimeError("等待 MuMu 连接超时")
+                    delay = min(float(2 ** min(attempt, 4)), 15.0, remaining(15.0))
+                    if delay <= 0 or self._wait_for_worker_retry(delay):
+                        raise RuntimeError("用户已停止") from retry_error
+                    attempt += 1
+            else:
+                raise RuntimeError("DEVICE_CONNECT_TIMEOUT")
+        self._device_launch_requested = False
         if self.device.status().foreground_package != self.config["device"]["package_name"]:
             self.device.launch(self.config["device"]["package_name"])
             threading.Event().wait(3)
         # Page understanding and recovery belong to Runtime. The GUI lifecycle
-        # adapter stops here after making the client reachable and foreground.
+        # adapter proceeds only after the client is reachable and foreground.
 
     def _run_worker(self) -> None:
         try:

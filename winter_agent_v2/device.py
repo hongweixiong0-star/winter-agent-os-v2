@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import time
 from io import BytesIO
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,29 +37,41 @@ class ADBDevice:
         self.production = production
 
     def _run(self, *args: str, binary: bool = False, timeout: float = 20.0):
-        result = subprocess.run(
-            [str(self.adb_path), "-s", self.serial, *args],
-            capture_output=True,
-            timeout=timeout,
-            check=False,
-            **_hidden_kwargs(),
-        )
+        try:
+            result = subprocess.run(
+                [str(self.adb_path), "-s", self.serial, *args],
+                capture_output=True,
+                timeout=timeout,
+                check=False,
+                **_hidden_kwargs(),
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError("ADB_COMMAND_TIMEOUT") from exc
         if result.returncode != 0:
             error = result.stderr.decode("utf-8", errors="replace").strip()
             raise RuntimeError(error or f"ADB_FAILED:{result.returncode}")
         return result.stdout if binary else result.stdout.decode("utf-8", errors="replace")
 
-    def resolve_connection(self) -> str:
-        """Prefer the configured serial; adopt only a unique online device.
+    def resolve_connection(self, *, timeout_s: float = 20.0) -> str:
+        """Resolve one online device within a single bounded time budget.
 
-        Emulator ADB ports drift between MuMu versions and multi-instance
-        layouts.  A MuMu instance only shows up in `adb devices` after an
-        explicit `adb connect`, so when nothing is online we probe the known
-        emulator ports before giving up.  Without this, a wrong configured
-        port makes every AUTO worker die with DEVICE_NOT_CONNECTED and the
-        watchdog restarts it forever.
+        Port probing used to give each of seven `adb connect` calls and each
+        `adb devices` call an independent timeout.  The control panel then
+        repeated that entire sweep up to sixty times, turning one disconnected
+        emulator into a many-minute worker exit.  Every subprocess below now
+        consumes the same monotonic deadline; callers can use a shorter budget
+        while retrying at the worker level.
         """
-        online = self._online_devices()
+        budget = max(0.05, float(timeout_s))
+        deadline = time.monotonic() + budget
+
+        def remaining(cap: float) -> float:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                return 0.0
+            return min(float(cap), left)
+
+        online = self._online_devices(timeout_s=remaining(5.0))
         if self.serial in online:
             return self.serial
         if online:
@@ -67,9 +80,25 @@ class ADBDevice:
             self.serial = online[0]
             return self.serial
         for candidate in self._probe_candidates():
-            subprocess.run([str(self.adb_path), "connect", candidate], capture_output=True,
-                           timeout=10, check=False, **_hidden_kwargs())
-            online = self._online_devices()
+            connect_timeout = remaining(1.0)
+            if connect_timeout <= 0:
+                break
+            try:
+                subprocess.run([str(self.adb_path), "connect", candidate], capture_output=True,
+                               timeout=connect_timeout, check=False, **_hidden_kwargs())
+            except subprocess.TimeoutExpired:
+                if remaining(0.05) <= 0:
+                    break
+                continue
+            devices_timeout = remaining(1.0)
+            if devices_timeout <= 0:
+                break
+            try:
+                online = self._online_devices(timeout_s=devices_timeout)
+            except RuntimeError as exc:
+                if "ADB_COMMAND_TIMEOUT" in str(exc) and remaining(0.05) > 0:
+                    continue
+                raise
             if self.serial in online:
                 return self.serial
             if len(online) == 1:
@@ -79,9 +108,12 @@ class ADBDevice:
                 raise RuntimeError("DEVICE_AMBIGUOUS")
         raise RuntimeError("DEVICE_NOT_CONNECTED")
 
-    def _online_devices(self) -> list[str]:
-        result = subprocess.run([str(self.adb_path), "devices"], capture_output=True,
-                                timeout=20, check=False, **_hidden_kwargs())
+    def _online_devices(self, *, timeout_s: float = 20.0) -> list[str]:
+        try:
+            result = subprocess.run([str(self.adb_path), "devices"], capture_output=True,
+                                    timeout=max(0.05, float(timeout_s)), check=False, **_hidden_kwargs())
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError("ADB_COMMAND_TIMEOUT") from exc
         if result.returncode:
             raise RuntimeError("ADB_DISCOVERY_FAILED")
         return [parts[0] for line in result.stdout.decode("utf-8", errors="replace").splitlines()

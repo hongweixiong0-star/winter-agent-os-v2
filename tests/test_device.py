@@ -30,6 +30,14 @@ class DeviceTests(unittest.TestCase):
             ADBDevice(Path("adb"), "a").resolve_connection()
 
     @patch("winter_agent_v2.device.subprocess.run")
+    def test_adb_command_timeout_is_normalized_as_recoverable_environment_state(self, run):
+        import subprocess
+        run.side_effect = subprocess.TimeoutExpired(["adb", "devices"], timeout=0.2)
+        with self.assertRaisesRegex(RuntimeError, "ADB_COMMAND_TIMEOUT"):
+            ADBDevice(Path("adb"), "a").resolve_connection(timeout_s=0.2)
+        self.assertLessEqual(run.call_args.kwargs["timeout"], 0.2)
+
+    @patch("winter_agent_v2.device.subprocess.run")
     def test_no_online_device_probes_emulator_ports_before_failing(self, run):
         """A wrong configured port must not kill the AUTO worker.
 
