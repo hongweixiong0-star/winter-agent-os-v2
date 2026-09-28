@@ -80,7 +80,9 @@ def verify_pin(manifest_path: Path = DEFAULT_MANIFEST) -> tuple[str, Path]:
         except ValueError as exc:
             raise PinError(f"{name} mount resolves outside DATA_ROOT: {actual}") from exc
 
-    dirty = _git("status", "--porcelain=v1", "--untracked-files=all")
+    # ``normal`` reports an untracked data directory once instead of walking
+    # the 18+ GB screenshot corpus file by file on every panel launch.
+    dirty = _git("status", "--porcelain=v1", "--untracked-files=normal")
     unexpected: list[str] = []
     for line in dirty.splitlines():
         if len(line) < 4:
@@ -126,7 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     except BaseException as exc:  # startup failures must remain diagnosable under pythonw
         failure = f"[{datetime.now().astimezone().isoformat()}] {type(exc).__name__}: {exc}\n"
         try:
-            (WORKTREE_HOME / "PRODUCTION_LAUNCH.log").open("a", encoding="utf-8").write(failure)
+            with (WORKTREE_HOME / "PRODUCTION_LAUNCH.log").open("a", encoding="utf-8") as stream:
+                stream.write(failure)
         except OSError:
             pass
         traceback.print_exc()
