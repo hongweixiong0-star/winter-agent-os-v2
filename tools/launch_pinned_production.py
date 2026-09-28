@@ -82,18 +82,13 @@ def verify_pin(manifest_path: Path = DEFAULT_MANIFEST) -> tuple[str, Path]:
 
     # ``normal`` reports an untracked data directory once instead of walking
     # the 18+ GB screenshot corpus file by file on every panel launch.
-    dirty = _git("status", "--porcelain=v1", "--untracked-files=normal")
+    dirty = _git("-c", "core.quotepath=false", "status", "--porcelain=v1", "--untracked-files=normal")
     unexpected: list[str] = []
     for line in dirty.splitlines():
         if len(line) < 4:
             unexpected.append(line)
             continue
         path = line[3:].strip().replace("\\", "/")
-        if path.startswith('"'):
-            # Git quotes only unusual paths; none of the allowed mount names need
-            # decoding, so quoted paths are conservatively treated as code dirt.
-            unexpected.append(line)
-            continue
         if not any(path == name or path.startswith(name + "/") for name in DATA_DIR_NAMES):
             unexpected.append(line)
     if unexpected:
