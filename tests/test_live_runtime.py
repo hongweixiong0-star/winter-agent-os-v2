@@ -248,6 +248,13 @@ class LiveRuntimeTests(unittest.TestCase):
         self.assertEqual(row["page_before"], "HOME")
         self.assertEqual(row["page_after"], "MAP")
         self.assertTrue(row["success"])
+        self.assertEqual(row["schema_version"], 2)
+        for field in ("capture_ms", "ocr_ms", "parse_ms", "decision_ms", "maa_ms",
+                      "settle_ms", "reobserve_ms", "verifier_ms", "episode_write_ms",
+                      "total_step_ms"):
+            self.assertIn(field, row)
+        for duplicate in ("frame_capture_ms", "scheduler_select_ms", "maa_execute_ms", "post_action_wait_ms"):
+            self.assertNotIn(duplicate, row)
         self.assertGreaterEqual(row["total_step_ms"], 0.0)
         self.assertEqual(row["settle_policy"], "PAGE_TRANSITION")
         self.assertEqual(row["settle_frame_change_fraction"], None)

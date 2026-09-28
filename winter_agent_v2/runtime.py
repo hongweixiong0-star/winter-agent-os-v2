@@ -35,7 +35,9 @@ from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
 from .verifier import verify_panel_building_queue_opened, verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_login_gift_claimed, verify_login_gift_panel_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_done_collected, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_rally_created, verify_rally_joined, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
-from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
+from .runtime_snapshot import (
+    AgentState, RuntimeSnapshotStore, StopCategory, is_fatal_stop, state_for_stop_reason,
+)
 from .verifier import (verify_alliance_tech_opened, verify_alliance_tech_node_opened,
                      verify_alliance_tech_details_closed, verify_alliance_tech_contribution,
                      verify_daily_task_followed)
@@ -443,6 +445,7 @@ class LiveRuntime:
         expected_lease_id: str = "",
         expected_after_version: str = "",
         latency_trace_path: Path | None = None,
+        fruitless_audit_path: Path | None = None,
         #: Who answers the on-demand question for a screen no skill can advance.
         #:
         #: Injected rather than built here for the same reason ``maa_adapter`` and ``routing``
@@ -462,6 +465,7 @@ class LiveRuntime:
     ) -> None:
         self.device = device
         self.latency_trace_path = Path(latency_trace_path) if latency_trace_path else None
+        self.fruitless_audit_path = Path(fruitless_audit_path) if fruitless_audit_path else None
         # The ADB device behind the fallback executor.  When MAA observation is
         # enabled ``device`` is the MaaExecutorAdapter, so without this the ADB
         # path would be gone and "fall back to ADB" would silently mean "fall back
@@ -670,6 +674,7 @@ class LiveRuntime:
     def _runtime(self, **changes) -> None:
         if self.runtime_store is not None:
             try:
+                changes.setdefault("role_id", self.role_id or None)
                 self.runtime_store.update(**changes)
             except (OSError, TypeError, ValueError):
                 pass
@@ -5007,8 +5012,88 @@ class LiveRuntime:
         self._goal_meters: dict[str, float] = {}
         self._committed_goal = ""
         gate = self._gate()
+        run_started_at = datetime.now(timezone.utc)
+        run_id = f"{run_started_at.strftime('%Y%m%dT%H%M%S%fZ')}_{self.capture_dir.name}"
+        audit_pages: list[dict[str, Any]] = []
+        audit_starting_page: str | None = None
+        audit_starting_goal: str | None = None
+        audit_starting_priority: float | None = None
+
+        def connected_state(target) -> bool | None:
+            status_reader = getattr(target, "status", None)
+            if not callable(status_reader):
+                return None
+            try:
+                status = status_reader()
+                value = getattr(status, "connected", None)
+                return bool(value) if value is not None else None
+            except Exception:  # noqa: BLE001 - diagnostics must never affect a run
+                return None
+
+        def append_fruitless_audit(reason: str) -> None:
+            if self.fruitless_audit_path is None or reason != self.NOTHING_LEFT_TO_LOOK_AT:
+                return
+            try:
+                last_page = audit_pages[-1] if audit_pages else {}
+                final_step = steps[-1] if steps else None
+                last_decision = final_step.decision if final_step is not None else None
+                category, _state = state_for_stop_reason(
+                    reason,
+                    decision_skill=getattr(last_decision, "skill", None),
+                    action_executed=bool(
+                        final_step is not None
+                        and final_step.execution is not None
+                        and final_step.execution.executed
+                    ),
+                    verifier_failed=any(
+                        step.verification is not None and not step.verification.ok for step in steps
+                    ),
+                )
+                latest = last_page.get("observations", {})
+                row = {
+                    "run_id": run_id,
+                    "started_at": run_started_at.isoformat(),
+                    "ended_at": datetime.now(timezone.utc).isoformat(),
+                    "role_id": self.role_id or None,
+                    "goal_id": audit_starting_goal,
+                    "goal_priority": audit_starting_priority,
+                    "starting_page": audit_starting_page,
+                    "visited_pages": list(dict.fromkeys(
+                        str(item.get("page", "UNKNOWN")) for item in audit_pages
+                    )),
+                    "per_page": audit_pages,
+                    "scheduler": {
+                        "runnable_goals": last_page.get("scheduler", {}).get("runnable_goals", []),
+                        "selected_goal": last_page.get("scheduler", {}).get("selected_goal"),
+                        "alternatives": last_page.get("scheduler", {}).get("alternatives", []),
+                        "switch_task_possible": last_page.get("scheduler", {}).get("switch_task_possible", False),
+                        "wait_reason": last_page.get("scheduler", {}).get("wait_reason"),
+                    },
+                    "queues": {
+                        key: latest.get(key)
+                        for key in ("march", "building", "research", "training")
+                    },
+                    "environment": {
+                        "device_connected": connected_state(self.device),
+                        "maa_available": self.maa_adapter is not None,
+                        "adb_available": connected_state(self.adb_device),
+                    },
+                    "final_reason": reason,
+                    "stop_category": category.value,
+                }
+                target = self.fruitless_audit_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                encoded = (json.dumps(row, ensure_ascii=False, default=str, separators=(",", ":")) + "\n")
+                fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+                try:
+                    os.write(fd, encoded.encode("utf-8"))
+                finally:
+                    os.close(fd)
+            except Exception:  # noqa: BLE001 - an audit must never alter gameplay
+                pass
 
         def finish(reason: str) -> LiveRun:
+            append_fruitless_audit(reason)
             # One write per run, not one per step: the ledger is folded in memory as
             # each step is recorded and persisted here, where the run has a single
             # exit.  A per-step rewrite of a JSON file would put disk I/O inside the
@@ -5158,7 +5243,8 @@ class LiveRuntime:
         # cannot outlive the fight it was armed for.
         self._fight_resolving = False
         self._runtime(agent_state=AgentState.AUTO_RUNNING.value, runtime_thread_alive=True,
-                      scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
+                      scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None,
+                      stop_category=None)
 
         previous_action_end: float | None = None
         for index in range(1, max_actions + 1):
@@ -5176,6 +5262,7 @@ class LiveRuntime:
                     pass
             ocr_service = self._ocr_service()
             ocr_before_ms = float(getattr(ocr_service, "timing_total_ms", 0.0))
+            parse_before_ms = float(getattr(ocr_service, "timing_parse_ms", 0.0))
             ocr_before_calls = int(getattr(ocr_service, "timing_calls", 0))
             ocr_before_hits = int(getattr(ocr_service, "timing_cache_hits", 0))
             # The single-UI-owner boundary (operator §8/§19), checked at the only moment
@@ -5216,7 +5303,7 @@ class LiveRuntime:
                 return finish(reason)
             phase_started = time.monotonic()
             before_path = self._capture_path(index, "before")
-            latency["frame_capture_ms"] = (time.monotonic() - phase_started) * 1000
+            latency["capture_ms"] = (time.monotonic() - phase_started) * 1000
             if self._device_lost(self.device.screenshot, before_path):
                 return finish(self._device_stop_reason)
             phase_started = time.monotonic()
@@ -5327,6 +5414,85 @@ class LiveRuntime:
                 leave = self._deferral_replan(before, deferrals, best_goal)
             decision = leave if leave is not None else self.brain.decide(before, self.registry)
             decision = self._stop_instead_of_looking_again(before, decision, best_goal)
+            if audit_starting_page is None:
+                audit_starting_page = before.page.value
+                audit_starting_goal = best_goal.goal_id if best_goal is not None else None
+                audit_starting_priority = float(best_goal.priority) if best_goal is not None else None
+            runnable_rows = [
+                {"goal_id": item[0].goal_id, "priority": float(item[0].priority)}
+                for item in board
+            ]
+            selected_id = best_goal.goal_id if best_goal is not None else None
+            selectable_ids = {goal.goal_id for goal in selectable_goals}
+            rejected_rows = [
+                {
+                    "goal_id": item.goal_id,
+                    "capability": item.capability,
+                    "state": item.state,
+                    "reason": item.reason,
+                    "source": item.source,
+                }
+                for item in deferrals
+            ]
+            deferred_ids = {str(item.get("goal_id") or "") for item in rejected_rows}
+            for goal in goals:
+                if goal.goal_id in selectable_ids or goal.goal_id in deferred_ids:
+                    continue
+                rejected_rows.append({
+                    "goal_id": goal.goal_id,
+                    "capability": "",
+                    "state": str(getattr(goal.status, "value", goal.status)),
+                    "reason": (
+                        "policy_disabled" if not self._policy_allows(goal.goal_id)
+                        else "already_yielded_or_not_selectable"
+                    ),
+                    "source": "RUNTIME_SELECTION",
+                })
+            candidate_rows = [
+                {"goal_id": goal.goal_id, "skill": str(skill),
+                 "goal_status": str(getattr(goal.status, "value", goal.status)),
+                 "priority": float(goal.priority)}
+                for goal in goals for skill in goal.available_skills
+            ]
+            page_audit: dict[str, Any] = {
+                "page": before.page.value,
+                "confidence": float(before.confidence),
+                "screenshot_path": str(before_path),
+                "goal_id": best_goal.goal_id if best_goal is not None else None,
+                "goal_priority": float(best_goal.priority) if best_goal is not None else None,
+                "observations": {
+                    "resources": before.resources,
+                    "marches": [str(getattr(item, "value", item)) for item in before.marches],
+                    "march_used": before.march_used,
+                    "march_max": before.march_max,
+                    "building": before.building,
+                    "research": before.research,
+                    "training": before.training,
+                    "camps": before.camps,
+                    "events": before.events,
+                    "daily": before.daily,
+                    "mail": before.mail,
+                    "alliance": before.alliance,
+                    "red_dots": before.red_dots,
+                    "queues": before.queues,
+                },
+                "candidate_actions": candidate_rows,
+                "rejected_actions": rejected_rows,
+                "rejection_reasons": list(dict.fromkeys(str(item["reason"]) for item in rejected_rows)),
+                "attempted_skill": None,
+                "verifier_result": {"status": "NOT_ATTEMPTED", "reason": decision.reason},
+                "scheduler": {
+                    "runnable_goals": runnable_rows,
+                    "selected_goal": selected_id,
+                    "alternatives": [row["goal_id"] for row in runnable_rows if row["goal_id"] != selected_id],
+                    "switch_task_possible": len(runnable_rows) > 1,
+                    "wait_reason": decision.reason,
+                    "deferred_goals": rejected_rows,
+                },
+            }
+            audit_pages.append(page_audit)
+            page_audit["attempted_skill"] = decision.skill
+            page_audit["attempted_reason"] = decision.reason
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,
                           current_goal=self._step_goal(best_goal),
                           current_skill=decision.skill, reason=decision.reason,
@@ -5457,7 +5623,11 @@ class LiveRuntime:
                 ):
                     continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
-                self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(decision.reason) else AgentState.DEGRADED.value,
+                page_audit["verifier_result"] = {"status": "NOT_ATTEMPTED", "reason": decision.reason}
+                category, stop_state = state_for_stop_reason(
+                    decision.reason, decision_skill=decision.skill, action_executed=False,
+                )
+                self._runtime(agent_state=stop_state.value, stop_category=category.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=decision.reason,
                               last_fatal_error=decision.reason if is_fatal_stop(decision.reason) else None)
                 return finish(decision.reason)
@@ -5629,11 +5799,13 @@ class LiveRuntime:
             # free-stamina once-per-run flag), so a second call for the same
             # frame answers differently and the verifier then judges a skill the
             # step never ran.  See ``Scheduler.tick`` for the live evidence.
-            latency["scheduler_select_ms"] = (time.monotonic() - selection_started) * 1000
+            latency["decision_ms"] = (time.monotonic() - selection_started) * 1000
             phase_started = time.monotonic()
             tick = Scheduler(self.brain, self.registry, executor, self.candidate_pool).tick(before, decision)
             latency["scheduler_tick_ms"] = (time.monotonic() - phase_started) * 1000
-            latency["maa_execute_ms"] = (
+            page_audit["attempted_skill"] = tick.decision.skill
+            page_audit["attempted_reason"] = tick.decision.reason
+            latency["maa_ms"] = (
                 float(tick.execution.latency_ms)
                 if tick.execution is not None and tick.execution.latency_ms is not None else None
             )
@@ -5661,6 +5833,18 @@ class LiveRuntime:
                 )
                 steps.append(LiveStep(index, tick.decision, tick.execution, before, None, None))
                 reason = tick.execution.error if tick.execution else "NO_EXECUTION"
+                page_audit["verifier_result"] = {"status": "NOT_ATTEMPTED", "reason": str(reason)}
+                if tick.execution is None or not tick.execution.executed:
+                    page_audit["rejected_actions"].append({
+                        "goal_id": selected_id,
+                        "skill": tick.decision.skill,
+                        "state": "REJECTED",
+                        "reason": str(reason),
+                        "source": "EXECUTOR",
+                    })
+                    page_audit["rejection_reasons"] = list(dict.fromkeys(
+                        [*page_audit["rejection_reasons"], str(reason)]
+                    ))
                 # Recorded so the guard before the executor can refuse a *second* derivation of the
                 # same control.  ``_failed_controls`` cannot serve here: nothing was tried, so no
                 # verifier produced a verdict, and the six refusals this runtime names itself
@@ -5699,10 +5883,15 @@ class LiveRuntime:
                 ):
                     self._runtime(agent_state=AgentState.DEGRADED.value, stop_reason=reason)
                     continue
-                self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(reason) else AgentState.DEGRADED.value,
+                category, stop_state = state_for_stop_reason(
+                    reason, decision_skill=tick.decision.skill, action_executed=False,
+                )
+                self._runtime(agent_state=stop_state.value, stop_category=category.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=reason,
                               last_fatal_error=reason if is_fatal_stop(reason) else None)
                 return finish(tick.execution.error if tick.execution else "NO_EXECUTION")
+
+            page_audit["action_sent"] = bool(tick.execution.executed)
 
             settle_policy = choose_settle_policy(decision.skill)
             settle_first_wait = min(max(0.0, settle_policy.first_wait_s), max(0.0, self.settle_seconds))
@@ -5712,7 +5901,7 @@ class LiveRuntime:
             latency["settle_first_wait_ms"] = (time.monotonic() - phase_started) * 1000
             phase_started = time.monotonic()
             after_path = self._capture_path(index, "after")
-            latency["frame_capture_ms"] = (latency.get("frame_capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
+            latency["capture_ms"] = (latency.get("capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
             if self._device_lost(self.device.screenshot, after_path):
                 return finish(self._device_stop_reason)
             frame_changed, frame_change_fraction = FrameChangeProbe(before_path).changed(after_path)
@@ -5726,11 +5915,11 @@ class LiveRuntime:
                 latency["settle_retry_wait_ms"] = (time.monotonic() - phase_started) * 1000
                 phase_started = time.monotonic()
                 retry_path = self._capture_path(index, "after", suffix="settle_retry")
-                latency["frame_capture_ms"] = (latency.get("frame_capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
+                latency["capture_ms"] = (latency.get("capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
                 if self._device_lost(self.device.screenshot, retry_path):
                     return finish(self._device_stop_reason)
                 after_path = retry_path
-            latency["post_action_wait_ms"] = latency["settle_first_wait_ms"] + latency["settle_retry_wait_ms"]
+            latency["settle_ms"] = latency["settle_first_wait_ms"] + latency["settle_retry_wait_ms"]
             phase_started = time.monotonic()
             after = self._observe(after_path)
             latency["reobserve_ms"] = (latency.get("reobserve_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
@@ -5756,6 +5945,12 @@ class LiveRuntime:
             goals_after = self._record_goals(after, frame=after_path)
             phase_started = time.monotonic()
             verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+            page_audit["verifier_result"] = {
+                "status": "PASS" if verification.ok else "FAIL",
+                "ok": bool(verification.ok),
+                "reason": verification.reason,
+                "page_after": after.page.value,
+            }
             latency["verifier_ms"] = (time.monotonic() - phase_started) * 1000
             for refresh in range(1, self.observation_retries + 1):
                 # A known page can still be an intermediate animation/frame.
@@ -5832,6 +6027,9 @@ class LiveRuntime:
             )
             latency["episode_write_ms"] = (time.monotonic() - phase_started) * 1000
             latency["ocr_ms"] = max(0.0, float(getattr(ocr_service, "timing_total_ms", 0.0)) - ocr_before_ms)
+            latency["parse_ms"] = max(
+                0.0, float(getattr(ocr_service, "timing_parse_ms", 0.0)) - parse_before_ms
+            )
             latency["total_step_ms"] = (time.monotonic() - latency_started) * 1000
             if self.latency_trace_path is not None:
                 action_latency.append(self.latency_trace_path, {
@@ -6045,16 +6243,20 @@ class LiveRuntime:
                         verifier=verification.reason,
                     )
                     continue
-                self._runtime(agent_state=AgentState.DEGRADED.value, runtime_thread_alive=False,
+                self._runtime(agent_state=AgentState.DEGRADED.value,
+                              stop_category=StopCategory.SYSTEM_FAILURE.value,
+                              runtime_thread_alive=False,
                               scheduler_loop_alive=False, stop_reason=verification.reason)
                 return finish(verification.reason)
             if decision.skill == "DISPATCH_MARCH" and self.resource_rotation is not None:
                 self.resource_rotation.completed(planned_resource)
             if decision.skill == stop_after_skill:
                 self._runtime(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
-                              scheduler_loop_alive=False, stop_reason="TARGET_SKILL_VERIFIED")
+                              scheduler_loop_alive=False, stop_reason="TARGET_SKILL_VERIFIED",
+                              stop_category=StopCategory.COMPLETED.value)
                 return finish("TARGET_SKILL_VERIFIED")
 
         self._runtime(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
-                      scheduler_loop_alive=False, stop_reason="MAX_ACTIONS_REACHED")
+                      scheduler_loop_alive=False, stop_reason="MAX_ACTIONS_REACHED",
+                      stop_category=StopCategory.COMPLETED.value)
         return finish("MAX_ACTIONS_REACHED")

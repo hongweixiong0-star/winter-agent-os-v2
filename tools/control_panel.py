@@ -65,8 +65,10 @@ from winter_agent_v2.runtime_snapshot import (
     UNCLASSIFIED_EVENT,
     AgentState,
     RuntimeSnapshotStore,
+    StopCategory,
     counts_as_unexpected_worker_exit,
     is_fatal_stop,
+    state_for_stop_reason,
 )
 from winter_agent_v2.worker_recovery import RecoveryOutcome, retry_until_ready
 
@@ -490,7 +492,9 @@ def classify_worker_failure(message: str) -> str:
     return "ENVIRONMENT" if any(marker in text for marker in ENVIRONMENT_FAILURES) else "WORKER_CRASH"
 
 
-def write_worker_crash_report(*, where: str, exc: BaseException, snapshot: Any) -> Path:
+def write_worker_crash_report(
+    *, where: str, exc: BaseException, snapshot: Any, context: dict[str, Any] | None = None,
+) -> Path:
     """Persist the evidence needed to find the real root cause of a worker exit.
 
     Previously the worker caught ``Exception`` and forwarded only ``str(exc)``,
@@ -500,6 +504,22 @@ def write_worker_crash_report(*, where: str, exc: BaseException, snapshot: Any) 
     """
     CRASH_ROOT.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    snapshot_data = snapshot.__dict__ if hasattr(snapshot, "__dict__") else {"value": str(snapshot)}
+    context = context if isinstance(context, dict) else {}
+
+    def event_tail(path: Path, *, limit: int = 20) -> list[dict[str, str]]:
+        try:
+            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+            stamp = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()
+        except OSError:
+            return []
+        return [{"source": path.name, "file_mtime": stamp, "line": line}
+                for line in lines[-limit:]]
+
+    panel_events = event_tail(PANEL_LOG_PATH)
+    runtime_output = event_tail(LOG_ROOT / "latest.log")
+    recovery_events = event_tail(LOG_ROOT / "worker_recovery.jsonl")
+    events = (panel_events + runtime_output + recovery_events)[-20:]
     report = {
         "at": datetime.now(timezone.utc).isoformat(),
         "where": where,
@@ -507,15 +527,31 @@ def write_worker_crash_report(*, where: str, exc: BaseException, snapshot: Any) 
         "exception_message": str(exc),
         "traceback": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
         "classification": classify_worker_failure(str(exc)),
+        "goal": context.get("goal", snapshot_data.get("current_goal")),
+        "skill": context.get("skill", snapshot_data.get("current_skill")),
+        "role": context.get("role", snapshot_data.get("role_id")),
+        "page": context.get("page", snapshot_data.get("page", "UNKNOWN")),
+        "last_20_events": events,
+        "device_state": context.get("device_state", snapshot_data.get("device", "UNKNOWN")),
+        "adb_state": context.get("adb_state", "UNKNOWN"),
+        "maa_state": context.get("maa_state", {
+            "configured": None,
+            "vision": snapshot_data.get("vision", "UNKNOWN"),
+        }),
+        "retry_state": context.get("retry_state", {
+            "watchdog_restart_count": snapshot_data.get("watchdog_restart_count", 0),
+            "unexpected_worker_exits_before_report": snapshot_data.get("unexpected_worker_exits", 0),
+        }),
+        "recovery_attempt": context.get("recovery_attempt"),
         "thread_state": [
             {"name": thread.name, "alive": thread.is_alive(), "daemon": thread.daemon}
             for thread in threading.enumerate()
         ],
-        "runtime_snapshot": snapshot.__dict__ if hasattr(snapshot, "__dict__") else str(snapshot),
+        "runtime_snapshot": snapshot_data,
     }
     path = CRASH_ROOT / f"{stamp}_{where}.json"
     temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     temporary.replace(path)
     return path
 
@@ -599,9 +635,28 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
             verified += int(verification.get("ok") is True)
             failures += int(verification.get("ok") is False)
     reason = payload.get("stop_reason", "暂无结构化结果") if isinstance(payload, dict) else "暂无结构化结果"
-    successful_stops = {"TARGET_SKILL_VERIFIED", "target_skill_verified", "MAX_ACTIONS_REACHED", "max_actions_reached", "no_idle_march", "reserved_march_for_stamina", "mail_all_clear", "exploration_income_not_ready", "daily_state_unknown_or_not_actionable", "daily_no_claimable_rewards", "alliance_action_not_needed", "training_queue_busy", "every_page_this_run_was_fruitless"}
+    last = next((step for step in reversed(steps) if isinstance(step, dict)), {})
+    decision = last.get("decision") if isinstance(last.get("decision"), dict) else {}
+    execution = last.get("execution") if isinstance(last.get("execution"), dict) else {}
+    category, agent_state = state_for_stop_reason(
+        str(reason),
+        decision_skill=str(decision.get("skill") or ""),
+        action_executed=execution.get("executed") is True,
+        verifier_failed=failures > 0,
+    )
+    normal_ends = {
+        StopCategory.EXPECTED_NO_ACTION,
+        StopCategory.COMPLETED,
+    }
+    healthy = exit_code == 0 and failures == 0 and category is not StopCategory.SYSTEM_FAILURE
     return {"steps": len(steps), "executed": executed, "verified": verified, "failures": failures,
-            "reason": reason, "ok": exit_code == 0 and failures == 0 and reason in successful_stops}
+            "reason": reason, "stop_category": category.value,
+            "agent_state": agent_state.value,
+            "healthy": healthy,
+            # ``ok`` continues to mean the cycle reached a normal no-action or
+            # completion result. A capability gap is safe to continue around, but
+            # it is not a completed task and must remain visible as such.
+            "ok": exit_code == 0 and failures == 0 and category in normal_ends}
 
 
 def human_reason(value: Any) -> str:
@@ -4928,6 +4983,9 @@ class ControlPanel:
 
     def _run_unified_worker(self) -> None:
         """Lifecycle adapter only; it never selects a Goal or Skill."""
+        recovery = None
+        recovery_started_at = None
+        self._device_recovery_retry_count = 0
         try:
             blocker = runtime_env_blocker()
             if blocker is not None:
@@ -4964,10 +5022,44 @@ class ControlPanel:
             # worker death is never silent.  The full traceback plus the runtime
             # state is written to learning/control_panel/crashes/ before the GUI
             # is told anything; only the classified outcome drives the counters.
-            report = write_worker_crash_report(where="unified_worker", exc=exc,
-                                               snapshot=self.runtime_store.read())
+            snapshot = self.runtime_store.read()
+            device_state = {}
+            try:
+                device_state = self.probes.device_state()
+            except Exception:  # noqa: BLE001 - crash evidence is best effort
+                device_state = {"status": "UNAVAILABLE"}
+            retry_count = getattr(
+                recovery, "retries", getattr(self, "_device_recovery_retry_count", None)
+            )
+            report = write_worker_crash_report(
+                where="unified_worker", exc=exc, snapshot=snapshot,
+                context={
+                    "goal": snapshot.current_goal,
+                    "skill": snapshot.current_skill,
+                    "role": snapshot.role_id,
+                    "page": snapshot.page,
+                    "device_state": device_state,
+                    "adb_state": device_state.get("status", "UNKNOWN"),
+                    "maa_state": {
+                        "vision": snapshot.vision,
+                        "configured": None,
+                        "last_known_backend": snapshot.device,
+                    },
+                    "retry_state": {
+                        "device_recovery_started_at": recovery_started_at,
+                        "retries": retry_count,
+                        "ready": getattr(recovery, "ready", None),
+                    },
+                    "recovery_attempt": {
+                        "attempted": bool(recovery_started_at),
+                        "retry_count": retry_count,
+                        "ready": getattr(recovery, "ready", None),
+                    } if recovery_started_at else None,
+                },
+            )
             self.runtime_store.update(
                 agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(str(exc)) else AgentState.DEGRADED.value,
+                stop_category=StopCategory.SYSTEM_FAILURE.value,
                 runtime_thread_alive=False, scheduler_loop_alive=False,
                 last_fatal_error=str(exc) if is_fatal_stop(str(exc)) else None, stop_reason=str(exc))
             self.events.put(("worker_failure", {
@@ -5031,6 +5123,7 @@ class ControlPanel:
 
     def _record_device_recovery_retry(self, exc: Exception, retry_count: int,
                                       delay_seconds: float, elapsed_seconds: float) -> None:
+        self._device_recovery_retry_count = int(retry_count)
         message = str(exc) or type(exc).__name__
         try:
             self.runtime_store.update(
@@ -5380,6 +5473,7 @@ class ControlPanel:
                                                snapshot=self.runtime_store.read())
             self.runtime_store.update(
                 agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(str(exc)) else AgentState.DEGRADED.value,
+                stop_category=StopCategory.SYSTEM_FAILURE.value,
                 runtime_thread_alive=False, scheduler_loop_alive=False,
                 last_fatal_error=str(exc) if is_fatal_stop(str(exc)) else None, stop_reason=str(exc))
             self.events.put(("worker_failure", {
@@ -5449,6 +5543,7 @@ class ControlPanel:
         )
         self.runtime_store.update(
             agent_state=AgentState.FATAL_STOPPED.value if fatal else AgentState.DEGRADED.value,
+            stop_category=StopCategory.SYSTEM_FAILURE.value,
             runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=message,
             last_fatal_error=message if fatal else previous.last_fatal_error,
             unexpected_worker_exits=previous.unexpected_worker_exits + (1 if counts_as_exit else 0),
@@ -5484,6 +5579,7 @@ class ControlPanel:
         )
         self.runtime_store.update(
             agent_state=AgentState.FATAL_STOPPED.value if fatal else AgentState.DEGRADED.value,
+            stop_category=StopCategory.SYSTEM_FAILURE.value,
             runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=message,
             last_fatal_error=message if fatal else previous.last_fatal_error,
             unexpected_worker_exits=previous.unexpected_worker_exits + (1 if counts_as_exit else 0),
@@ -5527,20 +5623,40 @@ class ControlPanel:
         last = steps[-1] if steps else {}; decision = last.get("decision", {}) if isinstance(last, dict) else {}; verification = last.get("verification", {}) if isinstance(last, dict) else {}
         skill = decision.get("skill", "GATHER_RESOURCE") if isinstance(decision, dict) else "GATHER_RESOURCE"
         self.values["skill"].set(skill); self.values["task_cn"].set(SKILL_ZH.get(skill, "资源采集")); self.values["reason"].set(human_reason(decision.get("reason") if isinstance(decision, dict) else None))
-        self.values["next"].set("等待下一轮状态观察" if summary["ok"] else "进入安全恢复或停止")
+        self.values["next"].set(
+            "等待下一轮状态观察" if summary["ok"] else
+            ("切换其他任务并记录能力缺口" if summary["stop_category"] == StopCategory.CAPABILITY_GAP.value
+             else "进入安全恢复或停止")
+        )
         self.values["verifier"].set(("验证通过" if verification.get("ok") else human_reason(verification.get("reason"))) if isinstance(verification, dict) and verification else "本轮无最终验证数据")
-        self.values["result"].set(human_reason(summary["reason"])); self.values["agent"].set("● 等待" if summary["ok"] else "● 异常")
-        self.session["runs"] += 1; self.session["actions"] += summary["executed"]; self.session["success" if summary["ok"] else "failed"] += 1
-        self.values["stats"].set(f"本次启动：{self.session['runs']} 轮 · {self.session['actions']} 动作 · 成功 {self.session['success']} · 异常 {self.session['failed']}")
-        self._append(("✓ " if summary["ok"] else "⚠ ") + f"本轮结束：{human_reason(summary['reason'])}")
+        category = summary["stop_category"]
+        state_label = (
+            "● 等待" if summary["ok"] else
+            ("◇ 待补能力" if category == StopCategory.CAPABILITY_GAP.value else "● 异常")
+        )
+        self.values["result"].set(human_reason(summary["reason"])); self.values["agent"].set(state_label)
+        self.session["runs"] += 1; self.session["actions"] += summary["executed"]
+        if summary["ok"]:
+            self.session["success"] += 1
+        elif category == StopCategory.CAPABILITY_GAP.value:
+            self.session.setdefault("blocked", 0)
+            self.session["blocked"] += 1
+        else:
+            self.session["failed"] += 1
+        self.values["stats"].set(
+            f"本次启动：{self.session['runs']} 轮 · {self.session['actions']} 动作 · "
+            f"正常 {self.session['success']} · 待补能力 {self.session.get('blocked', 0)} · 异常 {self.session['failed']}"
+        )
+        icon = "✓ " if summary["ok"] else ("◇ " if category == StopCategory.CAPABILITY_GAP.value else "⚠ ")
+        self._append(icon + f"本轮结束：{human_reason(summary['reason'])}")
         # Full structured output belongs only in latest.log. Rendering large
         # JSON blobs in Tk made the UI appear flooded and could stall it.
         self._idle_buttons(); self._enforce_retention(); self.refresh()
         fatal = is_fatal_stop(str(summary["reason"]))
-        self.runtime_store.update(agent_state=AgentState.FATAL_STOPPED.value if fatal else (AgentState.IDLE.value if summary["ok"] else AgentState.DEGRADED.value),
+        self.runtime_store.update(agent_state=summary["agent_state"], stop_category=category,
                                   runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=summary["reason"],
                                   last_fatal_error=summary["reason"] if fatal else None)
-        if self.continuous.get() and not fatal and not self.stop_requested and not self.paused:
+        if self.continuous.get() and summary["healthy"] and not fatal and not self.stop_requested and not self.paused:
             # Four different things used to collapse into one 30-second wait:
             #
             #   A  this ``run_live.py`` subprocess ended

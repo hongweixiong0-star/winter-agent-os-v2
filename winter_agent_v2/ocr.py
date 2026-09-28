@@ -222,14 +222,17 @@ class RapidOCRBackend:
         from rapidocr_onnxruntime import RapidOCR
 
         self._engine = RapidOCR()
+        self.timing_parse_ms = 0.0
 
     def recognize(self, image: Image.Image) -> tuple[OCRToken, ...]:
         import numpy as np
 
         rows, _ = self._engine(np.asarray(image.convert("RGB")))
+        parse_started = time.monotonic()
         if not rows:
+            self.timing_parse_ms += (time.monotonic() - parse_started) * 1000
             return ()
-        return tuple(
+        tokens = tuple(
             OCRToken(
                 text=str(row[1]).strip(),
                 confidence=float(row[2]),
@@ -238,6 +241,8 @@ class RapidOCRBackend:
             for row in rows
             if str(row[1]).strip()
         )
+        self.timing_parse_ms += (time.monotonic() - parse_started) * 1000
+        return tokens
 
 
 class ResilientOCRBackend:
@@ -255,6 +260,10 @@ class ResilientOCRBackend:
         self.initial_backoff = max(0.0, float(initial_backoff))
         self.sleeper = sleeper
         self.name = f"resilient:{backend.name}"
+
+    @property
+    def timing_parse_ms(self) -> float:
+        return float(getattr(self.backend, "timing_parse_ms", 0.0))
 
     def recognize(self, image: Image.Image) -> tuple[OCRToken, ...]:
         delay = self.initial_backoff
@@ -279,6 +288,11 @@ class OCRService:
         self.timing_cache_hits = 0
         self.timing_total_ms = 0.0
         self.timing_backend_ms = 0.0
+
+    @property
+    def timing_parse_ms(self) -> float:
+        """Time spent converting OCR engine rows into V2's structured tokens."""
+        return float(getattr(self.backend, "timing_parse_ms", 0.0))
 
     @staticmethod
     def _roi_key(roi: dict[str, float] | None) -> str:

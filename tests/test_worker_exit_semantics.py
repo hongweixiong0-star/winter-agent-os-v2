@@ -21,8 +21,12 @@ one of the handlers.
 from __future__ import annotations
 
 import ast
+import json
 import unittest
+from tempfile import TemporaryDirectory
 from pathlib import Path
+from unittest.mock import patch
+from unittest.mock import patch
 
 from winter_agent_v2.runtime_snapshot import (
     NON_FATAL_STOPS,
@@ -233,6 +237,42 @@ class TheRealHandlersMoveTheCounterCorrectlyTests(unittest.TestCase):
         self.panel.ControlPanel._handle_runtime_error(fake, "KeyError: 'march_max'")
         self.assertEqual(self._counter(store), 15)
         self.assertEqual(store.read().stop_reason, "KeyError: 'march_max'")
+
+
+    def test_crash_report_captures_runtime_and_recovery_context(self):
+        from types import SimpleNamespace
+
+        with TemporaryDirectory() as folder:
+            folder = Path(folder)
+            log = folder / "panel.log"
+            log.write_text("one\ntwo\nthree\n", encoding="utf-8")
+            snapshot = SimpleNamespace(
+                current_goal="PARTICIPATE_BEAR", current_skill="JOIN_RALLY",
+                role_id="test-role", page="EVENT", device="CONNECTED", vision="READY",
+                watchdog_restart_count=4, unexpected_worker_exits=15,
+            )
+            with patch.object(self.panel, "CRASH_ROOT", folder / "crashes"), \
+                 patch.object(self.panel, "PANEL_LOG_PATH", log), \
+                 patch.object(self.panel, "LOG_ROOT", folder):
+                path = self.panel.write_worker_crash_report(
+                    where="test_worker", exc=RuntimeError("worker fault"), snapshot=snapshot,
+                    context={
+                        "device_state": {"connected": True},
+                        "adb_state": "CONNECTED",
+                        "maa_state": {"configured": True, "status": "READY"},
+                        "retry_state": {"retries": 2},
+                        "recovery_attempt": {"attempted": True, "retry_count": 2},
+                    },
+                )
+            report = json.loads(path.read_text(encoding="utf-8"))
+        for key in ("exception_type", "traceback", "goal", "skill", "role", "page",
+                    "last_20_events", "device_state", "adb_state", "maa_state",
+                    "retry_state", "thread_state", "recovery_attempt"):
+            self.assertIn(key, report)
+        self.assertEqual(report["goal"], "PARTICIPATE_BEAR")
+        self.assertEqual(report["role"], "test-role")
+        self.assertEqual(report["last_20_events"][-1]["line"], "three")
+        self.assertEqual(report["recovery_attempt"]["retry_count"], 2)
 
     def test_a_classified_worker_crash_still_counts_once(self):
         fake, store = self._harness(15)

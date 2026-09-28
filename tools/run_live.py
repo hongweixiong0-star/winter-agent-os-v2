@@ -363,6 +363,7 @@ def main() -> int:
         )
     result = LiveRuntime(
         latency_trace_path=ROOT / "learning/action_latency.jsonl",
+        fruitless_audit_path=ROOT / "learning/fruitless_run_audit.jsonl",
         device=observation_device,
         adb_device=device,
         maa_adapter=maa_adapter,

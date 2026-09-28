@@ -178,7 +178,21 @@ class ControlPanelTests(unittest.TestCase):
 
     def test_unknown_page_is_not_reported_as_success(self):
         payload = {"stop_reason": "unknown_page", "steps": [{"decision": {"skill": "SAFE_STOP"}}]}
-        self.assertFalse(summarize_runtime_result(payload, 0)["ok"])
+        summary = summarize_runtime_result(payload, 0)
+        self.assertFalse(summary["ok"], "a capability gap is not a completed game task")
+        self.assertTrue(summary["healthy"], "a safe refusal is not a runtime failure")
+        self.assertEqual(summary["stop_category"], "CAPABILITY_GAP")
+        self.assertEqual(summary["agent_state"], "SAFE_STOP")
+
+    def test_fruitless_stop_is_a_normal_no_action_cycle(self):
+        payload = {"stop_reason": "every_page_this_run_was_fruitless",
+                   "steps": [{"decision": {"skill": "SAFE_STOP"},
+                              "execution": None, "verification": None}]}
+        summary = summarize_runtime_result(payload, 0)
+        self.assertTrue(summary["ok"])
+        self.assertTrue(summary["healthy"])
+        self.assertEqual(summary["stop_category"], "EXPECTED_NO_ACTION")
+        self.assertEqual(summary["agent_state"], "IDLE")
 
     def test_user_visible_status_is_chinese(self):
         self.assertEqual(human_reason("DEVICE_BUSY"), "设备忙")
