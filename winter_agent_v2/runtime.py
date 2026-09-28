@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import os
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -8,6 +9,7 @@ import json
 from typing import Any, Callable, Iterable, Mapping
 
 from .brain import RuleBrain
+from . import action_latency
 from .verifier import verify_bear_rally_list_open
 from . import control_experience
 from . import goal_utility
@@ -439,6 +441,7 @@ class LiveRuntime:
         capability: str = "",
         expected_lease_id: str = "",
         expected_after_version: str = "",
+        latency_trace_path: Path | None = None,
         #: Who answers the on-demand question for a screen no skill can advance.
         #:
         #: Injected rather than built here for the same reason ``maa_adapter`` and ``routing``
@@ -457,6 +460,7 @@ class LiveRuntime:
         advisor=None,
     ) -> None:
         self.device = device
+        self.latency_trace_path = Path(latency_trace_path) if latency_trace_path else None
         # The ADB device behind the fallback executor.  When MAA observation is
         # enabled ``device`` is the MaaExecutorAdapter, so without this the ADB
         # path would be gone and "fall back to ADB" would silently mean "fall back
@@ -5155,7 +5159,24 @@ class LiveRuntime:
         self._runtime(agent_state=AgentState.AUTO_RUNNING.value, runtime_thread_alive=True,
                       scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
 
+        previous_action_end: float | None = None
         for index in range(1, max_actions + 1):
+            latency_started = time.monotonic()
+            latency: dict[str, float | None] = {}
+            if previous_action_end is not None:
+                latency["inter_step_wait_ms"] = max(0.0, (latency_started - previous_action_end) * 1000)
+            if index == 1 and os.environ.get("WINTER_WORKER_ENTRY_MONOTONIC"):
+                try:
+                    latency["worker_start_ms"] = max(
+                        0.0,
+                        (latency_started - float(os.environ["WINTER_WORKER_ENTRY_MONOTONIC"])) * 1000,
+                    )
+                except ValueError:
+                    pass
+            ocr_service = self._ocr_service()
+            ocr_before_ms = float(getattr(ocr_service, "timing_total_ms", 0.0))
+            ocr_before_calls = int(getattr(ocr_service, "timing_calls", 0))
+            ocr_before_hits = int(getattr(ocr_service, "timing_cache_hits", 0))
             # The single-UI-owner boundary (operator §8/§19), checked at the only moment
             # when no input is in flight: the previous step's action and verification are
             # finished and the next one has not begun.  A lease held by anyone else ends
@@ -5192,10 +5213,14 @@ class LiveRuntime:
                     next_action="yielded at a safe point; resumes when the lease is released",
                 )
                 return finish(reason)
+            phase_started = time.monotonic()
             before_path = self._capture_path(index, "before")
+            latency["frame_capture_ms"] = (time.monotonic() - phase_started) * 1000
             if self._device_lost(self.device.screenshot, before_path):
                 return finish(self._device_stop_reason)
+            phase_started = time.monotonic()
             before = self._observe(before_path)
+            latency["reobserve_ms"] = (time.monotonic() - phase_started) * 1000
             # A known page means whatever owned the screen has finished, so the
             # fight-aware branch of the unknown-page recovery is no longer needed.
             # Cleared here rather than where the fight is dispatched because this
@@ -5229,6 +5254,7 @@ class LiveRuntime:
                           queues={"building": before.building, "research": before.research, "training": before.training,
                                   "intel": before.intel, "alliance": before.alliance, "events": before.events})
             before = self._reject_a_dropped_digit(before)
+            selection_started = time.monotonic()
             goals = self._record_goals(before, frame=before_path)
             self._remember_goal_meters(goals)
             # Operator §四/§五: the board is re-ranked here, on every step, against the
@@ -5602,7 +5628,14 @@ class LiveRuntime:
             # free-stamina once-per-run flag), so a second call for the same
             # frame answers differently and the verifier then judges a skill the
             # step never ran.  See ``Scheduler.tick`` for the live evidence.
+            latency["scheduler_select_ms"] = (time.monotonic() - selection_started) * 1000
+            phase_started = time.monotonic()
             tick = Scheduler(self.brain, self.registry, executor, self.candidate_pool).tick(before, decision)
+            latency["scheduler_tick_ms"] = (time.monotonic() - phase_started) * 1000
+            latency["maa_execute_ms"] = (
+                float(tick.execution.latency_ms)
+                if tick.execution is not None and tick.execution.latency_ms is not None else None
+            )
             self._runtime(last_action_time=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat())
             if tick.execution is None or not tick.execution.executed:
                 self._record_episode(
@@ -5670,11 +5703,17 @@ class LiveRuntime:
                               last_fatal_error=reason if is_fatal_stop(reason) else None)
                 return finish(tick.execution.error if tick.execution else "NO_EXECUTION")
 
+            phase_started = time.monotonic()
             self.sleeper(self.settle_seconds)
+            latency["post_action_wait_ms"] = (time.monotonic() - phase_started) * 1000
+            phase_started = time.monotonic()
             after_path = self._capture_path(index, "after")
+            latency["frame_capture_ms"] = (latency.get("frame_capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
             if self._device_lost(self.device.screenshot, after_path):
                 return finish(self._device_stop_reason)
+            phase_started = time.monotonic()
             after = self._observe(after_path)
+            latency["reobserve_ms"] = (latency.get("reobserve_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
             if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 after = replace(after, resource_target=planned_resource)
             # Some successful game actions are followed by a promotional
@@ -5695,7 +5734,9 @@ class LiveRuntime:
                 after_path = recovery_path
             after = self._reject_a_dropped_digit(after)
             goals_after = self._record_goals(after, frame=after_path)
+            phase_started = time.monotonic()
             verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+            latency["verifier_ms"] = (time.monotonic() - phase_started) * 1000
             for refresh in range(1, self.observation_retries + 1):
                 # A known page can still be an intermediate animation/frame.
                 # Re-observe when the action-specific verifier is not yet
@@ -5712,7 +5753,9 @@ class LiveRuntime:
                     after = replace(after, resource_target=planned_resource)
                 after = self._reject_a_dropped_digit(after)
                 goals_after = self._record_goals(after, frame=refresh_path)
+                phase_started = time.monotonic()
                 verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+                latency["verifier_ms"] = (latency.get("verifier_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
                 # The episode must point at the frame its recorded ``after``
                 # state was actually read from.  ``after_path`` used to stay on
                 # the first post-action frame, so a step whose refreshes changed
@@ -5755,6 +5798,7 @@ class LiveRuntime:
                     row.no_progress_streak = 0
                 elif progress is False:
                     row.no_progress_streak += 1
+            phase_started = time.monotonic()
             self._record_episode(
                 decision=tick.decision, before=before, execution=tick.execution,
                 after=after, verification=verification, started_at=started_at,
@@ -5766,6 +5810,27 @@ class LiveRuntime:
                 goal_progress=progress,
                 before_screenshot=before_path, after_screenshot=after_path,
             )
+            latency["episode_write_ms"] = (time.monotonic() - phase_started) * 1000
+            latency["ocr_ms"] = max(0.0, float(getattr(ocr_service, "timing_total_ms", 0.0)) - ocr_before_ms)
+            latency["total_step_ms"] = (time.monotonic() - latency_started) * 1000
+            if self.latency_trace_path is not None:
+                action_latency.append(self.latency_trace_path, {
+                    **latency,
+                    "episode_id": self.capture_dir.name,
+                    "step_id": index,
+                    "repo_revision": self.code_revision,
+                    "role_id": self.role_id,
+                    "goal": step_goal or "",
+                    "skill": decision.skill,
+                    "page_before": before.page.value,
+                    "page_after": after.page.value,
+                    "success": bool(verification.ok),
+                    "failure_type": "" if verification.ok else verification.reason,
+                    "settle_policy": "FIXED_WAIT",
+                    "ocr_calls": int(getattr(ocr_service, "timing_calls", 0)) - ocr_before_calls,
+                    "ocr_cache_hits": int(getattr(ocr_service, "timing_cache_hits", 0)) - ocr_before_hits,
+                })
+            previous_action_end = time.monotonic()
             steps.append(LiveStep(index, tick.decision, tick.execution, before, after, verification))
             # Arm the fight-aware recovery.  The verifier is the evidence, not the
             # skill name: a step that verified "a fight has been dispatched" is the

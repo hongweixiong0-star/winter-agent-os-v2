@@ -275,6 +275,10 @@ class OCRService:
     def __init__(self, backend: OCRBackend) -> None:
         self.backend = backend
         self._cache: dict[str, OCRResult] = {}
+        self.timing_calls = 0
+        self.timing_cache_hits = 0
+        self.timing_total_ms = 0.0
+        self.timing_backend_ms = 0.0
 
     @staticmethod
     def _roi_key(roi: dict[str, float] | None) -> str:
@@ -287,10 +291,14 @@ class OCRService:
         image_path: Path,
         roi: dict[str, float] | None = None,
     ) -> OCRResult:
+        timing_started = time.monotonic()
+        self.timing_calls += 1
         digest = hashlib.sha256(image_path.read_bytes()).hexdigest()
         key = f"{digest}:{self._roi_key(roi)}:{self.backend.name}"
         if key in self._cache:
+            self.timing_cache_hits += 1
             previous = self._cache[key]
+            self.timing_total_ms += (time.monotonic() - timing_started) * 1000
             return OCRResult(previous.tokens, previous.backend, cached=True)
         with Image.open(image_path) as source:
             image = source.convert("RGB")
@@ -303,7 +311,10 @@ class OCRService:
                 if left < 0 or top < 0 or right > width or bottom > height or right <= left or bottom <= top:
                     raise ValueError("OCR_ROI_OUT_OF_BOUNDS")
                 image = image.crop((left, top, right, bottom))
+            backend_started = time.monotonic()
             result = OCRResult(self.backend.recognize(image), self.backend.name)
+            self.timing_backend_ms += (time.monotonic() - backend_started) * 1000
+        self.timing_total_ms += (time.monotonic() - timing_started) * 1000
         self._cache[key] = result
         return result
 

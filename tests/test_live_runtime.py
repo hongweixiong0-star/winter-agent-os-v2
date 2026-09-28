@@ -178,6 +178,31 @@ class LiveRuntimeTests(unittest.TestCase):
         self.assertEqual(row["state_before"]["page"], "HOME")
         self.assertEqual(row["state_after"]["page"], "MAP")
 
+    def test_verified_live_action_writes_phase_latency(self):
+        device = FakeDevice()
+        states = [
+            WorldState(page=Page.HOME, confidence=0.99),
+            WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
+        ]
+        with TemporaryDirectory() as temp:
+            latency_path = Path(temp) / "action_latency.jsonl"
+            run = LiveRuntime(
+                device=device,
+                vision=FakeVision(states),
+                semantic_vision=FakeSemantic(),
+                capture_dir=Path(temp) / "captures",
+                latency_trace_path=latency_path,
+                sleeper=lambda _seconds: None,
+            ).run(max_actions=1, allowed_skills={"OPEN_MAP"})
+            row = json.loads(latency_path.read_text(encoding="utf-8"))
+        self.assertTrue(run.steps[0].verification.ok)
+        self.assertEqual(row["skill"], "OPEN_MAP")
+        self.assertEqual(row["page_before"], "HOME")
+        self.assertEqual(row["page_after"], "MAP")
+        self.assertTrue(row["success"])
+        self.assertGreaterEqual(row["total_step_ms"], 0.0)
+        self.assertEqual(row["settle_policy"], "FIXED_WAIT")
+
     def test_verified_action_repeats_then_safe_stops(self):
         states = [
             ally(100, 2, 2, 0), ally(130, 1, 1, 1),

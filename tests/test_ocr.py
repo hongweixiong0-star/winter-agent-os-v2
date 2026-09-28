@@ -175,6 +175,10 @@ class OCRTests(unittest.TestCase):
             self.assertFalse(service.recognize(path, roi).cached)
             self.assertTrue(service.recognize(path, roi).cached)
             self.assertEqual(backend.calls, 1)
+            self.assertEqual(service.timing_calls, 2)
+            self.assertEqual(service.timing_cache_hits, 1)
+            self.assertGreaterEqual(service.timing_total_ms, 0.0)
+            self.assertGreaterEqual(service.timing_backend_ms, 0.0)
 
     def test_alliance_counter_is_structured(self):
         result = OCRResult((OCRToken("联盟科技",1.0), OCRToken("您的捐献：49,680",0.938)), "fake")

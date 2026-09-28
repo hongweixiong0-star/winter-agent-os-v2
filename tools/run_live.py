@@ -4,9 +4,13 @@ import argparse
 import json
 import os
 import sys
+import time
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
+
+_worker_entry_monotonic = time.monotonic()
+os.environ["WINTER_WORKER_ENTRY_MONOTONIC"] = str(_worker_entry_monotonic)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -358,6 +362,7 @@ def main() -> int:
             flush=True,
         )
     result = LiveRuntime(
+        latency_trace_path=ROOT / "learning/action_latency.jsonl",
         device=observation_device,
         adb_device=device,
         maa_adapter=maa_adapter,
