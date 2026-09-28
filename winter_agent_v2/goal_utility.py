@@ -404,6 +404,7 @@ class UtilityBreakdown:
     history: float = 0.0
     repeat_failure: float = 0.0
     red_dot: float = 0.0
+    event_readiness: float = 0.0
     #: The entries whose own dot produced ``red_dot``.  Carried here rather than looked up again by
     #: the caller because the frame the term was computed on is the only frame that can explain it.
     red_dot_on: tuple[str, ...] = ()
@@ -411,12 +412,12 @@ class UtilityBreakdown:
     @property
     def total(self) -> float:
         return (self.base + self.fairness + self.resource + self.history
-                + self.repeat_failure + self.red_dot)
+                + self.repeat_failure + self.red_dot + self.event_readiness)
 
     @property
     def dynamic(self) -> float:
         return (self.fairness + self.resource + self.history + self.repeat_failure
-                + self.red_dot)
+                + self.red_dot + self.event_readiness)
 
     def as_row(self) -> dict[str, Any]:
         return {
@@ -428,6 +429,7 @@ class UtilityBreakdown:
             "repeat_failure": round(self.repeat_failure, 1),
             "red_dot": round(self.red_dot, 1),
             "red_dot_on": list(self.red_dot_on),
+            "event_readiness": round(self.event_readiness, 1),
             "dynamic": round(self.dynamic, 1),
             "total": round(self.total, 1),
         }
@@ -445,6 +447,8 @@ class UtilityBreakdown:
             parts.append(f"repeat-failure {self.repeat_failure:+.1f}")
         if self.red_dot:
             parts.append(f"red-dot {self.red_dot:+.1f} on {'/'.join(self.red_dot_on)}")
+        if self.event_readiness:
+            parts.append(f"event-readiness {self.event_readiness:+.1f}")
         return ", ".join(parts) if parts else "catalogue price only"
 
 
@@ -454,6 +458,7 @@ def utility(
     world: Any = None,
     facts: Iterable[RouteFact] = (),
     row: GoalFairness | None = None,
+    event_readiness: float = 0.0,
     now: datetime | None = None,
 ) -> UtilityBreakdown:
     """The catalogue price plus what is only known at this moment.
@@ -475,6 +480,7 @@ def utility(
         repeat_failure=repeat_failure_penalty(row),
         red_dot=dot,
         red_dot_on=dot_entries,
+        event_readiness=max(0.0, float(event_readiness)),
     )
 
 
@@ -484,6 +490,7 @@ def rank(
     world: Any = None,
     facts: Iterable[RouteFact] = (),
     ledger: Mapping[str, GoalFairness] | None = None,
+    event_readiness: Mapping[str, float] | None = None,
     now: datetime | None = None,
 ) -> tuple[tuple[Any, UtilityBreakdown], ...]:
     """Every eligible goal with its utility, best first.  Ties keep board order.
@@ -509,7 +516,9 @@ def rank(
             continue
         breakdown = utility(
             goal, world=world, facts=facts,
-            row=rows.get(str(goal.goal_id)), now=moment,
+            row=rows.get(str(goal.goal_id)),
+            event_readiness=(event_readiness or {}).get(str(goal.goal_id), 0.0),
+            now=moment,
         )
         if breakdown.base == float("-inf"):
             continue
