@@ -11,6 +11,7 @@ from typing import Any, Callable, Iterable, Mapping
 from .brain import RuleBrain
 from . import action_latency
 from .settle_policy import FrameChangeProbe, choose as choose_settle_policy
+from .rally import RallyTarget, live_rally_join_point, rally_target_for_goal
 from .verifier import verify_bear_rally_list_open
 from . import control_experience
 from . import goal_utility
@@ -185,6 +186,18 @@ def _declared_record(semantic: str) -> tuple[tuple[str, ...], tuple[str, ...], b
     return _UI_DICTIONARY[1].get(str(semantic))
 
 
+def _verify_rally_action(skill_id: str, before: WorldState, after: WorldState, target: str):
+    target_id = str(getattr(target, "value", target) or "UNKNOWN").strip().upper()
+    supported_targets = {item.value for item in RallyTarget if item is not RallyTarget.UNKNOWN}
+    if target_id not in supported_targets:
+        return VerificationResult(False, "RALLY_TARGET_UNKNOWN", {"target": target_id})
+    if skill_id == "JOIN_RALLY":
+        return verify_rally_joined(before, after, target_id)
+    if skill_id == "START_RALLY":
+        return verify_rally_created(before, after, target_id)
+    raise ValueError(f"not a rally action: {skill_id}")
+
+
 class LiveRuntime:
     """Bounded production loop built around the one V2 Scheduler.
 
@@ -298,29 +311,9 @@ class LiveRuntime:
         "OPEN_BEAR_RALLY_LIST": verify_bear_rally_list_open,
         "OPEN_EXPLORATION": verify_open_exploration,
         # ------------------------------------------------------------------
-        # Bear rally: the two skills the 30-minute window depends on.
-        #
-        # ADDED 2026-09-24.  Both were registered (``skills.v2_registry``) and both carried
-        # a verifier *name* (``RALLY_JOINED`` / ``RALLY_CREATED``) that had **no entry
-        # here**, so ``run`` refused them at ``decision.skill not in self.VERIFIED_ATOMIC``
-        # and ended the step with ``SKILL_NOT_ENABLED_FOR_LIVE_LOOP``.  The class comment
-        # states the rule plainly -- "Only skills with an explicit post-action verifier may
-        # execute" -- and this is that rule applied to the one activity with a deadline.
-        #
-        # The binding is a ``lambda`` because the verifiers take a third argument: they are
-        # generic over the rally target, and ``Verifier`` here is the two-argument contract
-        # ``Callable[[WorldState, WorldState], VerificationResult]``.  ``runtime`` calls
-        # ``VERIFIED_ATOMIC[skill](before, after)``.
-        #
-        # Why ``"BEAR"`` and why that is not a shortcut: both verifiers compute
-        # ``identity_ok = str(rally.get("target_type", target)).upper() == target.upper()``.
-        # Passing "BEAR" means a frame that reports *any other* target type fails the check
-        # -- so this cannot certify a 普通集结, a 玩家攻击 or a 野怪 as a bear rally.  The
-        # target comes from the frame's own reading, not from this literal.
-        #
-        # Not claimed: that either has ever run.  They are now *dispatchable*; the first
-        # real dispatch needs the client to open the window.
-        # ------------------------------------------------------------------
+        # START_RALLY and JOIN_RALLY share target-parameterized verifiers. Keep the
+        # registry's Bear default for legacy callers; the live loop binds the target
+        # from the selected Goal before dispatch and verification.
         "JOIN_RALLY": lambda before, after: verify_rally_joined(before, after, "BEAR"),
         "START_RALLY": lambda before, after: verify_rally_created(before, after, "BEAR"),
         "SELECT_MAIL_ALLIANCE_TAB": verify_mail_alliance_tab_selected,
@@ -2544,6 +2537,7 @@ class LiveRuntime:
         frame_path: "Path | None" = None,
         resource: str | None = None,
         untried_intel_pins: list | None = None,
+        rally_target: str | None = None,
     ):
         """Answer where on ``frame`` the named semantic control is, or ``None``.
 
@@ -2567,6 +2561,19 @@ class LiveRuntime:
         invented point.  Every guard below exists because a real frame made the
         guess wrong at least once.
         """
+        if semantic == "RALLY_ROW_JOIN_BUTTON":
+            if frame.page is not Page.ALLIANCE:
+                return None
+            target = getattr(rally_target, "value", rally_target) or "BEAR"
+            alliance = frame.alliance if isinstance(frame.alliance, Mapping) else {}
+            if alliance.get("section") == "RALLY_LIST" or alliance.get("rally_list_visible") is True:
+                return live_rally_join_point(frame, target)
+            # Preserve the old, current-frame Bear detail-panel fallback. It is not
+            # target-generic, so an explicit Polar/unknown Goal must never use it.
+            if str(target).strip().upper() != "BEAR" or frame_path is None:
+                return None
+            match = self._semantic.find(Path(frame_path), "BTN_JOIN_ROW")
+            return match.center_norm if match is not None else None
         if semantic == "BTN_DAILY_TASK_GO":
             # The task row and its adjacent 前往 control are read from this exact
             # screenshot. A cached row, unpositioned OCR result, or different task
@@ -5483,10 +5490,22 @@ class LiveRuntime:
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 return finish("SKILL_NOT_ENABLED_FOR_LIVE_LOOP")
 
-            # The executor and the backend router both take this one callable.  It binds
-            # the run-scoped arguments (the frame this step observed, the resource this
-            # step planned, the pins this run has not tried) to the class-level resolver
-            # so a test can call the resolver the same way without a device.
+            rally_target = None
+            if decision.skill in {"START_RALLY", "JOIN_RALLY"}:
+                rally_target = (
+                    rally_target_for_goal(
+                        str(getattr(best_goal, "goal_id", "")),
+                        getattr(best_goal, "evidence", None),
+                    )
+                    if best_goal is not None else None
+                )
+                # Rally clicks without an explicit/legacy Bear target are refused
+                # by both recognizers and their target-specific verifiers.
+                if rally_target is None:
+                    rally_target = "UNKNOWN"
+
+            # Bind the current frame and Goal target so the ADB fallback and MAA
+            # LIST_DYNAMIC resolver apply one target identity to this observation.
             def resolve(semantic: str):
                 return self._resolve_semantic_target(
                     semantic,
@@ -5494,7 +5513,14 @@ class LiveRuntime:
                     frame_path=before_path,
                     resource=planned_resource,
                     untried_intel_pins=untried_intel_pins,
+                    rally_target=rally_target,
                 )
+
+            def verify_current_step(before_state: WorldState, after_state: WorldState):
+                if decision.skill in {"START_RALLY", "JOIN_RALLY"}:
+                    target = getattr(rally_target, "value", rally_target) or "UNKNOWN"
+                    return _verify_rally_action(decision.skill, before_state, after_state, str(target))
+                return self.VERIFIED_ATOMIC[decision.skill](before_state, after_state)
 
             if (
                 decision.skill in ("SELECT_RESOURCE", "OPEN_BEAST_SEARCH_TAB")
@@ -5621,6 +5647,7 @@ class LiveRuntime:
                 skill_id=decision.skill,
                 routing=self.routing,
                 ledger=self.backend_ledger,
+                rally_target=rally_target,
             )
             started_at = time.monotonic()
             # ``decision`` was already made above and the backend router below
@@ -5775,7 +5802,7 @@ class LiveRuntime:
             after = self._reject_a_dropped_digit(after)
             goals_after = self._record_goals(after, frame=after_path)
             phase_started = time.monotonic()
-            verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+            verification = verify_current_step(before, after)
             latency["verifier_ms"] = (time.monotonic() - phase_started) * 1000
             for refresh in range(1, self.observation_retries + 1):
                 # A known page can still be an intermediate animation/frame.
@@ -5796,7 +5823,7 @@ class LiveRuntime:
                 after = self._reject_a_dropped_digit(after)
                 goals_after = self._record_goals(after, frame=refresh_path)
                 phase_started = time.monotonic()
-                verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+                verification = verify_current_step(before, after)
                 latency["verifier_ms"] = (latency.get("verifier_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
                 # The episode must point at the frame its recorded ``after``
                 # state was actually read from.  ``after_path`` used to stay on

@@ -171,7 +171,7 @@ class _StubAdapter:
         return _StubOutcome()
 
 
-def _resolver_for(frame):
+def _resolver_for(frame, rally_target=None):
     from winter_agent_v2.executor_router import ExecutorRouter
 
     router = ExecutorRouter.__new__(ExecutorRouter)
@@ -181,6 +181,7 @@ def _resolver_for(frame):
 
     router.routing = RoutingTable.load()
     router.adb_resolver = None
+    router.rally_target = rally_target
     router.last_outcome = None
     router.last_recognition_error = None
     return router
@@ -222,6 +223,29 @@ def test_a_list_with_nothing_joinable_refuses_instead_of_falling_back():
     some other row would then be tapped even though the list said no.
     """
     router = _resolver_for(_frame_of("joined_with_jesse.png"))
+    point = router.maa_resolver("RALLY_ROW_JOIN_BUTTON", "JOIN_RALLY")
+    assert point is None
+    assert router.last_recognition_error == "LIST_DYNAMIC:NO_JOINABLE_ROW"
+
+
+def test_non_bear_target_refuses_the_bear_template_fallback():
+    from winter_agent_v2.rally import RallyTarget
+
+    router = _resolver_for(
+        _frame_of("special_buildings.png"), rally_target=RallyTarget.POLAR_TERROR
+    )
+    point = router.maa_resolver("RALLY_ROW_JOIN_BUTTON", "JOIN_RALLY")
+    assert point is None
+    assert router.last_recognition_error == "LIST_DYNAMIC:TARGET_FALLBACK_REFUSED"
+
+
+def test_explicit_non_bear_target_never_joins_a_bear_row():
+    """A target supplied by the current Goal scopes LIST_DYNAMIC row selection."""
+    from winter_agent_v2.rally import RallyTarget
+
+    router = _resolver_for(
+        _frame_of("join_list_now.png"), rally_target=RallyTarget.POLAR_TERROR
+    )
     point = router.maa_resolver("RALLY_ROW_JOIN_BUTTON", "JOIN_RALLY")
     assert point is None
     assert router.last_recognition_error == "LIST_DYNAMIC:NO_JOINABLE_ROW"
