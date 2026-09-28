@@ -45,6 +45,12 @@ from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
 from .intel_pins import intel_pin_centers
 from .verifier import verify_research_node_inspected, verify_completed_training_camp_inspected
+from .verifier import (
+    verify_gather_hero_picker_open,
+    verify_gather_hero_picker_selected,
+    verify_gather_hero_removed,
+    verify_gather_specialist_assigned,
+)
 
 
 @dataclass(frozen=True)
@@ -269,6 +275,10 @@ class LiveRuntime:
         # verify_march_count_readable for the measurement.
         "CHECK_MARCH": verify_march_count_readable,
         "DISPATCH_MARCH": verify_wood_dispatch_from_march,
+        "CLEAR_GATHER_HEROES": verify_gather_hero_removed,
+        "OPEN_GATHER_HERO_PICKER": verify_gather_hero_picker_open,
+        "SELECT_GATHER_HERO": verify_gather_hero_picker_selected,
+        "ASSIGN_GATHER_HERO": verify_gather_specialist_assigned,
         "SELECT_BEAST_TARGET": verify_beast_target_selected,
         "SELECT_BEAST_TARGET_MAMMOTH": verify_beast_mammoth_target_selected,
         # The species-agnostic twin.  A skill with no entry here is never dispatched,
@@ -2371,6 +2381,7 @@ class LiveRuntime:
         if focus is None:
             state = vision.observe(frame_path)
             self._record_live_event_reservation(state)
+            state = self._annotate_gather_formation(state, frame_path)
             return state
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         page_hint = str(getattr(self, "_last_known_label", "") or "")
@@ -2402,7 +2413,84 @@ class LiveRuntime:
             )
             state = look(widen=True, reason="widening after an unnamed frame")
         self._record_live_event_reservation(state)
+        state = self._annotate_gather_formation(state, frame_path)
         return state
+
+    def _annotate_gather_formation(self, world: WorldState, frame_path: Path) -> WorldState:
+        """Attach current-frame hero identities with role-scoped availability."""
+        if world.page is Page.POPUP and world.popup == "HERO_PICKER":
+            if str(getattr(getattr(self, "brain", None), "current_goal", "") or "") == "GATHER_RESOURCE":
+                return self._annotate_gather_picker(world, frame_path)
+            return world
+        if world.page is not Page.MARCH:
+            return world
+        try:
+            from PIL import Image
+            from .formation import read_formation_hero_identities
+
+            with Image.open(frame_path) as opened:
+                observation = read_formation_hero_identities(opened.convert("RGB"))
+        except Exception as exc:  # optional portrait recognition must not break general observation
+            return replace(world, hero_troop={
+                **dict(world.hero_troop or {}),
+                "gather_formation": {
+                    "status": "UNAVAILABLE",
+                    "reason": f"PORTRAIT_READER_ERROR:{type(exc).__name__}",
+                    "source_frame": str(frame_path),
+                    "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
+                },
+            })
+        role_scope = str(getattr(self, "role_scope", "") or "").upper()
+        live_scope = role_scope in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+        record = {
+            **observation,
+            "role_id": str(getattr(self, "role_id", "") or "") if live_scope else None,
+            "role_scope": role_scope or "UNKNOWN",
+            "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
+            "source_frame": str(frame_path),
+            "resource_type": str(
+                world.resource_target or getattr(self, "_active_gather_resource", "") or ""
+            ).upper() or None,
+            "specialist_availability": "UNKNOWN",
+        }
+        return replace(world, hero_troop={**dict(world.hero_troop or {}), "gather_formation": record})
+
+    def _annotate_gather_picker(self, world: WorldState, frame_path: Path) -> WorldState:
+        """Match only the exact resource specialist on the current role's picker frame."""
+        from PIL import Image
+        from .hero_portraits import gather_hero_for_resource, match_picker_hero, picker_card_selected
+
+        role_scope = str(getattr(self, "role_scope", "") or "").upper()
+        live_scope = role_scope in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+        resource = str(world.resource_target or getattr(self, "_active_gather_resource", "") or "").upper()
+        target = gather_hero_for_resource(resource)
+        try:
+            with Image.open(frame_path) as opened:
+                image = opened.convert("RGB")
+            match = match_picker_hero(
+                image,
+                target or "",
+                picker_page_verified=world.page is Page.POPUP and world.popup == "HERO_PICKER",
+            ) if target else {"status": "UNKNOWN_RESOURCE", "hero_id": None}
+            selected = bool(match.get("status") == "MATCHED" and picker_card_selected(image, match))
+        except Exception as exc:
+            match = {"status": "READER_ERROR", "error": type(exc).__name__, "hero_id": target}
+            selected = False
+        picker = {
+            "open": True,
+            "resource_type": resource or None,
+            "hero_id": target,
+            "match_status": str(match.get("status") or "UNKNOWN"),
+            "specialist_availability": "SELECTABILITY_UNVERIFIED" if match.get("status") == "MATCHED" else "UNKNOWN",
+            "selected": selected,
+            "match": dict(match),
+            "source_frame": str(frame_path),
+            "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
+            "role_id": str(getattr(self, "role_id", "") or "") if live_scope else None,
+            "role_scope": role_scope or "UNKNOWN",
+        }
+        return replace(world, resource_target=resource or world.resource_target,
+                       hero_troop={**dict(world.hero_troop or {}), "hero_picker": picker})
 
     def _record_live_event_reservation(self, world: WorldState) -> None:
         """Persist or clear role-scoped event reservations from current client evidence."""
@@ -2670,6 +2758,117 @@ class LiveRuntime:
             except (TypeError, ValueError):
                 return None
             return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
+        if semantic == "OPEN_GATHER_HERO_PICKER":
+            if frame.page is not Page.MARCH or frame_path is None:
+                return None
+            observation = (frame.hero_troop or {}).get("gather_formation")
+            if not isinstance(observation, Mapping) or observation.get("source_frame") != str(frame_path):
+                return None
+            if observation.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            slots = [item for item in (observation.get("slots") or ()) if isinstance(item, Mapping)]
+            if len(slots) != 3 or any(item.get("state") != "EMPTY" for item in slots):
+                return None
+            from PIL import Image
+            from .hero_portraits import formation_slot_boxes
+            try:
+                with Image.open(frame_path) as opened:
+                    width, height = opened.size
+            except OSError:
+                return None
+            if width <= 0 or height <= 0:
+                return None
+            box = formation_slot_boxes((width, height))[0]
+            return ((box[0] + box[2] / 2) / width, (box[1] + box[3] / 2) / height)
+        if semantic == "PICK_EXACT_GATHER_HERO":
+            if frame.page is not Page.POPUP or frame.popup != "HERO_PICKER" or frame_path is None:
+                return None
+            picker = (frame.hero_troop or {}).get("hero_picker")
+            if not isinstance(picker, Mapping) or picker.get("source_frame") != str(frame_path):
+                return None
+            if picker.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            from PIL import Image
+            from .hero_portraits import gather_hero_for_resource, match_picker_hero
+            target = gather_hero_for_resource(str(resource or frame.resource_target or ""))
+            if not target or picker.get("hero_id") != target:
+                return None
+            try:
+                with Image.open(frame_path) as opened:
+                    result = match_picker_hero(opened.convert("RGB"), target, picker_page_verified=True)
+            except OSError:
+                return None
+            if result.get("status") != "MATCHED":
+                return None
+            point = result.get("tap_norm")
+            if not isinstance(point, (tuple, list)) or len(point) != 2:
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0 <= x_norm <= 1 and 0 <= y_norm <= 1 else None
+        if semantic == "ASSIGN_EXACT_GATHER_HERO":
+            if frame.page is not Page.POPUP or frame.popup != "HERO_PICKER" or frame_path is None:
+                return None
+            picker = (frame.hero_troop or {}).get("hero_picker")
+            if not isinstance(picker, Mapping) or picker.get("source_frame") != str(frame_path):
+                return None
+            if picker.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            from PIL import Image
+            from .hero_portraits import gather_hero_for_resource, match_picker_hero, picker_card_selected
+            target = gather_hero_for_resource(str(resource or frame.resource_target or ""))
+            if not target or picker.get("hero_id") != target:
+                return None
+            try:
+                with Image.open(frame_path) as opened:
+                    image = opened.convert("RGB")
+                    result = match_picker_hero(image, target, picker_page_verified=True)
+            except OSError:
+                return None
+            if result.get("status") != "MATCHED" or not picker_card_selected(image, result):
+                return None
+            ocr_service = self._ocr_service()
+            hit = find_printed_words(
+                frame_path,
+                ("派遣",),
+                ocr_service,
+                band={"x_norm": 0.45, "y_norm": 0.72, "w_norm": 0.48, "h_norm": 0.15},
+            ) if ocr_service is not None else None
+            point = hit.get("center_norm") if isinstance(hit, Mapping) else None
+            if not isinstance(point, (tuple, list)) or len(point) != 2:
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0 <= x_norm <= 1 and 0 <= y_norm <= 1 else None
+        if semantic == "REMOVE_GATHER_HERO":
+            if frame.page is not Page.MARCH or frame_path is None:
+                return None
+            observation = (frame.hero_troop or {}).get("gather_formation")
+            if not isinstance(observation, Mapping) or observation.get("source_frame") != str(frame_path):
+                return None
+            if observation.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            from .hero_portraits import evaluate_gather_formation
+            from .hero_badge import remove_button_point
+            from PIL import Image
+            target_resource = resource or frame.resource_target or observation.get("resource_type")
+            decision = evaluate_gather_formation(str(target_resource or ""), observation)
+            slots = decision.get("remove_slots") or []
+            if decision.get("status") != "CLEANUP_REQUIRED" or not slots:
+                return None
+            try:
+                with Image.open(frame_path) as opened:
+                    point = remove_button_point(opened.convert("RGB"), int(slots[0]))
+                    width, height = opened.size
+            except (OSError, TypeError, ValueError):
+                return None
+            if not point or width <= 0 or height <= 0:
+                return None
+            return (point[0] / width, point[1] / height)
         if semantic == "RESOURCE_DYNAMIC":
             # The strip scrolls, so the tap target is derived from the
             # bracket anchor observed on the current frame (see
@@ -5333,6 +5532,8 @@ class LiveRuntime:
                 })
             self._sync_stamina_supply(before)
             planned_resource = self.resource_rotation.target(before.resources) if self.resource_rotation else "WOOD"
+            if str(getattr(self.brain, "current_goal", "") or "") == "GATHER_RESOURCE":
+                self._active_gather_resource = planned_resource
             if before.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 before = replace(before, resource_target=planned_resource)
             self._runtime(last_tick_time=datetime.now(timezone.utc).isoformat(),

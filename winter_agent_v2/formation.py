@@ -106,3 +106,15 @@ def read_formation_state(image_path, ocr) -> dict[str, Any]:
         frame_size = source.size
     result = ocr.recognize(image_path)
     return read_formation_state_tokens(result.tokens, frame_size)
+
+
+def read_formation_hero_identities(frame) -> dict[str, Any]:
+    """Add shared portrait identity to the page's three current hero slots.
+
+    Names are not printed on the march page. Identity therefore comes from the
+    candidate library built on named hero cards and is returned separately from
+    occupancy/state. Unknown and ambiguous portraits stay unnamed.
+    """
+    from .hero_portraits import recognize_formation_heroes
+
+    return recognize_formation_heroes(frame)

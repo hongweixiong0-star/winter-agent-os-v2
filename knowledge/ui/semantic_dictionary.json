@@ -3277,9 +3277,172 @@
    "evidence_refs": [
     "dataset/truth_audit/alliance_daily_closure_20260928/donation_detail_after.png"
    ]
+  },
+  {
+   "id": "BTN_HERO_PICKER_ASSIGN",
+   "type": "BUTTON",
+   "cn": "派遣",
+   "en_aliases": [
+    "Assign"
+   ],
+   "ocr": [
+    "派遣"
+   ],
+   "icon_semantic": "hero.picker.assign",
+   "pages": [
+    "HERO_PICKER"
+   ],
+   "target_state": "HERO_ASSIGNED_TO_MARCH",
+   "actions": [
+    "TAP"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "visual_features": {
+    "state": "bottom action bar button enabled after selection",
+    "semantic_target": "current selected hero"
+   },
+   "preconditions": [
+    "exact_resource_specialist_identity_confirmed",
+    "current_card_selected_by_four_corner_brackets",
+    "role_state_fresh"
+   ],
+   "expected_transition": "PAGE_MARCH_WITH_EXACT_SPECIALIST",
+   "verification": {
+    "button_target": "current-frame OCR 派遣 in lower action bar",
+    "postcondition": "current-frame formation portrait resolves to exact specialist and role matches",
+    "evidence": [
+     "dataset/raw/ui_exploration/20260928/frame_137_MEAT_CLORIS_ASSIGNED_CONFIRMED.png",
+     "dataset/raw/ui_exploration/20260928/frame_139_MEAT_FORMATION_CLORIS_ONLY.png"
+    ]
+   },
+   "notes": "This button is not the final gather dispatch. It only assigns the selected hero to the current march."
+  },
+  {
+   "id": "HERO_PICKER_CARD_DYNAMIC",
+   "type": "COMPOSITE_CONTROL",
+   "cn": "英雄选择卡片",
+   "en_aliases": [
+    "Hero picker card"
+   ],
+   "ocr": [],
+   "icon_semantic": "hero.picker_card",
+   "pages": [
+    "HERO_PICKER"
+   ],
+   "target_state": "HERO_CARD_SELECTED",
+   "actions": [
+    "SELECT",
+    "INSPECT"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "visual_features": {
+    "identity": "hero portrait core matched against named portrait library",
+    "selection_indicator": "four gold corner brackets",
+    "layout": "scrollable rows; current-frame match only"
+   },
+   "preconditions": [
+    "PAGE_HERO_PICKER_verified",
+    "hero_id_has_picker_face_sample",
+    "local_match_score_and_margin_pass"
+   ],
+   "expected_transition": "same_card_has_four_gold_corner_brackets",
+   "verification": {
+    "card_identity": "match_picker_hero on current frame",
+    "selected_state": "picker_card_selected",
+    "evidence": [
+     "dataset/raw/ui_exploration/20260928/frame_136_PICKER_CLORIS_ROW_VISIBLE.png",
+     "dataset/raw/ui_exploration/20260928/frame_135_MEAT_CLORIS_RESELECTED.png"
+    ]
+   },
+   "notes": "Rows can scroll; bbox is measured from this frame. Historical coordinates are not reused. Ambiguous or missing portrait samples abstain."
+  },
+  {
+   "id": "HERO_SLOT_EMPTY",
+   "type": "STATE_INDICATOR",
+   "cn": "空英雄槽位",
+   "en_aliases": [
+    "Empty hero slot"
+   ],
+   "ocr": [],
+   "icon_semantic": "hero.slot_empty",
+   "pages": [
+    "MARCH"
+   ],
+   "target_state": "EMPTY",
+   "actions": [
+    "OPEN_HERO_PICKER"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "visual_features": {
+    "state": "empty formation portrait tile with plus affordance",
+    "formation_slots": 3
+   },
+   "preconditions": [
+    "current_march_page",
+    "all_formation_slots_classified_from_current_frame"
+   ],
+   "expected_transition": "PAGE_HERO_PICKER",
+   "verification": {
+    "before": "slot classified EMPTY",
+    "after": "OCR heading 英雄选择",
+    "evidence": [
+     "dataset/raw/ui_exploration/20260928/frame_095_MEAT_EMPTY_SETTLED.png",
+     "dataset/raw/ui_exploration/20260928/frame_096_MEAT_HERO_PICKER.png"
+    ]
+   },
+   "notes": "Open the picker only when all three slots are observed empty for a specialist availability check; do not infer a missing hero from stale role state."
+  },
+  {
+   "id": "PAGE_HERO_PICKER",
+   "type": "PAGE",
+   "cn": "英雄选择",
+   "en_aliases": [
+    "Hero Selection"
+   ],
+   "ocr": [
+    "英雄选择"
+   ],
+   "icon_semantic": "hero.picker",
+   "pages": [
+    "POPUP"
+   ],
+   "target_state": "HERO_PICKER",
+   "actions": [
+    "INSPECT",
+    "SELECT",
+    "BACK"
+   ],
+   "status": "CANDIDATE",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "visual_features": {
+    "heading": "英雄选择",
+    "contains": "scrollable hero card list",
+    "selection_indicator": "four gold corner brackets"
+   },
+   "preconditions": [
+    "current_march_page",
+    "current_role_observed"
+   ],
+   "expected_transition": "HERO_PICKER_VISIBLE",
+   "verification": {
+    "page_identity": "OCR heading 英雄选择",
+    "selection": "all four gold brackets around the current matched card",
+    "evidence": [
+     "dataset/raw/ui_exploration/20260928/frame_050_OPEN_HERO_PICKER.png",
+     "dataset/raw/ui_exploration/20260928/frame_096_MEAT_HERO_PICKER.png"
+    ]
+   },
+   "notes": "CANDIDATE until fresh frames verify current popup identity; hero identity is resolved from portrait samples and the current list frame, never from a stored card coordinate."
   }
  ],
  "notes": "OCR strings are candidates until observed in current CN/EN clients. Icon semantics are labels, not production templates.",
  "schema_note": "Optional fields (operator directive 2026-09-22): visual_features (what the control looks like, measured), position_hint (where it sits, always with its basis, never treated as a template), preconditions (what must hold before acting), states (the named states the control or the surface it belongs to can be in), expected_transition (what acting on it should change), verification (how far the record is actually verified -- MEASURED_* is a reading, UNVERIFIED is a hypothesis), related_goals (the goals it serves). Every field is optional and every existing record stays valid without them.  Additional field: ocr_dynamic holds the values a control was seen printing -- a countdown, a cost, a count -- which are read by the state readers and are deliberately NOT part of the control's identity, because a value changes and an identity does not. Additional field: ocr_merged marks a control whose printed name the client draws together with its icon, so that OCR returns one token containing the name instead of equalling it (measured: the 实力详情 button is read as 三实力详情).  It is declared per record and only that record's reading is relaxed; find_printed_words keeps its exact-match default, which exists because a containment match once answered with a different control's position (城镇 inside 我的城镇).",
- "count": 121
+ "count": 125
 }

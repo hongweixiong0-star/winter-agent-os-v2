@@ -874,6 +874,16 @@ class OCRPageClassifier:
             for token in eligible
             if _is_quick_panel_section(token)
         }
+        # The hero selector is an in-place overlay on the march formation. Its
+        # own title identifies the page so the gather planner can inspect only
+        # the current picker frame and avoid reusing a stale formation target.
+        if "英雄选择" in exact_texts:
+            return WorldState(
+                page=Page.POPUP,
+                popup="HERO_PICKER",
+                hero_troop={"hero_picker": {"open": True}},
+                confidence=max(token.confidence for token in eligible),
+            )
         # The task board has two different page identities with tabs along its
         # bottom edge. The inactive tab label is always visible, so only the
         # centered heading in the top band can identify the current page.
