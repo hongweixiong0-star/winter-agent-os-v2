@@ -1,11 +1,28 @@
 from __future__ import annotations
 
 import unittest
+import subprocess
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from winter_agent_v2.worker_recovery import retry_until_ready
+from tools.control_panel import ControlPanel
 
 
 class WorkerRecoveryTests(unittest.TestCase):
+    def test_initial_adb_connect_timeout_is_classified_for_recovery(self):
+        panel = SimpleNamespace(
+            stop_requested=False,
+            paused=False,
+            device=SimpleNamespace(adb_path=Path("adb"), serial="127.0.0.1:7555"),
+            config={"device": {"package_name": "com.gof.china"}},
+        )
+        timeout = subprocess.TimeoutExpired(["adb", "connect"], timeout=5)
+        with patch("tools.control_panel._background_run", side_effect=timeout):
+            with self.assertRaisesRegex(RuntimeError, "ADB_COMMAND_TIMEOUT"):
+                ControlPanel._ensure_device(panel)
+
     def test_environment_failure_retries_with_bounded_backoff_then_continues(self):
         outcomes = iter([RuntimeError("DEVICE_NOT_CONNECTED"), RuntimeError("ADB_COMMAND_TIMEOUT"), None])
         delays = []

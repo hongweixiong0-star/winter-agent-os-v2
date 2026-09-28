@@ -5094,8 +5094,11 @@ class ControlPanel:
             timeout = remaining(5.0)
             if timeout <= 0:
                 raise RuntimeError("DEVICE_CONNECT_TIMEOUT")
-            _background_run([str(self.device.adb_path), "connect", self.device.serial],
-                            capture_output=True, text=True, timeout=timeout, check=False)
+            try:
+                _background_run([str(self.device.adb_path), "connect", self.device.serial],
+                                capture_output=True, text=True, timeout=timeout, check=False)
+            except subprocess.TimeoutExpired as exc:
+                raise RuntimeError("ADB_COMMAND_TIMEOUT") from exc
         retryable = {"DEVICE_NOT_CONNECTED", "ADB_COMMAND_TIMEOUT", "ADB_DISCOVERY_FAILED", "ADB_FAILED"}
         connect_adb()
         try:
@@ -5112,11 +5115,15 @@ class ControlPanel:
                     timeout = remaining(30.0)
                     if timeout <= 0:
                         raise RuntimeError("DEVICE_CONNECT_TIMEOUT") from exc
-                    launch = _background_run(
-                        [str(MUMU_MANAGER_PATH), "control", "-v", MUMU_VM_INDEX,
-                         "launch", "-pkg", self.config["device"]["package_name"]],
-                        capture_output=True, text=True, timeout=timeout, check=False,
-                    )
+                    try:
+                        launch = _background_run(
+                            [str(MUMU_MANAGER_PATH), "control", "-v", MUMU_VM_INDEX,
+                             "launch", "-pkg", self.config["device"]["package_name"]],
+                            capture_output=True, text=True, timeout=timeout, check=False,
+                        )
+                    except subprocess.TimeoutExpired as launch_error:
+                        self._device_launch_requested = False
+                        raise RuntimeError("MUMU_LAUNCH_FAILED:launcher_timeout") from launch_error
                     if launch.returncode != 0:
                         self._device_launch_requested = False
                         raise RuntimeError(f"MUMU_LAUNCH_FAILED:{launch.stderr.strip() or launch.stdout.strip()}")
