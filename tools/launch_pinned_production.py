@@ -112,6 +112,9 @@ def main(argv: list[str] | None = None) -> int:
         print(identity, flush=True)
         if args.check_only:
             return 0
+        # Runtime evidence belongs beside the shared mutable data, not in the
+        # pinned code checkout where it would make the next startup look dirty.
+        os.environ["WINTER_AGENT_DATA_ROOT"] = str(data_root)
         log_path = _startup_log(data_root)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("a", encoding="utf-8", buffering=1) as stream:

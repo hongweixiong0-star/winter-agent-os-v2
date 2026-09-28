@@ -2379,13 +2379,11 @@ class PanelProbes:
                     self._log_soak_once(f"验收 Soak 未启动：{self._soak_error}")
                     return
                 from winter_agent_v2.gateway_soak import GatewaySoak
-                from winter_agent_v2.gateway_soak import EVIDENCE_RELATIVE
 
                 self._soak = GatewaySoak(
                     self.root,
                     facts=lambda: dict(self._soak_facts(self._gateway, self._gateway_lifecycle)),
                     sample_every=self.SOAK_SAMPLE_EVERY,
-                    evidence_path=self.root / EVIDENCE_RELATIVE,
                     console_counter=self._console_windows_for_this_window,
                     rounds_completed=auto_rounds_completed,
                     launch_context=context,
