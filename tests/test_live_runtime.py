@@ -3,6 +3,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
 
+from PIL import Image
+
 from winter_agent_v2.learning import EpisodeStore
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
@@ -61,6 +63,20 @@ class FakeDevice:
 
     def swipe(self, x1, y1, x2, y2, duration_ms=300):
         self.taps.append(("swipe", x1, y1, x2, y2))
+
+
+class ImageSequenceDevice(FakeDevice):
+    def __init__(self, colors):
+        super().__init__()
+        self.colors = list(colors)
+        self.screenshot_count = 0
+
+    def screenshot(self, path):
+        color = self.colors[min(self.screenshot_count, len(self.colors) - 1)]
+        self.screenshot_count += 1
+        path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (720, 1280), color).save(path)
+        return path
 
 
 def ally(progress, badge, buttons, claimed, status="CLAIMABLE"):
@@ -201,7 +217,28 @@ class LiveRuntimeTests(unittest.TestCase):
         self.assertEqual(row["page_after"], "MAP")
         self.assertTrue(row["success"])
         self.assertGreaterEqual(row["total_step_ms"], 0.0)
-        self.assertEqual(row["settle_policy"], "FIXED_WAIT")
+        self.assertEqual(row["settle_policy"], "PAGE_TRANSITION")
+        self.assertEqual(row["settle_frame_change_fraction"], None)
+
+    def test_unchanged_frame_gets_one_bounded_settle_retry_without_repeating_action(self):
+        device = ImageSequenceDevice(["black", "black", "white"])
+        states = [
+            WorldState(page=Page.HOME, confidence=0.99),
+            WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
+        ]
+        waits = []
+        with TemporaryDirectory() as temp:
+            run = LiveRuntime(
+                device=device,
+                vision=FakeVision(states),
+                semantic_vision=FakeSemantic(),
+                capture_dir=Path(temp),
+                sleeper=waits.append,
+            ).run(max_actions=1, allowed_skills={"OPEN_MAP"})
+        self.assertTrue(run.steps[0].verification.ok)
+        self.assertEqual(len(device.taps), 1)
+        self.assertEqual(device.screenshot_count, 3)
+        self.assertEqual(waits, [0.15, 0.4])
 
     def test_verified_action_repeats_then_safe_stops(self):
         states = [

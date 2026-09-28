@@ -10,6 +10,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 from .brain import RuleBrain
 from . import action_latency
+from .settle_policy import FrameChangeProbe, choose as choose_settle_policy
 from .verifier import verify_bear_rally_list_open
 from . import control_experience
 from . import goal_utility
@@ -5703,14 +5704,33 @@ class LiveRuntime:
                               last_fatal_error=reason if is_fatal_stop(reason) else None)
                 return finish(tick.execution.error if tick.execution else "NO_EXECUTION")
 
+            settle_policy = choose_settle_policy(decision.skill)
+            settle_first_wait = min(max(0.0, settle_policy.first_wait_s), max(0.0, self.settle_seconds))
+            settle_retry_wait = min(max(0.0, settle_policy.retry_wait_s), max(0.0, self.settle_seconds))
             phase_started = time.monotonic()
-            self.sleeper(self.settle_seconds)
-            latency["post_action_wait_ms"] = (time.monotonic() - phase_started) * 1000
+            self.sleeper(settle_first_wait)
+            latency["settle_first_wait_ms"] = (time.monotonic() - phase_started) * 1000
             phase_started = time.monotonic()
             after_path = self._capture_path(index, "after")
             latency["frame_capture_ms"] = (latency.get("frame_capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
             if self._device_lost(self.device.screenshot, after_path):
                 return finish(self._device_stop_reason)
+            frame_changed, frame_change_fraction = FrameChangeProbe(before_path).changed(after_path)
+            latency["settle_frame_change_fraction"] = frame_change_fraction
+            latency["settle_retry_wait_ms"] = 0.0
+            if not frame_changed and settle_retry_wait > 0.0:
+                # The first post-action frame is still visually unchanged. Wait
+                # once, then observe a fresh frame; never repeat the action.
+                phase_started = time.monotonic()
+                self.sleeper(settle_retry_wait)
+                latency["settle_retry_wait_ms"] = (time.monotonic() - phase_started) * 1000
+                phase_started = time.monotonic()
+                retry_path = self._capture_path(index, "after", suffix="settle_retry")
+                latency["frame_capture_ms"] = (latency.get("frame_capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
+                if self._device_lost(self.device.screenshot, retry_path):
+                    return finish(self._device_stop_reason)
+                after_path = retry_path
+            latency["post_action_wait_ms"] = latency["settle_first_wait_ms"] + latency["settle_retry_wait_ms"]
             phase_started = time.monotonic()
             after = self._observe(after_path)
             latency["reobserve_ms"] = (latency.get("reobserve_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
@@ -5724,7 +5744,7 @@ class LiveRuntime:
                 if after.page.value != "POPUP" or after.popup not in {"REAL_MONEY_OFFER", "PURCHASE_POPUP"}:
                     break
                 self.device.press_back()
-                self.sleeper(self.settle_seconds)
+                self.sleeper(settle_retry_wait)
                 recovery_path = self._capture_path(index, "after", suffix=f"payment_offer_closed_{offer_recovery}")
                 if self._device_lost(self.device.screenshot, recovery_path):
                     return finish(self._device_stop_reason)
@@ -5744,7 +5764,7 @@ class LiveRuntime:
                 # delayed. This handles slow MAP -> RESOURCE_DETAIL transitions.
                 if verification.ok:
                     break
-                self.sleeper(self.settle_seconds)
+                self.sleeper(settle_retry_wait)
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
                 if self._device_lost(self.device.screenshot, refresh_path):
                     return finish(self._device_stop_reason)
@@ -5826,7 +5846,8 @@ class LiveRuntime:
                     "page_after": after.page.value,
                     "success": bool(verification.ok),
                     "failure_type": "" if verification.ok else verification.reason,
-                    "settle_policy": "FIXED_WAIT",
+                    "settle_policy": settle_policy.name,
+                    "settle_frame_change_fraction": latency.get("settle_frame_change_fraction"),
                     "ocr_calls": int(getattr(ocr_service, "timing_calls", 0)) - ocr_before_calls,
                     "ocr_cache_hits": int(getattr(ocr_service, "timing_cache_hits", 0)) - ocr_before_hits,
                 })
