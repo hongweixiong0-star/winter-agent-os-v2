@@ -266,6 +266,20 @@ def test_the_evidence_file_follows_the_existing_soak_conventions(tmp_path):
     assert payload["kind"] == "GatewaySoakAcceptance"
 
 
+def test_default_evidence_path_uses_shared_data_root_when_configured(tmp_path, monkeypatch):
+    """Production evidence must not dirty the pinned code checkout."""
+    code_root = tmp_path / "code"
+    data_root = tmp_path / "shared-data"
+    monkeypatch.setenv("WINTER_AGENT_DATA_ROOT", str(data_root))
+    soak = gs.GatewaySoak(code_root, facts=lambda: dict(GOOD), sample_every=1)
+
+    soak.observe()
+    soak.close()
+
+    assert (data_root / gs.EVIDENCE_RELATIVE).is_file()
+    assert not (code_root / gs.EVIDENCE_RELATIVE).exists()
+
+
 def test_a_development_launch_records_the_limitation_rather_than_hiding_it(tmp_path):
     """§三/§九: a window a development host started is not acceptance evidence."""
     soak = _fill(_soak(tmp_path, consoles=[0], launch_context="development"), 2)

@@ -27,6 +27,7 @@ it records and grades, and the twelve conditions it grades are the operator's, q
 from __future__ import annotations
 
 import json
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,6 +39,18 @@ WINDOW_SECONDS = 900.0
 #: Where the verdict lands.  Under ``evidence/`` so it sits beside the project's other
 #: evidence and is picked up by the existing index, rather than in a store of its own.
 EVIDENCE_RELATIVE = "evidence/gui_workbuddy_loop/latest.json"
+
+
+def default_evidence_path(root: Path, environ: Mapping[str, str] | None = None) -> Path:
+    """Place soak output beside shared project data when production is pinned.
+
+    The production launcher sets ``WINTER_AGENT_DATA_ROOT`` to the existing shared
+    data tree. A development checkout has no such setting and keeps evidence under
+    its own root, preserving the long-standing local behavior.
+    """
+    env = os.environ if environ is None else environ
+    data_root = str(env.get("WINTER_AGENT_DATA_ROOT") or "").strip()
+    return (Path(data_root) if data_root else Path(root)) / EVIDENCE_RELATIVE
 
 #: A gateway may restart, but not in a loop: §二 condition 5.  Three in fifteen minutes is
 #: generous for a service that should restart only when it dies, and small enough that
@@ -106,7 +119,7 @@ class GatewaySoak:
         self.window_seconds = float(window_seconds)
         self.sample_every = max(1, int(sample_every))
         self.evidence_path = Path(evidence_path) if evidence_path else (
-            self.root / EVIDENCE_RELATIVE
+            default_evidence_path(self.root)
         )
         self._console_counter = console_counter
         self._rounds_completed = rounds_completed
