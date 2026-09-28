@@ -2,9 +2,11 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
+from unittest.mock import patch
 
 from PIL import Image
 
+from winter_agent_v2.goal_library import GoalState, GoalStatus
 from winter_agent_v2.learning import EpisodeStore
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
@@ -97,6 +99,36 @@ def ally(progress, badge, buttons, claimed, status="CLAIMABLE"):
 
 
 class LiveRuntimeTests(unittest.TestCase):
+    def _runtime(self, goal_id, **kwargs):
+        runtime = LiveRuntime(**kwargs)
+        goals = () if goal_id is None else (
+            GoalState(goal_id=goal_id, status=GoalStatus.READY, available_skills=("TEST_RUNTIME",)),
+        )
+        # These tests cover the action loop and verifiers.  Keep their goal input
+        # deterministic; the separate home_to_map test exercises the real Scheduler.
+        runtime.goal_library.discover = lambda _world, observations=None: goals
+        return runtime
+
+    def setUp(self):
+        # Runtime tests exercise scheduler decisions as well as the UI loop.  Keep the
+        # learned observations and fairness state local to each test: sharing the repo's
+        # learning files lets an earlier fake screen change which goal a later test sees.
+        self.learning_temp = TemporaryDirectory()
+        self.addCleanup(self.learning_temp.cleanup)
+        learning_root = Path(self.learning_temp.name)
+        from winter_agent_v2 import control_experience, event_schedule, goal_utility, observation_store
+
+        for module, attribute, name in (
+            (control_experience, "STATE_PATH", "control_experience.json"),
+            (event_schedule, "STATE_PATH", "timed_event_schedule.json"),
+            (goal_utility, "STATE_PATH", "goal_fairness.json"),
+            (goal_utility, "DECISIONS_PATH", "decisions.jsonl"),
+            (observation_store, "STATE_PATH", "observation_state.json"),
+        ):
+            patcher = patch.object(module, attribute, learning_root / name)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
     def test_map_to_home_uses_goal_and_semantic_button(self):
         from winter_agent_v2.brain import RuleBrain
 
@@ -106,7 +138,7 @@ class LiveRuntimeTests(unittest.TestCase):
             WorldState(page=Page.HOME, confidence=0.99),
         ]
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime("HOME",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
@@ -124,7 +156,7 @@ class LiveRuntimeTests(unittest.TestCase):
             WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
         ]
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime("GATHER_RESOURCE",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
@@ -143,7 +175,7 @@ class LiveRuntimeTests(unittest.TestCase):
             WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
         ]
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime("GATHER_RESOURCE",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
@@ -161,7 +193,7 @@ class LiveRuntimeTests(unittest.TestCase):
             WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
         ]
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime("GATHER_RESOURCE",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
@@ -179,7 +211,7 @@ class LiveRuntimeTests(unittest.TestCase):
         ]
         with TemporaryDirectory() as temp:
             episode_path = Path(temp) / "episodes.jsonl"
-            run = LiveRuntime(
+            run = self._runtime("GATHER_RESOURCE",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
@@ -202,7 +234,7 @@ class LiveRuntimeTests(unittest.TestCase):
         ]
         with TemporaryDirectory() as temp:
             latency_path = Path(temp) / "action_latency.jsonl"
-            run = LiveRuntime(
+            run = self._runtime("GATHER_RESOURCE",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
@@ -228,7 +260,7 @@ class LiveRuntimeTests(unittest.TestCase):
         ]
         waits = []
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime("GATHER_RESOURCE",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
@@ -248,13 +280,13 @@ class LiveRuntimeTests(unittest.TestCase):
         ]
         device = FakeDevice()
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime("ALLIANCE_ROUTINE",
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
                 capture_dir=Path(temp),
                 sleeper=lambda _seconds: None,
-            ).run(max_actions=5)
+            ).run(max_actions=3)
         self.assertEqual(len(device.taps), 2)
         self.assertEqual(run.stop_reason, "alliance_action_not_needed")
         self.assertTrue(all(step.verification is None or step.verification.ok for step in run.steps))
@@ -269,13 +301,13 @@ class LiveRuntimeTests(unittest.TestCase):
         """
         device = FakeDevice()
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime(None,
                 device=device,
                 vision=FakeVision([WorldState(), WorldState(), WorldState(), WorldState()]),
                 semantic_vision=FakeSemantic(),
                 capture_dir=Path(temp),
                 sleeper=lambda _seconds: None,
-            ).run(max_actions=2)
+            ).run(max_actions=2, allowed_skills={"BACK"})
         self.assertEqual(device.taps, [], "unknown content must never be clicked")
         self.assertEqual(len(device.backs), 2, "recovery is bounded per run")
         self.assertEqual(run.stop_reason, "unknown_page")
@@ -289,13 +321,13 @@ class LiveRuntimeTests(unittest.TestCase):
             WorldState(page=Page.MAP, march_used=1, march_max=6, confidence=0.99),
         ]
         with TemporaryDirectory() as temp:
-            run = LiveRuntime(
+            run = self._runtime(None,
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
                 capture_dir=Path(temp),
                 sleeper=lambda _seconds: None,
-            ).run(max_actions=2)
+            ).run(max_actions=2, allowed_skills={"BACK"})
         self.assertEqual(len(device.backs), 1, "one back recovers, no more")
         self.assertEqual(device.taps, [])
         self.assertNotEqual(
