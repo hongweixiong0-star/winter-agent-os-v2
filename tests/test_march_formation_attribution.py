@@ -26,6 +26,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from winter_agent_v2.learning import EpisodeStore
+from winter_agent_v2.goal_library import GoalState, GoalStatus
 from winter_agent_v2.models import MarchState, Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
 
@@ -122,14 +123,24 @@ class MarchFormationAttributionTests(unittest.TestCase):
         ]
         with TemporaryDirectory() as temp:
             episode_path = Path(temp) / "episodes.jsonl"
-            run = LiveRuntime(
+            runtime = LiveRuntime(
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
                 capture_dir=Path(temp) / "captures",
                 sleeper=lambda _seconds: None,
                 episode_store=EpisodeStore(episode_path),
-            ).run(max_actions=2, allowed_skills={"SEARCH_RESOURCE", "START_GATHER"})
+            )
+            # Pin attribution after the gather goal has been selected. Unrelated
+            # discovered goals and persisted fairness history must not steal this fixture.
+            runtime.goal_library.discover = lambda *_args, **_kwargs: (
+                GoalState(
+                    goal_id="KEEP_MARCHES_PRODUCTIVE",
+                    status=GoalStatus.READY,
+                    available_skills=("SEARCH_RESOURCE", "START_GATHER"),
+                ),
+            )
+            run = runtime.run(max_actions=2, allowed_skills={"SEARCH_RESOURCE", "START_GATHER"})
             rows = episodes_at(episode_path)
 
         self.assertEqual(run.stop_reason, "MAX_ACTIONS_REACHED")
@@ -173,14 +184,18 @@ class MarchFormationAttributionTests(unittest.TestCase):
         ]
         with TemporaryDirectory() as temp:
             episode_path = Path(temp) / "episodes.jsonl"
-            LiveRuntime(
+            runtime = LiveRuntime(
                 device=device,
                 vision=FakeVision(states),
                 semantic_vision=FakeSemantic(),
                 capture_dir=Path(temp) / "captures",
                 sleeper=lambda _seconds: None,
                 episode_store=EpisodeStore(episode_path),
-            ).run(max_actions=1, allowed_skills={"OPEN_MAP"})
+            )
+            # This case explicitly has no selectable Goal; production persistence
+            # must not make its expected AUTO_DISCOVERY attribution nondeterministic.
+            runtime.goal_library.discover = lambda *_args, **_kwargs: ()
+            runtime.run(max_actions=1, allowed_skills={"OPEN_MAP"})
             rows = episodes_at(episode_path)
 
         self.assertEqual(rows[0]["goal_id"], "AUTO_DISCOVERY")
