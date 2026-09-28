@@ -89,6 +89,13 @@ class AdapterBindingTest(unittest.TestCase):
         for binding in audit.adapter_bindings().values():
             self.assertIn(binding.verifier, shapes)
 
+    def test_rally_verifiers_are_bound_from_the_active_goal_target(self):
+        bindings = audit.dynamic_target_bindings()
+        self.assertEqual(set(bindings), {"JOIN_RALLY", "START_RALLY"})
+        self.assertEqual(bindings["JOIN_RALLY"].verifier, "verify_rally_joined")
+        self.assertEqual(bindings["START_RALLY"].verifier, "verify_rally_created")
+        self.assertTrue(all(b.target_source == "active_goal" for b in bindings.values()))
+
 
 class LiveHistoryTest(unittest.TestCase):
     def _run(self, rows: list[dict]) -> dict[str, tuple[int, int]]:
@@ -160,13 +167,27 @@ class CurrentTreeTest(unittest.TestCase):
     def test_the_unreachable_families_are_measured_not_assumed(self):
         # Move a name out of these sets when the runtime gains that shape.
         self.assertIn("verify_beast_hunt", self.families.get("PARAMETER", []))
-        self.assertIn("verify_rally_joined", self.families.get("PARAMETER", []))
+        self.assertNotIn("verify_rally_joined", self.families.get("PARAMETER", []))
+        self.assertNotIn("verify_rally_created", self.families.get("PARAMETER", []))
         self.assertIn("verify_alliance_tech_contribution", self.families.get("FRAME", []))
         self.assertIn("verify_gathering", self.families.get("STATE", []))
+
+    def test_rally_skills_are_dispatchable_through_dynamic_target_bindings(self):
+        for skill, verifier in (
+            ("JOIN_RALLY", "verify_rally_joined"),
+            ("START_RALLY", "verify_rally_created"),
+        ):
+            row = self.by_skill[skill]
+            self.assertEqual(row.binding_kind, "DYNAMIC_TARGET")
+            self.assertEqual(row.verifier, verifier)
+            self.assertTrue(row.dispatchable)
+            self.assertNotIn("verifier", ",".join(row.missing))
 
     def test_an_adapted_verifier_is_not_also_reported_unreachable(self):
         reached = set(self.families.get("PARAMETER", [])) | set(self.families.get("FRAME", []))
         for binding in self.adapters.values():
+            self.assertNotIn(binding.verifier, reached, binding.skill)
+        for binding in audit.dynamic_target_bindings().values():
             self.assertNotIn(binding.verifier, reached, binding.skill)
 
     def test_ready_but_unproven_really_means_never_succeeded(self):
@@ -190,10 +211,13 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(code, 0)
         payload = json.loads(buf.getvalue())
         self.assertIn("unreachable_verifiers", payload)
+        self.assertEqual(set(payload["dynamic_target_bindings"]), {"JOIN_RALLY", "START_RALLY"})
         self.assertEqual(set(payload["lambda_adapters"]),
                          {"BUILDING_UPGRADE", "RESEARCH", "TRAIN_TROOPS"})
-        self.assertEqual(
-            sum(len(v) for v in payload["unreachable_verifiers"].values()), 18)
+        unreachable = {name for names in payload["unreachable_verifiers"].values()
+                       for name in names}
+        self.assertNotIn("verify_rally_joined", unreachable)
+        self.assertNotIn("verify_rally_created", unreachable)
 
     def test_the_plain_report_runs_and_names_the_adapters(self):
         buf = io.StringIO()

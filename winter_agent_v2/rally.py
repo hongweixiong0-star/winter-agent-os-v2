@@ -7,11 +7,13 @@ from pathlib import Path
 from time import monotonic
 from typing import Any, Iterable, Mapping
 
-from .models import WorldState
+from .models import Page, WorldState
 
 
 class RallyTarget(str, Enum):
     BEAR = "BEAR"
+    ICEFIELD_BEAST = "ICEFIELD_BEAST"
+    # Historical member remains parseable; normalization maps it to ICEFIELD_BEAST.
     POLAR_TERROR = "POLAR_TERROR"
     FORTRESS = "FORTRESS"
     OTHER = "OTHER"
@@ -41,6 +43,93 @@ class BearPhase(str, Enum):
     FINISHED = "FINISHED"
 
 
+def _as_rally_target(value: RallyTarget | str | None) -> RallyTarget:
+    if isinstance(value, RallyTarget):
+        return RallyTarget.ICEFIELD_BEAST if value is RallyTarget.POLAR_TERROR else value
+    raw = str(value or "").strip().upper().replace("-", "_").replace(" ", "_")
+    if raw in {"POLAR_TERROR", "POLAR_TERROR_RALLY"}:
+        return RallyTarget.ICEFIELD_BEAST
+    try:
+        return RallyTarget(raw)
+    except ValueError:
+        return RallyTarget.UNKNOWN
+
+
+def normalize_rally_target(value: RallyTarget | str | None) -> RallyTarget:
+    """Canonicalize a rally target, including the historical POLAR_TERROR name."""
+    return _as_rally_target(value)
+
+
+def rally_target_for_goal(
+    goal_id: str,
+    evidence: Mapping[str, Any] | None = None,
+    skill_id: str | None = None,
+) -> RallyTarget | None:
+    """Resolve an explicit Goal target; legacy Bear goals keep their old default."""
+    data = evidence if isinstance(evidence, Mapping) else {}
+    raw = data.get("rally_target") or data.get("target_type") or data.get("target")
+    if not raw:
+        raw = {
+            "PARTICIPATE_BEAR": RallyTarget.BEAR,
+            "DISCOVER_BEAR_RALLY_LIST": RallyTarget.BEAR,
+            "JOIN_BEAR_RALLY": RallyTarget.BEAR,
+            "START_BEAR_RALLY": RallyTarget.BEAR,
+            "PARTICIPATE_ICEFIELD_BEAST": RallyTarget.ICEFIELD_BEAST,
+            "JOIN_ICEFIELD_BEAST_RALLY": RallyTarget.ICEFIELD_BEAST,
+            "START_ICEFIELD_BEAST_RALLY": RallyTarget.ICEFIELD_BEAST,
+            "PARTICIPATE_POLAR_TERROR": RallyTarget.ICEFIELD_BEAST,
+            "JOIN_POLAR_TERROR_RALLY": RallyTarget.ICEFIELD_BEAST,
+            "START_POLAR_TERROR_RALLY": RallyTarget.ICEFIELD_BEAST,
+        }.get(str(goal_id or "").strip().upper())
+    if not raw:
+        raw = {
+            "START_POLAR_TERROR_RALLY": RallyTarget.ICEFIELD_BEAST,
+            "JOIN_POLAR_TERROR_RALLY": RallyTarget.ICEFIELD_BEAST,
+        }.get(str(skill_id or "").strip().upper())
+    target = _as_rally_target(raw) if raw else RallyTarget.UNKNOWN
+    return None if target is RallyTarget.UNKNOWN else target
+
+
+def live_rally_join_point(
+    world: WorldState, target: RallyTarget | str
+) -> tuple[float, float] | None:
+    """Find a join point only in the current, explicitly identified rally list."""
+    target = _as_rally_target(target)
+    if target is RallyTarget.UNKNOWN or world.page is not Page.ALLIANCE:
+        return None
+    alliance = world.alliance if isinstance(world.alliance, Mapping) else {}
+    if alliance.get("section") != "RALLY_LIST" or alliance.get("rally_list_visible") is not True:
+        return None
+    rally = world.rally if isinstance(world.rally, Mapping) else {}
+    if rally.get("source") != "LIVE_CLIENT_RALLY_LIST":
+        return None
+    rows = rally.get("rows")
+    if not isinstance(rows, (list, tuple)):
+        return None
+    eligible: list[tuple[int, int, tuple[float, float]]] = []
+    for order, row in enumerate(rows):
+        if not isinstance(row, Mapping) or _as_rally_target(row.get("target_type")) is not target:
+            continue
+        if str(row.get("state") or "").upper() != RallyRowState.JOINABLE.value:
+            continue
+        used, maximum = row.get("capacity_used"), row.get("capacity_max")
+        if isinstance(used, int) and isinstance(maximum, int) and used >= maximum:
+            continue
+        point = row.get("join_norm")
+        if not isinstance(point, (tuple, list)) or len(point) != 2:
+            continue
+        try:
+            x, y = float(point[0]), float(point[1])
+        except (TypeError, ValueError):
+            continue
+        if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
+            continue
+        remaining = row.get("remaining_seconds")
+        remaining = remaining if isinstance(remaining, int) and remaining >= 0 else 10**9
+        eligible.append((remaining, order, (x, y)))
+    return min(eligible, default=None, key=lambda item: (item[0], item[1]))[2] if eligible else None
+
+
 @dataclass(frozen=True)
 class RallyRow:
     target_type: RallyTarget
@@ -54,8 +143,12 @@ class RallyRow:
 
     @property
     def joinable(self) -> bool:
+        return self.joinable_for(RallyTarget.BEAR)
+
+    def joinable_for(self, target: RallyTarget | str) -> bool:
+        target = _as_rally_target(target)
         capacity = self.capacity_used is None or self.capacity_max is None or self.capacity_used < self.capacity_max
-        return self.target_type is RallyTarget.BEAR and self.state is RallyRowState.JOINABLE and capacity
+        return _as_rally_target(self.target_type) is target and self.state is RallyRowState.JOINABLE and capacity
 
 
 # ---------------------------------------------------------------------------
@@ -100,11 +193,14 @@ class RallyRow:
 #: row: everything else is a field *within* one.
 RALLY_ROW_HEADER_WORD = "集结中"
 
-#: Words the client prints for the bear as a rally target.  等级1变异巨熊 is the measured one;
-#: 冰原巨兽 is the name the auto-join dialog uses for the same activity (see
-#: ``knowledge/ui/en_zh_semantic_map.json``).  A row matching none of these is NOT a bear row
-#: and must never be joined on the strength of a green + alone.
-BEAR_TARGET_WORDS: tuple[str, ...] = ("变异巨熊", "冰原巨兽", "巨熊")
+#: Target identity is separate from the row's green join affordance.  In particular,
+#: 冰原巨兽 is not a synonym for the 巨熊/变异巨熊 rally target.
+RALLY_TARGET_WORDS: dict[RallyTarget, tuple[str, ...]] = {
+    RallyTarget.BEAR: ("变异巨熊", "巨熊", "BEAR"),
+    RallyTarget.ICEFIELD_BEAST: ("冰原巨兽", "ICEFIELD_BEAST", "POLAR_TERROR"),
+    RallyTarget.FORTRESS: ("堡垒", "FORTRESS"),
+}
+BEAR_TARGET_WORDS = RALLY_TARGET_WORDS[RallyTarget.BEAR]
 
 #: ``8/15`` -- the row's own member count and capacity.
 _CAPACITY_RE = re.compile(r"^(\d{1,3})\s*/\s*(\d{1,3})$")
@@ -181,13 +277,17 @@ class RallyRowReading:
 
     @property
     def joinable(self) -> bool:
+        return self.joinable_for(RallyTarget.BEAR)
+
+    def joinable_for(self, target: RallyTarget | str) -> bool:
+        target = _as_rally_target(target)
         capacity = (
             self.capacity_used is None
             or self.capacity_max is None
             or self.capacity_used < self.capacity_max
         )
         return (
-            self.target_type is RallyTarget.BEAR
+            _as_rally_target(self.target_type) is target
             and self.state is RallyRowState.JOINABLE
             and capacity
             and self.join_norm is not None
@@ -252,13 +352,19 @@ class RallyListReading:
     def joinable_bears(self) -> tuple[RallyRowReading, ...]:
         return tuple(row for row in self.rows if row.joinable)
 
+    def joinable_for(self, target: RallyTarget | str) -> tuple[RallyRowReading, ...]:
+        return tuple(row for row in self.rows if row.joinable_for(target))
+
     def best_joinable(self) -> RallyRowReading | None:
         """The joinable bear with the least time left -- detect-to-join time is the scarce thing.
 
         Ties keep reading order, which is the order the client drew them in.  ``None`` means
         this frame offers nothing to join, which is an answer and not a failure.
         """
-        eligible = self.joinable_bears()
+        return self.best_joinable_for(RallyTarget.BEAR)
+
+    def best_joinable_for(self, target: RallyTarget | str) -> RallyRowReading | None:
+        eligible = self.joinable_for(target)
         if not eligible:
             return None
         return min(
@@ -384,11 +490,18 @@ def _clock_seconds(text: str) -> int | None:
     return hours * 3600 + minutes * 60 + seconds
 
 
-def _bear_target_in(text: str) -> str | None:
-    for word in BEAR_TARGET_WORDS:
-        if word in text:
-            return word
+def _rally_target_in(text: str) -> tuple[RallyTarget, str] | None:
+    for target, words in RALLY_TARGET_WORDS.items():
+        for word in words:
+            if word in text:
+                return target, word
     return None
+
+
+def _bear_target_in(text: str) -> str | None:
+    """Compatibility helper that recognizes Bear labels only."""
+    match = _rally_target_in(text)
+    return match[1] if match is not None and match[0] is RallyTarget.BEAR else None
 
 
 def read_rally_list(
@@ -407,9 +520,8 @@ def read_rally_list(
     paying for a second pass -- ``OCRService`` caches by image digest anyway, so passing it is
     an optimisation and not a correctness requirement.
 
-    Returns a reading whose ``rows`` are in the client's own drawing order.  Nothing here
-    selects a rally; selection is a policy question and lives in ``choose_bear_operation`` /
-    ``best_joinable``.
+    Returns a reading whose ``rows`` are in the client's own drawing order. Nothing here
+    selects a rally; target-scoped selection is a policy question.
     """
     image_path = Path(image_path)
     if result is None:
@@ -495,10 +607,10 @@ def read_rally_list_image(image: Any, tokens: Iterable[Any]) -> RallyListReading
         target_text = ""
         target_type = RallyTarget.UNKNOWN
         for token in in_band:
-            word = _bear_target_in(token.text)
-            if word:
+            target_match = _rally_target_in(token.text)
+            if target_match:
                 target_text = token.text.strip()
-                target_type = RallyTarget.BEAR
+                target_type = target_match[0]
                 break
 
         remaining = _clock_seconds(header_text)
@@ -523,7 +635,7 @@ def read_rally_list_image(image: Any, tokens: Iterable[Any]) -> RallyListReading
             if header_y < t.centre[1] <= header_y + height * 0.06
             and RALLY_ROW_HEADER_WORD not in t.text
             and _CLOCK_RE.search(t.text) is None
-            and _bear_target_in(t.text) is None
+            and _rally_target_in(t.text) is None
             and t.text.strip() not in {"目标", "集结", "发起者", "距离"}
         ]
         if leader_line:
@@ -655,12 +767,26 @@ def bear_phase(event_status: str | None, seconds_to_start: int | None, seconds_r
     return BearPhase.SCHEDULED
 
 
-def choose_bear_operation(world: WorldState, role: BearRole, rows: Iterable[RallyRow]) -> str | None:
-    """Choose WHAT only; execution stays in generic START_RALLY/JOIN_RALLY skills."""
-    joinable = any(row.joinable for row in rows)
+def choose_rally_operation(
+    world: WorldState,
+    role: BearRole,
+    rows: Iterable[RallyRow],
+    *,
+    target: RallyTarget | str,
+    start_available: bool | None = None,
+) -> str | None:
+    """Choose the shared START/JOIN action for one explicit rally target."""
+    target = _as_rally_target(target)
+    if target is RallyTarget.UNKNOWN:
+        return None
+    joinable = any(row.joinable_for(target) for row in rows)
     normal_idle = world.idle_marches
     can_join = joinable and normal_idle is not None and normal_idle > 0
-    can_start = world.bear_rally_special_available is True
+    can_start = (
+        world.bear_rally_special_available is True
+        if start_available is None and target is RallyTarget.BEAR
+        else start_available is True
+    )
     if role is BearRole.JOINER:
         return "JOIN_RALLY" if can_join else None
     if role is BearRole.LEADER:
@@ -672,9 +798,23 @@ def choose_bear_operation(world: WorldState, role: BearRole, rows: Iterable[Rall
     return "JOIN_RALLY" if can_join else None
 
 
+def choose_bear_operation(world: WorldState, role: BearRole, rows: Iterable[RallyRow]) -> str | None:
+    """Backward-compatible Bear wrapper around the shared rally policy."""
+    return choose_rally_operation(world, role, rows, target=RallyTarget.BEAR)
+
+
+def fastest_joinable_for(rows: Iterable[RallyRow], target: RallyTarget | str) -> RallyRow | None:
+    eligible = [row for row in rows if row.joinable_for(target)]
+    return min(
+        eligible,
+        key=lambda row: row.remaining_seconds if row.remaining_seconds is not None else 10**9,
+        default=None,
+    )
+
+
 def fastest_joinable_bear(rows: Iterable[RallyRow]) -> RallyRow | None:
-    eligible = [row for row in rows if row.joinable]
-    return min(eligible, key=lambda row: row.remaining_seconds if row.remaining_seconds is not None else 10**9, default=None)
+    """Backward-compatible Bear wrapper around target-scoped selection."""
+    return fastest_joinable_for(rows, RallyTarget.BEAR)
 
 
 # ---------------------------------------------------------------------------
@@ -695,11 +835,12 @@ ROW_VOID_REASONS = ("FULL", "TARGET_CHANGED", "ROW_GONE")
 
 def select_join_candidates(
     reading: "RallyListReading",
+    target: RallyTarget | str = RallyTarget.BEAR,
 ) -> tuple["RallyRowReading", ...]:
     """Every LEGAL join row, ordered by the brief's own priority.
 
     A row is legal only when ALL of these hold (§十三):
-      * its target matches the bear/giant-beast context (target_type BEAR);
+      * its target matches the caller's current rally context;
       * ``join_available`` is true -- the row itself draws an affordance;
       * ``full`` is not True (unread capacity is *unknown*, not full);
       * its join button belongs to its own band (that is how join_available
@@ -710,10 +851,13 @@ def select_join_candidates(
     Callers re-frame and re-run this when candidates change -- stored rows
     are void by construction.
     """
+    target = _as_rally_target(target)
+    if target is RallyTarget.UNKNOWN:
+        return ()
     legal = [
         row
         for row in reading.rows
-        if row.target_type is RallyTarget.BEAR
+        if _as_rally_target(row.target_type) is target
         and row.join_available
         and row.full is not True
         and row.join_button_bbox is not None

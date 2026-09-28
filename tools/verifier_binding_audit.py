@@ -17,12 +17,11 @@ and prints the skills missing exactly one piece:
     4. has it ever succeeded live?    Episodes carrying a recorded_at
     5. can the runtime call what is bound?
 
-Question 5 is the one that hides.  ``LiveRuntime.Verifier`` is
-``Callable[[WorldState, WorldState], VerificationResult]`` and the step loop calls
-``VERIFIED_ATOMIC[skill](before, after)``, so the runtime cannot pass a decision's
-identity down.  Verifiers that want one were written to three shapes the runtime
-does not have, and a mismatched function binds without raising anything -- so
-"cannot be bound" looks exactly like "was never written".
+Question 5 is the one that hides. ``VERIFIED_ATOMIC`` stores target-free two-frame
+verifiers, while some verifier functions also need a Goal parameter. The live loop
+binds rally verifiers from the active Goal inside its per-step closure; this audit
+reports those as ``DYNAMIC_TARGET`` separately from static lambda adapters. Other
+incompatible shapes remain unreachable until a real runtime binding exists.
 
     PARAMETER  e.g. verify_building_upgrade(before, after, building_id)
     FRAME      e.g. verify_alliance_gifts_claim(before, reward, after)
@@ -103,13 +102,22 @@ class AdapterBinding:
 
 
 @dataclass(frozen=True)
+class DynamicTargetBinding:
+    """Verifier bound from the active Goal's target inside the live step loop."""
+
+    skill: str
+    verifier: str
+    target_source: str = "active_goal"
+
+
+@dataclass(frozen=True)
 class SkillRow:
     skill: str
     state: str
     target: str | None
     verifier: str | None
     verifier_kind: str | None
-    binding_kind: str | None          # DIRECT | ADAPTER | None
+    binding_kind: str | None          # DIRECT | ADAPTER | DYNAMIC_TARGET | None
     injected: str | None
     brain_route: bool
     vision_target: bool
@@ -118,7 +126,7 @@ class SkillRow:
 
     @property
     def dispatchable(self) -> bool:
-        """Bound at all -- the runtime only needs a 2-arg callable, adapters count."""
+        """Reachable from the live step loop, including target-bound closures."""
         return self.binding_kind is not None
 
     @property
@@ -174,6 +182,34 @@ def adapter_bindings() -> dict[str, AdapterBinding]:
     return out
 
 
+def dynamic_target_bindings() -> dict[str, DynamicTargetBinding]:
+    """Rally verifiers whose third argument is taken from the active Goal.
+
+    A target-free lambda with a literal BEAR would make the same skills unsafe for
+    other rally types. The runtime instead resolves the Goal target and calls the
+    shared verifier in its current-step closure; audit that actual binding path.
+    """
+    from winter_agent_v2 import runtime as runtime_mod
+
+    source = Path(runtime_mod.__file__).read_text(encoding="utf-8")
+    if "rally_target_for_goal(" not in source or "_verify_rally_action(" not in source:
+        return {}
+    if not re.search(
+        r"if\s+decision\.skill\s+in\s+\{(?=[^}]*\bJOIN_RALLY\b)(?=[^}]*\bSTART_RALLY\b)[^}]*\}",
+        source,
+    ):
+        return {}
+    out: dict[str, DynamicTargetBinding] = {}
+    branch = re.compile(
+        r'if\s+skill_id\s*==\s*"(JOIN_RALLY|START_RALLY)"\s*:\s*'
+        r'return\s+(verify_\w+)\(before,\s*after,\s*target_id\)',
+        re.S,
+    )
+    for skill, verifier in branch.findall(source):
+        out[skill] = DynamicTargetBinding(skill=skill, verifier=verifier)
+    return out
+
+
 def live_history() -> dict[str, tuple[int, int]]:
     """``{skill: (attempts, successes)}`` over production rows only.
 
@@ -215,6 +251,7 @@ def collect() -> tuple[list[SkillRow], dict[str, VerifierShape], dict[str, Adapt
     vision_src = Path(vision_mod.__file__).read_text(encoding="utf-8")
     shapes = verifier_shapes()
     adapters = adapter_bindings()
+    dynamic = dynamic_target_bindings()
     history = live_history()
     table = LiveRuntime.VERIFIED_ATOMIC
 
@@ -224,8 +261,12 @@ def collect() -> tuple[list[SkillRow], dict[str, VerifierShape], dict[str, Adapt
         target = getattr(getattr(skill, "action", None), "target", None)
         bound = table.get(sid)
         adapter = adapters.get(sid)
+        dynamic_binding = dynamic.get(sid)
         name = getattr(bound, "__name__", None)
-        if adapter is not None:
+        if dynamic_binding is not None:
+            name = dynamic_binding.verifier
+            binding_kind = "DYNAMIC_TARGET"
+        elif adapter is not None:
             name = adapter.verifier
             binding_kind = "ADAPTER"
         elif bound is not None:
@@ -257,9 +298,10 @@ def unbound_families(
     """Verifiers no skill can reach, grouped by the reason."""
     reached = {r.verifier for r in rows if r.verifier}
     adapted = {a.verifier for a in adapters.values()}
+    dynamic = {b.verifier for b in dynamic_target_bindings().values()}
     families: dict[str, list[str]] = {"FRAME": [], "PARAMETER": [], "STATE": []}
     for name, shape in sorted(shapes.items()):
-        if name in reached or name in adapted or shape.callable_by_runtime:
+        if name in reached or name in adapted or name in dynamic or shape.callable_by_runtime:
             continue
         if shape.kind in families:
             families[shape.kind].append(name)
@@ -292,7 +334,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps({
             "skills": len(rows),
-            "verified_atomic_entries": sum(1 for r in rows if r.dispatchable),
+            "dispatchable_skills": sum(1 for r in rows if r.dispatchable),
+            "verified_atomic_map_entries": sum(
+                1 for r in rows if r.binding_kind in {"DIRECT", "ADAPTER"}
+            ),
             "ready_but_unproven": [r.skill for r in ready],
             "missing_one_piece": {r.skill: list(r.missing) for r in one_piece},
             "unreachable_verifiers": families,
@@ -300,6 +345,10 @@ def main(argv: list[str] | None = None) -> int:
                 s: {"verifier": a.verifier, "injected": a.injected,
                     "reads_before_frame": a.reads_before_frame}
                 for s, a in sorted(adapters.items())
+            },
+            "dynamic_target_bindings": {
+                s: {"verifier": b.verifier, "target_source": b.target_source}
+                for s, b in sorted(dynamic_target_bindings().items())
             },
         }, ensure_ascii=False, indent=2))
         return 0
@@ -313,9 +362,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.unbound_verifiers:
         print("== verifiers no skill can reach ==")
-        print("   The runtime calls VERIFIED_ATOMIC[skill](before, after), so it cannot")
-        print("   hand a decision's identity to a verifier.  These were written to a shape")
-        print("   the runtime does not have, so the skill they serve is never dispatched.")
+        print("   These verifier shapes have no reachable runtime binding. Goal-target")
+        print("   bindings are reported separately because the live step loop supplies")
+        print("   the current rally target instead of using a target-free lambda.")
         print("   The fixes are NOT the same:")
         print()
         for kind, why in (
@@ -346,6 +395,13 @@ def main(argv: list[str] | None = None) -> int:
             for skill, adapter in sorted(adapters.items()):
                 source = "BEFORE frame" if adapter.reads_before_frame else "constant"
                 print(f"  {skill:22s} -> {adapter.verifier:30s} injects {adapter.injected}  [{source}]")
+            print()
+
+        dynamic = dynamic_target_bindings()
+        if dynamic:
+            print(f"== dynamic Goal-target bindings ({len(dynamic)}) ==")
+            for skill, binding in sorted(dynamic.items()):
+                print(f"  {skill:22s} -> {binding.verifier:30s} target={binding.target_source}")
             print()
 
     print(f"verdict: {len(ready)} skill(s) need only a live success; "

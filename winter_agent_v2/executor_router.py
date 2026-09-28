@@ -233,6 +233,7 @@ def build_router(
     production: bool = True,
     routing: RoutingTable | None = None,
     ledger: BackendLedger | None = None,
+    rally_target: Any = None,
 ) -> Executor | ExecutorRouter:
     """Return the executor to use for one step.
 
@@ -247,6 +248,7 @@ def build_router(
         routing=routing or RoutingTable.load(),
         ledger=ledger,
         adb_resolver=adb_resolver,
+        rally_target=rally_target,
     )
     router.maa_executor = Executor(
         production=production,
@@ -321,6 +323,7 @@ class ExecutorRouter:
         routing: RoutingTable | None = None,
         ledger: BackendLedger | None = None,
         adb_resolver: Callable[[str], tuple[float, float] | None] | None = None,
+        rally_target: Any = None,
     ) -> None:
         self.adb_executor = adb_executor
         self.maa_executor = maa_executor
@@ -328,6 +331,7 @@ class ExecutorRouter:
         self.routing = routing or RoutingTable.load()
         self.ledger = ledger or BackendLedger()
         self.adb_resolver = adb_resolver
+        self.rally_target = rally_target
         self.last_outcome: RecognitionOutcome | None = None
         #: Set when a node of another recognition kind was asked to fail informatively:
         #: it distinguishes "the control is absent" from "this node kind is misrouted".
@@ -470,7 +474,8 @@ class ExecutorRouter:
 
                 tokens = list(_Rapid().recognize(_Image.fromarray(frame)))
                 reading = _read_rows(frame, tokens)
-                best = reading.best_joinable()
+                target = getattr(self, "rally_target", None) or "BEAR"
+                best = reading.best_joinable_for(target)
                 if best is None or best.join_norm is None:
                     self.last_outcome = None
                     if not reading.has_rows:

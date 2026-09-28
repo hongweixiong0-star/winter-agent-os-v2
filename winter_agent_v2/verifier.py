@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from .models import MarchState, Page, VerificationResult, WorldState
+from .rally import normalize_rally_target
 from .beast_targets import is_dispatchable, lookup_by_name, refused_by_evidence
 from . import control_experience
 
@@ -2777,7 +2778,9 @@ def verify_rally_joined(before: WorldState, after: WorldState, target: str) -> V
     queue_increased = isinstance(before_used, int) and isinstance(after_used, int) and after_used > before_used
     rally = after.alliance.get("rally", {}) if isinstance(after.alliance, dict) else {}
     member_state = rally.get("member_state") in {"JOINED", "MARCHING", "ARRIVED"}
-    identity_ok = str(rally.get("target_type", target)).upper() == target.upper()
+    expected_target = normalize_rally_target(target)
+    observed_target = normalize_rally_target(rally.get("target_type", expected_target.value))
+    identity_ok = expected_target is not normalize_rally_target("UNKNOWN") and observed_target is expected_target
     ok = identity_ok and (queue_increased or member_state)
     return VerificationResult(ok, "OK" if ok else "RALLY_JOIN_NOT_PROVEN",
                               {"target":target, "queue_increased":queue_increased,
@@ -2790,9 +2793,11 @@ def verify_rally_created(before: WorldState, after: WorldState, target: str) -> 
     own = rally.get("ownership") == "SELF"
     countdown = rally.get("remaining_seconds")
     countdown_started = isinstance(countdown, int) and countdown > 0
-    identity_ok = str(rally.get("target_type", target)).upper() == target.upper()
-    special_transition = target.upper() == "BEAR" and before.bear_rally_special_available is True and after.bear_rally_special_available is False
+    expected_target = normalize_rally_target(target)
+    observed_target = normalize_rally_target(rally.get("target_type", expected_target.value))
+    identity_ok = expected_target is not normalize_rally_target("UNKNOWN") and observed_target is expected_target
+    special_transition = expected_target.value == "BEAR" and before.bear_rally_special_available is True and after.bear_rally_special_available is False
     ok = identity_ok and ((own and countdown_started) or special_transition)
     return VerificationResult(ok, "OK" if ok else "RALLY_CREATE_NOT_PROVEN",
-                              {"target":target, "own":own, "countdown":countdown,
+                              {"target":expected_target.value, "own":own, "countdown":countdown,
                                "special_slot_transition":special_transition})

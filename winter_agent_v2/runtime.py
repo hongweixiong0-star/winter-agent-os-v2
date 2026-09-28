@@ -43,6 +43,22 @@ from .verifier import (verify_alliance_tech_opened, verify_alliance_tech_node_op
                      verify_daily_task_followed)
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
+from .rally import RallyTarget, normalize_rally_target, rally_target_for_goal
+
+
+def _verify_rally_action(
+    skill_id: str, before: WorldState, after: WorldState, target: RallyTarget | str | None
+) -> VerificationResult:
+    """Bind the shared rally verifier to the target selected by this Goal."""
+    normalized = normalize_rally_target(target)
+    if normalized is RallyTarget.UNKNOWN:
+        return VerificationResult(False, "RALLY_TARGET_UNKNOWN", {"target": str(target or "UNKNOWN")})
+    target_id = normalized.value
+    if skill_id == "JOIN_RALLY":
+        return verify_rally_joined(before, after, target_id)
+    if skill_id == "START_RALLY":
+        return verify_rally_created(before, after, target_id)
+    raise ValueError(f"not a generic rally action: {skill_id}")
 from .intel_pins import intel_pin_centers
 from .verifier import verify_research_node_inspected, verify_completed_training_camp_inspected
 from .verifier import (
@@ -215,6 +231,10 @@ class LiveRuntime:
     #: See the branch that reads it for the measured frame.
     LEAVING_SKILLS = frozenset({"BACK", "LEAVE_FOREIGN_LAYER"})
 
+    # These verifiers require the current Goal's rally target. They are bound in
+    # the live step closure, not through VERIFIED_ATOMIC's target-free signature.
+    DYNAMIC_TARGET_SKILLS = frozenset({"JOIN_RALLY", "START_RALLY"})
+
     VERIFIED_ATOMIC: dict[str, Verifier] = {
         "WAIT": verify_environmental_wait,
         "CLOSE_POPUP": verify_popup_closed,
@@ -309,32 +329,6 @@ class LiveRuntime:
         "ALLIANCE_TECH_CONTRIBUTE": lambda b, a: verify_alliance_tech_contribution(b, a, a),
         "OPEN_BEAR_RALLY_LIST": verify_bear_rally_list_open,
         "OPEN_EXPLORATION": verify_open_exploration,
-        # ------------------------------------------------------------------
-        # Bear rally: the two skills the 30-minute window depends on.
-        #
-        # ADDED 2026-09-24.  Both were registered (``skills.v2_registry``) and both carried
-        # a verifier *name* (``RALLY_JOINED`` / ``RALLY_CREATED``) that had **no entry
-        # here**, so ``run`` refused them at ``decision.skill not in self.VERIFIED_ATOMIC``
-        # and ended the step with ``SKILL_NOT_ENABLED_FOR_LIVE_LOOP``.  The class comment
-        # states the rule plainly -- "Only skills with an explicit post-action verifier may
-        # execute" -- and this is that rule applied to the one activity with a deadline.
-        #
-        # The binding is a ``lambda`` because the verifiers take a third argument: they are
-        # generic over the rally target, and ``Verifier`` here is the two-argument contract
-        # ``Callable[[WorldState, WorldState], VerificationResult]``.  ``runtime`` calls
-        # ``VERIFIED_ATOMIC[skill](before, after)``.
-        #
-        # Why ``"BEAR"`` and why that is not a shortcut: both verifiers compute
-        # ``identity_ok = str(rally.get("target_type", target)).upper() == target.upper()``.
-        # Passing "BEAR" means a frame that reports *any other* target type fails the check
-        # -- so this cannot certify a 普通集结, a 玩家攻击 or a 野怪 as a bear rally.  The
-        # target comes from the frame's own reading, not from this literal.
-        #
-        # Not claimed: that either has ever run.  They are now *dispatchable*; the first
-        # real dispatch needs the client to open the window.
-        # ------------------------------------------------------------------
-        "JOIN_RALLY": lambda before, after: verify_rally_joined(before, after, "BEAR"),
-        "START_RALLY": lambda before, after: verify_rally_created(before, after, "BEAR"),
         "SELECT_MAIL_ALLIANCE_TAB": verify_mail_alliance_tab_selected,
         "SELECT_DAILY_TAB": verify_daily_tab_selected,
         "SELECT_MAIL_SYSTEM_TAB": verify_mail_system_tab_selected,
@@ -2637,6 +2631,7 @@ class LiveRuntime:
         frame_path: "Path | None" = None,
         resource: str | None = None,
         untried_intel_pins: list | None = None,
+        rally_target: RallyTarget | str | None = None,
     ):
         """Answer where on ``frame`` the named semantic control is, or ``None``.
 
@@ -2660,6 +2655,13 @@ class LiveRuntime:
         invented point.  Every guard below exists because a real frame made the
         guess wrong at least once.
         """
+        if semantic == "RALLY_ROW_JOIN_BUTTON":
+            if frame.page is not Page.ALLIANCE:
+                return None
+            from .rally import live_rally_join_point
+
+            target = normalize_rally_target(rally_target or RallyTarget.BEAR)
+            return live_rally_join_point(frame, target)
         if semantic == "BTN_DAILY_TASK_GO":
             # The task row and its adjacent 前往 control are read from this exact
             # screenshot. A cached row, unpositioned OCR result, or different task
@@ -5197,7 +5199,7 @@ class LiveRuntime:
     ) -> LiveRun:
         if max_actions < 1:
             raise ValueError("max_actions must be positive")
-        allowed = allowed_skills or set(self.VERIFIED_ATOMIC)
+        allowed = allowed_skills or (set(self.VERIFIED_ATOMIC) | set(self.DYNAMIC_TARGET_SKILLS))
         steps: list[LiveStep] = []
         # Goals this run refused to select, and the reason.  One list for the whole
         # run so the end-of-run escalation hook reads the scheduler's own decision
@@ -5832,7 +5834,10 @@ class LiveRuntime:
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=decision.reason,
                               last_fatal_error=decision.reason if is_fatal_stop(decision.reason) else None)
                 return finish(decision.reason)
-            if decision.skill not in allowed or decision.skill not in self.VERIFIED_ATOMIC:
+            if decision.skill not in allowed or (
+                decision.skill not in self.VERIFIED_ATOMIC
+                and decision.skill not in self.DYNAMIC_TARGET_SKILLS
+            ):
                 # Rule A: a task this run cannot carry out yields to the next one.  Only when
                 # there is no goal to hold back -- a named run's own route, or a goal already
                 # tried this run -- does an unusable skill end the cycle, which is the honest
@@ -5854,6 +5859,28 @@ class LiveRuntime:
                 steps.append(LiveStep(index, decision, None, before, None, None))
                 return finish("SKILL_NOT_ENABLED_FOR_LIVE_LOOP")
 
+            rally_target = None
+            if decision.skill in {"START_RALLY", "JOIN_RALLY"}:
+                rally_target = (
+                    rally_target_for_goal(
+                        str(getattr(best_goal, "goal_id", "")),
+                        getattr(best_goal, "evidence", None),
+                        skill_id=decision.skill,
+                    )
+                    if best_goal is not None else None
+                )
+                # An unknown target is passed through as an explicit refusal; it must
+                # not fall back to a generic green-plus or a different rally type.
+                if rally_target is None:
+                    rally_target = RallyTarget.UNKNOWN
+
+            def verify_current_step(before_state: WorldState, after_state: WorldState):
+                if decision.skill in {"START_RALLY", "JOIN_RALLY"}:
+                    return _verify_rally_action(
+                        decision.skill, before_state, after_state, rally_target
+                    )
+                return self.VERIFIED_ATOMIC[decision.skill](before_state, after_state)
+
             # The executor and the backend router both take this one callable.  It binds
             # the run-scoped arguments (the frame this step observed, the resource this
             # step planned, the pins this run has not tried) to the class-level resolver
@@ -5865,6 +5892,7 @@ class LiveRuntime:
                     frame_path=before_path,
                     resource=planned_resource,
                     untried_intel_pins=untried_intel_pins,
+                    rally_target=rally_target,
                 )
 
             if (
@@ -5992,6 +6020,7 @@ class LiveRuntime:
                 skill_id=decision.skill,
                 routing=self.routing,
                 ledger=self.backend_ledger,
+                rally_target=rally_target,
             )
             started_at = time.monotonic()
             # ``decision`` was already made above and the backend router below
@@ -6145,7 +6174,7 @@ class LiveRuntime:
             after = self._reject_a_dropped_digit(after)
             goals_after = self._record_goals(after, frame=after_path)
             phase_started = time.monotonic()
-            verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+            verification = verify_current_step(before, after)
             page_audit["verifier_result"] = {
                 "status": "PASS" if verification.ok else "FAIL",
                 "ok": bool(verification.ok),
@@ -6170,7 +6199,7 @@ class LiveRuntime:
                 after = self._reject_a_dropped_digit(after)
                 goals_after = self._record_goals(after, frame=refresh_path)
                 phase_started = time.monotonic()
-                verification = self.VERIFIED_ATOMIC[decision.skill](before, after)
+                verification = verify_current_step(before, after)
                 latency["verifier_ms"] = (latency.get("verifier_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
                 # The episode must point at the frame its recorded ``after``
                 # state was actually read from.  ``after_path`` used to stay on

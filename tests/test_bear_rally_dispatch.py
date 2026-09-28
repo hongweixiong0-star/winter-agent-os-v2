@@ -37,6 +37,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.models import Page, WorldState  # noqa: E402
+from winter_agent_v2.rally import RallyTarget  # noqa: E402
 from winter_agent_v2.skills import v2_registry  # noqa: E402
 
 BEAR_SKILLS = ("JOIN_RALLY", "START_RALLY")
@@ -69,17 +70,12 @@ def _runtime_class():
 
 @pytest.mark.parametrize("skill_id", BEAR_SKILLS)
 def test_the_rally_skill_is_enabled_for_the_live_loop(skill_id):
-    """The registered-not-enabled defect, pinned directly.
-
-    ``run`` gates on ``decision.skill not in self.VERIFIED_ATOMIC``; an entry here is
-    literally the difference between "the loop may dispatch this" and "the step ends".
-    """
-    verified = _runtime_class().VERIFIED_ATOMIC
-    assert skill_id in verified, (
-        f"{skill_id} is not in VERIFIED_ATOMIC, so LiveRuntime.run will refuse it with "
-        f"SKILL_NOT_ENABLED_FOR_LIVE_LOOP no matter how good the templates are"
+    """Shared rally skills are enabled through the target-aware verifier path."""
+    runtime = _runtime_class()
+    assert skill_id in runtime.DYNAMIC_TARGET_SKILLS
+    assert skill_id not in runtime.VERIFIED_ATOMIC, (
+        "rally actions must not retain a target-free, hard-coded Bear verifier"
     )
-    assert callable(verified[skill_id]), "the value must be a callable verifier"
 
 
 @pytest.mark.parametrize("skill_id", BEAR_SKILLS)
@@ -139,11 +135,11 @@ def _bear_frame(**over) -> WorldState:
 
 def test_a_join_is_proven_by_the_march_queue_or_the_member_state():
     """What ``verify_rally_joined`` demands, and why a click is not enough."""
-    verified = _runtime_class().VERIFIED_ATOMIC
+    from winter_agent_v2.runtime import _verify_rally_action
     before = _bear_frame(march_used=1, alliance={"rally": {"target_type": "BEAR"}})
     after = _bear_frame(march_used=2, alliance={"rally": {"target_type": "BEAR"}})
 
-    result = verified["JOIN_RALLY"](before, after)
+    result = _verify_rally_action("JOIN_RALLY", before, after, RallyTarget.BEAR)
     assert result.ok, (
         "a queue that went 1 -> 2 with the frame still reading BEAR is a proven join; "
         f"got {result.reason}"
@@ -152,12 +148,12 @@ def test_a_join_is_proven_by_the_march_queue_or_the_member_state():
 
 def test_a_join_that_changed_nothing_is_not_proven():
     """The verifier's whole purpose: the tap landing is not the join happening."""
-    verified = _runtime_class().VERIFIED_ATOMIC
+    from winter_agent_v2.runtime import _verify_rally_action
     same = {"rally": {"target_type": "BEAR"}}
     before = _bear_frame(march_used=1, alliance=same)
     after = _bear_frame(march_used=1, alliance=same)
 
-    result = verified["JOIN_RALLY"](before, after)
+    result = _verify_rally_action("JOIN_RALLY", before, after, RallyTarget.BEAR)
     assert not result.ok, "no queue change and no member state must not be reported as joined"
     assert result.reason == "RALLY_JOIN_NOT_PROVEN"
 
@@ -168,11 +164,11 @@ def test_a_join_against_another_target_is_refused():
     The frame reports a different ``target_type``, which is exactly how a live frame states
     what it is looking at.  The bound verifier must refuse even though the queue moved.
     """
-    verified = _runtime_class().VERIFIED_ATOMIC
+    from winter_agent_v2.runtime import _verify_rally_action
     before = _bear_frame(march_used=1, alliance={"rally": {"target_type": "FORTRESS"}})
     after = _bear_frame(march_used=2, alliance={"rally": {"target_type": "FORTRESS"}})
 
-    result = verified["JOIN_RALLY"](before, after)
+    result = _verify_rally_action("JOIN_RALLY", before, after, RallyTarget.BEAR)
     assert not result.ok, (
         "a queue increase against a FORTRESS rally must not certify a BEAR join -- this is "
         "the 普通集结/巨熊集结 confusion the directive names"
@@ -186,61 +182,73 @@ def test_a_creation_is_proven_by_ownership_or_the_special_slot():
     target the slot transition is itself evidence -- see the §14 model note in the master
     rules.  A non-bear target has no such shortcut.
     """
-    verified = _runtime_class().VERIFIED_ATOMIC
+    from winter_agent_v2.runtime import _verify_rally_action
 
     owned = _bear_frame(alliance={"rally": {"target_type": "BEAR", "ownership": "SELF",
                                            "remaining_seconds": 300}})
     before = _bear_frame(alliance={"rally": {"target_type": "BEAR"}})
-    assert verified["START_RALLY"](before, owned).ok, "own rally with a live countdown proves creation"
+    assert _verify_rally_action("START_RALLY", before, owned, RallyTarget.BEAR).ok, (
+        "own rally with a live countdown proves creation"
+    )
 
     before_special = _bear_frame(bear_rally_special_available=True,
                                  alliance={"rally": {"target_type": "BEAR"}})
     after_special = _bear_frame(bear_rally_special_available=False,
                                 alliance={"rally": {"target_type": "BEAR"}})
-    assert verified["START_RALLY"](before_special, after_special).ok, (
+    assert _verify_rally_action(
+        "START_RALLY", before_special, after_special, RallyTarget.BEAR
+    ).ok, (
         "for BEAR, consuming the special rally slot is also a proof of creation"
     )
 
 
 def test_a_creation_that_changed_nothing_is_not_proven():
     """Clicking 发起集结 is not starting a rally."""
-    verified = _runtime_class().VERIFIED_ATOMIC
+    from winter_agent_v2.runtime import _verify_rally_action
     same = {"rally": {"target_type": "BEAR"}}
     frame = _bear_frame(alliance=same, bear_rally_special_available=True)
 
-    result = verified["START_RALLY"](frame, frame)
+    result = _verify_rally_action("START_RALLY", frame, frame, RallyTarget.BEAR)
     assert not result.ok, "an unchanged frame must not certify a created rally"
     assert result.reason == "RALLY_CREATE_NOT_PROVEN"
 
 
 def test_a_creation_against_another_target_is_refused():
     """The same §三 guard on the leader side."""
-    verified = _runtime_class().VERIFIED_ATOMIC
+    from winter_agent_v2.runtime import _verify_rally_action
     owned = _bear_frame(alliance={"rally": {"target_type": "POLAR_TERROR",
                                             "ownership": "SELF", "remaining_seconds": 300}})
     before = _bear_frame(alliance={"rally": {"target_type": "POLAR_TERROR"}})
 
-    result = verified["START_RALLY"](before, owned)
+    result = _verify_rally_action("START_RALLY", before, owned, RallyTarget.BEAR)
     assert not result.ok, "a self-owned POLAR_TERROR rally must not certify a BEAR creation"
 
 
-def test_the_bound_verifier_takes_the_two_arguments_the_runtime_passes():
-    """``Verifier`` is ``Callable[[WorldState, WorldState], VerificationResult]``.
+@pytest.mark.parametrize(
+    ("skill_id", "target", "raw"),
+    [
+        ("JOIN_RALLY", RallyTarget.ICEFIELD_BEAST, "POLAR_TERROR"),
+        ("START_RALLY", RallyTarget.ICEFIELD_BEAST, "ICEFIELD_BEAST"),
+    ],
+)
+def test_generic_rally_verifier_uses_the_goal_target(skill_id, target, raw):
+    from winter_agent_v2.runtime import _verify_rally_action
 
-    The verifiers themselves are three-argument (they are generic over the target), and the
-    runtime calls two-argument.  That mismatch is precisely why the binding is a lambda, so
-    the arity of the *bound* object is the thing worth pinning.
-    """
-    import inspect
+    if skill_id == "JOIN_RALLY":
+        before = _bear_frame(march_used=1, alliance={"rally": {"target_type": raw}})
+        after = _bear_frame(march_used=2, alliance={"rally": {"target_type": raw}})
+    else:
+        before = _bear_frame(alliance={"rally": {"target_type": raw}})
+        after = _bear_frame(alliance={"rally": {
+            "target_type": raw, "ownership": "SELF", "remaining_seconds": 300,
+        }})
+    assert _verify_rally_action(skill_id, before, after, target).ok
 
-    verified = _runtime_class().VERIFIED_ATOMIC
-    for skill_id in BEAR_SKILLS:
-        bound = verified[skill_id]
-        params = [
-            p for p in inspect.signature(bound).parameters.values()
-            if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-        ]
-        assert len(params) == 2, (
-            f"{skill_id}'s bound verifier takes {len(params)} positional parameters; the "
-            f"runtime calls it with (before, after)"
-        )
+
+def test_rally_verifier_refuses_an_unknown_goal_target():
+    from winter_agent_v2.runtime import _verify_rally_action
+
+    frame = _bear_frame(alliance={"rally": {"target_type": "BEAR"}})
+    result = _verify_rally_action("JOIN_RALLY", frame, frame, None)
+    assert not result.ok
+    assert result.reason == "RALLY_TARGET_UNKNOWN"
