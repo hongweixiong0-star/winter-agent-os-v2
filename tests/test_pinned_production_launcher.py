@@ -11,6 +11,22 @@ sys.path.insert(0, str(ROOT / "tools"))
 import launch_pinned_production as launcher  # noqa: E402
 
 
+def test_pin_allows_only_the_single_known_legacy_soak_report(tmp_path):
+    evidence = tmp_path / "evidence" / "gui_workbuddy_loop"
+    evidence.mkdir(parents=True)
+    latest = evidence / "latest.json"
+    latest.write_text('{"kind":"GatewaySoakAcceptance"}\n', encoding="utf-8")
+
+    assert launcher._is_legacy_runtime_output(
+        "evidence/gui_workbuddy_loop/", code_root=tmp_path
+    )
+
+    (evidence / "unexpected.py").write_text("print('not evidence')\n", encoding="utf-8")
+    assert not launcher._is_legacy_runtime_output(
+        "evidence/gui_workbuddy_loop/", code_root=tmp_path
+    )
+
+
 def test_launcher_sets_shared_data_root_before_loading_control_panel(tmp_path, monkeypatch):
     data_root = tmp_path / "shared-data"
     data_root.mkdir()

@@ -23,6 +23,7 @@ CODE_ROOT = Path(__file__).resolve().parents[1]
 WORKTREE_HOME = CODE_ROOT.parent
 DEFAULT_MANIFEST = WORKTREE_HOME / "PRODUCTION_PIN.json"
 DATA_DIR_NAMES = ("config", "knowledge", "learning", "dataset")
+LEGACY_RUNTIME_OUTPUT_DIRS = {"evidence/gui_workbuddy_loop"}
 
 
 class PinError(RuntimeError):
@@ -48,6 +49,27 @@ def _manifest(path: Path) -> dict[str, object]:
     if not isinstance(data, dict) or data.get("schema_version") != 1:
         raise PinError("production pin manifest has an unsupported schema")
     return data
+
+
+def _is_legacy_runtime_output(path: str, *, code_root: Path = CODE_ROOT) -> bool:
+    """Accept only the known pre-DATA_ROOT soak report, never arbitrary evidence files."""
+    normalized = str(path).replace("\\", "/").strip().rstrip("/")
+    if normalized not in LEGACY_RUNTIME_OUTPUT_DIRS:
+        return False
+    directory = code_root / Path(normalized)
+    expected = f"{normalized}/latest.json"
+    try:
+        files = sorted(p.relative_to(code_root).as_posix()
+                       for p in directory.rglob("*") if p.is_file())
+    except OSError:
+        return False
+    if files != [expected]:
+        return False
+    try:
+        payload = json.loads((code_root / Path(expected)).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeError):
+        return False
+    return isinstance(payload, dict) and payload.get("kind") == "GatewaySoakAcceptance"
 
 
 def verify_pin(manifest_path: Path = DEFAULT_MANIFEST) -> tuple[str, Path]:
@@ -91,6 +113,8 @@ def verify_pin(manifest_path: Path = DEFAULT_MANIFEST) -> tuple[str, Path]:
             continue
         path = line[3:].strip().replace("\\", "/")
         if not any(path == name or path.startswith(name + "/") for name in DATA_DIR_NAMES):
+            if _is_legacy_runtime_output(path):
+                continue
             unexpected.append(line)
     if unexpected:
         raise PinError("production code worktree has unreviewed changes: " + " | ".join(unexpected[:8]))
