@@ -36,7 +36,8 @@ def _git(*args: str) -> str:
     )
     if result.returncode:
         raise PinError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
-    return result.stdout.strip()
+    # Preserve leading status columns from ``git status --porcelain``.
+    return result.stdout.rstrip("\r\n")
 
 
 def _manifest(path: Path) -> dict[str, object]:
