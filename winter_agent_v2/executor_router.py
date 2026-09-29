@@ -270,6 +270,8 @@ def _rapid_ocr_results(frame: Any, roi: tuple[int, int, int, int] | None,
     boxes are converted to absolute device pixels so callers keep the same
     shape ``adapter.ocr`` used to return.
     """
+    from .vision_policy import guard_ocr as _vp_guard_ocr  # VISION_POLICY_V1 C/F
+    _vp_guard_ocr("_rapid_ocr_results")
     from PIL import Image as _PILImage
     from .ocr import RapidOCRBackend
     image = _PILImage.fromarray(frame)

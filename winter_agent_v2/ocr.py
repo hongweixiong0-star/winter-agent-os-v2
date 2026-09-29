@@ -225,13 +225,24 @@ class RapidOCRBackend:
         self.timing_parse_ms = 0.0
 
     def recognize(self, image: Image.Image) -> tuple[OCRToken, ...]:
+        # VISION_POLICY_V1 section C/F: this is the deepest text-recognition choke
+        # point in the project, so the realtime ban is enforced here as a backstop
+        # as well as at the named entry points.  Offending code must fail loudly.
+        from .vision_policy import guard_ocr as _vp_guard_ocr
+        _vp_guard_ocr("RapidOCRBackend.recognize")
         import numpy as np
+        import time as _t
+        _t0 = _t.perf_counter()
 
         rows, _ = self._engine(np.asarray(image.convert("RGB")))
         parse_started = time.monotonic()
         if not rows:
             self.timing_parse_ms += (time.monotonic() - parse_started) * 1000
             return ()
+        from .vision_policy import realtime_counters as _vp_counters
+        _c = _vp_counters()
+        if _c is not None:
+            _c.record_ocr((_t.perf_counter() - _t0) * 1000.0)
         tokens = tuple(
             OCRToken(
                 text=str(row[1]).strip(),

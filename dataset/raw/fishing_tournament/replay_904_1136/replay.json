@@ -1,0 +1,1690 @@
+{
+ "phase": "FISHING_REPLAY",
+ "frames_replayed": 30,
+ "frame_range": [
+  904,
+  1136
+ ],
+ "line_detected_frames": 18,
+ "line_detection_rate": 0.6,
+ "gameplay_frames": 18,
+ "gameplay_detected": 18,
+ "gameplay_detection_rate": 1.0,
+ "nongameplay_frames": 12,
+ "nongameplay_refused": 12,
+ "nongameplay_refusal_rate": 1.0,
+ "hook_detected_frames": 18,
+ "outcome": "CAPTURE_FAILED",
+ "moves_sent": 4,
+ "moves_skipped_dead_zone": 14,
+ "lost_events": 1,
+ "max_lost_streak": 12,
+ "vision_policy": {
+  "frames": 31,
+  "capture_ms_mean": 0.0,
+  "opencv_ms_mean": 3.01,
+  "ocr_calls": 0,
+  "ocr_ms_mean": null,
+  "control_loop_ms_mean": 8.06,
+  "qwen_calls": 0,
+  "lost_target_frames": 12,
+  "fps": 120.0,
+  "vision_hz": 332.42,
+  "control_hz": 124.0,
+  "realtime_sessions": 1,
+  "realtime_s": 0.258,
+  "ocr_calls_inside_realtime": 0,
+  "ocr_zero_inside_realtime": true,
+  "realtime_clean": true,
+  "policy_violations": 0
+ },
+ "opencv_ms_mean_REAL": 3.01,
+ "fps_REPLAY_BOUND": 120.0,
+ "control_hz_REPLAY_BOUND": 124.0,
+ "live_reference": {
+  "control_hz": 21.28,
+  "capture_ms": 12.24,
+  "source": "dataset/raw/fishing_tournament/run_20260929T231017/run.json"
+ },
+ "decisions": [
+  {
+   "i": 0,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 421,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1029
+  },
+  {
+   "i": 1,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1029
+  },
+  {
+   "i": 2,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1029
+  },
+  {
+   "i": 3,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1029
+  },
+  {
+   "i": 4,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1029
+  },
+  {
+   "i": 5,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 1029
+  },
+  {
+   "i": 6,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1029
+  },
+  {
+   "i": 7,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1029
+  },
+  {
+   "i": 8,
+   "finger_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 1022
+  },
+  {
+   "i": 9,
+   "finger_x": 368,
+   "phase": "ASCENDING",
+   "desired_line_x": 129,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": 351,
+   "hook_y": 967
+  },
+  {
+   "i": 10,
+   "finger_x": 373,
+   "phase": "ASCENDING",
+   "desired_line_x": 362,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": 350,
+   "hook_y": 918
+  },
+  {
+   "i": 11,
+   "finger_x": 359,
+   "phase": "ASCENDING",
+   "desired_line_x": 130,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": 351,
+   "hook_y": 780
+  },
+  {
+   "i": 12,
+   "finger_x": 345,
+   "phase": "ASCENDING",
+   "desired_line_x": 133,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": 350,
+   "hook_y": 586
+  },
+  {
+   "i": 13,
+   "finger_x": 345,
+   "phase": "ASCENDING",
+   "desired_line_x": 351,
+   "reason": "FISH_TRACK_NO_TARGET",
+   "line_x": 351,
+   "hook_y": 579
+  },
+  {
+   "i": 14,
+   "finger_x": 345,
+   "phase": "ASCENDING",
+   "desired_line_x": 352,
+   "reason": "FISH_TRACK_NO_TARGET",
+   "line_x": 352,
+   "hook_y": 579
+  },
+  {
+   "i": 15,
+   "finger_x": 345,
+   "phase": "ASCENDING",
+   "desired_line_x": 351,
+   "reason": "FISH_TRACK_NO_TARGET",
+   "line_x": 351,
+   "hook_y": 586
+  },
+  {
+   "i": 16,
+   "finger_x": 345,
+   "phase": "ASCENDING",
+   "desired_line_x": 350,
+   "reason": "FISH_TRACK_NO_TARGET",
+   "line_x": 350,
+   "hook_y": 623
+  },
+  {
+   "i": 17,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 351,
+   "hook_y": 737
+  },
+  {
+   "i": 18,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 19,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 20,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 21,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 22,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 23,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 24,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 25,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 26,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 27,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 28,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 29,
+   "finger_x": 345,
+   "phase": "DESCENDING",
+   "desired_line_x": 351,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": null,
+   "hook_y": null
+  }
+ ],
+ "detections": [
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 588,
+   "line_separation": 98.0,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 364,
+     "y": 1108,
+     "w": 6,
+     "h": 15,
+     "area": 65,
+     "top": 1101,
+     "left": 362
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 590,
+   "line_separation": 65.56,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 364,
+     "y": 1108,
+     "w": 6,
+     "h": 15,
+     "area": 65,
+     "top": 1101,
+     "left": 362
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 588,
+   "line_separation": 49.0,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 360,
+     "y": 1089,
+     "w": 10,
+     "h": 11,
+     "area": 60,
+     "top": 1084,
+     "left": 357
+    },
+    {
+     "x": 364,
+     "y": 1109,
+     "w": 9,
+     "h": 16,
+     "area": 79,
+     "top": 1101,
+     "left": 359
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 591,
+   "line_separation": 45.46,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 539,
+     "y": 1017,
+     "w": 12,
+     "h": 7,
+     "area": 66,
+     "top": 1014,
+     "left": 534
+    },
+    {
+     "x": 360,
+     "y": 1090,
+     "w": 11,
+     "h": 13,
+     "area": 75,
+     "top": 1084,
+     "left": 356
+    },
+    {
+     "x": 364,
+     "y": 1109,
+     "w": 9,
+     "h": 16,
+     "area": 79,
+     "top": 1101,
+     "left": 359
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 591,
+   "line_separation": 45.46,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 360,
+     "y": 1090,
+     "w": 11,
+     "h": 13,
+     "area": 75,
+     "top": 1084,
+     "left": 356
+    },
+    {
+     "x": 364,
+     "y": 1109,
+     "w": 9,
+     "h": 16,
+     "area": 79,
+     "top": 1101,
+     "left": 359
+    }
+   ],
+   "obstacles": [
+    {
+     "x": 123,
+     "y": 769,
+     "w": 10,
+     "h": 17,
+     "area": 116,
+     "top": 762,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 588,
+   "line_separation": 53.45,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 360,
+     "y": 1089,
+     "w": 10,
+     "h": 11,
+     "area": 60,
+     "top": 1084,
+     "left": 357
+    },
+    {
+     "x": 364,
+     "y": 1109,
+     "w": 9,
+     "h": 16,
+     "area": 79,
+     "top": 1101,
+     "left": 359
+    }
+   ],
+   "obstacles": [
+    {
+     "x": 124,
+     "y": 818,
+     "w": 12,
+     "h": 25,
+     "area": 163,
+     "top": 809,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 588,
+   "line_separation": 98.0,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 364,
+     "y": 1108,
+     "w": 6,
+     "h": 15,
+     "area": 65,
+     "top": 1101,
+     "left": 362
+    }
+   ],
+   "obstacles": [
+    {
+     "x": 126,
+     "y": 913,
+     "w": 17,
+     "h": 26,
+     "area": 241,
+     "top": 901,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 590,
+   "line_separation": 65.56,
+   "hook_x": 354,
+   "hook_y": 1029,
+   "hook_area": 482,
+   "depth_px": 599,
+   "fish": [
+    {
+     "x": 123,
+     "y": 988,
+     "w": 9,
+     "h": 13,
+     "area": 89,
+     "top": 981,
+     "left": 120
+    },
+    {
+     "x": 128,
+     "y": 1007,
+     "w": 21,
+     "h": 25,
+     "area": 313,
+     "top": 996,
+     "left": 120
+    },
+    {
+     "x": 364,
+     "y": 1108,
+     "w": 6,
+     "h": 15,
+     "area": 65,
+     "top": 1101,
+     "left": 362
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 580,
+   "line_separation": 52.73,
+   "hook_x": 354,
+   "hook_y": 1022,
+   "hook_area": 483,
+   "depth_px": 592,
+   "fish": [
+    {
+     "x": 123,
+     "y": 1031,
+     "w": 11,
+     "h": 15,
+     "area": 112,
+     "top": 1023,
+     "left": 120
+    },
+    {
+     "x": 129,
+     "y": 1050,
+     "w": 22,
+     "h": 25,
+     "area": 327,
+     "top": 1039,
+     "left": 120
+    },
+    {
+     "x": 365,
+     "y": 1101,
+     "w": 6,
+     "h": 15,
+     "area": 65,
+     "top": 1094,
+     "left": 362
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 527,
+   "line_separation": 47.91,
+   "hook_x": 354,
+   "hook_y": 967,
+   "hook_area": 490,
+   "depth_px": 537,
+   "fish": [
+    {
+     "x": 360,
+     "y": 1028,
+     "w": 10,
+     "h": 12,
+     "area": 67,
+     "top": 1022,
+     "left": 357
+    },
+    {
+     "x": 364,
+     "y": 1047,
+     "w": 9,
+     "h": 16,
+     "area": 77,
+     "top": 1039,
+     "left": 359
+    },
+    {
+     "x": 129,
+     "y": 1104,
+     "w": 26,
+     "h": 40,
+     "area": 532,
+     "top": 1084,
+     "left": 120
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 482,
+   "line_separation": 43.82,
+   "hook_x": 354,
+   "hook_y": 918,
+   "hook_area": 487,
+   "depth_px": 488,
+   "fish": [
+    {
+     "x": 360,
+     "y": 979,
+     "w": 11,
+     "h": 12,
+     "area": 71,
+     "top": 974,
+     "left": 356
+    },
+    {
+     "x": 362,
+     "y": 1000,
+     "w": 14,
+     "h": 18,
+     "area": 101,
+     "top": 990,
+     "left": 354
+    },
+    {
+     "x": 129,
+     "y": 1122,
+     "w": 27,
+     "h": 41,
+     "area": 571,
+     "top": 1101,
+     "left": 120
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 339,
+   "line_separation": 33.9,
+   "hook_x": 354,
+   "hook_y": 780,
+   "hook_area": 489,
+   "depth_px": 350,
+   "fish": [
+    {
+     "x": 360,
+     "y": 840,
+     "w": 10,
+     "h": 11,
+     "area": 60,
+     "top": 835,
+     "left": 357
+    },
+    {
+     "x": 364,
+     "y": 860,
+     "w": 9,
+     "h": 16,
+     "area": 78,
+     "top": 852,
+     "left": 359
+    },
+    {
+     "x": 130,
+     "y": 1131,
+     "w": 31,
+     "h": 47,
+     "area": 687,
+     "top": 1106,
+     "left": 120
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 144,
+   "line_separation": 18.0,
+   "hook_x": 354,
+   "hook_y": 586,
+   "hook_area": 484,
+   "depth_px": 156,
+   "fish": [
+    {
+     "x": 365,
+     "y": 666,
+     "w": 6,
+     "h": 16,
+     "area": 68,
+     "top": 658,
+     "left": 362
+    },
+    {
+     "x": 133,
+     "y": 1111,
+     "w": 36,
+     "h": 45,
+     "area": 845,
+     "top": 1089,
+     "left": 120
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 139,
+   "line_separation": 15.44,
+   "hook_x": 354,
+   "hook_y": 579,
+   "hook_area": 479,
+   "depth_px": 149,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 352,
+   "line_strength": 138,
+   "line_separation": 10.62,
+   "hook_x": 354,
+   "hook_y": 579,
+   "hook_area": 479,
+   "depth_px": 149,
+   "fish": [
+    {
+     "x": 365,
+     "y": 658,
+     "w": 6,
+     "h": 15,
+     "area": 65,
+     "top": 651,
+     "left": 362
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 147,
+   "line_separation": 13.36,
+   "hook_x": 354,
+   "hook_y": 586,
+   "hook_area": 489,
+   "depth_px": 156,
+   "fish": [
+    {
+     "x": 360,
+     "y": 647,
+     "w": 11,
+     "h": 13,
+     "area": 75,
+     "top": 641,
+     "left": 356
+    },
+    {
+     "x": 364,
+     "y": 666,
+     "w": 9,
+     "h": 16,
+     "area": 80,
+     "top": 658,
+     "left": 359
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 227,
+   "line_separation": 8.41,
+   "hook_x": 353,
+   "hook_y": 623,
+   "hook_area": 448,
+   "depth_px": 193,
+   "fish": [
+    {
+     "x": 360,
+     "y": 684,
+     "w": 10,
+     "h": 13,
+     "area": 68,
+     "top": 678,
+     "left": 356
+    },
+    {
+     "x": 364,
+     "y": 704,
+     "w": 9,
+     "h": 17,
+     "area": 84,
+     "top": 695,
+     "left": 359
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 351,
+   "line_strength": 482,
+   "line_separation": 18.54,
+   "hook_x": 355,
+   "hook_y": 737,
+   "hook_area": 536,
+   "depth_px": 307,
+   "fish": [
+    {
+     "x": 364,
+     "y": 816,
+     "w": 6,
+     "h": 16,
+     "area": 69,
+     "top": 808,
+     "left": 362
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 276,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 498,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 52,
+     "h": 78,
+     "area": 2431,
+     "top": 719,
+     "left": 468
+    },
+    {
+     "x": 555,
+     "y": 780,
+     "w": 48,
+     "h": 52,
+     "area": 1676,
+     "top": 756,
+     "left": 531
+    },
+    {
+     "x": 506,
+     "y": 799,
+     "w": 22,
+     "h": 10,
+     "area": 153,
+     "top": 795,
+     "left": 495
+    },
+    {
+     "x": 360,
+     "y": 972,
+     "w": 19,
+     "h": 16,
+     "area": 101,
+     "top": 963,
+     "left": 350
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 276,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 358,
+     "y": 433,
+     "w": 23,
+     "h": 8,
+     "area": 119,
+     "top": 430,
+     "left": 348
+    },
+    {
+     "x": 356,
+     "y": 451,
+     "w": 30,
+     "h": 17,
+     "area": 256,
+     "top": 443,
+     "left": 343
+    },
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 500,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 52,
+     "h": 78,
+     "area": 2431,
+     "top": 719,
+     "left": 468
+    },
+    {
+     "x": 555,
+     "y": 780,
+     "w": 48,
+     "h": 52,
+     "area": 1682,
+     "top": 756,
+     "left": 531
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 276,
+   "line_separation": 1.01,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 494,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 51,
+     "h": 72,
+     "area": 2291,
+     "top": 724,
+     "left": 469
+    },
+    {
+     "x": 554,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 821,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 47,
+     "h": 27,
+     "area": 815,
+     "top": 781,
+     "left": 531
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 276,
+   "line_separation": 1.01,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 228,
+     "y": 686,
+     "w": 5,
+     "h": 17,
+     "area": 60,
+     "top": 678,
+     "left": 227
+    },
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 494,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 51,
+     "h": 72,
+     "area": 2291,
+     "top": 724,
+     "left": 469
+    },
+    {
+     "x": 554,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 821,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 47,
+     "h": 27,
+     "area": 815,
+     "top": 781,
+     "left": 531
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 275,
+   "line_separation": 1.01,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 231,
+     "y": 700,
+     "w": 6,
+     "h": 18,
+     "area": 62,
+     "top": 692,
+     "left": 229
+    },
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 502,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 88,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 757,
+     "w": 52,
+     "h": 79,
+     "area": 2518,
+     "top": 718,
+     "left": 468
+    },
+    {
+     "x": 554,
+     "y": 780,
+     "w": 49,
+     "h": 52,
+     "area": 1711,
+     "top": 756,
+     "left": 530
+    },
+    {
+     "x": 506,
+     "y": 799,
+     "w": 22,
+     "h": 10,
+     "area": 169,
+     "top": 795,
+     "left": 495
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 469,
+   "line_separation": 1.7,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 232,
+     "y": 694,
+     "w": 5,
+     "h": 17,
+     "area": 60,
+     "top": 687,
+     "left": 230
+    },
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 494,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 51,
+     "h": 72,
+     "area": 2288,
+     "top": 724,
+     "left": 469
+    },
+    {
+     "x": 554,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 828,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 47,
+     "h": 27,
+     "area": 816,
+     "top": 781,
+     "left": 531
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 469,
+   "line_separation": 1.69,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 231,
+     "y": 689,
+     "w": 4,
+     "h": 21,
+     "area": 67,
+     "top": 680,
+     "left": 230
+    },
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 492,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 759,
+     "w": 49,
+     "h": 70,
+     "area": 2109,
+     "top": 726,
+     "left": 470
+    },
+    {
+     "x": 554,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 808,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 46,
+     "h": 27,
+     "area": 805,
+     "top": 781,
+     "left": 532
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 471,
+   "line_separation": 1.69,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 561,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 488,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 586,
+     "y": 747,
+     "w": 7,
+     "h": 13,
+     "area": 83,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 763,
+     "w": 47,
+     "h": 63,
+     "area": 1679,
+     "top": 733,
+     "left": 471
+    },
+    {
+     "x": 555,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 792,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 46,
+     "h": 27,
+     "area": 796,
+     "top": 781,
+     "left": 532
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 473,
+   "line_separation": 1.71,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 492,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 49,
+     "h": 70,
+     "area": 2142,
+     "top": 726,
+     "left": 470
+    },
+    {
+     "x": 555,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 806,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 46,
+     "h": 27,
+     "area": 805,
+     "top": 781,
+     "left": 532
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 473,
+   "line_separation": 1.71,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 494,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 51,
+     "h": 72,
+     "area": 2283,
+     "top": 724,
+     "left": 469
+    },
+    {
+     "x": 554,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 828,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 47,
+     "h": 27,
+     "area": 816,
+     "top": 781,
+     "left": 531
+    },
+    {
+     "x": 511,
+     "y": 800,
+     "w": 11,
+     "h": 7,
+     "area": 60,
+     "top": 798,
+     "left": 506
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 471,
+   "line_separation": 1.71,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 494,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 51,
+     "h": 72,
+     "area": 2286,
+     "top": 724,
+     "left": 469
+    },
+    {
+     "x": 554,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 822,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 47,
+     "h": 27,
+     "area": 816,
+     "top": 781,
+     "left": 531
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 469,
+   "line_separation": 1.69,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 560,
+     "y": 747,
+     "w": 39,
+     "h": 15,
+     "area": 492,
+     "top": 741,
+     "left": 542
+    },
+    {
+     "x": 587,
+     "y": 747,
+     "w": 8,
+     "h": 13,
+     "area": 86,
+     "top": 742,
+     "left": 584
+    },
+    {
+     "x": 493,
+     "y": 758,
+     "w": 49,
+     "h": 70,
+     "area": 2142,
+     "top": 726,
+     "left": 470
+    },
+    {
+     "x": 554,
+     "y": 769,
+     "w": 45,
+     "h": 26,
+     "area": 807,
+     "top": 756,
+     "left": 534
+    },
+    {
+     "x": 555,
+     "y": 791,
+     "w": 46,
+     "h": 27,
+     "area": 805,
+     "top": 781,
+     "left": 532
+    }
+   ]
+  }
+ ]
+}

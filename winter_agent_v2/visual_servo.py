@@ -36,6 +36,7 @@ ENGAGE move whose displacement nobody depends on.
 
 from __future__ import annotations
 
+import contextlib
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable
@@ -44,6 +45,7 @@ import numpy as np
 from PIL import Image
 
 from .continuous_touch import ContinuousTouchSession
+from . import vision_policy as vp
 
 #: Fast phase-correlation-free frame hash: 48x48 grey.  ~0.2 ms, enough to tell
 #: "this is the same picture as last frame" from "the client is animating".
@@ -162,6 +164,8 @@ class ServoReport:
     lost_events: int = 0
     max_lost_streak: int = 0
     stale_frames: int = 0
+    #: VISION_POLICY_V1 section G — the counters this session ran under.
+    policy: dict[str, Any] = field(default_factory=dict)
     timeline: list[dict[str, Any]] = field(default_factory=list)
     touch_sessions: list[dict[str, Any]] = field(default_factory=list)
 
@@ -189,7 +193,7 @@ class ServoReport:
         }
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        rep = {
             "outcome": self.outcome, "frames": self.frames,
             "duration_s": round(self.duration_s, 3), "reason": self.reason,
             "presses": self.presses, "moves_sent": self.moves_sent,
@@ -201,6 +205,17 @@ class ServoReport:
             "touch_sessions": self.touch_sessions,
             "timeline": self.timeline,
         }
+        if self.policy:
+            # Section G at the top level as well, because these four are the numbers
+            # that decide whether the loop is fast enough to control anything.
+            rep["fps"] = self.policy.get("fps")
+            rep["vision_hz"] = self.policy.get("vision_hz")
+            rep["control_hz"] = self.policy.get("control_hz")
+            rep["lost_target_frames"] = self.policy.get("lost_target_frames")
+            rep["ocr_calls_inside_realtime"] = self.policy.get("ocr_calls_inside_realtime")
+            rep["realtime_clean"] = self.policy.get("realtime_clean")
+            rep["vision_policy"] = self.policy
+        return rep
 
 
 class VisualServoSession:
@@ -279,12 +294,26 @@ class VisualServoSession:
         started = time.monotonic()
         self.report = ServoReport(outcome="RUNNING")
 
+        # VISION_POLICY_V1 section C/F: while this loop runs, text recognition and any
+        # model call are FORBIDDEN, and that is enforced at the OCR choke point rather
+        # than trusted.  Section G counters ride along, so every servo session reports
+        # capture/opencv/ocr/control_loop and fps/vision_hz/control_hz from one place.
+        counters = vp.VisionCounters()
+        self._policy_gate = contextlib.ExitStack()
+        if vp.realtime_active() is None:
+            self._policy_gate.enter_context(
+                vp.realtime_session(type(self).__name__, counters=counters))
+        else:
+            # A caller already owns the realtime gate; nesting would hide its rules.
+            counters = vp.realtime_counters() or counters
+
         last_sig: np.ndarray | None = None
         stale_streak = 0
         lost_streak = 0
         last_seen_at = started
         index = 0
         press_x = int(roi[0] + (roi[2] - roi[0]) / 2) if roi else 360
+        self._counters_for_loop = counters
         if not self._press(press_x, cfg.anchor_y):
             self.report.outcome = "PRESS_FAILED"
             self.report.reason = "touch_down refused"
@@ -308,10 +337,17 @@ class VisualServoSession:
                 t0 = time.perf_counter()
                 frame = self.device.capture()
                 row.capture_ms = (time.perf_counter() - t0) * 1000.0
+                counters.record_capture(row.capture_ms)
                 if frame is None:
                     self._release("CAPTURE_FAILED")
                     self.report.outcome = "CAPTURE_FAILED"
-                    self.report.reason = self.device.unavailable_reason or "screencap returned None"
+                    # getattr, not attribute access: ``unavailable_reason`` belongs to
+                    # MaaExecutorAdapter.  Demanding it here turned "the capture
+                    # returned nothing" into an AttributeError on any other device
+                    # (ADB backend, replay device, test double), which reported ERROR
+                    # instead of the real, actionable CAPTURE_FAILED.
+                    self.report.reason = (getattr(self.device, "unavailable_reason", None)
+                                          or "screencap returned None")
                     break
 
                 # ---- 2. frame-stale guard ---------------------------------
@@ -354,6 +390,7 @@ class VisualServoSession:
                 t1 = time.perf_counter()
                 state = detector(roi_frame)
                 row.vision_ms = (time.perf_counter() - t1) * 1000.0
+                counters.record_opencv(row.vision_ms)
                 row.state_summary = self._summarise(state)
                 # Publish the actuator position into the state.  An outer control
                 # loop (e.g. "put the fishing LINE at x") needs to know where the
@@ -368,6 +405,7 @@ class VisualServoSession:
                 # ---- 5. lost-target policy --------------------------------
                 if missing:
                     lost_streak += 1
+                    counters.record_lost()
                     self.report.max_lost_streak = max(self.report.max_lost_streak, lost_streak)
                     if lost_streak == 1:
                         self.report.lost_events += 1
@@ -414,6 +452,11 @@ class VisualServoSession:
             self._release(f"SESSION_END:{self.report.outcome}")
             self.report.duration_s = time.monotonic() - started
             self.report.frames = index
+            try:
+                self._policy_gate.close()
+            except Exception:  # noqa: BLE001
+                pass
+            self.report.policy = counters.report()
             self.report.touch_sessions = self.sessions
             for r in self.sessions:
                 if r.get("stuck"):
@@ -502,6 +545,9 @@ class VisualServoSession:
             if spent < budget:
                 time.sleep(budget - spent)
         row.loop_ms = (time.monotonic() - loop_start) * 1000.0
+        counters = getattr(self, "_counters_for_loop", None)
+        if counters is not None:
+            counters.record_loop(row.loop_ms)
         if len(self.report.timeline) < self.cfg.max_frame_records:
             self.report.timeline.append(row.to_dict())
         elif index % 10 == 0:

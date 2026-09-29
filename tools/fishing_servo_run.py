@@ -74,7 +74,14 @@ def main() -> int:
             print(reason)
             return 3
 
+        # VISION POLICY V1 section F: OCR is allowed BEFORE entering the minigame
+        # (bait/points/tokens/attempts/timer) and AFTER leaving it (result/points/
+        # tokens/bait/rewards) — and is a hard error in between.  Both sides are
+        # counted so the run can prove which side each call was on.
+        ocr_outside = {"calls": 0}
+
         def txt(f):
+            ocr_outside["calls"] += 1
             return " ".join(t["text"] for t in read_all(Image.fromarray(f)))
 
         def cap(attempts=3):
@@ -240,6 +247,13 @@ def main() -> int:
         th.start()
         srep = session.run(det, ctrl, completed)
         rep["control_session"] = srep.to_dict()
+        pol = srep.to_dict().get("vision_policy", {})
+        rep["vision_policy"] = pol
+        rep["ocr_calls_outside_realtime"] = ocr_outside["calls"]
+        rep["ocr_zero_inside_realtime"] = (pol.get("ocr_calls_inside_realtime") == 0)
+        rep["control_hz"] = pol.get("control_hz")
+        rep["vision_hz"] = pol.get("vision_hz")
+        rep["lost_target_frames"] = pol.get("lost_target_frames")
         rep["detections"] = detectors
         rep["decisions"] = decisions
         rep["frames_saved"] = sampled
@@ -308,9 +322,12 @@ def main() -> int:
             "RESULT_PAGE": rep["result_page"],
             "BAIT_DECREASED": rep["bait_decreased"],
             "DEPTH_M": rep["depth_m"],
+            "OCR_ZERO_INSIDE_REALTIME": rep["ocr_zero_inside_realtime"],
+            "OCR_CALLS_OUTSIDE_REALTIME": rep["ocr_calls_outside_realtime"],
         }
         rep["FISHING_RUN_L4"] = all([rep["minigame_started"], rep["control_session_ran"],
-                                     rep["result_page"], rep["bait_decreased"]])
+                                     rep["result_page"], rep["bait_decreased"],
+                                     rep["ocr_zero_inside_realtime"]])
         rep["phase"] = "DONE"
         (outd / "run.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1),
                                        encoding="utf-8")
@@ -322,7 +339,12 @@ def main() -> int:
                           "control": {k: srep.to_dict()[k] for k in
                                       ("outcome", "frames", "duration_s", "presses",
                                        "moves_sent", "moves_skipped_dead_zone")},
-                          "timings": srep.timings()},
+                          "timings": srep.timings(),
+                          "control_hz": rep.get("control_hz"),
+                          "vision_hz": rep.get("vision_hz"),
+                          "lost_target_frames": rep.get("lost_target_frames"),
+                          "ocr_zero_inside_realtime": rep.get("ocr_zero_inside_realtime"),
+                          "ocr_calls_outside_realtime": rep.get("ocr_calls_outside_realtime")},
                          ensure_ascii=False, indent=1))
         print("EVIDENCE:", outd)
         return 0 if rep["FISHING_RUN_L4"] else 1

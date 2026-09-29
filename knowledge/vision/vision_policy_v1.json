@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "policy_id": "VISION_POLICY_V1",
+  "source": "OPERATOR_DIRECTIVE 2026-09-29",
+  "status": "ENFORCED_AND_TESTED",
+  "module": "winter_agent_v2/vision_policy.py",
+  "tests": "tools/test_vision_policy.py (50/50)",
+  "sections": {
+    "A_TARGET_LOCALIZATION": {
+      "default": "OpenCV",
+      "applies_to": ["buttons", "icons", "buildings", "hero portraits", "list rows",
+                     "red dots", "rally buttons", "formation slots", "hook", "fish",
+                     "obstacles", "minigame targets"],
+      "methods_in_order": ["TEMPLATE", "COLOR", "CONTOUR", "EDGE", "GEOMETRY",
+                           "STRUCTURE", "PHASH"],
+      "output": "a bbox MEASURED on the current frame",
+      "rule": "history absolute coordinates are never a cross-frame rule",
+      "how_it_is_enforced": "TargetSpec has no absolute click coordinate field at all; every Localization carries frame_token and require_fresh() refuses a measurement taken on another frame",
+      "reused_not_reimplemented": {
+        "TEMPLATE": "winter_agent_v2/matchers.match_ccoeff semantics (cv2 TM_CCOEFF_NORMED)",
+        "PHASH": "winter_agent_v2/image_hash.phash + hamming",
+        "COLOR/CONTOUR/EDGE/GEOMETRY/STRUCTURE": "cv2 directly"
+      }
+    },
+    "B_STATE_READING": {
+      "ocr_role": ["text", "numbers", "counts", "countdowns", "scores", "resource amounts",
+                   "task descriptions"],
+      "flow": "OpenCV locates the ROI -> crop -> RapidOCR",
+      "rule": "no unnecessary full-screen OCR",
+      "operating_vs_evidence": {
+        "operating_path": "ocr_roi.ocr_region (ROI-first) — this is what the game driver uses",
+        "evidence_path": "ocr_full.read_all (multi-channel whole-frame) — kept because the operator's earlier standing rule is that a screenshot handed over for review must be read completely. That rule is about READING EVIDENCE, not about driving the game, so it is not the operating path and is not used inside a control loop."
+      }
+    },
+    "C_REALTIME_CONTROL": {
+      "allowed_only": ["MAA fast capture", "OpenCV", "lightweight policy", "MAA input"],
+      "forbidden": ["OCR", "Qwen", "full world state", "global scheduler per frame"],
+      "fishing_loop": "capture ROI -> hook detection -> fish detection -> obstacle detection -> steering -> touch_move -> next frame",
+      "how_it_is_enforced": "guard_ocr()/guard_qwen() raise VisionPolicyViolation while a realtime_session is open; the guard is installed at the DEEPEST choke point (ocr.RapidOCRBackend.recognize) as well as at every named entry (executor_router._rapid_ocr_results, ocr_full.read_all, ocr_roi.ocr_region), so it cannot be routed around"
+    },
+    "D_FAST_SLOW_PATH": {
+      "FAST": {"stack": ["OpenCV", "action"],
+               "for": ["known buttons", "known pages", "Rally", "minigame",
+                       "repeat navigation"]},
+      "SLOW": {"stack": ["OpenCV", "local ROI OCR", "WorldState"],
+               "for": ["task discovery", "value reading", "rule reading", "countdowns",
+                       "unknown pages"]},
+      "UNKNOWN": {"qwen": "permitted only here"},
+      "routing": "choose_path(situation, target_known, needs_text); an unnamed situation is UNKNOWN, never assumed FAST"
+    },
+    "E_PRIORITY": {
+      "order": ["OPENCV_DIRECT", "STRUCTURAL", "ROI_OCR", "MULTI_FRAME", "QWEN_FALLBACK"],
+      "how_it_is_enforced": "Method is an IntEnum so the order is a number, and methods_for(path) returns only what a path may use; a test asserts FAST never yields an OCR method and that only UNKNOWN reaches QWEN",
+      "bug_found_and_fixed": "needs_ocr was originally `self >= ROI_OCR`, which wrongly classified MULTI_FRAME (cross-frame inference, not OCR) as needing OCR and silently banned it from the FAST path. It is now an explicit set."
+    },
+    "F_FISHING_HARD_CONSTRAINT": {
+      "before_minigame_ocr_allowed": ["bait", "points", "tokens", "attempts", "timer"],
+      "inside_session": {"OCR_CALLS": 0, "QWEN_CALLS": 0, "all_vision": "OpenCV"},
+      "after_minigame_ocr_allowed": ["result", "points", "tokens", "bait", "rewards"],
+      "how_it_is_enforced": "the servo opens a realtime_session around the loop; VisionCounters records ocr_calls_inside_realtime and the run refuses to call itself L4 without OCR_ZERO_INSIDE_REALTIME"
+    },
+    "G_PERFORMANCE": {
+      "counters": ["opencv_ms", "ocr_ms", "capture_ms", "control_loop_ms",
+                   "fps", "vision_hz", "control_hz", "lost_target_frames"],
+      "target": "10-20 Hz stable for a realtime control loop"
+    }
+  },
+  "measured": {
+    "device_bound_live": {
+      "capture_ms": 12.24, "control_hz": 21.28, "vision_hz": 21.28,
+      "input_ms": 0.3, "source": "dataset/raw/fishing_tournament/run_20260929T231017/run.json"
+    },
+    "replay_bound": {
+      "opencv_ms": 3.0,
+      "note": "REAL vision cost on the real pixels. fps/control_hz from a replay are the algorithm's ceiling, not the robot's, because the replay device returns a frame instantly — never quote them as device numbers.",
+      "source": "dataset/raw/fishing_tournament/replay_904_1136/replay.json"
+    },
+    "fishing_detector_accuracy": {
+      "gameplay_frames": 18, "gameplay_detected": 18, "gameplay_detection_rate": 1.0,
+      "nongameplay_frames": 12, "nongameplay_refused": 12, "nongameplay_refusal_rate": 1.0
+    }
+  },
+  "bugs_found_by_this_work": [
+    "visual_servo read device.unavailable_reason directly; on any device that is not MaaExecutorAdapter (ADB backend, replay device, test double) a null capture became an AttributeError and the loop reported ERROR instead of CAPTURE_FAILED. Now getattr.",
+    "Method.needs_ocr used an ordered comparison that misclassified MULTI_FRAME."
+  ],
+  "blockers": []
+}
