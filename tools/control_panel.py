@@ -343,12 +343,27 @@ def _pid_is_live(pid: int) -> bool:
     second implementation would be a second place for that mistake to live.  An
     unanswerable question returns True -- refusing to open a window because a liveness
     check failed is worse than opening a read-only one.
+
+    Both import spellings are tried, because the *panel* runs through
+    ``launch_pinned_production.py`` -> ``runpy.run_path`` with ``cwd=CODE_ROOT``, where
+    ``tools/`` is not on ``sys.path``: ``from panel_restart import alive`` raised
+    ``ModuleNotFoundError`` there and *only* there.  Measured 2026-09-30: that made the
+    except-branch fire for every call, so every pid answered "live" and AUTO was refused
+    for a whole window against a pid that did not exist --
+
+        03:41:11  另一个实例正在运行（pid 3168）：本窗口只读，不消费队列、不启动 AUTO
+        03:42:00  不自动启动 AUTO：另一个实例（pid 3168）正在运行。本窗口只读。
+
+    ``alive`` itself was never wrong: ``alive(3168)`` is False and ``alive(<panel pid>)``
+    is True.  Only the name it was looked up under was wrong.
     """
     if pid <= 0:
         return False
     try:
-        from panel_restart import alive  # type: ignore[import-not-found]
-
+        try:
+            from panel_restart import alive  # type: ignore[import-not-found]
+        except ImportError:
+            from tools.panel_restart import alive  # type: ignore[import-not-found]
         return bool(alive(pid))
     except Exception:  # noqa: BLE001
         return True

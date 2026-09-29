@@ -546,5 +546,57 @@ class NextCycleDelayLadder(unittest.TestCase):
         self.assertEqual(delay.delay_text, "活动节点前 12 秒")
 
 
+class PidLivenessInThePanelsOwnContext(unittest.TestCase):
+    """The instance guard must be answerable where the panel actually runs.
+
+    Measured 2026-09-30: the panel runs through ``launch_pinned_production.py`` ->
+    ``runpy.run_path`` with ``cwd=CODE_ROOT``, where ``tools/`` is not on ``sys.path``.
+    ``_pid_is_live`` used only ``from panel_restart import alive``, which raised
+    ``ModuleNotFoundError`` there, and its documented "unanswerable returns True" branch
+    then answered "live" for *every* pid.  A stale ``pump.json`` pid therefore blocked
+    AUTO for a whole window while reporting a process that did not exist:
+
+        03:41:11  另一个实例正在运行（pid 3168）：本窗口只读，不消费队列、不启动 AUTO
+        03:42:00  不自动启动 AUTO：另一个实例（pid 3168）正在运行。本窗口只读。
+
+    ``alive`` was never wrong -- ``alive(3168)`` is False.  Only the name it was looked up
+    under was wrong.
+    """
+
+    def test_a_dead_pid_is_not_reported_live(self):
+        self.assertFalse(cp._pid_is_live(0))
+        self.assertFalse(cp._pid_is_live(-1))
+        # A pid that cannot exist.  With the bare-name-only import this answered True in the
+        # panel's own cwd, which is the whole defect.
+        self.assertFalse(cp._pid_is_live(999_999_999))
+
+    def test_a_live_pid_is_reported_live(self):
+        import os
+
+        self.assertTrue(cp._pid_is_live(os.getpid()))
+
+    def test_the_answer_survives_the_panels_own_working_directory_and_import_path(self):
+        # Reproduce the real context in a subprocess: cwd is the repo root, ``tools/`` is not
+        # on the path, so the bare ``panel_restart`` import fails exactly as it does in the
+        # panel.  This is the regression test for the fallback spellings.
+        import os
+        import subprocess
+        import sys
+
+        root = Path(__file__).resolve().parents[1]
+        env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+        script = (
+            "import os, sys\n"
+            "from tools.control_panel import _pid_is_live\n"
+            "print(_pid_is_live(999999999), _pid_is_live(os.getpid()))\n"
+        )
+        done = subprocess.run(
+            [sys.executable, "-c", script], cwd=str(root), env=env,
+            capture_output=True, text=True, timeout=180,
+        )
+        self.assertEqual(done.returncode, 0, done.stderr[-2000:])
+        self.assertEqual(done.stdout.strip(), "False True", done.stdout + done.stderr[-1000:])
+
+
 if __name__ == "__main__":
     unittest.main()
