@@ -15,7 +15,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tkinter import ttk
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping, NamedTuple
 
 from PIL import Image, ImageDraw, ImageTk
 
@@ -1031,6 +1031,85 @@ def should_continue_auto_cycle(
 
 
 ROLE_SWITCH_RETRY_DELAY_MS = 15_000
+
+# The runtime re-observes the same role inside its own run when the Scheduler finds no
+# candidate for it (TASK THROUGHPUT V1 §10).  This reason only reaches the panel after that
+# in-process bound is exhausted.  See ``next_cycle_delay``.
+ROLE_REOBSERVE_REASON = "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE"
+
+
+class CycleDelay(NamedTuple):
+    """How long the panel waits before starting the next AUTO round."""
+
+    delay_ms: int
+    delay_text: str
+    immediate: bool
+
+
+def activity_bounded_wait_ms(ms: int) -> int:
+    """Cap an AUTO-round wait at the next scheduled activity node.
+
+    An unreadable event clock must keep ordinary polling rather than abort the wait, so
+    the requested delay is returned unchanged when the clock cannot be read.
+    """
+    try:
+        return int(event_schedule.bounded_poll_delay_seconds(ms / 1000.0, event_schedule.load()) * 1000)
+    except Exception:  # noqa: BLE001 -- an unreadable event clock keeps ordinary polling
+        return ms
+
+
+def next_cycle_delay(
+    *, reason: str, summary: Mapping[str, Any], role_handoff: bool,
+    retryable_role_switch: bool, bound_ms: Callable[[int], int] | None = None,
+) -> CycleDelay:
+    """Decide the wait before the next AUTO round.
+
+    Extracted from ``ControlPanel._schedule_next_cycle`` so the ladder can be tested
+    without a Tk root.  Four different things used to collapse into one 30-second wait:
+
+        A  this ``run_live.py`` subprocess ended
+        B  one repeatable goal finished its current pass
+        C  this character has no executable work left
+        D  the whole AUTO work cycle is done
+
+    A round that spent its action budget on real actions has, by definition, more of this
+    cycle to do, so it continues at once.  A round that failed to resolve a target is the
+    "this goal cannot act right now" case: yielding to another goal immediately is what the
+    operator asked for, and it is bounded -- the no-progress deferral counts those episodes
+    and stands the goal down after three, so this cannot spin.  Everything else keeps the
+    existing breather, which is the loop protection: this must not become a tight restart
+    loop on an environmental failure.
+
+    ``ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE`` is the newest member of the "continue at once"
+    set.  The account is unchanged and the very next observation is exactly what the reason
+    asks for, so waiting on it is pure device idle (TASK THROUGHPUT V1 §23/§24).  Measured
+    on pin 553d8df (2026-09-30 03:13:19-03:14:37 local; ``runtime_loaded_revision`` in
+    ``learning/control_panel/pump.json`` confirms the pin): a round of three successful
+    actions ended for this reason and no further round ever started.  The classifier half of
+    that outage is fixed in ``runtime_snapshot``; this half removes the residual wait that
+    would otherwise remain on an account that has not changed.
+
+    ``bound_ms`` lets the caller cap the wait at the next activity node; it must be a pure
+    function of the delay so this decision stays reproducible.
+    """
+    no_progress_stall = summary["reason"] == "SEMANTIC_TARGET_NOT_VERIFIED"
+    spent_its_budget = summary["reason"] == "MAX_ACTIONS_REACHED" and summary["executed"] > 0
+    full_queue = summary["reason"] in {"no_idle_march", "reserved_march_for_stamina"}
+    global_wait = reason == "GLOBAL_WAIT"
+    role_reobserve = reason == ROLE_REOBSERVE_REASON
+    immediate = no_progress_stall or spent_its_budget or role_handoff or role_reobserve
+    delay_ms = (ROLE_SWITCH_RETRY_DELAY_MS if retryable_role_switch else 0 if immediate else 600000 if full_queue
+                else _global_wait_delay_ms(reason) if global_wait else 30000)
+    if delay_ms > 0 and bound_ms is not None:
+        delay_ms = int(bound_ms(delay_ms))
+    delay_text = ("15 秒后重新观察当前角色" if retryable_role_switch else
+                  "立即刷新角色" if role_handoff else
+                  "立即" if immediate else
+                  (f"{max(1, delay_ms // 1000)} 秒后唤醒" if global_wait else
+                   "10 分钟" if full_queue else "30 秒"))
+    if not immediate and not retryable_role_switch and delay_ms < (600000 if full_queue else 30000):
+        delay_text = f"活动节点前 {max(1, delay_ms // 1000)} 秒"
+    return CycleDelay(delay_ms=delay_ms, delay_text=delay_text, immediate=immediate)
 
 
 def human_reason(value: Any) -> str:
@@ -6111,41 +6190,21 @@ class ControlPanel:
             # CLOSE_POPUP failed three rounds in a row, no DISPATCH/MARCH episode appeared at all,
             # and every single round was followed by the full wait.
             #
-            # A round that spent its action budget on real actions has, by definition, more of this
-            # cycle to do, so it continues at once.  A round that failed to resolve a target is the
-            # "this goal cannot act right now" case: yielding to another goal immediately is what
-            # the operator asked for, and it is bounded -- the no-progress deferral now counts those
-            # episodes and stands the goal down after three, so this cannot spin here.
-            #
-            # Everything else keeps the existing breather, which is the loop protection: this must
-            # not become a tight restart loop on an environmental failure.
-            no_progress_stall = summary["reason"] == "SEMANTIC_TARGET_NOT_VERIFIED"
-            spent_its_budget = summary["reason"] == "MAX_ACTIONS_REACHED" and summary["executed"] > 0
-            full_queue = summary["reason"] in {"no_idle_march", "reserved_march_for_stamina"}
-            global_wait = reason == "GLOBAL_WAIT"
-            immediate = no_progress_stall or spent_its_budget or role_handoff
-            delay_ms = (ROLE_SWITCH_RETRY_DELAY_MS if retryable_role_switch else 0 if immediate else 600000 if full_queue
-                        else _global_wait_delay_ms(reason) if global_wait else 30000)
-            if delay_ms > 0:
-                try:
-                    delay_ms = int(event_schedule.bounded_poll_delay_seconds(
-                        delay_ms / 1000.0, event_schedule.load()
-                    ) * 1000)
-                except Exception:  # noqa: BLE001 -- an unreadable event clock keeps ordinary polling
-                    pass
-            delay_text = ("15 秒后重新观察当前角色" if retryable_role_switch else
-                          "立即刷新角色" if role_handoff else
-                          "立即" if immediate else
-                          (f"{max(1, delay_ms // 1000)} 秒后唤醒" if global_wait else
-                           "10 分钟" if full_queue else "30 秒"))
-            if not immediate and not retryable_role_switch and delay_ms < (600000 if full_queue else 30000):
-                delay_text = f"活动节点前 {max(1, delay_ms // 1000)} 秒"
+            # The ladder itself now lives in ``next_cycle_delay`` so it can be tested without a
+            # Tk root; the loop-protection reasoning is documented there.
+            decision = next_cycle_delay(
+                reason=reason, summary=summary, role_handoff=role_handoff,
+                retryable_role_switch=retryable_role_switch, bound_ms=activity_bounded_wait_ms,
+            )
+            delay_ms, delay_text, immediate = decision
             self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
             self._append(f"连续运行已启用，{delay_text}后进入下一轮。"
                          + ("（角色切换已确认，本轮重启只用于刷新目标角色状态）" if role_handoff else
                             "（目标角色已有切换退避；下一轮重新读取当前角色与页面）" if retryable_role_switch else
+                            "（角色仍持有设备，立即重新观察同一角色）"
+                            if reason == ROLE_REOBSERVE_REASON else
                             "（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
 
     def _enforce_retention(self) -> None:

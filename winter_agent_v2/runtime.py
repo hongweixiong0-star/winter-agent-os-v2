@@ -45,6 +45,16 @@ ROLE_REFRESH_ONLY_REASONS = frozenset({
     ACTIVE_ROLE_NO_CANDIDATE,
 })
 
+#: How many consecutive re-observations of the same role one run may pay for in-process before
+#: it ends and lets the control plane decide again.  TASK THROUGHPUT V1 §23/§24: re-observing
+#: the same account is the wanted behaviour, but the *way* it was obtained was to end the run,
+#: and a panel round costs a subprocess restart plus, for this reason, a 30-second breather
+#: before it.  Measured 2026-09-30 on pin 7055f02: a run ended at 03:14:37 after three
+#: successful actions and the next round's first action never came at all.  Bounded rather
+#: than unlimited because a role that can never produce a candidate must still end its run;
+#: the Role Session's own ``no_work_streak`` (2) opens the switch gate within this bound.
+MAX_ROLE_REFRESH_TICKS_PER_RUN = 3
+
 from .goal_library import (
     GoalLibrary, GoalStateStore, action_relevant_goal_ids,
     newly_completed_goal_ids, progress_moved, route_for,
@@ -556,6 +566,9 @@ class LiveRuntime:
         self.max_unknown_page_backs = max_unknown_page_backs
         self.max_verification_retries = max_verification_retries
         self.max_battle_reobservations = max_battle_reobservations
+        # TASK THROUGHPUT V1 §23: in-process re-observation of the same role, in place of ending
+        # the run and paying a panel round for it.  See MAX_ROLE_REFRESH_TICKS_PER_RUN.
+        self.max_role_refresh_ticks = MAX_ROLE_REFRESH_TICKS_PER_RUN
         self.observation_retries = observation_retries
         self.sleeper = sleeper
         #: Set by ``_device_lost`` when the transport dies mid-run, and read by the
@@ -6005,6 +6018,9 @@ class LiveRuntime:
         # one retry per camp, after role, page, popup, panel, and static-camera checks.
         training_focus_retry_used: set[str] = set()
         pending_training_focus_retry: dict[str, Any] | None = None
+        # Consecutive ticks this run re-observed the active role instead of acting.  Cleared
+        # whenever an action actually executes, so it counts a streak and not a total.
+        role_refresh_ticks = 0
 
         for index in range(1, max_actions + 1):
             latency_started = time.monotonic()
@@ -6326,20 +6342,52 @@ class LiveRuntime:
                 elif selection.decision.reason in ROLE_REFRESH_ONLY_REASONS \
                         and selection.index is None:
                     reason = selection.decision.reason
+                    # TASK THROUGHPUT V1 §10/§23/§24.  This verdict says "look at this same
+                    # account again", not "this account is finished", and the *account* is
+                    # already kept -- but the run was ended to obtain the re-observation, and
+                    # that is what the directive calls device idle while work exists:
+                    #
+                    #   measured on pin 7055f02, 2026-09-30: run ended 03:14:37 after three
+                    #   successful actions (OPEN_MAIL, MAIL_CLAIM_REWARDS, DISMISS_SHARED_REWARD)
+                    #   with ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE; the panel then waited 30 s and
+                    #   started a fresh subprocess, and the device sat idle.  Ending the run also
+                    #   classified this reason as SYSTEM_FAILURE, so the panel's own
+                    #   ``should_continue_auto_cycle`` returned False and AUTO stopped outright.
+                    #
+                    # So: re-observe in this run.  Bounded, because a role that never plans a
+                    # candidate must still end its run rather than spin here.
+                    role_refresh_ticks += 1
+                    if role_refresh_ticks > self.max_role_refresh_ticks:
+                        self._runtime(
+                            agent_state=AgentState.IDLE.value,
+                            current_goal="GLOBAL_SCHEDULER",
+                            current_skill=reason,
+                            reason=selection.selection_reason,
+                            next_action=selection.next_wakeup or "bounded global refresh",
+                            stop_reason=reason,
+                        )
+                        print(
+                            f"[global-role] {reason}; {role_refresh_ticks} consecutive "
+                            f"re-observations reached the limit -- ending the run; "
+                            f"{selection.selection_reason}",
+                            flush=True,
+                        )
+                        return finish(reason)
+                    # ``AUTO_RUNNING`` and no stop_reason on purpose: the run has not stopped.
                     self._runtime(
-                        agent_state=AgentState.IDLE.value,
+                        agent_state=AgentState.AUTO_RUNNING.value,
                         current_goal="GLOBAL_SCHEDULER",
                         current_skill=reason,
                         reason=selection.selection_reason,
-                        next_action=selection.next_wakeup or "bounded global refresh",
-                        stop_reason=reason,
+                        next_action="re-observe the same role in this run",
                     )
                     print(
-                        f"[global-role] {reason}; wake={selection.next_wakeup or 'bounded refresh'}; "
+                        f"[global-role] {reason}; re-observing the same role in this run "
+                        f"({role_refresh_ticks}/{self.max_role_refresh_ticks}); "
                         f"{selection.selection_reason}",
                         flush=True,
                     )
-                    return finish(reason)
+                    continue
                 elif selection.role_id == active_role_id and selection.index is not None:
                     decision = selection.decision
                     global_credited_goal_ids = selection.credited_goal_ids
@@ -6783,6 +6831,9 @@ class LiveRuntime:
                 if tick.execution is not None and tick.execution.latency_ms is not None else None
             )
             self._runtime(last_action_time=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat())
+            if tick.execution is not None and tick.execution.executed:
+                # A real action ran, so whatever re-observation streak preceded it is over.
+                role_refresh_ticks = 0
             if tick.execution is None or not tick.execution.executed:
                 self._record_episode(
                     decision=tick.decision, before=before, execution=tick.execution,

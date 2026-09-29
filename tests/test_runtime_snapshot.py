@@ -46,3 +46,77 @@ def test_unmapped_safe_stop_is_a_capability_gap_not_system_failure() -> None:
     category, state = state_for_stop_reason("new_unmapped_reason", decision_skill="SAFE_STOP")
     assert category is StopCategory.CAPABILITY_GAP
     assert state is AgentState.SAFE_STOP
+
+
+def test_a_role_re_observation_request_is_not_a_system_failure() -> None:
+    """TASK THROUGHPUT V1 §24: an unclassified stop reason stopped AUTO and idled the device.
+
+    Measured on pin 7055f02, 2026-09-30.  A run ended with
+    ``ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE`` after three successful actions
+    (OPEN_MAIL / MAIL_CLAIM_REWARDS / DISMISS_SHARED_REWARD).  The reason was not in any of
+    the recognised sets, so ``classify_stop_reason`` fell through to SYSTEM_FAILURE, the
+    panel's ``healthy`` became false, ``should_continue_auto_cycle`` returned False, and AUTO
+    stopped -- the device then sat idle while the account still had runnable Goals.
+    """
+    category, state = state_for_stop_reason(
+        "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE", decision_skill="GLOBAL_SCHEDULER"
+    )
+    assert category is StopCategory.CAPABILITY_GAP
+    assert state is AgentState.SAFE_STOP
+    assert not is_fatal_stop("ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE")
+
+
+def test_every_keep_current_reason_survives_the_classifier() -> None:
+    """The runtime's no-switch verdicts must never read as an unhealthy stop.
+
+    ``ROLE_REFRESH_ONLY_REASONS`` is the set the runtime uses to mean "do not switch; look at
+    the same account again".  A member the classifier does not recognise falls through to
+    SYSTEM_FAILURE, which stops the whole AUTO cycle -- so adding a new member to that set
+    without registering it here is a production outage, not a cosmetic omission.  This is the
+    guard for that pair.
+    """
+    from winter_agent_v2.runtime import ROLE_REFRESH_ONLY_REASONS
+
+    assert ROLE_REFRESH_ONLY_REASONS, "the no-switch reason set must not be empty"
+    for reason in sorted(ROLE_REFRESH_ONLY_REASONS):
+        category, _state = state_for_stop_reason(reason, decision_skill="GLOBAL_SCHEDULER")
+        assert category is not StopCategory.SYSTEM_FAILURE, (
+            f"{reason} classifies as {category.value}, which stops AUTO"
+        )
+
+
+def test_a_role_re_observation_request_is_not_a_system_failure() -> None:
+    """TASK THROUGHPUT V1 §24: an unclassified stop reason stopped AUTO and idled the device.
+
+    Measured on pin 7055f02, 2026-09-30.  A run ended with
+    ``ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE`` after three successful actions
+    (OPEN_MAIL / MAIL_CLAIM_REWARDS / DISMISS_SHARED_REWARD).  The reason was not in any of
+    the recognised sets, so ``classify_stop_reason`` fell through to SYSTEM_FAILURE, the
+    panel's ``healthy`` became false, ``should_continue_auto_cycle`` returned False, and AUTO
+    stopped -- the device then sat idle while the account still had runnable Goals.
+    """
+    category, state = state_for_stop_reason(
+        "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE", decision_skill="GLOBAL_SCHEDULER"
+    )
+    assert category is StopCategory.CAPABILITY_GAP
+    assert state is AgentState.SAFE_STOP
+    assert not is_fatal_stop("ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE")
+
+
+def test_every_keep_current_reason_survives_the_classifier() -> None:
+    """The runtime's no-switch verdicts must never read as an unhealthy stop.
+
+    ``ROLE_REFRESH_ONLY_REASONS`` is the set the runtime uses to mean "do not switch; look at
+    the same account again".  A member the classifier does not recognise falls through to
+    SYSTEM_FAILURE, which stops the whole AUTO cycle -- so adding a new member to that set
+    without registering it here is a production outage, not a cosmetic omission.  This is the
+    guard for that pair.
+    """
+    from winter_agent_v2.runtime import ROLE_REFRESH_ONLY_REASONS
+
+    assert ROLE_REFRESH_ONLY_REASONS, "the no-switch reason set must not be empty"
+    for reason in sorted(ROLE_REFRESH_ONLY_REASONS):
+        category, _state = state_for_stop_reason(reason, decision_skill="GLOBAL_SCHEDULER")
+        assert category is not StopCategory.SYSTEM_FAILURE, (
+            f"{reason} classifies as {category.value}, which stops AUTO"
+        )

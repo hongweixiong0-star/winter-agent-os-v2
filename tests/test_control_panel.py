@@ -431,5 +431,120 @@ class ControlPanelTests(unittest.TestCase):
         self.assertIn("RUNTIME_PATH", worker)
 
 
+class NextCycleDelayLadder(unittest.TestCase):
+    """TASK THROUGHPUT V1 §23/§24.
+
+    A round that spent its action budget, stalled on a target, handed the device to
+    another role, or asked to re-observe the same role has more of this cycle to do and
+    must restart at once.  Everything else keeps the breather that stops the panel from
+    becoming a tight restart loop on an environmental failure.
+    """
+
+    def _summary(self, reason, executed=0):
+        return {"reason": reason, "executed": executed}
+
+    def test_a_role_re_observation_restarts_at_once(self):
+        # Measured live: a round on pin 7055f02 ended 03:14:37 with this reason after
+        # three successful actions and the panel then idled 30 s.  The device was idle
+        # while the account still had runnable Goals (DEVICE_IDLE_WHILE_WORK_EXISTS).
+        delay = cp.next_cycle_delay(
+            reason=cp.ROLE_REOBSERVE_REASON,
+            summary=self._summary(cp.ROLE_REOBSERVE_REASON),
+            role_handoff=False, retryable_role_switch=False,
+        )
+        self.assertTrue(delay.immediate)
+        self.assertEqual(delay.delay_ms, 0)
+        self.assertEqual(delay.delay_text, "立即")
+
+    def test_a_spent_action_budget_restarts_at_once(self):
+        delay = cp.next_cycle_delay(
+            reason="MAX_ACTIONS_REACHED",
+            summary=self._summary("MAX_ACTIONS_REACHED", executed=24),
+            role_handoff=False, retryable_role_switch=False,
+        )
+        self.assertTrue(delay.immediate)
+        self.assertEqual(delay.delay_ms, 0)
+
+    def test_a_stalled_target_restarts_at_once(self):
+        delay = cp.next_cycle_delay(
+            reason="SEMANTIC_TARGET_NOT_VERIFIED",
+            summary=self._summary("SEMANTIC_TARGET_NOT_VERIFIED"),
+            role_handoff=False, retryable_role_switch=False,
+        )
+        self.assertTrue(delay.immediate)
+
+    def test_a_role_handoff_restarts_at_once_with_its_own_wording(self):
+        delay = cp.next_cycle_delay(
+            reason="ROLE_SWITCHED_TO:ROLE_B",
+            summary=self._summary("ROLE_SWITCHED_TO:ROLE_B"),
+            role_handoff=True, retryable_role_switch=False,
+        )
+        self.assertTrue(delay.immediate)
+        self.assertEqual(delay.delay_text, "立即刷新角色")
+
+    def test_an_empty_action_budget_keeps_the_breather(self):
+        # ``executed == 0`` means the round resolved no target at all; that is the
+        # environmental-failure shape the breather exists to contain.
+        delay = cp.next_cycle_delay(
+            reason="MAX_ACTIONS_REACHED",
+            summary=self._summary("MAX_ACTIONS_REACHED", executed=0),
+            role_handoff=False, retryable_role_switch=False,
+        )
+        self.assertFalse(delay.immediate)
+        self.assertEqual(delay.delay_ms, 30_000)
+        self.assertEqual(delay.delay_text, "30 秒")
+
+    def test_a_retryable_role_switch_keeps_its_cooldown(self):
+        delay = cp.next_cycle_delay(
+            reason="ROLE_SWITCH_FAILED:ROLE_A:SOURCE_ROLE_HOME_NOT_CONFIRMED",
+            summary=self._summary("ROLE_SWITCH_FAILED:ROLE_A:SOURCE_ROLE_HOME_NOT_CONFIRMED"),
+            role_handoff=False, retryable_role_switch=True,
+        )
+        self.assertFalse(delay.immediate)
+        self.assertEqual(delay.delay_ms, cp.ROLE_SWITCH_RETRY_DELAY_MS)
+
+    def test_the_reason_that_stopped_auto_lets_the_next_round_start(self):
+        # The live outage, end to end: a round on pin 553d8df ended 03:14:37 for this
+        # reason after three successful actions, the classifier called it a system
+        # failure, ``should_continue_auto_cycle`` then said no, and AUTO never started
+        # another round -- the device sat idle while the account still had runnable
+        # Goals.  Both halves of that chain are asserted here.
+        summary = summarize_runtime_result({
+            "stop_reason": cp.ROLE_REOBSERVE_REASON,
+            "steps": [{"decision": {"skill": "OPEN_MAIL"},
+                       "execution": {"executed": True}, "verification": {"ok": True}}],
+        }, 0)
+        self.assertNotEqual(summary["stop_category"], "SYSTEM_FAILURE")
+        self.assertTrue(summary["healthy"])
+        self.assertTrue(cp.should_continue_auto_cycle(
+            healthy=summary["healthy"], reason=cp.ROLE_REOBSERVE_REASON, continuous=True,
+            stop_requested=False, paused=False, fatal=False,
+        ))
+
+    def test_a_missing_activity_clock_falls_back_to_the_unbounded_wait(self):
+        from winter_agent_v2 import event_schedule
+
+        def broken(_seconds, _schedule):
+            raise RuntimeError("event clock unreadable")
+
+        with patch.object(event_schedule, "bounded_poll_delay_seconds", broken):
+            bounded = cp.activity_bounded_wait_ms(600_000)
+        self.assertEqual(bounded, 600_000, "an unreadable clock must keep ordinary polling")
+        delay = cp.next_cycle_delay(
+            reason="no_idle_march", summary=self._summary("no_idle_march"),
+            role_handoff=False, retryable_role_switch=False, bound_ms=cp.activity_bounded_wait_ms,
+        )
+        self.assertEqual(delay.delay_ms, 600_000)
+        self.assertEqual(delay.delay_text, "10 分钟")
+
+    def test_the_wait_is_capped_at_the_next_activity_node(self):
+        delay = cp.next_cycle_delay(
+            reason="GLOBAL_WAIT", summary=self._summary("GLOBAL_WAIT"),
+            role_handoff=False, retryable_role_switch=False, bound_ms=lambda _ms: 12_345,
+        )
+        self.assertEqual(delay.delay_ms, 12_345)
+        self.assertEqual(delay.delay_text, "活动节点前 12 秒")
+
+
 if __name__ == "__main__":
     unittest.main()

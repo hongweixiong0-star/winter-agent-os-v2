@@ -102,10 +102,20 @@ NON_FATAL_STOPS = {
     # this run's search, not about any goal and not about the device, so a reader of this
     # table should find it here instead of inferring it from what it does not start with.
     "every_page_this_run_was_fruitless", "GLOBAL_WAIT",
+    # Sibling of ``GLOBAL_WAIT``: an honest "nothing planned this tick", not a device fault.
+    "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE",
 }
 
 EXPECTED_NO_ACTION_STOPS = frozenset({
     "every_page_this_run_was_fruitless",
+    # TASK THROUGHPUT V1 §24.  The Scheduler's "nothing to do now; wake at the next event"
+    # verdict is a keep-current role decision, and the panel already plans a scheduled wakeup
+    # for it (``_global_wait_delay_ms`` -> ``event_schedule.bounded_poll_delay_seconds``).  It
+    # was listed as NON_FATAL but never as EXPECTED, so ``classify_stop_reason`` fell through
+    # to SYSTEM_FAILURE and the panel's ``healthy`` became false -- which stopped AUTO, so that
+    # scheduled wakeup could never run.  Found by
+    # ``test_every_keep_current_reason_survives_the_classifier``.
+    "GLOBAL_WAIT",
     "no_idle_march", "reserved_march_for_stamina",
     "mail_all_clear", "exploration_income_not_ready",
     "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable",
@@ -122,6 +132,13 @@ CAPABILITY_GAP_STOPS = frozenset({
     "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
     "GLOBAL_CANDIDATE_GENERATION_GAP", "ROLE_IDENTITY_UNCONFIRMED",
     "all_tasks_unavailable", "SEMANTIC_NOT_FOUND", "SEMANTIC_TARGET_NOT_VERIFIED",
+    # The active role's Brain answered SAFE_STOP/WAIT for one tick, so the Scheduler produced
+    # no candidate for it and asked for the same account to be observed again.  It belongs with
+    # ``GLOBAL_CANDIDATE_GENERATION_GAP`` -- both are "this scheduling planned nothing", neither
+    # is a statement about the device.  Missing from this set, it fell through
+    # ``classify_stop_reason`` to SYSTEM_FAILURE, which made the panel's ``healthy`` false and
+    # stopped AUTO entirely; measured on pin 7055f02, 2026-09-30, the device then sat idle.
+    "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE",
 })
 COMPLETED_STOPS = frozenset({"MAX_ACTIONS_REACHED", "TARGET_SKILL_VERIFIED"})
 
