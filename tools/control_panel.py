@@ -615,15 +615,51 @@ def _global_wait_delay_ms(reason: str, *, now: datetime | None = None) -> int:
     # the source time is unexpectedly far away.
     return int(min(seconds, 24 * 60 * 60) * 1000)
 
+def _global_decision_timeline(history: Any, names: dict[str, str], *, limit: int = 10) -> str:
+    """Format persisted arbitration decisions for the operator console."""
+    if not isinstance(history, list):
+        return "暂无历史决策"
+    rows = [row for row in history if isinstance(row, dict)][-max(1, int(limit)):]
+    if not rows:
+        return "暂无历史决策"
+    decision_labels = {
+        "KEEP_ROLE": "保持角色",
+        "ROLE_REFRESH_REQUIRED": "请求切换",
+        "GLOBAL_WAIT": "全局等待",
+        "ROLE_SWITCH_FAILED": "切换失败",
+    }
+    lines = []
+    for row in rows:
+        stamp = str(row.get("at") or row.get("timestamp") or "")
+        when = stamp.replace("T", " ")[:19] if stamp else "时间未知"
+        source = str(row.get("current_role_id") or "")
+        target = str(row.get("selected_role_id") or source)
+        source_name = names.get(source, source or "未知")
+        target_name = names.get(target, target or "未知")
+        kind = str(row.get("decision") or "").upper()
+        if kind == "GLOBAL_WAIT":
+            selection = "全局等待"
+        elif kind == "KEEP_ROLE" or (source and source == target):
+            selection = f"保持 {target_name}"
+        else:
+            selection = f"{decision_labels.get(kind, kind or '选择')} {source_name}→{target_name}"
+        goal = str(row.get("selected_goal_id") or row.get("selected_skill_id") or "无目标")
+        reason = " ".join(str(row.get("reason") or "暂无原因").split())
+        if len(reason) > 72:
+            reason = reason[:69] + "..."
+        lines.append(f"{when}｜{selection}｜{goal}｜{reason}")
+    return "\n".join(lines)
+
+
 def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
     """Render the persisted arbitration decision without inventing live role state."""
     try:
         payload = json.loads((root / "learning/global_scheduler_state.json").read_text(encoding="utf-8"))
         catalog = json.loads((root / "knowledge/roles/role_inventory.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, TypeError):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "metrics": "暂无切换样本"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
     if not isinstance(payload, dict):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "metrics": "暂无切换样本"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
     names = {
         str(row.get("role_id")): str(row.get("role_key") or row.get("display_name") or row.get("role_id"))
         for row in (catalog.get("roles", []) if isinstance(catalog, dict) else [])
@@ -676,6 +712,7 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
         "current": current,
         "roles": role_lines,
         "decision": f"{action} → {selected_label} {selected_goal} / {selected_skill}；{why}",
+        "timeline": _global_decision_timeline(payload.get("decision_history"), names),
         "wakeup": next_wakeup,
         "metrics": f"切换 {metrics['count']} 次｜成功率 {rate}｜p50 {p50}｜p95 {p95}",
     }
@@ -4005,11 +4042,12 @@ class ControlPanel:
             row=0, column=0, columnspan=2, sticky="w")
         self.global_role_vars = {
             key: tk.StringVar(value="等待双角色状态")
-            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics")
+            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics", "timeline")
         }
         for row, (label, key) in enumerate((
             ("当前角色", "current"), ("角色 A", "role_a"), ("角色 B", "role_b"),
             ("最近决策", "decision"), ("下一唤醒", "wakeup"), ("切换指标", "metrics"),
+            ("最近 10 次选择", "timeline"),
         ), 1):
             ttk.Label(dual, text=label, style="Muted.TLabel", background=PANEL, width=12).grid(
                 row=row, column=0, sticky="nw", padx=(0, 8), pady=2)
@@ -4066,6 +4104,7 @@ class ControlPanel:
             self.global_role_vars["decision"].set(global_view.get("decision", "暂无"))
             self.global_role_vars["wakeup"].set(global_view.get("wakeup", "无"))
             self.global_role_vars["metrics"].set(global_view.get("metrics", "暂无"))
+            self.global_role_vars["timeline"].set(global_view.get("timeline", "暂无历史决策"))
         except (AttributeError, OSError, TypeError, ValueError):
             # The live runtime status remains usable when the optional global state
             # artifact has not been created yet or is malformed.
