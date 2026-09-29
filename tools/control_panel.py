@@ -829,6 +829,26 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
             "ok": exit_code == 0 and failures == 0 and category in normal_ends}
 
 
+def should_continue_auto_cycle(
+    *, healthy: bool, reason: str, continuous: bool,
+    stop_requested: bool, paused: bool, fatal: bool,
+) -> bool:
+    """Keep the global scheduler alive after a bounded role-switch failure.
+
+    A round can include a verifier failure from one yielded Goal and then end at a
+    role-switch boundary. The failure stays visible in the run summary, but it must
+    not cancel the next fresh observation that lets the other role continue.
+    """
+    retryable_role_switch = str(reason or "").startswith("ROLE_SWITCH_FAILED:")
+    return bool(
+        continuous and not stop_requested and not paused and not fatal
+        and (healthy or retryable_role_switch)
+    )
+
+
+ROLE_SWITCH_RETRY_DELAY_MS = 15_000
+
+
 def human_reason(value: Any) -> str:
     if value is None or value == "":
         return "暂无数据"
@@ -5875,7 +5895,12 @@ class ControlPanel:
         self.runtime_store.update(agent_state=summary["agent_state"], stop_category=category,
                                   runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=summary["reason"],
                                   last_fatal_error=summary["reason"] if fatal else None)
-        if self.continuous.get() and summary["healthy"] and not fatal and not self.stop_requested and not self.paused:
+        retryable_role_switch = reason.startswith("ROLE_SWITCH_FAILED:")
+        if should_continue_auto_cycle(
+            healthy=summary["healthy"], reason=reason,
+            continuous=self.continuous.get(), stop_requested=self.stop_requested,
+            paused=self.paused, fatal=fatal,
+        ):
             # Four different things used to collapse into one 30-second wait:
             #
             #   A  this ``run_live.py`` subprocess ended
@@ -5901,7 +5926,7 @@ class ControlPanel:
             full_queue = summary["reason"] in {"no_idle_march", "reserved_march_for_stamina"}
             global_wait = reason == "GLOBAL_WAIT"
             immediate = no_progress_stall or spent_its_budget or role_handoff
-            delay_ms = (0 if immediate else 600000 if full_queue
+            delay_ms = (ROLE_SWITCH_RETRY_DELAY_MS if retryable_role_switch else 0 if immediate else 600000 if full_queue
                         else _global_wait_delay_ms(reason) if global_wait else 30000)
             if delay_ms > 0:
                 try:
@@ -5910,17 +5935,19 @@ class ControlPanel:
                     ) * 1000)
                 except Exception:  # noqa: BLE001 -- an unreadable event clock keeps ordinary polling
                     pass
-            delay_text = ("立即刷新角色" if role_handoff else
+            delay_text = ("15 秒后重新观察当前角色" if retryable_role_switch else
+                          "立即刷新角色" if role_handoff else
                           "立即" if immediate else
                           (f"{max(1, delay_ms // 1000)} 秒后唤醒" if global_wait else
                            "10 分钟" if full_queue else "30 秒"))
-            if not immediate and delay_ms < (600000 if full_queue else 30000):
+            if not immediate and not retryable_role_switch and delay_ms < (600000 if full_queue else 30000):
                 delay_text = f"活动节点前 {max(1, delay_ms // 1000)} 秒"
             self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
             self._append(f"连续运行已启用，{delay_text}后进入下一轮。"
                          + ("（角色切换已确认，本轮重启只用于刷新目标角色状态）" if role_handoff else
+                            "（目标角色已有切换退避；下一轮重新读取当前角色与页面）" if retryable_role_switch else
                             "（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
 
     def _enforce_retention(self) -> None:

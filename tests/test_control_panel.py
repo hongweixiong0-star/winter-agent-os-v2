@@ -176,6 +176,27 @@ class ControlPanelTests(unittest.TestCase):
         payload = {"stop_reason": "VERIFIER_UNKNOWN", "steps": [{"verification": {"ok": False}}]}
         self.assertFalse(summarize_runtime_result(payload)["ok"])
 
+    def test_role_switch_failure_restarts_a_fresh_global_cycle_after_backoff(self):
+        # A prior Goal may have a verifier failure even though it yielded. The role
+        # switch cooldown prevents hammering the target; the next cycle must still
+        # observe the current role and continue its work.
+        self.assertTrue(cp.should_continue_auto_cycle(
+            healthy=False, reason="ROLE_SWITCH_FAILED:ROLE_A:SOURCE_ROLE_HOME_NOT_CONFIRMED",
+            continuous=True, stop_requested=False, paused=False, fatal=False,
+        ))
+        self.assertEqual(cp.ROLE_SWITCH_RETRY_DELAY_MS, 15_000)
+
+    def test_operator_pause_and_fatal_stop_still_suppress_role_switch_retry(self):
+        args = {
+            "healthy": False,
+            "reason": "ROLE_SWITCH_FAILED:ROLE_A:SOURCE_ROLE_HOME_NOT_CONFIRMED",
+            "continuous": True,
+            "stop_requested": False,
+            "paused": False,
+        }
+        self.assertFalse(cp.should_continue_auto_cycle(**{**args, "paused": True}, fatal=False))
+        self.assertFalse(cp.should_continue_auto_cycle(**args, fatal=True))
+
     def test_unknown_page_is_not_reported_as_success(self):
         payload = {"stop_reason": "unknown_page", "steps": [{"decision": {"skill": "SAFE_STOP"}}]}
         summary = summarize_runtime_result(payload, 0)
