@@ -399,6 +399,17 @@ learning/control_panel/gateway.json
 learning/control_panel/gateway_service.json
 learning/control_panel/live_gateway_proof.json
 
+# Account-specific multi-role identity data.  These files can contain real role
+# IDs, display names, avatar crops, and device-local evidence paths.  Runtime
+# arbitration code is shared; account inventory, avatar templates, and the live
+# scheduler snapshot stay on the machine where those roles were observed.
+knowledge/roles/role_inventory.json
+knowledge/ui/role_switch/avatar_templates/INDEX.json
+knowledge/ui/role_switch/avatar_templates/[0-9]*.png
+dataset/raw/ui_exploration/multirole_*/
+learning/global_scheduler_state.json
+learning/roles/
+
 # Third-party agent skills installed by npx (vendor artifact, MIT).
 # Kept locally only - must never be pushed to the public mirror.
 .codebuddy/

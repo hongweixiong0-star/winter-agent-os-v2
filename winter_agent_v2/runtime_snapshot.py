@@ -101,7 +101,7 @@ NON_FATAL_STOPS = {
     # same reason ``camp_entry_is_a_guided_step_not_a_selection`` is: it is an answer about
     # this run's search, not about any goal and not about the device, so a reader of this
     # table should find it here instead of inferring it from what it does not start with.
-    "every_page_this_run_was_fruitless",
+    "every_page_this_run_was_fruitless", "GLOBAL_WAIT",
 }
 
 EXPECTED_NO_ACTION_STOPS = frozenset({
@@ -118,6 +118,9 @@ CAPABILITY_GAP_STOPS = frozenset({
     "live_event_fallback_budget_exhausted", "selected_daily_task_row_not_currently_actionable",
     "daily_quick_panel_row_has_no_registered_skill", "daily_panel_already_read_not_actionable",
     "daily_tab_not_confirmed_after_task_board", "skill_not_ready", "no_ready_skill",
+    "GLOBAL_REFRESH_REQUIRED_NO_SAFE_CANDIDATE",
+    "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
+    "GLOBAL_CANDIDATE_GENERATION_GAP", "ROLE_IDENTITY_UNCONFIRMED",
     "all_tasks_unavailable", "SEMANTIC_NOT_FOUND", "SEMANTIC_TARGET_NOT_VERIFIED",
 })
 COMPLETED_STOPS = frozenset({"MAX_ACTIONS_REACHED", "TARGET_SKILL_VERIFIED"})
@@ -142,6 +145,11 @@ def classify_stop_reason(
         return StopCategory.SYSTEM_FAILURE
     if token in {item.upper() for item in COMPLETED_STOPS}:
         return StopCategory.COMPLETED
+    if normalized.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
+                              "ROLE_SWITCH_FAILED:")):
+        # A role handoff ends this process intentionally. The control plane starts a
+        # fresh cycle, whose first frame must identify the new account before acting.
+        return StopCategory.EXPECTED_NO_ACTION
     if token in {item.upper() for item in EXPECTED_NO_ACTION_STOPS}:
         return StopCategory.EXPECTED_NO_ACTION
     if token in {item.upper() for item in CAPABILITY_GAP_STOPS}:

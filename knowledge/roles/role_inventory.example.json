@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "scope": "CURRENT_CLIENT_ROLE_MANAGER",
+  "switch_status": "NOT_CONFIGURED",
+  "roles": [
+    {
+      "role_key": "ROLE_A",
+      "role_id": "",
+      "display_name": "",
+      "enabled": false,
+      "identity_confidence": 0.0,
+      "identity_source": "LIVE_PROFILE",
+      "identity_evidence": "",
+      "avatar_template": "knowledge/ui/role_switch/avatar_templates/<ROLE_ID>.png"
+    },
+    {
+      "role_key": "ROLE_B",
+      "role_id": "",
+      "display_name": "",
+      "enabled": false,
+      "identity_confidence": 0.0,
+      "identity_source": "LIVE_PROFILE",
+      "identity_evidence": "",
+      "avatar_template": "knowledge/ui/role_switch/avatar_templates/<ROLE_ID>.png"
+    }
+  ]
+}

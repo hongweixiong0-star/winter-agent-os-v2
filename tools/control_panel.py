@@ -594,6 +594,92 @@ MARCH_ZH = {MarchState.IDLE: "空闲", MarchState.MARCHING: "行军中", MarchSt
             MarchState.RETURNING: "返回中", MarchState.UNKNOWN: "未识别"}
 
 
+def _global_wait_delay_ms(reason: str, *, now: datetime | None = None) -> int:
+    """Wait until the persisted global wake time, with a bounded fallback refresh."""
+    if reason != "GLOBAL_WAIT":
+        return 30000
+    path = ROOT / "learning/global_scheduler_state.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        raw = payload.get("global_next_wakeup_at") if isinstance(payload, dict) else None
+        wake = datetime.fromisoformat(str(raw).replace("Z", "+00:00")) if raw else None
+    except (OSError, ValueError, json.JSONDecodeError, TypeError):
+        wake = None
+    if wake is None:
+        return 30000
+    moment = now or datetime.now(timezone.utc)
+    if wake.tzinfo is None:
+        wake = wake.replace(tzinfo=timezone.utc)
+    seconds = max(1.0, (wake.astimezone(timezone.utc) - moment.astimezone(timezone.utc)).total_seconds())
+    # Do not lose an exact near-term wake, and retain one daily health refresh if
+    # the source time is unexpectedly far away.
+    return int(min(seconds, 24 * 60 * 60) * 1000)
+
+def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
+    """Render the persisted arbitration decision without inventing live role state."""
+    try:
+        payload = json.loads((root / "learning/global_scheduler_state.json").read_text(encoding="utf-8"))
+        catalog = json.loads((root / "knowledge/roles/role_inventory.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "metrics": "暂无切换样本"}
+    if not isinstance(payload, dict):
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "metrics": "暂无切换样本"}
+    names = {
+        str(row.get("role_id")): str(row.get("role_key") or row.get("display_name") or row.get("role_id"))
+        for row in (catalog.get("roles", []) if isinstance(catalog, dict) else [])
+        if isinstance(row, dict) and row.get("role_id")
+    }
+    role_ids = list(names)
+    active = str(payload.get("active_role_id") or "")
+    current = f"{names.get(active, active or '未知')} · {active or '身份未确认'}"
+    decision = payload.get("last_decision") if isinstance(payload.get("last_decision"), dict) else {}
+    statuses = decision.get("role_statuses") if isinstance(decision.get("role_statuses"), list) else []
+    status_by_id = {str(row.get("role_id")): row for row in statuses if isinstance(row, dict)}
+    role_lines = []
+    for role_id in role_ids[:2]:
+        row = status_by_id.get(role_id, {})
+        top = str(row.get("top_goal") or "无可执行目标")
+        ready = int(row.get("runnable_count") or 0)
+        blocked = int(row.get("blocked_count") or 0)
+        wait = str(row.get("wait_until") or "无")
+        deadline = row.get("next_deadline_seconds")
+        deadline_text = f"{int(deadline)}秒" if isinstance(deadline, (int, float)) else "无"
+        freshness = "本轮已观测" if row.get("state_fresh") else "使用逻辑快照/待刷新"
+        cooldown = str(row.get("switch_cooldown_until") or "")
+        failure_streak = int(row.get("switch_failure_streak") or 0)
+        switch_state = f"｜切换退避至 {cooldown}（失败 {failure_streak} 次）" if cooldown else ""
+        role_lines.append(
+            f"{names.get(role_id, role_id)}：{top}｜可执行 {ready}｜阻塞 {blocked}｜"
+            f"等待至 {wait}｜最近期限 {deadline_text}｜{freshness}{switch_state}"
+        )
+    selected_role = str(decision.get("selected_role_id") or "")
+    selected_goal = str(decision.get("selected_goal_id") or "")
+    selected_skill = str(decision.get("selected_skill_id") or "")
+    selected_label = names.get(selected_role, selected_role or "无")
+    why = str(decision.get("reason") or payload.get("last_switch_reason") or "暂无")
+    action = str(decision.get("decision") or "暂无")
+    next_wakeup = str(payload.get("global_next_wakeup_at") or decision.get("next_wakeup") or "无")
+    metrics = {
+        "count": int(payload.get("role_switch_count") or 0),
+        "success": int(payload.get("role_switch_success_count") or 0),
+        "failure": int(payload.get("role_switch_failure_count") or 0),
+    }
+    complete = metrics["success"] + metrics["failure"]
+    rate = f"{metrics['success'] / complete:.0%}" if complete else "暂无"
+    duration_rows = payload.get("role_switch_durations_ms", [])
+    if not isinstance(duration_rows, list):
+        duration_rows = []
+    samples = sorted(float(value) for value in duration_rows if isinstance(value, (int, float)))
+    p50 = f"{samples[max(0, (len(samples) + 1) // 2 - 1)]:.0f}ms" if samples else "暂无"
+    p95 = f"{samples[max(0, int(len(samples) * .95 + .999999) - 1)]:.0f}ms" if samples else "暂无"
+    return {
+        "current": current,
+        "roles": role_lines,
+        "decision": f"{action} → {selected_label} {selected_goal} / {selected_skill}；{why}",
+        "wakeup": next_wakeup,
+        "metrics": f"切换 {metrics['count']} 次｜成功率 {rate}｜p50 {p50}｜p95 {p95}",
+    }
+
 def parse_runtime_result(text: str) -> dict:
     """The runtime's result object, wherever the client's own output lands.
 
@@ -663,6 +749,16 @@ def human_reason(value: Any) -> str:
     if value is None or value == "":
         return "暂无数据"
     text = str(value)
+    if text.startswith("ROLE_SWITCHED_TO:"):
+        return f"已切换到角色 {text.partition(':')[2]}，正在刷新状态"
+    if text.startswith("ROLE_IDENTITY_CHANGED:"):
+        return f"检测到角色 {text.partition(':')[2]} 已变化，正在重新识别"
+    if text == "ROLE_IDENTITY_UNCONFIRMED":
+        return "暂时无法确认当前角色，已停止输入并等待重新识别"
+    if text.startswith("ROLE_SWITCH_FAILED:"):
+        _, _, detail = text.partition(":")
+        target, _, reason = detail.partition(":")
+        return f"切换到角色 {target} 暂未成功，已停止旧页面操作并按退避时间重试：{human_reason(reason)}"
     return REASON_ZH.get(text, text.replace("_", " "))
 
 
@@ -3904,6 +4000,22 @@ class ControlPanel:
             ttk.Label(top, text=name, style="Muted.TLabel", background=PANEL).grid(row=1 + index // 4 * 2, column=index % 4, sticky="w", padx=8, pady=(8, 0))
             ttk.Label(top, textvariable=self.runtime_detail_vars[key], background=PANEL).grid(row=2 + index // 4 * 2, column=index % 4, sticky="w", padx=8)
             top.columnconfigure(index % 4, weight=1)
+        dual = ttk.Frame(tab, style="Card.TFrame", padding=12); dual.pack(fill="x", pady=(10, 0))
+        ttk.Label(dual, text="Global Role Arbitration · 单 Scheduler", style="Section.TLabel", background=PANEL).grid(
+            row=0, column=0, columnspan=2, sticky="w")
+        self.global_role_vars = {
+            key: tk.StringVar(value="等待双角色状态")
+            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics")
+        }
+        for row, (label, key) in enumerate((
+            ("当前角色", "current"), ("角色 A", "role_a"), ("角色 B", "role_b"),
+            ("最近决策", "decision"), ("下一唤醒", "wakeup"), ("切换指标", "metrics"),
+        ), 1):
+            ttk.Label(dual, text=label, style="Muted.TLabel", background=PANEL, width=12).grid(
+                row=row, column=0, sticky="nw", padx=(0, 8), pady=2)
+            ttk.Label(dual, textvariable=self.global_role_vars[key], background=PANEL,
+                      wraplength=1100, justify="left").grid(row=row, column=1, sticky="w", pady=2)
+        dual.columnconfigure(1, weight=1)
         bar = ttk.Frame(tab); bar.pack(fill="x", pady=(10, 6))
         ttk.Label(bar, text="完整日志 / Vision Debug / Replay", style="Section.TLabel").pack(side="left")
         for label, path in (("日志目录", LOG_ROOT), ("截图目录", CAPTURE_ROOT), ("Evidence", ROOT / "evidence"), ("Replay", ROOT / "tests/replay")):
@@ -3945,6 +4057,19 @@ class ControlPanel:
             restart_scheduled=self.repeat_after_id is not None,
         ))
         self.values["runtime_state"].set(runtime_status_cn(snapshot.stop_reason, running=running))
+        try:
+            global_view = global_scheduler_display(ROOT)
+            self.global_role_vars["current"].set(global_view.get("current", "暂无"))
+            role_lines = list(global_view.get("roles", []))
+            self.global_role_vars["role_a"].set(role_lines[0] if role_lines else "暂无角色 A 快照")
+            self.global_role_vars["role_b"].set(role_lines[1] if len(role_lines) > 1 else "暂无角色 B 快照")
+            self.global_role_vars["decision"].set(global_view.get("decision", "暂无"))
+            self.global_role_vars["wakeup"].set(global_view.get("wakeup", "无"))
+            self.global_role_vars["metrics"].set(global_view.get("metrics", "暂无"))
+        except (AttributeError, OSError, TypeError, ValueError):
+            # The live runtime status remains usable when the optional global state
+            # artifact has not been created yet or is malformed.
+            pass
         # MAA / backend axis.  Taken from the executor ledger and the resolved
         # production interpreter, so this cell cannot claim MAA is fine while the
         # worker is quietly running on ADB capture -- and it reports how old the newest
@@ -5621,8 +5746,12 @@ class ControlPanel:
     def _apply_complete(self, code: int, payload: dict, output: str) -> None:
         summary = summarize_runtime_result(payload, code); steps = payload.get("steps", []) if isinstance(payload, dict) else []
         last = steps[-1] if steps else {}; decision = last.get("decision", {}) if isinstance(last, dict) else {}; verification = last.get("verification", {}) if isinstance(last, dict) else {}
-        skill = decision.get("skill", "GATHER_RESOURCE") if isinstance(decision, dict) else "GATHER_RESOURCE"
-        self.values["skill"].set(skill); self.values["task_cn"].set(SKILL_ZH.get(skill, "资源采集")); self.values["reason"].set(human_reason(decision.get("reason") if isinstance(decision, dict) else None))
+        reason = str(summary["reason"] or "")
+        role_handoff = reason.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:"))
+        skill = ("ROLE_SWITCH" if role_handoff else
+                 decision.get("skill", "GATHER_RESOURCE") if isinstance(decision, dict)
+                 else "GATHER_RESOURCE")
+        self.values["skill"].set(skill); self.values["task_cn"].set(SKILL_ZH.get(skill, "角色切换" if role_handoff else "资源采集")); self.values["reason"].set(human_reason(reason if role_handoff else decision.get("reason") if isinstance(decision, dict) else None))
         self.values["next"].set(
             "等待下一轮状态观察" if summary["ok"] else
             ("切换其他任务并记录能力缺口" if summary["stop_category"] == StopCategory.CAPABILITY_GAP.value
@@ -5680,8 +5809,10 @@ class ControlPanel:
             no_progress_stall = summary["reason"] == "SEMANTIC_TARGET_NOT_VERIFIED"
             spent_its_budget = summary["reason"] == "MAX_ACTIONS_REACHED" and summary["executed"] > 0
             full_queue = summary["reason"] in {"no_idle_march", "reserved_march_for_stamina"}
-            immediate = no_progress_stall or spent_its_budget
-            delay_ms = 0 if immediate else (600000 if full_queue else 30000)
+            global_wait = reason == "GLOBAL_WAIT"
+            immediate = no_progress_stall or spent_its_budget or role_handoff
+            delay_ms = (0 if immediate else 600000 if full_queue
+                        else _global_wait_delay_ms(reason) if global_wait else 30000)
             if delay_ms > 0:
                 try:
                     delay_ms = int(event_schedule.bounded_poll_delay_seconds(
@@ -5689,14 +5820,18 @@ class ControlPanel:
                     ) * 1000)
                 except Exception:  # noqa: BLE001 -- an unreadable event clock keeps ordinary polling
                     pass
-            delay_text = "立即" if immediate else ("10 分钟" if full_queue else "30 秒")
+            delay_text = ("立即刷新角色" if role_handoff else
+                          "立即" if immediate else
+                          (f"{max(1, delay_ms // 1000)} 秒后唤醒" if global_wait else
+                           "10 分钟" if full_queue else "30 秒"))
             if not immediate and delay_ms < (600000 if full_queue else 30000):
                 delay_text = f"活动节点前 {max(1, delay_ms // 1000)} 秒"
             self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
             self._append(f"连续运行已启用，{delay_text}后进入下一轮。"
-                         + ("（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
+                         + ("（角色切换已确认，本轮重启只用于刷新目标角色状态）" if role_handoff else
+                            "（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
 
     def _enforce_retention(self) -> None:
         policy = self.config.get("retention", {})

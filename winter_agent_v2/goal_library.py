@@ -99,6 +99,12 @@ GOAL_ROUTES: dict[str, str] = {
     # the live rally list. Participation still needs fresh role and queue evidence.
     "DISCOVER_BEAR_RALLY_LIST": "ALLIANCE",
     "PARTICIPATE_BEAR": "ALLIANCE",
+    # Mobilization is a role-local Goal provider. Its accepted task is translated
+    # to an existing route; it does not own a Scheduler or executor.
+    "ALLIANCE_MOBILIZATION_TROOP_TRAINING_120K": "TRAIN",
+    "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST": "ALLIANCE",
+    "ALLIANCE_MOBILIZATION_LARGE_GATHER": "GATHER_RESOURCE",
+    "ALLIANCE_MOBILIZATION_BEAST": "BEAST_HUNT",
     "CLAIM_EXPLORATION_IDLE": "EXPLORATION",
     # Measured 2026-09-21: this one was missing, and it was the only goal ``discover`` can
     # emit that ``route_for`` answered ``None`` for.  It still worked -- ``RuleBrain`` with
@@ -1185,6 +1191,7 @@ class GoalLibrary:
         self._append_event_calendar_goal(
             goals, world, role_id=role_id, calendar_snapshot=calendar_snapshot
         )
+        self._append_alliance_mobilization_goals(goals, world, role_id=role_id)
         self._append_known_activities(goals, calendar_snapshot=calendar_snapshot)
         if (
             world.page is Page.ALLIANCE
@@ -1220,6 +1227,116 @@ class GoalLibrary:
                 distance=1.0,
             ))
         return tuple(goals)
+
+    @staticmethod
+    def _append_alliance_mobilization_goals(
+        goals: list[GoalState], world: WorldState, *, role_id: str,
+    ) -> None:
+        """Project explicitly observed accepted Mobilization tasks into the shared Goal pool.
+
+        This adapter intentionally consumes only a current-client reading that is both
+        recognized and tagged with the currently confirmed role. It does not infer an
+        activity from a red dot or a registry prior, and it reuses ordinary production
+        Skills for execution. The event reader may add this mapping when it can identify
+        task rows; until then the existing prepared-only event record remains UNKNOWN.
+        """
+        events = world.events if isinstance(world.events, Mapping) else {}
+        reading = events.get("alliance_mobilization")
+        if not isinstance(reading, Mapping) or reading.get("recognized") is not True:
+            return
+        observed_role_id = str(reading.get("role_id") or "").strip()
+        if not role_id or not observed_role_id or observed_role_id != str(role_id):
+            return
+        if str(reading.get("status") or "").upper() not in {"OPEN", "ACTIVE"}:
+            return
+        tasks = reading.get("tasks")
+        if not isinstance(tasks, (list, tuple)):
+            return
+
+        task_specs = {
+            "TROOP_TRAINING_120K": (
+                "ALLIANCE_MOBILIZATION_TROOP_TRAINING_120K", ("TRAIN_TROOPS",), 1200.0,
+            ),
+            "ICEFIELD_BEAST": (
+                "ALLIANCE_MOBILIZATION_ICEFIELD_BEAST", ("START_RALLY", "JOIN_RALLY"), 1000.0,
+            ),
+            "LARGE_GATHER": (
+                "ALLIANCE_MOBILIZATION_LARGE_GATHER", ("GATHER_RESOURCE",), 800.0,
+            ),
+            "BEAST": (
+                "ALLIANCE_MOBILIZATION_BEAST", ("BEAST_HUNT",), 600.0,
+            ),
+        }
+        from .skills import v2_registry
+
+        registry = v2_registry()
+        selected_tasks: dict[str, Mapping[str, Any]] = {}
+        for task in tasks:
+            if not isinstance(task, Mapping):
+                continue
+            task_type = str(task.get("task_type") or "").strip().upper()
+            spec = task_specs.get(task_type)
+            if spec is None:
+                continue
+            goal_id, proposed_skills, priority = spec
+            existing = selected_tasks.get(goal_id)
+            accepted = (task.get("accepted") is True
+                        or str(task.get("status") or "").upper() in {"ACCEPTED", "IN_PROGRESS"})
+            existing_accepted = bool(existing) and (
+                existing.get("accepted") is True
+                or str(existing.get("status") or "").upper() in {"ACCEPTED", "IN_PROGRESS"}
+            )
+            if existing is None or (accepted and not existing_accepted):
+                selected_tasks[goal_id] = task
+
+        for goal_id, task in selected_tasks.items():
+            task_type = str(task.get("task_type") or "").strip().upper()
+            _goal_id, proposed_skills, priority = task_specs[task_type]
+            task_id = str(task.get("task_id") or "").strip()
+            if not task_id:
+                continue
+            task_status = str(task.get("status") or "").upper()
+            accepted = task.get("accepted") is True or task_status in {"ACCEPTED", "IN_PROGRESS"}
+            skills = tuple(skill_id for skill_id in proposed_skills
+                           if registry.get(skill_id) is not None) if accepted else ()
+            progress = task.get("progress")
+            target = task.get("target")
+            try:
+                progress_value = max(0.0, float(progress)) if progress is not None else None
+                target_value = max(0.0, float(target)) if target is not None else None
+            except (TypeError, ValueError):
+                progress_value = target_value = None
+            complete = task.get("completed") is True or (
+                progress_value is not None and target_value is not None
+                and target_value > 0 and progress_value >= target_value
+            )
+            status = (GoalStatus.COMPLETE if complete else
+                      GoalStatus.READY if accepted and skills else
+                      GoalStatus.UNKNOWN)
+            goals.append(GoalState(
+                goal_id,
+                status,
+                completion=1.0 if complete else 0.0,
+                remaining_seconds=_optional_int(reading.get("remaining_seconds")),
+                event_synergy=priority if accepted and not complete else 0.0,
+                available_skills=() if complete else skills,
+                evidence={
+                    "event_id": "ALLIANCE_MOBILIZATION",
+                    "role_id": observed_role_id,
+                    "source": str(reading.get("source") or "LIVE_CLIENT"),
+                    "task_id": task_id,
+                    "task_type": task_type,
+                    "task_status": task_status or ("ACCEPTED" if accepted else "UNKNOWN"),
+                    "accepted": accepted,
+                    "progress": progress_value,
+                    "target": target_value,
+                    "shared_credit_tags": ["ALLIANCE_MOBILIZATION"],
+                    "execution_uses_existing_skills": list(skills),
+                },
+                distance=(0.0 if complete else
+                          max(0.0, target_value - progress_value)
+                          if target_value is not None and progress_value is not None else 1.0),
+            ))
 
     @staticmethod
     def _append_prepared_workflows(goals: list[GoalState]) -> None:
@@ -1927,18 +2044,41 @@ class GoalStateStore:
     def __init__(self, path: Path) -> None:
         self.path = path
 
-    def write(self, world: WorldState, goals: Iterable[GoalState]) -> None:
+    def write(self, world: WorldState, goals: Iterable[GoalState], *, role_id: str = "") -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {
+        current = {
             "observed_at": world.timestamp,
             "written_at": datetime.now(timezone.utc).isoformat(),
             "page": world.page.value,
             "confidence": world.confidence,
             "goals": [self._serialize(goal) for goal in goals],
         }
+        try:
+            existing = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            existing = {}
+        role_snapshots = existing.get("roles") if isinstance(existing, dict) else {}
+        if not isinstance(role_snapshots, dict):
+            role_snapshots = {}
+        role_snapshots = dict(role_snapshots)
+        if role_id:
+            role_snapshots[str(role_id)] = dict(current)
+        payload = {**current, "active_role_id": str(role_id or ""), "roles": role_snapshots}
         temporary = self.path.with_suffix(self.path.suffix + ".tmp")
         temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         temporary.replace(self.path)
+
+    def read_roles(self) -> dict[str, dict[str, Any]]:
+        """Read per-role logical Goal boards without merging account state."""
+        try:
+            payload = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        rows = payload.get("roles") if isinstance(payload, dict) else None
+        if not isinstance(rows, dict):
+            return {}
+        return {str(role_id): dict(value) for role_id, value in rows.items()
+                if role_id and isinstance(value, dict)}
 
     @staticmethod
     def _serialize(goal: GoalState) -> dict[str, Any]:
