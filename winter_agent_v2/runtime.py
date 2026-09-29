@@ -30,7 +30,9 @@ from .ocr import (
 )
 from .camp_training import CAMP_LABELS, CAMP_ORDER
 from .scheduler import Scheduler
-from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
+from .goal_library import (
+    GoalLibrary, GoalStateStore, newly_completed_goal_ids, progress_moved, route_for,
+)
 from .global_scheduler_state import GlobalSchedulerStateStore
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
@@ -6813,11 +6815,8 @@ class LiveRuntime:
                 attached_id: progress_moved(self._goal_meters, goals_after, attached_id)
                 for attached_id in attached_goal_ids
             }
-            completed_goal_ids = tuple(
-                str(goal.goal_id) for goal in goals_after
-                if str(goal.goal_id) in attached_goal_ids
-                and str(getattr(getattr(goal, "status", ""), "value", getattr(goal, "status", ""))).upper()
-                == "COMPLETE"
+            completed_goal_ids = newly_completed_goal_ids(
+                goals, goals_after, attached_goal_ids,
             )
             progress = goal_progress_by_id.get(step_goal)
             for attached_id, attached_progress in goal_progress_by_id.items():

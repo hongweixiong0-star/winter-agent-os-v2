@@ -1989,6 +1989,42 @@ def progress_moved(
     return now.distance < previous
 
 
+def newly_completed_goal_ids(
+    before: Iterable[GoalState],
+    after: Iterable[GoalState],
+    attached_goal_ids: Iterable[str],
+) -> tuple[str, ...]:
+    """Return only attached Goals whose observed status changed to COMPLETE.
+
+    A COMPLETE Goal can remain visible in later WorldState observations. Counting that
+    status on every subsequent action would turn a persistent state into repeated
+    completion events. Require a known, non-UNKNOWN pre-action row and a post-action
+    COMPLETE row so production telemetry records only a transition this step can support.
+    """
+    attached = {str(item).strip() for item in attached_goal_ids if str(item).strip()}
+    if not attached:
+        return ()
+
+    def status_of(goal: GoalState) -> str:
+        value = getattr(goal, "status", "")
+        return str(getattr(value, "value", value)).upper()
+
+    before_status = {
+        str(getattr(goal, "goal_id", "")): status_of(goal)
+        for goal in before
+        if str(getattr(goal, "goal_id", ""))
+    }
+    completed: list[str] = []
+    for goal in after:
+        goal_id = str(getattr(goal, "goal_id", ""))
+        if goal_id not in attached or status_of(goal) != GoalStatus.COMPLETE.value:
+            continue
+        prior = before_status.get(goal_id)
+        if prior and prior not in {GoalStatus.COMPLETE.value, GoalStatus.UNKNOWN.value}:
+            completed.append(goal_id)
+    return tuple(dict.fromkeys(completed))
+
+
 @dataclass(frozen=True)
 class GoalComposition:
     """How a goal is composed out of capabilities, as the project already maps it.

@@ -4,7 +4,9 @@ import pytest
 
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.executor import Executor
-from winter_agent_v2.goal_library import GoalState, GoalStatus, GoalStateStore
+from winter_agent_v2.goal_library import (
+    GoalState, GoalStatus, GoalStateStore, newly_completed_goal_ids,
+)
 from winter_agent_v2.models import Action, Decision, ExecutionResult, Page, VerificationResult, WorldState
 from winter_agent_v2.scheduler import ActiveRoleLiveState, RoleObservation, Scheduler
 from winter_agent_v2.skills import v2_registry
@@ -451,6 +453,25 @@ def test_runtime_persists_shared_action_outcome_and_episode_progress_by_goal(tmp
     assert episode["goal_progress_by_id"] == {
         "KEEP_TRAINING_PRODUCTIVE": True, "DAILY_TRAINING": False,
     }
+
+
+def test_completed_goal_credit_counts_only_a_verified_status_transition():
+    before = (
+        GoalState("NEWLY_DONE", GoalStatus.IN_PROGRESS),
+        GoalState("ALREADY_DONE", GoalStatus.COMPLETE),
+        GoalState("UNKNOWN_BEFORE", GoalStatus.UNKNOWN),
+    )
+    after = (
+        GoalState("NEWLY_DONE", GoalStatus.COMPLETE),
+        GoalState("ALREADY_DONE", GoalStatus.COMPLETE),
+        GoalState("UNKNOWN_BEFORE", GoalStatus.COMPLETE),
+        GoalState("NO_BASELINE", GoalStatus.COMPLETE),
+    )
+
+    assert newly_completed_goal_ids(
+        before, after,
+        ("NEWLY_DONE", "ALREADY_DONE", "UNKNOWN_BEFORE", "NO_BASELINE"),
+    ) == ("NEWLY_DONE",)
 
 
 def test_switch_cost_uses_measured_median_latency_with_a_safe_cap():
