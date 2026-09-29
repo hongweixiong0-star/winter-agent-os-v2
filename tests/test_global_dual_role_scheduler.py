@@ -509,6 +509,106 @@ def test_role_switch_invalidates_every_live_ui_field_until_new_identity_observed
     assert all(state.live.get(field) is None for field in state.invalidated_fields)
 
 
+def test_runtime_requires_a_fresh_avatar_match_before_using_role_scoped_state():
+    class Controller:
+        def identify_current_role(self, _frame):
+            return None
+
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    runtime._multi_role_enabled = True
+    runtime._role_identity_confirmed = False
+    runtime._role_identity_bootstrapped = False
+    runtime.role_id = "A"  # persisted startup hint is not a live confirmation
+    runtime.role_scope = "FRESH_RUNTIME"
+    runtime.role_switch_controller = Controller()
+    runtime._role_catalog_by_id = {"A": {"role_id": "A"}, "B": {"role_id": "B"}}
+    runtime.global_scheduler_state_store = None
+    runtime._activate_role_persistent_state = lambda _role_id: None
+
+    ok, reason = runtime._confirm_live_role("frame.png")
+
+    assert not ok
+    assert reason == "ROLE_IDENTITY_UNCONFIRMED"
+    assert runtime._calendar_role_id() == ""
+
+
+def test_runtime_retains_confirmed_role_when_modal_occludes_avatar_within_same_run():
+    class Controller:
+        def __init__(self):
+            self.matches = iter([("A", 0.94), None])
+
+        def identify_current_role(self, _frame):
+            return next(self.matches)
+
+    class Store:
+        def __init__(self):
+            self.recovered = []
+
+        def recover_after_restart(self, **values):
+            self.recovered.append(values)
+
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    runtime._multi_role_enabled = True
+    runtime._role_identity_confirmed = False
+    runtime._role_identity_bootstrapped = False
+    runtime.role_id = "B"
+    runtime.role_scope = "UNKNOWN"
+    runtime.role_switch_controller = Controller()
+    runtime._role_catalog_by_id = {
+        "A": {"role_id": "A", "display_name": "Role A"},
+        "B": {"role_id": "B", "display_name": "Role B"},
+    }
+    runtime.global_scheduler_state_store = Store()
+    runtime._activate_role_persistent_state = lambda _role_id: None
+
+    first_ok, first_reason = runtime._confirm_live_role("visible-avatar.png")
+    second_ok, second_reason = runtime._confirm_live_role("modal-blurred-avatar.png")
+
+    assert first_ok and first_reason == "ROLE_IDENTITY_CONFIRMED"
+    assert second_ok and second_reason == "ROLE_IDENTITY_RETAINED_FRAME_UNREADABLE"
+    assert runtime._calendar_role_id() == "A"
+    assert runtime.global_scheduler_state_store.recovered == [{
+        "actual_role_id": "A",
+        "actual_role_name": "Role A",
+        "observed_at": runtime.global_scheduler_state_store.recovered[0]["observed_at"],
+    }]
+
+
+def test_runtime_stops_if_a_different_role_avatar_is_uniquely_observed_mid_run():
+    class Controller:
+        def __init__(self):
+            self.matches = iter([("A", 0.94), ("B", 0.96)])
+
+        def identify_current_role(self, _frame):
+            return next(self.matches)
+
+    class Store:
+        def __init__(self):
+            self.recovered = []
+
+        def recover_after_restart(self, **values):
+            self.recovered.append(values)
+
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    runtime._multi_role_enabled = True
+    runtime._role_identity_confirmed = False
+    runtime._role_identity_bootstrapped = False
+    runtime.role_id = "A"
+    runtime.role_scope = "UNKNOWN"
+    runtime.role_switch_controller = Controller()
+    runtime._role_catalog_by_id = {"A": {"role_id": "A"}, "B": {"role_id": "B"}}
+    runtime.global_scheduler_state_store = Store()
+    runtime._activate_role_persistent_state = lambda _role_id: None
+
+    assert runtime._confirm_live_role("role-a.png")[0]
+    ok, reason = runtime._confirm_live_role("role-b.png")
+
+    assert not ok
+    assert reason == "ROLE_IDENTITY_CHANGED:B"
+    assert runtime.role_id == "B"
+    assert runtime.global_scheduler_state_store.recovered[-1]["actual_role_id"] == "B"
+
+
 def test_goal_schedule_view_exposes_expected_cross_role_fields():
     now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
     role = _role(

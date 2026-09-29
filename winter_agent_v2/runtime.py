@@ -5525,6 +5525,72 @@ class LiveRuntime:
             flush=True,
         )
 
+    def _confirm_live_role(self, frame_path: Path | str) -> tuple[bool, str]:
+        """Confirm the active account, tolerating an occluded avatar after bootstrap.
+
+        Each fresh worker must uniquely match a role avatar before it can use
+        role-scoped state. Within that worker, a temporarily unreadable avatar
+        (for example, the game blurring the city behind a modal) does not mean
+        the account changed: this runtime owns the UI and a role switch ends the
+        worker. A uniquely matched different avatar still stops the run.
+        """
+        if not self._multi_role_enabled:
+            return True, ""
+
+        observed_identity = self.role_switch_controller.identify_current_role(frame_path)
+        if observed_identity is None:
+            if self._role_identity_bootstrapped and self._role_identity_confirmed:
+                print(
+                    "[global-role] avatar is occluded or ambiguous; retaining the "
+                    f"already confirmed role {self._calendar_role_id()} for this runtime",
+                    flush=True,
+                )
+                return True, "ROLE_IDENTITY_RETAINED_FRAME_UNREADABLE"
+            self._role_identity_confirmed = False
+            return False, "ROLE_IDENTITY_UNCONFIRMED"
+
+        observed_role_id, avatar_score = observed_identity
+        if not self._role_identity_bootstrapped:
+            self.role_id = observed_role_id
+            identity = self._role_catalog_by_id.get(observed_role_id, {})
+            self.role_scope = "FRESH_RUNTIME"
+            self._role_identity_confirmed = True
+            self._role_identity_bootstrapped = True
+            self._activate_role_persistent_state(observed_role_id)
+            state_store = self.global_scheduler_state_store
+            if state_store is not None:
+                state_store.recover_after_restart(
+                    actual_role_id=observed_role_id,
+                    actual_role_name=str(identity.get("display_name") or identity.get("role_name") or ""),
+                    observed_at=datetime.now(timezone.utc),
+                )
+            print(
+                f"[global-role] current identity matched live avatar: {observed_role_id} "
+                f"(score={avatar_score:.3f}); all role live state starts stale",
+                flush=True,
+            )
+            return True, "ROLE_IDENTITY_CONFIRMED"
+
+        if observed_role_id != self._calendar_role_id():
+            # The one-device lease should make an in-process account change
+            # impossible. If it happens anyway, invalidate the prior role before
+            # allowing another task to run.
+            self.role_id = observed_role_id
+            self.role_scope = "FRESH_RUNTIME"
+            self._activate_role_persistent_state(observed_role_id)
+            state_store = self.global_scheduler_state_store
+            if state_store is not None:
+                state_store.recover_after_restart(
+                    actual_role_id=observed_role_id,
+                    actual_role_name=str(
+                        self._role_catalog_by_id.get(observed_role_id, {}).get("display_name") or ""
+                    ),
+                    observed_at=datetime.now(timezone.utc),
+                )
+            return False, f"ROLE_IDENTITY_CHANGED:{observed_role_id}"
+
+        return True, "ROLE_IDENTITY_CONFIRMED"
+
     def run(
         self,
         *,
@@ -5844,62 +5910,21 @@ class LiveRuntime:
             if self._device_lost(self.device.screenshot, before_path):
                 return finish(self._device_stop_reason)
             if self._multi_role_enabled:
-                observed_identity = self.role_switch_controller.identify_current_role(before_path)
-                if observed_identity is None:
-                    reason = "ROLE_IDENTITY_UNCONFIRMED"
+                identity_ok, identity_state = self._confirm_live_role(before_path)
+                if not identity_ok:
+                    reason = identity_state
+                    changed = reason.startswith("ROLE_IDENTITY_CHANGED:")
                     self._runtime(
                         agent_state=AgentState.IDLE.value,
                         current_skill="ROLE_IDENTITY_REFRESH",
-                        reason="current frame did not uniquely match an enabled role avatar",
-                        next_action="reobserve before any role-scoped action",
+                        reason=("live role avatar changed during one runtime session" if changed
+                                else "current frame did not uniquely match an enabled role avatar"),
+                        next_action=("restart and rebuild WorldState for the observed role" if changed
+                                     else "reobserve before any role-scoped action"),
                         stop_reason=reason,
                     )
-                    print(f"[global-role] {reason}; no input will be sent", flush=True)
+                    print(f"[global-role] {reason}; no further input will be sent", flush=True)
                     return finish(reason)
-                if observed_identity is not None:
-                    observed_role_id, avatar_score = observed_identity
-                    if not self._role_identity_bootstrapped:
-                        self.role_id = observed_role_id
-                        identity = self._role_catalog_by_id.get(observed_role_id, {})
-                        self.role_scope = "FRESH_RUNTIME"
-                        self._role_identity_confirmed = True
-                        self._role_identity_bootstrapped = True
-                        self._activate_role_persistent_state(observed_role_id)
-                        state_store = self.global_scheduler_state_store
-                        if state_store is not None:
-                            state_store.recover_after_restart(
-                                actual_role_id=observed_role_id,
-                                actual_role_name=str(identity.get("display_name") or identity.get("role_name") or ""),
-                                observed_at=datetime.now(timezone.utc),
-                            )
-                        print(
-                            f"[global-role] current identity matched live avatar: {observed_role_id} "
-                            f"(score={avatar_score:.3f}); all role live state starts stale",
-                            flush=True,
-                        )
-                    elif observed_role_id != self._calendar_role_id():
-                        # The one-device lease should make an in-process account
-                        # change impossible. If it happens anyway, invalidate all
-                        # frame-derived state and let the lifecycle start a fresh
-                        # runtime under the newly observed role.
-                        self.role_id = observed_role_id
-                        self.role_scope = "FRESH_RUNTIME"
-                        self._activate_role_persistent_state(observed_role_id)
-                        if self.global_scheduler_state_store is not None:
-                            self.global_scheduler_state_store.recover_after_restart(
-                                actual_role_id=observed_role_id,
-                                actual_role_name=str(self._role_catalog_by_id.get(observed_role_id, {}).get("display_name") or ""),
-                                observed_at=datetime.now(timezone.utc),
-                            )
-                        reason = f"ROLE_IDENTITY_CHANGED:{observed_role_id}"
-                        self._runtime(
-                            agent_state=AgentState.IDLE.value,
-                            current_skill="ROLE_IDENTITY_REFRESH",
-                            reason="live role avatar changed during one runtime session",
-                            next_action="restart and rebuild this role WorldState before dispatch",
-                            stop_reason=reason,
-                        )
-                        return finish(reason)
             phase_started = time.monotonic()
             before = self._observe(before_path)
             latency["reobserve_ms"] = (time.monotonic() - phase_started) * 1000
