@@ -319,6 +319,39 @@ def test_startup_identity_home_preparation_backs_out_of_mail_without_guessing_ro
     assert back_calls == ["back"]
 
 
+def test_role_switch_returns_from_world_map_with_current_city_control_before_android_back(
+    tmp_path, monkeypatch,
+):
+    _store, controller = _role_switch_fixture(tmp_path)
+    world_map = tmp_path / "world-map.png"
+    home = tmp_path / "home.png"
+    back_calls = []
+    city_actions = []
+    controller.device = SimpleNamespace(press_back=lambda: back_calls.append("back"))
+    monkeypatch.setattr(controller, "_capture", lambda _label: home)
+    monkeypatch.setattr(controller, "identify_current_role", lambda _path: ("role-a", 0.99))
+    controller.sleeper = lambda _seconds: None
+    controller.vision = SimpleNamespace(observe=lambda path: SimpleNamespace(
+        page=Page.MAP if Path(path) == world_map else Page.HOME,
+        popup=None,
+    ))
+
+    def click_text(path, *, exact=(), contains=()):
+        city_actions.append((Path(path), exact, contains))
+        return Path(path) == world_map and exact == ("城镇",)
+
+    monkeypatch.setattr(controller, "_click_text", click_text)
+    evidence = []
+
+    result, error = controller._prepare_source_home(world_map, "role-a", evidence)
+
+    assert result == home
+    assert error == ""
+    assert city_actions == [(world_map, ("城镇",), ())]
+    assert back_calls == []
+    assert evidence == [str(home)]
+
+
 def test_role_switch_returns_from_mail_to_confirmed_home_before_identity_check(tmp_path, monkeypatch):
     store, controller = _role_switch_fixture(tmp_path)
     _stub_switch_navigation(monkeypatch, controller, tmp_path)

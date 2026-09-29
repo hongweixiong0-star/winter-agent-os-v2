@@ -347,6 +347,17 @@ class RoleSwitchController:
                     # Back from an unrecognized HOME frame can exit the game and
                     # cannot improve source-role certainty.
                     return None, "SOURCE_ROLE_IDENTITY_NOT_CONFIRMED"
+            elif world is not None and world.page is Page.MAP and world.popup is None:
+                # The live world map has an explicit 城镇 control (BTN_OPEN_HOME).
+                # Android Back stayed on MAP during production role arbitration
+                # (2026-09-29), exhausting all nine attempts without reaching HOME.
+                # Resolve the current frame's unique printed label instead; this
+                # uses no stored coordinate and the next loop verifies the page.
+                if self._click_text(path, exact=("城镇",)):
+                    self.sleeper(self.poll_seconds)
+                    path = self._capture("source_home")
+                    evidence.append(str(path))
+                    continue
             elif world is None and identity is not None and (
                 not source_role_id or identity[0] == source_role_id
             ):
