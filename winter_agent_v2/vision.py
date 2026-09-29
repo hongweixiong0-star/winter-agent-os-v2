@@ -1404,6 +1404,21 @@ class SemanticROIVision:
             x_start, x_stop = round(width * x0), round(width * x1)
             y_start, y_stop = round(height * y0), round(height * y1)
             step = max(4, round(width / 90))
+            # The sweep hashes one crop per (crop size, x, y) offset.  Two costs were paid for
+            # every one of those offsets and neither changes an answer (directive §24/§27,
+            # profiled on a real frame: 101,038 dhash calls, 13.8 s, for three observations):
+            #
+            # * the luminance plane was rebuilt per offset.  ``crop`` then ``convert`` is the
+            #   same integers as ``convert`` then ``crop`` -- RGB->L is per-pixel -- so the frame
+            #   is converted once here and the crops are taken from it;
+            # * the crops were re-hashed once per candidate row even when rows share a size.
+            #   ``TARGET_INTEL_BEAST_MISSION`` holds 10 rows at only 4 distinct sizes, so the
+            #   same rectangle was hashed up to ten times for one answer.
+            #
+            # A distance of 0 cannot be beaten, so the scan stops there rather than finishing
+            # the grid; ``min`` by distance is what the caller receives either way.
+            gray = image.convert("L")
+            hashes: dict[tuple[int, int, int, int], str] = {}
             best: SemanticMatch | None = None
             for row in candidates:
                 roi = row["roi_norm"]
@@ -1414,12 +1429,18 @@ class SemanticROIVision:
                 )
                 if not target_hash:
                     continue
-                for y in range(y_start, max(y_start + 1, y_stop - crop_height + 1), step):
-                    for x in range(x_start, max(x_start + 1, x_stop - crop_width + 1), step):
-                        distance = hamming(
-                            target_hash,
-                            dhash(image.crop((x, y, x + crop_width, y + crop_height)), size=16),
-                        )
+                y_axis = range(y_start, max(y_start + 1, y_stop - crop_height + 1), step)
+                x_axis = range(x_start, max(x_start + 1, x_stop - crop_width + 1), step)
+                for y in y_axis:
+                    for x in x_axis:
+                        key = (crop_width, crop_height, x, y)
+                        digest = hashes.get(key)
+                        if digest is None:
+                            digest = dhash(
+                                gray.crop((x, y, x + crop_width, y + crop_height)), size=16
+                            )
+                            hashes[key] = digest
+                        distance = hamming(target_hash, digest)
                         if best is None or distance < best.distance:
                             best = SemanticMatch(
                                 semantic,
@@ -1431,6 +1452,8 @@ class SemanticROIVision:
                                     "h_norm": crop_height / height,
                                 },
                             )
+                            if distance == 0:
+                                return best
             return best if best is not None and best.distance <= threshold else None
 
 
