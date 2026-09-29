@@ -168,6 +168,18 @@ def test_no_routine_offers_a_skill_without_a_live_loop_verifier():
     assert not (offered & forbidden), f"unverified skills offered: {sorted(offered & forbidden)}"
 
 
+def test_quick_panel_discovery_goal_has_a_live_verifier():
+    """The measured handle may be used by AUTO and judged by the panel-state change."""
+    from winter_agent_v2.verifier import verify_ordinary_control_tried
+
+    assert LiveRuntime.VERIFIED_ATOMIC.get("OPEN_QUICK_PANEL") is verify_ordinary_control_tried
+    before = WorldState(page=Page.HOME, quick_panel={"open": False})
+    after = replace(before, quick_panel={"open": True, "handle": {"state": "OPEN"}})
+    result = LiveRuntime.VERIFIED_ATOMIC["OPEN_QUICK_PANEL"](before, after)
+    assert result.ok
+    assert result.evidence["change"] == "QUICK_PANEL_OPENED"
+
+
 class ConsecutiveSweepsMustHopBetweenPanels(unittest.TestCase):
     """Live 2026-09-19: the first sweep worked and the second could not move.
 

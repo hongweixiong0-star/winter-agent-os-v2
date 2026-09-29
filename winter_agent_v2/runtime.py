@@ -241,6 +241,11 @@ class LiveRuntime:
         "DISMISS_REAL_MONEY_OFFER": verify_popup_closed,
         "CLAIM_OFFLINE_REWARDS": verify_offline_rewards_claimed,
         "OPEN_DAILY": verify_open_daily,
+        # The quick-panel handle is a bounded navigation/exploration action. Its
+        # shared verifier has a dedicated QUICK_PANEL_OPENED check when the panel
+        # state flips on; without this binding, GoalLibrary can select
+        # DISCOVER_QUICK_PANEL_TASKS but the live loop rejects it before MAA runs.
+        "OPEN_QUICK_PANEL": verify_ordinary_control_tried,
         "FOLLOW_DAILY_TASK": verify_daily_task_followed,
         "DAILY_CLAIM_REWARDS": verify_daily_claim_feedback,
         "DISMISS_DAILY_REWARD": verify_daily_reward_advanced,
