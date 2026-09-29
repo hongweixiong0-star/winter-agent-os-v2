@@ -6,24 +6,24 @@
 <!-- AUTO:open_issues -->
 Machine-detected issues (recomputed every run):
 
-- **SEMANTIC_TARGET_NOT_VERIFIED** x429 all-time; recent=147 (last 2d), last seen 2026-09-23T17:43:06.198521+00:00 — TRY_ORDINARY_CONTROL(51), SELECT_RESOURCE(47), OPEN_HOME(45)
-- **POPUP_CLOSE_NOT_PROVEN** x89 all-time; recent=83 (last 2d), last seen 2026-09-23T09:36:07.512813+00:00 — CLOSE_POPUP(82), DISMISS_REAL_MONEY_OFFER(6), RECONNECT_SESSION(1)
-- **SAFE_BACK_NOT_PROVEN** x97 all-time; recent=68 (last 2d), last seen 2026-09-23T13:08:24.805139+00:00 — BACK(97)
-- **BEAST_DISPATCH_NOT_PROVEN** x58 all-time; recent=53 (last 2d), last seen 2026-09-23T18:11:34.567601+00:00 — DISPATCH_BEAST(58)
-- **NO_EXECUTION** x52 all-time; recent=43 (last 2d), last seen 2026-09-23T15:54:36.630527+00:00 — SAFE_STOP(52)
-- **POWER_DETAILS_NOT_PROVEN** x20 all-time; recent=20 (last 2d), last seen 2026-09-23T17:25:13.203862+00:00 — OPEN_POWER_DETAILS(20)
+- **SEMANTIC_TARGET_NOT_VERIFIED** x455 all-time; recent=126 (last 2d), last seen 2026-09-24T13:27:02.849145+00:00 — TRY_ORDINARY_CONTROL(56), SELECT_RESOURCE(50), OPEN_HOME(45)
+- **POPUP_CLOSE_NOT_PROVEN** x90 all-time; recent=76 (last 2d), last seen 2026-09-23T23:15:34.464669+00:00 — CLOSE_POPUP(82), DISMISS_REAL_MONEY_OFFER(7), RECONNECT_SESSION(1)
+- **POWER_DETAILS_NOT_PROVEN** x38 all-time; recent=38 (last 2d), last seen 2026-09-24T13:38:56.204884+00:00 — OPEN_POWER_DETAILS(38)
+- **BEAST_DISPATCH_NOT_PROVEN** x67 all-time; recent=29 (last 2d), last seen 2026-09-24T04:49:35.547754+00:00 — DISPATCH_BEAST(67)
+- **SAFE_BACK_NOT_PROVEN** x97 all-time; recent=20 (last 2d), last seen 2026-09-23T13:08:24.805139+00:00 — BACK(97)
+- **NO_EXECUTION** x54 all-time; recent=13 (last 2d), last seen 2026-09-24T09:17:07.995622+00:00 — SAFE_STOP(54)
 - `ALLIANCE_HELP` never succeeded (attempts=1, failure=0)
 - `CANCEL_DUPLICATE_TARGET` never succeeded (attempts=1, failure=1)
 - `DISMISS_EXPLORATION_REWARD` never succeeded (attempts=1, failure=1)
 - `DISMISS_MAIL_REWARD` never succeeded (attempts=1, failure=1)
 - `OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN` never succeeded (attempts=1, failure=1)
 - `RESEARCH` never succeeded (attempts=1, failure=0)
-- `SAFE_STOP` never succeeded (attempts=52, failure=52)
+- `SAFE_STOP` never succeeded (attempts=54, failure=54)
 - `SELECT_BEAST_TARGET` never succeeded (attempts=1, failure=1)
 - `SELECT_BEAST_TARGET_MAMMOTH` never succeeded (attempts=8, failure=8)
 - `SELECT_INFANTRY_CAMP` never succeeded (attempts=3, failure=3)
 - `WAIT` never succeeded (attempts=1, failure=1)
-- 598 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/00_MASTER_RULES.md']
+- 732 uncommitted file(s): ['M .workbuddy-ai/commander/CODEX_DIRECTIVES.md', ' M .workbuddy-ai/commander/EXECUTION_STATE.json', ' M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md', ' M .workbuddy-ai/commander/WORK_QUEUE.json', ' M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md']
 <!-- /AUTO:open_issues -->
 
 ---

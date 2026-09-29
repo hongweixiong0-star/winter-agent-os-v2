@@ -34,7 +34,7 @@
     "heroes/mechanism_cards.json": "采集加成 / 集结英雄角色 / 名册缺口",
     "events/mechanism_cards.json": "保底 / 倒计时压力 / 阶段机 / 限次 / 阻塞上报",
     "strategy/worth_it_rubric.json": "为什么做 / 什么时候做 / 做到什么程度 / 什么时候不值得做",
-    "events/event_registry.json": "已注册活动（BEAR_HUNT REVIEWED / STATE_VS_STATE DISCOVERED）",
+    "events/event_registry.json": "已注册活动（巨熊 / 最强王国 / 军备竞赛 / 联盟总动员 / Officer Project / Defeat Nearby Beasts / Brothers in Arms）；后四项为 DISCOVERED 候选，活动当前窗口状态仍须由客户端读取",
     "events/*_live_*.json": "单次活动的真机观测原始记录",
     "strategy/stamina_routes.json": "体力路线的成本/可靠性/可用性台账：常见消耗体力的途径有哪些、各实测消耗多少、哪条性价比高、哪条被卡在识别层而不是成本层（2026-09-20，含实测方法）"
   },

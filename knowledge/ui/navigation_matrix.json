@@ -3,11 +3,11 @@
   "generated_by": "tools/ui_navigation_matrix.py",
   "contract_file": "skill_factory.py",
   "counts": {
-    "skills": 114,
-    "schedulable": 100,
-    "navigation_like_entries": 51,
-    "schedulable_navigation_entries": 49,
-    "distinct_targets": 91,
+    "skills": 116,
+    "schedulable": 102,
+    "navigation_like_entries": 53,
+    "schedulable_navigation_entries": 51,
+    "distinct_targets": 93,
     "semantics_with_templates": 266,
     "semantics_with_templates_and_no_skill": 200
   },
@@ -1360,10 +1360,10 @@
     },
     {
       "skill": "SELECT_DAILY_TAB",
-      "source_page": "DAILY",
+      "source_page": "GROWTH_TASKS",
       "action": "TAP_SEMANTIC:BTN_DAILY_TAB_TASKS",
       "target": "BTN_DAILY_TAB_TASKS",
-      "destination_page": "UNKNOWN",
+      "destination_page": "DAILY",
       "schedulable": true,
       "verifier": "verify_daily_tab_selected",
       "visual_evidence": 1,
@@ -1621,6 +1621,34 @@
       "verifier": "verify_camp_menu_reobserved",
       "visual_evidence": "OBSERVE",
       "navigation_like": false
+    },
+    {
+      "skill": "OPEN_ALLIANCE_RECOMMENDED_TECH_NODE",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC",
+      "target": "BTN_ALLIANCE_TECH_RECOMMENDED_NODE",
+      "destination_page": "ALLIANCE",
+      "schedulable": true,
+      "verifier": "ALLIANCE_TECH_NODE_OPEN",
+      "visual_evidence": [
+        "PAGE_ALLIANCE_TECH",
+        "BTN_ALLIANCE_TECH_RECOMMENDED_NODE"
+      ],
+      "navigation_like": true
+    },
+    {
+      "skill": "CLOSE_ALLIANCE_TECH_DONATION_DETAILS",
+      "source_page": "ALLIANCE",
+      "action": "TAP_SEMANTIC",
+      "target": "BTN_ALLIANCE_TECH_DETAILS_CLOSE",
+      "destination_page": "ALLIANCE",
+      "schedulable": true,
+      "verifier": "ALLIANCE_TECH_DETAILS_CLOSED",
+      "visual_evidence": [
+        "DIALOG_ALLIANCE_TECH",
+        "BTN_ALLIANCE_TECH_DETAILS_CLOSE"
+      ],
+      "navigation_like": true
     }
   ],
   "goals": [

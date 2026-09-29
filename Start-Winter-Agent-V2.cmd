@@ -41,4 +41,12 @@ rem 24936/25408 -- so a soak from one is recorded as DEVELOPMENT_ENV_LIMITATION 
 rem counted as evidence.  This marker is that declaration; it is inherited by the child.
 set "WINTER_AGENT_LAUNCH_PATH=desktop"
 
-start "Winter Agent OS V2" "%WINTER_PYTHONW%" "E:\无尽冬日智能体\tools\control_panel.py"
+rem Task Scheduler owns the interactive process so it survives the short-lived
+rem desktop launcher.  Its pythonw action runs launch_panel_logged.py, which
+rem records startup exceptions in learning\control_panel\desktop_startup.log.
+schtasks /Run /TN "WinterAgentV2Panel"
+if errorlevel 1 (
+    echo [Winter Agent OS V2] Panel launch failed. See learning\control_panel\desktop_startup.log.
+    pause
+    exit /b 1
+)

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-23T18:35:21+00:00",
-  "count": 1684,
+  "generated_at": "2026-09-24T14:12:45+00:00",
+  "count": 1919,
   "entries": [
     {
       "path": "evidence/ab_matcher_20260914.json",
@@ -179,14 +179,14 @@
     {
       "path": "evidence/gui_workbuddy_loop/latest.json",
       "kind": "evidence",
-      "bytes": 30038,
-      "mtime": "2026-09-23T18:06:27+00:00"
+      "bytes": 29975,
+      "mtime": "2026-09-24T10:19:11+00:00"
     },
     {
       "path": "evidence/INDEX.json",
       "kind": "evidence",
-      "bytes": 370865,
-      "mtime": "2026-09-23T15:21:35+00:00"
+      "bytes": 416694,
+      "mtime": "2026-09-24T10:03:37+00:00"
     },
     {
       "path": "evidence/intel_beast_production_2026-09-06.json",
@@ -2193,6 +2193,12 @@
       "mtime": "2026-09-14T09:03:37+00:00"
     },
     {
+      "path": "dataset/truth_audit/icon_label_controls/samples.json",
+      "kind": "fixture",
+      "bytes": 1365170,
+      "mtime": "2026-09-24T03:20:35+00:00"
+    },
+    {
       "path": "dataset/truth_audit/intel_beast_target_20260914/01_intel_beast_mission_dialog.png",
       "kind": "fixture",
       "bytes": 367415,
@@ -2415,6 +2421,1218 @@
       "mtime": "2026-09-13T15:58:21+00:00"
     },
     {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/city_0.png",
+      "kind": "fixture",
+      "bytes": 458702,
+      "mtime": "2026-09-24T06:35:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim.json",
+      "kind": "fixture",
+      "bytes": 12613,
+      "mtime": "2026-09-24T06:37:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_00.png",
+      "kind": "fixture",
+      "bytes": 459453,
+      "mtime": "2026-09-24T06:35:57+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_01.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:36:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_02.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:36:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_03.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:36:20+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_04.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:36:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_05.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:36:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_06.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:36:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_07.png",
+      "kind": "fixture",
+      "bytes": 450915,
+      "mtime": "2026-09-24T06:36:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_08.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:36:56+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_09.png",
+      "kind": "fixture",
+      "bytes": 450963,
+      "mtime": "2026-09-24T06:37:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_10.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:37:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_after_11.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:37:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/claim_final.png",
+      "kind": "fixture",
+      "bytes": 451662,
+      "mtime": "2026-09-24T06:37:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/free_tab.png",
+      "kind": "fixture",
+      "bytes": 458657,
+      "mtime": "2026-09-24T06:35:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_live/panel.png",
+      "kind": "fixture",
+      "bytes": 458612,
+      "mtime": "2026-09-24T06:35:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_open/city_0.png",
+      "kind": "fixture",
+      "bytes": 812149,
+      "mtime": "2026-09-24T06:30:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_open/claim.json",
+      "kind": "fixture",
+      "bytes": 9815,
+      "mtime": "2026-09-24T06:31:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_open/free_tab.png",
+      "kind": "fixture",
+      "bytes": 458690,
+      "mtime": "2026-09-24T06:31:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_claim_open/panel.png",
+      "kind": "fixture",
+      "bytes": 458571,
+      "mtime": "2026-09-24T06:31:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_plan_observe/city_0.png",
+      "kind": "fixture",
+      "bytes": 865259,
+      "mtime": "2026-09-24T06:29:57+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_plan_observe/city_1.png",
+      "kind": "fixture",
+      "bytes": 812268,
+      "mtime": "2026-09-24T06:30:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924_plan_observe/claim.json",
+      "kind": "fixture",
+      "bytes": 863,
+      "mtime": "2026-09-24T06:30:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_00.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:45:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_01.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:45:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_02.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_03.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_04.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_05.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_06.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_07.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_08.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/drift_09.png",
+      "kind": "fixture",
+      "bytes": 356503,
+      "mtime": "2026-09-24T03:46:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T034542_登录好礼/live.json",
+      "kind": "fixture",
+      "bytes": 1885,
+      "mtime": "2026-09-24T03:46:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040345_登录好礼/drift_00.png",
+      "kind": "fixture",
+      "bytes": 630696,
+      "mtime": "2026-09-24T04:03:47+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040345_登录好礼/drift_01.png",
+      "kind": "fixture",
+      "bytes": 621844,
+      "mtime": "2026-09-24T04:03:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040345_登录好礼/drift_02.png",
+      "kind": "fixture",
+      "bytes": 618783,
+      "mtime": "2026-09-24T04:04:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040345_登录好礼/live.json",
+      "kind": "fixture",
+      "bytes": 1669,
+      "mtime": "2026-09-24T04:04:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040345_登录好礼/plan_frame.png",
+      "kind": "fixture",
+      "bytes": 456994,
+      "mtime": "2026-09-24T04:04:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_00_frame.png",
+      "kind": "fixture",
+      "bytes": 424457,
+      "mtime": "2026-09-24T04:05:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_01_frame.png",
+      "kind": "fixture",
+      "bytes": 458551,
+      "mtime": "2026-09-24T04:06:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_02_frame.png",
+      "kind": "fixture",
+      "bytes": 458688,
+      "mtime": "2026-09-24T04:06:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_03_frame.png",
+      "kind": "fixture",
+      "bytes": 458619,
+      "mtime": "2026-09-24T04:06:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_04_frame.png",
+      "kind": "fixture",
+      "bytes": 427617,
+      "mtime": "2026-09-24T04:06:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_05_frame.png",
+      "kind": "fixture",
+      "bytes": 422768,
+      "mtime": "2026-09-24T04:06:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_06_frame.png",
+      "kind": "fixture",
+      "bytes": 421936,
+      "mtime": "2026-09-24T04:06:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_07_frame.png",
+      "kind": "fixture",
+      "bytes": 430206,
+      "mtime": "2026-09-24T04:06:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_08_frame.png",
+      "kind": "fixture",
+      "bytes": 444650,
+      "mtime": "2026-09-24T04:07:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_09_frame.png",
+      "kind": "fixture",
+      "bytes": 449162,
+      "mtime": "2026-09-24T04:07:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/after_1_frame.png",
+      "kind": "fixture",
+      "bytes": 446342,
+      "mtime": "2026-09-24T04:07:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/drift_00.png",
+      "kind": "fixture",
+      "bytes": 807565,
+      "mtime": "2026-09-24T04:05:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/drift_01.png",
+      "kind": "fixture",
+      "bytes": 799447,
+      "mtime": "2026-09-24T04:05:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/drift_02.png",
+      "kind": "fixture",
+      "bytes": 785554,
+      "mtime": "2026-09-24T04:05:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/plan_frame.png",
+      "kind": "fixture",
+      "bytes": 585795,
+      "mtime": "2026-09-24T04:05:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040458_登录好礼/pre_tap_frame.png",
+      "kind": "fixture",
+      "bytes": 583649,
+      "mtime": "2026-09-24T04:05:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040819_登录好礼/drift_00.png",
+      "kind": "fixture",
+      "bytes": 729797,
+      "mtime": "2026-09-24T04:08:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040819_登录好礼/drift_01.png",
+      "kind": "fixture",
+      "bytes": 862845,
+      "mtime": "2026-09-24T04:08:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040819_登录好礼/drift_02.png",
+      "kind": "fixture",
+      "bytes": 866764,
+      "mtime": "2026-09-24T04:08:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040819_登录好礼/live.json",
+      "kind": "fixture",
+      "bytes": 1227,
+      "mtime": "2026-09-24T04:08:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040819_登录好礼/plan_frame.png",
+      "kind": "fixture",
+      "bytes": 867153,
+      "mtime": "2026-09-24T04:08:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040947_登录好礼/drift_00.png",
+      "kind": "fixture",
+      "bytes": 304680,
+      "mtime": "2026-09-24T04:09:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040947_登录好礼/drift_01.png",
+      "kind": "fixture",
+      "bytes": 304680,
+      "mtime": "2026-09-24T04:09:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040947_登录好礼/live.json",
+      "kind": "fixture",
+      "bytes": 882,
+      "mtime": "2026-09-24T04:09:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T040947_登录好礼/plan_frame.png",
+      "kind": "fixture",
+      "bytes": 304680,
+      "mtime": "2026-09-24T04:09:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T052335_登录好礼/drift_00.png",
+      "kind": "fixture",
+      "bytes": 355498,
+      "mtime": "2026-09-24T05:23:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T052335_登录好礼/drift_01.png",
+      "kind": "fixture",
+      "bytes": 355498,
+      "mtime": "2026-09-24T05:23:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T052335_登录好礼/live.json",
+      "kind": "fixture",
+      "bytes": 880,
+      "mtime": "2026-09-24T05:24:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T052335_登录好礼/plan_frame.png",
+      "kind": "fixture",
+      "bytes": 394540,
+      "mtime": "2026-09-24T05:23:57+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_00_frame.png",
+      "kind": "fixture",
+      "bytes": 978192,
+      "mtime": "2026-09-24T05:33:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_01_frame.png",
+      "kind": "fixture",
+      "bytes": 458642,
+      "mtime": "2026-09-24T05:33:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_02_frame.png",
+      "kind": "fixture",
+      "bytes": 458923,
+      "mtime": "2026-09-24T05:33:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_03_frame.png",
+      "kind": "fixture",
+      "bytes": 458611,
+      "mtime": "2026-09-24T05:33:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_04_frame.png",
+      "kind": "fixture",
+      "bytes": 458663,
+      "mtime": "2026-09-24T05:33:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_05_frame.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:33:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_06_frame.png",
+      "kind": "fixture",
+      "bytes": 458520,
+      "mtime": "2026-09-24T05:34:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_07_frame.png",
+      "kind": "fixture",
+      "bytes": 458642,
+      "mtime": "2026-09-24T05:34:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_08_frame.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:34:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_09_frame.png",
+      "kind": "fixture",
+      "bytes": 458591,
+      "mtime": "2026-09-24T05:34:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_10_frame.png",
+      "kind": "fixture",
+      "bytes": 458611,
+      "mtime": "2026-09-24T05:34:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_11_frame.png",
+      "kind": "fixture",
+      "bytes": 458534,
+      "mtime": "2026-09-24T05:34:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_12_frame.png",
+      "kind": "fixture",
+      "bytes": 458693,
+      "mtime": "2026-09-24T05:34:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_13_frame.png",
+      "kind": "fixture",
+      "bytes": 458591,
+      "mtime": "2026-09-24T05:34:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_14_frame.png",
+      "kind": "fixture",
+      "bytes": 458534,
+      "mtime": "2026-09-24T05:34:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_15_frame.png",
+      "kind": "fixture",
+      "bytes": 458658,
+      "mtime": "2026-09-24T05:35:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_16_frame.png",
+      "kind": "fixture",
+      "bytes": 458617,
+      "mtime": "2026-09-24T05:35:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_17_frame.png",
+      "kind": "fixture",
+      "bytes": 458769,
+      "mtime": "2026-09-24T05:35:18+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_18_frame.png",
+      "kind": "fixture",
+      "bytes": 458719,
+      "mtime": "2026-09-24T05:35:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_19_frame.png",
+      "kind": "fixture",
+      "bytes": 458709,
+      "mtime": "2026-09-24T05:35:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_1_frame.png",
+      "kind": "fixture",
+      "bytes": 458516,
+      "mtime": "2026-09-24T05:36:05+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_20_frame.png",
+      "kind": "fixture",
+      "bytes": 458591,
+      "mtime": "2026-09-24T05:35:38+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_21_frame.png",
+      "kind": "fixture",
+      "bytes": 458610,
+      "mtime": "2026-09-24T05:35:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_22_frame.png",
+      "kind": "fixture",
+      "bytes": 458709,
+      "mtime": "2026-09-24T05:35:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/after_23_frame.png",
+      "kind": "fixture",
+      "bytes": 458647,
+      "mtime": "2026-09-24T05:35:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/drift_00.png",
+      "kind": "fixture",
+      "bytes": 1001853,
+      "mtime": "2026-09-24T05:32:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/drift_01.png",
+      "kind": "fixture",
+      "bytes": 989285,
+      "mtime": "2026-09-24T05:32:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/live.json",
+      "kind": "fixture",
+      "bytes": 21293,
+      "mtime": "2026-09-24T05:36:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/plan_frame.png",
+      "kind": "fixture",
+      "bytes": 989527,
+      "mtime": "2026-09-24T05:32:57+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T053234_登录好礼/pre_tap_frame.png",
+      "kind": "fixture",
+      "bytes": 981714,
+      "mtime": "2026-09-24T05:33:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T055924_login_gift_claim/city_0.png",
+      "kind": "fixture",
+      "bytes": 978615,
+      "mtime": "2026-09-24T05:59:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T055924_login_gift_claim/claim.json",
+      "kind": "fixture",
+      "bytes": 9842,
+      "mtime": "2026-09-24T05:59:49+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T055924_login_gift_claim/free_tab.png",
+      "kind": "fixture",
+      "bytes": 458644,
+      "mtime": "2026-09-24T05:59:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/20260924T055924_login_gift_claim/panel.png",
+      "kind": "fixture",
+      "bytes": 458714,
+      "mtime": "2026-09-24T05:59:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/control_click_040151/after_0.png",
+      "kind": "fixture",
+      "bytes": 818211,
+      "mtime": "2026-09-24T04:02:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/control_click_040151/after_1.png",
+      "kind": "fixture",
+      "bytes": 653437,
+      "mtime": "2026-09-24T04:02:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/control_click_040151/after_2.png",
+      "kind": "fixture",
+      "bytes": 830496,
+      "mtime": "2026-09-24T04:02:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/control_click_040151/after_3.png",
+      "kind": "fixture",
+      "bytes": 828005,
+      "mtime": "2026-09-24T04:02:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/control_click_040151/before.png",
+      "kind": "fixture",
+      "bytes": 801043,
+      "mtime": "2026-09-24T04:01:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/control_click_040151/live.json",
+      "kind": "fixture",
+      "bytes": 1306,
+      "mtime": "2026-09-24T04:02:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/current.png",
+      "kind": "fixture",
+      "bytes": 786989,
+      "mtime": "2026-09-24T04:00:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/nav.png",
+      "kind": "fixture",
+      "bytes": 1001858,
+      "mtime": "2026-09-24T05:32:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/nav_home.png",
+      "kind": "fixture",
+      "bytes": 812744,
+      "mtime": "2026-09-24T04:04:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/now.png",
+      "kind": "fixture",
+      "bytes": 796360,
+      "mtime": "2026-09-24T05:23:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_000.png",
+      "kind": "fixture",
+      "bytes": 458484,
+      "mtime": "2026-09-24T05:41:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_001.png",
+      "kind": "fixture",
+      "bytes": 458604,
+      "mtime": "2026-09-24T05:42:00+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_002.png",
+      "kind": "fixture",
+      "bytes": 458659,
+      "mtime": "2026-09-24T05:42:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_003.png",
+      "kind": "fixture",
+      "bytes": 458640,
+      "mtime": "2026-09-24T05:42:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_004.png",
+      "kind": "fixture",
+      "bytes": 458839,
+      "mtime": "2026-09-24T05:42:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_005.png",
+      "kind": "fixture",
+      "bytes": 458537,
+      "mtime": "2026-09-24T05:42:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_006.png",
+      "kind": "fixture",
+      "bytes": 458569,
+      "mtime": "2026-09-24T05:42:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_007.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:42:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_008.png",
+      "kind": "fixture",
+      "bytes": 458595,
+      "mtime": "2026-09-24T05:42:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_009.png",
+      "kind": "fixture",
+      "bytes": 458707,
+      "mtime": "2026-09-24T05:42:17+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_010.png",
+      "kind": "fixture",
+      "bytes": 458537,
+      "mtime": "2026-09-24T05:42:20+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_011.png",
+      "kind": "fixture",
+      "bytes": 459126,
+      "mtime": "2026-09-24T05:42:22+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_012.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:42:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_013.png",
+      "kind": "fixture",
+      "bytes": 458595,
+      "mtime": "2026-09-24T05:42:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_014.png",
+      "kind": "fixture",
+      "bytes": 458645,
+      "mtime": "2026-09-24T05:42:28+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_015.png",
+      "kind": "fixture",
+      "bytes": 458520,
+      "mtime": "2026-09-24T05:42:31+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_016.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:42:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_017.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:42:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_018.png",
+      "kind": "fixture",
+      "bytes": 458625,
+      "mtime": "2026-09-24T05:42:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_019.png",
+      "kind": "fixture",
+      "bytes": 458798,
+      "mtime": "2026-09-24T05:42:40+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_020.png",
+      "kind": "fixture",
+      "bytes": 458484,
+      "mtime": "2026-09-24T05:42:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_021.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:42:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_022.png",
+      "kind": "fixture",
+      "bytes": 459060,
+      "mtime": "2026-09-24T05:42:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_023.png",
+      "kind": "fixture",
+      "bytes": 458595,
+      "mtime": "2026-09-24T05:42:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_024.png",
+      "kind": "fixture",
+      "bytes": 458645,
+      "mtime": "2026-09-24T05:42:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_025.png",
+      "kind": "fixture",
+      "bytes": 458747,
+      "mtime": "2026-09-24T05:42:53+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_026.png",
+      "kind": "fixture",
+      "bytes": 459149,
+      "mtime": "2026-09-24T05:42:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_027.png",
+      "kind": "fixture",
+      "bytes": 458659,
+      "mtime": "2026-09-24T05:42:57+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_028.png",
+      "kind": "fixture",
+      "bytes": 458595,
+      "mtime": "2026-09-24T05:42:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_029.png",
+      "kind": "fixture",
+      "bytes": 458807,
+      "mtime": "2026-09-24T05:43:02+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_030.png",
+      "kind": "fixture",
+      "bytes": 458484,
+      "mtime": "2026-09-24T05:43:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_031.png",
+      "kind": "fixture",
+      "bytes": 458612,
+      "mtime": "2026-09-24T05:43:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_032.png",
+      "kind": "fixture",
+      "bytes": 458601,
+      "mtime": "2026-09-24T05:43:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_033.png",
+      "kind": "fixture",
+      "bytes": 458694,
+      "mtime": "2026-09-24T05:43:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_034.png",
+      "kind": "fixture",
+      "bytes": 458602,
+      "mtime": "2026-09-24T05:43:13+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_035.png",
+      "kind": "fixture",
+      "bytes": 458569,
+      "mtime": "2026-09-24T05:43:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_036.png",
+      "kind": "fixture",
+      "bytes": 458856,
+      "mtime": "2026-09-24T05:43:17+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_037.png",
+      "kind": "fixture",
+      "bytes": 458601,
+      "mtime": "2026-09-24T05:43:19+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_038.png",
+      "kind": "fixture",
+      "bytes": 458707,
+      "mtime": "2026-09-24T05:43:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_039.png",
+      "kind": "fixture",
+      "bytes": 458602,
+      "mtime": "2026-09-24T05:43:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_040.png",
+      "kind": "fixture",
+      "bytes": 458651,
+      "mtime": "2026-09-24T05:43:26+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_041.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:43:28+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_042.png",
+      "kind": "fixture",
+      "bytes": 458601,
+      "mtime": "2026-09-24T05:43:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_043.png",
+      "kind": "fixture",
+      "bytes": 458668,
+      "mtime": "2026-09-24T05:43:33+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_044.png",
+      "kind": "fixture",
+      "bytes": 458694,
+      "mtime": "2026-09-24T05:43:35+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_045.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:43:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_046.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:43:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_047.png",
+      "kind": "fixture",
+      "bytes": 459447,
+      "mtime": "2026-09-24T05:43:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_048.png",
+      "kind": "fixture",
+      "bytes": 458710,
+      "mtime": "2026-09-24T05:43:44+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_049.png",
+      "kind": "fixture",
+      "bytes": 458484,
+      "mtime": "2026-09-24T05:43:46+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_050.png",
+      "kind": "fixture",
+      "bytes": 458612,
+      "mtime": "2026-09-24T05:43:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_051.png",
+      "kind": "fixture",
+      "bytes": 459191,
+      "mtime": "2026-09-24T05:43:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_052.png",
+      "kind": "fixture",
+      "bytes": 458640,
+      "mtime": "2026-09-24T05:43:52+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_053.png",
+      "kind": "fixture",
+      "bytes": 458710,
+      "mtime": "2026-09-24T05:43:55+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_054.png",
+      "kind": "fixture",
+      "bytes": 459339,
+      "mtime": "2026-09-24T05:43:57+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_055.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:43:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_056.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:44:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_057.png",
+      "kind": "fixture",
+      "bytes": 458595,
+      "mtime": "2026-09-24T05:44:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_058.png",
+      "kind": "fixture",
+      "bytes": 459662,
+      "mtime": "2026-09-24T05:44:06+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_059.png",
+      "kind": "fixture",
+      "bytes": 458537,
+      "mtime": "2026-09-24T05:44:08+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_060.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:44:10+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_061.png",
+      "kind": "fixture",
+      "bytes": 458762,
+      "mtime": "2026-09-24T05:44:12+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_062.png",
+      "kind": "fixture",
+      "bytes": 458595,
+      "mtime": "2026-09-24T05:44:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_063.png",
+      "kind": "fixture",
+      "bytes": 458645,
+      "mtime": "2026-09-24T05:44:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_064.png",
+      "kind": "fixture",
+      "bytes": 458537,
+      "mtime": "2026-09-24T05:44:19+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_065.png",
+      "kind": "fixture",
+      "bytes": 459405,
+      "mtime": "2026-09-24T05:44:21+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_066.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:44:23+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_067.png",
+      "kind": "fixture",
+      "bytes": 458601,
+      "mtime": "2026-09-24T05:44:25+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_068.png",
+      "kind": "fixture",
+      "bytes": 458805,
+      "mtime": "2026-09-24T05:44:27+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_069.png",
+      "kind": "fixture",
+      "bytes": 458537,
+      "mtime": "2026-09-24T05:44:30+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_070.png",
+      "kind": "fixture",
+      "bytes": 458613,
+      "mtime": "2026-09-24T05:44:32+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_071.png",
+      "kind": "fixture",
+      "bytes": 458656,
+      "mtime": "2026-09-24T05:44:34+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_072.png",
+      "kind": "fixture",
+      "bytes": 458594,
+      "mtime": "2026-09-24T05:44:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_073.png",
+      "kind": "fixture",
+      "bytes": 458645,
+      "mtime": "2026-09-24T05:44:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/frame_074.png",
+      "kind": "fixture",
+      "bytes": 985424,
+      "mtime": "2026-09-24T05:44:41+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race/race.json",
+      "kind": "fixture",
+      "bytes": 12565,
+      "mtime": "2026-09-24T05:44:43+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_000.png",
+      "kind": "fixture",
+      "bytes": 459436,
+      "mtime": "2026-09-24T06:00:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_001.png",
+      "kind": "fixture",
+      "bytes": 458622,
+      "mtime": "2026-09-24T06:00:45+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_002.png",
+      "kind": "fixture",
+      "bytes": 458849,
+      "mtime": "2026-09-24T06:00:48+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_003.png",
+      "kind": "fixture",
+      "bytes": 458591,
+      "mtime": "2026-09-24T06:00:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_004.png",
+      "kind": "fixture",
+      "bytes": 458689,
+      "mtime": "2026-09-24T06:00:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_005.png",
+      "kind": "fixture",
+      "bytes": 458664,
+      "mtime": "2026-09-24T06:00:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_006.png",
+      "kind": "fixture",
+      "bytes": 458518,
+      "mtime": "2026-09-24T06:01:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_007.png",
+      "kind": "fixture",
+      "bytes": 458713,
+      "mtime": "2026-09-24T06:01:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_008.png",
+      "kind": "fixture",
+      "bytes": 458568,
+      "mtime": "2026-09-24T06:01:07+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/frame_009.png",
+      "kind": "fixture",
+      "bytes": 989235,
+      "mtime": "2026-09-24T06:01:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/panel_owner_race_after_fix/race.json",
+      "kind": "fixture",
+      "bytes": 1900,
+      "mtime": "2026-09-24T06:01:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/popup.png",
+      "kind": "fixture",
+      "bytes": 715178,
+      "mtime": "2026-09-24T04:10:29+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/live_ops/state_now.png",
+      "kind": "fixture",
+      "bytes": 458645,
+      "mtime": "2026-09-24T05:41:04+00:00"
+    },
+    {
       "path": "dataset/truth_audit/live_panel_arrow_20260923/20260922_200202_00_recover0.png",
       "kind": "fixture",
       "bytes": 933263,
@@ -2515,6 +3733,198 @@
       "kind": "fixture",
       "bytes": 548575,
       "mtime": "2026-09-14T01:15:36+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live/after_frame.png",
+      "kind": "fixture",
+      "bytes": 1023703,
+      "mtime": "2026-09-24T03:28:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live/before_frame.png",
+      "kind": "fixture",
+      "bytes": 1020227,
+      "mtime": "2026-09-24T03:28:09+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live/live.json",
+      "kind": "fixture",
+      "bytes": 2556,
+      "mtime": "2026-09-24T03:28:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live/navigate_0.png",
+      "kind": "fixture",
+      "bytes": 671846,
+      "mtime": "2026-09-24T03:27:39+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/local_planner_live/navigate_1.png",
+      "kind": "fixture",
+      "bytes": 1018786,
+      "mtime": "2026-09-24T03:27:50+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_claim_20260924/claim.json",
+      "kind": "fixture",
+      "bytes": 12613,
+      "mtime": "2026-09-24T06:44:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_claim_20260924/key/01_panel_free_tab_before.png",
+      "kind": "fixture",
+      "bytes": 458657,
+      "mtime": "2026-09-24T06:44:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_claim_20260924/key/02_claim_after_00_quarter_second.png",
+      "kind": "fixture",
+      "bytes": 459453,
+      "mtime": "2026-09-24T06:44:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_claim_20260924/key/03_claim_after_01_half_second.png",
+      "kind": "fixture",
+      "bytes": 450897,
+      "mtime": "2026-09-24T06:44:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_claim_20260924/key/04_claim_final.png",
+      "kind": "fixture",
+      "bytes": 451662,
+      "mtime": "2026-09-24T06:44:37+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/city_entry_source_20260924T093904Z.png",
+      "kind": "fixture",
+      "bytes": 728562,
+      "mtime": "2026-09-24T02:10:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/city_entry_source_20260924T093942Z.png",
+      "kind": "fixture",
+      "bytes": 728562,
+      "mtime": "2026-09-24T02:10:24+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/key/control_click_EXPLORATION_20260924T040151.png",
+      "kind": "fixture",
+      "bytes": 653437,
+      "mtime": "2026-09-24T04:02:14+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/key/login_gift_CITY_BEFORE_ENTRY_20260924T055934.png",
+      "kind": "fixture",
+      "bytes": 978615,
+      "mtime": "2026-09-24T06:20:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/key/login_gift_PANEL_FREE_TAB_20260924T055924.png",
+      "kind": "fixture",
+      "bytes": 458644,
+      "mtime": "2026-09-24T06:20:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/key/login_gift_PANEL_JUST_OPENED_20260924T055924.png",
+      "kind": "fixture",
+      "bytes": 458714,
+      "mtime": "2026-09-24T06:20:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/key/login_gift_PANEL_OPENED_20260924T040458.png",
+      "kind": "fixture",
+      "bytes": 458688,
+      "mtime": "2026-09-24T04:06:15+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/key/map_hud_panel_closed_20260924T040458.png",
+      "kind": "fixture",
+      "bytes": 444650,
+      "mtime": "2026-09-24T04:07:03+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/key/quit_game_CONFIRM_DIALOG_20260924T040947.png",
+      "kind": "fixture",
+      "bytes": 304680,
+      "mtime": "2026-09-24T04:09:51+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/login_gift_claim_tile_overlay_20260924T063301Z.png",
+      "kind": "fixture",
+      "bytes": 459124,
+      "mtime": "2026-09-24T06:33:01+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/login_gift_claim_tile_overlay_20260924T063359Z.png",
+      "kind": "fixture",
+      "bytes": 459124,
+      "mtime": "2026-09-24T06:33:59+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/login_gift_claim_tile_overlay_20260924T063416Z.png",
+      "kind": "fixture",
+      "bytes": 459124,
+      "mtime": "2026-09-24T06:34:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/login_gift_claim_tile_overlay_20260924T063516Z.png",
+      "kind": "fixture",
+      "bytes": 459124,
+      "mtime": "2026-09-24T06:35:16+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/login_gift_entry_overlay_20260924T093904Z.png",
+      "kind": "fixture",
+      "bytes": 727732,
+      "mtime": "2026-09-24T09:39:04+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/login_gift_entry_overlay_20260924T093942Z.png",
+      "kind": "fixture",
+      "bytes": 727732,
+      "mtime": "2026-09-24T09:39:42+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/panel_anchor_crops_20260924.png",
+      "kind": "fixture",
+      "bytes": 459712,
+      "mtime": "2026-09-24T05:51:54+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/panel_claim_source_20260924T063301Z.png",
+      "kind": "fixture",
+      "bytes": 458690,
+      "mtime": "2026-09-24T06:31:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/panel_claim_source_20260924T063359Z.png",
+      "kind": "fixture",
+      "bytes": 458690,
+      "mtime": "2026-09-24T06:31:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/panel_claim_source_20260924T063416Z.png",
+      "kind": "fixture",
+      "bytes": 458690,
+      "mtime": "2026-09-24T06:31:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/panel_claim_source_20260924T063516Z.png",
+      "kind": "fixture",
+      "bytes": 458690,
+      "mtime": "2026-09-24T06:31:11+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/panel_open_source_20260924T053234Z.png",
+      "kind": "fixture",
+      "bytes": 458647,
+      "mtime": "2026-09-24T05:35:58+00:00"
+    },
+    {
+      "path": "dataset/truth_audit/login_gift_entry_20260924/panel_tab_crops_20260924.png",
+      "kind": "fixture",
+      "bytes": 458747,
+      "mtime": "2026-09-24T05:57:55+00:00"
     },
     {
       "path": "dataset/truth_audit/lower_panel.png",

@@ -2108,3 +2108,56 @@ OAuth / 会话桥接一律停止）。WorkBuddy = 人工驱动的开发工具。
 
 证据与复现：`docs/LOCAL_PLANNER_ACCEPTANCE.md`、
 `knowledge/failure_patterns/integration/WORKBUDDY_CHANNEL_RETIRED.md`。
+
+## 操作者定规：任意截图必须全读（2026-09-28）
+
+**规则（长期有效）**：任何截图都必须**完整读出**，**不得漏掉按钮信息**。
+
+**实现（唯一入口）**：`winter_agent_v2/ocr_full.py: read_all(frame)` —— 多通道合并：
+P1 全屏 → P2 3×5 网格分块(重叠 20%，放大 2×) → P3 七条 UI 带（顶栏/标签条/按钮行/左右栏，放大 3×），
+按「同文本且中心邻近」合并去重，返回带 `source` 的 token 表。
+命令行：`tools/ocr_readall.py <图或目录> [--json]`。
+
+**为什么必须这样**：全屏 OCR 会漏小字。实测某资源标签仅 22–24px 高，
+全屏漏检、裁到标签带后 100% 命中（`knowledge/formation/formation_policy_rules.json#ocr_roi_lesson_20260928`）。
+机制是引擎对**候选区域**做尺寸归一化——区域越小越准。
+12 帧随机回归：token 召回 **2.22×**（375 → 833），逐帧 1.43–2.48×。
+
+**元素化（宪法 A §二）**：控件按「图标 + 标签」合成**一个元素盒**取中心点；
+**禁止**在点击处加偏移、按比例放大标签框、历史坐标兜底。
+`winter_agent_v2/ocr_roi.py` 的 `find_resource_tab(s)` 已按此返回 `control_box/control_centre`。
+
+**适用范围**：后续所有脚本/工具读屏一律走 `read_all`（或 ROI 版 `ocr_region`），
+不再裸用全屏 OCR；新写的识别代码若绕过这两者，视为违规。
+
+## 采集与采集英雄（2026-09-28 实作确认）
+
+- **采集=采集英雄机制**，不用预设编队；英雄卡左上角**蓝色职能徽章**是唯一可靠身份：
+  **铲子=采集英雄**，盾牌/交叉兵器=战斗英雄（`winter_agent_v2/hero_badge.py`，模板在
+  `dataset/candidate/formation_badges/`）。
+- **采集英雄槽位不固定**（实测同一角色出现过槽1、槽3），必须**逐帧识别**，禁止按位置假设。
+- 整页无铲子徽章 → 移除全部英雄后出征。
+- 入口：城屏放大镜 → 搜索面板 →（标签条可滚动，位置会变）→ 搜索【自动飞达】→ 资源点 → 采集。
+- 联盟矿厂玩家不可采集；无罐头=不耗体力。
+- 实作结果：2026-09-28 01:20 六条行军队列全部派出采集（3/6 → 6/6）。
+
+## 统一语义点击重试（2026-09-29 落地）
+
+**规则（操作者定规）**：动作一旦通过 Policy/RiskGate/Preconditions/目标校验（ACTION_AUTHORIZED），
+执行层的唯一职责是**确保它被游戏接收**；不因"出征/攻击/领奖/用道具/确认"而拒绝重试。
+未授权动作永不点击；已授权动作必须执行成功。
+
+**实现**：`winter_agent_v2/semantic_executor.py`
+- `SemanticActionExecutor.execute(action)`：每次尝试**取新帧→重新定位→点击→有界 settle→评估 postcondition**，
+  坐标**从不复用**；结果分类 SUCCESS / PROGRESS / STILL_PENDING / AMBIGUOUS / FAILED。
+- `MAX_SEMANTIC_CLICK_RETRY = 2`；`is_same_action_still_pending()` 基于 postcondition 返回 TRUE/FALSE/UNKNOWN。
+- SUCCESS 立即停（成功证据优先）；PROGRESS(loading) 只等待不重点；AMBIGUOUS 只观察不盲点。
+- 通用 postcondition 适配器：march_counter / page_open / claim / train_queue / item_count / rally_row。
+- 指标：`learning/semantic_click_metrics.jsonl` + `semantic_click_counters.json`
+  （CLICK_FIRST_TRY_SUCCESS / CLICK_RETRY_SUCCESS / CLICK_RETRY_EXHAUSTED / CLICK_AMBIGUOUS_DEFERRED / CLICK_BLOCKED_UNAUTHORIZED）。
+
+**验证**：离线 8/8（`tools/test_semantic_executor.py`：首点丢失→重试成功、成功不重复、重试耗尽、
+AMBIGUOUS 不盲点、未授权零点击、目标缺失零点击、每次尝试坐标不同）；
+真机 `DISPATCH`（采集出征）——执行器 attempts=1 outcome=SUCCESS @(551,1214)，**首次即 SUCCESS**；
+本轮 `gather_slot=None` 时按规则**无英雄出征**（与采集英雄规则一致）。
+接入：`tools/gather_all.py` 的出征步骤已改走执行器。

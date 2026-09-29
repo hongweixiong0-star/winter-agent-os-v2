@@ -76,12 +76,20 @@
       "version": "1.0.1",
       "status": "VERIFIED",
       "location": "E:\\无尽冬日智能体\\.venv\\Lib\\site-packages\\MaaAgentBinary",
-      "capabilities": ["maatouch", "minicap", "minitouch"],
+      "capabilities": [
+        "maatouch",
+        "minicap",
+        "minitouch"
+      ],
       "verified": true,
       "verification": "dist-info present; directory contains maatouch/ minicap/ minitouch/ (probed 2026-09-14)",
       "benchmark": null,
-      "best_for": ["fast input channel used by MAA controller"],
-      "limitations": ["only meaningful through MaaFramework"],
+      "best_for": [
+        "fast input channel used by MAA controller"
+      ],
+      "limitations": [
+        "only meaningful through MaaFramework"
+      ],
       "fallback": "ADB shell input",
       "last_checked": "2026-09-14"
     },
@@ -91,14 +99,22 @@
       "version": "unknown",
       "status": "VERIFIED / FALLBACK",
       "location": "D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\adb.exe",
-      "capabilities": ["screencap", "input tap/swipe/key", "device connect"],
+      "capabilities": [
+        "screencap",
+        "input tap/swipe/key",
+        "device connect"
+      ],
       "verified": true,
       "verification": "adbutils 2.12.0 -> AdbClient(127.0.0.1:5037).list() == ['127.0.0.1:7555'] (probed 2026-09-14)",
       "benchmark": {
         "adb_capture_ms_mean": 324.12,
         "note": "20-sample live A/B against MAA; ADB is the fallback capture backend"
       },
-      "best_for": ["fallback capture", "fallback input", "device bootstrap (adb connect 127.0.0.1:7555)"],
+      "best_for": [
+        "fallback capture",
+        "fallback input",
+        "device bootstrap (adb connect 127.0.0.1:7555)"
+      ],
       "limitations": [
         "NOT on PATH - call by full path or via adbutils",
         "36x slower capture than MAA"
@@ -112,11 +128,18 @@
       "version": "12",
       "status": "VERIFIED",
       "location": "D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\",
-      "capabilities": ["emulator run", "adb bridge 127.0.0.1:7555", "emulator-native screencap via MAA extras"],
+      "capabilities": [
+        "emulator run",
+        "adb bridge 127.0.0.1:7555",
+        "emulator-native screencap via MAA extras"
+      ],
       "verified": true,
       "verification": "device 127.0.0.1:7555 online; processes MuMuNxMain.exe / MuMuNxDevice.exe / MuMuVMMHeadless.exe running (probed 2026-09-14)",
       "benchmark": null,
-      "best_for": ["running the game client", "fast capture channel"],
+      "best_for": [
+        "running the game client",
+        "fast capture channel"
+      ],
       "limitations": [
         "process name is MuMuNxMain.exe, NOT MuMuPlayer.exe",
         "not launched by default"
@@ -134,11 +157,17 @@
       "version": "1.4.4",
       "status": "VERIFIED / PRIMARY OCR",
       "location": "winter_agent_v2/ocr.py (OCRService, RapidOCRBackend, ResilientOCRBackend)",
-      "capabilities": ["text recognition", "bounded ROI recognition"],
+      "capabilities": [
+        "text recognition",
+        "bounded ROI recognition"
+      ],
       "verified": true,
       "verification": "rapidocr_onnxruntime import OK; HUD stamina ROI reads 0.999 (probed 2026-09-14)",
       "benchmark": null,
-      "best_for": ["HUD numbers", "any text in a known ROI"],
+      "best_for": [
+        "HUD numbers",
+        "any text in a known ROI"
+      ],
       "limitations": [
         "MUST use a dedicated ROI - a full-screen pass misses the stamina gauge entirely",
         "MAA's OCR is unusable (no model), do not route OCR to MAA"
@@ -152,15 +181,24 @@
       "version": "5.0.0",
       "status": "VERIFIED",
       "location": "winter_agent_v2/matchers.py (match_ccoeff, TM_CCOEFF_NORMED multi-scale)",
-      "capabilities": ["template matching", "ROI crop", "annotated evidence"],
+      "capabilities": [
+        "template matching",
+        "ROI crop",
+        "annotated evidence"
+      ],
       "verified": true,
       "verification": "import cv2 -> 5.0.0 (probed 2026-09-14)",
       "benchmark": {
         "legacy_recognition_ms_mean": 34.5,
         "note": "fixed-ROI matcher; 3.3x faster than MAA full-frame at identical 20/20 hits"
       },
-      "best_for": ["known-ROI template matching (fast path)", "special visual supplements"],
-      "limitations": ["cannot search the full frame when position is unknown - use MAA for that"],
+      "best_for": [
+        "known-ROI template matching (fast path)",
+        "special visual supplements"
+      ],
+      "limitations": [
+        "cannot search the full frame when position is unknown - use MAA for that"
+      ],
       "fallback": "MAA template match",
       "last_checked": "2026-09-14"
     },
@@ -170,11 +208,16 @@
       "version": "2.5.2",
       "status": "VERIFIED",
       "location": "venv",
-      "capabilities": ["array math", "MAA frame format (ndarray RGB 720x1280x3)"],
+      "capabilities": [
+        "array math",
+        "MAA frame format (ndarray RGB 720x1280x3)"
+      ],
       "verified": true,
       "verification": "import numpy -> 2.5.2",
       "benchmark": null,
-      "best_for": ["frame handling"],
+      "best_for": [
+        "frame handling"
+      ],
       "limitations": [],
       "fallback": null,
       "last_checked": "2026-09-14"
@@ -185,12 +228,20 @@
       "version": "12.3.0",
       "status": "VERIFIED",
       "location": "venv",
-      "capabilities": ["frame I/O", "crop", "annotated evidence"],
+      "capabilities": [
+        "frame I/O",
+        "crop",
+        "annotated evidence"
+      ],
       "verified": true,
       "verification": "import PIL -> 12.3.0",
       "benchmark": null,
-      "best_for": ["evidence images"],
-      "limitations": ["managed Python 3.13 has NO PIL - always use project venv"],
+      "best_for": [
+        "evidence images"
+      ],
+      "limitations": [
+        "managed Python 3.13 has NO PIL - always use project venv"
+      ],
       "fallback": null,
       "last_checked": "2026-09-14"
     },
@@ -200,11 +251,15 @@
       "version": "1.19.2",
       "status": "VERIFIED",
       "location": "venv",
-      "capabilities": ["inference runtime for RapidOCR"],
+      "capabilities": [
+        "inference runtime for RapidOCR"
+      ],
       "verified": true,
       "verification": "import onnxruntime -> 1.19.2",
       "benchmark": null,
-      "best_for": ["OCR inference"],
+      "best_for": [
+        "OCR inference"
+      ],
       "limitations": [],
       "fallback": null,
       "last_checked": "2026-09-14"
@@ -215,12 +270,18 @@
       "version": "2.13.0+cpu",
       "status": "VERIFIED",
       "location": "venv",
-      "capabilities": ["tensor math / model inference"],
+      "capabilities": [
+        "tensor math / model inference"
+      ],
       "verified": true,
       "verification": "import torch -> 2.13.0+cpu",
       "benchmark": null,
-      "best_for": ["occasional model work"],
-      "limitations": ["CPU only - heavy models will hurt 24h stability"],
+      "best_for": [
+        "occasional model work"
+      ],
+      "limitations": [
+        "CPU only - heavy models will hurt 24h stability"
+      ],
       "fallback": null,
       "last_checked": "2026-09-14"
     },
@@ -230,11 +291,17 @@
       "version": "2.12.0",
       "status": "VERIFIED",
       "location": "venv",
-      "capabilities": ["adb device discovery", "shell", "screencap"],
+      "capabilities": [
+        "adb device discovery",
+        "shell",
+        "screencap"
+      ],
       "verified": true,
       "verification": "AdbClient list -> ['127.0.0.1:7555']",
       "benchmark": null,
-      "best_for": ["device discovery when adb is not on PATH"],
+      "best_for": [
+        "device discovery when adb is not on PATH"
+      ],
       "limitations": [],
       "fallback": null,
       "last_checked": "2026-09-14"
@@ -245,11 +312,17 @@
       "version": "2.55.0.windows.3",
       "status": "VERIFIED",
       "location": "C:\\Program Files\\Git\\cmd\\git.EXE",
-      "capabilities": ["version control", "GitHub source access"],
+      "capabilities": [
+        "version control",
+        "GitHub source access"
+      ],
       "verified": true,
       "verification": "git --version OK; git ls-remote --heads https://github.com/Shederator/wosbot.git returned refs (probed 2026-09-14)",
       "benchmark": null,
-      "best_for": ["checkpoints", "cloning external WOS projects for source-level study"],
+      "best_for": [
+        "checkpoints",
+        "cloning external WOS projects for source-level study"
+      ],
       "limitations": [],
       "fallback": null,
       "last_checked": "2026-09-14"
@@ -260,12 +333,20 @@
       "version": "2.98.0",
       "status": "VERIFIED",
       "location": "C:\\Program Files\\GitHub CLI\\gh.EXE",
-      "capabilities": ["GitHub API", "repo browse", "source access"],
+      "capabilities": [
+        "GitHub API",
+        "repo browse",
+        "source access"
+      ],
       "verified": true,
       "verification": "gh --version -> 2.98.0 (2026-08-20)",
       "benchmark": null,
-      "best_for": ["fallback source access when git clone is blocked"],
-      "limitations": ["needs auth for some operations"],
+      "best_for": [
+        "fallback source access when git clone is blocked"
+      ],
+      "limitations": [
+        "needs auth for some operations"
+      ],
       "fallback": null,
       "last_checked": "2026-09-14"
     },
@@ -275,17 +356,97 @@
       "version": "9.1.1",
       "status": "VERIFIED",
       "location": "venv",
-      "capabilities": ["unit / replay tests"],
+      "capabilities": [
+        "unit / replay tests"
+      ],
       "verified": true,
       "verification": "import pytest -> 9.1.1",
       "benchmark": null,
-      "best_for": ["regression before live test"],
+      "best_for": [
+        "regression before live test"
+      ],
       "limitations": [
         "full suite needs --basetemp=\"E:/无尽冬日智能体/tools/_pt_tmp\" (default temp cleanup trips the bulk-delete guard)",
         "pytest PASS is NOT completion - live verification still required"
       ],
       "fallback": null,
       "last_checked": "2026-09-14"
+    },
+    {
+      "tool_id": "MUMU_CLI",
+      "name": "mumu-cli.exe (MuMu Player 12 CLI) + mumu-control skill",
+      "version": "skill 1.2",
+      "status": "CANDIDATE / READY_FOR_LIVE_VERIFY",
+      "location": "D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\mumu-cli.exe",
+      "skill_paths": {
+        "workbuddy_user_level": "C:\\Users\\xhw\\.workbuddy\\skills\\mumu-control",
+        "codebuddy_install_mirror": "E:\\无尽冬日智能体\\.codebuddy\\skills\\mumu-control"
+      },
+      "source": {
+        "origin": "vendor official - https://skills.mumu.163.com/mumu-control",
+        "discovery_endpoint": "https://skills.mumu.163.com/mumu-control/.well-known/agent-skills/index.json",
+        "license": "MIT",
+        "install_command": "npx skills add https://skills.mumu.163.com/mumu-control -a codebuddy -y",
+        "evidence_level": "PRIOR for every command described in SKILL.md; the only OBSERVED fact is binary presence",
+        "security_audit": "2026-09-26: 9 files audited, byte-identical to upstream source (SKILL.md md5 5fd96086d0f0745331c918716cb8deae); no network / subprocess / credential / destructive code; sole file removal is its own temp screenshot.",
+        "source_url": "https://skills.mumu.163.com/mumu-control",
+        "install_verified": "installed 2026-09-26; 9 files byte-identical to upstream (SKILL.md md5 5fd96086d0f0745331c918716cb8deae)"
+      },
+      "capabilities": [
+        "instance lifecycle: launch / shutdown / restart / show_window / hide_window / layout_window",
+        "batch multi-instance targeting via --vmindex 0,1,2 or --vmindex all",
+        "app ops: install (apk/xapk/apks) / uninstall / launch / close / info",
+        "instance query `info` -> JSON with index, is_process_started, is_android_started, player_state, adb_port, pid",
+        "setting read/write (resolution_width / resolution_height / resolution_dpi, others)",
+        "simulation of device identity (android_id / IMEI) - dual use, see limitations",
+        "export / import instance snapshots (.mumudata)",
+        "tool func (home/back/rotate/screenshot/...) and tool downcpu"
+      ],
+      "verified": false,
+      "verification": "SELF-MEASURED (filesystem): mumu-cli.exe and legacy MuMuManager.exe BOTH exist in D:\\Program Files\\Netease\\MuMu Player 12\\nx_main\\ . INSTANCE STATE: measured earlier this session by redirecting to a file, but the temp files were later cleaned and a repeat probe returned exit 0 with EMPTY stdout (known traps: this shell cannot cd; PowerShell stdout is not returned). Therefore NOT currently reproducible - re-measure by file redirect before relying on it. NOT done at all: screenshot, tap, or any action through this tool.",
+      "verification_pending": [
+        "Re-measure `mumu-cli.exe info -v all` with output redirected to a file, so the index-to-serial mapping stops resting on a reported number.",
+        "Resolve which --vmindex carries the V2 serial 127.0.0.1:7555 (currently UNKNOWN).",
+        "Under a fresh DEVELOPMENT_VALIDATION_DEVICE_LEASE: one real screenshot + one low-risk click, executed by the unified V2 Executor (MAA-first, ADB fallback), never by the skill scripts directly."
+      ],
+      "prior_vs_live_diff": [
+        "UPSTREAM CLAIM (PRIOR, not truth): index 0 -> adb port 16384, general rule 16384 + index*2, default serial 127.0.0.1:16384.",
+        "MEASURED EARLIER THIS SESSION, NOT CURRENTLY REPRODUCIBLE: a redirect-to-file probe showed index 0 = stopped and index 1 = booted with index_host_port=16386; the temp files were then cleaned up and a repeat probe returned exit 0 with EMPTY stdout (this box cannot cd; PowerShell stdout is not returned). Plausible but UNCONFIRMED - re-measure with a file redirect before building on it.",
+        "V2 VERIFIED DEVICE (VERIFIED 2026-09-14, highest truth): serial 127.0.0.1:7555, 720x1280, com.gof.china.",
+        "CONFLICT, UNRESOLVED: the mapping between the V2 serial 127.0.0.1:7555 and a mumu-cli --vmindex value is UNKNOWN. It does not follow the upstream 16384+N*2 formula. Do not assume --vmindex 0 == 7555.",
+        "RULE: never hardcode serial or port. Any script from this skill defaults to 127.0.0.1:16384 and MUST be passed -s 127.0.0.1:7555 explicitly. Resolve the index-to-serial mapping only from a live `info` response, never from the doc."
+      ],
+      "traps": [
+        "setting writes return 'key not writable' unless the instance is STOPPED.",
+        "Fields adb_host_ip / adb_port / pid / player_state are absent from `info` when the instance is stopped.",
+        "Do NOT run `python -m uiautomator2 init`: it pushes atx-agent onto the device and would collide with the existing automation stack.",
+        "Skill scripts write to ./tmp/mumu-control - run them only from a scratch directory, never from the repo root.",
+        "Root URL https://skills.mumu.163.com/mumu-control returns 403 to a browser; only SKILL.md and the well-known index are served. This is expected, not a failure."
+      ],
+      "python_deps": {
+        "status": "already satisfied in project .venv",
+        "present": [
+          "uiautomator2",
+          "rapidocr_onnxruntime",
+          "opencv-python",
+          "numpy",
+          "pillow"
+        ],
+        "note": "requirements.txt uses unpinned lower bounds -> installing it is unnecessary and would be a supply-chain risk. Nothing to install."
+      },
+      "best_for": [
+        "instance lifecycle orchestration and device recovery",
+        "batch operations across multiple emulator instances",
+        "authoritative CLI flag reference (replaces guessing at MuMuManager.exe syntax)"
+      ],
+      "limitations": [
+        "NOT a production executor: all gameplay clicks stay MAA-first with ADB fallback. This tool touches device lifecycle only.",
+        "UI scripts (uiscan/tap/swipe/input_text/keyevent) are REFERENCE implementations, not a second execution chain.",
+        "Device-identity 'simulation' is dual-use and out of scope for normal operation."
+      ],
+      "fallback": "MUMU (MuMuManager.exe) - functionally identical per vendor docs",
+      "last_checked": "2026-09-26",
+      "source_url": "https://skills.mumu.163.com/mumu-control"
     }
   ],
   "not_installed": {

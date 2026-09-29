@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-23T18:35:19+00:00",
+  "generated_at": "2026-09-24T14:12:42+00:00",
   "source": "tools/update_workbuddy_handoff.py",
-  "commit": "d6d1a47",
+  "commit": "e3d00ad",
   "last_good_commit": "e4fd245",
-  "dirty_count": 598,
+  "dirty_count": 732,
   "episodes": {
-    "total": 7864,
-    "production": 7864,
-    "success": 6425,
-    "failure": 1434,
-    "success_rate_over_decided": 0.8175,
+    "total": 8620,
+    "production": 8620,
+    "success": 7120,
+    "failure": 1495,
+    "success_rate_over_decided": 0.8265,
     "modes": {
-      "PRODUCTION": 7864
+      "PRODUCTION": 8620
     },
     "mixed_case_rows": 35
   },
   "skills": {
-    "registry_total": 112,
+    "registry_total": 114,
     "by_state": {
       "VERIFIED": 47,
-      "CANDIDATE": 63,
+      "CANDIDATE": 65,
       "BLOCKED": 2
     },
-    "dispatchable": 98,
+    "dispatchable": 100,
     "counts": {
-      "live_verified": 20,
-      "stable": 44,
-      "degraded": 18,
+      "live_verified": 18,
+      "stable": 45,
+      "degraded": 19,
       "only_failed": 11,
-      "never_executed": 21
+      "never_executed": 23
     }
   },
   "top_failures": [
     {
       "failure_type": "SEMANTIC_TARGET_NOT_VERIFIED",
-      "count": 429,
-      "recent": 147,
-      "last_seen": "2026-09-23T17:43:06.198521+00:00",
+      "count": 455,
+      "recent": 126,
+      "last_seen": "2026-09-24T13:27:02.849145+00:00",
       "dates": {
         "2026-09-12": 36,
         "2026-09-13": 37,
@@ -49,17 +49,18 @@
         "2026-09-20": 89,
         "2026-09-21": 53,
         "2026-09-22": 87,
-        "2026-09-23": 50
+        "2026-09-23": 57,
+        "2026-09-24": 19
       },
       "undated": 31,
       "top_skills": [
         [
           "TRY_ORDINARY_CONTROL",
-          51
+          56
         ],
         [
           "SELECT_RESOURCE",
-          47
+          50
         ],
         [
           "OPEN_HOME",
@@ -69,14 +70,14 @@
     },
     {
       "failure_type": "POPUP_CLOSE_NOT_PROVEN",
-      "count": 89,
-      "recent": 83,
-      "last_seen": "2026-09-23T09:36:07.512813+00:00",
+      "count": 90,
+      "recent": 76,
+      "last_seen": "2026-09-23T23:15:34.464669+00:00",
       "dates": {
         "2026-09-13": 5,
         "2026-09-17": 1,
         "2026-09-22": 8,
-        "2026-09-23": 75
+        "2026-09-23": 76
       },
       "undated": 0,
       "top_skills": [
@@ -86,7 +87,7 @@
         ],
         [
           "DISMISS_REAL_MONEY_OFFER",
-          6
+          7
         ],
         [
           "RECONNECT_SESSION",
@@ -95,9 +96,45 @@
       ]
     },
     {
+      "failure_type": "POWER_DETAILS_NOT_PROVEN",
+      "count": 38,
+      "recent": 38,
+      "last_seen": "2026-09-24T13:38:56.204884+00:00",
+      "dates": {
+        "2026-09-23": 22,
+        "2026-09-24": 16
+      },
+      "undated": 0,
+      "top_skills": [
+        [
+          "OPEN_POWER_DETAILS",
+          38
+        ]
+      ]
+    },
+    {
+      "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
+      "count": 67,
+      "recent": 29,
+      "last_seen": "2026-09-24T04:49:35.547754+00:00",
+      "dates": {
+        "2026-09-21": 9,
+        "2026-09-22": 33,
+        "2026-09-23": 21,
+        "2026-09-24": 3
+      },
+      "undated": 1,
+      "top_skills": [
+        [
+          "DISPATCH_BEAST",
+          67
+        ]
+      ]
+    },
+    {
       "failure_type": "SAFE_BACK_NOT_PROVEN",
       "count": 97,
-      "recent": 68,
+      "recent": 20,
       "last_seen": "2026-09-23T13:08:24.805139+00:00",
       "dates": {
         "2026-09-13": 1,
@@ -118,82 +155,65 @@
       ]
     },
     {
-      "failure_type": "BEAST_DISPATCH_NOT_PROVEN",
-      "count": 58,
-      "recent": 53,
-      "last_seen": "2026-09-23T18:11:34.567601+00:00",
-      "dates": {
-        "2026-09-21": 9,
-        "2026-09-22": 33,
-        "2026-09-23": 15
-      },
-      "undated": 1,
-      "top_skills": [
-        [
-          "DISPATCH_BEAST",
-          58
-        ]
-      ]
-    },
-    {
       "failure_type": "NO_EXECUTION",
-      "count": 52,
-      "recent": 43,
-      "last_seen": "2026-09-23T15:54:36.630527+00:00",
+      "count": 54,
+      "recent": 13,
+      "last_seen": "2026-09-24T09:17:07.995622+00:00",
       "dates": {
         "2026-09-14": 4,
         "2026-09-15": 1,
         "2026-09-21": 10,
         "2026-09-22": 32,
-        "2026-09-23": 5
+        "2026-09-23": 6,
+        "2026-09-24": 1
       },
       "undated": 0,
       "top_skills": [
         [
           "SAFE_STOP",
-          52
+          54
         ]
       ]
     },
     {
-      "failure_type": "POWER_DETAILS_NOT_PROVEN",
-      "count": 20,
-      "recent": 20,
-      "last_seen": "2026-09-23T17:25:13.203862+00:00",
+      "failure_type": "ORDINARY_CONTROL_ALREADY_USED_THIS_RUN",
+      "count": 12,
+      "recent": 12,
+      "last_seen": "2026-09-23T20:03:32.077006+00:00",
       "dates": {
-        "2026-09-23": 20
+        "2026-09-22": 2,
+        "2026-09-23": 10
       },
       "undated": 0,
       "top_skills": [
         [
-          "OPEN_POWER_DETAILS",
-          20
+          "TRY_ORDINARY_CONTROL",
+          12
         ]
       ]
     },
     {
-      "failure_type": "EXPLORATION_IDLE_DIALOG_NOT_PROVEN",
-      "count": 39,
-      "recent": 18,
-      "last_seen": "2026-09-22T11:21:51.270358+00:00",
+      "failure_type": "MARCH_COUNT_NOT_READ",
+      "count": 11,
+      "recent": 8,
+      "last_seen": "2026-09-22T22:25:53.188615+00:00",
       "dates": {
-        "2026-09-19": 7,
-        "2026-09-20": 3,
-        "2026-09-21": 18,
-        "2026-09-22": 10
+        "2026-09-15": 1,
+        "2026-09-20": 2,
+        "2026-09-22": 8
       },
-      "undated": 1,
+      "undated": 0,
       "top_skills": [
         [
-          "EXPLORATION_IDLE_CLAIM",
-          39
+          "CHECK_MARCH",
+          11
         ]
       ]
     },
     {
       "failure_type": "OPEN_INTEL_NOT_PROVEN",
       "count": 16,
-      "recent": 15,
+      "recent": 7,
       "last_seen": "2026-09-22T21:33:56.537796+00:00",
       "dates": {
         "2026-09-17": 1,
@@ -209,37 +229,27 @@
       ]
     },
     {
-      "failure_type": "INFANTRY_CAMP_HIGHLIGHT_NOT_PROVEN",
-      "count": 27,
-      "recent": 10,
-      "last_seen": "2026-09-22T14:55:21.909586+00:00",
+      "failure_type": "TRAINING_PAGE_NOT_PROVEN",
+      "count": 9,
+      "recent": 6,
+      "last_seen": "2026-09-22T15:43:39.417290+00:00",
       "dates": {
-        "2026-09-19": 10,
-        "2026-09-21": 14,
-        "2026-09-22": 1
-      },
-      "undated": 2,
-      "top_skills": [
-        [
-          "NAVIGATE_INFANTRY_CAMP",
-          27
-        ]
-      ]
-    },
-    {
-      "failure_type": "ORDINARY_CONTROL_ALREADY_USED_THIS_RUN",
-      "count": 10,
-      "recent": 10,
-      "last_seen": "2026-09-23T17:57:34.142051+00:00",
-      "dates": {
-        "2026-09-22": 2,
-        "2026-09-23": 8
+        "2026-09-17": 2,
+        "2026-09-22": 7
       },
       "undated": 0,
       "top_skills": [
         [
-          "TRY_ORDINARY_CONTROL",
-          10
+          "OPEN_TASK_FROM_QUICK_PANEL_LANCER",
+          4
+        ],
+        [
+          "OPEN_INFANTRY_TRAINING",
+          3
+        ],
+        [
+          "OPEN_TASK_FROM_QUICK_PANEL_SHIELD",
+          2
         ]
       ]
     }
@@ -277,9 +287,9 @@
   },
   "evidence_integrity": {
     "status": "PASS",
-    "referenced_screenshots": 13877,
-    "present_on_disk": 13877,
-    "traceable_episodes": 7132,
+    "referenced_screenshots": 15359,
+    "present_on_disk": 15359,
+    "traceable_episodes": 7888,
     "note": "Live Verified requires production episode + verifier + screenshot evidence",
     "missing_count": 0
   },
@@ -290,9 +300,9 @@
   },
   "git_sync": {
     "branch": "main",
-    "local_head": "d6d1a477b692c2eb6479632e47d3795fdc7dac17",
-    "remote_head": "63b17c31d4e1a1285985332bcf8b7fc42df3450d",
-    "unpushed_commits": 2,
+    "local_head": "e3d00ad51849bc3521f5539d5daa1a8485e870e8",
+    "remote_head": "e590784283ed5b9a4c82c69431c7217f1960c2f7",
+    "unpushed_commits": 5,
     "behind": 0,
     "in_sync": false,
     "remote_url": "https://github.com/hongweixiong0-star/winter-agent-os-v2.git",
@@ -300,7 +310,7 @@
     "last_push_status": "PUSHED"
   },
   "runtime": {
-    "agent_state": "RECOVERING",
+    "agent_state": "GOAL_RUNNING",
     "unexpected_worker_exits": 15,
     "watchdog_restart_count": 21,
     "last_fatal_error": null,

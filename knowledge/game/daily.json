@@ -1,6 +1,372 @@
-{"schema_version":"1.0","gate":"REVIEWED","records":[
-  {"id":"DAILY_HERO_RECRUIT","name":"完成1次英雄招募","category":"DAILY_TASK","entry":"HOME/GROWTH_TASKS/DAILY","progress_before":"0/1","progress_after_action":"1/1 CLAIMABLE","reward":{"activity":10,"coal":800,"iron":200},"activity_before":270,"activity_after":280,"next_repeat_task":"完成3次英雄招募 (1/3)","next_milestone":325,"cost":"FREE_RECRUIT","source":["LIVE_CLIENT","official_help_center","github_aminul_wos"],"retrieved_at":"2026-09-03","last_verified":"2026-09-03","confidence":0.99,"status":"VERIFIED"},
-  {"id":"DAILY_MULTI_CLAIM","name":"每日任务一键领取","category":"DAILY_CLAIM","entry":"HOME/TASK/DAILY","tasks":["DAILY_LOGIN","ALLIANCE_HELP_1","TRAIN_INFANTRY_10"],"claimable_before":3,"claimable_after":0,"activity_before":0,"activity_after":65,"milestone_opened":40,"reward":{"activity":65,"meat":28000,"coal":800,"iron":200},"source":["LIVE_CLIENT"],"last_verified":"2026-09-04","confidence":0.99,"status":"VERIFIED"},
-  {"id":"DAILY_ALLIANCE_CONTRIBUTE_5","name":"完成联盟捐献5次","category":"DAILY_TASK","entry":"HOME/TASK/DAILY→ALLIANCE/TECHNOLOGY","progress_before":"3/5","progress_after":"5/5 CLAIMABLE","next_repeat_task":"完成联盟捐献20次 (5/20)","activity_before":65,"activity_after":70,"reward":{"activity":5,"wood":4000},"linked_skill":"ALLIANCE_TECH_CONTRIBUTE","source":["LIVE_CLIENT"],"last_verified":"2026-09-04","confidence":0.99,"status":"VERIFIED"},
-  {"id":"DAILY_ROUTINE","name":"日常","tasks":["INTEL","ALLIANCE_HELP","ALLIANCE_TECH","MAIL","VIP","TRAINING","GATHER_RESOURCE","HERO_RECRUIT"],"schedule":"live reset countdown; official help says daily refresh at midnight UTC for mission systems","priority":"strategy-dependent","source":["LIVE_CLIENT","century_games_help","github_aminul_wos"],"confidence":0.90,"status":"CONFIRMED","notes":"Only individually live-verified task variants are executable. Paid tasks remain outside normal selection."}
-]}
+{
+ "schema_version": "1.0",
+ "gate": "REVIEWED",
+ "records": [
+  {
+   "id": "DAILY_HERO_RECRUIT",
+   "name": "完成1次英雄招募",
+   "category": "DAILY_TASK",
+   "entry": "HOME/GROWTH_TASKS/DAILY",
+   "progress_before": "0/1",
+   "progress_after_action": "1/1 CLAIMABLE",
+   "reward": {
+    "activity": 10,
+    "coal": 800,
+    "iron": 200
+   },
+   "activity_before": 270,
+   "activity_after": 280,
+   "next_repeat_task": "完成3次英雄招募 (1/3)",
+   "next_milestone": 325,
+   "cost": "FREE_RECRUIT",
+   "source": [
+    "LIVE_CLIENT",
+    "official_help_center",
+    "github_aminul_wos"
+   ],
+   "retrieved_at": "2026-09-03",
+   "last_verified": "2026-09-03",
+   "confidence": 0.99,
+   "status": "VERIFIED"
+  },
+  {
+   "id": "DAILY_MULTI_CLAIM",
+   "name": "每日任务一键领取",
+   "category": "DAILY_CLAIM",
+   "entry": "HOME/TASK/DAILY",
+   "tasks": [
+    "DAILY_LOGIN",
+    "ALLIANCE_HELP_1",
+    "TRAIN_INFANTRY_10"
+   ],
+   "claimable_before": 3,
+   "claimable_after": 0,
+   "activity_before": 0,
+   "activity_after": 65,
+   "milestone_opened": 40,
+   "reward": {
+    "activity": 65,
+    "meat": 28000,
+    "coal": 800,
+    "iron": 200
+   },
+   "source": [
+    "LIVE_CLIENT"
+   ],
+   "last_verified": "2026-09-04",
+   "confidence": 0.99,
+   "status": "VERIFIED"
+  },
+  {
+   "id": "DAILY_ALLIANCE_CONTRIBUTE_5",
+   "name": "完成联盟捐献5次",
+   "category": "DAILY_TASK",
+   "entry": "HOME/TASK/DAILY→ALLIANCE/TECHNOLOGY",
+   "progress_before": "3/5",
+   "progress_after": "5/5 CLAIMABLE",
+   "next_repeat_task": "完成联盟捐献20次 (5/20)",
+   "activity_before": 65,
+   "activity_after": 70,
+   "reward": {
+    "activity": 5,
+    "wood": 4000
+   },
+   "linked_skill": "ALLIANCE_TECH_CONTRIBUTE",
+   "source": [
+    "LIVE_CLIENT"
+   ],
+   "last_verified": "2026-09-04",
+   "confidence": 0.99,
+   "status": "VERIFIED"
+  },
+  {
+   "id": "DAILY_ROUTINE",
+   "name": "日常",
+   "tasks": [
+    "INTEL",
+    "ALLIANCE_HELP",
+    "ALLIANCE_TECH",
+    "MAIL",
+    "VIP",
+    "TRAINING",
+    "GATHER_RESOURCE",
+    "HERO_RECRUIT"
+   ],
+   "schedule": "live reset countdown; official help says daily refresh at midnight UTC for mission systems",
+   "priority": "strategy-dependent",
+   "source": [
+    "LIVE_CLIENT",
+    "century_games_help",
+    "github_aminul_wos"
+   ],
+   "confidence": 0.9,
+   "status": "CONFIRMED",
+   "notes": "Only individually live-verified task variants are executable. Paid tasks remain outside normal selection."
+  },
+  {
+   "id": "GROWTH_INFERMARY_LEVEL_23_LIVE_1063040265",
+   "name": "将军医所升到23级",
+   "category": "GROWTH_TASK_MAINLINE",
+   "entry": "HOME/GROWTH_TASKS/MAINLINE -> 前往 -> CITY/INFIRMARY -> UPGRADE",
+   "role_id": "1063040265",
+   "role_scope": "ROLE_SCOPED_LIVE_STATE",
+   "progress_before": "22/23",
+   "preflight": {
+    "furnace_level_23": "client displayed green check",
+    "resources": "all four cost rows displayed green checks",
+    "building_queue_before": "occupied; second queue purchase dialog opened"
+   },
+   "second_queue": {
+    "action": "rented for 2 days",
+    "diamond_cost": 1000,
+    "confirmed_by": "client confirmation dialog",
+    "role_scope": "CURRENT_TEST_ALT_ONLY"
+   },
+   "upgrade": {
+    "state_after": "IN_PROGRESS",
+    "displayed_remaining_at_start": "17:43:04",
+    "client_toast": "艾格妮丝为您节约了120分钟建造时间",
+    "evidence_refs": [
+     "dataset/raw/ui_exploration/20260928/frame_182_DAILY_GROWTH_TASKS.png",
+     "dataset/raw/ui_exploration/20260928/frame_183_GROWTH_TASK_ROUTE.png",
+     "dataset/raw/ui_exploration/20260928/frame_184_INFIRMARY_UPGRADE_DIALOG.png",
+     "dataset/raw/ui_exploration/20260928/frame_186_SECOND_BUILD_QUEUE_HIRED.png",
+     "dataset/raw/ui_exploration/20260928/frame_187_SECOND_BUILD_QUEUE_CONFIRMED.png",
+     "dataset/raw/ui_exploration/20260928/frame_188_INFIRMARY_UPGRADE_STARTED.png",
+     "dataset/raw/ui_exploration/20260928/frame_190_QUICK_PANEL_AFTER_BUILD_START.png"
+    ]
+   },
+   "goal_status": "IN_PROGRESS_NOT_COMPLETED",
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "last_verified": "2026-09-28",
+   "status": "LIVE_IN_PROGRESS",
+   "notes": "The mainline task still displayed 22/23. Do not mark complete until the client reports level 23. The 2-day builder purchase is role-scoped and must not be reused for another role without its own current policy."
+  },
+  {
+   "id": "DAILY_TASK_CATALOG_LIVE_20260928",
+   "name": "每日任务清单现场观察",
+   "category": "DAILY_TASK_CATALOG_OBSERVATION",
+   "entry": "HOME -> DAILY_TASKS -> DAILY_TAB",
+   "role_id": null,
+   "role_scope": "CURRENT_TEST_ALT_SESSION_ROLE_ID_NOT_REFRESHED",
+   "activity_points": 185,
+   "refresh_countdown_at_first_capture": "14:06:07",
+   "observed_at_start": "2026-09-28T01:45:04+00:00",
+   "observed_at_end": "2026-09-28T01:58:23+00:00",
+   "status": "LIVE_OBSERVED",
+   "tasks": [
+    {
+     "task_id": "DAILY_ALLIANCE_CONTRIBUTE",
+     "label": "完成联盟捐献5次",
+     "progress": "3/5",
+     "state": "AVAILABLE",
+     "go_control_observed": true
+    },
+    {
+     "task_id": "DAILY_HERO_RECRUIT",
+     "label": "完成3次英雄招募",
+     "progress": "2/3",
+     "state": "AVAILABLE",
+     "go_control_observed": true,
+     "followup": {
+      "action": "FREE_HERO_RECRUIT_ADVANCED via MAA",
+      "verifier": "PASS; reward popup appeared and draw count changed",
+      "task_progress_after": "NOT_REOBSERVED"
+     }
+    },
+    {
+     "task_id": "DAILY_INTEL_CLUES",
+     "label": "处理5次情报线索",
+     "progress": "1/5",
+     "state": "AVAILABLE",
+     "go_control_observed": true
+    },
+    {
+     "task_id": "DAILY_WAREHOUSE_SUPPLY",
+     "label": "在仓库领取3次补给",
+     "progress": "2/3",
+     "state": "UNKNOWN",
+     "go_control_observed": false,
+     "note": "row was clipped by bottom tab overlay in captured viewport"
+    },
+    {
+     "task_id": "DAILY_RESEARCH",
+     "label": "研究1次科技",
+     "progress": "0/1",
+     "state": "AVAILABLE",
+     "go_control_observed": true
+    },
+    {
+     "task_id": "DAILY_DEFEAT_BEAST",
+     "label": "击败冰原巨兽2次",
+     "progress": "1/2",
+     "state": "AVAILABLE",
+     "go_control_observed": true
+    },
+    {
+     "task_id": "DAILY_ARENA_CHALLENGE",
+     "label": "进行1次竞技场挑战",
+     "progress": "0/1",
+     "state": "AVAILABLE",
+     "go_control_observed": true
+    },
+    {
+     "task_id": "DAILY_EXTERNAL_SHARE",
+     "label": "成功分享1次传说英雄/满级宠物/执政官",
+     "progress": "0/1",
+     "state": "UNKNOWN",
+     "go_control_observed": false,
+     "note": "No action was taken; outbound social sharing is not part of this observation"
+    },
+    {
+     "task_id": "DAILY_EXPLORATION_CHALLENGE",
+     "label": "进行1次探险挑战",
+     "progress": "0/1",
+     "state": "UNKNOWN",
+     "ocr_confidence": 0.53,
+     "note": "partly obscured at viewport edge"
+    },
+    {
+     "task_id": "DAILY_LOGIN",
+     "label": "每日登录",
+     "progress": "1/1",
+     "state": "COMPLETED"
+    },
+    {
+     "task_id": "DAILY_ALLIANCE_HELP",
+     "label": "联盟互助20次",
+     "progress": "20/20",
+     "state": "COMPLETED"
+    },
+    {
+     "task_id": "DAILY_TRAIN_SHIELD",
+     "label": "训练30个盾兵",
+     "progress": "30/30",
+     "state": "COMPLETED"
+    },
+    {
+     "task_id": "DAILY_TRAIN_LANCER",
+     "label": "训练30个矛兵",
+     "progress": "30/30",
+     "state": "COMPLETED"
+    },
+    {
+     "task_id": "DAILY_TRAIN_MARKSMAN",
+     "label": "训练30个射手",
+     "progress": "30/30",
+     "state": "COMPLETED"
+    },
+    {
+     "task_id": "DAILY_GATHER_MEAT",
+     "label": "采集250,000单位生肉",
+     "progress": "250000/250000",
+     "state": "COMPLETED"
+    },
+    {
+     "task_id": "DAILY_GATHER_WOOD",
+     "label": "采集250,000单位木材",
+     "progress": "250000/250000",
+     "state": "COMPLETED"
+    },
+    {
+     "task_id": "DAILY_GATHER",
+     "label": "采集4次",
+     "progress": "4/4",
+     "state": "COMPLETED"
+    }
+   ],
+   "evidence_refs": [
+    "dataset/raw/ui_exploration/20260928/frame_618_CURRENT_AFTER_DAILY_AUTO.png",
+    "dataset/raw/ui_exploration/20260928/frame_620_DAILY_AFTER_SCROLL.png",
+    "dataset/raw/ui_exploration/20260928/frame_622_DAILY_AFTER_SCROLL2.png",
+    "dataset/raw/ui_exploration/20260928/frame_624_DAILY_AFTER_SCROLL3.png",
+    "dataset/raw/ui_exploration/20260928/frame_631_DAILY_SCROLL_TO_TOP_1.png",
+    "dataset/raw/ui_exploration/20260928/frame_633_DAILY_SCROLL_TO_TOP_2.png",
+    "dataset/raw/ui_exploration/20260928/frame_635_DAILY_HERO_RECRUIT_GO_BEFORE.png",
+    "dataset/raw/ui_exploration/20260928/daily_hero_recruit_auto/daily_hero_recruit_auto_step_001_before_20260928T020143340489.png",
+    "dataset/raw/ui_exploration/20260928/daily_hero_recruit_auto/daily_hero_recruit_auto_step_001_after_20260928T020153877410.png"
+   ],
+   "last_verified": "2026-09-28",
+   "confidence": 0.99,
+   "notes": "Rows were read from multiple current frames while scrolling; task IDs are semantic categories, not role-global execution IDs. One daily recruitment action was performed by the existing AUTO/MAA route, but that task row's progress was not re-read afterward."
+  },
+  {
+   "id": "DAILY_TRAVEL_SUPPLY_FREE_REFILL_LIVE_1063040265",
+   "name": "游历补给免费领取",
+   "category": "FREE_DAILY_SUPPLY",
+   "entry": "HOME/QUICK_PANEL/TRAVEL_SUPPLY -> ENDLESS_JOURNEY -> CURRENT_SUPPLY_COUNTER",
+   "role_id": "1063040265",
+   "role_name": "零氪纯盾流",
+   "role_scope": "ROLE_SCOPED_LIVE_OBSERVATION",
+   "free_claim": {
+    "amount": 10,
+    "availability_text": "每日8:00和16:00，可手动领取10个游历补给。",
+    "timezone": "UNKNOWN",
+    "before_count": 63,
+    "after_count": 73,
+    "verified_delta": 10,
+    "next_refill_after_claim": "04:31:36 (point-in-time UI countdown)"
+   },
+   "paid_offer": {
+    "visible": true,
+    "currency": "DIAMONDS",
+    "price": 1000,
+    "daily_limit_text": "4/4",
+    "action_taken": false
+   },
+   "source": "LIVE_TEST_ALT_2026-09-28",
+   "observed_at_utc": "2026-09-28T04:36:59.957113+00:00",
+   "last_verified": "2026-09-28",
+   "evidence_refs": [
+    "dataset/raw/ui_exploration/20260928/frame_721_TRAVEL_RESOURCE_AFTER.png",
+    "dataset/raw/ui_exploration/20260928/frame_723_TRAVEL_FREE_CLAIM_AFTER.png"
+   ],
+   "status": "LIVE_VERIFIED",
+   "confidence": 0.99,
+   "notes": "Free claim verifier requires count +10 and cooldown state. The separate paid offer is never part of this flow; this fact must not be copied to another role."
+  },
+  {
+   "id": "DAILY_PROGRESS_OBS_1063040265_20260928_TASKBOARD_RECHECK_01",
+   "name": "测试小号每日任务当前状态",
+   "category": "ROLE_SCOPED_LIVE_OBSERVATION",
+   "role_id": "1063040265",
+   "role_name": "零氪纯盾流",
+   "observed_at_utc": "2026-09-28T06:01:45.971527+00:00",
+   "timezone": "Asia/Shanghai",
+   "activity": 215,
+   "tasks": [
+    {
+     "task_id": "DAILY_ALLIANCE_CONTRIBUTE",
+     "label": "完成联盟捐献5次",
+     "progress": "4/5",
+     "state": "AVAILABLE"
+    },
+    {
+     "task_id": "DAILY_INTEL_CLUES",
+     "label": "处理5次情报线索",
+     "progress": "1/5",
+     "state": "AVAILABLE"
+    },
+    {
+     "task_id": "DAILY_WAREHOUSE_SUPPLY",
+     "label": "在仓库领取5次补给",
+     "progress": "4/5",
+     "state": "AVAILABLE"
+    },
+    {
+     "task_id": "DAILY_GATHER_COAL",
+     "label": "采集10,000单位煤炭",
+     "progress": "0/10000",
+     "state": "AVAILABLE"
+    }
+   ],
+   "evidence_refs": [
+    "dataset/raw/ui_exploration/20260928/frame_828_LIVE_DAILY_RECHECK.png"
+   ],
+   "source": "LIVE_TEST_ALT_OCR_READBACK",
+   "status": "LIVE_OBSERVED",
+   "confidence": 0.99,
+   "notes": "全屏OCR重新读取实时每日任务页；任务进度按当前帧记录。"
+  }
+ ]
+}

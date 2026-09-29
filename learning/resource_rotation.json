@@ -1,13 +1,10 @@
 {
   "dispatched": {
-    "MEAT": 2,
-    "WOOD": 2,
-    "COAL": 2,
-    "IRON": 2
+    "MEAT": 27,
+    "WOOD": 26,
+    "COAL": 26,
+    "IRON": 26
   },
-  "next": "MEAT",
-  "unavailable": {
-    "MEAT": "2026-09-14T06:30:38.914553+00:00",
-    "WOOD": "2026-09-14T06:36:07.384931+00:00"
-  }
+  "next": "WOOD",
+  "unavailable": {}
 }

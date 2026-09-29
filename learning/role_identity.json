@@ -1,14 +1,15 @@
 {
- "role_id": "1171757165",
- "role_name": "xhw小号",
- "alliance_tag": "zoe",
+ "role_id": "1063040265",
+ "role_name": "零氪纯盾流",
+ "alliance_tag": "ioi",
  "kingdom": "4298",
- "power_text": "54.2万",
- "confidence": 0.8536205887794495,
- "observed_at": "2026-09-16T10:44:08.934554+00:00",
+ "power_text": "6236.0万",
+ "confidence": 0.8288143053650856,
+ "observed_at": "2026-09-29T12:40:56.309449+00:00",
  "evidence": [
-  "dataset/truth_audit/role_identity_20260916/profile_panel_live_20260916T184004.png"
+  "C:\\Users\\xhw\\.codex\\worktrees\\global-multirole-live\\无尽冬日智能体\\dataset\\raw\\role_switch\\20260929T124033_916546Z_target_profile.png",
+  "C:\\Users\\xhw\\.codex\\worktrees\\global-multirole-live\\无尽冬日智能体\\dataset\\raw\\role_switch\\20260929T124043_864681Z_target_home_after_profile.png"
  ],
- "verification": "VISION_READ_REPLAY",
+ "verification": "LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED",
  "written_by": "state_truth.record_role"
 }

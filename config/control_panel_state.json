@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "task_enabled": {
     "邮件": true,
     "探险": true,
@@ -11,5 +11,8 @@
     "野怪": true
   },
   "continuous": true,
-  "updated_at": "2026-09-17T22:58:00.246595+08:00"
+  "updated_at": "2026-09-29T21:06:32.715129+08:00",
+  "operator_intent": "PAUSED",
+  "operator_intent_at": "2026-09-29T21:06:32.715129+08:00",
+  "operator_intent_reason": "User is manually participating in Bear; Codex stopped all device inputs"
 }

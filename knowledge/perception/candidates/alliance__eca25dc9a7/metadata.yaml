@@ -2,8 +2,8 @@ candidate_id: alliance__eca25dc9a7
 semantic_id: ''
 page: ALLIANCE
 goal: ALLIANCE
-source_frame: dataset/raw/control_panel/runtime_exploration/unknown_page_check/unknown_page_check_step_007_after_20260922T071939437289.png
-source_episode: unknown_page_check
+source_frame: E:/无尽冬日智能体/dataset/raw/control_panel/runtime_auto/20260923_205447_839789/20260923_205447_839789_step_004_after_20260923T125624851687.png
+source_episode: '20260923_205447_839789'
 image_path: knowledge/perception/candidates/alliance__eca25dc9a7/element.png
 context_image_path: knowledge/perception/candidates/alliance__eca25dc9a7/context.png
 bbox:
@@ -25,7 +25,7 @@ attempt_count: 0
 success_count: 0
 failure_count: 0
 created_at: '2026-09-22T06:46:37.227458+00:00'
-last_seen_at: '2026-09-22T07:19:46.765435+00:00'
+last_seen_at: '2026-09-23T12:56:34.929902+00:00'
 template_version: ''
 notes: the client printed an ordinary action word the semantic dictionary does not
   declare; the candidate semantic is a guess from the word and the page and is kept

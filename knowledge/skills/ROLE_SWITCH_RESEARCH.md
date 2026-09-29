@@ -1,5 +1,7 @@
 # ROLE_SWITCH 研究与候选设计（2026-09-22）
 
+> **状态更新（2026-09-29）：**以下“未验证切换路径”是 2026-09-22 的历史状态，已被当天真实客户端探索取代。角色管理页与往返切换已经实测；生产 AUTO 接线仍未完成。详见 `docs/dual_role/GLOBAL_DUAL_ROLE_SCHEDULER_PHASE0_AUDIT.md` 及 `dataset/raw/ui_exploration/multirole_20260929/`。
+
 > 结论先行：**多角色切换在 V2 里不存在**，本轮也没有实现它 —— 因为实现它需要一次真机确认，
 > 而真机本轮归 AUTO（操作者本轮第一优先是让 AUTO 真正跑起来）。
 > 本文件的价值是把"要真机发现"压缩成"要真机确认一处文字差异"。
@@ -101,8 +103,16 @@ LIVE 的；缺的只是"切换到另一个"。**
 5. **不点** `Create new character`，**不点** `Change Account`。
 6. 上述三帧即可把本文件从 `PRIOR` 抬到 `OBSERVED`；真正的切换动作留到有第二个角色可切时再做。
 
-## 六、状态
+## 六、2026-09-29 实机增量
 
-- 本文件：`PRIOR`（外部 OCR 参考 + 本项目身份帧交叉印证，**无任何真机切换证据**）
-- `ROLE_SWITCH` capability：`MISSING`（无 skill、无模板、无 verifier、无 brain 路由）
-- 不得据此声称"多角色已支持"。
+- 当前角色管理列表显示两个角色，均属于王国 4298：`[ioi]零氪纯盾流`（账号 `1063040265`，大熔炉 30 级）和 `[DIW]xhw`（账号 `1061663148`，战力约 `8243.4万`；列表中“大熔炉等级”旁红色 `2` 徽章含义未解释，不将其推断为普通炉等级）。
+- 真实切换已往返验证：`1063040265 → 1061663148 → 1063040265`。目标行会弹出“登录 / 您确定要登录该角色？”；确认后客户端重新加载，并出现离线收益或游历结算页面。身份读取确认 Role B 后，按同一流程切回 Role A。
+- 证据帧：`dataset/raw/ui_exploration/multirole_20260929/role_explore_04_role_management.png`、`role_explore_05_role_b_select_dialog.png`、`role_explore_10_role_b_profile.png`、`role_explore_13_role_b_role_management.png`、`role_explore_14_role_a_select_dialog.png`、`role_explore_19_dismiss_role_a_result.png`。
+- Role A 登录期间自动显示了 `¥30.00` 礼包；本次仅关闭，没有尝试支付。角色切换状态机必须把含价格的礼包视为阻断弹窗并安全关闭或等待，不能选择购买控件。
+- 以上证明客户端角色可切换，不证明任何角色的任务状态可复用，也不证明生产 MAA 调度接线已经完成。
+
+## 七、状态
+
+- UI 路径：`LIVE_VERIFIED`（双向角色切换及账号 ID 验证）。
+- `ROLE_SWITCH` production capability：仍为 `MISSING`（无注册 Skill、生产 Verifier、调度器调用点）。
+- 全局多角色 AUTO：`NOT_WIRED`；当前不能声称生产双角色调度已支持。

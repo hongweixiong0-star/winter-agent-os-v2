@@ -1,12 +1,17 @@
-[code] revision 9ffc11eddd35+72
-[role] 1171757165 (PERSISTED)
-[schedule] deferred AVOID_STAMINA_WASTE -> DEVELOPMENT_PENDING on SPEND_STAMINA_ON_BEAST: a development job owns it (job=d8ea0e44)
+[code] revision 015e4f2ca06279b001fb2c9958de63aa0c045b4d+a28c0a3417143d36
+[role] 1063040265 (FRESH_RUNTIME)
+[planner] qwen3635bagent-q3:latest at http://127.0.0.1:11434 -> reachable
 product: MuMuPlayer-12.0-0
-nemu_connect instance_name: ginstance1400897965935489300
+nemu_connect instance_name: ginstance1400967653141180200
 connect not same day
 product: MuMuPlayer-12.0-0
-nemu_connect instance_name: ginstance1400897965935489300
-[schedule] deferred AVOID_STAMINA_WASTE -> DEVELOPMENT_PENDING on SPEND_STAMINA_ON_BEAST: a development job owns it (job=d8ea0e44)
-{"steps": [{"index": 1, "decision": {"skill": "SAFE_STOP", "reason": "reserved_march_for_stamina", "confidence": 1.0, "expected_result": "stamina_task_slot_preserved"}, "execution": null, "before": {"page": "MAP", "popup": null, "resources": {}, "marches": ["MARCHING"], "march_used": 2, "march_max": 3, "normal_march_slots": null, "normal_idle_slots": null, "bear_rally_special_slot": null, "bear_rally_special_available": null, "building": {}, "research": {}, "training": {}, "events": {}, "alliance": {}, "intel": {}, "beast": {}, "daily": {}, "mail": {}, "exploration": {}, "stamina": {"current": 577, "source": "MAP_HUD", "roi": {"x_norm": 0.04, "y_norm": 0.0755, "w_norm": 0.058, "h_norm": 0.019}, "gauge_pixels": 520}, "hospital": {}, "defense": {}, "rewards": {}, "account_stage": {}, "resource_bank": {}, "queues": {}, "rally": {}, "hero_troop": {}, "attempts": {}, "battlefield": {}, "inventory": {}, "resource_target": "WOOD", "resource_search_open": false, "resource_search_exhausted": false, "resource_selected": null, "resource_level": null, "resource_available": null, "confidence": 0.99, "timestamp": "2026-09-18T07:53:32.430635+00:00"}, "after": null, "verification": null}], "stop_reason": "reserved_march_for_stamina", "deferrals": [{"goal_id": "AVOID_STAMINA_WASTE", "capability": "SPEND_STAMINA_ON_BEAST", "state": "DEVELOPMENT_PENDING", "reason": "a development job owns it (job=d8ea0e44)", "source": "ESCALATION_QUEUE", "failure_signature": "", "streak": 0, "until": "", "last_skill": ""}]}
-[escalation] errors 1
-[escalation]   error SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SCAN_MAP_FOR_BEAST: status(d8ea0e44) failed: http://127.0.0.1:8080/api/v1/jobs/d8ea0e44: timed out after 15.0s
+nemu_connect instance_name: ginstance1400967653141180200
+{"steps": [], "stop_reason": "device_leased_for_development", "deferrals": []}
+[escalation] skipped 7
+[escalation]   skipped OPEN_RESEARCH_PAGE|NO_GOAL_PROGRESS|NAVIGATE_RESEARCH_LAB: DEDUP_SKIP: OPEN_RESEARCH_PAGE / NO_GOAL_PROGRESS / NAVIGATE_RESEARCH_LAB is the same capability as OPEN_RESEARCH_PAGE|NO_GOAL_PROGRESS|BACK (state=DONE, job=not submitted yet); one capability must not have two jobs
+[escalation]   skipped SPEND_STAMINA_ON_BEAST|NO_GOAL_PROGRESS|SUBMIT_BEAST_SEARCH: DEDUP_SKIP: SPEND_STAMINA_ON_BEAST / NO_GOAL_PROGRESS / SUBMIT_BEAST_SEARCH is the same capability as SPEND_STAMINA_ON_BEAST|SEMANTIC_TARGET_NOT_VERIFIED|ATTACK_BEAST_CARD (state=DONE, job=not submitted yet); one capability must not have two jobs
+[escalation]   skipped CLAIM_IDLE_INCOME|NO_GOAL_PROGRESS|OPEN_POWER_OVERVIEW: DEDUP_SKIP: CLAIM_IDLE_INCOME / NO_GOAL_PROGRESS / OPEN_POWER_OVERVIEW is the same capability as CLAIM_IDLE_INCOME|NO_GOAL_PROGRESS|OPEN_HOME (state=DONE, job=not submitted yet); one capability must not have two jobs
+[escalation]   skipped READ_INTEL_LIST|NO_GOAL_PROGRESS|OPEN_HOME: DEDUP_SKIP: READ_INTEL_LIST / NO_GOAL_PROGRESS / OPEN_HOME is the same capability as READ_INTEL_LIST|NO_GOAL_PROGRESS|OPEN_DAILY (state=DONE, job=not submitted yet); one capability must not have two jobs
+[escalation]   skipped OPEN_EXPLORATION_PAGE|NO_GOAL_PROGRESS|EXPLORATION_IDLE_CLAIM: DEDUP_SKIP: OPEN_EXPLORATION_PAGE / NO_GOAL_PROGRESS / EXPLORATION_IDLE_CLAIM is the same capability as OPEN_EXPLORATION_PAGE|OPEN_EXPLORATION_NOT_PROVEN|OPEN_EXPLORATION (state=DONE, job=not submitted yet); one capability must not have two jobs
+[escalation]   skipped EXECUTE_INTEL_MISSION|INTEL_BEAST_DISPATCH_NOT_PROVEN|DISPATCH_INTEL_BEAST: DEDUP_SKIP: EXECUTE_INTEL_MISSION / INTEL_BEAST_DISPATCH_NOT_PROVEN / DISPATCH_INTEL_BEAST is the same capability as EXECUTE_INTEL_MISSION|INTEL_RESCUE_START_NOT_PROVEN|EXECUTE_INTEL_RESCUE_SURVIVORS (state=DONE, job=not submitted yet); one capability must not have two jobs
+[escalation]   skipped OPEN_INTEL_PAGE|NO_GOAL_PROGRESS|OPEN_MAP: DEDUP_SKIP: OPEN_INTEL_PAGE / NO_GOAL_PROGRESS / OPEN_MAP is the same capability as OPEN_INTEL_PAGE|OPEN_INTEL_NOT_PROVEN|OPEN_INTEL (state=DONE, job=not submitted yet); one capability must not have two jobs

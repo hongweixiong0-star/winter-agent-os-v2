@@ -1,2473 +1,2486 @@
 {
- "baseline": {
-  "goals": 16,
-  "skills_defined": 138,
-  "skills_with_maa_node": 23,
-  "skills_with_node_and_auto": 23,
-  "skills_requiring_pipeline": 115,
-  "skills_missing_pipeline": 92,
-  "semantic_targets_requiring_pipeline": 102,
-  "semantic_targets_with_node": 21,
-  "semantic_targets_missing_node": 81,
-  "maa_executed_skills": 9,
-  "maa_verifier_passed_skills": 7,
-  "maa_goal_progress_skills": 1
- },
- "queue": [
-  {
-   "semantic": "BTN_DISPATCH",
-   "skills": [
-    "DISPATCH_MARCH"
-   ],
-   "goals": [
-    "KEEP_MARCHES_PRODUCTIVE",
-    "PARTICIPATE_BEAR"
-   ],
-   "pages": [
-    "MARCH"
-   ],
-   "production_attempts": 85,
-   "family": "NAV",
-   "priority": "P0",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "出征",
-    "派遣",
-    "Deploy",
-    "Dispatch",
-    "March"
-   ],
-   "generator_ready": false,
-   "next_step": "L4 PROVEN 2026-09-27: production resolver tap (551,1213) on live formation page -> march 行军 1/4 (17公里, countdown). DISPATCH_READY is LIVE_VERIFIED; no further node work needed.",
-   "l4_proven_at": "2026-09-26T17:19:38.927849+00:00"
-  },
-  {
-   "semantic": "BTN_ALLIANCE_GIFTS_CLAIM_ALL",
-   "skills": [
-    "ALLIANCE_GIFTS"
-   ],
-   "goals": [
-    "ALLIANCE_ROUTINE",
-    "CLAIM_FREE_REWARDS"
-   ],
-   "pages": [
-    "ALLIANCE"
-   ],
-   "production_attempts": 11,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "一键领取"
-   ],
-   "generator_ready": true,
-   "next_step": "LIVE 2026-09-26: gifts popup shows 前往/无盟友赠礼 -- 一键领取 renders only when a gift exists; harvest again with a gift on the test account"
-  },
-  {
-   "semantic": "BTN_ALLY_GIFT_CLAIM",
-   "skills": [
-    "ALLIANCE_ALLY_GIFT_CLAIM"
-   ],
-   "goals": [
-    "ALLIANCE_ROUTINE",
-    "CLAIM_FREE_REWARDS"
-   ],
-   "pages": [
-    "ALLIANCE"
-   ],
-   "production_attempts": 12,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "领取"
-   ],
-   "generator_ready": true,
-   "next_step": "LIVE 2026-09-26: same popup state, no claim button rendered without gifts"
-  },
-  {
-   "semantic": "BTN_ALLIANCE_HELP_ALL",
-   "skills": [
-    "ALLIANCE_HELP"
-   ],
-   "goals": [
-    "ALLIANCE_ROUTINE"
-   ],
-   "pages": [
-    "ALLIANCE"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
-   "skills": [
-    "ALLIANCE_TECH_CONTRIBUTE"
-   ],
-   "goals": [
-    "ALLIANCE_ROUTINE"
-   ],
-   "pages": [
-    "ALLIANCE"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "捐献"
-   ],
-   "generator_ready": true,
-   "next_step": "LIVE 2026-09-26: tech page shows 您的捐献：23,280 as one token; the 捐献 button appears after selecting a tech item, harvest needs that intermediate tap"
-  },
-  {
-   "semantic": "BTN_ALLIANCE_WAR",
-   "skills": [
-    "OPEN_BEAR_RALLY_LIST"
-   ],
-   "goals": [],
-   "pages": [
-    "ALLIANCE"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "联盟战争"
-   ],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "live frame r2_alliance prints 联盟战争 as button caption (observed 2026-09-26)",
-    "classified_at_source": "live_frame_token"
-   }
-  },
-  {
-   "semantic": "BTN_OPEN_ALLIANCE_GIFTS",
-   "skills": [
-    "OPEN_ALLIANCE_GIFTS"
-   ],
-   "goals": [
-    "ALLIANCE_ROUTINE"
-   ],
-   "pages": [
-    "ALLIANCE"
-   ],
-   "production_attempts": 97,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "联盟宝箱"
-   ],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "live frame r2_alliance prints 联盟宝箱; gifts popup reached via this button earlier today",
-    "classified_at_source": "live_frame_token"
-   }
-  },
-  {
-   "semantic": "BTN_BEAST_CARD_ATTACK",
-   "skills": [
-    "ATTACK_BEAST_CARD"
-   ],
-   "goals": [
-    "AVOID_STAMINA_WASTE"
-   ],
-   "pages": [
-    "BEAST"
-   ],
-   "production_attempts": 101,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_BEAST_START_MARCH",
-   "skills": [
-    "BEAST_HUNT",
-    "INTEL_BEAST_START_MARCH"
-   ],
-   "goals": [
-    "AVOID_STAMINA_WASTE",
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "BEAST"
-   ],
-   "production_attempts": 102,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_BUILD_UPGRADE",
-   "skills": [
-    "BUILDING_UPGRADE"
-   ],
-   "goals": [
-    "EVENT_MINIMUM_GUARANTEE",
-    "KEEP_BUILDING_PRODUCTIVE"
-   ],
-   "pages": [
-    "BUILDING"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_DAILY_GO_HERO_RECRUIT",
-   "skills": [
-    "DAILY_HERO_RECRUIT"
-   ],
-   "goals": [],
-   "pages": [
-    "DAILY"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_DAILY_TAB_TASKS",
-   "skills": [
-    "SELECT_DAILY_TAB"
-   ],
-   "goals": [],
-   "pages": [
-    "DAILY"
-   ],
-   "production_attempts": 53,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "LOGIN_GIFT_DAY_CLAIM",
-   "skills": [
-    "CLAIM_LOGIN_GIFT"
-   ],
-   "goals": [],
-   "pages": [
-    "EVENT"
-   ],
-   "production_attempts": 0,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_OPEN_EXPLORATION",
-   "skills": [
-    "OPEN_EXPLORATION"
-   ],
-   "goals": [
-    "CLAIM_EXPLORATION_IDLE"
-   ],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 83,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_OPEN_POWER_OVERVIEW_ICON",
-   "skills": [
-    "OPEN_POWER_OVERVIEW"
-   ],
-   "goals": [
-    "KEEP_TRAINING_PRODUCTIVE"
-   ],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 190,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_OPEN_TRAINING_FROM_CAMP",
-   "skills": [
-    "OPEN_INFANTRY_TRAINING"
-   ],
-   "goals": [
-    "KEEP_TRAINING_PRODUCTIVE"
-   ],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 67,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_SELECTED_BUILDING_UPGRADE",
-   "skills": [
-    "OPEN_BUILDING_UPGRADE"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 5,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "TRAINING_CAMP_IN_RING",
-   "skills": [
-    "SELECT_INFANTRY_CAMP"
-   ],
-   "goals": [
-    "KEEP_TRAINING_PRODUCTIVE"
-   ],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 4,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_OPEN_RESEARCH",
-   "skills": [
-    "OPEN_RESEARCH"
-   ],
-   "goals": [
-    "KEEP_RESEARCH_PRODUCTIVE"
-   ],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 109,
-   "family": "SEARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "blue arrow sprite identical to building-upgrade arrow; rejected by negative-frame validation 2026-09-26 — must be located relative to the 科技研究 text row, not by sprite",
-    "classified_at_source": "negative_frame_rejection"
-   },
-   "note": "locate via parent row of text 科技研究 (row at y~790 on HOME) then offset to right arrow"
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_MY_REWARDS",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 0,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": "ROW",
-   "visible_words": [
-    "我的奖励",
-    "仓库补给"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- reader proven on the scrolled frame (20260927_071653_484155 step_016).  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "我的奖励",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_MY_REWARDS_DONE",
-   "skills": [
-    "COLLECT_MY_REWARDS_ROW"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 0,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": "ROW_CONTROL",
-   "visible_words": [
-    "仓库补给"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- reader proven: 仓库补给 row read control=DONE with done_norm.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row_done",
-    "row_label": "我的奖励",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_ALLIANCE_DONATION",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 1,
-   "family": "LIST",
-   "priority": "P1",
-   "record_type": "ROW",
-   "visible_words": [
-    "联盟捐献"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-27T00:52:19Z alliance-donation walk SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "联盟捐献",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_BUILDING",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_BUILDING"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 17,
-   "family": "LIST",
-   "priority": "P1",
-   "record_type": "ROW",
-   "visible_words": [
-    "队列1",
-    "建筑队列"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-26+.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "建筑队列",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "PAGE_MAP",
-   "skills": [
-    "OPEN_MAP"
-   ],
-   "goals": [
-    "KEEP_MARCHES_PRODUCTIVE"
-   ],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 597,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "世界",
-    "地图"
-   ],
-   "generator_ready": false,
-   "next_step": "RESOLVED 2026-09-27: the chip is an ACTION label (city view draws 野外, wilderness draws 城镇), so a single '城镇/野外' OCR node can never name a state.  Replaced by two bidirectionally validated state templates (STATE_CITY_VIEW / STATE_WILDERNESS_VIEW, see their queue items); the tap itself stays on the legacy vision path that already works (2026-09-27 00:43 OPEN_MAP SUCCESS) because the router's miss-stays-a-miss rule would turn every panel-covered chip into an OPEN_MAP failure.",
-   "superseded_by": [
-    "STATE_CITY_VIEW",
-    "STATE_WILDERNESS_VIEW"
-   ]
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_RESEARCH",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 66,
-   "family": "SEARCH",
-   "priority": "P1",
-   "record_type": "ROW",
-   "visible_words": [
-    "科技研究"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-27T00:20:06Z OPEN_TASK_FROM_QUICK_PANEL_RESEARCH SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "科技研究",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "TARGET_INTEL_BEAST_MISSION",
-   "skills": [
-    "SELECT_INTEL_BEAST_MISSION"
-   ],
-   "goals": [
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "INTEL"
-   ],
-   "production_attempts": 2,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "row/target whose content and position change per state; needs per-instance capture",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "TARGET_INTEL_FIREBEAST_MISSION",
-   "skills": [
-    "SELECT_INTEL_FIREBEAST_MISSION"
-   ],
-   "goals": [
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "INTEL"
-   ],
-   "production_attempts": 0,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": "CARD",
-   "visible_words": [
-    "炽红巨兽情报图标"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "INTEL_PIN",
-   "skills": [
-    "SELECT_INTEL_PIN"
-   ],
-   "goals": [],
-   "pages": [
-    "INTEL"
-   ],
-   "production_attempts": 417,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "TARGET_INTEL_RESCUE_SURVIVORS",
-   "skills": [
-    "SELECT_INTEL_RESCUE_SURVIVORS"
-   ],
-   "goals": [
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "INTEL"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "CARD",
-   "visible_words": [
-    "营救幸存者情报图标"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "TARGET_BEAST_MAMMOTH_5",
-   "skills": [
-    "SELECT_BEAST_TARGET_MAMMOTH"
-   ],
-   "goals": [
-    "AVOID_STAMINA_WASTE"
-   ],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 12,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "row/target whose content and position change per state; needs per-instance capture",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "TARGET_BEAST_MUSK_OX_9",
-   "skills": [
-    "SELECT_BEAST_TARGET"
-   ],
-   "goals": [
-    "AVOID_STAMINA_WASTE"
-   ],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 0,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "row/target whose content and position change per state; needs per-instance capture",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_INTEL_RESCUE_SURVIVORS",
-   "skills": [
-    "EXECUTE_INTEL_RESCUE_SURVIVORS"
-   ],
-   "goals": [
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 33,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "营救"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "BTN_OPEN_INTEL_WILD_HUD",
-   "skills": [
-    "OPEN_INTEL"
-   ],
-   "goals": [
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 483,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "RESOURCE_DYNAMIC",
-   "skills": [
-    "SELECT_RESOURCE"
-   ],
-   "goals": [
-    "KEEP_MARCHES_PRODUCTIVE"
-   ],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 105,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "row/target whose content and position change per state; needs per-instance capture",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BEAST_SEARCH_TAB",
-   "skills": [
-    "OPEN_BEAST_SEARCH_TAB"
-   ],
-   "goals": [],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 7,
-   "family": "SEARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_OPEN_RESOURCE_SEARCH",
-   "skills": [
-    "SEARCH_RESOURCE"
-   ],
-   "goals": [
-    "KEEP_MARCHES_PRODUCTIVE"
-   ],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 467,
-   "family": "SEARCH",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "打开资源搜索"
-   ],
-   "generator_ready": false,
-   "next_step": "L1/L2 registered 2026-09-27: TEMPLATE node BTN_OPEN_RESOURCE_SEARCH (threshold .78; live hit 0.845 during the L4 dispatch chain; 0/3 negative frames). Awaiting AUTO L3/L4 through the normal gather chain."
-  },
-  {
-   "semantic": "BTN_BEAST_DISPATCH",
-   "skills": [
-    "DISPATCH_INTEL_BEAST"
-   ],
-   "goals": [
-    "AVOID_STAMINA_WASTE",
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "MARCH"
-   ],
-   "production_attempts": 101,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_BEAST_DISPATCH_MUSK_OX_9",
-   "skills": [
-    "DISPATCH_BEAST"
-   ],
-   "goals": [
-    "AVOID_STAMINA_WASTE"
-   ],
-   "pages": [
-    "MARCH"
-   ],
-   "production_attempts": 98,
-   "family": "MARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_CLAIM_FREE_STAMINA",
-   "skills": [
-    "CLAIM_FREE_STAMINA"
-   ],
-   "goals": [],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 254,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_CLAIM_OFFLINE_REWARDS",
-   "skills": [
-    "CLAIM_OFFLINE_REWARDS"
-   ],
-   "goals": [
-    "CLAIM_FREE_REWARDS"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 3,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_DISMISS_INTEL_REWARD",
-   "skills": [
-    "DISMISS_INTEL_REWARD",
-    "DISMISS_MAIL_GENERIC_REWARD",
-    "DISMISS_DAILY_GENERIC_REWARD",
-    "DISMISS_INTEL_GENERIC_REWARD",
-    "DISMISS_EXPLORATION_GENERIC_REWARD",
-    "DISMISS_ALLIANCE_GENERIC_REWARD",
-    "DISMISS_SHARED_REWARD"
-   ],
-   "goals": [
-    "CLAIM_EXPLORATION_IDLE",
-    "CLAIM_FREE_REWARDS",
-    "CLEAR_INTEL",
-    "DAILY_ACTIVITY_TARGET",
-    "MAIL_ROUTINE"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 449,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "POPUP_DAILY_REWARD_CURRENT",
-   "skills": [
-    "DISMISS_DAILY_REWARD"
-   ],
-   "goals": [
-    "DAILY_ACTIVITY_TARGET"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 4,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "POPUP_EXPLORATION_REWARD",
-   "skills": [
-    "DISMISS_EXPLORATION_REWARD"
-   ],
-   "goals": [
-    "CLAIM_EXPLORATION_IDLE"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 1,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": "POPUP",
-   "visible_words": [
-    "获得奖励"
-   ],
-   "generator_ready": false,
-   "next_step": "capture-first: production AUTO saves the real popup frame on first appearance; then AutoGen from evidence.",
-   "gap_class": "CAPTURE_FIRST_POPUP",
-   "capture_first": true,
-   "capture_contract": {
-    "trigger": "popup with 获得奖励 semantics appears during production AUTO",
-    "capture": [
-     "current frame",
-     "page",
-     "OCR tokens",
-     "popup bbox",
-     "previous action",
-     "next action",
-     "semantic candidates"
-    ],
-    "route": "Gap Queue -> AutoGen -> validation -> routing -> L1/L2",
-    "reuse_rule": "if the control is generic CLAIM/CLOSE/CONFIRM, reuse the existing generic node; do NOT mint a dedicated skill",
-    "forbidden": "do not guess ROI offline"
-   }
-  },
-  {
-   "semantic": "POPUP_MAIL_REWARD",
-   "skills": [
-    "DISMISS_MAIL_REWARD"
-   ],
-   "goals": [
-    "MAIL_ROUTINE"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 0,
-   "family": "CLAIM",
-   "priority": "P1",
-   "record_type": "POPUP",
-   "visible_words": [
-    "获得奖励"
-   ],
-   "generator_ready": false,
-   "next_step": "capture-first: production AUTO saves the real popup frame on first appearance; then AutoGen from evidence.",
-   "gap_class": "CAPTURE_FIRST_POPUP",
-   "capture_first": true,
-   "capture_contract": {
-    "trigger": "popup with 获得奖励 semantics appears during production AUTO",
-    "capture": [
-     "current frame",
-     "page",
-     "OCR tokens",
-     "popup bbox",
-     "previous action",
-     "next action",
-     "semantic candidates"
-    ],
-    "route": "Gap Queue -> AutoGen -> validation -> routing -> L1/L2",
-    "reuse_rule": "if the control is generic CLAIM/CLOSE/CONFIRM, reuse the existing generic node; do NOT mint a dedicated skill",
-    "forbidden": "do not guess ROI offline"
-   }
-  },
-  {
-   "semantic": "BTN_EXPLORATION_IDLE_CONFIRM",
-   "skills": [
-    "CONFIRM_EXPLORATION_IDLE_CLAIM"
-   ],
-   "goals": [
-    "CLAIM_EXPLORATION_IDLE"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 28,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_INTEL_VIEW_TARGET",
-   "skills": [
-    "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
-    "OPEN_INTEL_HERO_JOURNEY_TARGET",
-    "OPEN_INTEL_BEAST_TARGET"
-   ],
-   "goals": [
-    "AVOID_STAMINA_WASTE",
-    "CLEAR_INTEL"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 206,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_OPEN_POWER_DETAILS",
-   "skills": [
-    "OPEN_POWER_DETAILS"
-   ],
-   "goals": [
-    "KEEP_TRAINING_PRODUCTIVE"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 207,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "实力详情"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "BTN_POWER_TROOP_IMPROVE",
-   "skills": [
-    "NAVIGATE_INFANTRY_CAMP"
-   ],
-   "goals": [
-    "KEEP_TRAINING_PRODUCTIVE"
-   ],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 103,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_POWER_RESEARCH_IMPROVE",
-   "skills": [
-    "NAVIGATE_RESEARCH_LAB"
-   ],
-   "goals": [],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 48,
-   "family": "SEARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "HUD icon button observed without caption text on its recorded page",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_START_RESEARCH",
-   "skills": [
-    "RESEARCH"
-   ],
-   "goals": [
-    "EVENT_MINIMUM_GUARANTEE",
-    "KEEP_RESEARCH_PRODUCTIVE"
-   ],
-   "pages": [
-    "RESEARCH"
-   ],
-   "production_attempts": 1,
-   "family": "SEARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "RESEARCH_NODE_NEXT",
-   "skills": [
-    "SELECT_RESEARCH_NODE"
-   ],
-   "goals": [],
-   "pages": [
-    "RESEARCH"
-   ],
-   "production_attempts": 19,
-   "family": "SEARCH",
-   "priority": "P1",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_START_TRAINING",
-   "skills": [
-    "TRAIN_TROOPS"
-   ],
-   "goals": [
-    "EVENT_MINIMUM_GUARANTEE",
-    "KEEP_TRAINING_PRODUCTIVE"
-   ],
-   "pages": [
-    "TRAINING"
-   ],
-   "production_attempts": 21,
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "训练"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "ORDINARY_CONTROL",
-   "skills": [
-    "TRY_ORDINARY_CONTROL"
-   ],
-   "goals": [],
-   "pages": [],
-   "production_attempts": 266,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_BACK_ARROW",
-   "skills": [
-    "LEAVE_FOREIGN_LAYER"
-   ],
-   "goals": [],
-   "pages": [
-    "ALLIANCE"
-   ],
-   "production_attempts": 73,
-   "family": "POPUP",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "EVENT_CALENDAR_NEXT_DETAIL",
-   "skills": [
-    "OPEN_EVENT_CALENDAR_DETAIL"
-   ],
-   "goals": [],
-   "pages": [
-    "EVENT"
-   ],
-   "production_attempts": 4,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "EVENT_CALENDAR_TAB",
-   "skills": [
-    "OPEN_EVENT_CALENDAR_TAB"
-   ],
-   "goals": [],
-   "pages": [
-    "EVENT"
-   ],
-   "production_attempts": 1,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": "INTERACTIVE_CONTROL",
-   "visible_words": [
-    "日历标签页"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "BTN_FREE_RECRUIT_ADVANCED",
-   "skills": [
-    "FREE_HERO_RECRUIT_ADVANCED"
-   ],
-   "goals": [],
-   "pages": [
-    "HERO"
-   ],
-   "production_attempts": 2,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_FREE_RECRUIT_EPIC",
-   "skills": [
-    "FREE_HERO_RECRUIT_EPIC"
-   ],
-   "goals": [],
-   "pages": [
-    "HERO"
-   ],
-   "production_attempts": 1,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_HERO_RECRUIT_EPIC",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 0,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "row/target whose content and position change per state; needs per-instance capture",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY",
-   "skills": [
-    "OPEN_COMPLETED_TRAINING_CAMP_LANCER"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 6,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW_CONTROL",
-   "visible_words": [
-    "矛兵"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "枪兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP_ENTRY",
-   "skills": [
-    "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 4,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW_CONTROL",
-   "visible_words": [
-    "射手"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN 2026-09-27T00:28:47Z SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "弓兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_PET_TREASURE",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 2,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "row/target whose content and position change per state; needs per-instance capture",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP_ENTRY",
-   "skills": [
-    "OPEN_COMPLETED_TRAINING_CAMP_SHIELD"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 5,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW_CONTROL",
-   "visible_words": [
-    "盾兵"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "盾兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "CONTROL[登录好礼]",
-   "skills": [
-    "OPEN_LOGIN_GIFT"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "TRAINING_CAMP_BODY_FROM_FOCUS",
-   "skills": [
-    "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
-    "TAP_FOCUSED_TRAINING_CAMP_LANCER",
-    "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME"
-   ],
-   "production_attempts": 8,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": "INTERACTIVE_CONTROL",
-   "visible_words": [
-    "当前聚焦兵营本体"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_LANCER_CAMP",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_LANCER"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 11,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW",
-   "visible_words": [
-    "矛兵"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_TASK_FROM_QUICK_PANEL_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "枪兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_LANCER_CAMP_DONE",
-   "skills": [
-    "COLLECT_FINISHED_TRAINING_LANCER"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 0,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW_CONTROL",
-   "visible_words": [
-    "矛兵营"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row_done",
-    "row_label": "枪兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 4,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW",
-   "visible_words": [
-    "射手"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "弓兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP_DONE",
-   "skills": [
-    "COLLECT_FINISHED_TRAINING_MARKSMAN"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 0,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW_CONTROL",
-   "visible_words": [
-    "射手营"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_MARKSMAN production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row_done",
-    "row_label": "弓兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP",
-   "skills": [
-    "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 11,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW",
-   "visible_words": [
-    "盾兵"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row",
-    "row_label": "盾兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP_DONE",
-   "skills": [
-    "COLLECT_FINISHED_TRAINING_SHIELD"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 1,
-   "family": "LIST",
-   "priority": "P2",
-   "record_type": "ROW_CONTROL",
-   "visible_words": [
-    "盾兵营"
-   ],
-   "generator_ready": false,
-   "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
-   "recognition": {
-    "kind": "LIST_DYNAMIC",
-    "reader": "quick_panel",
-    "field": "row_done",
-    "row_label": "盾兵营",
-    "tap_allowed": false,
-    "purpose": "PRODUCTION_READER_RECONCILIATION",
-    "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
-   }
-  },
-  {
-   "semantic": "QUICK_PANEL_HANDLE",
-   "skills": [
-    "OPEN_QUICK_PANEL"
-   ],
-   "goals": [],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "production_attempts": 31,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": "CONTROL",
-   "visible_words": [
-    "快捷面板把手"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "BEAST_ON_MAP",
-   "skills": [
-    "SELECT_BEAST_TARGET_LABELLED"
-   ],
-   "goals": [],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 39,
-   "family": "MARCH",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "MARCH_ROW_1",
-   "skills": [
-    "SELECT_MARCH_TO_RECALL"
-   ],
-   "goals": [],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 18,
-   "family": "MARCH",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "row/target whose content and position change per state; needs per-instance capture",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "HUD_STAMINA_GAUGE",
-   "skills": [
-    "OPEN_STAMINA_SOURCES"
-   ],
-   "goals": [],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 44,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "COLOR",
-    "basis": "gauge/bar: state is a colour ratio inside a fixed track",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "RESOURCE_LEVEL_MINUS",
-   "skills": [
-    "RELAX_RESOURCE_LEVEL"
-   ],
-   "goals": [],
-   "pages": [
-    "MAP"
-   ],
-   "production_attempts": 0,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_CONFIRM_RECALL",
-   "skills": [
-    "RECALL_MARCH"
-   ],
-   "goals": [],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 3,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_DUPLICATE_TARGET_CANCEL",
-   "skills": [
-    "CANCEL_DUPLICATE_TARGET"
-   ],
-   "goals": [],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 1,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_RECONNECT_SESSION",
-   "skills": [
-    "RECONNECT_SESSION"
-   ],
-   "goals": [],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 2,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "OCR",
-    "basis": "named action button; client prints caption text at runtime, to be read live",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "BTN_CLOSE",
-   "skills": [
-    "CLOSE_POPUP"
-   ],
-   "goals": [],
-   "pages": [
-    "POPUP"
-   ],
-   "production_attempts": 191,
-   "family": "POPUP",
-   "priority": "P2",
-   "record_type": "BUTTON",
-   "visible_words": [
-    "关闭"
-   ],
-   "generator_ready": true,
-   "next_step": "find real page frame and validate MAA candidate"
-  },
-  {
-   "semantic": "TRAINING_CAMP_NEXT",
-   "skills": [
-    "SELECT_TRAINING_CAMP"
-   ],
-   "goals": [],
-   "pages": [
-    "TRAINING"
-   ],
-   "production_attempts": 55,
-   "family": "NAV",
-   "priority": "P2",
-   "record_type": null,
-   "visible_words": [],
-   "generator_ready": false,
-   "next_step": "observe clickable control and record its true bounds",
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
-    "classified_at_source": "rule_table_v1"
-   }
-  },
-  {
-   "semantic": "RALLY_LIST_OPEN",
-   "family": "NAV",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "open the alliance rally/war rally list",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "OPEN_BEAR_RALLY_LIST"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "OPEN_BEAR_RALLY_LIST taps BTN_ALLIANCE_WAR then BTN_WAR_TAB_RALLY (both wired), and SemanticWorldVision sets alliance.rally_list_visible / section=RALLY_LIST from the live frame (ocr.py:4299)",
-    "classified_at_source": "production_path_reconciled"
-   },
-   "generator_ready": false,
-   "next_step": "Covered end to end: tap path wired, list presence read off the frame. Live-confirmed 2026-09-27 01:49Z on the real war page (frames dataset/evidence/autojoin_boundary_20260927).",
-   "reconciled_at": "2026-09-27T02:00:00+08:00"
-  },
-  {
-   "semantic": "RALLY_LIST_ROW_TARGET",
-   "family": "LIST",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "a rally row: target icon, initiator, troop count, countdown",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "JOIN_RALLY"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "same reader: per-row target text classified against 变异巨熊/冰原巨兽/巨熊; a row matching none is UNKNOWN and never joined",
-    "classified_at_source": "live_frame_replay"
-   },
-   "generator_ready": false,
-   "next_step": "Covered by RALLY_ROW_JOIN_BUTTON's row reading (field 'target'); joinable already requires target_type BEAR.",
-   "wired_at": "2026-09-27T01:40:00+08:00"
-  },
-  {
-   "semantic": "RALLY_ROW_JOIN_BUTTON",
-   "family": "LIST",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "join button on a rally row with free slots",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "JOIN_RALLY"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "rally.read_rally_list_image: row identity/leader/members/capacity/timer + that row's own green button, replayed on four archived live frames",
-    "classified_at_source": "live_frame_replay"
-   },
-   "generator_ready": false,
-   "next_step": "L2 wired 2026-09-27 (LIST_DYNAMIC, fallback BTN_JOIN_ROW). L3 arrives with the first production join; L4 needs a live joined-state verifier pass.",
-   "wired_at": "2026-09-27T01:40:00+08:00"
-  },
-  {
-   "semantic": "RALLY_ROW_FULL",
-   "family": "LIST",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "full marker on a rally row; triggers switch to next target",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "JOIN_RALLY"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "same reader: members >= capacity -> full; unreadable capacity stays null, never full",
-    "classified_at_source": "live_frame_replay"
-   },
-   "generator_ready": false,
-   "next_step": "Covered by RALLY_ROW_JOIN_BUTTON's row reading (field 'full'); kept as its own semantic so a policy can ask about capacity without asking for a tap.",
-   "wired_at": "2026-09-27T01:40:00+08:00"
-  },
-  {
-   "semantic": "START_RALLY_BUTTON",
-   "family": "NAV",
-   "pages": [
-    "BEAR_TRAP_DETAIL"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "initiate a rally on a selected bear target",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "START_RALLY"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "TEMPLATE",
-    "basis": "the same control as BTN_START_RALLY, already wired under START_RALLY (routing: dataset/candidate/bear_rally/btn_start_rally__bear_trap_detail__9db2cb89__0.png, observed 0.9863)",
-    "classified_at_source": "duplicate_semantic_reconciled"
-   },
-   "generator_ready": false,
-   "next_step": "No separate node: START_RALLY already taps it. Kept as its own semantic only so the goal can name the action; do not generate a second template for one control.",
-   "reconciled_at": "2026-09-27T02:00:00+08:00"
-  },
-  {
-   "semantic": "JOIN_RALLY_CONFIRM",
-   "family": "POPUP",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "confirm join with current preset troop",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "JOIN_RALLY"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "next_step": "P0 live gap: first real rally UI occurrence triggers capture-first fast channel; contract above is pre-agreed, recognition method is calibrated on the live frame only.",
-   "reconciled_at": "2026-09-27T02:00:00+08:00",
-   "gap_class": "LIVE_EVENT_GAP",
-   "capture_first": true,
-   "candidate_contract": {
-    "precondition": [
-     "legal rally row selected in LIST_DYNAMIC",
-     "JOIN_RALLY executed on that row"
-    ],
-    "expected_page_or_state": [
-     "confirm dialog",
-     "troop/formation page",
-     "direct join (no dialog)"
-    ],
-    "action": "execute ONLY when confirm semantics are explicit on the live frame (button token like 确认/加入)",
-    "verifier": "JOINED_STATE (joined flag / in-rally roster), never the click itself",
-    "if_no_confirm_dialog": "auto-mark NOT_REQUIRED_FOR_THIS_FLOW and pass through JOINED_STATE verifier; do NOT hunt for a nonexistent button",
-    "fast_channel": "capture frame -> OCR -> classify -> detect confirm action -> AutoGen -> validate -> MAA -> Verifier (seconds-scale local patch, not a fresh study)"
-   }
-  },
-  {
-   "semantic": "RALLY_HERO_SELECT",
-   "family": "LIST",
-   "pages": [
-    "MARCH"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "hero picker inside rally preparation",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "DISPATCH_MARCH"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "winter_agent_v2.formation.read_formation_state_tokens reads the three hero slots from the current frame on both an ordinary march and the 2026-09-09 bear auto-join hero page",
-    "classified_at_source": "live_frame_replay"
-   },
-   "generator_ready": false,
-   "next_step": "COMMON_READY (slot geometry from the current frame, no stored coordinates). BEAR_LIVE_VERIFIED waits for the live bear formation page.",
-   "wired_at": "2026-09-27T01:40:00+08:00"
-  },
-  {
-   "semantic": "RALLY_TROOP_SELECT",
-   "family": "LIST",
-   "pages": [
-    "MARCH"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "troop formation picker inside rally preparation",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "DISPATCH_MARCH"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "STRUCTURE",
-    "basis": "same reader: troop rows of the current formation page",
-    "classified_at_source": "live_frame_replay"
-   },
-   "generator_ready": false,
-   "next_step": "COMMON_READY, same basis as RALLY_HERO_SELECT.",
-   "wired_at": "2026-09-27T01:40:00+08:00"
-  },
-  {
-   "semantic": "RALLY_DISPATCH_CONFIRM",
-   "family": "POPUP",
-   "pages": [
-    "MARCH"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "final dispatch confirmation",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "DISPATCH_MARCH"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "OCR",
-    "basis": "formation confirm button 出征/储存 read by winter_agent_v2.formation; BTN_DISPATCH is L4-proved on a real formation page 2026-09-27",
-    "classified_at_source": "live_proof"
-   },
-   "generator_ready": false,
-   "next_step": "COMMON_READY via BTN_DISPATCH (L4 2026-09-27). Bear-specific wording, if any, is confirmed when the bear formation page is live.",
-   "wired_at": "2026-09-27T01:40:00+08:00"
-  },
-  {
-   "semantic": "RALLY_JOINED_STATE",
-   "family": "STATUS",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "joined badge / own troop shown in rally detail",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "JOIN_RALLY"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "verify_rally_joined(before, after, 'BEAR') is bound to JOIN_RALLY in runtime.VERIFIED_ATOMIC (runtime.py:335) -- success is a joined-state reading, never a click; tools/bear_joined_state.py reads JOINED/NOT_JOINED/UNKNOWN from the frame",
-    "classified_at_source": "production_path_reconciled"
-   },
-   "generator_ready": false,
-   "next_step": "Covered. L4 needs the 2026-09-28 war: with no war the frame prints 当前暂无战事 and NOT_JOINED is the only honest reading.",
-   "wired_at": "2026-09-27T01:40:00+08:00",
-   "reconciled_at": "2026-09-27T02:00:00+08:00"
-  },
-  {
-   "semantic": "RALLY_BATTLE_REPORT",
-   "family": "STATUS",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "battle report entry proving participation result",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "JOIN_RALLY"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "next_step": "P0 live gap: first post-battle frame triggers capture-first; generate from the captured frame, not guessed.",
-   "reconciled_at": "2026-09-27T02:00:00+08:00",
-   "gap_class": "LIVE_EVENT_GAP",
-   "capture_first": true,
-   "candidate_contract": {
-    "precondition": [
-     "bear battle resolved (rally completed)"
-    ],
-    "expected_page_or_state": [
-     "battle report page/popup with damage/rewards/result"
-    ],
-    "capture": [
-     "page",
-     "ocr tokens",
-     "rewards",
-     "damage",
-     "report entry",
-     "close button",
-     "back entry"
-    ],
-    "verifier": "battle RESULT read (text/numbers present), NOT \"report button clicked\"",
-    "blocking_rule": "knowledge-closure only: must never block BEAR Goal L5 unless the Goal contract explicitly requires the report"
-   }
-  },
-  {
-   "semantic": "RALLY_EVENT_ACTIVE_STATE",
-   "family": "STATUS",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [],
-   "record_type": "CONTROL",
-   "priority": "P0",
-   "note": "event page state proving bear hunt window is open",
-   "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
-   "skills": [
-    "OPEN_BEAR_RALLY_LIST"
-   ],
-   "goals": [
-    "PARTICIPATE_BEAR"
-   ],
-   "recognition": {
-    "method": "LIST_DYNAMIC",
-    "basis": "SemanticWorldVision reads live bear rally rows and writes events['bear'] = {'status': 'ACTIVE', 'remaining_seconds': min(row.remaining_seconds)} (ocr.py:4304-4317); goal_library.bear_phase turns that into BearPhase.ACTIVE",
-    "classified_at_source": "production_path_reconciled"
-   },
-   "generator_ready": false,
-   "next_step": "Covered: ACTIVE is derived from the rows themselves, so 'the event is live' and 'a row can be joined' cannot disagree. Today's live frame reads 当前暂无战事 -> not active, which is the honest answer.",
-   "reconciled_at": "2026-09-27T02:00:00+08:00"
-  },
-  {
-   "semantic": "BTN_EXPLORATION_IDLE_CLAIM",
-   "family": "CLAIM",
-   "pages": [
-    "EXPLORATION"
-   ],
-   "visible_words": [
-    "领取",
-    "挂机收益",
-    "挂机时间"
-   ],
-   "record_type": "BUTTON",
-   "priority": "P1",
-   "recognition": {
-    "method": "OCR",
-    "basis": "words observed live on the exploration idle panel; recorded in semantic_dictionary under sibling control BTN_EXPLORATION_IDLE_CONFIRM",
-    "classified_at_source": "sibling_dict_record"
-   },
-   "note": "failing control of CLAIM_EXPLORATION_IDLE (SEMANTIC_TARGET_NOT_VERIFIED at 2026-09-26T03:05Z); words taken from the dictionary's real-client record of the same panel, not invented",
-   "source": "repair-path data fix 2026-09-26"
-  },
-  {
-   "semantic": "BTN_BEAR_AUTO_JOIN",
-   "family": "NAV",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [
-    "自动加入"
-   ],
-   "record_type": "BUTTON",
-   "priority": "P0",
-   "recognition": {
-    "method": "OCR",
-    "basis": "live frame r14_war: blue button 自动加入 with red dot at bottom of alliance-war rally tab (observed 2026-09-26)",
-    "classified_at_source": "live_frame_token"
-   },
-   "note": "auto-join the ice giant (bear) rally; toggle state visible as red dot",
-   "source": "bear-hunt prep r14/r17 2026-09-26"
-  },
-  {
-   "semantic": "STATUS_WAR_NO_WAR",
-   "family": "STATUS",
-   "pages": [
-    "ALLIANCE_WAR"
-   ],
-   "visible_words": [
-    "当前暂无战事"
-   ],
-   "record_type": "STATUS",
-   "priority": "P1",
-   "recognition": {
-    "method": "OCR",
-    "basis": "live frames r16/r17: empty rally list prints 当前暂无战事",
-    "classified_at_source": "live_frame_token"
-   },
-   "note": "empty-state marker of the rally list; absence of this text = rally exists",
-   "source": "bear-hunt prep r16 2026-09-26"
-  },
-  {
-   "semantic": "STATE_CITY_VIEW",
-   "skills": [
-    "OPEN_MAP"
-   ],
-   "goals": [
-    "KEEP_MARCHES_PRODUCTIVE"
-   ],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "STATE",
-   "visible_words": [
-    "野外"
-   ],
-   "generator_ready": true,
-   "recognition": {
-    "kind": "TEMPLATE",
-    "template": "STATE_CITY_VIEW.png",
-    "roi": [
-     613,
-     1234,
-     687,
-     1280
-    ],
-    "threshold": 0.8,
-    "tap_allowed": false,
-    "purpose": "STATE_DETECTION",
-    "state_meaning": "this template matching means the client is in the CITY view",
-    "note": "the chip is an action label: CITY view draws 野外, WILDERNESS draws 城镇"
-   },
-   "next_step": "wired 2026-09-27; bidirectional validation 27/27 own-state frames hit (worst 0.9994), 0/12 opposite-state frames hit (best 0.4754), separation 0.524; one OCR-unreadable wilderness frame (chip washed out, RapidOCR NONE) was recovered by the template at 0.9786 -- the exact case that motivated leaving OCR for templates"
-  },
-  {
-   "semantic": "STATE_WILDERNESS_VIEW",
-   "skills": [
-    "OPEN_MAP"
-   ],
-   "goals": [
-    "KEEP_MARCHES_PRODUCTIVE"
-   ],
-   "pages": [
-    "HOME",
-    "MAP"
-   ],
-   "family": "NAV",
-   "priority": "P1",
-   "record_type": "STATE",
-   "visible_words": [
-    "城镇"
-   ],
-   "generator_ready": true,
-   "recognition": {
-    "kind": "TEMPLATE",
-    "template": "STATE_WILDERNESS_VIEW.png",
-    "roi": [
-     613,
-     1234,
-     687,
-     1280
-    ],
-    "threshold": 0.8,
-    "tap_allowed": false,
-    "purpose": "STATE_DETECTION",
-    "state_meaning": "this template matching means the client is in the WILDERNESS view",
-    "note": "the chip is an action label: CITY view draws 野外, WILDERNESS draws 城镇"
-   },
-   "next_step": "wired 2026-09-27; bidirectional validation 12/12 own-state frames hit (worst 0.9994), 0/27 opposite-state frames hit (best 0.4862), separation 0.5132; one OCR-unreadable wilderness frame (chip washed out, RapidOCR NONE) was recovered by the template at 0.9786 -- the exact case that motivated leaving OCR for templates"
-  }
- ],
- "honest_rejections": [
-  {
-   "semantic": "BTN_OK_POPUP",
-   "candidate_word": "确定",
-   "date": "2026-09-26",
-   "frame": "dataset/raw/autogen/r2_home3.png",
-   "reason": "OCR batch-1 scan hit 确定 on the EXIT GAME confirm dialog (确认退出游戏吗？). Wiring a generic OK tap risks confirming destructive dialogs. Rejected; requires a page-scoped context rule."
-  }
- ],
- "reconciled_at": "2026-09-27T11:20:00+08:00"
+  "baseline": {
+    "goals": 16,
+    "skills_defined": 138,
+    "skills_with_maa_node": 23,
+    "skills_with_node_and_auto": 23,
+    "skills_requiring_pipeline": 115,
+    "skills_missing_pipeline": 92,
+    "semantic_targets_requiring_pipeline": 102,
+    "semantic_targets_with_node": 21,
+    "semantic_targets_missing_node": 81,
+    "maa_executed_skills": 9,
+    "maa_verifier_passed_skills": 7,
+    "maa_goal_progress_skills": 1
+  },
+  "queue": [
+    {
+      "semantic": "BTN_DISPATCH",
+      "skills": [
+        "DISPATCH_MARCH"
+      ],
+      "goals": [
+        "KEEP_MARCHES_PRODUCTIVE",
+        "PARTICIPATE_BEAR"
+      ],
+      "pages": [
+        "MARCH"
+      ],
+      "production_attempts": 85,
+      "family": "NAV",
+      "priority": "P0",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "出征",
+        "派遣",
+        "Deploy",
+        "Dispatch",
+        "March"
+      ],
+      "generator_ready": false,
+      "next_step": "L4 PROVEN 2026-09-27: production resolver tap (551,1213) on live formation page -> march 行军 1/4 (17公里, countdown). DISPATCH_READY is LIVE_VERIFIED; no further node work needed.",
+      "l4_proven_at": "2026-09-26T17:19:38.927849+00:00"
+    },
+    {
+      "semantic": "BTN_ALLIANCE_GIFTS_CLAIM_ALL",
+      "skills": [
+        "ALLIANCE_GIFTS"
+      ],
+      "goals": [
+        "ALLIANCE_ROUTINE",
+        "CLAIM_FREE_REWARDS"
+      ],
+      "pages": [
+        "ALLIANCE"
+      ],
+      "production_attempts": 11,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "一键领取"
+      ],
+      "generator_ready": true,
+      "next_step": "LIVE 2026-09-26: gifts popup shows 前往/无盟友赠礼 -- 一键领取 renders only when a gift exists; harvest again with a gift on the test account"
+    },
+    {
+      "semantic": "BTN_ALLY_GIFT_CLAIM",
+      "skills": [
+        "ALLIANCE_ALLY_GIFT_CLAIM"
+      ],
+      "goals": [
+        "ALLIANCE_ROUTINE",
+        "CLAIM_FREE_REWARDS"
+      ],
+      "pages": [
+        "ALLIANCE"
+      ],
+      "production_attempts": 12,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "领取"
+      ],
+      "generator_ready": true,
+      "next_step": "LIVE 2026-09-26: same popup state, no claim button rendered without gifts"
+    },
+    {
+      "semantic": "BTN_ALLIANCE_HELP_ALL",
+      "skills": [
+        "ALLIANCE_HELP"
+      ],
+      "goals": [
+        "ALLIANCE_ROUTINE"
+      ],
+      "pages": [
+        "ALLIANCE"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_ALLIANCE_TECH_CONTRIBUTE_MEAT",
+      "skills": [
+        "ALLIANCE_TECH_CONTRIBUTE"
+      ],
+      "goals": [
+        "ALLIANCE_ROUTINE"
+      ],
+      "pages": [
+        "ALLIANCE"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "捐献"
+      ],
+      "generator_ready": true,
+      "next_step": "LIVE 2026-09-26: tech page shows 您的捐献：23,280 as one token; the 捐献 button appears after selecting a tech item, harvest needs that intermediate tap"
+    },
+    {
+      "semantic": "BTN_ALLIANCE_WAR",
+      "skills": [
+        "OPEN_BEAR_RALLY_LIST"
+      ],
+      "goals": [],
+      "pages": [
+        "ALLIANCE"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "联盟战争"
+      ],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "live frame r2_alliance prints 联盟战争 as button caption (observed 2026-09-26)",
+        "classified_at_source": "live_frame_token"
+      }
+    },
+    {
+      "semantic": "BTN_OPEN_ALLIANCE_GIFTS",
+      "skills": [
+        "OPEN_ALLIANCE_GIFTS"
+      ],
+      "goals": [
+        "ALLIANCE_ROUTINE"
+      ],
+      "pages": [
+        "ALLIANCE"
+      ],
+      "production_attempts": 97,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "联盟宝箱"
+      ],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "live frame r2_alliance prints 联盟宝箱; gifts popup reached via this button earlier today",
+        "classified_at_source": "live_frame_token"
+      }
+    },
+    {
+      "semantic": "BTN_BEAST_CARD_ATTACK",
+      "skills": [
+        "ATTACK_BEAST_CARD"
+      ],
+      "goals": [
+        "AVOID_STAMINA_WASTE"
+      ],
+      "pages": [
+        "BEAST"
+      ],
+      "production_attempts": 101,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_BEAST_START_MARCH",
+      "skills": [
+        "BEAST_HUNT",
+        "INTEL_BEAST_START_MARCH"
+      ],
+      "goals": [
+        "AVOID_STAMINA_WASTE",
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "BEAST"
+      ],
+      "production_attempts": 102,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_BUILD_UPGRADE",
+      "skills": [
+        "BUILDING_UPGRADE"
+      ],
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE",
+        "KEEP_BUILDING_PRODUCTIVE"
+      ],
+      "pages": [
+        "BUILDING"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_DAILY_GO_HERO_RECRUIT",
+      "skills": [
+        "DAILY_HERO_RECRUIT"
+      ],
+      "goals": [],
+      "pages": [
+        "DAILY"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_DAILY_TAB_TASKS",
+      "skills": [
+        "SELECT_DAILY_TAB"
+      ],
+      "goals": [],
+      "pages": [
+        "DAILY"
+      ],
+      "production_attempts": 53,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "LOGIN_GIFT_DAY_CLAIM",
+      "skills": [
+        "CLAIM_LOGIN_GIFT"
+      ],
+      "goals": [],
+      "pages": [
+        "EVENT"
+      ],
+      "production_attempts": 0,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_OPEN_EXPLORATION",
+      "skills": [
+        "OPEN_EXPLORATION"
+      ],
+      "goals": [
+        "CLAIM_EXPLORATION_IDLE"
+      ],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 83,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_OPEN_POWER_OVERVIEW_ICON",
+      "skills": [
+        "OPEN_POWER_OVERVIEW"
+      ],
+      "goals": [
+        "KEEP_TRAINING_PRODUCTIVE"
+      ],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 190,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_OPEN_TRAINING_FROM_CAMP",
+      "skills": [
+        "OPEN_INFANTRY_TRAINING"
+      ],
+      "goals": [
+        "KEEP_TRAINING_PRODUCTIVE"
+      ],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 67,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_SELECTED_BUILDING_UPGRADE",
+      "skills": [
+        "OPEN_BUILDING_UPGRADE"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 5,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "TRAINING_CAMP_IN_RING",
+      "skills": [
+        "SELECT_INFANTRY_CAMP"
+      ],
+      "goals": [
+        "KEEP_TRAINING_PRODUCTIVE"
+      ],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 4,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_OPEN_RESEARCH",
+      "skills": [
+        "OPEN_RESEARCH"
+      ],
+      "goals": [
+        "KEEP_RESEARCH_PRODUCTIVE"
+      ],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 109,
+      "family": "SEARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "blue arrow sprite identical to building-upgrade arrow; rejected by negative-frame validation 2026-09-26 — must be located relative to the 科技研究 text row, not by sprite",
+        "classified_at_source": "negative_frame_rejection"
+      },
+      "note": "locate via parent row of text 科技研究 (row at y~790 on HOME) then offset to right arrow"
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_MY_REWARDS",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_MY_REWARDS"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 0,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": "ROW",
+      "visible_words": [
+        "我的奖励",
+        "仓库补给"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- reader proven on the scrolled frame (20260927_071653_484155 step_016).  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "我的奖励",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_MY_REWARDS_DONE",
+      "skills": [
+        "COLLECT_MY_REWARDS_ROW"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 0,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": "ROW_CONTROL",
+      "visible_words": [
+        "仓库补给"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- reader proven: 仓库补给 row read control=DONE with done_norm.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row_done",
+        "row_label": "我的奖励",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_ALLIANCE_DONATION",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 1,
+      "family": "LIST",
+      "priority": "P1",
+      "record_type": "ROW",
+      "visible_words": [
+        "联盟捐献"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-27T00:52:19Z alliance-donation walk SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "联盟捐献",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_BUILDING",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_BUILDING"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 17,
+      "family": "LIST",
+      "priority": "P1",
+      "record_type": "ROW",
+      "visible_words": [
+        "队列1",
+        "建筑队列"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-26+.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "建筑队列",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "PAGE_MAP",
+      "skills": [
+        "OPEN_MAP"
+      ],
+      "goals": [
+        "KEEP_MARCHES_PRODUCTIVE"
+      ],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 597,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "世界",
+        "地图"
+      ],
+      "generator_ready": false,
+      "next_step": "RESOLVED 2026-09-27: the chip is an ACTION label (city view draws 野外, wilderness draws 城镇), so a single '城镇/野外' OCR node can never name a state.  Replaced by two bidirectionally validated state templates (STATE_CITY_VIEW / STATE_WILDERNESS_VIEW, see their queue items); the tap itself stays on the legacy vision path that already works (2026-09-27 00:43 OPEN_MAP SUCCESS) because the router's miss-stays-a-miss rule would turn every panel-covered chip into an OPEN_MAP failure.",
+      "superseded_by": [
+        "STATE_CITY_VIEW",
+        "STATE_WILDERNESS_VIEW"
+      ]
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_RESEARCH",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_RESEARCH"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 66,
+      "family": "SEARCH",
+      "priority": "P1",
+      "record_type": "ROW",
+      "visible_words": [
+        "科技研究"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- 2026-09-27T00:20:06Z OPEN_TASK_FROM_QUICK_PANEL_RESEARCH SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "科技研究",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "TARGET_INTEL_BEAST_MISSION",
+      "skills": [
+        "SELECT_INTEL_BEAST_MISSION"
+      ],
+      "goals": [
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "INTEL"
+      ],
+      "production_attempts": 2,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "TARGET_INTEL_FIREBEAST_MISSION",
+      "skills": [
+        "SELECT_INTEL_FIREBEAST_MISSION"
+      ],
+      "goals": [
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "INTEL"
+      ],
+      "production_attempts": 0,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": "CARD",
+      "visible_words": [
+        "炽红巨兽情报图标"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "INTEL_PIN",
+      "skills": [
+        "SELECT_INTEL_PIN"
+      ],
+      "goals": [],
+      "pages": [
+        "INTEL"
+      ],
+      "production_attempts": 417,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "TARGET_INTEL_RESCUE_SURVIVORS",
+      "skills": [
+        "SELECT_INTEL_RESCUE_SURVIVORS"
+      ],
+      "goals": [
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "INTEL"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "CARD",
+      "visible_words": [
+        "营救幸存者情报图标"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "TARGET_BEAST_MAMMOTH_5",
+      "skills": [
+        "SELECT_BEAST_TARGET_MAMMOTH"
+      ],
+      "goals": [
+        "AVOID_STAMINA_WASTE"
+      ],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 12,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "TARGET_BEAST_MUSK_OX_9",
+      "skills": [
+        "SELECT_BEAST_TARGET"
+      ],
+      "goals": [
+        "AVOID_STAMINA_WASTE"
+      ],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 0,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_INTEL_RESCUE_SURVIVORS",
+      "skills": [
+        "EXECUTE_INTEL_RESCUE_SURVIVORS"
+      ],
+      "goals": [
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 33,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "营救"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "BTN_OPEN_INTEL_WILD_HUD",
+      "skills": [
+        "OPEN_INTEL"
+      ],
+      "goals": [
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 483,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "RESOURCE_DYNAMIC",
+      "skills": [
+        "SELECT_RESOURCE"
+      ],
+      "goals": [
+        "KEEP_MARCHES_PRODUCTIVE"
+      ],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 105,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BEAST_SEARCH_TAB",
+      "skills": [
+        "OPEN_BEAST_SEARCH_TAB"
+      ],
+      "goals": [],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 7,
+      "family": "SEARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_OPEN_RESOURCE_SEARCH",
+      "skills": [
+        "SEARCH_RESOURCE"
+      ],
+      "goals": [
+        "KEEP_MARCHES_PRODUCTIVE"
+      ],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 467,
+      "family": "SEARCH",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "打开资源搜索"
+      ],
+      "generator_ready": false,
+      "next_step": "L1/L2 registered 2026-09-27: TEMPLATE node BTN_OPEN_RESOURCE_SEARCH (threshold .78; live hit 0.845 during the L4 dispatch chain; 0/3 negative frames). Awaiting AUTO L3/L4 through the normal gather chain."
+    },
+    {
+      "semantic": "BTN_BEAST_DISPATCH",
+      "skills": [
+        "DISPATCH_INTEL_BEAST"
+      ],
+      "goals": [
+        "AVOID_STAMINA_WASTE",
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "MARCH"
+      ],
+      "production_attempts": 101,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_BEAST_DISPATCH_MUSK_OX_9",
+      "skills": [
+        "DISPATCH_BEAST"
+      ],
+      "goals": [
+        "AVOID_STAMINA_WASTE"
+      ],
+      "pages": [
+        "MARCH"
+      ],
+      "production_attempts": 98,
+      "family": "MARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_CLAIM_FREE_STAMINA",
+      "skills": [
+        "CLAIM_FREE_STAMINA"
+      ],
+      "goals": [],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 254,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_CLAIM_OFFLINE_REWARDS",
+      "skills": [
+        "CLAIM_OFFLINE_REWARDS"
+      ],
+      "goals": [
+        "CLAIM_FREE_REWARDS"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 3,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_DISMISS_INTEL_REWARD",
+      "skills": [
+        "DISMISS_INTEL_REWARD",
+        "DISMISS_MAIL_GENERIC_REWARD",
+        "DISMISS_DAILY_GENERIC_REWARD",
+        "DISMISS_INTEL_GENERIC_REWARD",
+        "DISMISS_EXPLORATION_GENERIC_REWARD",
+        "DISMISS_ALLIANCE_GENERIC_REWARD",
+        "DISMISS_SHARED_REWARD"
+      ],
+      "goals": [
+        "CLAIM_EXPLORATION_IDLE",
+        "CLAIM_FREE_REWARDS",
+        "CLEAR_INTEL",
+        "DAILY_ACTIVITY_TARGET",
+        "MAIL_ROUTINE"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 449,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "POPUP_DAILY_REWARD_CURRENT",
+      "skills": [
+        "DISMISS_DAILY_REWARD"
+      ],
+      "goals": [
+        "DAILY_ACTIVITY_TARGET"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 4,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "POPUP_EXPLORATION_REWARD",
+      "skills": [
+        "DISMISS_EXPLORATION_REWARD"
+      ],
+      "goals": [
+        "CLAIM_EXPLORATION_IDLE"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 1,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": "POPUP",
+      "visible_words": [
+        "获得奖励"
+      ],
+      "generator_ready": false,
+      "next_step": "capture-first: production AUTO saves the real popup frame on first appearance; then AutoGen from evidence.",
+      "gap_class": "CAPTURE_FIRST_POPUP",
+      "capture_first": true,
+      "capture_contract": {
+        "trigger": "popup with 获得奖励 semantics appears during production AUTO",
+        "capture": [
+          "current frame",
+          "page",
+          "OCR tokens",
+          "popup bbox",
+          "previous action",
+          "next action",
+          "semantic candidates"
+        ],
+        "route": "Gap Queue -> AutoGen -> validation -> routing -> L1/L2",
+        "reuse_rule": "if the control is generic CLAIM/CLOSE/CONFIRM, reuse the existing generic node; do NOT mint a dedicated skill",
+        "forbidden": "do not guess ROI offline"
+      }
+    },
+    {
+      "semantic": "POPUP_MAIL_REWARD",
+      "skills": [
+        "DISMISS_MAIL_REWARD"
+      ],
+      "goals": [
+        "MAIL_ROUTINE"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 0,
+      "family": "CLAIM",
+      "priority": "P1",
+      "record_type": "POPUP",
+      "visible_words": [
+        "获得奖励"
+      ],
+      "generator_ready": false,
+      "next_step": "capture-first: production AUTO saves the real popup frame on first appearance; then AutoGen from evidence.",
+      "gap_class": "CAPTURE_FIRST_POPUP",
+      "capture_first": true,
+      "capture_contract": {
+        "trigger": "popup with 获得奖励 semantics appears during production AUTO",
+        "capture": [
+          "current frame",
+          "page",
+          "OCR tokens",
+          "popup bbox",
+          "previous action",
+          "next action",
+          "semantic candidates"
+        ],
+        "route": "Gap Queue -> AutoGen -> validation -> routing -> L1/L2",
+        "reuse_rule": "if the control is generic CLAIM/CLOSE/CONFIRM, reuse the existing generic node; do NOT mint a dedicated skill",
+        "forbidden": "do not guess ROI offline"
+      }
+    },
+    {
+      "semantic": "BTN_EXPLORATION_IDLE_CONFIRM",
+      "skills": [
+        "CONFIRM_EXPLORATION_IDLE_CLAIM"
+      ],
+      "goals": [
+        "CLAIM_EXPLORATION_IDLE"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 28,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_INTEL_VIEW_TARGET",
+      "skills": [
+        "OPEN_INTEL_RESCUE_SURVIVORS_TARGET",
+        "OPEN_INTEL_HERO_JOURNEY_TARGET",
+        "OPEN_INTEL_BEAST_TARGET"
+      ],
+      "goals": [
+        "AVOID_STAMINA_WASTE",
+        "CLEAR_INTEL"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 206,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_OPEN_POWER_DETAILS",
+      "skills": [
+        "OPEN_POWER_DETAILS"
+      ],
+      "goals": [
+        "KEEP_TRAINING_PRODUCTIVE"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 207,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "实力详情"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "BTN_POWER_TROOP_IMPROVE",
+      "skills": [
+        "NAVIGATE_INFANTRY_CAMP"
+      ],
+      "goals": [
+        "KEEP_TRAINING_PRODUCTIVE"
+      ],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 103,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_POWER_RESEARCH_IMPROVE",
+      "skills": [
+        "NAVIGATE_RESEARCH_LAB"
+      ],
+      "goals": [],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 48,
+      "family": "SEARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "HUD icon button observed without caption text on its recorded page",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_START_RESEARCH",
+      "skills": [
+        "RESEARCH"
+      ],
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE",
+        "KEEP_RESEARCH_PRODUCTIVE"
+      ],
+      "pages": [
+        "RESEARCH"
+      ],
+      "production_attempts": 1,
+      "family": "SEARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "RESEARCH_NODE_NEXT",
+      "skills": [
+        "SELECT_RESEARCH_NODE"
+      ],
+      "goals": [],
+      "pages": [
+        "RESEARCH"
+      ],
+      "production_attempts": 19,
+      "family": "SEARCH",
+      "priority": "P1",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_START_TRAINING",
+      "skills": [
+        "TRAIN_TROOPS"
+      ],
+      "goals": [
+        "EVENT_MINIMUM_GUARANTEE",
+        "KEEP_TRAINING_PRODUCTIVE"
+      ],
+      "pages": [
+        "TRAINING"
+      ],
+      "production_attempts": 21,
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "训练"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "ORDINARY_CONTROL",
+      "skills": [
+        "TRY_ORDINARY_CONTROL"
+      ],
+      "goals": [],
+      "pages": [],
+      "production_attempts": 266,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_BACK_ARROW",
+      "skills": [
+        "LEAVE_FOREIGN_LAYER"
+      ],
+      "goals": [],
+      "pages": [
+        "ALLIANCE"
+      ],
+      "production_attempts": 73,
+      "family": "POPUP",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "EVENT_CALENDAR_NEXT_DETAIL",
+      "skills": [
+        "OPEN_EVENT_CALENDAR_DETAIL"
+      ],
+      "goals": [],
+      "pages": [
+        "EVENT"
+      ],
+      "production_attempts": 4,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "EVENT_CALENDAR_TAB",
+      "skills": [
+        "OPEN_EVENT_CALENDAR_TAB"
+      ],
+      "goals": [],
+      "pages": [
+        "EVENT"
+      ],
+      "production_attempts": 1,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": "INTERACTIVE_CONTROL",
+      "visible_words": [
+        "日历标签页"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "BTN_FREE_RECRUIT_ADVANCED",
+      "skills": [
+        "FREE_HERO_RECRUIT_ADVANCED"
+      ],
+      "goals": [],
+      "pages": [
+        "HERO"
+      ],
+      "production_attempts": 2,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "免费"
+      ],
+      "generator_ready": true,
+      "next_step": "observe ordinary AUTO consume this route and monitor false-positive/Verifier evidence; do not promote from replay-only validation",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      },
+      "candidate_wired": true,
+      "candidate_route": "FREE_HERO_RECRUIT_ADVANCED",
+      "validation": {
+        "positive_replays": 4,
+        "positive_hits": 4,
+        "negative_replays": 3,
+        "false_hits": 0,
+        "tool": "MAA",
+        "live_free_action_observed": true
+      },
+      "status": "CANDIDATE_WIRED"
+    },
+    {
+      "semantic": "BTN_FREE_RECRUIT_EPIC",
+      "skills": [
+        "FREE_HERO_RECRUIT_EPIC"
+      ],
+      "goals": [],
+      "pages": [
+        "HERO"
+      ],
+      "production_attempts": 1,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_HERO_RECRUIT_EPIC",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT_EPIC"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 0,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_LANCER_CAMP_ENTRY",
+      "skills": [
+        "OPEN_COMPLETED_TRAINING_CAMP_LANCER"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 6,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW_CONTROL",
+      "visible_words": [
+        "矛兵"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "枪兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP_ENTRY",
+      "skills": [
+        "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 4,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW_CONTROL",
+      "visible_words": [
+        "射手"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN 2026-09-27T00:28:47Z SUCCESS.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "弓兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_PET_TREASURE",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_PET_TREASURE"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 2,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP_ENTRY",
+      "skills": [
+        "OPEN_COMPLETED_TRAINING_CAMP_SHIELD"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 5,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW_CONTROL",
+      "visible_words": [
+        "盾兵"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_COMPLETED_TRAINING_CAMP_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "盾兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "CONTROL[登录好礼]",
+      "skills": [
+        "OPEN_LOGIN_GIFT"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "TRAINING_CAMP_BODY_FROM_FOCUS",
+      "skills": [
+        "TAP_FOCUSED_TRAINING_CAMP_SHIELD",
+        "TAP_FOCUSED_TRAINING_CAMP_LANCER",
+        "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME"
+      ],
+      "production_attempts": 8,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": "INTERACTIVE_CONTROL",
+      "visible_words": [
+        "当前聚焦兵营本体"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_LANCER_CAMP",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_LANCER"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 11,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW",
+      "visible_words": [
+        "矛兵"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_TASK_FROM_QUICK_PANEL_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "枪兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_LANCER_CAMP_DONE",
+      "skills": [
+        "COLLECT_FINISHED_TRAINING_LANCER"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 0,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW_CONTROL",
+      "visible_words": [
+        "矛兵营"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_LANCER production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row_done",
+        "row_label": "枪兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 4,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW",
+      "visible_words": [
+        "射手"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- OPEN_TASK_FROM_QUICK_PANEL_MARKSMAN production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "弓兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_MARKSMAN_CAMP_DONE",
+      "skills": [
+        "COLLECT_FINISHED_TRAINING_MARKSMAN"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 0,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW_CONTROL",
+      "visible_words": [
+        "射手营"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_MARKSMAN production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row_done",
+        "row_label": "弓兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP",
+      "skills": [
+        "OPEN_TASK_FROM_QUICK_PANEL_SHIELD"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 11,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW",
+      "visible_words": [
+        "盾兵"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row",
+        "row_label": "盾兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_ROW_SHIELD_CAMP_DONE",
+      "skills": [
+        "COLLECT_FINISHED_TRAINING_SHIELD"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 1,
+      "family": "LIST",
+      "priority": "P2",
+      "record_type": "ROW_CONTROL",
+      "visible_words": [
+        "盾兵营"
+      ],
+      "generator_ready": false,
+      "next_step": "RECONCILED 2026-09-27: production proof -- COLLECT_FINISHED_TRAINING_SHIELD production.  The queue counted these MISSING because only routing wiring was recognised; the runtime reader has been the working resolution all along",
+      "recognition": {
+        "kind": "LIST_DYNAMIC",
+        "reader": "quick_panel",
+        "field": "row_done",
+        "row_label": "盾兵营",
+        "tap_allowed": false,
+        "purpose": "PRODUCTION_READER_RECONCILIATION",
+        "note": "resolved in production by runtime.py's tier-2 resolver reading frame.quick_panel.rows (current frame only; row control ARROW->arrow_norm, DONE->done_norm).  Deliberately NOT wired as a tier-1 node: the router's LIST_DYNAMIC branch only implements the rally-list reader, and duplicating the runtime reader there before the 2026-09-28 20:00 bear window would be unreviewed duplication of a proven path"
+      }
+    },
+    {
+      "semantic": "QUICK_PANEL_HANDLE",
+      "skills": [
+        "OPEN_QUICK_PANEL"
+      ],
+      "goals": [],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "production_attempts": 31,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": "CONTROL",
+      "visible_words": [
+        "快捷面板把手"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "BEAST_ON_MAP",
+      "skills": [
+        "SELECT_BEAST_TARGET_LABELLED"
+      ],
+      "goals": [],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 39,
+      "family": "MARCH",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "MARCH_ROW_1",
+      "skills": [
+        "SELECT_MARCH_TO_RECALL"
+      ],
+      "goals": [],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 18,
+      "family": "MARCH",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "row/target whose content and position change per state; needs per-instance capture",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "HUD_STAMINA_GAUGE",
+      "skills": [
+        "OPEN_STAMINA_SOURCES"
+      ],
+      "goals": [],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 44,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "COLOR",
+        "basis": "gauge/bar: state is a colour ratio inside a fixed track",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "RESOURCE_LEVEL_MINUS",
+      "skills": [
+        "RELAX_RESOURCE_LEVEL"
+      ],
+      "goals": [],
+      "pages": [
+        "MAP"
+      ],
+      "production_attempts": 0,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "unique icon sprite (map marker / arrow / pin / minus), no stable text",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_CONFIRM_RECALL",
+      "skills": [
+        "RECALL_MARCH"
+      ],
+      "goals": [],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 3,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_DUPLICATE_TARGET_CANCEL",
+      "skills": [
+        "CANCEL_DUPLICATE_TARGET"
+      ],
+      "goals": [],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 1,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_RECONNECT_SESSION",
+      "skills": [
+        "RECONNECT_SESSION"
+      ],
+      "goals": [],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 2,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "OCR",
+        "basis": "named action button; client prints caption text at runtime, to be read live",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "BTN_CLOSE",
+      "skills": [
+        "CLOSE_POPUP"
+      ],
+      "goals": [],
+      "pages": [
+        "POPUP"
+      ],
+      "production_attempts": 191,
+      "family": "POPUP",
+      "priority": "P2",
+      "record_type": "BUTTON",
+      "visible_words": [
+        "关闭"
+      ],
+      "generator_ready": true,
+      "next_step": "find real page frame and validate MAA candidate"
+    },
+    {
+      "semantic": "TRAINING_CAMP_NEXT",
+      "skills": [
+        "SELECT_TRAINING_CAMP"
+      ],
+      "goals": [],
+      "pages": [
+        "TRAINING"
+      ],
+      "production_attempts": 55,
+      "family": "NAV",
+      "priority": "P2",
+      "record_type": null,
+      "visible_words": [],
+      "generator_ready": false,
+      "next_step": "observe clickable control and record its true bounds",
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "position defined relative to a page layout (ring slot / next-slot anchor)",
+        "classified_at_source": "rule_table_v1"
+      }
+    },
+    {
+      "semantic": "RALLY_LIST_OPEN",
+      "family": "NAV",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "open the alliance rally/war rally list",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "OPEN_BEAR_RALLY_LIST"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "OPEN_BEAR_RALLY_LIST taps BTN_ALLIANCE_WAR then BTN_WAR_TAB_RALLY (both wired), and SemanticWorldVision sets alliance.rally_list_visible / section=RALLY_LIST from the live frame (ocr.py:4299)",
+        "classified_at_source": "production_path_reconciled"
+      },
+      "generator_ready": false,
+      "next_step": "Covered end to end: tap path wired, list presence read off the frame. Live-confirmed 2026-09-27 01:49Z on the real war page (frames dataset/evidence/autojoin_boundary_20260927).",
+      "reconciled_at": "2026-09-27T02:00:00+08:00"
+    },
+    {
+      "semantic": "RALLY_LIST_ROW_TARGET",
+      "family": "LIST",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "a rally row: target icon, initiator, troop count, countdown",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "JOIN_RALLY"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "same reader: per-row target text classified against 变异巨熊/冰原巨兽/巨熊; a row matching none is UNKNOWN and never joined",
+        "classified_at_source": "live_frame_replay"
+      },
+      "generator_ready": false,
+      "next_step": "Covered by RALLY_ROW_JOIN_BUTTON's row reading (field 'target'); joinable already requires target_type BEAR.",
+      "wired_at": "2026-09-27T01:40:00+08:00"
+    },
+    {
+      "semantic": "RALLY_ROW_JOIN_BUTTON",
+      "family": "LIST",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "join button on a rally row with free slots",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "JOIN_RALLY"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "rally.read_rally_list_image: row identity/leader/members/capacity/timer + that row's own green button, replayed on four archived live frames",
+        "classified_at_source": "live_frame_replay"
+      },
+      "generator_ready": false,
+      "next_step": "L2 wired 2026-09-27 (LIST_DYNAMIC, fallback BTN_JOIN_ROW). L3 arrives with the first production join; L4 needs a live joined-state verifier pass.",
+      "wired_at": "2026-09-27T01:40:00+08:00"
+    },
+    {
+      "semantic": "RALLY_ROW_FULL",
+      "family": "LIST",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "full marker on a rally row; triggers switch to next target",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "JOIN_RALLY"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "same reader: members >= capacity -> full; unreadable capacity stays null, never full",
+        "classified_at_source": "live_frame_replay"
+      },
+      "generator_ready": false,
+      "next_step": "Covered by RALLY_ROW_JOIN_BUTTON's row reading (field 'full'); kept as its own semantic so a policy can ask about capacity without asking for a tap.",
+      "wired_at": "2026-09-27T01:40:00+08:00"
+    },
+    {
+      "semantic": "START_RALLY_BUTTON",
+      "family": "NAV",
+      "pages": [
+        "BEAR_TRAP_DETAIL"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "initiate a rally on a selected bear target",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "START_RALLY"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "TEMPLATE",
+        "basis": "the same control as BTN_START_RALLY, already wired under START_RALLY (routing: dataset/candidate/bear_rally/btn_start_rally__bear_trap_detail__9db2cb89__0.png, observed 0.9863)",
+        "classified_at_source": "duplicate_semantic_reconciled"
+      },
+      "generator_ready": false,
+      "next_step": "No separate node: START_RALLY already taps it. Kept as its own semantic only so the goal can name the action; do not generate a second template for one control.",
+      "reconciled_at": "2026-09-27T02:00:00+08:00"
+    },
+    {
+      "semantic": "JOIN_RALLY_CONFIRM",
+      "family": "POPUP",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "confirm join with current preset troop",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "JOIN_RALLY"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "next_step": "P0 live gap: first real rally UI occurrence triggers capture-first fast channel; contract above is pre-agreed, recognition method is calibrated on the live frame only.",
+      "reconciled_at": "2026-09-27T02:00:00+08:00",
+      "gap_class": "LIVE_EVENT_GAP",
+      "capture_first": true,
+      "candidate_contract": {
+        "precondition": [
+          "legal rally row selected in LIST_DYNAMIC",
+          "JOIN_RALLY executed on that row"
+        ],
+        "expected_page_or_state": [
+          "confirm dialog",
+          "troop/formation page",
+          "direct join (no dialog)"
+        ],
+        "action": "execute ONLY when confirm semantics are explicit on the live frame (button token like 确认/加入)",
+        "verifier": "JOINED_STATE (joined flag / in-rally roster), never the click itself",
+        "if_no_confirm_dialog": "auto-mark NOT_REQUIRED_FOR_THIS_FLOW and pass through JOINED_STATE verifier; do NOT hunt for a nonexistent button",
+        "fast_channel": "capture frame -> OCR -> classify -> detect confirm action -> AutoGen -> validate -> MAA -> Verifier (seconds-scale local patch, not a fresh study)"
+      }
+    },
+    {
+      "semantic": "RALLY_HERO_SELECT",
+      "family": "LIST",
+      "pages": [
+        "MARCH"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "hero picker inside rally preparation",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "DISPATCH_MARCH"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "winter_agent_v2.formation.read_formation_state_tokens reads the three hero slots from the current frame on both an ordinary march and the 2026-09-09 bear auto-join hero page",
+        "classified_at_source": "live_frame_replay"
+      },
+      "generator_ready": false,
+      "next_step": "COMMON_READY (slot geometry from the current frame, no stored coordinates). BEAR_LIVE_VERIFIED waits for the live bear formation page.",
+      "wired_at": "2026-09-27T01:40:00+08:00"
+    },
+    {
+      "semantic": "RALLY_TROOP_SELECT",
+      "family": "LIST",
+      "pages": [
+        "MARCH"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "troop formation picker inside rally preparation",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "DISPATCH_MARCH"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "STRUCTURE",
+        "basis": "same reader: troop rows of the current formation page",
+        "classified_at_source": "live_frame_replay"
+      },
+      "generator_ready": false,
+      "next_step": "COMMON_READY, same basis as RALLY_HERO_SELECT.",
+      "wired_at": "2026-09-27T01:40:00+08:00"
+    },
+    {
+      "semantic": "RALLY_DISPATCH_CONFIRM",
+      "family": "POPUP",
+      "pages": [
+        "MARCH"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "final dispatch confirmation",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "DISPATCH_MARCH"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "OCR",
+        "basis": "formation confirm button 出征/储存 read by winter_agent_v2.formation; BTN_DISPATCH is L4-proved on a real formation page 2026-09-27",
+        "classified_at_source": "live_proof"
+      },
+      "generator_ready": false,
+      "next_step": "COMMON_READY via BTN_DISPATCH (L4 2026-09-27). Bear-specific wording, if any, is confirmed when the bear formation page is live.",
+      "wired_at": "2026-09-27T01:40:00+08:00"
+    },
+    {
+      "semantic": "RALLY_JOINED_STATE",
+      "family": "STATUS",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "joined badge / own troop shown in rally detail",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "JOIN_RALLY"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "verify_rally_joined(before, after, 'BEAR') is bound to JOIN_RALLY in runtime.VERIFIED_ATOMIC (runtime.py:335) -- success is a joined-state reading, never a click; tools/bear_joined_state.py reads JOINED/NOT_JOINED/UNKNOWN from the frame",
+        "classified_at_source": "production_path_reconciled"
+      },
+      "generator_ready": false,
+      "next_step": "Covered. L4 needs the 2026-09-28 war: with no war the frame prints 当前暂无战事 and NOT_JOINED is the only honest reading.",
+      "wired_at": "2026-09-27T01:40:00+08:00",
+      "reconciled_at": "2026-09-27T02:00:00+08:00"
+    },
+    {
+      "semantic": "RALLY_BATTLE_REPORT",
+      "family": "STATUS",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "battle report entry proving participation result",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "JOIN_RALLY"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "next_step": "P0 live gap: first post-battle frame triggers capture-first; generate from the captured frame, not guessed.",
+      "reconciled_at": "2026-09-27T02:00:00+08:00",
+      "gap_class": "LIVE_EVENT_GAP",
+      "capture_first": true,
+      "candidate_contract": {
+        "precondition": [
+          "bear battle resolved (rally completed)"
+        ],
+        "expected_page_or_state": [
+          "battle report page/popup with damage/rewards/result"
+        ],
+        "capture": [
+          "page",
+          "ocr tokens",
+          "rewards",
+          "damage",
+          "report entry",
+          "close button",
+          "back entry"
+        ],
+        "verifier": "battle RESULT read (text/numbers present), NOT \"report button clicked\"",
+        "blocking_rule": "knowledge-closure only: must never block BEAR Goal L5 unless the Goal contract explicitly requires the report"
+      }
+    },
+    {
+      "semantic": "RALLY_EVENT_ACTIVE_STATE",
+      "family": "STATUS",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [],
+      "record_type": "CONTROL",
+      "priority": "P0",
+      "note": "event page state proving bear hunt window is open",
+      "source": "bear-hunt prep 2026-09-26; recognition.method pending live frames of the bear rally UI",
+      "skills": [
+        "OPEN_BEAR_RALLY_LIST"
+      ],
+      "goals": [
+        "PARTICIPATE_BEAR"
+      ],
+      "recognition": {
+        "method": "LIST_DYNAMIC",
+        "basis": "SemanticWorldVision reads live bear rally rows and writes events['bear'] = {'status': 'ACTIVE', 'remaining_seconds': min(row.remaining_seconds)} (ocr.py:4304-4317); goal_library.bear_phase turns that into BearPhase.ACTIVE",
+        "classified_at_source": "production_path_reconciled"
+      },
+      "generator_ready": false,
+      "next_step": "Covered: ACTIVE is derived from the rows themselves, so 'the event is live' and 'a row can be joined' cannot disagree. Today's live frame reads 当前暂无战事 -> not active, which is the honest answer.",
+      "reconciled_at": "2026-09-27T02:00:00+08:00"
+    },
+    {
+      "semantic": "BTN_EXPLORATION_IDLE_CLAIM",
+      "family": "CLAIM",
+      "pages": [
+        "EXPLORATION"
+      ],
+      "visible_words": [
+        "领取",
+        "挂机收益",
+        "挂机时间"
+      ],
+      "record_type": "BUTTON",
+      "priority": "P1",
+      "recognition": {
+        "method": "OCR",
+        "basis": "words observed live on the exploration idle panel; recorded in semantic_dictionary under sibling control BTN_EXPLORATION_IDLE_CONFIRM",
+        "classified_at_source": "sibling_dict_record"
+      },
+      "note": "failing control of CLAIM_EXPLORATION_IDLE (SEMANTIC_TARGET_NOT_VERIFIED at 2026-09-26T03:05Z); words taken from the dictionary's real-client record of the same panel, not invented",
+      "source": "repair-path data fix 2026-09-26"
+    },
+    {
+      "semantic": "BTN_BEAR_AUTO_JOIN",
+      "family": "NAV",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [
+        "自动加入"
+      ],
+      "record_type": "BUTTON",
+      "priority": "P0",
+      "recognition": {
+        "method": "OCR",
+        "basis": "live frame r14_war: blue button 自动加入 with red dot at bottom of alliance-war rally tab (observed 2026-09-26)",
+        "classified_at_source": "live_frame_token"
+      },
+      "note": "auto-join the ice giant (bear) rally; toggle state visible as red dot",
+      "source": "bear-hunt prep r14/r17 2026-09-26"
+    },
+    {
+      "semantic": "STATUS_WAR_NO_WAR",
+      "family": "STATUS",
+      "pages": [
+        "ALLIANCE_WAR"
+      ],
+      "visible_words": [
+        "当前暂无战事"
+      ],
+      "record_type": "STATUS",
+      "priority": "P1",
+      "recognition": {
+        "method": "OCR",
+        "basis": "live frames r16/r17: empty rally list prints 当前暂无战事",
+        "classified_at_source": "live_frame_token"
+      },
+      "note": "empty-state marker of the rally list; absence of this text = rally exists",
+      "source": "bear-hunt prep r16 2026-09-26"
+    },
+    {
+      "semantic": "STATE_CITY_VIEW",
+      "skills": [
+        "OPEN_MAP"
+      ],
+      "goals": [
+        "KEEP_MARCHES_PRODUCTIVE"
+      ],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "STATE",
+      "visible_words": [
+        "野外"
+      ],
+      "generator_ready": true,
+      "recognition": {
+        "kind": "TEMPLATE",
+        "template": "STATE_CITY_VIEW.png",
+        "roi": [
+          613,
+          1234,
+          687,
+          1280
+        ],
+        "threshold": 0.8,
+        "tap_allowed": false,
+        "purpose": "STATE_DETECTION",
+        "state_meaning": "this template matching means the client is in the CITY view",
+        "note": "the chip is an action label: CITY view draws 野外, WILDERNESS draws 城镇"
+      },
+      "next_step": "wired 2026-09-27; bidirectional validation 27/27 own-state frames hit (worst 0.9994), 0/12 opposite-state frames hit (best 0.4754), separation 0.524; one OCR-unreadable wilderness frame (chip washed out, RapidOCR NONE) was recovered by the template at 0.9786 -- the exact case that motivated leaving OCR for templates"
+    },
+    {
+      "semantic": "STATE_WILDERNESS_VIEW",
+      "skills": [
+        "OPEN_MAP"
+      ],
+      "goals": [
+        "KEEP_MARCHES_PRODUCTIVE"
+      ],
+      "pages": [
+        "HOME",
+        "MAP"
+      ],
+      "family": "NAV",
+      "priority": "P1",
+      "record_type": "STATE",
+      "visible_words": [
+        "城镇"
+      ],
+      "generator_ready": true,
+      "recognition": {
+        "kind": "TEMPLATE",
+        "template": "STATE_WILDERNESS_VIEW.png",
+        "roi": [
+          613,
+          1234,
+          687,
+          1280
+        ],
+        "threshold": 0.8,
+        "tap_allowed": false,
+        "purpose": "STATE_DETECTION",
+        "state_meaning": "this template matching means the client is in the WILDERNESS view",
+        "note": "the chip is an action label: CITY view draws 野外, WILDERNESS draws 城镇"
+      },
+      "next_step": "wired 2026-09-27; bidirectional validation 12/12 own-state frames hit (worst 0.9994), 0/27 opposite-state frames hit (best 0.4862), separation 0.5132; one OCR-unreadable wilderness frame (chip washed out, RapidOCR NONE) was recovered by the template at 0.9786 -- the exact case that motivated leaving OCR for templates"
+    }
+  ],
+  "honest_rejections": [
+    {
+      "semantic": "BTN_OK_POPUP",
+      "candidate_word": "确定",
+      "date": "2026-09-26",
+      "frame": "dataset/raw/autogen/r2_home3.png",
+      "reason": "OCR batch-1 scan hit 确定 on the EXIT GAME confirm dialog (确认退出游戏吗？). Wiring a generic OK tap risks confirming destructive dialogs. Rejected; requires a page-scoped context rule."
+    }
+  ],
+  "reconciled_at": "2026-09-27T11:20:00+08:00"
 }

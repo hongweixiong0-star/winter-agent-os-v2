@@ -6,40 +6,40 @@
 <!-- AUTO:recent_commits -->
 Last 12 commits (newest first):
 
-- `d6d1a47 2026-09-24T02:22:05+08:00 fix(gateway-service): a service must not be started inside someone else's tool call`
-- `ffb4502 2026-09-24T02:07:27+08:00 fix(unknown-channel): the gateway sets the bundle selector, so an answering job can start`
-- `63b17c3 2026-09-23T22:43:06+08:00 docs(handoff): refreshed, with the panel's state-source rule and its two remaining gaps pinned`
-- `8e384d8 2026-09-23T22:42:17+08:00 feat(quick-panel): the panel reads the city's state, and the city stopped asking twice`
-- `ef204e4 2026-09-23T22:04:37+08:00 docs(skill): a fixture's own learned inputs are variables too -- and do not delete a load-bearing term to make one deterministic`
-- `ed945c5 2026-09-23T22:04:11+08:00 docs(handoff): the AUTO refreshed, with the five questions and their judging criteria pinned`
-- `f36ab20 2026-09-23T22:03:19+08:00 feat(goals): whether a task exists is not the same fact as whether it can be run`
-- `4132f7f 2026-09-23T21:29:18+08:00 docs(handoff): register #114 -- two faults, two different first breaks, and the judging criteria`
-- `e9c8bca 2026-09-23T21:28:06+08:00 feat(red-dot): the dot decides whether the task exists, not merely how it ranks`
-- `afdb44c 2026-09-23T20:31:10+08:00 docs(memory): a field written at partial write-sites cannot prove absence; and a similarity score can run backwards`
-- `4c4ea94 2026-09-23T20:30:26+08:00 feat(truth_audit): 实力详情 landed on the real device -- the tap and the after-frame are both right`
-- `72c8e25 2026-09-23T20:25:31+08:00 docs(ai-channel): register the break, and a watcher that says when the two live questions land`
+- `e3d00ad 2026-09-24T17:51:59+08:00 feat(login-gift): the ordinary AUTO can now open the panel itself, and claims only a client-highlighted node`
+- `7892717 2026-09-24T17:12:10+08:00 feat(login-gift): the highlighted day node was tapped, and the claim is proven by the client's own two marks`
+- `d7460ac 2026-09-24T17:11:28+08:00 feat(readiness): a preparation window needs a clock, not a frame`
+- `e7ae378 2026-09-24T17:10:58+08:00 fix(rally): read which rally a green + belongs to, and make the two rally actions deliverable`
+- `d5b4647 2026-09-24T14:29:02+08:00 fix(event-panel): the 鐧诲綍濂界ぜ panel has a name, and a just-opened screen is observed before any flow leaves it`
+- `e590784 2026-09-24T12:12:02+08:00 measure(live-ops): the click was never dead -- the response is 0.75 s long, and BACK raises a quit dialog`
+- `078a238 2026-09-24T11:49:24+08:00 measure(live-ops): the HUD did not move -- the previous round's cause was wrong`
+- `cf34588 2026-09-24T11:30:37+08:00 fix(ui-collection): an element is now a typed control, and the label鈫抍ontrol relation is measured`
+- `54132db 2026-09-24T11:00:25+08:00 fix(planner): the advisor is built per run, and COMPLETE is not DEFER`
+- `d789714 2026-09-24T10:51:45+08:00 fix(unknown-channel): the retirement marker must not change what an existing key means`
+- `24b4293 2026-09-24T10:29:32+08:00 feat(planner): the local Qwen plans structured UI actions, and the WorkBuddy channel is retired`
+- `0e96f02 2026-09-24T07:57:44+08:00 docs(gateway-contract): the official API at 2.147.0, and who owns the session`
 
-Uncommitted changes: 598
+Uncommitted changes: 732
 - `M .workbuddy-ai/commander/CODEX_DIRECTIVES.md`
 - ` M .workbuddy-ai/commander/EXECUTION_STATE.json`
 - ` M .workbuddy-ai/commander/LAST_CODEX_REVIEW.md`
 - ` M .workbuddy-ai/commander/WORK_QUEUE.json`
-- ` M .workbuddy-ai/handoff/00_MASTER_RULES.md`
 - ` M .workbuddy-ai/handoff/01_CURRENT_TRUTH.md`
 - ` M .workbuddy-ai/handoff/02_CURRENT_PROGRESS.md`
 - ` M .workbuddy-ai/handoff/03_NEXT_ACTION.md`
 - ` M .workbuddy-ai/handoff/04_OPEN_ISSUES.md`
 - ` M .workbuddy-ai/handoff/05_RECENT_CHANGES.md`
-- ` M .workbuddy-ai/handoff/07_EXTERNAL_REUSE.md`
 - ` M .workbuddy-ai/handoff/08_LIVE_METRICS.json`
 - ` M .workbuddy-ai/handoff/09_RUNTIME_STATE.json`
 - ` M .workbuddy-ai/handoff/10_LAST_HANDOFF.md`
 - ` M .workbuddy-ai/memory/2026-09-23.md`
+- ` M .workbuddy-ai/memory/2026-09-24.md`
+- ` M .workbuddy-ai/memory/2026-09-25.md`
 - ` M .workbuddy/memory/2026-09-21.md`
 - ` M .workbuddy/memory/2026-09-23.md`
+- ` M .workbuddy/memory/2026-09-24.md`
+- ` M .workbuddy/memory/2026-09-25.md`
 - ` M config/control_panel_state.json`
-- ` M config/policy_state.json`
-- ` M dataset/candidate/template_manifest.json`
 <!-- /AUTO:recent_commits -->
 
 ---

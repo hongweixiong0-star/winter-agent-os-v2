@@ -23,6 +23,17 @@
 
 # --- bulk evidence ---------------------------------------------------------
 learning/action_latency.jsonl
+# The production episode ledger, machine-local for the same reason the screenshots
+# are: measured 2026-09-30 it is 107.7 MB / 10059 rows, which is over GitHub's
+# 100 MB hard limit -- the push of the shared data root was rejected with
+# "GH001: Large files detected".  The runtime reads this path directly, so it has
+# to stay exactly where it is and keep growing; what git carries instead is the
+# small sidecar the runtime already writes, learning/.episodes.jsonl.index.json
+# ({version, file_size, line_count, ends_with_newline}), plus the derived summary
+# in docs/CURRENT_TRUTH.md.  Keeping it tracked was also a live hazard, not just a
+# size problem: a checkout/rebase silently rolled the ledger back to a committed
+# copy 11 days old, which is what fix(state) 2026-09-30 had to undo.
+learning/episodes.jsonl
 dataset/raw/**/*.png
 dataset/raw/**/*.jpg
 dataset/truth_audit/**/*.png
