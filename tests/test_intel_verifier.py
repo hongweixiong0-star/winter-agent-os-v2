@@ -47,13 +47,16 @@ class IntelVerifierTests(unittest.TestCase):
         self.assertTrue(verify_intel_claim_feedback(before, reward).ok)
         self.assertFalse(verify_intel_claim_feedback(before, before).ok)
 
-    def test_reward_overlay_uses_dedicated_safe_dismiss_and_requires_intel_page(self) -> None:
+    def test_reward_overlay_dismisses_to_any_known_underlying_page(self) -> None:
         reward = WorldState(page=Page.POPUP, popup="INTEL_REWARD", intel={"claim_feedback": True}, confidence=0.99)
         intel = WorldState(page=Page.INTEL, intel={"status": "AVAILABLE", "stamina": 200}, confidence=0.99)
         decision = RuleBrain().decide(reward, v2_registry())
         self.assertEqual(decision.skill, "DISMISS_INTEL_REWARD")
         self.assertTrue(verify_intel_reward_dismissed(reward, intel).ok)
+        mail = WorldState(page=Page.MAIL, mail={"status": "CLAIMABLE"}, confidence=0.99)
+        self.assertTrue(verify_intel_reward_dismissed(reward, mail).ok)
         self.assertFalse(verify_intel_reward_dismissed(reward, WorldState(page=Page.UNKNOWN)).ok)
+        self.assertFalse(verify_intel_reward_dismissed(reward, WorldState(page=Page.POPUP)).ok)
 
     def test_current_client_intel_beast_chain_is_verifier_gated(self) -> None:
         vision = SemanticWorldVision(ROOT / "dataset" / "candidate" / "template_manifest.json")

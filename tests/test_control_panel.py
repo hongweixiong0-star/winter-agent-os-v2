@@ -186,6 +186,17 @@ class ControlPanelTests(unittest.TestCase):
         ))
         self.assertEqual(cp.ROLE_SWITCH_RETRY_DELAY_MS, 15_000)
 
+    def test_confirmed_role_handoff_restarts_even_after_prior_goal_failure(self):
+        for reason in (
+            "ROLE_SWITCHED_TO:ROLE_B",
+            "ROLE_IDENTITY_CHANGED:ROLE_B",
+        ):
+            with self.subTest(reason=reason):
+                self.assertTrue(cp.should_continue_auto_cycle(
+                    healthy=False, reason=reason, continuous=True,
+                    stop_requested=False, paused=False, fatal=False,
+                ))
+
     def test_operator_pause_and_fatal_stop_still_suppress_role_switch_retry(self):
         args = {
             "healthy": False,
@@ -196,6 +207,12 @@ class ControlPanelTests(unittest.TestCase):
         }
         self.assertFalse(cp.should_continue_auto_cycle(**{**args, "paused": True}, fatal=False))
         self.assertFalse(cp.should_continue_auto_cycle(**args, fatal=True))
+
+    def test_non_handoff_runtime_failure_does_not_auto_restart(self):
+        self.assertFalse(cp.should_continue_auto_cycle(
+            healthy=False, reason="DEVICE_FATAL", continuous=True,
+            stop_requested=False, paused=False, fatal=False,
+        ))
 
     def test_unknown_page_is_not_reported_as_success(self):
         payload = {"stop_reason": "unknown_page", "steps": [{"decision": {"skill": "SAFE_STOP"}}]}

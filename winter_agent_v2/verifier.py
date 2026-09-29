@@ -738,12 +738,21 @@ def verify_daily_reward_advanced(before: WorldState, after: WorldState) -> Verif
 
 def verify_intel_reward_dismissed(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.POPUP and before.popup in {"INTEL_REWARD", "GENERIC_REWARD"}
-    restored = after.page is Page.INTEL and after.popup is None
+    # A generic reward popup can cover another known page. Live production
+    # evidence on 2026-09-29 showed the Intel reward overlay over MAIL; closing
+    # it succeeded, but the verifier falsely required the hidden page to be
+    # INTEL and recorded a failure. Verify the action's actual contract: the
+    # reward popup is gone and the newly observed page is positively known.
+    restored = (
+        after.page not in {Page.POPUP, Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}
+        and after.popup is None
+    )
     ok = before_ok and restored
     return VerificationResult(
         ok,
         "OK" if ok else "INTEL_REWARD_DISMISS_NOT_PROVEN",
-        {"before_reward": before_ok, "after_intel": restored, "after_page": after.page.value},
+        {"before_reward": before_ok, "popup_dismissed_on_known_page": restored,
+         "after_page": after.page.value},
     )
 
 

@@ -119,6 +119,46 @@ class GlobalSchedulerDashboardTests(unittest.TestCase):
 
         self.assertEqual(view["hard_event"], "ROLE_A · SCHEDULED_BEAR · 距离开始 287 秒（T5）")
 
+    def test_daily_role_boards_show_pending_work_and_exclude_unseen_from_rate(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "learning").mkdir()
+            (root / "knowledge" / "roles").mkdir(parents=True)
+            (root / "learning" / "global_scheduler_state.json").write_text(
+                json.dumps({"active_role_id": "role-a"}), encoding="utf-8",
+            )
+            (root / "knowledge" / "roles" / "role_inventory.json").write_text(
+                json.dumps({"roles": [
+                    {"role_id": "role-a", "role_key": "ROLE_A"},
+                    {"role_id": "role-b", "role_key": "ROLE_B"},
+                ]}), encoding="utf-8",
+            )
+            (root / "learning" / "task_completion_matrix.json").write_text(
+                json.dumps({"roles": {
+                    "role-a": {"daily_board": {
+                        "tasks": {
+                            "MAIL": {"status": "READY"},
+                            "BEAR": {"status": "WAITING", "reason_code": "EVENT_NOT_OPEN"},
+                            "INTEL": {"status": "COMPLETE"},
+                            "ARENA": {"status": "NOT_DISCOVERED"},
+                        },
+                        "summary": {"completed": 1, "observed": 3, "expired": 0, "not_discovered": 1},
+                    }},
+                    "role-b": {"daily_board": {
+                        "tasks": {"RESEARCH": {"status": "BLOCKED", "reason_code": "CAPABILITY_GAP"}},
+                        "summary": {"completed": 0, "observed": 1, "expired": 0, "not_discovered": 2},
+                    }},
+                }}), encoding="utf-8",
+            )
+
+            view = global_scheduler_display(root)
+
+        self.assertIn("邮件 可执行", view["remaining_a"])
+        self.assertIn("巨熊 等待/EVENT_NOT_OPEN", view["remaining_a"])
+        self.assertIn("科研 阻塞/CAPABILITY_GAP", view["remaining_b"])
+        self.assertIn("1/4（25%）", view["task_completion"])
+        self.assertIn("未发现类别 3（未并入分母）", view["task_completion"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -686,9 +686,9 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
         payload = json.loads((root / "learning/global_scheduler_state.json").read_text(encoding="utf-8"))
         catalog = json.loads((root / "knowledge/roles/role_inventory.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, TypeError):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化", "remaining_a": "今日完成看板尚未生成", "remaining_b": "今日完成看板尚未生成", "task_completion": "暂无今日任务完成证据"}
     if not isinstance(payload, dict):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化", "remaining_a": "今日完成看板尚未生成", "remaining_b": "今日完成看板尚未生成", "task_completion": "暂无今日任务完成证据"}
     names = {
         str(row.get("role_id")): str(row.get("role_key") or row.get("display_name") or row.get("role_id"))
         for row in (catalog.get("roles", []) if isinstance(catalog, dict) else [])
@@ -753,6 +753,7 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
         )
     else:
         telemetry = "生产计数尚未初始化（从本版本首条 Scheduler / ActionOutcome 记录开始统计）"
+    completion_view = task_completion_display(root, role_ids, names)
     return {
         "current": current,
         "roles": role_lines,
@@ -762,6 +763,66 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
         "telemetry": telemetry,
         "wakeup": next_wakeup,
         "metrics": f"切换 {metrics['count']} 次｜成功率 {rate}｜p50 {p50}｜p95 {p95}",
+        **completion_view,
+    }
+
+
+def task_completion_display(
+    root: Path, role_ids: list[str], names: dict[str, str],
+) -> dict[str, str]:
+    """Show today's role boards from the Goal/Episode projection when available."""
+    try:
+        matrix = json.loads((root / "learning/task_completion_matrix.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        matrix = {}
+    roles = matrix.get("roles") if isinstance(matrix, dict) else {}
+    roles = roles if isinstance(roles, dict) else {}
+    lines: dict[str, str] = {}
+    completed_total = observed_total = unseen_total = 0
+    status_zh = {"READY": "可执行", "RUNNING": "进行中", "WAITING": "等待", "BLOCKED": "阻塞",
+                 "NOT_DISCOVERED": "未发现", "COMPLETE": "完成", "EXPIRED": "已过期"}
+    task_zh = {
+        "DAILY": "每日任务", "INTEL": "情报", "MAIL": "邮件", "REWARD": "奖励",
+        "ALLIANCE": "联盟", "ALLIANCE_DONATION": "联盟捐献", "TRAINING": "训练",
+        "RESEARCH": "科研", "BUILDING": "建筑", "GATHER": "采集", "STAMINA": "体力",
+        "BEAST": "打野", "ICEFIELD_BEAST": "冰原巨兽", "ARENA": "竞技场",
+        "ACTIVITY_CLAIM": "活动奖励", "FREE_REWARD": "免费奖励",
+        "ALLIANCE_MOBILIZATION": "联盟总动员", "BEAR": "巨熊", "OTHER_CURRENT_EVENTS": "其他活动",
+    }
+    for index, role_id in enumerate(role_ids[:2]):
+        key = "remaining_a" if index == 0 else "remaining_b"
+        role = roles.get(role_id) if isinstance(roles.get(role_id), dict) else {}
+        board = role.get("daily_board") if isinstance(role.get("daily_board"), dict) else {}
+        tasks = board.get("tasks") if isinstance(board.get("tasks"), dict) else {}
+        summary = board.get("summary") if isinstance(board.get("summary"), dict) else {}
+        completed_total += int(summary.get("completed") or 0)
+        observed_total += max(0, int(summary.get("observed") or 0) - int(summary.get("expired") or 0))
+        unseen_total += int(summary.get("not_discovered") or 0)
+        if not board:
+            lines[key] = f"{names.get(role_id, role_id)}：尚无当日角色 Goal 观察"
+            continue
+        pending = []
+        for task_type, row in tasks.items():
+            if not isinstance(row, dict) or row.get("status") in {"COMPLETE", "EXPIRED", "NOT_DISCOVERED"}:
+                continue
+            status = status_zh.get(str(row.get("status") or ""), str(row.get("status") or "待识别"))
+            reason = str(row.get("reason_code") or "")
+            suffix = f"/{reason}" if reason else ""
+            pending.append(f"{task_zh.get(task_type, task_type)} {status}{suffix}")
+        unseen = int(summary.get("not_discovered") or 0)
+        completed = int(summary.get("completed") or 0)
+        observed = max(0, int(summary.get("observed") or 0) - int(summary.get("expired") or 0))
+        text = "、".join(pending[:7]) if pending else "当前已发现目标均完成或过期"
+        if len(pending) > 7:
+            text += f"等 {len(pending)} 项"
+        text += f"；完成 {completed}/{observed}，未发现 {unseen} 类"
+        lines[key] = f"{names.get(role_id, role_id)}：{text}"
+    if len(role_ids) < 2:
+        lines.setdefault("remaining_b", "角色 B：尚未登记启用角色")
+    rate = f"{completed_total}/{observed_total}（{completed_total / observed_total:.0%}）" if observed_total else "暂无可计算的已观察任务"
+    return {
+        **lines,
+        "task_completion": f"已观察角色任务完成度 {rate}｜未发现类别 {unseen_total}（未并入分母）",
     }
 
 def parse_runtime_result(text: str) -> dict:
@@ -833,16 +894,20 @@ def should_continue_auto_cycle(
     *, healthy: bool, reason: str, continuous: bool,
     stop_requested: bool, paused: bool, fatal: bool,
 ) -> bool:
-    """Keep the global scheduler alive after a bounded role-switch failure.
+    """Keep the global scheduler alive across recoverable role handoffs.
 
     A round can include a verifier failure from one yielded Goal and then end at a
     role-switch boundary. The failure stays visible in the run summary, but it must
     not cancel the next fresh observation that lets the other role continue.
+    A confirmed switch and an externally changed role also require a new cycle so
+    the scheduler can identify the active role and rebuild its live state.
     """
-    retryable_role_switch = str(reason or "").startswith("ROLE_SWITCH_FAILED:")
+    role_handoff = str(reason or "").startswith((
+        "ROLE_SWITCH_FAILED:", "ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
+    ))
     return bool(
         continuous and not stop_requested and not paused and not fatal
-        and (healthy or retryable_role_switch)
+        and (healthy or role_handoff)
     )
 
 
@@ -4109,10 +4174,13 @@ class ControlPanel:
             row=0, column=0, columnspan=2, sticky="w")
         self.global_role_vars = {
             key: tk.StringVar(value="等待双角色状态")
-            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics", "hard_event", "timeline", "telemetry")
+            for key in ("current", "role_a", "role_b", "remaining_a", "remaining_b",
+                        "task_completion", "decision", "wakeup", "metrics", "hard_event", "timeline", "telemetry")
         }
         for row, (label, key) in enumerate((
             ("当前角色", "current"), ("角色 A", "role_a"), ("角色 B", "role_b"),
+            ("A 今日剩余", "remaining_a"), ("B 今日剩余", "remaining_b"),
+            ("今日完成度", "task_completion"),
             ("最近决策", "decision"), ("下一唤醒", "wakeup"), ("切换指标", "metrics"),
             ("临近硬时间活动", "hard_event"),
             ("生产遥测", "telemetry"),
@@ -4170,6 +4238,9 @@ class ControlPanel:
             role_lines = list(global_view.get("roles", []))
             self.global_role_vars["role_a"].set(role_lines[0] if role_lines else "暂无角色 A 快照")
             self.global_role_vars["role_b"].set(role_lines[1] if len(role_lines) > 1 else "暂无角色 B 快照")
+            self.global_role_vars["remaining_a"].set(global_view.get("remaining_a", "今日完成看板尚未生成"))
+            self.global_role_vars["remaining_b"].set(global_view.get("remaining_b", "今日完成看板尚未生成"))
+            self.global_role_vars["task_completion"].set(global_view.get("task_completion", "暂无今日任务完成证据"))
             self.global_role_vars["decision"].set(global_view.get("decision", "暂无"))
             self.global_role_vars["wakeup"].set(global_view.get("wakeup", "无"))
             self.global_role_vars["metrics"].set(global_view.get("metrics", "暂无"))

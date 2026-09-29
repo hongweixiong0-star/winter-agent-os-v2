@@ -35,6 +35,7 @@ from .goal_library import (
     GoalLibrary, GoalStateStore, newly_completed_goal_ids, progress_moved, route_for,
 )
 from .global_scheduler_state import GlobalSchedulerStateStore
+from .task_completion import TaskCompletionStore
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
@@ -531,6 +532,14 @@ class LiveRuntime:
         self._device_stop_reason = "DEVICE_NOT_CONNECTED"
         self.episode_store = episode_store
         self.goal_store = goal_store
+        task_data_dir = (
+            Path(goal_store.path).parent if goal_store is not None
+            else Path(episode_store.path).parent if episode_store is not None else None
+        )
+        self.task_completion_store = (
+            TaskCompletionStore(task_data_dir / "task_completion_matrix.json")
+            if task_data_dir is not None else None
+        )
         self.global_scheduler_state_store = global_scheduler_state_store
         self._fairness_store_path: Path | None = None
         self.role_catalog = tuple(dict(row) for row in role_catalog if isinstance(row, Mapping))
@@ -1428,6 +1437,19 @@ class LiveRuntime:
                 self.goal_store.write(world, goals, role_id=role_id)
             except (OSError, TypeError, ValueError):
                 pass
+        if self.task_completion_store is not None and role_id:
+            try:
+                identity = self._role_catalog_by_id.get(role_id, {})
+                self.task_completion_store.observe_role(
+                    role_id=role_id,
+                    role_key=str(identity.get("role_key") or ""),
+                    goals=goals,
+                    observed_at=world.timestamp or datetime.now(timezone.utc),
+                )
+            except Exception:  # noqa: BLE001 - reporting must never stop the game loop
+                # This board is a readout of the production loop; its writer must
+                # never become a reason to repeat or stop a game action.
+                pass
             global_store = getattr(self, "global_scheduler_state_store", None)
             if self._multi_role_enabled and role_id and global_store is not None:
                 try:
@@ -1686,6 +1708,11 @@ class LiveRuntime:
             # Learning persistence must never cause an already-issued action to
             # be repeated. The run result remains authoritative for this turn.
             pass
+        if self.task_completion_store is not None:
+            try:
+                self.task_completion_store.record_episode(episode)
+            except Exception:  # noqa: BLE001 - a derived board cannot stop production
+                pass
 
     # --------------------------------------------------- per-control experience
 
