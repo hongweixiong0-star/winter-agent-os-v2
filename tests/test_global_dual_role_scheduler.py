@@ -5,7 +5,8 @@ import pytest
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.executor import Executor
 from winter_agent_v2.goal_library import (
-    GoalLibrary, GoalState, GoalStatus, GoalStateStore, newly_completed_goal_ids,
+    GoalLibrary, GoalState, GoalStatus, GoalStateStore, action_relevant_goal_ids,
+    newly_completed_goal_ids,
 )
 from winter_agent_v2.models import Action, Decision, ExecutionResult, Page, VerificationResult, WorldState
 from winter_agent_v2.scheduler import ActiveRoleLiveState, RoleObservation, Scheduler
@@ -254,6 +255,68 @@ def test_shared_action_credits_all_matching_goals_in_one_dispatch():
     assert selected.credited_goal_ids == (
         "KEEP_TRAINING_PRODUCTIVE", "DAILY_TRAINING", "ALLIANCE_MOBILIZATION",
     )
+
+
+def test_training_action_credit_is_scoped_to_the_current_camp_and_shared_goals():
+    goals = (
+        _goal("SHIELD_CAMP_TRAINING", "TRAIN_TROOPS", 1200),
+        _goal("LANCER_CAMP_TRAINING", "TRAIN_TROOPS", 1200),
+        _goal("MARKSMAN_CAMP_TRAINING", "TRAIN_TROOPS", 1200),
+        _goal("DAILY_TRAINING", "TRAIN_TROOPS", 250),
+    )
+    world = WorldState(
+        page=Page.TRAINING,
+        training={"troop_type": "LANCER", "camp_open_label": "矛兵营"},
+        camps={"LANCER_CAMP": {"selected": True}},
+    )
+
+    relevant = action_relevant_goal_ids(
+        goals, "TRAIN_TROOPS", world, primary_goal_id="SHIELD_CAMP_TRAINING",
+    )
+
+    assert relevant == ("LANCER_CAMP_TRAINING", "DAILY_TRAINING")
+
+
+def test_training_action_with_unknown_camp_only_tracks_its_selected_camp_goal():
+    goals = (
+        _goal("SHIELD_CAMP_TRAINING", "TRAIN_TROOPS", 1200),
+        _goal("LANCER_CAMP_TRAINING", "TRAIN_TROOPS", 1200),
+        _goal("MARKSMAN_CAMP_TRAINING", "TRAIN_TROOPS", 1200),
+    )
+
+    relevant = action_relevant_goal_ids(
+        goals,
+        "TRAIN_TROOPS",
+        WorldState(page=Page.TRAINING),
+        primary_goal_id="SHIELD_CAMP_TRAINING",
+    )
+
+    assert relevant == ("SHIELD_CAMP_TRAINING",)
+
+
+def test_global_training_selection_uses_current_camp_not_highest_sibling_priority():
+    now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+    world = WorldState(
+        page=Page.TRAINING,
+        timestamp=now.isoformat(),
+        training={"troop_type": "LANCER", "camp_open_label": "矛兵营"},
+    )
+    goals = (
+        _goal("SHIELD_CAMP_TRAINING", "TRAIN_TROOPS", 10000),
+        _goal("LANCER_CAMP_TRAINING", "TRAIN_TROOPS", 1200),
+        _goal("MARKSMAN_CAMP_TRAINING", "TRAIN_TROOPS", 9000),
+        _goal("DAILY_TRAINING", "TRAIN_TROOPS", 250),
+    )
+    role = RoleObservation(
+        role_id="A", confirmed_role_id="A", world=world, observed_at=now,
+        decision=Decision("TRAIN_TROOPS", "current camp is selected", 1, "training_started"),
+        goals=goals,
+    )
+
+    selected = _scheduler().select_global((role,), current_role_id="A", now=now)
+
+    assert selected.goal_id == "LANCER_CAMP_TRAINING"
+    assert selected.credited_goal_ids == ("LANCER_CAMP_TRAINING", "DAILY_TRAINING")
 
 
 def test_live_mobilization_provider_goal_competes_in_the_existing_global_pool():

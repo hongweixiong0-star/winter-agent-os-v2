@@ -349,6 +349,75 @@ class GoalState:
         return deadline + self.reward_value + self.daily_loss + self.event_synergy + self.development_value - self.resource_cost - self.risk
 
 
+def action_relevant_goal_ids(
+    goals: Iterable[GoalState],
+    skill_id: str,
+    world: WorldState | None,
+    *,
+    primary_goal_id: str = "",
+) -> tuple[str, ...]:
+    """Return goals this action can actually advance on the current role/frame.
+
+    Several independent goals can share one generic Skill. Training is the concrete
+    example: all three camp Goals use ``TRAIN_TROOPS``, but starting shield training
+    cannot advance the lancer or marksman queue. Attaching every same-Skill Goal made
+    those untouched camps accumulate false no-progress penalties. Keep generic shared
+    credit, while scoping a camp Goal to the camp positively identified on this frame.
+    If that identity is unavailable, only the already-selected camp Goal may be tracked.
+    """
+    skill = str(skill_id or "")
+    selected_goal = str(primary_goal_id or "")
+    training_goal = _training_goal_for_world(world) if skill == "TRAIN_TROOPS" else None
+    camp_goals = set(CAMP_GOAL_FOR.values())
+    relevant: list[str] = []
+    for goal in goals:
+        goal_id = str(getattr(goal, "goal_id", "") or "")
+        if not goal_id:
+            continue
+        skills = tuple(str(item) for item in (getattr(goal, "available_skills", ()) or ()))
+        if goal_id in camp_goals:
+            if skill != "TRAIN_TROOPS":
+                if goal_id != selected_goal:
+                    continue
+            elif training_goal is not None:
+                if goal_id != training_goal:
+                    continue
+            elif goal_id != selected_goal:
+                continue
+        elif skill not in skills and goal_id != selected_goal:
+            continue
+        relevant.append(goal_id)
+    return tuple(dict.fromkeys(relevant))
+
+
+def _training_goal_for_world(world: WorldState | None) -> str | None:
+    """Resolve the selected training camp from explicit, current-frame identity facts."""
+    if world is None:
+        return None
+    training = world.training if isinstance(world.training, Mapping) else {}
+    camps = world.camps if isinstance(world.camps, Mapping) else {}
+    identities: set[str] = set()
+
+    def add_camp(value: Any) -> None:
+        camp = str(value or "").strip().upper()
+        if camp in CAMP_GOAL_FOR:
+            identities.add(camp)
+
+    add_camp(training.get("camp"))
+    add_camp(TROOP_TO_CAMP.get(str(training.get("troop_type") or "").strip().upper()))
+    for key in ("camp_open_label", "camp_label"):
+        label = str(training.get(key) or "").strip()
+        if label:
+            add_camp(next((camp for camp, known in CAMP_LABELS.items() if known == label), None))
+    selected = [camp for camp, row in camps.items()
+                if isinstance(row, Mapping) and row.get("selected") is True]
+    for camp in selected:
+        add_camp(camp)
+    if len(identities) != 1:
+        return None
+    return CAMP_GOAL_FOR[next(iter(identities))]
+
+
 def deadline_pressure(seconds: int | None) -> float:
     if seconds is None:
         return 0.0

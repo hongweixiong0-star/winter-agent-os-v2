@@ -32,7 +32,8 @@ from .ocr import (
 from .camp_training import CAMP_LABELS, CAMP_ORDER
 from .scheduler import Scheduler
 from .goal_library import (
-    GoalLibrary, GoalStateStore, newly_completed_goal_ids, progress_moved, route_for,
+    GoalLibrary, GoalStateStore, action_relevant_goal_ids,
+    newly_completed_goal_ids, progress_moved, route_for,
 )
 from .global_scheduler_state import GlobalSchedulerStateStore
 from .task_completion import TaskCompletionStore
@@ -6273,13 +6274,15 @@ class LiveRuntime:
                         if chosen_goal is not None:
                             best_goal = chosen_goal
                             self._committed_goal = chosen_goal.goal_id
+            primary_goal_id = (
+                str(best_goal.goal_id) if best_goal is not None
+                else str(getattr(self, "_committed_goal", "") or "")
+            )
             attached_goal_ids = tuple(dict.fromkeys((
                 *global_credited_goal_ids,
-                *(
-                    str(goal.goal_id) for goal in goals
-                    if decision.skill in (getattr(goal, "available_skills", ()) or ())
+                *action_relevant_goal_ids(
+                    goals, decision.skill, before, primary_goal_id=primary_goal_id,
                 ),
-                *((best_goal.goal_id,) if best_goal is not None else ()),
             )))
             if audit_starting_page is None:
                 audit_starting_page = before.page.value

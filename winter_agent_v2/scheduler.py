@@ -12,7 +12,7 @@ from .models import Decision, ExecutionResult, LatencyClass, WorldState
 from .skills import SkillRegistry
 from .event_goal import event_priority_modifier
 from .operations_policy import operational_priority
-from .goal_library import GoalLibrary
+from .goal_library import GoalLibrary, action_relevant_goal_ids
 from .candidate_policy import CandidateAttemptPool
 from . import entry_badges
 from . import event_schedule
@@ -748,9 +748,15 @@ class Scheduler:
                 continue
 
             goals = role.goals or self.goals.discover(world, role_id=role.role_id)
+            relevant_goal_ids = set(action_relevant_goal_ids(
+                goals,
+                decision.skill,
+                world,
+                primary_goal_id=str(getattr(role_brain, "current_goal", "") or ""),
+            ))
             matching_goals = [
                 goal for goal in goals
-                if decision.skill in (getattr(goal, "available_skills", ()) or ())
+                if str(getattr(goal, "goal_id", "") or "") in relevant_goal_ids
             ]
             goal = max(matching_goals, key=lambda item: float(getattr(item, "priority", 0.0)), default=None)
             goal_info = (_goal_schedule_info(goal, role.role_id, now=moment,
@@ -765,11 +771,8 @@ class Scheduler:
             # This is the same GoalLibrary marginal value used by the existing path,
             # calculated over this role's own Goal states so shared credit is retained
             # without pooling another account's resources or progress.
-            priority += sum(
-                float(getattr(item, "priority", 0.0) or 0.0)
-                for item in goals
-                if decision.skill in (getattr(item, "available_skills", ()) or ())
-            )
+            priority += sum(float(getattr(item, "priority", 0.0) or 0.0)
+                            for item in matching_goals)
 
             matching_schedules = [row for row in schedule_rows if row.role_id == role.role_id]
             plausible_schedules = [
