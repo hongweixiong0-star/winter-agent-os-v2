@@ -1,7 +1,9 @@
 from pathlib import Path
+from PIL import Image, ImageDraw
 from unittest.mock import patch
 
 from winter_agent_v2.brain import RuleBrain
+from winter_agent_v2.camp_ring import focused_camp_body_tap_norm
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.runtime import LiveRuntime
 from winter_agent_v2.skills import v2_registry
@@ -89,3 +91,29 @@ def test_focused_camp_actions_have_named_production_verifiers():
             },
         )
         assert LiveRuntime.VERIFIED_ATOMIC[skill](before, after).ok
+
+
+def test_focus_halo_is_not_merged_into_tutorial_hand(tmp_path):
+    """A real production frame showed 5x5 closing merged both warm UI shapes.
+
+    Keep a small synthetic regression fixture so the detector continues to reject the
+    narrow tutorial hand while locating the separate focus halo.
+    """
+    frame = Image.new("RGB", (720, 1280), (125, 135, 145))
+    draw = ImageDraw.Draw(frame)
+    gold = (255, 205, 65)
+    draw.ellipse((316, 545, 404, 623), outline=gold, width=4)
+    # This tutorial-hand silhouette is close enough for a 5x5 close to join it to
+    # the halo, but remains a separate component under the production 3x3 close.
+    draw.polygon(
+        [(358, 512), (412, 512), (412, 576), (407, 576), (407, 536), (358, 530)],
+        fill=gold,
+    )
+    path = tmp_path / "focus_halo_with_tutorial_hand.png"
+    frame.save(path)
+
+    point = focused_camp_body_tap_norm(path)
+
+    assert point is not None
+    assert abs(point[0] - 0.501) < 0.02
+    assert abs(point[1] - 0.457) < 0.02

@@ -1644,9 +1644,9 @@ class RuleBrain:
                         camp = str(completed_row.get("key") or "")
                         return Decision(
                             _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL[camp],
-                            f"completed_{camp.lower()}_entry_opens_its_barracks_before_claim_or_restart",
+                            f"completed_{camp.lower()}_entry_focuses_its_barracks_before_claim_or_restart",
                             world.confidence,
-                            "camp_action_bar_open",
+                            "camp_focused",
                         )
                 # A row the client has marked done comes first: its only valid action is to collect
                 # what is finished, and _actionable_panel_row refuses it, so the two never compete.
@@ -1953,9 +1953,9 @@ class RuleBrain:
                     camp = str(completed_row.get("key") or "")
                     return Decision(
                         _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL[camp],
-                        f"completed_{camp.lower()}_entry_opens_its_barracks_before_claim_or_restart",
+                        f"completed_{camp.lower()}_entry_focuses_its_barracks_before_claim_or_restart",
                         world.confidence,
-                        "camp_action_bar_open",
+                        "camp_focused",
                     )
                 idle_camp = next(
                     (
@@ -2056,9 +2056,9 @@ class RuleBrain:
                     camp = str(done_row.get("key") or "")
                     return Decision(
                         _QUICK_PANEL_COMPLETED_CAMP_ENTRY_SKILL[camp],
-                        f"completed_{camp.lower()}_entry_opens_its_barracks_before_claim_or_restart",
+                        f"completed_{camp.lower()}_entry_focuses_its_barracks_before_claim_or_restart",
                         world.confidence,
-                        "camp_action_bar_open",
+                        "camp_focused",
                     )
                 # Same rule as the lab above, and the same measurement: the panel described all three
                 # barracks in 56 of the 57 panel frames and the goal layer saw none of it, so this

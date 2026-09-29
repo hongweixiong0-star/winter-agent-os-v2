@@ -68,7 +68,8 @@ def test_completed_camp_marker_does_not_repeat_the_disproved_tap():
     decision = brain.decide(world, v2_registry())
 
     assert decision.skill == "OPEN_COMPLETED_TRAINING_CAMP_SHIELD"
-    assert decision.reason.startswith("completed_shield_camp_entry_opens_its_barracks")
+    assert decision.expected_result == "camp_focused"
+    assert decision.reason.startswith("completed_shield_camp_entry_focuses_its_barracks")
     assert decision.skill != "COLLECT_FINISHED_TRAINING_SHIELD"
 
 

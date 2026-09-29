@@ -184,7 +184,14 @@ def focused_camp_body_tap_norm(image_path: Path) -> tuple[float, float] | None:
         & (saturation[y0:y1, x0:x1] >= 30)
         & (value[y0:y1, x0:x1] >= 160)
     ).astype(np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    # On the live 2026-09-29 frame, a 5x5 close bridged two separate components:
+    # the 90x78 selection halo (~970 pixels) and the 54x64 tutorial hand (~1450
+    # pixels). Their merged 97x110 box exceeded the 1500-pixel ceiling, so the
+    # production route stopped before tapping the focused camp. A 3x3 close keeps
+    # the gap: the hand still fails the width gate, while the halo remains a unique
+    # plausible target. The synthetic regression case is in
+    # test_training_panel_focus_handoff; the live frame was replayed separately.
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
     count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(mask, 8)
     candidates: list[tuple[float, float, float, float]] = []
     for index in range(1, count):
@@ -193,10 +200,9 @@ def focused_camp_body_tap_norm(image_path: Path) -> tuple[float, float] | None:
         if (
             area < 350 or area > 1500
             or box_w < width * 0.09
-            # Current production frames after a quick-panel camp entry measured a
-            # 113x49 px focus halo at 720x1280 (2026-09-29). The old 4% height
-            # floor rejected it by 2 px while the larger tutorial hand was correctly
-            # excluded by the area ceiling. Keep the gate relative to the live frame.
+            # Current production focus halos measure about 90x78 px at 720x1280.
+            # Keep the lower bound relative to the live frame; the narrower tutorial
+            # hand is rejected by the width gate after the 3x3 close above.
             or box_h < height * 0.035
             or not 0.75 <= aspect <= 2.4
         ):
