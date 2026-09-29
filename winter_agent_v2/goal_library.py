@@ -1862,6 +1862,27 @@ class GoalLibrary:
         if camp is None:
             return
         training = world.training or {}
+        page_camp = TROOP_TO_CAMP.get(str(training.get("troop_type") or "").upper())
+        if page_camp is None:
+            page_camp = next(
+                (key for key, label in CAMP_LABELS.items()
+                 if label == str(training.get("camp_open_label") or "")),
+                None,
+            )
+        training_page_continuation = (
+            world.page is Page.TRAINING
+            and page_camp == camp
+            and (
+                (
+                    training.get("queue_available") is True
+                    and training.get("trainable") is True
+                )
+                or (
+                    training.get("claimable") is True
+                    and bool(training.get("claim_button_norm"))
+                )
+            )
+        )
         focused = (
             world.page is Page.HOME
             and training.get("navigation") == "PANEL_CAMP_FOCUSED"
@@ -1869,7 +1890,7 @@ class GoalLibrary:
             and len(training.get("camp_focus_tap_norm")) == 2
         )
         reward_feedback = world.page is Page.POPUP and world.popup == "GENERIC_REWARD"
-        if not (focused or reward_feedback):
+        if not (focused or reward_feedback or training_page_continuation):
             return
         existing_index = next(
             (index for index, item in enumerate(goals) if item.goal_id == goal_id),
@@ -1884,7 +1905,11 @@ class GoalLibrary:
             evidence={
                 "camp": camp,
                 "continuation": True,
-                "intermediate_state": "PANEL_CAMP_FOCUSED" if focused else "TRAINING_REWARD_FEEDBACK",
+                "intermediate_state": (
+                    "TRAINING_PAGE_QUEUE_ACTIONABLE" if training_page_continuation
+                    else "PANEL_CAMP_FOCUSED" if focused
+                    else "TRAINING_REWARD_FEEDBACK"
+                ),
                 "source": "CURRENT_GOAL_AND_CURRENT_FRAME",
             },
             distance=1.0,

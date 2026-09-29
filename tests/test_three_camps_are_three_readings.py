@@ -131,6 +131,7 @@ class OneCampIsNotTheOtherTwoTests(unittest.TestCase):
         self.assertTrue(goals[CAMP_GOAL_FOR["LANCER_CAMP"]].available_skills)
         self.assertTrue(goals[CAMP_GOAL_FOR["MARKSMAN_CAMP"]].available_skills)
 
+
     def test_a_camp_that_was_never_opened_stays_schedulable(self):
         """DISCOVERED, not COMPLETE and not absent: the loop has to go and look."""
         camps = observe_camps(page_is_training=True, training=SHIELD_BUSY)
@@ -198,6 +199,81 @@ class OneCampIsNotTheOtherTwoTests(unittest.TestCase):
         self.assertEqual(summary["unread"], [])
         self.assertTrue(summary["all_accounted_for"])
         self.assertEqual(sorted(summary["busy"]), sorted(CAMP_ORDER))
+
+
+class SelectedCampContinuationTests(unittest.TestCase):
+    """A fresh actionable training page must survive the next scheduler handoff."""
+
+    def _selected_goal(self, training, camps):
+        world = WorldState(page=Page.TRAINING, training=training, camps=camps)
+        return next(
+            item for item in GoalLibrary().discover(
+                world, training_continuation_goal_id=CAMP_GOAL_FOR["LANCER_CAMP"]
+            )
+            if item.goal_id == CAMP_GOAL_FOR["LANCER_CAMP"]
+        )
+
+    def test_live_idle_camp_page_overrides_stale_unread_goal(self):
+        goal = self._selected_goal(
+            {
+                "camp_open_label": "矛兵营",
+                "troop_type": "LANCER",
+                "status": "AVAILABLE",
+                "queue_available": True,
+                "trainable": True,
+            },
+            {"LANCER_CAMP": {"status": "UNKNOWN"}},
+        )
+
+        self.assertIs(goal.status, GoalStatus.READY)
+        self.assertEqual(goal.available_skills, ("TRAIN_TROOPS",))
+        self.assertEqual(goal.development_value, 1200.0)
+        self.assertEqual(goal.evidence["intermediate_state"], "TRAINING_PAGE_QUEUE_ACTIONABLE")
+
+    def test_selected_camp_claim_button_stays_with_training_goal(self):
+        goal = self._selected_goal(
+            {
+                "camp_open_label": "矛兵营",
+                "troop_type": "LANCER",
+                "status": "COMPLETED",
+                "claimable": True,
+                "claim_button_norm": [0.5, 0.5],
+            },
+            {"LANCER_CAMP": {"status": "IN_PROGRESS", "busy": True}},
+        )
+
+        self.assertIs(goal.status, GoalStatus.READY)
+        self.assertEqual(goal.evidence["intermediate_state"], "TRAINING_PAGE_QUEUE_ACTIONABLE")
+
+    def test_other_camp_page_does_not_resume_selected_goal(self):
+        goal = self._selected_goal(
+            {
+                "camp_open_label": "射手营",
+                "troop_type": "MARKSMAN",
+                "status": "AVAILABLE",
+                "queue_available": True,
+                "trainable": True,
+            },
+            {"LANCER_CAMP": {"status": "UNKNOWN"}},
+        )
+
+        self.assertIs(goal.status, GoalStatus.DISCOVERED)
+        self.assertIsNot(goal.evidence.get("continuation"), True)
+
+    def test_running_queue_is_not_promoted_to_actionable_continuation(self):
+        goal = self._selected_goal(
+            {
+                "camp_open_label": "矛兵营",
+                "troop_type": "LANCER",
+                "status": "IN_PROGRESS",
+                "queue_available": False,
+                "trainable": False,
+            },
+            {"LANCER_CAMP": {"status": "IN_PROGRESS", "busy": True}},
+        )
+
+        self.assertIs(goal.status, GoalStatus.BLOCKED)
+        self.assertIsNot(goal.evidence.get("continuation"), True)
 
 
 class TheReadingIsHonestAboutWhatItDidNotSeeTests(unittest.TestCase):
