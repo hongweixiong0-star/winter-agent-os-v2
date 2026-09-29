@@ -2810,7 +2810,7 @@ class LiveRuntime:
         except Exception:  # noqa: BLE001 - a ledger write must never fail a run
             pass
 
-    def _observe(self, frame_path: Path) -> "WorldState":
+    def _observe(self, frame_path: Path, *, latency: dict | None = None, phase: str = "before") -> "WorldState":
         """Look at the screen once, with this step's goal deciding what is worth the seconds.
 
         Operator directive 2026-09-22 ("Goal 驱动的视觉注意力优化").  Everything the observation does
@@ -2832,11 +2832,36 @@ class LiveRuntime:
         A vision that has no ``focus`` (a test stub, a replay vision) is observed exactly as before.
         """
         vision = self.vision
+        # TASK THROUGHPUT V1 §24 ("必须能看出：时间到底浪费在哪").  ``reobserve_ms`` is one number
+        # built from two observations, and this method held a third cost nobody could see: the
+        # gather-formation read that only happens on MARCH frames.  Measured 2026-09-30 on pin
+        # 553d8df, a MARCH->UNKNOWN step recorded ``reobserve_ms`` 10375 ms while the same two
+        # frames replayed offline at 93 ms + 2270 ms, so the archive alone could not attribute it.
+        # Account per phase and per component instead of guessing.
+        accounting = latency if isinstance(latency, dict) else None
+
+        def account(component: str, ms: float) -> None:
+            if accounting is None:
+                return
+            key = f"observe_{phase}_{component}_ms"
+            accounting[key] = (accounting.get(key) or 0.0) + ms
+
+        def count_call() -> None:
+            if accounting is None:
+                return
+            key = f"observe_{phase}_calls"
+            accounting[key] = int(accounting.get(key) or 0) + 1
+
         focus = getattr(vision, "focus", None)
         if focus is None:
+            count_call()
+            started = time.monotonic()
             state = vision.observe(frame_path)
+            account("vision", (time.monotonic() - started) * 1000)
             self._record_live_event_reservation(state)
+            started = time.monotonic()
             state = self._annotate_gather_formation(state, frame_path)
+            account("formation", (time.monotonic() - started) * 1000)
             return state
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         page_hint = str(getattr(self, "_last_known_label", "") or "")
@@ -2845,7 +2870,10 @@ class LiveRuntime:
             focus(goal=goal, page_hint=page_hint, reason=reason, widen=widen)
             return vision.observe(frame_path)
 
+        count_call()
+        started = time.monotonic()
         state = look(widen=False, reason=f"goal {goal or '(none)'} from {page_hint or '(nowhere)'}")
+        account("vision", (time.monotonic() - started) * 1000)
         skipped = getattr(vision, "sweeps_skipped", None)
         pending = skipped() if callable(skipped) else {}
         if pending:
@@ -2866,9 +2894,17 @@ class LiveRuntime:
                 f"look",
                 flush=True,
             )
+            count_call()
+            started = time.monotonic()
             state = look(widen=True, reason="widening after an unnamed frame")
+            account("vision", (time.monotonic() - started) * 1000)
+            if accounting is not None:
+                widened_key = f"observe_{phase}_widened"
+                accounting[widened_key] = int(accounting.get(widened_key) or 0) + 1
         self._record_live_event_reservation(state)
+        started = time.monotonic()
         state = self._annotate_gather_formation(state, frame_path)
+        account("formation", (time.monotonic() - started) * 1000)
         return state
 
     def _annotate_gather_formation(self, world: WorldState, frame_path: Path) -> WorldState:
@@ -6100,7 +6136,7 @@ class LiveRuntime:
                     print(f"[global-role] {reason}; no further input will be sent", flush=True)
                     return finish(reason)
             phase_started = time.monotonic()
-            before = self._observe(before_path)
+            before = self._observe(before_path, latency=latency, phase="before")
             latency["reobserve_ms"] = (time.monotonic() - phase_started) * 1000
             if pending_training_focus_retry is not None:
                 pending = pending_training_focus_retry
@@ -6530,7 +6566,7 @@ class LiveRuntime:
                             recovery_path = self._capture_path(index, "after", suffix="battle_wait")
                             if self._device_lost(self.device.screenshot, recovery_path):
                                 return finish(self._device_stop_reason)
-                            before = self._observe(recovery_path)
+                            before = self._observe(recovery_path, latency=latency, phase="recovery")
                             before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
@@ -6546,7 +6582,7 @@ class LiveRuntime:
                             )
                             if self._device_lost(self.device.screenshot, recovery_path):
                                 return finish(self._device_stop_reason)
-                            before = self._observe(recovery_path)
+                            before = self._observe(recovery_path, latency=latency, phase="recovery")
                             before = self._reject_a_dropped_digit(before)
                             self._record_goals(before, frame=recovery_path)
                             if before.page not in {Page.UNKNOWN, Page.LOADING, Page.MAINTENANCE}:
@@ -6965,7 +7001,7 @@ class LiveRuntime:
                 after_path = retry_path
             latency["settle_ms"] = latency["settle_first_wait_ms"] + latency["settle_retry_wait_ms"]
             phase_started = time.monotonic()
-            after = self._observe(after_path)
+            after = self._observe(after_path, latency=latency, phase="after")
             latency["reobserve_ms"] = (latency.get("reobserve_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
             if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 after = replace(after, resource_target=planned_resource)
@@ -6983,7 +7019,7 @@ class LiveRuntime:
                 recovery_path = self._capture_path(index, "after", suffix=f"payment_offer_closed_{offer_recovery}")
                 if self._device_lost(self.device.screenshot, recovery_path):
                     return finish(self._device_stop_reason)
-                after = self._observe(recovery_path)
+                after = self._observe(recovery_path, latency=latency, phase="recovery")
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
                 after_path = recovery_path
@@ -7011,7 +7047,7 @@ class LiveRuntime:
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
                 if self._device_lost(self.device.screenshot, refresh_path):
                     return finish(self._device_stop_reason)
-                after = self._observe(refresh_path)
+                after = self._observe(refresh_path, latency=latency, phase="refresh")
                 if after.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                     after = replace(after, resource_target=planned_resource)
                 after = self._reject_a_dropped_digit(after)

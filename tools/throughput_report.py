@@ -113,6 +113,21 @@ def collect(*, since=None, until=None, commit=None) -> dict:
     wait_total = sum(float(r["inter_step_wait_ms"]) for r in latency
                      if r.get("inter_step_wait_ms") is not None)
 
+    # ``reobserve_ms`` is one number built from two observations, and until 2026-09-30 the two
+    # were indistinguishable in the trace -- as were the recovery/refresh observations, which were
+    # not counted anywhere at all.  Report the split so the next cut is chosen from data.
+    observation = {}
+    for component in sorted({
+        key for r in latency for key in r
+        if key.startswith("observe_") and key.endswith("_ms")
+    }):
+        observation[component] = sum(float(r[component]) for r in latency if r.get(component) is not None)
+        observation[component.replace("_ms", "_share")] = (
+            100.0 * observation[component] / measured if measured else 0.0)
+    observe_calls = sum(int(r.get("observe_before_calls") or 0) + int(r.get("observe_after_calls") or 0)
+                        + int(r.get("observe_recovery_calls") or 0) + int(r.get("observe_refresh_calls") or 0)
+                        for r in latency)
+
     navigation = [r for r in latency
                   if str(r.get("skill") or "").upper().startswith(NAVIGATION_PREFIXES)]
     navigation_ms = sum(float(r["total_step_ms"]) for r in navigation if r.get("total_step_ms"))
@@ -198,6 +213,9 @@ def collect(*, since=None, until=None, commit=None) -> dict:
         "phase_ms": phase_total,
         "phase_share": {p: (100.0 * v / measured if measured else 0.0)
                         for p, v in phase_total.items()},
+        "observation": observation,
+        "observe_calls": observe_calls,
+        "observe_calls_per_task": (observe_calls / steps) if steps else 0.0,
         "wait_share": (100.0 * wait_total / (measured + wait_total)
                        if (measured + wait_total) else 0.0),
         "navigation_share": (100.0 * navigation_ms / sum(total_ms) if total_ms else 0.0),
@@ -247,6 +265,22 @@ def render(report: dict) -> None:
     line("WAIT (inter-step gap)", "%.1f%%" % report["wait_share"])
     line("NAVIGATION (nav skills, of step time)", "%.1f%%" % report["navigation_share"])
     line("RECOVERY (episodes reporting a recovery)", "%.1f%%" % report["recovery_share"])
+
+    if report["observation"]:
+        print("\n== inside the observation (the phase that dominates) ==")
+        # ``ocr_ms`` runs *inside* the observation window, so these shares overlap it by
+        # construction; read them as "which part of the look", not as a partition of the step.
+        for component, ms in sorted(
+            ((k, v) for k, v in report["observation"].items() if k.endswith("_ms")),
+            key=lambda kv: -kv[1],
+        ):
+            line(component, "%5.1f%%" % report["observation"][component.replace("_ms", "_share")],
+                 "  (%.1f min)" % (ms / 60000.0))
+        line("observe calls (all phases)", report["observe_calls"])
+        line("OBSERVE_CALLS_PER_TASK", "%.2f" % report["observe_calls_per_task"])
+    else:
+        print("\n== inside the observation ==")
+        line("(no split recorded)", "older rows predate the observe_* fields")
 
     print("\n== device time ==")
     line("task time (summed steps)", "%.1f" % (report["task_seconds"] / 60.0), " min")
