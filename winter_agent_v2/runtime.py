@@ -1247,6 +1247,25 @@ class LiveRuntime:
             return (reference + timedelta(seconds=max(0, seconds))
                     if seconds is not None and reference is not None else None)
 
+        def queue_reading_wakeup(goal: GoalState, evidence: Mapping[str, Any],
+                                 reference: datetime | None) -> datetime | None:
+            queue_goals = {
+                "KEEP_TRAINING_PRODUCTIVE",
+                "KEEP_RESEARCH_PRODUCTIVE",
+                "KEEP_BUILDING_PRODUCTIVE",
+            }
+            goal_id = str(goal.goal_id)
+            if goal_id not in queue_goals and not goal_id.endswith("_CAMP_TRAINING"):
+                return None
+            reading = evidence.get("reading")
+            if not isinstance(reading, Mapping):
+                return None
+            busy = (str(reading.get("status") or "").upper() == "IN_PROGRESS"
+                    or reading.get("queue_available") is False)
+            if not busy:
+                return None
+            return cached_wakeup(reading.get("timer") or reading.get("source_word"), reference)
+
         for role_id, identity in self._role_catalog_by_id.items():
             if role_id == active_id:
                 active_waits: list[datetime] = []
@@ -1256,6 +1275,7 @@ class LiveRuntime:
                     candidates.extend(cached_wakeup(evidence.get(key), moment) for key in (
                         "next_action_at", "wait_until", "expected_finish_at",
                     ))
+                    candidates.append(queue_reading_wakeup(goal, evidence, moment))
                     condition = str(evidence.get("condition") or "").lower()
                     if (goal.status is GoalStatus.BLOCKED
                             and condition in {"queue_busy", "camp_queue_busy"}
@@ -1325,6 +1345,7 @@ class LiveRuntime:
                 candidates.extend(cached_wakeup(evidence.get(key), stamp) for key in (
                     "next_action_at", "wait_until", "expected_finish_at",
                 ))
+                candidates.append(queue_reading_wakeup(goal, evidence, stamp))
                 condition = str(evidence.get("condition") or "").lower()
                 if (goal.status is GoalStatus.BLOCKED
                         and condition in {"queue_busy", "camp_queue_busy"}

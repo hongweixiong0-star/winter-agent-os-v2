@@ -520,6 +520,41 @@ def test_cached_countdown_becomes_role_scoped_global_wakeup(tmp_path, countdown,
     assert abs((wake - (now + timedelta(seconds=seconds))).total_seconds()) < 2
 
 
+def test_completed_queue_goal_keeps_wakeup_from_its_live_reading(tmp_path):
+    now = datetime.now(timezone.utc)
+    store = GoalStateStore(tmp_path / "goal_state.json")
+    completed_goal = GoalState(
+        "KEEP_RESEARCH_PRODUCTIVE", GoalStatus.COMPLETE,
+        available_skills=("RESEARCH",),
+        evidence={"reading": {
+            "status": "IN_PROGRESS",
+            "queue_available": False,
+            "source_word": "1天 09:01:01",
+        }},
+    )
+    store.write(WorldState(page=Page.HOME, timestamp=now.isoformat()),
+                (completed_goal,), role_id="B")
+
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    runtime._multi_role_enabled = True
+    runtime._role_identity_confirmed = True
+    runtime.role_id = "A"
+    runtime.role_scope = "FRESH_RUNTIME"
+    runtime.role_catalog = ({"role_id": "A"}, {"role_id": "B"})
+    runtime._role_catalog_by_id = {"A": {"role_id": "A"}, "B": {"role_id": "B"}}
+    runtime.role_switch_cost = 30.0
+    runtime.goal_store = store
+    runtime.global_scheduler_state_store = None
+
+    observations = runtime._global_role_observations(
+        WorldState(page=Page.HOME, timestamp=now.isoformat()), (),
+        Decision("SAFE_STOP", "no_action", 1, "wait"),
+    )
+    wake = datetime.fromisoformat(str(observations[1].next_action_at))
+
+    assert abs((wake - (now + timedelta(days=1, hours=9, minutes=1, seconds=1))).total_seconds()) < 2
+
+
 def test_role_switch_invalidates_every_live_ui_field_until_new_identity_observed():
     state = ActiveRoleLiveState()
     state.switch_to("A")
