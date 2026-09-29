@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "kind": "MANUAL_OVERLAY",
+  "note": "Human-confirmed knowledge the capability-coverage generator must never delete. tools/build_capability_coverage.py merges this file on top of the generated base (generated base + manual overlay): alternatives_add is unioned into the capability's alternatives, notes is appended to the capability's notes, and the merge is recorded under manual_overlay in capability_skill_map.json. Nothing here is derived -- edit by hand.",
+  "overlay": [
+    {
+      "goal": "AVOID_STAMINA_WASTE",
+      "capability": "SPEND_STAMINA_ON_BEAST",
+      "alternatives_add": [
+        "SELECT_BEAST_TARGET_LABELLED"
+      ],
+      "notes": "2026-09-20: SELECT_BEAST_TARGET_LABELLED registered.  The existing hops each tap one species' sprite, so the route could only act on a beast somebody had pre-approved; the measured failure was a live frame whose 霜鳞避役/20 read perfectly (label 0.89, badge 1.00, row registered) and still produced nothing, after which the route panned.  The new hop taps whatever the client's own label names, at the point that label's box measures, and the spend stays gated on the client's printed 胜券在握."
+    }
+  ]
+}

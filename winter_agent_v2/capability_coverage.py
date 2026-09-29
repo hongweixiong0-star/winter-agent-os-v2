@@ -74,6 +74,12 @@ class CapabilityRow:
     # Empty means "no published evidence set", which is the honest state for
     # most capabilities and must not read as "no evidence exists".
     evidence: str = ""
+    # Human-confirmed prose explaining *why* an alternative exists.  Written by
+    # hand in the canonical map and in the manual overlay, and carried through to
+    # the generated report -- a regeneration must never silently drop the
+    # reasoning behind a skill, which is exactly what happened to
+    # ``SELECT_BEAST_TARGET_LABELLED`` before the overlay existed.
+    notes: str = ""
 
 
 @dataclass
@@ -104,6 +110,7 @@ class CapabilityCoverage:
         verifier_skills: set[str] | None = None,
         *,
         map_path: Path | None = None,
+        overlay_path: Path | None = None,
         rules: dict | None = None,
     ) -> None:
         self.registry = registry
@@ -112,7 +119,39 @@ class CapabilityCoverage:
         self.verifier_skills = set(verifier_skills or ())
         self.map_path = map_path
         self.mapping = self._load_mapping(map_path)
+        # The overlay is generated-base + manual-overlay: the generator owns only
+        # the machine-computed fields and must add, never remove, what a human
+        # confirmed.  See ``knowledge/goals/capability_skill_map.manual.json``.
+        self.overlay_path = overlay_path
+        self.overlay = self._load_overlay(overlay_path)
         self.rules = {**DEFAULT_RULES, **(rules or self.mapping.get("lifecycle_rules", {}))}
+
+    @staticmethod
+    def _load_overlay(overlay_path: Path | None) -> dict:
+        if overlay_path is None:
+            return {}
+        try:
+            payload = json.loads(Path(overlay_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        if not isinstance(payload, dict):
+            return {}
+        entries = payload.get("overlay")
+        if not isinstance(entries, list):
+            return {}
+        keyed: dict[tuple[str, str], dict] = {}
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            goal = str(entry.get("goal") or "").strip()
+            capability = str(entry.get("capability") or "").strip()
+            if not goal or not capability:
+                continue
+            keyed[(goal, capability)] = entry
+        return keyed
+
+    def _overlay_for(self, goal: str, capability: str) -> dict:
+        return self.overlay.get((goal, capability), {})
 
     @staticmethod
     def _load_mapping(map_path: Path | None) -> dict:
@@ -148,6 +187,9 @@ class CapabilityCoverage:
         stats = episode_stats or {}
         rules = self.rules
         rows: list[GoalRow] = []
+        # Every overlay entry that actually matched a capability, so the generated
+        # report can name what a human confirmed instead of the merge being invisible.
+        applied_overlay: list[dict] = []
 
         for goal, definition in self.mapping.get("goals", {}).items():
             composition = str(definition.get("composition", ALL_OF)).upper()
@@ -157,6 +199,24 @@ class CapabilityCoverage:
             for entry in definition.get("capabilities", []):
                 name = str(entry.get("capability", ""))
                 alternatives = [str(x) for x in entry.get("alternatives", [])]
+                overlay = self._overlay_for(goal, name)
+                if overlay:
+                    # Union, order-preserving: the generator can only add here.
+                    for extra in overlay.get("alternatives_add", ()) or ():
+                        extra = str(extra)
+                        if extra and extra not in alternatives:
+                            alternatives.append(extra)
+                    applied_overlay.append({
+                        "goal": goal,
+                        "capability": name,
+                        "alternatives_add": [str(x) for x in overlay.get("alternatives_add", ()) or ()],
+                    })
+                notes = "\n\n".join(
+                    part for part in (
+                        str(entry.get("notes", "") or "").strip(),
+                        str(overlay.get("notes", "") or "").strip(),
+                    ) if part
+                )
                 implemented_by = next((sid for sid in alternatives if self._implemented(sid)), None)
                 live_by = None
                 attempts = successes = failures = 0
@@ -191,6 +251,7 @@ class CapabilityCoverage:
                     successes=successes,
                     failures=failures,
                     evidence=str(entry.get("evidence", "") or ""),
+                    notes=notes,
                 ))
 
             total = len(capabilities)
@@ -258,6 +319,7 @@ class CapabilityCoverage:
             },
             "goals": [asdict(row) for row in rows],
             "highest_leverage": self._leverage(rows),
+            "manual_overlay": applied_overlay,
         }
 
     @staticmethod

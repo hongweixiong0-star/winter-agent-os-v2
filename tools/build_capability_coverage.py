@@ -130,10 +130,15 @@ def _markdown(payload: dict) -> str:
 def main() -> None:
     registry = v2_registry()
     map_path = ROOT / "knowledge" / "goals" / "goal_capability_map.json"
+    # Manual overlay: the generator writes the generated base and then merges what a
+    # human confirmed, so re-running it (the handoff refresh does) can no longer
+    # delete hand-written knowledge such as SELECT_BEAST_TARGET_LABELLED.
+    overlay_path = ROOT / "knowledge" / "goals" / "capability_skill_map.manual.json"
     coverage = CapabilityCoverage(
         registry,
         verifier_skills=set(LiveRuntime.VERIFIED_ATOMIC),
         map_path=map_path,
+        overlay_path=overlay_path,
     )
     payload = coverage.build(episode_stats(ROOT / "learning" / "episodes.jsonl"))
     out_json = ROOT / "knowledge" / "goals" / "capability_skill_map.json"

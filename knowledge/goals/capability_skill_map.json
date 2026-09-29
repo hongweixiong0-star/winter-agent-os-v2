@@ -2,17 +2,17 @@
   "schema_version": "1.0",
   "model": "Goal -> Canonical Capability -> Registered Skill -> Production Evidence",
   "summary": {
-    "total": 16,
-    "fully_live_verified": 1,
-    "partial": 9,
-    "never_tried": 0,
-    "blocked": 3,
+    "total": 17,
+    "fully_live_verified": 2,
+    "partial": 7,
+    "never_tried": 1,
+    "blocked": 4,
     "degraded": 3,
     "missing": 0,
-    "fully_live_verified_percent": 6.2,
-    "never_tried_percent": 0.0,
-    "automation_coverage_mean": 0.5713,
-    "live_coverage_mean": 0.5765
+    "fully_live_verified_percent": 11.8,
+    "never_tried_percent": 5.9,
+    "automation_coverage_mean": 0.6249,
+    "live_coverage_mean": 0.5426
   },
   "goals": [
     {
@@ -29,10 +29,11 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL",
           "live_verified_by": "OPEN_INTEL",
-          "attempts": 168,
-          "successes": 147,
-          "failures": 21,
-          "evidence": ""
+          "attempts": 604,
+          "successes": 567,
+          "failures": 37,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_INTEL_LIST",
@@ -45,7 +46,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "SELECT_INTEL_MISSION",
@@ -54,13 +56,14 @@
             "SELECT_INTEL_FIREBEAST_MISSION",
             "SELECT_INTEL_RESCUE_SURVIVORS"
           ],
-          "status": "STABLE",
+          "status": "LIVE_VERIFIED",
           "implemented_by": "SELECT_INTEL_BEAST_MISSION",
           "live_verified_by": "SELECT_INTEL_BEAST_MISSION",
-          "attempts": 13,
-          "successes": 11,
-          "failures": 2,
-          "evidence": ""
+          "attempts": 3,
+          "successes": 3,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "EXECUTE_INTEL_MISSION",
@@ -73,10 +76,11 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 168,
-          "successes": 146,
-          "failures": 22,
-          "evidence": ""
+          "attempts": 287,
+          "successes": 275,
+          "failures": 12,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CLAIM_INTEL_REWARD",
@@ -86,10 +90,11 @@
           "status": "STABLE",
           "implemented_by": "INTEL_CLAIM_REWARDS",
           "live_verified_by": "INTEL_CLAIM_REWARDS",
-          "attempts": 79,
-          "successes": 76,
-          "failures": 3,
-          "evidence": ""
+          "attempts": 165,
+          "successes": 165,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "DISMISS_INTEL_REWARD",
@@ -97,13 +102,14 @@
             "DISMISS_INTEL_REWARD",
             "DISMISS_INTEL_GENERIC_REWARD"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "DISMISS_INTEL_REWARD",
-          "live_verified_by": "DISMISS_INTEL_REWARD",
-          "attempts": 111,
-          "successes": 71,
-          "failures": 40,
-          "evidence": ""
+          "live_verified_by": "DISMISS_INTEL_GENERIC_REWARD",
+          "attempts": 181,
+          "successes": 177,
+          "failures": 4,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 6,
@@ -136,10 +142,10 @@
           ],
           "status": "STABLE",
           "implemented_by": "SELECT_BEAST_TARGET",
-          "live_verified_by": "SCAN_MAP_FOR_BEAST",
-          "attempts": 411,
-          "successes": 403,
-          "failures": 8,
+          "live_verified_by": "ATTACK_BEAST_CARD",
+          "attempts": 616,
+          "successes": 507,
+          "failures": 109,
           "evidence": "dataset/truth_audit/beast_search_wiring_20260918/key/",
           "notes": "2026-09-20: SELECT_BEAST_TARGET_LABELLED registered.  The existing hops each tap one species' sprite, so the route could only act on a beast somebody had pre-approved; the measured failure was a live frame whose 霜鳞避役/20 read perfectly (label 0.89, badge 1.00, row registered) and still produced nothing, after which the route panned.  The new hop taps whatever the client's own label names, at the point that label's box measures, and the spend stays gated on the client's printed 胜券在握."
         },
@@ -153,37 +159,37 @@
           "status": "STABLE",
           "implemented_by": "OPEN_INTEL_BEAST_TARGET",
           "live_verified_by": "OPEN_INTEL_BEAST_TARGET",
-          "attempts": 155,
-          "successes": 140,
-          "failures": 15,
-          "evidence": ""
+          "attempts": 254,
+          "successes": 243,
+          "failures": 11,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "SPEND_STAMINA_ON_RALLY",
           "alternatives": [
             "JOIN_RALLY"
           ],
-          "status": "BLOCKED",
-          "implemented_by": null,
+          "status": "CANDIDATE",
+          "implemented_by": "JOIN_RALLY",
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 3,
-      "implemented_capabilities": 2,
+      "implemented_capabilities": 3,
       "live_verified_capabilities": 2,
       "stable_capabilities": 2,
       "design_coverage": 1.0,
-      "implementation_coverage": 0.6667,
+      "implementation_coverage": 1.0,
       "live_coverage": 0.6667,
       "stable_coverage": 0.6667,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
-      "blocked_by": [
-        "SPEND_STAMINA_ON_RALLY"
-      ]
+      "blocked_by": []
     },
     {
       "goal": "KEEP_MARCHES_PRODUCTIVE",
@@ -200,75 +206,81 @@
           "status": "STABLE",
           "implemented_by": "OPEN_MAP",
           "live_verified_by": "OPEN_MAP",
-          "attempts": 197,
-          "successes": 185,
-          "failures": 12,
-          "evidence": "dataset/truth_audit/nav_to_map_20260918/key/"
+          "attempts": 1400,
+          "successes": 1363,
+          "failures": 37,
+          "evidence": "dataset/truth_audit/nav_to_map_20260918/key/",
+          "notes": ""
         },
         {
           "capability": "OPEN_RESOURCE_SEARCH",
           "alternatives": [
             "SEARCH_RESOURCE"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "SEARCH_RESOURCE",
           "live_verified_by": "SEARCH_RESOURCE",
-          "attempts": 151,
-          "successes": 117,
-          "failures": 34,
-          "evidence": ""
+          "attempts": 490,
+          "successes": 466,
+          "failures": 24,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "SELECT_RESOURCE_TYPE",
           "alternatives": [
             "SELECT_RESOURCE"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "SELECT_RESOURCE",
           "live_verified_by": "SELECT_RESOURCE",
-          "attempts": 110,
-          "successes": 64,
-          "failures": 46,
-          "evidence": ""
+          "attempts": 40,
+          "successes": 32,
+          "failures": 8,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "FIND_RESOURCE_NODE",
           "alternatives": [
             "SUBMIT_RESOURCE_SEARCH"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "SUBMIT_RESOURCE_SEARCH",
           "live_verified_by": "SUBMIT_RESOURCE_SEARCH",
-          "attempts": 124,
-          "successes": 91,
-          "failures": 33,
-          "evidence": ""
+          "attempts": 36,
+          "successes": 36,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "OPEN_MARCH_FORMATION",
           "alternatives": [
             "START_GATHER"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "START_GATHER",
           "live_verified_by": "START_GATHER",
-          "attempts": 149,
-          "successes": 89,
-          "failures": 60,
-          "evidence": "dataset/truth_audit/march_formation_20260918/key/"
+          "attempts": 25,
+          "successes": 25,
+          "failures": 0,
+          "evidence": "dataset/truth_audit/march_formation_20260918/key/",
+          "notes": ""
         },
         {
           "capability": "DISPATCH_GATHER_MARCH",
           "alternatives": [
             "DISPATCH_MARCH"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 123,
-          "successes": 85,
-          "failures": 38,
-          "evidence": ""
+          "attempts": 30,
+          "successes": 30,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "VERIFY_GATHERING",
@@ -281,17 +293,18 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 7,
       "implemented_capabilities": 6,
       "live_verified_capabilities": 6,
-      "stable_capabilities": 1,
+      "stable_capabilities": 6,
       "design_coverage": 1.0,
       "implementation_coverage": 0.8571,
       "live_coverage": 0.8571,
-      "stable_coverage": 0.1429,
+      "stable_coverage": 0.8571,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "VERIFY_GATHERING"
@@ -301,7 +314,7 @@
       "goal": "KEEP_BUILDING_PRODUCTIVE",
       "category": "持续发展",
       "composition": "ALL_OF",
-      "status": "PARTIAL",
+      "status": "NEVER_TRIED",
       "capabilities": [
         {
           "capability": "OPEN_BUILDING_PAGE",
@@ -314,29 +327,31 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "START_BUILD",
           "alternatives": [
             "BUILDING_UPGRADE"
           ],
-          "status": "LIVE_VERIFIED",
+          "status": "CANDIDATE",
           "implemented_by": "BUILDING_UPGRADE",
-          "live_verified_by": "BUILDING_UPGRADE",
-          "attempts": 1,
-          "successes": 1,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 2,
       "implemented_capabilities": 1,
-      "live_verified_capabilities": 1,
+      "live_verified_capabilities": 0,
       "stable_capabilities": 0,
       "design_coverage": 1.0,
       "implementation_coverage": 0.5,
-      "live_coverage": 0.5,
+      "live_coverage": 0.0,
       "stable_coverage": 0.0,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
@@ -347,7 +362,7 @@
       "goal": "KEEP_RESEARCH_PRODUCTIVE",
       "category": "持续发展",
       "composition": "ALL_OF",
-      "status": "PARTIAL",
+      "status": "DEGRADED",
       "capabilities": [
         {
           "capability": "OPEN_RESEARCH_PAGE",
@@ -357,37 +372,37 @@
           "status": "STABLE",
           "implemented_by": "OPEN_RESEARCH",
           "live_verified_by": "OPEN_RESEARCH",
-          "attempts": 8,
-          "successes": 8,
-          "failures": 0,
-          "evidence": ""
+          "attempts": 161,
+          "successes": 155,
+          "failures": 6,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "START_RESEARCH",
           "alternatives": [
             "RESEARCH"
           ],
-          "status": "BLOCKED",
-          "implemented_by": null,
-          "live_verified_by": null,
-          "attempts": 1,
-          "successes": 0,
-          "failures": 0,
-          "evidence": ""
+          "status": "DEGRADED",
+          "implemented_by": "RESEARCH",
+          "live_verified_by": "RESEARCH",
+          "attempts": 6,
+          "successes": 1,
+          "failures": 5,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 2,
-      "implemented_capabilities": 1,
-      "live_verified_capabilities": 1,
+      "implemented_capabilities": 2,
+      "live_verified_capabilities": 2,
       "stable_capabilities": 1,
       "design_coverage": 1.0,
-      "implementation_coverage": 0.5,
-      "live_coverage": 0.5,
+      "implementation_coverage": 1.0,
+      "live_coverage": 1.0,
       "stable_coverage": 0.5,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
-      "blocked_by": [
-        "START_RESEARCH"
-      ]
+      "blocked_by": []
     },
     {
       "goal": "KEEP_TRAINING_PRODUCTIVE",
@@ -408,10 +423,11 @@
           "status": "STABLE",
           "implemented_by": "OPEN_POWER_OVERVIEW",
           "live_verified_by": "OPEN_POWER_OVERVIEW",
-          "attempts": 106,
-          "successes": 87,
-          "failures": 19,
-          "evidence": ""
+          "attempts": 411,
+          "successes": 347,
+          "failures": 64,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "START_TRAINING",
@@ -419,23 +435,24 @@
             "TRAIN_TROOPS",
             "PROMOTE_TROOPS"
           ],
-          "status": "LIVE_VERIFIED",
+          "status": "STABLE",
           "implemented_by": "TRAIN_TROOPS",
           "live_verified_by": "TRAIN_TROOPS",
-          "attempts": 3,
-          "successes": 2,
-          "failures": 0,
-          "evidence": ""
+          "attempts": 42,
+          "successes": 41,
+          "failures": 1,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 2,
       "implemented_capabilities": 2,
       "live_verified_capabilities": 2,
-      "stable_capabilities": 1,
+      "stable_capabilities": 2,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 1.0,
-      "stable_coverage": 0.5,
+      "stable_coverage": 1.0,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -450,13 +467,14 @@
           "alternatives": [
             "OPEN_MAIL"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "OPEN_MAIL",
           "live_verified_by": "OPEN_MAIL",
-          "attempts": 64,
-          "successes": 47,
-          "failures": 17,
-          "evidence": ""
+          "attempts": 157,
+          "successes": 157,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_MAIL_TABS",
@@ -468,23 +486,25 @@
           "status": "DEGRADED",
           "implemented_by": "SELECT_MAIL_ALLIANCE_TAB",
           "live_verified_by": "SELECT_MAIL_ALLIANCE_TAB",
-          "attempts": 17,
-          "successes": 12,
-          "failures": 5,
-          "evidence": ""
+          "attempts": 61,
+          "successes": 41,
+          "failures": 20,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CLAIM_MAIL_ATTACHMENTS",
           "alternatives": [
             "MAIL_CLAIM_REWARDS"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "MAIL_CLAIM_REWARDS",
           "live_verified_by": "MAIL_CLAIM_REWARDS",
-          "attempts": 38,
-          "successes": 28,
-          "failures": 10,
-          "evidence": ""
+          "attempts": 104,
+          "successes": 104,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "DISMISS_MAIL_REWARD",
@@ -492,23 +512,24 @@
             "DISMISS_MAIL_REWARD",
             "DISMISS_MAIL_GENERIC_REWARD"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "DISMISS_MAIL_REWARD",
           "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
-          "attempts": 54,
-          "successes": 11,
-          "failures": 43,
-          "evidence": ""
+          "attempts": 41,
+          "successes": 41,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 4,
       "implemented_capabilities": 4,
       "live_verified_capabilities": 4,
-      "stable_capabilities": 0,
+      "stable_capabilities": 3,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 1.0,
-      "stable_coverage": 0.0,
+      "stable_coverage": 0.75,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -526,10 +547,11 @@
           "status": "STABLE",
           "implemented_by": "OPEN_DAILY",
           "live_verified_by": "OPEN_DAILY",
-          "attempts": 25,
-          "successes": 23,
-          "failures": 2,
-          "evidence": ""
+          "attempts": 83,
+          "successes": 82,
+          "failures": 1,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_DAILY_PROGRESS",
@@ -542,7 +564,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CLAIM_DAILY_REWARD",
@@ -552,10 +575,11 @@
           "status": "STABLE",
           "implemented_by": "DAILY_CLAIM_REWARDS",
           "live_verified_by": "DAILY_CLAIM_REWARDS",
-          "attempts": 8,
-          "successes": 8,
+          "attempts": 29,
+          "successes": 29,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "DISMISS_DAILY_REWARD",
@@ -563,23 +587,24 @@
             "DISMISS_DAILY_REWARD",
             "DISMISS_DAILY_GENERIC_REWARD"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "DISMISS_DAILY_REWARD",
-          "live_verified_by": "DISMISS_DAILY_REWARD",
-          "attempts": 16,
-          "successes": 8,
-          "failures": 8,
-          "evidence": ""
+          "live_verified_by": "DISMISS_DAILY_GENERIC_REWARD",
+          "attempts": 47,
+          "successes": 43,
+          "failures": 4,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 4,
       "implemented_capabilities": 3,
       "live_verified_capabilities": 3,
-      "stable_capabilities": 2,
+      "stable_capabilities": 3,
       "design_coverage": 1.0,
       "implementation_coverage": 0.75,
       "live_coverage": 0.75,
-      "stable_coverage": 0.5,
+      "stable_coverage": 0.75,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "READ_DAILY_PROGRESS"
@@ -589,7 +614,7 @@
       "goal": "CLAIM_FREE_REWARDS",
       "category": "日常低保",
       "composition": "ANY_OF",
-      "status": "DEGRADED",
+      "status": "FULLY_LIVE_VERIFIED",
       "capabilities": [
         {
           "capability": "CLAIM_FREE_REWARD",
@@ -603,13 +628,14 @@
             "DAILY_CLAIM_REWARDS",
             "INTEL_CLAIM_REWARDS"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "CLAIM_OFFLINE_REWARDS",
           "live_verified_by": "CLAIM_OFFLINE_REWARDS",
-          "attempts": 177,
-          "successes": 141,
-          "failures": 36,
-          "evidence": ""
+          "attempts": 425,
+          "successes": 359,
+          "failures": 66,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "DISMISS_FREE_REWARD_POPUP",
@@ -619,23 +645,24 @@
             "DISMISS_DAILY_GENERIC_REWARD",
             "DISMISS_EXPLORATION_GENERIC_REWARD"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "DISMISS_ALLIANCE_GENERIC_REWARD",
-          "live_verified_by": "DISMISS_ALLIANCE_GENERIC_REWARD",
-          "attempts": 66,
-          "successes": 21,
-          "failures": 45,
-          "evidence": ""
+          "live_verified_by": "DISMISS_MAIL_GENERIC_REWARD",
+          "attempts": 136,
+          "successes": 131,
+          "failures": 5,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 2,
       "implemented_capabilities": 2,
       "live_verified_capabilities": 2,
-      "stable_capabilities": 0,
+      "stable_capabilities": 2,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 1.0,
-      "stable_coverage": 0.0,
+      "stable_coverage": 1.0,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -653,10 +680,11 @@
           "status": "STABLE",
           "implemented_by": "OPEN_EXPLORATION",
           "live_verified_by": "OPEN_EXPLORATION",
-          "attempts": 18,
-          "successes": 17,
-          "failures": 1,
-          "evidence": ""
+          "attempts": 103,
+          "successes": 101,
+          "failures": 2,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CLAIM_IDLE_INCOME",
@@ -667,10 +695,11 @@
           "status": "DEGRADED",
           "implemented_by": "EXPLORATION_IDLE_CLAIM",
           "live_verified_by": "EXPLORATION_IDLE_CLAIM",
-          "attempts": 14,
-          "successes": 2,
-          "failures": 12,
-          "evidence": ""
+          "attempts": 180,
+          "successes": 114,
+          "failures": 66,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "DISMISS_EXPLORATION_REWARD",
@@ -678,23 +707,24 @@
             "DISMISS_EXPLORATION_REWARD",
             "DISMISS_EXPLORATION_GENERIC_REWARD"
           ],
-          "status": "LIVE_VERIFIED",
+          "status": "STABLE",
           "implemented_by": "DISMISS_EXPLORATION_REWARD",
           "live_verified_by": "DISMISS_EXPLORATION_GENERIC_REWARD",
-          "attempts": 2,
-          "successes": 1,
-          "failures": 1,
-          "evidence": ""
+          "attempts": 47,
+          "successes": 47,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 3,
       "implemented_capabilities": 3,
       "live_verified_capabilities": 3,
-      "stable_capabilities": 1,
+      "stable_capabilities": 2,
       "design_coverage": 1.0,
       "implementation_coverage": 1.0,
       "live_coverage": 1.0,
-      "stable_coverage": 0.3333,
+      "stable_coverage": 0.6667,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": []
     },
@@ -712,10 +742,11 @@
           "status": "STABLE",
           "implemented_by": "OPEN_ALLIANCE",
           "live_verified_by": "OPEN_ALLIANCE",
-          "attempts": 11,
-          "successes": 11,
-          "failures": 0,
-          "evidence": ""
+          "attempts": 68,
+          "successes": 67,
+          "failures": 1,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "ALLIANCE_HELP",
@@ -725,23 +756,25 @@
           "status": "BLOCKED",
           "implemented_by": null,
           "live_verified_by": null,
-          "attempts": 1,
+          "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "ALLIANCE_TECH_CONTRIBUTE",
           "alternatives": [
             "ALLIANCE_TECH_CONTRIBUTE"
           ],
-          "status": "BLOCKED",
-          "implemented_by": null,
+          "status": "LIVE_VERIFIED",
+          "implemented_by": "ALLIANCE_TECH_CONTRIBUTE",
           "live_verified_by": "ALLIANCE_TECH_CONTRIBUTE",
-          "attempts": 4,
-          "successes": 4,
+          "attempts": 2,
+          "successes": 2,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CLAIM_ALLIANCE_GIFTS",
@@ -750,27 +783,27 @@
             "OPEN_ALLIANCE_GIFTS",
             "ALLIANCE_ALLY_GIFT_CLAIM"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "ALLIANCE_GIFTS",
-          "live_verified_by": "ALLIANCE_GIFTS",
+          "live_verified_by": "OPEN_ALLIANCE_GIFTS",
           "attempts": 50,
-          "successes": 37,
-          "failures": 13,
-          "evidence": ""
+          "successes": 50,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 4,
-      "implemented_capabilities": 2,
+      "implemented_capabilities": 3,
       "live_verified_capabilities": 3,
-      "stable_capabilities": 1,
+      "stable_capabilities": 2,
       "design_coverage": 1.0,
-      "implementation_coverage": 0.5,
+      "implementation_coverage": 0.75,
       "live_coverage": 0.75,
-      "stable_coverage": 0.25,
+      "stable_coverage": 0.5,
       "runtime_goal_status": "NOT_A_RUNTIME_GOAL",
       "blocked_by": [
-        "ALLIANCE_HELP",
-        "ALLIANCE_TECH_CONTRIBUTE"
+        "ALLIANCE_HELP"
       ]
     },
     {
@@ -790,7 +823,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_EVENT_RULES",
@@ -803,7 +837,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_EVENT_PROGRESS",
@@ -817,7 +852,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_EVENT_TIMER",
@@ -831,7 +867,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CONTRIBUTE_TO_EVENT_SCORE",
@@ -840,13 +877,14 @@
             "BUILDING_UPGRADE",
             "RESEARCH"
           ],
-          "status": "LIVE_VERIFIED",
+          "status": "STABLE",
           "implemented_by": "TRAIN_TROOPS",
           "live_verified_by": "TRAIN_TROOPS",
-          "attempts": 5,
-          "successes": 3,
-          "failures": 0,
-          "evidence": ""
+          "attempts": 48,
+          "successes": 42,
+          "failures": 6,
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CLAIM_EVENT_TIER",
@@ -859,17 +897,18 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 6,
       "implemented_capabilities": 1,
       "live_verified_capabilities": 1,
-      "stable_capabilities": 0,
+      "stable_capabilities": 1,
       "design_coverage": 1.0,
       "implementation_coverage": 0.1667,
       "live_coverage": 0.1667,
-      "stable_coverage": 0.0,
+      "stable_coverage": 0.1667,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "CLAIM_EVENT_TIER",
@@ -896,7 +935,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_ALLIANCE_EVENT_TIMER",
@@ -911,7 +951,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CLAIM_EVENT_TIER",
@@ -924,7 +965,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 3,
@@ -960,7 +1002,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "SELECT_TROOP_PRESET",
@@ -973,33 +1016,36 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "START_RALLY",
           "alternatives": [
             "START_RALLY"
           ],
-          "status": "BLOCKED",
-          "implemented_by": null,
+          "status": "CANDIDATE",
+          "implemented_by": "START_RALLY",
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "JOIN_RALLY",
           "alternatives": [
             "JOIN_RALLY"
           ],
-          "status": "BLOCKED",
-          "implemented_by": null,
+          "status": "CANDIDATE",
+          "implemented_by": "JOIN_RALLY",
           "live_verified_by": null,
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "CONFIRM_MARCH",
@@ -1007,29 +1053,28 @@
             "CONFIRM_MARCH",
             "DISPATCH_MARCH"
           ],
-          "status": "DEGRADED",
+          "status": "STABLE",
           "implemented_by": "DISPATCH_MARCH",
           "live_verified_by": "DISPATCH_MARCH",
-          "attempts": 123,
-          "successes": 85,
-          "failures": 38,
-          "evidence": ""
+          "attempts": 30,
+          "successes": 30,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 5,
-      "implemented_capabilities": 1,
+      "implemented_capabilities": 3,
       "live_verified_capabilities": 1,
-      "stable_capabilities": 0,
+      "stable_capabilities": 1,
       "design_coverage": 1.0,
-      "implementation_coverage": 0.2,
+      "implementation_coverage": 0.6,
       "live_coverage": 0.2,
-      "stable_coverage": 0.0,
+      "stable_coverage": 0.2,
       "runtime_goal_status": "RUNTIME_DISCOVERED",
       "blocked_by": [
         "CHECK_BEAR_PHASE",
-        "JOIN_RALLY",
-        "SELECT_TROOP_PRESET",
-        "START_RALLY"
+        "SELECT_TROOP_PRESET"
       ]
     },
     {
@@ -1049,7 +1094,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_FREE_ATTEMPTS",
@@ -1063,7 +1109,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "SELECT_ARENA_OPPONENT",
@@ -1076,7 +1123,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "START_ARENA",
@@ -1090,7 +1138,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "VERIFY_ARENA_RESULT",
@@ -1103,7 +1152,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 5,
@@ -1140,7 +1190,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "READ_LABYRINTH_ATTEMPTS",
@@ -1154,7 +1205,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "START_LABYRINTH",
@@ -1168,7 +1220,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         },
         {
           "capability": "VERIFY_LABYRINTH_RESULT",
@@ -1181,7 +1234,8 @@
           "attempts": 0,
           "successes": 0,
           "failures": 0,
-          "evidence": ""
+          "evidence": "",
+          "notes": ""
         }
       ],
       "design_requirements_total": 4,
@@ -1198,6 +1252,70 @@
         "READ_LABYRINTH_ATTEMPTS",
         "START_LABYRINTH",
         "VERIFY_LABYRINTH_RESULT"
+      ]
+    },
+    {
+      "goal": "TRAVEL_SUPPLY",
+      "category": "日常低保",
+      "composition": "SEQUENCE",
+      "status": "BLOCKED",
+      "capabilities": [
+        {
+          "capability": "OPEN_TRAVEL_SUPPLY_ENTRY",
+          "alternatives": [
+            "OPEN_TASK_FROM_QUICK_PANEL_TRAVEL_SUPPLY"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
+        },
+        {
+          "capability": "OPEN_TRAVEL_SUPPLY_COUNTER",
+          "alternatives": [
+            "OPEN_TRAVEL_SUPPLY_COUNTER"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
+        },
+        {
+          "capability": "CLAIM_FREE_TRAVEL_SUPPLY",
+          "alternatives": [
+            "CLAIM_TRAVEL_SUPPLY_FREE"
+          ],
+          "status": "BLOCKED",
+          "implemented_by": null,
+          "live_verified_by": null,
+          "attempts": 0,
+          "successes": 0,
+          "failures": 0,
+          "evidence": "",
+          "notes": ""
+        }
+      ],
+      "design_requirements_total": 3,
+      "implemented_capabilities": 0,
+      "live_verified_capabilities": 0,
+      "stable_capabilities": 0,
+      "design_coverage": 1.0,
+      "implementation_coverage": 0.0,
+      "live_coverage": 0.0,
+      "stable_coverage": 0.0,
+      "runtime_goal_status": "RUNTIME_DISCOVERED",
+      "blocked_by": [
+        "CLAIM_FREE_TRAVEL_SUPPLY",
+        "OPEN_TRAVEL_SUPPLY_COUNTER",
+        "OPEN_TRAVEL_SUPPLY_ENTRY"
       ]
     }
   ],
@@ -1218,15 +1336,6 @@
       "goals": [
         "EVENT_MINIMUM_GUARANTEE",
         "ALLIANCE_TIMED_EVENTS"
-      ]
-    },
-    {
-      "skill_id": "JOIN_RALLY",
-      "blocked_goals": 2,
-      "never_tried_goals": 0,
-      "goals": [
-        "AVOID_STAMINA_WASTE",
-        "PARTICIPATE_BEAR"
       ]
     },
     {
@@ -1266,6 +1375,14 @@
       ]
     },
     {
+      "skill_id": "OPEN_BUILDING",
+      "blocked_goals": 1,
+      "never_tried_goals": 1,
+      "goals": [
+        "KEEP_BUILDING_PRODUCTIVE"
+      ]
+    },
+    {
       "skill_id": "ALLIANCE_HELP",
       "blocked_goals": 1,
       "never_tried_goals": 0,
@@ -1274,11 +1391,11 @@
       ]
     },
     {
-      "skill_id": "ALLIANCE_TECH_CONTRIBUTE",
+      "skill_id": "CLAIM_TRAVEL_SUPPLY_FREE",
       "blocked_goals": 1,
       "never_tried_goals": 0,
       "goals": [
-        "ALLIANCE_ROUTINE"
+        "TRAVEL_SUPPLY"
       ]
     },
     {
@@ -1287,14 +1404,6 @@
       "never_tried_goals": 0,
       "goals": [
         "USE_FREE_ARENA_ATTEMPTS"
-      ]
-    },
-    {
-      "skill_id": "OPEN_BUILDING",
-      "blocked_goals": 1,
-      "never_tried_goals": 0,
-      "goals": [
-        "KEEP_BUILDING_PRODUCTIVE"
       ]
     },
     {
@@ -1311,6 +1420,22 @@
       "never_tried_goals": 0,
       "goals": [
         "LABYRINTH_DAILY"
+      ]
+    },
+    {
+      "skill_id": "OPEN_TASK_FROM_QUICK_PANEL_TRAVEL_SUPPLY",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "TRAVEL_SUPPLY"
+      ]
+    },
+    {
+      "skill_id": "OPEN_TRAVEL_SUPPLY_COUNTER",
+      "blocked_goals": 1,
+      "never_tried_goals": 0,
+      "goals": [
+        "TRAVEL_SUPPLY"
       ]
     },
     {
@@ -1360,13 +1485,14 @@
       "goals": [
         "EVENT_MINIMUM_GUARANTEE"
       ]
-    },
+    }
+  ],
+  "manual_overlay": [
     {
-      "skill_id": "READ_FREE_ATTEMPTS",
-      "blocked_goals": 1,
-      "never_tried_goals": 0,
-      "goals": [
-        "USE_FREE_ARENA_ATTEMPTS"
+      "goal": "AVOID_STAMINA_WASTE",
+      "capability": "SPEND_STAMINA_ON_BEAST",
+      "alternatives_add": [
+        "SELECT_BEAST_TARGET_LABELLED"
       ]
     }
   ]
