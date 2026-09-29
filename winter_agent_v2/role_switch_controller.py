@@ -24,8 +24,12 @@ from .global_scheduler_state import GlobalSchedulerStateStore
 
 AVATAR_TEMPLATE_DIR = Path("knowledge/ui/role_switch/avatar_templates")
 PAID_OFFER_CLOSE_TEMPLATE = AVATAR_TEMPLATE_DIR / "paid_offer_close.png"
+PAID_OFFER_CLOSE_FALLBACKS = (
+    Path("dataset/candidate/templates/btn_close__step_001_before__0.png"),
+)
 ROLE_AVATAR_THRESHOLD = 0.94
 PAID_OFFER_CLOSE_THRESHOLD = 0.88
+PAID_OFFER_CLOSE_VERIFY_TIMEOUT = 8.0
 
 
 @dataclass(frozen=True)
@@ -81,6 +85,17 @@ def load_role_catalog(path: Path | str) -> list[dict[str, Any]]:
 
 def _normalized_text(value: str) -> str:
     return re.sub(r"[^0-9a-z\u3400-\u9fff]", "", str(value or "").casefold())
+
+
+def _is_paid_offer_text(value: str) -> bool:
+    """Recognize monetized login offers without treating them as game actions."""
+    raw = str(value or "")
+    if any(currency in raw for currency in ("¥", "￥", "$")):
+        return True
+    normalized = _normalized_text(raw)
+    return any(_normalized_text(marker) in normalized for marker in (
+        "超越传说礼包", "充值积分", "前往充值", "充值礼包",
+    ))
 
 
 def _box(token: Any) -> tuple[int, int, int, int] | None:
@@ -445,11 +460,37 @@ class RoleSwitchController:
 
     def _capture_until_role_login_dialog(self, target: Mapping[str, Any], *, timeout: float) -> Path | None:
         deadline = self.monotonic() + timeout
-        wanted = _normalized_text(str(target.get("display_name") or ""))
+        target_id = str(target.get("role_id") or "")
+        aliases: set[str] = set()
+        display_name = str(target.get("display_name") or "").strip()
+        role_name = str(target.get("role_name") or "").strip()
+        for value in (display_name, role_name,
+                      re.sub(r"^\[[^\]]+\]\s*", "", display_name)):
+            normalized = _normalized_text(value)
+            if normalized:
+                aliases.add(normalized)
+
+        # The role manager decorates names with an alliance tag (for example,
+        # ``[DIW]xhw``), while the login confirmation shows only the account
+        # name (``xhw``).  Accept that shorter label only when it identifies
+        # exactly this catalog role; otherwise a shared/generic alias must not
+        # authorize a role switch.
+        unique_aliases = {
+            alias for alias in aliases
+            if {role_id for role_id, entry in self.roles.items()
+                if alias in {
+                    _normalized_text(str(entry.get("display_name") or "")),
+                    _normalized_text(str(entry.get("role_name") or "")),
+                    _normalized_text(re.sub(
+                        r"^\[[^\]]+\]\s*", "", str(entry.get("display_name") or "").strip(),
+                    )),
+                }} == {target_id}
+        }
         while self.monotonic() <= deadline:
             path = self._capture("login_confirm")
             text = _normalized_text(self._text(path))
-            if wanted and wanted in text and "登录" in text and ("确定" in text or "確認" in text):
+            if (any(alias in text for alias in unique_aliases)
+                    and "登录" in text and ("确定" in text or "確認" in text)):
                 return path
             self.sleeper(self.poll_seconds)
         return None
@@ -471,7 +512,7 @@ class RoleSwitchController:
             path = self._capture("post_login")
             text = self._text(path)
             normalized = _normalized_text(text)
-            if any(value in text for value in ("¥", "￥", "$")) or "超越传说礼包" in text:
+            if _is_paid_offer_text(text):
                 if not self._close_paid_offer(path):
                     return None
                 self.sleeper(self.poll_seconds)
@@ -503,25 +544,32 @@ class RoleSwitchController:
         return None
 
     def _close_paid_offer(self, frame_path: Path) -> bool:
-        if not PAID_OFFER_CLOSE_TEMPLATE.is_absolute():
-            template = self.root / PAID_OFFER_CLOSE_TEMPLATE
-        else:
-            template = PAID_OFFER_CLOSE_TEMPLATE
-        if not template.is_file():
-            return False
         try:
             image = np.asarray(Image.open(frame_path).convert("RGB"))
         except (OSError, ValueError):
             return False
-        result = self._match_image(
-            image, "ROLE_SWITCH_PAID_OFFER_CLOSE", template,
-            threshold=PAID_OFFER_CLOSE_THRESHOLD,
-        )
-        if not result or not result.get("hit") or not result.get("center"):
+        templates = (*PAID_OFFER_CLOSE_FALLBACKS, PAID_OFFER_CLOSE_TEMPLATE)
+        for index, candidate in enumerate(templates):
+            template = candidate if candidate.is_absolute() else self.root / candidate
+            if not template.is_file():
+                continue
+            result = self._match_image(
+                image, f"ROLE_SWITCH_PAID_OFFER_CLOSE_{index}", template,
+                threshold=PAID_OFFER_CLOSE_THRESHOLD,
+            )
+            if not result or not result.get("hit") or not result.get("center"):
+                continue
+            if not self._click(*result["center"]):
+                return False
+            # Login offers animate out asynchronously. A frame captured in the
+            # first few hundred milliseconds can still show the old overlay even
+            # though the close input was accepted; wait for observed disappearance
+            # instead of reporting failure or sending the same input again.
+            deadline = self.monotonic() + PAID_OFFER_CLOSE_VERIFY_TIMEOUT
+            while self.monotonic() <= deadline:
+                after = self._capture("paid_offer_closed")
+                if not _is_paid_offer_text(self._text(after)):
+                    return True
+                self.sleeper(self.poll_seconds)
             return False
-        if not self._click(*result["center"]):
-            return False
-        after = self._capture("paid_offer_closed")
-        after_text = self._text(after)
-        return "超越传说礼包" not in after_text and not any(
-            currency in after_text for currency in ("¥", "￥", "$"))
+        return False

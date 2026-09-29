@@ -5,7 +5,11 @@ from types import SimpleNamespace
 from PIL import Image
 
 from winter_agent_v2.global_scheduler_state import GlobalSchedulerStateStore
-from winter_agent_v2.role_switch_controller import RoleSwitchController, load_role_catalog
+from winter_agent_v2.role_switch_controller import (
+    RoleSwitchController,
+    _is_paid_offer_text,
+    load_role_catalog,
+)
 
 
 def test_role_catalog_requires_live_verification_and_current_avatar_template(tmp_path):
@@ -122,6 +126,118 @@ def test_capture_until_identity_waits_for_profile_animation(tmp_path):
     assert found == tmp_path / "source_profile-2.png"
     assert len(frames) == 3
     assert now[0] == 0.5
+
+
+def test_login_confirmation_matches_unique_role_name_without_alliance_tag(tmp_path):
+    _store, controller = _role_switch_fixture(tmp_path)
+    controller.roles["role-a"].update(role_name="ZeroKrypton", display_name="[IOI]ZeroKrypton")
+    controller.roles["role-b"].update(role_name="xhw", display_name="[DIW]xhw")
+    frame = tmp_path / "login-confirm.png"
+    controller._capture = lambda _label: frame
+    controller._text = lambda _path: "xhw 您确定要登录该角色吗 取消 确定"
+
+    found = controller._capture_until_role_login_dialog(
+        controller.roles["role-b"], timeout=1.0,
+    )
+
+    assert found == frame
+
+
+def test_login_confirmation_rejects_role_name_shared_by_catalog_entries(tmp_path):
+    _store, controller = _role_switch_fixture(tmp_path)
+    controller.roles["role-a"].update(role_name="xhw", display_name="[IOI]xhw")
+    controller.roles["role-b"].update(role_name="xhw", display_name="[DIW]xhw")
+    frame = tmp_path / "ambiguous-login-confirm.png"
+    controller._capture = lambda _label: frame
+    controller._text = lambda _path: "xhw 您确定要登录该角色吗 取消 确定"
+    now = [0.0]
+    controller.monotonic = lambda: now[0]
+    controller.sleeper = lambda seconds: now.__setitem__(0, now[0] + seconds)
+    controller.poll_seconds = 0.5
+
+    found = controller._capture_until_role_login_dialog(
+        controller.roles["role-b"], timeout=0.1,
+    )
+
+    assert found is None
+
+
+def test_paid_offer_text_recognizes_recharge_points_screen_without_currency_symbol():
+    assert _is_paid_offer_text("充值积分达到 5,000 立刻获取传说城建专家 前往充值")
+    assert not _is_paid_offer_text("免费训练奖励可以领取")
+
+
+def test_wait_for_target_home_closes_recharge_offer_before_accepting_role(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    offer = tmp_path / "recharge-offer.png"
+    home = tmp_path / "home.png"
+    frames = iter((offer, home))
+    closed = []
+    monkeypatch.setattr(controller, "_capture", lambda _label: next(frames))
+    monkeypatch.setattr(controller, "_text", lambda path: (
+        "充值积分达到 5,000 前往充值" if Path(path) == offer else ""
+    ))
+    monkeypatch.setattr(controller, "_close_paid_offer",
+                        lambda path: closed.append(Path(path)) or True)
+    monkeypatch.setattr(controller, "identify_current_role",
+                        lambda path: ("role-b", 0.99) if Path(path) == home else None)
+    controller.sleeper = lambda _seconds: None
+
+    found = controller._wait_for_target_home(
+        controller.roles["role-b"], timeout=1.0,
+    )
+
+    assert found == home
+    assert closed == [offer]
+
+
+def test_paid_offer_close_uses_live_purchase_popup_close_candidate(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    candidate = tmp_path / "dataset/candidate/templates/btn_close__step_001_before__0.png"
+    candidate.parent.mkdir(parents=True)
+    Image.new("RGB", (8, 8), "white").save(candidate)
+    frame = tmp_path / "recharge-offer.png"
+    Image.new("RGB", (32, 32), "blue").save(frame)
+    calls = []
+    monkeypatch.setattr(controller, "_match_image", lambda _image, semantic, template, **_kwargs: (
+        calls.append((semantic, Path(template))) or
+        ({"hit": True, "center": (676, 45)} if Path(template) == candidate else None)
+    ))
+    monkeypatch.setattr(controller, "_click", lambda x, y: calls.append((x, y)) or True)
+    monkeypatch.setattr(controller, "_capture", lambda _label: tmp_path / "closed.png")
+    monkeypatch.setattr(controller, "_text", lambda _path: "主城 统帅")
+
+    assert controller._close_paid_offer(frame) is True
+    assert calls[0][1] == candidate
+    assert calls[-1] == (676, 45)
+
+
+def test_paid_offer_close_waits_for_animation_and_does_not_repeat_the_click(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    candidate = tmp_path / "dataset/candidate/templates/btn_close__step_001_before__0.png"
+    candidate.parent.mkdir(parents=True)
+    Image.new("RGB", (8, 8), "white").save(candidate)
+    frame = tmp_path / "recharge-offer.png"
+    Image.new("RGB", (32, 32), "blue").save(frame)
+    after_frames = iter((tmp_path / "still-visible.png", tmp_path / "closed.png"))
+    Image.new("RGB", (32, 32), "red").save(tmp_path / "still-visible.png")
+    Image.new("RGB", (32, 32), "green").save(tmp_path / "closed.png")
+    clicks = []
+    monkeypatch.setattr(controller, "_match_image", lambda *_args, **_kwargs:
+                        {"hit": True, "center": (676, 45)})
+    monkeypatch.setattr(controller, "_click", lambda x, y: clicks.append((x, y)) or True)
+    monkeypatch.setattr(controller, "_capture", lambda _label: next(after_frames))
+    monkeypatch.setattr(controller, "_text", lambda path: (
+        "充值积分 前往充值" if Path(path).name == "still-visible.png" else "主城 统帅"
+    ))
+    now = [0.0]
+    controller.monotonic = lambda: now[0]
+    controller.sleeper = lambda seconds: now.__setitem__(0, now[0] + seconds)
+    controller.poll_seconds = 0.25
+
+    assert controller._close_paid_offer(frame) is True
+    assert clicks == [(676, 45)]
+    assert now[0] == 0.25
 
 
 def test_verified_role_switch_invalidates_both_roles_live_page_state(tmp_path, monkeypatch):
