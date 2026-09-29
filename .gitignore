@@ -440,3 +440,29 @@ learning/roles/
 dataset/raw/fishing_tournament/*/frames/
 dataset/raw/fishing_tournament/*/key_frames/
 dataset/raw/fishing_tournament/*/*.png
+
+# --- runtime-mutable state (RUNTIME_MUTABLE_STATE_MANIFEST) ---
+# Written by tools/build_runtime_state_manifest.py --apply.
+# These files live in the shared DATA_ROOT and are rewritten by the running loop.
+# Git must not checkout over them: the 2026-09-29 rebase rolled the live role,
+# the 10k-row episode ledger and the scheduler snapshot back to an 11-day-old copy.
+# 34 tracked files were untracked in favour of this rule.
+learning/**/*.jsonl
+learning/control_panel/**
+learning/roles/**
+learning/knowledge_bootstrap/**
+learning/capability_bootstrap/**
+learning/runtime_snapshot.json
+learning/goal_state.json
+learning/event_goal_state.json
+learning/role_identity.json
+learning/timed_event_schedule.json
+learning/stamina_supply.json
+learning/stamina_priority_state.json
+learning/resource_rotation.json
+learning/candidate_attempt_pool.json
+learning/bear_role.json
+config/control_panel_state.json
+config/policy_state.json
+config/*.bak_*
+# --- /runtime-mutable state ---
