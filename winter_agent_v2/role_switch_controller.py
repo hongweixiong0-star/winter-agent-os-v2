@@ -254,11 +254,31 @@ class RoleSwitchController:
             if verified_identity is None or verified_identity.role_id != target_role_id:
                 return self._abort(target_role_id, "TARGET_PROFILE_ACCOUNT_ID_MISMATCH", evidence, started)
 
+            # The profile read proves which account is loaded, but the normal
+            # AUTO identity reader only recognizes the role avatar on the home
+            # screen. Return to that known page before committing the switch so
+            # the next runtime cycle cannot inherit a profile-page frame and
+            # stop with ROLE_IDENTITY_UNCONFIRMED.
+            press_back = getattr(self.device, "press_back", None)
+            if not callable(press_back):
+                return self._abort(target_role_id, "TARGET_PROFILE_BACK_ACTION_UNAVAILABLE",
+                                   evidence, started)
+            press_back()
+            home_path = self._wait_for_confirmed_target_home(
+                target, timeout=self.max_load_seconds,
+            )
+            if home_path is None:
+                return self._abort(target_role_id,
+                                   "TARGET_ROLE_HOME_AFTER_PROFILE_NOT_CONFIRMED",
+                                   evidence, started)
+            evidence.append(str(home_path))
+
             from .state_truth import record_role
 
             record_role(
-                self.root, verified_identity, evidence=[str(final_profile)],
-                observed_at=datetime.now(timezone.utc), verification="LIVE_ROLE_SWITCH_PROFILE_READ",
+                self.root, verified_identity, evidence=[str(final_profile), str(home_path)],
+                observed_at=datetime.now(timezone.utc),
+                verification="LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED",
             )
             self.state_store.commit_role_switch(
                 confirmed_role_id=target_role_id,
@@ -540,6 +560,37 @@ class RoleSwitchController:
                     return path
             except Exception:  # noqa: BLE001
                 pass
+            self.sleeper(self.poll_seconds)
+        return None
+
+    def _wait_for_confirmed_target_home(
+        self, target: Mapping[str, Any], *, timeout: float,
+    ) -> Path | None:
+        """Wait for both the expected role avatar and a clean HOME page."""
+        from .models import Page
+
+        target_role_id = str(target.get("role_id") or "")
+        deadline = self.monotonic() + timeout
+        while self.monotonic() <= deadline:
+            path = self._capture("target_home_after_profile")
+            text = self._text(path)
+            if _is_paid_offer_text(text):
+                if not self._close_paid_offer(path):
+                    return None
+                self.sleeper(self.poll_seconds)
+                continue
+
+            identity = self.identify_current_role(path)
+            if identity is not None and identity[0] != target_role_id:
+                return None
+            try:
+                world = self.vision.observe(path)
+            except Exception:  # noqa: BLE001 - an unreadable frame is not proof of HOME
+                world = None
+            if (identity is not None and identity[0] == target_role_id
+                    and world is not None and world.page is Page.HOME
+                    and world.popup is None):
+                return path
             self.sleeper(self.poll_seconds)
         return None
 

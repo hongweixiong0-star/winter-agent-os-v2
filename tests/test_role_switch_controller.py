@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from PIL import Image
 
 from winter_agent_v2.global_scheduler_state import GlobalSchedulerStateStore
+from winter_agent_v2.models import Page
 from winter_agent_v2.role_switch_controller import (
     RoleSwitchController,
     _is_paid_offer_text,
@@ -79,6 +80,10 @@ def _role_switch_fixture(tmp_path):
 
 def _stub_switch_navigation(monkeypatch, controller, tmp_path, *, final_identity="role-b"):
     identity_waits = []
+    back_calls = []
+    confirmed_home_calls = []
+
+    controller.device = SimpleNamespace(press_back=lambda: back_calls.append("back"))
 
     def frame(label):
         return tmp_path / f"{label}.png"
@@ -96,12 +101,21 @@ def _stub_switch_navigation(monkeypatch, controller, tmp_path, *, final_identity
     monkeypatch.setattr(controller, "_capture_until_role_login_dialog",
                         lambda *_args, **_kwargs: frame("login_confirm"))
     monkeypatch.setattr(controller, "_wait_for_target_home", lambda *_args, **_kwargs: frame("home"))
+    monkeypatch.setattr(
+        controller, "_wait_for_confirmed_target_home",
+        lambda target, *, timeout: (
+            confirmed_home_calls.append((target["role_id"], timeout))
+            or frame("home_after_profile")
+        ),
+    )
     def capture_until_identity(label, role_id, *, timeout):
         identity_waits.append((label, role_id, timeout))
         return frame("source_profile" if role_id == "role-a" else "target_profile")
 
     monkeypatch.setattr(controller, "_capture_until_identity", capture_until_identity)
     controller._identity_wait_calls = identity_waits
+    controller._back_calls = back_calls
+    controller._confirmed_home_calls = confirmed_home_calls
 
 
 def test_capture_until_identity_waits_for_profile_animation(tmp_path):
@@ -260,7 +274,13 @@ def test_verified_role_switch_invalidates_both_roles_live_page_state(tmp_path, m
         ("source_profile", "role-a", 8.0),
         ("target_profile", "role-b", 8.0),
     ]
-    assert recorded and recorded[0]["verification"] == "LIVE_ROLE_SWITCH_PROFILE_READ"
+    assert controller._back_calls == ["back"]
+    assert controller._confirmed_home_calls == [("role-b", controller.max_load_seconds)]
+    assert result.evidence[-1].endswith("home_after_profile.png")
+    assert recorded and recorded[0]["verification"] == "LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED"
+    assert recorded[0]["evidence"] == [
+        str(tmp_path / "target_profile.png"), str(tmp_path / "home_after_profile.png"),
+    ]
     assert state.active_role_id == "role-b"
     assert state.role_switch_pending is None
     assert state.role_switch_success_count == 1
@@ -273,6 +293,64 @@ def test_verified_role_switch_invalidates_both_roles_live_page_state(tmp_path, m
     assert state.roles["role-b"].current_goal == ""
     assert state.roles["role-b"].current_skill == ""
     assert state.roles["role-b"].dirty_live_state is True
+
+
+def test_confirmed_target_home_requires_avatar_and_clean_home_page(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    frame = tmp_path / "home.png"
+    monkeypatch.setattr(controller, "_capture", lambda _label: frame)
+    monkeypatch.setattr(controller, "_text", lambda _path: "主城")
+    monkeypatch.setattr(controller, "identify_current_role", lambda _path: ("role-b", 0.99))
+    controller.vision = SimpleNamespace(observe=lambda _path: SimpleNamespace(
+        page=Page.HOME, popup=None,
+    ))
+    controller.sleeper = lambda _seconds: None
+
+    assert controller._wait_for_confirmed_target_home(
+        controller.roles["role-b"], timeout=0.1,
+    ) == frame
+
+
+def test_confirmed_target_home_rejects_profile_or_wrong_role(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    frame = tmp_path / "profile.png"
+    monkeypatch.setattr(controller, "_capture", lambda _label: frame)
+    monkeypatch.setattr(controller, "_text", lambda _path: "领主档案")
+    monkeypatch.setattr(controller, "identify_current_role", lambda _path: ("role-b", 0.99))
+    controller.vision = SimpleNamespace(observe=lambda _path: SimpleNamespace(
+        page=Page.PROFILE, popup=None,
+    ))
+    now = [0.0]
+    controller.monotonic = lambda: now[0]
+    controller.sleeper = lambda seconds: now.__setitem__(0, now[0] + seconds)
+    controller.poll_seconds = 0.05
+
+    assert controller._wait_for_confirmed_target_home(
+        controller.roles["role-b"], timeout=0.1,
+    ) is None
+
+
+def test_role_switch_does_not_commit_until_home_is_confirmed(tmp_path, monkeypatch):
+    store, controller = _role_switch_fixture(tmp_path)
+    _stub_switch_navigation(monkeypatch, controller, tmp_path)
+    monkeypatch.setattr(controller, "_wait_for_confirmed_target_home", lambda *_args, **_kwargs: None)
+    recorded = []
+
+    from winter_agent_v2 import state_truth
+    monkeypatch.setattr(state_truth, "record_role", lambda *args, **kwargs: recorded.append(kwargs))
+
+    result = controller.switch_to(
+        source_role_id="role-a", target_role_id="role-b", reason="ROLE_B has runnable work",
+    )
+
+    state = store.load()
+    assert result.ok is False
+    assert result.reason == "TARGET_ROLE_HOME_AFTER_PROFILE_NOT_CONFIRMED"
+    assert recorded == []
+    assert state.active_role_id == "role-a"
+    assert state.role_switch_pending is None
+    assert state.role_switch_success_count == 0
+    assert state.role_switch_failure_count == 1
 
 
 def test_role_identity_mismatch_aborts_switch_and_sets_bounded_retry(tmp_path, monkeypatch):
