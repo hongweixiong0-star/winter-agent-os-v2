@@ -3943,6 +3943,10 @@ def read_building_action_tokens(
         centre_y = (min(ys) + max(ys)) / 2.0 / height
         text = token.text.strip()
         if action_lo <= centre_y <= action_hi:
+            # The live tutorial overlay yielded ``训练、`` at confidence 0.93.
+            # Normalize label-edge punctuation only in this control band; keep
+            # the exact whitelist so status text such as ``训练中`` cannot tap.
+            text = text.strip(" ：:、，。,. ")
             if text in BUILDING_ACTION_LABELS and text not in actions:
                 actions[text] = (round(centre_x, 4), round(centre_y, 4))
             continue

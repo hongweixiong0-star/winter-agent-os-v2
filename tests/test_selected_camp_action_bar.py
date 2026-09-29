@@ -85,6 +85,24 @@ def action_bar_tokens(confidence: float = 0.99) -> list[OCRToken]:
 
 
 class ActionBarReadingTests(unittest.TestCase):
+    def test_live_lancer_training_label_with_separator_keeps_its_current_box(self):
+        tokens = [
+            token("矛兵营", (352, 532, 402, 560)),
+            OCRToken(text="训练、", confidence=0.92989,
+                     box=((457, 895), (517, 899), (515, 932), (455, 928))),
+        ]
+        reading = read_building_action_tokens(tokens, FRAME)
+        self.assertEqual(reading["camp"], "LANCER_CAMP")
+        self.assertAlmostEqual(reading["actions"]["训练"][0], 486 / 720, places=3)
+        self.assertAlmostEqual(reading["actions"]["训练"][1], 913.5 / 1280, places=3)
+
+    def test_training_status_and_unrecognized_controls_remain_non_actions(self):
+        for label in ("训练中", "训练完成", "训练、出征", "自动训练"):
+            with self.subTest(label=label):
+                reading = read_building_action_tokens(
+                    [token(label, (458, 897, 512, 930))], FRAME)
+                self.assertNotIn("训练", reading["actions"])
+
     def test_the_three_controls_are_read_where_the_client_drew_them(self):
         reading = read_building_action_tokens(action_bar_tokens(), FRAME)
         self.assertEqual(set(reading["actions"]), {"详情", "升级", "训练"})
