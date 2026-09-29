@@ -27,7 +27,18 @@ class GlobalSchedulerDashboardTests(unittest.TestCase):
                 json.dumps(
                     {
                         "active_role_id": "role-b",
-                        "last_decision": decisions[-1],
+                        "last_decision": {
+                            **decisions[-1],
+                            "candidates": [
+                                {
+                                    "role_id": "role-a",
+                                    "goal_id": "SCHEDULED_BEAR",
+                                    "hard_event": True,
+                                    "score": 950,
+                                    "deadline_seconds": 240,
+                                }
+                            ],
+                        },
                         "decision_history": decisions,
                         "role_switch_count": 4,
                         "role_switch_success_count": 3,
@@ -57,12 +68,14 @@ class GlobalSchedulerDashboardTests(unittest.TestCase):
             self.assertIn("reason_2", lines[0])
             self.assertIn("请求切换 ROLE_A→ROLE_B", lines[0])
             self.assertIn("GOAL_11", lines[-1])
+            self.assertEqual(view["hard_event"], "ROLE_A · SCHEDULED_BEAR · 剩余 240 秒")
 
     def test_missing_state_shows_an_explicit_empty_timeline(self):
         with TemporaryDirectory() as temporary:
             view = global_scheduler_display(Path(temporary))
 
         self.assertEqual(view["timeline"], "暂无历史决策")
+        self.assertEqual(view["hard_event"], "暂无硬时间评估")
 
 
 if __name__ == "__main__":

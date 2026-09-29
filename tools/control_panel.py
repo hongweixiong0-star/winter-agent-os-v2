@@ -651,15 +651,35 @@ def _global_decision_timeline(history: Any, names: dict[str, str], *, limit: int
     return "\n".join(lines)
 
 
+def _global_hard_event(decision: dict[str, Any], names: dict[str, str]) -> str:
+    """Summarize the strongest hard-time candidate from the latest global round."""
+    candidates = decision.get("candidates")
+    if not isinstance(candidates, list):
+        return "最近一次评估未提供硬时间目标"
+    hard = [row for row in candidates if isinstance(row, dict) and row.get("hard_event") is True]
+    if not hard:
+        return "最近一次评估无临近硬时间目标"
+    selected = max(hard, key=lambda row: float(row.get("score") or 0.0))
+    role_id = str(selected.get("role_id") or "")
+    role = names.get(role_id, role_id or "角色未知")
+    goal = str(selected.get("goal_id") or selected.get("skill_id") or "活动状态刷新")
+    remaining = selected.get("deadline_seconds", selected.get("remaining_seconds"))
+    if isinstance(remaining, (int, float)) and not isinstance(remaining, bool):
+        timing = f"剩余 {max(0, int(remaining))} 秒"
+    else:
+        timing = "调度硬时间优先级已触发"
+    return f"{role} · {goal} · {timing}"
+
+
 def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
     """Render the persisted arbitration decision without inventing live role state."""
     try:
         payload = json.loads((root / "learning/global_scheduler_state.json").read_text(encoding="utf-8"))
         catalog = json.loads((root / "knowledge/roles/role_inventory.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, TypeError):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
     if not isinstance(payload, dict):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
     names = {
         str(row.get("role_id")): str(row.get("role_key") or row.get("display_name") or row.get("role_id"))
         for row in (catalog.get("roles", []) if isinstance(catalog, dict) else [])
@@ -712,6 +732,7 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
         "current": current,
         "roles": role_lines,
         "decision": f"{action} → {selected_label} {selected_goal} / {selected_skill}；{why}",
+        "hard_event": _global_hard_event(decision, names),
         "timeline": _global_decision_timeline(payload.get("decision_history"), names),
         "wakeup": next_wakeup,
         "metrics": f"切换 {metrics['count']} 次｜成功率 {rate}｜p50 {p50}｜p95 {p95}",
@@ -4042,11 +4063,12 @@ class ControlPanel:
             row=0, column=0, columnspan=2, sticky="w")
         self.global_role_vars = {
             key: tk.StringVar(value="等待双角色状态")
-            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics", "timeline")
+            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics", "hard_event", "timeline")
         }
         for row, (label, key) in enumerate((
             ("当前角色", "current"), ("角色 A", "role_a"), ("角色 B", "role_b"),
             ("最近决策", "decision"), ("下一唤醒", "wakeup"), ("切换指标", "metrics"),
+            ("临近硬时间活动", "hard_event"),
             ("最近 10 次选择", "timeline"),
         ), 1):
             ttk.Label(dual, text=label, style="Muted.TLabel", background=PANEL, width=12).grid(
@@ -4104,6 +4126,7 @@ class ControlPanel:
             self.global_role_vars["decision"].set(global_view.get("decision", "暂无"))
             self.global_role_vars["wakeup"].set(global_view.get("wakeup", "无"))
             self.global_role_vars["metrics"].set(global_view.get("metrics", "暂无"))
+            self.global_role_vars["hard_event"].set(global_view.get("hard_event", "暂无"))
             self.global_role_vars["timeline"].set(global_view.get("timeline", "暂无历史决策"))
         except (AttributeError, OSError, TypeError, ValueError):
             # The live runtime status remains usable when the optional global state
