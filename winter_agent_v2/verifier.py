@@ -1402,6 +1402,29 @@ def verify_march_page_open(before: WorldState, after: WorldState) -> Verificatio
 
 def verify_wood_dispatch_from_march(before: WorldState, after: WorldState) -> VerificationResult:
     before_ok = before.page is Page.MARCH and before.resource_target in {"MEAT", "WOOD", "COAL", "IRON"}
+    formation = (before.hero_troop or {}).get("gather_formation")
+    formation_policy = "MISSING_CURRENT_ROLE_SCOPED_FORMATION"
+    formation_ok = False
+    if isinstance(formation, dict):
+        observed_at = str(formation.get("observed_at") or "")
+        expected_observed_at = str(before.timestamp or "")
+        role_scoped_current = (
+            formation.get("status") == "OBSERVED"
+            and formation.get("page") == "PAGE_FORMATION"
+            and formation.get("role_scope") in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+            and bool(str(formation.get("role_id") or "").strip())
+            and bool(str(formation.get("source_frame") or "").strip())
+            and bool(expected_observed_at)
+            and observed_at == expected_observed_at
+            and str(formation.get("resource_type") or "").upper() == str(before.resource_target or "").upper()
+        )
+        if not role_scoped_current:
+            formation_policy = "STALE_OR_ROLE_UNSCOPED_FORMATION"
+        else:
+            from .hero_portraits import evaluate_gather_formation
+            policy = evaluate_gather_formation(str(before.resource_target or ""), formation)
+            formation_policy = str(policy.get("status") or "UNKNOWN")
+            formation_ok = formation_policy in {"READY_WITH_SPECIALIST", "READY_EMPTY"}
     after_state = any(state in {MarchState.MARCHING, MarchState.GATHERING} for state in after.marches)
     # The formation page does not expose the global march counter, and the
     # idle map can hide it completely. A fixed ``>= 2`` requirement therefore
@@ -1410,18 +1433,131 @@ def verify_wood_dispatch_from_march(before: WorldState, after: WorldState) -> Ve
     queue_ok = after.march_used is not None and after.march_used >= 1
     target_ok = before.resource_target in {"MEAT", "WOOD", "COAL", "IRON"}
     after_ok = after.page is Page.MAP and after_state and queue_ok and target_ok
-    ok = before_ok and after_ok
+    ok = before_ok and formation_ok and after_ok
     return VerificationResult(
         ok,
         "OK" if ok else "DISPATCH_NOT_PROVEN",
         {
             "wood_march_page": before_ok,
+            "gather_formation_policy": formation_policy,
+            "gather_formation_policy_ok": formation_ok,
+            "gather_formation_is_current_role_scoped": formation_policy not in {
+                "MISSING_CURRENT_ROLE_SCOPED_FORMATION", "STALE_OR_ROLE_UNSCOPED_FORMATION",
+            },
             "active_state": after_state,
             "active_queue_visible": queue_ok,
             "march_used": after.march_used,
             "target_ok": target_ok,
         },
     )
+
+
+def verify_gather_hero_removed(before: WorldState, after: WorldState) -> VerificationResult:
+    """Prove a current formation card disappeared after its remove control was tapped."""
+    before_obs = (before.hero_troop or {}).get("gather_formation")
+    after_obs = (after.hero_troop or {}).get("gather_formation")
+    if before.page is not Page.MARCH or after.page is not Page.MARCH:
+        return VerificationResult(False, "GATHER_FORMATION_LEFT", {
+            "before_page": before.page.value, "after_page": after.page.value,
+        })
+    if not isinstance(before_obs, dict) or not isinstance(after_obs, dict):
+        return VerificationResult(False, "GATHER_FORMATION_NOT_OBSERVED", {})
+    before_role = before_obs.get("role_id")
+    after_role = after_obs.get("role_id")
+    role_ok = not (before_role and after_role and before_role != after_role)
+    before_slots = {int(row["slot"]): row for row in before_obs.get("slots", ())
+                    if isinstance(row, dict) and row.get("slot") is not None}
+    after_slots = {int(row["slot"]): row for row in after_obs.get("slots", ())
+                   if isinstance(row, dict) and row.get("slot") is not None}
+    removed = [slot for slot, row in before_slots.items()
+               if row.get("state") == "OCCUPIED"
+               and after_slots.get(slot, {}).get("state") == "EMPTY"]
+    ok = role_ok and bool(removed)
+    return VerificationResult(ok, "OK" if ok else "GATHER_HERO_REMOVAL_NOT_PROVEN", {
+        "role_scope_matches": role_ok,
+        "removed_slots": removed,
+        "occupied_before": sum(row.get("state") == "OCCUPIED" for row in before_slots.values()),
+        "occupied_after": sum(row.get("state") == "OCCUPIED" for row in after_slots.values()),
+    })
+
+
+def verify_gather_hero_picker_open(before: WorldState, after: WorldState) -> VerificationResult:
+    picker = (after.hero_troop or {}).get("hero_picker")
+    ok = (
+        before.page is Page.MARCH
+        and after.page is Page.POPUP
+        and after.popup == "HERO_PICKER"
+        and isinstance(picker, dict)
+        and picker.get("open") is True
+        and picker.get("role_scope") in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+    )
+    return VerificationResult(ok, "OK" if ok else "GATHER_HERO_PICKER_NOT_PROVEN", {
+        "before_page": before.page.value,
+        "after_page": after.page.value,
+        "popup": after.popup,
+        "role_scope": picker.get("role_scope") if isinstance(picker, dict) else None,
+    })
+
+
+def verify_gather_hero_picker_selected(before: WorldState, after: WorldState) -> VerificationResult:
+    picker = (after.hero_troop or {}).get("hero_picker")
+    before_picker = (before.hero_troop or {}).get("hero_picker")
+    target = str((picker or {}).get("hero_id") or "") if isinstance(picker, dict) else ""
+    ok = (
+        before.page is Page.POPUP and before.popup == "HERO_PICKER"
+        and after.page is Page.POPUP and after.popup == "HERO_PICKER"
+        and isinstance(before_picker, dict) and isinstance(picker, dict)
+        and target != ""
+        and str(before_picker.get("hero_id") or "") == target
+        and picker.get("match_status") == "MATCHED"
+        and picker.get("selected") is True
+        and picker.get("source_frame") != before_picker.get("source_frame")
+        and picker.get("role_id") == before_picker.get("role_id")
+    )
+    return VerificationResult(ok, "OK" if ok else "GATHER_HERO_PICKER_SELECTION_NOT_PROVEN", {
+        "hero_id": target or None,
+        "match_status": picker.get("match_status") if isinstance(picker, dict) else None,
+        "selected": picker.get("selected") if isinstance(picker, dict) else None,
+        "role_matches": isinstance(picker, dict) and isinstance(before_picker, dict)
+                        and picker.get("role_id") == before_picker.get("role_id"),
+    })
+
+
+def verify_gather_specialist_assigned(before: WorldState, after: WorldState) -> VerificationResult:
+    picker = (before.hero_troop or {}).get("hero_picker")
+    formation = (after.hero_troop or {}).get("gather_formation")
+    resource = str(before.resource_target or (picker or {}).get("resource_type") or "").upper()
+    target = str((picker or {}).get("hero_id") or "") if isinstance(picker, dict) else ""
+    role_matches = (
+        isinstance(picker, dict) and isinstance(formation, dict)
+        and picker.get("role_id") == formation.get("role_id")
+        and picker.get("role_scope") in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+        and formation.get("role_scope") in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+    )
+    policy = None
+    if isinstance(formation, dict) and resource:
+        from .hero_portraits import evaluate_gather_formation
+        policy = evaluate_gather_formation(resource, formation)
+    ok = (
+        before.page is Page.POPUP and before.popup == "HERO_PICKER"
+        and after.page is Page.MARCH
+        and isinstance(picker, dict) and picker.get("match_status") == "MATCHED"
+        and picker.get("selected") is True
+        and target != ""
+        and role_matches
+        and isinstance(policy, dict)
+        and policy.get("status") == "READY_WITH_SPECIALIST"
+        and policy.get("expected_hero_id") == target
+    )
+    return VerificationResult(ok, "OK" if ok else "GATHER_SPECIALIST_ASSIGNMENT_NOT_PROVEN", {
+        "resource_type": resource,
+        "expected_hero_id": target or None,
+        "role_matches": role_matches,
+        "formation_policy": policy.get("status") if isinstance(policy, dict) else None,
+        "formation_hero_ids": [row.get("hero_id") for row in (formation or {}).get("slots", ())
+                               if isinstance(row, dict) and row.get("state") == "OCCUPIED"]
+                               if isinstance(formation, dict) else [],
+    })
 
 
 def verify_dispatch(before: WorldState, after: WorldState, expected_resource: str) -> VerificationResult:

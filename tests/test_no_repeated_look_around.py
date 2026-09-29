@@ -16,6 +16,7 @@ below pin the rule that ends it, and the four edges of that rule.
 from __future__ import annotations
 
 import sys
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -250,10 +251,16 @@ class TheWholeRunTest(unittest.TestCase):
                     sleeper=lambda _seconds: None,
                     episode_store=None,
                     capability_gate=_EverythingDeferred(),
+                    fruitless_audit_path=temp / "fruitless_run_audit.jsonl",
                 )
                 result = runtime.run(
                     max_actions=max_actions,
                     allowed_skills=frozenset({"OPEN_MAP", "OPEN_HOME", "BACK"}),
+                )
+                audit_path = temp / "fruitless_run_audit.jsonl"
+                client.audit_rows = (
+                    [json.loads(line) for line in audit_path.read_text(encoding="utf-8").splitlines()]
+                    if audit_path.exists() else []
                 )
             finally:
                 observation_store.STATE_PATH = previous
@@ -275,6 +282,24 @@ class TheWholeRunTest(unittest.TestCase):
         self.assertEqual(client.page, Page.MAP,
                          "and the client is left where it was last known to have nothing, not "
                          "mid-hop")
+
+    def test_fruitless_stop_writes_structured_page_and_scheduler_evidence(self):
+        client, result = self._run()
+        self.assertEqual(result.stop_reason, STOPPED)
+        self.assertEqual(len(client.audit_rows), 1)
+        row = client.audit_rows[0]
+        self.assertEqual(row["final_reason"], STOPPED)
+        self.assertEqual(row["stop_category"], "EXPECTED_NO_ACTION")
+        self.assertEqual(row["starting_page"], "HOME")
+        self.assertEqual(row["visited_pages"], ["HOME", "MAP"])
+        self.assertEqual(row["role_id"], None)
+        self.assertIn("candidate_actions", row["per_page"][0])
+        self.assertIn("rejection_reasons", row["per_page"][0])
+        self.assertEqual(row["per_page"][-1]["attempted_skill"], "SAFE_STOP")
+        self.assertEqual(row["per_page"][-1]["verifier_result"]["status"], "NOT_ATTEMPTED")
+        self.assertIn("switch_task_possible", row["scheduler"])
+        self.assertIn("building", row["queues"])
+        self.assertIn("device_connected", row["environment"])
 
     def test_the_run_reaches_the_hop_that_the_recorded_one_reached(self):
         """The chain is the recorded one, so the guard is being asked the recorded question.

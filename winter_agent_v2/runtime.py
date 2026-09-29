@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import os
+import inspect
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -21,7 +22,7 @@ from . import event_schedule
 from . import unknown_advisor
 from .executor import Executor
 from .executor_router import DEFAULT_ROUTING_PATH, BackendLedger, RoutingTable, build_router
-from .learning import Episode, EpisodeStore
+from .learning import ActionOutcome, Episode, EpisodeStore
 from .models import Decision, ExecutionResult, Page, VerificationResult, WorldState
 from .ocr import (
     find_printed_words, find_quick_panel_handle, read_frame_size,
@@ -30,13 +31,16 @@ from .ocr import (
 from .camp_training import CAMP_LABELS, CAMP_ORDER
 from .scheduler import Scheduler
 from .goal_library import GoalLibrary, GoalStateStore, progress_moved, route_for
+from .global_scheduler_state import GlobalSchedulerStateStore
 from .capability_gate import DEFERRED, CapabilityGate, Deferral
 from .device_lease import OWNER_DEVELOPMENT_VALIDATION, OWNER_GAMEPLAY, DeviceLease
 from .candidate_policy import CandidateAttemptPool
 from .skills import SkillRegistry, v2_registry
 from .verifier import verify_alliance_reward_dismissed, verify_ally_gift_claim_feedback, verify_intel_hero_dispatched, verify_intel_hero_march_open, verify_intel_hero_target_open, verify_daily_claim_feedback, verify_daily_reward_advanced, verify_daily_tab_selected, verify_exploration_claim_confirmed, verify_exploration_claim_feedback, verify_exploration_reward_dismissed, verify_infantry_camp_highlighted, verify_infantry_camp_selected, verify_mail_read_or_claim, verify_offline_rewards_claimed, verify_open_alliance, verify_open_alliance_gifts, verify_open_daily, verify_open_exploration, verify_power_details_open, verify_power_overview_open, verify_training_page_open, verify_training_camp_switched, verify_intel_list_read, verify_alliance_gifts_claimed
 from .verifier import verify_panel_building_queue_opened, verify_ally_gift_claim, verify_beast_card_march_open, verify_beast_card_opened, verify_beast_dispatch, verify_beast_mammoth_target_selected, verify_beast_march_open, verify_beast_scan_observed, verify_beast_search_submitted, verify_beast_search_tab_selected, verify_beast_target_selected, verify_building_upgrade, verify_camp_menu_reobserved, verify_duplicate_target_cancelled, verify_environmental_wait, verify_intel_beast_dispatch, verify_intel_beast_march_open, verify_intel_claim_feedback, verify_intel_mission_selected, verify_intel_pin_opened, verify_intel_rescue_selected, verify_intel_rescue_started, verify_intel_rescue_target_open, verify_intel_reward_dismissed, verify_intel_target_open, verify_left_foreign_layer, verify_login_gift_claimed, verify_login_gift_panel_open, verify_mail_alliance_tab_selected, verify_mail_claim_feedback, verify_mail_report_tab_selected, verify_mail_reward_dismissed, verify_mail_system_tab_selected, verify_march_count_readable, verify_march_page_open, verify_march_recall_dialog_open, verify_march_recalled, verify_open_home, verify_open_intel, verify_open_mail, verify_open_map, verify_panel_row_done_collected, verify_panel_row_research_bar_opened, verify_panel_row_task_bar_opened, verify_popup_closed, verify_rally_created, verify_rally_joined, verify_research_lab_focused, verify_research_page_open, verify_research_started, verify_resource_found, verify_resource_level_relaxed, verify_resource_search_open, verify_resource_selected, verify_free_stamina_claimed, verify_safe_back, verify_stamina_sources_open, verify_training_started, verify_wood_dispatch_from_march, verify_ordinary_control_tried
-from .runtime_snapshot import AgentState, RuntimeSnapshotStore, is_fatal_stop
+from .runtime_snapshot import (
+    AgentState, RuntimeSnapshotStore, StopCategory, is_fatal_stop, state_for_stop_reason,
+)
 from .verifier import (verify_alliance_tech_opened, verify_alliance_tech_node_opened,
                      verify_alliance_tech_details_closed, verify_alliance_tech_contribution,
                      verify_daily_task_followed)
@@ -44,6 +48,12 @@ from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
 from .intel_pins import intel_pin_centers
 from .verifier import verify_research_node_inspected, verify_completed_training_camp_inspected
+from .verifier import (
+    verify_gather_hero_picker_open,
+    verify_gather_hero_picker_selected,
+    verify_gather_hero_removed,
+    verify_gather_specialist_assigned,
+)
 
 
 @dataclass(frozen=True)
@@ -280,6 +290,10 @@ class LiveRuntime:
         # verify_march_count_readable for the measurement.
         "CHECK_MARCH": verify_march_count_readable,
         "DISPATCH_MARCH": verify_wood_dispatch_from_march,
+        "CLEAR_GATHER_HEROES": verify_gather_hero_removed,
+        "OPEN_GATHER_HERO_PICKER": verify_gather_hero_picker_open,
+        "SELECT_GATHER_HERO": verify_gather_hero_picker_selected,
+        "ASSIGN_GATHER_HERO": verify_gather_specialist_assigned,
         "SELECT_BEAST_TARGET": verify_beast_target_selected,
         "SELECT_BEAST_TARGET_MAMMOTH": verify_beast_mammoth_target_selected,
         # The species-agnostic twin.  A skill with no entry here is never dispatched,
@@ -416,6 +430,10 @@ class LiveRuntime:
         sleeper: Callable[[float], None] = time.sleep,
         episode_store: EpisodeStore | None = None,
         goal_store: GoalStateStore | None = None,
+        global_scheduler_state_store: GlobalSchedulerStateStore | None = None,
+        role_catalog: Iterable[Mapping[str, Any]] = (),
+        role_switch_controller: Any | None = None,
+        role_switch_cost: float = 30.0,
         candidate_pool: CandidateAttemptPool | None = None,
         runtime_store: RuntimeSnapshotStore | None = None,
         resource_rotation: ResourceRotationStore | None = None,
@@ -436,6 +454,7 @@ class LiveRuntime:
         expected_lease_id: str = "",
         expected_after_version: str = "",
         latency_trace_path: Path | None = None,
+        fruitless_audit_path: Path | None = None,
         #: Who answers the on-demand question for a screen no skill can advance.
         #:
         #: Injected rather than built here for the same reason ``maa_adapter`` and ``routing``
@@ -455,6 +474,7 @@ class LiveRuntime:
     ) -> None:
         self.device = device
         self.latency_trace_path = Path(latency_trace_path) if latency_trace_path else None
+        self.fruitless_audit_path = Path(fruitless_audit_path) if fruitless_audit_path else None
         # The ADB device behind the fallback executor.  When MAA observation is
         # enabled ``device`` is the MaaExecutorAdapter, so without this the ADB
         # path would be gone and "fall back to ADB" would silently mean "fall back
@@ -503,6 +523,24 @@ class LiveRuntime:
         self._device_stop_reason = "DEVICE_NOT_CONNECTED"
         self.episode_store = episode_store
         self.goal_store = goal_store
+        self.global_scheduler_state_store = global_scheduler_state_store
+        self._fairness_store_path: Path | None = None
+        self.role_catalog = tuple(dict(row) for row in role_catalog if isinstance(row, Mapping))
+        self.role_switch_controller = role_switch_controller
+        self.role_switch_cost = max(0.0, float(role_switch_cost or 0.0))
+        self._multi_role_enabled = (
+            len(self.role_catalog) > 1
+            and role_switch_controller is not None
+            and str(execution_mode).upper() == "PRODUCTION"
+        )
+        self._role_identity_confirmed = not self._multi_role_enabled
+        self._role_identity_bootstrapped = False
+        self._role_catalog_by_id = {
+            str(row.get("role_id") or ""): row for row in self.role_catalog
+            if row.get("role_id")
+        }
+        # One central Scheduler per runtime. The executor is rebound for each atomic action.
+        self._scheduler: Scheduler | None = None
         self.goal_library = GoalLibrary()
         self.candidate_pool = candidate_pool
         self.runtime_store = runtime_store
@@ -663,6 +701,7 @@ class LiveRuntime:
     def _runtime(self, **changes) -> None:
         if self.runtime_store is not None:
             try:
+                changes.setdefault("role_id", self.role_id or None)
                 self.runtime_store.update(**changes)
             except (OSError, TypeError, ValueError):
                 pass
@@ -891,7 +930,7 @@ class LiveRuntime:
         whose own live evidence names the same event.  It cannot synthesize a goal, open a
         page, or transfer one account's event window to another account.
         """
-        role_id = str(getattr(self, "role_id", "") or "")
+        role_id = self._calendar_role_id()
         if not role_id:
             return {}
         try:
@@ -1015,7 +1054,9 @@ class LiveRuntime:
         from . import observation_store
 
         try:
-            return dict(observation_store.as_observation_input(observation_store.load()))
+            return dict(observation_store.as_observation_input(
+                observation_store.load(self._role_observation_store_path())
+            ))
         except Exception:  # noqa: BLE001 - a broken store means "nothing is fresh", never a crash
             return {}
 
@@ -1024,7 +1065,7 @@ class LiveRuntime:
         from . import observation_store
 
         try:
-            domains = (observation_store.load() or {}).get("domains") or {}
+            domains = (observation_store.load(self._role_observation_store_path()) or {}).get("domains") or {}
             reading = (domains.get("stamina") or {}).get("reading") or {}
             value = reading.get("current")
             return int(value) if isinstance(value, (int, float)) else None
@@ -1084,11 +1125,13 @@ class LiveRuntime:
         from . import observation_store
         from .goal_library import PANEL_ROUTINES, SWEEP_ROUTINES
 
+        store_path = self._role_observation_store_path()
+
         for routine in (*PANEL_ROUTINES, *SWEEP_ROUTINES):
             reading = getattr(world, routine.field, None)
             if reading:
                 try:
-                    observation_store.record(routine.field, reading, frame=frame)
+                    observation_store.record(routine.field, reading, frame=frame, path=store_path)
                 except Exception:  # noqa: BLE001 - observing must never fail a run
                     pass
         # The HUD gauge is read on many frames but is a *domain* like the others: the stamina goal
@@ -1096,9 +1139,201 @@ class LiveRuntime:
         # produced it or the goal disappears from the board whenever the gauge is off screen.
         if world.stamina:
             try:
-                observation_store.record("stamina", world.stamina, frame=frame)
+                observation_store.record("stamina", world.stamina, frame=frame, path=store_path)
             except Exception:  # noqa: BLE001
                 pass
+
+    def _calendar_role_id(self) -> str:
+        """Use role-scoped calendar state only when the current role is freshly confirmed."""
+        if (getattr(self, "_multi_role_enabled", False)
+                and not getattr(self, "_role_identity_confirmed", False)):
+            return ""
+        role_id = str(getattr(self, "role_id", "") or "")
+        if not role_id:
+            return ""
+        role_scope = str(getattr(self, "role_scope", "") or "").upper()
+        if role_scope and role_scope not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+            return ""
+        return role_id
+
+    def _role_observation_store_path(self) -> Path | None:
+        """Keep sticky panel readings separate by account in multi-role mode."""
+        role_id = self._calendar_role_id()
+        if not role_id or not self._multi_role_enabled:
+            return None
+        return Path(__file__).resolve().parents[1] / "learning" / "roles" / role_id / "observation_state.json"
+
+    def _activate_role_persistent_state(self, role_id: str) -> None:
+        """Bind account-specific counters after the current frame proves its role."""
+        if not self._multi_role_enabled or role_id not in self._role_catalog_by_id:
+            return
+        directory = Path(__file__).resolve().parents[1] / "learning" / "roles" / role_id
+        self.resource_rotation = ResourceRotationStore(directory / "resource_rotation.json")
+        self.stamina_supply = StaminaSupplyStore(directory / "stamina_supply.json")
+        self._fairness_store_path = directory / "goal_fairness.json"
+        self._fairness = goal_utility.load(self._fairness_store_path)
+
+    def _global_role_observations(
+        self,
+        world: WorldState,
+        goals: Iterable[Any],
+        decision: Decision,
+        *,
+        role_switch_cost: float | None = None,
+    ) -> tuple[Any, ...]:
+        """Build one current live row plus logical-only rows for every other role."""
+        if not self._multi_role_enabled or not self._calendar_role_id():
+            return ()
+        from .goal_library import GoalState, GoalStatus
+        from .scheduler import RoleObservation
+
+        moment = datetime.now(timezone.utc)
+        goals = tuple(goals)
+        effective_switch_cost = (self.role_switch_cost if role_switch_cost is None
+                                 else max(0.0, float(role_switch_cost)))
+        active_id = self._calendar_role_id()
+        snapshots = self.goal_store.read_roles() if self.goal_store is not None else {}
+        global_state = (self.global_scheduler_state_store.load()
+                        if self.global_scheduler_state_store is not None else None)
+        stored_roles = getattr(global_state, "roles", {}) if global_state is not None else {}
+        result: list[RoleObservation] = []
+
+        def cached_wakeup(value: Any, reference: datetime | None) -> datetime | None:
+            if isinstance(value, datetime):
+                return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+            text = str(value or "").strip()
+            if not text:
+                return None
+            try:
+                parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+                return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+            except ValueError:
+                pass
+            seconds = None
+            if text.isdigit():
+                seconds = int(text)
+            elif ":" in text and all(part.isdigit() for part in text.split(":")):
+                parts = [int(part) for part in text.split(":")]
+                if len(parts) == 2:
+                    seconds = parts[0] * 60 + parts[1]
+                elif len(parts) == 3:
+                    seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
+            return (reference + timedelta(seconds=max(0, seconds))
+                    if seconds is not None and reference is not None else None)
+
+        for role_id, identity in self._role_catalog_by_id.items():
+            if role_id == active_id:
+                active_waits: list[datetime] = []
+                for goal in goals:
+                    evidence = goal.evidence if isinstance(goal.evidence, Mapping) else {}
+                    candidates = [cached_wakeup(goal.retry_after, moment)]
+                    candidates.extend(cached_wakeup(evidence.get(key), moment) for key in (
+                        "next_action_at", "wait_until", "expected_finish_at",
+                    ))
+                    condition = str(evidence.get("condition") or "").lower()
+                    if (goal.status is GoalStatus.BLOCKED
+                            and condition in {"queue_busy", "camp_queue_busy"}
+                            and goal.remaining_seconds is not None):
+                        candidates.append(moment + timedelta(seconds=max(0, int(goal.remaining_seconds))))
+                    active_waits.extend(
+                        value for value in candidates if value is not None and value > moment
+                    )
+                result.append(RoleObservation(
+                    role_id=role_id,
+                    confirmed_role_id=active_id,
+                    world=world,
+                    observed_at=world.timestamp or moment,
+                    decision=decision,
+                    goals=tuple(goals),
+                    next_action_at=min(active_waits).isoformat() if active_waits else None,
+                    switch_cost=0.0,
+                ))
+                continue
+
+            snapshot = snapshots.get(role_id) if isinstance(snapshots, Mapping) else None
+            saved_role = stored_roles.get(role_id) if isinstance(stored_roles, Mapping) else None
+            saved_role = saved_role or {}
+            observed_at = ((snapshot or {}).get("observed_at")
+                           or getattr(saved_role, "last_observed_at", None)
+                           or identity.get("identity_observed_at"))
+            stamp = None
+            if observed_at:
+                try:
+                    stamp = datetime.fromisoformat(str(observed_at).replace("Z", "+00:00"))
+                    if stamp.tzinfo is None:
+                        stamp = stamp.replace(tzinfo=timezone.utc)
+                except (TypeError, ValueError):
+                    stamp = None
+            age_seconds = ((moment - stamp).total_seconds() if stamp else float("inf"))
+            parsed_goals: list[Any] = []
+            for row in (snapshot or {}).get("goals", ()):
+                if not isinstance(row, Mapping) or not row.get("goal_id"):
+                    continue
+                try:
+                    status = GoalStatus(str(row.get("status") or "UNKNOWN").upper())
+                except ValueError:
+                    status = GoalStatus.UNKNOWN
+                remaining = row.get("remaining_seconds")
+                if remaining is not None and age_seconds >= 0:
+                    remaining = max(0, int(remaining) - int(age_seconds))
+                values = {
+                    name: row.get(name)
+                    for name in (
+                        "completion", "reward_value", "daily_loss", "event_synergy",
+                        "development_value", "resource_cost", "risk", "retry_after",
+                        "evidence", "distance",
+                    )
+                    if row.get(name) is not None
+                }
+                parsed_goals.append(GoalState(
+                    goal_id=str(row["goal_id"]),
+                    status=status,
+                    remaining_seconds=remaining,
+                    available_skills=tuple(str(item) for item in (row.get("available_skills") or ())),
+                    **values,
+                ))
+            retry_times: list[datetime] = []
+            for goal in parsed_goals:
+                candidates = [cached_wakeup(goal.retry_after, stamp)]
+                evidence = goal.evidence if isinstance(goal.evidence, Mapping) else {}
+                candidates.extend(cached_wakeup(evidence.get(key), stamp) for key in (
+                    "next_action_at", "wait_until", "expected_finish_at",
+                ))
+                condition = str(evidence.get("condition") or "").lower()
+                if (goal.status is GoalStatus.BLOCKED
+                        and condition in {"queue_busy", "camp_queue_busy"}
+                        and goal.remaining_seconds is not None and stamp is not None):
+                    candidates.append(stamp + timedelta(seconds=max(0, int(goal.remaining_seconds))))
+                retry_times.extend(
+                    value for value in candidates if value is not None and value > moment
+                )
+            result.append(RoleObservation(
+                role_id=role_id,
+                confirmed_role_id=role_id,
+                world=None,
+                observed_at=observed_at,
+                goals=tuple(parsed_goals),
+                next_action_at=min(retry_times).isoformat() if retry_times
+                else getattr(saved_role, "next_action_at", None),
+                switch_cost=effective_switch_cost,
+                switch_blocked_until=getattr(saved_role, "blocked_until", None),
+                failure_streak=int(getattr(saved_role, "switch_failure_streak", 0) or 0),
+                needs_initial_refresh=(not snapshot or age_seconds > 30 * 60),
+            ))
+        return tuple(result)
+
+    def _measured_role_switch_cost(self, state: Any | None) -> float:
+        """Map observed median switch latency to the same explainable score penalty."""
+        samples = getattr(state, "role_switch_durations_ms", ()) if state is not None else ()
+        valid = sorted(float(value) for value in samples
+                       if isinstance(value, (int, float)) and float(value) >= 0)
+        if not valid:
+            return self.role_switch_cost
+        median_ms = valid[(len(valid) - 1) // 2]
+        # A second of real loading time is one score point, with the configured
+        # baseline protecting the first measured rounds and a cap preventing an
+        # unhealthy device from making account switching mathematically impossible.
+        return max(self.role_switch_cost, min(180.0, median_ms / 1000.0))
 
     def _record_goals(self, world: WorldState, frame: Path | str | None = None):
         """Discover this frame's goals, persist the board, and hand them back.
@@ -1112,13 +1347,67 @@ class LiveRuntime:
         world would only be a second chance for the two answers to disagree.
         """
         self._record_observations(world, frame=frame)
-        goals = self.goal_library.discover(world, observations=self._observations_for_engine())
-        if self.goal_store is None:
-            return goals
+        role_id = self._calendar_role_id()
+        calendar_snapshot = None
+        event_rows = world.events if isinstance(world.events, Mapping) else {}
+        live_calendar = event_rows.get("calendar")
+        if role_id and isinstance(live_calendar, Mapping) and live_calendar.get("recognized") is True:
+            calendar_snapshot = {
+                **dict(live_calendar),
+                "role_id": role_id,
+                "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
+            }
+        discover = self.goal_library.discover
+        discover_kwargs = {
+            "observations": self._observations_for_engine(),
+            "role_id": role_id,
+            "calendar_snapshot": calendar_snapshot,
+        }
+        # Preserve lightweight GoalLibrary adapters used by older integrations and
+        # deterministic runtime tests. The real GoalLibrary accepts the full context;
+        # adapters receive only the named parameters they implement.
         try:
-            self.goal_store.write(world, goals)
-        except (OSError, TypeError, ValueError):
+            parameters = inspect.signature(discover).parameters.values()
+            accepts_kwargs = any(item.kind is inspect.Parameter.VAR_KEYWORD for item in parameters)
+            accepted_names = {item.name for item in parameters}
+            if not accepts_kwargs:
+                discover_kwargs = {key: value for key, value in discover_kwargs.items()
+                                   if key in accepted_names}
+        except (TypeError, ValueError):
             pass
+        goals = discover(world, **discover_kwargs)
+        if self.goal_store is not None:
+            try:
+                self.goal_store.write(world, goals, role_id=role_id)
+            except (OSError, TypeError, ValueError):
+                pass
+            global_store = getattr(self, "global_scheduler_state_store", None)
+            if self._multi_role_enabled and role_id and global_store is not None:
+                try:
+                    summaries = [
+                        {
+                            "goal_id": goal.goal_id,
+                            "status": goal.status.value,
+                            "priority": None if goal.priority == float("-inf") else goal.priority,
+                            "remaining_seconds": goal.remaining_seconds,
+                            "available_skills": list(goal.available_skills),
+                            "completion": goal.completion,
+                            "distance": goal.distance,
+                            "retry_after": goal.retry_after,
+                            "evidence": dict(goal.evidence) if isinstance(goal.evidence, Mapping) else {},
+                        }
+                        for goal in goals
+                    ]
+                    global_store.record_role_observation(
+                        role_id=role_id,
+                        observed_at=world.timestamp or datetime.now(timezone.utc),
+                        page=world.page.value,
+                        page_confidence=world.confidence,
+                        goal_summaries=summaries,
+                        current_goal=str(getattr(self, "_committed_goal", "") or ""),
+                    )
+                except (OSError, TypeError, ValueError):
+                    pass
         return goals
 
     def _record_episode(
@@ -1133,6 +1422,9 @@ class LiveRuntime:
         step_id: int = 0,
         goal_id: str = "",
         goal_progress: bool | None = None,
+        attached_goal_ids: Iterable[str] = (),
+        goal_progress_by_id: Mapping[str, bool | None] | None = None,
+        completed_goal_ids: Iterable[str] = (),
         before_screenshot: Path | None = None,
         after_screenshot: Path | None = None,
     ) -> None:
@@ -1152,6 +1444,54 @@ class LiveRuntime:
             named = str((verification.evidence or {}).get("change") or "")
             if named:
                 observed_change = named
+        attached_ids = tuple(dict.fromkeys(
+            str(item).strip() for item in attached_goal_ids if str(item).strip()
+        ))
+        progress_by_goal = {
+            str(key): value if isinstance(value, bool) else None
+            for key, value in (goal_progress_by_id or {}).items()
+            if str(key).strip()
+        }
+        completed_ids = tuple(dict.fromkeys(
+            str(item).strip() for item in completed_goal_ids if str(item).strip()
+        ))
+        if self._multi_role_enabled and self._role_identity_confirmed:
+            verifier_result = (
+                "NOT_RUN" if verification is None else "PASS" if verification.ok else "FAIL"
+            )
+            failure_reason = (
+                str(verification.reason) if verification is not None and not verification.ok
+                else str(getattr(execution, "error", "") or "")
+            )
+            credited_ids = tuple(
+                item for item in attached_ids
+                if (progress_by_goal.get(item) is True or item in completed_ids)
+                and execution is not None and execution.executed
+                and verification is not None and verification.ok
+            )
+            try:
+                if self.global_scheduler_state_store is not None:
+                    outcome = ActionOutcome(
+                        action_id=(
+                            f"{getattr(getattr(self, 'capture_dir', None), 'name', '')}:{int(step_id)}"
+                        ),
+                        role_id=self._calendar_role_id(),
+                        skill_id=str(decision.skill),
+                        goal_id=str(goal_id or ""),
+                        attached_goal_ids=attached_ids,
+                        action_sent=bool(execution is not None and execution.executed),
+                        post_action_observed=after is not None,
+                        observed_change=observed_change,
+                        verifier_result=verifier_result,
+                        goal_progress_by_id=progress_by_goal,
+                        credited_goal_ids=credited_ids,
+                        completed_goal_ids=tuple(item for item in completed_ids if item in credited_ids),
+                        failure_reason=failure_reason,
+                    )
+                    self.global_scheduler_state_store.record_action_outcome(asdict(outcome))
+            except (OSError, TypeError, ValueError):
+                # Outcome telemetry must never cause a physical action to repeat.
+                pass
         # Folded before the episode store is consulted: what the control did is what
         # the *next* decision reads, so losing it because the evidence stream happens
         # to be switched off would be the worse of the two trades.
@@ -1233,6 +1573,9 @@ class LiveRuntime:
             episode_id=self.capture_dir.name,
             goal_id=goal_id,
             goal_progress=goal_progress,
+            attached_goal_ids=attached_ids,
+            goal_progress_by_id=progress_by_goal,
+            completed_goal_ids=completed_ids,
             step_id=step_id,
             before_screenshot=str(before_screenshot) if before_screenshot else "",
             after_screenshot=str(after_screenshot) if after_screenshot else "",
@@ -2328,8 +2671,10 @@ class LiveRuntime:
             )
 
     def _save_fairness(self) -> None:
+        if self._multi_role_enabled and not self._role_identity_confirmed:
+            return
         try:
-            goal_utility.save(self._fairness)
+            goal_utility.save(self._fairness, self._fairness_store_path)
         except Exception:  # noqa: BLE001 - a ledger write must never fail a run
             pass
 
@@ -2359,6 +2704,7 @@ class LiveRuntime:
         if focus is None:
             state = vision.observe(frame_path)
             self._record_live_event_reservation(state)
+            state = self._annotate_gather_formation(state, frame_path)
             return state
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
         page_hint = str(getattr(self, "_last_known_label", "") or "")
@@ -2390,11 +2736,89 @@ class LiveRuntime:
             )
             state = look(widen=True, reason="widening after an unnamed frame")
         self._record_live_event_reservation(state)
+        state = self._annotate_gather_formation(state, frame_path)
         return state
+
+    def _annotate_gather_formation(self, world: WorldState, frame_path: Path) -> WorldState:
+        """Attach current-frame hero identities with role-scoped availability."""
+        if world.page is Page.POPUP and world.popup == "HERO_PICKER":
+            if str(getattr(getattr(self, "brain", None), "current_goal", "") or "") == "GATHER_RESOURCE":
+                return self._annotate_gather_picker(world, frame_path)
+            return world
+        if world.page is not Page.MARCH:
+            return world
+        try:
+            from PIL import Image
+            from .formation import read_formation_hero_identities
+
+            with Image.open(frame_path) as opened:
+                observation = read_formation_hero_identities(opened.convert("RGB"))
+        except Exception as exc:  # optional portrait recognition must not break general observation
+            return replace(world, hero_troop={
+                **dict(world.hero_troop or {}),
+                "gather_formation": {
+                    "status": "UNAVAILABLE",
+                    "reason": f"PORTRAIT_READER_ERROR:{type(exc).__name__}",
+                    "source_frame": str(frame_path),
+                    "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
+                },
+            })
+        role_scope = str(getattr(self, "role_scope", "") or "").upper()
+        live_scope = role_scope in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+        record = {
+            **observation,
+            "role_id": str(getattr(self, "role_id", "") or "") if live_scope else None,
+            "role_scope": role_scope or "UNKNOWN",
+            "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
+            "source_frame": str(frame_path),
+            "resource_type": str(
+                world.resource_target or getattr(self, "_active_gather_resource", "") or ""
+            ).upper() or None,
+            "specialist_availability": "UNKNOWN",
+        }
+        return replace(world, hero_troop={**dict(world.hero_troop or {}), "gather_formation": record})
+
+    def _annotate_gather_picker(self, world: WorldState, frame_path: Path) -> WorldState:
+        """Match only the exact resource specialist on the current role's picker frame."""
+        from PIL import Image
+        from .hero_portraits import gather_hero_for_resource, match_picker_hero, picker_card_selected
+
+        role_scope = str(getattr(self, "role_scope", "") or "").upper()
+        live_scope = role_scope in {"LIVE_OBSERVED", "FRESH_RUNTIME"}
+        resource = str(world.resource_target or getattr(self, "_active_gather_resource", "") or "").upper()
+        target = gather_hero_for_resource(resource)
+        try:
+            with Image.open(frame_path) as opened:
+                image = opened.convert("RGB")
+            match = match_picker_hero(
+                image,
+                target or "",
+                picker_page_verified=world.page is Page.POPUP and world.popup == "HERO_PICKER",
+            ) if target else {"status": "UNKNOWN_RESOURCE", "hero_id": None}
+            selected = bool(match.get("status") == "MATCHED" and picker_card_selected(image, match))
+        except Exception as exc:
+            match = {"status": "READER_ERROR", "error": type(exc).__name__, "hero_id": target}
+            selected = False
+        picker = {
+            "open": True,
+            "resource_type": resource or None,
+            "hero_id": target,
+            "match_status": str(match.get("status") or "UNKNOWN"),
+            "specialist_availability": "SELECTABILITY_UNVERIFIED" if match.get("status") == "MATCHED" else "UNKNOWN",
+            "selected": selected,
+            "match": dict(match),
+            "source_frame": str(frame_path),
+            "observed_at": str(world.timestamp or datetime.now(timezone.utc).isoformat()),
+            "role_id": str(getattr(self, "role_id", "") or "") if live_scope else None,
+            "role_scope": role_scope or "UNKNOWN",
+        }
+        return replace(world, resource_target=resource or world.resource_target,
+                       hero_troop={**dict(world.hero_troop or {}), "hero_picker": picker})
 
     def _record_live_event_reservation(self, world: WorldState) -> None:
         """Persist or clear role-scoped event reservations from current client evidence."""
-        if not self.role_id:
+        role_id = self._calendar_role_id()
+        if not role_id:
             return
         events = world.events if isinstance(world.events, Mapping) else {}
         def event_seconds(value: object) -> int | None:
@@ -2459,7 +2883,7 @@ class LiveRuntime:
                 if seconds is not None and seconds > 0:
                     event_schedule.record_live_countdown(
                         schedules,
-                        role_id=self.role_id,
+                        role_id=role_id,
                         event_id=event_id,
                         seconds_to_start=seconds,
                         source="LIVE_CLIENT_EXPLICIT_START_COUNTDOWN",
@@ -2468,7 +2892,7 @@ class LiveRuntime:
                         now=observed,
                     )
                 event_schedule.record_live_window_observation(
-                    schedules, role_id=self.role_id, event_id=event_id,
+                    schedules, role_id=role_id, event_id=event_id,
                     state=window_state, source="LIVE_CLIENT_EVENT_WINDOW_OBSERVATION",
                     role=role, alliance=alliance, now=observed,
                 )
@@ -2672,6 +3096,117 @@ class LiveRuntime:
             except (TypeError, ValueError):
                 return None
             return (x_norm, y_norm) if 0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0 else None
+        if semantic == "OPEN_GATHER_HERO_PICKER":
+            if frame.page is not Page.MARCH or frame_path is None:
+                return None
+            observation = (frame.hero_troop or {}).get("gather_formation")
+            if not isinstance(observation, Mapping) or observation.get("source_frame") != str(frame_path):
+                return None
+            if observation.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            slots = [item for item in (observation.get("slots") or ()) if isinstance(item, Mapping)]
+            if len(slots) != 3 or any(item.get("state") != "EMPTY" for item in slots):
+                return None
+            from PIL import Image
+            from .hero_portraits import formation_slot_boxes
+            try:
+                with Image.open(frame_path) as opened:
+                    width, height = opened.size
+            except OSError:
+                return None
+            if width <= 0 or height <= 0:
+                return None
+            box = formation_slot_boxes((width, height))[0]
+            return ((box[0] + box[2] / 2) / width, (box[1] + box[3] / 2) / height)
+        if semantic == "PICK_EXACT_GATHER_HERO":
+            if frame.page is not Page.POPUP or frame.popup != "HERO_PICKER" or frame_path is None:
+                return None
+            picker = (frame.hero_troop or {}).get("hero_picker")
+            if not isinstance(picker, Mapping) or picker.get("source_frame") != str(frame_path):
+                return None
+            if picker.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            from PIL import Image
+            from .hero_portraits import gather_hero_for_resource, match_picker_hero
+            target = gather_hero_for_resource(str(resource or frame.resource_target or ""))
+            if not target or picker.get("hero_id") != target:
+                return None
+            try:
+                with Image.open(frame_path) as opened:
+                    result = match_picker_hero(opened.convert("RGB"), target, picker_page_verified=True)
+            except OSError:
+                return None
+            if result.get("status") != "MATCHED":
+                return None
+            point = result.get("tap_norm")
+            if not isinstance(point, (tuple, list)) or len(point) != 2:
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0 <= x_norm <= 1 and 0 <= y_norm <= 1 else None
+        if semantic == "ASSIGN_EXACT_GATHER_HERO":
+            if frame.page is not Page.POPUP or frame.popup != "HERO_PICKER" or frame_path is None:
+                return None
+            picker = (frame.hero_troop or {}).get("hero_picker")
+            if not isinstance(picker, Mapping) or picker.get("source_frame") != str(frame_path):
+                return None
+            if picker.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            from PIL import Image
+            from .hero_portraits import gather_hero_for_resource, match_picker_hero, picker_card_selected
+            target = gather_hero_for_resource(str(resource or frame.resource_target or ""))
+            if not target or picker.get("hero_id") != target:
+                return None
+            try:
+                with Image.open(frame_path) as opened:
+                    image = opened.convert("RGB")
+                    result = match_picker_hero(image, target, picker_page_verified=True)
+            except OSError:
+                return None
+            if result.get("status") != "MATCHED" or not picker_card_selected(image, result):
+                return None
+            ocr_service = self._ocr_service()
+            hit = find_printed_words(
+                frame_path,
+                ("派遣",),
+                ocr_service,
+                band={"x_norm": 0.45, "y_norm": 0.72, "w_norm": 0.48, "h_norm": 0.15},
+            ) if ocr_service is not None else None
+            point = hit.get("center_norm") if isinstance(hit, Mapping) else None
+            if not isinstance(point, (tuple, list)) or len(point) != 2:
+                return None
+            try:
+                x_norm, y_norm = float(point[0]), float(point[1])
+            except (TypeError, ValueError):
+                return None
+            return (x_norm, y_norm) if 0 <= x_norm <= 1 and 0 <= y_norm <= 1 else None
+        if semantic == "REMOVE_GATHER_HERO":
+            if frame.page is not Page.MARCH or frame_path is None:
+                return None
+            observation = (frame.hero_troop or {}).get("gather_formation")
+            if not isinstance(observation, Mapping) or observation.get("source_frame") != str(frame_path):
+                return None
+            if observation.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return None
+            from .hero_portraits import evaluate_gather_formation
+            from .hero_badge import remove_button_point
+            from PIL import Image
+            target_resource = resource or frame.resource_target or observation.get("resource_type")
+            decision = evaluate_gather_formation(str(target_resource or ""), observation)
+            slots = decision.get("remove_slots") or []
+            if decision.get("status") != "CLEANUP_REQUIRED" or not slots:
+                return None
+            try:
+                with Image.open(frame_path) as opened:
+                    point = remove_button_point(opened.convert("RGB"), int(slots[0]))
+                    width, height = opened.size
+            except (OSError, TypeError, ValueError):
+                return None
+            if not point or width <= 0 or height <= 0:
+                return None
+            return (point[0] / width, point[1] / height)
         if semantic == "RESOURCE_DYNAMIC":
             # The strip scrolls, so the tap target is derived from the
             # bracket anchor observed on the current frame (see
@@ -5014,8 +5549,88 @@ class LiveRuntime:
         self._goal_meters: dict[str, float] = {}
         self._committed_goal = ""
         gate = self._gate()
+        run_started_at = datetime.now(timezone.utc)
+        run_id = f"{run_started_at.strftime('%Y%m%dT%H%M%S%fZ')}_{self.capture_dir.name}"
+        audit_pages: list[dict[str, Any]] = []
+        audit_starting_page: str | None = None
+        audit_starting_goal: str | None = None
+        audit_starting_priority: float | None = None
+
+        def connected_state(target) -> bool | None:
+            status_reader = getattr(target, "status", None)
+            if not callable(status_reader):
+                return None
+            try:
+                status = status_reader()
+                value = getattr(status, "connected", None)
+                return bool(value) if value is not None else None
+            except Exception:  # noqa: BLE001 - diagnostics must never affect a run
+                return None
+
+        def append_fruitless_audit(reason: str) -> None:
+            if self.fruitless_audit_path is None or reason != self.NOTHING_LEFT_TO_LOOK_AT:
+                return
+            try:
+                last_page = audit_pages[-1] if audit_pages else {}
+                final_step = steps[-1] if steps else None
+                last_decision = final_step.decision if final_step is not None else None
+                category, _state = state_for_stop_reason(
+                    reason,
+                    decision_skill=getattr(last_decision, "skill", None),
+                    action_executed=bool(
+                        final_step is not None
+                        and final_step.execution is not None
+                        and final_step.execution.executed
+                    ),
+                    verifier_failed=any(
+                        step.verification is not None and not step.verification.ok for step in steps
+                    ),
+                )
+                latest = last_page.get("observations", {})
+                row = {
+                    "run_id": run_id,
+                    "started_at": run_started_at.isoformat(),
+                    "ended_at": datetime.now(timezone.utc).isoformat(),
+                    "role_id": self.role_id or None,
+                    "goal_id": audit_starting_goal,
+                    "goal_priority": audit_starting_priority,
+                    "starting_page": audit_starting_page,
+                    "visited_pages": list(dict.fromkeys(
+                        str(item.get("page", "UNKNOWN")) for item in audit_pages
+                    )),
+                    "per_page": audit_pages,
+                    "scheduler": {
+                        "runnable_goals": last_page.get("scheduler", {}).get("runnable_goals", []),
+                        "selected_goal": last_page.get("scheduler", {}).get("selected_goal"),
+                        "alternatives": last_page.get("scheduler", {}).get("alternatives", []),
+                        "switch_task_possible": last_page.get("scheduler", {}).get("switch_task_possible", False),
+                        "wait_reason": last_page.get("scheduler", {}).get("wait_reason"),
+                    },
+                    "queues": {
+                        key: latest.get(key)
+                        for key in ("march", "building", "research", "training")
+                    },
+                    "environment": {
+                        "device_connected": connected_state(self.device),
+                        "maa_available": self.maa_adapter is not None,
+                        "adb_available": connected_state(self.adb_device),
+                    },
+                    "final_reason": reason,
+                    "stop_category": category.value,
+                }
+                target = self.fruitless_audit_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                encoded = (json.dumps(row, ensure_ascii=False, default=str, separators=(",", ":")) + "\n")
+                fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+                try:
+                    os.write(fd, encoded.encode("utf-8"))
+                finally:
+                    os.close(fd)
+            except Exception:  # noqa: BLE001 - an audit must never alter gameplay
+                pass
 
         def finish(reason: str) -> LiveRun:
+            append_fruitless_audit(reason)
             # One write per run, not one per step: the ledger is folded in memory as
             # each step is recorded and persisted here, where the run has a single
             # exit.  A per-step rewrite of a JSON file would put disk I/O inside the
@@ -5165,7 +5780,8 @@ class LiveRuntime:
         # cannot outlive the fight it was armed for.
         self._fight_resolving = False
         self._runtime(agent_state=AgentState.AUTO_RUNNING.value, runtime_thread_alive=True,
-                      scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None)
+                      scheduler_loop_alive=True, last_fatal_error=None, stop_reason=None,
+                      stop_category=None)
 
         previous_action_end: float | None = None
         for index in range(1, max_actions + 1):
@@ -5183,6 +5799,7 @@ class LiveRuntime:
                     pass
             ocr_service = self._ocr_service()
             ocr_before_ms = float(getattr(ocr_service, "timing_total_ms", 0.0))
+            parse_before_ms = float(getattr(ocr_service, "timing_parse_ms", 0.0))
             ocr_before_calls = int(getattr(ocr_service, "timing_calls", 0))
             ocr_before_hits = int(getattr(ocr_service, "timing_cache_hits", 0))
             # The single-UI-owner boundary (operator §8/§19), checked at the only moment
@@ -5223,9 +5840,66 @@ class LiveRuntime:
                 return finish(reason)
             phase_started = time.monotonic()
             before_path = self._capture_path(index, "before")
-            latency["frame_capture_ms"] = (time.monotonic() - phase_started) * 1000
+            latency["capture_ms"] = (time.monotonic() - phase_started) * 1000
             if self._device_lost(self.device.screenshot, before_path):
                 return finish(self._device_stop_reason)
+            if self._multi_role_enabled:
+                observed_identity = self.role_switch_controller.identify_current_role(before_path)
+                if observed_identity is None:
+                    reason = "ROLE_IDENTITY_UNCONFIRMED"
+                    self._runtime(
+                        agent_state=AgentState.IDLE.value,
+                        current_skill="ROLE_IDENTITY_REFRESH",
+                        reason="current frame did not uniquely match an enabled role avatar",
+                        next_action="reobserve before any role-scoped action",
+                        stop_reason=reason,
+                    )
+                    print(f"[global-role] {reason}; no input will be sent", flush=True)
+                    return finish(reason)
+                if observed_identity is not None:
+                    observed_role_id, avatar_score = observed_identity
+                    if not self._role_identity_bootstrapped:
+                        self.role_id = observed_role_id
+                        identity = self._role_catalog_by_id.get(observed_role_id, {})
+                        self.role_scope = "FRESH_RUNTIME"
+                        self._role_identity_confirmed = True
+                        self._role_identity_bootstrapped = True
+                        self._activate_role_persistent_state(observed_role_id)
+                        state_store = self.global_scheduler_state_store
+                        if state_store is not None:
+                            state_store.recover_after_restart(
+                                actual_role_id=observed_role_id,
+                                actual_role_name=str(identity.get("display_name") or identity.get("role_name") or ""),
+                                observed_at=datetime.now(timezone.utc),
+                            )
+                        print(
+                            f"[global-role] current identity matched live avatar: {observed_role_id} "
+                            f"(score={avatar_score:.3f}); all role live state starts stale",
+                            flush=True,
+                        )
+                    elif observed_role_id != self._calendar_role_id():
+                        # The one-device lease should make an in-process account
+                        # change impossible. If it happens anyway, invalidate all
+                        # frame-derived state and let the lifecycle start a fresh
+                        # runtime under the newly observed role.
+                        self.role_id = observed_role_id
+                        self.role_scope = "FRESH_RUNTIME"
+                        self._activate_role_persistent_state(observed_role_id)
+                        if self.global_scheduler_state_store is not None:
+                            self.global_scheduler_state_store.recover_after_restart(
+                                actual_role_id=observed_role_id,
+                                actual_role_name=str(self._role_catalog_by_id.get(observed_role_id, {}).get("display_name") or ""),
+                                observed_at=datetime.now(timezone.utc),
+                            )
+                        reason = f"ROLE_IDENTITY_CHANGED:{observed_role_id}"
+                        self._runtime(
+                            agent_state=AgentState.IDLE.value,
+                            current_skill="ROLE_IDENTITY_REFRESH",
+                            reason="live role avatar changed during one runtime session",
+                            next_action="restart and rebuild this role WorldState before dispatch",
+                            stop_reason=reason,
+                        )
+                        return finish(reason)
             phase_started = time.monotonic()
             before = self._observe(before_path)
             latency["reobserve_ms"] = (time.monotonic() - phase_started) * 1000
@@ -5253,6 +5927,8 @@ class LiveRuntime:
                 })
             self._sync_stamina_supply(before)
             planned_resource = self.resource_rotation.target(before.resources) if self.resource_rotation else "WOOD"
+            if str(getattr(self.brain, "current_goal", "") or "") == "GATHER_RESOURCE":
+                self._active_gather_resource = planned_resource
             if before.page.value in {"MAP", "RESOURCE_DETAIL", "MARCH"}:
                 before = replace(before, resource_target=planned_resource)
             self._runtime(last_tick_time=datetime.now(timezone.utc).isoformat(),
@@ -5334,6 +6010,205 @@ class LiveRuntime:
                 leave = self._deferral_replan(before, deferrals, best_goal)
             decision = leave if leave is not None else self.brain.decide(before, self.registry)
             decision = self._stop_instead_of_looking_again(before, decision, best_goal)
+            global_credited_goal_ids: tuple[str, ...] = ()
+            if self._multi_role_enabled and self._role_identity_confirmed:
+                active_role_id = self._calendar_role_id()
+                global_store = self.global_scheduler_state_store
+                if self._scheduler is None:
+                    # Arbitration and execution share this one Scheduler instance.
+                    # It receives its real step-scoped executor below before tick().
+                    self._scheduler = Scheduler(
+                        self.brain, self.registry, Executor(), self.candidate_pool,
+                        global_state_store=global_store,
+                    )
+                state = global_store.load() if global_store is not None else None
+                observations = self._global_role_observations(
+                    before, goals, decision,
+                    role_switch_cost=self._measured_role_switch_cost(state),
+                )
+                selection = self._scheduler.select_global(
+                    observations,
+                    current_role_id=active_role_id,
+                    now=datetime.now(timezone.utc),
+                    last_switch_at=getattr(state, "last_role_switch_at", None),
+                    # A switch is already an action boundary. Candidate exploration
+                    # accounting belongs to Scheduler.tick and must happen once.
+                    mark_candidate_attempts=False,
+                )
+                if selection.role_id and selection.role_id != active_role_id:
+                    held = self.device_lease.holder() if self.device_lease is not None else None
+                    if (held is not None and held.owner != OWNER_GAMEPLAY
+                            and not self._owns_the_lease(held)):
+                        switch_reason = f"ROLE_SWITCH_REFUSED_DEVICE_LEASE:{held.owner}"
+                        print(f"[global-role] {switch_reason}; keep current role", flush=True)
+                    else:
+                        switch_result = self.role_switch_controller.switch_to(
+                            source_role_id=active_role_id,
+                            target_role_id=selection.role_id,
+                            reason=selection.selection_reason,
+                        )
+                        if switch_result.ok:
+                            reason = f"ROLE_SWITCHED_TO:{selection.role_id}"
+                            print(
+                                f"[global-role] {selection.selection_reason}; verified in "
+                                f"{switch_result.elapsed_seconds:.1f}s; restarting for a fresh "
+                                f"{selection.role_id} observation",
+                                flush=True,
+                            )
+                            self._runtime(
+                                agent_state=AgentState.IDLE.value,
+                                current_goal="GLOBAL_ROLE_ARBITRATION",
+                                current_skill="ROLE_SWITCH",
+                                reason=selection.selection_reason,
+                                next_action="restart and observe the confirmed target role",
+                                stop_reason=reason,
+                            )
+                            return finish(reason)
+                        switch_reason = f"ROLE_SWITCH_FAILED:{selection.role_id}:{switch_result.reason}"
+                        print(f"[global-role] {switch_reason}; stop before using the pre-switch frame", flush=True)
+                        if global_store is not None:
+                            try:
+                                global_store.record_decision(decision={
+                                    "decision": "ROLE_SWITCH_FAILED",
+                                    "current_role_id": active_role_id,
+                                    "selected_role_id": selection.role_id,
+                                    "selected_goal_id": selection.goal_id,
+                                    "selected_skill_id": selection.requested_skill,
+                                    "reason": switch_reason,
+                                    "scheduler_reason": selection.selection_reason,
+                                    "evidence": list(switch_result.evidence),
+                                })
+                            except (OSError, TypeError, ValueError):
+                                pass
+                        self._runtime(
+                            agent_state=AgentState.IDLE.value,
+                            current_goal="GLOBAL_ROLE_ARBITRATION",
+                            current_skill="ROLE_SWITCH",
+                            reason=switch_reason,
+                            next_action="reobserve after the target role switch cooldown",
+                            stop_reason=switch_reason,
+                        )
+                        # The controller may have left the client in settings or an
+                        # intermediate login page. Never execute a decision built
+                        # from the screenshot captured before the failed transition.
+                        return finish(switch_reason)
+                elif selection.decision.reason in {
+                    "GLOBAL_WAIT", "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
+                    "GLOBAL_CANDIDATE_GENERATION_GAP",
+                    "GLOBAL_REFRESH_REQUIRED_NO_SAFE_CANDIDATE",
+                } and selection.index is None:
+                    reason = selection.decision.reason
+                    self._runtime(
+                        agent_state=AgentState.IDLE.value,
+                        current_goal="GLOBAL_SCHEDULER",
+                        current_skill=reason,
+                        reason=selection.selection_reason,
+                        next_action=selection.next_wakeup or "bounded global refresh",
+                        stop_reason=reason,
+                    )
+                    print(
+                        f"[global-role] {reason}; wake={selection.next_wakeup or 'bounded refresh'}; "
+                        f"{selection.selection_reason}",
+                        flush=True,
+                    )
+                    return finish(reason)
+                elif selection.role_id == active_role_id and selection.index is not None:
+                    decision = selection.decision
+                    global_credited_goal_ids = selection.credited_goal_ids
+                    if selection.goal_id:
+                        chosen_goal = next(
+                            (goal for goal in goals if goal.goal_id == selection.goal_id), None
+                        )
+                        if chosen_goal is not None:
+                            best_goal = chosen_goal
+                            self._committed_goal = chosen_goal.goal_id
+            attached_goal_ids = tuple(dict.fromkeys((
+                *global_credited_goal_ids,
+                *(
+                    str(goal.goal_id) for goal in goals
+                    if decision.skill in (getattr(goal, "available_skills", ()) or ())
+                ),
+                *((best_goal.goal_id,) if best_goal is not None else ()),
+            )))
+            if audit_starting_page is None:
+                audit_starting_page = before.page.value
+                audit_starting_goal = best_goal.goal_id if best_goal is not None else None
+                audit_starting_priority = float(best_goal.priority) if best_goal is not None else None
+            runnable_rows = [
+                {"goal_id": item[0].goal_id, "priority": float(item[0].priority)}
+                for item in board
+            ]
+            selected_id = best_goal.goal_id if best_goal is not None else None
+            selectable_ids = {goal.goal_id for goal in selectable_goals}
+            rejected_rows = [
+                {
+                    "goal_id": item.goal_id,
+                    "capability": item.capability,
+                    "state": item.state,
+                    "reason": item.reason,
+                    "source": item.source,
+                }
+                for item in deferrals
+            ]
+            deferred_ids = {str(item.get("goal_id") or "") for item in rejected_rows}
+            for goal in goals:
+                if goal.goal_id in selectable_ids or goal.goal_id in deferred_ids:
+                    continue
+                rejected_rows.append({
+                    "goal_id": goal.goal_id,
+                    "capability": "",
+                    "state": str(getattr(goal.status, "value", goal.status)),
+                    "reason": (
+                        "policy_disabled" if not self._policy_allows(goal.goal_id)
+                        else "already_yielded_or_not_selectable"
+                    ),
+                    "source": "RUNTIME_SELECTION",
+                })
+            candidate_rows = [
+                {"goal_id": goal.goal_id, "skill": str(skill),
+                 "goal_status": str(getattr(goal.status, "value", goal.status)),
+                 "priority": float(goal.priority)}
+                for goal in goals for skill in goal.available_skills
+            ]
+            page_audit: dict[str, Any] = {
+                "page": before.page.value,
+                "confidence": float(before.confidence),
+                "screenshot_path": str(before_path),
+                "goal_id": best_goal.goal_id if best_goal is not None else None,
+                "goal_priority": float(best_goal.priority) if best_goal is not None else None,
+                "observations": {
+                    "resources": before.resources,
+                    "marches": [str(getattr(item, "value", item)) for item in before.marches],
+                    "march_used": before.march_used,
+                    "march_max": before.march_max,
+                    "building": before.building,
+                    "research": before.research,
+                    "training": before.training,
+                    "camps": before.camps,
+                    "events": before.events,
+                    "daily": before.daily,
+                    "mail": before.mail,
+                    "alliance": before.alliance,
+                    "red_dots": before.red_dots,
+                    "queues": before.queues,
+                },
+                "candidate_actions": candidate_rows,
+                "rejected_actions": rejected_rows,
+                "rejection_reasons": list(dict.fromkeys(str(item["reason"]) for item in rejected_rows)),
+                "attempted_skill": None,
+                "verifier_result": {"status": "NOT_ATTEMPTED", "reason": decision.reason},
+                "scheduler": {
+                    "runnable_goals": runnable_rows,
+                    "selected_goal": selected_id,
+                    "alternatives": [row["goal_id"] for row in runnable_rows if row["goal_id"] != selected_id],
+                    "switch_task_possible": len(runnable_rows) > 1,
+                    "wait_reason": decision.reason,
+                    "deferred_goals": rejected_rows,
+                },
+            }
+            audit_pages.append(page_audit)
+            page_audit["attempted_skill"] = decision.skill
+            page_audit["attempted_reason"] = decision.reason
             self._runtime(agent_state=AgentState.GOAL_RUNNING.value,
                           current_goal=self._step_goal(best_goal),
                           current_skill=decision.skill, reason=decision.reason,
@@ -5464,7 +6339,11 @@ class LiveRuntime:
                 ):
                     continue
                 steps.append(LiveStep(index, decision, None, before, None, None))
-                self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(decision.reason) else AgentState.DEGRADED.value,
+                page_audit["verifier_result"] = {"status": "NOT_ATTEMPTED", "reason": decision.reason}
+                category, stop_state = state_for_stop_reason(
+                    decision.reason, decision_skill=decision.skill, action_executed=False,
+                )
+                self._runtime(agent_state=stop_state.value, stop_category=category.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=decision.reason,
                               last_fatal_error=decision.reason if is_fatal_stop(decision.reason) else None)
                 return finish(decision.reason)
@@ -5656,11 +6535,20 @@ class LiveRuntime:
             # free-stamina once-per-run flag), so a second call for the same
             # frame answers differently and the verifier then judges a skill the
             # step never ran.  See ``Scheduler.tick`` for the live evidence.
-            latency["scheduler_select_ms"] = (time.monotonic() - selection_started) * 1000
+            latency["decision_ms"] = (time.monotonic() - selection_started) * 1000
             phase_started = time.monotonic()
-            tick = Scheduler(self.brain, self.registry, executor, self.candidate_pool).tick(before, decision)
+            if self._scheduler is None:
+                self._scheduler = Scheduler(
+                    self.brain, self.registry, executor, self.candidate_pool,
+                    global_state_store=getattr(self, "global_scheduler_state_store", None),
+                )
+            else:
+                self._scheduler.executor = executor
+            tick = self._scheduler.tick(before, decision)
             latency["scheduler_tick_ms"] = (time.monotonic() - phase_started) * 1000
-            latency["maa_execute_ms"] = (
+            page_audit["attempted_skill"] = tick.decision.skill
+            page_audit["attempted_reason"] = tick.decision.reason
+            latency["maa_ms"] = (
                 float(tick.execution.latency_ms)
                 if tick.execution is not None and tick.execution.latency_ms is not None else None
             )
@@ -5671,6 +6559,8 @@ class LiveRuntime:
                     after=None, verification=None, started_at=started_at,
                     step_id=index,
                     goal_id=self._step_goal(best_goal),
+                    attached_goal_ids=attached_goal_ids,
+                    goal_progress_by_id={goal_id: None for goal_id in attached_goal_ids},
                     # Nothing ran, so there is no after-frame for ``progress_moved``
                     # to measure and no verifier verdict either -- but the goal
                     # still did not advance, and this field is what feeds
@@ -5688,6 +6578,18 @@ class LiveRuntime:
                 )
                 steps.append(LiveStep(index, tick.decision, tick.execution, before, None, None))
                 reason = tick.execution.error if tick.execution else "NO_EXECUTION"
+                page_audit["verifier_result"] = {"status": "NOT_ATTEMPTED", "reason": str(reason)}
+                if tick.execution is None or not tick.execution.executed:
+                    page_audit["rejected_actions"].append({
+                        "goal_id": selected_id,
+                        "skill": tick.decision.skill,
+                        "state": "REJECTED",
+                        "reason": str(reason),
+                        "source": "EXECUTOR",
+                    })
+                    page_audit["rejection_reasons"] = list(dict.fromkeys(
+                        [*page_audit["rejection_reasons"], str(reason)]
+                    ))
                 # Recorded so the guard before the executor can refuse a *second* derivation of the
                 # same control.  ``_failed_controls`` cannot serve here: nothing was tried, so no
                 # verifier produced a verdict, and the six refusals this runtime names itself
@@ -5726,10 +6628,15 @@ class LiveRuntime:
                 ):
                     self._runtime(agent_state=AgentState.DEGRADED.value, stop_reason=reason)
                     continue
-                self._runtime(agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(reason) else AgentState.DEGRADED.value,
+                category, stop_state = state_for_stop_reason(
+                    reason, decision_skill=tick.decision.skill, action_executed=False,
+                )
+                self._runtime(agent_state=stop_state.value, stop_category=category.value,
                               runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=reason,
                               last_fatal_error=reason if is_fatal_stop(reason) else None)
                 return finish(tick.execution.error if tick.execution else "NO_EXECUTION")
+
+            page_audit["action_sent"] = bool(tick.execution.executed)
 
             bear_reading = before.events.get("bear") if isinstance(before.events, dict) else None
             settle_policy = choose_settle_policy(
@@ -5757,7 +6664,7 @@ class LiveRuntime:
             latency["settle_first_wait_ms"] = (time.monotonic() - phase_started) * 1000
             phase_started = time.monotonic()
             after_path = self._capture_path(index, "after")
-            latency["frame_capture_ms"] = (latency.get("frame_capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
+            latency["capture_ms"] = (latency.get("capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
             if self._device_lost(self.device.screenshot, after_path):
                 return finish(self._device_stop_reason)
             frame_changed, frame_change_fraction = FrameChangeProbe(before_path).changed(after_path)
@@ -5771,11 +6678,11 @@ class LiveRuntime:
                 latency["settle_retry_wait_ms"] = (time.monotonic() - phase_started) * 1000
                 phase_started = time.monotonic()
                 retry_path = self._capture_path(index, "after", suffix="settle_retry")
-                latency["frame_capture_ms"] = (latency.get("frame_capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
+                latency["capture_ms"] = (latency.get("capture_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
                 if self._device_lost(self.device.screenshot, retry_path):
                     return finish(self._device_stop_reason)
                 after_path = retry_path
-            latency["post_action_wait_ms"] = latency["settle_first_wait_ms"] + latency["settle_retry_wait_ms"]
+            latency["settle_ms"] = latency["settle_first_wait_ms"] + latency["settle_retry_wait_ms"]
             phase_started = time.monotonic()
             after = self._observe(after_path)
             latency["reobserve_ms"] = (latency.get("reobserve_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
@@ -5791,7 +6698,7 @@ class LiveRuntime:
                 self.device.press_back()
                 phase_started = time.monotonic()
                 self.sleeper(settle_retry_wait)
-                latency["post_action_wait_ms"] += (time.monotonic() - phase_started) * 1000
+                latency["settle_ms"] += (time.monotonic() - phase_started) * 1000
                 recovery_path = self._capture_path(index, "after", suffix=f"payment_offer_closed_{offer_recovery}")
                 if self._device_lost(self.device.screenshot, recovery_path):
                     return finish(self._device_stop_reason)
@@ -5803,6 +6710,12 @@ class LiveRuntime:
             goals_after = self._record_goals(after, frame=after_path)
             phase_started = time.monotonic()
             verification = verify_current_step(before, after)
+            page_audit["verifier_result"] = {
+                "status": "PASS" if verification.ok else "FAIL",
+                "ok": bool(verification.ok),
+                "reason": verification.reason,
+                "page_after": after.page.value,
+            }
             latency["verifier_ms"] = (time.monotonic() - phase_started) * 1000
             for refresh in range(1, self.observation_retries + 1):
                 # A known page can still be an intermediate animation/frame.
@@ -5813,7 +6726,7 @@ class LiveRuntime:
                     break
                 phase_started = time.monotonic()
                 self.sleeper(settle_retry_wait)
-                latency["post_action_wait_ms"] += (time.monotonic() - phase_started) * 1000
+                latency["settle_ms"] += (time.monotonic() - phase_started) * 1000
                 refresh_path = self._capture_path(index, "after", suffix=f"refresh_{refresh}")
                 if self._device_lost(self.device.screenshot, refresh_path):
                     return finish(self._device_stop_reason)
@@ -5824,6 +6737,12 @@ class LiveRuntime:
                 goals_after = self._record_goals(after, frame=refresh_path)
                 phase_started = time.monotonic()
                 verification = verify_current_step(before, after)
+                page_audit["verifier_result"] = {
+                    "status": "PASS" if verification.ok else "FAIL",
+                    "ok": bool(verification.ok),
+                    "reason": verification.reason,
+                    "page_after": after.page.value,
+                }
                 latency["verifier_ms"] = (latency.get("verifier_ms") or 0.0) + (time.monotonic() - phase_started) * 1000
                 # The episode must point at the frame its recorded ``after``
                 # state was actually read from.  ``after_path`` used to stay on
@@ -5860,12 +6779,22 @@ class LiveRuntime:
             # failure, and counting it would penalise a goal for the camera, not for
             # itself.  Bounded in ``goal_utility``, so this lowers a candidate and never
             # removes it: a starved goal must still be able to come back (§八E).
-            progress = progress_moved(self._goal_meters, goals_after, step_goal)
-            if step_goal:
-                row = goal_utility.entry(self._fairness, str(step_goal))
-                if progress is True:
+            goal_progress_by_id = {
+                attached_id: progress_moved(self._goal_meters, goals_after, attached_id)
+                for attached_id in attached_goal_ids
+            }
+            completed_goal_ids = tuple(
+                str(goal.goal_id) for goal in goals_after
+                if str(goal.goal_id) in attached_goal_ids
+                and str(getattr(getattr(goal, "status", ""), "value", getattr(goal, "status", ""))).upper()
+                == "COMPLETE"
+            )
+            progress = goal_progress_by_id.get(step_goal)
+            for attached_id, attached_progress in goal_progress_by_id.items():
+                row = goal_utility.entry(self._fairness, attached_id)
+                if attached_progress is True:
                     row.no_progress_streak = 0
-                elif progress is False:
+                elif attached_progress is False:
                     row.no_progress_streak += 1
             phase_started = time.monotonic()
             self._record_episode(
@@ -5873,6 +6802,9 @@ class LiveRuntime:
                 after=after, verification=verification, started_at=started_at,
                 step_id=index,
                 goal_id=step_goal,
+                attached_goal_ids=attached_goal_ids,
+                goal_progress_by_id=goal_progress_by_id,
+                completed_goal_ids=completed_goal_ids,
                 # The verifier passed means the action landed.  This says whether the
                 # *goal* moved, and the two are not the same statement: 58 episodes
                 # passed their verifier while stamina sat at 457 (2026-09-18).
@@ -5881,6 +6813,9 @@ class LiveRuntime:
             )
             latency["episode_write_ms"] = (time.monotonic() - phase_started) * 1000
             latency["ocr_ms"] = max(0.0, float(getattr(ocr_service, "timing_total_ms", 0.0)) - ocr_before_ms)
+            latency["parse_ms"] = max(
+                0.0, float(getattr(ocr_service, "timing_parse_ms", 0.0)) - parse_before_ms
+            )
             latency["total_step_ms"] = (time.monotonic() - latency_started) * 1000
             if self.latency_trace_path is not None:
                 action_latency.append(self.latency_trace_path, {
@@ -6094,16 +7029,20 @@ class LiveRuntime:
                         verifier=verification.reason,
                     )
                     continue
-                self._runtime(agent_state=AgentState.DEGRADED.value, runtime_thread_alive=False,
+                self._runtime(agent_state=AgentState.DEGRADED.value,
+                              stop_category=StopCategory.SYSTEM_FAILURE.value,
+                              runtime_thread_alive=False,
                               scheduler_loop_alive=False, stop_reason=verification.reason)
                 return finish(verification.reason)
             if decision.skill == "DISPATCH_MARCH" and self.resource_rotation is not None:
                 self.resource_rotation.completed(planned_resource)
             if decision.skill == stop_after_skill:
                 self._runtime(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
-                              scheduler_loop_alive=False, stop_reason="TARGET_SKILL_VERIFIED")
+                              scheduler_loop_alive=False, stop_reason="TARGET_SKILL_VERIFIED",
+                              stop_category=StopCategory.COMPLETED.value)
                 return finish("TARGET_SKILL_VERIFIED")
 
         self._runtime(agent_state=AgentState.IDLE.value, runtime_thread_alive=False,
-                      scheduler_loop_alive=False, stop_reason="MAX_ACTIONS_REACHED")
+                      scheduler_loop_alive=False, stop_reason="MAX_ACTIONS_REACHED",
+                      stop_category=StopCategory.COMPLETED.value)
         return finish("MAX_ACTIONS_REACHED")

@@ -332,10 +332,37 @@ def main() -> int:
     # and that fact must stay visible.  Filling it from config or a default is what let the
     # window print a role nobody had observed.
     from winter_agent_v2.state_truth import TruthAudit
+    from winter_agent_v2.global_scheduler_state import GlobalSchedulerStateStore
+    from winter_agent_v2.role_switch_controller import RoleSwitchController, load_role_catalog
 
     role = TruthAudit(ROOT).report().by_name("current_role")
     role_id = role.role_id if role is not None else ""
     role_scope = role.status if role is not None else ""
+    global_scheduler_state_store = GlobalSchedulerStateStore(
+        ROOT / "learning/global_scheduler_state.json"
+    )
+    role_catalog = (
+        load_role_catalog(ROOT / "knowledge/roles/role_inventory.json")
+        if args.execution_mode == PRODUCTION_MODE else []
+    )
+    if role_catalog:
+        global_scheduler_state_store.register_role_catalog(role_catalog)
+        persisted_role = global_scheduler_state_store.load().active_role_id
+        if persisted_role in {str(row.get("role_id") or "") for row in role_catalog}:
+            # This is only a startup hint. Live avatar matching replaces it before
+            # role-scoped observations or any action can be used.
+            role_id = persisted_role
+            role_scope = "FRESH_RUNTIME"
+    role_switch_controller = (
+        RoleSwitchController(
+            root=ROOT,
+            device=observation_device,
+            vision=vision,
+            state_store=global_scheduler_state_store,
+            role_catalog=role_catalog,
+        )
+        if len(role_catalog) > 1 else None
+    )
     print(f"[role] {role_id or 'unscoped'} ({role_scope or 'UNKNOWN'})", flush=True)
     # Who plans the next UI action on a screen no registered skill can advance.
     #
@@ -363,6 +390,7 @@ def main() -> int:
         )
     result = LiveRuntime(
         latency_trace_path=ROOT / "learning/action_latency.jsonl",
+        fruitless_audit_path=ROOT / "learning/fruitless_run_audit.jsonl",
         device=observation_device,
         adb_device=device,
         maa_adapter=maa_adapter,
@@ -381,6 +409,9 @@ def main() -> int:
         ),
         episode_store=EpisodeStore(ROOT / "learning/episodes.jsonl", limit=int(config.get("retention", {}).get("episode_limit", 10000))),
         goal_store=GoalStateStore(ROOT / "learning/goal_state.json"),
+        global_scheduler_state_store=global_scheduler_state_store,
+        role_catalog=role_catalog,
+        role_switch_controller=role_switch_controller,
         candidate_pool=CandidateAttemptPool(ROOT / "learning/candidate_attempt_pool.json",
                                             verifier_skills=verifier_skills,
                                             recovery_skills=verifier_skills,
@@ -450,6 +481,16 @@ def main() -> int:
 
     accepted_stops = {"TARGET_SKILL_VERIFIED", "MAX_ACTIONS_REACHED", "no_idle_march", "reserved_march_for_stamina", "verified_beast_target_not_visible", "intel_available_no_claim", "intel_not_available", "intel_expired", "mail_all_clear", "exploration_income_not_ready", "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable", "alliance_action_not_needed", "research_queue_busy", "training_queue_busy"}
     verified = all(step.verification is None or step.verification.ok for step in result.steps)
+    accepted_stops.update({
+        "GLOBAL_WAIT",
+        "GLOBAL_REFRESH_REQUIRED_NO_SAFE_CANDIDATE",
+        "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
+        "GLOBAL_CANDIDATE_GENERATION_GAP",
+    })
+    if result.stop_reason.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
+                                      "ROLE_SWITCH_FAILED:")):
+        accepted_stops.add(result.stop_reason)
+    accepted_stops.add("ROLE_IDENTITY_UNCONFIRMED")
     accepted_stops.add("intel_no_untried_pins")
     # Added 2026-09-16 with the panel exit: the DAILY goal now leaves the 任务
     # panel before stopping, so the honest "nothing claimable" end of a run is

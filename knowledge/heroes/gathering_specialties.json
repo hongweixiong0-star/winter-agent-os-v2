@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "identity_scope": "SHARED_GAME_RULE",
+  "availability_scope": "ROLE_SCOPED_RUNTIME_ONLY",
+  "policy": "EXACT_RESOURCE_GATHER_HERO_OR_EMPTY",
+  "resources": {
+    "WOOD": {
+      "hero_id": "HERO_EUGENE",
+      "display_name": "尤金",
+      "specialty": "GATHER",
+      "resource_type": "WOOD",
+      "skill_name": "伐木大师4级",
+      "skill_text": "出征时木材采集速度提升20%",
+      "skill_level": 4,
+      "status": "LIVE_VERIFIED",
+      "confidence": 1.0,
+      "source": "LIVE_CLIENT_HERO_EXPEDITION_SKILL",
+      "evidence_refs": [
+        "dataset/raw/ui_exploration/20260928/hero_尤金_expedition_skill_2.png",
+        "dataset/raw/ui_exploration/20260928/frame_524_GREEN_HEADBAND_DETAIL.png",
+        "dataset/raw/ui_exploration/20260928/frame_546_WORLD_MAP_MARCH_CHECK.png"
+      ],
+      "observed_at": "2026-09-28T07:59:42.392767+08:00",
+      "production_observation": {
+        "role_id": "TEST_ALT_CURRENT",
+        "formation": "HERO_EUGENE_ONLY",
+        "other_hero_count": 0,
+        "result": "GATHERING",
+        "source_frames": [
+          "dataset/raw/ui_exploration/20260928/frame_523_PICKER_GREEN_HEADBAND_SELECTED.png",
+          "dataset/raw/ui_exploration/20260928/frame_524_GREEN_HEADBAND_DETAIL.png",
+          "dataset/raw/ui_exploration/20260928/frame_546_WORLD_MAP_MARCH_CHECK.png"
+        ]
+      }
+    },
+    "MEAT": {
+      "hero_id": "HERO_CLORIS",
+      "display_name": "克劳瑞斯",
+      "specialty": "GATHER",
+      "resource_type": "MEAT",
+      "skill_name": "肉食者5级",
+      "skill_text": "出征时能使生肉采集速度提升25%",
+      "skill_level": 5,
+      "status": "LIVE_VERIFIED",
+      "confidence": 1.0,
+      "source": "LIVE_CLIENT_HERO_EXPEDITION_SKILL",
+      "evidence_refs": [
+        "dataset/raw/ui_exploration/20260928/hero_克劳瑞斯_expedition_skill_2.png"
+      ],
+      "observed_at": "2026-09-28T01:23:49+08:00"
+    },
+    "COAL": {
+      "hero_id": "HERO_CHARLIE",
+      "display_name": "查理",
+      "specialty": "GATHER",
+      "resource_type": "COAL",
+      "skill_name": "煤矿开采4级",
+      "skill_text": "出征时煤矿采集速度提升20%",
+      "skill_level": 4,
+      "status": "LIVE_VERIFIED",
+      "confidence": 1.0,
+      "source": "LIVE_CLIENT_HERO_EXPEDITION_SKILL",
+      "evidence_refs": [
+        "dataset/raw/ui_exploration/20260928/hero_查理_expedition_skill_2.png"
+      ],
+      "observed_at": "2026-09-28T01:23:49+08:00"
+    },
+    "IRON": {
+      "hero_id": "HERO_SMITH",
+      "display_name": "史密斯",
+      "specialty": "GATHER",
+      "resource_type": "IRON",
+      "skill_name": "铁匠精神3级",
+      "skill_text": "出征时铁矿采集速度提升15%",
+      "skill_level": 3,
+      "status": "LIVE_VERIFIED",
+      "confidence": 1.0,
+      "source": "LIVE_CLIENT_HERO_EXPEDITION_SKILL",
+      "evidence_refs": [
+        "dataset/raw/ui_exploration/20260928/hero_史密斯_expedition_skill_2.png"
+      ],
+      "observed_at": "2026-09-28T01:23:49+08:00"
+    }
+  },
+  "constraints": [
+    "A resource hero may be used only for the exact matching resource.",
+    "Never infer resource specialty from a troop-class badge.",
+    "If portrait identity or role-scoped availability cannot be proven, remove all heroes and continue with an empty hero formation; never substitute another gather hero or combat hero.",
+    "If the target resource itself is unknown, reobserve or stop before dispatch.",
+    "Ownership, level, and in-use state are role-scoped and must be refreshed from the current client.",
+    "Gather marches do not use any of the eight combat/rally preset formations."
+  ],
+  "unknown_specialist_fallback": {
+    "action": "CLEAR_ALL_HEROES",
+    "result": "READY_EMPTY",
+    "continue_gather_dispatch": true,
+    "scope": "only when resource type itself is known and the current formation has three confirmed empty slots"
+  }
+}

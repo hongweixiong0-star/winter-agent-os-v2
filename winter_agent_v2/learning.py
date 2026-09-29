@@ -46,6 +46,12 @@ class Episode:
     # was the only thing being measured.  ``None`` means the goal was not
     # observable on both frames, which is not the same as "no progress".
     goal_progress: bool | None = None
+    # One physical action can advance more than one Goal. Keep the association on
+    # the step record; each entry in ``goal_progress_by_id`` is measured against
+    # that Goal's own observed meter, never inferred from the selected Goal alone.
+    attached_goal_ids: tuple[str, ...] = ()
+    goal_progress_by_id: dict[str, bool | None] = field(default_factory=dict)
+    completed_goal_ids: tuple[str, ...] = ()
     # Which backend actually executed this step ("MAA" / "ADB" / "" when nothing
     # was issued).  Recorded per episode so the MAA rollout is auditable from the
     # production stream instead of from a migration document.
@@ -114,6 +120,26 @@ class Episode:
     # on purpose: "the tap was issued and nothing moved" is a finding about the
     # control, "we could not tell" is a finding about the reading.
     observed_change: str = ""
+    recorded_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@dataclass(frozen=True)
+class ActionOutcome:
+    """Observed outcome of one physical action and its role-scoped Goal effects."""
+
+    action_id: str
+    role_id: str
+    skill_id: str
+    goal_id: str = ""
+    attached_goal_ids: tuple[str, ...] = ()
+    action_sent: bool = False
+    post_action_observed: bool = False
+    observed_change: str = "UNKNOWN"
+    verifier_result: str = "NOT_RUN"
+    goal_progress_by_id: dict[str, bool | None] = field(default_factory=dict)
+    credited_goal_ids: tuple[str, ...] = ()
+    completed_goal_ids: tuple[str, ...] = ()
+    failure_reason: str = ""
     recorded_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

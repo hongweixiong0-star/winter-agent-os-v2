@@ -19,6 +19,15 @@ class AgentState(str, Enum):
     PAUSED = "PAUSED"
 
 
+class StopCategory(str, Enum):
+    """Why a runtime cycle ended, kept separate from whether AUTO is healthy."""
+
+    EXPECTED_NO_ACTION = "EXPECTED_NO_ACTION"
+    CAPABILITY_GAP = "CAPABILITY_GAP"
+    COMPLETED = "COMPLETED"
+    SYSTEM_FAILURE = "SYSTEM_FAILURE"
+
+
 @dataclass
 class RuntimeSnapshot:
     agent_state: str = AgentState.IDLE.value
@@ -31,6 +40,7 @@ class RuntimeSnapshot:
     watchdog_restart_count: int = 0
     unexpected_worker_exits: int = 0
     page: str = "UNKNOWN"
+    role_id: str | None = None
     current_goal: str | None = None
     current_skill: str | None = None
     reason: str | None = None
@@ -49,6 +59,7 @@ class RuntimeSnapshot:
     march_max: int | None = None
     queues: dict[str, Any] = field(default_factory=dict)
     stop_reason: str | None = None
+    stop_category: str | None = None
     # The goal paths the scheduler refused to re-enter this run, with the evidence for
     # refusing (goal, capability, state, reason, streak).  Declared here because
     # ``update`` filters unknown keys -- measured 2026-09-18: the runtime's write of
@@ -90,8 +101,85 @@ NON_FATAL_STOPS = {
     # same reason ``camp_entry_is_a_guided_step_not_a_selection`` is: it is an answer about
     # this run's search, not about any goal and not about the device, so a reader of this
     # table should find it here instead of inferring it from what it does not start with.
-    "every_page_this_run_was_fruitless",
+    "every_page_this_run_was_fruitless", "GLOBAL_WAIT",
 }
+
+EXPECTED_NO_ACTION_STOPS = frozenset({
+    "every_page_this_run_was_fruitless",
+    "no_idle_march", "reserved_march_for_stamina",
+    "mail_all_clear", "exploration_income_not_ready",
+    "daily_no_claimable_rewards", "daily_state_unknown_or_not_actionable",
+    "alliance_action_not_needed", "training_queue_busy", "research_queue_busy",
+    "intel_available_no_claim", "intel_no_untried_pins",
+    "verified_beast_target_not_visible",
+})
+CAPABILITY_GAP_STOPS = frozenset({
+    "unknown_page", "goal_page_mismatch", "SKILL_NOT_ENABLED_FOR_LIVE_LOOP",
+    "live_event_fallback_budget_exhausted", "selected_daily_task_row_not_currently_actionable",
+    "daily_quick_panel_row_has_no_registered_skill", "daily_panel_already_read_not_actionable",
+    "daily_tab_not_confirmed_after_task_board", "skill_not_ready", "no_ready_skill",
+    "GLOBAL_REFRESH_REQUIRED_NO_SAFE_CANDIDATE",
+    "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
+    "GLOBAL_CANDIDATE_GENERATION_GAP", "ROLE_IDENTITY_UNCONFIRMED",
+    "all_tasks_unavailable", "SEMANTIC_NOT_FOUND", "SEMANTIC_TARGET_NOT_VERIFIED",
+})
+COMPLETED_STOPS = frozenset({"MAX_ACTIONS_REACHED", "TARGET_SKILL_VERIFIED"})
+
+
+def classify_stop_reason(
+    reason: str | None,
+    *,
+    decision_skill: str | None = None,
+    action_executed: bool = False,
+    verifier_failed: bool = False,
+) -> StopCategory:
+    """Classify a cycle result without treating every safe stop as a failure.
+
+    A verifier failure after an issued action is a system/execution failure for this
+    cycle.  A SAFE_STOP without an attempted action is either a known no-action result
+    or a capability gap that should be recorded and handed to another goal.
+    """
+    normalized = str(reason or "").strip()
+    token = normalized.upper()
+    if verifier_failed or is_fatal_stop(normalized):
+        return StopCategory.SYSTEM_FAILURE
+    if token in {item.upper() for item in COMPLETED_STOPS}:
+        return StopCategory.COMPLETED
+    if normalized.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:",
+                              "ROLE_SWITCH_FAILED:")):
+        # A role handoff ends this process intentionally. The control plane starts a
+        # fresh cycle, whose first frame must identify the new account before acting.
+        return StopCategory.EXPECTED_NO_ACTION
+    if token in {item.upper() for item in EXPECTED_NO_ACTION_STOPS}:
+        return StopCategory.EXPECTED_NO_ACTION
+    if token in {item.upper() for item in CAPABILITY_GAP_STOPS}:
+        return StopCategory.CAPABILITY_GAP
+    if str(decision_skill or "") == "SAFE_STOP" and not action_executed:
+        return StopCategory.CAPABILITY_GAP
+    return StopCategory.SYSTEM_FAILURE
+
+
+def state_for_stop_reason(
+    reason: str | None,
+    *,
+    decision_skill: str | None = None,
+    action_executed: bool = False,
+    verifier_failed: bool = False,
+) -> tuple[StopCategory, AgentState]:
+    """Map a completed runtime cycle to the operator-facing health state."""
+    category = classify_stop_reason(
+        reason,
+        decision_skill=decision_skill,
+        action_executed=action_executed,
+        verifier_failed=verifier_failed,
+    )
+    if category is StopCategory.SYSTEM_FAILURE:
+        state = AgentState.FATAL_STOPPED if is_fatal_stop(reason) else AgentState.DEGRADED
+    elif category is StopCategory.CAPABILITY_GAP:
+        state = AgentState.SAFE_STOP
+    else:
+        state = AgentState.IDLE
+    return category, state
 
 
 def is_fatal_stop(reason: str | None) -> bool:

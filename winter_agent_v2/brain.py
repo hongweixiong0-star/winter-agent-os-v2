@@ -806,6 +806,23 @@ class RuleBrain:
             return Decision("WAIT", "client_loading_screen", 1.0, "wait_for_game_page")
         if world.page is Page.POPUP and world.popup == "WELCOME_BACK_OFFLINE":
             return Decision("CLAIM_OFFLINE_REWARDS", "verified_welcome_back_rewards", world.confidence, "home_restored")
+        if world.page is Page.POPUP and world.popup == "HERO_PICKER" and self.current_goal == "GATHER_RESOURCE":
+            picker = (world.hero_troop or {}).get("hero_picker")
+            if not isinstance(picker, dict) or picker.get("open") is not True:
+                return Decision("SAFE_STOP", "gather_hero_picker_not_observed", 1.0, "refresh_or_switch_task")
+            if picker.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                return Decision("SAFE_STOP", "gather_hero_picker_role_not_fresh", 1.0, "refresh_or_switch_task")
+            if picker.get("match_status") != "MATCHED":
+                if picker.get("match_status") in {"UNKNOWN", "AMBIGUOUS", "NO_PICKER_SAMPLE"}:
+                    return Decision("BACK", "exact_gather_specialist_identity_unknown_use_empty_formation",
+                                    world.confidence, "empty_gather_formation_restored")
+                return Decision("SAFE_STOP", "exact_gather_specialist_not_located_in_current_picker", 1.0,
+                                "refresh_or_switch_task")
+            if picker.get("selected") is True:
+                return Decision("ASSIGN_GATHER_HERO", "exact_resource_specialist_selected_in_current_picker",
+                                world.confidence, "specialist_added_to_march")
+            return Decision("SELECT_GATHER_HERO", "exact_resource_specialist_located_in_current_picker",
+                            world.confidence, "specialist_selected")
         if world.page is Page.POPUP and world.popup == "SESSION_DISCONNECTED":
             return Decision("RECONNECT_SESSION", "game_session_disconnected", world.confidence, "live_page_restored")
         if world.page is Page.POPUP and world.popup == "BATTLEFIELD_REVIVAL":
@@ -2813,25 +2830,33 @@ class RuleBrain:
                 return Decision("DISPATCH_INTEL_BEAST", "intel_beast_victory_assured", world.confidence, "intel_beast_march_dispatched")
             return Decision("SAFE_STOP", "beast_low_win_probability", 1.0, "choose_lower_target")
         if world.page is Page.MARCH:
-            # The gathering formation page had no branch at all, so it fell
-            # through to the generic "first ready skill" fallback below.  That
-            # fallback walks the registry in insertion order and the first skill
-            # whose required_page is None is WAIT (an environment hold), so a
-            # live gather run reached the formation page and then waited
-            # forever instead of dispatching.  Measured live on 2026-09-14:
-            # START_GATHER verified, then the loop picked WAIT and the run ended
-            # with ENVIRONMENTAL_WAIT_NOT_PROVEN.
-            #
-            # A gather march page means the formation is already configured by
-            # the game's own default selection, so the correct action is to
-            # dispatch and let the march verifier prove the state change.
-            if self.current_goal in {None, "GATHER_RESOURCE"} or world.resource_target:
-                return Decision(
-                    "DISPATCH_MARCH",
-                    "resource_march_formation_open",
-                    world.confidence,
-                    "gather_march_dispatched",
-                )
+            is_gather = self.current_goal == "GATHER_RESOURCE" or (
+                self.current_goal is None and bool(world.resource_target)
+            )
+            if is_gather:
+                from .hero_portraits import evaluate_gather_formation
+
+                observed = (world.hero_troop or {}).get("gather_formation")
+                if not isinstance(observed, dict) or observed.get("status") != "OBSERVED":
+                    return Decision("SAFE_STOP", "gather_formation_identity_unobserved", 1.0,
+                                    "refresh_or_switch_task")
+                if observed.get("role_scope") not in {"LIVE_OBSERVED", "FRESH_RUNTIME"}:
+                    return Decision("SAFE_STOP", "gather_formation_role_not_fresh", 1.0,
+                                    "refresh_or_switch_task")
+                resource = str(world.resource_target or observed.get("resource_type") or "").upper()
+                policy = evaluate_gather_formation(resource, observed)
+                if policy["status"] == "CLEANUP_REQUIRED":
+                    return Decision("CLEAR_GATHER_HEROES", "gather_formation_contains_nonmatching_hero",
+                                    world.confidence, "one_invalid_hero_removed")
+                if policy["status"] in {"READY_WITH_SPECIALIST", "READY_EMPTY"}:
+                    return Decision("DISPATCH_MARCH", "gather_formation_matches_exact_specialist_or_empty_policy",
+                                    world.confidence, "gather_march_dispatched")
+                if policy["status"] in {"BLOCKED_AVAILABILITY_UNKNOWN", "SELECT_SPECIALIST_REQUIRED"} \
+                        and len(observed.get("empty_slots") or ()) == 3:
+                    return Decision("OPEN_GATHER_HERO_PICKER", "refresh_role_scoped_gather_specialist_availability",
+                                    world.confidence, "hero_picker_opened")
+                return Decision("SAFE_STOP", f"gather_formation_{str(policy['status']).lower()}", 1.0,
+                                "refresh_or_switch_task")
         ready = registry.ready(world)
         if ready:
             # A placeholder skill must never win the fallback.  WAIT only means

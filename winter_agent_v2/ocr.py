@@ -222,14 +222,17 @@ class RapidOCRBackend:
         from rapidocr_onnxruntime import RapidOCR
 
         self._engine = RapidOCR()
+        self.timing_parse_ms = 0.0
 
     def recognize(self, image: Image.Image) -> tuple[OCRToken, ...]:
         import numpy as np
 
         rows, _ = self._engine(np.asarray(image.convert("RGB")))
+        parse_started = time.monotonic()
         if not rows:
+            self.timing_parse_ms += (time.monotonic() - parse_started) * 1000
             return ()
-        return tuple(
+        tokens = tuple(
             OCRToken(
                 text=str(row[1]).strip(),
                 confidence=float(row[2]),
@@ -238,6 +241,8 @@ class RapidOCRBackend:
             for row in rows
             if str(row[1]).strip()
         )
+        self.timing_parse_ms += (time.monotonic() - parse_started) * 1000
+        return tokens
 
 
 class ResilientOCRBackend:
@@ -255,6 +260,10 @@ class ResilientOCRBackend:
         self.initial_backoff = max(0.0, float(initial_backoff))
         self.sleeper = sleeper
         self.name = f"resilient:{backend.name}"
+
+    @property
+    def timing_parse_ms(self) -> float:
+        return float(getattr(self.backend, "timing_parse_ms", 0.0))
 
     def recognize(self, image: Image.Image) -> tuple[OCRToken, ...]:
         delay = self.initial_backoff
@@ -279,6 +288,11 @@ class OCRService:
         self.timing_cache_hits = 0
         self.timing_total_ms = 0.0
         self.timing_backend_ms = 0.0
+
+    @property
+    def timing_parse_ms(self) -> float:
+        """Time spent converting OCR engine rows into V2's structured tokens."""
+        return float(getattr(self.backend, "timing_parse_ms", 0.0))
 
     @staticmethod
     def _roi_key(roi: dict[str, float] | None) -> str:
@@ -860,6 +874,16 @@ class OCRPageClassifier:
             for token in eligible
             if _is_quick_panel_section(token)
         }
+        # The hero selector is an in-place overlay on the march formation. Its
+        # own title identifies the page so the gather planner can inspect only
+        # the current picker frame and avoid reusing a stale formation target.
+        if "英雄选择" in exact_texts:
+            return WorldState(
+                page=Page.POPUP,
+                popup="HERO_PICKER",
+                hero_troop={"hero_picker": {"open": True}},
+                confidence=max(token.confidence for token in eligible),
+            )
         # The task board has two different page identities with tabs along its
         # bottom edge. The inactive tab label is always visible, so only the
         # centered heading in the top band can identify the current page.

@@ -65,8 +65,10 @@ from winter_agent_v2.runtime_snapshot import (
     UNCLASSIFIED_EVENT,
     AgentState,
     RuntimeSnapshotStore,
+    StopCategory,
     counts_as_unexpected_worker_exit,
     is_fatal_stop,
+    state_for_stop_reason,
 )
 from winter_agent_v2.worker_recovery import RecoveryOutcome, retry_until_ready
 
@@ -490,7 +492,9 @@ def classify_worker_failure(message: str) -> str:
     return "ENVIRONMENT" if any(marker in text for marker in ENVIRONMENT_FAILURES) else "WORKER_CRASH"
 
 
-def write_worker_crash_report(*, where: str, exc: BaseException, snapshot: Any) -> Path:
+def write_worker_crash_report(
+    *, where: str, exc: BaseException, snapshot: Any, context: dict[str, Any] | None = None,
+) -> Path:
     """Persist the evidence needed to find the real root cause of a worker exit.
 
     Previously the worker caught ``Exception`` and forwarded only ``str(exc)``,
@@ -500,6 +504,22 @@ def write_worker_crash_report(*, where: str, exc: BaseException, snapshot: Any) 
     """
     CRASH_ROOT.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    snapshot_data = snapshot.__dict__ if hasattr(snapshot, "__dict__") else {"value": str(snapshot)}
+    context = context if isinstance(context, dict) else {}
+
+    def event_tail(path: Path, *, limit: int = 20) -> list[dict[str, str]]:
+        try:
+            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+            stamp = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()
+        except OSError:
+            return []
+        return [{"source": path.name, "file_mtime": stamp, "line": line}
+                for line in lines[-limit:]]
+
+    panel_events = event_tail(PANEL_LOG_PATH)
+    runtime_output = event_tail(LOG_ROOT / "latest.log")
+    recovery_events = event_tail(LOG_ROOT / "worker_recovery.jsonl")
+    events = (panel_events + runtime_output + recovery_events)[-20:]
     report = {
         "at": datetime.now(timezone.utc).isoformat(),
         "where": where,
@@ -507,15 +527,31 @@ def write_worker_crash_report(*, where: str, exc: BaseException, snapshot: Any) 
         "exception_message": str(exc),
         "traceback": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
         "classification": classify_worker_failure(str(exc)),
+        "goal": context.get("goal", snapshot_data.get("current_goal")),
+        "skill": context.get("skill", snapshot_data.get("current_skill")),
+        "role": context.get("role", snapshot_data.get("role_id")),
+        "page": context.get("page", snapshot_data.get("page", "UNKNOWN")),
+        "last_20_events": events,
+        "device_state": context.get("device_state", snapshot_data.get("device", "UNKNOWN")),
+        "adb_state": context.get("adb_state", "UNKNOWN"),
+        "maa_state": context.get("maa_state", {
+            "configured": None,
+            "vision": snapshot_data.get("vision", "UNKNOWN"),
+        }),
+        "retry_state": context.get("retry_state", {
+            "watchdog_restart_count": snapshot_data.get("watchdog_restart_count", 0),
+            "unexpected_worker_exits_before_report": snapshot_data.get("unexpected_worker_exits", 0),
+        }),
+        "recovery_attempt": context.get("recovery_attempt"),
         "thread_state": [
             {"name": thread.name, "alive": thread.is_alive(), "daemon": thread.daemon}
             for thread in threading.enumerate()
         ],
-        "runtime_snapshot": snapshot.__dict__ if hasattr(snapshot, "__dict__") else str(snapshot),
+        "runtime_snapshot": snapshot_data,
     }
     path = CRASH_ROOT / f"{stamp}_{where}.json"
     temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     temporary.replace(path)
     return path
 
@@ -558,6 +594,92 @@ MARCH_ZH = {MarchState.IDLE: "空闲", MarchState.MARCHING: "行军中", MarchSt
             MarchState.RETURNING: "返回中", MarchState.UNKNOWN: "未识别"}
 
 
+def _global_wait_delay_ms(reason: str, *, now: datetime | None = None) -> int:
+    """Wait until the persisted global wake time, with a bounded fallback refresh."""
+    if reason != "GLOBAL_WAIT":
+        return 30000
+    path = ROOT / "learning/global_scheduler_state.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        raw = payload.get("global_next_wakeup_at") if isinstance(payload, dict) else None
+        wake = datetime.fromisoformat(str(raw).replace("Z", "+00:00")) if raw else None
+    except (OSError, ValueError, json.JSONDecodeError, TypeError):
+        wake = None
+    if wake is None:
+        return 30000
+    moment = now or datetime.now(timezone.utc)
+    if wake.tzinfo is None:
+        wake = wake.replace(tzinfo=timezone.utc)
+    seconds = max(1.0, (wake.astimezone(timezone.utc) - moment.astimezone(timezone.utc)).total_seconds())
+    # Do not lose an exact near-term wake, and retain one daily health refresh if
+    # the source time is unexpectedly far away.
+    return int(min(seconds, 24 * 60 * 60) * 1000)
+
+def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
+    """Render the persisted arbitration decision without inventing live role state."""
+    try:
+        payload = json.loads((root / "learning/global_scheduler_state.json").read_text(encoding="utf-8"))
+        catalog = json.loads((root / "knowledge/roles/role_inventory.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "metrics": "暂无切换样本"}
+    if not isinstance(payload, dict):
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "metrics": "暂无切换样本"}
+    names = {
+        str(row.get("role_id")): str(row.get("role_key") or row.get("display_name") or row.get("role_id"))
+        for row in (catalog.get("roles", []) if isinstance(catalog, dict) else [])
+        if isinstance(row, dict) and row.get("role_id")
+    }
+    role_ids = list(names)
+    active = str(payload.get("active_role_id") or "")
+    current = f"{names.get(active, active or '未知')} · {active or '身份未确认'}"
+    decision = payload.get("last_decision") if isinstance(payload.get("last_decision"), dict) else {}
+    statuses = decision.get("role_statuses") if isinstance(decision.get("role_statuses"), list) else []
+    status_by_id = {str(row.get("role_id")): row for row in statuses if isinstance(row, dict)}
+    role_lines = []
+    for role_id in role_ids[:2]:
+        row = status_by_id.get(role_id, {})
+        top = str(row.get("top_goal") or "无可执行目标")
+        ready = int(row.get("runnable_count") or 0)
+        blocked = int(row.get("blocked_count") or 0)
+        wait = str(row.get("wait_until") or "无")
+        deadline = row.get("next_deadline_seconds")
+        deadline_text = f"{int(deadline)}秒" if isinstance(deadline, (int, float)) else "无"
+        freshness = "本轮已观测" if row.get("state_fresh") else "使用逻辑快照/待刷新"
+        cooldown = str(row.get("switch_cooldown_until") or "")
+        failure_streak = int(row.get("switch_failure_streak") or 0)
+        switch_state = f"｜切换退避至 {cooldown}（失败 {failure_streak} 次）" if cooldown else ""
+        role_lines.append(
+            f"{names.get(role_id, role_id)}：{top}｜可执行 {ready}｜阻塞 {blocked}｜"
+            f"等待至 {wait}｜最近期限 {deadline_text}｜{freshness}{switch_state}"
+        )
+    selected_role = str(decision.get("selected_role_id") or "")
+    selected_goal = str(decision.get("selected_goal_id") or "")
+    selected_skill = str(decision.get("selected_skill_id") or "")
+    selected_label = names.get(selected_role, selected_role or "无")
+    why = str(decision.get("reason") or payload.get("last_switch_reason") or "暂无")
+    action = str(decision.get("decision") or "暂无")
+    next_wakeup = str(payload.get("global_next_wakeup_at") or decision.get("next_wakeup") or "无")
+    metrics = {
+        "count": int(payload.get("role_switch_count") or 0),
+        "success": int(payload.get("role_switch_success_count") or 0),
+        "failure": int(payload.get("role_switch_failure_count") or 0),
+    }
+    complete = metrics["success"] + metrics["failure"]
+    rate = f"{metrics['success'] / complete:.0%}" if complete else "暂无"
+    duration_rows = payload.get("role_switch_durations_ms", [])
+    if not isinstance(duration_rows, list):
+        duration_rows = []
+    samples = sorted(float(value) for value in duration_rows if isinstance(value, (int, float)))
+    p50 = f"{samples[max(0, (len(samples) + 1) // 2 - 1)]:.0f}ms" if samples else "暂无"
+    p95 = f"{samples[max(0, int(len(samples) * .95 + .999999) - 1)]:.0f}ms" if samples else "暂无"
+    return {
+        "current": current,
+        "roles": role_lines,
+        "decision": f"{action} → {selected_label} {selected_goal} / {selected_skill}；{why}",
+        "wakeup": next_wakeup,
+        "metrics": f"切换 {metrics['count']} 次｜成功率 {rate}｜p50 {p50}｜p95 {p95}",
+    }
+
 def parse_runtime_result(text: str) -> dict:
     """The runtime's result object, wherever the client's own output lands.
 
@@ -599,15 +721,44 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
             verified += int(verification.get("ok") is True)
             failures += int(verification.get("ok") is False)
     reason = payload.get("stop_reason", "暂无结构化结果") if isinstance(payload, dict) else "暂无结构化结果"
-    successful_stops = {"TARGET_SKILL_VERIFIED", "target_skill_verified", "MAX_ACTIONS_REACHED", "max_actions_reached", "no_idle_march", "reserved_march_for_stamina", "mail_all_clear", "exploration_income_not_ready", "daily_state_unknown_or_not_actionable", "daily_no_claimable_rewards", "alliance_action_not_needed", "training_queue_busy", "every_page_this_run_was_fruitless"}
+    last = next((step for step in reversed(steps) if isinstance(step, dict)), {})
+    decision = last.get("decision") if isinstance(last.get("decision"), dict) else {}
+    execution = last.get("execution") if isinstance(last.get("execution"), dict) else {}
+    category, agent_state = state_for_stop_reason(
+        str(reason),
+        decision_skill=str(decision.get("skill") or ""),
+        action_executed=execution.get("executed") is True,
+        verifier_failed=failures > 0,
+    )
+    normal_ends = {
+        StopCategory.EXPECTED_NO_ACTION,
+        StopCategory.COMPLETED,
+    }
+    healthy = exit_code == 0 and failures == 0 and category is not StopCategory.SYSTEM_FAILURE
     return {"steps": len(steps), "executed": executed, "verified": verified, "failures": failures,
-            "reason": reason, "ok": exit_code == 0 and failures == 0 and reason in successful_stops}
+            "reason": reason, "stop_category": category.value,
+            "agent_state": agent_state.value,
+            "healthy": healthy,
+            # ``ok`` continues to mean the cycle reached a normal no-action or
+            # completion result. A capability gap is safe to continue around, but
+            # it is not a completed task and must remain visible as such.
+            "ok": exit_code == 0 and failures == 0 and category in normal_ends}
 
 
 def human_reason(value: Any) -> str:
     if value is None or value == "":
         return "暂无数据"
     text = str(value)
+    if text.startswith("ROLE_SWITCHED_TO:"):
+        return f"已切换到角色 {text.partition(':')[2]}，正在刷新状态"
+    if text.startswith("ROLE_IDENTITY_CHANGED:"):
+        return f"检测到角色 {text.partition(':')[2]} 已变化，正在重新识别"
+    if text == "ROLE_IDENTITY_UNCONFIRMED":
+        return "暂时无法确认当前角色，已停止输入并等待重新识别"
+    if text.startswith("ROLE_SWITCH_FAILED:"):
+        _, _, detail = text.partition(":")
+        target, _, reason = detail.partition(":")
+        return f"切换到角色 {target} 暂未成功，已停止旧页面操作并按退避时间重试：{human_reason(reason)}"
     return REASON_ZH.get(text, text.replace("_", " "))
 
 
@@ -3849,6 +4000,22 @@ class ControlPanel:
             ttk.Label(top, text=name, style="Muted.TLabel", background=PANEL).grid(row=1 + index // 4 * 2, column=index % 4, sticky="w", padx=8, pady=(8, 0))
             ttk.Label(top, textvariable=self.runtime_detail_vars[key], background=PANEL).grid(row=2 + index // 4 * 2, column=index % 4, sticky="w", padx=8)
             top.columnconfigure(index % 4, weight=1)
+        dual = ttk.Frame(tab, style="Card.TFrame", padding=12); dual.pack(fill="x", pady=(10, 0))
+        ttk.Label(dual, text="Global Role Arbitration · 单 Scheduler", style="Section.TLabel", background=PANEL).grid(
+            row=0, column=0, columnspan=2, sticky="w")
+        self.global_role_vars = {
+            key: tk.StringVar(value="等待双角色状态")
+            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics")
+        }
+        for row, (label, key) in enumerate((
+            ("当前角色", "current"), ("角色 A", "role_a"), ("角色 B", "role_b"),
+            ("最近决策", "decision"), ("下一唤醒", "wakeup"), ("切换指标", "metrics"),
+        ), 1):
+            ttk.Label(dual, text=label, style="Muted.TLabel", background=PANEL, width=12).grid(
+                row=row, column=0, sticky="nw", padx=(0, 8), pady=2)
+            ttk.Label(dual, textvariable=self.global_role_vars[key], background=PANEL,
+                      wraplength=1100, justify="left").grid(row=row, column=1, sticky="w", pady=2)
+        dual.columnconfigure(1, weight=1)
         bar = ttk.Frame(tab); bar.pack(fill="x", pady=(10, 6))
         ttk.Label(bar, text="完整日志 / Vision Debug / Replay", style="Section.TLabel").pack(side="left")
         for label, path in (("日志目录", LOG_ROOT), ("截图目录", CAPTURE_ROOT), ("Evidence", ROOT / "evidence"), ("Replay", ROOT / "tests/replay")):
@@ -3890,6 +4057,19 @@ class ControlPanel:
             restart_scheduled=self.repeat_after_id is not None,
         ))
         self.values["runtime_state"].set(runtime_status_cn(snapshot.stop_reason, running=running))
+        try:
+            global_view = global_scheduler_display(ROOT)
+            self.global_role_vars["current"].set(global_view.get("current", "暂无"))
+            role_lines = list(global_view.get("roles", []))
+            self.global_role_vars["role_a"].set(role_lines[0] if role_lines else "暂无角色 A 快照")
+            self.global_role_vars["role_b"].set(role_lines[1] if len(role_lines) > 1 else "暂无角色 B 快照")
+            self.global_role_vars["decision"].set(global_view.get("decision", "暂无"))
+            self.global_role_vars["wakeup"].set(global_view.get("wakeup", "无"))
+            self.global_role_vars["metrics"].set(global_view.get("metrics", "暂无"))
+        except (AttributeError, OSError, TypeError, ValueError):
+            # The live runtime status remains usable when the optional global state
+            # artifact has not been created yet or is malformed.
+            pass
         # MAA / backend axis.  Taken from the executor ledger and the resolved
         # production interpreter, so this cell cannot claim MAA is fine while the
         # worker is quietly running on ADB capture -- and it reports how old the newest
@@ -4928,6 +5108,9 @@ class ControlPanel:
 
     def _run_unified_worker(self) -> None:
         """Lifecycle adapter only; it never selects a Goal or Skill."""
+        recovery = None
+        recovery_started_at = None
+        self._device_recovery_retry_count = 0
         try:
             blocker = runtime_env_blocker()
             if blocker is not None:
@@ -4964,10 +5147,44 @@ class ControlPanel:
             # worker death is never silent.  The full traceback plus the runtime
             # state is written to learning/control_panel/crashes/ before the GUI
             # is told anything; only the classified outcome drives the counters.
-            report = write_worker_crash_report(where="unified_worker", exc=exc,
-                                               snapshot=self.runtime_store.read())
+            snapshot = self.runtime_store.read()
+            device_state = {}
+            try:
+                device_state = self.probes.device_state()
+            except Exception:  # noqa: BLE001 - crash evidence is best effort
+                device_state = {"status": "UNAVAILABLE"}
+            retry_count = getattr(
+                recovery, "retries", getattr(self, "_device_recovery_retry_count", None)
+            )
+            report = write_worker_crash_report(
+                where="unified_worker", exc=exc, snapshot=snapshot,
+                context={
+                    "goal": snapshot.current_goal,
+                    "skill": snapshot.current_skill,
+                    "role": snapshot.role_id,
+                    "page": snapshot.page,
+                    "device_state": device_state,
+                    "adb_state": device_state.get("status", "UNKNOWN"),
+                    "maa_state": {
+                        "vision": snapshot.vision,
+                        "configured": None,
+                        "last_known_backend": snapshot.device,
+                    },
+                    "retry_state": {
+                        "device_recovery_started_at": recovery_started_at,
+                        "retries": retry_count,
+                        "ready": getattr(recovery, "ready", None),
+                    },
+                    "recovery_attempt": {
+                        "attempted": bool(recovery_started_at),
+                        "retry_count": retry_count,
+                        "ready": getattr(recovery, "ready", None),
+                    } if recovery_started_at else None,
+                },
+            )
             self.runtime_store.update(
                 agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(str(exc)) else AgentState.DEGRADED.value,
+                stop_category=StopCategory.SYSTEM_FAILURE.value,
                 runtime_thread_alive=False, scheduler_loop_alive=False,
                 last_fatal_error=str(exc) if is_fatal_stop(str(exc)) else None, stop_reason=str(exc))
             self.events.put(("worker_failure", {
@@ -5031,6 +5248,7 @@ class ControlPanel:
 
     def _record_device_recovery_retry(self, exc: Exception, retry_count: int,
                                       delay_seconds: float, elapsed_seconds: float) -> None:
+        self._device_recovery_retry_count = int(retry_count)
         message = str(exc) or type(exc).__name__
         try:
             self.runtime_store.update(
@@ -5380,6 +5598,7 @@ class ControlPanel:
                                                snapshot=self.runtime_store.read())
             self.runtime_store.update(
                 agent_state=AgentState.FATAL_STOPPED.value if is_fatal_stop(str(exc)) else AgentState.DEGRADED.value,
+                stop_category=StopCategory.SYSTEM_FAILURE.value,
                 runtime_thread_alive=False, scheduler_loop_alive=False,
                 last_fatal_error=str(exc) if is_fatal_stop(str(exc)) else None, stop_reason=str(exc))
             self.events.put(("worker_failure", {
@@ -5449,6 +5668,7 @@ class ControlPanel:
         )
         self.runtime_store.update(
             agent_state=AgentState.FATAL_STOPPED.value if fatal else AgentState.DEGRADED.value,
+            stop_category=StopCategory.SYSTEM_FAILURE.value,
             runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=message,
             last_fatal_error=message if fatal else previous.last_fatal_error,
             unexpected_worker_exits=previous.unexpected_worker_exits + (1 if counts_as_exit else 0),
@@ -5484,6 +5704,7 @@ class ControlPanel:
         )
         self.runtime_store.update(
             agent_state=AgentState.FATAL_STOPPED.value if fatal else AgentState.DEGRADED.value,
+            stop_category=StopCategory.SYSTEM_FAILURE.value,
             runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=message,
             last_fatal_error=message if fatal else previous.last_fatal_error,
             unexpected_worker_exits=previous.unexpected_worker_exits + (1 if counts_as_exit else 0),
@@ -5525,22 +5746,46 @@ class ControlPanel:
     def _apply_complete(self, code: int, payload: dict, output: str) -> None:
         summary = summarize_runtime_result(payload, code); steps = payload.get("steps", []) if isinstance(payload, dict) else []
         last = steps[-1] if steps else {}; decision = last.get("decision", {}) if isinstance(last, dict) else {}; verification = last.get("verification", {}) if isinstance(last, dict) else {}
-        skill = decision.get("skill", "GATHER_RESOURCE") if isinstance(decision, dict) else "GATHER_RESOURCE"
-        self.values["skill"].set(skill); self.values["task_cn"].set(SKILL_ZH.get(skill, "资源采集")); self.values["reason"].set(human_reason(decision.get("reason") if isinstance(decision, dict) else None))
-        self.values["next"].set("等待下一轮状态观察" if summary["ok"] else "进入安全恢复或停止")
+        reason = str(summary["reason"] or "")
+        role_handoff = reason.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:"))
+        skill = ("ROLE_SWITCH" if role_handoff else
+                 decision.get("skill", "GATHER_RESOURCE") if isinstance(decision, dict)
+                 else "GATHER_RESOURCE")
+        self.values["skill"].set(skill); self.values["task_cn"].set(SKILL_ZH.get(skill, "角色切换" if role_handoff else "资源采集")); self.values["reason"].set(human_reason(reason if role_handoff else decision.get("reason") if isinstance(decision, dict) else None))
+        self.values["next"].set(
+            "等待下一轮状态观察" if summary["ok"] else
+            ("切换其他任务并记录能力缺口" if summary["stop_category"] == StopCategory.CAPABILITY_GAP.value
+             else "进入安全恢复或停止")
+        )
         self.values["verifier"].set(("验证通过" if verification.get("ok") else human_reason(verification.get("reason"))) if isinstance(verification, dict) and verification else "本轮无最终验证数据")
-        self.values["result"].set(human_reason(summary["reason"])); self.values["agent"].set("● 等待" if summary["ok"] else "● 异常")
-        self.session["runs"] += 1; self.session["actions"] += summary["executed"]; self.session["success" if summary["ok"] else "failed"] += 1
-        self.values["stats"].set(f"本次启动：{self.session['runs']} 轮 · {self.session['actions']} 动作 · 成功 {self.session['success']} · 异常 {self.session['failed']}")
-        self._append(("✓ " if summary["ok"] else "⚠ ") + f"本轮结束：{human_reason(summary['reason'])}")
+        category = summary["stop_category"]
+        state_label = (
+            "● 等待" if summary["ok"] else
+            ("◇ 待补能力" if category == StopCategory.CAPABILITY_GAP.value else "● 异常")
+        )
+        self.values["result"].set(human_reason(summary["reason"])); self.values["agent"].set(state_label)
+        self.session["runs"] += 1; self.session["actions"] += summary["executed"]
+        if summary["ok"]:
+            self.session["success"] += 1
+        elif category == StopCategory.CAPABILITY_GAP.value:
+            self.session.setdefault("blocked", 0)
+            self.session["blocked"] += 1
+        else:
+            self.session["failed"] += 1
+        self.values["stats"].set(
+            f"本次启动：{self.session['runs']} 轮 · {self.session['actions']} 动作 · "
+            f"正常 {self.session['success']} · 待补能力 {self.session.get('blocked', 0)} · 异常 {self.session['failed']}"
+        )
+        icon = "✓ " if summary["ok"] else ("◇ " if category == StopCategory.CAPABILITY_GAP.value else "⚠ ")
+        self._append(icon + f"本轮结束：{human_reason(summary['reason'])}")
         # Full structured output belongs only in latest.log. Rendering large
         # JSON blobs in Tk made the UI appear flooded and could stall it.
         self._idle_buttons(); self._enforce_retention(); self.refresh()
         fatal = is_fatal_stop(str(summary["reason"]))
-        self.runtime_store.update(agent_state=AgentState.FATAL_STOPPED.value if fatal else (AgentState.IDLE.value if summary["ok"] else AgentState.DEGRADED.value),
+        self.runtime_store.update(agent_state=summary["agent_state"], stop_category=category,
                                   runtime_thread_alive=False, scheduler_loop_alive=False, stop_reason=summary["reason"],
                                   last_fatal_error=summary["reason"] if fatal else None)
-        if self.continuous.get() and not fatal and not self.stop_requested and not self.paused:
+        if self.continuous.get() and summary["healthy"] and not fatal and not self.stop_requested and not self.paused:
             # Four different things used to collapse into one 30-second wait:
             #
             #   A  this ``run_live.py`` subprocess ended
@@ -5564,8 +5809,10 @@ class ControlPanel:
             no_progress_stall = summary["reason"] == "SEMANTIC_TARGET_NOT_VERIFIED"
             spent_its_budget = summary["reason"] == "MAX_ACTIONS_REACHED" and summary["executed"] > 0
             full_queue = summary["reason"] in {"no_idle_march", "reserved_march_for_stamina"}
-            immediate = no_progress_stall or spent_its_budget
-            delay_ms = 0 if immediate else (600000 if full_queue else 30000)
+            global_wait = reason == "GLOBAL_WAIT"
+            immediate = no_progress_stall or spent_its_budget or role_handoff
+            delay_ms = (0 if immediate else 600000 if full_queue
+                        else _global_wait_delay_ms(reason) if global_wait else 30000)
             if delay_ms > 0:
                 try:
                     delay_ms = int(event_schedule.bounded_poll_delay_seconds(
@@ -5573,14 +5820,18 @@ class ControlPanel:
                     ) * 1000)
                 except Exception:  # noqa: BLE001 -- an unreadable event clock keeps ordinary polling
                     pass
-            delay_text = "立即" if immediate else ("10 分钟" if full_queue else "30 秒")
+            delay_text = ("立即刷新角色" if role_handoff else
+                          "立即" if immediate else
+                          (f"{max(1, delay_ms // 1000)} 秒后唤醒" if global_wait else
+                           "10 分钟" if full_queue else "30 秒"))
             if not immediate and delay_ms < (600000 if full_queue else 30000):
                 delay_text = f"活动节点前 {max(1, delay_ms // 1000)} 秒"
             self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
             self._append(f"连续运行已启用，{delay_text}后进入下一轮。"
-                         + ("（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
+                         + ("（角色切换已确认，本轮重启只用于刷新目标角色状态）" if role_handoff else
+                            "（子进程结束不等于工作周期结束，立即继续）" if immediate else ""))
 
     def _enforce_retention(self) -> None:
         policy = self.config.get("retention", {})
