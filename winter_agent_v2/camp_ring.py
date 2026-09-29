@@ -193,7 +193,11 @@ def focused_camp_body_tap_norm(image_path: Path) -> tuple[float, float] | None:
         if (
             area < 350 or area > 1500
             or box_w < width * 0.09
-            or box_h < height * 0.04
+            # Current production frames after a quick-panel camp entry measured a
+            # 113x49 px focus halo at 720x1280 (2026-09-29). The old 4% height
+            # floor rejected it by 2 px while the larger tutorial hand was correctly
+            # excluded by the area ceiling. Keep the gate relative to the live frame.
+            or box_h < height * 0.035
             or not 0.75 <= aspect <= 2.4
         ):
             continue

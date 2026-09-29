@@ -51,7 +51,11 @@ from .verifier import (verify_alliance_tech_opened, verify_alliance_tech_node_op
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
 from .intel_pins import intel_pin_centers
-from .verifier import verify_research_node_inspected, verify_completed_training_camp_inspected
+from .verifier import (
+    verify_research_node_inspected,
+    verify_completed_training_camp_inspected,
+    verify_focused_training_camp_action_bar_opened,
+)
 from .verifier import (
     verify_gather_hero_picker_open,
     verify_gather_hero_picker_selected,
@@ -388,6 +392,12 @@ class LiveRuntime:
         "OPEN_COMPLETED_TRAINING_CAMP_SHIELD": lambda b, a: verify_completed_training_camp_inspected(b, a, camp="SHIELD"),
         "OPEN_COMPLETED_TRAINING_CAMP_LANCER": lambda b, a: verify_completed_training_camp_inspected(b, a, camp="LANCER"),
         "OPEN_COMPLETED_TRAINING_CAMP_MARKSMAN": lambda b, a: verify_completed_training_camp_inspected(b, a, camp="MARKSMAN"),
+        # A completed-row tap focuses the camp first. This second, current-frame tap
+        # must prove that the same named camp's action bar (including its 训练 control)
+        # actually opened before the route can continue.
+        "TAP_FOCUSED_TRAINING_CAMP_SHIELD": lambda b, a: verify_focused_training_camp_action_bar_opened(b, a, camp="SHIELD"),
+        "TAP_FOCUSED_TRAINING_CAMP_LANCER": lambda b, a: verify_focused_training_camp_action_bar_opened(b, a, camp="LANCER"),
+        "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN": lambda b, a: verify_focused_training_camp_action_bar_opened(b, a, camp="MARKSMAN"),
         "COLLECT_MY_REWARDS_ROW": lambda b, a: verify_panel_row_done_collected(b, a, row_key="MY_REWARDS"),
         "OPEN_TASK_FROM_QUICK_PANEL_ALLIANCE_DONATION": verify_ordinary_control_tried,
         "OPEN_TASK_FROM_QUICK_PANEL_HERO_RECRUIT": verify_ordinary_control_tried,
@@ -3495,6 +3505,22 @@ class LiveRuntime:
             if not (0.0 <= x_norm <= 1.0 and 0.0 <= y_norm <= 1.0):
                 return None
             return (x_norm, y_norm)
+        if semantic == "TRAINING_CAMP_BODY_FROM_FOCUS":
+            # The quick-panel DONE tile first focuses a barracks. Resolve the next tap
+            # from this exact screenshot's halo; never reuse the older ring centre or a
+            # cached screen point. The OCR reader must have positively classified the
+            # intermediate panel-focus state on HOME.
+            training = frame.training or {}
+            if (
+                frame.page is not Page.HOME
+                or frame_path is None
+                or training.get("navigation") != "PANEL_CAMP_FOCUSED"
+                or training.get("camp_focus_source") != "CURRENT_FRAME_SELECTION_HALO"
+            ):
+                return None
+            from .camp_ring import focused_camp_body_tap_norm
+
+            return focused_camp_body_tap_norm(Path(frame_path))
         if semantic == "TRAINING_CAMP_IN_RING":
             # The selected camp's own centre, read off the frame by camp_ring.py.
             #
