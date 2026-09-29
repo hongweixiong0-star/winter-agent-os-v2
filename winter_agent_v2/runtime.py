@@ -1426,6 +1426,14 @@ class LiveRuntime:
         discover = self.goal_library.discover
         discover_kwargs = {
             "observations": self._observations_for_engine(),
+            # A completed quick-panel row closes the panel and removes the camp's
+            # queue row from this frame.  GoalLibrary already knows how to keep
+            # that selected camp runnable while the current-frame focus halo is
+            # present; pass the role's committed goal so the scheduler can take
+            # the action-bar hop before unrelated discovery work replaces it.
+            "training_continuation_goal_id": str(
+                getattr(self, "_committed_goal", "") or ""
+            ),
             "role_id": role_id,
             "calendar_snapshot": calendar_snapshot,
         }

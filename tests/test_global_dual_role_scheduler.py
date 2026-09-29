@@ -5,7 +5,7 @@ import pytest
 from winter_agent_v2.brain import RuleBrain
 from winter_agent_v2.executor import Executor
 from winter_agent_v2.goal_library import (
-    GoalState, GoalStatus, GoalStateStore, newly_completed_goal_ids,
+    GoalLibrary, GoalState, GoalStatus, GoalStateStore, newly_completed_goal_ids,
 )
 from winter_agent_v2.models import Action, Decision, ExecutionResult, Page, VerificationResult, WorldState
 from winter_agent_v2.scheduler import ActiveRoleLiveState, RoleObservation, Scheduler
@@ -387,6 +387,7 @@ def test_runtime_goal_discovery_passes_confirmed_role_and_live_calendar_snapshot
     runtime._calendar_role_id = lambda: "B"
     runtime.goal_library = Library()
     runtime.goal_store = None
+    runtime.task_completion_store = None
     world = WorldState(
         page=Page.HOME,
         timestamp=now.isoformat(),
@@ -398,6 +399,34 @@ def test_runtime_goal_discovery_passes_confirmed_role_and_live_calendar_snapshot
     assert captured["role_id"] == "B"
     assert captured["calendar_snapshot"]["role_id"] == "B"
     assert captured["calendar_snapshot"]["entries"][0]["event_id"] == "BEAR_HUNT"
+
+
+def test_runtime_keeps_selected_camp_goal_runnable_on_the_focus_frame():
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    runtime._record_observations = lambda *_args, **_kwargs: None
+    runtime._observations_for_engine = lambda: {}
+    runtime._calendar_role_id = lambda: "ROLE_A"
+    runtime.goal_library = GoalLibrary()
+    runtime.goal_store = None
+    runtime.task_completion_store = None
+    runtime._committed_goal = "SHIELD_CAMP_TRAINING"
+
+    world = WorldState(
+        page=Page.HOME,
+        training={
+            "navigation": "PANEL_CAMP_FOCUSED",
+            "camp_focus_tap_norm": [0.5014, 0.4621],
+            "camp_focus_source": "CURRENT_FRAME_SELECTION_HALO",
+        },
+    )
+
+    goals = runtime._record_goals(world)
+    continuation = next(goal for goal in goals if goal.goal_id == "SHIELD_CAMP_TRAINING")
+
+    assert continuation.status is GoalStatus.READY
+    assert continuation.available_skills == ("TRAIN_TROOPS",)
+    assert continuation.evidence["continuation"] is True
+    assert continuation.evidence["intermediate_state"] == "PANEL_CAMP_FOCUSED"
 
 
 def test_runtime_persists_shared_action_outcome_and_episode_progress_by_goal(tmp_path):
@@ -412,6 +441,7 @@ def test_runtime_persists_shared_action_outcome_and_episode_progress_by_goal(tmp
     runtime._calendar_role_id = lambda: "A"
     runtime.global_scheduler_state_store = GlobalSchedulerStateStore(tmp_path / "global.json")
     runtime.episode_store = EpisodeStore(tmp_path / "episodes.jsonl")
+    runtime.task_completion_store = None
     runtime.capture_dir = tmp_path / "episode-42"
     runtime.device = SimpleNamespace(capture_backend="MAA")
     runtime.code_revision = "test-revision"
