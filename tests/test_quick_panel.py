@@ -102,13 +102,13 @@ class QuickPanelReaderTests(unittest.TestCase):
     def test_the_panel_is_read_as_its_own_surface(self) -> None:
         self.assertTrue(self.panel["open"])
 
-    def test_all_three_barracks_are_reported_idle(self) -> None:
-        """The reading the operator had to supply by hand, from one frame."""
+    def test_all_three_completed_barracks_remain_claimable_states(self) -> None:
+        """A completed queue remains distinct from an idle queue until it is collected."""
         camps = self.panel["camps"]
         self.assertEqual(set(camps), {"SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP"})
         for camp, reading in camps.items():
-            self.assertEqual(reading["status"], "IDLE", camp)
-            self.assertIs(reading["queue_available"], True, camp)
+            self.assertEqual(reading["status"], "COMPLETED", camp)
+            self.assertIs(reading["queue_available"], False, camp)
             self.assertEqual(reading["source_word"], "已完成", camp)
         self.assertEqual(camps["SHIELD_CAMP"]["troop_type"], "INFANTRY")
         self.assertEqual(camps["LANCER_CAMP"]["troop_type"], "LANCER")
@@ -131,6 +131,20 @@ class QuickPanelReaderTests(unittest.TestCase):
         self.assertEqual(research["status"], "IDLE")
         self.assertIs(research["queue_available"], True)
         self.assertEqual(research["source_word"], "空闲中")
+
+    def test_day_prefixed_countdowns_are_preserved_for_camp_and_research(self) -> None:
+        tokens = list(PANEL_TOKENS)
+        tokens[7] = _token("1d08:50:34", 224.5, 576.5)
+        tokens[14] = _token("1天 09:01:01", 224.0, 835.0)
+        panel = read_quick_panel(None, _NullOCR(tuple(tokens)))
+
+        shield = panel["camps"]["SHIELD_CAMP"]
+        self.assertEqual(shield["status"], "IN_PROGRESS")
+        self.assertEqual(shield["timer"], "1d08:50:34")
+        research = panel["research"]
+        self.assertEqual(research["status"], "IN_PROGRESS")
+        self.assertIs(research["queue_available"], False)
+        self.assertEqual(research["timer"], "1天 09:01:01")
 
     def test_a_second_building_queue_is_not_a_second_reading(self) -> None:
         """队列2 sits inside 建筑队列's section, so it must not overwrite the first row."""
@@ -189,13 +203,13 @@ class LiveQuickPanelTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.vision = production_vision()
 
-    def test_the_open_panel_reads_all_three_barracks_idle(self) -> None:
+    def test_the_open_panel_preserves_all_three_completed_barracks(self) -> None:
         world = self.vision.observe(PANEL_OPEN)
         camps = world.camps
         self.assertEqual(set(camps), {"SHIELD_CAMP", "LANCER_CAMP", "MARKSMAN_CAMP"})
         for camp, reading in camps.items():
-            self.assertEqual(reading.get("status"), "IDLE", camp)
-            self.assertIs(reading.get("queue_available"), True, camp)
+            self.assertEqual(reading.get("status"), "COMPLETED", camp)
+            self.assertIs(reading.get("queue_available"), False, camp)
 
     def test_the_open_panel_no_longer_masquerades_as_the_research_page(self) -> None:
         world = self.vision.observe(PANEL_OPEN)

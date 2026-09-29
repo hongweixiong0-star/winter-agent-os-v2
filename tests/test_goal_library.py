@@ -36,6 +36,18 @@ class GoalLibraryTests(unittest.TestCase):
         )
         self.assertEqual(GoalLibrary().best(goals).goal_id, "READY")
 
+    def test_queue_countdown_is_retained_when_only_source_word_has_it(self):
+        goals = {goal.goal_id: goal for goal in GoalLibrary().discover(WorldState(
+            page=Page.HOME,
+            research={"status": "IN_PROGRESS", "queue_available": False,
+                      "source_word": "1天 09:01:01"},
+        ))}
+
+        research_goal = goals["KEEP_RESEARCH_PRODUCTIVE"]
+        self.assertEqual(research_goal.status, GoalStatus.BLOCKED)
+        self.assertEqual(research_goal.retry_after, "1天 09:01:01")
+        self.assertEqual(research_goal.evidence["timer"], "1天 09:01:01")
+
     def test_mobilization_goal_provider_is_live_role_scoped_and_reuses_existing_skill(self):
         world = WorldState(
             page=Page.HOME,

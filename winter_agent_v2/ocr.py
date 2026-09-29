@@ -2374,6 +2374,15 @@ RESOURCE_TAB_LABEL_TO_KIND: dict[str, str] = {
 QUICK_PANEL_IDLE_WORDS: tuple[str, ...] = ("空闲中",)
 QUICK_PANEL_COMPLETED_WORDS: tuple[str, ...] = ("已完成",)
 QUICK_PANEL_BUSY_WORDS: tuple[str, ...] = ("训练中", "升级中", "研究中", "进行中")
+QUICK_PANEL_COUNTDOWN_RE = re.compile(
+    r"(?:(\d+)\s*(?:天|d)\s*)?\d{1,3}:\d{2}:\d{2}",
+    re.IGNORECASE,
+)
+
+
+def _quick_panel_countdown(value: str | None) -> str | None:
+    text = str(value or "").strip()
+    return text if text and QUICK_PANEL_COUNTDOWN_RE.fullmatch(text) else None
 
 
 def _quick_panel_queue_state(word: str) -> tuple[str, bool | None]:
@@ -2385,7 +2394,7 @@ def _quick_panel_queue_state(word: str) -> tuple[str, bool | None]:
         return "IDLE", True
     if value in QUICK_PANEL_BUSY_WORDS:
         return "IN_PROGRESS", False
-    if re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", value):
+    if _quick_panel_countdown(value):
         return "IN_PROGRESS", False
     return "UNKNOWN", None
 
@@ -2826,7 +2835,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
             # ``knowledge/resources/mechanism_cards.json``: "队列进行中 -> 使用加速 ->
             # 剩余时间下降" -- so it is returned as the state and the caller treats it
             # as busy, the same way the research reader does.
-            if re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", text):
+            if _quick_panel_countdown(text):
                 return text
         return None
 
@@ -2865,12 +2874,13 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 running = name in QUICK_PANEL_BUSY_WORDS or any(
                     word in name for word in QUICK_PANEL_BUSY_WORDS
                 )
-                if re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state):
+                timer = _quick_panel_countdown(state)
+                if timer:
                     running = True
                 completed = state in QUICK_PANEL_COMPLETED_WORDS
                 panel["building"] = {
                     "name": name,
-                    "timer": state if running and re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state) else None,
+                    "timer": timer if running else None,
                     "status": "IN_PROGRESS" if running else "COMPLETED" if completed else "IDLE",
                     "queue_available": not running and not completed,
                     "source_word": state,
@@ -2892,6 +2902,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     "label": name,
                     "status": queue_status,
                     "queue_available": queue_available,
+                    "timer": _quick_panel_countdown(state),
                     "source_word": state,
                 }
             if camps:
@@ -2926,7 +2937,8 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                 state = state_below(name_y)
                 if state is None:
                     continue
-                running = bool(re.fullmatch(r"(?:(\d+)天)?\d{1,2}:\d{2}:\d{2}", state))
+                timer = _quick_panel_countdown(state)
+                running = timer is not None
                 recruit_key = (
                     "HERO_RECRUIT_EPIC" if "史诗" in name
                     else "HERO_RECRUIT" if "高级" in name
@@ -2936,7 +2948,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     "name": name,
                     "key": recruit_key,
                     "status": "IN_PROGRESS" if running else ("AVAILABLE" if ("免费" in state or "可" in state) else "UNKNOWN"),
-                    "timer": state if running else None,
+                    "timer": timer,
                     "source_word": state,
                 })
             if recruit_rows:
@@ -2953,6 +2965,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
                     "name": name,
                     "status": queue_status,
                     "queue_available": queue_available,
+                    "timer": _quick_panel_countdown(state),
                     "source_word": state,
                 }
                 break
@@ -2985,6 +2998,7 @@ def read_quick_panel(image_path, ocr, *, result: OCRResult | None = None) -> dic
             "label": name,
             "status": queue_status,
             "queue_available": queue_available,
+            "timer": _quick_panel_countdown(state),
             "source_word": state,
         }
         section_rows.append(("部队训练", name, token.centre[1]))

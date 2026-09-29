@@ -485,12 +485,16 @@ def test_switch_cost_uses_measured_median_latency_with_a_safe_cap():
     assert runtime._measured_role_switch_cost(None) == 30.0
 
 
-def test_cached_countdown_becomes_role_scoped_global_wakeup(tmp_path):
+@pytest.mark.parametrize(
+    ("countdown", "seconds"),
+    (("00:07:00", 420), ("1d09:01:01", 118861), ("1天 09:01:01", 118861)),
+)
+def test_cached_countdown_becomes_role_scoped_global_wakeup(tmp_path, countdown, seconds):
     now = datetime.now(timezone.utc)
     store = GoalStateStore(tmp_path / "goal_state.json")
     waiting_goal = GoalState(
-        "B_TRAINING", GoalStatus.BLOCKED, remaining_seconds=420,
-        available_skills=(), retry_after="00:07:00",
+        "B_TRAINING", GoalStatus.BLOCKED, remaining_seconds=seconds,
+        available_skills=(), retry_after=countdown,
         evidence={"condition": "queue_busy"},
     )
     store.write(WorldState(page=Page.TRAINING, timestamp=now.isoformat()),
@@ -513,7 +517,7 @@ def test_cached_countdown_becomes_role_scoped_global_wakeup(tmp_path):
     )
     wake = datetime.fromisoformat(str(observations[1].next_action_at))
 
-    assert abs((wake - (now + timedelta(minutes=7))).total_seconds()) < 2
+    assert abs((wake - (now + timedelta(seconds=seconds))).total_seconds()) < 2
 
 
 def test_role_switch_invalidates_every_live_ui_field_until_new_identity_observed():

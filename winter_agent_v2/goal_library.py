@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Iterable, Mapping
 import json
+import re
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,20 @@ from .rally import BearPhase, bear_phase
 #: the same number in the goal's status, its completion, its loss estimate and its
 #: distance, and four copies of a boundary is how they drift apart.
 STAMINA_FLOOR = 30
+
+_QUEUE_COUNTDOWN_RE = re.compile(
+    r"(?:(?:\d+)\s*(?:天|d)\s*)?\d{1,3}:\d{2}:\d{2}",
+    re.IGNORECASE,
+)
+
+
+def _queue_countdown_text(state: Mapping[str, Any]) -> str | None:
+    """Keep a real queue countdown even when OCR only populated ``source_word``."""
+    for key in ("timer", "source_word"):
+        value = str(state.get(key) or "").strip()
+        if value and _QUEUE_COUNTDOWN_RE.fullmatch(value):
+            return value
+    return None
 
 #: One training goal per barracks (open issue #86).
 #:
@@ -1659,11 +1674,13 @@ class GoalLibrary:
         if not state:
             return
         busy = state.get("queue_available") is False or state.get("status") == "IN_PROGRESS" or state.get("all_queues_busy") is True
+        countdown = _queue_countdown_text(state) if busy else None
         goals.append(GoalState(goal_id, GoalStatus.BLOCKED if busy else GoalStatus.READY,
                                completion=1.0 if busy else 0.0, development_value=value,
                                available_skills=skills,
-                               retry_after=(str(state.get("timer") or "") or None) if busy else None,
+                               retry_after=countdown,
                                evidence={"queue_busy": busy,
+                                         "timer": countdown,
                                          "condition": "queue_busy" if busy else ""},
                                distance=0.0 if busy else 1.0))
 
@@ -1794,7 +1811,7 @@ class GoalLibrary:
                 goals.append(GoalState(
                     goal_id, GoalStatus.BLOCKED, completion=1.0,
                     development_value=TRAINING_CAMP_VALUE, available_skills=(),
-                    retry_after=(str(state.get("timer") or "") or None),
+                    retry_after=_queue_countdown_text(state),
                     evidence={**evidence, "reason": "this_camp_is_training",
                               "condition": "camp_queue_busy"},
                     distance=0.0,

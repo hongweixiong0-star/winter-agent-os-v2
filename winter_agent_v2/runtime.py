@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 import os
 import inspect
+import re
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -1219,12 +1220,30 @@ class LiveRuntime:
             seconds = None
             if text.isdigit():
                 seconds = int(text)
-            elif ":" in text and all(part.isdigit() for part in text.split(":")):
-                parts = [int(part) for part in text.split(":")]
-                if len(parts) == 2:
-                    seconds = parts[0] * 60 + parts[1]
-                elif len(parts) == 3:
-                    seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
+            else:
+                countdown = re.fullmatch(
+                    r"(?:(\d+)\s*(?:天|d)\s*)?(\d{1,3}):(\d{2}):(\d{2})",
+                    text,
+                    re.IGNORECASE,
+                )
+                if countdown:
+                    days, hours, minutes, remainder = countdown.groups()
+                    hours_value, minutes_value, seconds_value = (
+                        int(hours), int(minutes), int(remainder)
+                    )
+                    if minutes_value < 60 and seconds_value < 60:
+                        seconds = (
+                            int(days or 0) * 86400
+                            + hours_value * 3600
+                            + minutes_value * 60
+                            + seconds_value
+                        )
+                elif ":" in text and all(part.isdigit() for part in text.split(":")):
+                    parts = [int(part) for part in text.split(":")]
+                    if len(parts) == 2:
+                        seconds = parts[0] * 60 + parts[1]
+                    elif len(parts) == 3:
+                        seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
             return (reference + timedelta(seconds=max(0, seconds))
                     if seconds is not None and reference is not None else None)
 
