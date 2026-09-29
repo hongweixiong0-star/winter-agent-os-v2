@@ -74,6 +74,8 @@ def _role_switch_fixture(tmp_path):
 
 
 def _stub_switch_navigation(monkeypatch, controller, tmp_path, *, final_identity="role-b"):
+    identity_waits = []
+
     def frame(label):
         return tmp_path / f"{label}.png"
 
@@ -81,7 +83,7 @@ def _stub_switch_navigation(monkeypatch, controller, tmp_path, *, final_identity
     monkeypatch.setattr(controller, "identify_current_role", lambda _path: ("role-a", 0.99))
     monkeypatch.setattr(controller, "_click_template", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(controller, "_read_identity", lambda path: SimpleNamespace(
-        role_id="role-a" if Path(path).name == "profile.png" else final_identity
+        role_id="role-a" if Path(path).name == "source_profile.png" else final_identity
     ))
     monkeypatch.setattr(controller, "_click_text", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(controller, "_capture_until_text", lambda label, *_args, **_kwargs: frame(label))
@@ -90,8 +92,36 @@ def _stub_switch_navigation(monkeypatch, controller, tmp_path, *, final_identity
     monkeypatch.setattr(controller, "_capture_until_role_login_dialog",
                         lambda *_args, **_kwargs: frame("login_confirm"))
     monkeypatch.setattr(controller, "_wait_for_target_home", lambda *_args, **_kwargs: frame("home"))
-    monkeypatch.setattr(controller, "_capture_until_identity",
-                        lambda *_args, **_kwargs: frame("target_profile"))
+    def capture_until_identity(label, role_id, *, timeout):
+        identity_waits.append((label, role_id, timeout))
+        return frame("source_profile" if role_id == "role-a" else "target_profile")
+
+    monkeypatch.setattr(controller, "_capture_until_identity", capture_until_identity)
+    controller._identity_wait_calls = identity_waits
+
+
+def test_capture_until_identity_waits_for_profile_animation(tmp_path):
+    _store, controller = _role_switch_fixture(tmp_path)
+    now = [0.0]
+    observations = [None, None, SimpleNamespace(role_id="role-a")]
+    frames = []
+
+    controller.monotonic = lambda: now[0]
+    controller.sleeper = lambda seconds: now.__setitem__(0, now[0] + seconds)
+    controller.poll_seconds = 0.25
+    def capture(label):
+        path = tmp_path / f"{label}-{len(frames)}.png"
+        frames.append(path)
+        return path
+
+    controller._capture = capture
+    controller._read_identity = lambda _path: observations.pop(0)
+
+    found = controller._capture_until_identity("source_profile", "role-a", timeout=1.0)
+
+    assert found == tmp_path / "source_profile-2.png"
+    assert len(frames) == 3
+    assert now[0] == 0.5
 
 
 def test_verified_role_switch_invalidates_both_roles_live_page_state(tmp_path, monkeypatch):
@@ -110,6 +140,10 @@ def test_verified_role_switch_invalidates_both_roles_live_page_state(tmp_path, m
     assert result.ok is True
     assert result.role_id == "role-b"
     assert result.reason == "ROLE_SWITCH_LIVE_PROFILE_VERIFIED"
+    assert controller._identity_wait_calls == [
+        ("source_profile", "role-a", 8.0),
+        ("target_profile", "role-b", 8.0),
+    ]
     assert recorded and recorded[0]["verification"] == "LIVE_ROLE_SWITCH_PROFILE_READ"
     assert state.active_role_id == "role-b"
     assert state.role_switch_pending is None

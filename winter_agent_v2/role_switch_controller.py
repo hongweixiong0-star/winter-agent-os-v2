@@ -179,7 +179,17 @@ class RoleSwitchController:
                                         ROLE_AVATAR_THRESHOLD):
                 return self._abort(target_role_id, "PROFILE_AVATAR_NOT_LOCATED", evidence, started)
 
-            profile_path = self._capture("profile")
+            # The avatar click opens the profile panel with a short client
+            # animation. A single immediate frame can still be the city/map
+            # underneath it, so wait for the account ID itself before treating
+            # the source account as mismatched. This remains bounded and never
+            # authorizes a role-scoped action without fresh identity evidence.
+            profile_path = self._capture_until_identity(
+                "source_profile", source_role_id, timeout=8.0,
+            )
+            if profile_path is None:
+                return self._abort(target_role_id, "SOURCE_PROFILE_IDENTITY_NOT_VERIFIED",
+                                   evidence, started)
             evidence.append(str(profile_path))
             identity = self._read_identity(profile_path)
             if identity is None or identity.role_id != source_role_id:
