@@ -213,6 +213,7 @@ class GlobalSchedulerStateStore:
             role.dirty_live_state = True
             role.page = None
             role.page_confidence = 0.0
+            role.current_goal = ""
             role.current_skill = ""
         if actual:
             role = state.roles.get(actual) or RoleRuntimeState(role_key=actual, role_id=actual)
@@ -269,6 +270,7 @@ class GlobalSchedulerStateStore:
             role.health = "NEEDS_FRESH_OBSERVATION" if role_id == active else "STALE"
             role.page = None
             role.page_confidence = 0.0
+            role.current_goal = ""
             role.current_skill = ""
             role.dirty_live_state = True
             state.roles[role_id] = role
@@ -301,6 +303,7 @@ class GlobalSchedulerStateStore:
             other.dirty_live_state = True
             other.page = None
             other.page_confidence = 0.0
+            other.current_goal = ""
             other.current_skill = ""
         role = state.roles.get(role_id) or RoleRuntimeState(role_key=role_id, role_id=role_id)
         rows = [self._logical_mapping(dict(row)) for row in (goal_summaries or ())]
@@ -395,11 +398,15 @@ class GlobalSchedulerStateStore:
             state.roles[source].dirty_live_state = True
             state.roles[source].page = None
             state.roles[source].page_confidence = 0.0
+            state.roles[source].current_goal = ""
+            state.roles[source].current_skill = ""
         role = state.roles.get(target) or RoleRuntimeState(role_key=target, role_id=target)
         role.health = "NEEDS_FRESH_OBSERVATION"
         role.dirty_live_state = True
         role.page = None
         role.page_confidence = 0.0
+        role.current_goal = ""
+        role.current_skill = ""
         role.blocked_until = None
         role.switch_failure_streak = 0
         role.last_failure = ""
@@ -442,6 +449,7 @@ class GlobalSchedulerStateStore:
                 target.dirty_live_state = True
                 target.page = None
                 target.page_confidence = 0.0
+                target.current_goal = ""
                 target.current_skill = ""
                 state.roles[target_id] = target
         actual = str(actual_role_id or "").strip()
@@ -452,6 +460,8 @@ class GlobalSchedulerStateStore:
             role.dirty_live_state = True
             role.page = None
             role.page_confidence = 0.0
+            role.current_goal = ""
+            role.current_skill = ""
             state.roles[actual] = role
             state.global_health = "RUNNING"
         else:
@@ -462,6 +472,7 @@ class GlobalSchedulerStateStore:
                 role.dirty_live_state = True
                 role.page = None
                 role.page_confidence = 0.0
+                role.current_goal = ""
                 role.current_skill = ""
         state.last_switch_reason = f"ROLE_SWITCH_ABORT:{reason}"
         state.scheduler_generation += 1
