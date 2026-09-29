@@ -30,7 +30,21 @@ from .ocr import (
     read_power_details_action_tokens, read_tap_anywhere_instruction,
 )
 from .camp_training import CAMP_LABELS, CAMP_ORDER
-from .scheduler import Scheduler
+from .scheduler import ACTIVE_ROLE_NO_CANDIDATE, Scheduler
+
+#: Selections that mean "finish this step and re-observe the SAME role".  Every member is
+#: a no-switch verdict, so the runtime must never fall through to executing a decision
+#: built from the frame captured before it.  ``ACTIVE_ROLE_NO_CANDIDATE`` is directive
+#: §3/§4/§9: the active role produced no candidate while its Role Session was still
+#: locked, so it keeps the device and is observed again.
+ROLE_REFRESH_ONLY_REASONS = frozenset({
+    "GLOBAL_WAIT",
+    "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
+    "GLOBAL_CANDIDATE_GENERATION_GAP",
+    "GLOBAL_REFRESH_REQUIRED_NO_SAFE_CANDIDATE",
+    ACTIVE_ROLE_NO_CANDIDATE,
+})
+
 from .goal_library import (
     GoalLibrary, GoalStateStore, action_relevant_goal_ids,
     newly_completed_goal_ids, progress_moved, route_for,
@@ -6309,11 +6323,8 @@ class LiveRuntime:
                         # intermediate login page. Never execute a decision built
                         # from the screenshot captured before the failed transition.
                         return finish(switch_reason)
-                elif selection.decision.reason in {
-                    "GLOBAL_WAIT", "GLOBAL_CAPABILITY_GAP_NO_EXECUTABLE_CANDIDATE",
-                    "GLOBAL_CANDIDATE_GENERATION_GAP",
-                    "GLOBAL_REFRESH_REQUIRED_NO_SAFE_CANDIDATE",
-                } and selection.index is None:
+                elif selection.decision.reason in ROLE_REFRESH_ONLY_REASONS \
+                        and selection.index is None:
                     reason = selection.decision.reason
                     self._runtime(
                         agent_state=AgentState.IDLE.value,

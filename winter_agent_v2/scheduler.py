@@ -27,6 +27,11 @@ from .role_session import (
     evaluate_role_session_gate,
     resolve_policy,
 )
+
+#: Directive §3/§4/§9: the ACTIVE role produced no candidate while its Role Session was
+#: still locked.  The answer is to re-observe the active role, never to log into another
+#: account.  The runtime matches on this reason string, so it is a public contract.
+ACTIVE_ROLE_NO_CANDIDATE = "ACTIVE_ROLE_NO_CANDIDATE_REOBSERVE"
 from . import entry_badges
 from . import event_schedule
 
@@ -1067,6 +1072,37 @@ class Scheduler:
 
         switch_reason_class = ""
         dominant_hard = max(hard_candidates, key=lambda item: item["priority"], default=None)
+
+        def candidate_explanations_for(
+            selected_item: dict[str, Any] | None, selected_reason: str,
+        ) -> tuple[dict[str, Any], ...]:
+            """Explain every candidate once, for the normal and the keep-current paths.
+
+            Defined here because the keep-current path returns before the ordinary
+            explanation block runs, and a decision that keeps the role must still show
+            the operator exactly which other-role candidate it declined.
+            """
+            return tuple({
+                "role_id": item["role"].role_id,
+                "goal_id": str(getattr(item["goal"], "goal_id", "") or ""),
+                "skill_id": item["decision"].skill,
+                "source": "CACHED_GOAL_REFRESH" if item["requires_role_refresh"] else "FRESH_ROLE_BRAIN",
+                "ready_now": not item["requires_role_refresh"],
+                "score": float(item["priority"]),
+                "role_switch_cost": max(0.0, float(item["role"].switch_cost or 0.0)),
+                "hard_event": bool(item["hard_event"]),
+                "deadline_seconds": item.get("deadline_seconds"),
+                "event_starts_in_seconds": item.get("event_starts_in_seconds"),
+                "event_phase": item.get("event_phase"),
+                "selected": item is selected_item,
+                "selected_reason": selected_reason if item is selected_item else "",
+                "rejected_reason": "selected_candidate_won_global_arbitration" if item is selected_item
+                else ("hard_event_preemption" if dominant_hard is not None and not item["hard_event"]
+                      else ("role_session_locked" if not gate.allowed
+                            and item["role"].role_id != current_role_id
+                            else "lower_score_or_role_hysteresis")),
+                "attached_goal_ids": list(item["credited_goal_ids"]),
+            } for item in candidates)
         if dominant_hard is not None:
             selected = dominant_hard
             if selected["role"].role_id == current_role_id:
@@ -1084,6 +1120,54 @@ class Scheduler:
             selected = current
             reason = (f"KEEP_CURRENT_ROLE: ROLE_SESSION_LOCKED({gate.detail}) — "
                       f"{gate.description}")
+        elif (current is None and not gate.allowed and current_role_id
+              and bool((status_by_role.get(current_role_id) or {}).get("state_fresh"))):
+            # Directive §3/§4/§9 — the ACTIVE role produced no candidate in this
+            # scheduling while its Role Session is still locked.  ``current is None`` is a
+            # planning gap, not a verdict on the role: the usual cause is the active Brain
+            # answering SAFE_STOP/WAIT for one tick while the page is transient (see the
+            # skip at the top of the per-role loop).  Measured live 2026-09-29T18:15:19 this
+            # exact path moved the device to the other account while the outgoing role was
+            # FRESH and still owned 7 runnable Goals, reporting
+            # ``ROLE_SESSION_END(ROLE_SESSION_ACTIVE)`` for a gate that said LOCKED -- the
+            # highest-value form of the meaningless role switch this directive removes.
+            # The role keeps the device and is re-observed instead.  ``no_work_streak``
+            # still advances for this scheduling (GlobalSchedulerState), so a role that is
+            # genuinely stuck ends its session through §4(D) rather than being abandoned on
+            # the first transient WAIT.
+            explanation = (f"KEEP_CURRENT_ROLE: ROLE_SESSION_LOCKED({gate.detail}) — "
+                           f"{current_role_id} produced no candidate this scheduling, so "
+                           f"re-observe the active role instead of switching accounts")
+            next_wakeup = min(wakeups).isoformat() if wakeups else None
+            keep_rows = candidate_explanations_for(None, explanation)
+            self._persist_global_decision({
+                "decision": "KEEP_ROLE",
+                "current_role_id": current_role_id,
+                "selected_role_id": current_role_id,
+                "selected_goal_id": "",
+                "selected_skill_id": "",
+                "requires_role_refresh": True,
+                "reason": explanation,
+                "next_wakeup": next_wakeup,
+                "role_statuses": role_statuses,
+                "candidates": list(keep_rows),
+                "session_gate": session_gate_row,
+                "switch_reason_class": "",
+                "hard_event_roles": hard_event_roles,
+                "active_role_candidate_missing": True,
+            })
+            return TaskSelection(
+                None,
+                Decision("SAFE_STOP", ACTIVE_ROLE_NO_CANDIDATE, 1.0,
+                         "reobserve_active_role_and_rearbitrate"),
+                tuple(skipped), role_id=current_role_id, selection_reason=explanation,
+                next_wakeup=next_wakeup,
+                role_statuses=tuple(role_statuses),
+                goal_metrics=tuple(goal_metrics),
+                requires_role_refresh=True,
+                candidate_explanations=keep_rows,
+                session_gate=dict(session_gate_row),
+            )
         elif current is not None and dwell_active:
             selected = current
             reason = (f"KEEP_CURRENT_ROLE: {current_role_id} within minimum dwell "
@@ -1100,9 +1184,13 @@ class Scheduler:
                           f"HARD_EVENT_PREEMPT for {selected['decision'].skill}")
                 switch_reason_class = HARD_EVENT_PREEMPT
             elif current is None:
+                # Only reachable when the gate ALLOWED the move: either the active role
+                # was never observed fresh (nothing to keep it for), or its own board no
+                # longer holds runnable work.  The text must not claim a session end the
+                # gate never granted.
                 reason = (f"SWITCH {current_role_id or 'UNKNOWN'}→{selected['role'].role_id}: "
-                          f"ROLE_SESSION_END({gate.detail}); current role has no fresh "
-                          f"runnable Goal")
+                          f"ROLE_SESSION_{'END' if gate.allowed else 'LOCKED'}"
+                          f"({gate.detail}); current role has no fresh runnable Goal")
                 switch_reason_class = gate.reason_class or NO_RUNNABLE_WORK
             elif selected["priority"] >= current["priority"] + max(0.0, switch_margin):
                 # ``switch_margin`` survives only as this tie-break (directive §11): the
@@ -1134,27 +1222,7 @@ class Scheduler:
                     # wait cycle so cross-role exploration cannot starve silently.
                     self.candidate_pool.wait_cycle(skill)
         next_wakeup = min(wakeups).isoformat() if wakeups else None
-        candidate_explanations = tuple({
-            "role_id": item["role"].role_id,
-            "goal_id": str(getattr(item["goal"], "goal_id", "") or ""),
-            "skill_id": item["decision"].skill,
-            "source": "CACHED_GOAL_REFRESH" if item["requires_role_refresh"] else "FRESH_ROLE_BRAIN",
-            "ready_now": not item["requires_role_refresh"],
-            "score": float(item["priority"]),
-            "role_switch_cost": max(0.0, float(item["role"].switch_cost or 0.0)),
-            "hard_event": bool(item["hard_event"]),
-            "deadline_seconds": item.get("deadline_seconds"),
-            "event_starts_in_seconds": item.get("event_starts_in_seconds"),
-            "event_phase": item.get("event_phase"),
-            "selected": item is selected,
-            "selected_reason": reason if item is selected else "",
-            "rejected_reason": "selected_candidate_won_global_arbitration" if item is selected
-            else ("hard_event_preemption" if dominant_hard is not None and not item["hard_event"]
-                  else ("role_session_locked" if not gate.allowed
-                        and item["role"].role_id != current_role_id
-                        else "lower_score_or_role_hysteresis")),
-            "attached_goal_ids": list(item["credited_goal_ids"]),
-        } for item in candidates)
+        candidate_explanations = candidate_explanations_for(selected, reason)
         self._persist_global_decision({
             "decision": ("ROLE_REFRESH_REQUIRED" if selected["requires_role_refresh"]
                          else "KEEP_ROLE" if role_id == current_role_id else "SWITCH_ROLE"),

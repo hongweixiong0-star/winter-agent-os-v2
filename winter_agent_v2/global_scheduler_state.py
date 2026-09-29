@@ -60,6 +60,24 @@ def _parse_dt(value: str | datetime | None) -> datetime | None:
         return None
 
 
+def _advance_no_work_streak(
+    streak: int, *, runnable_now: int, candidate_missing: bool,
+) -> int:
+    """Directive §4(D): count consecutive schedulings that found no executable work.
+
+    A scheduling advances the streak when the role has nothing runnable, **or** when the
+    active role yielded no candidate at all even though its cached board still lists
+    runnable Goals.  The second case is the one that matters in production: the Goals
+    exist, but nothing could be planned from the live state, so counting it is what lets
+    a genuinely stuck role end its own session.  Without it a role whose Brain only ever
+    answers WAIT would be pinned to the device forever -- the mirror image of the bug that
+    used to abandon such a role on the first transient WAIT.
+    """
+    if runnable_now <= 0 or candidate_missing:
+        return min(10_000, max(0, int(streak)) + 1)
+    return 0
+
+
 @dataclass
 class RoleRuntimeState:
     """Restart-safe, role-scoped scheduler summary; never a cached live screen."""
@@ -515,8 +533,10 @@ class GlobalSchedulerStateStore:
                 settled_goal_ids=row.get("board_settled_goal_ids") or (),
                 runnable_goal_ids=row.get("board_runnable_goal_ids") or (),
             )
-            session.no_work_streak = (
-                0 if session.runnable_now > 0 else min(10_000, session.no_work_streak + 1)
+            session.no_work_streak = _advance_no_work_streak(
+                session.no_work_streak,
+                runnable_now=session.runnable_now,
+                candidate_missing=bool(decision.get("active_role_candidate_missing")),
             )
         gate = decision.get("session_gate")
         if isinstance(gate, Mapping):

@@ -974,3 +974,172 @@ def test_global_decision_log_includes_scheduled_event_countdown(tmp_path):
     assert bear["hard_event"] is True
     assert bear["event_starts_in_seconds"] == pytest.approx(240.0)
     assert bear["event_phase"] == "T5"
+
+
+def _cached_role(role_id, *, now, goals, switch_cost=0.0, blocked_until=None):
+    """A role the scheduler may only plan from its cached logical board.
+
+    ``world is None`` is what the live runtime builds for every account that is not on the
+    device (see LiveRuntime._global_role_observations), so this is the honest shape of an
+    inactive role in production.
+    """
+    return RoleObservation(
+        role_id=role_id,
+        confirmed_role_id=role_id,
+        world=None,
+        observed_at=now,
+        goals=tuple(goals),
+        switch_cost=switch_cost,
+        switch_blocked_until=blocked_until,
+    )
+
+
+def test_a_transient_active_role_wait_does_not_switch_accounts(tmp_path):
+    """Directive §3/§4/§9 — the exact production regression, measured 2026-09-29T18:15:19.
+
+    The active role was fresh and owned 7 runnable Goals, but its Brain answered
+    SAFE_STOP/WAIT for one tick, so it produced no candidate.  ``current is None`` was
+    read as "the role is finished" and the device moved to the other account, reporting
+    ``ROLE_SESSION_END(ROLE_SESSION_ACTIVE)`` for a gate that said LOCKED.
+
+    An empty candidate list for the ACTIVE role is a planning gap.  The role keeps the
+    device and is re-observed; it is never abandoned for another account's cached Goal.
+    """
+    from winter_agent_v2.scheduler import ACTIVE_ROLE_NO_CANDIDATE
+
+    now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+    scheduler, _ = _session_scheduler(tmp_path, "A")
+    roles = (
+        # Fresh, and still owns runnable work -- but this tick plans nothing.
+        _role("A", now=now, decision=Decision("SAFE_STOP", "page_transient", 1, "wait"),
+              goals=(_goal("KEEP_TRAINING_PRODUCTIVE", "TRY_ORDINARY_CONTROL", 300),
+                     _goal("CLEAR_INTEL", "OPEN_INTEL", 300))),
+        # A genuinely valuable cached Goal on the other account.
+        _cached_role("B", now=now, switch_cost=20.0,
+                     goals=(_goal("AVOID_STAMINA_WASTE", "SEARCH_RESOURCE", 900),
+                            _goal("DAILY_REWARD", "DAILY_CLAIM_REWARDS", 800))),
+    )
+
+    selected = scheduler.select_global(
+        roles, current_role_id="A", now=now,
+        last_switch_at=now - timedelta(minutes=10), min_role_dwell_seconds=300,
+    )
+
+    assert selected.role_id == "A"
+    assert selected.index is None
+    assert selected.decision.reason == ACTIVE_ROLE_NO_CANDIDATE
+    assert selected.switch_reason_class == ""
+    assert "ROLE_SESSION_LOCKED" in selected.selection_reason
+
+
+def test_a_candidate_less_scheduling_advances_the_no_work_streak(tmp_path):
+    """Directive §4(D): a stall must be able to end the session, or the fix wedges AUTO.
+
+    Counting the candidate-less scheduling is the mirror of the regression above: without
+    it a role whose Brain only ever answers WAIT would be pinned to the device forever.
+    """
+    now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+    scheduler, store = _session_scheduler(tmp_path, "A")
+
+    def roles():
+        return (
+            _role("A", now=now, decision=Decision("SAFE_STOP", "page_transient", 1, "wait"),
+                  goals=(_goal("KEEP_TRAINING_PRODUCTIVE", "TRY_ORDINARY_CONTROL", 300),)),
+            _cached_role("B", now=now, goals=(_goal("DAILY_REWARD", "DAILY_CLAIM_REWARDS", 900),)),
+        )
+
+    for _ in range(2):
+        scheduler.select_global(roles(), current_role_id="A", now=now)
+
+    session = store.load().role_session
+    assert session.no_work_streak >= 2
+    assert session.runnable_now == 1  # the board still lists work; the streak is about planning
+
+    # §4(D) now allows the ordinary switch on its own merits.
+    allowed = scheduler.select_global(
+        roles(), current_role_id="A", now=now,
+        last_switch_at=now - timedelta(minutes=10),
+    )
+    assert allowed.role_id == "B"
+
+
+def test_a_healthy_scheduling_resets_the_no_work_streak(tmp_path):
+    """A scheduling that DID find work clears the stall counter, so §4(D) never false-fires."""
+    now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+    scheduler, store = _session_scheduler(tmp_path, "A")
+
+    scheduler.select_global(
+        (_role("A", now=now, decision=Decision("SAFE_STOP", "page_transient", 1, "wait"),
+               goals=(_goal("KEEP_TRAINING_PRODUCTIVE", "TRY_ORDINARY_CONTROL", 300),)),
+         _cached_role("B", now=now, goals=(_goal("DAILY_REWARD", "DAILY_CLAIM_REWARDS", 900),))),
+        current_role_id="A", now=now,
+    )
+    assert store.load().role_session.no_work_streak >= 1
+
+    scheduler.select_global(
+        (_role("A", now=now, decision=Decision("OPEN_INTEL", "intel_ready", 1, "opened"),
+               goals=(_goal("CLEAR_INTEL", "OPEN_INTEL", 300),)),
+         _cached_role("B", now=now, goals=(_goal("DAILY_REWARD", "DAILY_CLAIM_REWARDS", 900),))),
+        current_role_id="A", now=now,
+    )
+
+    assert store.load().role_session.no_work_streak == 0
+
+
+def test_a_stale_active_role_may_still_be_left(tmp_path):
+    """The keep-current guard must not wedge AUTO when the active role cannot be observed.
+
+    A stale observation is not evidence of work (directive §9 is about not *inventing*
+    work), so an ordinary switch stays available when the current role is not fresh.
+    """
+    now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+    scheduler, _ = _session_scheduler(tmp_path, "A")
+    stale = RoleObservation(
+        role_id="A",
+        confirmed_role_id="A",
+        world=WorldState(page=Page.HOME, timestamp=(now - timedelta(hours=2)).isoformat()),
+        observed_at=now - timedelta(hours=2),
+        decision=Decision("SAFE_STOP", "not_observed", 1, "wait"),
+        goals=(_goal("KEEP_TRAINING_PRODUCTIVE", "TRY_ORDINARY_CONTROL", 300),),
+    )
+    roles = (
+        stale,
+        _cached_role("B", now=now, goals=(_goal("DAILY_REWARD", "DAILY_CLAIM_REWARDS", 900),)),
+    )
+
+    selected = scheduler.select_global(
+        roles, current_role_id="A", now=now,
+        last_switch_at=now - timedelta(minutes=10),
+    )
+
+    assert selected.role_id == "B"
+
+
+def test_the_keep_current_reason_is_the_one_the_runtime_honours():
+    """The scheduler/report contract has two halves and both must name the same string.
+
+    The scheduler decides "keep the active role"; the runtime is what actually refrains
+    from switching.  If a future edit renames the reason on one side only, the runtime
+    would fall through and execute a decision built from the pre-switch frame.
+    """
+    from winter_agent_v2.runtime import ROLE_REFRESH_ONLY_REASONS
+    from winter_agent_v2.scheduler import ACTIVE_ROLE_NO_CANDIDATE
+
+    assert ACTIVE_ROLE_NO_CANDIDATE in ROLE_REFRESH_ONLY_REASONS
+    # Every member is a no-switch verdict, so none may look like a switch.
+    assert all("SWITCH" not in reason.upper() for reason in ROLE_REFRESH_ONLY_REASONS)
+
+
+def test_the_keep_current_reason_is_the_one_the_runtime_honours():
+    """The scheduler/report contract has two halves and both must name the same string.
+
+    The scheduler decides "keep the active role"; the runtime is what actually refrains
+    from switching.  If a future edit renames the reason on one side only, the runtime
+    would fall through and execute a decision built from the pre-switch frame.
+    """
+    from winter_agent_v2.runtime import ROLE_REFRESH_ONLY_REASONS
+    from winter_agent_v2.scheduler import ACTIVE_ROLE_NO_CANDIDATE
+
+    assert ACTIVE_ROLE_NO_CANDIDATE in ROLE_REFRESH_ONLY_REASONS
+    # Every member is a no-switch verdict, so none may look like a switch.
+    assert all("SWITCH" not in reason.upper() for reason in ROLE_REFRESH_ONLY_REASONS)

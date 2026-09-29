@@ -504,8 +504,14 @@ def test_an_inactive_role_is_not_switched_to_only_for_a_look(tmp_path):
     assert "ROLE_SESSION_LOCKED" in selected.selection_reason
 
 
-def test_a_stale_current_role_releases_the_device(tmp_path):
-    """The lock protects real work, not an unobserved role: nothing runnable -> switch."""
+def test_a_current_role_with_no_runnable_work_releases_the_device(tmp_path):
+    """Directive §4(A): an empty board is a real session end, so the switch still happens.
+
+    The role must be observed as having nothing runnable -- hence the stubbed discovery.
+    A bare HOME WorldState would otherwise be expanded into 26 runnable Goals, and the
+    gate would correctly lock; asserting a switch from that state is what the
+    candidate-less-WAIT regression used to do by accident.
+    """
     now = NOW
     active = _role("A", now=now, decision=Decision("SAFE_STOP", "no_work", 1, "wait"))
     inactive = RoleObservation(
@@ -513,6 +519,7 @@ def test_a_stale_current_role_releases_the_device(tmp_path):
         goals=(_goal("B_TRAIN", "TRAIN_TROOPS", 500),),
     )
     scheduler, _ = _scheduler(tmp_path, "A")
+    scheduler.goals.discover = lambda *_args, **_kwargs: ()
 
     selected = scheduler.select_global((active, inactive), current_role_id="A", now=now)
 
