@@ -204,17 +204,8 @@
         "note": "Device axis only. Its recognition is V2 semantic state (does the search panel exist), which MAA template matching does not improve on its own. Promoted because it is a high-frequency failure family and 55% success is worth the 36x faster frame and native input even before the recognition axis moves.",
         "node_20260927": {
           "source": "template matched 0.845 on the live L4-dispatch session frame (dispatch_01_start.png); the tap it produced opened the real resource-search panel",
-          "promoted_from": "gap queue P1 BTN_OPEN_RESOURCE_SEARCH (467 attempts, generator_ready)"
-        }
-      },
-      "recognition": {
-        "BTN_OPEN_RESOURCE_SEARCH": {
-          "template": "BTN_OPEN_RESOURCE_SEARCH",
-          "threshold": [
-            0.78,
-            0.82
-          ],
-          "source_template": "dataset/candidate/templates/btn_open_resource_search__legacy_wilderness__1.png"
+          "promoted_from": "gap queue P1 BTN_OPEN_RESOURCE_SEARCH (467 attempts, generator_ready)",
+          "status": "REVERTED 2026-09-30 -- see not_migrated.SEARCH_RESOURCE_RECOGNITION. Authored without the A/B the recognition axis requires, and it contradicted this skill's own recognition_backend (LEGACY), so it is retired from `recognition` rather than left to override the declaration."
         }
       }
     },
@@ -2436,6 +2427,11 @@
       "semantic": "BTN_OPEN_INTEL_WILD_HUD",
       "reason": "REVERTED after a live regression. Measured on the real production frame (dataset/raw/live_runtime/live_runtime_step_001_before_20260914T131236556151.png): MAA found the control at exactly the manifest ROI (623,813,86,96) but scored only 0.448 against the template, versus a 0.7 threshold and 0.191 on negative frames. The control's blue fill animates, which is why the legacy semantic carries a relaxed tolerance that a default-threshold node does not reproduce. A threshold near 0.4 would sit too close to the negative band to publish. It needs either a re-crop from several current frames or a two-signal page model, validated on >=3 independent live positives.",
       "measured_at": "2026-09-14T13:13:00Z"
+    },
+    "SEARCH_RESOURCE_RECOGNITION": {
+      "semantic": "BTN_OPEN_RESOURCE_SEARCH",
+      "reason": "REVERTED after a live regression that cost every SEARCH_RESOURCE tap. The skill declares recognition_backend LEGACY (its own evidence note: 'Its recognition is V2 semantic... which MAA template matching does not improve on its own'), but node_20260927 was nonetheless consulted, because nothing read the declaration. Its template is the legacy-wilderness crop, where the search button still wore a filled blue disc; the 2026-09-30 client draws the same glyph as a transparent button over the live map, so the node scored TM_CCOEFF_NORMED 0.609 against its own 0.78 gate on dataset/raw/control_panel/runtime_auto/20260930_002432_782721/20260930_002432_782721_step_005_before_20260929T162544495247.png, while the declared V2 recogniser locates the same control on that frame at pHash distance 10 <= its 12 tolerance. A miss in that tier is terminal, so the step ended as SEMANTIC_TARGET_NOT_VERIFIED -- the wrong sentence for a control the frame plainly draws. Same class as OPEN_INTEL_RECOGNITION: a background that animates under the ROI, tolerated by the legacy semantic and not by a fixed threshold. Needs a glyph-only crop (no map background) measured against the current client before it can be re-promoted.",
+      "measured_at": "2026-09-30T16:56:00Z"
     }
   }
 }

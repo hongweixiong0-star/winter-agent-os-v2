@@ -342,6 +342,28 @@ class ExecutorRouter:
         self.last_recognition_error: str | None = None
 
     # -------------------------------------------------------------- resolution
+    def _declared_recognition(self, skill_id: str | None) -> str:
+        """The recogniser this skill declares, upper-cased; ``""`` when it declares none.
+
+        ``Route.recognition_backend`` is documented as "which recogniser this skill is declared to
+        use: ``MAA``, ``LEGACY`` (the V2 semantic vision) or ``NONE``".  Read through the table
+        rather than cached: the routing file is a knowledge asset the runtime may rewrite, and a
+        stale copy here would be a second source of truth for the same fact.
+        """
+        try:
+            return str(self.routing.route(skill_id).recognition_backend or "").strip().upper()
+        except Exception:  # noqa: BLE001 - a routing read must never break a live step
+            return ""
+
+    def _node_may_take_over(self, skill_id: str | None) -> bool:
+        """Whether a MAA recognition node is entitled to answer for this skill.
+
+        ``""`` (no declaration) keeps the historical behaviour: a node, if present, answers.  Only
+        an explicit non-``MAA`` declaration refuses it, so this cannot silently disable a node that
+        was authored under the doctrine.
+        """
+        return self._declared_recognition(skill_id) in ("", MAA)
+
     def maa_resolver(self, semantic: str, skill_id: str | None) -> tuple[float, float] | None:
         """Resolver handed to the MAA ``Executor``.
 
@@ -363,8 +385,41 @@ class ExecutorRouter:
         if adapter is None:
             return self.adb_resolver(semantic) if self.adb_resolver else None
         node = self.routing.recognition_node(skill_id, semantic)
+        # A node may only answer for a skill that is *declared* to recognise with MAA.
+        #
+        # Doctrine, from this module's own header: recognition is migrated per semantic "only
+        # after a node is authored and drawn on a real frame for visual check, and only after an
+        # A/B shows it is not worse than the legacy matcher".  ``recognition_backend`` is that
+        # decision written down, so consulting a node while the skill declares ``LEGACY`` lets the
+        # file and the code disagree -- and the node always wins, because until now nothing read
+        # the declaration at all.
+        #
+        # Measured 2026-09-30, and it was not theoretical: ``SEARCH_RESOURCE`` declares ``LEGACY``
+        # ("Its recognition is V2 semantic... which MAA template matching does not improve on its
+        # own") yet carried ``node_20260927``, promoted from a single 0.845 frame with no A/B.
+        # That node's template is the *legacy wilderness* crop, where the search button still wore
+        # a filled blue disc; today's client draws it as a transparent button over the live map, so
+        # the node scored TM_CCOEFF_NORMED 0.609 against its own 0.78 gate on
+        # ``20260930_002432_782721_step_005_before_20260929T162544495247.png`` -- and a miss here is
+        # terminal ("a miss stays a miss", below), so every ``SEARCH_RESOURCE`` tap died with
+        # ``SEMANTIC_TARGET_NOT_VERIFIED``.  On that very frame the declared V2 recogniser locates
+        # the same control at pHash distance 10 <= its 12 tolerance.  Same class of defect as the
+        # ``OPEN_INTEL_RECOGNITION`` revert in the routing file: an animated control the legacy
+        # semantic tolerates and a fixed threshold does not reproduce.
+        suppressed = node is not None and not self._node_may_take_over(skill_id)
+        if suppressed:
+            node = None
         if node is None:
-            return self.adb_resolver(semantic) if self.adb_resolver else None
+            point = self.adb_resolver(semantic) if self.adb_resolver else None
+            if suppressed:
+                # Only a *failed* delegation names the reason: the diagnostic harnesses read this
+                # field as "NONE:<reason>", so a set value next to a resolved point would read as a
+                # live failure.  A resolved point proves the declaration was the right one.
+                self.last_recognition_error = (
+                    None if point is not None
+                    else f"RECOGNITION_BACKEND:{self._declared_recognition(skill_id)}:NODE_NOT_ENTITLED"
+                )
+            return point
         frame = adapter.frame()
         if frame is None:
             return None
