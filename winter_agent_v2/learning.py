@@ -4,6 +4,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+import tempfile
 from typing import Any
 
 
@@ -146,17 +147,138 @@ class ActionOutcome:
 class EpisodeStore:
     def __init__(self, path: Path, *, limit: int = 10000) -> None:
         self.path = path
-        self.limit = limit
+        self.limit = max(1, int(limit))
+        self._line_count: int | None = None
+        self._ends_with_newline = True
+        self._index_path = self.path.with_name(f".{self.path.name}.index.json")
 
     def append(self, episode: Episode) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        rows = self.path.read_text(encoding="utf-8").splitlines() if self.path.exists() else []
-        rows.append(json.dumps(
+        self._append_line(json.dumps(
             asdict(episode),
             ensure_ascii=False,
             default=lambda value: value.value if hasattr(value, "value") else str(value),
         ))
-        self.path.write_text("\n".join(rows[-self.limit:]) + "\n", encoding="utf-8")
+
+    def _append_line(self, line: str) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self._line_count is None:
+            self._line_count, self._ends_with_newline = self._load_line_index()
+
+        # Production calls this once for every UI action. Re-reading and rewriting
+        # the complete, growing ledger made each action O(total history size).
+        # Keep the hot path to one small append; compact in bounded batches below.
+        with self.path.open("a", encoding="utf-8", newline="") as stream:
+            if self._line_count and not self._ends_with_newline:
+                stream.write("\n")
+            stream.write(line)
+            stream.write("\n")
+        self._line_count += 1
+        self._ends_with_newline = True
+
+        # Let the ledger grow by at most ~5% (capped at 512 rows) between
+        # compactions. This retains the configured history bound without making
+        # every append rewrite all retained production evidence.
+        overflow = max(1, min(512, self.limit // 20))
+        if self._line_count > self.limit + overflow:
+            try:
+                self._compact_to_limit()
+            except OSError:
+                # The just-appended evidence is already durable. A failed
+                # housekeeping compaction must not turn it into a failed action.
+                pass
+        self._persist_line_index()
+
+    def _load_line_index(self) -> tuple[int, bool]:
+        if not self.path.is_file():
+            return 0, True
+        try:
+            stat = self.path.stat()
+            with self._index_path.open("r", encoding="utf-8") as stream:
+                payload = json.load(stream)
+            if (
+                isinstance(payload, dict)
+                and payload.get("version") == 1
+                and payload.get("file_size") == stat.st_size
+                and payload.get("modified_ns") == stat.st_mtime_ns
+                and isinstance(payload.get("line_count"), int)
+                and payload["line_count"] >= 0
+            ):
+                return payload["line_count"], bool(payload.get("ends_with_newline", True))
+        except (OSError, ValueError, TypeError):
+            pass
+        return self._count_existing_lines()
+
+    def _count_existing_lines(self) -> tuple[int, bool]:
+        if not self.path.is_file():
+            return 0, True
+        count = 0
+        last_byte = b""
+        with self.path.open("rb") as stream:
+            while chunk := stream.read(1024 * 1024):
+                count += chunk.count(b"\n")
+                last_byte = chunk[-1:]
+        if last_byte and last_byte != b"\n":
+            count += 1
+        return count, not last_byte or last_byte == b"\n"
+
+    def _compact_to_limit(self) -> None:
+        assert self._line_count is not None
+        drop = max(0, self._line_count - self.limit)
+        if not drop:
+            return
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", newline="", dir=self.path.parent,
+                prefix=f".{self.path.name}.", suffix=".tmp", delete=False,
+            ) as target:
+                temporary_path = Path(target.name)
+                with self.path.open("r", encoding="utf-8", newline="") as source:
+                    for _ in range(drop):
+                        if source.readline() == "":
+                            break
+                    for row in source:
+                        target.write(row)
+                        if not row.endswith("\n"):
+                            target.write("\n")
+                target.flush()
+        except Exception:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+            raise
+        assert temporary_path is not None
+        try:
+            temporary_path.replace(self.path)
+        except Exception:
+            temporary_path.unlink(missing_ok=True)
+            raise
+        self._line_count = self.limit
+        self._ends_with_newline = True
+
+    def _persist_line_index(self) -> None:
+        if self._line_count is None:
+            return
+        temporary_path: Path | None = None
+        try:
+            stat = self.path.stat()
+            payload = {
+                "version": 1,
+                "file_size": stat.st_size,
+                "modified_ns": stat.st_mtime_ns,
+                "line_count": self._line_count,
+                "ends_with_newline": self._ends_with_newline,
+            }
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", newline="", dir=self.path.parent,
+                prefix=f".{self._index_path.name}.", suffix=".tmp", delete=False,
+            ) as stream:
+                temporary_path = Path(stream.name)
+                stream.write(json.dumps(payload, separators=(",", ":")))
+                stream.write("\n")
+            temporary_path.replace(self._index_path)
+        except OSError:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
 
 
 @dataclass(frozen=True)
@@ -171,7 +293,4 @@ class ResourceSpend:
 
 class ResourceLedger(EpisodeStore):
     def append_spend(self, spend: ResourceSpend) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        rows = self.path.read_text(encoding="utf-8").splitlines() if self.path.exists() else []
-        rows.append(json.dumps(asdict(spend), ensure_ascii=False))
-        self.path.write_text("\n".join(rows[-self.limit:]) + "\n", encoding="utf-8")
+        self._append_line(json.dumps(asdict(spend), ensure_ascii=False))
