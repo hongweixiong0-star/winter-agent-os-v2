@@ -15,6 +15,13 @@ from pathlib import Path
 import tempfile
 from typing import Any, Mapping
 
+from .role_session import (
+    RoleSessionState,
+    classify_switch_reason,
+    new_session,
+    role_switch_quality_metrics,
+)
+
 
 LIVE_ONLY_KEYS = frozenset({
     "frame", "frame_path", "bbox", "target_bbox", "tap_point", "click_point",
@@ -40,6 +47,17 @@ def _aware_iso(value: str | datetime | None) -> str | None:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc).isoformat()
+
+
+def _parse_dt(value: str | datetime | None) -> datetime | None:
+    """The datetime form of ``_aware_iso``, for callers that need arithmetic not text."""
+    stamp = _aware_iso(value)
+    if stamp is None:
+        return None
+    try:
+        return datetime.fromisoformat(stamp)
+    except (TypeError, ValueError):
+        return None
 
 
 @dataclass
@@ -114,6 +132,13 @@ class GlobalSchedulerState:
     shared_goal_credit_count: int = 0
     completed_goal_count_by_role: dict[str, int] = field(default_factory=dict)
     global_health: str = "WAITING"
+    #: ROLE_SESSION_POLICY (operator directive 2026-09-30): the current role's logical
+    #: batch.  ``None`` means no session has been established for the active role yet.
+    role_session: RoleSessionState | None = None
+    #: One row per committed role switch: {at, source_role_id, target_role_id,
+    #: reason_class, reason, duration_seconds, goals_completed}.  This is what turns the
+    #: switch-quality metrics of directive §17 into measured numbers instead of a claim.
+    role_switch_history: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.last_role_switch_at = _aware_iso(self.last_role_switch_at)
@@ -140,6 +165,11 @@ class GlobalSchedulerState:
         self.role_switch_durations_ms = [
             max(0.0, float(value)) for value in self.role_switch_durations_ms[-200:]
             if isinstance(value, (int, float))
+        ]
+        if self.role_session is not None and not isinstance(self.role_session, RoleSessionState):
+            self.role_session = None
+        self.role_switch_history = [
+            dict(row) for row in self.role_switch_history[-200:] if isinstance(row, Mapping)
         ]
 
 
@@ -203,7 +233,24 @@ class GlobalSchedulerStateStore:
             completed_goal_count_by_role=dict(payload.get("completed_goal_count_by_role", {}))
             if isinstance(payload.get("completed_goal_count_by_role", {}), Mapping) else {},
             global_health=str(payload.get("global_health") or "WAITING").upper(),
+            role_session=self._load_session(payload.get("role_session")),
+            role_switch_history=[dict(row) for row in payload.get("role_switch_history", ())
+                                 if isinstance(row, Mapping)][-200:],
         )
+
+    @staticmethod
+    def _load_session(raw: Any) -> RoleSessionState | None:
+        """Rebuild the logical session, tolerating a schema the running code no longer has."""
+        if not isinstance(raw, Mapping):
+            return None
+        allowed = RoleSessionState.__dataclass_fields__.keys()
+        values = {name: raw[name] for name in allowed if name in raw}
+        if not str(values.get("role_id") or "").strip():
+            return None
+        try:
+            return RoleSessionState(**values)
+        except (TypeError, ValueError):
+            return None
 
     def save(self, state: GlobalSchedulerState) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -253,6 +300,12 @@ class GlobalSchedulerStateStore:
             state.roles[actual] = role
             state.active_role_id = actual
             state.global_health = "RUNNING"
+            # Keep the session when the restarted worker came back on the *same* account:
+            # a switch is implemented as a worker restart, and resetting here would make
+            # every session look zero seconds long (directive §17).
+            session = state.role_session
+            if session is None or session.role_id != actual:
+                state.role_session = new_session(actual, at=stamp)
         else:
             state.active_role_id = ""
             state.global_health = "DEGRADED"
@@ -305,6 +358,9 @@ class GlobalSchedulerStateStore:
             state.active_role_id = active
             state.roles[active].last_active_at = stamp
             state.global_health = "RUNNING"
+            session = state.role_session
+            if session is None or session.role_id != active:
+                state.role_session = new_session(active, at=stamp)
         self.save(state)
         return state
 
@@ -382,6 +438,7 @@ class GlobalSchedulerStateStore:
         state.last_decision = row
         state.decision_history = [*state.decision_history, row][-10:]
         state.global_next_wakeup_at = _aware_iso(row.get("next_wakeup"))
+        self._refresh_role_session(state, decision=row)
         self.save(state)
         return state
 
@@ -411,11 +468,134 @@ class GlobalSchedulerStateStore:
             )
         state.latest_action_outcome = row
         state.action_outcome_history = [*state.action_outcome_history, row][-200:]
+        session = state.role_session
+        if session is not None and session.role_id == role_id:
+            if completed_ids:
+                session.note_completed(sorted(completed_ids))
+                session.goals_completed += len(completed_ids)
+            if (str(row.get("verifier_result") or "").upper() == "PASS"
+                    and bool(row.get("action_sent", True))):
+                session.actions_verified += 1
         self.save(state)
         return state
 
+    # ------------------------------------------------------- ROLE_SESSION_POLICY
+
+    @staticmethod
+    def _refresh_role_session(state: GlobalSchedulerState, *,
+                              decision: Mapping[str, Any]) -> None:
+        """Fold one arbitration decision into the current role's logical session.
+
+        Called from ``record_decision``, i.e. once per scheduling, which is exactly the
+        cadence directive §4's ``no_work_streak`` is defined over.
+        """
+        session = state.role_session
+        if session is None:
+            return
+        current = str(decision.get("current_role_id") or "")
+        if not current or current != session.role_id:
+            return
+        statuses = decision.get("role_statuses")
+        row: Mapping[str, Any] | None = None
+        if isinstance(statuses, list):
+            for item in statuses:
+                if isinstance(item, Mapping) and str(item.get("role_id") or "") == current:
+                    row = item
+                    break
+        if row is not None:
+            session.ready_now = max(0, int(row.get("ready_goal_count") or 0))
+            session.runnable_now = max(
+                0, int(row.get("runnable_goal_count") or row.get("runnable_count") or 0),
+            )
+            session.capability_gap_now = max(0, int(row.get("capability_gap_count") or 0))
+            session.blocked_now = max(0, int(row.get("blocked_count") or 0))
+            session.waiting_now = max(0, int(row.get("waiting_goal_count") or 0))
+            session.note_board(
+                goal_ids=row.get("board_goal_ids") or (),
+                settled_goal_ids=row.get("board_settled_goal_ids") or (),
+                runnable_goal_ids=row.get("board_runnable_goal_ids") or (),
+            )
+            session.no_work_streak = (
+                0 if session.runnable_now > 0 else min(10_000, session.no_work_streak + 1)
+            )
+        gate = decision.get("session_gate")
+        if isinstance(gate, Mapping):
+            session.switch_allowed = bool(gate.get("allowed"))
+            session.switch_reason = str(
+                gate.get("detail") or gate.get("description") or ""
+            )
+        session.last_evaluated_at = _aware_iso(decision.get("at")) or _now_iso()
+
+    def start_role_session(self, *, role_id: str, ready_at_start: int = 0,
+                           at: str | datetime | None = None) -> GlobalSchedulerState:
+        """Open a fresh session for a role that now owns the device.
+
+        Idempotent for the same role only when ``force`` is not needed: a worker restart
+        on the *same* account must keep its session, or directive §17's session-duration
+        metric would reset on every crash.
+        """
+        role_id = str(role_id or "").strip()
+        if not role_id:
+            raise ValueError("a role session requires a confirmed role_id")
+        state = self.load()
+        session = new_session(role_id, at=at, ready_at_start=ready_at_start)
+        session.switch_allowed = False
+        session.switch_reason = "ROLE_SESSION_ACTIVE"
+        state.role_session = session
+        self.save(state)
+        return state
+
+    def ensure_role_session(self, *, role_id: str, at: str | datetime | None = None,
+                            ready_at_start: int = 0) -> GlobalSchedulerState:
+        """Start a session only when the active role does not already have one."""
+        role_id = str(role_id or "").strip()
+        if not role_id:
+            raise ValueError("a role session requires a confirmed role_id")
+        state = self.load()
+        current = state.role_session
+        if current is not None and current.role_id == role_id:
+            return state
+        return self.start_role_session(role_id=role_id, ready_at_start=ready_at_start, at=at)
+
+    def _close_role_session_locked(
+        self, state: GlobalSchedulerState, *, source_role_id: str,
+        reason: str, reason_class: str, at: str | datetime | None,
+    ) -> None:
+        """Archive the ending session into the switch history, then clear it."""
+        session = state.role_session
+        if session is not None:
+            elapsed = session.elapsed_seconds(_parse_dt(at))
+            state.role_switch_history = [*state.role_switch_history, {
+                "at": _aware_iso(at) or _now_iso(),
+                "source_role_id": session.role_id or str(source_role_id or ""),
+                "target_role_id": "",
+                "reason_class": str(reason_class or ""),
+                "reason": str(reason or ""),
+                "duration_seconds": round(elapsed, 1) if elapsed is not None else None,
+                "goals_completed": session.goals_completed,
+                "actions_verified": session.actions_verified,
+                "goals_discovered": len(session.session_goal_ids),
+                "completion_ratio": round(session.completion_ratio, 4),
+                "no_work_streak": session.no_work_streak,
+                "switch_reason_detail": session.switch_reason,
+            }][-200:]
+        state.role_session = None
+
+    def role_switch_quality_metrics(self) -> dict[str, Any]:
+        """Directive §17's switch-quality block, measured from the persisted history."""
+        state = self.load()
+        return role_switch_quality_metrics(
+            switch_history=state.role_switch_history, session=state.role_session,
+        )
+
+    def role_session_view(self) -> dict[str, Any] | None:
+        state = self.load()
+        session = state.role_session
+        return session.as_logical_row() if session is not None else None
+
     def begin_role_switch(self, *, source_role_id: str, target_role_id: str,
-                          reason: str, at: str | datetime | None = None) -> GlobalSchedulerState:
+                          reason: str, at: str | datetime | None = None,
+                          reason_class: str = "") -> GlobalSchedulerState:
         source = str(source_role_id or "").strip()
         target = str(target_role_id or "").strip()
         if not target or source == target:
@@ -427,6 +607,7 @@ class GlobalSchedulerStateStore:
             "source_role_id": source,
             "target_role_id": target,
             "reason": str(reason),
+            "reason_class": str(reason_class or classify_switch_reason(reason)),
             "phase": "BEGIN",
             "started_at": _aware_iso(at) or _now_iso(),
         }
@@ -466,8 +647,25 @@ class GlobalSchedulerStateStore:
         role.last_failure = ""
         state.roles[target] = role
         state.active_role_id = target
-        state.last_role_switch_at = _aware_iso(at) or _now_iso()
+        committed_at = _aware_iso(at) or _now_iso()
+        state.last_role_switch_at = committed_at
         state.last_switch_reason = str(pending.get("reason") or "")
+        # ROLE_SESSION_POLICY: the source session ends here and is archived with its own
+        # measured duration and Goal count; the target opens a fresh batch.  Field order
+        # matters -- ``_close_role_session_locked`` reads the *old* session, so it runs
+        # before the new one is written.  The history length is captured first because
+        # ``_close`` appends nothing when there was no session to close, and indexing
+        # ``[-1]`` then would have rewritten an *older* switch's target.
+        history_before = len(state.role_switch_history)
+        self._close_role_session_locked(
+            state, source_role_id=source,
+            reason=str(pending.get("reason") or ""),
+            reason_class=str(pending.get("reason_class") or ""),
+            at=committed_at,
+        )
+        if len(state.role_switch_history) > history_before:
+            state.role_switch_history[-1]["target_role_id"] = target
+        state.role_session = new_session(target, at=committed_at)
         state.role_switch_pending = None
         state.role_switch_success_count += 1
         self._append_switch_duration(state, elapsed_ms)
@@ -518,6 +716,12 @@ class GlobalSchedulerStateStore:
             role.current_skill = ""
             state.roles[actual] = role
             state.global_health = "RUNNING"
+            # The device is on an account, and it is not the one the session belongs to,
+            # so the session cannot keep counting for it (directive §17's per-session
+            # numbers would silently accrue to the wrong role).
+            session = state.role_session
+            if session is None or session.role_id != actual:
+                state.role_session = new_session(actual, at=_now_iso())
         else:
             state.active_role_id = ""
             state.global_health = "DEGRADED"
@@ -586,9 +790,15 @@ class GlobalSchedulerStateStore:
             if isinstance(item, Mapping):
                 out[str(key)] = cls._logical_mapping(item)
             elif isinstance(item, list):
+                # Filter each element *in place*.  Dropping an element that merely
+                # mentions one live key silently deleted whole rows -- a
+                # ``role_statuses`` entry that happened to carry a stray ``bbox``
+                # vanished from the persisted decision, and every reader of that row
+                # (the panel, the session refresh) then saw zeros instead of the truth.
+                # Stripping the live field is what the doctrine asks for; discarding the
+                # record was never the intent.
                 out[str(key)] = [cls._logical_mapping(row) if isinstance(row, Mapping) else row
-                                 for row in item if not isinstance(row, Mapping)
-                                 or not any(str(k).lower() in LIVE_ONLY_KEYS for k in row)]
+                                 for row in item]
             else:
                 out[str(key)] = item
         return out

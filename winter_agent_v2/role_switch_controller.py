@@ -163,7 +163,7 @@ class RoleSwitchController:
         return matches[0]
 
     def switch_to(self, *, source_role_id: str, target_role_id: str,
-                  reason: str) -> RoleSwitchResult:
+                  reason: str, reason_class: str = "") -> RoleSwitchResult:
         started = self.monotonic()
         source = self.roles.get(str(source_role_id or ""))
         target = self.roles.get(str(target_role_id or ""))
@@ -174,6 +174,7 @@ class RoleSwitchController:
         try:
             self.state_store.begin_role_switch(
                 source_role_id=source_role_id, target_role_id=target_role_id, reason=reason,
+                reason_class=reason_class,
             )
         except (OSError, RuntimeError, ValueError) as exc:
             return RoleSwitchResult(False, reason=f"ROLE_SWITCH_TRANSACTION_REFUSED:{exc}")

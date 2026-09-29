@@ -136,6 +136,14 @@
     "max_log_size_bytes": 10485760,
     "episode_limit": 10000
   },
+  "role_session": {
+    "note": "ROLE SESSION PRODUCTION V2 (operator directive 2026-09-30). One account keeps the device until its own batch is mostly done; another role's merely higher ordinary score is no longer a switching condition. min_role_dwell_seconds and switch_margin are retained but DEMOTED: dwell is a minimum-protection floor (time passing is not a licence to switch) and the margin only decides worth AFTER the session gate has allowed a move. Limited-time work is unaffected -- HARD_EVENT_PREEMPT still outranks all of this.",
+    "mostly_done_ratio": 0.75,
+    "max_ready_before_switch": 2,
+    "no_work_streak_to_end_session": 2,
+    "min_role_dwell_seconds": 300.0,
+    "switch_margin": 30.0
+  },
   "risk": {
     "block_real_money": true,
     "block_account_or_role_delete": true,

@@ -440,6 +440,11 @@ def main() -> int:
         # validation takes it, and this run yields at the next atomic boundary rather
         # than being interrupted mid-transaction (operator §8/§19).
         device_lease=DeviceLease(ROOT),
+        # ROLE_SESSION_POLICY (operator directive 2026-09-30 §15): the parameters that
+        # make one account keep the device until its own batch is mostly done.  Read here
+        # because the runtime has no config dict; a missing block keeps the Scheduler's
+        # own first-version defaults.
+        role_session_policy=config.get("role_session") or {},
     ).run(max_actions=args.max_actions, stop_after_skill=args.stop_after)
     for deferral in result.deferrals:
         print(f"[schedule] deferred {deferral.get('goal_id')} -> {deferral.get('state')}"

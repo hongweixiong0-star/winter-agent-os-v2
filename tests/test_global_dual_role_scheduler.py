@@ -22,6 +22,23 @@ def _scheduler(global_state_store=None) -> Scheduler:
     return scheduler
 
 
+def _session_scheduler(tmp_path, role_id, *, now=None) -> tuple[Scheduler, object]:
+    """A scheduler whose active role already holds a ROLE_SESSION_POLICY session.
+
+    Without a store there is no session at all, and the ordinary-switch gate would have
+    nothing to lock on -- which is exactly why the production runtime always passes one.
+    """
+    from winter_agent_v2.global_scheduler_state import GlobalSchedulerStateStore
+
+    store = GlobalSchedulerStateStore(tmp_path / "global_scheduler_state.json")
+    store.register_role_catalog(
+        [{"role_id": "A", "display_name": "ROLE_A"},
+         {"role_id": "B", "display_name": "ROLE_B"}],
+        active_role_id=role_id,
+    )
+    return _scheduler(store), store
+
+
 def _role(role_id, *, now, decision, goals=(), next_action_at=None,
           confirmed_role_id=None, switch_cost=0.0):
     world = WorldState(page=Page.HOME, timestamp=now.isoformat())
@@ -102,7 +119,7 @@ def test_other_roles_t5_event_overrides_minimum_dwell_and_switch_cost():
     )
 
     assert selected.role_id == "A"
-    assert "hard deadline/event phase" in selected.selection_reason
+    assert "HARD_EVENT_PREEMPT" in selected.selection_reason
 
 
 def test_global_wait_uses_earliest_role_wakeup():
@@ -190,7 +207,13 @@ def test_role_refresh_request_still_switches_when_inactive_role_has_no_cached_bo
     assert selected.index is None
 
 
-def test_role_dwell_suppresses_ordinary_switch_but_measured_gain_can_switch_after_dwell():
+def test_role_dwell_alone_no_longer_licenses_an_ordinary_switch(tmp_path):
+    """Directive 2026-09-30 §3/§10: time passing is not a switching licence.
+
+    A still owns a runnable Goal and its batch is not mostly done, so B's higher score --
+    which clears ``switch_margin`` several times over -- must not take the device, either
+    inside the dwell window or long after it expired.
+    """
     now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
     roles = (
         _role("A", now=now, decision=Decision("DAILY_CLAIM_REWARDS", "claim", 1, "claimed"),
@@ -198,7 +221,7 @@ def test_role_dwell_suppresses_ordinary_switch_but_measured_gain_can_switch_afte
         _role("B", now=now, decision=Decision("TRAIN_TROOPS", "train", 1, "training"),
               goals=(_goal("B_TRAINING", "TRAIN_TROOPS", 500),), switch_cost=80),
     )
-    scheduler = _scheduler()
+    scheduler, _ = _session_scheduler(tmp_path, "A")
 
     within_dwell = scheduler.select_global(
         roles, current_role_id="A", now=now,
@@ -209,10 +232,13 @@ def test_role_dwell_suppresses_ordinary_switch_but_measured_gain_can_switch_afte
         last_switch_at=now - timedelta(minutes=5), min_role_dwell_seconds=120,
     )
 
-    assert within_dwell.role_id == "A"
-    assert within_dwell.selection_reason.startswith("KEEP_CURRENT_ROLE")
-    assert after_dwell.role_id == "B"
-    assert after_dwell.selection_reason.startswith("SWITCH A→B")
+    for selection in (within_dwell, after_dwell):
+        assert selection.role_id == "A"
+        assert selection.selection_reason.startswith("KEEP_CURRENT_ROLE")
+        assert selection.switch_reason_class == ""
+        assert not selection.session_gate["allowed"]
+    assert "ROLE_SESSION_LOCKED" in after_dwell.selection_reason
+    assert after_dwell.session_gate["detail"] == "ROLE_SESSION_ACTIVE"
 
 
 def test_stale_or_mismatched_role_state_cannot_be_dispatched():
@@ -854,7 +880,7 @@ def test_inactive_cached_state_older_than_refresh_window_cannot_select_role():
     assert selected.requires_role_refresh is False
 
 
-def test_cached_role_deadline_pressure_overrides_role_dwell():
+def test_cached_role_deadline_pressure_overrides_role_dwell(tmp_path):
     now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
     active = _role(
         "A", now=now,
@@ -866,15 +892,21 @@ def test_cached_role_deadline_pressure_overrides_role_dwell():
         goals=(_goal("B_BEAR", "START_RALLY", 1, remaining_seconds=240),),
         switch_cost=100000,
     )
+    # A holds a live session AND has runnable work, so an ordinary move is locked.  The
+    # deadline on B must still preempt: directive §7 keeps HARD_EVENT_PREEMPT above the
+    # session policy precisely for this case.
+    scheduler, _ = _session_scheduler(tmp_path, "A")
 
-    selected = _scheduler().select_global(
+    selected = scheduler.select_global(
         (active, inactive), current_role_id="A", now=now,
         last_switch_at=now - timedelta(seconds=5), min_role_dwell_seconds=600,
     )
 
     assert selected.role_id == "B"
     assert selected.requires_role_refresh is True
-    assert "hard deadline" in selected.selection_reason
+    assert "HARD_EVENT_PREEMPT" in selected.selection_reason
+    assert selected.switch_reason_class == "HARD_EVENT_PREEMPT"
+    assert not selected.session_gate["allowed"]
 
 
 def test_global_wait_is_forbidden_when_a_registered_ready_goal_has_no_brain_candidate():

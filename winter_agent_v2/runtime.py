@@ -495,6 +495,11 @@ class LiveRuntime:
         #: ``None`` keeps the pre-existing advisor, so a caller that knows nothing about
         #: planners behaves exactly as before.
         advisor=None,
+        #: ROLE_SESSION_POLICY knobs (operator directive 2026-09-30 §15).  The runtime has
+        #: no config dict of its own, so like ``maa_adapter`` and ``routing`` this is a
+        #: deployment decision injected from where the config is read.  ``None`` keeps the
+        #: Scheduler's own defaults, which are the directive's first-version parameters.
+        role_session_policy: Mapping[str, Any] | None = None,
     ) -> None:
         self.device = device
         self.latency_trace_path = Path(latency_trace_path) if latency_trace_path else None
@@ -556,6 +561,9 @@ class LiveRuntime:
             if task_data_dir is not None else None
         )
         self.global_scheduler_state_store = global_scheduler_state_store
+        self.role_session_policy = (
+            dict(role_session_policy) if isinstance(role_session_policy, Mapping) else None
+        )
         self._fairness_store_path: Path | None = None
         self.role_catalog = tuple(dict(row) for row in role_catalog if isinstance(row, Mapping))
         self.role_switch_controller = role_switch_controller
@@ -6234,6 +6242,11 @@ class LiveRuntime:
                     current_role_id=active_role_id,
                     now=datetime.now(timezone.utc),
                     last_switch_at=getattr(state, "last_role_switch_at", None),
+                    # ROLE_SESSION_POLICY: the current role's own logical batch, plus the
+                    # deployment's parameters.  Passed explicitly rather than re-read from
+                    # the store so the gate and the persisted session cannot disagree.
+                    role_session=getattr(state, "role_session", None),
+                    role_session_policy=self.role_session_policy,
                     # A switch is already an action boundary. Candidate exploration
                     # accounting belongs to Scheduler.tick and must happen once.
                     mark_candidate_attempts=False,
@@ -6249,6 +6262,7 @@ class LiveRuntime:
                             source_role_id=active_role_id,
                             target_role_id=selection.role_id,
                             reason=selection.selection_reason,
+                            reason_class=selection.switch_reason_class,
                         )
                         if switch_result.ok:
                             reason = f"ROLE_SWITCHED_TO:{selection.role_id}"

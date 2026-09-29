@@ -49,6 +49,7 @@ from winter_agent_v2.escalation_queue import (
     fold,
 )
 from winter_agent_v2.models import MarchState, Page, SkillState, WorldState
+from winter_agent_v2.role_session import role_switch_quality_metrics
 # The job-lost answer, so "this job is gone" can be told apart from "the gateway is down"
 # without catching a bare Exception and guessing.  Measured 2026-09-18: conflating them made a
 # healthy gateway look dead and restarted it 51 times.
@@ -680,15 +681,131 @@ def _global_hard_event(decision: dict[str, Any], names: dict[str, str]) -> str:
     return f"{role} · {goal} · {timing}"
 
 
+def _fmt_duration(seconds: Any) -> str:
+    try:
+        value = int(float(seconds))
+    except (TypeError, ValueError):
+        return "未知"
+    if value < 0:
+        return "未知"
+    hours, remainder = divmod(value, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{secs:02d}s"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+def _role_session_display(payload: dict[str, Any],
+                          names: dict[str, str]) -> dict[str, str]:
+    """ROLE_SESSION_PRODUCTION_V2 §16: show the real session, not a paraphrase.
+
+    Everything here is read from artifacts the runtime already wrote -- the persisted
+    session counters and the last arbitration's own gate verdict -- so a panel that is not
+    running cannot disagree with the worker about why a role switch did or did not happen.
+    """
+    decision = payload.get("last_decision") if isinstance(payload.get("last_decision"), dict) else {}
+    gate = decision.get("session_gate") if isinstance(decision.get("session_gate"), dict) else {}
+    session = payload.get("role_session") if isinstance(payload.get("role_session"), dict) else {}
+    active = str(payload.get("active_role_id") or "")
+    label = names.get(active, active or "未知")
+
+    if not session and not gate:
+        return {
+            "session": "尚未建立角色Session（等待首次身份确认）",
+            "preempt": "暂无跨角色限时抢占评估",
+            "switch_quality": "切换质量样本不足",
+        }
+
+    discovered = gate.get("goals_discovered")
+    if discovered is None:
+        discovered = session.get("session_goal_count")
+    consumed = gate.get("goals_consumed")
+    if consumed is None:
+        consumed = session.get("session_done_goal_count")
+    ratio = gate.get("completion_ratio")
+    if ratio is None:
+        ratio = session.get("completion_ratio")
+    try:
+        ratio_text = f"{float(ratio):.0%}" if ratio is not None else "未知"
+    except (TypeError, ValueError):
+        ratio_text = "未知"
+    allowed = bool(gate.get("allowed"))
+    reason = str(gate.get("detail") or session.get("switch_reason") or "未知")
+    # The dwell clock is the session's own age: it starts when the role took the device.
+    elapsed = gate.get("session_elapsed_seconds")
+    if elapsed is None:
+        elapsed = session.get("elapsed_seconds")
+    dwell = (_fmt_duration(elapsed) if elapsed is not None
+             else ("计于 " + str(session.get("started_at") or "")[:19]
+                   if session.get("started_at") else "未知"))
+    ready = gate.get("ready_now")
+    if ready is None:
+        ready = session.get("ready_now")
+    waiting = gate.get("waiting_now")
+    if waiting is None:
+        waiting = session.get("waiting_now")
+    session_line = (
+        f"{label}｜驻留 {dwell}｜本Session 完成/已发现 "
+        f"{int(consumed or 0)}/{int(discovered or 0)}（{ratio_text}）"
+        f"｜READY {int(ready or 0)}｜WAIT {int(waiting or 0)}"
+        f"｜切换 {'ALLOWED' if allowed else 'LOCKED'}｜Reason {reason}"
+    )
+
+    preempt_rows = decision.get("hard_event_roles")
+    preempt_rows = preempt_rows if isinstance(preempt_rows, list) else []
+    if preempt_rows:
+        parts = []
+        for row in preempt_rows[:2]:
+            if not isinstance(row, dict):
+                continue
+            other = names.get(str(row.get("role_id") or ""), str(row.get("role_id") or "未知"))
+            starts = row.get("event_starts_in_seconds")
+            deadline = row.get("deadline_seconds")
+            if isinstance(starts, (int, float)):
+                timing = f"T-{_fmt_duration(starts)}"
+            elif isinstance(deadline, (int, float)):
+                timing = f"截止 {_fmt_duration(deadline)}"
+            else:
+                timing = str(row.get("event_phase") or "窗口内")
+            parts.append(f"{other} HARD EVENT: {row.get('skill_id') or '未知'}｜{timing}")
+        preempt = "；".join(parts) + " → PREEMPT_PENDING"
+    else:
+        preempt = "无跨角色限时抢占（普通优先级差异不构成切换理由）"
+
+    history = payload.get("role_switch_history")
+    history = history if isinstance(history, list) else []
+    quality_rows = [row for row in history if isinstance(row, dict)]
+    if quality_rows:
+        # One definition of these metrics, shared with the state store's own accessor, so
+        # the panel and any programmatic reader cannot report different numbers.
+        measured = role_switch_quality_metrics(switch_history=quality_rows)
+        per_hour = measured.get("role_switches_per_hour")
+        avg_dwell = _fmt_duration(measured.get("avg_role_session_duration_seconds"))
+        avg_goals = (f"{float(measured['avg_goals_per_role_session']):.1f}"
+                     if measured.get("avg_goals_per_role_session") is not None else "未知")
+        reasons = measured.get("last_switch_reasons") or []
+        quality = (
+            f"样本 {len(quality_rows)} 次 Session｜ROLE_SWITCHES_PER_HOUR "
+            f"{per_hour if per_hour is not None else '样本不足'}｜平均驻留 {avg_dwell}｜"
+            f"平均每 Session 完成 Goal {avg_goals}｜"
+            f"最近原因 {', '.join(str(item or '未分类') for item in reasons) or '无'}"
+        )
+    else:
+        quality = "切换质量样本不足（尚无完成的角色Session）"
+    return {"session": session_line, "preempt": preempt, "switch_quality": quality}
+
+
 def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
     """Render the persisted arbitration decision without inventing live role state."""
     try:
         payload = json.loads((root / "learning/global_scheduler_state.json").read_text(encoding="utf-8"))
         catalog = json.loads((root / "knowledge/roles/role_inventory.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, TypeError):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化", "remaining_a": "今日完成看板尚未生成", "remaining_b": "今日完成看板尚未生成", "task_completion": "暂无今日任务完成证据"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化", "remaining_a": "今日完成看板尚未生成", "remaining_b": "今日完成看板尚未生成", "task_completion": "暂无今日任务完成证据", "session": "尚未建立角色Session（等待首次身份确认）", "preempt": "暂无跨角色限时抢占评估", "switch_quality": "切换质量样本不足"}
     if not isinstance(payload, dict):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化", "remaining_a": "今日完成看板尚未生成", "remaining_b": "今日完成看板尚未生成", "task_completion": "暂无今日任务完成证据"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化", "remaining_a": "今日完成看板尚未生成", "remaining_b": "今日完成看板尚未生成", "task_completion": "暂无今日任务完成证据", "session": "尚未建立角色Session（等待首次身份确认）", "preempt": "暂无跨角色限时抢占评估", "switch_quality": "切换质量样本不足"}
     names = {
         str(row.get("role_id")): str(row.get("role_key") or row.get("display_name") or row.get("role_id"))
         for row in (catalog.get("roles", []) if isinstance(catalog, dict) else [])
@@ -754,6 +871,7 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
     else:
         telemetry = "生产计数尚未初始化（从本版本首条 Scheduler / ActionOutcome 记录开始统计）"
     completion_view = task_completion_display(root, role_ids, names)
+    session_view = _role_session_display(payload, names)
     return {
         "current": current,
         "roles": role_lines,
@@ -763,6 +881,7 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
         "telemetry": telemetry,
         "wakeup": next_wakeup,
         "metrics": f"切换 {metrics['count']} 次｜成功率 {rate}｜p50 {p50}｜p95 {p95}",
+        **session_view,
         **completion_view,
     }
 
@@ -4174,15 +4293,18 @@ class ControlPanel:
             row=0, column=0, columnspan=2, sticky="w")
         self.global_role_vars = {
             key: tk.StringVar(value="等待双角色状态")
-            for key in ("current", "role_a", "role_b", "remaining_a", "remaining_b",
-                        "task_completion", "decision", "wakeup", "metrics", "hard_event", "timeline", "telemetry")
+            for key in ("current", "session", "role_a", "role_b", "remaining_a", "remaining_b",
+                        "task_completion", "decision", "wakeup", "metrics", "switch_quality",
+                        "hard_event", "preempt", "timeline", "telemetry")
         }
         for row, (label, key) in enumerate((
-            ("当前角色", "current"), ("角色 A", "role_a"), ("角色 B", "role_b"),
+            ("当前角色", "current"), ("角色Session", "session"),
+            ("角色 A", "role_a"), ("角色 B", "role_b"),
             ("A 今日剩余", "remaining_a"), ("B 今日剩余", "remaining_b"),
             ("今日完成度", "task_completion"),
-            ("最近决策", "decision"), ("下一唤醒", "wakeup"), ("切换指标", "metrics"),
-            ("临近硬时间活动", "hard_event"),
+            ("最近决策", "decision"), ("下一唤醒", "wakeup"),
+            ("切换指标", "metrics"), ("切换质量", "switch_quality"),
+            ("临近硬时间活动", "hard_event"), ("抢占待执行", "preempt"),
             ("生产遥测", "telemetry"),
             ("最近 10 次选择", "timeline"),
         ), 1):
@@ -4235,6 +4357,7 @@ class ControlPanel:
         try:
             global_view = global_scheduler_display(ROOT)
             self.global_role_vars["current"].set(global_view.get("current", "暂无"))
+            self.global_role_vars["session"].set(global_view.get("session", "尚未建立角色Session"))
             role_lines = list(global_view.get("roles", []))
             self.global_role_vars["role_a"].set(role_lines[0] if role_lines else "暂无角色 A 快照")
             self.global_role_vars["role_b"].set(role_lines[1] if len(role_lines) > 1 else "暂无角色 B 快照")
@@ -4244,7 +4367,11 @@ class ControlPanel:
             self.global_role_vars["decision"].set(global_view.get("decision", "暂无"))
             self.global_role_vars["wakeup"].set(global_view.get("wakeup", "无"))
             self.global_role_vars["metrics"].set(global_view.get("metrics", "暂无"))
+            self.global_role_vars["switch_quality"].set(
+                global_view.get("switch_quality", "切换质量样本不足"))
             self.global_role_vars["hard_event"].set(global_view.get("hard_event", "暂无"))
+            self.global_role_vars["preempt"].set(
+                global_view.get("preempt", "暂无跨角色限时抢占评估"))
             self.global_role_vars["telemetry"].set(global_view.get("telemetry", "生产计数尚未初始化"))
             self.global_role_vars["timeline"].set(global_view.get("timeline", "暂无历史决策"))
         except (AttributeError, OSError, TypeError, ValueError):

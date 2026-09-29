@@ -14,6 +14,19 @@ from .event_goal import event_priority_modifier
 from .operations_policy import operational_priority
 from .goal_library import GoalLibrary, action_relevant_goal_ids
 from .candidate_policy import CandidateAttemptPool
+from .role_session import (
+    BLOCKED_STATUSES,
+    HARD_EVENT_PREEMPT,
+    NO_RUNNABLE_WORK,
+    RUNNABLE_STATUSES,
+    SESSION_COMPLETE,
+    SETTLED_STATUSES,
+    WAITING_STATUSES,
+    RoleSessionGate,
+    RoleSessionState,
+    evaluate_role_session_gate,
+    resolve_policy,
+)
 from . import entry_badges
 from . import event_schedule
 
@@ -66,6 +79,10 @@ class TaskSelection:
     requires_role_refresh: bool = False
     requested_skill: str = ""
     candidate_explanations: tuple[dict[str, Any], ...] = ()
+    #: Directive §17's fixed class for the selected move.  ``""`` means "we stayed".
+    switch_reason_class: str = ""
+    #: The ROLE_SESSION_POLICY verdict this arbitration ran under (directive §16/§11).
+    session_gate: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -170,6 +187,24 @@ def _as_datetime(value: str | datetime | None) -> datetime | None:
     except (TypeError, ValueError):
         return None
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _goal_status(goal: Any) -> str:
+    """One place that reads a Goal's status, so every counter below means the same thing."""
+    return str(getattr(getattr(goal, "status", ""), "value", getattr(goal, "status", ""))).upper()
+
+
+def _coerce_role_session(value: Any) -> RoleSessionState | None:
+    """Accept the session either as its dataclass or as the JSON mapping the store writes."""
+    if isinstance(value, RoleSessionState):
+        return value
+    if isinstance(value, dict) and value.get("role_id"):
+        allowed = RoleSessionState.__dataclass_fields__.keys()
+        try:
+            return RoleSessionState(**{name: value[name] for name in allowed if name in value})
+        except (TypeError, ValueError):
+            return None
+    return None
 
 def _goal_schedule_info(goal: Any, role_id: str, *, now: datetime,
                         switch_cost: float = 0.0) -> GoalScheduleInfo:
@@ -380,10 +415,12 @@ class Scheduler:
             current_role_id: str = "",
             now: datetime | None = None,
             last_switch_at: str | datetime | None = None,
-            min_role_dwell_seconds: float = 120.0,
+            min_role_dwell_seconds: float | None = None,
             max_observation_age_seconds: float = 300.0,
             max_cached_goal_age_seconds: float = 1800.0,
-            switch_margin: float = 30.0,
+            switch_margin: float | None = None,
+            role_session: Any | None = None,
+            role_session_policy: Any | None = None,
         ) -> TaskSelection:
             """Choose the first actionable observed task with no second scheduler.
 
@@ -398,6 +435,8 @@ class Scheduler:
                     max_observation_age_seconds=max_observation_age_seconds,
                     max_cached_goal_age_seconds=max_cached_goal_age_seconds,
                     switch_margin=switch_margin,
+                    role_session=role_session,
+                    role_session_policy=role_session_policy,
                 )
             skipped: list[Decision] = []
             candidates: list[tuple[float, int, Decision]] = []
@@ -459,10 +498,12 @@ class Scheduler:
         current_role_id: str = "",
         now: datetime | None = None,
         last_switch_at: str | datetime | None = None,
-        min_role_dwell_seconds: float = 120.0,
+        min_role_dwell_seconds: float | None = None,
         max_observation_age_seconds: float = 300.0,
         max_cached_goal_age_seconds: float = 1800.0,
-        switch_margin: float = 30.0,
+        switch_margin: float | None = None,
+        role_session: Any | None = None,
+        role_session_policy: Any | None = None,
         mark_candidate_attempts: bool = True,
     ) -> TaskSelection:
         """Arbitrate fresh role observations through this existing central Scheduler.
@@ -470,7 +511,18 @@ class Scheduler:
         This is the role-aware entrance to the same Goal/Brain/Skill path, not a second
         scheduler. A cached role summary may contribute a wake time, but only a fresh
         observation whose client-confirmed identity matches can produce an action.
+
+        ROLE_SESSION_POLICY (operator directive 2026-09-30) sits *above* the dwell guard:
+        the current role keeps the device until its own batch is mostly done, and a merely
+        higher ordinary score on another role is not a switching condition any more --
+        ``switch_margin`` only decides worth *after* the session gate has allowed a move.
         """
+        if min_role_dwell_seconds is None or switch_margin is None:
+            policy = resolve_policy(role_session_policy)
+            if min_role_dwell_seconds is None:
+                min_role_dwell_seconds = float(policy["min_role_dwell_seconds"])
+            if switch_margin is None:
+                switch_margin = float(policy["switch_margin"])
         moment = now or datetime.now(timezone.utc)
         current_role_id = str(current_role_id or "")
         candidates: list[dict[str, Any]] = []
@@ -500,21 +552,36 @@ class Scheduler:
             )
             known_runnable = sum(
                 1 for goal in known_goals
-                if str(getattr(getattr(goal, "status", ""), "value", getattr(goal, "status", ""))).upper()
-                in {"READY", "DISCOVERED", "RUNNABLE"}
+                if _goal_status(goal) in RUNNABLE_STATUSES
                 and any(self.registry.get(str(skill_id)) is not None
                         for skill_id in (getattr(goal, "available_skills", ()) or ()))
             )
             ready_goals = sum(
-                1 for goal in known_goals
-                if str(getattr(getattr(goal, "status", ""), "value", getattr(goal, "status", ""))).upper()
-                in {"READY", "DISCOVERED", "RUNNABLE"}
+                1 for goal in known_goals if _goal_status(goal) in RUNNABLE_STATUSES
             )
             known_blocked = sum(
-                1 for goal in known_goals
-                if str(getattr(getattr(goal, "status", ""), "value", getattr(goal, "status", ""))).upper()
-                in {"BLOCKED", "UNKNOWN", "DEFERRED", "WAITING_GAME_CONDITION"}
+                1 for goal in known_goals if _goal_status(goal) in BLOCKED_STATUSES
             )
+            waiting_goals = sum(
+                1 for goal in known_goals if _goal_status(goal) in WAITING_STATUSES
+            )
+            # The ROLE_SESSION_POLICY denominator and numerator, computed once here so the
+            # store and the gate can never disagree about what a status means (§5).
+            board_goal_ids: list[str] = []
+            board_settled_ids: list[str] = []
+            board_runnable_ids: list[str] = []
+            for goal in known_goals:
+                goal_id = str(getattr(goal, "goal_id", "") or "")
+                if not goal_id:
+                    continue
+                status = _goal_status(goal)
+                if status in RUNNABLE_STATUSES:
+                    board_runnable_ids.append(goal_id)
+                if status in SETTLED_STATUSES:
+                    board_settled_ids.append(goal_id)
+                if (status in RUNNABLE_STATUSES or status in SETTLED_STATUSES
+                        or status in WAITING_STATUSES or status in BLOCKED_STATUSES):
+                    board_goal_ids.append(goal_id)
             stamp = _as_datetime(role.observed_at) or (
                 _as_datetime(role.world.timestamp) if role.world is not None else None
             )
@@ -547,7 +614,11 @@ class Scheduler:
                                   else known_blocked),
                 "ready_goal_count": ready_goals,
                 "runnable_goal_count": known_runnable,
+                "waiting_goal_count": waiting_goals,
                 "capability_gap_count": max(0, ready_goals - known_runnable),
+                "board_goal_ids": board_goal_ids,
+                "board_settled_goal_ids": board_settled_ids,
+                "board_runnable_goal_ids": board_runnable_ids,
                 "wait_until": min(waits).isoformat() if waits else None,
                 "next_deadline_seconds": min(deadlines) if deadlines else None,
                 "state_fresh": fresh,
@@ -835,6 +906,91 @@ class Scheduler:
                 )),
             })
 
+        # ---------------------------------------------------------- ROLE_SESSION_POLICY
+        #
+        # One gate, evaluated once per arbitration, whose verdict outranks the ordinary
+        # value comparison below.  Operator directive 2026-09-30 §4: the current role may
+        # only be left for an ordinary reason when it has nothing runnable, or its own
+        # batch is mostly done, or repeated schedulings found no work.  "Another role
+        # scores 30 points higher" is not one of those reasons (§3).
+        session = _coerce_role_session(role_session)
+        if session is None:
+            # The runtime normally passes it in.  Falling back to the store keeps a caller
+            # that has not been taught about the session honest instead of unlocked.
+            store = getattr(self, "global_state_store", None)
+            if store is not None:
+                try:
+                    session = store.load().role_session
+                except (OSError, TypeError, ValueError):
+                    session = None
+        status_by_role = {str(row.get("role_id") or ""): row for row in role_statuses}
+        current_status = status_by_role.get(current_role_id) if current_role_id else None
+        gate = evaluate_role_session_gate(
+            session,
+            current_role_id=current_role_id,
+            runnable_now=int((current_status or {}).get("runnable_goal_count") or 0),
+            ready_now=int((current_status or {}).get("ready_goal_count") or 0),
+            waiting_now=int((current_status or {}).get("waiting_goal_count") or 0),
+            blocked_now=int((current_status or {}).get("blocked_count") or 0),
+            capability_gap_now=int((current_status or {}).get("capability_gap_count") or 0),
+            policy=role_session_policy,
+        )
+        if not candidates and not current_role_id:
+            # No current role at all (single-role entrance, or nothing observed yet).
+            gate = RoleSessionGate(True, NO_RUNNABLE_WORK, "NO_CURRENT_ROLE",
+                                   "no current role is holding the device")
+        session_row: dict[str, Any] = {}
+        if session is not None:
+            session_row = session.as_logical_row()
+            session_row["elapsed_seconds"] = session.elapsed_seconds(moment)
+            session_row["session_gate_detail"] = gate.detail
+            session_row["session_gate_reason_class"] = gate.reason_class
+        for row in role_statuses:
+            if str(row.get("role_id") or "") != current_role_id:
+                continue
+            row.update(session_row)
+            row["session_active"] = bool(
+                session is not None and session.role_id == current_role_id
+            )
+            row["switch_allowed"] = bool(gate.allowed)
+            row["switch_reason"] = gate.detail
+            row["switch_reason_description"] = gate.description
+            row["dwell_seconds"] = float(min_role_dwell_seconds)
+
+        session_gate_row = {
+            "allowed": bool(gate.allowed),
+            "reason_class": gate.reason_class,
+            "detail": gate.detail,
+            "description": gate.description,
+            "runnable_now": int((current_status or {}).get("runnable_goal_count") or 0),
+            "ready_now": int((current_status or {}).get("ready_goal_count") or 0),
+            "waiting_now": int((current_status or {}).get("waiting_goal_count") or 0),
+            "blocked_now": int((current_status or {}).get("blocked_count") or 0),
+            "capability_gap_now": int((current_status or {}).get("capability_gap_count") or 0),
+            "completion_ratio": (round(session.completion_ratio, 4) if session else None),
+            "goals_discovered": (len(session.session_goal_ids) if session else None),
+            "goals_consumed": (len(session.consumed_goal_ids()) if session else None),
+            "no_work_streak": (session.no_work_streak if session else None),
+            "min_role_dwell_seconds": float(min_role_dwell_seconds),
+            "switch_margin": float(switch_margin),
+            "session_started_at": (session.started_at if session else None),
+            "session_elapsed_seconds": (session.elapsed_seconds(moment) if session else None),
+            "session_role_id": (session.role_id if session else ""),
+        }
+        # Directive §16's PREEMPT_PENDING: another role genuinely carrying a deadline.
+        hard_event_roles = [
+            {
+                "role_id": item["role"].role_id,
+                "skill_id": item["decision"].skill,
+                "event_phase": item.get("event_phase"),
+                "event_starts_in_seconds": item.get("event_starts_in_seconds"),
+                "deadline_seconds": item.get("deadline_seconds"),
+                "priority": float(item["priority"]),
+            }
+            for item in candidates
+            if item["hard_event"] and item["role"].role_id != current_role_id
+        ]
+
         if not candidates:
             for row in schedule_rows:
                 start = row.start_datetime()
@@ -883,6 +1039,9 @@ class Scheduler:
                 "next_wakeup": next_wakeup,
                 "role_statuses": role_statuses,
                 "candidates": [],
+                "session_gate": session_gate_row,
+                "switch_reason_class": "",
+                "hard_event_roles": hard_event_roles,
             })
             return TaskSelection(
                 None,
@@ -893,6 +1052,7 @@ class Scheduler:
                 next_wakeup=next_wakeup,
                 role_statuses=tuple(role_statuses),
                 goal_metrics=tuple(goal_metrics),
+                session_gate=dict(session_gate_row),
             )
 
 
@@ -905,6 +1065,7 @@ class Scheduler:
             and (moment - switched_at).total_seconds() < max(0.0, min_role_dwell_seconds)
         )
 
+        switch_reason_class = ""
         dominant_hard = max(hard_candidates, key=lambda item: item["priority"], default=None)
         if dominant_hard is not None:
             selected = dominant_hard
@@ -913,11 +1074,20 @@ class Scheduler:
                           f"{selected['decision'].skill}")
             else:
                 reason = (f"SWITCH {current_role_id or 'UNKNOWN'}→{selected['role'].role_id}: "
-                          f"hard deadline/event phase overrides dwell and switch cost "
-                          f"for {selected['decision'].skill}")
+                          f"HARD_EVENT_PREEMPT for {selected['decision'].skill}; overrides "
+                          f"ROLE_SESSION_POLICY({gate.detail}) and switch cost")
+                switch_reason_class = HARD_EVENT_PREEMPT
+        elif current is not None and not gate.allowed:
+            # Directive §3/§4/§10: the current role still owns runnable work, so an
+            # ordinary Goal on another role may not take the device no matter its score.
+            # The dwell clock is irrelevant here -- time passing is not a switching licence.
+            selected = current
+            reason = (f"KEEP_CURRENT_ROLE: ROLE_SESSION_LOCKED({gate.detail}) — "
+                      f"{gate.description}")
         elif current is not None and dwell_active:
             selected = current
-            reason = f"KEEP_CURRENT_ROLE: {current_role_id} within minimum dwell and has runnable Goal"
+            reason = (f"KEEP_CURRENT_ROLE: {current_role_id} within minimum dwell "
+                      f"({float(min_role_dwell_seconds):.0f}s) and has a runnable Goal")
         else:
             selected = max(candidates, key=lambda item: (
                 item["priority"], item["role"].role_id == current_role_id,
@@ -927,16 +1097,25 @@ class Scheduler:
                 reason = f"KEEP_CURRENT_ROLE: {selected['decision'].skill} remains best after switch cost"
             elif selected["hard_event"]:
                 reason = (f"SWITCH {current_role_id or 'UNKNOWN'}→{selected['role'].role_id}: "
-                          f"hard deadline/event phase for {selected['decision'].skill}")
+                          f"HARD_EVENT_PREEMPT for {selected['decision'].skill}")
+                switch_reason_class = HARD_EVENT_PREEMPT
             elif current is None:
                 reason = (f"SWITCH {current_role_id or 'UNKNOWN'}→{selected['role'].role_id}: "
-                          "current role has no fresh runnable Goal")
+                          f"ROLE_SESSION_END({gate.detail}); current role has no fresh "
+                          f"runnable Goal")
+                switch_reason_class = gate.reason_class or NO_RUNNABLE_WORK
             elif selected["priority"] >= current["priority"] + max(0.0, switch_margin):
+                # ``switch_margin`` survives only as this tie-break (directive §11): the
+                # session gate has ALREADY allowed the move, and the margin now answers
+                # the separate question of whether the move is worth its cost.
                 reason = (f"SWITCH {current_role_id}→{selected['role'].role_id}: "
-                          f"higher global value ({selected['decision'].skill})")
+                          f"ROLE_SESSION_END({gate.detail}) and higher global value "
+                          f"({selected['decision'].skill})")
+                switch_reason_class = gate.reason_class or SESSION_COMPLETE
             else:
                 selected = current
-                reason = f"KEEP_CURRENT_ROLE: switch gain is below {switch_margin:.1f}"
+                reason = (f"KEEP_CURRENT_ROLE: session may end ({gate.detail}) but switch "
+                          f"gain is below {float(switch_margin):.1f}")
 
         decision = selected["decision"]
         role_id = selected["role"].role_id
@@ -971,7 +1150,9 @@ class Scheduler:
             "selected_reason": reason if item is selected else "",
             "rejected_reason": "selected_candidate_won_global_arbitration" if item is selected
             else ("hard_event_preemption" if dominant_hard is not None and not item["hard_event"]
-                  else "lower_score_or_role_hysteresis"),
+                  else ("role_session_locked" if not gate.allowed
+                        and item["role"].role_id != current_role_id
+                        else "lower_score_or_role_hysteresis")),
             "attached_goal_ids": list(item["credited_goal_ids"]),
         } for item in candidates)
         self._persist_global_decision({
@@ -988,6 +1169,9 @@ class Scheduler:
             "next_wakeup": next_wakeup,
             "role_statuses": role_statuses,
             "candidates": list(candidate_explanations),
+            "session_gate": session_gate_row,
+            "switch_reason_class": switch_reason_class,
+            "hard_event_roles": hard_event_roles,
         })
         return TaskSelection(
             None if selected["requires_role_refresh"] else selected["index"],
@@ -1004,6 +1188,8 @@ class Scheduler:
             requested_skill=decision.skill,
             next_wakeup=next_wakeup,
             candidate_explanations=candidate_explanations,
+            switch_reason_class=switch_reason_class,
+            session_gate=dict(session_gate_row),
         )
 
     def _persist_global_decision(self, decision: dict[str, Any]) -> None:

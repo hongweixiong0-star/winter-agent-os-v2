@@ -192,6 +192,31 @@ def test_decision_history_is_bounded_and_excludes_live_coordinates(tmp_path):
     assert "bbox" not in state.last_decision["candidate"]
 
 
+def test_a_list_row_that_mentions_a_live_key_keeps_its_logical_fields(tmp_path):
+    """Stripping the live field must not delete the record that carried it.
+
+    ``role_statuses`` is a list of per-role rows.  An earlier filter dropped any list
+    element containing a live-only key at all, so one stray ``bbox`` silently removed the
+    whole role row -- and every reader of that row (the panel, the ROLE_SESSION_POLICY
+    refresh) then saw zeros instead of the real counts.
+    """
+    store = GlobalSchedulerStateStore(tmp_path / "state.json")
+    store.record_decision(decision={
+        "decision": "KEEP_ROLE",
+        "role_statuses": [{
+            "role_id": "A", "runnable_goal_count": 3, "ready_goal_count": 3,
+            "bbox": [1, 2, 3, 4], "tap_point": [10, 20],
+        }],
+    })
+
+    rows = store.load().last_decision["role_statuses"]
+    assert len(rows) == 1
+    assert rows[0]["role_id"] == "A"
+    assert rows[0]["runnable_goal_count"] == 3
+    assert "bbox" not in rows[0]
+    assert "tap_point" not in rows[0]
+
+
 def test_role_runtime_state_never_restores_as_fresh_live_state():
     role = RoleRuntimeState(
         role_key="A", role_id="A", health="ACTIVE", page="HOME",
