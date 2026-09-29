@@ -1067,54 +1067,68 @@ class TruthAudit:
         )
 
     def episode_role_scope(self) -> TruthValue:
-        """Are the episodes we draw conclusions from actually scoped to this role?
+        """Are episode rows attributable to a role in the shared multi-role ledger?
 
-        This is the operator's role-isolation question, made answerable.  The corpus was
-        already pooled from two accounts with different power and different march slots, so
-        a metric computed across episodes is an average of two different players unless the
-        episodes carry a role.  The field was added to the schema on 2026-09-18; every
-        episode written before that is permanently unscoped, and saying so is the honest
-        reading -- not a gap to be filled in by guessing.
+        The global scheduler writes both roles to one episode stream. Their presence together
+        is expected when every row carries a role_id; role-specific metrics must group by that
+        field. Recent rows without a role_id cannot safely be attributed and remain a conflict.
         """
         role = self.role()
         total = len(self._all_episodes)
-        scoped = [e for e in self._all_episodes if e.get("role_id")]
-        mine = [e for e in scoped if str(e.get("role_id")) == role.role_id] if role.role_id else []
-        foreign = [e for e in scoped
-                   if role.role_id and str(e.get("role_id")) != role.role_id]
+        scoped = [e for e in self._all_episodes if str(e.get("role_id") or "").strip()]
+        role_ids = sorted({str(e.get("role_id")).strip() for e in scoped})
+        mine = [e for e in scoped if role.role_id and str(e.get("role_id")).strip() == role.role_id]
         note = (f"{len(scoped)}/{total} 条 episode 带角色；"
                 f"{len(mine)} 条属于上次已知角色 {role.value or '未知'}")
-        if foreign and self._recent(foreign):
-            self._conflicts.append(Conflict(
-                "episode_role_scope",
-                (("current_role", role.role_id or "UNKNOWN"),
-                 ("recent episodes", ", ".join(sorted({str(e.get("role_id")) for e in foreign})[:3]))),
-                "有别的角色的 episode 混在同一份语料里 —— 任何跨 episode 的统计都必须是分角色的",
-            ))
-            return TruthValue(
-                name="episode_role_scope", value=f"{len(scoped)}/{total}",
-                status=CONFLICT, source=EPISODES, role_id=role.role_id,
-                note=note + "；发现非当前角色的 episode",
-            )
+
         if not scoped:
             return TruthValue(
                 name="episode_role_scope", value=f"0/{total}", status=UNKNOWN,
                 source=EPISODES, role_id=role.role_id,
                 note=note + "；**全部未按角色限定** —— 跨 episode 统计不得当作单角色结论",
             )
+
+        unscoped_recent = [
+            e for e in self._all_episodes[-200:] if not str(e.get("role_id") or "").strip()
+        ]
+        if unscoped_recent:
+            self._conflicts.append(Conflict(
+                "episode_role_scope",
+                (("current_role", role.role_id or "UNKNOWN"),
+                 ("recent unscoped episodes", str(len(unscoped_recent)))),
+                "最近 episode 缺少 role_id，无法归属到角色；不得用于角色状态或跨角色统计",
+            ))
+            return TruthValue(
+                name="episode_role_scope", value=f"{len(scoped)}/{total}",
+                status=CONFLICT, source=EPISODES, role_id=role.role_id,
+                note=note + f"；最近 200 条中有 {len(unscoped_recent)} 条未标角色",
+            )
+
+        if not role.role_id:
+            return TruthValue(
+                name="episode_role_scope", value=f"{len(scoped)}/{total}", status=UNKNOWN,
+                source=EPISODES, role_id="",
+                note=note + "；当前角色身份未知，不能把记录归并到当前角色",
+            )
+        if not mine:
+            return TruthValue(
+                name="episode_role_scope", value=f"{len(scoped)}/{total}", status=UNKNOWN,
+                source=EPISODES, role_id=role.role_id,
+                note=note + "；共享日志中暂无当前角色的 episode",
+            )
+
+        latest_mine = mine[-1]
         status, age = self._episode_stamp(
-            str(scoped[-1].get("episode_id") or ""), str(scoped[-1].get("recorded_at") or "")
+            str(latest_mine.get("episode_id") or ""), str(latest_mine.get("recorded_at") or "")
         )
+        if len(role_ids) > 1:
+            note += (f"；共享日志含 {len(role_ids)} 个带标角色，已按 role_id 区分；"
+                     "跨角色指标需分组计算（这是多角色历史，不是实时冲突）")
         return TruthValue(
             name="episode_role_scope", value=f"{len(scoped)}/{total}", status=status,
-            source=EPISODES, observed_at=str(scoped[-1].get("recorded_at") or ""),
+            source=EPISODES, observed_at=str(latest_mine.get("recorded_at") or ""),
             age_seconds=age, role_id=role.role_id, note=note,
         )
-
-    def _recent(self, episodes: Sequence[Mapping[str, Any]], within: int = 200) -> bool:
-        """Are any of these among the most recent rows?  Old history is not a live conflict."""
-        recent_ids = {e.get("episode_id") for e in self._all_episodes[-within:]}
-        return any(e.get("episode_id") in recent_ids for e in episodes)
 
     def capability_lifecycle(self) -> TruthValue:
         catalog = _read_json(self.root / "knowledge/game/capability_catalog.json")

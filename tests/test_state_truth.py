@@ -489,15 +489,27 @@ class EpisodesAreScopedToARole(unittest.TestCase):
         self.assertEqual(value.role_id, "1171757165")
         self.assertNotEqual(value.status, st.CONFLICT)
 
-    def test_another_account_in_the_same_corpus_is_a_conflict(self):
-        """A metric computed across both accounts is an average of two players."""
+    def test_recently_scoped_rows_from_both_roles_are_expected_in_the_global_ledger(self):
+        """The shared global ledger may contain both roles when every row is attributable."""
         write(self.tmp, st.EPISODES, [
             {**episode(NOW.isoformat()), "role_id": "1171757165"},
             {**episode(NOW.isoformat(), goal="OTHER"), "role_id": "9999999999"},
         ])
         report = st.TruthAudit(self.tmp, now=NOW).report()
+        value = report.by_name("episode_role_scope")
+        self.assertEqual(value.status, st.LIVE_OBSERVED)
+        self.assertEqual(report.conflicts_for("episode_role_scope"), ())
+        self.assertIn("2 个带标角色", value.note)
+        self.assertIn("需分组计算", value.note)
+
+    def test_recent_unscoped_episode_is_a_role_isolation_conflict(self):
+        write(self.tmp, st.EPISODES, [
+            {**episode(NOW.isoformat()), "role_id": "1171757165"},
+            episode(NOW.isoformat(), goal="UNSCOPED"),
+        ])
+        report = st.TruthAudit(self.tmp, now=NOW).report()
         self.assertEqual(report.by_name("episode_role_scope").status, st.CONFLICT)
-        self.assertIn("分角色的", report.conflicts_for("episode_role_scope")[0].note)
+        self.assertIn("缺少 role_id", report.conflicts_for("episode_role_scope")[0].note)
 
     def test_history_from_a_previous_account_is_not_a_live_conflict(self):
         """The old pooled rows are a fact about history, not a running disagreement.
