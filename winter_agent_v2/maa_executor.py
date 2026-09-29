@@ -219,6 +219,11 @@ class MaaExecutorAdapter:
         self._package_at: float = 0.0
         self._stats: dict[str, _VerbStats] = {}
         self._draw_dir: Path | None = None
+        #: continuous-touch stream evidence (PHASE 2).  Kept as a bounded ring so
+        #: a long servo session cannot grow the process without limit.
+        self._touch_trace: list[dict[str, Any]] = []
+        self._touch_downs: int = 0
+        self._touch_ups: int = 0
 
     # ------------------------------------------------------------------ stats
     def _stat(self, verb: str) -> _VerbStats:
@@ -884,6 +889,94 @@ class MaaExecutorAdapter:
                                    None if job.succeeded else "MAA_SWIPE_FAILED")
         if not job.succeeded:
             raise RuntimeError("MAA_SWIPE_FAILED")
+
+    # ------------------------------------------------------- continuous touch
+    #
+    # Added 2026-09-29 for continuous visual control (Visual Servo V1).  Probe
+    # result on THIS machine, read from the installed toolkit rather than from a
+    # doc page: ``AdbController`` exposes ``post_touch_down(x, y, contact=0,
+    # pressure=1)``, ``post_touch_move(x, y, contact=0, pressure=1)`` and
+    # ``post_touch_up(contact=0)``.  No MaaFramework upgrade is required, and the
+    # existing controller (with its already-negotiated MuMu native input channel)
+    # is reused — a second connection would fight this one for the device.
+    def _touch_verb(self, verb: str, call: Callable[[], Any]) -> tuple[bool, str]:
+        """Send one continuous-touch event with the same discipline as ``click``."""
+        if not self.production:
+            return False, "DRY_RUN_BLOCKED_DEVICE_ACTION"
+        ok, reason = self.ensure_ready()
+        if not ok:
+            self._stat(verb).record(False, 0.0, reason)
+            return False, reason
+        started = time.perf_counter()
+        try:
+            job = call().wait()
+            elapsed_ms = (time.perf_counter() - started) * 1000.0
+            error = None if job.succeeded else f"MAA_{verb.upper()}_FAILED"
+            self._stat(verb).record(bool(job.succeeded), elapsed_ms, error)
+            return bool(job.succeeded), error or ""
+        except Exception as exc:  # noqa: BLE001
+            error = f"MAA_{verb.upper()}_FAILED:{type(exc).__name__}"
+            self._stat(verb).record(False, (time.perf_counter() - started) * 1000.0, error)
+            return False, error
+
+    def touch_down(self, x: int, y: int, contact: int = 0,
+                   pressure: int = 1) -> tuple[bool, str]:
+        """Put ``contact`` down at (x, y).  It STAYS down until ``touch_up``."""
+        result = self._touch_verb(
+            "touch_down",
+            lambda: self._controller.post_touch_down(int(x), int(y), int(contact), int(pressure)))
+        self._record_touch("down", x, y, contact, result)
+        return result
+
+    def touch_move(self, x: int, y: int, contact: int = 0,
+                   pressure: int = 1) -> tuple[bool, str]:
+        """Drag the finger held by ``contact`` to (x, y).  No-op without a down."""
+        result = self._touch_verb(
+            "touch_move",
+            lambda: self._controller.post_touch_move(int(x), int(y), int(contact), int(pressure)))
+        self._record_touch("move", x, y, contact, result)
+        return result
+
+    def touch_up(self, contact: int = 0) -> tuple[bool, str]:
+        """Lift ``contact``.  Safe to call when nothing is held (controller says so)."""
+        result = self._touch_verb(
+            "touch_up", lambda: self._controller.post_touch_up(int(contact)))
+        self._record_touch("up", None, None, contact, result)
+        return result
+
+    def _record_touch(self, kind: str, x: int | None, y: int | None,
+                      contact: int, result: tuple[bool, str]) -> None:
+        ok, reason = result
+        # Only a touch that was actually SENT can leave a finger down, so a
+        # gate-refused call is traced (evidence) but never counted in the pair
+        # ledger — otherwise TOUCH_STUCK would report a phantom stuck finger.
+        if ok and kind == "down":
+            self._touch_downs += 1
+        elif ok and kind == "up":
+            self._touch_ups += 1
+        self._touch_trace.append({
+            "kind": kind, "x": x, "y": y, "contact": contact,
+            "ok": ok, "reason": reason or None, "at": round(time.monotonic(), 3),
+        })
+        if len(self._touch_trace) > 6000:
+            del self._touch_trace[:2000]
+
+    @property
+    def touch_balance(self) -> dict[str, Any]:
+        """``TOUCH_STUCK`` evidence: a down must always be matched by an up.
+
+        Reported as a number because "the finger is still down" is the one bug
+        this whole subsystem must never have.
+        """
+        return {
+            "downs": self._touch_downs,
+            "ups": self._touch_ups,
+            "balanced": self._touch_downs == self._touch_ups,
+            "stuck": max(0, self._touch_downs - self._touch_ups),
+        }
+
+    def touch_trace(self, last: int = 40) -> list[dict[str, Any]]:
+        return self._touch_trace[-last:]
 
     def press_back(self) -> None:
         if not self.production:

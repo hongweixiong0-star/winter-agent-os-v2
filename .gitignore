@@ -22,6 +22,7 @@
 # excluded, which silently drops the regression fixtures.
 
 # --- bulk evidence ---------------------------------------------------------
+learning/action_latency.jsonl
 dataset/raw/**/*.png
 dataset/raw/**/*.jpg
 dataset/truth_audit/**/*.png
@@ -422,3 +423,9 @@ learning/roles/
 /.full_*.txt
 /.acceptance_frames.json
 /tools/_*.py
+
+# Fishing tournament exploration: the dense frame dumps are 300MB+ and are
+# re-derivable; the small JSON reports next to them are the evidence of record.
+dataset/raw/fishing_tournament/*/frames/
+dataset/raw/fishing_tournament/*/key_frames/
+dataset/raw/fishing_tournament/*/*.png

@@ -1,0 +1,212 @@
+{
+ "stamp": "20260929T225523",
+ "dir": "dataset\\raw\\fishing_tournament\\capture_probe_20260929T225523",
+ "negotiated": {
+  "capture_backend": "MAA_MUMU_EXTRAS",
+  "screencap_methods": 64,
+  "input_methods": 18446744073709551615,
+  "device": {
+   "name": "MuMu安卓设备-MuMuPlayer v5+",
+   "address": "127.0.0.1:16384",
+   "screencap_methods": 64,
+   "input_methods": 18446744073709551615,
+   "has_mumu_extras": true
+  }
+ },
+ "samples": [
+  {
+   "i": 0,
+   "t": 0.62,
+   "maa_bri": 140.36,
+   "adb_bri": 140.59,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 1,
+   "t": 6.56,
+   "maa_bri": 109.83,
+   "adb_bri": 109.58,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 2,
+   "t": 6.75,
+   "maa_bri": 109.57,
+   "adb_bri": 109.66,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 3,
+   "t": 6.91,
+   "maa_bri": 109.87,
+   "adb_bri": 109.92,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 4,
+   "t": 7.08,
+   "maa_bri": 109.97,
+   "adb_bri": 109.86,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 5,
+   "t": 7.25,
+   "maa_bri": 109.89,
+   "adb_bri": 109.91,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 6,
+   "t": 12.97,
+   "maa_bri": 107.72,
+   "adb_bri": 107.77,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 7,
+   "t": 13.12,
+   "maa_bri": 107.68,
+   "adb_bri": 107.68,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 8,
+   "t": 13.28,
+   "maa_bri": 108.04,
+   "adb_bri": 108.13,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 9,
+   "t": 13.42,
+   "maa_bri": 108.03,
+   "adb_bri": 107.95,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 10,
+   "t": 13.58,
+   "maa_bri": 107.35,
+   "adb_bri": 107.51,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 11,
+   "t": 20.0,
+   "maa_bri": 116.89,
+   "adb_bri": 122.92,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 12,
+   "t": 20.44,
+   "maa_bri": 137.93,
+   "adb_bri": 138.11,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 13,
+   "t": 20.86,
+   "maa_bri": 139.46,
+   "adb_bri": 139.11,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 14,
+   "t": 21.41,
+   "maa_bri": 140.23,
+   "adb_bri": 140.53,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 15,
+   "t": 21.84,
+   "maa_bri": 140.31,
+   "adb_bri": 140.22,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 16,
+   "t": 27.89,
+   "maa_bri": 59.25,
+   "adb_bri": 59.22,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 17,
+   "t": 28.12,
+   "maa_bri": 59.11,
+   "adb_bri": 59.09,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 18,
+   "t": 28.36,
+   "maa_bri": 59.19,
+   "adb_bri": 59.17,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 19,
+   "t": 28.58,
+   "maa_bri": 59.17,
+   "adb_bri": 59.21,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  },
+  {
+   "i": 20,
+   "t": 28.8,
+   "maa_bri": 59.24,
+   "adb_bri": 59.24,
+   "maa_err": null,
+   "adb_err": null,
+   "disagree": false
+  }
+ ],
+ "disagreements": 0,
+ "saved_pairs": 0,
+ "maa_min_bri": 59.11,
+ "adb_min_bri": 59.09,
+ "end_text": "本 本次收获 快 米 下潜深度：50米 ★ 业1 10 10 10 10 10 10 x1 x1 x1 LX LX 30 30 退出 冰钓礼 冰钓礼券 返出"
+}

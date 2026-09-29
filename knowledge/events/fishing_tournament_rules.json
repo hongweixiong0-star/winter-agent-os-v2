@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "event_id": "FISHING_TOURNAMENT",
+  "source": "LIVE_DEVICE_EXPLORATION_2026-09-29",
+  "evidence_root": "dataset/raw/fishing_tournament/",
+  "resource_model": {
+    "bait": {
+      "observed": "10/10 at first read, then 7/10, then 6/10, 5/10 after two runs",
+      "cap_observed": 10,
+      "consumed_per_level": 1,
+      "is_timer_resource": true,
+      "operator_prior": "start 5, ~3h per recovery, cap 10",
+      "rule": "read LIVE every time; treat bait as a Global Scheduler timer resource"
+    },
+    "treasure_tickets": {
+      "observed": 14,
+      "note": "shown next to a + button; buying is POLICY_BLOCKED"
+    },
+    "currencies": {
+      "冰钓积分": "per-run score, 0 -> 190 after one run",
+      "coins_shells": "per-run rewards, 10+10 per caught fish"
+    }
+  },
+  "gear": {
+    "components": [
+      "鱼线",
+      "鱼钩",
+      "鱼坠"
+    ],
+    "levels_observed": 1,
+    "cost_units": {
+      "鱼线": "100米",
+      "鱼钩": 11,
+      "鱼坠": "0米"
+    },
+    "upgrade_currency": "FISHING_TOKENS (event-internal)",
+    "policy": "USE_OWNED_ITEM only; gem / real-money purchases are BLOCKED"
+  },
+  "levels": {
+    "普通关卡": {
+      "cost": 1,
+      "id": "NORMAL"
+    },
+    "宝藏关卡": {
+      "cost": 1,
+      "id": "TREASURE"
+    }
+  },
+  "level_flow_measured": {
+    "1_tutorial": "FIRST ever level only: a large hand points at a circle on the ice; tap (357,632)",
+    "2_cutscene": "skip button ~(634,94); ~5-16 s; plays on the first level only",
+    "3_ready": "countdown 3-2-1 over the fisherman; HUD 0M/100M appears",
+    "4_gameplay": "a vertical line hangs from the rod; steer LEFT/RIGHT.  HUD: depth 0M/100M, fish n/11, shields n/2.  Unsteered, a level ended after ~4 s at 47-62 m",
+    "5_result": "本次收获 / 新纪录 / 下潜深度 NN米 / fish cards / 退出 + 冰钓礼券",
+    "6_popup": "a 图鉴 popup can block afterwards: 恭喜您获得新图鉴 / 点击任意位置继续 -> tap anywhere"
+  },
+  "vision_measured": {
+    "line": {
+      "method": "argmax of dark(<60) pixel count per column in water ROI (120,430)-(620,1180)",
+      "observed": "line_x 350-352, dark count 126-600, runner-up column only 26 => 6-19x separation",
+      "validated": "18/18 real gameplay frames detected; 13/13 non-gameplay frames correctly refused"
+    },
+    "hook": {
+      "method": "green glowing marker, HSV (40,120,150)-(85,255,255), blob ~25x34",
+      "observed": "centroid tracks the hook, y 577..1029",
+      "area_px": "396-450"
+    },
+    "depth_proxy": "hook_y, and the dark-pixel count which grows with depth — no per-frame OCR needed",
+    "fish_obstacles": "warm-hue blobs in the water; below the hook = fish, above = ice scenery"
+  },
+  "control_measured": {
+    "axis": "horizontal only: line x is the control axis, y is fixed",
+    "finger_to_line_gain": 0.5,
+    "gain_evidence": "finger 382->254 (128 px) moved the line 350->286 (64 px), read from pixels",
+    "first_move_absorbed_ticks": 5,
+    "first_move_note": "matches the PHASE 4 world-map finding: the client eats the first motion after touch_down",
+    "loop_rate_live_hz": 21.28,
+    "capture_ms_p50": 13.82,
+    "vision_ms_p50": 3.68,
+    "input_ms_p50": 0.0,
+    "capture_hz_max": 59.91,
+    "capture_hz_static_page": 91.3
+  },
+  "verifier_signals": {
+    "MINIGAME_STARTED": "HUD 0M/100M present",
+    "CONTROL_SESSION_RAN": "the servo sent at least one move",
+    "RESULT_PAGE": "本次收获 or 下潜深度 present",
+    "BAIT_DECREASED": "home bait counter strictly lower after the run",
+    "POINTS_INCREASED": "我的冰钓积分 increased (0 -> 190 observed)"
+  },
+  "policy": {
+    "USE_OWNED_ITEM": "allowed (free bait, tickets already owned)",
+    "BUY_ITEM": "BLOCK by default (gems)",
+    "REAL_MONEY": "PERMANENTLY_BLOCK",
+    "not_verified": "whether exiting mid-level refunds the bait — NOT verified, so NOT relied on"
+  },
+  "blockers": []
+}

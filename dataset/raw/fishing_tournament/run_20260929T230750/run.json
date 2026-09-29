@@ -1,0 +1,2683 @@
+{
+ "run_id": "run_20260929T230750",
+ "phase": "DONE",
+ "dir": "dataset\\raw\\fishing_tournament\\run_20260929T230750",
+ "bait_before": "7",
+ "bait_cap": "10",
+ "home_text": "钓鱼锦标赛 标赛 0 钓 冰钓 冰钓大师榜 冰钓俱乐部 钓鱼锦标赛 赛 ！ 季 当前季节：冬季 ? 2天0 2天00:51:39 39 宜 HCE 我的 80 我的冰钓积分：80 鱼 鱼线 鱼线等级：1 鱼钩等级：1 鱼坠等级：1 级：1 100米 0米 11 0米 美 特殊道具 5 23 26 27 14 7 7/10 普通关 关卡 普通关卡 宝藏关卡 61 1 1 管1",
+ "first_line_seen_after_s": 2.19,
+ "first_state": {
+  "found": true,
+  "lost": false,
+  "line_x": 351,
+  "line_strength": 546,
+  "line_separation": 4.63,
+  "hook_x": 353,
+  "hook_y": 944,
+  "hook_area": 443,
+  "depth_px": 514,
+  "fish": [],
+  "obstacles": [
+   {
+    "x": 560,
+    "y": 438,
+    "w": 39,
+    "h": 15,
+    "area": 489,
+    "top": 432,
+    "left": 542
+   },
+   {
+    "x": 587,
+    "y": 438,
+    "w": 8,
+    "h": 13,
+    "area": 86,
+    "top": 433,
+    "left": 584
+   },
+   {
+    "x": 493,
+    "y": 455,
+    "w": 49,
+    "h": 57,
+    "area": 1834,
+    "top": 430,
+    "left": 470
+   },
+   {
+    "x": 555,
+    "y": 460,
+    "w": 45,
+    "h": 26,
+    "area": 804,
+    "top": 447,
+    "left": 534
+   },
+   {
+    "x": 555,
+    "y": 482,
+    "w": 46,
+    "h": 27,
+    "area": 804,
+    "top": 472,
+    "left": 532
+   }
+  ]
+ },
+ "control_session": {
+  "outcome": "ABORTED",
+  "frames": 47,
+  "duration_s": 2.532,
+  "reason": "LINE_GONE_LEVEL_ENDED",
+  "presses": 1,
+  "moves_sent": 1,
+  "moves_skipped_dead_zone": 7,
+  "moves_skipped_clamped": 0,
+  "lost_events": 1,
+  "max_lost_streak": 39,
+  "stale_frames": 0,
+  "timings": {
+   "frames": 47,
+   "capture_ms": {
+    "p50": 13.82,
+    "p95": 16.73,
+    "max": 18.21
+   },
+   "vision_ms": {
+    "p50": 3.68,
+    "p95": 4.44,
+    "max": 4.97
+   },
+   "decision_ms": {
+    "p50": 0.0,
+    "p95": 4.99,
+    "max": 5.59
+   },
+   "input_ms": {
+    "p50": 0.0,
+    "p95": 0.0,
+    "max": 0.41
+   },
+   "loop_ms": {
+    "p50": 47.0,
+    "p95": 63.0,
+    "max": 63.0
+   },
+   "loop_hz_median": 21.28,
+   "loop_hz_p95_slowest": 15.87
+  },
+  "touch_sessions": [
+   {
+    "session_id": "VS001",
+    "contact": 0,
+    "duration_s": 2.5,
+    "state": "RELEASED",
+    "begin_xy": [
+     360,
+     800
+    ],
+    "end_xy": [
+     368,
+     800
+    ],
+    "moves": 2,
+    "failed_moves": 0,
+    "distance_px": 36.0,
+    "lift_attempts": 1,
+    "stuck": false,
+    "reason": "LINE_GONE_LEVEL_ENDED",
+    "mean_move_ms": 0.31,
+    "events": [
+     {
+      "kind": "down",
+      "x": 360,
+      "y": 800,
+      "ok": true,
+      "reason": null,
+      "ms": 0.36,
+      "state_after": "IDLE"
+     },
+     {
+      "kind": "move",
+      "x": 382,
+      "y": 800,
+      "ok": true,
+      "reason": null,
+      "ms": 0.22,
+      "state_after": "PRESSED"
+     },
+     {
+      "kind": "move",
+      "x": 368,
+      "y": 800,
+      "ok": true,
+      "reason": null,
+      "ms": 0.4,
+      "state_after": "MOVING"
+     },
+     {
+      "kind": "up",
+      "x": null,
+      "y": null,
+      "ok": true,
+      "reason": null,
+      "ms": 0.36,
+      "state_after": "MOVING"
+     }
+    ]
+   }
+  ],
+  "timeline": [
+   {
+    "index": 0,
+    "at": 695182.34,
+    "capture_ms": 13.08,
+    "vision_ms": 3.25,
+    "decision_ms": 5.03,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 382,
+    "desired_x": 382,
+    "commanded_x": 382,
+    "moved": false,
+    "skipped_reason": "DEAD_ZONE",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=140, line_separation=8.235294117647058, hook_x=354, hook_"
+   },
+   {
+    "index": 1,
+    "at": 695182.42,
+    "capture_ms": 12.01,
+    "vision_ms": 3.63,
+    "decision_ms": 5.59,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 382,
+    "desired_x": 382,
+    "commanded_x": 382,
+    "moved": false,
+    "skipped_reason": "DEAD_ZONE",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=140, line_separation=8.235294117647058, hook_x=354, hook_"
+   },
+   {
+    "index": 2,
+    "at": 695182.47,
+    "capture_ms": 15.34,
+    "vision_ms": 3.88,
+    "decision_ms": 3.76,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 382,
+    "desired_x": 382,
+    "commanded_x": 382,
+    "moved": false,
+    "skipped_reason": "DEAD_ZONE",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=126, line_separation=126.0, hook_x=354, hook_y=578, hook_"
+   },
+   {
+    "index": 3,
+    "at": 695182.52,
+    "capture_ms": 18.21,
+    "vision_ms": 4.01,
+    "decision_ms": 4.46,
+    "input_ms": 0.0,
+    "loop_ms": 63.0,
+    "finger_x": 382,
+    "desired_x": 382,
+    "commanded_x": 382,
+    "moved": false,
+    "skipped_reason": "DEAD_ZONE",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=126, line_separation=126.0, hook_x=354, hook_y=578, hook_"
+   },
+   {
+    "index": 4,
+    "at": 695182.58,
+    "capture_ms": 13.74,
+    "vision_ms": 3.52,
+    "decision_ms": 5.14,
+    "input_ms": 0.0,
+    "loop_ms": 62.0,
+    "finger_x": 382,
+    "desired_x": 382,
+    "commanded_x": 382,
+    "moved": false,
+    "skipped_reason": "DEAD_ZONE",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=126, line_separation=126.0, hook_x=354, hook_y=578, hook_"
+   },
+   {
+    "index": 5,
+    "at": 695182.64,
+    "capture_ms": 13.3,
+    "vision_ms": 4.26,
+    "decision_ms": 4.85,
+    "input_ms": 0.0,
+    "loop_ms": 63.0,
+    "finger_x": 382,
+    "desired_x": 382,
+    "commanded_x": 382,
+    "moved": false,
+    "skipped_reason": "DEAD_ZONE",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=138, line_separation=8.625, hook_x=354, hook_y=575, hook_"
+   },
+   {
+    "index": 6,
+    "at": 695182.7,
+    "capture_ms": 13.43,
+    "vision_ms": 4.19,
+    "decision_ms": 4.89,
+    "input_ms": 0.0,
+    "loop_ms": 62.0,
+    "finger_x": 382,
+    "desired_x": 382,
+    "commanded_x": 382,
+    "moved": false,
+    "skipped_reason": "DEAD_ZONE",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=126, line_separation=7.875, hook_x=354, hook_y=563, hook_"
+   },
+   {
+    "index": 7,
+    "at": 695182.77,
+    "capture_ms": 15.18,
+    "vision_ms": 3.37,
+    "decision_ms": 0.05,
+    "input_ms": 0.41,
+    "loop_ms": 63.0,
+    "finger_x": 368,
+    "desired_x": 356,
+    "commanded_x": 368,
+    "moved": true,
+    "skipped_reason": "",
+    "lost": false,
+    "stale": false,
+    "state_summary": "FishingFrame(found=True, lost=False, line_x=350, line_strength=87, line_separation=7.909090909090909, hook_x=354, hook_y"
+   },
+   {
+    "index": 8,
+    "at": 695182.83,
+    "capture_ms": 13.82,
+    "vision_ms": 3.39,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=50, line_separation=3.8461538461538463, hook_x=354, hook"
+   },
+   {
+    "index": 9,
+    "at": 695182.88,
+    "capture_ms": 12.75,
+    "vision_ms": 3.13,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 46.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=16, line_separation=1.0, hook_x=354, hook_y=453, hook_ar"
+   },
+   {
+    "index": 10,
+    "at": 695182.92,
+    "capture_ms": 14.76,
+    "vision_ms": 4.97,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=16, line_separation=1.0, hook_x=354, hook_y=453, hook_ar"
+   },
+   {
+    "index": 11,
+    "at": 695182.97,
+    "capture_ms": 12.46,
+    "vision_ms": 3.63,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=16, line_separation=1.0666666666666667, hook_x=None, hoo"
+   },
+   {
+    "index": 12,
+    "at": 695183.02,
+    "capture_ms": 14.53,
+    "vision_ms": 4.14,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=6, line_separation=1.5, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 13,
+    "at": 695183.06,
+    "capture_ms": 15.31,
+    "vision_ms": 3.74,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=7, line_separation=1.4, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 14,
+    "at": 695183.11,
+    "capture_ms": 12.83,
+    "vision_ms": 3.92,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=7, line_separation=1.4, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 15,
+    "at": 695183.16,
+    "capture_ms": 13.87,
+    "vision_ms": 3.56,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 62.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=6, line_separation=1.2, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 16,
+    "at": 695183.23,
+    "capture_ms": 12.9,
+    "vision_ms": 4.94,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=8, line_separation=1.6, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 17,
+    "at": 695183.28,
+    "capture_ms": 13.31,
+    "vision_ms": 3.29,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 62.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=8, line_separation=2.0, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 18,
+    "at": 695183.34,
+    "capture_ms": 15.64,
+    "vision_ms": 4.44,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 63.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=7, line_separation=1.4, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 19,
+    "at": 695183.41,
+    "capture_ms": 16.36,
+    "vision_ms": 3.53,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 62.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=5, line_separation=2.5, hook_x=None, hook_y=None, hook_a"
+   },
+   {
+    "index": 20,
+    "at": 695183.47,
+    "capture_ms": 17.73,
+    "vision_ms": 3.78,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=13, line_separation=1.1818181818181819, hook_x=None, hoo"
+   },
+   {
+    "index": 21,
+    "at": 695183.52,
+    "capture_ms": 12.03,
+    "vision_ms": 3.88,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=13, line_separation=1.1818181818181819, hook_x=None, hoo"
+   },
+   {
+    "index": 22,
+    "at": 695183.56,
+    "capture_ms": 13.31,
+    "vision_ms": 3.36,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 63.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=31, line_separation=1.0689655172413792, hook_x=None, hoo"
+   },
+   {
+    "index": 23,
+    "at": 695183.62,
+    "capture_ms": 12.19,
+    "vision_ms": 3.68,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 46.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0238095238095237, hook_x=None, hoo"
+   },
+   {
+    "index": 24,
+    "at": 695183.67,
+    "capture_ms": 13.98,
+    "vision_ms": 4.0,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 25,
+    "at": 695183.72,
+    "capture_ms": 13.99,
+    "vision_ms": 3.7,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 26,
+    "at": 695183.77,
+    "capture_ms": 13.89,
+    "vision_ms": 3.67,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 63.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 27,
+    "at": 695183.83,
+    "capture_ms": 11.92,
+    "vision_ms": 3.65,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0238095238095237, hook_x=None, hoo"
+   },
+   {
+    "index": 28,
+    "at": 695183.88,
+    "capture_ms": 13.74,
+    "vision_ms": 3.92,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 46.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 29,
+    "at": 695183.92,
+    "capture_ms": 16.8,
+    "vision_ms": 4.15,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 30,
+    "at": 695183.97,
+    "capture_ms": 11.78,
+    "vision_ms": 3.51,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0238095238095237, hook_x=None, hoo"
+   },
+   {
+    "index": 31,
+    "at": 695184.05,
+    "capture_ms": 12.61,
+    "vision_ms": 3.63,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 32,
+    "at": 695184.09,
+    "capture_ms": 13.79,
+    "vision_ms": 3.87,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0238095238095237, hook_x=None, hoo"
+   },
+   {
+    "index": 33,
+    "at": 695184.14,
+    "capture_ms": 12.42,
+    "vision_ms": 3.31,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 34,
+    "at": 695184.19,
+    "capture_ms": 11.23,
+    "vision_ms": 3.74,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 35,
+    "at": 695184.23,
+    "capture_ms": 12.39,
+    "vision_ms": 3.56,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 36,
+    "at": 695184.28,
+    "capture_ms": 12.58,
+    "vision_ms": 3.3,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 62.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 37,
+    "at": 695184.34,
+    "capture_ms": 16.56,
+    "vision_ms": 3.59,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 38,
+    "at": 695184.39,
+    "capture_ms": 15.7,
+    "vision_ms": 2.91,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 39,
+    "at": 695184.44,
+    "capture_ms": 14.25,
+    "vision_ms": 4.04,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 40,
+    "at": 695184.48,
+    "capture_ms": 13.83,
+    "vision_ms": 4.44,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 41,
+    "at": 695184.53,
+    "capture_ms": 15.66,
+    "vision_ms": 3.69,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0238095238095237, hook_x=None, hoo"
+   },
+   {
+    "index": 42,
+    "at": 695184.58,
+    "capture_ms": 14.54,
+    "vision_ms": 3.65,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 62.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=43, line_separation=1.0238095238095237, hook_x=None, hoo"
+   },
+   {
+    "index": 43,
+    "at": 695184.64,
+    "capture_ms": 13.86,
+    "vision_ms": 3.65,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=38, line_separation=1.027027027027027, hook_x=None, hook"
+   },
+   {
+    "index": 44,
+    "at": 695184.69,
+    "capture_ms": 12.74,
+    "vision_ms": 3.82,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=39, line_separation=1.5, hook_x=None, hook_y=None, hook_"
+   },
+   {
+    "index": 45,
+    "at": 695184.73,
+    "capture_ms": 15.6,
+    "vision_ms": 3.62,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 47.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=30, line_separation=1.0344827586206897, hook_x=None, hoo"
+   },
+   {
+    "index": 46,
+    "at": 695184.81,
+    "capture_ms": 14.5,
+    "vision_ms": 3.82,
+    "decision_ms": 0.0,
+    "input_ms": 0.0,
+    "loop_ms": 63.0,
+    "finger_x": 368,
+    "desired_x": null,
+    "commanded_x": null,
+    "moved": false,
+    "skipped_reason": "HOLD_LOST_TIMEOUT",
+    "lost": true,
+    "stale": false,
+    "state_summary": "FishingFrame(found=False, lost=True, line_x=None, line_strength=28, line_separation=1.0769230769230769, hook_x=None, hoo"
+   }
+  ]
+ },
+ "detections": [
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 140,
+   "line_separation": 8.24,
+   "hook_x": 354,
+   "hook_y": 577,
+   "hook_area": 475,
+   "depth_px": 147,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 140,
+   "line_separation": 8.24,
+   "hook_x": 354,
+   "hook_y": 577,
+   "hook_area": 475,
+   "depth_px": 147,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 126,
+   "line_separation": 126.0,
+   "hook_x": 354,
+   "hook_y": 578,
+   "hook_area": 455,
+   "depth_px": 148,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 126,
+   "line_separation": 126.0,
+   "hook_x": 354,
+   "hook_y": 578,
+   "hook_area": 455,
+   "depth_px": 148,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 126,
+   "line_separation": 126.0,
+   "hook_x": 354,
+   "hook_y": 578,
+   "hook_area": 455,
+   "depth_px": 148,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 138,
+   "line_separation": 8.62,
+   "hook_x": 354,
+   "hook_y": 575,
+   "hook_area": 478,
+   "depth_px": 145,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 126,
+   "line_separation": 7.88,
+   "hook_x": 354,
+   "hook_y": 563,
+   "hook_area": 485,
+   "depth_px": 133,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": true,
+   "lost": false,
+   "line_x": 350,
+   "line_strength": 87,
+   "line_separation": 7.91,
+   "hook_x": 354,
+   "hook_y": 539,
+   "hook_area": 464,
+   "depth_px": 109,
+   "fish": [
+    {
+     "x": 124,
+     "y": 899,
+     "w": 14,
+     "h": 28,
+     "area": 234,
+     "top": 888,
+     "left": 120
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 50,
+   "line_separation": 3.85,
+   "hook_x": 354,
+   "hook_y": 502,
+   "hook_area": 459,
+   "depth_px": 72,
+   "fish": [
+    {
+     "x": 133,
+     "y": 787,
+     "w": 30,
+     "h": 29,
+     "area": 510,
+     "top": 775,
+     "left": 120
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 16,
+   "line_separation": 1.0,
+   "hook_x": 354,
+   "hook_y": 453,
+   "hook_area": 483,
+   "depth_px": 23,
+   "fish": [
+    {
+     "x": 146,
+     "y": 669,
+     "w": 35,
+     "h": 28,
+     "area": 560,
+     "top": 657,
+     "left": 129
+    },
+    {
+     "x": 433,
+     "y": 1084,
+     "w": 110,
+     "h": 62,
+     "area": 2611,
+     "top": 1055,
+     "left": 379
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 16,
+   "line_separation": 1.0,
+   "hook_x": 354,
+   "hook_y": 453,
+   "hook_area": 483,
+   "depth_px": 23,
+   "fish": [
+    {
+     "x": 146,
+     "y": 669,
+     "w": 35,
+     "h": 28,
+     "area": 560,
+     "top": 657,
+     "left": 129
+    },
+    {
+     "x": 433,
+     "y": 1084,
+     "w": 110,
+     "h": 62,
+     "area": 2611,
+     "top": 1055,
+     "left": 379
+    }
+   ],
+   "obstacles": []
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 16,
+   "line_separation": 1.07,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 162,
+     "y": 544,
+     "w": 34,
+     "h": 28,
+     "area": 553,
+     "top": 533,
+     "left": 145
+    },
+    {
+     "x": 434,
+     "y": 959,
+     "w": 113,
+     "h": 62,
+     "area": 2752,
+     "top": 931,
+     "left": 379
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 6,
+   "line_separation": 1.5,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 437,
+     "y": 828,
+     "w": 114,
+     "h": 62,
+     "area": 2788,
+     "top": 800,
+     "left": 381
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 7,
+   "line_separation": 1.4,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 439,
+     "y": 690,
+     "w": 114,
+     "h": 63,
+     "area": 2859,
+     "top": 661,
+     "left": 383
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 7,
+   "line_separation": 1.4,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 439,
+     "y": 690,
+     "w": 114,
+     "h": 63,
+     "area": 2859,
+     "top": 661,
+     "left": 383
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 6,
+   "line_separation": 1.2,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 441,
+     "y": 566,
+     "w": 115,
+     "h": 64,
+     "area": 2869,
+     "top": 537,
+     "left": 385
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 8,
+   "line_separation": 1.6,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 443,
+     "y": 519,
+     "w": 114,
+     "h": 63,
+     "area": 2870,
+     "top": 490,
+     "left": 387
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 8,
+   "line_separation": 2.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 445,
+     "y": 472,
+     "w": 114,
+     "h": 63,
+     "area": 2884,
+     "top": 444,
+     "left": 389
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 7,
+   "line_separation": 1.4,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 486,
+     "y": 436,
+     "w": 38,
+     "h": 19,
+     "area": 376,
+     "top": 430,
+     "left": 468
+    },
+    {
+     "x": 419,
+     "y": 439,
+     "w": 78,
+     "h": 30,
+     "area": 832,
+     "top": 430,
+     "left": 390
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 5,
+   "line_separation": 2.5,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": []
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 13,
+   "line_separation": 1.18,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 523,
+     "y": 1172,
+     "w": 35,
+     "h": 17,
+     "area": 426,
+     "top": 1163,
+     "left": 507
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 13,
+   "line_separation": 1.18,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 523,
+     "y": 1172,
+     "w": 35,
+     "h": 17,
+     "area": 426,
+     "top": 1163,
+     "left": 507
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 31,
+   "line_separation": 1.07,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 448,
+     "y": 645,
+     "w": 12,
+     "h": 7,
+     "area": 66,
+     "top": 642,
+     "left": 443
+    },
+    {
+     "x": 539,
+     "y": 1129,
+     "w": 35,
+     "h": 29,
+     "area": 566,
+     "top": 1117,
+     "left": 522
+    },
+    {
+     "x": 563,
+     "y": 1130,
+     "w": 12,
+     "h": 10,
+     "area": 74,
+     "top": 1126,
+     "left": 559
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 447,
+     "y": 598,
+     "w": 12,
+     "h": 7,
+     "area": 66,
+     "top": 596,
+     "left": 442
+    },
+    {
+     "x": 554,
+     "y": 1082,
+     "w": 35,
+     "h": 28,
+     "area": 563,
+     "top": 1071,
+     "left": 537
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 568,
+     "y": 1036,
+     "w": 34,
+     "h": 28,
+     "area": 558,
+     "top": 1025,
+     "left": 552
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 568,
+     "y": 1036,
+     "w": 34,
+     "h": 28,
+     "area": 558,
+     "top": 1025,
+     "left": 552
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 583,
+     "y": 990,
+     "w": 35,
+     "h": 28,
+     "area": 564,
+     "top": 978,
+     "left": 566
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 598,
+     "y": 944,
+     "w": 35,
+     "h": 28,
+     "area": 558,
+     "top": 932,
+     "left": 581
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 609,
+     "y": 897,
+     "w": 24,
+     "h": 26,
+     "area": 389,
+     "top": 885,
+     "left": 596
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 609,
+     "y": 897,
+     "w": 24,
+     "h": 26,
+     "area": 389,
+     "top": 885,
+     "left": 596
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 615,
+     "y": 851,
+     "w": 8,
+     "h": 13,
+     "area": 93,
+     "top": 845,
+     "left": 612
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 440,
+     "y": 1161,
+     "w": 34,
+     "h": 29,
+     "area": 559,
+     "top": 1149,
+     "left": 425
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 425,
+     "y": 1115,
+     "w": 34,
+     "h": 28,
+     "area": 557,
+     "top": 1103,
+     "left": 410
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 410,
+     "y": 1069,
+     "w": 34,
+     "h": 28,
+     "area": 559,
+     "top": 1057,
+     "left": 395
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 410,
+     "y": 1069,
+     "w": 34,
+     "h": 28,
+     "area": 559,
+     "top": 1057,
+     "left": 395
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 395,
+     "y": 1022,
+     "w": 34,
+     "h": 28,
+     "area": 546,
+     "top": 1011,
+     "left": 380
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 381,
+     "y": 975,
+     "w": 35,
+     "h": 25,
+     "area": 535,
+     "top": 964,
+     "left": 365
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 613,
+     "y": 571,
+     "w": 9,
+     "h": 10,
+     "area": 61,
+     "top": 568,
+     "left": 609
+    },
+    {
+     "x": 366,
+     "y": 930,
+     "w": 34,
+     "h": 29,
+     "area": 547,
+     "top": 918,
+     "left": 350
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 613,
+     "y": 526,
+     "w": 15,
+     "h": 29,
+     "area": 272,
+     "top": 514,
+     "left": 605
+    },
+    {
+     "x": 351,
+     "y": 883,
+     "w": 35,
+     "h": 25,
+     "area": 530,
+     "top": 872,
+     "left": 335
+    },
+    {
+     "x": 148,
+     "y": 1162,
+     "w": 66,
+     "h": 42,
+     "area": 1520,
+     "top": 1138,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 613,
+     "y": 526,
+     "w": 15,
+     "h": 29,
+     "area": 272,
+     "top": 514,
+     "left": 605
+    },
+    {
+     "x": 351,
+     "y": 883,
+     "w": 35,
+     "h": 25,
+     "area": 530,
+     "top": 872,
+     "left": 335
+    },
+    {
+     "x": 148,
+     "y": 1162,
+     "w": 66,
+     "h": 42,
+     "area": 1520,
+     "top": 1138,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.0,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 604,
+     "y": 478,
+     "w": 31,
+     "h": 25,
+     "area": 502,
+     "top": 467,
+     "left": 589
+    },
+    {
+     "x": 336,
+     "y": 837,
+     "w": 35,
+     "h": 25,
+     "area": 533,
+     "top": 825,
+     "left": 320
+    },
+    {
+     "x": 154,
+     "y": 1121,
+     "w": 74,
+     "h": 63,
+     "area": 1891,
+     "top": 1093,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 566,
+     "y": 433,
+     "w": 12,
+     "h": 9,
+     "area": 62,
+     "top": 430,
+     "left": 560
+    },
+    {
+     "x": 590,
+     "y": 435,
+     "w": 31,
+     "h": 17,
+     "area": 340,
+     "top": 430,
+     "left": 577
+    },
+    {
+     "x": 321,
+     "y": 791,
+     "w": 33,
+     "h": 29,
+     "area": 553,
+     "top": 779,
+     "left": 306
+    },
+    {
+     "x": 153,
+     "y": 1074,
+     "w": 73,
+     "h": 62,
+     "area": 1819,
+     "top": 1046,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 43,
+   "line_separation": 1.02,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 566,
+     "y": 433,
+     "w": 12,
+     "h": 9,
+     "area": 62,
+     "top": 430,
+     "left": 560
+    },
+    {
+     "x": 590,
+     "y": 435,
+     "w": 31,
+     "h": 17,
+     "area": 340,
+     "top": 430,
+     "left": 577
+    },
+    {
+     "x": 321,
+     "y": 791,
+     "w": 33,
+     "h": 29,
+     "area": 553,
+     "top": 779,
+     "left": 306
+    },
+    {
+     "x": 153,
+     "y": 1074,
+     "w": 73,
+     "h": 62,
+     "area": 1819,
+     "top": 1046,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 38,
+   "line_separation": 1.03,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 306,
+     "y": 743,
+     "w": 34,
+     "h": 26,
+     "area": 525,
+     "top": 732,
+     "left": 290
+    },
+    {
+     "x": 152,
+     "y": 1027,
+     "w": 71,
+     "h": 63,
+     "area": 1763,
+     "top": 998,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 39,
+   "line_separation": 1.5,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 290,
+     "y": 697,
+     "w": 34,
+     "h": 30,
+     "area": 555,
+     "top": 685,
+     "left": 275
+    },
+    {
+     "x": 151,
+     "y": 981,
+     "w": 70,
+     "h": 63,
+     "area": 1759,
+     "top": 952,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 30,
+   "line_separation": 1.03,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 275,
+     "y": 650,
+     "w": 34,
+     "h": 26,
+     "area": 539,
+     "top": 639,
+     "left": 260
+    },
+    {
+     "x": 150,
+     "y": 935,
+     "w": 68,
+     "h": 62,
+     "area": 1725,
+     "top": 906,
+     "left": 120
+    }
+   ]
+  },
+  {
+   "found": false,
+   "lost": true,
+   "line_x": null,
+   "line_strength": 28,
+   "line_separation": 1.08,
+   "hook_x": null,
+   "hook_y": null,
+   "hook_area": 0,
+   "depth_px": null,
+   "fish": [],
+   "obstacles": [
+    {
+     "x": 260,
+     "y": 604,
+     "w": 34,
+     "h": 27,
+     "area": 536,
+     "top": 592,
+     "left": 244
+    },
+    {
+     "x": 149,
+     "y": 889,
+     "w": 66,
+     "h": 63,
+     "area": 1664,
+     "top": 859,
+     "left": 120
+    }
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "i": 0,
+   "finger_x": 382,
+   "commanded_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 577
+  },
+  {
+   "i": 1,
+   "finger_x": 382,
+   "commanded_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 577
+  },
+  {
+   "i": 2,
+   "finger_x": 382,
+   "commanded_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 578
+  },
+  {
+   "i": 3,
+   "finger_x": 382,
+   "commanded_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 578
+  },
+  {
+   "i": 4,
+   "finger_x": 382,
+   "commanded_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 578
+  },
+  {
+   "i": 5,
+   "finger_x": 382,
+   "commanded_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 575
+  },
+  {
+   "i": 6,
+   "finger_x": 382,
+   "commanded_x": 382,
+   "phase": "DESCENDING",
+   "desired_line_x": 350,
+   "reason": "OBSTACLE_AVOIDANCE",
+   "line_x": 350,
+   "hook_y": 563
+  },
+  {
+   "i": 7,
+   "finger_x": 368,
+   "commanded_x": 368,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": 350,
+   "hook_y": 539
+  },
+  {
+   "i": 8,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": 502
+  },
+  {
+   "i": 9,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": 453
+  },
+  {
+   "i": 10,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": 453
+  },
+  {
+   "i": 11,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 12,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 13,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 14,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 15,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 16,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 17,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 18,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 19,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 20,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 21,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 22,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 23,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 24,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 25,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 26,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 27,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 28,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 29,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 30,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 31,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 32,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 33,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 34,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 35,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 36,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 37,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 38,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 39,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 40,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 41,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 42,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 43,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 44,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 45,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  },
+  {
+   "i": 46,
+   "finger_x": 368,
+   "commanded_x": null,
+   "phase": "ASCENDING",
+   "desired_line_x": 124,
+   "reason": "FISH_HEAD_TRACKING",
+   "line_x": null,
+   "hook_y": null
+  }
+ ],
+ "frames_saved": 4,
+ "line_lost_ticks": 4,
+ "result_text": "00 36M 100M 0/11 1/2",
+ "minigame_started": true,
+ "control_session_ran": true,
+ "result_page": false,
+ "depth_m": null,
+ "home_after_text": "本次收获 本 快 .米 下潜深度：47 米 下潜深度：47米 ★ 10 10 X2 x2",
+ "bait_after": null,
+ "points_after": null,
+ "bait_decreased": false,
+ "verifier": {
+  "MINIGAME_STARTED": true,
+  "CONTROL_SESSION_RAN": true,
+  "RESULT_PAGE": false,
+  "BAIT_DECREASED": false,
+  "DEPTH_M": null
+ },
+ "FISHING_RUN_L4": false
+}

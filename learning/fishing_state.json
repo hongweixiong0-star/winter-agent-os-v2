@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "note": "role-scoped: bait / gear / points / collections are NEVER shared between roles",
+  "roles": {
+    "ROLE_A": {
+      "role_id": "1063040265",
+      "name": "[ioi]零氪纯盾流",
+      "bait_current": 5,
+      "bait_cap": 10,
+      "next_bait_at": "2026-09-29T18:13:16+00:00",
+      "last_fishing_at": "2026-09-29T15:13:16+00:00",
+      "points_today": 190,
+      "line_level": 1,
+      "hook_level": 1,
+      "sinker_level": 1,
+      "free_special_attempts": "UNKNOWN",
+      "collection_seen": 1,
+      "collection_new": 1,
+      "status": "READY"
+    },
+    "ROLE_B": {
+      "role_id": "1061663148",
+      "name": "[DIW]xhw",
+      "bait_current": null,
+      "bait_cap": null,
+      "next_bait_at": null,
+      "last_fishing_at": null,
+      "points_today": null,
+      "line_level": null,
+      "hook_level": null,
+      "sinker_level": null,
+      "status": "STATE_NOT_READ",
+      "note": "ROLE_B fishing state has NOT been read yet — do not assume A's values"
+    }
+  },
+  "bait_is_a_timer": "bait == cap must raise priority so natural recovery is not wasted"
+}
