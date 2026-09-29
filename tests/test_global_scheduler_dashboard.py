@@ -87,6 +87,38 @@ class GlobalSchedulerDashboardTests(unittest.TestCase):
         self.assertEqual(view["hard_event"], "暂无硬时间评估")
         self.assertEqual(view["telemetry"], "生产计数尚未初始化")
 
+    def test_hard_event_displays_scheduled_start_countdown_and_phase(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "learning").mkdir()
+            (root / "knowledge" / "roles").mkdir(parents=True)
+            (root / "learning" / "global_scheduler_state.json").write_text(
+                json.dumps({
+                    "active_role_id": "role-a",
+                    "last_decision": {
+                        "decision": "ROLE_REFRESH_REQUIRED",
+                        "selected_role_id": "role-a",
+                        "candidates": [{
+                            "role_id": "role-a",
+                            "goal_id": "SCHEDULED_BEAR",
+                            "hard_event": True,
+                            "score": 900,
+                            "event_starts_in_seconds": 287,
+                            "event_phase": "T5",
+                        }],
+                    },
+                }),
+                encoding="utf-8",
+            )
+            (root / "knowledge" / "roles" / "role_inventory.json").write_text(
+                json.dumps({"roles": [{"role_id": "role-a", "role_key": "ROLE_A"}]}),
+                encoding="utf-8",
+            )
+
+            view = global_scheduler_display(root)
+
+        self.assertEqual(view["hard_event"], "ROLE_A · SCHEDULED_BEAR · 距离开始 287 秒（T5）")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -664,8 +664,17 @@ def _global_hard_event(decision: dict[str, Any], names: dict[str, str]) -> str:
     role = names.get(role_id, role_id or "角色未知")
     goal = str(selected.get("goal_id") or selected.get("skill_id") or "活动状态刷新")
     remaining = selected.get("deadline_seconds", selected.get("remaining_seconds"))
+    event_start = selected.get("event_starts_in_seconds")
+    phase = str(selected.get("event_phase") or "").upper()
     if isinstance(remaining, (int, float)) and not isinstance(remaining, bool):
         timing = f"剩余 {max(0, int(remaining))} 秒"
+    elif isinstance(event_start, (int, float)) and not isinstance(event_start, bool):
+        timing = ("活动窗口已开放" if int(event_start) <= 0 and phase == "OPEN"
+                  else f"距离开始 {max(0, int(event_start))} 秒")
+        if phase:
+            timing += f"（{phase}）"
+    elif phase and phase != "IDLE":
+        timing = f"调度阶段 {phase}"
     else:
         timing = "调度硬时间优先级已触发"
     return f"{role} · {goal} · {timing}"

@@ -623,6 +623,11 @@ class Scheduler:
                         default=None,
                     )
                     phase = schedule.phase_at(moment) if schedule else event_schedule.ReadinessPhase.IDLE
+                    scheduled_start = schedule.start_datetime() if schedule else None
+                    event_starts_in_seconds = (
+                        max(0.0, (scheduled_start - moment).total_seconds())
+                        if scheduled_start is not None else None
+                    )
                     for skill_id, attached_goals in by_skill.items():
                         primary = max(attached_goals,
                                       key=lambda item: float(getattr(item, "priority", 0.0) or 0.0))
@@ -668,6 +673,9 @@ class Scheduler:
                             ),
                             "credited_goal_ids": goal_ids,
                             "requires_role_refresh": True,
+                            "deadline_seconds": remaining,
+                            "event_starts_in_seconds": event_starts_in_seconds,
+                            "event_phase": phase.value,
                         })
                 # A registered account with no usable cached Goal board still has
                 # to be observed once. This is a refresh request only: it cannot
@@ -685,6 +693,11 @@ class Scheduler:
                         default=None,
                     )
                     phase = schedule.phase_at(moment) if schedule else event_schedule.ReadinessPhase.IDLE
+                    scheduled_start = schedule.start_datetime() if schedule else None
+                    event_starts_in_seconds = (
+                        max(0.0, (scheduled_start - moment).total_seconds())
+                        if scheduled_start is not None else None
+                    )
                     hard_event = phase in {
                         event_schedule.ReadinessPhase.T15,
                         event_schedule.ReadinessPhase.T5,
@@ -707,6 +720,9 @@ class Scheduler:
                         "goal_info": None,
                         "credited_goal_ids": (),
                         "requires_role_refresh": True,
+                        "deadline_seconds": None,
+                        "event_starts_in_seconds": event_starts_in_seconds,
+                        "event_phase": phase.value,
                     })
                 continue
             fresh_role_count += 1
@@ -788,6 +804,11 @@ class Scheduler:
                 or _deadline_active(world)
                 or (deadline_seconds is not None and int(deadline_seconds) <= 300)
             )
+            scheduled_start = role_schedule.start_datetime() if role_schedule else None
+            event_starts_in_seconds = (
+                max(0.0, (scheduled_start - moment).total_seconds())
+                if scheduled_start is not None else None
+            )
             if skill and skill.latency_class is LatencyClass.REALTIME and _deadline_active(world):
                 priority += 10_000_000.0
             if self.candidate_pool and self.candidate_pool.starved(skill):
@@ -801,6 +822,9 @@ class Scheduler:
                 "index": index, "role": role, "decision": decision,
                 "priority": priority, "hard_event": hard_event,
                 "goal": goal, "goal_info": goal_info,
+                "deadline_seconds": deadline_seconds,
+                "event_starts_in_seconds": event_starts_in_seconds,
+                "event_phase": phase.value,
                 "requires_role_refresh": False,
                 "credited_goal_ids": tuple(dict.fromkeys(
                     str(getattr(item, "goal_id", "")) for item in matching_goals
@@ -937,6 +961,9 @@ class Scheduler:
             "score": float(item["priority"]),
             "role_switch_cost": max(0.0, float(item["role"].switch_cost or 0.0)),
             "hard_event": bool(item["hard_event"]),
+            "deadline_seconds": item.get("deadline_seconds"),
+            "event_starts_in_seconds": item.get("event_starts_in_seconds"),
+            "event_phase": item.get("event_phase"),
             "selected": item is selected,
             "selected_reason": reason if item is selected else "",
             "rejected_reason": "selected_candidate_won_global_arbitration" if item is selected

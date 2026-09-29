@@ -749,3 +749,33 @@ def test_global_decision_log_persists_candidates_and_selection_reason(tmp_path):
     assert last["selected_goal_id"] == "B_REWARD"
     assert "SWITCH A→B" in last["reason"]
     assert any(row["selected"] for row in last["candidates"])
+
+
+def test_global_decision_log_includes_scheduled_event_countdown(tmp_path):
+    from winter_agent_v2.global_scheduler_state import GlobalSchedulerStateStore
+
+    now = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+    store = GlobalSchedulerStateStore(tmp_path / "global_scheduler_state.json")
+    scheduler = _scheduler(store)
+    scheduler._schedule = {
+        "A|BEAR_HUNT": event_schedule.RoleSchedule(
+            role_id="A", event_id="BEAR_HUNT",
+            reserved_start=(now + timedelta(seconds=240)).isoformat(),
+            source="LIVE_CLIENT",
+        )
+    }
+    roles = (
+        _role("A", now=now, decision=Decision("START_RALLY", "bear_t5", 1, "rally_started"),
+              goals=(_goal("PARTICIPATE_BEAR", "START_RALLY", 100),)),
+        _role("B", now=now,
+              decision=Decision("DAILY_CLAIM_REWARDS", "daily_ready", 1, "claimed"),
+              goals=(_goal("DAILY_REWARD", "DAILY_CLAIM_REWARDS", 1000),)),
+    )
+
+    scheduler.select_global(roles, current_role_id="B", now=now)
+    last = store.load().last_decision
+    bear = next(row for row in last["candidates"] if row["goal_id"] == "PARTICIPATE_BEAR")
+
+    assert bear["hard_event"] is True
+    assert bear["event_starts_in_seconds"] == pytest.approx(240.0)
+    assert bear["event_phase"] == "T5"
