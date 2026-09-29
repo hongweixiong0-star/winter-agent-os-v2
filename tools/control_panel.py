@@ -677,9 +677,9 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
         payload = json.loads((root / "learning/global_scheduler_state.json").read_text(encoding="utf-8"))
         catalog = json.loads((root / "knowledge/roles/role_inventory.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, TypeError):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化"}
     if not isinstance(payload, dict):
-        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本"}
+        return {"current": "尚未启动", "roles": [], "decision": "暂无双角色决策", "hard_event": "暂无硬时间评估", "timeline": "暂无历史决策", "metrics": "暂无切换样本", "telemetry": "生产计数尚未初始化"}
     names = {
         str(row.get("role_id")): str(row.get("role_key") or row.get("display_name") or row.get("role_id"))
         for row in (catalog.get("roles", []) if isinstance(catalog, dict) else [])
@@ -728,12 +728,29 @@ def global_scheduler_display(root: Path = ROOT) -> dict[str, Any]:
     samples = sorted(float(value) for value in duration_rows if isinstance(value, (int, float)))
     p50 = f"{samples[max(0, (len(samples) + 1) // 2 - 1)]:.0f}ms" if samples else "暂无"
     p95 = f"{samples[max(0, int(len(samples) * .95 + .999999) - 1)]:.0f}ms" if samples else "暂无"
+    telemetry_since = str(payload.get("telemetry_since") or "")
+    if telemetry_since:
+        completed_by_role = payload.get("completed_goal_count_by_role")
+        completed_by_role = completed_by_role if isinstance(completed_by_role, dict) else {}
+        completed_text = " / ".join(
+            f"{names.get(role_id, role_id)} {int(completed_by_role.get(role_id) or 0)}"
+            for role_id in role_ids[:2]
+        ) or "暂无角色"
+        telemetry = (
+            f"自 {telemetry_since[:10]}：GLOBAL_WAIT {int(payload.get('global_wait_count') or 0)} 次"
+            f"（带可执行 Goal {int(payload.get('global_wait_with_runnable_goal_count') or 0)} 次）｜"
+            f"共享 Goal credit {int(payload.get('shared_goal_credit_count') or 0)} 次｜"
+            f"已完成 Goal {completed_text}｜动作结果 {int(payload.get('action_outcome_count') or 0)} 条"
+        )
+    else:
+        telemetry = "生产计数尚未初始化（从本版本首条 Scheduler / ActionOutcome 记录开始统计）"
     return {
         "current": current,
         "roles": role_lines,
         "decision": f"{action} → {selected_label} {selected_goal} / {selected_skill}；{why}",
         "hard_event": _global_hard_event(decision, names),
         "timeline": _global_decision_timeline(payload.get("decision_history"), names),
+        "telemetry": telemetry,
         "wakeup": next_wakeup,
         "metrics": f"切换 {metrics['count']} 次｜成功率 {rate}｜p50 {p50}｜p95 {p95}",
     }
@@ -4063,12 +4080,13 @@ class ControlPanel:
             row=0, column=0, columnspan=2, sticky="w")
         self.global_role_vars = {
             key: tk.StringVar(value="等待双角色状态")
-            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics", "hard_event", "timeline")
+            for key in ("current", "role_a", "role_b", "decision", "wakeup", "metrics", "hard_event", "timeline", "telemetry")
         }
         for row, (label, key) in enumerate((
             ("当前角色", "current"), ("角色 A", "role_a"), ("角色 B", "role_b"),
             ("最近决策", "decision"), ("下一唤醒", "wakeup"), ("切换指标", "metrics"),
             ("临近硬时间活动", "hard_event"),
+            ("生产遥测", "telemetry"),
             ("最近 10 次选择", "timeline"),
         ), 1):
             ttk.Label(dual, text=label, style="Muted.TLabel", background=PANEL, width=12).grid(
@@ -4127,6 +4145,7 @@ class ControlPanel:
             self.global_role_vars["wakeup"].set(global_view.get("wakeup", "无"))
             self.global_role_vars["metrics"].set(global_view.get("metrics", "暂无"))
             self.global_role_vars["hard_event"].set(global_view.get("hard_event", "暂无"))
+            self.global_role_vars["telemetry"].set(global_view.get("telemetry", "生产计数尚未初始化"))
             self.global_role_vars["timeline"].set(global_view.get("timeline", "暂无历史决策"))
         except (AttributeError, OSError, TypeError, ValueError):
             # The live runtime status remains usable when the optional global state

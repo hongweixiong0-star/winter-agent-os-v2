@@ -107,11 +107,18 @@ class GlobalSchedulerState:
     role_switch_durations_ms: list[float] = field(default_factory=list)
     latest_action_outcome: dict[str, Any] = field(default_factory=dict)
     action_outcome_history: list[dict[str, Any]] = field(default_factory=list)
+    telemetry_since: str | None = None
+    global_wait_count: int = 0
+    global_wait_with_runnable_goal_count: int = 0
+    action_outcome_count: int = 0
+    shared_goal_credit_count: int = 0
+    completed_goal_count_by_role: dict[str, int] = field(default_factory=dict)
     global_health: str = "WAITING"
 
     def __post_init__(self) -> None:
         self.last_role_switch_at = _aware_iso(self.last_role_switch_at)
         self.global_next_wakeup_at = _aware_iso(self.global_next_wakeup_at)
+        self.telemetry_since = _aware_iso(self.telemetry_since)
         if len(self.decision_history) > 10:
             self.decision_history = self.decision_history[-10:]
         if len(self.action_outcome_history) > 200:
@@ -119,6 +126,17 @@ class GlobalSchedulerState:
         self.role_switch_count = max(0, int(self.role_switch_count or 0))
         self.role_switch_success_count = max(0, int(self.role_switch_success_count or 0))
         self.role_switch_failure_count = max(0, int(self.role_switch_failure_count or 0))
+        self.global_wait_count = max(0, int(self.global_wait_count or 0))
+        self.global_wait_with_runnable_goal_count = max(
+            0, int(self.global_wait_with_runnable_goal_count or 0),
+        )
+        self.action_outcome_count = max(0, int(self.action_outcome_count or 0))
+        self.shared_goal_credit_count = max(0, int(self.shared_goal_credit_count or 0))
+        self.completed_goal_count_by_role = {
+            str(role_id): max(0, int(count or 0))
+            for role_id, count in self.completed_goal_count_by_role.items()
+            if role_id
+        }
         self.role_switch_durations_ms = [
             max(0.0, float(value)) for value in self.role_switch_durations_ms[-200:]
             if isinstance(value, (int, float))
@@ -175,6 +193,15 @@ class GlobalSchedulerStateStore:
             action_outcome_history=[self._logical_mapping(row)
                                     for row in payload.get("action_outcome_history", ())
                                     if isinstance(row, Mapping)][-200:],
+            telemetry_since=_aware_iso(payload.get("telemetry_since")),
+            global_wait_count=int(payload.get("global_wait_count", 0) or 0),
+            global_wait_with_runnable_goal_count=int(
+                payload.get("global_wait_with_runnable_goal_count", 0) or 0,
+            ),
+            action_outcome_count=int(payload.get("action_outcome_count", 0) or 0),
+            shared_goal_credit_count=int(payload.get("shared_goal_credit_count", 0) or 0),
+            completed_goal_count_by_role=dict(payload.get("completed_goal_count_by_role", {}))
+            if isinstance(payload.get("completed_goal_count_by_role", {}), Mapping) else {},
             global_health=str(payload.get("global_health") or "WAITING").upper(),
         )
 
@@ -338,6 +365,20 @@ class GlobalSchedulerStateStore:
         state = self.load()
         row = self._logical_mapping(dict(decision))
         row["at"] = _aware_iso(at) or _now_iso()
+        if state.telemetry_since is None:
+            state.telemetry_since = row["at"]
+        if str(row.get("decision") or "").upper() == "GLOBAL_WAIT":
+            state.global_wait_count += 1
+            statuses = row.get("role_statuses")
+            if isinstance(statuses, list) and any(
+                isinstance(status, Mapping)
+                and max(
+                    int(status.get("runnable_count") or 0),
+                    int(status.get("runnable_goal_count") or 0),
+                ) > 0
+                for status in statuses
+            ):
+                state.global_wait_with_runnable_goal_count += 1
         state.last_decision = row
         state.decision_history = [*state.decision_history, row][-10:]
         state.global_next_wakeup_at = _aware_iso(row.get("next_wakeup"))
@@ -355,6 +396,19 @@ class GlobalSchedulerStateStore:
         row["role_id"] = role_id
         row["recorded_at"] = _aware_iso(row.get("recorded_at")) or _now_iso()
         state = self.load()
+        if state.telemetry_since is None:
+            state.telemetry_since = row["recorded_at"]
+        state.action_outcome_count += 1
+        credited = row.get("credited_goal_ids")
+        credited_ids = {str(item) for item in credited if item} if isinstance(credited, (list, tuple)) else set()
+        if len(credited_ids) > 1:
+            state.shared_goal_credit_count += 1
+        completed = row.get("completed_goal_ids")
+        completed_ids = {str(item) for item in completed if item} if isinstance(completed, (list, tuple)) else set()
+        if completed_ids:
+            state.completed_goal_count_by_role[role_id] = (
+                state.completed_goal_count_by_role.get(role_id, 0) + len(completed_ids)
+            )
         state.latest_action_outcome = row
         state.action_outcome_history = [*state.action_outcome_history, row][-200:]
         self.save(state)
@@ -507,6 +561,18 @@ class GlobalSchedulerStateStore:
             "success_rate": (state.role_switch_success_count / completed) if completed else None,
             "p50_ms": percentile(0.50),
             "p95_ms": percentile(0.95),
+        }
+
+    def production_telemetry_metrics(self) -> dict[str, Any]:
+        """Return counters backed by explicit global decisions and ActionOutcome rows."""
+        state = self.load()
+        return {
+            "since": state.telemetry_since,
+            "global_wait_count": state.global_wait_count,
+            "global_wait_with_runnable_goal_count": state.global_wait_with_runnable_goal_count,
+            "action_outcome_count": state.action_outcome_count,
+            "shared_goal_credit_count": state.shared_goal_credit_count,
+            "completed_goal_count_by_role": dict(state.completed_goal_count_by_role),
         }
 
     @classmethod

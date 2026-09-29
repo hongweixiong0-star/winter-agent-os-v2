@@ -124,6 +124,37 @@ def test_action_outcome_persists_per_goal_verified_credit_without_live_ui_data(t
     assert outcome.action_outcome_history[-1]["goal_progress_by_id"]["DAILY_TRAINING"] is False
 
 
+def test_production_telemetry_counts_wait_invariant_and_shared_goal_credit(tmp_path):
+    store = GlobalSchedulerStateStore(tmp_path / "state.json")
+    store.record_decision(decision={
+        "decision": "GLOBAL_WAIT",
+        "role_statuses": [{"role_id": "A", "runnable_count": 0}],
+    })
+    store.record_decision(decision={
+        "decision": "GLOBAL_WAIT",
+        "role_statuses": [{"role_id": "A", "runnable_count": 1}],
+    })
+    store.record_action_outcome({
+        "action_id": "episode-2:4",
+        "role_id": "A",
+        "skill_id": "TRAIN_TROOPS",
+        "credited_goal_ids": ["KEEP_TRAINING_PRODUCTIVE", "DAILY_TRAINING"],
+        "completed_goal_ids": ["KEEP_TRAINING_PRODUCTIVE", "DAILY_TRAINING"],
+        "action_sent": True,
+        "post_action_observed": True,
+        "verifier_result": "PASS",
+    })
+
+    metrics = store.production_telemetry_metrics()
+
+    assert metrics["global_wait_count"] == 2
+    assert metrics["global_wait_with_runnable_goal_count"] == 1
+    assert metrics["action_outcome_count"] == 1
+    assert metrics["shared_goal_credit_count"] == 1
+    assert metrics["completed_goal_count_by_role"] == {"A": 2}
+    assert metrics["since"]
+
+
 def test_role_switch_metrics_track_verified_outcomes_and_latency_percentiles(tmp_path):
     store = GlobalSchedulerStateStore(tmp_path / "state.json")
     store.begin_role_switch(source_role_id="A", target_role_id="B", reason="B has work")

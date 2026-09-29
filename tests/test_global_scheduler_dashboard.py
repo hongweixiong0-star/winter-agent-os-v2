@@ -44,6 +44,12 @@ class GlobalSchedulerDashboardTests(unittest.TestCase):
                         "role_switch_success_count": 3,
                         "role_switch_failure_count": 1,
                         "role_switch_durations_ms": [],
+                        "telemetry_since": "2026-09-29T11:00:00+08:00",
+                        "global_wait_count": 2,
+                        "global_wait_with_runnable_goal_count": 1,
+                        "action_outcome_count": 5,
+                        "shared_goal_credit_count": 3,
+                        "completed_goal_count_by_role": {"role-a": 7, "role-b": 4},
                     }
                 ),
                 encoding="utf-8",
@@ -69,6 +75,9 @@ class GlobalSchedulerDashboardTests(unittest.TestCase):
             self.assertIn("请求切换 ROLE_A→ROLE_B", lines[0])
             self.assertIn("GOAL_11", lines[-1])
             self.assertEqual(view["hard_event"], "ROLE_A · SCHEDULED_BEAR · 剩余 240 秒")
+            self.assertIn("GLOBAL_WAIT 2 次（带可执行 Goal 1 次）", view["telemetry"])
+            self.assertIn("共享 Goal credit 3 次", view["telemetry"])
+            self.assertIn("ROLE_A 7 / ROLE_B 4", view["telemetry"])
 
     def test_missing_state_shows_an_explicit_empty_timeline(self):
         with TemporaryDirectory() as temporary:
@@ -76,6 +85,7 @@ class GlobalSchedulerDashboardTests(unittest.TestCase):
 
         self.assertEqual(view["timeline"], "暂无历史决策")
         self.assertEqual(view["hard_event"], "暂无硬时间评估")
+        self.assertEqual(view["telemetry"], "生产计数尚未初始化")
 
 
 if __name__ == "__main__":
