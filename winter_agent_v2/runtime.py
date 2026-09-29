@@ -49,8 +49,12 @@ from .runtime_snapshot import (
 from .verifier import (verify_alliance_tech_opened, verify_alliance_tech_node_opened,
                      verify_alliance_tech_details_closed, verify_alliance_tech_contribution,
                      verify_daily_task_followed)
+from .verifier import can_reobserve_focused_training_camp_after_nonmenu_tap
+
 from .resource_rotation import ResourceRotationStore
 from .stamina_supply import StaminaSupplyStore
+from .camp_ring import reproject_point_on_static_city_view
+
 from .intel_pins import intel_pin_centers
 from .verifier import (
     verify_research_node_inspected,
@@ -5975,6 +5979,11 @@ class LiveRuntime:
                       stop_category=None)
 
         previous_action_end: float | None = None
+        # A tutorial overlay may consume the first current-frame camp tap. Permit at most
+        # one retry per camp, after role, page, popup, panel, and static-camera checks.
+        training_focus_retry_used: set[str] = set()
+        pending_training_focus_retry: dict[str, Any] | None = None
+
         for index in range(1, max_actions + 1):
             latency_started = time.monotonic()
             latency: dict[str, float | None] = {}
@@ -6055,6 +6064,48 @@ class LiveRuntime:
             phase_started = time.monotonic()
             before = self._observe(before_path)
             latency["reobserve_ms"] = (time.monotonic() - phase_started) * 1000
+            if pending_training_focus_retry is not None:
+                pending = pending_training_focus_retry
+                pending_training_focus_retry = None
+                expected_goal = str(pending.get("goal_id") or "")
+                expected_role = str(pending.get("role_id") or "")
+                state_is_same_camp_route = (
+                    expected_goal
+                    and self._training_continuation_goal == expected_goal
+                    and (not expected_role or self._calendar_role_id() == expected_role)
+                    and before.page is Page.HOME
+                    and before.popup is None
+                    and not before.training
+                    and before.quick_panel.get("open") is False
+                )
+                point = None
+                if state_is_same_camp_route:
+                    point = reproject_point_on_static_city_view(
+                        Path(str(pending.get("reference_frame") or "")),
+                        before_path,
+                        pending.get("point") or (),
+                    )
+                if point is not None:
+                    before = replace(before, training={
+                        "navigation": "PANEL_CAMP_FOCUSED",
+                        "camp_focus_tap_norm": list(point),
+                        "camp_focus_source": "REOBSERVED_STATIC_CITY_VIEW",
+                        "camp_focus_retry_attempt": 1,
+                        "camp_focus_reference_frame": str(pending.get("reference_frame") or ""),
+                        "camp_focus_current_frame": str(before_path),
+                    })
+                    print(
+                        f"[training] {pending.get('camp')} action bar still closed; "
+                        "same HOME city view re-observed, allowing one current-frame retry",
+                        flush=True,
+                    )
+                else:
+                    print(
+                        f"[training] {pending.get('camp')} tap recovery declined: "
+                        "role/page/panel/camera did not revalidate",
+                        flush=True,
+                    )
+
             # A known page means whatever owned the screen has finished, so the
             # fight-aware branch of the unknown-page recovery is no longer needed.
             # Cleared here rather than where the fight is dispatched because this
@@ -7125,6 +7176,40 @@ class LiveRuntime:
                           queues={"building": after.building, "research": after.research, "training": after.training,
                                   "intel": after.intel, "alliance": after.alliance, "events": after.events})
             if not verification.ok:
+                focused_camp = {
+                    "TAP_FOCUSED_TRAINING_CAMP_SHIELD": "SHIELD",
+                    "TAP_FOCUSED_TRAINING_CAMP_LANCER": "LANCER",
+                    "TAP_FOCUSED_TRAINING_CAMP_MARKSMAN": "MARKSMAN",
+                }.get(decision.skill)
+                if (
+                    focused_camp is not None
+                    and focused_camp not in training_focus_retry_used
+                    and index < max_actions
+                    and best_goal is not None
+                    and best_goal.goal_id == f"{focused_camp}_CAMP_TRAINING"
+                    and self._training_continuation_goal == best_goal.goal_id
+                    and verification.reason == "FOCUSED_CAMP_ACTION_BAR_NOT_PROVEN"
+                    and can_reobserve_focused_training_camp_after_nonmenu_tap(
+                        before, after, camp=focused_camp
+                    ).ok
+                ):
+                    point = (before.training or {}).get("camp_focus_tap_norm")
+                    if isinstance(point, (tuple, list)) and len(point) == 2:
+                        training_focus_retry_used.add(focused_camp)
+                        pending_training_focus_retry = {
+                            "camp": focused_camp,
+                            "goal_id": best_goal.goal_id,
+                            "role_id": self._calendar_role_id(),
+                            "reference_frame": str(before_path),
+                            "point": [float(point[0]), float(point[1])],
+                        }
+                        self._runtime(
+                            agent_state=AgentState.GOAL_RUNNING.value,
+                            reason=f"{focused_camp.lower()}_tap_dismissed_or_selected_without_action_bar",
+                            next_action="reobserve_same_home_view_then_allow_one_bounded_camp_tap",
+                            verifier=verification.reason,
+                        )
+                        continue
                 # Operator §二.5 / §二.7, 2026-09-21: one step that did not reach its
                 # final state no longer ends the whole run.  Measured cause: the run
                 # held one goal, that goal's step failed its verifier, and every other

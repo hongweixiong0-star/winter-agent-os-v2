@@ -1721,6 +1721,48 @@ def verify_focused_training_camp_action_bar_opened(
     )
 
 
+def can_reobserve_focused_training_camp_after_nonmenu_tap(
+    before: WorldState, after: WorldState, *, camp: str
+) -> VerificationResult:
+    """Whether the first focused-building tap may get one fresh-frame retry.
+
+    Live 2026-09-28 captures show a small-client/tutorial transition in which the first tap
+    leaves HOME and the same barracks in view but does not draw its action bar; the second
+    tap does. This gate authorizes only one bounded, non-resource navigation retry after a
+    fresh screenshot can be checked. A page change, popup, another named camp, or a menu
+    already being open ends the recovery path.
+    """
+    expected = f"{str(camp).upper()}_CAMP"
+    before_training = before.training or {}
+    after_training = after.training or {}
+    actual = str(after_training.get("camp") or "").upper()
+    before_point = before_training.get("camp_focus_tap_norm")
+    focused_before = (
+        before.page is Page.HOME
+        and before_training.get("navigation") == "PANEL_CAMP_FOCUSED"
+        and isinstance(before_point, (tuple, list))
+        and len(before_point) == 2
+        and all(isinstance(value, (int, float)) and 0.0 <= float(value) <= 1.0 for value in before_point)
+    )
+    same_home = before.page is Page.HOME and after.page is Page.HOME
+    safe_surface = after.popup is None and after_training.get("menu_open") is not True
+    panel_closed = (after.quick_panel or {}).get("open") is False
+    camp_not_changed = not actual or actual == expected
+    eligible = focused_before and same_home and safe_surface and panel_closed and camp_not_changed
+    return VerificationResult(
+        eligible,
+        "OK" if eligible else "FOCUSED_CAMP_RETRY_NOT_SAFE",
+        {
+            "focused_before": focused_before,
+            "same_home_page": same_home,
+            "no_popup_or_open_menu": safe_surface,
+            "quick_panel_closed": panel_closed,
+            "expected_camp": expected,
+            "camp_after": actual,
+            "camp_not_changed": camp_not_changed,
+        },
+    )
+
 def verify_selected_building_upgrade_panel_opened(
     before: WorldState, after: WorldState
 ) -> VerificationResult:
