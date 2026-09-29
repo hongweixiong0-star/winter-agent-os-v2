@@ -75,6 +75,9 @@ def _role_switch_fixture(tmp_path):
         ],
         monotonic=lambda: 10.0,
     )
+    controller.vision = SimpleNamespace(observe=lambda _path: SimpleNamespace(
+        page=Page.HOME, popup=None,
+    ))
     return store, controller
 
 
@@ -293,6 +296,36 @@ def test_verified_role_switch_invalidates_both_roles_live_page_state(tmp_path, m
     assert state.roles["role-b"].current_goal == ""
     assert state.roles["role-b"].current_skill == ""
     assert state.roles["role-b"].dirty_live_state is True
+
+
+def test_role_switch_returns_from_mail_to_confirmed_home_before_identity_check(tmp_path, monkeypatch):
+    store, controller = _role_switch_fixture(tmp_path)
+    _stub_switch_navigation(monkeypatch, controller, tmp_path)
+    controller._capture = lambda label: tmp_path / f"{label}.png"
+    controller.identify_current_role = lambda path: (
+        None if Path(path).name == "before.png" else ("role-a", 0.99)
+    )
+    controller.vision = SimpleNamespace(observe=lambda path: SimpleNamespace(
+        page=Page.MAIL if Path(path).name == "before.png" else Page.HOME,
+        popup=None,
+    ))
+    recorded = []
+
+    from winter_agent_v2 import state_truth
+    monkeypatch.setattr(state_truth, "record_role", lambda *args, **kwargs: recorded.append(kwargs))
+
+    result = controller.switch_to(
+        source_role_id="role-a", target_role_id="role-b", reason="ROLE_B has runnable work",
+    )
+
+    assert result.ok is True
+    assert result.role_id == "role-b"
+    assert "back" in controller._back_calls
+    assert any(path.endswith("source_home.png") for path in result.evidence)
+    assert recorded and recorded[0]["verification"] == "LIVE_ROLE_SWITCH_PROFILE_AND_HOME_VERIFIED"
+    state = store.load()
+    assert state.active_role_id == "role-b"
+    assert state.role_switch_pending is None
 
 
 def test_confirmed_target_home_requires_avatar_and_clean_home_page(tmp_path, monkeypatch):

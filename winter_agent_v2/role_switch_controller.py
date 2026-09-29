@@ -182,6 +182,11 @@ class RoleSwitchController:
         try:
             current_path = self._capture("before")
             evidence.append(str(current_path))
+            current_path, source_home_error = self._prepare_source_home(
+                current_path, source_role_id, evidence,
+            )
+            if current_path is None:
+                return self._abort(target_role_id, source_home_error, evidence, started)
             actual = self.identify_current_role(current_path)
             if actual is None or actual[0] != source_role_id:
                 return self._abort(target_role_id, "SOURCE_ROLE_IDENTITY_NOT_CONFIRMED", evidence, started)
@@ -311,6 +316,51 @@ class RoleSwitchController:
             pass
         return RoleSwitchResult(False, role_id=actual, reason=reason,
                                 evidence=tuple(evidence), elapsed_seconds=self.monotonic() - started)
+
+    def _prepare_source_home(
+        self, initial_path: Path, source_role_id: str, evidence: list[str],
+    ) -> tuple[Path | None, str]:
+        """Return to a clean, role-confirmed HOME before opening the role manager.
+
+        A previous skill may leave the game on MAIL, a detail page, or a popup.
+        The avatar used to prove role identity is not visible on those pages, so
+        attempting a role switch directly would incorrectly abort the entire AUTO
+        pass. Android Back is a bounded, non-committing way to restore HOME.
+        """
+        from .models import Page
+
+        path = initial_path
+        press_back = getattr(self.device, "press_back", None)
+        for attempt in range(9):
+            identity = self.identify_current_role(path)
+            if identity is not None and identity[0] != source_role_id:
+                return None, "SOURCE_ROLE_IDENTITY_NOT_CONFIRMED"
+
+            try:
+                world = self.vision.observe(path)
+            except Exception:  # noqa: BLE001 - unreadable frames cannot prove HOME
+                world = None
+            if world is not None and world.page is Page.HOME:
+                if world.popup is None and identity is not None:
+                    return path, ""
+                if identity is None:
+                    # Back from an unrecognized HOME frame can exit the game and
+                    # cannot improve source-role certainty.
+                    return None, "SOURCE_ROLE_IDENTITY_NOT_CONFIRMED"
+            elif world is None and identity is not None and identity[0] == source_role_id:
+                # Compatibility for vision adapters that expose only the unique
+                # role-avatar recognizer. Production Vision also verifies HOME.
+                return path, ""
+
+            if attempt >= 8 or not callable(press_back):
+                break
+            if world is None or world.page is not Page.LOADING:
+                press_back()
+            self.sleeper(self.poll_seconds)
+            path = self._capture("source_home")
+            evidence.append(str(path))
+
+        return None, "SOURCE_ROLE_HOME_NOT_CONFIRMED"
 
     def _capture(self, label: str) -> Path:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
