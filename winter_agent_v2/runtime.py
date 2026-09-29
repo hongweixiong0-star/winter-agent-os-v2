@@ -5532,7 +5532,7 @@ class LiveRuntime:
             flush=True,
         )
 
-    def _confirm_live_role(self, frame_path: Path | str) -> tuple[bool, str]:
+    def _confirm_live_role(self, frame_path: Path | str) -> tuple[bool, str, Path | str]:
         """Confirm the active account, tolerating an occluded avatar after bootstrap.
 
         Each fresh worker must uniquely match a role avatar before it can use
@@ -5541,10 +5541,26 @@ class LiveRuntime:
         the account changed: this runtime owns the UI and a role switch ends the
         worker. A uniquely matched different avatar still stops the run.
         """
+        confirmed_frame: Path | str = frame_path
         if not self._multi_role_enabled:
-            return True, ""
+            return True, "", confirmed_frame
 
-        observed_identity = self.role_switch_controller.identify_current_role(frame_path)
+        observed_identity = self.role_switch_controller.identify_current_role(confirmed_frame)
+        if observed_identity is None and not self._role_identity_bootstrapped:
+            prepare_home = getattr(
+                self.role_switch_controller, "prepare_current_role_home", None,
+            )
+            if callable(prepare_home):
+                home_frame = prepare_home(confirmed_frame)
+                if home_frame is not None:
+                    confirmed_frame = home_frame
+                    observed_identity = self.role_switch_controller.identify_current_role(confirmed_frame)
+                    if observed_identity is not None:
+                        print(
+                            f"[global-role] returned to HOME before startup identity confirmation: "
+                            f"{confirmed_frame}",
+                            flush=True,
+                        )
         if observed_identity is None:
             if self._role_identity_bootstrapped and self._role_identity_confirmed:
                 print(
@@ -5552,9 +5568,9 @@ class LiveRuntime:
                     f"already confirmed role {self._calendar_role_id()} for this runtime",
                     flush=True,
                 )
-                return True, "ROLE_IDENTITY_RETAINED_FRAME_UNREADABLE"
+                return True, "ROLE_IDENTITY_RETAINED_FRAME_UNREADABLE", confirmed_frame
             self._role_identity_confirmed = False
-            return False, "ROLE_IDENTITY_UNCONFIRMED"
+            return False, "ROLE_IDENTITY_UNCONFIRMED", confirmed_frame
 
         observed_role_id, avatar_score = observed_identity
         if not self._role_identity_bootstrapped:
@@ -5576,7 +5592,7 @@ class LiveRuntime:
                 f"(score={avatar_score:.3f}); all role live state starts stale",
                 flush=True,
             )
-            return True, "ROLE_IDENTITY_CONFIRMED"
+            return True, "ROLE_IDENTITY_CONFIRMED", confirmed_frame
 
         if observed_role_id != self._calendar_role_id():
             # The one-device lease should make an in-process account change
@@ -5594,9 +5610,9 @@ class LiveRuntime:
                     ),
                     observed_at=datetime.now(timezone.utc),
                 )
-            return False, f"ROLE_IDENTITY_CHANGED:{observed_role_id}"
+            return False, f"ROLE_IDENTITY_CHANGED:{observed_role_id}", confirmed_frame
 
-        return True, "ROLE_IDENTITY_CONFIRMED"
+        return True, "ROLE_IDENTITY_CONFIRMED", confirmed_frame
 
     def run(
         self,
@@ -5917,7 +5933,9 @@ class LiveRuntime:
             if self._device_lost(self.device.screenshot, before_path):
                 return finish(self._device_stop_reason)
             if self._multi_role_enabled:
-                identity_ok, identity_state = self._confirm_live_role(before_path)
+                identity_ok, identity_state, confirmed_frame = self._confirm_live_role(before_path)
+                if Path(confirmed_frame) != before_path:
+                    before_path = Path(confirmed_frame)
                 if not identity_ok:
                     reason = identity_state
                     changed = reason.startswith("ROLE_IDENTITY_CHANGED:")

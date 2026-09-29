@@ -333,7 +333,7 @@ class RoleSwitchController:
         press_back = getattr(self.device, "press_back", None)
         for attempt in range(9):
             identity = self.identify_current_role(path)
-            if identity is not None and identity[0] != source_role_id:
+            if identity is not None and source_role_id and identity[0] != source_role_id:
                 return None, "SOURCE_ROLE_IDENTITY_NOT_CONFIRMED"
 
             try:
@@ -347,7 +347,9 @@ class RoleSwitchController:
                     # Back from an unrecognized HOME frame can exit the game and
                     # cannot improve source-role certainty.
                     return None, "SOURCE_ROLE_IDENTITY_NOT_CONFIRMED"
-            elif world is None and identity is not None and identity[0] == source_role_id:
+            elif world is None and identity is not None and (
+                not source_role_id or identity[0] == source_role_id
+            ):
                 # Compatibility for vision adapters that expose only the unique
                 # role-avatar recognizer. Production Vision also verifies HOME.
                 return path, ""
@@ -361,6 +363,16 @@ class RoleSwitchController:
             evidence.append(str(path))
 
         return None, "SOURCE_ROLE_HOME_NOT_CONFIRMED"
+
+    def prepare_current_role_home(self, initial_path: Path | str) -> Path | None:
+        """Return a bounded, current-frame-verified HOME image for startup identity.
+
+        A new worker can start while the previous task left MAIL or another page
+        open. The role avatar is hidden there, so safely back out before deciding
+        whether the account is one of the registered roles.
+        """
+        path, _reason = self._prepare_source_home(Path(initial_path), "", [])
+        return path
 
     def _capture(self, label: str) -> Path:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")

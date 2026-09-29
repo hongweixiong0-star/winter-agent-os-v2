@@ -546,11 +546,42 @@ def test_runtime_requires_a_fresh_avatar_match_before_using_role_scoped_state():
     runtime.global_scheduler_state_store = None
     runtime._activate_role_persistent_state = lambda _role_id: None
 
-    ok, reason = runtime._confirm_live_role("frame.png")
+    ok, reason, _frame = runtime._confirm_live_role("frame.png")
 
     assert not ok
     assert reason == "ROLE_IDENTITY_UNCONFIRMED"
     assert runtime._calendar_role_id() == ""
+
+
+def test_runtime_returns_to_home_before_startup_role_identity_check():
+    class Controller:
+        def __init__(self):
+            self.prepared = []
+
+        def identify_current_role(self, frame):
+            return ("A", 0.99) if str(frame) == "home-frame.png" else None
+
+        def prepare_current_role_home(self, frame):
+            self.prepared.append(str(frame))
+            return "home-frame.png"
+
+    runtime = LiveRuntime.__new__(LiveRuntime)
+    runtime._multi_role_enabled = True
+    runtime._role_identity_confirmed = False
+    runtime._role_identity_bootstrapped = False
+    runtime.role_id = "B"  # persisted startup hint is replaced only by the live avatar
+    runtime.role_scope = "UNKNOWN"
+    runtime.role_switch_controller = Controller()
+    runtime._role_catalog_by_id = {"A": {"role_id": "A"}, "B": {"role_id": "B"}}
+    runtime.global_scheduler_state_store = None
+    runtime._activate_role_persistent_state = lambda _role_id: None
+
+    ok, reason, frame = runtime._confirm_live_role("mail-frame.png")
+
+    assert ok and reason == "ROLE_IDENTITY_CONFIRMED"
+    assert str(frame) == "home-frame.png"
+    assert runtime.role_switch_controller.prepared == ["mail-frame.png"]
+    assert runtime._calendar_role_id() == "A"
 
 
 def test_runtime_retains_confirmed_role_when_modal_occludes_avatar_within_same_run():
@@ -582,8 +613,8 @@ def test_runtime_retains_confirmed_role_when_modal_occludes_avatar_within_same_r
     runtime.global_scheduler_state_store = Store()
     runtime._activate_role_persistent_state = lambda _role_id: None
 
-    first_ok, first_reason = runtime._confirm_live_role("visible-avatar.png")
-    second_ok, second_reason = runtime._confirm_live_role("modal-blurred-avatar.png")
+    first_ok, first_reason, _first_frame = runtime._confirm_live_role("visible-avatar.png")
+    second_ok, second_reason, _second_frame = runtime._confirm_live_role("modal-blurred-avatar.png")
 
     assert first_ok and first_reason == "ROLE_IDENTITY_CONFIRMED"
     assert second_ok and second_reason == "ROLE_IDENTITY_RETAINED_FRAME_UNREADABLE"
@@ -622,7 +653,7 @@ def test_runtime_stops_if_a_different_role_avatar_is_uniquely_observed_mid_run()
     runtime._activate_role_persistent_state = lambda _role_id: None
 
     assert runtime._confirm_live_role("role-a.png")[0]
-    ok, reason = runtime._confirm_live_role("role-b.png")
+    ok, reason, _frame = runtime._confirm_live_role("role-b.png")
 
     assert not ok
     assert reason == "ROLE_IDENTITY_CHANGED:B"

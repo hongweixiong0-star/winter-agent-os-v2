@@ -298,6 +298,27 @@ def test_verified_role_switch_invalidates_both_roles_live_page_state(tmp_path, m
     assert state.roles["role-b"].dirty_live_state is True
 
 
+def test_startup_identity_home_preparation_backs_out_of_mail_without_guessing_role(tmp_path, monkeypatch):
+    _store, controller = _role_switch_fixture(tmp_path)
+    mail = tmp_path / "mail.png"
+    home = tmp_path / "home.png"
+    back_calls = []
+    controller.device = SimpleNamespace(press_back=lambda: back_calls.append("back"))
+    monkeypatch.setattr(controller, "_capture", lambda label: home if label == "source_home" else mail)
+    monkeypatch.setattr(controller, "identify_current_role", lambda path: (
+        ("role-b", 0.99) if Path(path) == home else None
+    ))
+    controller.vision = SimpleNamespace(observe=lambda path: SimpleNamespace(
+        page=Page.HOME if Path(path) == home else Page.MAIL,
+        popup=None,
+    ))
+
+    result = controller.prepare_current_role_home(mail)
+
+    assert result == home
+    assert back_calls == ["back"]
+
+
 def test_role_switch_returns_from_mail_to_confirmed_home_before_identity_check(tmp_path, monkeypatch):
     store, controller = _role_switch_fixture(tmp_path)
     _stub_switch_navigation(monkeypatch, controller, tmp_path)
