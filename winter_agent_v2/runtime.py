@@ -21,6 +21,7 @@ from . import ui_collection
 from . import page_knowledge
 from . import event_schedule
 from . import unknown_advisor
+from . import unknown_learning
 from .executor import Executor
 from .policy import SafetyPolicy
 from . import semantic_executor as click_retry
@@ -572,6 +573,31 @@ class LiveRuntime:
         self.semantic_vision = semantic_vision
         self.capture_dir = capture_dir
         self.registry = registry or v2_registry()
+        #: Where UNKNOWN steps that the verifier passed are written, and where the learned
+        #: actions for a screen are read back from.  Rooted at the package's parent rather than at
+        #: ``capture_dir`` for the reason every other store here is: a production run's capture
+        #: directory is per-episode, so learning filed under it would be invisible to the next
+        #: run -- which is the whole point of learning.  Held on the instance so a test can point
+        #: it at a temp directory without patching a module global.
+        self.learned_ledger = unknown_learning.VerifiedStepLedger(
+            Path(__file__).resolve().parents[1] / unknown_learning.LEARNED_STEPS_PATH
+        )
+        #: Read once per run and cached: the ledger only grows *after* a step this run verifies,
+        #: and a re-read on every step of an unnamed screen would be a disk read per step for a
+        #: file that the same run appends to at most a handful of times.  Invalidated by the
+        #: append in ``_settle_advised_step``.
+        self._learned_cache: list[dict[str, Any]] | None = None
+        #: What the step currently being resolved learned at accept time.  Cleared at the top of
+        #: every resolution with ``_advised_request_id``, for the same reason: a step that resolved
+        #: nothing must not be credited with the previous step's answer.
+        self._advised_learn_context: dict[str, Any] = {}
+        #: Section 15's numerator and denominator, counted where the decision is actually made:
+        #: ``_learned_model_calls`` counts model consultations on a screen this project had already
+        #: solved, and ``_learned_unknown_screens`` counts every solved screen reached.  Two
+        #: counters rather than a ratio computed in one place, because the ratio is only meaningful
+        #: over a run and the run is what owns them.
+        self._learned_reuse_hits = 0
+        self._learned_model_calls_on_known = 0
         #: Kept, not consumed here: ``run()`` builds the advisor because it is run-scoped.
         #: Held under its own name so the parameter and the live attribute cannot be confused --
         #: the first version of this injection set ``self._advisor`` from ``__init__``'s
@@ -2216,6 +2242,18 @@ class LiveRuntime:
             except Exception:  # noqa: BLE001 - a derived board cannot stop production
                 pass
         self._settle_advised_step(decision, verification, result)
+        # ...and the same step again, for the durable record §11/§12 ask for.  Its own call for
+        # the same reason the three above have their own: a step that has already been issued and
+        # judged must never be lost because a learning write failed.  Only a verifier PASS reaches
+        # the ledger -- the gate is in the callee, stated once.
+        self._note_learned_step(
+            decision=decision,
+            verification=verification,
+            result=result,
+            observed_change=observed_change,
+            after=after,
+            step_id=step_id,
+        )
 
     def _note_step_for_planner(self, decision: Any, execution: Any,
                                verification: Any, observed_change: str) -> None:
@@ -2279,6 +2317,80 @@ class LiveRuntime:
                 evidence={} if verification is None else dict(verification.evidence),
             )
         except Exception:  # noqa: BLE001 - a ledger must never fail an already-issued action
+            pass
+
+    # --------------------------------------------------- UNKNOWN -> skill bridge
+    def _note_learned_step(self, *, decision: Any, verification: Any, result: str,
+                           observed_change: str, after: Any, step_id: int = 0) -> None:
+        """File the step the model drove, if the verifier passed it (§11/§12).
+
+        The two gates are stated here rather than trusted to the caller:
+
+        * **the verifier must have passed.**  This is §39's "模型 confidence 不是证据" applied to
+          the one place it could leak back in: a step the model proposed and the game did not
+          agree with teaches nothing, and an unverified step would make the compiled skill a
+          record of what the model *said* rather than of what *happened*;
+        * **there must be an accept context**, i.e. a model answer actually drove this step.  A
+          step the rules resolved is already learned by the tiers that resolved it (the transition
+          ledger, the L1 experiences) and filing it here would inflate every count in the console
+          with work the model never did.
+
+        What lands in the ledger is the semantic record; the frames ride along as evidence paths,
+        and the *point* does not appear anywhere.  §10's "模型 bbox 生命周期仅当前 frame" is
+        therefore satisfied by construction.
+        """
+        context = getattr(self, "_advised_learn_context", None) or {}
+        self._advised_learn_context = {}
+        if not context:
+            return
+        if verification is None or not verification.ok:
+            # A failed advised step is still worth knowing about, and it is *not* discarded: the
+            # failure patterns the offline learner groups (§23) come from the episode stream, which
+            # already recorded this step.  This ledger's contract is narrower on purpose -- it is
+            # the set of things V2 may henceforth do without a model.
+            return
+        try:
+            page_after = ""
+            if after is not None:
+                page_after = control_experience.label(getattr(after, "page", "") or "")
+            episode_id = str(getattr(getattr(self, "capture_dir", None), "name", "") or "")
+            step = unknown_learning.record_verified_step(
+                request_id=str(getattr(self, "_last_advice", {}).get("request_id", "") or ""),
+                session_id=episode_id,
+                episode_id=episode_id,
+                step_index=int(step_id or 0),
+                goal_id=str(context.get("goal") or ""),
+                role_id=str(getattr(self, "role_id", "") or ""),
+                page_before=str(context.get("page_key") or ""),
+                page_after=page_after,
+                no_progress=str(observed_change or "") in ("NONE", "UNKNOWN", ""),
+                semantic_target=str(context.get("semantic") or ""),
+                action_type="CLICK_ELEMENT",
+                basis=str(context.get("basis") or ""),
+                grounding_basis=str(context.get("grounding_basis") or ""),
+                area="",
+                visual_evidence=dict(context.get("visual_evidence") or {}),
+                verifier_ok=True,
+                verifier_reason=str(getattr(verification, "reason", "") or ""),
+                expected_result=str(context.get("expected_result") or ""),
+                actual_result=str(observed_change or ""),
+                attempts_before_success=int(context.get("attempts") or 0),
+                source_frames=[str(context.get("frame") or "")],
+                ledger=getattr(self, "learned_ledger", None) or unknown_learning.VerifiedStepLedger(
+                    Path(__file__).resolve().parents[1] / unknown_learning.LEARNED_STEPS_PATH
+                ),
+            )
+            # Invalidate the per-run cache, or the rest of this run would keep re-asking for an
+            # action it has just learned.  That would be §15's defect reproduced inside a single
+            # run, which is the one place it would be hardest to notice.
+            self._learned_cache = None
+            print(
+                f"[learned] verified step filed: {step.semantic_target or step.action_type} "
+                f"on {step.page_before} -> {step.page_after or '(no page change)'} "
+                f"[{step.risk_route}]",
+                flush=True,
+            )
+        except Exception:  # noqa: BLE001 - a learning write must never fail a finished step
             pass
 
     # --------------------------------------------------- per-control experience
@@ -4856,6 +4968,10 @@ class LiveRuntime:
         # with the previous step's answer, and (measured 2026-09-30) a request id that outlived
         # its step would attach a later verifier verdict to a step the model never touched.
         self._advised_request_id = ""
+        # Cleared with it, and for the same reason: a step that resolved nothing must not be
+        # credited with the previous step's answer, which would file a learned step for a semantic
+        # this step never pressed.
+        self._advised_learn_context = {}
         if unnamed:
             # The title is what keeps two unnamed screens apart in the ledger key and in a
             # question's id, so it is read before anything is asked about this screen.  One cached
@@ -5062,12 +5178,38 @@ class LiveRuntime:
         The question is filed when there is no answer yet, so a WorkBuddy session reading
         ``learning/unknown_requests/`` -- or the dispatcher that asks one for it -- has something to
         answer.
+
+        Before any of that, though, the *learned* actions for this screen are tried
+        ---------------------------------------------------------------------------
+        Operator directive 2026-10-01 §15: 相同 UNKNOWN 每次都重新问 UI-Venus 是禁止的.  A screen
+        whose action the verifier already passed once is a screen this project has solved, so the
+        recorded semantic element is re-located on **this** frame and taken without a model call.
+        The re-location is the same printed-word measurement every other tier uses, so nothing
+        here is a stored coordinate: what was learned is "this screen's 关闭 does that", and the
+        point is produced from the frame in front of us.
+
+        Two properties worth stating because they are easy to get wrong:
+
+        * the learned attempt runs **first**, before the question is even built, so a solved screen
+          costs zero tokens -- and when it fails (the control has moved, been renamed, or the
+          screen was mis-keyed) the ordinary path below still runs, including the model.  A learned
+          record that no longer locates is therefore a *re-ask*, not a dead end;
+        * the ledger is read once per run and cached, so this is a dict lookup per step rather than
+          a file read per step.
         """
         advisor = getattr(self, "_advisor", None)
-        if advisor is None:
-            return None
         key = page_knowledge.page_key(page, title)
         goal = str(getattr(getattr(self, "brain", None), "current_goal", "") or "")
+        # The learned attempt is placed here, not at the top of the method, because it needs the
+        # same ``goal`` the question is filed under -- a learned action for one goal is not
+        # knowledge about another.  And it is placed **before** the ``advisor is None`` return
+        # below, because it is a deterministic re-location and not a model path: a deployment with
+        # no planner at all should still get cheaper on a screen it has already solved.
+        learned = self._learned_reuse_point(page, title, goal, frame_path, frame)
+        if learned is not None:
+            return learned
+        if advisor is None:
+            return None
         situation = self._l1_state(frame, title)
         # Serialised once: the request needs it as the world state, the state signature and the
         # character are read out of it, and ``to_dict`` on a whole WorldState is not free on a path
@@ -5116,6 +5258,18 @@ class LiveRuntime:
             if callable(take_with_request)
             else advisor.take(request.request_id, registry=self.registry)
         )
+        # §15's numerator.  Reaching this line means the model *was* consulted, and since the
+        # learned reuse ran first and returned if it could, this counts exactly one thing: a screen
+        # this project had already solved, asked about again.  Counter rather than a log line
+        # because the console's 重复 UNKNOWN 调用率 is this number over the run.
+        if self._learned_ledger_rows():
+            try:
+                if unknown_learning.learned_steps_for(
+                    self._learned_ledger_rows(), page_key=key, goal_id=goal
+                ):
+                    self._learned_model_calls_on_known = int(getattr(self, "_learned_model_calls_on_known", 0)) + 1
+            except Exception:  # noqa: BLE001 - a metric must never fail a live step
+                pass
         if advice is None:
             if advisor.ask(request) and unnamed:
                 print(
@@ -5217,6 +5371,32 @@ class LiveRuntime:
         }
         # This is the step the answer drives, so this is the step whose verdict settles it.
         self._advised_request_id = request.request_id
+        # What this step would teach if the verifier passes (§12).  Captured *now*, at the moment
+        # the answer is accepted, because by settlement time the frame is gone and the only record
+        # of which semantic was pressed on which screen is this dict.  ``action_type`` is
+        # ``CLICK_ELEMENT`` and that is not a placeholder: this method's whole contract is "return
+        # a point to tap", so any other name would be describing a mechanism that does not exist.
+        self._advised_learn_context = {
+            "page_key": key,
+            "goal": goal,
+            "semantic": semantic,
+            "basis": str(advice.action_kind),
+            "grounding_basis": basis,
+            "expected_result": str(advice.expected_result or ""),
+            "frame": str(frame_path),
+            # Prior resolution attempts this run, before this one: §12's recovery evidence.
+            "attempts": int(self._ordinary_attempts),
+            # §12's "视觉依据", as identities rather than geometry: which reader located this point
+            # and what it anchored on.  Enough for a reviewer to know *how* to find the element
+            # again, and structurally incapable of carrying a pixel -- which is the same property
+            # ``LearnedStepCandidate`` gets by having no coordinate field at all.
+            "visual_evidence": {
+                "reader": f"AI_ADVICE/{basis}",
+                "ocr_anchor": str(region.get("text") or advice.target_semantics or ""),
+                "region_basis": str(region.get("basis") or ""),
+                "control_type": str(advice.action_kind or ""),
+            },
+        }
         self._ordinary_tried.add((page, semantic))
         self._ordinary_attempts += 1
         self._ordinary_last = {
@@ -5260,6 +5440,142 @@ class LiveRuntime:
             flush=True,
         )
         return point
+
+    def learning_run_counters(self) -> dict[str, int]:
+        """This run's §15 counters, for the console and the end-of-run report.
+
+        Exposed as a method rather than read as attributes so the two numbers that make the ratio
+        always travel together: a reader who took one without the other could report a rate from
+        a numerator with no denominator.
+        """
+        return {
+            "learned_reuse_hits": int(getattr(self, "_learned_reuse_hits", 0)),
+            "model_calls_on_known_screen": int(getattr(self, "_learned_model_calls_on_known", 0)),
+        }
+
+    # --------------------------------------------------- learned UNKNOWN reuse
+    def _learned_ledger_rows(self) -> list[dict[str, Any]]:
+        """The verified-step ledger, read once per run.
+
+        Cached rather than re-read per step because this sits on the resolution path of every
+        unnamed screen, and the file only changes when *this* run verifies something -- at which
+        point the append invalidates the cache.  A missing ledger is an empty list, which is the
+        correct answer for a project that has not learned anything yet.
+
+        Both the ledger and the cache are created on first use rather than assumed to exist: a
+        test that builds a runtime without running ``__init__`` is a supported construction in this
+        project, and this path runs on *every* unnamed screen -- so it must behave like an optional
+        collaborator (``getattr`` + default) instead of an initialised field.
+        """
+        ledger = getattr(self, "learned_ledger", None)
+        if ledger is None:
+            ledger = unknown_learning.VerifiedStepLedger(
+                Path(__file__).resolve().parents[1] / unknown_learning.LEARNED_STEPS_PATH
+            )
+            self.learned_ledger = ledger
+        if getattr(self, "_learned_cache", None) is None:
+            try:
+                self._learned_cache = ledger.verified()
+            except Exception:  # noqa: BLE001 - a learning read must never fail a live step
+                self._learned_cache = []
+        return self._learned_cache
+
+    def _learned_reuse_point(self, page: str, title: str, goal: str,
+                             frame_path: Path, frame: "WorldState") -> tuple[float, float] | None:
+        """An action this screen already proved, re-located on the current frame, or ``None``.
+
+        §15 made mechanical.  The element is named by the client's own printed word (the ledger
+        stores ``ORDINARY_CONTROL[<word>]``, which is the project's existing vocabulary for "a
+        control named by what it prints"), and the point comes from ``find_printed_words`` on
+        *this* frame -- so a learned action is re-located, never replayed.
+
+        Deliberately narrow, and each bound is a rule rather than a tuning:
+
+        * only ``FAST_PROMOTION`` / ``SLOW_PROMOTION`` rows are taken; a ``BLOCKED`` row names
+          money or gems and must never be re-issued by a reuse path that has no risk gate in front
+          of it;
+        * only rows whose semantic is a printed control are usable -- ``AI_ADVICE[...]`` named an
+          element the screen does not print, so there is no text to find and the honest answer is
+          to leave it to the tier that can still ask;
+        * the control must still be drawn.  If it is not, nothing is tapped and the caller proceeds
+          to the ordinary path, which is the same "current frame does not match -> identify again"
+          rule the L1 tier already follows.
+        """
+        key = page_knowledge.page_key(page, title)
+        rows = self._learned_ledger_rows()
+        if not rows:
+            return None
+        try:
+            candidates = unknown_learning.learned_steps_for(
+                rows, page_key=key, goal_id=str(goal or "")
+            )
+        except Exception:  # noqa: BLE001 - see above
+            return None
+        if not candidates:
+            return None
+        ocr = self._ocr_service()
+        if ocr is None:
+            return None
+        for row in candidates:
+            if str(row.get("risk_route") or "") == unknown_learning.ROUTE_BLOCKED:
+                continue
+            semantic = str(row.get("semantic_target") or "")
+            word = page_knowledge.word_from_control(semantic)
+            if not word or word == semantic:
+                continue
+            if (page, word) in self._ordinary_tried:
+                continue
+            hit = find_printed_words(frame_path, (word,), ocr)
+            if hit is None:
+                continue
+            point = (float(hit["center_norm"][0]), float(hit["center_norm"][1]))
+            self._learned_reuse_hits = int(getattr(self, "_learned_reuse_hits", 0)) + 1
+            self._ordinary_tried.add((page, word))
+            self._ordinary_attempts += 1
+            # The same four records a measured tier leaves behind, so a learned tap is
+            # indistinguishable to the rest of the runtime from one the printed-word tier found
+            # -- which is what lets it register an L1 action and stage an element candidate
+            # instead of being a special case nobody downstream understands.
+            self._ordinary_last = {
+                "page": page,
+                "title": title,
+                "word": word,
+                "point": (round(point[0], 4), round(point[1], 4)),
+                "semantic": semantic,
+                "basis": "LEARNED_VERIFIED_STEP",
+                "source": "LEARNED",
+                "box_norm": dict(hit.get("box_norm") or {}),
+            }
+            self._l1_context = {
+                "page": page,
+                "goal": str(goal or ""),
+                "state": self._l1_state(frame, title),
+                "semantic": semantic,
+                "text": word,
+                "box_norm": dict(hit.get("box_norm") or {}),
+                "basis": "LEARNED_VERIFIED_STEP",
+                "source": "LEARNED",
+                "confidence": float(hit.get("confidence") or 0.0),
+                "frame": str(frame_path),
+            }
+            self._note_printed(
+                semantic,
+                key,
+                f"a verified step already learned on this screen "
+                f"(session {row.get('session_id', '?')})",
+                point,
+                box_norm=hit.get("box_norm"),
+                text=word,
+                confidence=hit.get("confidence"),
+                label=page,
+            )
+            print(
+                f"[learned] {key}: '{word}' re-located on this frame from a verified step -- "
+                f"no model needed (reuse #{getattr(self, '_learned_reuse_hits', 0)})",
+                flush=True,
+            )
+            return point
+        return None
 
     def _advice_evidence(
         self,
