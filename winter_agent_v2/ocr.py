@@ -4645,6 +4645,16 @@ class HybridVision:
         self.ocr = ocr
         self.classifier = classifier or OCRPageClassifier()
 
+    def focus(self, **kwargs) -> None:
+        """Forward runtime attention and loop widening to the existing template reader."""
+        focus = getattr(self.template_vision, "focus", None)
+        if callable(focus):
+            focus(**kwargs)
+
+    def sweeps_skipped(self) -> dict:
+        skipped = getattr(self.template_vision, "sweeps_skipped", None)
+        return dict(skipped() or {}) if callable(skipped) else {}
+
     def _read_rally_list_state(self, image_path: Path, primary: WorldState, result=None) -> WorldState:
         """Attach row-to-button rally evidence to the same Alliance frame.
 

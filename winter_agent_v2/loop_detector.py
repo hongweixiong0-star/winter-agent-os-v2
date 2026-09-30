@@ -594,8 +594,11 @@ class LoopDetector:
         self.timeline.append({
             "kind": kind,
             "digest": signature.digest,
+            "role_id": signature.role_id,
             "goal_id": signature.goal_id,
             "skill_id": signature.skill_id,
+            "semantic_target": signature.semantic_target,
+            "relevant_state_hash": signature.state_hash,
             "page": signature.page,
             "outcome": signature.verifier_outcome,
             "progress": signature.progress,

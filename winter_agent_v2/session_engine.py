@@ -1121,12 +1121,12 @@ class SessionEngine:
             return self._loop_look(host, state, "loop_widen", widen=True)
         if rung == RUNG_FEATURE_REOPEN:
             try:
-                adapter.recover(context, host, step,
+                recovered = adapter.recover(context, host, step,
                                 StepVerdict(StepOutcome.FAILED, loop.reason,
                                             {"loop_pattern": loop.pattern, "loop_rung": rung}))
             except Exception:  # noqa: BLE001 - an adapter bug is not a licence to repeat the tap
                 return False
-            return True
+            return recovered is True
         if rung == RUNG_HOME_RECOVERY:
             return self._loop_home(host, step, rung)
         if rung == RUNG_DEFER_GOAL:

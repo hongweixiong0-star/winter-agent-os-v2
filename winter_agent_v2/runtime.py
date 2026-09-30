@@ -6202,6 +6202,19 @@ class LiveRuntime:
         verifier = self.VERIFIED_ATOMIC.get(str(skill_id or ""))
         return verifier(before, after) if verifier is not None else None
 
+    def _record_session_timeline(self, event: str, **fields: Any) -> None:
+        """Keep session evidence beside this run's frames; logging cannot stop AUTO."""
+        try:
+            path = self.capture_dir / "session_timeline.jsonl"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            row = {"timestamp": datetime.now(timezone.utc).isoformat(),
+                   "event": event, "role_id": self.role_id,
+                   "repo_revision": self.code_revision, **fields}
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+        except Exception:
+            pass
+
     def _run_goal_session(self, *, route, index: int, run_id: str, before: WorldState,
                           before_path: Path, best_goal, latency: dict, page_audit: dict,
                           rally_target, planned_resource: str | None,
@@ -6521,6 +6534,7 @@ class LiveRuntime:
         # Consecutive ticks this run re-observed the active role instead of acting.  Cleared
         # whenever an action actually executes, so it counts a streak and not a total.
         role_refresh_ticks = 0
+        loop_return_pending: dict[str, Any] | None = None
 
         for index in range(1, max_actions + 1):
             latency_started = time.monotonic()
@@ -6903,6 +6917,10 @@ class LiveRuntime:
                         if chosen_goal is not None:
                             best_goal = chosen_goal
                             self._committed_goal = chosen_goal.goal_id
+            if loop_return_pending is not None:
+                self._record_session_timeline("AUTO_CONTINUED", **loop_return_pending,
+                                              next_goal_id=self._step_goal(best_goal))
+                loop_return_pending = None
             primary_goal_id = (
                 str(best_goal.goal_id) if best_goal is not None
                 else str(getattr(self, "_committed_goal", "") or "")
@@ -7230,6 +7248,9 @@ class LiveRuntime:
                 latency["session_ms"] = session_ms
                 if session_result is not None:
                     metrics = dict(getattr(session_result, "metrics", {}) or {})
+                    self._record_session_timeline("SESSION_ENDED",
+                        session_id=session_result.session_id, goal_id=selected_id,
+                        reason=session_result.reason, metrics=metrics)
                     page_audit["session_result"] = {
                         "session_id": session_result.session_id,
                         "lifecycle": session_result.lifecycle.value,
@@ -7241,6 +7262,8 @@ class LiveRuntime:
                         "yield_class": session_result.yield_class or None,
                         "failure": metrics.get("SESSION_FAILURE"),
                         "duration_ms": metrics.get("SESSION_DURATION_MS"),
+                        "loop_metrics": {key: value for key, value in metrics.items()
+                                         if key.startswith("LOOP_")},
                     }
                     page_audit["attempted_skill"] = decision.skill
                     page_audit["attempted_reason"] = (
@@ -7276,6 +7299,10 @@ class LiveRuntime:
                     )
                     if not session_result.completed:
                         self._yield_to_next_goal(best_goal, deferrals, decision, session_result.reason)
+                    if str(session_result.reason).startswith("SESSION_DOMAIN_STUCK"):
+                        loop_return_pending = {"session_id": session_result.session_id,
+                                               "goal_id": selected_id,
+                                               "reason": session_result.reason}
                     continue
                 # No result at all: the session could not be built.  Fall through to the
                 # ordinary atomic path rather than ending the run on a routing problem.
