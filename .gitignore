@@ -353,6 +353,12 @@ session*
 !dataset/candidate/session_disconnected/
 !dataset/candidate/session_disconnected_manifest.json
 !tests/replay/session_disconnected_labels.json
+# Same trap, second instance: the session engine of V2 is a production module, not a
+# credential.  `session*` swallowed it whole -- `git check-ignore` says so, and an
+# untracked module is a module that never reaches GitHub no matter how many tests pass.
+!winter_agent_v2/session_engine.py
+!winter_agent_v2/session_adapters.py
+!winter_agent_v2/session_host.py
 # WorkBuddy's connector cache sits inside the project when the desktop app is opened
 # from here; it holds OAuth material for the connected GitHub / mail accounts.
 .workbuddy/connectors/

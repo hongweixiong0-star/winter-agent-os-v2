@@ -33,6 +33,11 @@ from .ocr import (
 )
 from .camp_training import CAMP_LABELS, CAMP_ORDER
 from .scheduler import ACTIVE_ROLE_NO_CANDIDATE, Scheduler
+# The Goal -> session-adapter table, and nothing else from the session engine: the runtime
+# asks "does this Goal have a session?" and, if it does, lets ``_run_goal_session`` build it.
+# Imported at module level because it has no dependency back on this module, so there is no
+# cycle to dodge -- and a lazy import here would just hide a routing defect until run time.
+from . import session_adapters
 
 #: Selections that mean "finish this step and re-observe the SAME role".  Every member is
 #: a no-switch verdict, so the runtime must never fall through to executing a decision
@@ -6087,6 +6092,132 @@ class LiveRuntime:
 
         return True, "ROLE_IDENTITY_CONFIRMED", confirmed_frame
 
+    # ------------------------------------------------------- GENERIC_SESSION_ENGINE_V1
+    #
+    # Two transport services the session host needs, and deliberately nothing else.  The
+    # engine owns the sequence, the budgets and the lifecycle; the business adapter owns the
+    # domain reading; **these two own the wire** -- how one atomic skill reaches the device
+    # and how its outcome is judged.  Keeping them here (rather than in ``session_host``) is
+    # what stops a session from growing a second executor, a second router or a second
+    # verifier: there is exactly one implementation of each, and a session borrows it.
+
+    def _session_execute_atomic(self, *, skill_id: str, before: WorldState, before_path: Path,
+                                planned_resource: str | None = None, rally_target=None):
+        """Dispatch ONE atomic skill for a session step, through the loop's own router.
+
+        The same three lines the main loop runs immediately before ``Scheduler.tick``: an ADB
+        executor bound to *this* observation, ``build_router`` choosing the backend from the
+        skill's own routing row, and the pair handed to the **single** Scheduler.  A session
+        that built its own executor would be the second routing implementation the directive
+        forbids, and it would drift the first time a routing row changed.
+
+        ``before`` is the frame the adapter decided on -- the same relationship the main loop
+        has between its decision and its ``before`` state, which is what makes the verifier's
+        comparison meaningful.  Returns the runtime's own ``ExecutionResult``, or ``None``
+        when the Scheduler refused to dispatch (gone skill, not ready, entry gate).
+        """
+        world = before
+
+        def resolve(semantic: str):
+            return self._resolve_semantic_target(
+                semantic, world, frame_path=before_path,
+                resource=planned_resource, rally_target=rally_target,
+            )
+
+        adb_executor = Executor(
+            production=True, dry_run=False, device=self.adb_device,
+            target_resolver=resolve, backend="ADB",
+        )
+        executor = build_router(
+            adb_executor=adb_executor, adb_resolver=resolve,
+            maa_adapter=self.maa_adapter, skill_id=str(skill_id),
+            routing=self.routing, ledger=self.backend_ledger, rally_target=rally_target,
+        )
+        if self._scheduler is None:
+            self._scheduler = Scheduler(
+                self.brain, self.registry, executor, self.candidate_pool,
+                global_state_store=getattr(self, "global_scheduler_state_store", None),
+            )
+        else:
+            self._scheduler.executor = executor
+        # The reason names the session, so a session's step is never readable in the episode
+        # stream as a goal-driven decision.  The decision is NOT re-derived: the adapter
+        # already chose the step, and a second ``brain.decide`` would answer differently for
+        # the same frame (see ``Scheduler.tick``).
+        decision = Decision(str(skill_id), f"session_step:{skill_id}", 1.0, "")
+        return self._scheduler.tick(world, decision).execution
+
+    def _session_verify(self, skill_id: str, before: WorldState, after: WorldState,
+                        rally_target=None):
+        """The runtime's own verifier for one skill, or ``None`` when it has none.
+
+        Shares the rally branch with the loop's ``verify_current_step`` rather than
+        restating it, so a session's ``START_RALLY`` / ``JOIN_RALLY`` is judged by the same
+        target-scoped check the rest of the system uses -- the place where "no second
+        verifier" would otherwise quietly stop being true, because the rally check is the one
+        verifier that needs the goal's own target.
+        """
+        if before is None or after is None:
+            return None
+        if skill_id in ("START_RALLY", "JOIN_RALLY"):
+            target = getattr(rally_target, "value", rally_target) or "UNKNOWN"
+            return _verify_rally_action(skill_id, before, after, str(target))
+        verifier = self.VERIFIED_ATOMIC.get(str(skill_id or ""))
+        return verifier(before, after) if verifier is not None else None
+
+    def _run_goal_session(self, *, route, index: int, run_id: str, before: WorldState,
+                          before_path: Path, best_goal, latency: dict, page_audit: dict,
+                          rally_target, planned_resource: str | None,
+                          attached_goal_ids: Iterable[str] = ()):
+        """Run one Goal's internal sequence, then hand the device straight back.
+
+        Returns the ``SessionResult``, or ``None`` when the session could not be built at all
+        -- in which case the caller falls through to the ordinary atomic path, which is the
+        safe direction: a routing defect must never turn into "this Goal did nothing".
+
+        Nothing here decides anything globally.  The Goal and the role were already chosen by
+        the Scheduler and the Brain before this is reached, the adapter is handed only its own
+        domain, and the one question the session may ask the Scheduler is the yield check at
+        its own safe point (``Scheduler.session_preemption``).
+        """
+        from .session_adapters import make_adapter, plan_for
+        from .session_engine import SessionContext, SessionEngine
+        from .session_host import LiveRuntimeSessionHost, SessionRunBinding
+
+        goal_id = str(getattr(best_goal, "goal_id", "") or "")
+        if not goal_id:
+            return None
+        plan = plan_for(route, goal_id=goal_id, role_id=self._calendar_role_id(),
+                        goal_evidence=getattr(best_goal, "evidence", None))
+        adapter = make_adapter(route.adapter, extras=plan.extras,
+                               resource_budget=plan.spec.resource_budget)
+        if adapter is None:
+            return None
+        binding = SessionRunBinding(
+            index=index, goal_id=goal_id,
+            role_id=str(self.role_id or self._calendar_role_id() or ""),
+            before=before, before_path=before_path,
+            latency=latency, page_audit=page_audit,
+            settle_seconds=float(self.settle_seconds or 0.0),
+            planned_resource=planned_resource, rally_target=rally_target,
+            committed_goal=str(self._committed_goal or ""),
+            attached_goal_ids=tuple(attached_goal_ids or ()),
+        )
+        context = SessionContext(
+            spec=plan.spec, run_id=str(run_id), episode_prefix=self.capture_dir.name,
+            goal_deadline_s=plan.goal_deadline_s, extras=plan.extras,
+        )
+        host = LiveRuntimeSessionHost(self, binding)
+        try:
+            return SessionEngine().run(context, adapter, host)
+        except Exception as exc:  # noqa: BLE001
+            # The engine already catches its own exceptions and returns a FAILED result; this
+            # is the backstop for a defect in building the session (a bad route declaration, a
+            # host that cannot be constructed).  A session failure may never end the run.
+            self._narrate_once(f"session could not start for {goal_id}: "
+                               f"{type(exc).__name__}:{exc}")
+            return None
+
     def run(
         self,
         *,
@@ -7017,6 +7148,104 @@ class LiveRuntime:
                     target = getattr(rally_target, "value", rally_target) or "UNKNOWN"
                     return _verify_rally_action(decision.skill, before_state, after_state, str(target))
                 return self.VERIFIED_ATOMIC[decision.skill](before_state, after_state)
+
+            # ---- GENERIC_SESSION_ENGINE_V1 -------------------------------------------
+            #
+            # The Goal and the role are already chosen (the Scheduler and the Brain ran above);
+            # all that is left to decide is *how* this Goal does its work.  When the route
+            # table says this Goal has a session, the session runs the Goal's internal sequence
+            # -- several steps, one device lease, one budget -- and then this ``continue`` hands
+            # the cycle straight back to the same Scheduler that chose it.  That is constraint
+            # 8 ("Session 完成/Yield/失败后必须返回 Global Scheduler") implemented as the loop's
+            # own existing edge, not as a new one.
+            #
+            # The hook sits HERE, after the decision and before the atomic step's own guards,
+            # for three reasons:
+            #   * the session must not be subject to the "this control resolved to nothing"
+            #     guards below -- those are about repeating one failed atomic decision, and a
+            #     session has not resolved anything yet;
+            #   * it must not build the executor/router below -- the session's steps build
+            #     their own through ``_session_execute_atomic``;
+            #   * ``index < max_actions`` keeps one iteration of the run's budget for the
+            #     return trip, so a session can never be the last thing a run does.
+            #
+            # A session's ending -- complete, yield OR failure -- is never a run ending.  The
+            # failure of one Goal's internal sequence says nothing about the other Goals, and
+            # the loop's next iteration re-arbitrates, which is the whole point of constraint 8.
+            session_route = (session_adapters.route_for(selected_id, decision.skill)
+                             if index < max_actions else None)
+            if session_route is not None:
+                page_audit["session_route"] = {
+                    "goal_id": selected_id, "adapter": session_route.adapter,
+                    "step_budget": session_route.step_budget,
+                    "time_budget_s": session_route.time_budget_s,
+                    "lifecycle": session_route.lifecycle,
+                }
+                session_started = time.monotonic()
+                session_result = self._run_goal_session(
+                    route=session_route, index=index, run_id=run_id,
+                    before=before, before_path=before_path, best_goal=best_goal,
+                    latency=latency, page_audit=page_audit,
+                    rally_target=rally_target, planned_resource=planned_resource,
+                    attached_goal_ids=attached_goal_ids,
+                )
+                session_ms = (time.monotonic() - session_started) * 1000.0
+                latency["session_ms"] = session_ms
+                if session_result is not None:
+                    metrics = dict(getattr(session_result, "metrics", {}) or {})
+                    page_audit["session_result"] = {
+                        "session_id": session_result.session_id,
+                        "lifecycle": session_result.lifecycle.value,
+                        "outcome": session_result.outcome,
+                        "reason": session_result.reason,
+                        "steps": len(session_result.steps),
+                        "verified": metrics.get("SESSION_VERIFIED_STEPS"),
+                        "episode_ids": list(session_result.episode_ids),
+                        "yield_class": session_result.yield_class or None,
+                        "failure": metrics.get("SESSION_FAILURE"),
+                        "duration_ms": metrics.get("SESSION_DURATION_MS"),
+                    }
+                    page_audit["attempted_skill"] = decision.skill
+                    page_audit["attempted_reason"] = (
+                        f"session:{session_route.adapter}:{session_result.reason}")
+                    page_audit["verifier_result"] = {
+                        "status": "PASS" if session_result.completed else "SESSION_ENDED",
+                        "ok": bool(session_result.completed),
+                        "reason": session_result.reason,
+                        "lifecycle": session_result.lifecycle.value,
+                    }
+                    page_audit["action_sent"] = bool(len(session_result.steps))
+                    steps.append(LiveStep(index, decision, None, before, None, None))
+                    # Only the snapshot's own declared fields are passed: ``update`` filters
+                    # unknown keys out, so inventing ``session_*`` names here would look like
+                    # reporting while changing nothing.  The session's facts ride on the audit
+                    # row (``session_result``) and the narration, which is where a reader can
+                    # actually find them.
+                    self._runtime(
+                        agent_state=AgentState.AUTO_RUNNING.value,
+                        current_goal=self._step_goal(best_goal),
+                        current_skill=decision.skill,
+                        reason=(f"session {session_route.adapter} "
+                                f"{session_result.lifecycle.value}:{session_result.reason}"),
+                        next_action="return to the scheduler",
+                        verifier="SESSION_ENGINE",
+                    )
+                    self._narrate_once(
+                        f"session {session_result.session_id} [{session_route.adapter}] "
+                        f"{session_result.lifecycle.value} {session_result.reason} "
+                        f"steps={len(session_result.steps)} "
+                        f"verified={metrics.get('SESSION_VERIFIED_STEPS')} "
+                        f"{session_ms:.0f}ms -- returning to the scheduler"
+                    )
+                    continue
+                # No result at all: the session could not be built.  Fall through to the
+                # ordinary atomic path rather than ending the run on a routing problem.
+                page_audit["session_result"] = {"lifecycle": "NOT_STARTED",
+                                                "reason": "SESSION_COULD_NOT_BE_BUILT"}
+                self._narrate_once(
+                    f"session for {selected_id} could not be built; "
+                    f"{decision.skill} runs as an ordinary step"
+                )
 
             if (
                 decision.skill in ("SELECT_RESOURCE", "OPEN_BEAST_SEARCH_TAB")

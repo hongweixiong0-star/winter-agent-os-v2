@@ -14,6 +14,7 @@ from .event_goal import event_priority_modifier
 from .operations_policy import operational_priority
 from .goal_library import GoalLibrary, action_relevant_goal_ids
 from .candidate_policy import CandidateAttemptPool
+from .session_engine import YieldVerdict
 from .role_session import (
     BLOCKED_STATUSES,
     HARD_EVENT_PREEMPT,
@@ -317,6 +318,100 @@ class Scheduler:
             return 0.0, event_schedule.ReadinessPhase.IDLE, None
         phase = role.phase_at(now)
         return event_schedule.PHASE_PRIORITY[phase], phase, role
+
+    # --------------------------------------------------- the session yield oracle
+    #
+    # GENERIC_SESSION_ENGINE_V1 (operator directive 2026-09-30, constraint 6):
+    # 「Hard Event 只能通过 Global Scheduler 抢占」.  A Session runs a Goal's own steps and
+    # must not decide global questions -- so the ONE question it is allowed to ask the
+    # outside world is "may I keep the device?", and this method is the only thing that
+    # answers it.  It is a *question*, not a schedule: it ranks nothing, selects nothing,
+    # and returns no Goal.
+    #
+    # Why it lives here rather than in the session engine: the answer depends on the timed
+    # event ladder, and the ladder is already the Scheduler's.  Putting the rule anywhere
+    # else would be a second place that knows when an event starts.
+    #
+    # The threshold is T5, not T30.  ``PHASE_PRIORITY`` already encodes the book's own
+    # instruction -- "T5 and tighter is the rung whose instruction is 普通任务让路" -- so
+    # reusing the ladder's own break point keeps the two consistent by construction.  A
+    # session is bounded (seconds to a couple of minutes), so interrupting it at T15 would
+    # cost more than it saves; at T5 the preparation window is the scarce resource.
+
+    #: Phases at or above which a running session must hand the device back.  Expressed as
+    #: a set of names rather than a numeric comparison so that adding a rung to the ladder
+    #: forces a decision here instead of silently inheriting one.
+    SESSION_YIELD_PHASES: frozenset[str] = frozenset({"T5", "T1", "OPEN"})
+
+    #: How long past its reserved start a reservation stays credible when the client has
+    #: never confirmed the window.  The bear window the book describes is ~30 minutes, so
+    #: past this a reservation with no live confirmation is a stale record rather than an
+    #: event.  Without this bound the ladder is permanently OPEN once a reservation's start
+    #: passes -- measured 2026-09-30: three reservations from 2026-09-27/28 were still
+    #: reading ``OPEN``, which pinned ``PHASE_PRIORITY`` at 4000 for a bear skill that had
+    #: no window at all.  That is a ranking defect in the *existing* scheduler, reported
+    #: separately; the bound here keeps the yield oracle from inheriting it.
+    STALE_RESERVATION_GRACE_MINUTES: float = 40.0
+
+    def session_preemption(
+        self,
+        *,
+        goal_id: str = "",
+        role_id: str = "",
+        steps_used: int = 0,
+        now: datetime | None = None,
+        fatal_reason: str = "",
+        hard_event: str = "",
+        next_action_at: str | None = None,
+    ) -> YieldVerdict:
+        """Whether a running session must yield, and in which of §17's fixed classes.
+
+        Inputs, and nothing else can produce a yield:
+
+        * ``fatal_reason`` -- a stop that is not the session's business to survive;
+        * ``hard_event`` -- a caller-supplied event reading (the panel/CLI can set one);
+        * the readiness ladder at T5 or tighter, where the book's own instruction is that
+          ordinary work yields at a safe boundary;
+        * ``OPEN`` **and** either the client confirming the window is live, or the reserved
+          start being recent enough that the window may still be running.
+
+        Notably absent: a role switch.  A session cannot switch role (constraint 3), so a
+        role handoff is not a yield reason here -- it is a reason for the *Goal* to end,
+        which the runtime decides after the session returns.
+        """
+        moment = now or datetime.now(timezone.utc)
+        if str(fatal_reason or "").strip():
+            return YieldVerdict(True, f"FATAL:{fatal_reason}", "FATAL",
+                                next_action_at=next_action_at)
+        if str(hard_event or "").strip():
+            return YieldVerdict(True, f"HARD_EVENT:{hard_event}", "HARD_EVENT_PREEMPT",
+                                next_action_at=next_action_at)
+        try:
+            _bonus, phase, role = self.readiness(moment)
+        except Exception:  # noqa: BLE001 - an unreadable ladder must not strand a session
+            return YieldVerdict(False)
+        name = str(getattr(phase, "value", phase) or "")
+        if name not in self.SESSION_YIELD_PHASES:
+            return YieldVerdict(False)
+        who = getattr(role, "role_id", "") or "?"
+
+        live = str(getattr(role, "live_window_state", "") or "").upper()
+        if live == event_schedule.LiveWindowState.EXPIRED.value:
+            # The client itself said the window is over.  A past reservation on an expired
+            # window is exactly the stale record this rule exists for.
+            return YieldVerdict(False)
+        if name == "OPEN" and live != event_schedule.LiveWindowState.OPEN.value:
+            if live == event_schedule.LiveWindowState.SCHEDULED_NOT_OPEN.value:
+                return YieldVerdict(False)
+            minutes = role.minutes_to_start(moment) if hasattr(role, "minutes_to_start") else None
+            if isinstance(minutes, float) and minutes < -self.STALE_RESERVATION_GRACE_MINUTES:
+                return YieldVerdict(False)
+        return YieldVerdict(
+            True,
+            f"readiness {name} for role {who} after {steps_used} session step(s)",
+            "HARD_EVENT_PREEMPT",
+            next_action_at=next_action_at,
+        )
 
     def _bear_goal_skills(self, world: WorldState) -> set[str]:
         """The skills ``PARTICIPATE_BEAR`` can emit on this frame, from the library itself."""
