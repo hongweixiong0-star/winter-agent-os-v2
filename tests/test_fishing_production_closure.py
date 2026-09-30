@@ -1,11 +1,43 @@
 from types import SimpleNamespace
 from pathlib import Path
+import json
+import time
+import pytest
 
 from winter_agent_v2.fishing_state import FishingState
 from winter_agent_v2.models import Page, WorldState
 from winter_agent_v2.session_adapters import FishingSessionAdapter, STAGE_LEAVING
 from winter_agent_v2.session_engine import SessionStep, StepExecution, StepOutcome, STEP_OBSERVE_ONLY
 from winter_agent_v2.session_host import LiveRuntimeSessionHost, SessionRunBinding
+from winter_agent_v2.learning import EpisodeStore
+from winter_agent_v2.models import Action, Decision, ExecutionResult, VerificationResult
+from winter_agent_v2.runtime import LiveRuntime
+
+
+@pytest.mark.parametrize("outcome,verified,sent,result", [
+    ("SUCCESS", True, False, "SUCCESS"),
+    ("PROGRESS", False, True, "PROGRESS"),
+    ("FAILED", False, True, "FAILURE"),
+    ("SUCCESS", False, True, "FAILURE"),
+])
+def test_session_observation_does_not_invent_a_click_or_hide_a_failure(tmp_path, outcome, verified, sent, result):
+    path = tmp_path / "episodes.jsonl"
+    runtime = SimpleNamespace(
+        _multi_role_enabled=False, _fold_control_experience=lambda **kw: None,
+        _collect_ui_evidence=lambda **kw: None, _failure_type_from=lambda execution: "NO_EXECUTION",
+        episode_store=EpisodeStore(path), task_completion_store=None, capture_dir=tmp_path,
+        device=SimpleNamespace(), code_revision="test", role_id="A", role_scope="ROLE_A",
+        execution_mode="PRODUCTION", trace_id="", job_id="", capability="",
+        expected_after_version="")
+    LiveRuntime._record_episode(runtime, decision=Decision("OBSERVE_ONLY", "session", 1, ""),
+        before=WorldState(page=Page.EVENT), after=WorldState(page=Page.EVENT),
+        execution=ExecutionResult(True, False, Action("TAP", "normal_stage")) if sent else None,
+        verification=VerificationResult(verified, "INCOMPLETE", {}), started_at=time.monotonic(),
+        session_outcome=outcome)
+    row = json.loads(path.read_text(encoding="utf-8").splitlines()[-1])
+    assert row["result"] == result
+    assert row["verifier_ok"] == verified
+    assert bool(row["action"]) == sent
 
 
 def test_servo_and_bait_cost_without_points_never_prove_a_cast():
