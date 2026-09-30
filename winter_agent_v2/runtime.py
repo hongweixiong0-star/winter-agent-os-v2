@@ -477,6 +477,7 @@ class LiveRuntime:
         max_verification_retries: int = 2,
         max_battle_reobservations: int = 3,
         observation_retries: int = 2,
+        max_semantic_click_retry: int = click_retry.MAX_SEMANTIC_CLICK_RETRY,
         sleeper: Callable[[float], None] = time.sleep,
         episode_store: EpisodeStore | None = None,
         goal_store: GoalStateStore | None = None,
@@ -490,7 +491,6 @@ class LiveRuntime:
         stamina_supply: StaminaSupplyStore | None = None,
         maa_adapter=None,
         adb_device=None,
-        max_semantic_click_retry: int = click_retry.MAX_SEMANTIC_CLICK_RETRY,
         routing=None,
         backend_ledger: BackendLedger | None = None,
         capability_gate: CapabilityGate | None = None,
@@ -611,6 +611,7 @@ class LiveRuntime:
         }
         # One central Scheduler per runtime. The executor is rebound for each atomic action.
         self._scheduler: Scheduler | None = None
+        self.max_semantic_click_retry = min(2, max(0, int(max_semantic_click_retry)))
         self.goal_library = GoalLibrary()
         self.candidate_pool = candidate_pool
         self.runtime_store = runtime_store
@@ -624,7 +625,6 @@ class LiveRuntime:
         # loop would tap the same pin forever.  Session-scoped on purpose: the
         # board changes between runs, and a pin that produced nothing may be
         # workable later (the hourly harness re-runs from a cold start).
-        self.max_semantic_click_retry = min(2, max(0, int(max_semantic_click_retry)))
         self._tapped_intel_pins: list[tuple[int, int]] = []
         # Which goal paths must step aside, projected from the escalation ledger and
         # the episode stream.  Built once per run (see ``_gate``) and injectable, so a
@@ -1541,54 +1541,6 @@ class LiveRuntime:
                     pass
         return goals
 
-    def _record_episode(
-        self,
-        *,
-        decision: Decision,
-        before: WorldState,
-        execution: ExecutionResult | None,
-        after: WorldState | None,
-        verification: VerificationResult | None,
-        started_at: float,
-        step_id: int = 0,
-        goal_id: str = "",
-        goal_progress: bool | None = None,
-        attached_goal_ids: Iterable[str] = (),
-        goal_progress_by_id: Mapping[str, bool | None] | None = None,
-        completed_goal_ids: Iterable[str] = (),
-        before_screenshot: Path | None = None,
-        after_screenshot: Path | None = None,
-    ) -> None:
-        state_before = asdict(before)
-        state_after = asdict(after) if after is not None else {}
-        observed_change = (
-            control_experience.classify_change(state_before, state_after)
-            if after is not None else "UNKNOWN"
-        )
-        # When the step's own verifier named the change, that name is the record -- the ledger and
-        # the verifier must not disagree about what happened, which is the same reason
-        # ``classify_change`` is shared with the verifier in the first place.  Measured on the
-        # 快捷面板 handle: the generic classifier reported NUMBER_CHANGED (its fallback for "the two
-        # states differ") while the verifier, which knows what this control does, reported
-        # QUICK_PANEL_OPENED -- and the weaker name had been written to the ledger.
-        if verification is not None and verification.ok:
-            named = str((verification.evidence or {}).get("change") or "")
-            if named:
-                observed_change = named
-        attached_ids = tuple(dict.fromkeys(
-            str(item).strip() for item in attached_goal_ids if str(item).strip()
-        ))
-        progress_by_goal = {
-            str(key): value if isinstance(value, bool) else None
-            for key, value in (goal_progress_by_id or {}).items()
-            if str(key).strip()
-        }
-        completed_ids = tuple(dict.fromkeys(
-            str(item).strip() for item in completed_goal_ids if str(item).strip()
-        ))
-        if self._multi_role_enabled and self._role_identity_confirmed:
-            verifier_result = (
-                "NOT_RUN" if verification is None else "PASS" if verification.ok else "FAIL"
     def _retry_semantic_click(self, *, decision, before, before_path, after, after_path,
                               execution, verify, resource, rally_target, index, settle, latency=None):
         """Delivery retries stay inside one selected Skill and the existing executor."""
@@ -1795,6 +1747,54 @@ class LiveRuntime:
             pass
 
 
+    def _record_episode(
+        self,
+        *,
+        decision: Decision,
+        before: WorldState,
+        execution: ExecutionResult | None,
+        after: WorldState | None,
+        verification: VerificationResult | None,
+        started_at: float,
+        step_id: int = 0,
+        goal_id: str = "",
+        goal_progress: bool | None = None,
+        attached_goal_ids: Iterable[str] = (),
+        goal_progress_by_id: Mapping[str, bool | None] | None = None,
+        completed_goal_ids: Iterable[str] = (),
+        before_screenshot: Path | None = None,
+        after_screenshot: Path | None = None,
+    ) -> None:
+        state_before = asdict(before)
+        state_after = asdict(after) if after is not None else {}
+        observed_change = (
+            control_experience.classify_change(state_before, state_after)
+            if after is not None else "UNKNOWN"
+        )
+        # When the step's own verifier named the change, that name is the record -- the ledger and
+        # the verifier must not disagree about what happened, which is the same reason
+        # ``classify_change`` is shared with the verifier in the first place.  Measured on the
+        # 快捷面板 handle: the generic classifier reported NUMBER_CHANGED (its fallback for "the two
+        # states differ") while the verifier, which knows what this control does, reported
+        # QUICK_PANEL_OPENED -- and the weaker name had been written to the ledger.
+        if verification is not None and verification.ok:
+            named = str((verification.evidence or {}).get("change") or "")
+            if named:
+                observed_change = named
+        attached_ids = tuple(dict.fromkeys(
+            str(item).strip() for item in attached_goal_ids if str(item).strip()
+        ))
+        progress_by_goal = {
+            str(key): value if isinstance(value, bool) else None
+            for key, value in (goal_progress_by_id or {}).items()
+            if str(key).strip()
+        }
+        completed_ids = tuple(dict.fromkeys(
+            str(item).strip() for item in completed_goal_ids if str(item).strip()
+        ))
+        if self._multi_role_enabled and self._role_identity_confirmed:
+            verifier_result = (
+                "NOT_RUN" if verification is None else "PASS" if verification.ok else "FAIL"
             )
             failure_reason = (
                 str(verification.reason) if verification is not None and not verification.ok
@@ -7287,6 +7287,25 @@ class LiveRuntime:
                 # the escalation read as "V2 saw something it could not read"
                 # with nothing to look at.
                 after_path = refresh_path
+            phase_started = time.monotonic()
+            delivery_initial_frame = str(after_path)
+            after, after_path, delivery, verification, click_result = self._retry_semantic_click(
+                decision=decision, before=before, before_path=before_path,
+                after=after, after_path=after_path, execution=tick.execution,
+                verify=verify_current_step, resource=planned_resource,
+                rally_target=rally_target, index=index, settle=settle_retry_wait, latency=latency,
+            )
+            tick = replace(tick, execution=delivery)
+            latency["semantic_click_retry_ms"] = (time.monotonic() - phase_started) * 1000
+            latency["semantic_click_retries"] = click_result.retries if click_result else 0
+            if click_result and click_result.observation.frame != delivery_initial_frame:
+                goals_after = self._record_goals(after, frame=after_path)
+            elif click_result and click_result.retries:
+                goals_after = self._record_goals(after, frame=after_path)
+            page_audit["verifier_result"] = {
+                "status": "PASS" if verification.ok else "FAIL", "ok": bool(verification.ok),
+                "reason": verification.reason, "page_after": after.page.value,
+            }
             if (
                 not verification.ok
                 and decision.skill == "CLAIM_FREE_STAMINA"
@@ -7337,25 +7356,6 @@ class LiveRuntime:
                 # The verifier passed means the action landed.  This says whether the
                 # *goal* moved, and the two are not the same statement: 58 episodes
                 # passed their verifier while stamina sat at 457 (2026-09-18).
-            phase_started = time.monotonic()
-            delivery_initial_frame = str(after_path)
-            after, after_path, delivery, verification, click_result = self._retry_semantic_click(
-                decision=decision, before=before, before_path=before_path,
-                after=after, after_path=after_path, execution=tick.execution,
-                verify=verify_current_step, resource=planned_resource,
-                rally_target=rally_target, index=index, settle=settle_retry_wait, latency=latency,
-            )
-            tick = replace(tick, execution=delivery)
-            latency["semantic_click_retry_ms"] = (time.monotonic() - phase_started) * 1000
-            latency["semantic_click_retries"] = click_result.retries if click_result else 0
-            if click_result and click_result.observation.frame != delivery_initial_frame:
-                goals_after = self._record_goals(after, frame=after_path)
-            elif click_result and click_result.retries:
-                goals_after = self._record_goals(after, frame=after_path)
-            page_audit["verifier_result"] = {
-                "status": "PASS" if verification.ok else "FAIL", "ok": bool(verification.ok),
-                "reason": verification.reason, "page_after": after.page.value,
-            }
                 goal_progress=progress,
                 before_screenshot=before_path, after_screenshot=after_path,
             )
@@ -7529,6 +7529,7 @@ class LiveRuntime:
                 }.get(decision.skill)
                 if (
                     focused_camp is not None
+                    and (click_result is None or click_result.retries == 0)
                     and focused_camp not in training_focus_retry_used
                     and index < max_actions
                     and best_goal is not None
@@ -7579,7 +7580,6 @@ class LiveRuntime:
                 # * §七.3 "避免重复点击同一错误位置" -- a control that failed its
                 #   verifier is recorded in ``_failed_controls`` and never tapped again
                 #   in this run.  Without this the handover did exactly what the rule
-                    and (click_result is None or click_result.retries == 0)
                 #   forbids: the next goal's route landed on the same control and the
                 #   same failing tap was issued three times, once per goal.
                 # * paid and irreversible outcomes (``is_fatal_stop``), a run out of

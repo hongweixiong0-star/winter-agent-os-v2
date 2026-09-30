@@ -509,9 +509,6 @@ def classify_worker_failure(message: str) -> str:
     return "ENVIRONMENT" if any(marker in text for marker in ENVIRONMENT_FAILURES) else "WORKER_CRASH"
 
 
-def write_worker_crash_report(
-    *, where: str, exc: BaseException, snapshot: Any, context: dict[str, Any] | None = None,
-) -> Path:
 MAX_CONSECUTIVE_WORKER_CRASH_RESTARTS = 3
 
 
@@ -537,6 +534,9 @@ def worker_result_failure(output: str, exit_code: int) -> dict[str, Any]:
             "exit_code": exit_code, "child_traceback": child_traceback}
 
 
+def write_worker_crash_report(
+    *, where: str, exc: BaseException, snapshot: Any, context: dict[str, Any] | None = None,
+) -> Path:
     """Persist the evidence needed to find the real root cause of a worker exit.
 
     Previously the worker caught ``Exception`` and forwarded only ``str(exc)``,
@@ -590,11 +590,11 @@ def worker_result_failure(output: str, exit_code: int) -> dict[str, Any]:
             for thread in threading.enumerate()
         ],
         "runtime_snapshot": snapshot_data,
+        "child_traceback": context.get("child_traceback", ""),
+        "child_exit_code": context.get("exit_code"),
     }
     path = CRASH_ROOT / f"{stamp}_{where}.json"
     temporary = path.with_suffix(".json.tmp")
-        "child_traceback": context.get("child_traceback", ""),
-        "child_exit_code": context.get("exit_code"),
     temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     temporary.replace(path)
     return path
@@ -5227,6 +5227,8 @@ class ControlPanel:
             return
         self._worker_thread = None
         if self.process is not None or self.starting: return
+        if self.paused:
+            self._consecutive_worker_crashes = 0
         blocker = runtime_env_blocker()
         if blocker is not None:
             # Refuse rather than degrade.  Starting work on an interpreter that
@@ -5296,8 +5298,6 @@ class ControlPanel:
         """
         try:
             from winter_agent_v2.control_plane_reload import (
-        if self.paused:
-            self._consecutive_worker_crashes = 0
                 changed_paths_since, control_plane_signal, needs_reload, reload_reason,
                 safe_to_reload,
             )
@@ -6110,9 +6110,19 @@ class ControlPanel:
         if report: self._append(f"  根因证据：{report}")
         self._idle_buttons(); self._clear_running_task_labels()
         if self.continuous.get() and not fatal and not self.stop_requested and not self.paused:
+            if classification == "WORKER_CRASH":
+                self._consecutive_worker_crashes = getattr(self, "_consecutive_worker_crashes", 0) + 1
+                if self._consecutive_worker_crashes > MAX_CONSECUTIVE_WORKER_CRASH_RESTARTS:
+                    self.paused = True
+                    self.operator_intent = save_operator_intent(
+                        PANEL_STATE_PATH, "PAUSED", "worker crash restart budget exhausted")
+                    self._append("连续 Worker 异常已耗尽恢复预算，AUTO 已暂停；根因和现场已保留。")
+                    return
+            delay_ms = (min(30_000, 5_000 * 2 ** (getattr(self, "_consecutive_worker_crashes", 1) - 1))
+                        if classification == "WORKER_CRASH" else 5_000)
             self.runtime_store.update(watchdog_restart_count=previous.watchdog_restart_count + 1)
-            self.repeat_after_id = self.root.after(5000, self.start)
-            self._waiting_buttons(); self._append("Watchdog 将在 5 秒后恢复唯一 Runtime。")
+            self.repeat_after_id = self.root.after(delay_ms, self.start)
+            self._waiting_buttons(); self._append(f"Watchdog 将在 {delay_ms // 1000} 秒后重新观察并恢复唯一 Runtime。")
 
     def _handle_runtime_error(self, message: str) -> None:
         """Handle an event that is NOT a worker death.
@@ -6145,8 +6155,8 @@ class ControlPanel:
         self._idle_buttons(); self._clear_running_task_labels()
         if self.continuous.get() and not fatal and not self.stop_requested and not self.paused:
             self.runtime_store.update(watchdog_restart_count=previous.watchdog_restart_count + 1)
-            self.repeat_after_id = self.root.after(delay_ms, self.start)
-            self._waiting_buttons(); self._append(f"Watchdog 将在 {delay_ms // 1000} 秒后重新观察并恢复唯一 Runtime。")
+            self.repeat_after_id = self.root.after(5000, self.start)
+            self._waiting_buttons(); self._append("Watchdog 将在 5 秒后恢复唯一 Runtime。")
 
     def _apply_world(self, status: Any, world: WorldState, path: Path) -> None:
         self.latest_world, self.latest_image_path = world, path; self.preview_source = Image.open(path).convert("RGB")
@@ -6176,19 +6186,20 @@ class ControlPanel:
         return f"已识别 {len(value)} 项"
 
     def _apply_complete(self, code: int, payload: dict, output: str) -> None:
+        if not payload and not self.stop_requested and not self.paused:
+            failure = worker_result_failure(output, code)
+            report = write_worker_crash_report(
+                where="auto_subprocess", exc=RuntimeError(failure["message"]),
+                snapshot=self.runtime_store.read(), context=failure,
+            )
+            failure["crash_report"] = str(report)
+            self._handle_worker_failure(failure)
+            return
         summary = summarize_runtime_result(payload, code); steps = payload.get("steps", []) if isinstance(payload, dict) else []
+        if summary["healthy"] or summary["verified"]:
+            self._consecutive_worker_crashes = 0
         last = steps[-1] if steps else {}; decision = last.get("decision", {}) if isinstance(last, dict) else {}; verification = last.get("verification", {}) if isinstance(last, dict) else {}
         reason = str(summary["reason"] or "")
-            if classification == "WORKER_CRASH":
-                self._consecutive_worker_crashes = getattr(self, "_consecutive_worker_crashes", 0) + 1
-                if self._consecutive_worker_crashes > MAX_CONSECUTIVE_WORKER_CRASH_RESTARTS:
-                    self.paused = True
-                    self.operator_intent = save_operator_intent(
-                        PANEL_STATE_PATH, "PAUSED", "worker crash restart budget exhausted")
-                    self._append("连续 Worker 异常已耗尽恢复预算，AUTO 已暂停；根因和现场已保留。")
-                    return
-            delay_ms = (min(30_000, 5_000 * 2 ** (getattr(self, "_consecutive_worker_crashes", 1) - 1))
-                        if classification == "WORKER_CRASH" else 5_000)
         role_handoff = reason.startswith(("ROLE_SWITCHED_TO:", "ROLE_IDENTITY_CHANGED:"))
         skill = ("ROLE_SWITCH" if role_handoff else
                  decision.get("skill", "GATHER_RESOURCE") if isinstance(decision, dict)
@@ -6255,18 +6266,7 @@ class ControlPanel:
             self.values["mode"].set("继续" if immediate else "等待")
             self.repeat_after_id = self.root.after(delay_ms, self.start)
             self._waiting_buttons()
-        if not payload and not self.stop_requested and not self.paused:
-            failure = worker_result_failure(output, code)
-            report = write_worker_crash_report(
-                where="auto_subprocess", exc=RuntimeError(failure["message"]),
-                snapshot=self.runtime_store.read(), context=failure,
-            )
-            failure["crash_report"] = str(report)
-            self._handle_worker_failure(failure)
-            return
             self._append(f"连续运行已启用，{delay_text}后进入下一轮。"
-        if summary["healthy"] or summary["verified"]:
-            self._consecutive_worker_crashes = 0
                          + ("（角色切换已确认，本轮重启只用于刷新目标角色状态）" if role_handoff else
                             "（目标角色已有切换退避；下一轮重新读取当前角色与页面）" if retryable_role_switch else
                             "（角色仍持有设备，立即重新观察同一角色）"
