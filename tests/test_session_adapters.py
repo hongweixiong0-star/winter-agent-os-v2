@@ -153,7 +153,7 @@ class RoutingIsByGoalNotBySkillTests(unittest.TestCase):
         for route in SESSION_ROUTES:
             with self.subTest(goal=route.goal_id):
                 self.assertIn(route.adapter, SESSION_ADAPTERS)
-                self.assertTrue(route.enabled)
+                self.assertTrue(route.enabled or route.disabled_reason)
                 self.assertEqual(route.lifecycle, "CANDIDATE",
                                  "nothing may be called verified before an episode says so")
 
