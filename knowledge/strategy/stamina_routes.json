@@ -130,10 +130,10 @@
     {
       "route": "GIANT_BEAST_RALLY",
       "name_cn": "冰原巨兽（集结）",
-      "stamina_displayed": null,
-      "stamina_actual": null,
-      "availability": "REGISTERED_AWAITING_LIVE",
-      "blocked_reason": "GIANT_BEAST_STAMINA_ROUTE wired; current role target, queue, creation and stamina decrease require live evidence",
+      "stamina_displayed": 25,
+      "stamina_actual": 25,
+      "availability": "AVAILABLE",
+      "blocked_reason": null,
       "source": [
         "knowledge/game/giant_beasts.json"
       ],
@@ -147,7 +147,30 @@
         "verify_rally_created",
         "verify_rally_joined"
       ],
-      "target_type": "POLAR_TERROR"
+      "target_type": "POLAR_TERROR",
+      "live_evidence": [
+        {
+          "role_id": "1061663148",
+          "target_level": 5,
+          "stamina_before": 284,
+          "stamina_after": 259,
+          "march_used_before": 0,
+          "march_used_after": 1,
+          "capture_dir": "dataset/raw/stamina_polar_rally/run_20260930T202620",
+          "verifier_state": "REAL_EXECUTION_SCREENSHOT_REPLAY_PASS"
+        },
+        {
+          "role_id": "1063040265",
+          "target_level": 4,
+          "stamina_before": 268,
+          "stamina_after": 243,
+          "march_used_before": 1,
+          "march_used_after": 2,
+          "capture_dir": "dataset/raw/stamina_polar_rally/run_20260930T204116",
+          "verifier_state": "REAL_EXECUTION_READER_CORRECTION_PENDING_PRODUCTION_RECHECK"
+        }
+      ],
+      "goal_completion": "Not satisfied: both measured stamina values remained >=30"
     },
     {
       "route": "BEAR_HUNT_RALLY",
@@ -239,6 +262,6 @@
   "conclusion": {
     "answer": "常见消耗体力的途径按操作者顺序是 **情报 → 冰原巨兽集结 → 世界地图打野**；性价比（每次成功的体力）实测为：**打野最便宜、英雄之旅次之、营救幸存者最差**。",
     "but": "Shared rally atoms/verifiers exist. Stamina search/session routing is registered; live creation and stamina spend must be proven independently.",
-    "immediate": "Fresh role-scoped stamina, queues and target; no successful click substitutes for RALLY_CREATED or actual stamina change."
+    "immediate": "Two roles created polar rallies and each spent 25 stamina. Reuse the shared rally verifier; normal AUTO must refresh the march HUD and wait while a rally is gathering. The latest row-binding correction awaits a subsequent production execution."
   }
 }
