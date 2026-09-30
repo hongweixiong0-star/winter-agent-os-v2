@@ -829,7 +829,9 @@ class BearSessionAdapter(SessionAdapter):
                 return SessionStep(0,STEP_PRINTED_TAP,target='出征',reason='authorized polar rally dispatch')
             for word in ('发起集结','集结'):
                 if word in words:
-                    return SessionStep(0,STEP_PRINTED_TAP,target=word,reason='START_RALLY POLAR_TERROR')
+                    params = {'below_text':'请设定集结时间'} if word == '发起集结' else {}
+                    return SessionStep(0,STEP_PRINTED_TAP,target=word,params=params,
+                                       reason='START_RALLY POLAR_TERROR')
             return SessionStep(0,STEP_OBSERVE_ONLY,reason='fresh rally-created observation')
         if world.resource_selected_tab == 'GIANT_BEAST':
             if not self._polar_search_sent:

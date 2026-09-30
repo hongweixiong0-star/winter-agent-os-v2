@@ -540,7 +540,7 @@ class LiveRuntimeSessionHost:
 
     def _frame_to_path(self, frame: Any) -> Path | None:
         if frame is None:
-            return None
+            return getattr(self, '_last_world_path', None)
         if isinstance(frame, (str, Path)):
             return Path(frame)
         path = self._fresh_path("session_ocr")
@@ -841,7 +841,8 @@ class LiveRuntimeSessionHost:
         if self.runtime._device_lost(self.runtime.device.screenshot, path):
             self._device_lost_seen = True
             return StepExecution(executed=False, reason="DEVICE_LOST", latency_ms=latency_ms())
-        point, why = self._locate_printed(path, word, service)
+        anchor = str((step.params or {}).get('below_text') or '')
+        point, why = self._locate_printed(path, word, service, below_text=anchor)
         if word == "普通关卡" and point is not None:
             import numpy as np
             from .fishing_vision import locate_normal_stage
@@ -880,7 +881,7 @@ class LiveRuntimeSessionHost:
         )
 
     def _locate_printed(self, path: Path, word: str,
-                        service: Any) -> tuple[tuple[float, float] | None, str]:
+                        service: Any, *, below_text: str = '') -> tuple[tuple[float, float] | None, str]:
         """``(pixel centre, "")`` or ``(None, reason)``.  Whole frame, so the centre is native."""
         try:
             result = service.recognize(path)
@@ -889,6 +890,12 @@ class LiveRuntimeSessionHost:
         wanted = _norm(word)
         hits = [token for token in (getattr(result, "tokens", ()) or ())
                 if _norm(getattr(token, "text", "")) == wanted]
+        if below_text:
+            anchors = [token for token in result.tokens
+                       if _norm(below_text) in _norm(getattr(token, 'text', ''))]
+            if len(anchors) != 1:
+                return None, 'SESSION_TAP_CONTEXT_ANCHOR_NOT_PROVEN'
+            hits = [token for token in hits if token.centre[1] > anchors[0].centre[1]]
         if not hits:
             return None, f"SESSION_TAP_WORD_ABSENT:{word}"
         if len(hits) > 1:

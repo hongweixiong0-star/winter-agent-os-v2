@@ -107,3 +107,17 @@ def test_selected_monster_tab_uses_current_bracket_and_label_not_old_order(tmp_p
     assert selected_tab_from_live_labels(path,labels,strokes) == 'GIANT_BEAST'
     assert selected_tab_from_live_labels(path,{'BEAST':(.34,.74)},strokes) is None
     assert selected_tab_from_live_labels(path,{**labels,'MEAT':(.56,.74)},strokes) is None
+
+
+def test_session_ocr_uses_observed_frame_and_disambiguates_dialog_action():
+    from winter_agent_v2.session_host import LiveRuntimeSessionHost
+    host = object.__new__(LiveRuntimeSessionHost)
+    host._last_world_path = 'current_frame.png'
+    assert host._frame_to_path(None) == 'current_frame.png'
+    tokens = [SimpleNamespace(text='发起集结', centre=(360,400)),
+              SimpleNamespace(text='请设定集结时间，所有部队', centre=(360,500)),
+              SimpleNamespace(text='发起集结', centre=(360,840))]
+    service = SimpleNamespace(recognize=lambda path: SimpleNamespace(tokens=tokens))
+    assert host._locate_printed(None,'发起集结',service)[0] is None
+    assert host._locate_printed(None,'发起集结',service,below_text='请设定集结时间')[0] == (360,840)
+    assert host._locate_printed(None,'发起集结',service,below_text='不存在的说明')[0] is None
