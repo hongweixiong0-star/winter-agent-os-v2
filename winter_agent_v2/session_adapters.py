@@ -139,19 +139,19 @@ SESSION_ROUTES: tuple[SessionRoute, ...] = (
         step_budget=12, time_budget_s=240.0, extras={"target": "BEAR", "max_joins": 8},
     ),
     SessionRoute(
-        goal_id="KEEP_MARCHES_PRODUCTIVE", adapter="stamina", skills=STAMINA_SKILLS,
+        goal_id="KEEP_MARCHES_PRODUCTIVE", adapter="march_productivity", skills=frozenset({"DISPATCH_MARCH"}),
         step_budget=6, time_budget_s=240.0,
-        resource_budget={"stamina": STAMINA_FLOOR}, extras={"max_marches": 4},
+        extras={"max_marches": 1},
     ),
     SessionRoute(
-        goal_id="GATHER_RESOURCE", adapter="stamina", skills=STAMINA_SKILLS,
+        goal_id="GATHER_RESOURCE", adapter="march_productivity", skills=frozenset({"DISPATCH_MARCH"}),
         step_budget=4, time_budget_s=180.0,
-        resource_budget={"stamina": STAMINA_FLOOR}, extras={"max_marches": 2},
+        extras={"max_marches": 1},
     ),
     SessionRoute(
-        goal_id="LARGE_GATHER", adapter="stamina", skills=STAMINA_SKILLS,
+        goal_id="LARGE_GATHER", adapter="march_productivity", skills=frozenset({"DISPATCH_MARCH"}),
         step_budget=4, time_budget_s=180.0,
-        resource_budget={"stamina": STAMINA_FLOOR}, extras={"max_marches": 2},
+        extras={"max_marches": 1},
     ),
     SessionRoute(
         goal_id="KEEP_TRAINING_PRODUCTIVE", adapter="training_batch", skills=TRAINING_SKILLS,
@@ -949,6 +949,50 @@ class StaminaDomain:
     idle_marches: int | None = None
 
 
+class MarchProductivitySessionAdapter(SessionAdapter):
+    """Verify one gather dispatch, then return for fresh navigation and arbitration.
+
+    Gathering consumes a march slot, never stamina. Search/navigation remain on
+    their existing atomic path; a successful dispatch cannot license another tap
+    on the now obsolete formation page.
+    """
+
+    name = "march_productivity"
+
+    def __init__(self) -> None:
+        self.marches = 0
+
+    def configure(self, extras, resource_budget=None) -> None:
+        pass
+
+    def observe(self, context, host):
+        return host.observe("session_gather")
+
+    def is_complete(self, context, host, domain):
+        return (True, "GATHER_DISPATCH_VERIFIED") if self.marches else (False, "")
+
+    def choose_step(self, context, host, domain):
+        # The Scheduler already authorized the formation. Recheck its current
+        # identity; missing capacity is not invented and known full remains blocked.
+        if domain.page is not Page.MARCH or domain.idle_marches == 0:
+            return None
+        return SessionStep(0, STEP_SKILL, skill_id="DISPATCH_MARCH",
+                           expected="outgoing gather march verified",
+                           reason="dispatch current gather formation")
+
+    def verify_step(self, context, host, step, execution):
+        verdict = host.verify_step(step, execution)
+        if verdict is None:
+            return StepVerdict(StepOutcome.AMBIGUOUS, "GATHER_NO_VERDICT")
+        if not verdict.ok:
+            return StepVerdict(StepOutcome.FAILED, verdict.reason, dict(verdict.evidence or {}))
+        self.marches += 1
+        return StepVerdict(StepOutcome.SUCCESS, verdict.reason, dict(verdict.evidence or {}))
+
+    def summarize(self):
+        return {"marches": self.marches, "productive_cycle_verified": bool(self.marches)}
+
+
 class StaminaSpendSessionAdapter(SessionAdapter):
     """Spend stamina legally, one march after another, until the floor or a blocked march.
 
@@ -1218,6 +1262,7 @@ class TrainingBatchSessionAdapter(SessionAdapter):
 # ==============================================================================
 
 SESSION_ADAPTERS: dict[str, type[SessionAdapter]] = {
+    MarchProductivitySessionAdapter.name: MarchProductivitySessionAdapter,
     FishingSessionAdapter.name: FishingSessionAdapter,
     BearSessionAdapter.name: BearSessionAdapter,
     StaminaSpendSessionAdapter.name: StaminaSpendSessionAdapter,
@@ -1252,7 +1297,7 @@ __all__ = [
     "SESSION_ROUTES",
     "STAMINA_FLOOR", "STAMINA_SKILLS", "STAGE_CONTROLLING", "STAGE_DONE", "STAGE_ENTERING",
     "STAGE_HOME", "STAGE_LEAVING", "SessionPlan", "SessionRoute", "StaminaDomain",
-    "StaminaSpendSessionAdapter", "TRAINING_CAMP_ORDER", "TRAINING_CAMP_TAP",
+    "StaminaSpendSessionAdapter", "MarchProductivitySessionAdapter", "TRAINING_CAMP_ORDER", "TRAINING_CAMP_TAP",
     "TRAINING_SKILLS", "TrainingBatchSessionAdapter", "TrainingDomain", "make_adapter",
     "plan_for", "route_for",
 ]

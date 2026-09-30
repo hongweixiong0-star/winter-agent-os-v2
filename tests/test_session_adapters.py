@@ -205,12 +205,36 @@ class RoutingIsByGoalNotBySkillTests(unittest.TestCase):
                 route = route_for(goal, "TRAIN_TROOPS")
                 self.assertEqual(tuple(route.extras.get("camps") or ()), (camp,))
 
-    def test_the_stamina_routes_declare_the_floor_the_operator_named(self):
+    def test_gather_routes_never_require_stamina_or_intercept_navigation(self):
         for goal in ("KEEP_MARCHES_PRODUCTIVE", "GATHER_RESOURCE", "LARGE_GATHER"):
             with self.subTest(goal=goal):
                 route = route_for(goal, "DISPATCH_MARCH")
-                self.assertEqual(route.resource_budget.get("stamina"), STAMINA_FLOOR)
-                self.assertEqual(STAMINA_FLOOR, 30.0)
+                self.assertEqual(route.adapter, "march_productivity")
+                self.assertNotIn("stamina", route.resource_budget)
+                self.assertIsNone(route_for(goal, "GATHER_RESOURCE"))
+
+    def test_zero_stamina_gather_dispatch_still_requires_real_verifier(self):
+        adapter = make_adapter("march_productivity")
+        context = context_for("KEEP_MARCHES_PRODUCTIVE")
+        host = AdapterHost(worlds=[WorldState(page=Page.MARCH, stamina={"value": 0},
+                                             normal_idle_slots=1)], verdict=(False, "NOT_DISPATCHED"))
+        domain = adapter.observe(context, host)
+        self.assertFalse(adapter.is_complete(context, host, domain)[0])
+        step = adapter.choose_step(context, host, domain)
+        self.assertEqual(step.skill_id, "DISPATCH_MARCH")
+        adapter.verify_step(context, host, step, StepExecution(executed=True))
+        self.assertFalse(adapter.is_complete(context, host, domain)[0])
+        host.verdict = (True, "OUTGOING_MARCH_VERIFIED")
+        adapter.verify_step(context, host, step, StepExecution(executed=True))
+        self.assertTrue(adapter.is_complete(context, host, domain)[0])
+
+    def test_full_queue_or_obsolete_formation_does_not_dispatch_or_complete_gather(self):
+        adapter = make_adapter("march_productivity")
+        context = context_for("GATHER_RESOURCE")
+        for world in (WorldState(page=Page.MARCH, normal_idle_slots=0),
+                      WorldState(page=Page.MAP, normal_idle_slots=2)):
+            self.assertIsNone(adapter.choose_step(context, AdapterHost(), world))
+            self.assertFalse(adapter.is_complete(context, AdapterHost(), world)[0])
 
 
 class ThePlanKeepsTheGoalDeadlineSeparateTests(unittest.TestCase):
