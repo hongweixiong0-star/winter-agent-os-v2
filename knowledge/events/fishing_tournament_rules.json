@@ -5,16 +5,20 @@
   "evidence_root": "dataset/raw/fishing_tournament/",
   "resource_model": {
     "bait": {
+      "id": "NORMAL_BAIT",
       "observed": "10/10 at first read, then 7/10, then 6/10, 5/10 after two runs",
       "cap_observed": 10,
       "consumed_per_level": 1,
       "is_timer_resource": true,
       "operator_prior": "start 5, ~3h per recovery, cap 10",
-      "rule": "read LIVE every time; treat bait as a Global Scheduler timer resource"
+      "rule": "read LIVE every time; treat bait as a Global Scheduler timer resource",
+      "policy": "The ONLY spend this agent may make on the fishing event is NORMAL_BAIT (V2 §1)."
     },
     "treasure_tickets": {
       "observed": 14,
-      "note": "shown next to a + button; buying is POLICY_BLOCKED"
+      "note": "shown next to a + button",
+      "policy": "POLICY_DISABLED_BY_USER (V2 §4)",
+      "policy_note": "Neither buying nor spending an already-owned ticket is allowed. The observed count is recorded as knowledge only."
     },
     "currencies": {
       "冰钓积分": "per-run score, 0 -> 190 after one run",
@@ -39,12 +43,41 @@
   "levels": {
     "普通关卡": {
       "cost": 1,
-      "id": "NORMAL"
+      "cost_resource": "NORMAL_BAIT",
+      "id": "NORMAL",
+      "policy": "ALLOWED"
     },
     "宝藏关卡": {
       "cost": 1,
-      "id": "TREASURE"
+      "id": "TREASURE",
+      "policy": "POLICY_DISABLED_BY_USER",
+      "note": "V2 §4: never enter this level, not even when its attempt is free."
     }
+  },
+  "policy_v2": {
+    "directive": "FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2",
+    "received": "2026-09-30",
+    "only_allowed_spend": "NORMAL_BAIT",
+    "forbidden": ["special_bait", "treasure_ticket", "treasure_mode", "free_special_fishing", "gem_bought_bait", "real_money"],
+    "acceptance": {
+      "NORMAL_BAIT_SPECIAL_USED": 0,
+      "GEMS_SPENT": 0,
+      "REAL_MONEY_SPENT": 0,
+      "NORMAL_BAIT_WASTED_BY_CAP": 0,
+      "NORMAL_BAIT_LEFT_AT_EVENT_END": "APPROX_0"
+    },
+    "run_record_fields": [
+      "bait_cost", "points_before", "points_after", "points_gain", "depth",
+      "fish_caught", "collision_count", "shield_used", "duration", "control_hz"
+    ],
+    "core_metric": "points_per_bait = points_gain / normal_bait_used",
+    "verifier_signals_required": [
+      "MINIGAME_STARTED", "CONTROL_SESSION_RAN", "RESULT_PAGE",
+      "NORMAL_BAIT_DECREASED", "POINTS_READ"
+    ],
+    "zero_score_run": "bait decreased but points did not increase -> ZERO_SCORE_RUN -> failure analysis",
+    "optimisation_discipline": "replay/offline first; at most a small share of real normal bait may be spent validating a new policy; no random wide exploration",
+    "state_owner": "winter_agent_v2/fishing_state.py + learning/fishing_state.json"
   },
   "level_flow_measured": {
     "1_tutorial": "FIRST ever level only: a large hand points at a circle on the ice; tap (357,632)",
@@ -89,9 +122,15 @@
     "POINTS_INCREASED": "我的冰钓积分 increased (0 -> 190 observed)"
   },
   "policy": {
-    "USE_OWNED_ITEM": "allowed (free bait, tickets already owned)",
+    "authority": "FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 (operator directive 2026-09-30)",
+    "ONLY_NORMAL_BAIT": "The sole resource this agent may spend on fishing is NORMAL_BAIT.",
+    "USE_OWNED_ITEM": "allowed for NORMAL_BAIT and for event-internal upgrade currency earned by normal fishing; treasure tickets are NO LONGER allowed even when already owned (V2 §4)",
+    "SPECIAL_MODE": "POLICY_DISABLED_BY_USER: special bait / Treasure Mode / Free Special Fishing / any special-mode attempt must not be used even when free",
+    "SPECIAL_MODE_IS_NOT_A_GAP": "This is a policy verdict, not a capability gap.  Nothing here is to be developed or reported as missing work.",
     "BUY_ITEM": "BLOCK by default (gems)",
     "REAL_MONEY": "PERMANENTLY_BLOCK",
+    "UPGRADE_FISHING_KIT": "allowed, but only with free event-internal currency read LIVE as cost <= owned; gems / real money / purchased tokens are BLOCKED (V2 §5)",
+    "OBJECTIVE": "MAXIMIZE_EVENT_POINTS_TOTAL and MAXIMIZE_POINTS_PER_NORMAL_BAIT",
     "not_verified": "whether exiting mid-level refunds the bait — NOT verified, so NOT relied on"
   },
   "blockers": []

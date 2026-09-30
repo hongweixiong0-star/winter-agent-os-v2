@@ -4,6 +4,15 @@
 Run once.  Idempotent: it upgrades the existing registry entry rather than adding
 a duplicate, and rewrites the measured rules + role-scoped state from the numbers
 actually observed on the device.
+
+.. warning::
+   **Do not re-run this as a historical replay.**  It was written before the operator's
+   FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 (2026-09-30), and its ``tasks``
+   list used to include ``USE_FREE_SPECIAL_FISHING``.  Re-running the old version would
+   put a policy-forbidden action back into the registry, which is the one thing §4 says
+   must not happen.  The list below has been corrected to match the current policy; if
+   this file is ever used again, re-read §4 first and check that
+   ``config/policy_state.json`` ``disabled_goals`` is still what the registry agrees with.
 """
 from __future__ import annotations
 
@@ -23,9 +32,11 @@ ev.update({
     "type": "SOLO_MINIGAME_EVENT",
     "generic_flow": ["DISCOVER", "READ_STATE", "CLAIM_FREE", "PREPARE", "FISH",
                      "VERIFY_RESULT", "CLAIM_REWARDS"],
+    # POLICY V2 §4: USE_FREE_SPECIAL_FISHING is deliberately absent.  Special-mode fishing is
+    # forbidden even when the attempt is free, so it is not a task -- see
+    # ``policy_disabled_tasks`` in the registry for where it is recorded instead.
     "tasks": ["CLAIM_FISHING_FREE_REWARD", "USE_FISHING_BAIT", "UPGRADE_FISHING_KIT",
-              "USE_FREE_SPECIAL_FISHING", "CLAIM_FISHING_DAILY_REWARD",
-              "CLAIM_FISHING_COLLECTION_REWARD"],
+              "CLAIM_FISHING_DAILY_REWARD", "CLAIM_FISHING_COLLECTION_REWARD"],
     "entry": "WORLD_MAP/RIGHT_RAIL/钓鱼锦标赛",
     "entry_geometry_720x1280": {"home_icon": [664, 476], "normal_stage": [500, 1170],
                                 "treasure_stage": [200, 1170], "tutorial_tap": [357, 632],

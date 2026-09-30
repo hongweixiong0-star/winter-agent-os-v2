@@ -57,6 +57,19 @@ ROLE_REFRESH_ONLY_REASONS = frozenset({
 #: the Role Session's own ``no_work_streak`` (2) opens the switch gate within this bound.
 MAX_ROLE_REFRESH_TICKS_PER_RUN = 3
 
+#: The operator's own verdict, used verbatim as the refusal reason so that it cannot be
+#: mistaken for a missing capability.  Directive FISHING TOURNAMENT — NORMAL BAIT MAX SCORE
+#: POLICY V2 §4 (2026-09-30) asks for exactly this string, and asks in the same breath that it
+#: NOT be reported as ``CAPABILITY_GAP``: a forbidden action is not work to be built.
+POLICY_DISABLED_BY_USER = "POLICY_DISABLED_BY_USER"
+#: Refused because its whole category is switched off in the panel.  Distinct from the above
+#: because it *is* reversible by the operator and is not a standing prohibition.
+POLICY_CATEGORY_DISABLED = "POLICY_CATEGORY_DISABLED"
+#: The operator's policy file.  A module attribute rather than an inline expression so that a
+#: test can point it at a scratch file, and so the one place that decides "what may run" has
+#: its input named in one place.
+POLICY_STATE_PATH = Path(__file__).resolve().parents[1] / "config/policy_state.json"
+
 from .goal_library import (
     GoalLibrary, GoalStateStore, action_relevant_goal_ids,
     newly_completed_goal_ids, progress_moved, route_for,
@@ -754,20 +767,55 @@ class LiveRuntime:
         self.brain.next_supply_at = self.stamina_supply.next_supply_at()
         self.brain.free_stamina_claim_cooling = self.stamina_supply.claim_cooling_down()
 
-    def _policy_allows(self, goal_id: str) -> bool:
+    def _policy_refusal(self, goal_id: str) -> str | None:
+        """Why the operator's policy refuses this goal; ``None`` when it is allowed.
+
+        Two different questions live in ``config/policy_state.json`` and they are asked in a
+        fixed order, because they mean different things:
+
+        1. ``disabled_goals`` -- goals the operator has forbidden **outright**.  Directive
+           FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 §4 (2026-09-30): special-mode
+           fishing is not to be developed, not to be scheduled, and not to be spent on *even
+           when the attempt is free*.  A forbidden goal must therefore be refused by name,
+           before any category default can let it through, and the refusal must read as a
+           policy verdict (:data:`POLICY_DISABLED_BY_USER`) rather than as missing capability --
+           otherwise the operator's decision shows up as a queue of work to build.
+        2. ``goal_categories`` -- the per-category switches the panel exposes.
+
+        An unreadable or malformed file allows everything, which is this project's long-standing
+        trade for a knowledge/config file: a file a run cannot parse is a gap in the policy, not a
+        reason to die.  This is why the answer is returned as a *reason* rather than a bool: the
+        caller that has to explain "why is AUTO not doing this" can then print the operator's own
+        verdict instead of a generic flag.  Returning ``None`` only when the file was readable and
+        silent about the goal is what makes that distinction possible.
+        """
         category = {
             "CLEAR_INTEL": "日常低保", "AVOID_STAMINA_WASTE": "PVE",
             "KEEP_TRAINING_PRODUCTIVE": "持续发展", "KEEP_RESEARCH_PRODUCTIVE": "持续发展",
             "KEEP_BUILDING_PRODUCTIVE": "持续发展", "EVENT_MINIMUM_GUARANTEE": "限时活动",
             "PARTICIPATE_BEAR": "实时活动",
         }.get(goal_id, "日常低保" if goal_id.startswith("CLAIM_FREE_") else None)
-        if category is None:
-            return True
         try:
-            payload = json.loads((Path(__file__).resolve().parents[1] / "config/policy_state.json").read_text(encoding="utf-8"))
-            return bool(payload.get("goal_categories", {}).get(category, True))
+            payload = json.loads(POLICY_STATE_PATH.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError, TypeError):
-            return True
+            return None
+        if not isinstance(payload, dict):
+            return None
+        # Read before the category default can return early.  A goal the operator forbade by name
+        # has to be refused even when it carries no category, and a goal that arrives from a path
+        # the registry does not own -- a red dot, the UI planner -- still has to meet this gate.
+        disabled = payload.get("disabled_goals")
+        if isinstance(disabled, dict) and goal_id in disabled:
+            return str(disabled.get(goal_id) or POLICY_DISABLED_BY_USER)
+        if category is None:
+            return None
+        if payload.get("goal_categories", {}).get(category, True):
+            return None
+        return POLICY_CATEGORY_DISABLED
+
+    def _policy_allows(self, goal_id: str) -> bool:
+        """The operator's yes/no for one goal.  The reason lives in ``_policy_refusal``."""
+        return self._policy_refusal(goal_id) is None
 
     def _runtime(self, **changes) -> None:
         if self.runtime_store is not None:
@@ -6687,9 +6735,11 @@ class LiveRuntime:
                     "goal_id": goal.goal_id,
                     "capability": "",
                     "state": str(getattr(goal.status, "value", goal.status)),
+                    # The operator's own reason when the policy refused it (POLICY_DISABLED_BY_USER
+                    # vs POLICY_CATEGORY_DISABLED), so an audit can tell a standing prohibition from
+                    # a paused category without reading the policy file itself.
                     "reason": (
-                        "policy_disabled" if not self._policy_allows(goal.goal_id)
-                        else "already_yielded_or_not_selectable"
+                        self._policy_refusal(goal.goal_id) or "already_yielded_or_not_selectable"
                     ),
                     "source": "RUNTIME_SELECTION",
                 })

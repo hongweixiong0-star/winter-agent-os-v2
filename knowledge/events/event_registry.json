@@ -632,10 +632,35 @@
         "CLAIM_FISHING_FREE_REWARD",
         "USE_FISHING_BAIT",
         "UPGRADE_FISHING_KIT",
-        "USE_FREE_SPECIAL_FISHING",
         "CLAIM_FISHING_DAILY_REWARD",
         "CLAIM_FISHING_COLLECTION_REWARD"
       ],
+      "policy_disabled_tasks": {
+        "reason": "POLICY_DISABLED_BY_USER",
+        "directive": "FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 §4 (2026-09-30)",
+        "tasks": [
+          "USE_FREE_SPECIAL_FISHING",
+          "USE_SPECIAL_FISHING",
+          "TREASURE_FISHING",
+          "USE_TREASURE_TICKET"
+        ],
+        "note": "The operator forbids special bait, treasure tickets, Treasure Mode and every special-mode attempt even when the attempt is free. This is a policy verdict, not a capability gap: there is nothing here to develop, so these must never be reported as missing work. Only NORMAL_BAIT may be spent."
+      },
+      "policy": {
+        "source": "FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 (operator directive 2026-09-30)",
+        "allowed_spend": [
+          "NORMAL_BAIT"
+        ],
+        "forbidden_spend": [
+          "special_bait",
+          "treasure_ticket",
+          "gems",
+          "real_money",
+          "free_special_attempts"
+        ],
+        "objective": "MAXIMIZE_EVENT_POINTS_TOTAL / MAXIMIZE_POINTS_PER_NORMAL_BAIT",
+        "rules_ref": "knowledge/events/fishing_tournament_rules.json"
+      },
       "rewards": "UNKNOWN",
       "priority": "dynamic",
       "gate": "VERIFIED",
@@ -687,6 +712,8 @@
           200,
           1170
         ],
+        "treasure_stage_policy": "POLICY_DISABLED_BY_USER",
+        "treasure_stage_note": "Measured for completeness only.  FISHING POLICY V2 §4 forbids Treasure Mode and every special-mode attempt, so no Skill may tap this control.",
         "tutorial_tap": [
           357,
           632

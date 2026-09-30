@@ -76,6 +76,9 @@ from winter_agent_v2.worker_recovery import RecoveryOutcome, retry_until_ready
 
 CONFIG_PATH = ROOT / "config/v2.json"
 PANEL_STATE_PATH = ROOT / "config/control_panel_state.json"
+#: The operator's policy file.  Read at startup and merged on save; see
+#: ``load_policy_categories`` / ``write_policy_state`` for why both halves matter.
+POLICY_STATE_PATH = ROOT / "config/policy_state.json"
 RUNTIME_PATH = ROOT / "tools/run_live.py"
 #: The mode a calibration cycle reports, so an examination can never be mistaken for
 #: production play when its episode is read back (operator's §8 rule).  Kept next to
@@ -1174,6 +1177,12 @@ def human_reason(value: Any) -> str:
 
 LIVE_PANEL_TASKS = frozenset({"采集", "野怪", "Intel", "邮件", "探险", "日常", "联盟", "训练"})
 
+#: The category switches the panel exposes.  One tuple, read by both the startup load and the
+#: save, so a category can never be written without also being read back.
+POLICY_CATEGORIES: tuple[str, ...] = (
+    "日常低保", "持续发展", "联盟协作", "限时活动", "PVE", "实时活动", "资源优化", "自动学习",
+)
+
 
 def event_goal_is_current(item: dict[str, Any], now: datetime | None = None) -> bool:
     """Only label a saved event result as today's fact when it was updated today."""
@@ -1314,6 +1323,52 @@ def save_operator_intent(path: Path, intent: str, reason: str = "") -> str:
                       operator_intent_at=datetime.now().astimezone().isoformat(),
                       operator_intent_reason=reason)
     return wanted
+
+
+# The operator's policy file is the second place an operator decision has to outlive the
+# process, and it carried the defect described just above in a worse form -- on both halves.
+# ``_save_policy_state`` rebuilt the payload from scratch, so it dropped every key it did not
+# know about, and nothing ever read the saved categories back: ``__init__`` built all eight
+# toggles as ``True`` and then immediately overwrote the file.  Measured 2026-09-30 at
+# 09:46:02, seconds after the panel started, ``config/policy_state.json`` was rewritten with
+# every category forced on.  A policy that resets itself to permissive on each restart is not
+# a policy, and directive FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 §4 (2026-09-30)
+# puts a *standing prohibition* in this file (``disabled_goals``) that no panel save may erase.
+
+
+def read_policy_state(path: Path) -> dict:
+    """The operator policy file, or ``{}``.  A broken file is not a policy."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def write_policy_state(path: Path, **changes: object) -> dict:
+    """Merge-and-write, for the same reason ``write_panel_state`` is one.
+
+    ``disabled_goals`` is written by the operator and read by the runtime; a panel save that
+    rewrote the whole file would silently re-arm special-mode fishing, which is exactly the
+    outcome §4 forbids.
+    """
+    payload = read_policy_state(path)
+    payload.update(changes)
+    payload.setdefault("schema_version", "1.0")
+    payload["updated_at"] = datetime.now().astimezone().isoformat()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+    return payload
+
+
+def load_policy_categories(path: Path, names: tuple[str, ...]) -> dict[str, bool]:
+    """The saved category switches; an unreadable file keeps every category enabled."""
+    saved = read_policy_state(path).get("goal_categories")
+    if not isinstance(saved, dict):
+        return {name: True for name in names}
+    return {name: bool(saved.get(name, True)) for name in names}
 
 
 def count_knowledge() -> dict[str, int]:
@@ -3567,9 +3622,10 @@ class ControlPanel:
         self.resource_policy = {"普通资源": tk.StringVar(value="自动使用"), "普通加速": tk.StringVar(value="自动使用"),
                                 "高级加速": tk.StringVar(value="保守"), "钻石": tk.StringVar(value="保守"),
                                 "真实支付": tk.StringVar(value="禁止")}
-        self.policy_enabled = {name: tk.BooleanVar(value=True) for name in (
-            "日常低保", "持续发展", "联盟协作", "限时活动", "PVE", "实时活动", "资源优化", "自动学习"
-        )}
+        self.policy_enabled = {
+            name: tk.BooleanVar(value=enabled)
+            for name, enabled in load_policy_categories(POLICY_STATE_PATH, POLICY_CATEGORIES).items()
+        }
         self._build()
         self._save_policy_state()
         self._save_panel_state()
@@ -3864,6 +3920,20 @@ class ControlPanel:
         for row, (name, value) in enumerate(policies, 1):
             ttk.Label(resource, text=name, style="Muted.TLabel", background=PANEL, width=16).grid(row=row, column=0, sticky="w", pady=5)
             ttk.Label(resource, text=value, background=PANEL, foreground=BAD if name == "真实支付" else TEXT).grid(row=row, column=1, sticky="w", pady=5)
+        # The operator's standing prohibitions are shown as read-only rules, for the same
+        # reason the 🔒 rows above are: they are not settings and not a to-do list.  Directive
+        # FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 §4 (2026-09-30) asks explicitly
+        # that special-mode fishing NOT appear as pending work, because there is nothing to
+        # build -- so it has to be visible as forbidden, or it will be re-proposed forever.
+        forbidden = read_policy_state(POLICY_STATE_PATH).get("disabled_goals")
+        if isinstance(forbidden, dict) and forbidden:
+            blocked = ttk.Frame(tab, style="Card.TFrame", padding=18); blocked.pack(fill="x", pady=(12, 0))
+            ttk.Label(blocked, text="禁止执行 · POLICY_DISABLED_BY_USER 🔒", style="Section.TLabel", background=PANEL).pack(anchor="w")
+            ttk.Label(blocked, text="由操作者明确禁止：不进入候选、不执行、不需要开发；不是待接入，也不是能力缺失。",
+                      style="Muted.TLabel", background=PANEL, wraplength=1200, justify="left").pack(anchor="w", pady=(6, 4))
+            for goal_id, reason in sorted(forbidden.items()):
+                ttk.Label(blocked, text=f"{goal_id}   ·   {reason}",
+                          background=PANEL, foreground=BAD).pack(anchor="w", pady=1)
 
     def _toggle_policy(self, name: str) -> None:
         """Redraw the switch's own label, then persist -- in that order.
@@ -3881,13 +3951,12 @@ class ControlPanel:
         self._save_policy_state()
 
     def _save_policy_state(self) -> None:
-        path = ROOT / "config/policy_state.json"
-        payload = {"schema_version": "1.0", "goal_categories": {k: v.get() for k, v in self.policy_enabled.items()},
-                   "reward_policy": "FREE_CLAIM_FIRST", "real_money": "PERMANENTLY_BLOCKED",
-                   "updated_at": datetime.now().astimezone().isoformat()}
-        temporary = path.with_suffix(".json.tmp")
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        temporary.replace(path)
+        write_policy_state(
+            POLICY_STATE_PATH,
+            goal_categories={k: v.get() for k, v in self.policy_enabled.items()},
+            reward_policy="FREE_CLAIM_FIRST",
+            real_money="PERMANENTLY_BLOCKED",
+        )
 
     def _goals(self) -> None:
         tab = self._tab("目标")
@@ -3950,8 +4019,201 @@ class ControlPanel:
             ttk.Label(box, text=label, style="Muted.TLabel", background=PANEL, width=18).grid(row=i, column=0, sticky="nw", pady=6)
             style = "Value.TLabel" if key in {"name", "status"} else "TLabel"
             ttk.Label(box, textvariable=self.event_goal_vars[key], style=style, background=PANEL, wraplength=760).grid(row=i, column=1, sticky="w", pady=6)
+        self._fishing_box(tab)
+        self._refresh_fishing_display()
         self._refresh_event_goal_display()
         self._refresh_goal_board()
+
+    # ------------------------------------------------------- fishing (§16, policy V2)
+    #
+    # Directive FISHING TOURNAMENT — NORMAL BAIT MAX SCORE POLICY V2 (2026-09-30) §16 asks for
+    # normal bait and event points per role, and asks in the same section that special mode NOT
+    # be shown as a to-do.  Those two requests are one requirement: the page has to make the
+    # *only* legal resource visible and the forbidden ones visible-as-forbidden, because a
+    # forbidden action that is merely absent reads like unfinished work and gets re-proposed.
+
+    FISHING_ROLE_FIELDS: tuple[tuple[str, str], ...] = (
+        ("bait", "普通鱼饵"),
+        ("next_bait_at", "下次恢复"),
+        ("points_total", "活动积分"),
+        ("pressure", "调度压力"),
+        ("available", "剩余可出钓"),
+        ("left_at_end", "预计残留"),
+    )
+
+    FISHING_KPI_FIELDS: tuple[tuple[str, str], ...] = (
+        ("NORMAL_BAIT_USED", "普通鱼饵已用"),
+        ("NORMAL_BAIT_WASTED", "回满浪费"),
+        ("NORMAL_BAIT_REMAINING", "当前剩余"),
+        ("TOTAL_POINTS", "本活动积分"),
+        ("POINTS_PER_BAIT_AVG", "每饵均分"),
+        ("POINTS_PER_BAIT_P50", "每饵中位"),
+        ("BEST_POINTS_PER_BAIT", "最佳每饵"),
+        ("AVG_DEPTH", "平均深度"),
+        ("BEST_DEPTH", "最佳深度"),
+        ("AVG_FISH_CAUGHT", "平均鱼数"),
+        ("COLLISION_RATE", "碰撞/局"),
+    )
+
+    FISHING_PRESSURE_ZH = {
+        "UNKNOWN": "状态未读取",
+        "NO_BAIT": "无饵",
+        "ENDGAME": "收尾（优先出钓）",
+        "CAP_FULL": "已满（避免浪费）",
+        "NORMAL": "正常",
+    }
+
+    def _fishing_box(self, tab: ttk.Frame) -> None:
+        box = ttk.Frame(tab, style="Card.TFrame", padding=18); box.pack(fill="x", pady=(18, 0))
+        ttk.Label(box, text="钓鱼锦标赛 · 普通鱼饵策略", style="Section.TLabel",
+                  background=PANEL).pack(anchor="w")
+        ttk.Label(box, text=(
+            "唯一允许消耗：NORMAL_BAIT。特殊鱼饵 / 宝藏券 / Treasure Mode / 免费特殊次数 = "
+            "POLICY_DISABLED_BY_USER（即使免费也不使用）。它是策略禁止，不是能力缺失，"
+            "所以这里也不列为待办。"
+        ), style="Muted.TLabel", background=PANEL, wraplength=1200,
+            justify="left").pack(anchor="w", pady=(6, 10))
+
+        self.fishing_vars: dict[str, tk.StringVar] = {}
+        roles = ttk.Frame(box, style="Card.TFrame"); roles.pack(fill="x")
+        for index, key in enumerate(("ROLE_A", "ROLE_B")):
+            card = ttk.Frame(roles, style="Card2.TFrame", padding=14)
+            card.grid(row=0, column=index, sticky="nsew", padx=(0, 10))
+            roles.columnconfigure(index, weight=1)
+            title = tk.StringVar(value=key)
+            self.fishing_vars[f"{key}.title"] = title
+            ttk.Label(card, textvariable=title, style="Section.TLabel",
+                      background=PANEL2).pack(anchor="w", pady=(0, 6))
+            for field_key, label in self.FISHING_ROLE_FIELDS:
+                variable = tk.StringVar(value="—")
+                self.fishing_vars[f"{key}.{field_key}"] = variable
+                row = ttk.Frame(card, style="Card2.TFrame"); row.pack(fill="x", pady=1)
+                ttk.Label(row, text=label, style="Muted.TLabel", background=PANEL2,
+                          width=12).pack(side="left")
+                ttk.Label(row, textvariable=variable, background=PANEL2).pack(side="left")
+
+        kpis = ttk.Frame(box, style="Card.TFrame"); kpis.pack(fill="x", pady=(10, 0))
+        ttk.Label(kpis, text="本活动指标（普通鱼饵口径）", style="Section.TLabel",
+                  background=PANEL).grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 6))
+        for position, (metric, label) in enumerate(self.FISHING_KPI_FIELDS):
+            variable = tk.StringVar(value="—")
+            self.fishing_vars[f"kpi.{metric}"] = variable
+            column = (position % 2) * 2
+            row = 1 + position // 2
+            ttk.Label(kpis, text=label, style="Muted.TLabel", background=PANEL,
+                      width=16).grid(row=row, column=column, sticky="w", pady=2)
+            ttk.Label(kpis, textvariable=variable, background=PANEL).grid(
+                row=row, column=column + 1, sticky="w", pady=2)
+        self.fishing_meta = tk.StringVar(value="尚无钓鱼记录；出钓后自动更新。")
+        ttk.Label(kpis, textvariable=self.fishing_meta, style="Muted.TLabel",
+                  background=PANEL, wraplength=1200, justify="left").grid(
+            row=1 + (len(self.FISHING_KPI_FIELDS) + 1) // 2, column=0, columnspan=4,
+            sticky="w", pady=(8, 0))
+
+    @staticmethod
+    def _fishing_countdown(iso_stamp: Any) -> str:
+        """``3小时12分后`` / ``已到`` / ``未读取``.  Never a silent blank."""
+        from winter_agent_v2.fishing_state import parse_instant
+
+        moment = parse_instant(iso_stamp)
+        if moment is None:
+            return "未读取"
+        remaining = (moment - datetime.now(timezone.utc)).total_seconds()
+        if remaining <= 0:
+            return "已到"
+        if remaining >= 3600:
+            return f"{int(remaining // 3600)}小时{int((remaining % 3600) // 60)}分后"
+        return f"{int(remaining // 60)}分后"
+
+    @classmethod
+    def _fishing_next_recovery(cls, card: dict) -> str:
+        """The next recovery instant, or an explicit "needs re-reading".
+
+        A stored instant older than one regeneration period must not be presented as the next
+        recovery, because the counter has almost certainly moved since it was read.  ``待重读``
+        is both the honest answer and the actionable one: it names the missing step instead of
+        showing a number that invites a wrong decision.
+        """
+        from winter_agent_v2.fishing_state import parse_instant
+
+        observed = parse_instant(card.get("observed_at"))
+        regen = card.get("regen_seconds")
+        if observed is None:
+            return "未读取"
+        age = (datetime.now(timezone.utc) - observed).total_seconds()
+        if regen and age > float(regen):
+            return f"待重读（读数 {age / 3600.0:.0f} 小时前）"
+        return cls._fishing_countdown(card.get("next_bait_at"))
+
+    @staticmethod
+    def _fishing_number(value: Any, *, digits: int = 0, suffix: str = "") -> str:
+        if value is None:
+            return "—"
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return "—"
+        return (f"{number:.{digits}f}" if digits else f"{number:.0f}") + suffix
+
+    def _refresh_fishing_display(self) -> None:
+        """Read the fishing record and render it.  A failure here must not touch the panel."""
+        if not hasattr(self, "fishing_vars"):
+            return
+        try:
+            from winter_agent_v2.fishing_state import FishingState
+
+            store = FishingState.load(ROOT / "learning/fishing_state.json",
+                                      ROOT / "learning/fishing_runs.jsonl")
+            snapshot = store.snapshot()
+        except Exception:  # noqa: BLE001 - a display must never break the control loop
+            return
+
+        for key, card in (snapshot.get("roles") or {}).items():
+            title = self.fishing_vars.get(f"{key}.title")
+            if title is not None:
+                label = card.get("name") or card.get("role_id") or ""
+                title.set(f"{key}{(' · ' + str(label)) if label else ''}")
+            pairs = {
+                "bait": card.get("bait") or "未读取",
+                "next_bait_at": self._fishing_next_recovery(card),
+                "points_total": self._fishing_number(card.get("points_total")),
+                "pressure": self.FISHING_PRESSURE_ZH.get(
+                    str(card.get("pressure")), str(card.get("pressure"))
+                ),
+                "available": self._fishing_number(card.get("bait_available_until_end")),
+                "left_at_end": self._fishing_number(card.get("projected_bait_at_end")),
+            }
+            for field_key, value in pairs.items():
+                variable = self.fishing_vars.get(f"{key}.{field_key}")
+                if variable is not None:
+                    variable.set(value)
+
+        total = snapshot.get("event_total") or {}
+        for metric, _label in self.FISHING_KPI_FIELDS:
+            variable = self.fishing_vars.get(f"kpi.{metric}")
+            if variable is None:
+                continue
+            value = total.get(metric)
+            variable.set(self._fishing_number(
+                value, digits=1 if isinstance(value, float) else 0
+            ))
+
+        roles = snapshot.get("roles") or {}
+        endgame = [key for key, card in roles.items()
+                   if (card.get("endgame") or {}).get("active")]
+        notes = [
+            f"出钓记录 {total.get('runs', 0)} 竿（其中 {total.get('runs_with_efficiency', 0)} "
+            f"竿有积分读数）",
+        ]
+        if total.get("zero_score_runs"):
+            notes.append(f"零分竿 {total['zero_score_runs']} 竿（已进入失败分析）")
+        if endgame:
+            notes.append(f"收尾窗口：{'、'.join(sorted(endgame))} 剩余普通鱼饵可能用不完")
+        source = next((card.get("regen_source") for card in roles.values()
+                       if card.get("regen_source")), None)
+        if source == "OPERATOR_PRIOR":
+            notes.append("恢复节奏目前来自操作者先验（3 小时/个），未真机标定")
+        self.fishing_meta.set(" · ".join(notes))
 
     def _coverage(self) -> None:
         tab = self._tab("自动化覆盖")
@@ -6169,6 +6431,7 @@ class ControlPanel:
         self._refresh_event_goal_display()
         self._refresh_goal_board()
         self._refresh_coverage()
+        self._refresh_fishing_display()
         march = f"{world.march_used}/{world.march_max}" if world.march_used is not None and world.march_max is not None else "暂无数据"
         self.values["march"].set(f"行军：{march}"); self.queues["行军"].set(march)
         for name, value in (("建筑", world.building), ("科技", world.research), ("训练", world.training), ("Intel", world.intel), ("联盟", world.alliance)):
