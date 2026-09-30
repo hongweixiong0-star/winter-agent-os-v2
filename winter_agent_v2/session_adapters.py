@@ -116,14 +116,14 @@ SESSION_ROUTES: tuple[SessionRoute, ...] = (
     SessionRoute(
         goal_id="USE_NORMAL_FISHING_BAIT", adapter="fishing",
         skills=frozenset({"USE_NORMAL_FISHING_BAIT", "PLAY_NORMAL_FISHING_LEVEL"}),
-        # Three steps is one cast once the goal route has opened the tournament home:
-        # enter the level, steer it, leave the result page.  Six leaves room for a popup.
-        step_budget=6, time_budget_s=150.0,
+        # Entry/tutorial and delayed result observations also consume steps. Keep
+        # room for the final home-counter verification; time remains bounded.
+        step_budget=10, time_budget_s=150.0,
         extras={"casts": 1},
     ),
     SessionRoute(
         goal_id="PLAY_NORMAL_FISHING_LEVEL", adapter="fishing",
-        step_budget=6, time_budget_s=150.0, extras={"casts": 1},
+        step_budget=10, time_budget_s=150.0, extras={"casts": 1},
     ),
     SessionRoute(
         goal_id="PARTICIPATE_BEAR", adapter="bear", skills=BEAR_SKILLS,

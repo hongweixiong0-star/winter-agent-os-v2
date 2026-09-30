@@ -177,3 +177,15 @@ def test_the_measured_round_shape_now_continues_the_cycle() -> None:
         healthy=summary["healthy"], reason=summary["reason"],
         continuous=True, stop_requested=False, paused=False, fatal=False,
     ) is True
+
+
+def test_safe_development_handoff_is_not_a_worker_failure() -> None:
+    from tools.control_panel import should_continue_auto_cycle, summarize_runtime_result
+    from winter_agent_v2.runtime_snapshot import classify_stop_reason
+    summary = summarize_runtime_result(
+        {"steps": [], "stop_reason": "device_leased_for_development"}, 0)
+    assert summary["healthy"] is True
+    assert classify_stop_reason("device_leased_for_development") is StopCategory.EXPECTED_NO_ACTION
+    assert should_continue_auto_cycle(
+        healthy=summary["healthy"], reason=summary["reason"], continuous=True,
+        stop_requested=False, paused=False, fatal=False)

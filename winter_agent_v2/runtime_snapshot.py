@@ -107,6 +107,9 @@ NON_FATAL_STOPS = {
 }
 
 EXPECTED_NO_ACTION_STOPS = frozenset({
+    # A development lease ends gameplay at a safe boundary intentionally. The
+    # lease still blocks inputs; releasing it lets the existing AUTO cycle resume.
+    "device_leased_for_development",
     "every_page_this_run_was_fruitless",
     # TASK THROUGHPUT V1 §24.  The Scheduler's "nothing to do now; wake at the next event"
     # verdict is a keep-current role decision, and the panel already plans a scheduled wakeup
