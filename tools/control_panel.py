@@ -1029,6 +1029,7 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
     steps = payload.get("steps", []) if isinstance(payload, dict) else []
     steps = steps if isinstance(steps, list) else []
     executed = verified = failures = 0
+    verifier_reasons: list[str] = []
     for step in steps:
         if not isinstance(step, dict):
             continue
@@ -1037,15 +1038,23 @@ def summarize_runtime_result(payload: dict, exit_code: int = 0) -> dict[str, Any
         if isinstance(verification, dict):
             verified += int(verification.get("ok") is True)
             failures += int(verification.get("ok") is False)
+            if verification.get("ok") is False:
+                verifier_reasons.append(str(verification.get("reason") or ""))
     reason = payload.get("stop_reason", "暂无结构化结果") if isinstance(payload, dict) else "暂无结构化结果"
     last = next((step for step in reversed(steps) if isinstance(step, dict)), {})
     decision = last.get("decision") if isinstance(last.get("decision"), dict) else {}
     execution = last.get("execution") if isinstance(last.get("execution"), dict) else {}
+    last_verification = last.get("verification") if isinstance(last.get("verification"), dict) else {}
     category, agent_state = state_for_stop_reason(
         str(reason),
         decision_skill=str(decision.get("skill") or ""),
         action_executed=execution.get("executed") is True,
         verifier_failed=failures > 0,
+        # Which failure ended the round, not merely that one happened: a stop naming a recoverable
+        # verifier reason must not be refused as a system failure (measured 2026-09-30 05:14:35
+        # UTC, DAILY_REWARD_ADVANCE_NOT_PROVEN).  See classify_stop_reason.
+        verifier_reasons=tuple(verifier_reasons),
+        last_step_verifier_failed=last_verification.get("ok") is False,
     )
     normal_ends = {
         StopCategory.EXPECTED_NO_ACTION,

@@ -553,11 +553,21 @@ def main() -> int:
     # classifier it feeds consumes the shared sets.  ``verified`` is kept and still computed: it
     # is reported in the run JSON and asserted by tests, it is simply no longer the exit gate.
     last_step = result.steps[-1] if getattr(result, "steps", None) else None
+    failed_reasons = tuple(
+        str(step.verification.reason or "")
+        for step in (getattr(result, "steps", None) or ())
+        if getattr(step, "verification", None) is not None and not step.verification.ok
+    )
+    last_verification = getattr(last_step, "verification", None)
     category, _ = state_for_stop_reason(
         result.stop_reason,
         decision_skill=str(getattr(getattr(last_step, "decision", None), "skill", "") or ""),
         action_executed=bool(getattr(getattr(last_step, "execution", None), "executed", False)),
         verifier_failed=not verified,
+        # The child and the panel must classify the same round the same way, which means both need
+        # to know WHICH failure ended it, not just that the round contained one.
+        verifier_reasons=failed_reasons,
+        last_step_verifier_failed=last_verification is not None and not last_verification.ok,
     )
     return run_outcome_exit_code(result.stop_reason, category)
 

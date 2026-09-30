@@ -37,6 +37,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from winter_agent_v2.runtime_snapshot import (  # noqa: E402
+    AgentState,
     StopCategory,
     classify_stop_reason,
     state_for_stop_reason,
@@ -112,6 +113,68 @@ class TheMeasuredHaltsDoNotRepeatCase:
         for reason in ("SEMANTIC_TARGET_NOT_VERIFIED", "no_idle_march", "mail_all_clear",
                        "verified_beast_target_not_visible", "intel_no_untried_pins"):
             assert _exit_code(reason, verifier_failed=True) == 0, reason
+
+
+class The14HaltCase:
+    """2026-09-30 05:14:35 UTC -- the halt that survived the first three fixes.
+
+    ``DAILY_REWARD_ADVANCE_NOT_PROVEN`` is a verifier reason, not a declared stop.  The runtime's
+    own recovery loop consumed the class correctly (it hands the failing goal to the next one), but
+    ``max_verification_retries`` ran out, so the run ended with that reason -- honestly.  The
+    classifier then called the ending a SYSTEM_FAILURE, the panel read ``healthy=False``, and AUTO
+    stopped with the operator's intent still RUNNING.
+
+    §7 lists this family as things that must not stop the Agent:
+    "NOT_VERIFIED / VERIFY_FAILED ... Recover -> Bounded Retry -> Defer/Skip -> Next Goal".
+    """
+
+    REASON = "DAILY_REWARD_ADVANCE_NOT_PROVEN"
+
+    def test_the_verifier_reason_that_ended_the_round_is_recoverable(self):
+        category, state = state_for_stop_reason(
+            self.REASON,
+            decision_skill="DISMISS_DAILY_GENERIC_REWARD",
+            action_executed=True,
+            verifier_failed=True,
+            verifier_reasons=(self.REASON,),
+            last_step_verifier_failed=True,
+        )
+        assert category is StopCategory.CAPABILITY_GAP
+        assert state is AgentState.SAFE_STOP
+
+    def test_and_the_panel_therefore_does_not_halt(self):
+        """End to end through the panel's own summary and gate -- the layer that actually stopped."""
+        import importlib
+
+        cp = importlib.import_module("tools.control_panel")
+        payload = {
+            "stop_reason": self.REASON,
+            "steps": [
+                {"decisions": {}, "execution": {"executed": True},
+                 "verification": {"ok": False, "reason": self.REASON}},
+            ],
+        }
+        summary = cp.summarize_runtime_result(payload, 0)
+        assert summary["stop_category"] == StopCategory.CAPABILITY_GAP.value
+        assert summary["healthy"] is True
+        assert cp.auto_halt_reason(
+            healthy=summary["healthy"], reason=summary["reason"], continuous=True,
+            stop_requested=False, paused=False, fatal=False,
+        ) == "", "one recoverable miss must not leave the device idle indefinitely"
+
+    def test_a_miss_that_did_not_end_the_round_still_fails_the_gate(self):
+        """The narrow half: a failure the stop does not name is NOT a licence to continue.
+
+        ``TARGET_SKILL_VERIFIED`` is reached by a verification *succeeding*, so an earlier miss in
+        the same round is not what ended it -- and the round's own success token must not be
+        overwritten by that miss.  (Pinned in ``tests/test_runtime_snapshot.py`` too.)
+        """
+        category, _ = state_for_stop_reason(
+            "TARGET_SKILL_VERIFIED", decision_skill="CLEAR_INTEL",
+            action_executed=True, verifier_failed=True,
+            verifier_reasons=("SOME_UNRELATED_MISS",), last_step_verifier_failed=False,
+        )
+        assert category is StopCategory.SYSTEM_FAILURE
 
 
 class TheGateIsNotARubberStampCase:

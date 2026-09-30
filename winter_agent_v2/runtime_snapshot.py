@@ -149,12 +149,21 @@ def classify_stop_reason(
     decision_skill: str | None = None,
     action_executed: bool = False,
     verifier_failed: bool = False,
+    verifier_reasons: "tuple[str, ...] | frozenset[str]" = (),
+    last_step_verifier_failed: bool = False,
 ) -> StopCategory:
     """Classify a cycle result without treating every safe stop as a failure.
 
-    A verifier failure after an issued action is a system/execution failure for this
-    cycle.  A SAFE_STOP without an attempted action is either a known no-action result
-    or a capability gap that should be recorded and handed to another goal.
+    Two different questions live here, and conflating them stopped AUTO three times on
+    2026-09-30: *why did the round end* (the stop reason), and *did a step inside it fail*
+    (``verifier_failed``).  A step failure is recorded per episode and must not relabel a round
+    that ended on a reason this module declares recoverable -- but it must not be ignored either
+    when it IS what ended the round.
+
+    ``verifier_reasons`` is the set of step-level verifier failure reasons in the round and
+    ``last_step_verifier_failed`` says whether the final step was one of them.  Together they
+    answer "did a verifier failure cause this stop", which is the only case that turns a
+    verifier reason into a recoverable ending.
     """
     normalized = str(reason or "").strip()
     token = normalized.upper()
@@ -193,7 +202,28 @@ def classify_stop_reason(
     # ``SEMANTIC_TARGET_NOT_VERIFIED`` is in CAPABILITY_GAP_STOPS above and §7 requires
     # "Recover -> Bounded Retry -> Defer/Skip -> Next Goal" for it, never a stop.  The miss stays
     # visible: it is a per-step episode and the panel's run summary still counts it.
+    # A verifier reason is not a declaration that the system broke.  The verifier names the
+    # step-level contract it could not prove, and the runtime's own recovery loop consumes
+    # exactly this class: it hands the failing goal to the next one and keeps going.  When that
+    # loop is out of budget the run ends honestly *with that reason* -- and until this line the
+    # classifier called the ending a SYSTEM_FAILURE, so the panel refused the next round and AUTO
+    # stopped on a step the project had already decided was recoverable.
+    #
+    # Measured 2026-09-30 05:14:35 UTC, live: ``DAILY_REWARD_ADVANCE_NOT_PROVEN`` spent the run's
+    # handover budget (``max_verification_retries``) and AUTO stopped with the operator's intent
+    # still RUNNING.  §7 lists this whole family -- NOT_VERIFIED / VERIFY_FAILED -- as things that
+    # must not stop the Agent: "Recover -> Bounded Retry -> Defer/Skip -> Next Goal".
+    #
+    # Deliberately narrow: only a verifier failure that IS the terminal reason downgrades.  Two
+    # cases keep SYSTEM_FAILURE, and both are pinned in ``tests/test_runtime_snapshot.py``: a stop
+    # that names something other than the failure (``TARGET_SKILL_VERIFIED`` alongside an
+    # unrelated miss -- the stop is a success token, so the miss is not what ended the round), and
+    # a stop nobody can name with no verifier miss at all.
     if verifier_failed:
+        if str(normalized) in {str(item).strip() for item in verifier_reasons if str(item).strip()}:
+            return StopCategory.CAPABILITY_GAP
+        if last_step_verifier_failed:
+            return StopCategory.CAPABILITY_GAP
         return StopCategory.SYSTEM_FAILURE
     if token in {item.upper() for item in COMPLETED_STOPS}:
         return StopCategory.COMPLETED
@@ -208,6 +238,8 @@ def state_for_stop_reason(
     decision_skill: str | None = None,
     action_executed: bool = False,
     verifier_failed: bool = False,
+    verifier_reasons: "tuple[str, ...] | frozenset[str]" = (),
+    last_step_verifier_failed: bool = False,
 ) -> tuple[StopCategory, AgentState]:
     """Map a completed runtime cycle to the operator-facing health state."""
     category = classify_stop_reason(
@@ -215,6 +247,8 @@ def state_for_stop_reason(
         decision_skill=decision_skill,
         action_executed=action_executed,
         verifier_failed=verifier_failed,
+        verifier_reasons=verifier_reasons,
+        last_step_verifier_failed=last_step_verifier_failed,
     )
     if category is StopCategory.SYSTEM_FAILURE:
         state = AgentState.FATAL_STOPPED if is_fatal_stop(reason) else AgentState.DEGRADED
