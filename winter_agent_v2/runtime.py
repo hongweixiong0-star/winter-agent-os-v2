@@ -21,6 +21,7 @@ from . import ui_collection
 from . import page_knowledge
 from . import event_schedule
 from . import unknown_advisor
+from . import skill_repair
 from . import unknown_learning
 from .executor import Executor
 from .policy import SafetyPolicy
@@ -598,6 +599,13 @@ class LiveRuntime:
         #: over a run and the run is what owns them.
         self._learned_reuse_hits = 0
         self._learned_model_calls_on_known = 0
+        #: §16's repair channel: the trailing failures of this run, per skill, and the set of skills
+        #: already asked about.  Run-scoped rather than durable because the *durable* record of a
+        #: failure is the episode stream, and a second persistent counter would be the second source
+        #: of truth this project keeps measuring as a defect.
+        self._skill_failures: dict[str, list[dict[str, Any]]] = {}
+        self._repair_asked: set[str] = set()
+        self._repair_root = Path(__file__).resolve().parents[1] / skill_repair.REQUEST_DIR
         #: Kept, not consumed here: ``run()`` builds the advisor because it is run-scoped.
         #: Held under its own name so the parameter and the live attribute cannot be confused --
         #: the first version of this injection set ``self._advisor`` from ``__init__``'s
@@ -2254,6 +2262,17 @@ class LiveRuntime:
             after=after,
             step_id=step_id,
         )
+        # ...and one more time for the *failing* skill (directive 2026-10-01 §16): a skill that has
+        # just failed several times in a row is a candidate for repair analysis.  This only *files
+        # the question* -- it never calls a model and never blocks, so a repair request cannot
+        # become a reason the AUTO waits.
+        self._maybe_request_repair(
+            decision=decision,
+            verification=verification,
+            result=result,
+            before=before,
+            frame=before_screenshot,
+        )
 
     def _note_step_for_planner(self, decision: Any, execution: Any,
                                verification: Any, observed_change: str) -> None:
@@ -2320,6 +2339,126 @@ class LiveRuntime:
             pass
 
     # --------------------------------------------------- UNKNOWN -> skill bridge
+    def _maybe_request_repair(self, *, decision: Any, verification: Any, result: str,
+                              before: Any, frame: Any) -> None:
+        """File a SKILL_REPAIR_ANALYSIS question when a known skill keeps failing (§16).
+
+        Three things this deliberately does *not* do, each for a stated reason:
+
+        * **it does not call the model.**  The question is a file, exactly like the UNKNOWN channel,
+          so "AUTO 永不等待 AI" survives contact with repair as well;
+        * **it does not decide the repair.**  :func:`skill_repair.should_escalate` decides whether
+          the failures are the kind a screenshot can explain at all -- a full march queue escalates
+          nothing -- and everything downstream is a candidate patch (§17);
+        * **it does not touch a skill.**  No template, no registry entry, no route: the output is a
+          question, and the existing deterministic recovery paths keep owning the step.
+
+        The run-scoped counter is bounded per skill, so a skill failing fifty times files one
+        question rather than fifty.
+        """
+        try:
+            skill = str(getattr(decision, "skill", "") or "")
+            if not skill:
+                return
+            failures = getattr(self, "_skill_failures", None)
+            if failures is None:
+                failures = self._skill_failures = {}
+            if str(result) not in ("FAILURE", "INCOMPLETE"):
+                failures.pop(skill, None)
+                return
+            history = failures.setdefault(skill, [])
+            history.append({
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
+                "verifier_ok": None if verification is None else bool(verification.ok),
+                "result": str(result),
+                "failure_type": str(
+                    getattr(verification, "reason", "")
+                    or getattr(decision, "reason", "")
+                    or "NO_EXECUTION"
+                ),
+                "before_screenshot": str(frame or ""),
+                "goal_id": str(getattr(getattr(self, "brain", None), "current_goal", "") or ""),
+            })
+            if len(history) > 12:
+                del history[:-12]
+            asked = getattr(self, "_repair_asked", None)
+            if asked is None:
+                asked = self._repair_asked = set()
+            trigger = skill_repair.should_escalate(skill, history)
+            if trigger is None or skill in asked:
+                return
+            asked.add(skill)
+            self._write_repair_request(trigger, before=before, frame=frame)
+        except Exception:  # noqa: BLE001 - a repair *question* must never fail a live step
+            pass
+
+    def _write_repair_request(self, trigger: Any, *, before: Any, frame: Any) -> None:
+        """Write one repair question, unless the same one is already on file and fresh."""
+        request_id = skill_repair.request_id(trigger.skill_id, trigger.page_key)
+        repair_root = getattr(self, "_repair_root", None) or (
+            Path(__file__).resolve().parents[1] / skill_repair.REQUEST_DIR
+        )
+        self._repair_root = repair_root
+        path = repair_root / f"{request_id}.json"
+        if path.exists():
+            try:
+                existing = json.loads(path.read_text(encoding="utf-8"))
+                created = str(existing.get("created_at") or "")
+                if created:
+                    moment = datetime.fromisoformat(created)
+                    if moment.tzinfo is None:
+                        moment = moment.replace(tzinfo=timezone.utc)
+                    age = (datetime.now(timezone.utc) - moment).total_seconds()
+                    if age < skill_repair.REPAIR_REQUEST_COOLDOWN_SECONDS:
+                        return
+            except (OSError, ValueError, AttributeError, TypeError):
+                pass
+        known = None
+        try:
+            known = self.registry.get(trigger.skill_id)
+        except Exception:  # noqa: BLE001 - an unknown skill id is not an error worth failing on
+            known = None
+        page = str(getattr(before, "page", "") or "")
+        request = skill_repair.RepairRequest(
+            request_id=request_id,
+            skill_id=trigger.skill_id,
+            page_key=trigger.page_key or control_experience.label(page),
+            goal_id=trigger.goal_id,
+            frame_path=str(frame or ""),
+            old_semantic=str(getattr(known, "semantic_goal", "") or trigger.skill_id),
+            old_target_text=", ".join(
+                str(item) for item in (getattr(known, "semantic_requirements", ()) or ())
+            ),
+            old_success_pages=tuple(
+                str(item) for item in (getattr(known, "target_pages", ()) or ())
+            ),
+            verifier_expectation=str(getattr(known, "success_condition", "") or ""),
+            failure_kinds=tuple(trigger.failure_kinds),
+            consecutive_failures=int(trigger.consecutive_failures),
+            failure_frames=tuple(trigger.failure_frames),
+            role_id=str(getattr(self, "role_id", "") or ""),
+            created_at=datetime.now(timezone.utc).isoformat(),
+            question=(
+                f"技能 {trigger.skill_id} 连续失败 {trigger.consecutive_failures} 次"
+                f"（{', '.join(trigger.failure_kinds)}）。当前画面里，它要找的目标还在吗？"
+                "是位置变了、文字变了，还是这个技能本身已经过时？"
+            ),
+        )
+        try:
+            repair_root.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                json.dumps(request.as_row(), ensure_ascii=False, indent=1),
+                encoding="utf-8",
+            )
+            print(
+                f"[repair] filed an analysis question for {trigger.skill_id} "
+                f"({trigger.consecutive_failures} failures): {request_id}",
+                flush=True,
+            )
+        except (OSError, TypeError, ValueError):
+            pass
+
+
     def _note_learned_step(self, *, decision: Any, verification: Any, result: str,
                            observed_change: str, after: Any, step_id: int = 0) -> None:
         """File the step the model drove, if the verifier passed it (§11/§12).

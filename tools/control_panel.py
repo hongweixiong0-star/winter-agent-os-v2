@@ -2655,6 +2655,10 @@ def status_defaults() -> dict[str, str]:
         "why_idle": PENDING, "executor_mix": PENDING, "progress": PENDING,
         "bootstrap": PENDING, "coverage": PENDING, "attention": "暂无需要关注的问题",
         "watchdog": PENDING, "local_model": PENDING, "local_model_last": PENDING,
+        # Operator directive 2026-10-01 §36: the learning-effect lines.  Two rows rather than one
+        # because the funnel and the KPI set answer different questions -- "where did it stop" is
+        # not the same as "did the game get played".
+        "learning": PENDING, "learning_kpi": PENDING,
         # §八's closed-loop card: the eight cells, the trace and the current breakpoint, all
         # from ``unattended_closure``.  And §一's acceptance, which the window runs itself so
         # the operator never has to execute a second command.
@@ -2809,6 +2813,74 @@ def local_gui_model_last_call(root: Path | None = None) -> str:
     # a plan with no settlement says 未验证 rather than borrowing the plan's own confidence.
     bits.append(_settlement_line((root or ROOT) / LOCAL_GUI_PLAN_LEDGER_PATH))
     return " · ".join(str(bit) for bit in bits if str(bit).strip())
+
+
+def _learning_funnel_payload(root: Path | None = None) -> dict[str, Any]:
+    """The funnel snapshot the panel reads, or ``{}`` when nothing has written one yet.
+
+    Read from the file rather than folded here for a measured reason: the fold walks
+    ``episodes.jsonl``, which is thousands of rows in production, and this runs on a UI tick.
+    An empty result is shown as 未生成 rather than as zeroes, because "nobody has refreshed it"
+    and "the runtime learned nothing" are different facts.
+    """
+    path = (root or ROOT) / "learning" / "learning_funnel.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return dict(payload) if isinstance(payload, dict) else {}
+
+
+def learning_effect_line(root: Path | None = None) -> str:
+    """§36's funnel line, in Chinese: where the model's involvement stopped turning into skill."""
+    payload = _learning_funnel_payload(root)
+    if not payload:
+        return "未生成（运行 tools/learning_report.py --funnel 生成一次）"
+    console = payload.get("console") or {}
+
+    def show(label: str) -> str:
+        value = console.get(label)
+        if value is None:
+            return f"{label} —"
+        if isinstance(value, float) and 0.0 <= value <= 1.0:
+            return f"{label} {value:.0%}"
+        return f"{label} {value}"
+
+    stops = [
+        stage for stage in (payload.get("funnel") or [])
+        if stage.get("count") is None
+    ]
+    bits = [show(label) for label in (
+        "今日 UI-Venus 调用", "UNKNOWN 次数", "UNKNOWN 成功解决", "新 Candidate Skill",
+        "重复 UNKNOWN 调用率", "KNOWN_MODEL_CALLS",
+    )]
+    if stops:
+        # Named, not summarised: "the funnel stopped here" is the single most useful thing the
+        # console can say, and a reader who has to open a JSON file to find out will not.
+        bits.append(f"未测量 {len(stops)} 级（首个：{stops[0].get('stage')}）")
+    return " · ".join(bits)
+
+
+def learning_kpi_line(root: Path | None = None) -> str:
+    """§37's KPI line.  Rates with their sample sizes, and ``—`` where there is no denominator."""
+    payload = _learning_funnel_payload(root)
+    if not payload:
+        return "未生成（运行 tools/learning_report.py --funnel 生成一次）"
+    metrics = payload.get("metrics") or {}
+
+    def rate(name: str, n_key: str = "") -> str:
+        value = metrics.get(name)
+        shown = "—" if value is None else f"{value:.0%}"
+        if n_key:
+            shown += f"(n={metrics.get(n_key, 0)})"
+        return f"{name} {shown}"
+
+    return " · ".join((
+        rate("GAME_TASK_COMPLETION_RATE", "game_task_completion_rate_n"),
+        rate("UNKNOWN_RESOLUTION_RATE"),
+        rate("UNKNOWN_VERIFIER_PASS_RATE"),
+        f"MODEL_CALLS_PER_HOUR {metrics.get('MODEL_CALLS_PER_HOUR', 0)}",
+    ))
 
 
 def _last_plan_row(path: Path) -> dict[str, Any]:
@@ -5058,6 +5130,8 @@ class ControlPanel:
             ("MAA", self.maa_note_var), ("MuMu", self.device_note_var),
             ("本地模型", self.values["local_model"]),
             ("最近调用", self.values["local_model_last"]),
+            ("学习效果", self.values["learning"]),
+            ("学习 KPI", self.values["learning_kpi"]),
         ), 1):
             ttk.Label(evidence, text=label, style="Muted.TLabel", background=PANEL, width=8).grid(row=index, column=0, sticky="w", pady=2)
             ttk.Label(evidence, textvariable=var, background=PANEL, wraplength=1000, justify="left").grid(row=index, column=1, sticky="w", pady=2)
@@ -5284,6 +5358,11 @@ class ControlPanel:
         self._set_health("dot_model", self.probes.local_model_truth())
         self.values["local_model"].set(local_gui_model_line(ROOT))
         self.values["local_model_last"].set(local_gui_model_last_call(ROOT))
+        # §36's Chinese learning lines.  Read from the file ``learning_funnel.refresh`` writes
+        # rather than folded here: the panel is on a UI tick and folding the episode stream on
+        # every tick would make the console the slowest thing in the process.
+        self.values["learning"].set(learning_effect_line(ROOT))
+        self.values["learning_kpi"].set(learning_kpi_line(ROOT))
         self._workbuddy = report.by_name("workbuddy_job")
         self._gateway_value = report.by_name("gateway_health")
         # The gateway detail line cites AUTO's real state rather than asserting it is fine.
