@@ -60,8 +60,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
+from . import context_budget
 from . import local_gui_model
 from . import unknown_advisor
+from .context_budget import HISTORY_TARGET
+
+#: How many steps the advisor remembers.  Twice the packet's target, so the budget ladder has a
+#: real surplus to trim rather than a list that was cut before anyone measured it -- and so a
+#: session that raises the target does not have to re-learn the history it already had.
+HISTORY_MEMORY = HISTORY_TARGET * 2
 
 #: Section 5's decision vocabulary.  Exactly these words, no synonyms.
 DECISIONS = ("EXECUTE", "OBSERVE", "REPLAN", "COMPLETE", "DEFER", "BLOCKED")
@@ -119,6 +126,103 @@ BASIS_VISION_PROPOSAL = "UNTRUSTED_CURRENT_FRAME_PROPOSAL"
 #: The reason every refusal is filed under when the model is simply not there.
 PLANNER_UNAVAILABLE = "LOCAL_PLANNER_UNAVAILABLE"
 
+# ---------------------------------------------------------------------------- output contract
+#
+# Why the reply is constrained by a schema and not by a sentence in the prompt
+# ---------------------------------------------------------------------------
+# Measured 2026-09-30 on the deployed model, one real UNKNOWN packet, production flags
+# (``enable_thinking=false``, greedy, ``max_tokens`` 400).  The reply is 147 output tokens and
+# every one of them costs ~70 ms, because this deployment decodes at **14.3 tok/s**::
+
+#     reason                    41 tokens   (28%)
+#     candidate_bbox_norm       29 tokens   (20%)
+#     expected.{page,result}    22 tokens   (15%)
+#     action.{type,target_id}   18 tokens   (12%)
+#     semantic_target           15 tokens   (10%)
+#     confidence                 8 tokens    (5%)
+#     decision                   7 tokens    (5%)
+#     goal                       6 tokens    (4%)
+
+# So ~10 of every 16 seconds in an UNKNOWN step is generation, and the reply's prose is the
+# budget.  Rule 9 of ``SYSTEM_PROMPT`` records that asking for a short ``reason`` does not work
+# -- p50 moved 11.5 s to 12.4 s, i.e. inside the noise -- so the constraint has to be
+# structural.  The server does honour ``maxLength`` and ``additionalProperties`` (measured: the
+# same call under a schema with ``maxLength: 30`` returned 23 tokens instead of 147), which
+# makes this the lever the prompt is not.
+#
+# What is deliberately NOT removed: ``expected`` and ``action`` stay, because
+# ``parse_plan`` feeds ``expected_result`` to the verifier and reads the action channel for
+# every EXECUTE.  A schema that dropped them would be faster and wrong.  ``goal`` and
+# ``confidence`` are removed: ``parse_plan`` defaults both, and ``goal`` is an echo of a value
+# the client already knows.
+#
+# The box is requested **only when the element table is empty**, because that is the only case
+# that can use it: an EXECUTE that names an element id never reads the box, and a non-EXECUTE
+# step never reads it either.  Measured: a REPLAN reply still paid 29 tokens for one.
+REASON_MAX_CHARS = 120
+EXPECTED_PAGE_MAX_CHARS = 40
+EXPECTED_RESULT_MAX_CHARS = 60
+SEMANTIC_TARGET_MAX_CHARS = 60
+
+
+def response_schema(*, needs_box: bool) -> dict[str, Any]:
+    """The reply contract, as JSON Schema, for a call that can (or cannot) use a region.
+
+    ``needs_box`` is decided by the caller from the element table it just built -- not by the
+    model, which was measured to volunteer a box on a step that could not use one.
+    """
+    properties: dict[str, Any] = {
+        "decision": {"type": "string", "enum": list(DECISIONS)},
+        "action": {
+            "type": "object",
+            "properties": {
+                # ``enum`` rather than free text so an action outside the offered set cannot be
+                # generated at all; that refusal used to be found by ``parse_plan`` after the
+                # tokens had already been paid for.
+                "type": {"type": "string", "enum": list(OFFERED_ACTIONS)},
+                "target_element_id": {"type": ["string", "null"]},
+            },
+            "required": ["type"],
+            "additionalProperties": False,
+        },
+        "expected": {
+            "type": "object",
+            "properties": {
+                "page": {"type": "string", "maxLength": EXPECTED_PAGE_MAX_CHARS},
+                "result": {"type": "string", "maxLength": EXPECTED_RESULT_MAX_CHARS},
+            },
+            "required": ["result"],
+            "additionalProperties": False,
+        },
+        "reason": {"type": "string", "maxLength": REASON_MAX_CHARS},
+    }
+    # ``expected`` is required even though ``parse_plan`` tolerates its absence: the verifier
+    # reads ``expected_result`` back on every EXECUTE, and a contract that let the model skip it
+    # would save ~15 tokens by making the verifier's input optional.  The measured saving comes
+    # from the capped ``reason`` and the omitted box, not from dropping this.
+    required = ["decision", "action", "expected", "reason"]
+    if needs_box:
+        properties["semantic_target"] = {
+            "type": "string", "maxLength": SEMANTIC_TARGET_MAX_CHARS}
+        properties[VISION_BOX_KEY] = {
+            "type": "array", "items": {"type": "number"},
+            "minItems": 4, "maxItems": 4,
+        }
+        required += ["semantic_target", VISION_BOX_KEY]
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": required,
+        "additionalProperties": False,
+    }
+
+
+#: The reason filed when the packet could not be made to fit the input budget.  Its own name
+#: rather than a generic refusal, because the response is different: the model is fine and the
+#: window is fine, which means the *session* is deeper than this deployment can describe, and
+#: what a reader should look at is ``budget.dropped_sections`` rather than the model.
+OVER_BUDGET = "LOCAL_GUI_MODEL_INPUT_OVER_BUDGET"
+
 SYSTEM_PROMPT = """You are the UI action planner of a screenshot-driven game automation agent.
 
 You are shown the CURRENT screenshot of one game screen. Look at it.
@@ -135,8 +239,18 @@ You will also be given, for the same screen:
   press); TEXT_LABEL is printed information -- a town name, a resource count -- and is NOT a
   button.
 - available_actions: the action types you are allowed to return. Nothing else is legal.
-- last_action / last_result / remaining_steps: what this session already tried and how much of
-  its budget is left. If your previous step did not change anything, do NOT repeat it.
+- recent_steps: the last few steps this session actually took, oldest first. Each has the skill
+  that ran, the control it aimed at, what it expected, what the two screens really differed by,
+  and whether the verifier passed it. This is what you have already tried ON THIS SESSION.
+- last_verifier_outcome: the verifier's verdict on the immediately previous step -- the
+  authority on whether that step worked. Your own opinion of it is not.
+- session: where this session is -- its step index, how many steps of its budget are left, how
+  many consecutive steps have changed nothing (no_progress_count), and how often this screen has
+  already been asked.
+- context: how much of the session history was actually shown to you. When steps_shown is
+  smaller than steps_available the older steps were dropped to fit; that is not the same as the
+  session being short, so do not treat an empty history as a first attempt.
+- last_action / last_result / remaining_steps: the single most recent step, for convenience.
 
 Choose the single next UI action toward the goal.
 
@@ -153,9 +267,14 @@ Hard rules:
 4. Never propose an element, banner or button that spends money, gems, items or speedups
    unless the goal is exactly that.
 5. Reply with JSON only, exactly this shape:
-   {"goal": str, "decision": str, "action": {"type": str, "target_element_id": str|null},
-    "semantic_target": str|null, "candidate_bbox_norm": [x, y, w, h]|null,
-    "expected": {"page": str, "result": str}, "confidence": 0.0, "reason": str}
+   {"decision": str, "action": {"type": str, "target_element_id": str|null},
+    "expected": {"page": str, "result": str}, "reason": str}
+   and, only when you are asked for it because this screen printed no usable element, also
+   "semantic_target": str and "candidate_bbox_norm": [x, y, w, h].
+   The server enforces this shape, its key set and the length caps on its text fields, so an
+   extra key is not a style problem -- it is simply refused. "reason" is capped at 120
+   characters: put the decision's justification in the first clause, because a longer sentence
+   is cut off rather than shortened.
 6. decision must be one of: EXECUTE, OBSERVE, REPLAN, COMPLETE, DEFER, BLOCKED.
    - EXECUTE: carry out the action now; name a target_element_id, or a semantic_target plus box.
    - OBSERVE: the screen is not readable enough yet; tap nothing.
@@ -172,13 +291,21 @@ Hard rules:
 7. Prefer an element whose printed text directly names the action the goal needs. Prefer a
    low-risk control (close, back, confirm-free, claim-free) over anything that spends.
    "confidence" is your own 0..1 estimate; be honest, a low number is useful information.
-8. "reason" is one short sentence, in the language of the client's own text.
+8. Do NOT repeat a step that recent_steps shows already ran on this screen and changed nothing.
+   When no_progress_count is high, the honest answer is usually REPLAN or DEFER, not another
+   EXECUTE of the same control. A second identical attempt is the failure this history exists to
+   prevent.
+9. "reason" is one short sentence, in the language of the client's own text.
    Measured 2026-09-30: the model writes **112-160 output tokens per plan whatever this rule
    asks for** -- asking it more firmly for <=20 characters changed p50 from 11.5s to 12.4s,
-   i.e. not at all (noise). Output runs at ~16 tok/s here, so ~7-9s of every step is
-   generation and it is not prompt-controllable. What contains it is the step and run budgets
-   (``max_steps_per_screen`` / ``max_steps_per_run``), not this line. Recorded so the next
-   account does not spend a cycle re-learning it.
+   i.e. not at all (noise). Output runs at ~14-16 tok/s here, so ~10s of every step is
+   generation and it is **not prompt-controllable**. What contains it is the enforced reply
+   schema (``ui_planner.response_schema``): it caps this field in the grammar itself and is
+   measured to cut the same reply from 147 output tokens to 58. Recorded so the next account
+   does not spend a cycle re-learning it -- fix the shape, not the wording.
+10. You are not a chat model and this is not a conversation. The window is large (32768) so that
+   a deep session fits, not so that you can think at length: answer with the decision above and
+   nothing else. Do not write a plan, a rationale paragraph or a list of alternatives.
 """
 
 
@@ -317,22 +444,36 @@ def build_packet(
     relevant_knowledge: list[str] | None = None,
     last_action: str | None = None,
     last_result: str | None = None,
+    last_verifier_outcome: Mapping[str, Any] | None = None,
+    recent_steps: list[Mapping[str, Any]] | None = None,
+    session: Mapping[str, Any] | None = None,
+    last_failure: str = "",
     remaining_steps: int = 0,
     step_index: int = 0,
-    max_elements: int = 30,
+    #: The packet-level element cap.  Read from ``context_budget`` so there is one number for
+    #: "how many elements a packet carries": the builder bounds it here and the budget manager
+    #: trims below it only when the window demands.  A second literal in this signature is how
+    #: the two would start disagreeing about a quantity both act on.
+    max_elements: int = context_budget.ELEMENT_TARGET,
 ) -> dict[str, Any]:
     """Section 4's packet, and nothing more.
 
     The caps are the point: the directive's own words are "不要将全部游戏知识库、完整历史日志
-    和无关任务信息塞入模型上下文", and an 8K budget is only a budget if the caller enforces it.
+    和无关任务信息塞入模型上下文", and the budget is only a budget if the caller enforces it.
 
     ``screenshot`` is a *statement of fact about the call*, not a datum: since 2026-09-30 the
     frame is attached as an image part alongside this text, and saying so in the packet keeps
     the model from concluding the text is all it has.  Its value is True by construction --
     ``local_gui_model`` refuses a text-only turn while ``multimodal`` is on -- so it cannot
     drift out of step with reality the way a hand-maintained flag would.
+
+    ``recent_steps`` and ``last_action``/``last_result`` overlap by one step on purpose.  The
+    first is the structured history the repetition rule reads; the second pair is what the
+    prompt has described since 2026-09-25 and what a step that predates the history still
+    carries.  Keeping both costs a few tokens and removes an ordering dependency between the
+    runtime that fills one and the prompt that reads the other.
     """
-    return {
+    packet: dict[str, Any] = {
         "goal": str(goal or ""),
         "role_id": str(role_id or ""),
         "current_page": str(current_page or ""),
@@ -349,6 +490,15 @@ def build_packet(
         "last_result": None if last_result is None else str(last_result)[:200],
         "remaining_steps": int(remaining_steps),
     }
+    if session:
+        packet["session"] = dict(session)
+    if recent_steps:
+        packet["recent_steps"] = [dict(row) for row in recent_steps]
+    if last_verifier_outcome:
+        packet["last_verifier_outcome"] = dict(last_verifier_outcome)
+    if last_failure:
+        packet["last_failure"] = str(last_failure)[:200]
+    return packet
 
 
 def _compact(state: Mapping[str, Any], *, keys: tuple[str, ...]) -> dict[str, Any]:
@@ -603,6 +753,7 @@ class ManagedAdvisor:
         max_steps_per_screen: int = 2,
         last_action: str | None = None,
         last_result: str | None = None,
+        budget: context_budget.ContextBudgetManager | None = None,
     ) -> None:
         self.client = client
         self.ledger = ledger
@@ -617,6 +768,22 @@ class ManagedAdvisor:
         self.last_action = last_action
         self.last_result = last_result
         self.last_outcome: dict[str, Any] = {}
+        #: The one that decides what the prompt may contain.  Defaulted rather than required so
+        #: an existing construction site keeps working and still gets a legal prompt -- the
+        #: default manager is exactly ``context_budget``'s production settings.
+        self.budget = budget or context_budget.ContextBudgetManager()
+        #: This session's own action -> feedback memory, oldest first.  Bounded well above the
+        #: target so the budget ladder has something to trim *from* rather than a value that was
+        #: already cut before it was measured; the packet takes the newest ``HISTORY_TARGET``.
+        #:
+        #: Filled by the runtime for **every** step, not only model-driven ones.  A history that
+        #: only held advised steps would tell the next plan "this has been tried once" about a
+        #: session that has tried it six times, which is the repetition the directive's section 6
+        #: exists to stop.
+        self.recent_steps: list[dict[str, Any]] = []
+        #: The verifier's verdict on the immediately previous step.  The verifier is the success
+        #: authority; the model's own opinion is not, so this is what the packet shows.
+        self.last_verifier_outcome: dict[str, Any] = {}
 
     # ----------------------------------------------------------- runtime interface
     def take_request(self, request: Any, *, registry: Any = None) -> unknown_advisor.Advice | None:
@@ -665,17 +832,49 @@ class ManagedAdvisor:
             relevant_knowledge=self._knowledge(question),
             last_action=self.last_action,
             last_result=self.last_result,
+            last_verifier_outcome=self.last_verifier_outcome,
+            recent_steps=self.recent_steps[-HISTORY_TARGET:],
+            session=self.session_context(page_key),
+            last_failure=self._last_failure(),
             remaining_steps=max(0, self.max_steps_per_screen - self._per_screen.get(page_key, 0)),
             step_index=self.steps,
         )
+        # What the model is shown is decided here rather than by the caps inside ``build_packet``:
+        # the caps bound one section and the manager bounds the whole prompt against the window
+        # the server was actually started with.  A packet that still does not fit comes back with
+        # ``within_budget=False``, and the step is refused for that reason instead of being sent
+        # over the wall -- an over-long prompt is truncated by the server at the *oldest* end,
+        # which is where the system prompt and the frame are.
+        packet, budget_report = self.budget.fit(system=SYSTEM_PROMPT, packet=packet)
+        if not budget_report.within_budget:
+            self.last_outcome = {"decision": "", "error": OVER_BUDGET}
+            self.ledger.append({
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
+                "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key,
+                "goal": str(getattr(question, "goal", "") or ""),
+                "decision": "", "error": OVER_BUDGET, "element_count": len(elements),
+                "budget": budget_report.to_row(),
+            })
+            return self._delegate_take(request, registry)
         # The frame travels with the question.  This is the P0 fix: before 2026-09-30 these
         # four arguments were the whole call and the model never saw the screen.
+        # The reply contract is the caller's, and it is chosen from the table that was just
+        # built: a box is only requested when there is no element id that could serve instead,
+        # which is the only situation that can read one.  Measured 2026-09-30: asked
+        # unconditionally, a REPLAN reply spent 29 of its 147 output tokens on a box it could
+        # not use.
         call = self.client.ask_json(
             system=SYSTEM_PROMPT, user=render_packet(packet), purpose="ui_plan",
             element_count=len(elements), image_path=frame_path or None,
+            response_schema=response_schema(needs_box=not elements),
         )
         self.steps += 1
         self._per_screen[page_key] = self._per_screen.get(page_key, 0) + 1
+        # Both the estimate and the server's own count, on every row: the estimate is what the
+        # trim was decided on and the measurement is what actually happened, and a ledger that
+        # kept only one of them could not answer "is the estimator still any good".
+        budget_row = budget_report.to_row()
+        budget_row["actual_prompt_tokens"] = int(call.prompt_tokens)
         if not call.ok:
             self.last_outcome = {"decision": "", "error": call.error}
             self.ledger.append({
@@ -683,7 +882,7 @@ class ManagedAdvisor:
                 "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key,
                 "goal": str(getattr(question, "goal", "") or ""),
                 "decision": "", "error": call.error, "element_count": len(elements),
-                "latency_ms": call.latency_ms,
+                "latency_ms": call.latency_ms, "budget": budget_row,
             })
             return self._delegate_take(request, registry)
 
@@ -695,7 +894,7 @@ class ManagedAdvisor:
                 "source": SOURCE_LOCAL_GUI_MODEL, "page_key": page_key,
                 "goal": str(getattr(question, "goal", "") or ""),
                 "decision": "", "error": parsed.error, "element_count": len(elements),
-                "latency_ms": call.latency_ms, "raw": parsed.raw,
+                "latency_ms": call.latency_ms, "raw": parsed.raw, "budget": budget_row,
             })
             return self._delegate_take(request, registry)
 
@@ -706,7 +905,9 @@ class ManagedAdvisor:
             "target_element_id": plan.target_element_id, "target_text": plan.target_text,
             "reason": plan.reason,
         }
-        self.ledger.append(plan.to_row(page_key=page_key))
+        row = plan.to_row(page_key=page_key)
+        row["budget"] = budget_row
+        self.ledger.append(row)
         if plan.decision != "EXECUTE":
             # OBSERVE / REPLAN / COMPLETE / DEFER / BLOCKED all mean the same thing to the
             # executor: nothing is tapped this step.  Section 8 is explicit that COMPLETE is
@@ -772,6 +973,12 @@ class ManagedAdvisor:
         """
         if not request_id:
             return
+        self.last_verifier_outcome = {
+            "ok": None if verifier_ok is None else bool(verifier_ok),
+            "skill": str(skill),
+            "result": str(result)[:120],
+            "reason": str((evidence or {}).get("reason") or "")[:160],
+        }
         self.ledger.append({
             "record": "outcome",
             "source": SOURCE_LOCAL_GUI_MODEL,
@@ -781,6 +988,96 @@ class ManagedAdvisor:
             "skill": str(skill),
             "verifier_evidence": dict(evidence or {}),
         })
+
+    # ----------------------------------------------------------- session memory
+    def note_step(
+        self,
+        *,
+        skill: str = "",
+        control: str = "",
+        expected_result: str = "",
+        observed_change: str = "",
+        verifier_ok: bool | None = None,
+        page_key: str = "",
+    ) -> None:
+        """Remember one step of this session, whether or not the model drove it.
+
+        Section 6 of the directive ("Context → Action → Feedback") asks the next question to
+        carry what has already been tried, and the honest source for that is the runtime's own
+        per-step summary -- ``skill``, the control it aimed at, what it expected, what the two
+        screens really differed by, and the verifier's verdict.  Nothing here is inferred from
+        the model's opinion of itself: ``observed_change`` is the measured difference between the
+        frames and ``verifier_ok`` is the verifier's verdict.
+
+        Called on every completed step, so the history is the *session's* history.  Recording
+        only model-driven steps would make a control the rules had already tried six times look
+        untried, which is precisely the repeat this memory exists to prevent.
+        """
+        entry = {
+            "step": len(self.recent_steps) + 1,
+            "skill": str(skill)[:60],
+            "control": str(control)[:60],
+            "expected": str(expected_result)[:80],
+            "observed": str(observed_change)[:40],
+            "verifier": "PASS" if verifier_ok else ("FAIL" if verifier_ok is False else "UNKNOWN"),
+        }
+        if page_key:
+            entry["page"] = str(page_key)[:40]
+        self.recent_steps.append(entry)
+        # A bounded deque rather than an unbounded list: this object lives for a whole AUTO run
+        # and nothing prunes it, so an unbounded one is a slow leak in the process that also
+        # holds the device connection.
+        if len(self.recent_steps) > HISTORY_MEMORY:
+            del self.recent_steps[: len(self.recent_steps) - HISTORY_MEMORY]
+        self.last_action = f"{entry['skill']}[{entry['control']}]" if entry["control"] \
+            else str(skill)
+        self.last_result = str(observed_change)
+
+    def no_progress_count(self) -> int:
+        """Consecutive trailing steps that changed nothing.
+
+        Derived from the history rather than counted separately, because the loop detectors that
+        already exist own their own counters and a second one would be the second source of truth
+        this project keeps measuring as a defect.  "Changed nothing" is the frame-difference
+        vocabulary (``NONE``/``UNKNOWN``) or a verifier FAIL; an entry the runtime never settled
+        is counted as progress, since absence of a verdict is not evidence of a stuck loop.
+        """
+        count = 0
+        for entry in reversed(self.recent_steps):
+            if entry.get("verifier") == "PASS":
+                break
+            if entry.get("observed") in ("NONE", "UNKNOWN", ""):
+                count += 1
+                continue
+            break
+        return count
+
+    def session_context(self, page_key: str) -> dict[str, Any]:
+        """The SessionContext block: where this session is, in five numbers.
+
+        Only quantities the advisor actually holds.  ``steps_shown``/``elements_shown`` are added
+        by the budget manager when it trims, so this must not guess at them.
+        """
+        return {
+            "step_index": int(self.steps),
+            "remaining_steps": max(0, self.max_steps_per_screen - self._per_screen.get(page_key, 0)),
+            "remaining_run_steps": max(0, self.max_steps_per_run - self.steps),
+            "no_progress_count": self.no_progress_count(),
+            "steps_on_this_screen": int(self._per_screen.get(page_key, 0)),
+            "steps_in_session": len(self.recent_steps),
+        }
+
+    def _last_failure(self) -> str:
+        """The most recent step that failed, or ``""``.  P1's "当前失败 / recovery 信息".
+
+        The newest non-PASS entry only.  A list of failures would grow without bound and the
+        newest one is what the recovery paths are actually working on.
+        """
+        for entry in reversed(self.recent_steps):
+            if entry.get("verifier") != "PASS":
+                return (f"{entry.get('skill', '')}[{entry.get('control', '')}] -> "
+                        f"{entry.get('observed', '')}")
+        return ""
 
     def _advice_for(self, plan: Plan, question: Any, elements: list[dict[str, Any]],
                     request_id: str) -> unknown_advisor.Advice | None:
@@ -885,6 +1182,9 @@ def from_config(
     client = local_gui_model.from_config(config, root=root)
     if client is None:
         return None
+    # Built from the same section as the client, so ``context`` is one number: the window the
+    # server was started with and the window this module budgets against cannot disagree.
+    budget = context_budget.from_config(config)
     return ManagedAdvisor(
         client=client,
         ledger=PlannerLedger(Path(root) / str(section.get("plan_ledger")
@@ -893,6 +1193,7 @@ def from_config(
         fallback=fallback,
         max_steps_per_run=int(section.get("max_steps_per_run") or 12),
         max_steps_per_screen=int(section.get("max_steps_per_screen") or 2),
+        budget=budget,
     )
 
 

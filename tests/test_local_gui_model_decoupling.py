@@ -156,11 +156,19 @@ class PlannerIsOffByDefaultAndSwitchableTest(unittest.TestCase):
         self.assertEqual(client.num_ctx, 4096, "num_ctx and context are one quantity")
 
     def test_the_shipped_config_enables_the_planner(self):
-        config = json.loads((ROOT / "config/v2.json").read_text(encoding="utf-8"))
+        config = json.loads((ROOT / "config" / "v2.json").read_text(encoding="utf-8"))
         planner = config["local_planner"]
         self.assertTrue(planner["enabled"])
-        # Section 4: keep the existing 8K context.
-        self.assertEqual(int(planner["context"]), 8192)
+        # The 2026-09-30 window, and read from ``context_budget`` rather than written again: the
+        # manager is what reserves the reply space inside this number, so a literal here would be
+        # a third copy of a quantity that must be one.
+        from winter_agent_v2 import context_budget
+
+        self.assertEqual(int(planner["context"]), context_budget.MAX_MODEL_CONTEXT)
+        self.assertEqual(context_budget.MAX_MODEL_CONTEXT, 32768)
+        # The two windows this number used to be.  Neither may come back as a production default.
+        self.assertNotIn(int(planner["context"]), (8192, 16384))
+        self.assertGreaterEqual(int(planner["output_reserve"]), 4096)
         # The 2026-09-30 migration, pinned so a silent revert is a test failure.
         self.assertEqual(planner["provider"], "UI_VENUS")
         self.assertEqual(planner["model"], "UI-Venus-2-9B")

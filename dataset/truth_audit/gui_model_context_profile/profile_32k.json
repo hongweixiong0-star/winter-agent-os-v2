@@ -1,0 +1,299 @@
+{
+  "what_this_is": "VRAM/RAM/latency evidence for the 32768-context deployment: a KV-cache A/B, an input-size ladder, and the estimator's calibration against the server's own prompt_tokens",
+  "generated_at": "2026-09-30T16:21:34.405227+00:00",
+  "max_model_context": 32768,
+  "max_input_budget": 28672,
+  "output_reserve": 4096,
+  "sweep": {
+    "mode": "sweep",
+    "rows": [
+      {
+        "profile": {
+          "gpu_layers": 24,
+          "context": 32768,
+          "kv_type": "q8_0",
+          "port": 18080
+        },
+        "vram_before": {
+          "used_mib": 1682,
+          "free_mib": 6276
+        },
+        "ram_before": {
+          "used_mib": 19477,
+          "free_mib": 12485,
+          "percent": 60
+        },
+        "launch_exit": 0,
+        "vram_idle": {
+          "used_mib": 7426,
+          "free_mib": 532
+        },
+        "ram_idle": {
+          "used_mib": 24251,
+          "free_mib": 7710,
+          "percent": 75
+        },
+        "server_rss_idle_mib": 5676,
+        "latency_ms": {
+          "n": 3,
+          "p50": 19711.5,
+          "p95": 23109.2,
+          "max": 23486.76,
+          "min": 16046.96,
+          "mean": 19748.4
+        },
+        "actual_prompt_tokens": {
+          "n": 3,
+          "p50": 3314.0,
+          "p95": 3668.6,
+          "max": 3708,
+          "min": 2946,
+          "mean": 3322.7
+        },
+        "vram_peak": {
+          "used_mib": 7607,
+          "free_mib": 351
+        },
+        "ram_peak": {
+          "used_mib": 25772,
+          "free_mib": 6111
+        },
+        "server_rss_peak_mib": 6510,
+        "cuda_oom": false,
+        "replies": [
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "REPLAN",
+            "target": "",
+            "reply_chars": 537
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "DEFER",
+            "target": "",
+            "reply_chars": 560
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "OBSERVE",
+            "target": "",
+            "reply_chars": 481
+          }
+        ],
+        "quality": {
+          "answered": 3,
+          "parsed": 3,
+          "decisions": [
+            "DEFER",
+            "OBSERVE",
+            "REPLAN"
+          ],
+          "mean_reply_chars": 526.0
+        }
+      },
+      {
+        "profile": {
+          "gpu_layers": 24,
+          "context": 32768,
+          "kv_type": "f16",
+          "port": 18080
+        },
+        "vram_before": {
+          "used_mib": 1669,
+          "free_mib": 6289
+        },
+        "ram_before": {
+          "used_mib": 19228,
+          "free_mib": 12733,
+          "percent": 60
+        },
+        "launch_exit": 0,
+        "vram_idle": {
+          "used_mib": 7517,
+          "free_mib": 441
+        },
+        "ram_idle": {
+          "used_mib": 24946,
+          "free_mib": 7015,
+          "percent": 78
+        },
+        "server_rss_idle_mib": 5880,
+        "latency_ms": {
+          "n": 3,
+          "p50": 16877.6,
+          "p95": 22086.7,
+          "max": 22665.47,
+          "min": 14187.82,
+          "mean": 17910.3
+        },
+        "actual_prompt_tokens": {
+          "n": 3,
+          "p50": 3314.0,
+          "p95": 3668.6,
+          "max": 3708,
+          "min": 2946,
+          "mean": 3322.7
+        },
+        "vram_peak": {
+          "used_mib": 7700,
+          "free_mib": 258
+        },
+        "ram_peak": {
+          "used_mib": 26122,
+          "free_mib": 5836
+        },
+        "server_rss_peak_mib": 6800,
+        "cuda_oom": false,
+        "replies": [
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "REPLAN",
+            "target": "",
+            "reply_chars": 527
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "DEFER",
+            "target": "",
+            "reply_chars": 514
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "OBSERVE",
+            "target": "",
+            "reply_chars": 464
+          }
+        ],
+        "quality": {
+          "answered": 3,
+          "parsed": 3,
+          "decisions": [
+            "DEFER",
+            "OBSERVE",
+            "REPLAN"
+          ],
+          "mean_reply_chars": 501.7
+        }
+      }
+    ]
+  },
+  "ladder": {
+    "mode": "ladder",
+    "rows": [
+      {
+        "target_tokens": "real",
+        "synthetic_depth": false,
+        "history_rows": 0,
+        "estimated_input_tokens": 3696,
+        "actual_prompt_tokens": 3781,
+        "estimate_ratio": 1.023,
+        "within_budget": true,
+        "dropped_sections": [],
+        "ok": true,
+        "error": "",
+        "latency_ms": 20779.03,
+        "image_sent": true,
+        "vram_used_mib": 7721,
+        "vram_free_mib": 237,
+        "ram_used_mib": 25864,
+        "ram_free_mib": 6097,
+        "vram_delta_mib": 497,
+        "ram_delta_mib": 403,
+        "cuda_oom": false
+      },
+      {
+        "target_tokens": 8192,
+        "synthetic_depth": true,
+        "history_rows": 144,
+        "estimated_input_tokens": 11594,
+        "actual_prompt_tokens": 13337,
+        "estimate_ratio": 1.15,
+        "within_budget": true,
+        "dropped_sections": [],
+        "ok": true,
+        "error": "",
+        "latency_ms": 45435.4,
+        "image_sent": true,
+        "vram_used_mib": 7609,
+        "vram_free_mib": 349,
+        "ram_used_mib": 25099,
+        "ram_free_mib": 6862,
+        "vram_delta_mib": -112,
+        "ram_delta_mib": -758,
+        "cuda_oom": false
+      },
+      {
+        "target_tokens": 16384,
+        "synthetic_depth": true,
+        "history_rows": 288,
+        "estimated_input_tokens": 19615,
+        "actual_prompt_tokens": 22980,
+        "estimate_ratio": 1.172,
+        "within_budget": true,
+        "dropped_sections": [],
+        "ok": true,
+        "error": "",
+        "latency_ms": 80687.68,
+        "image_sent": true,
+        "vram_used_mib": 7650,
+        "vram_free_mib": 308,
+        "ram_used_mib": 25712,
+        "ram_free_mib": 6249,
+        "vram_delta_mib": 41,
+        "ram_delta_mib": 614,
+        "cuda_oom": false
+      },
+      {
+        "target_tokens": 24576,
+        "synthetic_depth": true,
+        "history_rows": 432,
+        "estimated_input_tokens": 27756,
+        "actual_prompt_tokens": 32760,
+        "estimate_ratio": 1.18,
+        "within_budget": true,
+        "dropped_sections": [],
+        "ok": true,
+        "error": "",
+        "latency_ms": 69486.23,
+        "image_sent": true,
+        "vram_used_mib": 7656,
+        "vram_free_mib": 302,
+        "ram_used_mib": 27114,
+        "ram_free_mib": 4848,
+        "vram_delta_mib": -3,
+        "ram_delta_mib": 1411,
+        "cuda_oom": false
+      },
+      {
+        "target_tokens": 28672,
+        "synthetic_depth": true,
+        "history_rows": 8,
+        "estimated_input_tokens": 4090,
+        "actual_prompt_tokens": 4271,
+        "estimate_ratio": 1.044,
+        "within_budget": true,
+        "dropped_sections": [
+          "world_state:building,defense,hospital,research,resources,training",
+          "history:496->8"
+        ],
+        "ok": true,
+        "error": "",
+        "latency_ms": 19340.75,
+        "image_sent": true,
+        "vram_used_mib": 7724,
+        "vram_free_mib": 234,
+        "ram_used_mib": 26856,
+        "ram_free_mib": 5105,
+        "vram_delta_mib": 68,
+        "ram_delta_mib": -261,
+        "cuda_oom": false
+      }
+    ]
+  }
+}

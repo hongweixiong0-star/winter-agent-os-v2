@@ -292,27 +292,38 @@ class _StubClient:
         self.quantization = "TEST"
         self.endpoint = "http://127.0.0.1:0"
         self.multimodal = True
+        self.context = 32768
         self.text = text
         self.ok = ok
         self.error = error
         self.calls = 0
+        #: Stands in for the server's own ``usage.prompt_tokens``.  Non-zero and obviously not a
+        #: real measurement, so a row that copies the client's *estimate* into the field the
+        #: report calls ACTUAL cannot pass by coincidence.
+        self.prompt_tokens = 4321
         self.prompts: list[str] = []
         self.images: list[str | None] = []
+        #: Every reply contract the planner asked for, in order.  Recorded because the schema is
+        #: what caps the reply length, so "the planner stopped sending one" would silently undo
+        #: the fix and no other assertion here would notice.
+        self.schemas: list[dict | None] = []
 
     def available(self, *, force: bool = False):
         return (self.ok, "stub")
 
     def ask_json(self, *, system: str, user: str, purpose: str = "", element_count: int = 0,
-                 image_path=None, timeout_s=None):
+                 image_path=None, timeout_s=None, response_schema=None):
         from winter_agent_v2 import local_gui_model
 
         self.calls += 1
         self.prompts.append(user)
         self.images.append(image_path)
+        self.schemas.append(response_schema)
         return local_gui_model.GUIModelCall(
             ok=self.ok, text=self.text, error=self.error, model=self.model,
             latency_ms=1.0, prompt_chars=len(user),
             image_sent=bool(image_path), image_bytes=1 if image_path else 0,
+            prompt_tokens=self.prompt_tokens, context_limit=self.context,
         )
 
 
@@ -603,6 +614,384 @@ def _advisor_with(root: Path, text: str):
         client=_StubClient(text), ledger=ui_planner.PlannerLedger(root / "steps.jsonl"),
         root=root,
     )
+
+
+class TheSessionIsRememberedTest(unittest.TestCase):
+    """Operator directive 2026-09-30 §6: Context -> Action -> Feedback, and no infinite repeats.
+
+    Before this the packet's ``last_action``/``last_result`` were never set by anything, so every
+    question looked like a first attempt and the model had no way to know its last proposal had
+    already been tried and changed nothing.  The memory is fed by the runtime for every step --
+    model-driven or not -- because a history that only held advised steps would under-report how
+    often a control had been tried.
+    """
+
+    def test_a_step_lands_in_the_history_with_its_verdict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            advisor.note_step(skill="TRY_ORDINARY_CONTROL", control="搜索",
+                              expected_result="POPUP", observed_change="NONE", verifier_ok=False)
+            self.assertEqual(len(advisor.recent_steps), 1)
+            entry = advisor.recent_steps[0]
+            self.assertEqual(entry["skill"], "TRY_ORDINARY_CONTROL")
+            self.assertEqual(entry["control"], "搜索")
+            self.assertEqual(entry["observed"], "NONE")
+            self.assertEqual(entry["verifier"], "FAIL")
+            # ...and the single-step fields the prompt has described since 2026-09-25 stay filled,
+            # so a packet read by either description says the same thing.
+            self.assertEqual(advisor.last_action, "TRY_ORDINARY_CONTROL[搜索]")
+            self.assertEqual(advisor.last_result, "NONE")
+
+    def test_the_history_is_bounded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            for index in range(ui_planner.HISTORY_MEMORY * 3):
+                advisor.note_step(skill="S", control=f"c{index}", observed_change="NONE")
+            self.assertEqual(len(advisor.recent_steps), ui_planner.HISTORY_MEMORY)
+            # Oldest go first, so the newest step is still the one that survived.
+            self.assertEqual(advisor.recent_steps[-1]["control"],
+                             f"c{ui_planner.HISTORY_MEMORY * 3 - 1}")
+
+    def test_no_progress_counts_the_trailing_steps_that_changed_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            advisor.note_step(skill="S", control="a", observed_change="PAGE_CHANGED",
+                              verifier_ok=False)
+            advisor.note_step(skill="S", control="b", observed_change="NONE")
+            advisor.note_step(skill="S", control="c", observed_change="NONE")
+            advisor.note_step(skill="S", control="d", observed_change="UNKNOWN")
+            self.assertEqual(advisor.no_progress_count(), 3)
+
+    def test_a_pass_resets_the_no_progress_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            advisor.note_step(skill="S", control="a", observed_change="NONE")
+            advisor.note_step(skill="S", control="b", observed_change="PAGE_CHANGED",
+                              verifier_ok=True)
+            self.assertEqual(advisor.no_progress_count(), 0)
+
+    def test_the_last_failure_is_the_newest_step_that_did_not_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            advisor.note_step(skill="A", control="old", observed_change="NONE")
+            advisor.note_step(skill="B", control="new", observed_change="NO_PANEL")
+            self.assertIn("B[new]", advisor._last_failure())
+            self.assertIn("NO_PANEL", advisor._last_failure())
+
+    def test_a_session_with_nothing_tried_has_no_failure_to_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            self.assertEqual(advisor._last_failure(), "")
+
+    def test_the_session_block_reports_both_budgets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            block = advisor.session_context("UNKNOWN::挂机收益")
+            self.assertEqual(block["step_index"], 0)
+            self.assertEqual(block["remaining_run_steps"], advisor.max_steps_per_run)
+            self.assertEqual(block["steps_on_this_screen"], 0)
+            self.assertIn("no_progress_count", block)
+
+
+class TheVerifierVerdictIsWhatThePacketShowsTest(unittest.TestCase):
+    def test_note_outcome_becomes_the_last_verifier_outcome(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            advisor.note_outcome("r1", verifier_ok=True, skill="S", result="SUCCESS",
+                                 evidence={"reason": "panel read"})
+            self.assertIs(advisor.last_verifier_outcome["ok"], True)
+            self.assertEqual(advisor.last_verifier_outcome["skill"], "S")
+            self.assertEqual(advisor.last_verifier_outcome["reason"], "panel read")
+
+    def test_an_unsettled_step_leaves_no_verdict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            self.assertEqual(advisor.last_verifier_outcome, {})
+
+
+class ThePromptCarriesTheNewSectionsTest(unittest.TestCase):
+    def test_history_session_and_verdict_reach_the_prompt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            advisor.note_step(skill="TRY_ORDINARY_CONTROL", control="登录好礼",
+                              observed_change="NONE", verifier_ok=False)
+            advisor.note_outcome("r1", verifier_ok=False, skill="TRY_ORDINARY_CONTROL",
+                                 result="FAILURE")
+            advisor.take_request(_request())
+            packet = json.loads(advisor.client.prompts[0].split("\n", 1)[1])
+            self.assertEqual(packet["session"]["no_progress_count"], 1)
+            self.assertEqual(packet["recent_steps"][0]["control"], "登录好礼")
+            self.assertIs(packet["last_verifier_outcome"]["ok"], False)
+            self.assertIn("context", packet)
+
+    def test_the_prompt_explains_how_to_read_the_new_sections(self):
+        # A section the model is not told about is a section it will ignore, and the repetition
+        # rule is the whole reason the history is sent.
+        for token in ("recent_steps", "last_verifier_outcome", "session", "no_progress_count"):
+            self.assertIn(token, ui_planner.SYSTEM_PROMPT, token)
+
+    def test_an_impossible_packet_is_refused_by_name_rather_than_sent(self):
+        """The refusal has its own reason: the model is fine and the window is fine."""
+        from winter_agent_v2 import context_budget
+
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = ui_planner.ManagedAdvisor(
+                client=_StubClient(execute()),
+                ledger=ui_planner.PlannerLedger(Path(tmp) / "steps.jsonl"),
+                root=Path(tmp),
+                budget=context_budget.ContextBudgetManager(max_model_context=2000,
+                                                           output_reserve=500),
+            )
+            self.assertIsNone(advisor.take_request(_request()))
+            self.assertEqual(advisor.client.calls, 0)
+            rows = [json.loads(line) for line in
+                    (Path(tmp) / "steps.jsonl").read_text(encoding="utf-8").splitlines()
+                    if line.strip()]
+            self.assertEqual(rows[0]["error"], ui_planner.OVER_BUDGET)
+            self.assertFalse(rows[0]["budget"]["within_budget"])
+
+
+class TheBudgetIsRecordedOnTheStepTest(unittest.TestCase):
+    """The report quotes ACTUAL_PROMPT_*, so the ledger has to carry the server's own count."""
+
+    def test_a_plan_row_carries_the_budget_and_the_measured_prompt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = _advisor_with(Path(tmp), execute())
+            advisor.take_request(_request())
+            rows = [json.loads(line) for line in
+                    (Path(tmp) / "steps.jsonl").read_text(encoding="utf-8").splitlines()
+                    if line.strip()]
+            budget = rows[0]["budget"]
+            self.assertEqual(budget["max_model_context"], 32768)
+            self.assertEqual(budget["max_input_budget"], 28672)
+            self.assertEqual(budget["actual_prompt_tokens"], 4321)
+            self.assertTrue(budget["within_budget"])
+            self.assertLess(budget["estimated_input_tokens"], budget["max_input_budget"])
+
+    def test_a_failed_call_still_records_what_the_prompt_cost(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = ui_planner.ManagedAdvisor(
+                client=_StubClient("", ok=False, error="LOCAL_GUI_MODEL_TIMEOUT"),
+                ledger=ui_planner.PlannerLedger(Path(tmp) / "steps.jsonl"), root=Path(tmp))
+            advisor.take_request(_request())
+            rows = [json.loads(line) for line in
+                    (Path(tmp) / "steps.jsonl").read_text(encoding="utf-8").splitlines()
+                    if line.strip()]
+            self.assertEqual(rows[0]["error"], "LOCAL_GUI_MODEL_TIMEOUT")
+            self.assertIn("budget", rows[0])
+
+
+class TheRuntimeFeedsEveryStepToThePlannerTest(unittest.TestCase):
+    """The hook that makes the history real: it must fire for steps the model did not drive."""
+
+    @staticmethod
+    def _decision(skill: str = "PRINTED_TAP", expected: str = "PAGE_CHANGED"):
+        from winter_agent_v2.models import Decision
+
+        return Decision(skill=skill, reason="", confidence=0.0, expected_result=expected)
+
+    @staticmethod
+    def _execution(target: str = "出征"):
+        class _Action:
+            target = ""
+        action = _Action()
+        action.target = target
+
+        class _Execution:
+            executed = True
+        execution = _Execution()
+        execution.action = action
+        return execution
+
+    @staticmethod
+    def _verdict(ok: bool = True):
+        class _Verdict:
+            pass
+        verdict = _Verdict()
+        verdict.ok = ok
+        verdict.evidence = {}
+        return verdict
+
+    def test_the_hook_hands_over_skill_control_change_and_verdict(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        seen: list[dict] = []
+
+        class _Advisor:
+            def note_step(self, **kwargs):
+                seen.append(kwargs)
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._advisor = _Advisor()
+        runtime._note_step_for_planner(self._decision(), self._execution(),
+                                       self._verdict(True), "PAGE_CHANGED")
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0]["skill"], "PRINTED_TAP")
+        self.assertEqual(seen[0]["control"], "出征")
+        self.assertEqual(seen[0]["observed_change"], "PAGE_CHANGED")
+        self.assertIs(seen[0]["verifier_ok"], True)
+
+    def test_a_step_with_no_execution_is_recorded_as_a_step_that_ran_nothing(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        seen: list[dict] = []
+
+        class _Advisor:
+            def note_step(self, **kwargs):
+                seen.append(kwargs)
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._advisor = _Advisor()
+        runtime._note_step_for_planner(self._decision(), None, None, "NONE")
+        self.assertEqual(seen[0]["control"], "")
+        self.assertIsNone(seen[0]["verifier_ok"])
+
+    def test_an_advisor_without_the_hook_is_not_an_error(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        class _RetiredAdvisor:
+            pass
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._advisor = _RetiredAdvisor()
+        runtime._note_step_for_planner(self._decision(), self._execution(),
+                                       self._verdict(True), "PAGE_CHANGED")
+
+    def test_a_broken_memory_cannot_fail_a_step_that_already_ran(self):
+        from winter_agent_v2.runtime import LiveRuntime
+
+        class _Advisor:
+            def note_step(self, **kwargs):
+                raise OSError("disk full")
+
+        runtime = object.__new__(LiveRuntime)
+        runtime._advisor = _Advisor()
+        runtime._note_step_for_planner(self._decision(), self._execution(),
+                                       self._verdict(True), "PAGE_CHANGED")
+
+    def test_the_cycle_feeds_the_planner_and_not_only_the_advised_steps(self):
+        """Source-level, because the call site is inside the step fold.
+
+        A behavioural test would need a whole runtime; what must not regress is that the hook is
+        called from the per-step collection path (where every completed step passes) rather than
+        from the advised-step settlement (where only model-driven ones do).
+        """
+        text = (ROOT / "winter_agent_v2" / "runtime.py").read_text(encoding="utf-8")
+        self.assertIn("self._note_step_for_planner(decision, execution, verification, "
+                      "observed_change)", text)
+        self.assertLess(text.index("self._note_step_for_planner(decision"),
+                        text.index("self._settle_advised_step(decision"))
+
+
+class TheReplyContractIsEnforcedNotRequestedTest(unittest.TestCase):
+    """The reply schema is what caps the output length -- the prompt was measured not to.
+
+    Measured 2026-09-30: ``reason`` costs 41 of the 147 output tokens a plan takes, and asking
+    for a shorter one in prose did nothing (p50 11.5s -> 12.4s).  The server does honour
+    ``maxLength``, so the constraint has to live in the schema; these tests hold the schema to
+    the two properties that make it worth having -- it caps the free text, and it cannot drop a
+    field the parser or the verifier reads back.
+    """
+
+    def test_every_text_field_the_model_can_ramble_in_is_capped(self):
+        props = ui_planner.response_schema(needs_box=True)["properties"]
+        self.assertEqual(props["reason"]["maxLength"], ui_planner.REASON_MAX_CHARS)
+        self.assertEqual(props["semantic_target"]["maxLength"],
+                         ui_planner.SEMANTIC_TARGET_MAX_CHARS)
+        expected = props["expected"]["properties"]
+        self.assertEqual(expected["page"]["maxLength"], ui_planner.EXPECTED_PAGE_MAX_CHARS)
+        self.assertEqual(expected["result"]["maxLength"], ui_planner.EXPECTED_RESULT_MAX_CHARS)
+
+    def test_the_caps_are_short_enough_to_be_worth_it(self):
+        """A cap near the observed length would cost tokens and buy nothing."""
+        self.assertLess(ui_planner.REASON_MAX_CHARS, 184)   # the measured reason length
+
+    def test_the_shipped_image_cannot_be_dropped(self):
+        """``action`` and ``expected`` stay: the parser and the verifier read them back."""
+        schema = ui_planner.response_schema(needs_box=True)
+        self.assertIn("action", schema["required"])
+        self.assertIn("expected", schema["required"])
+        self.assertIn("target_element_id", schema["properties"]["action"]["properties"])
+        self.assertIn("result", schema["properties"]["expected"]["required"])
+
+    def test_the_enums_are_the_protocol_not_a_copy_of_it(self):
+        props = ui_planner.response_schema(needs_box=False)["properties"]
+        self.assertEqual(props["decision"]["enum"], list(ui_planner.DECISIONS))
+        self.assertEqual(props["action"]["properties"]["type"]["enum"],
+                         list(ui_planner.OFFERED_ACTIONS))
+
+    def test_no_key_outside_the_contract_can_be_emitted(self):
+        self.assertFalse(ui_planner.response_schema(needs_box=True)["additionalProperties"])
+        self.assertFalse(ui_planner.response_schema(needs_box=False)["additionalProperties"])
+
+    def test_the_box_is_only_asked_for_when_it_could_be_used(self):
+        """An EXECUTE that names an element never reads a box, so asking for one is 29 tokens."""
+        without = ui_planner.response_schema(needs_box=False)
+        self.assertNotIn(ui_planner.VISION_BOX_KEY, without["properties"])
+        self.assertNotIn(ui_planner.VISION_BOX_KEY, without["required"])
+        self.assertNotIn("semantic_target", without["properties"])
+        with_box = ui_planner.response_schema(needs_box=True)
+        self.assertIn(ui_planner.VISION_BOX_KEY, with_box["required"])
+        self.assertEqual(with_box["properties"][ui_planner.VISION_BOX_KEY]["maxItems"], 4)
+
+    def test_the_schema_still_parses_a_reply_that_obeys_it(self):
+        """The contract and the reader must agree, or the cap would just move the failure."""
+        reply = json.dumps({
+            "decision": "REPLAN",
+            "action": {"type": "OBSERVE", "target_element_id": None},
+            "expected": {"page": "home", "result": "training page opens"},
+            "reason": "no training control on this screen",
+        })
+        parsed = ui_planner.parse_plan(reply, elements=[])
+        self.assertTrue(parsed.ok, parsed.error)
+        self.assertEqual(parsed.plan.decision, "REPLAN")
+        self.assertEqual(parsed.plan.expected_result, "training page opens")
+
+
+class ThePlannerAsksForTheContractItCanUseTest(unittest.TestCase):
+    """The schema is chosen from the element table, not left to the model's discretion."""
+
+    def _request_for(self, *, with_elements: bool):
+        """A request whose element table is (or is not) populated.
+
+        The table is derived from the request's own recorded OCR, so an empty one is expressed
+        by recording no text -- and a frame is still attached, because
+        ``PLANNER_NO_ELEMENTS_ON_THIS_SCREEN`` only fires when *both* channels are empty and
+        that is not the case under test here.
+        """
+        texts = ("领取",) if with_elements else ()
+        boxes = ({"x_norm": 0.3, "y_norm": 0.45, "w_norm": 0.2, "h_norm": 0.06},) if with_elements else ()
+        return unknown_advisor.UnknownRequest(
+            request_id="unknown__control__schema", unknown_type=unknown_advisor.UNKNOWN_CONTROL,
+            page_label="UNKNOWN", page_key="UNKNOWN::挂机收益", goal="DAILY_ROUTINE",
+            ocr_texts=texts, ocr_boxes=boxes,
+            frame_path="/tmp/frame.png",
+        )
+
+    def _advisor(self, tmp: str):
+        return ui_planner.ManagedAdvisor(
+            client=_StubClient(json.dumps({
+                "decision": "OBSERVE", "action": {"type": "OBSERVE"},
+                "expected": {"result": "read the screen"},
+                "reason": "not readable yet"})),
+            ledger=ui_planner.PlannerLedger(path=Path(tmp) / "steps.jsonl"),
+            root=Path(tmp))
+
+    def test_a_screen_with_elements_is_not_asked_for_a_box(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = self._advisor(tmp)
+            advisor.take_request(self._request_for(with_elements=True))
+            self.assertEqual(len(advisor.client.schemas), 1)
+            self.assertIsNotNone(advisor.client.schemas[-1])
+            self.assertNotIn(ui_planner.VISION_BOX_KEY,
+                             advisor.client.schemas[-1]["properties"])
+
+    def test_an_empty_screen_is_asked_for_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            advisor = self._advisor(tmp)
+            advisor.take_request(self._request_for(with_elements=False))
+            self.assertEqual(len(advisor.client.schemas), 1)
+            self.assertIn(ui_planner.VISION_BOX_KEY, advisor.client.schemas[-1]["properties"])
 
 
 if __name__ == "__main__":

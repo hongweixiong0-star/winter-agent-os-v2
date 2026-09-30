@@ -1,0 +1,74 @@
+错误: 没有找到进程 "llama-server.exe"。
+[no_server]   maa p50=12.81 p95=23.51 fail=0  adb p50=27.96
+错误: 没有找到进程 "llama-server.exe"。
+started llama-server pid=29304 profile={"gpu_layers": 20, "context": 32768, "kv_type": "f16", "port": 18080}
+{
+  "endpoint": "http://127.0.0.1:18080",
+  "model_path": "E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "context_requested": 32768,
+  "gpu_layers": 20,
+  "kv_cache_type": "f16",
+  "multimodal_projector_loaded": true,
+  "modalities": {
+    "vision": true,
+    "video": true,
+    "audio": false
+  },
+  "resident": true
+}
+[ngl 20/f16] idle p50=11.78 load p50=15.14 p95=26.25 fail=0 calls=5 free=763 -> DEVICE_IMPACT
+成功: 已终止进程 "llama-server.exe"，其 PID 为 29304。
+started llama-server pid=30260 profile={"gpu_layers": 18, "context": 32768, "kv_type": "f16", "port": 18080}
+{
+  "endpoint": "http://127.0.0.1:18080",
+  "model_path": "E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "context_requested": 32768,
+  "gpu_layers": 18,
+  "kv_cache_type": "f16",
+  "multimodal_projector_loaded": true,
+  "modalities": {
+    "vision": true,
+    "video": true,
+    "audio": false
+  },
+  "resident": true
+}
+[31m[2026-10-01 00:54:45.935][ERR][Px6648][Tx6234][AdbControlUnitMgr.cpp][L46][MaaNS::CtrlUnitNs::AdbControlUnitMgr::connect] failed to connect [adb_path_=D:/Program Files/Netease/MuMu Player 12/nx_main/adb.exe] [adb_serial_=127.0.0.1:7555] [0m
+[31m[2026-10-01 00:54:45.935][ERR][Px6648][Tx6234][AdbControlUnitMgr.cpp][L144][MaaNS::CtrlUnitNs::AdbControlUnitMgr::screencap] re-connect failed [i=0] [0m
+[31m[2026-10-01 00:54:58.211][ERR][Px6648][Tx6234][UnitBase.cpp][L64][MaaNS::CtrlUnitNs::UnitBase::startup_and_read_pipe] child return error [argv.exec=D:/Program Files/Netease/MuMu Player 12/nx_main/adb.exe] [argv.args=["-s","127.0.0.1:7555","get-state"]] [0m
+[31m[2026-10-01 00:54:58.211][ERR][Px6648][Tx6234][AdbControlUnitMgr.cpp][L46][MaaNS::CtrlUnitNs::AdbControlUnitMgr::connect] failed to connect [adb_path_=D:/Program Files/Netease/MuMu Player 12/nx_main/adb.exe] [adb_serial_=127.0.0.1:7555] [0m
+[31m[2026-10-01 00:54:58.212][ERR][Px6648][Tx6234][AdbControlUnitMgr.cpp][L144][MaaNS::CtrlUnitNs::AdbControlUnitMgr::screencap] re-connect failed [i=1] [0m
+[ngl 18/f16] idle p50=12.21 load p50=15.63 p95=28.73 fail=0 calls=5 free=1770 -> DEVICE_IMPACT
+成功: 已终止进程 "llama-server.exe"，其 PID 为 30260。
+started llama-server pid=9676 profile={"gpu_layers": 16, "context": 32768, "kv_type": "f16", "port": 18080}
+{
+  "endpoint": "http://127.0.0.1:18080",
+  "model_path": "E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "context_requested": 32768,
+  "gpu_layers": 16,
+  "kv_cache_type": "f16",
+  "multimodal_projector_loaded": true,
+  "modalities": {
+    "vision": true,
+    "video": true,
+    "audio": false
+  },
+  "resident": true
+}
+[ngl 16/f16] idle p50=12.63 load p50=15.61 p95=23.33 fail=0 calls=4 free=1818 -> OK
+成功: 已终止进程 "llama-server.exe"，其 PID 为 9676。
+product: MuMuPlayer-12.0-0
+nemu_connect instance_name: ginstance1400967653141180200
+connect not same day
+product: MuMuPlayer-12.0-0
+nemu_connect instance_name: ginstance1400967653141180200
+product: MuMuPlayer-12.0-0
+nemu_connect instance_name: ginstance1401008008361700900
+connect not same day
+product: MuMuPlayer-12.0-0
+nemu_connect instance_name: ginstance1401008008361700900
+
+wrote dataset\truth_audit\gui_model_context_profile\device_impact_tiebreak.json

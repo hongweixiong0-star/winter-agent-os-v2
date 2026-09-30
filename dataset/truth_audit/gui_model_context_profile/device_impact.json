@@ -1,0 +1,436 @@
+{
+ "generated": "2026-09-30T16:35:32+00:00",
+ "tolerance": 1.5,
+ "hard_ms": 250.0,
+ "probe_seconds": 45.0,
+ "baseline_recorded": {
+  "maa_screencap_ms": 12.1,
+  "adb_screencap_ms": 246.2
+ },
+ "profiles": [
+  {
+   "profile": {
+    "gpu_layers": 24,
+    "context": 32768,
+    "kv_type": "f16",
+    "port": 18080
+   },
+   "vram_before": {
+    "used_mib": 1355,
+    "free_mib": 6603
+   },
+   "launch_exit": 0,
+   "cuda_oom_at_launch": false,
+   "vram_idle": {
+    "used_mib": 7452,
+    "free_mib": 506
+   },
+   "ram_idle": {
+    "used_mib": 23506,
+    "free_mib": 8455,
+    "percent": 73
+   },
+   "server_rss_idle_mib": 5803,
+   "server_idle": {
+    "maa_capture": {
+     "n": 3704,
+     "p50": 11.03,
+     "p95": 17.91,
+     "max": 92.87,
+     "mean": 12.15,
+     "min": 7.98,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 45.11,
+     "p95": 50.78,
+     "max": 50.78,
+     "mean": 45.26,
+     "min": 40.05
+    },
+    "vram": {
+     "used_mib": 7510,
+     "free_mib": 448
+    },
+    "ram": {
+     "used_mib": 23427,
+     "free_mib": 8534,
+     "percent": 73
+    }
+   },
+   "server_load": {
+    "maa_capture": {
+     "n": 2718,
+     "p50": 15.02,
+     "p95": 29.77,
+     "max": 107.49,
+     "mean": 16.56,
+     "min": 9.17,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 31.63,
+     "p95": 90.23,
+     "max": 90.23,
+     "mean": 45.38,
+     "min": 28.05
+    },
+    "vram": {
+     "used_mib": 7714,
+     "free_mib": 244
+    },
+    "ram": {
+     "used_mib": 24364,
+     "free_mib": 7597,
+     "percent": 76
+    },
+    "model_calls": 3,
+    "model_call_failures": 0,
+    "model_latency_ms": {
+     "n": 3,
+     "p50": 20562.7,
+     "p95": 25931.5,
+     "max": 25931.5,
+     "mean": 21176.7,
+     "min": 17035.9
+    }
+   },
+   "server_rss_peak_mib": 6735,
+   "cuda_oom": false,
+   "capture_p95_ratio_vs_no_server": 1.559,
+   "adb_roundtrip_ratio_idle": 1.633,
+   "reasons": [
+    "MAA_P95_REGRESSION x1.56"
+   ],
+   "verdict": "DEVICE_IMPACT",
+   "vram_free_mib": 244
+  },
+  {
+   "profile": {
+    "gpu_layers": 20,
+    "context": 32768,
+    "kv_type": "f16",
+    "port": 18080
+   },
+   "vram_before": {
+    "used_mib": 1329,
+    "free_mib": 6629
+   },
+   "launch_exit": 0,
+   "cuda_oom_at_launch": false,
+   "vram_idle": {
+    "used_mib": 6815,
+    "free_mib": 1143
+   },
+   "ram_idle": {
+    "used_mib": 23165,
+    "free_mib": 8797,
+    "percent": 72
+   },
+   "server_rss_idle_mib": 5937,
+   "server_idle": {
+    "maa_capture": {
+     "n": 3413,
+     "p50": 12.46,
+     "p95": 18.38,
+     "max": 42.37,
+     "mean": 13.18,
+     "min": 8.81,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 103.09,
+     "p95": 357.5,
+     "max": 357.5,
+     "mean": 147.88,
+     "min": 27.83
+    },
+    "vram": {
+     "used_mib": 6846,
+     "free_mib": 1112
+    },
+    "ram": {
+     "used_mib": 23254,
+     "free_mib": 8707,
+     "percent": 72
+    }
+   },
+   "server_load": {
+    "maa_capture": {
+     "n": 2799,
+     "p50": 15.3,
+     "p95": 23.56,
+     "max": 50.71,
+     "mean": 16.07,
+     "min": 10.05,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 163.3,
+     "p95": 449.39,
+     "max": 449.39,
+     "mean": 205.89,
+     "min": 47.57
+    },
+    "vram": {
+     "used_mib": 7006,
+     "free_mib": 952
+    },
+    "ram": {
+     "used_mib": 24490,
+     "free_mib": 7472,
+     "percent": 76
+    },
+    "model_calls": 3,
+    "model_call_failures": 0,
+    "model_latency_ms": {
+     "n": 3,
+     "p50": 23346.7,
+     "p95": 23799.3,
+     "max": 23799.3,
+     "mean": 22373.63,
+     "min": 19974.9
+    }
+   },
+   "server_rss_peak_mib": 6864,
+   "cuda_oom": false,
+   "capture_p95_ratio_vs_no_server": 1.234,
+   "adb_roundtrip_ratio_idle": 3.732,
+   "reasons": [
+    "ADB_ROUNDTRIP_REGRESSION x3.73"
+   ],
+   "verdict": "DEVICE_IMPACT",
+   "vram_free_mib": 952
+  },
+  {
+   "profile": {
+    "gpu_layers": 16,
+    "context": 32768,
+    "kv_type": "f16",
+    "port": 18080
+   },
+   "vram_before": {
+    "used_mib": 1520,
+    "free_mib": 6438
+   },
+   "launch_exit": 0,
+   "cuda_oom_at_launch": false,
+   "vram_idle": {
+    "used_mib": 6355,
+    "free_mib": 1603
+   },
+   "ram_idle": {
+    "used_mib": 24318,
+    "free_mib": 7643,
+    "percent": 76
+   },
+   "server_rss_idle_mib": 6070,
+   "server_idle": {
+    "maa_capture": {
+     "n": 3746,
+     "p50": 11.38,
+     "p95": 15.99,
+     "max": 51.78,
+     "mean": 12.01,
+     "min": 8.54,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 24.52,
+     "p95": 25.02,
+     "max": 25.02,
+     "mean": 24.23,
+     "min": 22.84
+    },
+    "vram": {
+     "used_mib": 6332,
+     "free_mib": 1626
+    },
+    "ram": {
+     "used_mib": 23502,
+     "free_mib": 8459,
+     "percent": 73
+    }
+   },
+   "server_load": {
+    "maa_capture": {
+     "n": 3130,
+     "p50": 13.71,
+     "p95": 18.71,
+     "max": 44.47,
+     "mean": 14.37,
+     "min": 8.99,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 50.55,
+     "p95": 58.81,
+     "max": 58.81,
+     "mean": 49.47,
+     "min": 37.97
+    },
+    "vram": {
+     "used_mib": 6434,
+     "free_mib": 1524
+    },
+    "ram": {
+     "used_mib": 23866,
+     "free_mib": 8095,
+     "percent": 74
+    },
+    "model_calls": 2,
+    "model_call_failures": 0,
+    "model_latency_ms": {
+     "n": 2,
+     "p50": 25869.95,
+     "p95": 28317.8,
+     "max": 28317.8,
+     "mean": 25869.95,
+     "min": 23422.1
+    }
+   },
+   "server_rss_peak_mib": 6742,
+   "cuda_oom": false,
+   "capture_p95_ratio_vs_no_server": 0.98,
+   "adb_roundtrip_ratio_idle": 0.888,
+   "reasons": [],
+   "verdict": "OK",
+   "vram_free_mib": 1524
+  },
+  {
+   "profile": {
+    "gpu_layers": 24,
+    "context": 32768,
+    "kv_type": "q8_0",
+    "port": 18080
+   },
+   "vram_before": {
+    "used_mib": 1505,
+    "free_mib": 6453
+   },
+   "launch_exit": 0,
+   "cuda_oom_at_launch": false,
+   "vram_idle": {
+    "used_mib": 7356,
+    "free_mib": 602
+   },
+   "ram_idle": {
+    "used_mib": 22949,
+    "free_mib": 9012,
+    "percent": 71
+   },
+   "server_rss_idle_mib": 5676,
+   "server_idle": {
+    "maa_capture": {
+     "n": 3707,
+     "p50": 11.74,
+     "p95": 15.78,
+     "max": 35.51,
+     "mean": 12.14,
+     "min": 8.65,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 26.55,
+     "p95": 28.6,
+     "max": 28.6,
+     "mean": 26.37,
+     "min": 23.8
+    },
+    "vram": {
+     "used_mib": 7446,
+     "free_mib": 512
+    },
+    "ram": {
+     "used_mib": 22929,
+     "free_mib": 9032,
+     "percent": 71
+    }
+   },
+   "server_load": {
+    "maa_capture": {
+     "n": 2623,
+     "p50": 15.26,
+     "p95": 31.9,
+     "max": 98.11,
+     "mean": 17.15,
+     "min": 9.79,
+     "failures": 0
+    },
+    "adb_roundtrip": {
+     "n": 4,
+     "p50": 39.88,
+     "p95": 47.48,
+     "max": 47.48,
+     "mean": 40.09,
+     "min": 33.13
+    },
+    "vram": {
+     "used_mib": 7596,
+     "free_mib": 362
+    },
+    "ram": {
+     "used_mib": 24100,
+     "free_mib": 7862,
+     "percent": 75
+    },
+    "model_calls": 2,
+    "model_call_failures": 0,
+    "model_latency_ms": {
+     "n": 2,
+     "p50": 26839.75,
+     "p95": 27524.5,
+     "max": 27524.5,
+     "mean": 26839.75,
+     "min": 26155.0
+    }
+   },
+   "server_rss_peak_mib": 6296,
+   "cuda_oom": false,
+   "capture_p95_ratio_vs_no_server": 1.671,
+   "adb_roundtrip_ratio_idle": 0.961,
+   "reasons": [
+    "MAA_P95_REGRESSION x1.67"
+   ],
+   "verdict": "DEVICE_IMPACT",
+   "vram_free_mib": 362
+  }
+ ],
+ "maa_available": true,
+ "maa_backend": "MAA_MUMU_EXTRAS",
+ "no_server": {
+  "maa_capture": {
+   "n": 3522,
+   "p50": 11.7,
+   "p95": 19.09,
+   "max": 41.87,
+   "mean": 12.77,
+   "min": 8.78,
+   "failures": 0
+  },
+  "adb_roundtrip": {
+   "n": 4,
+   "p50": 27.62,
+   "p95": 30.95,
+   "max": 30.95,
+   "mean": 28.16,
+   "min": 26.47
+  },
+  "vram": {
+   "used_mib": 1588,
+   "free_mib": 6370
+  },
+  "ram": {
+   "used_mib": 18519,
+   "free_mib": 13442,
+   "percent": 57
+  }
+ }
+}

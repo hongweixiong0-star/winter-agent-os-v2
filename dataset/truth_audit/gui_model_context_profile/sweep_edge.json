@@ -1,0 +1,186 @@
+{
+  "what_this_is": "VRAM/RAM/latency evidence for the 32768-context deployment: a KV-cache A/B, an input-size ladder, and the estimator's calibration against the server's own prompt_tokens",
+  "generated_at": "2026-09-30T17:21:25.031582+00:00",
+  "max_model_context": 32768,
+  "max_input_budget": 28672,
+  "output_reserve": 4096,
+  "sweep": {
+    "mode": "sweep",
+    "rows": [
+      {
+        "profile": {
+          "gpu_layers": 31,
+          "context": 32768,
+          "kv_type": "f16",
+          "port": 18080
+        },
+        "vram_before": {
+          "used_mib": 604,
+          "free_mib": 7354
+        },
+        "ram_before": {
+          "used_mib": 18408,
+          "free_mib": 13553,
+          "percent": 57
+        },
+        "launch_exit": 0,
+        "vram_idle": {
+          "used_mib": 7708,
+          "free_mib": 250
+        },
+        "ram_idle": {
+          "used_mib": 23280,
+          "free_mib": 8681,
+          "percent": 72
+        },
+        "server_rss_idle_mib": 5661,
+        "latency_ms": {
+          "n": 3,
+          "p50": 21010.5,
+          "p95": 23451.0,
+          "max": 23722.17,
+          "min": 18304.85,
+          "mean": 21012.5
+        },
+        "actual_prompt_tokens": {
+          "n": 3,
+          "p50": 3314.0,
+          "p95": 3668.6,
+          "max": 3708,
+          "min": 2946,
+          "mean": 3322.7
+        },
+        "vram_peak": {
+          "used_mib": 7788,
+          "free_mib": 170
+        },
+        "ram_peak": {
+          "used_mib": 24024,
+          "free_mib": 7901
+        },
+        "server_rss_peak_mib": 6620,
+        "cuda_oom": false,
+        "replies": [
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "REPLAN",
+            "target": "",
+            "reply_chars": 537
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "DEFER",
+            "target": "",
+            "reply_chars": 506
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "OBSERVE",
+            "target": "",
+            "reply_chars": 464
+          }
+        ],
+        "quality": {
+          "answered": 3,
+          "parsed": 3,
+          "decisions": [
+            "DEFER",
+            "OBSERVE",
+            "REPLAN"
+          ],
+          "mean_reply_chars": 502.3
+        }
+      },
+      {
+        "profile": {
+          "gpu_layers": 32,
+          "context": 32768,
+          "kv_type": "f16",
+          "port": 18080
+        },
+        "vram_before": {
+          "used_mib": 602,
+          "free_mib": 7356
+        },
+        "ram_before": {
+          "used_mib": 17161,
+          "free_mib": 14800,
+          "percent": 53
+        },
+        "launch_exit": 0,
+        "vram_idle": {
+          "used_mib": 7716,
+          "free_mib": 242
+        },
+        "ram_idle": {
+          "used_mib": 23179,
+          "free_mib": 8782,
+          "percent": 72
+        },
+        "server_rss_idle_mib": 5729,
+        "latency_ms": {
+          "n": 3,
+          "p50": 21182.9,
+          "p95": 22141.6,
+          "max": 22248.18,
+          "min": 20433.39,
+          "mean": 21288.1
+        },
+        "actual_prompt_tokens": {
+          "n": 3,
+          "p50": 3314.0,
+          "p95": 3668.6,
+          "max": 3708,
+          "min": 2946,
+          "mean": 3322.7
+        },
+        "vram_peak": {
+          "used_mib": 7846,
+          "free_mib": 112
+        },
+        "ram_peak": {
+          "used_mib": 24910,
+          "free_mib": 7045
+        },
+        "server_rss_peak_mib": 6688,
+        "cuda_oom": false,
+        "replies": [
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "REPLAN",
+            "target": "",
+            "reply_chars": 527
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "DEFER",
+            "target": "",
+            "reply_chars": 513
+          },
+          {
+            "ok": true,
+            "parse_error": "",
+            "decision": "OBSERVE",
+            "target": "",
+            "reply_chars": 464
+          }
+        ],
+        "quality": {
+          "answered": 3,
+          "parsed": 3,
+          "decisions": [
+            "DEFER",
+            "OBSERVE",
+            "REPLAN"
+          ],
+          "mean_reply_chars": 501.3
+        }
+      }
+    ]
+  }
+}

@@ -2089,6 +2089,16 @@ class LiveRuntime:
             )
         except Exception:  # noqa: BLE001 - collection must never fail the step it reads
             pass
+        # ...and the same step again, for the *planner's* memory of this session.
+        #
+        # Operator directive 2026-09-30 §6: the next UNKNOWN question must carry what this
+        # session has already tried, so the model stops re-proposing a control that has changed
+        # nothing.  The history is fed here, on every completed step, rather than from the
+        # advised-step settlement: a memory that only held model-driven steps would report "this
+        # was tried once" about a session whose rules-based skills had already tried it six times,
+        # which is exactly the repetition the directive is about.  Its own try, because a
+        # planner-side ledger must never cost a step that has already been issued and verified.
+        self._note_step_for_planner(decision, execution, verification, observed_change)
         if self.episode_store is None:
             return
         failure = None
@@ -2206,6 +2216,37 @@ class LiveRuntime:
             except Exception:  # noqa: BLE001 - a derived board cannot stop production
                 pass
         self._settle_advised_step(decision, verification, result)
+
+    def _note_step_for_planner(self, decision: Any, execution: Any,
+                               verification: Any, observed_change: str) -> None:
+        """Hand this step's Action -> Feedback to the planner's session memory.
+
+        The planner builds its question from evidence, and until 2026-09-30 the only evidence
+        about the session was the *current* screen: ``last_action``/``last_result`` were never
+        set by anything, so every question looked like a first attempt and the model had no way
+        to know that its last proposal had already been tried and changed nothing.
+
+        What is handed over is measured, not claimed.  ``observed_change`` is the difference
+        between the two frames (the same fold the episode carries) and ``verifier_ok`` is the
+        verifier's verdict, so the model never reads its own opinion of itself back as fact.
+        ``control`` comes from the executed action's own target, which is what the model would
+        have to name again to repeat it.
+        """
+        advisor = getattr(self, "_advisor", None)
+        note = getattr(advisor, "note_step", None)
+        if not callable(note):
+            return
+        try:
+            action = getattr(execution, "action", None) if execution is not None else None
+            note(
+                skill=str(getattr(decision, "skill", "") or ""),
+                control=str(getattr(action, "target", "") or ""),
+                expected_result=str(getattr(decision, "expected_result", "") or ""),
+                observed_change=str(observed_change or ""),
+                verifier_ok=None if verification is None else bool(verification.ok),
+            )
+        except Exception:  # noqa: BLE001 - a memory must never fail a step that already ran
+            pass
 
     def _settle_advised_step(self, decision: Any, verification: Any, result: str) -> None:
         """Tell the planner what the verifier said about the step its answer drove.

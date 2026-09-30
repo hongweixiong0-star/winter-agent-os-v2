@@ -44,9 +44,10 @@ not see.  A missing frame is therefore recorded as ``LOCAL_GUI_MODEL_NO_SCREENSH
 than quietly degrading to the old, blind behaviour.
 
 Measured on this machine 2026-09-30: llama-server (llama.cpp b11284, CUDA 12.4) serving
-``UI-Venus-2-9B-Q4_K_M.gguf`` with ``mmproj-UI-Venus-2-9B-f16.gguf`` on ``127.0.0.1:8080``.
-The predecessor was Ollama on ``127.0.0.1:11434`` serving ``qwen3635bagent-q3:latest`` (35.5B
-MoE, Q3_K_M), measured at p50 17.9 s / p95 42.9 s per plan and 11 timeouts in 79 calls.
+``UI-Venus-2-9B-Q4_K_M.gguf`` with ``mmproj-UI-Venus-2-9B-f16.gguf`` on ``127.0.0.1:18080``,
+``-c 32768``.  The predecessor was Ollama on ``127.0.0.1:11434`` serving
+``qwen3635bagent-q3:latest`` (35.5B MoE, Q3_K_M), measured at p50 17.9 s / p95 42.9 s per plan
+and 11 timeouts in 79 calls.
 """
 
 from __future__ import annotations
@@ -63,7 +64,9 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
+
+from .context_budget import MAX_MODEL_CONTEXT
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -83,10 +86,12 @@ DEFAULT_MODEL = "UI-Venus-2-9B"
 
 DEFAULT_QUANTIZATION = "Q4_K_M"
 
-#: Section 4: keep the existing 8K context.  A planner step is this screen's own element
-#: table plus the goal and one image, and 8K covers that -- the packet builder caps and
-#: truncates rather than letting the prompt grow.
-DEFAULT_CONTEXT = 8192
+#: The window the server was started with, and therefore the window the client is entitled to
+#: fill.  Re-exported from ``context_budget`` rather than written again: the budget module is
+#: what actually *uses* the number to decide what to drop, so a second literal here is the
+#: exact "two sources of truth about one quantity" the constitution forbids -- and the two
+#: would drift the first time one of them was retuned to fit VRAM.
+DEFAULT_CONTEXT = MAX_MODEL_CONTEXT
 
 #: A planner step must not become the slowest thing in a cycle.  Bounded, and the cycle
 #: proceeds without a plan when it expires.  60 s rather than the old 45 s because the first
@@ -123,6 +128,16 @@ class GUIModelCall:
     image_sent: bool = False
     image_bytes: int = 0
     image_digest: str = ""
+    #: What the server itself counted for the prompt, from ``usage.prompt_tokens``.  This is
+    #: the *measured* input size, and it is the only honest source for it: the client's own
+    #: estimate (``context_budget.estimate_tokens``) is what decides trimming, but a report
+    #: quoting an estimate as ACTUAL_PROMPT would be measuring the ruler instead of the thing.
+    #: ``0`` means the server did not report one, which is recorded as unknown rather than as
+    #: zero input.
+    prompt_tokens: int = 0
+    #: The window the server was started with, echoed on every row so a ledger read months
+    #: later cannot be mistaken for one produced under a different ``-c``.
+    context_limit: int = 0
 
     def to_row(self, *, purpose: str = "", element_count: int = 0) -> dict[str, Any]:
         return {
@@ -135,6 +150,8 @@ class GUIModelCall:
             "error": self.error,
             "latency_ms": self.latency_ms,
             "prompt_chars": self.prompt_chars,
+            "prompt_tokens": self.prompt_tokens,
+            "context_limit": self.context_limit,
             "reply_chars": len(self.text or ""),
             "element_count": element_count,
             "image_sent": self.image_sent,
@@ -181,6 +198,11 @@ class LocalGUIModel:
     def num_ctx(self) -> int:
         return self.context
 
+    #: What the ledger calls the same quantity.
+    @property
+    def context_limit(self) -> int:
+        return self.context
+
     # ------------------------------------------------------------------ availability
     def _host_port(self) -> tuple[str, int]:
         parsed = urllib.parse.urlsplit(self.endpoint)
@@ -214,11 +236,18 @@ class LocalGUIModel:
         element_count: int = 0,
         image_path: Path | str | None = None,
         timeout_s: float | None = None,
+        response_schema: Mapping[str, Any] | None = None,
     ) -> GUIModelCall:
         """One ``/v1/chat/completions`` turn, with the frame attached.  Never raises.
 
         ``image_path`` is required while ``multimodal`` is on: a call without a picture would
         reproduce exactly the defect this module exists to fix, so it is refused by name.
+
+        ``response_schema`` turns the reply constraint from "is JSON" into "is *this* JSON".
+        It is the caller's contract (``ui_planner.response_schema``), not this module's, because
+        only the caller knows what it can parse.  When it is given the payload asks for
+        ``json_schema``; when the server rejects that, the request degrades to ``json_object``
+        rather than failing, because a slower correct answer beats a fast error.
         """
         prompt_chars = len(system) + len(user)
         image_bytes, image_digest, image_error = self._read_image(image_path)
@@ -264,8 +293,10 @@ class LocalGUIModel:
             # The planner validates the shape, so the server is asked only to remove the
             # "wrapped it in prose" failure, which is not the failure worth spending retries
             # on.  Recorded as a request, not assumed: ``_post`` retries once without it if
-            # this build rejects the key.
-            "response_format": {"type": "json_object"},
+            # this build rejects the key.  With a ``response_schema`` this becomes the exact
+            # reply shape, which is what caps the output length -- see the contract note in
+            # ``ui_planner``.  A rejected schema falls back to ``json_object``, not to nothing.
+            "response_format": self._response_format(response_schema),
             # GUI planning is a control loop, not a chat: the same screen should produce the
             # same proposal, so the sampler is pinned to greedy.
             "temperature": 0.0,
@@ -275,7 +306,14 @@ class LocalGUIModel:
         try:
             body = self._post(payload, timeout_s=timeout_s)
         except _RejectedKey as exc:
-            payload.pop("response_format", None)
+            # A rejected reply constraint degrades twice before giving up: the exact schema
+            # first, then the loose ``json_object``, and only then nothing.  Dropping straight
+            # to "any text at all" would trade a fast correct answer for an unconstrained one,
+            # which is the failure this module already paid to remove.
+            if payload.get("response_format", {}).get("type") == "json_schema":
+                payload["response_format"] = {"type": "json_object"}
+            else:
+                payload.pop("response_format", None)
             if exc.key == "temperature":
                 payload.pop("temperature", None)
             try:
@@ -300,9 +338,45 @@ class LocalGUIModel:
             image_sent=bool(image_bytes),
             image_bytes=len(image_bytes),
             image_digest=image_digest,
+            prompt_tokens=self._usage_tokens(body),
+            context_limit=self.context,
         )
         self.record(call, purpose=purpose, element_count=element_count)
         return call
+
+    @staticmethod
+    def _response_format(schema: Mapping[str, Any] | None) -> dict[str, Any]:
+        """The ``response_format`` for one call: the caller's schema, or plain JSON object.
+
+        llama.cpp accepts either, and the schema is the one that bounds the reply -- but this
+        module does not assume that: a build that rejects the key is handled in ``ask_json``,
+        which degrades the request rather than losing it.
+        """
+        if not schema:
+            return {"type": "json_object"}
+        return {
+            "type": "json_schema",
+            "json_schema": {"name": "ui_plan", "strict": True, "schema": dict(schema)},
+        }
+
+    @staticmethod
+    def _usage_tokens(body: Any) -> int:
+        """``usage.prompt_tokens`` from the reply, or ``0`` when the build does not report one.
+
+        llama.cpp's OpenAI-compatible endpoint returns ``usage`` (measured 2026-09-30: 14
+        prompt tokens for a one-line question), and it is the only number here that comes from
+        the tokenizer rather than from a heuristic.  Read tolerantly -- ``0`` is "not reported"
+        and the ledger keeps it distinguishable from a genuinely empty prompt.
+        """
+        if not isinstance(body, Mapping):
+            return 0
+        usage = body.get("usage")
+        if not isinstance(usage, Mapping):
+            return 0
+        try:
+            return max(0, int(usage.get("prompt_tokens") or 0))
+        except (TypeError, ValueError):
+            return 0
 
     # ------------------------------------------------------------------ image
     def _user_content(self, text: str, image_path: Path | str | None) -> Any:

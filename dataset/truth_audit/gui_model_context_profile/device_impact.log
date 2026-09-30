@@ -1,0 +1,82 @@
+product: MuMuPlayer-12.0-0
+nemu_connect instance_name: ginstance1400967653141180200
+connect not same day
+product: MuMuPlayer-12.0-0
+nemu_connect instance_name: ginstance1400967653141180200
+成功: 已终止进程 "llama-server.exe"，其 PID 为 23092。
+[no_server]   maa p50=11.7 p95=19.09 fail=0  adb p50=27.62
+错误: 没有找到进程 "llama-server.exe"。
+started llama-server pid=9668 profile={"gpu_layers": 24, "context": 32768, "kv_type": "f16", "port": 18080}
+{
+  "endpoint": "http://127.0.0.1:18080",
+  "model_path": "E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "context_requested": 32768,
+  "gpu_layers": 24,
+  "kv_cache_type": "f16",
+  "multimodal_projector_loaded": true,
+  "modalities": {
+    "vision": true,
+    "video": true,
+    "audio": false
+  },
+  "resident": true
+}
+[ngl 24/f16] idle p50=11.03 load p50=15.02 p95=29.77 fail=0 calls=3 free=244 -> DEVICE_IMPACT
+成功: 已终止进程 "llama-server.exe"，其 PID 为 9668。
+started llama-server pid=16540 profile={"gpu_layers": 20, "context": 32768, "kv_type": "f16", "port": 18080}
+{
+  "endpoint": "http://127.0.0.1:18080",
+  "model_path": "E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "context_requested": 32768,
+  "gpu_layers": 20,
+  "kv_cache_type": "f16",
+  "multimodal_projector_loaded": true,
+  "modalities": {
+    "vision": true,
+    "video": true,
+    "audio": false
+  },
+  "resident": true
+}
+[ngl 20/f16] idle p50=12.46 load p50=15.3 p95=23.56 fail=0 calls=3 free=952 -> DEVICE_IMPACT
+成功: 已终止进程 "llama-server.exe"，其 PID 为 16540。
+started llama-server pid=19496 profile={"gpu_layers": 16, "context": 32768, "kv_type": "f16", "port": 18080}
+{
+  "endpoint": "http://127.0.0.1:18080",
+  "model_path": "E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "context_requested": 32768,
+  "gpu_layers": 16,
+  "kv_cache_type": "f16",
+  "multimodal_projector_loaded": true,
+  "modalities": {
+    "vision": true,
+    "video": true,
+    "audio": false
+  },
+  "resident": true
+}
+[ngl 16/f16] idle p50=11.38 load p50=13.71 p95=18.71 fail=0 calls=2 free=1524 -> OK
+成功: 已终止进程 "llama-server.exe"，其 PID 为 19496。
+started llama-server pid=25108 profile={"gpu_layers": 24, "context": 32768, "kv_type": "q8_0", "port": 18080}
+{
+  "endpoint": "http://127.0.0.1:18080",
+  "model_path": "E:\\winter_models\\ui-venus-2-9b\\UI-Venus-2-9B-Q4_K_M.gguf",
+  "n_ctx": 32768,
+  "context_requested": 32768,
+  "gpu_layers": 24,
+  "kv_cache_type": "q8_0",
+  "multimodal_projector_loaded": true,
+  "modalities": {
+    "vision": true,
+    "video": true,
+    "audio": false
+  },
+  "resident": true
+}
+[ngl 24/q8_0] idle p50=11.74 load p50=15.26 p95=31.9 fail=0 calls=2 free=362 -> DEVICE_IMPACT
+成功: 已终止进程 "llama-server.exe"，其 PID 为 25108。
+
+wrote E:\无尽冬日智能体\dataset\truth_audit\gui_model_context_profile\device_impact.json
