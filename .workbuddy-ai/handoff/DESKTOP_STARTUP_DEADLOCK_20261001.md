@@ -9,9 +9,9 @@
 设备坏是**可修复**的（运行时会 `LAUNCH_GAME` 并退避重试），解释器坏在进程内**不可修复**。
 
 - 修复提交：`b656f81`（行为修复）+ `743d3a2`（反回归测试与接线）
-- 生产 pin：`783a219` → `b656f81` → `743d3a2`（两次都 `CLEAN_OUTSIDE_DATA`）
-- 验证：修复后 07:41:34 AUTO 首次成功启动；设备被自愈拉起；两个完整轮次
-  `15 executed / 13 verified`、`24 executed / 24 verified / 0 failures`
+- 生产 pin：`783a219` → `b656f81` → `743d3a2` → `1557128`（结局见 §G2）
+- 验证：修复后 07:41:34 AUTO 首次成功启动；设备被自愈拉起；三个连续完整轮次
+  `15 executed / 13 verified`、`24 executed / 24 verified / 0 failures`、`22 / 21`
 
 ---
 
@@ -189,10 +189,32 @@ pidof com.gof.china → 3666
    **我没有重启它** —— 理由：① 该提示明确要求"手动 / 安全点"；② 连续运行已启用，
    轮次之间只有约 3 秒间隙（07:52:35 结束 → 07:52:38 开新轮），没有空闲安全点；
    ③ 杀掉面板会按设计连坐杀掉 worker，中断一个正在进行的 episode。
-   下一次操作员重启（`Start-Winter-Agent-V2.cmd`）会自动拿到 `743d3a2` 并清掉该提示。
+   下一次操作员重启（`Start-Winter-Agent-V2.cmd`）会自动拿到下面的最终 pin 并清掉该提示。
 2. `learning/auto_uptime.jsonl` 的 `repo_revision` 字段**一直为空**（本轮之前就如此，非本轮引入）。
 3. `winter_agent_v2/formation_policy.py` 仍未跟踪（历史遗留）。
 4. 本轮**没有**动第二 Scheduler / Executor / WorldState / Runtime Model —— 只改了启动闸门语义。
+5. `tools/check_wiring.py` 报 **259 OK / problems: 15**。已逐条归因：**15 项全部是本轮之前
+   就存在的积压，与本修复无关**。判据：① 11 处"未隐藏后台进程"全部落在 `tools/*.py`
+   里我没碰过的文件（`launch_pinned_production.py`、`repin_production.py`、
+   `build_runtime_state_manifest.py`、`_trace_panel_startup.py` 等）；② 悬空自调用在
+   `winter_agent_v2/ocr.py:5351`（`self._read_daily_activity_badge` 无定义），我没碰过该文件；
+   ③ 唯一读 `tools/control_panel.py` 的失败项 `lease: the window is the consumer…`
+   缺的字符串 `self._release_validation_lease(result,` 用 `git show 783a219:…` 核过 ——
+   **旧版本同样缺**，且不在我的 14 行改动区域内；④ 其余项分布在 stamina / training / goals /
+   brain / gate / runtime / navigation-matrix 等我完全没动的域。
+   **不要把它当成"推前必须清零"的阻塞项，也不要顺手改**（那是另一个工作单元）。
+
+## G2. 最终状态（收尾核对，2026-10-01 07:59）
+
+- **pin**：`783a219` → `b656f81` → `743d3a2` → `1557128`（三次 repin 均 `CLEAN_OUTSIDE_DATA`；
+  最后一次只同步文档，`tools/preflight.py` 在 `743d3a2` 与 `1557128` 之间逐字节相同，
+  且 `startup_fence` 每 worker 只调一次，故不影响在跑的轮次）。
+- **镜像**：`tools/git_sync.py push` 成功，`de38da0..1557128`（17 个提交），推前
+  `tools/scan_public_repo.py` = `forbidden_name 0 / secret 0 / pii 0 / gitignore_gap 0`。
+  `git status -sb` = `## main...origin/main`（无 ahead/behind）。
+- **生产**：面板连续运行，每轮预检通过；`auto_uptime.jsonl` 连续三个健康轮次
+  `exec = 15 / 24 / 22`、`verified = 13 / 24 / 21`、`failures = 2 / 0 / 1`，
+  全部 `MAX_ACTIONS_REACHED / COMPLETED / healthy=true`。
 
 ## H. 一句话教训（写给以后的自己）
 
