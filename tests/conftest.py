@@ -14,10 +14,24 @@ directory here, once, for the whole session:
 * ``page_knowledge.PAGE_ROOT``        unnamed-page candidates (knowledge/perception/pages/)
 * ``page_knowledge.TRANSITIONS_PATH`` the learned page transitions (knowledge/ui/)
 * ``unknown_advisor.REQUEST_ROOT``    the UNKNOWN question queue (learning/unknown_requests/)
+* ``control_panel.PUMP_STATE_PATH``   the AUTO queue clock's ownership heartbeat
+* ``control_panel.PANEL_LOG_PATH``    the panel log, its pid file and its gateway probe
 
-The last one is the newest and it matters for the same reason as the rest: the queue is what the
-running AUTO asks a reasoner, and a test that writes into it -- or that dispatches a job from it --
-would be answering questions the device actually asked.
+The last two were added 2026-09-30, after the pump's heartbeat was measured to be the reason
+AUTO would not start.  ``QueuePump._write_state`` writes ``PUMP_STATE_PATH`` and stamps it with
+``os.getpid()``, and that path resolves to the *live* ``learning/control_panel/pump.json`` in a
+plain test process.  So any test that ticks a real pump claimed the production clock:
+
+    03:41:11  另一个实例正在运行（pid 3168）：本窗口只读，不消费队列、不启动 AUTO、不申请设备租约。
+    03:42:00  不自动启动 AUTO：另一个实例（pid 3168）正在运行。本窗口只读。
+
+pid 3168 did not exist; it was a test process that had already exited, and ``panel_clock_owner``
+read it out of the live heartbeat file.  Sampled every 20 s during the outage the file named
+3168, then 29048 (a running pytest), then the panel's own pid -- three owners in ninety seconds,
+none of them the panel.  ``PANEL_LOG_PATH`` is redirected with it because ``panel_pid_path()``,
+``gateway_probe_path()`` and the log the operator reads are all derived from it, so a test that
+appended a line -- or wrote a pid the restart tool would then try to kill -- did it to the live
+files.
 
 A test that wants its own paths still passes them explicitly, exactly as before; what changes is
 only what "no path given" means inside a test run.  ``online`` no-ops for anyone importing these
@@ -37,6 +51,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from tools import control_panel  # noqa: E402
 from winter_agent_v2 import (  # noqa: E402
     control_experience,
     page_knowledge,
@@ -80,6 +95,10 @@ def _protect_the_live_learning_assets():
             "TRANSITIONS_PATH": page_knowledge.TRANSITIONS_PATH,
         },
         unknown_advisor: {"REQUEST_ROOT": unknown_advisor.REQUEST_ROOT},
+        control_panel: {
+            "PUMP_STATE_PATH": control_panel.PUMP_STATE_PATH,
+            "PANEL_LOG_PATH": control_panel.PANEL_LOG_PATH,
+        },
     }
     control_experience.STATE_PATH = _seed(
         control_experience.STATE_PATH, scratch / "learning/control_experience.json"
@@ -106,6 +125,14 @@ def _protect_the_live_learning_assets():
     # hand a test the AUTO's real questions -- and, with the dispatcher in the loop, would let a test
     # suite dispatch jobs about screens the device really asked about.
     unknown_advisor.REQUEST_ROOT = scratch / "learning/unknown_requests"
+    # Not seeded either, and for the same reason: a seeded heartbeat would hand a test the pid of
+    # whichever process is really ticking the clock, and a panel under test would then read itself
+    # as the *second* instance.  An empty heartbeat is what "no owner" honestly looks like.
+    control_panel.PUMP_STATE_PATH = scratch / "learning/control_panel/pump.json"
+    # Seeded, because the log is read by tests that parse it for real lines.
+    control_panel.PANEL_LOG_PATH = _seed(
+        control_panel.PANEL_LOG_PATH, scratch / "learning/control_panel/panel.log"
+    )
     try:
         yield
     finally:

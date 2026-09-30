@@ -828,6 +828,28 @@ class PanelClockTests(unittest.TestCase):
         # here is this test's failure and not the preloader's.
         return panel, panel.QueuePump(interval=0.01, preload_every=0, unknown_every=1)
 
+    def setUp(self):
+        # ``QueuePump.tick`` -> ``_persist`` writes ``PUMP_STATE_PATH`` and stamps it with
+        # ``os.getpid()``.  Unredirected that is the *live* ``learning/control_panel/pump.json``,
+        # and these tests tick a real pump -- so they claimed the production panel's clock.
+        # ``panel_clock_owner`` reads that file, so the running window then saw this pytest as
+        # "另一个实例正在运行" and refused to start AUTO:
+        #
+        #     03:41:11  另一个实例正在运行（pid 3168）：本窗口只读，不消费队列、不启动 AUTO
+        #     03:42:00  不自动启动 AUTO：另一个实例（pid 3168）正在运行。本窗口只读。
+        #
+        # pid 3168 was a pytest that had already exited; the next suite left 29048 behind.  The
+        # assertions below read ``pump.state()``, never the file, so redirecting it changes
+        # nothing they check -- only where the heartbeat lands.
+        from tools import control_panel as panel
+
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self._state_patch = mock.patch.object(
+            panel, "PUMP_STATE_PATH", Path(self._tmp.name) / "pump.json")
+        self._state_patch.start()
+        self.addCleanup(self._state_patch.stop)
+
     def test_the_tick_reports_what_the_channel_did(self):
         panel, pump = self._pump()
         seen: dict[str, object] = {}
